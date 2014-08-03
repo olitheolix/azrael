@@ -21,9 +21,9 @@ base_flags = ('-g -Wall -Wextra -pedantic -std=c++11'
               )
 
 # Determine which programs to compile.
-compile_tests = True
+compile_tests = False
 compile_wrapper = True
-compile_standalone = True
+compile_standalone = False
 
 # Output directory for binaries (this variable does not affect the location of
 # the shared libraries which will always end up in the CWD).
