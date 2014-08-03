@@ -72,8 +72,24 @@ existence...
 Installation
 ============
 
-Tedious... on Linux you will need Python3, Cython, Bullet, AssImp, Qt4, PySide,
-Scons, OpenGL, PyOpengl (Python 3), MongoDB, pymongo, RabbitMQ, ZeroMQ, pyzmq.
+On Ubuntu 14.04, you can install and test the Azrael stack (without the OpenGL
+viewer) with these commands:
+
+.. code-block:: bash
+
+   sudo apt-get install libassimp3 libassimp-dev python3-pymongo scons cython3
+   sudo apt-get install python3-zmq libbullet-dev mongodb rabbitmq-server
+   sudo pip3 install cytoolz setproctitle websocket-client==0.15
+   git clone https://github.com/olitheolix/azrael
+   cd azrael
+   py.test
+
+To also test the OpenGL client:
+
+.. code-block:: bash
+
+   sudo apt-get install python3-opengl libglu1-mesa-dev python3-pyside.qtopengl
+   ./start.py
 
 
 License

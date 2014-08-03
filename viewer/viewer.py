@@ -21,8 +21,7 @@ OpenGL demo (runs with Python 3).
 You will need 'python3-pyside.qtopengl' and 'pyopengl'. On Ubuntu 14.04 this
 should be all you need:
 
-  >> sudo apt-get install python3-pyside.qtopengl
-  >> sudo pip3 install pyopengl
+  >> sudo apt-get install python3-pyside.qtopengl python3-opengl
 
 """
 
