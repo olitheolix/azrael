@@ -79,12 +79,16 @@ viewer) with these commands:
 
    sudo apt-get install libassimp3 libassimp-dev python3-pymongo scons cython3
    sudo apt-get install python3-zmq libbullet-dev mongodb rabbitmq-server
+   sudo apt-get install python3-pip python3-numpy python3-pytest IPython3
+   sudo apt-get install python3-tornado python3-pil git
    sudo pip3 install cytoolz setproctitle websocket-client==0.15
    git clone https://github.com/olitheolix/azrael
-   cd azrael
+   cd azrael/azrael/bullet
+   scons
+   cd ../../
    py.test
 
-To also test the OpenGL client:
+To also test the OpenGL viewer:
 
 .. code-block:: bash
 
