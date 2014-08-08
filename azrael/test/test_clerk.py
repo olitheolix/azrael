@@ -410,7 +410,7 @@ def test_create_new_raw_object():
 def test_set_force():
     """
     The logic for the 'set_force' and 'suggest_pos' commands are
-    identical. Therefore thest them both with a single function here.
+    identical. Therefore test them both with a single function here.
     """
     killall()
 
@@ -649,7 +649,6 @@ def test_get_raw_object_id():
 
 if __name__ == '__main__':
     test_get_raw_object_id()
-    sys.exit()
     test_get_statevar()
     test_spawn()
     test_create_fetch_objects()

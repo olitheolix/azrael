@@ -99,7 +99,8 @@ class Clerk(multiprocessing.Process):
             client.drop_database('azrael')
             self.db_objdesc.insert({'name': 'objcnt', 'cnt': 0})
 
-        # Insert default objects: no CS, sphere, and cube.
+        # Insert default objects. None has a geometry, but their collision
+        # shapes are: none, sphere, cube.
         self.createObjectDescription(
             np.array([0, 1, 1, 1], np.float64).tostring(), b'')
         self.createObjectDescription(
@@ -373,13 +374,14 @@ class Clerk(multiprocessing.Process):
             else:
                 self.returnOk(addr, doc['geometry'])
         elif cmd == config.cmd['set_force']:
-            # Payload must be exactly one ID plus a 3-element force vector with
-            # 8 Bytes (64 Bits) each and another one for relative position.
+            # Payload must comprise one ID plus two 3-element vectors (8 Bytes
+            # each) for force and relative position of that force with respect
+            # to the center of mass.
             if len(payload) != (config.LEN_ID + 6 * 8):
                 self.returnErr(addr, 'Insufficient arguments')
                 return
 
-            # Unpack the ID and force value, then issue the update.
+            # Unpack the ID and 'force' value, then issue the update.
             obj_id = payload[:config.LEN_ID]
             _ = config.LEN_ID
             force, rpos = payload[_:_ + 3 * 8], payload[_ + 3 * 8:_ + 6 * 8]

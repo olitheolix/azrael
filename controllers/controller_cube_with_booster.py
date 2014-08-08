@@ -25,7 +25,6 @@ class ControllerCube(azrael.controller.ControllerBase):
 
         # Engage the booster up for one interval.
         force = 1 * np.ones(3)
-        cmd = config.cmd['set_force'] + self.objID
         self.setStateVariables(self.objID, force)
         time.sleep(t0)
 
