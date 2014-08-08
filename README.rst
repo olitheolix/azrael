@@ -4,76 +4,67 @@ Azrael
 
 Create interactive virtual worlds governed by real world physics.
 
-Conventional 3D engines provide an all-in-one option to simulate virtual
-worlds, visualise them, enforce physics, and takes player inputs into
-account. Azrael, on the other hand, only enforces the physics and provides a
-network API to populate it with objects and interact with them. Azrael is thus
-fully distributed, including the rendering and object control (eg. artificial
-intelligence), which may run in the cloud or on your local computer connecting
-to the Azrael server.
+Azrael applies the laws of physics to all objects in the simulation and queries
+about must use a network API. This means that with Azrael, the physics,
+rendering, and artificial AI are independent components that can run different
+machines. In contrast, most conventional 3D engines are monolithic, run all
+components on a single machine, and prescribe the programming language.
 
-Example
-=======
-Say you want dock a space ship to a space station. You cannot set the
-space ship's position directly but you *can* influence it with boosters (ie
-apply forces). To do so you may write a program in your favourite language that
-queries the world to determine your position relative to the station and
-activate the boosters as necessary to dock. Similarly, another program
-(possibly on a different computer) can simultaneously query the world and
-visualise it. Again, this program is independent of Azrael and your controller.
-
-Feel free to replace the the space ship with a drone that automatically pilots
-from A to B, or a car that drives itself through traffic, or an intelligent
-suspension system in a vehicle, or computer controlled players. You may also
-design larger systems like a fully automated naval port or an airport.
-
+The network API also ensures that Azrael is language Agnostic; any language
+with either ZeroMQ bindings or Websocket functionality will work.
 
 How and Why
 ===========
+
 Azrael will feature a scaleable physics engine to simulate worlds of
 unprecedented size, detail, and accuracy. The rise of cloud computing provides
-the infrastructure and Azrael will provide the software - at least that is the
-plan.
+the infrastructure and Azrael the logic - at least that is the plan :)
 
-Why do I bother? Because I believe everyone should be able to create their
-Utopia; design, build and launch a space shuttle; create a car that drives
-itself, or design a fully automated naval port, come up with a concept for a
-space shuttle, or an artificial spine, or fictitious space stations with
-automated hangars. Only a select few (if any) are currently in the position to
-work on such technologies due to the high costs in building them, but if the
-materials were just computer models that behaved like their counterparts in the
-real world...
+Why do I bother? Because in a virtual world that behaves reasonably similar to
+the real world then I can have my space shuttle, design a sub-marine, invent an
+algorithm to automatically steer a car through traffic, or build a fictitious
+space port. And so can you. All for free and no strings attached. Right now
+however only a select few people (if any) have access to the necessary
+resources to invent, design, build, and test such technology.
 
 
-Current Status
-===============
-Azrael is currently only a proof-of-concept useful for developers. It utilises
+Project Status
+==============
+
+So far it is a proof-of-concept only and mostly useful for developers. It wraps
 Bullet for the physics, provides basic APIs to control objects, and ships with
 a simple 3D viewer.
 
-The first major milestone is to build a minimum viable prototype (MVP) that
-features:
+The first major milestone is towards a minimum viable prototype (MVP) are:
 
 * decent physics,
-* ability to combine primitive objects into more complex ones (eg. build a
-  space ship with a passive hull element and active booster elements, or an
-  entire factory composed of thousands objects),
-* API to connect to these objects and control their active elements,
+* ability to combine primitive objects to form more complex ones
+* API to connect to these objects and control their active elements
+  (eg. boosters)
 * ability to query the world (mostly for visualisation).
 
-This has proven to be a surprisingly complex undertaking due to the many loosely
-coupled components. However, once the basics are all in place it will hopefully
-be easier to hone the individual components... with Oculus Rift 
-support, gorgeous 3D rendering (maybe served up via Amazon's AppStream?), a
-scaleable physics engine to create the largest physics simulation in
-existence...
+This has proven to be a surprisingly complex undertaking due to the many
+loosely coupled components. However, once the basics are in place it will
+hopefully be easier to hone the individual components... with Oculus Rift
+support, contemporary 3D rendering (maybe cloud based?), and a scaleable
+physics engine to create the largest such simulation in existence...
+
+
+Help Wanted
+===========
+
+The project spans a multitude of technologies, including ZeroMQ, RabbitMQ,
+MongoDB, OpenGL (via PyQt), Websockets, Tornado, Cython, a thin C++ wrapper for
+Bullet, Sphinx documentation, 3D models that can be distributed via GitHub
+without violating any licenses, and more. The skill threshold is rather low
+since most components are ludicrously primitive for now.
 
 
 Installation
 ============
 
-On Ubuntu 14.04, you can install and test the Azrael stack (without the OpenGL
-viewer) with these commands:
+On Ubuntu 14.04, you can install and test Azrael (without the OpenGL
+viewer) like this:
 
 .. code-block:: bash
 
@@ -101,6 +92,6 @@ License
 
 Azrael is licensed under the terms of the AGPL v3.
 
-The license emulates that of MongoDB. In colloquial terms: share any
-modifications you make, but feel free to use your own license for
-code that connects to Azrael (eg. object controllers or rendering front ends).
+In colloquial terms: share any modifications you make, but feel free to use
+your own license for code that connects to Azrael (eg. rendering frontends and
+AI algorithms).
