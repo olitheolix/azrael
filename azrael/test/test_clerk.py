@@ -13,6 +13,7 @@ import subprocess
 import numpy as np
 
 import azrael.clerk
+import azrael.types as types
 import azrael.config as config
 import azrael.clacks as clacks
 import azrael.wsclient as wsclient
@@ -545,11 +546,42 @@ def test_create_fetch_objects():
     # Create a brand new object.
     cs = np.array([1, 2, 3, 4], np.float64).tostring()
     geo = np.array([5, 6, 7, 8], np.float64).tostring()
-    objdescid = clerk.createObjectDescription(cs, geo)
+    objdescid = clerk.createObjectDescription(cs, geo, [], [])
     out = clerk.getObjectDescription(objdescid)
     assert out is not None
     assert out[0] == np.array([1, 2, 3, 4], np.float64).tostring()
     assert out[1] == np.array([5, 6, 7, 8], np.float64).tostring()
+
+
+    # Define a new object with two boosters and one factory unit.
+    # The 'boosters' and 'factories' arguments are a list of named
+    # tuples. The first argument to these tuples is the ID that will
+    # be assigned to the unit (the user can choose that number; Azrael
+    # will automatically enumerate them in any way).
+    cs = np.array([1, 2, 3, 4], np.float64).tostring()
+    geo = np.array([5, 6, 7, 8], np.float64).tostring()
+    b0 = types.booster(0, pos=np.zeros(3), orient=[0, 0, 0, 1], max_force=0.5)
+    b1 = types.booster(1, pos=np.zeros(3), orient=[0, 0, 0, 1], max_force=0.5)
+    f0 = types.factory(0, pos=np.zeros(3), orient=[0, 0, 0, 1], speed=[0.1, 0.5])
+
+    # ------------------------------------------------------------
+    # In Clerk: add new object description.
+    # ------------------------------------------------------------
+    objdescid = clerk.createObjectDescription(cs, geo, [b0, b1], [f0])
+
+    # Retrieve the just created object.
+    out = clerk.getObjectDescription(objdescid)
+    assert out is not None
+    assert out[0] == np.array([1, 2, 3, 4], np.float64).tostring()
+    assert out[1] == np.array([5, 6, 7, 8], np.float64).tostring()
+    assert len(out[2]) == 2
+    assert len(out[3]) == 1
+
+    out_boosters = [types.booster_tostring(_) for _ in out[2]]
+    out_factories = [types.factory_tostring(_) for _ in out[3]]
+    assert types.booster_tostring(b0) in out_boosters
+    assert types.booster_tostring(b1) in out_boosters
+    assert types.factory_tostring(f0) in out_factories
 
     print('Test passed')
 

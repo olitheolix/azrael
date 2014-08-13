@@ -28,6 +28,7 @@ import zmq.eventloop.zmqstream
 import numpy as np
 
 import azrael.util as util
+import azrael.types as types
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
 
@@ -102,11 +103,11 @@ class Clerk(multiprocessing.Process):
         # Insert default objects. None has a geometry, but their collision
         # shapes are: none, sphere, cube.
         self.createObjectDescription(
-            np.array([0, 1, 1, 1], np.float64).tostring(), b'')
+            np.array([0, 1, 1, 1], np.float64).tostring(), b'', [], [])
         self.createObjectDescription(
-            np.array([3, 1, 1, 1], np.float64).tostring(), b'')
+            np.array([3, 1, 1, 1], np.float64).tostring(), b'', [], [])
         self.createObjectDescription(
-            np.array([4, 1, 1, 1], np.float64).tostring(), b'')
+            np.array([4, 1, 1, 1], np.float64).tostring(), b'', [], [])
 
         # Initialise the SV related collections.
         btInterface.initSVDB(reset)
@@ -164,10 +165,23 @@ class Clerk(multiprocessing.Process):
         doc = self.db_objdesc.find_one({'objdesc': objdesc})
         if doc is None:
             return None
+
+        cs, geo = doc['cshape'], doc['geometry']
+
+        if 'boosters' in doc:
+            b = doc['boosters'].values()
+            boosters = [types.booster_fromstring(_) for _ in b]
         else:
-            return doc['cshape'], doc['geometry']
+            boosters = []
+        if 'factories' in doc:
+            f = doc['factories'].values()
+            factories = [types.factory_fromstring(_) for _ in f]
+        else:
+            factories = []
+
+        return cs, geo, boosters, factories
         
-    def createObjectDescription(self, cshape, geometry):
+    def createObjectDescription(self, cshape, geometry, boosters, factories):
         """
         Add a new object to the 'objdesc' DB and return its ID.
 
@@ -177,11 +191,14 @@ class Clerk(multiprocessing.Process):
             {'name': 'objcnt'}, {'$inc': {'cnt': 1}}, new=True)
         new_id = new_id['cnt']
         objdescid = np.int64(new_id).tostring()
-        self.db_objdesc.update(
-            {'objdesc': objdescid},
-            {'$set': {'objdesc': objdescid,
-                      'cshape': cshape, 'geometry': geometry}},
-            upsert=True)
+        data = {'objdesc': objdescid, 'cshape': cshape, 'geometry': geometry}
+        for b in boosters:
+            data['boosters.{0:03d}'.format(b.bid)] = types.booster_tostring(b)
+        for f in factories:
+            data['factories.{0:03d}'.format(f.fid)] = types.factory_tostring(f)
+
+        self.db_objdesc.update({'objdesc': objdescid},
+                               {'$set': data}, upsert=True)
         return objdescid
     
     def getUniqueID(self):
@@ -295,7 +312,7 @@ class Clerk(multiprocessing.Process):
                 return
             else:
                 # Unpack the return values.
-                cshape, geo = tmp
+                cshape, geo, boosters, factories = tmp
                 del tmp
 
             # Unpack the SV, then overwrite the supplied CS information.
@@ -358,7 +375,7 @@ class Clerk(multiprocessing.Process):
                 return
 
             # Create the new raw object and return its ID.
-            objdesc = self.createObjectDescription(cshape, geometry)
+            objdesc = self.createObjectDescription(cshape, geometry, [], [])
             self.returnOk(addr, objdesc)
         elif cmd == config.cmd['get_geometry']:
             # Payload must be exactly one objdescid.
