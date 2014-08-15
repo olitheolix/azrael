@@ -195,6 +195,66 @@ def setForce(ID, force, relpos):
     return ret['n'] == 1
     
 
+def getForceAndTorque(ID):
+    """
+    Return the force and torque for ``ID``.
+
+    Return (True, force, torque) if the query was successfull, otherwise
+    return (False, None, None).
+    """
+    # Sanity check.
+    assert isinstance(ID, bytes)
+    assert len(ID) == config.LEN_ID
+
+    # Query the object.
+    doc = _DB_SV.find_one({'objid': ID})
+    if doc is None:
+        return False, None, None
+
+    # Extract and unpack the force and its position relative to the center of
+    # mass.
+    try:
+        force = doc['central_force']
+        force = np.fromstring(force)        
+    except KeyError:
+        force = np.zeros(3)
+
+    try:
+        torque = doc['torque']
+        torque = np.fromstring(torque)
+    except KeyError:
+        torque = np.zeros(3)
+
+    # Return the result.
+    return True, force, torque
+    
+
+def setForceAndTorque(ID, force, torque):
+    """
+    Update the ``force`` and torque acting on ``ID``.
+
+    The force always only applies to the center of the mass.
+    """
+    # Sanity check.
+    assert isinstance(ID, bytes)
+    assert len(ID) == config.LEN_ID
+    assert isinstance(force, np.ndarray)
+    assert isinstance(torque, np.ndarray)
+    assert len(force) == len(torque) == 3
+
+    # Serialise the force and torque.
+    force = force.astype(np.float64)
+    torque = torque.astype(np.float64)
+    force, torque = force.tostring(), torque.tostring()
+
+    # Update the DB.
+    ret = _DB_SV.update({'objid': ID},
+                        {'$set': {'central_force': force, 'torque': torque}})
+
+    # Exactly one document should have been updated.
+    return ret['n'] == 1
+    
+
 def setSuggestedPosition(ID, pos):
     """
     Suggest to move ``ID`` to ``pos`` in the world.
@@ -256,6 +316,7 @@ def getTemplateID(ID):
 
     # Return an error if no document with matchin ID was found.
     if doc is None:
+        # fixme: must return a message, probably an empty string.
         return None, False
     else:
         return doc['objdesc'], True

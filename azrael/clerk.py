@@ -30,6 +30,7 @@ import numpy as np
 import azrael.util as util
 import azrael.types as types
 import azrael.config as config
+import azrael.commands as commands
 import azrael.bullet.btInterface as btInterface
 
 
@@ -141,6 +142,53 @@ class Clerk(multiprocessing.Process):
             if self.sock_cmd in sock:
                 self.processCmd()
 
+    def processControlCommand(self, cmds):
+        objID, cmd_boosters, cmd_factories = commands.deserialiseCommands(cmds)
+        if objID is None:
+            return False, 'Problem'
+
+        # Query the objdescr for objID.
+        objdesc, ok = btInterface.getTemplateID(objID)
+        if not ok:
+            return False, msg
+
+        # Query the object capabilities.
+        cap = self.getObjectDescription(objdesc)
+        if cap is None:
+            return False, 'Problem'
+        else:
+            cshape, geo, boosters, factories = cap
+
+        # Extract all booster- and factory IDs.
+        bid = dict(zip([int(_.bid) for _ in boosters], boosters))
+        fid = dict(zip([int(_.fid) for _ in factories], factories))
+        
+        # Verify that all boosters- and factories addressed in the commands
+        # actually exist.
+        tot_torque = np.zeros(3, np.float64)
+        tot_central_force = np.zeros(3, np.float64)
+        for cmd in cmd_boosters:
+            if int(cmd.unitID) not in bid:
+                return False, 'Invalid booster ID'
+            
+            # Rotate the unit force vector into the orientation given by the
+            # Quaternion.
+            f = bid[int(cmd.unitID)].orient * cmd.force_mag
+    
+            # Accumulate torque and central force.
+            pos = bid[int(cmd.unitID)].pos
+            tot_torque += np.cross(pos, f)
+            tot_central_force += f
+
+        # Set the resulting force.
+        btInterface.setForceAndTorque(objID, tot_central_force, tot_torque)
+
+        for cmd in cmd_factories:
+            if int(cmd.unitID) not in fid:
+                return False, 'Invalid factory ID'
+
+        return True, ''
+        
     def getControllerClass(self, ctrl_name: str):
         """
         Stub.

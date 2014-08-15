@@ -423,7 +423,65 @@ def test_create_work_package_with_objects():
     print('Test passed')
     
 
+def test_get_set_forceandtorque():
+    """
+    Query and update the force- and torque vectors for an object.
+    """
+    # Reset the SV database.
+    btInterface.initSVDB(reset=True)
+
+    # Create two object IDs for this test.
+    id_0 = int2id(0)
+    id_1 = int2id(1)
+
+    # Create two objects and serialise them.
+    data_0 = btInterface.defaultData()
+    data_0.position[:] = 0
+    data_0 = btInterface.pack(data_0).tostring()
+
+    data_1 = btInterface.defaultData()
+    data_1.position[:] = 10 * np.ones(3)
+    data_1 = btInterface.pack(data_1).tostring()
+
+    # Add the two objects to the DB.
+    assert btInterface.add(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.add(id_1, data_1, np.int64(1).tostring())
+
+    # Specify the forces and torques.
+    f0 = np.zeros(3, np.float64)
+    f1 = np.zeros(3, np.float64)
+    t0 = np.zeros(3, np.float64)
+    t1 = np.zeros(3, np.float64)
+
+    ok, force, torque = btInterface.getForceAndTorque(id_0)
+    assert ok
+    assert np.array_equal(force, f0)
+    assert np.array_equal(torque, t0)
+    ok, force, torque = btInterface.getForceAndTorque(id_1)
+    assert ok
+    assert np.array_equal(force, f1)
+    assert np.array_equal(torque, t1)
+
+    # Update the force and torque vectors of the second object.
+    f1 = np.ones(3, np.float64)
+    t1 = 2 * np.ones(3, np.float64)
+    assert btInterface.setForceAndTorque(id_1, f1, t1)
+
+    # Only the force an torque of the second object must have changed.
+    ok, force, torque = btInterface.getForceAndTorque(id_0)
+    assert ok
+    assert np.array_equal(force, f0)
+    assert np.array_equal(torque, t0)
+    ok, force, torque = btInterface.getForceAndTorque(id_1)
+    assert ok
+    assert np.array_equal(force, f1)
+    assert np.array_equal(torque, t1)
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_get_set_forceandtorque()
     test_create_work_package_with_objects()
     test_create_work_package_without_objects()
     test_suggest_position()

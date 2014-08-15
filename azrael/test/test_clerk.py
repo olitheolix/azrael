@@ -16,6 +16,7 @@ import azrael.clerk
 import azrael.types as types
 import azrael.config as config
 import azrael.clacks as clacks
+import azrael.commands as commands
 import azrael.wsclient as wsclient
 import azrael.controller as controller
 import azrael.bullet.btInterface as btInterface
@@ -552,7 +553,6 @@ def test_create_fetch_objects():
     assert out[0] == np.array([1, 2, 3, 4], np.float64).tostring()
     assert out[1] == np.array([5, 6, 7, 8], np.float64).tostring()
 
-
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
     # tuples. The first argument to these tuples is the ID that will
@@ -560,9 +560,9 @@ def test_create_fetch_objects():
     # will automatically enumerate them in any way).
     cs = np.array([1, 2, 3, 4], np.float64).tostring()
     geo = np.array([5, 6, 7, 8], np.float64).tostring()
-    b0 = types.booster(0, pos=np.zeros(3), orient=[0, 0, 0, 1], max_force=0.5)
-    b1 = types.booster(1, pos=np.zeros(3), orient=[0, 0, 0, 1], max_force=0.5)
-    f0 = types.factory(0, pos=np.zeros(3), orient=[0, 0, 0, 1], speed=[0.1, 0.5])
+    b0 = types.booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
+    b1 = types.booster(1, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
+    f0 = types.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # ------------------------------------------------------------
     # In Clerk: add new object description.
@@ -679,7 +679,69 @@ def test_get_raw_object_id():
     print('Test passed')
 
 
+def test_processControlCommand():
+    """
+    Create an object with some boosters and factories and send control
+    commands to them.
+    """
+    clerk = azrael.clerk.Clerk(reset=True)
+
+    # Create a fake object. We will not need it but since Clerk will double
+    # check its existence we need to spawn one. However, I do not want to run
+    # Clerk as a full fledged process which is why I just 'hack' it in for this
+    # test.
+    objID = int2id(1)
+    sv = btInterface.defaultData()
+    sv = btInterface.pack(sv).tostring()
+    btInterface.add(objID, sv, np.int64(1).tostring())
+
+    # Create booster control command.
+    cmd_0 = commands.controlBooster(unitID=0, force=0.2)
+    cmd = commands.serialiseCommands(objID, [cmd_0], [])
+
+    # Call processControlCommands. It must fail because the default object has
+    # no booster.
+    ok, msg = clerk.processControlCommand(cmd)
+    assert not ok
+
+    # ------------------------------------------------------------------------
+    # Now repeat the test with an object that actually contains a booster.
+    # ------------------------------------------------------------------------
+
+    # Define a new object with two boosters and one factory unit.
+    # The 'boosters' and 'factories' arguments are a list of named
+    # tuples. The first argument to these tuples is the ID that will
+    # be assigned to the unit (the user can choose that number; Azrael
+    # will automatically enumerate them in any way).
+    cs = np.array([1, 2, 3, 4], np.float64).tostring()
+    geo = np.array([5, 6, 7, 8], np.float64).tostring()
+    b0 = types.booster(0, pos=np.zeros(3), orient=[1, 0, 0], max_force=0.5)
+    b1 = types.booster(1, pos=np.zeros(3), orient=[0, 1, 0], max_force=0.5)
+    f0 = types.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
+
+    # Add it to Azrael and spawn an instance.
+    objdescid_2 = clerk.createObjectDescription(cs, geo, [b0, b1], [f0])
+    objID_2 = int2id(2)
+    btInterface.add(objID_2, sv, objdescid_2)
+    
+    # Call processControlCommands. It must fail because the default object has
+    # no booster.
+    cmd_0 = commands.controlBooster(unitID=0, force=0.2)
+    cmd_1 = commands.controlBooster(unitID=1, force=0.4)
+    cmd = commands.serialiseCommands(objID_2, [cmd_0, cmd_1], [])
+    ok, msg = clerk.processControlCommand(cmd)
+    assert ok
+
+    # Make sure the force got updated (only check the central force).
+    ok, force, torque = btInterface.getForceAndTorque(objID_2)
+    assert ok
+    assert np.array_equal(force, [0.2, 0.4, 0])
+
+    print('Test passed')
+    
+
 if __name__ == '__main__':
+    test_processControlCommand()
     test_get_raw_object_id()
     test_get_statevar()
     test_spawn()
