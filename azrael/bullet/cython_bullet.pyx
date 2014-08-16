@@ -73,7 +73,7 @@ cdef class PyBulletPhys:
         # Call the C++ function.
         ret = self.thisptr.getObjectData(
             len(IDs), <long*>ids.data, len(buf), <double*>buf.data)
-        return buf, ret
+        return ret, buf
 
     def setObjectData(self, IDs, np.ndarray[np.float64_t,ndim=1] buf):
         # Convert the inputs to the correct data format.
@@ -112,6 +112,6 @@ cdef class PyBulletPhys:
         # 16 because every object uses a 64Bit ID (8 Bytes), and they can only
         # be returned in pairs (hence 16 Bytes).
         if nb % 16 == 0:
-            return buf, True
+            return True, buf
         else:
-            return buf, False
+            return False, buf

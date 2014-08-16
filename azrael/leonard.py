@@ -45,15 +45,17 @@ class LeonardBase(multiprocessing.Process):
     
     def step(self, dt, max_sub_steps):
         # Retrieve the SV for all objects.
-        allSV, ok = btInterface.getAll()
+        ok, allSV = btInterface.getAll()
+        ok, all_ids = btInterface.getAllObjectIDs()
+        ok, all_sv = btInterface.getStateVariables(all_ids)
 
         # Iterate over all SV entries and update them.
-        for obj_id, sv in allSV.items():
+        for obj_id, sv in zip(all_ids, all_sv):
             # Convert the SV Bytes into a dictionary.
             sv = btInterface.unpack(np.fromstring(sv))
 
             # Retrieve the force vector.
-            force, relpos, ok = btInterface.getForce(obj_id)
+            ok, force, relpos = btInterface.getForce(obj_id)
             if not ok:
                 continue
 
@@ -63,7 +65,7 @@ class LeonardBase(multiprocessing.Process):
 
             # See if there is a suggested position available for this
             # object. If so, use it.
-            sug_pos, ok = btInterface.getSuggestedPosition(obj_id)
+            ok, sug_pos = btInterface.getSuggestedPosition(obj_id)
             if ok and sug_pos is not None:
                 # Assign the position, then delete the suggestion.
                 sv.position[:] = sug_pos
@@ -110,14 +112,14 @@ class LeonardBaseWorkpackages(LeonardBase):
         
     def step(self, dt, maxsteps):
         # Retrieve the SV for all objects.
-        allSV, ok = btInterface.getAll()
+        ok, allSV = btInterface.getAll()
 
         # --------------------------------------------------------------------
         # Create a single work list that features all objects.
         # --------------------------------------------------------------------
         IDs = list(allSV.keys())
         self.token += 1
-        wpid, ok = btInterface.createWorkPackage(IDs, self.token, dt, maxsteps)
+        ok, wpid = btInterface.createWorkPackage(IDs, self.token, dt, maxsteps)
         if not ok:
             return
         
@@ -125,7 +127,7 @@ class LeonardBaseWorkpackages(LeonardBase):
         # Process the work list.
         # --------------------------------------------------------------------
         # Fetch the work list.
-        worklist, admin, ok = btInterface.getWorkPackage(wpid)
+        ok, worklist, admin = btInterface.getWorkPackage(wpid)
         if not ok:
             return
 
@@ -169,7 +171,7 @@ class LeonardBulletMonolithic(LeonardBase):
             self.bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
 
         # Retrieve the SV for all objects.
-        allSV, ok = btInterface.getAll()
+        ok, allSV = btInterface.getAll()
 
         # Iterate over all SV entries and update them.
         for obj_id, sv in allSV.items():
@@ -178,7 +180,7 @@ class LeonardBulletMonolithic(LeonardBase):
 
             # See if there is a suggested position available for this
             # object. If so, use it.
-            sug_pos, ok = btInterface.getSuggestedPosition(obj_id)
+            ok, sug_pos = btInterface.getSuggestedPosition(obj_id)
             if ok and sug_pos is not None:
                 # Assign the position, then delete the suggestion.
                 sv.position[:] = sug_pos
@@ -188,7 +190,7 @@ class LeonardBulletMonolithic(LeonardBase):
             self.bullet.setObjectData([btID], btInterface.pack(sv))
 
             # Retrieve the force vector.
-            force, relpos, ok = btInterface.getForce(obj_id)
+            ok, force, relpos = btInterface.getForce(obj_id)
             if ok:
                 self.bullet.applyForce(btID, 0.01 * force, relpos)
 
@@ -197,7 +199,7 @@ class LeonardBulletMonolithic(LeonardBase):
         self.bullet.compute(IDs, dt, max_sub_steps)
         
         for obj_id, sv in allSV.items():
-            sv, ok = self.bullet.getObjectData([util.id2int(obj_id)])
+            ok, sv = self.bullet.getObjectData([util.id2int(obj_id)])
             if ok == 0:
                 # Serialise the state variables and update them in the DB.
                 btInterface.update(obj_id, sv.tostring())
@@ -217,7 +219,7 @@ class LeonardRMQWorker(multiprocessing.Process):
 
     def advanceSimulation(self, wpid):
         # Convert work package ID to integer and fetch the work list.
-        worklist, admin, ok = btInterface.getWorkPackage(wpid)
+        ok, worklist, admin = btInterface.getWorkPackage(wpid)
         if not ok:
             return
 
@@ -307,7 +309,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
             self.bullet = azrael.bullet.cython_bullet.PyBulletPhys(self.id, 0)
 
         # Fetch the work package.
-        worklist, admin, ok = btInterface.getWorkPackage(wpid)
+        ok, worklist, admin = btInterface.getWorkPackage(wpid)
         if not ok:
             return
 
@@ -339,7 +341,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
         # Retrieve all the objects again.
         out = {}
         for cur_id in IDs:
-            sv, ok = self.bullet.getObjectData([cur_id])
+            ok, sv = self.bullet.getObjectData([cur_id])
             if ok != 0:
                 self.logit.error('Could not retrieve all objects from Bullet')
                 sv = worklist[cur_id].sv
@@ -388,7 +390,7 @@ class LeonardBaseWPRMQ(LeonardBase):
 
     def step(self, dt, maxsteps):
         # Retrieve the SV for all objects.
-        allSV, ok = btInterface.getAll()
+        ok, allSV = btInterface.getAll()
         IDs = list(allSV.keys())
         
         # Update the token value for this iteration.
@@ -400,7 +402,7 @@ class LeonardBaseWPRMQ(LeonardBase):
         cwp = btInterface.createWorkPackage
         for cur_id in IDs:
             # Upload the work package into the DB.
-            wpid, ok = cwp([cur_id], self.token, dt, maxsteps)
+            ok, wpid = cwp([cur_id], self.token, dt, maxsteps)
             if not ok:
                 continue
 

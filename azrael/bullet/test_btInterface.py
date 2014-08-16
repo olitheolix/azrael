@@ -38,12 +38,12 @@ def test_add_get_single():
     id_0 = int2id(0)
 
     # The number of SV entries must now be zero.
-    assert btInterface.count() == 0
-    data, ok = btInterface.get(id_0)
+    assert btInterface.getNumObjects() == 0
+    ok, data = btInterface.getStateVariables([id_0])
     assert not ok
 
     # Query an object. Since none exist yet this must return with an error.
-    data, ok = btInterface.get([id_0])
+    ok, data = btInterface.getStateVariables([id_0])
     assert not ok
 
     # Create an object and serialise it.
@@ -51,20 +51,15 @@ def test_add_get_single():
     data = btInterface.pack(data).tostring()
 
     # Add the object to the DB with ID=0.
-    ok = btInterface.add(id_0, data, np.int64(1).tostring())
+    ok = btInterface.spawn(id_0, data, np.int64(1).tostring())
     assert ok
 
     # Query the object. This must return the SV data directly.
-    out, ok = btInterface.get(id_0)
-    assert ok
-    assert out == data
+    assert btInterface.getStateVariables([id_0]) == (True, [data])
     
     # Query the same object but supply it as a list. This must return a list
     # with one element which is the exact same object as before.
-    out, ok = btInterface.get([id_0])
-    assert ok
-    assert len(out) == 1
-    assert out[0] == data
+    assert btInterface.getStateVariables([id_0]) == (True, [data])
 
     print('Test passed')
 
@@ -81,8 +76,8 @@ def test_add_get_multiple():
     id_1 = int2id(1)
 
     # The number of SV entries must now be zero.
-    assert btInterface.count() == 0
-    data, ok = btInterface.get(id_0)
+    assert btInterface.getNumObjects() == 0
+    ok, data = btInterface.getStateVariables([id_0])
     assert not ok
 
     # Create an object and serialise it.
@@ -95,26 +90,24 @@ def test_add_get_multiple():
     data_1 = btInterface.pack(data_1).tostring()
 
     # Add the objects to the DB.
-    ok = btInterface.add(id_0, data_0, np.int64(1).tostring())
-    assert ok
-    ok = btInterface.add(id_1, data_1, np.int64(1).tostring())
-    assert ok
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
 
     # Query the objects individually.
-    out, ok = btInterface.get(id_0)
-    assert (out, ok) == (data_0, True)
-    out, ok = btInterface.get(id_1)
-    assert (out, ok) == (data_1, True)
+    ok, out = btInterface.getStateVariables([id_0])
+    assert (ok, out) == (True, [data_0])
+    ok, out = btInterface.getStateVariables([id_1])
+    assert (ok, out) == (True, [data_1])
     
     # Manually query multiple objects.
-    out, ok = btInterface.get([id_0, id_1])
+    ok, out = btInterface.getStateVariables([id_0, id_1])
     assert ok
     assert len(out) == 2
     assert out[0] == data_0
     assert out[1] == data_1
 
     # Query all objects at once.
-    out, ok = btInterface.getAll()
+    ok, out = btInterface.getAll()
     assert ok
     assert len(out) == 2
     assert out[id_0] == data_0
@@ -134,8 +127,8 @@ def test_add_same():
     id_0 = int2id(0)
 
     # The number of SV entries must now be zero.
-    assert btInterface.count() == 0
-    data, ok = btInterface.get(id_0)
+    assert btInterface.getNumObjects() == 0
+    ok, data = btInterface.getStateVariables([id_0])
     assert not ok
 
     # Create an object and serialise it.
@@ -148,17 +141,14 @@ def test_add_same():
     data_1 = btInterface.pack(data_1).tostring()
 
     # Add the objects to the DB.
-    ok = btInterface.add(id_0, data_0, np.int64(1).tostring())
-    assert ok
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
 
     # Add the same object with the same ID -- this should work because nothing
     # has changed.
-    ok = btInterface.add(id_0, data_0, np.int64(1).tostring())
-    assert ok
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
 
     # Add a different object with the same ID -- this should not work.
-    ok = btInterface.add(id_0, data_1, np.int64(1).tostring())
-    assert not ok
+    assert not btInterface.spawn(id_0, data_1, np.int64(1).tostring())
 
     print('Test passed')
 
@@ -184,10 +174,8 @@ def test_get_set_force():
     data_1 = btInterface.pack(data_1).tostring()
 
     # Add the two objects to the DB.
-    ok = btInterface.add(id_0, data_0, np.int64(1).tostring())
-    assert ok
-    ok = btInterface.add(id_1, data_1, np.int64(1).tostring())
-    assert ok
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
 
     # Specify the forces and their position with respect to the center of mass.
     f0 = np.zeros(3, np.float64)
@@ -195,11 +183,11 @@ def test_get_set_force():
     p0 = np.zeros(3, np.float64)
     p1 = np.zeros(3, np.float64)
 
-    force, rel_pos, ok = btInterface.getForce(id_0)
+    ok, force, rel_pos = btInterface.getForce(id_0)
     assert ok
     assert np.array_equal(force, f0)
     assert np.array_equal(rel_pos, p0)
-    force, rel_pos, ok = btInterface.getForce(id_1)
+    ok, force, rel_pos = btInterface.getForce(id_1)
     assert ok
     assert np.array_equal(force, f1)
     assert np.array_equal(rel_pos, p1)
@@ -210,11 +198,11 @@ def test_get_set_force():
     assert btInterface.setForce(id_1, f1, p1)
 
     # Only the force of the second object must have changed.
-    force, rel_pos, ok = btInterface.getForce(id_0)
+    ok, force, rel_pos = btInterface.getForce(id_0)
     assert ok
     assert np.array_equal(force, f0)
     assert np.array_equal(rel_pos, p0)
-    force, rel_pos, ok = btInterface.getForce(id_1)
+    ok, force, rel_pos = btInterface.getForce(id_1)
     assert ok
     assert np.array_equal(force, f1)
     assert np.array_equal(rel_pos, p1)
@@ -237,11 +225,11 @@ def test_update_statevar():
     data_0 = btInterface.pack(data_0).tostring()
 
     # Add the object to the DB with ID=0.
-    assert btInterface.add(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
 
     # Query the object. This must return the SV data directly.
-    out, ok = btInterface.get(id_0)
-    assert (out, ok) == (data_0, True)
+    ok, out = btInterface.getStateVariables([id_0])
+    assert (ok, out) == (True, [data_0])
     
     # Create an object and serialise it.
     data_1 = btInterface.defaultData()
@@ -250,8 +238,8 @@ def test_update_statevar():
 
     # Change the SV data and check it was updated correctly.
     assert btInterface.update(id_0, data_1)
-    out, ok = btInterface.get(id_0)
-    assert (out, ok) == (data_1, True)
+    ok, out = btInterface.getStateVariables([id_0])
+    assert (ok, out) == (True, [data_1])
 
     # Change the SV data and check it was updated correctly.
     assert not btInterface.update(int2id(10), data_1)
@@ -274,7 +262,7 @@ def test_suggest_position():
     data_0 = btInterface.pack(data_0).tostring()
 
     # Query suggested position for non-existing object.
-    data, ok = btInterface.getSuggestedPosition(id_0)
+    ok, data = btInterface.getSuggestedPosition(id_0)
     assert not ok
 
     # Suggest a position for a non-existing object.
@@ -282,27 +270,27 @@ def test_suggest_position():
     assert not btInterface.setSuggestedPosition(int2id(10), p)
 
     # Add the object to the DB with ID=0.
-    assert btInterface.add(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
 
     # Query suggested position for existing object. This must suceed. However,
     # since no position has been suggested yet the returned values must be
     # None.
-    data, ok = btInterface.getSuggestedPosition(id_0)
-    assert (data, ok) == (None, True)
+    ok, data = btInterface.getSuggestedPosition(id_0)
+    assert (ok, data) == (True, None)
 
     # Suggest a position for the just inserted object.
     p = np.array([1, 2, 5])
     assert btInterface.setSuggestedPosition(id_0, p)
 
     # Retrieve the suggested position.
-    data, ok = btInterface.getSuggestedPosition(id_0)
+    ok, data = btInterface.getSuggestedPosition(id_0)
     assert ok
     assert np.array_equal(data, p)
 
     # Void the suggested position.
     assert btInterface.setSuggestedPosition(id_0, None)
-    data, ok = btInterface.getSuggestedPosition(id_0)
-    assert (data, ok) == (None, True)
+    ok, data = btInterface.getSuggestedPosition(id_0)
+    assert (ok, data) == (True, None)
     
     print('Test passed')
 
@@ -318,28 +306,28 @@ def test_create_work_package_without_objects():
     token = 1
 
     # This call is invalid because the IDs must be a non-empty list.
-    wpid, ok = btInterface.createWorkPackage([], token, 1, 2)
+    ok, wpid = btInterface.createWorkPackage([], token, 1, 2)
     assert not ok
 
     # Valid function call. The first WPID must be 1.
     IDs = [int2id(_) for _ in range(3, 5)]
-    wpid, ok = btInterface.createWorkPackage(IDs, token, 1, 2)
-    assert (wpid, ok) == (1, True)
+    ok, wpid = btInterface.createWorkPackage(IDs, token, 1, 2)
+    assert (ok, wpid) == (True, 1)
 
     # Valid function call. The second WPID must be 2.
     IDs = [int2id(_) for _ in range(3, 5)]
-    _, ok = btInterface.createWorkPackage(IDs, token, 1, 2)
-    assert (_, ok) == (2, True)
+    ok, _ = btInterface.createWorkPackage(IDs, token, 1, 2)
+    assert (ok, _) == (True, 2)
     del _
 
     # Retrieving a non-existing ID must fail.
-    data, _, ok = btInterface.getWorkPackage(0)
+    ok, data, _ = btInterface.getWorkPackage(0)
     assert not ok
     
     # Retrieving an existing ID must succeed. In this case, it must also return
     # an empty list because there are no objects in the DB yet.
-    data, admin, ok = btInterface.getWorkPackage(wpid)
-    assert (data, ok) == ([], True)
+    ok, data, admin = btInterface.getWorkPackage(wpid)
+    assert (ok, data) == (True, [])
     assert (admin.token, admin.dt, admin.maxsteps) == (token, 1, 2)
     
     # Update (and thus remove) a non-existing work package. The number of SV
@@ -375,19 +363,19 @@ def test_create_work_package_with_objects():
     data_2 = btInterface.pack(data_2).tostring()
 
     id_1, id_2 = int2id(1), int2id(2)
-    assert btInterface.add(id_1, data_1, np.int64(1).tostring())
-    assert btInterface.add(id_2, data_2, np.int64(1).tostring())
+    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
+    assert btInterface.spawn(id_2, data_2, np.int64(1).tostring())
 
     # Valid function call. The first WPID must be 1.
-    wpid_1, ok = btInterface.createWorkPackage([id_1], token, 1, 2)
-    assert (wpid_1, ok) == (1, True)
+    ok, wpid_1 = btInterface.createWorkPackage([id_1], token, 1, 2)
+    assert (ok, wpid_1) == (True, 1)
 
     # Valid function call. The second WPID must be 2.
-    wpid_2, ok = btInterface.createWorkPackage([id_1, id_2], token, 3, 4)
-    assert (wpid_2, ok) == (2, True)
+    ok, wpid_2 = btInterface.createWorkPackage([id_1, id_2], token, 3, 4)
+    assert (ok, wpid_2) == (True, 2)
 
     # Retrieve the first work package.
-    ret, admin, ok = btInterface.getWorkPackage(wpid_1)
+    ok, ret, admin = btInterface.getWorkPackage(wpid_1)
     assert (len(ret), ok) == (1, True)
     assert (admin.token, admin.dt, admin.maxsteps) == (token, 1, 2)
     ret = ret[0]
@@ -396,9 +384,9 @@ def test_create_work_package_with_objects():
     assert np.array_equal(np.fromstring(ret.force), [0, 0, 0])
     
     # Retrieve the second work package.
-    ret, admin, ok = btInterface.getWorkPackage(wpid_2)
+    ok, ret, admin = btInterface.getWorkPackage(wpid_2)
     assert (admin.token, admin.dt, admin.maxsteps) == (token, 3, 4)
-    assert (len(ret), ok) == (2, True)
+    assert (ok, len(ret)) == (True, 2)
     assert (ret[0].id, ret[1].id) == (id_1, id_2)
     assert (ret[0].sv, ret[1].sv) == (data_1, data_2)
     assert np.array_equal(np.fromstring(ret[0].force), [0, 0, 0])
@@ -408,17 +396,17 @@ def test_create_work_package_with_objects():
     data_3 = btInterface.pack(data_3).tostring()
 
     # Manually retrieve the original data for id_1.
-    assert btInterface.get(id_1) == (data_1, True)
+    assert btInterface.getStateVariables([id_1]) == (True, [data_1])
 
     # Update the first work package with the wrong token. The call must fail
     # and the data must remain intact.
     assert not btInterface.updateWorkPackage(wpid_1, token + 1, {id_1: data_3})
-    assert btInterface.get(id_1) == (data_1, True)
+    assert btInterface.getStateVariables([id_1]) == (True, [data_1])
     
     # Update the first work package with the correct token. The data should now
     # have been updated.
     assert btInterface.updateWorkPackage(wpid_1, token, {id_1: data_3})
-    assert btInterface.get(id_1) == (data_3, True)
+    assert btInterface.getStateVariables([id_1]) == (True, [data_3])
 
     print('Test passed')
     
@@ -444,8 +432,8 @@ def test_get_set_forceandtorque():
     data_1 = btInterface.pack(data_1).tostring()
 
     # Add the two objects to the DB.
-    assert btInterface.add(id_0, data_0, np.int64(1).tostring())
-    assert btInterface.add(id_1, data_1, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
 
     # Specify the forces and torques.
     f0 = np.zeros(3, np.float64)

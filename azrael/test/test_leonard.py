@@ -45,22 +45,22 @@ def test_move_single_object(clsLeonard):
     leonard.setup()
     
     # Create a spherical object (a default spherical object exists by default
-    # and is associated with objdesc=2).
-    objdesc = np.int64(2).tostring()
-    id_0, ok = ctrl.spawn('Echo', objdesc, [0, 0, 0], [0, 0, 0])
+    # and is associated with templateID=2).
+    templateID = np.int64(2).tostring()
+    ok, id_0 = ctrl.spawn('Echo', templateID, [0, 0, 0], [0, 0, 0])
     assert ok
 
     # Advance the simulation by 1s and check that nothing has moved.
     leonard.step(1, 60)
-    sv, ok = btInterface.get(id_0)
+    ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    sv = btInterface.unpack(np.fromstring(sv))
+    sv = btInterface.unpack(np.fromstring(sv[0]))
     np.array_equal(sv.position, [0, 0, 0])
 
     # Give the object a velocity.
-    sv, ok = btInterface.get(id_0)
+    ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    sv = btInterface.unpack(np.fromstring(sv))
+    sv = btInterface.unpack(np.fromstring(sv[0]))
     sv.velocityLin[:] = [1, 0, 0]
     sv = btInterface.pack(sv).tostring()
     assert btInterface.update(id_0, sv)
@@ -68,9 +68,9 @@ def test_move_single_object(clsLeonard):
     # Advance the simulation by another second and test if the object moved
     # accordingly.
     leonard.step(1, 60)
-    sv, ok = btInterface.get(id_0)
+    ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    sv = btInterface.unpack(np.fromstring(sv))
+    sv = btInterface.unpack(np.fromstring(sv[0]))
     assert 0.9 <= sv.position[0] < 1.1
     assert sv.position[1] == sv.position[2] == 0
 
@@ -80,6 +80,7 @@ def test_move_single_object(clsLeonard):
     clacks.join()
     clerk.join()
 
+    killall()
     print('Test passed')
 
 
@@ -111,21 +112,21 @@ def test_move_two_objects_no_collision(clsLeonard):
     leonard.setup()
     
     # Create two spherical object.
-    objdesc = np.int64(2).tostring()
-    id_0, ok = ctrl.spawn('Echo', objdesc, [0, 0, 0], [1, 0, 0])
+    templateID = np.int64(2).tostring()
+    ok, id_0 = ctrl.spawn('Echo', templateID, [0, 0, 0], [1, 0, 0])
     assert ok
-    id_1, ok = ctrl.spawn('Echo', objdesc, [0, 10, 0], [0, -1, 0])
+    ok, id_1 = ctrl.spawn('Echo', templateID, [0, 10, 0], [0, -1, 0])
     assert ok
 
     # Advance the simulation by one second and test if the objects moved
     # accordingly.
     leonard.step(1, 60)
-    sv, ok = btInterface.get(id_0)
+    ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    pos_0 = btInterface.unpack(np.fromstring(sv)).position
-    sv, ok = btInterface.get(id_1)
+    pos_0 = btInterface.unpack(np.fromstring(sv[0])).position
+    ok, sv = btInterface.getStateVariables([id_1])
     assert ok
-    pos_1 = btInterface.unpack(np.fromstring(sv)).position
+    pos_1 = btInterface.unpack(np.fromstring(sv[0])).position
     
     assert pos_0[1] == pos_0[2] == 0
     assert 0.9 <= pos_0[0] <= 1.1
@@ -138,6 +139,7 @@ def test_move_two_objects_no_collision(clsLeonard):
     clacks.join()
     clerk.join()
 
+    killall()
     print('Test passed')
 
 
@@ -171,11 +173,11 @@ def test_multiple_workers(clsWorker):
     leonard.setup()
     
     # Create several spherical objects.
-    objdesc = np.int64(2).tostring()
+    templateID = np.int64(2).tostring()
     list_ids = []
 
     for ii in range(num_objects):
-        cur_id, ok = ctrl.spawn('Echo', objdesc, pos=[0, 10 * ii, 0],
+        ok, cur_id = ctrl.spawn('Echo', templateID, pos=[0, 10 * ii, 0],
                                 vel=[1,0, 0])
         assert ok
         list_ids.append(cur_id)
@@ -186,9 +188,9 @@ def test_multiple_workers(clsWorker):
 
     # All objects must have moved the same distance.
     for ii, cur_id in enumerate(list_ids):
-        sv, ok = btInterface.get(cur_id)
+        ok, sv = btInterface.getStateVariables([cur_id])
         assert ok
-        cur_pos = btInterface.unpack(np.fromstring(sv)).position
+        cur_pos = btInterface.unpack(np.fromstring(sv[0])).position
         assert 0.9 <= cur_pos[0] <= 1.1
         assert cur_pos[1] == 10 * ii
         assert cur_pos[2] == 0
@@ -202,6 +204,7 @@ def test_multiple_workers(clsWorker):
     clacks.join()
     clerk.join()
 
+    killall()
     print('Test passed')
 
 

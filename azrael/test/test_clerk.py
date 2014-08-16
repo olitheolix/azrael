@@ -1,3 +1,20 @@
+# Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
+#
+# This file is part of Azrael (https://github.com/olitheolix/azrael)
+#
+# Azrael is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# Azrael is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with Azrael. If not, see <http://www.gnu.org/licenses/>.
+
 """
 Test the Clerk only. Use a modified Controller to this end which allows to send
 raw bytestrings to bypass all convenience wrappers that the Controller class
@@ -35,12 +52,12 @@ class ControllerTest(controller.ControllerBase):
         self.sock_cmd.send(data)
         ret = self.sock_cmd.recv()
         if len(ret) == 0:
-            return 'Invalid response from Clerk', False
+            return False, 'Invalid response from Clerk'
 
         if ret[0] == 0:
-            return ret[1:], True
+            return True, ret[1:]
         else:
-            return ret[1:], False
+            return False, ret[1:]
 
 
 def killall():
@@ -53,10 +70,13 @@ def test_connect():
     """
     killall()
 
-    # Start Clerk.
+    # Start a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
     clerk.start()
 
+    # Instantiate a Controller and connect it the Clerk (would happen
+    # automatically if we ran it as a process and called the 'run' method, but
+    # for this test we will not start it as a separate process).
     ctrl = ControllerTest()
     ctrl.setupZMQ()
     ctrl.connectToClerk()
@@ -65,29 +85,33 @@ def test_connect():
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
 def test_invalid():
     """
-    Send a ping to the Clerk and check the response is correct.
+    Send an invalid command to the Clerk.
     """
     killall()
 
-    # Start Clerk and instantiate controller.
+    # Start Clerk and instantiate a Controller.
     clerk = azrael.clerk.Clerk(reset=True)
     clerk.start()
     ctrl = ControllerTest()
     ctrl.setupZMQ()
     ctrl.connectToClerk()
 
-    ret, ok = ctrl.testSend(config.cmd['invalid_cmd'])
-    assert not ok
-    assert ret == 'Invalid Command'.encode('utf8')
+    # Send an invalid command and ensure Clerk returns an error code.
+    ok, ret = ctrl.testSend(config.cmd['invalid_cmd'])
+    assert (ok, ret) == (False, 'Invalid Command'.encode('utf8'))
 
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
@@ -97,20 +121,22 @@ def test_ping():
     """
     killall()
 
-    # Start Clerk and instantiate controller.
+    # Start Clerk and instantiate a Controller.
     clerk = azrael.clerk.Clerk(reset=True)
     clerk.start()
     ctrl = ControllerTest()
     ctrl.setupZMQ()
     ctrl.connectToClerk()
 
-    ret, ok = ctrl.testSend(config.cmd['ping_clerk'])
-    assert ok
-    assert ret == 'pong clerk'.encode('utf8')
+    # Send the Ping command.
+    ok, ret = ctrl.ping()
+    assert (ok, ret) == (True, 'pong clerk'.encode('utf8'))
 
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
@@ -120,7 +146,7 @@ def test_get_id():
     """
     killall()
 
-    # Start Clerk and instantiate controller.
+    # Start Clerk and instantiate a Controller.
     clerk = azrael.clerk.Clerk(reset=True)
     clerk.start()
     ctrl = ControllerTest()
@@ -128,17 +154,22 @@ def test_get_id():
 
     # Request new IDs. It must increase with every request, starting at 1.
     for ii in range(3):
-        ret, ok = ctrl.testSend(config.cmd['get_id'])
-        assert ok
-        assert ret == int2id(ii + 1)
+        objID = ctrl.connectToClerk()
+        assert objID == int2id(ii + 1)
+
+        # Clear the objID as the `connectToClerk` method will otherwise not
+        # request a new one.
+        ctrl.objID = None
 
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
-def test_send_message():
+def test_send_receive_message():
     """
     Try to send a message to a random controller ID. The ID itself does not
     matter because the Clerk silently drops messages for non-existing
@@ -146,71 +177,31 @@ def test_send_message():
     """
     killall()
 
-    # Start Clerk and instantiate controller.
+    # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
 
-    # Invalid command sequence because it misses sender- and destination ID.
-    cmd = config.cmd['send_msg']
-    ret, ok = ctrl.testSend(cmd)
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
+    # Test parameters.
+    src, dst, data = int2id(5), int2id(10), 'blah'.encode('utf8')
+    
+    # Retrieve a non-existing message.
+    ok, msg = clerk.recvMessage(src)
+    assert (ok, msg) == (True, b'')
 
-    # Still invalid command sequence because it misses destination ID.
-    cmd += int2id(2)
-    ret, ok = ctrl.testSend(cmd)
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
+    # Dispatch a message.
+    ok, msg = clerk.sendMessage(src, dst, data)
+    assert ok
 
-    # Valid command sequence.
-    cmd += int2id(2) + 'blah'.encode('utf8')
-    ret, ok = ctrl.testSend(cmd)
-    assert (ok, ret) == (True, b'')
+    # Attempt to retrieve it with the wrong 'dst' -- we must get nothing.
+    ok, msg = clerk.recvMessage(src)
+    assert (ok, msg) == (True, b'')
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
-    print('Test passed')
+    # Now retrieve it with the correct ID, and the retrieve it once more to
+    # ensure that the same message is not delivered twice.
+    ok, msg = clerk.recvMessage(dst)
+    assert (ok, msg) == (True, src + data)
+    ok, msg = clerk.recvMessage(dst)
+    assert (ok, msg) == (True, b'')
 
-
-def test_get_message():
-    """
-    Test the 'get_msg' command in the Clerk.
-    """
-    killall()
-
-    # Start Clerk and instantiate controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
-
-    # Invalid command sequence because it misses ID of controller for which we
-    # want to fetch a message.
-    ret, ok = ctrl.testSend(config.cmd['get_msg'])
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
-
-    # Valid command. Must return an empty message because none has been
-    # posted for the object yet.
-    ret, ok = ctrl.testSend(config.cmd['get_msg'] + int2id(1))
-    assert (ok, ret) == (True, b'')
-
-    # Post a message for ID 1.
-    src, dst = int2id(1), int2id(2)
-    cmd = config.cmd['send_msg']
-    cmd += src + dst + 'blah'.encode('utf8')
-    ret, ok = ctrl.testSend(cmd)
-    assert (ok, ret) == (True, b'')
-
-    # Fetch the just posted message.
-    ret, ok = ctrl.testSend(config.cmd['get_msg'] + dst)
-    assert (ok, ret) == (True, src + 'blah'.encode('utf8'))
-
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
     print('Test passed')
 
 
@@ -220,56 +211,30 @@ def test_spawn():
     """
     killall()
 
-    # Start Clerk and instantiate controller.
+    # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
 
-    # Name of controller and its length in bytes.
-    ctrl_name = 'Echo'.encode('utf8')
-    ctrl_len = bytes([len(ctrl_name)])
-
+    # Test parameters (the 'Echo' controller is a hard coded dummy controller
+    # that is always available).
     sv = btInterface.defaultData()
-    sv = btInterface.pack(sv).tostring()
+    ctrl_name = 'Echo'
 
-    # Invalid command: misses length byte.
-    ret, ok = ctrl.testSend(config.cmd['spawn'])
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
+    # Unknown controller name.
+    templateID = np.int64(1).tostring()
+    ok, ret = clerk.spawn('aaaa', templateID, sv)
+    assert (ok, ret) == (False, 'Unknown Controller Name')
 
-    # Invalid command: has a length byte but it does not match the name.
-    payload = b'\01' + ctrl_name
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (False, 'Invalid Payload Length'.encode('utf8'))
+    # Invalid templateID.
+    templateID = np.int64(100).tostring()
+    ok, ret = clerk.spawn(ctrl_name, templateID, sv)
+    assert (ok, ret) == (False, 'Invalid Template ID')
 
-    # Invalid command: has a length byte but it does not match the name.
-    payload = b'\0A' + ctrl_name
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (False, 'Invalid Payload Length'.encode('utf8'))
+    # All parameters are now valid. We must be assigne ID=1 because this is the
+    # first ID in an otherwise pristine system.
+    templateID = np.int64(1).tostring()
+    ok, ret = clerk.spawn('Echo', templateID, sv)
+    assert (ok, ret) == (True, int2id(1))
 
-    # Valid command but unknown name.
-    objdescid = np.int64(1).tostring()
-    payload = ctrl_len + 'aaaa'.encode('utf8') + objdescid + sv
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (False, 'Unknown Controller Name'.encode('utf8'))
-
-    # Valid command but objdescid does not denote an existing object.
-    objdescid = np.int64(100).tostring()
-    payload = ctrl_len + ctrl_name + objdescid + sv
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (False, 'Invalid Raw Object ID'.encode('utf8'))
-
-    # Valid command and name. The returned ID must be ID=2 because ID=0 is
-    # invalid and ID=1 was already handed out to the 'ctrl' object.
-    objdescid = np.int64(1).tostring()
-    payload = ctrl_len + ctrl_name + objdescid + sv
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (True, int2id(2))
-
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
     print('Test passed')
 
 
@@ -279,133 +244,91 @@ def test_get_statevar():
     """
     killall()
 
-    # Start Clerk and instantiate controller.
+    # Test parameters and constants.
+    ctrl_name = 'Echo'
+    objID_1 = int2id(1)
+    objID_2 = int2id(2)
+    sv_1 = btInterface.defaultData(position=np.arange(3), vlin=[2, 4, 6])
+    sv_2 = btInterface.defaultData(position=[2, 4, 6], vlin=[6, 8, 10])
+    templateID = np.int64(1).tostring()
+
+    # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
-
-    ctrl_name = 'Echo'.encode('utf8')
-    ctrl_len = bytes([len(ctrl_name)])
-
-    # Insufficient parameters.
-    ret, ok = ctrl.testSend(config.cmd['get_statevar'])
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
-
+    
     # Retrieve the SV for a non-existing ID.
-    ret, ok = ctrl.testSend(config.cmd['get_statevar'] + int2id(10))
-    assert (ok, ret) == (False, 'ID does not exist'.encode('utf8'))
+    ok, ret = clerk.getStateVariables([int2id(10)])
+    assert (ok, ret) == (False, 'One or more IDs do not exist')
 
-    # Retrieve the SV of all objects. Must still be empty because we have not
-    # spawned any yet.
-    ret, ok = ctrl.testSend(config.cmd['get_statevar'] + int2id(0))
-    assert (ok, ret) == (True, b'')
+    # Spawn a new object. It must have ID=1.
+    ok, ret = clerk.spawn(ctrl_name, templateID, sv_1)
+    assert (ok, ret) == (True, objID_1)
 
-    # Spawn a new object. The returned ID must be ID=2 because ID=0 is
-    # invalid and ID=1 was already handed out to the 'ctrl' object.
-    id_2 = int2id(2)
-    sv2 = btInterface.defaultData(position=np.arange(3), vlin=[2, 4, 6])
-    sv2 = btInterface.pack(sv2).tostring()
-    objdesc = np.int64(1).tostring()
-    payload = ctrl_len + ctrl_name + objdesc + sv2
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (True, id_2)
+    # Retrieve the SV for a non-existing ID --> must fail.
+    ok, ret = clerk.getStateVariables([int2id(10)])
+    assert (ok, ret) == (False, 'One or more IDs do not exist')
 
-    # Retrieve the SV for a non-existing ID.
-    ret, ok = ctrl.testSend(config.cmd['get_statevar'] + int2id(10))
-    assert (ok, ret) == (False, 'ID does not exist'.encode('utf8'))
+    # Retrieve the SV for the existing ID=1.
+    ok, ret = clerk.getStateVariables([objID_1])
+    assert (ok, ret[:config.LEN_ID]) == (True, objID_1)
 
-    # Retrieve the SV for ID=2.
-    ret, ok = ctrl.testSend(config.cmd['get_statevar'] + id_2)
-    assert (ok, ret) == (True, id_2 + sv2)
+    # Verify the SV data.
+    ret_sv = btInterface.unpack(np.fromstring(ret[config.LEN_ID:]))
+    for ii in range(len(sv_1)):
+        assert np.array_equal(ret_sv[ii], sv_1[ii])
 
-    # Retrieve the SV of all objects. Must return the same as previous call
-    # since there is only one object yet.
-    ret, ok = ctrl.testSend(config.cmd['get_statevar'] + int2id(0))
-    assert (ok, ret) == (True, id_2 + sv2)
+    # Spawn a second object.
+    ok, ret = clerk.spawn(ctrl_name, templateID, sv_2)
+    assert (ok, ret) == (True, objID_2)
+    
+    # Retrieve the state variables for both objects.
+    for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
+        ok, ret = clerk.getStateVariables([objID])
+        assert (ok, ret[:config.LEN_ID]) == (True, objID)
 
-    # Spawn a second object and retrieve all state variables.
-    id_3 = int2id(3)
-    sv3 = btInterface.defaultData(position=[2, 4, 6], vlin=[6, 8, 10])
-    sv3 = btInterface.pack(sv3).tostring()
-    payload = ctrl_len + ctrl_name + objdesc + sv3
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (True, id_3)
+        ret_sv = btInterface.unpack(np.fromstring(ret[config.LEN_ID:]))
+        for ii in range(len(sv_1)):
+            assert np.array_equal(ret_sv[ii], ref_sv[ii])
 
-    # There must be two state vectors, each of which is preceed by the object
-    # ID.
-    ret, ok = ctrl.testSend(config.cmd['get_statevar'] + int2id(0))
-    assert ok
-    assert len(ret) == 2 * len(sv2) + 2 * config.LEN_ID
-
-    # Make sure both state vectors were returned exactly once.
-    t0, t1 = ret[config.LEN_ID + len(sv2):], ret[:config.LEN_ID + len(sv2)]
-    if t0[:config.LEN_ID] == id_2:
-        t0 = t0[:config.LEN_ID], t0[config.LEN_ID:]
-        assert t0 == (id_2, sv2)
-        t1 = t1[:config.LEN_ID], t1[config.LEN_ID:]
-        assert t1 == (id_3, sv3)
-    elif t0[:config.LEN_ID] == id_3:
-        t0 = t0[:config.LEN_ID], t0[config.LEN_ID:]
-        assert t0 == (id_3, sv3)
-        t1 = t1[:config.LEN_ID], t1[config.LEN_ID:]
-        assert t1 == (id_2, sv2)
-    else:
-        assert False
-
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
     print('Test passed')
 
 
-def test_create_new_raw_object():
+def test_create_new_template_object():
     """
-    Create new raw objects.
+    Create a new objects template.
     """
     killall()
 
-    # Start Clerk and instantiate controller.
+    # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
 
-    # Insufficient parameters.
-    ret, ok = ctrl.testSend(config.cmd['new_raw_object'])
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
-
-    # Insufficient parameters.
-    ret, ok = ctrl.testSend(config.cmd['get_geometry'])
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
-
-    # Request geometry of non-existing object.
-    id_2 = np.int64(200).tostring()
-    ret, ok = ctrl.testSend(config.cmd['get_geometry'] + id_2)
-    assert (ok, ret) == (False, 'ID does not exist'.encode('utf8'))
+    # Request geometry of a non-existing object.
+    ok, ret = clerk.getGeometry(np.int64(200).tostring())
+    assert (ok, ret) == (False, 'ID does not exist')
 
     # Request geometry of an existing default object. This particular object
     # has no geometry.
     id_2 = np.int64(1).tostring()
-    ret, ok = ctrl.testSend(config.cmd['get_geometry'] + id_2)
+    ok, ret = clerk.getGeometry(id_2)
     assert (ok, ret) == (True, b'')
 
     # Define a new raw object. The geometry data is arbitrary but its length
     # must be divisible by 9.
     geo_0_ref = bytes(range(0, 9))
     cs_0_ref = np.array([1, 1, 1, 1]).tostring()
-    id_3, ok = ctrl.testSend(config.cmd['new_raw_object'] + cs_0_ref + geo_0_ref)
+    ok, id_3 = clerk.newTemplate(cs_0_ref, geo_0_ref)
     assert ok
 
     # Query the new object.
-    ret, ok = ctrl.testSend(config.cmd['get_geometry'] + id_3)
+    ok, ret = clerk.getGeometry(id_3)
     assert (ok, ret) == (True, geo_0_ref)
     
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
+    # Attempt to insert an object with a geometry that is not an integer
+    # multiple of 9.
+    geo_0_ref = bytes(range(0, 5))
+    cs_0_ref = np.array([1, 1, 1, 1]).tostring()
+    ok, id_3 = clerk.newTemplate(cs_0_ref, geo_0_ref)
+    assert not ok
+
     print('Test passed')
 
 
@@ -416,53 +339,28 @@ def test_set_force():
     """
     killall()
 
-    # Start Clerk and instantiate controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
-
-    # Specify force and relative position of the force.
+    # Parameters and constants for this test.
+    id_1 = int2id(1)
+    sv = btInterface.defaultData()
     force = np.array([1, 2, 3], np.float64)
     relpos = np.array([4, 5, 6], np.float64)
 
-    # Insufficient parameters: missing ID, force, and rel position.
-    ret, ok = ctrl.testSend(config.cmd['set_force'])
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
-
-    # Insufficient parameters: missing force and rel position.
-    ret, ok = ctrl.testSend(config.cmd['set_force'] + int2id(0))
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
-
-    # Insufficient parameters: missing rel position.
-    ret, ok = ctrl.testSend(config.cmd['set_force'] + int2id(0) + force.tostring())
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk(reset=True)
 
     # Invalid/non-existing ID.
-    cmd = int2id(0) + force.tostring() + relpos.tostring()
-    ret, ok = ctrl.testSend(config.cmd['set_force'] + cmd)
-    assert (ok, ret) == (False, 'ID does not exist'.encode('utf8'))
+    ok, ret = clerk.setForce(int2id(0), force, relpos)
+    assert (ok, ret) == (False, 'ID does not exist')
 
-    # Spawn a new object. The returned ID must be ID=2 because ID=0 is
-    # invalid and ID=1 was already handed out to the 'ctrl' object.
-    id_2 = int2id(2)
-    sv2 = np.arange(6).astype(np.float64).tostring()
-    sv2 = btInterface.defaultData()
-    sv2 = btInterface.pack(sv2).tostring()
-    objdesc = np.int64(1).tostring()
-    payload = bytes([4]) + 'Echo'.encode('utf8') + objdesc + sv2
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (True, id_2)
+    # Spawn a new object. It must have ID=1.
+    templateID = np.int64(1).tostring()
+    ok, ret = clerk.spawn('Echo', templateID, sv)
+    assert (ok, ret) == (True, id_1)
 
     # Invalid/non-existing ID.
-    cmd = id_2 + force.tostring() + relpos.tostring()
-    ret, ok = ctrl.testSend(config.cmd['set_force'] + cmd)
-    assert (ok, ret) == (True, b'')
+    ok, ret = clerk.setForce(id_1, force, relpos)
+    assert (ok, ret) == (True, '')
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
     print('Test passed')
 
 
@@ -473,110 +371,95 @@ def test_suggest_position():
     """
     killall()
 
-    # Start Clerk and instantiate controller.
+    # Parameters and constants for this test.
+    id_1 = int2id(1)
+    sv = btInterface.defaultData()
+    force = np.array([1, 2, 3], np.float64)
+    templateID = np.int64(1).tostring()
+
+    # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
-
-    # Insufficient parameters: missing ID and force vector.
-    ret, ok = ctrl.testSend(config.cmd['suggest_pos'])
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
-
-    # Insufficient parameters: missing force vector.
-    ret, ok = ctrl.testSend(config.cmd['suggest_pos'] + int2id(0))
-    assert (ok, ret) == (False, 'Insufficient arguments'.encode('utf8'))
 
     # Invalid/non-existing ID.
-    force = np.array([1, 2, 3], np.float64).tostring()
-    ret, ok = ctrl.testSend(config.cmd['suggest_pos'] + int2id(0) + force)
-    assert (ok, ret) == (False, 'ID does not exist'.encode('utf8'))
+    ok, ret = clerk.suggestPosition(int2id(0), force)
+    assert (ok, ret) == (False, 'ID does not exist')
 
-    # Spawn a new object. The returned ID must be ID=2 because ID=0 is
-    # invalid and ID=1 was already handed out to the 'ctrl' object.
-    id_2 = int2id(2)
-    sv2 = btInterface.defaultData()
-    sv2 = btInterface.pack(sv2).tostring()
-    objdesc = np.int64(1).tostring()
-    payload = bytes([4]) + 'Echo'.encode('utf8') + objdesc + sv2
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (True, id_2)
+    # Spawn a new object. It must have ID=1.
+    ok, ret = clerk.spawn('Echo', templateID, sv)
+    assert (ok, ret) == (True, id_1)
 
     # Invalid/non-existing ID.
-    ret, ok = ctrl.testSend(config.cmd['suggest_pos'] + id_2 + force)
-    assert (ok, ret) == (True, b'')
+    ok, ret = clerk.suggestPosition(id_1, force)
+    assert (ok, ret) == (True, '')
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
     print('Test passed')
 
 
-def test_create_fetch_objects():
+def test_create_fetch_template():
     """
-    Add a new object to the objdesc DB and query it again.
+    Add a new object to the templateID DB and query it again.
     """
     killall()
 
-    # Start Clerk and instantiate controller.
+    # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
-    # Invalid ID.
-    assert clerk.getObjectDescription('blah'.encode('utf8')) == None
+    # Request and invalid ID.
+    ok, out = clerk.getTemplate('blah'.encode('utf8'))
+    assert not ok
 
-    # Clerk defines a few default objects upon start. This one has no collision
-    # shape.
-    objdescid = np.int64(1).tostring()
-    out = clerk.getObjectDescription(objdescid)
-    assert out is not None
+    # Clerk has a few default objects. This one has no collision shape...
+    ok, out = clerk.getTemplate(np.int64(1).tostring())
+    assert ok
     assert out[0] == np.array([0, 1, 1, 1], np.float64).tostring()
 
-    # Second default object: a sphere.
-    objdescid = np.int64(2).tostring()
-    out = clerk.getObjectDescription(objdescid)
-    assert out is not None
+    # ... this one is a sphere...
+    ok, out = clerk.getTemplate(np.int64(2).tostring())
+    assert ok
     assert out[0] == np.array([3, 1, 1, 1], np.float64).tostring()
 
-    # Third default object: a cube.
-    objdescid = np.int64(3).tostring()
-    out = clerk.getObjectDescription(objdescid)
-    assert out is not None
+    # ... and this one is a cube.
+    ok, out = clerk.getTemplate(np.int64(3).tostring())
+    assert ok
     assert out[0] == np.array([4, 1, 1, 1], np.float64).tostring()
 
-    # Create a brand new object.
+    # Add a new object template.
     cs = np.array([1, 2, 3, 4], np.float64).tostring()
     geo = np.array([5, 6, 7, 8], np.float64).tostring()
-    objdescid = clerk.createObjectDescription(cs, geo, [], [])
-    out = clerk.getObjectDescription(objdescid)
-    assert out is not None
+    ok, templateID = clerk.addTemplate(cs, geo, [], [])
+
+    # Fetch the just added template again.
+    ok, out = clerk.getTemplate(templateID)
+    assert ok
     assert out[0] == np.array([1, 2, 3, 4], np.float64).tostring()
     assert out[1] == np.array([5, 6, 7, 8], np.float64).tostring()
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
-    # tuples. The first argument to these tuples is the ID that will
-    # be assigned to the unit (the user can choose that number; Azrael
-    # will automatically enumerate them in any way).
+    # tuples. Their first argument is the unit ID (Azrael does not assign
+    # automatically assign any IDs).
     cs = np.array([1, 2, 3, 4], np.float64).tostring()
     geo = np.array([5, 6, 7, 8], np.float64).tostring()
     b0 = types.booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
     b1 = types.booster(1, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
     f0 = types.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
-    # ------------------------------------------------------------
-    # In Clerk: add new object description.
-    # ------------------------------------------------------------
-    objdescid = clerk.createObjectDescription(cs, geo, [b0, b1], [f0])
+    # Add the new template.
+    ok, templateID = clerk.addTemplate(cs, geo, [b0, b1], [f0])
 
-    # Retrieve the just created object.
-    out = clerk.getObjectDescription(objdescid)
-    assert out is not None
-    assert out[0] == np.array([1, 2, 3, 4], np.float64).tostring()
-    assert out[1] == np.array([5, 6, 7, 8], np.float64).tostring()
+    # Retrieve the just created object and verify the CS and geometry.
+    ok, out = clerk.getTemplate(templateID)
+    assert ok
+    assert np.array_equal(out[0], cs)
+    assert np.array_equal(out[1], geo)
+
+    # The template must also feature two boosters and one factory.
     assert len(out[2]) == 2
     assert len(out[3]) == 1
 
+    # Explicitly verify the booster- and factory units. The easisest (albeit
+    # not most readable) way to do the comparison is to convert the unit
+    # descriptions (which are named tuples) to byte strings and compare those.
     out_boosters = [types.booster_tostring(_) for _ in out[2]]
     out_factories = [types.factory_tostring(_) for _ in out[3]]
     assert types.booster_tostring(b0) in out_boosters
@@ -588,93 +471,41 @@ def test_create_fetch_objects():
 
 def test_get_raw_object_id():
     """
-    First spawn two objects with different raw object IDS, then query them
-    back. Unlike most other test, this particular tests the Clerk, the
-    controller, and the WS interface all in one spot.
+    Spawn two objects from different templates. Then query the template ID
+    based on the object ID.
     """
     killall()
 
-    # Start Clerk and instantiate controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    server = clacks.ClacksServer()
-    server.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
-
-    # Make sure the system is live before attaching a client.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping_clerk()
-
-    # Spawn a new object. The returned ID must be ID=3 because ID=0 is
-    # invalid and ID={1,2} were already handed out to the 'ctrl'- and 'client'
-    # object.
-    id_0 = int2id(3)
+    # Parameters and constants for this test.
+    id_0, id_1 = int2id(1), int2id(2)
+    templateID_0, templateID_1 = np.int64(1).tostring(), np.int64(3).tostring()
     sv = btInterface.defaultData()
-    sv = btInterface.pack(sv).tostring()
-    objdesc_0 = np.int64(1).tostring()
-    payload = bytes([4]) + 'Echo'.encode('utf8') + objdesc_0 + sv
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (True, id_0)
+    
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk(reset=True)
 
-    # Spawn another object. It only differs in terms of the template object.
-    id_1 = int2id(4)
-    objdesc_1 = np.int64(3).tostring()
-    payload = bytes([4]) + 'Echo'.encode('utf8') + objdesc_1 + sv
-    ret, ok = ctrl.testSend(config.cmd['spawn'] + payload)
-    assert (ok, ret) == (True, id_1)
-    
-    # ------------------------------------------------------------------------
-    # Retrieve the template ID for this object directly from the Clerk.
-    # ------------------------------------------------------------------------
-    # First object.
-    ret, ok = ctrl.testSend(config.cmd['get_template_id'] + id_0)
-    assert (ok, ret) == (True, objdesc_0)
-    
-    # Second object.
-    ret, ok = ctrl.testSend(config.cmd['get_template_id'] + id_1)
-    assert (ok, ret) == (True, objdesc_1)
-    
-    # Non-existing object.
-    ret, ok = ctrl.testSend(config.cmd['get_template_id'] + int2id(100))
-    assert not ok
-    
-    # ------------------------------------------------------------------------
-    # Retrieve the template ID via the Controller.
-    # ------------------------------------------------------------------------
-    # First object.
-    ret, ok = ctrl.getTemplateID(id_0)
-    assert (ok, ret) == (True, objdesc_0)
-    
-    # Second object.
-    ret, ok = ctrl.getTemplateID(id_1)
-    assert (ok, ret) == (True, objdesc_1)
-    
-    # Non-existing object.
-    ret, ok = ctrl.testSend(config.cmd['get_template_id'] + int2id(100))
-    assert not ok
+    # Spawn a new object. It must have ID=1.
+    ok, ctrl_id = clerk.spawn('Echo', templateID_0, sv)
+    assert (ok, ctrl_id) == (True, id_0)
 
-    # ------------------------------------------------------------------------
-    # Retrieve the template ID via the WS client.
-    # ------------------------------------------------------------------------
-    # First object.
-    ret, ok = client.getTemplateID(id_0)
-    assert (ok, ret) == (True, objdesc_0)
+    # Spawn another object from a different template.
+    ok, ctrl_id = clerk.spawn('Echo', templateID_1, sv)
+    assert (ok, ctrl_id) == (True, id_1)
+
+    # Retrieve template of first object.
+    ok, ret = clerk.getTemplateID(id_0)
+    assert (ok, ret) == (True, templateID_0)
     
-    # Second object.
-    ret, ok = client.getTemplateID(id_1)
-    assert (ok, ret) == (True, objdesc_1)
+    # Retrieve template of second object.
+    ok, ret = clerk.getTemplateID(id_1)
+    assert (ok, ret) == (True, templateID_1)
     
-    # Non-existing object.
-    ret, ok = ctrl.testSend(config.cmd['get_template_id'] + int2id(100))
+    # Attempt to retrieve a non-existing object.
+    ok, ret = clerk.getTemplateID(int2id(100))
     assert not ok
 
     # Shutdown.
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
+    killall()
 
     print('Test passed')
 
@@ -684,20 +515,24 @@ def test_processControlCommand():
     Create an object with some boosters and factories and send control
     commands to them.
     """
+    killall()
+    
+    # Parameters and constants for this test.
+    objID_1, objID_2 = int2id(1), int2id(2)
+    templateID_1 = np.int64(1).tostring()
+    sv = btInterface.defaultData()
+
+    # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
-    # Create a fake object. We will not need it but since Clerk will double
-    # check its existence we need to spawn one. However, I do not want to run
-    # Clerk as a full fledged process which is why I just 'hack' it in for this
-    # test.
-    objID = int2id(1)
-    sv = btInterface.defaultData()
-    sv = btInterface.pack(sv).tostring()
-    btInterface.add(objID, sv, np.int64(1).tostring())
+    # Create a fake object. We will not need it but for this test one must
+    # exist as other commands would otherwise fail.
+    ok, ctrl_id = clerk.spawn('Echo', templateID_1, sv)
+    assert (ok, ctrl_id) == (True, objID_1)
 
     # Create booster control command.
     cmd_0 = commands.controlBooster(unitID=0, force=0.2)
-    cmd = commands.serialiseCommands(objID, [cmd_0], [])
+    cmd = commands.serialiseCommands(objID_1, [cmd_0], [])
 
     # Call processControlCommands. It must fail because the default object has
     # no booster.
@@ -720,9 +555,9 @@ def test_processControlCommand():
     f0 = types.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # Add it to Azrael and spawn an instance.
-    objdescid_2 = clerk.createObjectDescription(cs, geo, [b0, b1], [f0])
-    objID_2 = int2id(2)
-    btInterface.add(objID_2, sv, objdescid_2)
+    ok, templateID_2 = clerk.addTemplate(cs, geo, [b0, b1], [f0])
+    ok, ctrl_id = clerk.spawn('Echo', templateID_2, sv)
+    assert (ok, ctrl_id) == (True, objID_2)
     
     # Call processControlCommands. It must fail because the default object has
     # no booster.
@@ -737,20 +572,61 @@ def test_processControlCommand():
     assert ok
     assert np.array_equal(force, [0.2, 0.4, 0])
 
+    killall()
     print('Test passed')
     
 
+def test_get_all_objectids():
+    """
+    Test getAllObjects.
+    """
+    killall()
+    
+    # Parameters and constants for this test.
+    objID_1, objID_2 = int2id(1), int2id(2)
+    templateID = np.int64(1).tostring()
+    sv = btInterface.defaultData()
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk(reset=True)
+
+    # So far no objects have been spawned.
+    ok, out = clerk.getAllObjectIDs()
+    assert (ok, out) == (True, b'')
+
+    # Spawn a new object.
+    ok, ret = clerk.spawn('Echo', templateID, sv)
+    assert (ok, ret) == (True, objID_1)
+    
+    # The object list must now contain the ID of the just spawned object.
+    ok, out = clerk.getAllObjectIDs()
+    assert (ok, out) == (True, objID_1)
+
+    # Spawn another object.
+    ok, ret = clerk.spawn('Echo', templateID, sv)
+    assert (ok, ret) == (True, objID_2)
+
+    # The object list must now contain the ID of both spawned objects.
+    ok, out = clerk.getAllObjectIDs()
+    assert (ok, out) == (True, objID_1 + objID_2)
+
+    # Kill all spawned Controller processes.
+    killall()
+
+    print('Test passed')
+
+    
 if __name__ == '__main__':
+    test_get_all_objectids()
     test_processControlCommand()
     test_get_raw_object_id()
     test_get_statevar()
     test_spawn()
-    test_create_fetch_objects()
+    test_create_fetch_template()
     test_set_force()
     test_suggest_position()
-    test_create_new_raw_object()
-    test_get_message()
-    test_send_message()
+    test_create_new_template_object()
+    test_send_receive_message()
     test_connect()
     test_ping()
     test_invalid()

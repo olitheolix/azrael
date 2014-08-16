@@ -308,20 +308,20 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         return buf_vert.flatten()
 
     def loadGeometry(self):
-        sv, ok = self.client.getStateVariables(None)
-
-        for ctrl_id in sv:
+        ok, all_ids = self.client.getAllObjectIDs()
+        
+        for ctrl_id in all_ids:
             # Do not add anything if we already have the object.
             if ctrl_id in self.controllers:
                 continue
 
             # Query the raw object ID associated with ctrl_id.
-            objdesc, ok = self.client.getTemplateID(ctrl_id)
+            ok, templateID = self.client.getTemplateID(ctrl_id)
             if not ok:
                 continue
 
             # Query the geometry of the raw object ID.
-            geometry, ok = self.client.getGeometry(objdesc)
+            ok, geometry = self.client.getGeometry(templateID)
             if not ok:
                 continue
             buf_vert = np.fromstring(geometry)
@@ -409,7 +409,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         buf_vert = self.getGeometryCube()
         cs = np.ones(4, np.float64)
         cs[0] = 4
-        tmp, ok = self.client.newRawObject(cs.tostring(), buf_vert.tostring())
+        ok, tmp = self.client.newObjectTemplate(cs.tostring(), buf_vert.tostring())
         if not ok:
             print('Could not create new raw object')
             self.close()
@@ -417,8 +417,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             self.cube_id = tmp
             print('Created ID <{}>'.format(self.cube_id))
             
-        # Spawn a cube (objdesc=3 defaults to one).
-        tmp, ok = self.client.spawn('Echo', self.cube_id, np.zeros(3), np.zeros(3))
+        # Spawn a cube (templateID=3 defaults to one).
+        ok, tmp = self.client.spawn('Echo', self.cube_id, np.zeros(3), np.zeros(3))
         if not ok:
             print('Cannot spawn object (<{}>)'.format(tmp))
             self.close()
@@ -472,7 +472,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             gl.glUseProgram(self.shaders)
 
             # Query the object's position to construct the model matrix.
-            sv, ok = self.client.getStateVariables(ctrl_id)
+            ok, sv = self.client.getStateVariables(ctrl_id)
             if not ok:
                 continue
             sv = sv[ctrl_id]
@@ -661,7 +661,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             pos = self.camera.position
             vel = 2 * self.camera.view
 
-            ctrl_id, ok = self.client.spawn('Echo', self.cube_id, pos, vel=vel,
+            ok, ctrl_id = self.client.spawn('Echo', self.cube_id, pos, vel=vel,
                                             scale=0.25, imass=20)
             if not ok:
                 print('Could not spawn Echo (<{}>)'.format(ctrl_id))
@@ -670,7 +670,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             pos = self.camera.position
             vel = 0.5 * self.camera.view
 
-            ctrl_id, ok = self.client.spawn('EchoBoost', self.cube_id, pos,
+            ok, ctrl_id = self.client.spawn('EchoBoost', self.cube_id, pos,
                                             vel=vel, scale=1, imass=1)
             if not ok:
                 print('Could not spawn EchoBoost (<{}>)'.format(ctrl_id))

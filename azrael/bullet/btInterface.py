@@ -24,7 +24,7 @@ import azrael.util
 import azrael.config as config
 
 from collections import namedtuple
-
+from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
 _DB_SV = None
@@ -49,14 +49,14 @@ def initSVDB(reset=True):
         _DB_WP.insert({'name': 'wpcnt', 'cnt': 0})
 
 
-def count():
+def getNumObjects():
     """
     Return the number of objects in the SV DB.
     """
     return _DB_SV.count()
     
 
-def add(ID, data, objdesc):
+def spawn(ID, data, templateID):
     """
     Add new ``ID`` with associated data and return the success.
     """
@@ -71,7 +71,7 @@ def add(ID, data, objdesc):
     doc = _DB_SV.find_and_modify(
         {'objid': ID},
         {'$setOnInsert': {'sv': data, 'force': z, 'relpos': z, 'sugPos': None,
-                          'objdesc': objdesc}},
+                          'templateID': templateID}},
         upsert=True, new=True)
     # The SV in the returned document will only match ``data`` if either no
     # object with ID existed before the call, or the ID existed but with
@@ -80,19 +80,14 @@ def add(ID, data, objdesc):
     return doc['sv'] == data
     
 
-def get(IDs):
+@typecheck
+def getStateVariables(IDs: (list, tuple)):
     """
     Retrieve one or more ``IDs``.
 
     The function either returns all requested ``IDs`` or None. The latter case
     usually happens when one or more ``IDs`` do not exist.
     """
-    if isinstance(IDs, bytes):
-        scalar = True
-        IDs = (IDs,)
-    else:
-        scalar = False
-    assert isinstance(IDs, (tuple, list))
     for _ in IDs:
         assert isinstance(_, bytes)
         assert len(_) == config.LEN_ID
@@ -102,28 +97,24 @@ def get(IDs):
 
     # Return with an error if one or more documents were unavailable.
     if None in out:
-        return [], False
-    else:
-        out = [_['sv'] for _ in out]
+        return False, []
 
-    # Return the retrieved SV data either in a list or a single byte
-    # stream, depending on whether ``IDs`` was a list or not.
-    if scalar:
-        return out[0], True
-    else:
-        return out, True
+    # Return the retrieved SV data as a list.
+    out = [_['sv'] for _ in out]
+    return True, out
     
 
-def update(ID, data):
+def update(ID, sv):
     """
-    Add new ``ID`` with associated data and return the success.
+    Update the ``sv`` data for object ``ID`` return the success.
+    fixme: `sv` must be of type `BulletData`
     """
     assert isinstance(ID, bytes)
     assert len(ID) == config.LEN_ID
-    assert isinstance(data, bytes)
-    assert len(data) == config.LEN_SV_BYTES
+    assert isinstance(sv, bytes)
+    assert len(sv) == config.LEN_SV_BYTES
 
-    doc = _DB_SV.update({'objid': ID}, {'$set': {'sv': data}})
+    doc = _DB_SV.update({'objid': ID}, {'$set': {'sv': sv}})
 
     # The SV in the returned document will only match ``data`` if either no
     # object with ID existed before the call, or the ID existed but with
@@ -142,7 +133,15 @@ def getAll():
         objid = doc['objid']
         del doc['objid']
         out[objid] = doc['sv']
-    return out, True
+    return True, out
+    
+
+def getAllObjectIDs():
+    """
+    Return all object IDs.
+    """
+    # Retrieve all objects.
+    return True, [_['objid'] for _ in _DB_SV.find()]
     
 
 def getForce(ID):
@@ -159,7 +158,7 @@ def getForce(ID):
     # Query the object.
     doc = _DB_SV.find_one({'objid': ID})
     if doc is None:
-        return None, None, False
+        return False, None, None
 
     # Extract and unpack the force and its position relative to the center of
     # mass.
@@ -167,7 +166,7 @@ def getForce(ID):
     force, relpos = np.fromstring(force), np.fromstring(relpos)
 
     # Return the result.
-    return force, relpos, True
+    return True, force, relpos
     
 
 def setForce(ID, force, relpos):
@@ -293,14 +292,14 @@ def getSuggestedPosition(ID):
 
     # Return an error if no document with matchin ID was found.
     if doc is None:
-        return None, False
+        return False, None
 
     # A matching document was found. This document may or may not contain a
     # suggested position. Either way, the call succeeded.
     if doc['sugPos'] is None:
-        return None, True
+        return True, None
     else:
-        return np.fromstring(doc['sugPos']), True
+        return True, np.fromstring(doc['sugPos'])
     
 
 def getTemplateID(ID):
@@ -317,9 +316,9 @@ def getTemplateID(ID):
     # Return an error if no document with matchin ID was found.
     if doc is None:
         # fixme: must return a message, probably an empty string.
-        return None, False
+        return False, None
     else:
-        return doc['objdesc'], True
+        return True, doc['templateID']
     
 
 def defaultData(radius=1, scale=1, imass=1, restitution=0.9,
@@ -358,7 +357,7 @@ def createWorkPackage(IDs, token, dt, maxsteps):
     """
     assert isinstance(IDs, list)
     if len(IDs) == 0:
-        return None, False
+        return False, None
 
     wpid = _DB_WP.find_and_modify(
         {'name': 'wpcnt'}, {'$inc': {'cnt': 1}}, new=True)
@@ -378,11 +377,11 @@ def createWorkPackage(IDs, token, dt, maxsteps):
     ret = _DB_WP.insert({'wpid': wpid, 'ids': IDs, 'token': token,
                          'dt': dt, 'maxsteps': maxsteps})
     if ret is None:
-        return wpid, False
+        return False, wpid
     else:
         for objid in IDs:
             _DB_SV.update({'objid': objid}, {'$set': {'token': token}})
-        return wpid, True
+        return True, wpid
 
 
 def getWorkPackage(wpid):
@@ -392,7 +391,7 @@ def getWorkPackage(wpid):
 
     doc = _DB_WP.find_one({'wpid': wpid})
     if doc is None:
-        return None, None, False
+        return False, None, None
     else:
         IDs = doc['ids']
 
@@ -402,7 +401,7 @@ def getWorkPackage(wpid):
     data = [_ for _ in data if _ is not None]
     data = [WPData(_['objid'], _['sv'], _['force'], _['sugPos']) for _ in data]
     admin = WPAdmin(doc['token'], doc['dt'], doc['maxsteps'])
-    return data, admin, True
+    return True, data, admin
 
 
 def updateWorkPackage(wpid, token, svdict):

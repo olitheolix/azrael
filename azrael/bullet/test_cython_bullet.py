@@ -51,12 +51,12 @@ def test_getset_object():
     bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
 
     # Request an invalid object ID.
-    ret_buf, ok = bullet.getObjectData([0])
+    ok, ret_buf = bullet.getObjectData([0])
     assert ok == 1
     
     # Send object to Bullet and request it back.
     bullet.setObjectData([0], btInterface.pack(obj_a))
-    ret_buf, ok = bullet.getObjectData([0])
+    ok, ret_buf = bullet.getObjectData([0])
     assert ok == 0
 
     # De-serialise the data and verify it is identical (rounding errors
@@ -88,7 +88,7 @@ def test_apply_force():
     # This should not move the objects because no forces are at play.
     bullet.setObjectData(IDs, btInterface.pack(obj_a))
     bullet.compute(IDs, 1.0, 60)
-    ret_buf, ok = bullet.getObjectData([0])
+    ok, ret_buf = bullet.getObjectData([0])
     assert ok == 0
 
     # De-serialise the data and verify it is identical (rounding errors due to
@@ -107,7 +107,7 @@ def test_apply_force():
     bullet.applyForce(0, force, np.zeros(3, np.float64))
 
     # Nothing must have happened because the simulation has not progressed.
-    ret_buf, ok = bullet.getObjectData([0])
+    ok, ret_buf = bullet.getObjectData([0])
     assert ok == 0
     ret = btInterface.unpack(ret_buf)
     assert np.allclose(ret.position, obj_a.position, atol=1E-9)
@@ -115,7 +115,7 @@ def test_apply_force():
     # Now progress the simulation and make sure the object moved in the right
     # direction by (roughly) the correct amount.
     bullet.compute(IDs, 1.0, 60)
-    ret_buf, ok = bullet.getObjectData([0])
+    ok, ret_buf = bullet.getObjectData([0])
     assert ok == 0
     ret = btInterface.unpack(ret_buf)
     assert np.allclose(ret.position, [0, 0, 0.5], atol=1E-2)
@@ -134,7 +134,7 @@ def test_get_pair_cache():
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 1)
-    pairs, ok = bullet.getPairCache()
+    ok, pairs = bullet.getPairCache()
     assert ok
     
     # Create an object and serialise it.
@@ -153,7 +153,7 @@ def test_get_pair_cache():
     # cache, whereas the third object is nowhere near them and thus not part of
     # any pair. Note: many identical pairs may be returned because Bullet runs
     # the broadphase algorithm several times.
-    pairs, ok = bullet.getPairCache()
+    ok, pairs = bullet.getPairCache()
     assert ok
     for pair in cytoolz.partition(2, pairs):
         assert set(pair) == set([0, 1])
@@ -173,17 +173,17 @@ def test_remove_object():
     bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
 
     # Request an invalid object ID.
-    ret_buf, ok = bullet.getObjectData([0])
+    ok, ret_buf = bullet.getObjectData([0])
     assert ok == 1
     
     # Send object to Bullet and request it back.
     bullet.setObjectData([0], a)
-    ret_buf, ok = bullet.getObjectData([0])
+    ok, ret_buf = bullet.getObjectData([0])
     assert ok == 0
 
     # Delete the object and try to request it again.
     assert bullet.removeObject([0]) == 1
-    ret_buf, ok = bullet.getObjectData([0])
+    ok, ret_buf = bullet.getObjectData([0])
     assert ok == 1
 
     print('Test passed')

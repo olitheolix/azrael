@@ -67,9 +67,9 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
     def controllerWrap(self, func, payload):
         if len(payload) == 0:
-            ret, ok = func()
+            ok, ret = func()
         else:
-            ret, ok = func(payload)
+            ok, ret = func(payload)
 
         if ok:
             ret = b'\x00' + ret
@@ -109,8 +109,8 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             self.controllerWrap(self.controller.ping, payload)
         elif cmd == config.cmd['get_geometry']:
             self.controllerWrap(self.controller._getGeometry, payload)
-        elif cmd == config.cmd['new_raw_object']:
-            self.controllerWrap(self.controller._newRawObject, payload)
+        elif cmd == config.cmd['new_template']:
+            self.controllerWrap(self.controller._newObjectTemplate, payload)
         elif cmd == config.cmd['spawn']:
             self.controllerWrap(self.controller._spawn, payload)
         elif cmd == config.cmd['get_statevar']:
@@ -122,9 +122,11 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         elif cmd == config.cmd['send_msg']:
             self.controllerWrap(self.controller._sendMessage, payload)
         elif cmd == config.cmd['get_msg']:
-            self.controllerWrap(self.controller._getMessage, payload)
+            self.controllerWrap(self.controller._recvMessage, payload)
         elif cmd == config.cmd['get_template_id']:
             self.controllerWrap(self.controller._getTemplateID, payload)
+        elif cmd == config.cmd['get_all_objids']:
+            self.controllerWrap(self.controller._getAllObjectIDs, payload)
         else:
             # Unknown command code: acknowledge and ignore.
             msg = 'WS: invalid command code <{}>'.format(cmd)

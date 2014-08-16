@@ -29,9 +29,12 @@ import numpy as np
 
 import azrael.util as util
 import azrael.types as types
+import azrael.unpack as unpack
 import azrael.config as config
 import azrael.commands as commands
 import azrael.bullet.btInterface as btInterface
+
+from azrael.typecheck import typecheck
 
 
 class PythonInstance(multiprocessing.Process):
@@ -71,20 +74,23 @@ class PythonInstance(multiprocessing.Process):
 
 class Clerk(multiprocessing.Process):
     """
-    Coordinate controllers and their messages.
+    Administrate all requests coming from the various clients.
 
-    There can only be one running instance of Clerk because it binds 0MQ
-    sockets.
+    There can only be one instance of Clerk because it binds 0MQ sockets, which
+    is also the only way to contact Clerk.
 
-    Clerk is only accessible via 0MQ sockets. It exposes the one and only
-    public API into Azrael.
+    Philosophy of Clerk:
+     * Unpack and inspect all data to ensure it is sane.
+     * Speed is irrelevant for now; Clerk will become asynchronous later.
+     * Ensure that all physics related data is in compact and read-to-use
+       format to avoid overhead.
 
-    All messages are binary, Byte oriented, and not language agnostic. This
-    makes Clerk accessible from any language which has binding for 0MQ (which
-    is pretty much every language).
+    All messages are binary Byte strings and language agnostic to ensure
+    clients can be written in any language with ZeroMQ bindings (which is
+    pretty much every language).
     """
-    def __init__(self, reset, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, reset):
+        super().__init__()
 
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
@@ -94,27 +100,31 @@ class Clerk(multiprocessing.Process):
         client = pymongo.MongoClient()
         self.db_msg = client['azrael']['msg']
         self.db_admin = client['azrael']['admin']
-        self.db_objdesc = client['azrael']['objdesc']
+        self.db_templateID = client['azrael']['templateID']
 
-        # Drop all collections, if requested.
+        # Drop all collections if requested.
         if reset:
             client.drop_database('azrael')
-            self.db_objdesc.insert({'name': 'objcnt', 'cnt': 0})
+            self.db_templateID.insert({'name': 'objcnt', 'cnt': 0})
 
-        # Insert default objects. None has a geometry, but their collision
-        # shapes are: none, sphere, cube.
-        self.createObjectDescription(
+            # Reset the object counter. We will use atomic increments to
+            # guarantee unique object IDs.
+            self.db_admin.insert({'name': 'objcnt', 'cnt': 0})
+
+        # Insert default objects. None of them has an actual geometry but
+        # their collision shapes are: none, sphere, cube.
+        self.addTemplate(
             np.array([0, 1, 1, 1], np.float64).tostring(), b'', [], [])
-        self.createObjectDescription(
+        self.addTemplate(
             np.array([3, 1, 1, 1], np.float64).tostring(), b'', [], [])
-        self.createObjectDescription(
+        self.addTemplate(
             np.array([4, 1, 1, 1], np.float64).tostring(), b'', [], [])
 
         # Initialise the SV related collections.
         btInterface.initSVDB(reset)
 
-        # Dictionary of all controllers this Clerk is aware of. The key is the
-        # object ID and the value the process ID.
+        # Dictionary of all controllers this Clerk is aware of. The object ID
+        # serves as the dictionary key whereas the the process ID is the value.
         self.processes = {}
 
     def run(self):
@@ -132,10 +142,6 @@ class Clerk(multiprocessing.Process):
         poller = zmq.Poller()
         poller.register(self.sock_cmd, zmq.POLLIN)
 
-        # Reset the object counter. In conjunction with atomic DB updates this
-        # counter will be the sole source for new and unique object IDs.
-        self.db_admin.insert({'name': 'objcnt', 'cnt': 0})
-
         # Wait for socket activity.
         while True:
             sock = dict(poller.poll())
@@ -147,17 +153,17 @@ class Clerk(multiprocessing.Process):
         if objID is None:
             return False, 'Problem'
 
-        # Query the objdescr for objID.
-        objdesc, ok = btInterface.getTemplateID(objID)
+        # Query the templateID for objID.
+        ok, templateID = btInterface.getTemplateID(objID)
         if not ok:
             return False, msg
 
         # Query the object capabilities.
-        cap = self.getObjectDescription(objdesc)
-        if cap is None:
+        ok, data = self.getTemplate(templateID)
+        if not ok:
             return False, 'Problem'
         else:
-            cshape, geo, boosters, factories = cap
+            cshape, geo, boosters, factories = data
 
         # Extract all booster- and factory IDs.
         bid = dict(zip([int(_.bid) for _ in boosters], boosters))
@@ -189,6 +195,7 @@ class Clerk(multiprocessing.Process):
 
         return True, ''
         
+    @typecheck
     def getControllerClass(self, ctrl_name: str):
         """
         Stub.
@@ -205,53 +212,132 @@ class Clerk(multiprocessing.Process):
         else:
             return None
 
-    def getObjectDescription(self, objdesc: bytes):
+    @typecheck
+    def getTemplate(self, templateID: bytes):
         """
-        Return the collision shape and geometry data, or None.
-        """
-        assert isinstance(objdesc, bytes)
-        doc = self.db_objdesc.find_one({'objdesc': objdesc})
-        if doc is None:
-            return None
+        Return the constituents of the template object.
 
+        The return values are (cs, geo, boosters, factories).
+
+        A template object has the following document structure:
+        {'_id': ObjectId('53eeb55062d05244dfec278f'),
+        'boosters': {'000': b'', '001': b'', ..},
+        'factories': {'000':b'', ...},
+        'cshape': b'',
+        'templateID': b'',
+        'geometry': b''}
+
+        :param bytes templateID: templateID
+        :return: (cs, geo, boosters, factories)
+        :rtype: tuple
+        :raises: None
+        """
+        # Retrieve the object template and return immediately if it does not
+        # exist.
+        doc = self.db_templateID.find_one({'templateID': templateID})
+        if doc is None:
+            return False, None
+
+        # Extract the collision shape and object geometry.
         cs, geo = doc['cshape'], doc['geometry']
 
+        # Extract all boosters if the object has any.
         if 'boosters' in doc:
             b = doc['boosters'].values()
             boosters = [types.booster_fromstring(_) for _ in b]
         else:
             boosters = []
+
+        # Extract all factories if the object has any.
         if 'factories' in doc:
             f = doc['factories'].values()
             factories = [types.factory_fromstring(_) for _ in f]
         else:
             factories = []
 
-        return cs, geo, boosters, factories
+        return True, (cs, geo, boosters, factories)
         
-    def createObjectDescription(self, cshape, geometry, boosters, factories):
-        """
-        Add a new object to the 'objdesc' DB and return its ID.
+    def delme(self, cs, geo, boosters, factories):
+        import json
+        class NumpyAwareJSONEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, np.ndarray) and obj.ndim == 1:
+                    return obj.tolist()
+                if isinstance(obj, bytes):
+                    return list(obj)
+                if isinstance(obj, np.int64):
+                    return int(obj)
+                if isinstance(obj, np.float64):
+                    return float(obj)
+                return json.JSONEncoder.default(self, obj)
+        d = {'cs': cs, 'geo': geo, 'boosters': boosters,
+             'factories': factories}
+        
+        return json.dumps(d, cls=NumpyAwareJSONEncoder).encode('utf8')
+        
+    @typecheck
+    def newTemplate(self, cshape: bytes, geometry: bytes):
+        # Geometry can only be a valid mesh of triangles if its length is a
+        # multiple of 9.
+        if len(geometry) % 9 != 0:
+            return False, 'Geometry is not a multiple of 9'
 
-        Only objects created with this method can be spawned later on.
+        # Create the new template object and return its ID.
+        ok, templateID = self.addTemplate(cshape, geometry, [], [])
+        return True, templateID
+
+    @typecheck
+    def addTemplate(self, cshape: bytes, geometry: bytes,
+                                boosters: (list, tuple),
+                                factories: (list, tuple)):
         """
-        new_id = self.db_objdesc.find_and_modify(
+        Add a new object to the 'templateID' DB and return its template ID.
+
+        Azrael can only spawn objects from templates that have been registered
+        with this function.
+
+        fixme: this method must go into the database module.
+        fixme: some parameters are missing
+
+        :param bytes cshape: collision shape
+        :param bytes geometry: object geometry (fixme: what data type? float64?)
+        :return: template ID
+        :rtype: bytes
+        :raises: None
+        """
+        # Create a new and unique ID for the next template object.
+        new_id = self.db_templateID.find_and_modify(
             {'name': 'objcnt'}, {'$inc': {'cnt': 1}}, new=True)
         new_id = new_id['cnt']
-        objdescid = np.int64(new_id).tostring()
-        data = {'objdesc': objdescid, 'cshape': cshape, 'geometry': geometry}
+
+        # Convert the integer to NumPy int64.
+        templateID = np.int64(new_id).tostring()
+
+        # Compile the Mongo document. It includes the collision shape,
+        # geometry, boosters- and factory units.
+        data = {'templateID': templateID, 'cshape': cshape, 'geometry': geometry}
         for b in boosters:
             data['boosters.{0:03d}'.format(b.bid)] = types.booster_tostring(b)
         for f in factories:
             data['factories.{0:03d}'.format(f.fid)] = types.factory_tostring(f)
 
-        self.db_objdesc.update({'objdesc': objdescid},
+        # Insert the document.
+        self.db_templateID.update({'templateID': templateID},
                                {'$set': data}, upsert=True)
-        return objdescid
+
+        # Return the ID of the new template.
+        return True, templateID
     
     def getUniqueID(self):
         """
         Return unique object ID.
+
+        fixme: return an encoded object ID
+
+        :returns: another unique object ID
+        :rtype: int
+        :raises: None
+
         """
         # Increment- and return the object counter with a single atomic Mongo
         # command.
@@ -259,224 +345,227 @@ class Clerk(multiprocessing.Process):
             {'name': 'objcnt'}, {'$inc': {'cnt': 1}}, new=True)
 
         if new_id is None:
+            # This must not happen because it means the DB is corrupt.
             self.logit.error('Could not fetch counter - this is a bug!')
             sys.exit(1)
+
+        # Return the ID.
         return new_id['cnt']
 
-    def returnOk(self, addr, data: bytes=b''):
+    @typecheck
+    def returnOk(self, addr, data: (bytes, str)=b''):
+        """
+        Send positive reply.
+
+        This is a convenience function only to enhance readability.
+
+        :param addr: ZeroMQ address as returned by the router socket.
+        :param bytes data: arbitrary data that should be passed back as well.
+        :return: None
+        """
+        # Convert the data to a byte string if necessary.
+        if isinstance(data, str):
+            data = data.encode('utf8')
+
+        # The first \x00 bytes tells the receiver that everything is ok.
         self.sock_cmd.send_multipart([addr, b'', b'\x00' + data])
 
     def returnErr(self, addr, data: (bytes, str)=b''):
+        """
+        Send negative reply.
+
+        This is a convenience function only to enhance readability. It also
+        automatically logs a warning message.
+
+        :param addr: ZeroMQ address as returned by the router socket.
+        :param bytes data: arbitrary data that should be passed back as well.
+        :return: None
+        """
+        # Convert the data to a byte string if necessary.
         if isinstance(data, str):
             data = data.encode('utf8')
+
+        # For record keeping.
         self.logit.warning(data)
+
+        # The first \x01 bytes tells the receiver that something went wrong.
         self.sock_cmd.send_multipart([addr, b'', b'\x01' + data])
 
-    def processCmd(self):
-        # Read from ROUTER socket.
-        msg = self.sock_cmd.recv_multipart()
+    @typecheck
+    def sendMessage(self, src: bytes, dst: bytes, data: bytes):
+        """
+        Queue a new message with content ``data`` for ``dst`` from ``src``.
 
-        # Unpack address and message; add sanity checks.
+        This currently uses a DB but will eventually use a proper message
+        queue. For this reason the method has not been moved to the database
+        interface.
+        """
+        doc = {'src': src, 'dst': dst, 'msg': data}
+        self.db_msg.insert(doc)
+        return True, ''
+
+    @typecheck
+    def recvMessage(self, obj_id: bytes):
+        # Retrieve and remove a matching document from Mongo.
+        doc = self.db_msg.find_and_modify({'dst': obj_id}, remove=True)
+
+        # Format the return message.
+        if doc is None:
+            msg = b''
+        else:
+            # Protocol: sender, message.
+            msg = doc['src'] + doc['msg']
+        return True, msg
+
+    @typecheck
+    def spawn(self, ctrl_name:str, templateID:bytes, sv: btInterface.BulletData):
+        ok, data = self.getTemplate(templateID)
+        if not ok:
+            return False, 'Invalid Template ID'
+        else:
+            cshape, geo, boosters, factories = data
+
+        # Unpack the SV, then overwrite the supplied CS information.
+        sv.cshape[:] = np.fromstring(cshape)
+        sv = btInterface.pack(sv).tostring()
+
+        # Find and launch the Controller.
+        prog = self.getControllerClass(ctrl_name)
+        if prog is None:
+            return False, 'Unknown Controller Name'
+
+        new_id = util.int2id(self.getUniqueID())
+        self.processes[new_id] = PythonInstance(prog, new_id)
+        self.processes[new_id].start()
+        btInterface.spawn(new_id, sv, templateID)
+        return True, new_id
+
+    @typecheck
+    def getStateVariables(self, objIDs: (list, tuple)):
+        """
+        Return the latest state variables for all ``objIDs``.
+        """
+        # Get the State Variables.
+        ok, sv = btInterface.getStateVariables(objIDs)
+        if not ok:
+            return False, 'One or more IDs do not exist'
+        else:
+            out = b''
+            for _id, _sv in zip(objIDs, sv):
+                out += _id + _sv
+            return True, out
+
+    @typecheck
+    def getGeometry(self, templateID: bytes):
+        # Retrieve the geometry. Return an error if the ID does not
+        # exist. Note: an empty geometry field is valid.
+        doc = self.db_templateID.find_one({'templateID': templateID})
+        if doc is None:
+            return False, 'ID does not exist'
+        else:
+            return True, doc['geometry']
+
+    @typecheck
+    def setForce(self, objID: bytes, force: np.ndarray, rpos: np.ndarray):
+        ok = btInterface.setForce(objID, force, rpos)
+        if ok:
+            return True, ''
+        else:
+            return False, 'ID does not exist'
+
+    def suggestPosition(self, objID: bytes, pos: np.ndarray):
+        ok = btInterface.setSuggestedPosition(objID, pos)
+        if ok:
+            return True, ''
+        else:
+            return False, 'ID does not exist'
+
+    @typecheck
+    def getTemplateID(self, objID: bytes):
+        ok, templateID = btInterface.getTemplateID(objID)
+        if ok:
+            return True, templateID
+        else:
+            return False, 'Could not find templateID for <{}>'.format(templateID)
+
+    @typecheck
+    def getAllObjectIDs(self, args=None):
+        # The ID is zero: retrieve all objects and concatenate the SV
+        # byte strings.
+        #
+        # The ``args`` command is empty but needs to be there to ensure
+        # a consistent calling signature for runCommand.
+        ok, data = btInterface.getAllObjectIDs()
+        if not ok:
+            return False, data
+        else:
+            ret = b''.join(data)
+            return True, ret
+
+    @typecheck
+    def runCommand(self, fun_unpack, fun_cmd, fun_pack=None):
+        ok, out = fun_unpack(self.payload)
+        if not ok:
+            self.returnErr(self.last_addr, out)
+        else:
+            out = fun_cmd(*out)
+            ok, out = out[0], out[1]
+            if ok:
+                if fun_pack is not None:
+                    out = fun_pack(*out)
+                self.returnOk(self.last_addr, out)
+            else:
+               self.returnErr(self.last_addr, out)
+
+    def processCmd(self):
+        """
+        Unpickle the received command and all the respective handler method.
+        """
+
+        # Read from ROUTER socket and perform sanity checks.
+        msg = self.sock_cmd.recv_multipart()
         assert len(msg) == 3
-        addr, empty, msg = msg[0], msg[1], msg[2]
+        self.last_addr, empty, msg = msg[0], msg[1], msg[2]
         assert empty == b''
 
+        # Sanity check: every message must contain at least a command byte.
         if len(msg) == 0:
-            # Sanity check: every message must contain at least a command byte.
-            self.returnErr(addr, 'Did not receive command word.')
+            self.returnErr(self.last_addr, 'Did not receive command word.')
             return
 
         # Split message into command word and payload.
-        cmd, payload = msg[:1], msg[1:]
+        cmd, self.payload = msg[:1], msg[1:]
 
         if cmd == config.cmd['ping_clerk']:
             # Return a hard coded 'pong' message.
-            self.returnOk(addr, 'pong clerk'.encode('utf8'))
+            self.returnOk(self.last_addr, 'pong clerk'.encode('utf8'))
         elif cmd == config.cmd['get_id']:
             # Create new ID, encode it as a byte stream, and send to client.
             new_id = util.int2id(self.getUniqueID())
-            self.returnOk(addr, new_id)
+            self.returnOk(self.last_addr, new_id)
         elif cmd == config.cmd['send_msg']:
-            # Client wants to clerk a message to another client.
-            src = payload[:config.LEN_ID]
-            dst = payload[config.LEN_ID:2 * config.LEN_ID]
-            data = payload[2 * config.LEN_ID:]
-
-            if len(dst) != config.LEN_ID:
-                self.returnErr(addr, 'Insufficient arguments')
-            else:
-                # Add the message to the queue in Mongo.
-                doc = {'src': src, 'dst': dst, 'msg': data}
-                self.db_msg.insert(doc)
-
-                # Acknowledge that everything went well.
-                self.returnOk(addr)
+            self.runCommand(unpack.sendMsg, self.sendMessage)
         elif cmd == config.cmd['get_msg']:
-            # Check if any messages for a particular controller ID are
-            # pending. Return the first such message if there are any and
-            # remove them from the queue. The controller ID is the only
-            # payload.
-            obj_id = payload[:config.LEN_ID]
-
-            if len(obj_id) != config.LEN_ID:
-                self.returnErr(addr, 'Insufficient arguments')
-                return
-
-            # Retrieve and remove a matching document from Mongo.
-            doc = self.db_msg.find_and_modify({'dst': obj_id}, remove=True)
-
-            # Format the return message.
-            if doc is None:
-                msg = b''
-            else:
-                # Protocol: sender, message.
-                msg = doc['src'] + doc['msg']
-            self.returnOk(addr, msg)
+            self.runCommand(unpack.recvMsg, self.recvMessage)
         elif cmd == config.cmd['spawn']:
-            # Spawn a new object/controller.
-
-            if len(payload) == 0:
-                self.returnErr(addr, 'Insufficient arguments')
-                return
-
-            # Extract name of Python object to launch. The first byte denotes
-            # the length of that name (in bytes).
-            name_len = payload[0]
-            if len(payload) != (name_len + 1 + 8 + config.LEN_SV_BYTES):
-                self.returnErr(addr, 'Invalid Payload Length')
-                return
-
-            # Extract and decode the Controller name.
-            ctrl_name = payload[1:name_len+1]
-            ctrl_name = ctrl_name.decode('utf8')
-
-            # Query the object description ID to spawn.
-            objdesc = payload[name_len+1:name_len+1+8]
-            sv = payload[name_len+1+8:]
-
-            tmp = self.getObjectDescription(objdesc)
-            if tmp is None:
-                self.returnErr(addr, 'Invalid Raw Object ID')
-                return
-            else:
-                # Unpack the return values.
-                cshape, geo, boosters, factories = tmp
-                del tmp
-
-            # Unpack the SV, then overwrite the supplied CS information.
-            sv = btInterface.unpack(np.fromstring(sv))
-            sv.cshape[:] = np.fromstring(cshape)
-            sv = btInterface.pack(sv).tostring()
-
-            # Find and launch the Controller.
-            prog = self.getControllerClass(ctrl_name)
-            if prog is None:
-                self.returnErr(addr, 'Unknown Controller Name')
-            else:
-                new_id = util.int2id(self.getUniqueID())
-                self.processes[new_id] = PythonInstance(prog, new_id)
-                self.processes[new_id].start()
-                btInterface.add(new_id, sv, objdesc)
-                self.returnOk(addr, new_id)
+            self.runCommand(unpack.spawn, self.spawn)
         elif cmd == config.cmd['get_statevar']:
-            # Return the state variables as a byte string preceeded by the
-            # controller ID. If the requested ID is zero return the state
-            # variables for all objects as a concatenated byte stream.
-
-            # Payload must be exactly one ID.
-            if len(payload) != config.LEN_ID:
-                self.returnErr(addr, 'Insufficient arguments')
-                return
-
-            if util.id2int(payload) == 0:
-                # The ID is zero: retrieve all objects and concatenate the SV
-                # byte strings.
-                data, ok = btInterface.getAll()
-                if not ok:
-                    self.returnErr(addr, 'Could not retrieve objects')
-                else:
-                    ret = [_ + data[_] for _ in data]
-                    ret = b''.join(ret)
-                    self.returnOk(addr, ret)
-            else:
-                # If the ID is non-zero then retrieve the SV for that
-                # controller, or return an error if no such controller ID
-                # exists.
-                doc, ok = btInterface.get(payload)
-                if not ok:
-                    self.returnErr(addr, 'ID does not exist')
-                else:
-                    self.returnOk(addr, payload + doc)
-        elif cmd == config.cmd['new_raw_object']:
-            # Payload must consist of at least a collision shape (4 float64).
-            if len(payload) < 4 * 8:
-                self.returnErr(addr, 'Insufficient arguments')
-                return
-
-            # Unpack the data.
-            cshape, geometry = payload[:32], payload[32:]
-
-            # Geometry can only be a valid mesh of triangles if its length is a
-            # multiple of 9.
-            if len(geometry) % 9 != 0:
-                self.returnErr(addr, 'Geometry is not a multiple of 9')
-                return
-
-            # Create the new raw object and return its ID.
-            objdesc = self.createObjectDescription(cshape, geometry, [], [])
-            self.returnOk(addr, objdesc)
+            self.runCommand(unpack.getSV, self.getStateVariables)
+        elif cmd == config.cmd['new_template']:
+            self.runCommand(unpack.newTemplate, self.newTemplate)
         elif cmd == config.cmd['get_geometry']:
-            # Payload must be exactly one objdescid.
-            if len(payload) != 8:
-                self.returnErr(addr, 'Insufficient arguments')
-                return
-
-            # Retrieve the geometry. Return an error if the ID does not
-            # exist. Note: an empty geometry field is valid.
-            doc = self.db_objdesc.find_one({'objdesc': payload})
-            if doc is None:
-                self.returnErr(addr, 'ID does not exist')
-            else:
-                self.returnOk(addr, doc['geometry'])
+            self.runCommand(unpack.getGeometry, self.getGeometry)
         elif cmd == config.cmd['set_force']:
-            # Payload must comprise one ID plus two 3-element vectors (8 Bytes
-            # each) for force and relative position of that force with respect
-            # to the center of mass.
-            if len(payload) != (config.LEN_ID + 6 * 8):
-                self.returnErr(addr, 'Insufficient arguments')
-                return
-
-            # Unpack the ID and 'force' value, then issue the update.
-            obj_id = payload[:config.LEN_ID]
-            _ = config.LEN_ID
-            force, rpos = payload[_:_ + 3 * 8], payload[_ + 3 * 8:_ + 6 * 8]
-            force, rpos = np.fromstring(force), np.fromstring(rpos)
-            ok = btInterface.setForce(obj_id, force, rpos)
-            if ok:
-                self.returnOk(addr)
-            else:
-                self.returnErr(addr, 'ID does not exist')
+            self.runCommand(unpack.setForce, self.setForce)
         elif cmd == config.cmd['suggest_pos']:
-            # Payload must be exactly one ID plus a 3-element position vector
-            # with 8 Bytes (64 Bits) each.
-            if len(payload) != (config.LEN_ID + 3 * 8):
-                self.returnErr(addr, 'Insufficient arguments')
-                return
-
-            # Unpack the suggested position.
-            obj_id, pos = payload[:config.LEN_ID], payload[config.LEN_ID:]
-            pos = np.fromstring(pos)
-            ok = btInterface.setSuggestedPosition(obj_id, pos)
-            if ok:
-                self.returnOk(addr)
-            else:
-                self.returnErr(addr, 'ID does not exist')
+            self.runCommand(unpack.suggestPos, self.suggestPosition)
+        elif cmd == config.cmd['get_template']:
+            self.runCommand(unpack.getTemplate, self.getTemplate, self.delme)
         elif cmd == config.cmd['get_template_id']:
-            objdesc, ok = btInterface.getTemplateID(payload)
-            if ok:
-                self.returnOk(addr, objdesc)
-            else:
-                msg = 'Could not find objdesc for <{}>'.format(payload)
-                self.returnErr(addr, msg)
+            self.runCommand(unpack.getTemplateID, self.getTemplateID)
+        elif cmd == config.cmd['add_template']:
+            self.runCommand(unpack.addTemplate, self.addTemplate)
+        elif cmd == config.cmd['get_all_objids']:
+            self.runCommand(unpack.getAllObjectIDs, self.getAllObjectIDs)
         else:
-            self.returnErr(addr, 'Invalid Command')
+            self.returnErr(self.last_addr, 'Invalid Command')

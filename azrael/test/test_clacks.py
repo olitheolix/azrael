@@ -53,6 +53,8 @@ def test_server():
 
     clerk.terminate()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
@@ -75,6 +77,8 @@ def test_connect():
     clerk.terminate()
     server.join()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
@@ -103,6 +107,7 @@ def test_timeout():
     clerk.terminate()
     server.join()
     clerk.join()
+    killall()
 
     print('Test passed')
 
@@ -129,6 +134,8 @@ def test_clerk_ping():
     clerk.terminate()
     server.join()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
@@ -146,13 +153,15 @@ def test_websocket_getID():
 
     # Make sure we are connected.
     client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
-    assert client.getID() == (int2id(1), True)
+    assert client.getID() == (True, int2id(1))
 
     # Shutdown.
     server.terminate()
     clerk.terminate()
     server.join()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
@@ -175,8 +184,8 @@ def test_spawn_one_controller():
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
     # was already given to the controller in the WS handler).
-    objdesc = np.int64(1).tostring()
-    ctrl_id, ok = client.spawn('Echo', objdesc, np.zeros(3))
+    templateID = np.int64(1).tostring()
+    ok, ctrl_id = client.spawn('Echo', templateID, np.zeros(3))
     assert (ctrl_id, ok) == (int2id(2), True)
 
     # Shutdown.
@@ -184,6 +193,8 @@ def test_spawn_one_controller():
     clerk.terminate()
     server.join()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
@@ -207,19 +218,19 @@ def test_spawn_and_talk_to_one_controller():
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
     # was already given to the controller in the WS handler).
-    objdesc = np.int64(1).tostring()
-    client_id, ok = client.spawn('Echo', objdesc, np.zeros(3))
-    assert (client_id, ok) == (int2id(2), True)
+    templateID = np.int64(1).tostring()
+    ok, client_id = client.spawn('Echo', templateID, np.zeros(3))
+    assert (ok, client_id) == (True, int2id(2))
 
     # Dispatch the test message.
     msg_orig = 'test'.encode('utf8')
-    ret, ok = client.sendMessage(client_id, msg_orig)
+    ok, ret = client.sendMessage(client_id, msg_orig)
     assert ok
 
     # Fetch the response. The responses may not be immediate available so poll
     # a few times.
     for ii in range(5):
-        src, msg_ret = client.getMessage()
+        src, msg_ret = client.recvMessage()
         if src is not None:
             break
         time.sleep(0.1)
@@ -235,6 +246,8 @@ def test_spawn_and_talk_to_one_controller():
     clerk.terminate()
     server.join()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
@@ -257,31 +270,34 @@ def test_spawn_and_get_state_variables():
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
     # was already given to the controller in the WS handler).
-    objdesc = np.int64(1).tostring()
-    id_0, ok = client.spawn('Echo', objdesc, pos=np.ones(3), vel=-np.ones(3))
-    assert (id_0, ok) == (int2id(2), True)
+    templateID = np.int64(1).tostring()
+    ok, id_0 = client.spawn('Echo', templateID, pos=np.ones(3), vel=-np.ones(3))
+    assert (ok, id_0) == (True, int2id(2))
 
-    sv, ok = client.getStateVariables(id_0)
-    assert (len(sv), ok) == (1, True)
+    ok, sv = client.getStateVariables(id_0)
+    assert (len(sv), ok) == (True, 1)
     assert id_0 in sv
     assert np.array_equal(sv[id_0].position, np.ones(3))
     assert np.array_equal(sv[id_0].velocityLin, -np.ones(3))
 
-    sv, ok = client.getStateVariables(None)
-    assert (len(sv), ok) == (1, True)
-    assert id_0 in sv
+    ok, all_ids = client.getAllObjectIDs()
+    assert (ok, all_ids) == (True, [id_0])
+
+    ok, sv = client.getStateVariables(id_0)
     assert np.array_equal(sv[id_0].position, np.ones(3))
     assert np.array_equal(sv[id_0].velocityLin, -np.ones(3))
 
     # Spawn two more controllers and query their state variables all at once.
-    id_1, ok = client.spawn('Echo', objdesc, pos=2 * np.ones(3), vel=-2 * np.ones(3))
-    assert (id_1, ok) == (int2id(3), True)
-    id_2, ok = client.spawn('Echo', objdesc, pos=3 * np.ones(3), vel=-3 * np.ones(3))
-    assert (id_2, ok) == (int2id(4), True)
-    sv, ok = client.getStateVariables(None)
-    assert (len(sv), ok) == (3, True)
-    for idx, ctrl_id in enumerate([id_0, id_1, id_2]):
-        assert ctrl_id in sv
+    ok, id_1 = client.spawn('Echo', templateID, pos=2 * np.ones(3), vel=-2 * np.ones(3))
+    assert (ok, id_1) == (True, int2id(3))
+    ok, id_2 = client.spawn('Echo', templateID, pos=3 * np.ones(3), vel=-3 * np.ones(3))
+    assert (ok, id_2) == (True, int2id(4))
+    
+    ok, all_ids = client.getAllObjectIDs()
+    assert (ok, set(all_ids)) == (True, set([id_0, id_1, id_2]))
+
+    ok, sv = client.getStateVariables(all_ids)
+    assert set(sv.keys()) == set(all_ids)
 
     assert np.array_equal(sv[id_0].position, 1 * np.ones(3))
     assert np.array_equal(sv[id_0].velocityLin, 1 * -np.ones(3))
@@ -294,15 +310,15 @@ def test_spawn_and_get_state_variables():
     # bug I once had.
     f = np.ones(3, np.float64)
     p = 2 * f
-    ret, ok = client.setForce(ctrl_id, f, p)
+    ok, ret = client.setForce(id_1, f, p)
     assert ok
-    ret, ok = client.setForce(ctrl_id, f + 1, p + 1)
+    ok, ret = client.setForce(id_1, f + 1, p + 1)
     assert ok
 
     # Set the suggested position.
-    ret, ok = client.suggestPosition(ctrl_id, f)
+    ok, ret = client.suggestPosition(id_1, f)
     assert ok
-    ret, ok = client.suggestPosition(ctrl_id, f + 1)
+    ok, ret = client.suggestPosition(id_1, f + 1)
     assert ok
     del f
 
@@ -311,6 +327,8 @@ def test_spawn_and_get_state_variables():
     clerk.terminate()
     server.join()
     clerk.join()
+    killall()
+
     print('Test passed')
 
 
@@ -336,17 +354,17 @@ def test_create_raw_objects():
     client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
     assert client.ping_clerk()
 
-    # Instruct the server to spawn an invisible dummy object (objdesc=1) and
+    # Instruct the server to spawn an invisible dummy object (templateID=1) and
     # assicate an 'Echo' instance with it. The call will return the ID of the
     # controller which must be '2' ('0' is invalid and '1' was already given to
     # the controller in the WS handler).
-    objdesc = np.int64(1).tostring()
-    id_0, ok = client.spawn('Echo', objdesc, np.zeros(3))
-    assert (id_0, ok) == (int2id(2), True)
+    templateID = np.int64(1).tostring()
+    ok, id_0 = client.spawn('Echo', templateID, np.zeros(3))
+    assert (ok, id_0) == (True, int2id(2))
 
-    # Must return no geometery becaus the default object (objdesc=1) has none.
-    geo_0, ok = client.getGeometry(objdesc)
-    assert (geo_0, ok) == (b'', True)
+    # Must return no geometery becaus the default object (templateID=1) has none.
+    ok, geo_0 = client.getGeometry(templateID)
+    assert (ok, geo_0) == (True, b'')
 
     # Define a new raw object. The geometry data is arbitrary but its length
     # must be divisible by 9.
@@ -354,19 +372,19 @@ def test_create_raw_objects():
     cs_0_ref = np.array([1, 1, 1, 1]).tostring()
     geo_1_ref = bytes(range(9, 18))
     cs_1_ref = np.array([3, 1, 1, 1]).tostring()
-    id_0, ok = client.newRawObject(cs_0_ref, geo_0_ref)
+    ok, id_0 = client.newObjectTemplate(cs_0_ref, geo_0_ref)
     assert ok
-    id_1, ok = client.newRawObject(cs_1_ref, geo_1_ref)
+    ok, id_1 = client.newObjectTemplate(cs_1_ref, geo_1_ref)
     assert ok
 
     # Check the geometries again.
-    geo_0, ok = client.getGeometry(id_0)
-    assert (geo_0, ok) == (geo_0_ref, True)
-    geo_1, ok = client.getGeometry(id_1)
-    assert (geo_1, ok) == (geo_1_ref, True)
+    ok, geo_0 = client.getGeometry(id_0)
+    assert (ok, geo_0) == (True, geo_0_ref)
+    ok, geo_1 = client.getGeometry(id_1)
+    assert (ok, geo_1) == (True, geo_1_ref)
 
     # Query the geometry of a non-existing object.
-    ret, ok = client.getGeometry(np.int64(200).tostring())
+    ok, ret = client.getGeometry(np.int64(200).tostring())
     assert not ok
 
     # Shutdown.
@@ -374,10 +392,109 @@ def test_create_raw_objects():
     clerk.terminate()
     server.join()
     clerk.join()
+    killall()
+
+    print('Test passed')
+
+
+def test_getAllObjectIDs():
+    """
+    Ensure the getAllObjectIDs command reaches Clerk.
+    """
+    killall()
+
+    # Parameters and constants for this test.
+    objID_2 = int2id(2)
+    templateID = np.int64(1).tostring()
+
+    # Start Clerk and instantiate two Controllers.
+    clerk = azrael.clerk.Clerk(reset=True)
+    clerk.start()
+    server = clacks.ClacksServer()
+    server.start()
+
+    # Make sure the system is live before attaching a client.
+    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    assert client.ping_clerk()
+
+    # So far no objects have been spawned.
+    ok, ret = client.getAllObjectIDs()
+    assert (ok, ret) == (True, [])
+
+    # Spawn a new object.
+    ok, ret = client.spawn('Echo', templateID, np.zeros(3))
+    assert (ok, ret) == (True, objID_2)
+
+    # The object list must now contain the ID of the just spawned object.
+    ok, ret = client.getAllObjectIDs()
+    assert (ok, ret) == (True, [objID_2])
+
+    # Terminate the Clerk.
+    clerk.terminate()
+    server.terminate()
+    clerk.join()
+    server.join()
+
+    # Kill all spawned Controller processes.
+    killall()
+
+    print('Test passed')
+
+
+def test_get_template():
+    """
+    Spawn some objects from the default templates and query their template IDs.
+    """
+    killall()
+
+    # Parameters and constants for this test.
+    id_0, id_1 = int2id(2), int2id(3)
+    templateID_0, templateID_1 = np.int64(1).tostring(), np.int64(3).tostring()
+
+    # Start Clerk and instantiate controller.
+    clerk = azrael.clerk.Clerk(reset=True)
+    clerk.start()
+    server = clacks.ClacksServer()
+    server.start()
+
+    # Make sure the system is live before attaching a client.
+    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    assert client.ping_clerk()
+
+    # Spawn a new object. It must have ID=2 because ID=1 was already given to
+    # the `ctrl` instance inside the websocket handler.
+    ok, ctrl_id = client.spawn('Echo', templateID_0, np.zeros(3))
+    assert (ok, ctrl_id) == (True, id_0)
+
+    # Spawn another object from a different template.
+    ok, ctrl_id = client.spawn('Echo', templateID_1, np.zeros(3))
+    assert (ok, ctrl_id) == (True, id_1)
+
+    # Retrieve template of first object.
+    ok, ret = client.getTemplateID(id_0)
+    assert (ok, ret) == (True, templateID_0)
+    
+    # Retrieve template of second object.
+    ok, ret = client.getTemplateID(id_1)
+    assert (ok, ret) == (True, templateID_1)
+    
+    # Attempt to retrieve a non-existing object.
+    ok, ret = client.getTemplateID(int2id(100))
+    assert not ok
+
+    # Shutdown.
+    server.terminate()
+    clerk.terminate()
+    server.join()
+    clerk.join()
+    killall()
+    
     print('Test passed')
 
 
 if __name__ == '__main__':
+    test_get_template()
+    test_getAllObjectIDs()
     test_create_raw_objects()
     test_spawn_one_controller()
     test_spawn_and_talk_to_one_controller()

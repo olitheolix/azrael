@@ -84,16 +84,16 @@ class WebsocketClient:
             return 'Invalid response from Clacks', False
 
         if ret[0] == 0:
-            return ret[1:], True
+            return True, ret[1:]
         else:
-            return ret[1:], False
+            return False, ret[1:]
 
     def ping(self):
         """
         Ping Clacks.
         """
         self.sendToClacks(config.cmd['ping_clacks'])
-        msg, ok = self.recvFromClacks()
+        ok, msg = self.recvFromClacks()
         if not ok:
             return False
         else:
@@ -104,7 +104,7 @@ class WebsocketClient:
         Ping Clerk.
         """
         self.sendToClacks(config.cmd['ping_clerk'])
-        msg, ok = self.recvFromClacks()
+        ok, msg = self.recvFromClacks()
         if not ok:
             return False
         else:
@@ -117,10 +117,10 @@ class WebsocketClient:
         self.sendToClacks(config.cmd['get_id'])
         return self.recvFromClacks()
 
-    def spawn(self, name: str, objdesc: bytes, pos: np.ndarray,
+    def spawn(self, name: str, templateID: bytes, pos: np.ndarray,
               vel=np.zeros(3), scale=1, radius=1, imass=1):
         """
-        Spawn the ``objdesc`` object at ``pos`` and launch the associated
+        Spawn the ``templateID`` object at ``pos`` and launch the associated
         ``name``controller for it.
 
         The new object will have initial velocity ``vel``.
@@ -136,7 +136,7 @@ class WebsocketClient:
         cmd += bytes([len(name.encode('utf8'))]) + name.encode('utf8')
         sv = btInterface.defaultData(position=pos, vlin=vel, cshape=cshape,
                                      scale=scale, radius=radius, imass=imass)
-        cmd += objdesc + btInterface.pack(sv).tostring()
+        cmd += templateID + btInterface.pack(sv).tostring()
         self.sendToClacks(cmd)
         return self.recvFromClacks()
 
@@ -168,7 +168,7 @@ class WebsocketClient:
         self.sendToClacks(cmd)
         return self.recvFromClacks()
 
-    def newRawObject(self, cshape: bytes, geometry: bytes):
+    def newObjectTemplate(self, cshape: bytes, geometry: bytes):
         """
         Create a new raw object with ``geometry`` and collision shape ``cs``. 
 
@@ -181,7 +181,7 @@ class WebsocketClient:
         assert isinstance(geometry, bytes)
         assert len(geometry) % 9 == 0
 
-        cmd = config.cmd['new_raw_object'] + cshape + geometry
+        cmd = config.cmd['new_template'] + cshape + geometry
         self.sendToClacks(cmd)
         return self.recvFromClacks()
 
@@ -202,14 +202,14 @@ class WebsocketClient:
         self.sendToClacks(config.cmd['send_msg'] + target + msg)
         return self.recvFromClacks()
 
-    def getMessage(self):
+    def recvMessage(self):
         """
         Check for new messages.
 
         The WS handler will use its own Controller to do the fetch.
         """
         self.sendToClacks(config.cmd['get_msg'])
-        ret, ok = self.recvFromClacks()
+        ok, ret = self.recvFromClacks()
 
         if ok:
             if len(ret) < config.LEN_ID:
@@ -223,21 +223,18 @@ class WebsocketClient:
         # Return message- source and body.
         return src, data
 
-    def getStateVariables(self, ctrl_id):
+    def getStateVariables(self, ctrl_ids):
         """
-        Return the state variables for ``ctrl_id``.
-
-        Return all state variables if ``ctrl_id`` is zero.
+        Return the state variables for all ``ctrl_ids``.
         """
-        # If no ctrl_id was specified use '0' (means all).
-        if ctrl_id is None:
-            ctrl_id = util.int2id(0)
-
-        assert isinstance(ctrl_id, bytes)
-        self.sendToClacks(config.cmd['get_statevar'] + ctrl_id)
-        ret, ok = self.recvFromClacks()
+        if isinstance(ctrl_ids, (list, tuple)):
+            ctrl_ids = b''.join(ctrl_ids)
+            
+        assert isinstance(ctrl_ids, bytes)
+        self.sendToClacks(config.cmd['get_statevar'] + ctrl_ids)
+        ok, ret = self.recvFromClacks()
         if not ok:
-            return {}, False
+            return False, {}
 
         # The available data must be an integer multiple of an ID plus SV.
         l = config.LEN_ID + config.LEN_SV_BYTES
@@ -251,7 +248,23 @@ class WebsocketClient:
             data = bytes(data)
             sv = np.fromstring(data[config.LEN_ID:])
             out[data[:config.LEN_ID]] = btInterface.unpack(sv)
-        return out, True
+        return True, out
+
+    def getAllObjectIDs(self):
+        """
+        Return all object IDs in the simulation.
+        """
+        self.sendToClacks(config.cmd['get_all_objids'])
+        ok, ret = self.recvFromClacks()
+        if not ok:
+            return False, []
+
+        # The available data must be an integer multiple of an ID plus SV.
+        assert (len(ret) % config.LEN_ID) == 0
+
+        # Split the byte string into a list of object IDs.
+        out = [bytes(_) for _ in cytoolz.partition(config.LEN_ID, ret)]
+        return True, out
 
     def getTemplateID(self, ctrl_id):
         """
@@ -259,8 +272,8 @@ class WebsocketClient:
         """
         assert isinstance(ctrl_id, bytes)
         self.sendToClacks(config.cmd['get_template_id'] + ctrl_id)
-        ret, ok = self.recvFromClacks()
+        ok, ret = self.recvFromClacks()
         if not ok:
-            return None, False
+            return False, None
         else:
-            return ret, True
+            return True, ret

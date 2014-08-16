@@ -58,8 +58,9 @@ LEN_SV_BYTES = 21 * 8
 # byte. For instance: 'cmd' could be {'get_msg': bytes([0]), 'clerk':
 # bytes([1])}. Note: the 'invalid_cmd' is purely for testing the Clerk.
 commands = ('invalid_cmd', 'ping_clerk', 'ping_clacks', 'get_id', 'spawn',
-            'get_statevar', 'new_raw_object', 'get_geometry', 'set_force',
-            'suggest_pos', 'send_msg', 'get_msg', 'get_template_id')
+            'get_statevar', 'new_template', 'get_geometry', 'set_force',
+            'suggest_pos', 'send_msg', 'get_msg', 'get_template_id',
+            'get_template', 'add_template', 'get_all_objids')
 cmd = dict(zip(commands, [bytes([_]) for _ in range(len(commands))]))
 del commands
 
