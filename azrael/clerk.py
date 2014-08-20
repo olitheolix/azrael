@@ -27,6 +27,7 @@ import multiprocessing
 import zmq.eventloop.zmqstream
 import numpy as np
 
+import azrael.json as json
 import azrael.util as util
 import azrael.types as types
 import azrael.unpack as unpack
@@ -258,22 +259,10 @@ class Clerk(multiprocessing.Process):
         return True, (cs, geo, boosters, factories)
         
     def delme(self, cs, geo, boosters, factories):
-        import json
-        class NumpyAwareJSONEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, np.ndarray) and obj.ndim == 1:
-                    return obj.tolist()
-                if isinstance(obj, bytes):
-                    return list(obj)
-                if isinstance(obj, np.int64):
-                    return int(obj)
-                if isinstance(obj, np.float64):
-                    return float(obj)
-                return json.JSONEncoder.default(self, obj)
         d = {'cs': cs, 'geo': geo, 'boosters': boosters,
              'factories': factories}
         
-        return json.dumps(d, cls=NumpyAwareJSONEncoder).encode('utf8')
+        return json.dumps(d).encode('utf8')
         
     @typecheck
     def newTemplate(self, cshape: bytes, geometry: bytes):
