@@ -28,6 +28,7 @@ import azrael.json as json
 import azrael.util as util
 import azrael.types as types
 import azrael.config as config
+import azrael.protocol as protocol
 import azrael.bullet.btInterface as btInterface
 
 from azrael.typecheck import typecheck
@@ -105,7 +106,13 @@ class ControllerBase(multiprocessing.Process):
         assert isinstance(target, bytes)
         assert isinstance(msg, bytes)
         assert len(target) == config.LEN_ID
-        return self._sendMessage(target + msg)
+
+        ok, data = protocol.ToClerk_SendMsg_Encode(self.objID, target, msg)
+        ok, data = self.sendToClerk(config.cmd['send_msg'] + data)
+        if not ok:
+            return ok, data
+        else:
+            return protocol.FromClerk_SendMsg_Decode(data)
 
     def _recvMessage(self):
         return self.sendToClerk(config.cmd['get_msg'] + self.objID)
@@ -119,18 +126,13 @@ class ControllerBase(multiprocessing.Process):
         """
         # Sanity check.
         assert len(self.objID) == config.LEN_ID
-        ok, ret = self._recvMessage()
-        if ok:
-            if len(ret) < config.LEN_ID:
-                src, data = None, b''
-            else:
-                # Protocol: sender ID, data
-                src, data = ret[:config.LEN_ID], ret[config.LEN_ID:]
-        else:
-            src, data = None, b''
 
-        # Return message- source and body.
-        return src, data
+        ok, data = protocol.ToClerk_RecvMsg_Encode(self.objID)
+        ok, data = self.sendToClerk(config.cmd['get_msg'] + data)
+        if not ok:
+            return ok, data
+        else:
+            return protocol.FromClerk_RecvMsg_Decode(data)
 
     def ping(self):
         """
@@ -140,18 +142,19 @@ class ControllerBase(multiprocessing.Process):
         """
         return self.sendToClerk(config.cmd['ping_clerk'])
 
+    @typecheck
     def _newObjectTemplate(self, data: bytes):
-        assert isinstance(data, bytes)
         return self.sendToClerk(config.cmd['new_template'] + data)
 
-    def newObjectTemplate(self, cshape: bytes, geometry: bytes):
+    @typecheck
+    def newObjectTemplate(self, cshape: np.ndarray, geometry: np.ndarray):
         """
         Create a new object template with ``geometry`` and collision shape
         ``cs``.
         """
-        assert isinstance(cshape, bytes)
-        assert isinstance(geometry, bytes)
-        return self._newObjectTemplate(cshape + geometry)
+        a, b = cshape.tostring(), geometry.tostring()
+        ret = self._newObjectTemplate(a + b)
+        return ret
 
     def _getGeometry(self, data: bytes):
         assert isinstance(data, bytes)
@@ -175,12 +178,16 @@ class ControllerBase(multiprocessing.Process):
         Spawn the ``templateID`` object at ``pos`` and launch the associated
         ``name``controller for it.
         """
-        cmd = bytes([len(name.encode('utf8'))]) + name.encode('utf8')
         cshape = [0, 1, 1, 1]
         sv = btInterface.defaultData(position=pos, vlin=vel, cshape=cshape,
                                      scale=scale, radius=radius, imass=imass)
-        cmd += templateID + btInterface.pack(sv).tostring()
-        return self._spawn(cmd)
+
+        ok, data = protocol.ToClerk_Spawn_Encode(name, templateID, sv)
+        ok, data = self.sendToClerk(config.cmd['spawn'] + data)
+        if not ok:
+            return ok, data
+        else:
+            return protocol.FromClerk_Spawn_Decode(data)
 
     def _getTemplateID(self, data: bytes):
         return self.sendToClerk(config.cmd['get_template_id'] + data)
@@ -191,26 +198,30 @@ class ControllerBase(multiprocessing.Process):
         """
         return self._getTemplateID(ctrl_id)
 
-    def _getTemplate(self, data: bytes): 
-        ok, data = self.sendToClerk(config.cmd['get_template'] + data)
-        if ok:
-            import collections
-            data = json.loads(data)
-            boosters = [types.booster(*_) for _ in data['boosters']]
-            factories = [types.factory(*_) for _ in data['factories']]
-            nt = collections.namedtuple('Generic', 'cs geo boosters factories')
-            ret = nt(np.fromstring(bytes(data['cs'])),
-                     np.fromstring(bytes(data['geo'])),
-                     boosters, factories)
-            return True, ret
-        else:
-            return ok, data
+    def _getTemplateEncode(self, data):
+        return data
+
+    def _getTemplateDecode(self, data: bytes): 
+        import collections
+        data = json.loads(data)
+        boosters = [types.booster(*_) for _ in data['boosters']]
+        factories = [types.factory(*_) for _ in data['factories']]
+        nt = collections.namedtuple('Generic', 'cs geo boosters factories')
+        ret = nt(np.fromstring(bytes(data['cs'])),
+                 np.fromstring(bytes(data['geo'])),
+                 boosters, factories)
+        return ret
 
     def getTemplate(self, templateID: bytes):
         """
         Retrieve the data for ``templateID``.
         """
-        return self._getTemplate(templateID)
+        ok, data = protocol.ToClerk_GetTemplate_Encode(templateID)
+        ok, data = self.sendToClerk(config.cmd['get_template'] + data)
+        if not ok:
+            return ok, data
+        else:
+            return protocol.FromClerk_GetTemplate_Decode(data)
 
     def _addTemplate(self, data: bytes): 
         return self.sendToClerk(config.cmd['add_template'] + data)
@@ -220,13 +231,12 @@ class ControllerBase(multiprocessing.Process):
         """
         Retrieve the data for ``templateID``.
         """
-        cs = cs.tostring()
-        geo = geo.tostring()
-        d = {'cs': cs, 'geo': geo, 'boosters': boosters,
-             'factories': factories}
-        d = json.dumps(d).encode('utf8')
-
-        return self._addTemplate(d)
+        ok, data = protocol.ToClerk_AddTemplate_Encode(cs, geo, boosters, factories)
+        ok, data = self.sendToClerk(config.cmd['add_template'] + data)
+        if not ok:
+            return ok, data
+        else:
+            return protocol.FromClerk_AddTemplate_Decode(data)
 
     def _getStateVariables(self, data: bytes):
         return self.sendToClerk(config.cmd['get_statevar'] + data)
@@ -257,19 +267,16 @@ class ControllerBase(multiprocessing.Process):
 
         return self._setStateVariables(ctrl_id + force + pos)
 
-    def _getAllObjectIDs(self):
-        return self.sendToClerk(config.cmd['get_all_objids'])
-
     def getAllObjectIDs(self):
         """
         Set the ``force`` for ``ctrl_id``.
         """
-        ok, data = self._getAllObjectIDs()
+        ok, data = protocol.ToClerk_GetAllObjectIDs_Encode()
+        ok, data = self.sendToClerk(config.cmd['get_all_objids'] + data)
         if not ok:
             return ok, data
-
-        data = [bytes(_) for _ in cytoolz.partition(config.LEN_ID, data)]
-        return True, data
+        else:
+            return protocol.FromClerk_GetAllObjectIDs_Decode(data)
 
     def run(self):
         """
@@ -287,7 +294,11 @@ class ControllerBase(multiprocessing.Process):
 
         while True:
             # See if we got any messages.
-            src, data = self.recvMessage()
+            ok, data = self.recvMessage()
+            if ok:
+                src, msg = data
+            else:
+                src, msg = None, None
 
             # If not, wait a bit and then ask again.
             if src is None:
@@ -295,4 +306,5 @@ class ControllerBase(multiprocessing.Process):
                 continue
 
             # Prefix the message with our ID and return to sender.
-            self.sendMessage(src, self.objID + data)
+            print('Ctrl (received, sent): ', msg, self.objID + msg)
+            self.sendMessage(src, self.objID + msg)

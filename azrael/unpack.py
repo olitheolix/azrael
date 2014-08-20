@@ -21,6 +21,7 @@ The functions in this module decode the byte strings sent to Clerk.
 
 import cytoolz
 import numpy as np
+import azrael.json as json
 import azrael.util as util
 import azrael.types as types
 import azrael.config as config
@@ -104,7 +105,7 @@ def newTemplate(payload: bytes):
         return False, 'Insufficient arguments'
 
     # Unpack the data.
-    cshape, geometry = payload[:32], payload[32:]
+    cshape, geometry = np.fromstring(payload[:32]), np.fromstring(payload[32:])
     return True, (cshape, geometry)
 
 
@@ -154,14 +155,6 @@ def getTemplateID(payload: bytes):
 
     return True, (payload, )
 
-@typecheck
-def getTemplate(payload: bytes):
-    # Payload must be exactly one templateID.
-    if len(payload) != 8:
-        return False, 'Invalid object ID encoding'
-
-    return True, (payload, )
-
 
 @typecheck
 def getAllObjectIDs(payload: bytes):
@@ -170,15 +163,3 @@ def getAllObjectIDs(payload: bytes):
     else:
         return False, 'Invalid payload'
 
-
-@typecheck
-def addTemplate(payload: bytes):
-    import json, collections
-    data = payload.decode('utf8')
-    data = json.loads(data)
-    boosters = [types.booster(*_) for _ in data['boosters']]
-    factories = [types.factory(*_) for _ in data['factories']]
-    cs = bytes(data['cs'])
-    geo = bytes(data['geo'])
-
-    return True, (cs, geo, boosters, factories)

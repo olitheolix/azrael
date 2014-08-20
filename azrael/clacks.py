@@ -65,11 +65,11 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         self.controller.setupZMQ()
         self.controller.connectToClerk()
 
-    def controllerWrap(self, func, payload):
+    def controllerWrap(self, cmd, payload):
         if len(payload) == 0:
-            ok, ret = func()
+            ok, ret = self.controller.sendToClerk(cmd)
         else:
-            ok, ret = func(payload)
+            ok, ret = self.controller.sendToClerk(cmd + payload)
 
         if ok:
             ret = b'\x00' + ret
@@ -105,33 +105,12 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         elif cmd == config.cmd['get_id']:
             msg = b'\x00' + self.controller.objID
             self.write_message(msg, binary=True)
-        elif cmd == config.cmd['ping_clerk']:
-            self.controllerWrap(self.controller.ping, payload)
-        elif cmd == config.cmd['get_geometry']:
-            self.controllerWrap(self.controller._getGeometry, payload)
-        elif cmd == config.cmd['new_template']:
-            self.controllerWrap(self.controller._newObjectTemplate, payload)
-        elif cmd == config.cmd['spawn']:
-            self.controllerWrap(self.controller._spawn, payload)
-        elif cmd == config.cmd['get_statevar']:
-            self.controllerWrap(self.controller._getStateVariables, payload)
-        elif cmd == config.cmd['set_force']:
-            self.controllerWrap(self.controller._setStateVariables, payload)
-        elif cmd == config.cmd['suggest_pos']:
-            self.controllerWrap(self.controller._suggestPosition, payload)
         elif cmd == config.cmd['send_msg']:
-            self.controllerWrap(self.controller._sendMessage, payload)
+            self.controllerWrap(cmd, self.controller.objID + payload)
         elif cmd == config.cmd['get_msg']:
-            self.controllerWrap(self.controller._recvMessage, payload)
-        elif cmd == config.cmd['get_template_id']:
-            self.controllerWrap(self.controller._getTemplateID, payload)
-        elif cmd == config.cmd['get_all_objids']:
-            self.controllerWrap(self.controller._getAllObjectIDs, payload)
+            self.controllerWrap(cmd, self.controller.objID + payload)
         else:
-            # Unknown command code: acknowledge and ignore.
-            msg = 'WS: invalid command code <{}>'.format(cmd)
-            self.logit.warning(msg)
-            self.write_message(b'\x01' + msg.encode('utf8'), binary=True)
+            self.controllerWrap(cmd, payload)
 
     def on_close(self):
         """

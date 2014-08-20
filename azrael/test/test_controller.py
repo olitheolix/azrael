@@ -17,6 +17,8 @@ import azrael.clerk
 import azrael.clacks
 import azrael.controller
 import azrael.types as types
+import azrael.protocol as protocol
+import azrael.unpack as unpack
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
 
@@ -111,8 +113,15 @@ def test_spawn_and_talk_to_one_controller():
     # Fetch the response. Poll for it a few times because it may not arrive
     # immediately.
     for ii in range(5):
-        src, msg_ret = ctrl.recvMessage()
-        if src is not None:
+        ok, data = ctrl.recvMessage()
+        assert isinstance(ok, bool)
+        print(data)
+        if ok:
+            src, msg_ret = data
+        else:
+            src, msg_ret = None, None
+
+        if ok and (src is not None):
             break
         time.sleep(0.1)
     assert src is not None
@@ -120,8 +129,8 @@ def test_spawn_and_talk_to_one_controller():
     # The source must be the newly created process and the response must be the
     # original messages prefixed with the controller ID.
     assert src == ctrl_id
-    if ctrl_id + msg_orig != msg_ret:
-        print(msg_ret)
+    if (ctrl_id + msg_orig) != msg_ret:
+        print(ok, src, msg_ret)
     assert ctrl_id + msg_orig == msg_ret
 
     # Terminate the Clerk.
@@ -202,10 +211,10 @@ def test_multi_controller():
         # Every echo controller should return the same message prefixed with
         # its own ID.
         for ii in range(num_proc):
-            src, msg = ctrl.recvMessage()
+            ok, (src, msg) = ctrl.recvMessage()
             while len(msg) == 0:
                 time.sleep(.02)
-                src, msg = ctrl.recvMessage()
+                ok, (src, msg) = ctrl.recvMessage()
             # Start/end of message must both contain the dst ID.
             assert msg[:config.LEN_ID] == msg[-config.LEN_ID:]
     except AssertionError as e:
@@ -222,66 +231,6 @@ def test_multi_controller():
 
     if err is not None:
         raise err
-
-    killall()
-    print('Test passed')
-
-
-def test_create_template_objects():
-    """
-    Spawn default objects and query their geometry. Then define new objects
-    with custom geometry, spawn them, and check their geometry is correct.
-
-    This test is almost identical to
-    test_clacks.test_create_template_objects. The main difference is that this
-    one uses a controller instance directly, whereas the other test uses a
-    WS to connect to the controller.
-    """
-    killall()
-
-    # Start Clerk and instantiate Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
-
-    # Instruct the server to spawn an invisible dummy object (templateID=1) and
-    # assicate an 'Echo' instance with it. The call will return the ID of the
-    # controller which must be '2' ('0' is invalid and '1' was already given to
-    # the controller in the WS handler).
-    templateID = np.int64(1).tostring()
-    ok, id_0 = ctrl.spawn('Echo', templateID, np.zeros(3))
-    assert (ok, id_0) == (True, int2id(2))
-
-    # Must return no geometry because the default object (templateID=1) has none.
-    ok, geo_0 = ctrl.getGeometry(templateID)
-    assert (ok, geo_0) == (True, b'')
-
-    # Define a new object template. The geometry data is arbitrary but its
-    # length must be divisible by 9.
-    geo_0_ref = bytes(range(0, 9))
-    cs_0_ref = np.array([1, 1, 1, 1]).tostring()
-    geo_1_ref = bytes(range(9, 18))
-    cs_1_ref = np.array([3, 1, 1, 1]).tostring()
-    ok, id_0 = ctrl.newObjectTemplate(cs_0_ref, geo_0_ref)
-    assert ok
-    ok, id_1 = ctrl.newObjectTemplate(cs_1_ref, geo_1_ref)
-    assert ok
-
-    # Check the geometries again.
-    ok, geo_0 = ctrl.getGeometry(id_0)
-    assert (ok, geo_0) == (True, geo_0_ref)
-    ok, geo_1 = ctrl.getGeometry(id_1)
-    assert (ok, geo_1) == (True, geo_1_ref)
-
-    # Query the geometry for a non-existing object.
-    ok, ret = ctrl.getGeometry(np.int64(200).tostring())
-    assert not ok
-
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
 
     killall()
     print('Test passed')
@@ -323,6 +272,8 @@ def test_getAllObjectIDs():
 
     # Kill all spawned Controller processes.
     killall()
+    print('Test passed')
+
 
 def test_get_template():
     """
@@ -438,7 +389,7 @@ def test_create_fetch_template():
     assert len(ret.boosters) == 2
     assert len(ret.factories) == 1
 
-    # Explicitly verify the booster- and factory units. The easisest (albeit
+    # Explicitly verify the booster- and factory units. The easiest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
     out_boosters = [types.booster_tostring(_) for _ in ret.boosters]
@@ -450,11 +401,45 @@ def test_create_fetch_template():
     print('Test passed')
 
 
+def test_encoding_add_get_template():
+    """
+    The the {en,de}coding related to the {add,get}Template functions.
+    """
+
+    killall()
+    
+    # Test parameters and constants.
+    cs = btInterface.defaultData().cshape
+    geo = np.array([1,2,3], np.float64)
+    b0 = types.booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
+    b1 = types.booster(0, pos=np.zeros(3), orient=[1, 1, 0], max_force=0.6)
+    f0 = types.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
+
+    # ----------------------------------------------------------------------
+    # Controller --> Clerk.
+    # ----------------------------------------------------------------------
+    ok, enc = protocol.ToClerk_GetTemplate_Encode(np.int64(1).tostring())
+    ok, dec = protocol.ToClerk_GetTemplate_Decode(enc)
+    assert dec[0] == np.int64(1).tostring()
+
+    # ----------------------------------------------------------------------
+    # Clerk --> Controller.
+    # ----------------------------------------------------------------------
+    ok, enc = protocol.FromClerk_GetTemplate_Encode(cs, geo, [b0, b1], [f0])
+    ok, dec = protocol.FromClerk_GetTemplate_Decode(enc)
+    assert np.array_equal(dec.cs, cs)
+    assert np.array_equal(dec.geo, geo)
+    assert len(dec.boosters) == 2
+    assert len(dec.factories) == 1
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_encoding_add_get_template()
     test_create_fetch_template()
     test_get_template()
     test_getAllObjectIDs()
-    test_create_template_objects()
     test_ping()
     test_spawn_one_controller()
     test_spawn_and_talk_to_one_controller()

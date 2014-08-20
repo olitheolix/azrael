@@ -31,6 +31,7 @@ import azrael.json as json
 import azrael.util as util
 import azrael.types as types
 import azrael.unpack as unpack
+import azrael.protocol as protocol
 import azrael.config as config
 import azrael.commands as commands
 import azrael.bullet.btInterface as btInterface
@@ -115,11 +116,11 @@ class Clerk(multiprocessing.Process):
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
         self.addTemplate(
-            np.array([0, 1, 1, 1], np.float64).tostring(), b'', [], [])
+            np.array([0, 1, 1, 1], np.float64), np.array([]), [], [])
         self.addTemplate(
-            np.array([3, 1, 1, 1], np.float64).tostring(), b'', [], [])
+            np.array([3, 1, 1, 1], np.float64), np.array([]), [], [])
         self.addTemplate(
-            np.array([4, 1, 1, 1], np.float64).tostring(), b'', [], [])
+            np.array([4, 1, 1, 1], np.float64), np.array([]), [], [])
 
         # Initialise the SV related collections.
         btInterface.initSVDB(reset)
@@ -237,10 +238,11 @@ class Clerk(multiprocessing.Process):
         # exist.
         doc = self.db_templateID.find_one({'templateID': templateID})
         if doc is None:
-            return False, None
+            self.logit.info('Invalid template ID')
+            return False, 'Invalid template ID'
 
         # Extract the collision shape and object geometry.
-        cs, geo = doc['cshape'], doc['geometry']
+        cs, geo = np.fromstring(doc['cshape']), np.fromstring(doc['geometry'])
 
         # Extract all boosters if the object has any.
         if 'boosters' in doc:
@@ -258,27 +260,9 @@ class Clerk(multiprocessing.Process):
 
         return True, (cs, geo, boosters, factories)
         
-    def delme(self, cs, geo, boosters, factories):
-        d = {'cs': cs, 'geo': geo, 'boosters': boosters,
-             'factories': factories}
-        
-        return json.dumps(d).encode('utf8')
-        
     @typecheck
-    def newTemplate(self, cshape: bytes, geometry: bytes):
-        # Geometry can only be a valid mesh of triangles if its length is a
-        # multiple of 9.
-        if len(geometry) % 9 != 0:
-            return False, 'Geometry is not a multiple of 9'
-
-        # Create the new template object and return its ID.
-        ok, templateID = self.addTemplate(cshape, geometry, [], [])
-        return True, templateID
-
-    @typecheck
-    def addTemplate(self, cshape: bytes, geometry: bytes,
-                                boosters: (list, tuple),
-                                factories: (list, tuple)):
+    def addTemplate(self, cshape: np.ndarray, geometry: np.ndarray,
+                    boosters: (list, tuple), factories: (list, tuple)):
         """
         Add a new object to the 'templateID' DB and return its template ID.
 
@@ -304,7 +288,8 @@ class Clerk(multiprocessing.Process):
 
         # Compile the Mongo document. It includes the collision shape,
         # geometry, boosters- and factory units.
-        data = {'templateID': templateID, 'cshape': cshape, 'geometry': geometry}
+        data = {'templateID': templateID,
+                'cshape': cshape.tostring(), 'geometry': geometry.tostring()}
         for b in boosters:
             data['boosters.{0:03d}'.format(b.bid)] = types.booster_tostring(b)
         for f in factories:
@@ -315,7 +300,7 @@ class Clerk(multiprocessing.Process):
                                {'$set': data}, upsert=True)
 
         # Return the ID of the new template.
-        return True, templateID
+        return True, (templateID, )
     
     def getUniqueID(self):
         """
@@ -391,7 +376,7 @@ class Clerk(multiprocessing.Process):
         """
         doc = {'src': src, 'dst': dst, 'msg': data}
         self.db_msg.insert(doc)
-        return True, ''
+        return True, tuple()
 
     @typecheck
     def recvMessage(self, obj_id: bytes):
@@ -400,11 +385,10 @@ class Clerk(multiprocessing.Process):
 
         # Format the return message.
         if doc is None:
-            msg = b''
+            return True, (b'', b'')
         else:
             # Protocol: sender, message.
-            msg = doc['src'] + doc['msg']
-        return True, msg
+            return True, (doc['src'], doc['msg'])
 
     @typecheck
     def spawn(self, ctrl_name:str, templateID:bytes, sv: btInterface.BulletData):
@@ -427,7 +411,7 @@ class Clerk(multiprocessing.Process):
         self.processes[new_id] = PythonInstance(prog, new_id)
         self.processes[new_id].start()
         btInterface.spawn(new_id, sv, templateID)
-        return True, new_id
+        return True, (new_id, )
 
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple)):
@@ -442,7 +426,7 @@ class Clerk(multiprocessing.Process):
             out = b''
             for _id, _sv in zip(objIDs, sv):
                 out += _id + _sv
-            return True, out
+            return True, (out, )
 
     @typecheck
     def getGeometry(self, templateID: bytes):
@@ -488,8 +472,7 @@ class Clerk(multiprocessing.Process):
         if not ok:
             return False, data
         else:
-            ret = b''.join(data)
-            return True, ret
+            return True, (data, )
 
     @typecheck
     def runCommand(self, fun_unpack, fun_cmd, fun_pack=None):
@@ -501,10 +484,10 @@ class Clerk(multiprocessing.Process):
             ok, out = out[0], out[1]
             if ok:
                 if fun_pack is not None:
-                    out = fun_pack(*out)
+                    ok, out = fun_pack(*out)
                 self.returnOk(self.last_addr, out)
             else:
-               self.returnErr(self.last_addr, out)
+                self.returnErr(self.last_addr, out)
 
     def processCmd(self):
         """
@@ -533,28 +516,46 @@ class Clerk(multiprocessing.Process):
             new_id = util.int2id(self.getUniqueID())
             self.returnOk(self.last_addr, new_id)
         elif cmd == config.cmd['send_msg']:
-            self.runCommand(unpack.sendMsg, self.sendMessage)
+            self.runCommand(protocol.ToClerk_SendMsg_Decode,
+                            self.sendMessage,
+                            protocol.FromClerk_SendMsg_Encode)
         elif cmd == config.cmd['get_msg']:
-            self.runCommand(unpack.recvMsg, self.recvMessage)
+            self.runCommand(protocol.ToClerk_RecvMsg_Decode,
+                            self.recvMessage,
+                            protocol.FromClerk_RecvMsg_Encode)
         elif cmd == config.cmd['spawn']:
-            self.runCommand(unpack.spawn, self.spawn)
+            self.runCommand(protocol.ToClerk_Spawn_Decode,
+                            self.spawn,
+                            protocol.FromClerk_Spawn_Encode)
         elif cmd == config.cmd['get_statevar']:
-            self.runCommand(unpack.getSV, self.getStateVariables)
-        elif cmd == config.cmd['new_template']:
-            self.runCommand(unpack.newTemplate, self.newTemplate)
+            self.runCommand(protocol.ToClerk_GetStateVariable_Decode,
+                            self.getStateVariables,
+                            protocol.FromClerk_GetStateVariable_Encode)
         elif cmd == config.cmd['get_geometry']:
-            self.runCommand(unpack.getGeometry, self.getGeometry)
+            self.runCommand(protocol.ToClerk_GetGeometry_Decode,
+                            self.getGeometry,
+                            protocol.FromClerk_GetGeometry_Encode)
         elif cmd == config.cmd['set_force']:
-            self.runCommand(unpack.setForce, self.setForce)
+            self.runCommand(protocol.ToClerk_SetForce_Decode,
+                            self.setForce,
+                            protocol.FromClerk_SetForce_Encode)
         elif cmd == config.cmd['suggest_pos']:
-            self.runCommand(unpack.suggestPos, self.suggestPosition)
+            self.runCommand(protocol.ToClerk_SuggestPosition_Decode,
+                            self.suggestPosition,
+                            protocol.FromClerk_SuggestPosition_Encode)
         elif cmd == config.cmd['get_template']:
-            self.runCommand(unpack.getTemplate, self.getTemplate, self.delme)
+            self.runCommand(protocol.ToClerk_GetTemplate_Decode,
+                            self.getTemplate,
+                            protocol.FromClerk_GetTemplate_Encode)
         elif cmd == config.cmd['get_template_id']:
             self.runCommand(unpack.getTemplateID, self.getTemplateID)
         elif cmd == config.cmd['add_template']:
-            self.runCommand(unpack.addTemplate, self.addTemplate)
+            self.runCommand(protocol.ToClerk_AddTemplate_Decode,
+                            self.addTemplate,
+                            protocol.FromClerk_AddTemplate_Encode)
         elif cmd == config.cmd['get_all_objids']:
-            self.runCommand(unpack.getAllObjectIDs, self.getAllObjectIDs)
+            self.runCommand(protocol.ToClerk_GetAllObjectIDs_Decode,
+                            self.getAllObjectIDs,
+                            protocol.FromClerk_GetAllObjectIDs_Encode)
         else:
             self.returnErr(self.last_addr, 'Invalid Command')
