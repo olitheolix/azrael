@@ -83,18 +83,6 @@ class ControllerBase(multiprocessing.Process):
                 self.objID = ret
         return self.objID
 
-    def _sendMessage(self, data: bytes):
-        """
-        Send ``msg`` to ``target``.
-
-        There is no guarantee that ``target`` will actually receive the
-        message, or that it even exists.
-        """
-        # Sanity checks.
-        assert isinstance(data, bytes)
-        assert len(self.objID) == config.LEN_ID
-        return self.sendToClerk(config.cmd['send_msg'] + self.objID + data)
-
     def sendMessage(self, target, msg):
         """
         Send ``msg`` to ``target``.
@@ -113,9 +101,6 @@ class ControllerBase(multiprocessing.Process):
             return ok, data
         else:
             return protocol.FromClerk_SendMsg_Decode(data)
-
-    def _recvMessage(self):
-        return self.sendToClerk(config.cmd['get_msg'] + self.objID)
 
     def recvMessage(self):
         """
@@ -142,35 +127,18 @@ class ControllerBase(multiprocessing.Process):
         """
         return self.sendToClerk(config.cmd['ping_clerk'])
 
-    @typecheck
-    def _newObjectTemplate(self, data: bytes):
-        return self.sendToClerk(config.cmd['new_template'] + data)
-
-    @typecheck
-    def newObjectTemplate(self, cshape: np.ndarray, geometry: np.ndarray):
-        """
-        Create a new object template with ``geometry`` and collision shape
-        ``cs``.
-        """
-        a, b = cshape.tostring(), geometry.tostring()
-        ret = self._newObjectTemplate(a + b)
-        return ret
-
-    def _getGeometry(self, data: bytes):
-        assert isinstance(data, bytes)
-        return self.sendToClerk(config.cmd['get_geometry'] + data)
-
     def getGeometry(self, target: bytes):
         """
         Fetch geometry for ``target``.
         """
         assert isinstance(target, bytes)
-        return self._getGeometry(target)
 
-    def _spawn(self, data: bytes):
-        assert isinstance(data, bytes)
-        assert len(data) == data[0] + 1 + 8 + config.LEN_SV_BYTES
-        return self.sendToClerk(config.cmd['spawn'] + data)
+        ok, data = protocol.ToClerk_GetGeometry_Encode(target)
+        ok, data = self.sendToClerk(config.cmd['get_geometry'] + data)
+        if not ok:
+            return ok, data
+        else:
+            return protocol.FromClerk_geometry_Decode(data)
 
     def spawn(self, name: str, templateID: bytes, pos: np.ndarray,
               vel=np.zeros(3), scale=1, radius=1, imass=1):
@@ -198,20 +166,6 @@ class ControllerBase(multiprocessing.Process):
         """
         return self._getTemplateID(ctrl_id)
 
-    def _getTemplateEncode(self, data):
-        return data
-
-    def _getTemplateDecode(self, data: bytes): 
-        import collections
-        data = json.loads(data)
-        boosters = [types.booster(*_) for _ in data['boosters']]
-        factories = [types.factory(*_) for _ in data['factories']]
-        nt = collections.namedtuple('Generic', 'cs geo boosters factories')
-        ret = nt(np.fromstring(bytes(data['cs'])),
-                 np.fromstring(bytes(data['geo'])),
-                 boosters, factories)
-        return ret
-
     def getTemplate(self, templateID: bytes):
         """
         Retrieve the data for ``templateID``.
@@ -222,9 +176,6 @@ class ControllerBase(multiprocessing.Process):
             return ok, data
         else:
             return protocol.FromClerk_GetTemplate_Decode(data)
-
-    def _addTemplate(self, data: bytes): 
-        return self.sendToClerk(config.cmd['add_template'] + data)
 
     @typecheck
     def addTemplate(self, cs: np.ndarray, geo: np.ndarray, boosters, factories):
