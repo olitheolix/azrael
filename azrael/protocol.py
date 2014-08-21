@@ -42,6 +42,28 @@ def FromClerk_GetTemplate_Decode(payload: bytes):
 # ---------------------------------------------------------------------------
 
 @typecheck
+def ToClerk_GetTemplateID_Encode(objID: bytes):
+    return True, objID
+
+
+@typecheck
+def ToClerk_GetTemplateID_Decode(payload: bytes):
+    return True, (payload, )
+
+
+@typecheck
+def FromClerk_GetTemplateID_Encode(templateID: bytes):
+    return True, templateID
+
+
+@typecheck
+def FromClerk_GetTemplateID_Decode(payload: bytes):
+    return True, payload
+
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+
+@typecheck
 def ToClerk_AddTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
                                boosters, factories):
     cs = cs.tostring()
@@ -156,7 +178,7 @@ def ToClerk_SetForce_Decode(payload: bytes):
 
 
 @typecheck
-def FromClerk_SetForce_Encode():
+def FromClerk_SetForce_Encode(dummyarg=None):
     return True, b''
 
 
@@ -194,8 +216,8 @@ def FromClerk_GetGeometry_Decode(payload: bytes):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_GetStateVariable_Encode(objID: bytes):
-    return True, objID
+def ToClerk_GetStateVariable_Encode(objIDs: (tuple, list)):
+    return True, b''.join(objIDs)
 
 
 @typecheck

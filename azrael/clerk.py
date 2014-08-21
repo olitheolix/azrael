@@ -457,7 +457,7 @@ class Clerk(multiprocessing.Process):
     def getTemplateID(self, objID: bytes):
         ok, templateID = btInterface.getTemplateID(objID)
         if ok:
-            return True, templateID
+            return True, (templateID, )
         else:
             return False, 'Could not find templateID for <{}>'.format(templateID)
 
@@ -548,7 +548,9 @@ class Clerk(multiprocessing.Process):
                             self.getTemplate,
                             protocol.FromClerk_GetTemplate_Encode)
         elif cmd == config.cmd['get_template_id']:
-            self.runCommand(unpack.getTemplateID, self.getTemplateID)
+            self.runCommand(protocol.ToClerk_GetTemplateID_Decode,
+                            self.getTemplateID,
+                            protocol.FromClerk_GetTemplateID_Encode)
         elif cmd == config.cmd['add_template']:
             self.runCommand(protocol.ToClerk_AddTemplate_Decode,
                             self.addTemplate,

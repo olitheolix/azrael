@@ -25,20 +25,20 @@ class ControllerCube(azrael.controller.ControllerBase):
 
         # Engage the booster up for one interval.
         force = 1 * np.ones(3)
-        self.setStateVariables(self.objID, force)
+        self.setForce(self.objID, force)
         time.sleep(t0)
 
         # Engage the booster down for two intervals.
         force = -force
-        self.setStateVariables(self.objID, force)
+        self.setForce(self.objID, force)
         time.sleep(2 * t0)
 
         # Periodically toggle the booster to make the object oscillate.
-        self.setStateVariables(self.objID, np.zeros(3))
+        self.setForce(self.objID, np.zeros(3))
         time.sleep(t0)
         while True:
             force = -force
-            self.setStateVariables(self.objID, force)
+            self.setForce(self.objID, force)
             time.sleep(2 * t0)
 
 

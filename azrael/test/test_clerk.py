@@ -455,11 +455,11 @@ def test_get_raw_object_id():
     assert (ok, ctrl_id) == (True, id_1)
 
     # Retrieve template of first object.
-    ok, ret = clerk.getTemplateID(id_0)
+    ok, (ret,) = clerk.getTemplateID(id_0)
     assert (ok, ret) == (True, templateID_0)
     
     # Retrieve template of second object.
-    ok, ret = clerk.getTemplateID(id_1)
+    ok, (ret,) = clerk.getTemplateID(id_1)
     assert (ok, ret) == (True, templateID_1)
     
     # Attempt to retrieve a non-existing object.

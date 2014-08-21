@@ -138,7 +138,7 @@ class ControllerBase(multiprocessing.Process):
         if not ok:
             return ok, data
         else:
-            return protocol.FromClerk_geometry_Decode(data)
+            return protocol.FromClerk_GetGeometry_Decode(data)
 
     def spawn(self, name: str, templateID: bytes, pos: np.ndarray,
               vel=np.zeros(3), scale=1, radius=1, imass=1):
@@ -157,14 +157,16 @@ class ControllerBase(multiprocessing.Process):
         else:
             return protocol.FromClerk_Spawn_Decode(data)
 
-    def _getTemplateID(self, data: bytes):
-        return self.sendToClerk(config.cmd['get_template_id'] + data)
-
-    def getTemplateID(self, ctrl_id: bytes):
+    def getTemplateID(self, objID: bytes):
         """
-        Retrieve the template ID  for ``ctrl_id``.
+        Retrieve the template ID for ``objID``.
         """
-        return self._getTemplateID(ctrl_id)
+        ok, data = protocol.ToClerk_GetTemplateID_Encode(objID)
+        ok, data = self.sendToClerk(config.cmd['get_template_id'] + data)
+        if not ok:
+            return ok, data
+        else:
+            return protocol.FromClerk_GetTemplateID_Decode(data)
 
     def getTemplate(self, templateID: bytes):
         """
@@ -189,34 +191,44 @@ class ControllerBase(multiprocessing.Process):
         else:
             return protocol.FromClerk_AddTemplate_Decode(data)
 
-    def _getStateVariables(self, data: bytes):
-        return self.sendToClerk(config.cmd['get_statevar'] + data)
+    @typecheck
+    def getStateVariables(self, objIDs: (list, tuple, bytes)):
+        """
+        Retrieve the state vector for all ``objIDs``.
+        """
+        if isinstance(objIDs, bytes):
+            objIDs = [objIDs]
 
-    def getStateVariables(self, ctrl_id):
-        """
-        Retrieve the state vector for ``ctrl_id``.
-        """
-        return self._getStateVariables(ctrl_id)
+        for objID in objIDs:
+            assert isinstance(objID, bytes)
+            assert len(objID) == config.LEN_ID
+
+        ok, data = protocol.ToClerk_GetStateVariable_Encode(objIDs)
+        ok, data = self.sendToClerk(config.cmd['get_statevar'] + data)
+        if not ok:
+            return ok, data
+        else:
+            return protocol.FromClerk_GetStateVariable_Decode(data)
 
     def _suggestPosition(self, data: bytes):
         assert isinstance(data, bytes)
         return self.sendToClerk(config.cmd['suggest_pos'] + data)
 
-    def _setStateVariables(self, data: bytes):
-        assert isinstance(data, bytes)
-        return self.sendToClerk(config.cmd['set_force'] + data)
-
-    def setStateVariables(self, ctrl_id, force):
+    def setForce(self, ctrl_id, force):
         """
         Set the ``force`` for ``ctrl_id``.
         """
         assert len(force) == 3
         assert isinstance(force, np.ndarray)
 
-        pos = np.zeros(3, np.float64).tostring()
-        force = force.astype(np.float64).tostring()
+        pos = np.zeros(3, np.float64)
 
-        return self._setStateVariables(ctrl_id + force + pos)
+        ok, data = protocol.ToClerk_SetStateVariables_Encode(pos, force)
+        ok, data = self.sendToClerk(config.cmd['set_force'] + data)
+        if not ok:
+            return ok, data
+        else:
+            return protocol.FromClerk_SetStateVariables_Decode(data)
 
     def getAllObjectIDs(self):
         """
