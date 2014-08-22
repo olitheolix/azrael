@@ -32,14 +32,26 @@ logger.propagate = False
 # Create a handler instance to log the messages to stdout.
 console = logging.StreamHandler(sys.stdout)
 console.setLevel(logging.DEBUG)
-console.setLevel(logging.ERROR)
+#console.setLevel(logging.ERROR)
 
 logFormat = '%(levelname)s - %(name)s - %(message)s'
 console.setFormatter(logging.Formatter(logFormat))
 
 # Install the handler.
 logger.addHandler(console)
-del logger, console, logFormat
+
+# Specify a file logger.
+logFormat = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+formatter = logging.Formatter(logFormat)
+fileHandler = logging.FileHandler(log_file, mode='a')
+fileHandler.setLevel(logging.DEBUG)
+fileHandler.setFormatter(formatter)
+fileHandler.setLevel(logging.DEBUG)
+
+# Install the handler.
+logger.addHandler(fileHandler)
+
+del logger, console, logFormat, formatter, fileHandler
 
 # ---------------------------------------------------------------------------
 # Global variables.

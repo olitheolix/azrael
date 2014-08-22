@@ -256,5 +256,8 @@ class ControllerBase(multiprocessing.Process):
                 continue
 
             # Prefix the message with our ID and return to sender.
-            print('Ctrl (received, sent): ', msg, self.objID + msg)
+            tmp = 'Ctrl (received, sent): <{}>, <{}>'
+            tmp = tmp.format(msg, self.objID + msg)
+            print(tmp)
+            self.logit.error(tmp)
             self.sendMessage(src, self.objID + msg)
