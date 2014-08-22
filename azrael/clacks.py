@@ -105,10 +105,6 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         elif cmd == config.cmd['get_id']:
             msg = b'\x00' + self.controller.objID
             self.write_message(msg, binary=True)
-        elif cmd == config.cmd['send_msg']:
-            self.controllerWrap(cmd, self.controller.objID + payload)
-        elif cmd == config.cmd['get_msg']:
-            self.controllerWrap(cmd, self.controller.objID + payload)
         else:
             self.controllerWrap(cmd, payload)
 

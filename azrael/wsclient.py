@@ -34,6 +34,7 @@ import IPython
 import websocket
 import numpy as np
 
+import azrael.controller
 import azrael.util as util
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
@@ -277,3 +278,85 @@ class WebsocketClient:
             return False, None
         else:
             return True, ret
+
+
+class ControllerBaseWS(azrael.controller.ControllerBase):
+    def __init__(self, url, timeout=20, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.url = url
+        self.ws = None
+
+        # Try a few times to establish the connection.
+        for ii in range(5):
+            try:
+                self.ws = websocket.create_connection(url, timeout)
+                break
+            except ConnectionRefusedError as err:
+                if ii >= 3:
+                    raise err
+                else:
+                    time.sleep(0.1)
+        ok, self.objID = self.getID()
+        
+    def __del__(self):
+        if self.ws is not None:
+            self.ws.close()
+
+    def sendToClerk(self, data):
+        """
+        Read from Websocket and analyse the error status.
+        """
+        assert isinstance(data, bytes)
+
+        self.ws.send_binary(data)
+        ret = self.ws.recv()
+
+        assert isinstance(ret, bytes)
+        if len(ret) == 0:
+            return 'Invalid response from Clacks', False
+
+        if ret[0] == 0:
+            return True, ret[1:]
+        else:
+            return False, ret[1:]
+
+    def sendToClacks(self, data):
+        """
+        Send ``data`` through Websocket.
+        """
+        assert isinstance(data, bytes)
+        self.ws.send_binary(data)
+
+    def recvFromClacks(self):
+        """
+        Read from Websocket and analyse the error status.
+        """
+        ret = self.ws.recv()
+        assert isinstance(ret, bytes)
+        if len(ret) == 0:
+            return 'Invalid response from Clacks', False
+
+        if ret[0] == 0:
+            return True, ret[1:]
+        else:
+            return False, ret[1:]
+
+    def getID(self):
+        """
+        Get controller ID associated with this connection.
+        """
+        self.sendToClacks(config.cmd['get_id'])
+        return self.recvFromClacks()
+
+    def ping_clerk(self):
+        """
+        Ping Clerk.
+        """
+        self.sendToClacks(config.cmd['ping_clerk'])
+        ok, msg = self.recvFromClacks()
+        if not ok:
+            return False
+        else:
+            return (msg.decode('utf8') == 'pong clerk')
+

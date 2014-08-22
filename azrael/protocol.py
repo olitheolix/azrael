@@ -244,7 +244,19 @@ def FromClerk_GetStateVariable_Encode(geo: bytes):
 
 @typecheck
 def FromClerk_GetStateVariable_Decode(payload: bytes):
-    return True, payload
+    # The available data must be an integer multiple of an ID plus SV.
+    l = config.LEN_ID + config.LEN_SV_BYTES
+    assert (len(payload) % l) == 0
+
+    # Return a dictionary of SV variables. The dictionary key is the
+    # object ID (the state variables - incidentally - are another
+    # dictionary).
+    out = {}
+    for data in cytoolz.partition(l, payload):
+        data = bytes(data)
+        sv = np.fromstring(data[config.LEN_ID:])
+        out[data[:config.LEN_ID]] = btInterface.unpack(sv)
+    return True, out
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

@@ -15,6 +15,8 @@ import azrael.controller as controller
 
 from azrael.util import int2id, id2int
 
+ControllerBaseWS = wsclient.ControllerBaseWS
+
 ipshell = IPython.embed
 
 
@@ -38,7 +40,7 @@ def test_server():
     server.start()
 
     # Start a client and ping the server.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
     assert client.ping()
     del client
 
@@ -49,7 +51,7 @@ def test_server():
 
     # Connection must now be impossible.
     with pytest.raises(ConnectionRefusedError):
-        wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+        ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
 
     clerk.terminate()
     clerk.join()
@@ -71,7 +73,7 @@ def test_connect():
     # Start server and client.
     server = clacks.ClacksServer()
     server.start()
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
     assert client.ping()
     server.terminate()
     clerk.terminate()
@@ -95,7 +97,7 @@ def test_timeout():
     # Start server and client.
     server = clacks.ClacksServer()
     server.start()
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
 
     # Read from the WS. Since the server is not writing to that socket the call
     # will block and must raise a timeout eventually.
@@ -126,7 +128,7 @@ def test_clerk_ping():
     server.start()
 
     # This is the actual test: connect and send 'PING' command.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
     assert client.ping_clerk()
 
     # Shutdown.
@@ -152,8 +154,8 @@ def test_websocket_getID():
     server.start()
 
     # Make sure we are connected.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
-    assert client.getID() == (True, int2id(1))
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
+    assert client.objID == int2id(1)
 
     # Shutdown.
     server.terminate()
@@ -178,7 +180,7 @@ def test_spawn_one_controller():
     server.start()
 
     # Make sure the system is live.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
     assert client.ping_clerk()
 
     # Instruct the server to spawn a Controller named 'Echo'. The call will
@@ -186,6 +188,7 @@ def test_spawn_one_controller():
     # was already given to the controller in the WS handler).
     templateID = np.int64(1).tostring()
     ok, ctrl_id = client.spawn('Echo', templateID, np.zeros(3))
+    print(ok, ctrl_id)
     assert (ctrl_id, ok) == (int2id(2), True)
 
     # Shutdown.
@@ -212,12 +215,12 @@ def test_spawn_and_talk_to_one_controller():
     server.start()
 
     # Make sure the system is live.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
     assert client.ping_clerk()
 
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
-    # was already given to the controller in the WS handler).
+    # was already given to the Controller in Clacks).
     templateID = np.int64(1).tostring()
     ok, client_id = client.spawn('Echo', templateID, np.zeros(3))
     assert (ok, client_id) == (True, int2id(2))
@@ -227,17 +230,23 @@ def test_spawn_and_talk_to_one_controller():
     ok, ret = client.sendMessage(client_id, msg_orig)
     assert ok
 
-    # Fetch the response. The responses may not be immediately available so
-    # poll a few times.
     for ii in range(5):
-        src, msg_ret = client.recvMessage()
-        if src is not None:
+        ok, data = client.recvMessage()
+        assert isinstance(ok, bool)
+        if ok:
+            src, msg_ret = data
+        else:
+            src, msg_ret = None, None
+
+        if ok and (src is not None):
             break
         time.sleep(0.1)
     assert src is not None
 
     # The source must be the newly created process and the response must be the
     # original messages prefixed with the controller ID.
+    print(src, client_id)
+    print(msg_ret)
     assert src == client_id
     assert (client_id + msg_orig) == msg_ret
 
@@ -264,7 +273,7 @@ def test_spawn_and_get_state_variables():
     server.start()
 
     # Make sure the system is live.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
     assert client.ping_clerk()
 
     # Instruct the server to spawn a Controller named 'Echo'. The call will
@@ -275,7 +284,7 @@ def test_spawn_and_get_state_variables():
     assert (ok, id_0) == (True, int2id(2))
 
     ok, sv = client.getStateVariables(id_0)
-    assert (len(sv), ok) == (True, 1)
+    assert (ok, len(sv)) == (True, 1)
     assert id_0 in sv
     assert np.array_equal(sv[id_0].position, np.ones(3))
     assert np.array_equal(sv[id_0].velocityLin, -np.ones(3))
@@ -310,9 +319,9 @@ def test_spawn_and_get_state_variables():
     # bug I once had.
     f = np.ones(3, np.float64)
     p = 2 * f
-    ok, ret = client.setForce(id_1, f, p)
+    ok, ret = client.setForce(id_1, f)
     assert ok
-    ok, ret = client.setForce(id_1, f + 1, p + 1)
+    ok, ret = client.setForce(id_1, f + 1)
     assert ok
 
     # Set the suggested position.
@@ -362,16 +371,16 @@ def fixme_test_create_raw_objects():
     ok, id_0 = client.spawn('Echo', templateID, np.zeros(3))
     assert (ok, id_0) == (True, int2id(2))
 
-    # Must return no geometery becaus the default object (templateID=1) has none.
+    # Must return no geometry because the default object (templateID=1) has none.
     ok, geo_0 = client.getGeometry(templateID)
     assert (ok, geo_0) == (True, b'')
 
     # Define a new raw object. The geometry data is arbitrary but its length
     # must be divisible by 9.
-    geo_0_ref = np.arange(9).astype(np.float64).tostring()
-    cs_0_ref = np.array([1, 1, 1, 1], np.float64).tostring()
-    geo_1_ref = np.arange(9, 18).astype(np.float64).tostring()
-    cs_1_ref = np.array([3, 1, 1, 1], np.float64).tostring()
+    geo_0_ref = np.arange(9).astype(np.float64)
+    cs_0_ref = np.array([1, 1, 1, 1], np.float64)
+    geo_1_ref = np.arange(9, 18).astype(np.float64)
+    cs_1_ref = np.array([3, 1, 1, 1], np.float64)
     ok, id_0 = client.newObjectTemplate(cs_0_ref, geo_0_ref)
     assert ok
     ok, id_1 = client.newObjectTemplate(cs_1_ref, geo_1_ref)
@@ -379,9 +388,10 @@ def fixme_test_create_raw_objects():
 
     # Check the geometries again.
     ok, geo_0 = client.getGeometry(id_0)
-    assert (ok, geo_0) == (True, geo_0_ref)
+    assert (ok, geo_0) == (True, geo_0_ref.tostring())
     ok, geo_1 = client.getGeometry(id_1)
-    assert (ok, geo_1) == (True, geo_1_ref)
+    assert (ok, geo_1) == (True, geo_1_ref.tostring())
+    print('check')
 
     # Query the geometry of a non-existing object.
     ok, ret = client.getGeometry(np.int64(200).tostring())
@@ -414,7 +424,7 @@ def test_getAllObjectIDs():
     server.start()
 
     # Make sure the system is live before attaching a client.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
     assert client.ping_clerk()
 
     # So far no objects have been spawned.
@@ -458,7 +468,7 @@ def test_get_template():
     server.start()
 
     # Make sure the system is live before attaching a client.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
+    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
     assert client.ping_clerk()
 
     # Spawn a new object. It must have ID=2 because ID=1 was already given to
@@ -495,7 +505,7 @@ def test_get_template():
 if __name__ == '__main__':
     test_get_template()
     test_getAllObjectIDs()
-#    test_create_raw_objects()
+#    fixme_test_create_raw_objects()
     test_spawn_one_controller()
     test_spawn_and_talk_to_one_controller()
     test_spawn_and_get_state_variables()

@@ -228,7 +228,7 @@ class ControllerBase(multiprocessing.Process):
 
         pos = np.zeros(3, np.float64)
 
-        return self.serialiseAndSend('set_force', pos, force)
+        return self.serialiseAndSend('set_force', ctrl_id, pos, force)
 
     def getAllObjectIDs(self):
         """

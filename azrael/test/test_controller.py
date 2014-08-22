@@ -100,7 +100,7 @@ def test_spawn_and_talk_to_one_controller():
 
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
-    # was already given to the controller in the WS handler).
+    # was already given to the Controller).
     templateID = np.int64(1).tostring()
     ok, ctrl_id = ctrl.spawn('Echo', templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
@@ -115,7 +115,6 @@ def test_spawn_and_talk_to_one_controller():
     for ii in range(5):
         ok, data = ctrl.recvMessage()
         assert isinstance(ok, bool)
-        print(data)
         if ok:
             src, msg_ret = data
         else:
@@ -162,7 +161,8 @@ def test_spawn_and_get_state_variables():
     assert (ok, id0) == (True, int2id(2))
 
     ok, sv = ctrl.getStateVariables(id0)
-    assert (ok, len(sv)) == (True, config.LEN_SV_BYTES + config.LEN_ID)
+    assert (ok, len(sv)) == (True, 1)
+    assert id0 in sv
 
     # Set the suggested position.
     ok, ret = ctrl.suggestPosition(id0, np.ones(3))
