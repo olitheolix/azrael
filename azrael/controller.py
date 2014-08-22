@@ -84,6 +84,7 @@ class ControllerBase(multiprocessing.Process):
         self.sock_cmd.close()
         self.logit.debug('Controller for <{}> has shutdown'.format(self.objID))
 
+    @typecheck
     def sendToClerk(self, data: bytes):
         """
         Send data to Clerk and return the response.
@@ -122,7 +123,8 @@ class ControllerBase(multiprocessing.Process):
         else:
             return FromClerk_Decode(data)
 
-    def sendMessage(self, target, msg):
+    @typecheck
+    def sendMessage(self, target: bytes, msg: bytes):
         """
         Send ``msg`` to ``target``.
 
@@ -156,6 +158,7 @@ class ControllerBase(multiprocessing.Process):
         """
         return self.sendToClerk(config.cmd['ping_clerk'])
 
+    @typecheck
     def getGeometry(self, target: bytes):
         """
         Fetch geometry for ``target``.
@@ -165,8 +168,9 @@ class ControllerBase(multiprocessing.Process):
         ok, data = self.serialiseAndSend('get_geometry', target)
         return ok, np.fromstring(data)
 
-    def spawn(self, name: str, templateID: bytes, pos: np.ndarray,
-              vel=np.zeros(3), scale=1, radius=1, imass=1):
+    @typecheck
+    def spawn(self, name: str, templateID: bytes, pos: (np.ndarray, list),
+              vel: (np.ndarray, list)=np.zeros(3), scale=1, radius=1, imass=1):
         """
         Spawn the ``templateID`` object at ``pos`` and launch the associated
         ``name``controller for it.
@@ -177,12 +181,14 @@ class ControllerBase(multiprocessing.Process):
 
         return self.serialiseAndSend('spawn', name, templateID, sv)
 
+    @typecheck
     def getTemplateID(self, objID: bytes):
         """
         Retrieve the template ID for ``objID``.
         """
         return self.serialiseAndSend('get_template_id', objID)
 
+    @typecheck
     def getTemplate(self, templateID: bytes):
         """
         Retrieve the data for ``templateID``.
@@ -190,7 +196,8 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_template', templateID)
 
     @typecheck
-    def addTemplate(self, cs: np.ndarray, geo: np.ndarray, boosters, factories):
+    def addTemplate(self, cs: np.ndarray, geo: np.ndarray,
+                    boosters: (list, tuple), factories: (list, tuple)):
         """
         Retrieve the data for ``templateID``.
         """
@@ -210,6 +217,7 @@ class ControllerBase(multiprocessing.Process):
 
         return self.serialiseAndSend('get_statevar', objIDs)
 
+    @typecheck
     def suggestPosition(self, target: bytes, pos: np.ndarray):
         """
         Suggest to move ``target`` instantly to ``position``.
@@ -220,7 +228,8 @@ class ControllerBase(multiprocessing.Process):
 
         return self.serialiseAndSend('suggest_pos', target, pos)
 
-    def setForce(self, ctrl_id, force):
+    @typecheck
+    def setForce(self, ctrl_id: bytes, force: np.ndarray):
         """
         Set the ``force`` for ``ctrl_id``.
         """
