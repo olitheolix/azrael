@@ -518,7 +518,7 @@ class Clerk(multiprocessing.Process):
             self.runCommand(protocol.ToClerk_SendMsg_Decode,
                             self.sendMessage,
                             protocol.FromClerk_SendMsg_Encode)
-        elif cmd == config.cmd['get_msg']:
+        elif cmd == config.cmd['recv_msg']:
             self.runCommand(protocol.ToClerk_RecvMsg_Decode,
                             self.recvMessage,
                             protocol.FromClerk_RecvMsg_Encode)

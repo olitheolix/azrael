@@ -210,7 +210,7 @@ def FromClerk_GetGeometry_Encode(geo):
 
 @typecheck
 def FromClerk_GetGeometry_Decode(payload: bytes):
-    return True, payload
+    return True, np.fromstring(payload)
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

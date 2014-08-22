@@ -46,7 +46,7 @@ class ControllerBase(multiprocessing.Process):
         self.codec = {
             'send_msg': (protocol.ToClerk_SendMsg_Encode,
                          protocol.FromClerk_SendMsg_Decode),
-            'get_msg': (protocol.ToClerk_RecvMsg_Encode,
+            'recv_msg': (protocol.ToClerk_RecvMsg_Encode,
                         protocol.FromClerk_RecvMsg_Decode),
             'get_geometry': (protocol.ToClerk_GetGeometry_Encode,
                         protocol.FromClerk_GetGeometry_Decode),
@@ -148,7 +148,7 @@ class ControllerBase(multiprocessing.Process):
         # Sanity check.
         assert len(self.objID) == config.LEN_ID
 
-        return self.serialiseAndSend('get_msg', self.objID)
+        return self.serialiseAndSend('recv_msg', self.objID)
 
     def ping(self):
         """
@@ -165,8 +165,7 @@ class ControllerBase(multiprocessing.Process):
         """
         assert isinstance(target, bytes)
 
-        ok, data = self.serialiseAndSend('get_geometry', target)
-        return ok, np.fromstring(data)
+        return self.serialiseAndSend('get_geometry', target)
 
     @typecheck
     def spawn(self, name: str, templateID: bytes, pos: (np.ndarray, list),

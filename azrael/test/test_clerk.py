@@ -431,7 +431,7 @@ def test_create_fetch_template():
     print('Test passed')
 
 
-def test_get_raw_object_id():
+def test_get_object_template_id():
     """
     Spawn two objects from different templates. Then query the template ID
     based on the object ID.
@@ -581,7 +581,7 @@ def test_get_all_objectids():
 if __name__ == '__main__':
     test_get_all_objectids()
     test_processControlCommand()
-    test_get_raw_object_id()
+    test_get_object_template_id()
     test_get_statevar()
     test_spawn()
     test_create_fetch_template()

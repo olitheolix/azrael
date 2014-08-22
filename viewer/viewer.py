@@ -315,12 +315,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             if ctrl_id in self.controllers:
                 continue
 
-            # Query the raw object ID associated with ctrl_id.
+            # Query the template ID associated with ctrl_id.
             ok, templateID = self.client.getTemplateID(ctrl_id)
             if not ok:
                 continue
 
-            # Query the geometry of the raw object ID.
+            # Query the object template.
             ok, buf_vert = self.client.getGeometry(templateID)
             if not ok:
                 continue
@@ -410,7 +410,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         cs[0] = 4
         ok, tmp = self.client.addTemplate(cs, buf_vert, [], [])
         if not ok:
-            print('Could not create new raw object')
+            print('Could not add new object template')
             self.close()
         else:
             self.cube_id = tmp
