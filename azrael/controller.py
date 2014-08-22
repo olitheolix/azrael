@@ -42,6 +42,30 @@ class ControllerBase(multiprocessing.Process):
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
 
+        # Associate the encoding and decoding functions for every command.
+        self.codec = {
+            'send_msg': (protocol.ToClerk_SendMsg_Encode,
+                         protocol.FromClerk_SendMsg_Decode),
+            'get_msg': (protocol.ToClerk_RecvMsg_Encode,
+                        protocol.FromClerk_RecvMsg_Decode),
+            'get_geometry': (protocol.ToClerk_GetGeometry_Encode,
+                        protocol.FromClerk_GetGeometry_Decode),
+            'spawn': (protocol.ToClerk_Spawn_Encode,
+                        protocol.FromClerk_Spawn_Decode),
+            'get_template_id': (protocol.ToClerk_GetTemplateID_Encode,
+                        protocol.FromClerk_GetTemplateID_Decode),
+            'get_template': (protocol.ToClerk_GetTemplate_Encode,
+                        protocol.FromClerk_GetTemplate_Decode),
+            'add_template': (protocol.ToClerk_AddTemplate_Encode,
+                        protocol.FromClerk_AddTemplate_Decode),
+            'get_statevar': (protocol.ToClerk_GetStateVariable_Encode,
+                        protocol.FromClerk_GetStateVariable_Decode),
+            'set_force': (protocol.ToClerk_SetForce_Encode,
+                        protocol.FromClerk_SetForce_Decode),
+            'get_all_objids': (protocol.ToClerk_GetAllObjectIDs_Encode,
+                        protocol.FromClerk_GetAllObjectIDs_Decode),
+            }
+
     def setupZMQ(self):
         """
         Create and connect 0MQ sockets.
@@ -83,6 +107,19 @@ class ControllerBase(multiprocessing.Process):
                 self.objID = ret
         return self.objID
 
+    def serialiseAndSend(self, cmd, *args):
+        assert cmd in config.cmd
+        assert cmd in self.codec
+
+        ToClerk_Encode, FromClerk_Decode = self.codec[cmd]
+
+        ok, data = ToClerk_Encode(*args)
+        ok, data = self.sendToClerk(config.cmd[cmd] + data)
+        if not ok:
+            return ok, data
+        else:
+            return FromClerk_Decode(data)
+
     def sendMessage(self, target, msg):
         """
         Send ``msg`` to ``target``.
@@ -95,12 +132,7 @@ class ControllerBase(multiprocessing.Process):
         assert isinstance(msg, bytes)
         assert len(target) == config.LEN_ID
 
-        ok, data = protocol.ToClerk_SendMsg_Encode(self.objID, target, msg)
-        ok, data = self.sendToClerk(config.cmd['send_msg'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_SendMsg_Decode(data)
+        return self.serialiseAndSend('send_msg', self.objID, target, msg)
 
     def recvMessage(self):
         """
@@ -112,12 +144,7 @@ class ControllerBase(multiprocessing.Process):
         # Sanity check.
         assert len(self.objID) == config.LEN_ID
 
-        ok, data = protocol.ToClerk_RecvMsg_Encode(self.objID)
-        ok, data = self.sendToClerk(config.cmd['get_msg'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_RecvMsg_Decode(data)
+        return self.serialiseAndSend('get_msg', self.objID)
 
     def ping(self):
         """
@@ -133,12 +160,7 @@ class ControllerBase(multiprocessing.Process):
         """
         assert isinstance(target, bytes)
 
-        ok, data = protocol.ToClerk_GetGeometry_Encode(target)
-        ok, data = self.sendToClerk(config.cmd['get_geometry'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_GetGeometry_Decode(data)
+        return self.serialiseAndSend('get_geometry', target)
 
     def spawn(self, name: str, templateID: bytes, pos: np.ndarray,
               vel=np.zeros(3), scale=1, radius=1, imass=1):
@@ -150,46 +172,26 @@ class ControllerBase(multiprocessing.Process):
         sv = btInterface.defaultData(position=pos, vlin=vel, cshape=cshape,
                                      scale=scale, radius=radius, imass=imass)
 
-        ok, data = protocol.ToClerk_Spawn_Encode(name, templateID, sv)
-        ok, data = self.sendToClerk(config.cmd['spawn'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_Spawn_Decode(data)
+        return self.serialiseAndSend('spawn', name, templateID, sv)
 
     def getTemplateID(self, objID: bytes):
         """
         Retrieve the template ID for ``objID``.
         """
-        ok, data = protocol.ToClerk_GetTemplateID_Encode(objID)
-        ok, data = self.sendToClerk(config.cmd['get_template_id'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_GetTemplateID_Decode(data)
+        return self.serialiseAndSend('get_template_id', objID)
 
     def getTemplate(self, templateID: bytes):
         """
         Retrieve the data for ``templateID``.
         """
-        ok, data = protocol.ToClerk_GetTemplate_Encode(templateID)
-        ok, data = self.sendToClerk(config.cmd['get_template'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_GetTemplate_Decode(data)
+        return self.serialiseAndSend('get_template', templateID)
 
     @typecheck
     def addTemplate(self, cs: np.ndarray, geo: np.ndarray, boosters, factories):
         """
         Retrieve the data for ``templateID``.
         """
-        ok, data = protocol.ToClerk_AddTemplate_Encode(cs, geo, boosters, factories)
-        ok, data = self.sendToClerk(config.cmd['add_template'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_AddTemplate_Decode(data)
+        return self.serialiseAndSend('add_template', cs, geo, boosters, factories)
 
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple, bytes)):
@@ -203,12 +205,7 @@ class ControllerBase(multiprocessing.Process):
             assert isinstance(objID, bytes)
             assert len(objID) == config.LEN_ID
 
-        ok, data = protocol.ToClerk_GetStateVariable_Encode(objIDs)
-        ok, data = self.sendToClerk(config.cmd['get_statevar'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_GetStateVariable_Decode(data)
+        return self.serialiseAndSend('get_statevar', objIDs)
 
     def _suggestPosition(self, data: bytes):
         assert isinstance(data, bytes)
@@ -223,23 +220,13 @@ class ControllerBase(multiprocessing.Process):
 
         pos = np.zeros(3, np.float64)
 
-        ok, data = protocol.ToClerk_SetStateVariables_Encode(pos, force)
-        ok, data = self.sendToClerk(config.cmd['set_force'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_SetStateVariables_Decode(data)
+        return self.serialiseAndSend('set_force', pos, force)
 
     def getAllObjectIDs(self):
         """
         Set the ``force`` for ``ctrl_id``.
         """
-        ok, data = protocol.ToClerk_GetAllObjectIDs_Encode()
-        ok, data = self.sendToClerk(config.cmd['get_all_objids'] + data)
-        if not ok:
-            return ok, data
-        else:
-            return protocol.FromClerk_GetAllObjectIDs_Decode(data)
+        return self.serialiseAndSend('get_all_objids')
 
     def run(self):
         """
