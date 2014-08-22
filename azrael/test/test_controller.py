@@ -18,7 +18,6 @@ import azrael.clacks
 import azrael.controller
 import azrael.types as types
 import azrael.protocol as protocol
-import azrael.unpack as unpack
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
 

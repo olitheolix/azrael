@@ -30,7 +30,6 @@ import numpy as np
 import azrael.json as json
 import azrael.util as util
 import azrael.types as types
-import azrael.unpack as unpack
 import azrael.protocol as protocol
 import azrael.config as config
 import azrael.commands as commands
