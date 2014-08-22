@@ -102,7 +102,7 @@ def test_timeout():
     # Read from the WS. Since the server is not writing to that socket the call
     # will block and must raise a timeout eventually.
     with pytest.raises(websocket.WebSocketTimeoutException):
-        client.recvFromClacks()
+        client.sendToClacks(b'')
 
     # Shutdown.
     server.terminate()
@@ -341,72 +341,6 @@ def test_spawn_and_get_state_variables():
     print('Test passed')
 
 
-def fixme_test_create_raw_objects():
-    """
-    Spawn default objects and query their geometry. Then define new objects
-    with custom geometry, spawn them, and check their geometry is correct.
-
-    This test is almost identical to
-    test_controller.test_create_raw_objects. The main difference is that this
-    one uses a WS interface, whereas the other test uses a controller instance
-    directly.
-    """
-    killall()
-
-    # Start server and client.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    server = clacks.ClacksServer()
-    server.start()
-
-    # Make sure the system is live.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping_clerk()
-
-    # Instruct the server to spawn an invisible dummy object (templateID=1) and
-    # assicate an 'Echo' instance with it. The call will return the ID of the
-    # controller which must be '2' ('0' is invalid and '1' was already given to
-    # the controller in the WS handler).
-    templateID = np.int64(1).tostring()
-    ok, id_0 = client.spawn('Echo', templateID, np.zeros(3))
-    assert (ok, id_0) == (True, int2id(2))
-
-    # Must return no geometry because the default object (templateID=1) has none.
-    ok, geo_0 = client.getGeometry(templateID)
-    assert (ok, geo_0) == (True, b'')
-
-    # Define a new raw object. The geometry data is arbitrary but its length
-    # must be divisible by 9.
-    geo_0_ref = np.arange(9).astype(np.float64)
-    cs_0_ref = np.array([1, 1, 1, 1], np.float64)
-    geo_1_ref = np.arange(9, 18).astype(np.float64)
-    cs_1_ref = np.array([3, 1, 1, 1], np.float64)
-    ok, id_0 = client.newObjectTemplate(cs_0_ref, geo_0_ref)
-    assert ok
-    ok, id_1 = client.newObjectTemplate(cs_1_ref, geo_1_ref)
-    assert ok
-
-    # Check the geometries again.
-    ok, geo_0 = client.getGeometry(id_0)
-    assert (ok, geo_0) == (True, geo_0_ref.tostring())
-    ok, geo_1 = client.getGeometry(id_1)
-    assert (ok, geo_1) == (True, geo_1_ref.tostring())
-    print('check')
-
-    # Query the geometry of a non-existing object.
-    ok, ret = client.getGeometry(np.int64(200).tostring())
-    assert not ok
-
-    # Shutdown.
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
-    killall()
-
-    print('Test passed')
-
-
 def test_getAllObjectIDs():
     """
     Ensure the getAllObjectIDs command reaches Clerk.
@@ -505,7 +439,6 @@ def test_get_template():
 if __name__ == '__main__':
     test_get_template()
     test_getAllObjectIDs()
-#    fixme_test_create_raw_objects()
     test_spawn_one_controller()
     test_spawn_and_talk_to_one_controller()
     test_spawn_and_get_state_variables()

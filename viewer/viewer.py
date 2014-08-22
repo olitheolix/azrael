@@ -321,10 +321,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Query the geometry of the raw object ID.
-            ok, geometry = self.client.getGeometry(templateID)
+            ok, buf_vert = self.client.getGeometry(templateID)
             if not ok:
                 continue
-            buf_vert = np.fromstring(geometry)
 
             # This is to mask a bug in Clacks: newly spawned objects can become
             # active before their geometry hits the DB. Since this viewer
@@ -389,7 +388,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         # Make sure the system is live.
         try:
-            self.client = wsclient.WebsocketClient(
+            self.client = wsclient.ControllerBaseWS(
                 'ws://127.0.0.1:8080/websocket')
         except ConnectionRefusedError as err:
             print('Viewer: could not connect to Clacks')
@@ -409,7 +408,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         buf_vert = self.getGeometryCube()
         cs = np.ones(4, np.float64)
         cs[0] = 4
-        ok, tmp = self.client.newObjectTemplate(cs.tostring(), buf_vert.tostring())
+        ok, tmp = self.client.addTemplate(cs, buf_vert, [], [])
         if not ok:
             print('Could not create new raw object')
             self.close()

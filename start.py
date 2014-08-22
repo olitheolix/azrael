@@ -109,7 +109,7 @@ def parseCommandline():
 
 def loadGroundModel(scale, model_name):
     # Establish connection to Azrael.
-    client = wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket')
+    client = wsclient.ControllerBaseWS('ws://127.0.0.1:8080/websocket')
     assert client.ping_clerk()
 
     # Load the model mesh.
@@ -124,8 +124,8 @@ def loadGroundModel(scale, model_name):
 
     # Set the geometry of the object in Azrael.
     print('  Adding geometry to Azrael... ', end='', flush=True)
-    cs = np.zeros(4, np.float64).tostring()
-    ok, ground = client.newObjectTemplate(cs, buf_vert.tostring())
+    cs = np.zeros(4, np.float64)
+    ok, ground = client.addTemplate(cs, buf_vert, [], [])
 
     # Tell Azrael to spawn the 'ground' object near the center of the scene.
     print('  Spawning object... ', end='', flush=True)
@@ -141,7 +141,7 @@ def main():
 
     # Determine if Azrael is live.
     try:
-        wsclient.WebsocketClient('ws://127.0.0.1:8080/websocket')
+        wsclient.ControllerBaseWS('ws://127.0.0.1:8080/websocket')
         is_azrael_live = True
     except ConnectionRefusedError as err:
         is_azrael_live = False

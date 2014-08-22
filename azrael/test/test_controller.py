@@ -384,7 +384,11 @@ def test_create_fetch_template():
     # Add the new template.
     ok, templateID = ctrl.addTemplate(cs, geo, [b0, b1], [f0])
 
-    # Retrieve the just created object and verify the CS and geometry.
+    # Retrieve the geometry of the just created object and verify it is correct.
+    ok, ret = ctrl.getGeometry(templateID)
+    assert np.array_equal(ret, geo)
+
+    # Retrieve the entire template and verify the CS and geometry.
     ok, ret = ctrl.getTemplate(templateID)
     assert np.array_equal(ret.cs, cs)
     assert np.array_equal(ret.geo, geo)

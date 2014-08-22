@@ -162,7 +162,8 @@ class ControllerBase(multiprocessing.Process):
         """
         assert isinstance(target, bytes)
 
-        return self.serialiseAndSend('get_geometry', target)
+        ok, data = self.serialiseAndSend('get_geometry', target)
+        return ok, np.fromstring(data)
 
     def spawn(self, name: str, templateID: bytes, pos: np.ndarray,
               vel=np.zeros(3), scale=1, radius=1, imass=1):

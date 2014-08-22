@@ -436,7 +436,7 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             return False, 'ID does not exist'
         else:
-            return True, doc['geometry']
+            return True, (doc['geometry'],)
 
     @typecheck
     def setForce(self, objID: bytes, force: np.ndarray, rpos: np.ndarray):
