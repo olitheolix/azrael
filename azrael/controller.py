@@ -64,6 +64,8 @@ class ControllerBase(multiprocessing.Process):
                         protocol.FromClerk_SetForce_Decode),
             'get_all_objids': (protocol.ToClerk_GetAllObjectIDs_Encode,
                         protocol.FromClerk_GetAllObjectIDs_Decode),
+            'suggest_pos': (protocol.ToClerk_SuggestPosition_Encode,
+                        protocol.FromClerk_SuggestPosition_Decode),
             }
 
     def setupZMQ(self):
@@ -207,9 +209,15 @@ class ControllerBase(multiprocessing.Process):
 
         return self.serialiseAndSend('get_statevar', objIDs)
 
-    def _suggestPosition(self, data: bytes):
-        assert isinstance(data, bytes)
-        return self.sendToClerk(config.cmd['suggest_pos'] + data)
+    def suggestPosition(self, target: bytes, pos: np.ndarray):
+        """
+        Suggest to move ``target`` instantly to ``position``.
+        """
+        assert isinstance(target, bytes)
+        assert isinstance(pos, np.ndarray)
+        assert len(pos) == 3
+
+        return self.serialiseAndSend('suggest_pos', target, pos)
 
     def setForce(self, ctrl_id, force):
         """

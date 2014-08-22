@@ -164,6 +164,10 @@ def test_spawn_and_get_state_variables():
     ok, sv = ctrl.getStateVariables(id0)
     assert (ok, len(sv)) == (True, config.LEN_SV_BYTES + config.LEN_ID)
 
+    # Set the suggested position.
+    ok, ret = ctrl.suggestPosition(id0, np.ones(3))
+    assert ok
+
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join()
