@@ -99,7 +99,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         cmd, payload = msg[:1], msg[1:]
 
         if cmd == config.cmd['ping_clacks']:
-            # Ping: send a pong.
+            # Return the pong.
             msg = b'\x00' + 'pong clacks'.encode('utf8')
             self.write_message(msg, binary=True)
         elif cmd == config.cmd['get_id']:

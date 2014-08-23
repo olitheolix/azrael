@@ -270,11 +270,12 @@ def test_get_statevar():
     assert (ok, ret) == (False, 'One or more IDs do not exist')
 
     # Retrieve the SV for the existing ID=1.
-    ok, (ret,) = clerk.getStateVariables([objID_1])
-    assert (ok, ret[:config.LEN_ID]) == (True, objID_1)
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID_1])
+    assert (ok, len(ret_objIDs), len(ret_SVs)) == (True, 1, 1)
+    assert ret_objIDs == [objID_1]
 
     # Verify the SV data.
-    ret_sv = btInterface.unpack(np.fromstring(ret[config.LEN_ID:]))
+    ret_sv = btInterface.unpack(np.fromstring(ret_SVs[0]))
     for ii in range(len(sv_1)):
         assert np.array_equal(ret_sv[ii], sv_1[ii])
 
@@ -282,14 +283,25 @@ def test_get_statevar():
     ok, (ret,) = clerk.spawn(ctrl_name, templateID, sv_2)
     assert (ok, ret) == (True, objID_2)
     
-    # Retrieve the state variables for both objects.
+    # Retrieve the state variables for both objects individually.
     for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
-        ok, (ret,) = clerk.getStateVariables([objID])
-        assert (ok, ret[:config.LEN_ID]) == (True, objID)
+        ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
+        assert (ok, len(ret_objIDs), len(ret_SVs)) == (True, 1, 1)
+        assert ret_objIDs == [objID]
 
-        ret_sv = btInterface.unpack(np.fromstring(ret[config.LEN_ID:]))
+        ret_sv = btInterface.unpack(np.fromstring(ret_SVs[0]))
         for ii in range(len(sv_1)):
             assert np.array_equal(ret_sv[ii], ref_sv[ii])
+
+    # Retrieve the state variables for both objects at once.
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID_1, objID_2])
+    assert (ok, len(ret_objIDs), len(ret_SVs)) == (True, 2, 2)
+    assert ret_objIDs == [objID_1, objID_2]
+
+    for ii, ref_sv in enumerate([sv_1, sv_2]):
+        ret_sv = btInterface.unpack(np.fromstring(ret_SVs[ii]))
+        for jj in range(len(sv_1)):
+            assert np.array_equal(ret_sv[jj], ref_sv[jj])
 
     print('Test passed')
 
@@ -320,7 +332,7 @@ def test_set_force():
     assert (ok, ret) == (True, id_1)
 
     # Invalid/non-existing ID.
-    ok, ret = clerk.setForce(id_1, force, relpos)
+    ok, (ret, ) = clerk.setForce(id_1, force, relpos)
     assert (ok, ret) == (True, '')
 
     print('Test passed')
@@ -351,7 +363,7 @@ def test_suggest_position():
     assert (ok, ret) == (True, id_1)
 
     # Invalid/non-existing ID.
-    ok, ret = clerk.suggestPosition(id_1, force)
+    ok, (ret,) = clerk.suggestPosition(id_1, force)
     assert (ok, ret) == (True, '')
 
     print('Test passed')

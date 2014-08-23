@@ -1,3 +1,38 @@
+# Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
+#
+# This file is part of Azrael (https://github.com/olitheolix/azrael)
+#
+# Azrael is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# Azrael is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with Azrael. If not, see <http://www.gnu.org/licenses/>.
+
+"""
+This module contains Python <--> binary convertes. These will be used to encode
+``Controller`` request to bytes (and back) so that they can be sent via ZeroMQ
+sockets.
+
+The ``ToClerk_*_Decode`` (decodes received byte stream) and
+``FromClerk_*_Encode`` (serialises the returned data in Clerk) describe the
+protocol expected by Azrael whereas their counterparts, namely
+``ToClerk_*_Encode`` and ``FromClerk_*_Decode``, are language specific
+{en,de}decoders. The Python versions were added to this module for
+convenience. Bindings from other languages must implement their own versions of
+``ToClerk_*_Encode`` and ``FromClerk_*_Decode``.
+
+The binary protocols are not pickled Python objects but straightforwards
+encodings of strings, JSON objects, or C-arrays (via NumPy). This should make
+it possible to write clients in other languages.
+"""
+
 import cytoolz
 import numpy as np
 import azrael.json as json
@@ -143,8 +178,8 @@ def ToClerk_SuggestPosition_Decode(payload: bytes):
 
 
 @typecheck
-def FromClerk_SuggestPosition_Encode():
-    return True, b''
+def FromClerk_SuggestPosition_Encode(ret):
+    return True, ret.encode('utf8')
 
 
 @typecheck
@@ -178,8 +213,8 @@ def ToClerk_SetForce_Decode(payload: bytes):
 
 
 @typecheck
-def FromClerk_SetForce_Encode(dummyarg=None):
-    return True, b''
+def FromClerk_SetForce_Encode(ret):
+    return True, ret.encode('utf8')
 
 
 @typecheck
@@ -204,8 +239,8 @@ def ToClerk_GetGeometry_Decode(payload: bytes):
 
 
 @typecheck
-def FromClerk_GetGeometry_Encode(geo):
-    return True, geo
+def FromClerk_GetGeometry_Encode(geo: np.ndarray):
+    return True, geo.tostring()
 
 
 @typecheck
@@ -238,8 +273,10 @@ def ToClerk_GetStateVariable_Decode(payload: bytes):
 
 
 @typecheck
-def FromClerk_GetStateVariable_Encode(geo: bytes):
-    return True, geo
+def FromClerk_GetStateVariable_Encode(objIDs: (list, tuple),
+                                      sv: (list, tuple)):
+    data = [_[0] + _[1] for _ in zip(objIDs, sv)]
+    return True, b''.join(data)
 
 
 @typecheck
