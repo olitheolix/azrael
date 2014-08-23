@@ -43,23 +43,23 @@ class Timer(object):
         return '{0:,}us'.format(int(elapsed * 1E6))
 
 
-def int2id(id_int: int):
+def int2id(objID: int):
     """
     Convert an integer to the corresponding object ID.
 
-    This function will raise an `OverflowError` if ``id_int`` is too large for
+    This function will raise an `OverflowError` if ``objID`` is too large for
     the available number of bytes.
     """
-    assert isinstance(id_int, int)
-    assert id_int >= 0
-    assert id_int < 2 ** (8 * config.LEN_ID)
-    return (id_int).to_bytes(config.LEN_ID, 'little')
+    assert isinstance(objID, int)
+    assert objID >= 0
+    assert objID < 2 ** 63
+    return np.int64(objID).tostring()
 
 
-def id2int(id_bytes: int):
+def id2int(objID: int):
     """
     Convert an object ID to the corresponding integer.
     """
-    assert isinstance(id_bytes, bytes)
-    assert len(id_bytes) == config.LEN_ID
-    return int.from_bytes(id_bytes, 'little')
+    assert isinstance(objID, bytes)
+    assert len(objID) == 8
+    return int(np.fromstring(objID, np.int64)[0])

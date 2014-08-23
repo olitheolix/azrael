@@ -58,7 +58,7 @@ del logger, console, logFormat, formatter, fileHandler
 # ---------------------------------------------------------------------------
 
 # Length of object ID in bytes.
-LEN_ID = 3
+LEN_ID = 8
 
 # Length of a single state variable record in terms of NumPy float64.
 LEN_SV_FLOATS = 21

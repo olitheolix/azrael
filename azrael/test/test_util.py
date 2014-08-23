@@ -20,6 +20,8 @@ def test_id2int():
         with pytest.raises(AssertionError):
             util.id2int(b'\x05' * (config.LEN_ID - 1))
 
+    print('Test passed')
+
 
 if __name__ == '__main__':
     test_id2int()
