@@ -13,6 +13,9 @@ import numpy as np
 
 ipshell = IPython.embed
 
+# Name of Echo controller (for convenience).
+echo_ctrl = 'Echo'.encode('utf8')
+
 
 def killall():
     subprocess.call(['pkill', 'killme'])
@@ -47,7 +50,7 @@ def test_move_single_object(clsLeonard):
     # Create a spherical object (a default spherical object exists by default
     # and is associated with templateID=2).
     templateID = np.int64(2).tostring()
-    ok, id_0 = ctrl.spawn('Echo', templateID, [0, 0, 0], [0, 0, 0])
+    ok, id_0 = ctrl.spawn(echo_ctrl, templateID, [0, 0, 0], [0, 0, 0])
     assert ok
 
     # Advance the simulation by 1s and check that nothing has moved.
@@ -113,9 +116,9 @@ def test_move_two_objects_no_collision(clsLeonard):
     
     # Create two spherical object.
     templateID = np.int64(2).tostring()
-    ok, id_0 = ctrl.spawn('Echo', templateID, [0, 0, 0], [1, 0, 0])
+    ok, id_0 = ctrl.spawn(echo_ctrl, templateID, [0, 0, 0], [1, 0, 0])
     assert ok
-    ok, id_1 = ctrl.spawn('Echo', templateID, [0, 10, 0], [0, -1, 0])
+    ok, id_1 = ctrl.spawn(echo_ctrl, templateID, [0, 10, 0], [0, -1, 0])
     assert ok
 
     # Advance the simulation by one second and test if the objects moved
@@ -177,7 +180,7 @@ def test_multiple_workers(clsWorker):
     list_ids = []
 
     for ii in range(num_objects):
-        ok, cur_id = ctrl.spawn('Echo', templateID, pos=[0, 10 * ii, 0],
+        ok, cur_id = ctrl.spawn(echo_ctrl, templateID, pos=[0, 10 * ii, 0],
                                 vel=[1,0, 0])
         assert ok
         list_ids.append(cur_id)

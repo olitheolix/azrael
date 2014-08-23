@@ -168,7 +168,7 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_geometry', target)
 
     @typecheck
-    def spawn(self, name: str, templateID: bytes, pos: (np.ndarray, list),
+    def spawn(self, name: bytes, templateID: bytes, pos: (np.ndarray, list),
               vel: (np.ndarray, list)=np.zeros(3), scale=1, radius=1, imass=1):
         """
         Spawn the ``templateID`` object at ``pos`` and launch the associated

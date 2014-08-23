@@ -296,7 +296,8 @@ def FromClerk_GetStateVariable_Decode(payload: bytes):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_Spawn_Encode(name: str, templateID: bytes, sv: btInterface.BulletData):
+def ToClerk_Spawn_Encode(name: bytes, templateID: bytes, sv:
+                         btInterface.BulletData):
     sv = btInterface.pack(sv).tostring()
     d = {'name': name, 'templateID': templateID, 'sv': sv}
     return True, json.dumps(d).encode('utf8')
@@ -305,7 +306,10 @@ def ToClerk_Spawn_Encode(name: str, templateID: bytes, sv: btInterface.BulletDat
 @typecheck
 def ToClerk_Spawn_Decode(payload: bytes):
     data = json.loads(payload)
-    ctrl_name = data['name']
+    if data['name'] is None:
+        ctrl_name = None
+    else:
+        ctrl_name = bytes(data['name'])
     templateID = bytes(data['templateID'])
     sv = np.fromstring(bytes(data['sv']), np.float64)
     sv = btInterface.unpack(sv)

@@ -418,7 +418,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             print('Created ID <{}>'.format(self.cube_id))
             
         # Spawn a cube (templateID=3 defaults to one).
-        ok, tmp = self.ctrl.spawn('Echo', self.cube_id, np.zeros(3), np.zeros(3))
+        ok, tmp = self.ctrl.spawn(
+            'Echo'.encode('utf8'), self.cube_id, np.zeros(3), np.zeros(3))
         if not ok:
             print('Cannot spawn object (<{}>)'.format(tmp))
             self.close()
@@ -661,8 +662,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             pos = self.camera.position
             vel = 2 * self.camera.view
 
-            ok, ctrl_id = self.ctrl.spawn('Echo', self.cube_id, pos, vel=vel,
-                                            scale=0.25, imass=20)
+            ok, ctrl_id = self.ctrl.spawn(
+                'Echo'.encode('utf8'), self.cube_id, pos, vel=vel,
+                scale=0.25, imass=20)
             if not ok:
                 print('Could not spawn Echo (<{}>)'.format(ctrl_id))
                 return
@@ -670,8 +672,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             pos = self.camera.position
             vel = 0.5 * self.camera.view
 
-            ok, ctrl_id = self.ctrl.spawn('EchoBoost', self.cube_id, pos,
-                                            vel=vel, scale=1, imass=1)
+            ok, ctrl_id = self.ctrl.spawn(
+                'EchoBoost'.encode('utf8'), self.cube_id, pos, vel=vel,
+                scale=1, imass=1)
             if not ok:
                 print('Could not spawn EchoBoost (<{}>)'.format(ctrl_id))
                 return

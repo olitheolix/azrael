@@ -43,6 +43,9 @@ from azrael.util import int2id, id2int
 
 ipshell = IPython.embed
 
+# Name of Echo controller (for convenience).
+echo_ctrl = 'Echo'.encode('utf8')
+
 
 class ControllerTest(controller.ControllerBase):
     def testSend(self, data):
@@ -219,22 +222,21 @@ def test_spawn():
     # Test parameters (the 'Echo' controller is a hard coded dummy controller
     # that is always available).
     sv = btInterface.defaultData()
-    ctrl_name = 'Echo'
 
     # Unknown controller name.
     templateID = np.int64(1).tostring()
-    ok, ret = clerk.spawn('aaaa', templateID, sv)
+    ok, ret = clerk.spawn('aaaa'.encode('utf8'), templateID, sv)
     assert (ok, ret) == (False, 'Unknown Controller Name')
 
     # Invalid templateID.
     templateID = np.int64(100).tostring()
-    ok, ret = clerk.spawn(ctrl_name, templateID, sv)
+    ok, ret = clerk.spawn(echo_ctrl, templateID, sv)
     assert (ok, ret) == (False, 'Invalid Template ID')
 
     # All parameters are now valid. We must be assigne ID=1 because this is the
     # first ID in an otherwise pristine system.
     templateID = np.int64(1).tostring()
-    ok, (ret,) = clerk.spawn('Echo', templateID, sv)
+    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
     assert (ok, ret) == (True, int2id(1))
 
     print('Test passed')
@@ -247,7 +249,6 @@ def test_get_statevar():
     killall()
 
     # Test parameters and constants.
-    ctrl_name = 'Echo'
     objID_1 = int2id(1)
     objID_2 = int2id(2)
     sv_1 = btInterface.defaultData(position=np.arange(3), vlin=[2, 4, 6])
@@ -262,7 +263,7 @@ def test_get_statevar():
     assert (ok, ret) == (False, 'One or more IDs do not exist')
 
     # Spawn a new object. It must have ID=1.
-    ok, (ret,) = clerk.spawn(ctrl_name, templateID, sv_1)
+    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv_1)
     assert (ok, ret) == (True, objID_1)
 
     # Retrieve the SV for a non-existing ID --> must fail.
@@ -280,7 +281,7 @@ def test_get_statevar():
         assert np.array_equal(ret_sv[ii], sv_1[ii])
 
     # Spawn a second object.
-    ok, (ret,) = clerk.spawn(ctrl_name, templateID, sv_2)
+    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv_2)
     assert (ok, ret) == (True, objID_2)
     
     # Retrieve the state variables for both objects individually.
@@ -328,7 +329,7 @@ def test_set_force():
 
     # Spawn a new object. It must have ID=1.
     templateID = np.int64(1).tostring()
-    ok, (ret,) = clerk.spawn('Echo', templateID, sv)
+    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
     assert (ok, ret) == (True, id_1)
 
     # Invalid/non-existing ID.
@@ -359,7 +360,7 @@ def test_suggest_position():
     assert (ok, ret) == (False, 'ID does not exist')
 
     # Spawn a new object. It must have ID=1.
-    ok, (ret,) = clerk.spawn('Echo', templateID, sv)
+    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
     assert (ok, ret) == (True, id_1)
 
     # Invalid/non-existing ID.
@@ -402,6 +403,10 @@ def test_create_fetch_template():
     geo = np.array([5, 6, 7, 8], np.float64)
     templateID = 't1'.encode('utf8')
     ok, _ = clerk.addTemplate(templateID, cs, geo, [], [])
+
+    # Add a different template with the same name. This must fail.
+    ok, _ = clerk.addTemplate(templateID, 2 * cs, 2 * geo, [], [])
+    assert not ok
 
     # Fetch the just added template again.
     ok, out = clerk.getTemplate(templateID)
@@ -461,11 +466,11 @@ def test_get_object_template_id():
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Spawn a new object. It must have ID=1.
-    ok, (ctrl_id,) = clerk.spawn('Echo', templateID_0, sv)
+    ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_0, sv)
     assert (ok, ctrl_id) == (True, id_0)
 
     # Spawn another object from a different template.
-    ok, (ctrl_id,) = clerk.spawn('Echo', templateID_1, sv)
+    ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_1, sv)
     assert (ok, ctrl_id) == (True, id_1)
 
     # Retrieve template of first object.
@@ -503,7 +508,7 @@ def test_processControlCommand():
 
     # Create a fake object. We will not need it but for this test one must
     # exist as other commands would otherwise fail.
-    ok, (ctrl_id,) = clerk.spawn('Echo', templateID_1, sv)
+    ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_1, sv)
     assert (ok, ctrl_id) == (True, objID_1)
 
     # Create booster control command.
@@ -533,7 +538,7 @@ def test_processControlCommand():
     # Add it to Azrael and spawn an instance.
     templateID_2 = 't1'.encode('utf8')
     ok, _ = clerk.addTemplate(templateID_2, cs, geo, [b0, b1], [f0])
-    ok, (ctrl_id,) = clerk.spawn('Echo', templateID_2, sv)
+    ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_2, sv)
     assert (ok, ctrl_id) == (True, objID_2)
     
     # Call processControlCommands. It must fail because the default object has
@@ -572,7 +577,7 @@ def test_get_all_objectids():
     assert (ok, out) == (True, [])
 
     # Spawn a new object.
-    ok, (ret,) = clerk.spawn('Echo', templateID, sv)
+    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
     assert (ok, ret) == (True, objID_1)
     
     # The object list must now contain the ID of the just spawned object.
@@ -580,7 +585,7 @@ def test_get_all_objectids():
     assert (ok, out) == (True, [objID_1])
 
     # Spawn another object.
-    ok, (ret,) = clerk.spawn('Echo', templateID, sv)
+    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
     assert (ok, ret) == (True, objID_2)
 
     # The object list must now contain the ID of both spawned objects.

@@ -23,6 +23,9 @@ commands. As such the tests here merely test these wrappers. See `test_clerk`
 if you want to see thorough tests for the Clerk functionality.
 """
 
+# Name of Echo controller (for convenience).
+echo_ctrl = 'Echo'.encode('utf8')
+
 import sys
 import time
 import pytest
@@ -115,12 +118,16 @@ def test_spawn_one_controller(ctrl_type):
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
     # was already given to the controller in the WS handler).
     templateID = np.int64(1).tostring()
-    ok, ctrl_id = ctrl.spawn('Echo', templateID, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
+    # Spawn another template but this time without also createing a new
+    # controller process to control the object. We cannot explicitly verify
+    # that not controller process was created but we can verify that the spawn
+    # command itself worked.
+    templateID = np.int64(1).tostring()
+    ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
+    assert (ok, ctrl_id) == (True, int2id(3))
 
     # Shutdown the services.
     stopAzrael(clerk, server)
@@ -140,7 +147,7 @@ def test_spawn_and_talk_to_one_controller(ctrl_type):
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
     # was already given to the Controller).
     templateID = np.int64(1).tostring()
-    ok, ctrl_id = ctrl.spawn('Echo', templateID, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
     # Send a message to `ctrl_id`.
@@ -170,10 +177,6 @@ def test_spawn_and_talk_to_one_controller(ctrl_type):
         print(ok, src, msg_ret)
     assert ctrl_id + msg_orig == msg_ret
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
-
     # Shutdown the services.
     stopAzrael(clerk, server)
     print('Test passed')
@@ -191,7 +194,7 @@ def test_spawn_and_get_state_variables(ctrl_type):
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
     # was already given to the controller in the WS handler).
     templateID = np.int64(1).tostring()
-    ok, id0 = ctrl.spawn('Echo', templateID, pos=np.ones(3), vel=-np.ones(3))
+    ok, id0 = ctrl.spawn(echo_ctrl, templateID, pos=np.ones(3), vel=-np.ones(3))
     assert (ok, id0) == (True, int2id(2))
 
     ok, sv = ctrl.getStateVariables(id0)
@@ -201,10 +204,6 @@ def test_spawn_and_get_state_variables(ctrl_type):
     # Set the suggested position.
     ok, ret = ctrl.suggestPosition(id0, np.ones(3))
     assert ok
-
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
 
     # Shutdown the services.
     stopAzrael(clerk, server)
@@ -259,10 +258,6 @@ def test_multi_controller(ctrl_type):
         p.terminate()
         p.join()
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
-
     if err is not None:
         raise err
 
@@ -289,16 +284,12 @@ def test_getAllObjectIDs(ctrl_type):
 
     # Spawn a new object.
     templateID = np.int64(1).tostring()
-    ok, ret = ctrl.spawn('Echo', templateID, np.zeros(3))
+    ok, ret = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
     assert (ok, ret) == (True, objID_2)
 
     # The object list must now contain the ID of the just spawned object.
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [objID_2])
-
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
 
     # Shutdown the services.
     stopAzrael(clerk, server)
@@ -319,11 +310,11 @@ def test_get_template(ctrl_type):
     
     # Spawn a new object. It must have ID=2 because ID=1 was already given to
     # the controller.
-    ok, ctrl_id = ctrl.spawn('Echo', templateID_0, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID_0, np.zeros(3))
     assert (ok, ctrl_id) == (True, id_0)
 
     # Spawn another object from a different template.
-    ok, ctrl_id = ctrl.spawn('Echo', templateID_1, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID_1, np.zeros(3))
     assert (ok, ctrl_id) == (True, id_1)
 
     # Retrieve template of first object.
@@ -337,10 +328,6 @@ def test_get_template(ctrl_type):
     # Attempt to retrieve a non-existing object.
     ok, ret = ctrl.getTemplateID(int2id(100))
     assert not ok
-
-    # Shutdown.
-    clerk.terminate()
-    clerk.join()
 
     # Shutdown the services.
     stopAzrael(clerk, server)

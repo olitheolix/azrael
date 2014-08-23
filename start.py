@@ -130,8 +130,9 @@ def loadGroundModel(scale, model_name):
 
     # Tell Azrael to spawn the 'ground' object near the center of the scene.
     print('  Spawning object... ', end='', flush=True)
-    ok, objID = ctrl.spawn('Echo', templateID, 2 * np.array([0, -2, 1],
-                                np.float64), np.zeros(3))
+    ok, objID = ctrl.spawn(
+        'Echo'.encode('utf8'), templateID, 2 * np.array([0, -2, 1],
+        np.float64), np.zeros(3))
     print('done (ID=<{}>)'.format(objID))
 
 

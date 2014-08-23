@@ -126,7 +126,6 @@ class Clerk(multiprocessing.Process):
         if reset:
             # Flush the database.
             client.drop_database('azrael')
-            self.db_templateID.insert({'name': 'objcnt', 'cnt': 0})
 
             # Reset the object counter. This counter will guarantee unique
             # object IDs.
@@ -301,7 +300,7 @@ class Clerk(multiprocessing.Process):
                 self.returnErr(self.last_addr, 'Invalid Command')
 
     @typecheck
-    def getControllerClass(self, ctrl_name: str):
+    def getControllerClass(self, ctrl_name: bytes):
         """
         Return the full path name of the Python script for ``ctrl_name``.
 
@@ -323,9 +322,9 @@ class Clerk(multiprocessing.Process):
         p = os.path.join(this_dir, '..', 'controllers')
 
         # Pick the correct script.
-        if ctrl_name == 'Echo':
+        if ctrl_name == 'Echo'.encode('utf8'):
             return os.path.join(p, 'controller_cube.py')
-        elif ctrl_name == 'EchoBoost':
+        elif ctrl_name == 'EchoBoost'.encode('utf8'):
             return os.path.join(p, 'controller_cube_with_booster.py')
         else:
             return None
@@ -507,12 +506,13 @@ class Clerk(multiprocessing.Process):
                     geometry: np.ndarray, boosters: (list, tuple),
                     factories: (list, tuple)):
         """
-        Add a new template called ``name``.
+        Add a new ``templateID`` to the system.
 
-        Return an error if a template called ``name`` already exists.
+        Henceforth it is possible to ``spawn`` ``templateID`` objects.
 
-        Azrael can only ``spawn`` objects for which it has a template.
+        Return an error if a template with name ``templateID`` already exists.
 
+        :param bytes templateID: the name of the new template.
         :param bytes cshape: collision shape
         :param bytes geometry: object geometry
         :param parts.Booster boosters: list of Booster instances.
@@ -521,21 +521,32 @@ class Clerk(multiprocessing.Process):
         :rtype: (bool, bytes)
         :raises: None
         """
-        # Compile the Mongo document. It includes the collision shape,
-        # geometry, boosters- and factory units.
+        # Compile the Mongo document for the new template. This document
+        # contains the collision shape and geometry...
         data = {'templateID': templateID,
                 'cshape': cshape.tostring(), 'geometry': geometry.tostring()}
+
+        # ... as well as boosters- and factory parts.
         for b in boosters:
             data['boosters.{0:03d}'.format(b.bid)] = parts.booster_tostring(b)
         for f in factories:
             data['factories.{0:03d}'.format(f.fid)] = parts.factory_tostring(f)
 
-        # Insert the document.
-        self.db_templateID.update({'templateID': templateID},
-                               {'$set': data}, upsert=True)
+        # Insert the document only if it does not exist already. The return
+        # value contains the old document, ie. **None** if the document
+        # did not yet exist.
+        ret = self.db_templateID.find_and_modify(
+                {'templateID': templateID},
+                {'$setOnInsert': data},
+                upsert=True)
 
-        # Return the ID of the new template.
-        return True, (templateID, )
+        if ret is None:
+            # No template with name ``templateID`` existed --> success.
+            return True, (templateID, )
+        else:
+            # A template with name ``templateID`` already existed --> failure.
+            msg = 'Template ID <{}> already exists'.format(templateID)
+            return False, (msg, )
     
     @typecheck
     def sendMessage(self, src: bytes, dst: bytes, data: bytes):
@@ -575,7 +586,7 @@ class Clerk(multiprocessing.Process):
             return True, (doc['src'], doc['msg'])
 
     @typecheck
-    def spawn(self, ctrl_name: str, templateID: bytes,
+    def spawn(self, ctrl_name: bytes, templateID: bytes,
               sv: btInterface.BulletData):
         """
         Spawn a new object based on ``templateID``.
@@ -605,17 +616,23 @@ class Clerk(multiprocessing.Process):
         sv.cshape[:] = np.fromstring(cshape)
         sv = btInterface.pack(sv).tostring()
 
-        # Determine the full path to the Controller script.
-        prog = self.getControllerClass(ctrl_name)
-        if prog is None:
-            return False, 'Unknown Controller Name'
-
-        # Request another unique object ID.
+        # Determine the full path to the Controller script. Return with an
+        # error if no matching script was found.
+        if ctrl_name is not None:
+            prog = self.getControllerClass(ctrl_name)
+            if prog is None:
+                return False, 'Unknown Controller Name'
+        else:
+            # No dedicated Controller process was requested. Do nothing.
+            prog = None
+    
+        # Request unique object ID.
         new_id = util.int2id(self.getUniqueID())
 
-        # Start the Python Controller.
-        self.processes[new_id] = PythonInstance(prog, new_id)
-        self.processes[new_id].start()
+        if prog is not None:
+            # Start the Python Controller.
+            self.processes[new_id] = PythonInstance(prog, new_id)
+            self.processes[new_id].start()
 
         # Add the object to the physics simulation.
         btInterface.spawn(new_id, sv, templateID)
