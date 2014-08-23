@@ -29,7 +29,7 @@ import numpy as np
 
 import azrael.json as json
 import azrael.util as util
-import azrael.types as types
+import azrael.parts as parts
 import azrael.protocol as protocol
 import azrael.config as config
 import azrael.commands as commands
@@ -246,14 +246,14 @@ class Clerk(multiprocessing.Process):
         # Extract all boosters if the object has any.
         if 'boosters' in doc:
             b = doc['boosters'].values()
-            boosters = [types.booster_fromstring(_) for _ in b]
+            boosters = [parts.booster_fromstring(_) for _ in b]
         else:
             boosters = []
 
         # Extract all factories if the object has any.
         if 'factories' in doc:
             f = doc['factories'].values()
-            factories = [types.factory_fromstring(_) for _ in f]
+            factories = [parts.factory_fromstring(_) for _ in f]
         else:
             factories = []
 
@@ -290,9 +290,9 @@ class Clerk(multiprocessing.Process):
         data = {'templateID': templateID,
                 'cshape': cshape.tostring(), 'geometry': geometry.tostring()}
         for b in boosters:
-            data['boosters.{0:03d}'.format(b.bid)] = types.booster_tostring(b)
+            data['boosters.{0:03d}'.format(b.bid)] = parts.booster_tostring(b)
         for f in factories:
-            data['factories.{0:03d}'.format(f.fid)] = types.factory_tostring(f)
+            data['factories.{0:03d}'.format(f.fid)] = parts.factory_tostring(f)
 
         # Insert the document.
         self.db_templateID.update({'templateID': templateID},

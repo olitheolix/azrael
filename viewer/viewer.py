@@ -308,7 +308,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         return buf_vert.flatten()
 
     def loadGeometry(self):
-        ok, all_ids = self.client.getAllObjectIDs()
+        ok, all_ids = self.ctrl.getAllObjectIDs()
         
         for ctrl_id in all_ids:
             # Do not add anything if we already have the object.
@@ -316,12 +316,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Query the template ID associated with ctrl_id.
-            ok, templateID = self.client.getTemplateID(ctrl_id)
+            ok, templateID = self.ctrl.getTemplateID(ctrl_id)
             if not ok:
                 continue
 
             # Query the object template.
-            ok, buf_vert = self.client.getGeometry(templateID)
+            ok, buf_vert = self.ctrl.getGeometry(templateID)
             if not ok:
                 continue
 
@@ -388,7 +388,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         # Make sure the system is live.
         try:
-            self.client = wscontroller.WSControllerBase(
+            self.ctrl = wscontroller.WSControllerBase(
                 'ws://127.0.0.1:8080/websocket')
         except ConnectionRefusedError as err:
             print('Viewer: could not connect to Clacks')
@@ -396,7 +396,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             sys.exit(1)
             return
 
-        if not self.client.pingClerk():
+        if not self.ctrl.pingClerk():
             print('Viewer: could not ping Clerk')
             self.close()
             sys.exit(1)
@@ -408,7 +408,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         buf_vert = self.getGeometryCube()
         cs = np.ones(4, np.float64)
         cs[0] = 4
-        ok, tmp = self.client.addTemplate(cs, buf_vert, [], [])
+        ok, tmp = self.ctrl.addTemplate(cs, buf_vert, [], [])
         if not ok:
             print('Could not add new object template')
             self.close()
@@ -417,7 +417,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             print('Created ID <{}>'.format(self.cube_id))
             
         # Spawn a cube (templateID=3 defaults to one).
-        ok, tmp = self.client.spawn('Echo', self.cube_id, np.zeros(3), np.zeros(3))
+        ok, tmp = self.ctrl.spawn('Echo', self.cube_id, np.zeros(3), np.zeros(3))
         if not ok:
             print('Cannot spawn object (<{}>)'.format(tmp))
             self.close()
@@ -471,7 +471,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             gl.glUseProgram(self.shaders)
 
             # Query the object's position to construct the model matrix.
-            ok, sv = self.client.getStateVariables(ctrl_id)
+            ok, sv = self.ctrl.getStateVariables(ctrl_id)
             if not ok:
                 continue
             sv = sv[ctrl_id]
@@ -565,7 +565,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         pos = self.camera.position
         pos = pos + 30 * self.camera.view
-        self.client.suggestPosition(self.player_id, pos)
+        self.ctrl.suggestPosition(self.player_id, pos)
 
         # Do not update the camera rotation if the mouse is not grabbed.
         if not self.mouseGrab:
@@ -660,7 +660,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             pos = self.camera.position
             vel = 2 * self.camera.view
 
-            ok, ctrl_id = self.client.spawn('Echo', self.cube_id, pos, vel=vel,
+            ok, ctrl_id = self.ctrl.spawn('Echo', self.cube_id, pos, vel=vel,
                                             scale=0.25, imass=20)
             if not ok:
                 print('Could not spawn Echo (<{}>)'.format(ctrl_id))
@@ -669,7 +669,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             pos = self.camera.position
             vel = 0.5 * self.camera.view
 
-            ok, ctrl_id = self.client.spawn('EchoBoost', self.cube_id, pos,
+            ok, ctrl_id = self.ctrl.spawn('EchoBoost', self.cube_id, pos,
                                             vel=vel, scale=1, imass=1)
             if not ok:
                 print('Could not spawn EchoBoost (<{}>)'.format(ctrl_id))

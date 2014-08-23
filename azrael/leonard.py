@@ -19,7 +19,6 @@ import sys
 import time
 import pika
 import logging
-import pymongo
 import setproctitle
 import multiprocessing
 import numpy as np
@@ -82,7 +81,6 @@ class LeonardBase(multiprocessing.Process):
         self.setup()
         self.logit.debug('Setup complete.')
         
-        client = pymongo.MongoClient()
         btInterface.initSVDB(reset=False)
 
         t0 = time.time()

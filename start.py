@@ -109,8 +109,8 @@ def parseCommandline():
 
 def loadGroundModel(scale, model_name):
     # Establish connection to Azrael.
-    client = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
-    assert client.pingClerk()
+    ctrl = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
+    assert ctrl.pingClerk()
 
     # Load the model mesh.
     print('  Importing <{}>... '.format(model_name), end='', flush=True)
@@ -125,13 +125,13 @@ def loadGroundModel(scale, model_name):
     # Set the geometry of the object in Azrael.
     print('  Adding geometry to Azrael... ', end='', flush=True)
     cs = np.zeros(4, np.float64)
-    ok, ground = client.addTemplate(cs, buf_vert, [], [])
+    ok, ground = ctrl.addTemplate(cs, buf_vert, [], [])
 
     # Tell Azrael to spawn the 'ground' object near the center of the scene.
     print('  Spawning object... ', end='', flush=True)
-    ok, ctrl_id = client.spawn('Echo', ground, 2 * np.array([0, -2, 1],
+    ok, objID = ctrl.spawn('Echo', ground, 2 * np.array([0, -2, 1],
                                 np.float64), np.zeros(3))
-    print('done (ID=<{}>)'.format(ctrl_id))
+    print('done (ID=<{}>)'.format(objID))
 
 
 def main():

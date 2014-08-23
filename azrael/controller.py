@@ -26,7 +26,7 @@ import numpy as np
 
 import azrael.json as json
 import azrael.util as util
-import azrael.types as types
+import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.bullet.btInterface as btInterface
@@ -273,8 +273,4 @@ class ControllerBase(multiprocessing.Process):
                 continue
 
             # Prefix the message with our ID and return to sender.
-            tmp = 'Ctrl (received, sent): <{}>, <{}>'
-            tmp = tmp.format(msg, self.objID + msg)
-            print(tmp)
-            self.logit.error(tmp)
             self.sendMessage(src, self.objID + msg)

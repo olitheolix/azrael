@@ -1,7 +1,7 @@
 import cytoolz
 import numpy as np
 import azrael.json as json
-import azrael.types as types
+import azrael.parts as parts
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
 from azrael.typecheck import typecheck
@@ -30,8 +30,8 @@ def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
 def FromClerk_GetTemplate_Decode(payload: bytes):
     import collections
     data = json.loads(payload)
-    boosters = [types.booster(*_) for _ in data['boosters']]
-    factories = [types.factory(*_) for _ in data['factories']]
+    boosters = [parts.booster(*_) for _ in data['boosters']]
+    factories = [parts.factory(*_) for _ in data['factories']]
     nt = collections.namedtuple('Generic', 'cs geo boosters factories')
     ret = nt(np.array(data['cs'], np.float64),
              np.array(data['geo'], np.float64),
@@ -79,8 +79,8 @@ def ToClerk_AddTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
 @typecheck
 def ToClerk_AddTemplate_Decode(payload: bytes):
     data = json.loads(payload)
-    boosters = [types.booster(*_) for _ in data['boosters']]
-    factories = [types.factory(*_) for _ in data['factories']]
+    boosters = [parts.booster(*_) for _ in data['boosters']]
+    factories = [parts.factory(*_) for _ in data['factories']]
     cs = np.fromstring(bytes(data['cs']), np.float64)
     geo = np.fromstring(bytes(data['geo']), np.float64)
     return True, (cs, geo, boosters, factories)

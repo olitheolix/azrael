@@ -1,12 +1,12 @@
 import numpy as np
-import azrael.types as types
+import azrael.parts as parts
 
 
 def test_booster():
-    orig = types.booster(1)
-    a = types.booster_tostring(orig)
+    orig = parts.booster(1)
+    a = parts.booster_tostring(orig)
     assert isinstance(a, bytes)
-    new = types.booster_fromstring(a)
+    new = parts.booster_fromstring(a)
     for ii in range(len(orig)):
         assert np.array_equal(orig[ii], new[ii])
 
@@ -14,10 +14,10 @@ def test_booster():
 
 
 def test_factory():
-    orig = types.factory(1)
-    a = types.factory_tostring(orig)
+    orig = parts.factory(1)
+    a = parts.factory_tostring(orig)
     assert isinstance(a, bytes)
-    new = types.factory_fromstring(a)
+    new = parts.factory_fromstring(a)
     for ii in range(len(orig)):
         assert np.array_equal(orig[ii], new[ii])
 

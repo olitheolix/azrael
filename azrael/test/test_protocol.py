@@ -21,7 +21,7 @@ import IPython
 import subprocess
 import numpy as np
 
-import azrael.types as types
+import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.bullet.btInterface as btInterface
@@ -45,9 +45,9 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Test parameters and constants.
     cs = btInterface.defaultData().cshape
     geo = np.array([1,2,3], np.float64)
-    b0 = types.booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
-    b1 = types.booster(0, pos=np.zeros(3), orient=[1, 1, 0], max_force=0.6)
-    f0 = types.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
+    b0 = parts.booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
+    b1 = parts.booster(0, pos=np.zeros(3), orient=[1, 1, 0], max_force=0.6)
+    f0 = parts.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # ----------------------------------------------------------------------
     # Controller --> Clerk.
