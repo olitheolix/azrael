@@ -380,7 +380,8 @@ def test_create_fetch_template(ctrl_type):
     # Add a new object template.
     cs = np.array([1, 2, 3, 4], np.float64)
     geo = np.array([5, 6, 7, 8], np.float64)
-    ok, templateID = ctrl.addTemplate(cs, geo, [], [])
+    templateID = 't1'.encode('utf8')
+    ok, templateID = ctrl.addTemplate(templateID, cs, geo, [], [])
 
     # Fetch the just added template again.
     ok, ret = ctrl.getTemplate(templateID)
@@ -399,7 +400,8 @@ def test_create_fetch_template(ctrl_type):
     f0 = parts.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # Add the new template.
-    ok, templateID = ctrl.addTemplate(cs, geo, [b0, b1], [f0])
+    templateID = 't2'.encode('utf8')
+    ok, templateID = ctrl.addTemplate(templateID, cs, geo, [b0, b1], [f0])
 
     # Retrieve the geometry of the just created object and verify it is correct.
     ok, ret = ctrl.getGeometry(templateID)

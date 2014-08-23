@@ -400,7 +400,8 @@ def test_create_fetch_template():
     # Add a new object template.
     cs = np.array([1, 2, 3, 4], np.float64)
     geo = np.array([5, 6, 7, 8], np.float64)
-    ok, (templateID, ) = clerk.addTemplate(cs, geo, [], [])
+    templateID = 't1'.encode('utf8')
+    ok, _ = clerk.addTemplate(templateID, cs, geo, [], [])
 
     # Fetch the just added template again.
     ok, out = clerk.getTemplate(templateID)
@@ -419,7 +420,8 @@ def test_create_fetch_template():
     f0 = parts.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # Add the new template.
-    ok, (templateID, ) = clerk.addTemplate(cs, geo, [b0, b1], [f0])
+    templateID = 't2'.encode('utf8')
+    ok, _ = clerk.addTemplate(templateID, cs, geo, [b0, b1], [f0])
 
     # Retrieve the just created object and verify the CS and geometry.
     ok, out = clerk.getTemplate(templateID)
@@ -529,12 +531,13 @@ def test_processControlCommand():
     f0 = parts.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # Add it to Azrael and spawn an instance.
-    ok, (templateID_2, ) = clerk.addTemplate(cs, geo, [b0, b1], [f0])
+    templateID_2 = 't1'.encode('utf8')
+    ok, _ = clerk.addTemplate(templateID_2, cs, geo, [b0, b1], [f0])
     ok, (ctrl_id,) = clerk.spawn('Echo', templateID_2, sv)
     assert (ok, ctrl_id) == (True, objID_2)
     
     # Call processControlCommands. It must fail because the default object has
-    # no booster.
+    # no boosters.
     cmd_0 = commands.controlBooster(unitID=0, force=0.2)
     cmd_1 = commands.controlBooster(unitID=1, force=0.4)
     cmd = commands.serialiseCommands(objID_2, [cmd_0, cmd_1], [])

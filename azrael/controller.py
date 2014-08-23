@@ -195,12 +195,13 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_template', templateID)
 
     @typecheck
-    def addTemplate(self, cs: np.ndarray, geo: np.ndarray,
+    def addTemplate(self, templateID: bytes, cs: np.ndarray, geo: np.ndarray,
                     boosters: (list, tuple), factories: (list, tuple)):
         """
         Retrieve the data for ``templateID``.
         """
-        return self.serialiseAndSend('add_template', cs, geo, boosters, factories)
+        return self.serialiseAndSend(
+            'add_template', templateID, cs, geo, boosters, factories)
 
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple, bytes)):

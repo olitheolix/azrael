@@ -99,12 +99,12 @@ def FromClerk_GetTemplateID_Decode(payload: bytes):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_AddTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
-                               boosters, factories):
+def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray, geo:
+                               np.ndarray, boosters, factories):
     cs = cs.tostring()
     geo = geo.tostring()
 
-    d = {'cs': cs, 'geo': geo, 'boosters': boosters,
+    d = {'name': templateID, 'cs': cs, 'geo': geo, 'boosters': boosters,
          'factories': factories}
     d = json.dumps(d).encode('utf8')
 
@@ -116,9 +116,10 @@ def ToClerk_AddTemplate_Decode(payload: bytes):
     data = json.loads(payload)
     boosters = [parts.booster(*_) for _ in data['boosters']]
     factories = [parts.factory(*_) for _ in data['factories']]
+    templateID = bytes(data['name'])
     cs = np.fromstring(bytes(data['cs']), np.float64)
     geo = np.fromstring(bytes(data['geo']), np.float64)
-    return True, (cs, geo, boosters, factories)
+    return True, (templateID, cs, geo, boosters, factories)
 
 
 @typecheck
@@ -231,10 +232,6 @@ def ToClerk_GetGeometry_Encode(target: bytes):
 
 @typecheck
 def ToClerk_GetGeometry_Decode(payload: bytes):
-    # Payload must be exactly one templateID.
-    if len(payload) != 8:
-        return False, 'Insufficient arguments'
-
     return True, (payload, )
 
 

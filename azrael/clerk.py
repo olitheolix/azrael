@@ -185,11 +185,11 @@ class Clerk(multiprocessing.Process):
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        self.addTemplate(
+        self.addTemplate(np.int64(1).tostring(),
             np.array([0, 1, 1, 1], np.float64), np.array([]), [], [])
-        self.addTemplate(
+        self.addTemplate(np.int64(2).tostring(),
             np.array([3, 1, 1, 1], np.float64), np.array([]), [], [])
-        self.addTemplate(
+        self.addTemplate(np.int64(3).tostring(),
             np.array([4, 1, 1, 1], np.float64), np.array([]), [], [])
 
         # Initialise the SV database.
@@ -503,14 +503,15 @@ class Clerk(multiprocessing.Process):
         return True, ''
         
     @typecheck
-    def addTemplate(self, cshape: np.ndarray, geometry: np.ndarray,
-                    boosters: (list, tuple), factories: (list, tuple)):
+    def addTemplate(self, templateID: bytes, cshape: np.ndarray,
+                    geometry: np.ndarray, boosters: (list, tuple),
+                    factories: (list, tuple)):
         """
-        Add a new object template and return its ID.
+        Add a new template called ``name``.
+
+        Return an error if a template called ``name`` already exists.
 
         Azrael can only ``spawn`` objects for which it has a template.
-
-        fixme: let the user specify the template.
 
         :param bytes cshape: collision shape
         :param bytes geometry: object geometry
@@ -520,14 +521,6 @@ class Clerk(multiprocessing.Process):
         :rtype: (bool, bytes)
         :raises: None
         """
-        # Create a new and unique ID for the next template object.
-        new_id = self.db_templateID.find_and_modify(
-            {'name': 'objcnt'}, {'$inc': {'cnt': 1}}, new=True)
-        new_id = new_id['cnt']
-
-        # Convert the integer to NumPy int64.
-        templateID = np.int64(new_id).tostring()
-
         # Compile the Mongo document. It includes the collision shape,
         # geometry, boosters- and factory units.
         data = {'templateID': templateID,
