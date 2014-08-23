@@ -24,62 +24,77 @@ def killall():
     subprocess.call(['pkill', 'killme'])
 
 
-def test_server():
-    """
-    Ensure the server terminates the connection when garbage collected.
-    This is mostly to make the unit tests easier to administrate.
-    """
+def startAzrael(ctrl_type):
     killall()
-
-    # Start Clerk.
+    
+    # Start Clerk and instantiate Controller.
     clerk = azrael.clerk.Clerk(reset=True)
     clerk.start()
 
-    # Start server and give it some time to initialise.
-    server = clacks.ClacksServer()
-    server.start()
+    if ctrl_type == 'ZeroMQ':
+        ctrl = ControllerBase()
+        ctrl.setupZMQ()
+        ctrl.connectToClerk()
+        server = None
+    elif ctrl_type == 'Websocket':
+        server = clacks.ClacksServer()
+        server.start()
 
-    # Start a client and ping the server.
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping()
-    del client
+        ctrl = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
+        assert ctrl.ping()
+    else:
+        print('Unknown controller type <{}>'.format(ctrl_type))
+        assert False
+    return clerk, ctrl, server
 
-    # Terminate the server object.
-    server.terminate()
-    server.join()
-    del server
+
+def stopAzrael(clerk, server):
+    # Terminate the Clerk.
+    clerk.terminate()
+    clerk.join(timeout=3)
+
+    # Terminate the Server (if one was started).
+    if server is not None:
+        server.terminate()
+        server.join(timeout=3)
+
+    # Forcefully terminate everything.
+    killall()
+
+
+def test_ping_clacks():
+    """
+    Start services and send Ping to Clacks. Then terminate clacks and verify
+    that the ping fails.
+    """
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael('Websocket')
+
+    # Ping the server.
+    assert ctrl.ping()
+
+    # Shutdown the services.
+    stopAzrael(clerk, server)
 
     # Connection must now be impossible.
     with pytest.raises(ConnectionRefusedError):
         ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
 
-    clerk.terminate()
-    clerk.join()
-    killall()
-
     print('Test passed')
 
 
-def test_connect():
+def test_ping_clerk():
     """
-    Ping the websocket server.
+    Ping the Clerk instance via Clacks.
     """
-    killall()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael('Websocket')
 
-    # Start Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
+    # And send 'PING' command.
+    assert ctrl.ping_clerk()
 
-    # Start server and client.
-    server = clacks.ClacksServer()
-    server.start()
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping()
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
 
     print('Test passed')
 
@@ -88,55 +103,16 @@ def test_timeout():
     """
     WS connection must timeout if it is inactive for too long.
     """
-    killall()
-
-    # Start Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-
-    # Start server and client.
-    server = clacks.ClacksServer()
-    server.start()
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael('Websocket')
 
     # Read from the WS. Since the server is not writing to that socket the call
     # will block and must raise a timeout eventually.
     with pytest.raises(websocket.WebSocketTimeoutException):
-        client.sendToClacks(b'')
+        ctrl.sendToClacks(b'')
 
-    # Shutdown.
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
-    killall()
-
-    print('Test passed')
-
-
-def test_clerk_ping():
-    """
-    Ping the clerk instance.
-    """
-    killall()
-
-    # Start server and client.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-
-    server = clacks.ClacksServer()
-    server.start()
-
-    # This is the actual test: connect and send 'PING' command.
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping_clerk()
-
-    # Shutdown.
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
 
     print('Test passed')
 
@@ -145,305 +121,20 @@ def test_websocket_getID():
     """
     Query the controller ID associated with this WebSocket.
     """
-    killall()
-
-    # Start server and client.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    server = clacks.ClacksServer()
-    server.start()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael('Websocket')
 
     # Make sure we are connected.
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
-    assert client.objID == int2id(1)
+    assert ctrl.objID == int2id(1)
 
-    # Shutdown.
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
 
-    print('Test passed')
-
-
-def test_spawn_one_controller():
-    """
-    Ask Clerk to spawn one (echo) controller.
-    """
-    killall()
-
-    # Start server and client.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    server = clacks.ClacksServer()
-    server.start()
-
-    # Make sure the system is live.
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping_clerk()
-
-    # Instruct the server to spawn a Controller named 'Echo'. The call will
-    # return the ID of the controller which must be '2' ('0' is invalid and '1'
-    # was already given to the controller in the WS handler).
-    templateID = np.int64(1).tostring()
-    ok, ctrl_id = client.spawn('Echo', templateID, np.zeros(3))
-    print(ok, ctrl_id)
-    assert (ctrl_id, ok) == (int2id(2), True)
-
-    # Shutdown.
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
-    killall()
-
-    print('Test passed')
-
-
-def test_spawn_and_talk_to_one_controller():
-    """
-    Ask Clerk to spawn one (echo) controller. Then send a message to that
-    controller to ensure everything works.
-    """
-    killall()
-
-    # Start server and client.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    server = clacks.ClacksServer()
-    server.start()
-
-    # Make sure the system is live.
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping_clerk()
-
-    # Instruct the server to spawn a Controller named 'Echo'. The call will
-    # return the ID of the controller which must be '2' ('0' is invalid and '1'
-    # was already given to the Controller in Clacks).
-    templateID = np.int64(1).tostring()
-    ok, client_id = client.spawn('Echo', templateID, np.zeros(3))
-    assert (ok, client_id) == (True, int2id(2))
-
-    # Dispatch the test message.
-    msg_orig = 'test'.encode('utf8')
-    ok, ret = client.sendMessage(client_id, msg_orig)
-    assert ok
-
-    for ii in range(5):
-        ok, data = client.recvMessage()
-        assert isinstance(ok, bool)
-        if ok:
-            src, msg_ret = data
-        else:
-            src, msg_ret = None, None
-
-        if ok and (src is not None):
-            break
-        time.sleep(0.1)
-    assert src is not None
-
-    # The source must be the newly created process and the response must be the
-    # original messages prefixed with the controller ID.
-    print(src, client_id)
-    print(msg_ret)
-    assert src == client_id
-    assert (client_id + msg_orig) == msg_ret
-
-    # Shutdown.
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
-    killall()
-
-    print('Test passed')
-
-
-def test_spawn_and_get_state_variables():
-    """
-    Spawn a new Controller and query its state variables.
-    """
-    killall()
-
-    # Start server and client.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    server = clacks.ClacksServer()
-    server.start()
-
-    # Make sure the system is live.
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping_clerk()
-
-    # Instruct the server to spawn a Controller named 'Echo'. The call will
-    # return the ID of the controller which must be '2' ('0' is invalid and '1'
-    # was already given to the controller in the WS handler).
-    templateID = np.int64(1).tostring()
-    ok, id_0 = client.spawn('Echo', templateID, pos=np.ones(3), vel=-np.ones(3))
-    assert (ok, id_0) == (True, int2id(2))
-
-    ok, sv = client.getStateVariables(id_0)
-    assert (ok, len(sv)) == (True, 1)
-    assert id_0 in sv
-    assert np.array_equal(sv[id_0].position, np.ones(3))
-    assert np.array_equal(sv[id_0].velocityLin, -np.ones(3))
-
-    ok, all_ids = client.getAllObjectIDs()
-    assert (ok, all_ids) == (True, [id_0])
-
-    ok, sv = client.getStateVariables(id_0)
-    assert np.array_equal(sv[id_0].position, np.ones(3))
-    assert np.array_equal(sv[id_0].velocityLin, -np.ones(3))
-
-    # Spawn two more controllers and query their state variables all at once.
-    ok, id_1 = client.spawn('Echo', templateID, pos=2 * np.ones(3), vel=-2 * np.ones(3))
-    assert (ok, id_1) == (True, int2id(3))
-    ok, id_2 = client.spawn('Echo', templateID, pos=3 * np.ones(3), vel=-3 * np.ones(3))
-    assert (ok, id_2) == (True, int2id(4))
-    
-    ok, all_ids = client.getAllObjectIDs()
-    assert (ok, set(all_ids)) == (True, set([id_0, id_1, id_2]))
-
-    ok, sv = client.getStateVariables(all_ids)
-    assert set(sv.keys()) == set(all_ids)
-
-    assert np.array_equal(sv[id_0].position, 1 * np.ones(3))
-    assert np.array_equal(sv[id_0].velocityLin, 1 * -np.ones(3))
-    assert np.array_equal(sv[id_1].position, 2 * np.ones(3))
-    assert np.array_equal(sv[id_1].velocityLin, -2 * np.ones(3))
-    assert np.array_equal(sv[id_2].position, 3 * np.ones(3))
-    assert np.array_equal(sv[id_2].velocityLin, -3 * np.ones(3))
-
-    # Set the force vector twice. The reasons for testing this twice is a
-    # bug I once had.
-    f = np.ones(3, np.float64)
-    p = 2 * f
-    ok, ret = client.setForce(id_1, f)
-    assert ok
-    ok, ret = client.setForce(id_1, f + 1)
-    assert ok
-
-    # Set the suggested position.
-    ok, ret = client.suggestPosition(id_1, f)
-    assert ok
-    ok, ret = client.suggestPosition(id_1, f + 1)
-    assert ok
-    del f
-
-    # Shutdown.
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
-    killall()
-
-    print('Test passed')
-
-
-def test_getAllObjectIDs():
-    """
-    Ensure the getAllObjectIDs command reaches Clerk.
-    """
-    killall()
-
-    # Parameters and constants for this test.
-    objID_2 = int2id(2)
-    templateID = np.int64(1).tostring()
-
-    # Start Clerk and instantiate two Controllers.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    server = clacks.ClacksServer()
-    server.start()
-
-    # Make sure the system is live before attaching a client.
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping_clerk()
-
-    # So far no objects have been spawned.
-    ok, ret = client.getAllObjectIDs()
-    assert (ok, ret) == (True, [])
-
-    # Spawn a new object.
-    ok, ret = client.spawn('Echo', templateID, np.zeros(3))
-    assert (ok, ret) == (True, objID_2)
-
-    # The object list must now contain the ID of the just spawned object.
-    ok, ret = client.getAllObjectIDs()
-    assert (ok, ret) == (True, [objID_2])
-
-    # Terminate the Clerk.
-    clerk.terminate()
-    server.terminate()
-    clerk.join()
-    server.join()
-
-    # Kill all spawned Controller processes.
-    killall()
-
-    print('Test passed')
-
-
-def test_get_template():
-    """
-    Spawn some objects from the default templates and query their template IDs.
-    """
-    killall()
-
-    # Parameters and constants for this test.
-    id_0, id_1 = int2id(2), int2id(3)
-    templateID_0, templateID_1 = np.int64(1).tostring(), np.int64(3).tostring()
-
-    # Start Clerk and instantiate controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    server = clacks.ClacksServer()
-    server.start()
-
-    # Make sure the system is live before attaching a client.
-    client = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
-    assert client.ping_clerk()
-
-    # Spawn a new object. It must have ID=2 because ID=1 was already given to
-    # the `ctrl` instance inside the websocket handler.
-    ok, ctrl_id = client.spawn('Echo', templateID_0, np.zeros(3))
-    assert (ok, ctrl_id) == (True, id_0)
-
-    # Spawn another object from a different template.
-    ok, ctrl_id = client.spawn('Echo', templateID_1, np.zeros(3))
-    assert (ok, ctrl_id) == (True, id_1)
-
-    # Retrieve template of first object.
-    ok, ret = client.getTemplateID(id_0)
-    assert (ok, ret) == (True, templateID_0)
-    
-    # Retrieve template of second object.
-    ok, ret = client.getTemplateID(id_1)
-    assert (ok, ret) == (True, templateID_1)
-    
-    # Attempt to retrieve a non-existing object.
-    ok, ret = client.getTemplateID(int2id(100))
-    assert not ok
-
-    # Shutdown.
-    server.terminate()
-    clerk.terminate()
-    server.join()
-    clerk.join()
-    killall()
-    
     print('Test passed')
 
 
 if __name__ == '__main__':
-    test_get_template()
-    test_getAllObjectIDs()
-    test_spawn_one_controller()
-    test_spawn_and_talk_to_one_controller()
-    test_spawn_and_get_state_variables()
-    test_server()
-    test_connect()
+    test_ping_clacks()
+    test_ping_clerk()
     test_timeout()
-    test_clerk_ping()
     test_websocket_getID()
