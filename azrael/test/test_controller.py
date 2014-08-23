@@ -31,7 +31,7 @@ import subprocess
 import numpy as np
 
 import azrael.clerk
-import azrael.wsclient
+import azrael.wscontroller
 import azrael.controller
 import azrael.types as types
 import azrael.clacks as clacks
@@ -42,7 +42,7 @@ import azrael.bullet.btInterface as btInterface
 from azrael.util import int2id, id2int
 
 ipshell = IPython.embed
-WSControllerBase = azrael.wsclient.WSControllerBase
+WSControllerBase = azrael.wscontroller.WSControllerBase
 ControllerBase = azrael.controller.ControllerBase
 
 

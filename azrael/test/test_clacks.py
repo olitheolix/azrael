@@ -10,12 +10,12 @@ import numpy as np
 import azrael.clerk
 import azrael.config as config
 import azrael.clacks as clacks
-import azrael.wsclient as wsclient
+import azrael.wscontroller as wscontroller
 import azrael.controller as controller
 
 from azrael.util import int2id, id2int
 
-WSControllerBase = wsclient.WSControllerBase
+WSControllerBase = wscontroller.WSControllerBase
 
 ipshell = IPython.embed
 

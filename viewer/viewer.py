@@ -38,7 +38,7 @@ import numpy as np
 import model_import
 import OpenGL.GL as gl
 
-import azrael.wsclient as wsclient
+import azrael.wscontroller as wscontroller
 
 from PySide import QtCore, QtGui, QtOpenGL
 
@@ -388,7 +388,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         # Make sure the system is live.
         try:
-            self.client = wsclient.WSControllerBase(
+            self.client = wscontroller.WSControllerBase(
                 'ws://127.0.0.1:8080/websocket')
         except ConnectionRefusedError as err:
             print('Viewer: could not connect to Clacks')

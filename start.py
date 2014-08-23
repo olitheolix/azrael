@@ -41,7 +41,7 @@ import azrael.clerk
 import azrael.config as config
 import azrael.clacks as clacks
 import azrael.leonard as leonard
-import azrael.wsclient as wsclient
+import azrael.wscontroller as wscontroller
 import azrael.bullet.btInterface as btInterface
 
 
@@ -109,7 +109,7 @@ def parseCommandline():
 
 def loadGroundModel(scale, model_name):
     # Establish connection to Azrael.
-    client = wsclient.WSControllerBase('ws://127.0.0.1:8080/websocket')
+    client = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
     assert client.pingClerk()
 
     # Load the model mesh.
@@ -141,7 +141,7 @@ def main():
 
     # Determine if Azrael is live.
     try:
-        wsclient.WSControllerBase('ws://127.0.0.1:8080/websocket')
+        wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
         is_azrael_live = True
     except ConnectionRefusedError as err:
         is_azrael_live = False
