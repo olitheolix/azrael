@@ -396,7 +396,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             sys.exit(1)
             return
 
-        if not self.client.ping_clerk():
+        if not self.client.pingClerk():
             print('Viewer: could not ping Clerk')
             self.close()
             sys.exit(1)

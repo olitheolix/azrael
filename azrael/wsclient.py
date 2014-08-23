@@ -89,7 +89,7 @@ class ControllerBaseWS(azrael.controller.ControllerBase):
         else:
             return False, ret[1:]
 
-    def ping_clerk(self):
+    def pingClerk(self):
         """
         Ping Clerk.
         """

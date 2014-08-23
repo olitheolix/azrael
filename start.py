@@ -110,7 +110,7 @@ def parseCommandline():
 def loadGroundModel(scale, model_name):
     # Establish connection to Azrael.
     client = wsclient.ControllerBaseWS('ws://127.0.0.1:8080/websocket')
-    assert client.ping_clerk()
+    assert client.pingClerk()
 
     # Load the model mesh.
     print('  Importing <{}>... '.format(model_name), end='', flush=True)
