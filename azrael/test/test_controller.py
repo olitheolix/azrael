@@ -31,9 +31,10 @@ import subprocess
 import numpy as np
 
 import azrael.clerk
-import azrael.clacks
+import azrael.wsclient
 import azrael.controller
 import azrael.types as types
+import azrael.clacks as clacks
 import azrael.protocol as protocol
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
@@ -41,6 +42,7 @@ import azrael.bullet.btInterface as btInterface
 from azrael.util import int2id, id2int
 
 ipshell = IPython.embed
+ControllerBaseWS = azrael.wsclient.ControllerBaseWS
 ControllerBase = azrael.controller.ControllerBase
 
 
@@ -48,42 +50,66 @@ def killall():
     subprocess.call(['pkill', 'killme'])
 
 
+def startAzrael(ctrl_type):
+    killall()
+    
+    # Start Clerk and instantiate Controller.
+    clerk = azrael.clerk.Clerk(reset=True)
+    clerk.start()
+
+    if ctrl_type == 'ZeroMQ':
+        ctrl = ControllerBase()
+        ctrl.setupZMQ()
+        ctrl.connectToClerk()
+        server = None
+    elif ctrl_type == 'Websocket':
+        server = clacks.ClacksServer()
+        server.start()
+
+        ctrl = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
+        assert ctrl.ping()
+    else:
+        print('Unknown controller type <{}>'.format(ctrl_type))
+        assert False
+    return clerk, ctrl, server
+
+
+def stopAzrael(clerk, server):
+    # Terminate the Clerk.
+    clerk.terminate()
+    clerk.join(timeout=3)
+
+    # Terminate the Server (if one was started).
+    if server is not None:
+        server.terminate()
+        server.join(timeout=3)
+
+    # Forcefully terminate everything.
+    killall()
+
+
 def test_ping():
     """
     Send a ping to the Clerk and check the response is correct.
     """
-    killall()
-
-    # Start Clerk and instantiate Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael('ZeroMQ')
 
     ok, ret = ctrl.ping()
     assert (ok, ret) == (True, 'pong clerk'.encode('utf8'))
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
-
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
     print('Test passed')
 
 
-def test_spawn_one_controller():
+@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
+def test_spawn_one_controller(ctrl_type):
     """
     Ask Clerk to spawn one (echo) controller.
     """
-    killall()
-
-    # Start Clerk and instantiate Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael(ctrl_type)
 
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
@@ -96,23 +122,19 @@ def test_spawn_one_controller():
     clerk.terminate()
     clerk.join()
 
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
     print('Test passed')
 
 
-def test_spawn_and_talk_to_one_controller():
+@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
+def test_spawn_and_talk_to_one_controller(ctrl_type):
     """
     Ask Clerk to spawn one (echo) controller. Then send a message to that
     controller to ensure everything works.
     """
-    killall()
-
-    # Start Clerk and instantiate Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael(ctrl_type)
 
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
@@ -152,22 +174,18 @@ def test_spawn_and_talk_to_one_controller():
     clerk.terminate()
     clerk.join()
 
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
     print('Test passed')
 
 
-def test_spawn_and_get_state_variables():
+@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
+def test_spawn_and_get_state_variables(ctrl_type):
     """
     Spawn a new Controller and query its state variables.
     """
-    killall()
-
-    # Start Clerk and instantiate Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael(ctrl_type)
 
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
@@ -188,23 +206,19 @@ def test_spawn_and_get_state_variables():
     clerk.terminate()
     clerk.join()
 
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
     print('Test passed')
 
 
-def test_multi_controller():
+@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
+def test_multi_controller(ctrl_type):
     """
     Start a few echo Controllers processes. Then manually operate one
     Controller instance to bounce messages off the other controllers.
     """
-    killall()
-
-    # Start Clerk and instantiate Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael(ctrl_type)
 
     # Launch the Controllers (default implementation is an echo).
     num_proc = 10
@@ -252,26 +266,22 @@ def test_multi_controller():
     if err is not None:
         raise err
 
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
     print('Test passed')
 
 
-def test_getAllObjectIDs():
+@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
+def test_getAllObjectIDs(ctrl_type):
     """
     Ensure the getAllObjectIDs command reaches Clerk.
     """
-    killall()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael(ctrl_type)
     
     # Parameters and constants for this test.
     objID_2 = int2id(2)
     templateID = np.int64(1).tostring()
-
-    # Start Clerk and instantiate two Controllers.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
 
     # So far no objects have been spawned.
     ok, ret = ctrl.getAllObjectIDs()
@@ -290,28 +300,23 @@ def test_getAllObjectIDs():
     clerk.terminate()
     clerk.join()
 
-    # Kill all spawned Controller processes.
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
     print('Test passed')
 
 
-def test_get_template():
+@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
+def test_get_template(ctrl_type):
     """
     Spawn some objects from the default templates and query their template IDs.
     """
-    killall()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
     id_0, id_1 = int2id(2), int2id(3)
     templateID_0, templateID_1 = np.int64(1).tostring(), np.int64(3).tostring()
     
-    # Start Clerk and instantiate Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
-
     # Spawn a new object. It must have ID=2 because ID=1 was already given to
     # the controller.
     ok, ctrl_id = ctrl.spawn('Echo', templateID_0, np.zeros(3))
@@ -337,22 +342,18 @@ def test_get_template():
     clerk.terminate()
     clerk.join()
 
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, server)
     print('Test passed')
     
 
-def test_create_fetch_template():
+@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
+def test_create_fetch_template(ctrl_type):
     """
     Add a new object to the templateID DB and query it again.
     """
-    killall()
-
-    # Start Clerk and instantiate Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Start the necessary services.
+    clerk, ctrl, server = startAzrael(ctrl_type)
 
     # Request an invalid ID.
     ok, ret = ctrl.getTemplate('blah'.encode('utf8'))
@@ -422,15 +423,17 @@ def test_create_fetch_template():
     assert types.booster_tostring(b1) in out_boosters
     assert types.factory_tostring(f0) in out_factories
 
+    # Shutdown the services.
+    stopAzrael(clerk, server)
     print('Test passed')
 
 
 if __name__ == '__main__':
-    test_create_fetch_template()
-    test_get_template()
-    test_getAllObjectIDs()
+    test_create_fetch_template('ZeroMQ')
+    test_get_template('ZeroMQ')
+    test_getAllObjectIDs('ZeroMQ')
     test_ping()
-    test_spawn_one_controller()
-    test_spawn_and_talk_to_one_controller()
-    test_spawn_and_get_state_variables()
-    test_multi_controller()
+    test_spawn_one_controller('ZeroMQ')
+    test_spawn_and_talk_to_one_controller('ZeroMQ')
+    test_spawn_and_get_state_variables('ZeroMQ')
+    test_multi_controller('ZeroMQ')
