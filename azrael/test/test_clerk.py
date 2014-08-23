@@ -224,7 +224,7 @@ def test_spawn():
     sv = btInterface.defaultData()
 
     # Unknown controller name.
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
     ok, ret = clerk.spawn('aaaa'.encode('utf8'), templateID, sv)
     assert (ok, ret) == (False, 'Unknown Controller Name')
 
@@ -235,7 +235,7 @@ def test_spawn():
 
     # All parameters are now valid. We must be assigne ID=1 because this is the
     # first ID in an otherwise pristine system.
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
     ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
     assert (ok, ret) == (True, int2id(1))
 
@@ -253,7 +253,7 @@ def test_get_statevar():
     objID_2 = int2id(2)
     sv_1 = btInterface.defaultData(position=np.arange(3), vlin=[2, 4, 6])
     sv_2 = btInterface.defaultData(position=[2, 4, 6], vlin=[6, 8, 10])
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -328,7 +328,7 @@ def test_set_force():
     assert (ok, ret) == (False, 'ID does not exist')
 
     # Spawn a new object. It must have ID=1.
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
     ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
     assert (ok, ret) == (True, id_1)
 
@@ -350,7 +350,7 @@ def test_suggest_position():
     id_1 = int2id(1)
     sv = btInterface.defaultData()
     force = np.array([1, 2, 3], np.float64)
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -384,17 +384,17 @@ def test_create_fetch_template():
     assert not ok
 
     # Clerk has a few default objects. This one has no collision shape...
-    ok, out = clerk.getTemplate(np.int64(1).tostring())
+    ok, out = clerk.getTemplate('_templateNone'.encode('utf8'))
     assert ok
     assert np.array_equal(out[0], np.array([0, 1, 1, 1]))
 
     # ... this one is a sphere...
-    ok, out = clerk.getTemplate(np.int64(2).tostring())
+    ok, out = clerk.getTemplate('_templateSphere'.encode('utf8'))
     assert ok
     assert np.array_equal(out[0], np.array([3, 1, 1, 1]))
 
     # ... and this one is a cube.
-    ok, out = clerk.getTemplate(np.int64(3).tostring())
+    ok, out = clerk.getTemplate('_templateCube'.encode('utf8'))
     assert ok
     assert np.array_equal(out[0], np.array([4, 1, 1, 1]))
 
@@ -459,7 +459,8 @@ def test_get_object_template_id():
 
     # Parameters and constants for this test.
     id_0, id_1 = int2id(1), int2id(2)
-    templateID_0, templateID_1 = np.int64(1).tostring(), np.int64(3).tostring()
+    templateID_0 = '_templateNone'.encode('utf8')
+    templateID_1 = '_templateCube'.encode('utf8')
     sv = btInterface.defaultData()
     
     # Instantiate a Clerk.
@@ -500,7 +501,7 @@ def test_processControlCommand():
     
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
-    templateID_1 = np.int64(1).tostring()
+    templateID_1 = '_templateNone'.encode('utf8')
     sv = btInterface.defaultData()
 
     # Instantiate a Clerk.
@@ -566,7 +567,7 @@ def test_get_all_objectids():
     
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
     sv = btInterface.defaultData()
 
     # Instantiate a Clerk.

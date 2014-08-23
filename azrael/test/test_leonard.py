@@ -49,7 +49,7 @@ def test_move_single_object(clsLeonard):
     
     # Create a spherical object (a default spherical object exists by default
     # and is associated with templateID=2).
-    templateID = np.int64(2).tostring()
+    templateID = '_templateCube'.encode('utf8')
     ok, id_0 = ctrl.spawn(echo_ctrl, templateID, [0, 0, 0], [0, 0, 0])
     assert ok
 
@@ -115,7 +115,7 @@ def test_move_two_objects_no_collision(clsLeonard):
     leonard.setup()
     
     # Create two spherical object.
-    templateID = np.int64(2).tostring()
+    templateID = '_templateCube'.encode('utf8')
     ok, id_0 = ctrl.spawn(echo_ctrl, templateID, [0, 0, 0], [1, 0, 0])
     assert ok
     ok, id_1 = ctrl.spawn(echo_ctrl, templateID, [0, 10, 0], [0, -1, 0])
@@ -176,7 +176,7 @@ def test_multiple_workers(clsWorker):
     leonard.setup()
     
     # Create several spherical objects.
-    templateID = np.int64(2).tostring()
+    templateID = '_templateCube'.encode('utf8')
     list_ids = []
 
     for ii in range(num_objects):

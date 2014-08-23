@@ -117,7 +117,7 @@ def test_spawn_one_controller(ctrl_type):
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
     # was already given to the controller in the WS handler).
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
     ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
@@ -125,7 +125,7 @@ def test_spawn_one_controller(ctrl_type):
     # controller process to control the object. We cannot explicitly verify
     # that not controller process was created but we can verify that the spawn
     # command itself worked.
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
     ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(3))
 
@@ -146,7 +146,7 @@ def test_spawn_and_talk_to_one_controller(ctrl_type):
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
     # was already given to the Controller).
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
     ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
@@ -193,7 +193,7 @@ def test_spawn_and_get_state_variables(ctrl_type):
     # Instruct the server to spawn a Controller named 'Echo'. The call will
     # return the ID of the controller which must be '2' ('0' is invalid and '1'
     # was already given to the controller in the WS handler).
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
     ok, id0 = ctrl.spawn(echo_ctrl, templateID, pos=np.ones(3), vel=-np.ones(3))
     assert (ok, id0) == (True, int2id(2))
 
@@ -276,14 +276,14 @@ def test_getAllObjectIDs(ctrl_type):
     
     # Parameters and constants for this test.
     objID_2 = int2id(2)
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
 
     # So far no objects have been spawned.
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [])
 
     # Spawn a new object.
-    templateID = np.int64(1).tostring()
+    templateID = '_templateNone'.encode('utf8')
     ok, ret = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
     assert (ok, ret) == (True, objID_2)
 
@@ -306,7 +306,8 @@ def test_get_template(ctrl_type):
 
     # Parameters and constants for this test.
     id_0, id_1 = int2id(2), int2id(3)
-    templateID_0, templateID_1 = np.int64(1).tostring(), np.int64(3).tostring()
+    templateID_0 = '_templateNone'.encode('utf8')
+    templateID_1 = '_templateCube'.encode('utf8')
     
     # Spawn a new object. It must have ID=2 because ID=1 was already given to
     # the controller.
@@ -347,19 +348,19 @@ def test_create_fetch_template(ctrl_type):
     assert not ok
 
     # Clerk has a few default objects. This one has no collision shape...
-    ok, ret = ctrl.getTemplate(np.int64(1).tostring())
+    ok, ret = ctrl.getTemplate('_templateNone'.encode('utf8'))
     assert ok
     assert np.array_equal(ret.cs, [0, 1, 1, 1])
     assert len(ret.geo) == len(ret.boosters) == len(ret.factories) == 0
 
     # ... this one is a sphere...
-    ok, ret = ctrl.getTemplate(np.int64(2).tostring())
+    ok, ret = ctrl.getTemplate('_templateSphere'.encode('utf8'))
     assert ok
     assert np.array_equal(ret.cs, [3, 1, 1, 1])
     assert len(ret.geo) == len(ret.boosters) == len(ret.factories) == 0
 
     # ... and this one is a cube.
-    ok, ret = ctrl.getTemplate(np.int64(3).tostring())
+    ok, ret = ctrl.getTemplate('_templateCube'.encode('utf8'))
     assert ok
     assert np.array_equal(ret.cs, [4, 1, 1, 1])
     assert len(ret.geo) == len(ret.boosters) == len(ret.factories) == 0

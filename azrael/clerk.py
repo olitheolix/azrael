@@ -184,11 +184,11 @@ class Clerk(multiprocessing.Process):
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        self.addTemplate(np.int64(1).tostring(),
+        self.addTemplate('_templateNone'.encode('utf8'),
             np.array([0, 1, 1, 1], np.float64), np.array([]), [], [])
-        self.addTemplate(np.int64(2).tostring(),
+        self.addTemplate('_templateSphere'.encode('utf8'),
             np.array([3, 1, 1, 1], np.float64), np.array([]), [], [])
-        self.addTemplate(np.int64(3).tostring(),
+        self.addTemplate('_templateCube'.encode('utf8'),
             np.array([4, 1, 1, 1], np.float64), np.array([]), [], [])
 
         # Initialise the SV database.
