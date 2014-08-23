@@ -125,11 +125,12 @@ def loadGroundModel(scale, model_name):
     # Set the geometry of the object in Azrael.
     print('  Adding geometry to Azrael... ', end='', flush=True)
     cs = np.zeros(4, np.float64)
-    ok, ground = ctrl.addTemplate(cs, buf_vert, [], [])
+    templateID = 'ground'.encode('utf8')
+    ok, _ = ctrl.addTemplate(templateID, cs, buf_vert, [], [])
 
     # Tell Azrael to spawn the 'ground' object near the center of the scene.
     print('  Spawning object... ', end='', flush=True)
-    ok, objID = ctrl.spawn('Echo', ground, 2 * np.array([0, -2, 1],
+    ok, objID = ctrl.spawn('Echo', templateID, 2 * np.array([0, -2, 1],
                                 np.float64), np.zeros(3))
     print('done (ID=<{}>)'.format(objID))
 

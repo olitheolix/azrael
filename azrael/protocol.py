@@ -296,32 +296,20 @@ def FromClerk_GetStateVariable_Decode(payload: bytes):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_Spawn_Encode(name: str, templateID: bytes, sv):
-    data = bytes([len(name.encode('utf8'))]) + name.encode('utf8')
-    data += templateID + btInterface.pack(sv).tostring()
-    return True, data
+def ToClerk_Spawn_Encode(name: str, templateID: bytes, sv: btInterface.BulletData):
+    sv = btInterface.pack(sv).tostring()
+    d = {'name': name, 'templateID': templateID, 'sv': sv}
+    return True, json.dumps(d).encode('utf8')
 
 
 @typecheck
 def ToClerk_Spawn_Decode(payload: bytes):
-    # Spawn a new object/controller.
-    if len(payload) == 0:
-        return False, 'Insufficient arguments'
+    data = json.loads(payload)
+    ctrl_name = data['name']
+    templateID = bytes(data['templateID'])
+    sv = np.fromstring(bytes(data['sv']), np.float64)
+    sv = btInterface.unpack(sv)
 
-    # Extract name of Python object to launch. The first byte denotes
-    # the length of that name (in bytes).
-    name_len = payload[0]
-    if len(payload) != (name_len + 1 + 8 + config.LEN_SV_BYTES):
-        return False, 'Invalid Payload Length'
-
-    # Extract and decode the Controller name.
-    ctrl_name = payload[1:name_len+1]
-    ctrl_name = ctrl_name.decode('utf8')
-
-    # Query the object description ID to spawn.
-    templateID = payload[name_len+1:name_len+1+8]
-    sv = payload[name_len+1+8:]
-    sv = btInterface.unpack(np.fromstring(sv))
     if sv is None:
         return False, 'Invalid State Variable data'
     else:

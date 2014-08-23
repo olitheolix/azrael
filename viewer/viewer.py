@@ -408,12 +408,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         buf_vert = self.getGeometryCube()
         cs = np.ones(4, np.float64)
         cs[0] = 4
-        ok, tmp = self.ctrl.addTemplate(cs, buf_vert, [], [])
+        templateID = 'cube'.encode('utf8')
+        ok, _ = self.ctrl.addTemplate(templateID, cs, buf_vert, [], [])
         if not ok:
             print('Could not add new object template')
             self.close()
         else:
-            self.cube_id = tmp
+            self.cube_id = templateID
             print('Created ID <{}>'.format(self.cube_id))
             
         # Spawn a cube (templateID=3 defaults to one).
