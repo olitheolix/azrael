@@ -42,7 +42,7 @@ import azrael.bullet.btInterface as btInterface
 from azrael.util import int2id, id2int
 
 ipshell = IPython.embed
-ControllerBaseWS = azrael.wsclient.ControllerBaseWS
+WSControllerBase = azrael.wsclient.WSControllerBase
 ControllerBase = azrael.controller.ControllerBase
 
 
@@ -66,7 +66,7 @@ def startAzrael(ctrl_type):
         server = clacks.ClacksServer()
         server.start()
 
-        ctrl = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
+        ctrl = WSControllerBase('ws://127.0.0.1:8080/websocket', 1)
         assert ctrl.ping()
     else:
         print('Unknown controller type <{}>'.format(ctrl_type))

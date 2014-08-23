@@ -42,7 +42,7 @@ import azrael.bullet.btInterface as btInterface
 ipshell = IPython.embed
 
 
-class ControllerBaseWS(azrael.controller.ControllerBase):
+class WSControllerBase(azrael.controller.ControllerBase):
     def __init__(self, url, timeout=20, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

@@ -15,7 +15,7 @@ import azrael.controller as controller
 
 from azrael.util import int2id, id2int
 
-ControllerBaseWS = wsclient.ControllerBaseWS
+WSControllerBase = wsclient.WSControllerBase
 
 ipshell = IPython.embed
 
@@ -40,7 +40,7 @@ def startAzrael(ctrl_type):
         server = clacks.ClacksServer()
         server.start()
 
-        ctrl = ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
+        ctrl = WSControllerBase('ws://127.0.0.1:8080/websocket', 1)
         assert ctrl.ping()
     else:
         print('Unknown controller type <{}>'.format(ctrl_type))
@@ -78,7 +78,7 @@ def test_ping_clacks():
 
     # Connection must now be impossible.
     with pytest.raises(ConnectionRefusedError):
-        ControllerBaseWS('ws://127.0.0.1:8080/websocket', 1)
+        WSControllerBase('ws://127.0.0.1:8080/websocket', 1)
 
     print('Test passed')
 

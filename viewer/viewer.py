@@ -388,7 +388,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         # Make sure the system is live.
         try:
-            self.client = wsclient.ControllerBaseWS(
+            self.client = wsclient.WSControllerBase(
                 'ws://127.0.0.1:8080/websocket')
         except ConnectionRefusedError as err:
             print('Viewer: could not connect to Clacks')

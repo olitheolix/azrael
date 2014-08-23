@@ -109,7 +109,7 @@ def parseCommandline():
 
 def loadGroundModel(scale, model_name):
     # Establish connection to Azrael.
-    client = wsclient.ControllerBaseWS('ws://127.0.0.1:8080/websocket')
+    client = wsclient.WSControllerBase('ws://127.0.0.1:8080/websocket')
     assert client.pingClerk()
 
     # Load the model mesh.
@@ -141,7 +141,7 @@ def main():
 
     # Determine if Azrael is live.
     try:
-        wsclient.ControllerBaseWS('ws://127.0.0.1:8080/websocket')
+        wsclient.WSControllerBase('ws://127.0.0.1:8080/websocket')
         is_azrael_live = True
     except ConnectionRefusedError as err:
         is_azrael_live = False
