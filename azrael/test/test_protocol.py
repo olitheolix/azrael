@@ -94,6 +94,20 @@ def test_send_command():
     print('Test passed')
     
 
+def test_recvMsg():
+    """
+    Test codec for recvMsg command.
+    """
+    sender = int2id(5)
+    msg = 'test'.encode('utf8')
+
+    ok, aux = protocol.FromClerk_RecvMsg_Encode(sender, msg)
+    assert ok
+    ok, out = protocol.FromClerk_RecvMsg_Decode(aux)
+    assert ok
+    
+
 if __name__ == '__main__':
+    test_recvMsg()
     test_send_command()
     test_encoding_add_get_template()

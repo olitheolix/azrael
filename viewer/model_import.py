@@ -19,7 +19,6 @@
 
 import os
 import sys
-import json
 import time
 import IPython
 import pyassimp
@@ -150,7 +149,7 @@ def loadModelAll(fname):
     for ii in range(len(UV)):
         assert (len(UV[ii]) // 2 == len(vert[ii]) // 3)
 
-    # Compile the data structure, convert it to JSON, and write it to disk.
+    # Return the data as a dictionary.
     data = {'vertices': vert,
             'UV': UV,
             'RGB': RGB,

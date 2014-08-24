@@ -16,31 +16,61 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-This module contains Python <--> binary convertes. These will be used to encode
-``Controller`` request to bytes (and back) so that they can be sent via ZeroMQ
-sockets.
+The encoders and decoders in this module specify the binary protocol for
+sending/receiving messages to/from Clerk.
 
-The ``ToClerk_*_Decode`` (decodes received byte stream) and
-``FromClerk_*_Encode`` (serialises the returned data in Clerk) describe the
-protocol expected by Azrael whereas their counterparts, namely
-``ToClerk_*_Encode`` and ``FromClerk_*_Decode``, are language specific
-{en,de}decoders. The Python versions were added to this module for
-convenience. Bindings from other languages must implement their own versions of
-``ToClerk_*_Encode`` and ``FromClerk_*_Decode``.
+``ToClerk_*_Decode``: Clerk will use this function to de-serialise the incoming
+byte stream into native Python types.
 
-The binary protocols are not pickled Python objects but straightforwards
-encodings of strings, JSON objects, or C-arrays (via NumPy). This should make
-it possible to write clients in other languages.
+``FromClerk_*_Encode``: Clerk will use this function to serialise its response.
+
+``ToClerk_*_Encode``: the (Python) client uses this function to serialise its
+request for Clerk.
+
+``FromClerk_*_Decode``: the (Python) client uses this function to de-serialise
+Clerk's response.
+
+The binary protocols are not pickled Python objects but (hopefully) language
+agnostic encodings of strings, JSON objects, or C-arrays (via NumPy). This
+should make it possible to write clients in other languages.
 """
 
+import json
 import cytoolz
+import collections
 import numpy as np
-import azrael.json as json
 import azrael.parts as parts
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
 from azrael.typecheck import typecheck
 
+
+class AzraelEncoder(json.JSONEncoder):
+    """
+    Augment default JSON encoder to handle bytes and NumPy arrays.
+    """
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, bytes):
+            return list(obj)
+        if isinstance(obj, np.int64):
+            return int(obj)
+        if isinstance(obj, np.float64):
+            return float(obj)
+        return json.JSONEncoder.default(self, obj)
+
+def dumps(data):
+    # Convenience function for encoding ``data`` with custom JSON encoder.
+    return json.dumps(data, cls=AzraelEncoder)
+
+def loads(data: bytes):
+    # Convenience function for decoding ``data``.
+    return json.loads(data.decode('utf8'))
+
+# ---------------------------------------------------------------------------
+# GetTemplate
+# ---------------------------------------------------------------------------
 
 @typecheck
 def ToClerk_GetTemplate_Encode(templateID: bytes):
@@ -58,23 +88,33 @@ def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
                                  factories: (list, tuple)):
     d = {'cs': cs, 'geo': geo, 'boosters': boosters,
          'factories': factories}
-    return True, json.dumps(d).encode('utf8')
+    return True, dumps(d).encode('utf8')
 
 
 @typecheck
 def FromClerk_GetTemplate_Decode(payload: bytes):
-    import collections
-    data = json.loads(payload)
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
+
+    # Wrap the Booster- and Factory data into their dedicated named tuples.
     boosters = [parts.booster(*_) for _ in data['boosters']]
     factories = [parts.factory(*_) for _ in data['factories']]
+
+    # Return the complete information in a named tuple.
     nt = collections.namedtuple('Template', 'cs geo boosters factories')
     ret = nt(np.array(data['cs'], np.float64),
              np.array(data['geo'], np.float64),
              boosters, factories)
     return True, ret
 
+
 # ---------------------------------------------------------------------------
+# GetTemplateID
 # ---------------------------------------------------------------------------
+
 
 @typecheck
 def ToClerk_GetTemplateID_Encode(objID: bytes):
@@ -95,30 +135,44 @@ def FromClerk_GetTemplateID_Encode(templateID: bytes):
 def FromClerk_GetTemplateID_Decode(payload: bytes):
     return True, payload
 
+
 # ---------------------------------------------------------------------------
+# AddTemplate
 # ---------------------------------------------------------------------------
+
 
 @typecheck
 def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray, geo:
                                np.ndarray, boosters, factories):
-    cs = cs.tostring()
-    geo = geo.tostring()
-
-    d = {'name': templateID, 'cs': cs, 'geo': geo, 'boosters': boosters,
-         'factories': factories}
-    d = json.dumps(d).encode('utf8')
-
+    d = {'name': templateID, 'cs': cs.tostring(), 'geo': geo.tostring(),
+         'boosters': boosters, 'factories': factories}
+    try:
+        d = dumps(d).encode('utf8')
+    except TypeError:
+        return False, 'JSON encoding error'
     return True, d
 
 
 @typecheck
 def ToClerk_AddTemplate_Decode(payload: bytes):
-    data = json.loads(payload)
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
+
+    # Wrap the Booster- and Factory data into their dedicated named tuples.
     boosters = [parts.booster(*_) for _ in data['boosters']]
     factories = [parts.factory(*_) for _ in data['factories']]
+
+    # Convert template ID to a byte string.
     templateID = bytes(data['name'])
+
+    # Convert collision shape and geometry to NumPy array (via byte string).
     cs = np.fromstring(bytes(data['cs']), np.float64)
     geo = np.fromstring(bytes(data['geo']), np.float64)
+
+    # Return decoded quantities.
     return True, (templateID, cs, geo, boosters, factories)
 
 
@@ -131,8 +185,11 @@ def FromClerk_AddTemplate_Encode(templateID: bytes):
 def FromClerk_AddTemplate_Decode(payload: bytes):
     return True, payload
 
+
 # ---------------------------------------------------------------------------
+# GetAllObjectIDs
 # ---------------------------------------------------------------------------
+
 
 @typecheck
 def ToClerk_GetAllObjectIDs_Encode(dummyarg=None):
@@ -146,36 +203,47 @@ def ToClerk_GetAllObjectIDs_Decode(payload: bytes):
 
 @typecheck
 def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
+    # Join all object IDs into a single byte stream.
     data = b''.join(data)
     return True, data
 
 
 @typecheck
 def FromClerk_GetAllObjectIDs_Decode(payload: bytes):
+    # Partition the byte stream into individual object IDs.
     data = [bytes(_) for _ in cytoolz.partition(config.LEN_ID, payload)]
     return True, data
 
+
 # ---------------------------------------------------------------------------
+# SuggestPosition
 # ---------------------------------------------------------------------------
 
+
 @typecheck
-def ToClerk_SuggestPosition_Encode(target: bytes, pos: np.ndarray):
-    pos = pos.astype(np.float64)
-    pos = pos.tostring()
-    return True, target + pos
+def ToClerk_SuggestPosition_Encode(objID: bytes, pos: np.ndarray):
+    d = {'objID': objID, 'pos': pos}
+
+    # Encode data as JSON.
+    try:
+        d = dumps(d).encode('utf8')
+    except TypeError:
+        return False, 'JSON encoding error'
+    return True, d
 
 
 @typecheck
 def ToClerk_SuggestPosition_Decode(payload: bytes):
-    # Payload must be exactly one ID plus a 3-element position vector
-    # with 8 Bytes (64 Bits) each.
-    if len(payload) != (config.LEN_ID + 3 * 8):
-        return False, 'Insufficient arguments'
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
 
-    # Unpack the suggested position.
-    obj_id, pos = payload[:config.LEN_ID], payload[config.LEN_ID:]
-    pos = np.fromstring(pos)
-    return True, (obj_id, pos)
+    # Convert to native Python types and return to caller.
+    objID = bytes(data['objID'])
+    pos = np.array(data['pos'], np.float64)
+    return True, (objID, pos)
 
 
 @typecheck
@@ -187,30 +255,37 @@ def FromClerk_SuggestPosition_Encode(ret):
 def FromClerk_SuggestPosition_Decode(payload: bytes):
     return True, payload
 
+
 # ---------------------------------------------------------------------------
+# SetForce
 # ---------------------------------------------------------------------------
 
+
 @typecheck
-def ToClerk_SetForce_Encode(target: bytes, force: np.ndarray, relpos: np.ndarray):
-    force = force.astype(np.float64).tostring()
-    relpos = relpos.astype(np.float64).tostring()
-    return True, target + force + relpos
+def ToClerk_SetForce_Encode(objID: bytes, force: np.ndarray, rel_pos: np.ndarray):
+    d = {'objID': objID, 'rel_pos': rel_pos, 'force': force}
+
+    # Encode data as JSON.
+    try:
+        d = dumps(d).encode('utf8')
+    except TypeError:
+        return False, 'JSON encoding error'
+    return True, d
 
 
 @typecheck
 def ToClerk_SetForce_Decode(payload: bytes):
-    # Payload must comprise one ID plus two 3-element vectors (8 Bytes
-    # each) for force and relative position of that force with respect
-    # to the center of mass.
-    if len(payload) != (config.LEN_ID + 6 * 8):
-        return False, 'Insufficient arguments'
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
 
-    # Unpack the ID and 'force' value.
-    objID = payload[:config.LEN_ID]
-    _ = config.LEN_ID
-    force, rpos = payload[_:_ + 3 * 8], payload[_ + 3 * 8:_ + 6 * 8]
-    force, rpos = np.fromstring(force), np.fromstring(rpos)
-    return True, (objID, force, rpos)
+    # Convert to native Python types and return to caller.
+    objID = bytes(data['objID'])
+    force = np.array(data['force'], np.float64)
+    rel_pos = np.array(data['rel_pos'], np.float64)
+    return True, (objID, force, rel_pos)
 
 
 @typecheck
@@ -222,8 +297,11 @@ def FromClerk_SetForce_Encode(ret):
 def FromClerk_SetForce_Decode(payload: bytes):
     return True, payload
 
+
 # ---------------------------------------------------------------------------
+# GetGeometry
 # ---------------------------------------------------------------------------
+
 
 @typecheck
 def ToClerk_GetGeometry_Encode(target: bytes):
@@ -244,8 +322,11 @@ def FromClerk_GetGeometry_Encode(geo: np.ndarray):
 def FromClerk_GetGeometry_Decode(payload: bytes):
     return True, np.fromstring(payload)
 
+
 # ---------------------------------------------------------------------------
+# GetStateVariables
 # ---------------------------------------------------------------------------
+
 
 @typecheck
 def ToClerk_GetStateVariable_Encode(objIDs: (tuple, list)):
@@ -292,20 +373,23 @@ def FromClerk_GetStateVariable_Decode(payload: bytes):
         out[data[:config.LEN_ID]] = btInterface.unpack(sv)
     return True, out
 
+
 # ---------------------------------------------------------------------------
+# Spawn
 # ---------------------------------------------------------------------------
+
 
 @typecheck
 def ToClerk_Spawn_Encode(name: bytes, templateID: bytes, sv:
                          btInterface.BulletData):
     sv = btInterface.pack(sv).tostring()
     d = {'name': name, 'templateID': templateID, 'sv': sv}
-    return True, json.dumps(d).encode('utf8')
+    return True, dumps(d).encode('utf8')
 
 
 @typecheck
 def ToClerk_Spawn_Decode(payload: bytes):
-    data = json.loads(payload)
+    data = loads(payload)
     if data['name'] is None:
         ctrl_name = None
     else:
@@ -329,8 +413,11 @@ def FromClerk_Spawn_Encode(objID: bytes):
 def FromClerk_Spawn_Decode(payload: bytes):
     return True, payload
 
+
 # ---------------------------------------------------------------------------
+# RecvMsg
 # ---------------------------------------------------------------------------
+
 
 @typecheck
 def ToClerk_RecvMsg_Encode(objID: bytes):
@@ -352,36 +439,64 @@ def ToClerk_RecvMsg_Decode(payload: bytes):
 
 @typecheck
 def FromClerk_RecvMsg_Encode(objID: bytes, msg: bytes):
-    return True, bytes(objID) + bytes(msg)
+    d = {'objID': objID, 'msg': msg}
+    # Encode data as JSON.
+    try:
+        d = dumps(d).encode('utf8')
+    except TypeError:
+        return False, 'JSON encoding error'
+    return True, d
 
 
 @typecheck
 def FromClerk_RecvMsg_Decode(payload: bytes):
-    if len(payload) < config.LEN_ID:
-        src, data = None, b''
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
+
+    # Unpack the message source. If this string is invalid (most likely empty)
+    # then it means no message was available for us.
+    src = bytes(data['objID'])
+    if len(src) < config.LEN_ID:
+        return True, (None, b'')
     else:
-        # Protocol: sender ID, data
-        src, data = payload[:config.LEN_ID], payload[config.LEN_ID:]
-    return True, (src, data)
+        msg = bytes(data['msg'])
+        return True, (src, msg)
+
 
 # ---------------------------------------------------------------------------
+# SendMsg
 # ---------------------------------------------------------------------------
 
 @typecheck
 def ToClerk_SendMsg_Encode(objID: bytes, target: bytes, msg: bytes):
-    return True, objID + target + msg
+    d = {'src': objID, 'dst': target, 'msg': msg}
+    # Encode data as JSON.
+    try:
+        d = dumps(d).encode('utf8')
+    except TypeError:
+        return False, 'JSON encoding error'
+    return True, d
 
 
 @typecheck
 def ToClerk_SendMsg_Decode(payload: bytes):
-    src = payload[:config.LEN_ID]
-    dst = payload[config.LEN_ID:2 * config.LEN_ID]
-    data = payload[2 * config.LEN_ID:]
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
+
+    src = bytes(data['src'])
+    dst = bytes(data['dst'])
+    msg = bytes(data['msg'])
 
     if len(dst) != config.LEN_ID:
         return False, 'Insufficient arguments'
     else:
-        return True, (src, dst, data)
+        return True, (src, dst, msg)
 
 
 @typecheck
@@ -393,58 +508,47 @@ def FromClerk_SendMsg_Encode(dummyarg=None):
 def FromClerk_SendMsg_Decode(payload: bytes):
     return True, tuple()
 
+
 # ---------------------------------------------------------------------------
+# ControlParts
 # ---------------------------------------------------------------------------
+
 
 @typecheck
 def ToClerk_ControlParts_Encode(objID: bytes, cmds_b: list, cmds_f: list):
-    assert isinstance(objID, bytes)
+    # Sanity checks.
     for cmd in cmds_b:
         assert isinstance(cmd, parts.CmdBooster)
     for cmd in cmds_f:
         assert isinstance(cmd, parts.CmdFactory)
 
+    # Every object can have at most 256 parts.
     assert len(cmds_b) < 256
     assert len(cmds_f) < 256
 
-    out = b''
-    out += objID
-    out += np.int64(len(cmds_b))
-    for cmd in cmds_b:
-        out += b''.join([_.tostring() for _ in cmd])
-
-    out += np.int64(len(cmds_f))
-    for cmd in cmds_f:
-        out += b''.join([_.tostring() for _ in cmd])
-
-    return True, out
+    d = {'objID': objID, 'cmd_boosters': cmds_b, 'cmd_factories': cmds_f}
+    # Encode data as JSON.
+    try:
+        d = dumps(d).encode('utf8')
+    except TypeError:
+        return False, 'JSON encoding error'
+    return True, d
 
 
 @typecheck
-def ToClerk_ControlParts_Decode(cmds: bytes):
-    objID = cmds[0:config.LEN_ID]
-    cmds_b, cmds_f = [], []
+def ToClerk_ControlParts_Decode(payload: bytes):
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
 
-    CmdBooster = parts.CmdBooster
-    CmdFactory = parts.CmdFactory
-    
-    ofs = config.LEN_ID
-    num_boosters = np.fromstring(cmds[ofs:ofs+8], np.int64)[0]
-    ofs += 8
-    for ii in range(num_boosters):
-        cmds_b.append(
-            CmdBooster(np.fromstring(cmds[ofs+0:ofs+8], np.int64),
-                       np.fromstring(cmds[ofs+8:ofs+16], np.float64)))
-        ofs += 16
+    objID = bytes(data['objID'])
+    cmds_b = [parts.CmdBooster(*_) for _ in data['cmd_boosters']]
+    cmds_f = [parts.CmdFactory(*_) for _ in data['cmd_factories']]
         
-    num_factories = np.fromstring(cmds[ofs:ofs+8], np.int64)[0]
-    ofs += 8
-    for ii in range(num_factories):
-        cmds_f.append(
-            CmdFactory(np.fromstring(cmds[ofs+0:ofs+8], np.int64),
-                       np.fromstring(cmds[ofs+8:ofs+16], np.float64)))
-        ofs += 16
     return True, (objID, cmds_b, cmds_f)
+
 
 @typecheck
 def FromClerk_ControlParts_Encode(dummyarg=None):
