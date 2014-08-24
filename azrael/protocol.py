@@ -392,3 +392,65 @@ def FromClerk_SendMsg_Encode(dummyarg=None):
 @typecheck
 def FromClerk_SendMsg_Decode(payload: bytes):
     return True, tuple()
+
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_ControlParts_Encode(objID: bytes, cmds_b: list, cmds_f: list):
+    assert isinstance(objID, bytes)
+    for cmd in cmds_b:
+        assert isinstance(cmd, parts.CmdBooster)
+    for cmd in cmds_f:
+        assert isinstance(cmd, parts.CmdFactory)
+
+    assert len(cmds_b) < 256
+    assert len(cmds_f) < 256
+
+    out = b''
+    out += objID
+    out += np.int64(len(cmds_b))
+    for cmd in cmds_b:
+        out += b''.join([_.tostring() for _ in cmd])
+
+    out += np.int64(len(cmds_f))
+    for cmd in cmds_f:
+        out += b''.join([_.tostring() for _ in cmd])
+
+    return True, out
+
+
+@typecheck
+def ToClerk_ControlParts_Decode(cmds: bytes):
+    objID = cmds[0:config.LEN_ID]
+    cmds_b, cmds_f = [], []
+
+    CmdBooster = parts.CmdBooster
+    CmdFactory = parts.CmdFactory
+    
+    ofs = config.LEN_ID
+    num_boosters = np.fromstring(cmds[ofs:ofs+8], np.int64)[0]
+    ofs += 8
+    for ii in range(num_boosters):
+        cmds_b.append(
+            CmdBooster(np.fromstring(cmds[ofs+0:ofs+8], np.int64),
+                       np.fromstring(cmds[ofs+8:ofs+16], np.float64)))
+        ofs += 16
+        
+    num_factories = np.fromstring(cmds[ofs:ofs+8], np.int64)[0]
+    ofs += 8
+    for ii in range(num_factories):
+        cmds_f.append(
+            CmdFactory(np.fromstring(cmds[ofs+0:ofs+8], np.int64),
+                       np.fromstring(cmds[ofs+8:ofs+16], np.float64)))
+        ofs += 16
+    return True, (objID, cmds_b, cmds_f)
+
+@typecheck
+def FromClerk_ControlParts_Encode(dummyarg=None):
+    return True, b''
+
+
+@typecheck
+def FromClerk_ControlParts_Decode(payload: bytes):
+    return True, tuple()

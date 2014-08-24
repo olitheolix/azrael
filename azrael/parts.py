@@ -22,6 +22,14 @@ from collections import namedtuple as NT
 Booster = NT('Booster', 'bid pos orient max_force')
 Factory = NT('Factory', 'fid pos orient speed')
 
+CmdBooster = NT('CmdBooster', 'unitID force_mag')
+CmdFactory = NT('CmdFactory', 'unitID')
+
+def controlBooster(unitID, force: float):
+    unitID = np.int64(unitID)
+    force = np.float64(force)
+    return CmdBooster(unitID, force)
+
 
 def booster(bid, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5):
     """

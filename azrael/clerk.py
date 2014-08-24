@@ -45,7 +45,6 @@ import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
-import azrael.commands as commands
 import azrael.bullet.btInterface as btInterface
 
 from azrael.typecheck import typecheck
@@ -446,25 +445,34 @@ class Clerk(multiprocessing.Process):
     # ----------------------------------------------------------------------
     # These methods service Controller requests.
     # ----------------------------------------------------------------------
-
-    def processControlCommand(self, cmds):
+    @typecheck
+    def controlParts(self, objID: bytes, cmd_boosters: (list, tuple),
+                     cmd_factories: (list, tuple)):
         """
-        fixme: deserialise must go into protocol; add client support for this
-        function.
-        :param bool reset: flush the database.
+        Issue control commands to object parts.
+
+        Boosters can be activated with a scalar force that will apply according
+        to their orientation. The commands themselves must be
+        ``parts.CmdBooster`` instances.
+
+        Factories can spawn objects. Their command syntax is defined in the
+        ``parts`` module. The commands themselves must be
+        ``parts.CmdFactory`` instances.
+
+        :param bytes objID: object ID.
+        :param list cmd_booster: booster commands.
+        :param list cmd_factory: factory commands.
+        :return: (True, (b'',)) or (False, error-message)
+        :rtype: (bool, (bytes, )) or (bool, str)
         :raises: None
         """
 
-        objID, cmd_boosters, cmd_factories = commands.deserialiseCommands(cmds)
-        if objID is None:
-            return False, 'Problem'
-
-        # Query the templateID for objID.
+        # Query the templateID for the current object.
         ok, templateID = btInterface.getTemplateID(objID)
         if not ok:
             return False, msg
 
-        # Query the object capabilities.
+        # Query the capabilities of the current object.
         ok, data = self.getTemplate(templateID)
         if not ok:
             return False, 'Problem'
@@ -484,7 +492,8 @@ class Clerk(multiprocessing.Process):
                 return False, 'Invalid booster ID'
             
             # Rotate the unit force vector into the orientation given by the
-            # Quaternion.
+            # Quaternion. Fixme: the orientation of the unit must still be
+            # multiplied by the Quaternion of the object orientation.
             f = bid[int(cmd.unitID)].orient * cmd.force_mag
     
             # Accumulate torque and central force.
@@ -492,14 +501,15 @@ class Clerk(multiprocessing.Process):
             tot_torque += np.cross(pos, f)
             tot_central_force += f
 
-        # Set the resulting force.
+        # Apply the net- force and torque.
         btInterface.setForceAndTorque(objID, tot_central_force, tot_torque)
 
+        # Let the factories spawn the objects.
         for cmd in cmd_factories:
             if int(cmd.unitID) not in fid:
                 return False, 'Invalid factory ID'
 
-        return True, ''
+        return True, ('', )
         
     @typecheck
     def addTemplate(self, templateID: bytes, cshape: np.ndarray,

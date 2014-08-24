@@ -34,7 +34,6 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.clacks as clacks
 import azrael.protocol as protocol
-import azrael.commands as commands
 import azrael.controller as controller
 import azrael.wscontroller as wscontroller
 import azrael.bullet.btInterface as btInterface
@@ -513,12 +512,11 @@ def test_processControlCommand():
     assert (ok, ctrl_id) == (True, objID_1)
 
     # Create booster control command.
-    cmd_0 = commands.controlBooster(unitID=0, force=0.2)
-    cmd = commands.serialiseCommands(objID_1, [cmd_0], [])
+    cmd_0 = parts.controlBooster(unitID=0, force=0.2)
 
-    # Call processControlCommands. It must fail because the default object has
-    # no booster.
-    ok, msg = clerk.processControlCommand(cmd)
+    # Call 'controlParts'. It must fail because the default object
+    # does not have any boosters.
+    ok, msg = clerk.controlParts(objID_1, [cmd_0], [])
     assert not ok
 
     # ------------------------------------------------------------------------
@@ -542,12 +540,11 @@ def test_processControlCommand():
     ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_2, sv)
     assert (ok, ctrl_id) == (True, objID_2)
     
-    # Call processControlCommands. It must fail because the default object has
+    # Call 'controlParts'. It must fail because the default object has
     # no boosters.
-    cmd_0 = commands.controlBooster(unitID=0, force=0.2)
-    cmd_1 = commands.controlBooster(unitID=1, force=0.4)
-    cmd = commands.serialiseCommands(objID_2, [cmd_0, cmd_1], [])
-    ok, msg = clerk.processControlCommand(cmd)
+    cmd_0 = parts.controlBooster(unitID=0, force=0.2)
+    cmd_1 = parts.controlBooster(unitID=1, force=0.4)
+    ok, msg = clerk.controlParts(objID_2, [cmd_0, cmd_1], [])
     assert ok
 
     # Make sure the force got updated (only check the central force).
@@ -601,7 +598,7 @@ def test_get_all_objectids():
     
 if __name__ == '__main__':
     test_get_all_objectids()
-    test_processControlCommand()
+    test_controlParts()
     test_get_object_template_id()
     test_get_statevar()
     test_spawn()
