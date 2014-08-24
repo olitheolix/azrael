@@ -15,9 +15,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Various utility functions.
+"""
 
 import numpy as np
 import azrael.config as config
+
+from azrael.typecheck import typecheck
 
 
 class Timer(object):
@@ -43,23 +48,25 @@ class Timer(object):
         return '{0:,}us'.format(int(elapsed * 1E6))
 
 
+@typecheck
 def int2id(objID: int):
     """
-    Convert an integer to the corresponding object ID.
+    Convert an integer to the binary object ID.
 
-    This function will raise an `OverflowError` if ``objID`` is too large for
-    the available number of bytes.
+    :param int objID: object ID as integer.
     """
-    assert isinstance(objID, int)
-    assert objID >= 0
-    assert objID < 2 ** 63
+    assert 0 <= objID < 2 ** 63
     return np.int64(objID).tostring()
 
 
-def id2int(objID: int):
+@typecheck
+def id2int(objID: bytes):
     """
-    Convert an object ID to the corresponding integer.
+    Convert an binary object ID to the corresponding integer.
+
+    .. note::
+       This function should not be called as it only serves debugging purposes.
+       Azrael does not know or care about what the binary object ID means.
     """
-    assert isinstance(objID, bytes)
-    assert len(objID) == 8
+    assert len(objID) == config.LEN_ID
     return int(np.fromstring(objID, np.int64)[0])
