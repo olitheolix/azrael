@@ -67,7 +67,7 @@ def FromClerk_GetTemplate_Decode(payload: bytes):
     data = json.loads(payload)
     boosters = [parts.booster(*_) for _ in data['boosters']]
     factories = [parts.factory(*_) for _ in data['factories']]
-    nt = collections.namedtuple('Generic', 'cs geo boosters factories')
+    nt = collections.namedtuple('Template', 'cs geo boosters factories')
     ret = nt(np.array(data['cs'], np.float64),
              np.array(data['geo'], np.float64),
              boosters, factories)
