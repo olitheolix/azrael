@@ -8,8 +8,8 @@ import subprocess
 import numpy as np
 
 import azrael.clerk
+import azrael.clacks
 import azrael.config as config
-import azrael.clacks as clacks
 import azrael.wscontroller as wscontroller
 import azrael.controller as controller
 
@@ -25,6 +25,16 @@ def killall():
 
 
 def startAzrael(ctrl_type):
+    """
+    Start all Azrael services and return their handles.
+    
+    ``ctrl_type`` may be  either 'ZeroMQ' or 'Websocket'. The only difference
+    this makes is that the 'Websocket' version will also start a Clacks server,
+    whereas for 'ZeroMQ' the respective handle will be **None**.
+
+    :param str ctrl_type: the controller type ('ZeroMQ' or 'Websocket').
+    :return: handles to (clerk, ctrl, clacks)
+    """
     killall()
     
     # Start Clerk and instantiate Controller.
@@ -32,31 +42,42 @@ def startAzrael(ctrl_type):
     clerk.start()
 
     if ctrl_type == 'ZeroMQ':
+        # Instantiate the ZeroMQ version of the Controller.
         ctrl = ControllerBase()
         ctrl.setupZMQ()
         ctrl.connectToClerk()
-        server = None
-    elif ctrl_type == 'Websocket':
-        server = clacks.ClacksServer()
-        server.start()
 
+        # Do not start a Clacks process.
+        clacks = None
+    elif ctrl_type == 'Websocket':
+        # Start a Clacks process.
+        clacks = azrael.clacks.ClacksServer()
+        clacks.start()
+
+        # Instantiate the Websocket version of the Controller.
         ctrl = WSControllerBase('ws://127.0.0.1:8080/websocket', 1)
         assert ctrl.ping()
     else:
         print('Unknown controller type <{}>'.format(ctrl_type))
         assert False
-    return clerk, ctrl, server
+    return clerk, ctrl, clacks
 
 
-def stopAzrael(clerk, server):
+def stopAzrael(clerk, clacks):
+    """
+    Kill all processes related to Azrael.
+
+    :param clerk: handle to Clerk process.
+    :param clacks: handle to Clacks process.
+    """
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join(timeout=3)
 
-    # Terminate the Server (if one was started).
-    if server is not None:
-        server.terminate()
-        server.join(timeout=3)
+    # Terminate Clacks (if one was started).
+    if clacks is not None:
+        clacks.terminate()
+        clacks.join(timeout=3)
 
     # Forcefully terminate everything.
     killall()
@@ -68,13 +89,13 @@ def test_ping_clacks():
     that the ping fails.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael('Websocket')
+    clerk, ctrl, clacks = startAzrael('Websocket')
 
-    # Ping the server.
+    # Ping the Clacks.
     assert ctrl.ping()
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
 
     # Connection must now be impossible.
     with pytest.raises(ConnectionRefusedError):
@@ -88,13 +109,13 @@ def test_ping_clerk():
     Ping the Clerk instance via Clacks.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael('Websocket')
+    clerk, ctrl, clacks = startAzrael('Websocket')
 
     # And send 'PING' command.
     assert ctrl.pingClerk()
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
 
     print('Test passed')
 
@@ -104,15 +125,15 @@ def test_timeout():
     WS connection must timeout if it is inactive for too long.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael('Websocket')
+    clerk, ctrl, clacks = startAzrael('Websocket')
 
-    # Read from the WS. Since the server is not writing to that socket the call
+    # Read from the WS. Since Clacks is not writing to that socket the call
     # will block and must raise a timeout eventually.
     with pytest.raises(websocket.WebSocketTimeoutException):
         ctrl.sendToClacks(b'')
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
 
     print('Test passed')
 
@@ -122,13 +143,13 @@ def test_websocket_getID():
     Query the controller ID associated with this WebSocket.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael('Websocket')
+    clerk, ctrl, clacks = startAzrael('Websocket')
 
     # Make sure we are connected.
     assert ctrl.objID == int2id(1)
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
 
     print('Test passed')
 
