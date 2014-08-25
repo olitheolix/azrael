@@ -21,6 +21,66 @@ def killall():
     subprocess.call(['pkill', 'killme'])
 
 
+def startAzrael(ctrl_type):
+    """
+    Start all Azrael services and return their handles.
+    
+    ``ctrl_type`` may be  either 'ZeroMQ' or 'Websocket'. The only difference
+    this makes is that the 'Websocket' version will also start a Clacks server,
+    whereas for 'ZeroMQ' the respective handle will be **None**.
+
+    :param str ctrl_type: the controller type ('ZeroMQ' or 'Websocket').
+    :return: handles to (clerk, ctrl, clacks)
+    """
+    killall()
+    
+    # Start Clerk and instantiate Controller.
+    clerk = azrael.clerk.Clerk(reset=True)
+    clerk.start()
+
+    if ctrl_type == 'ZeroMQ':
+        # Instantiate the ZeroMQ version of the Controller.
+        ctrl = azrael.controller.ControllerBase()
+        ctrl.setupZMQ()
+        ctrl.connectToClerk()
+
+        # Do not start a Clacks process.
+        clacks = None
+    elif ctrl_type == 'Websocket':
+        # Start a Clacks process.
+        clacks = azrael.clacks.ClacksServer()
+        clacks.start()
+
+        # Instantiate the Websocket version of the Controller.
+        ctrl = azrael.wscontroller.WSControllerBase(
+            'ws://127.0.0.1:8080/websocket', 1)
+        assert ctrl.ping()
+    else:
+        print('Unknown controller type <{}>'.format(ctrl_type))
+        assert False
+    return clerk, ctrl, clacks
+
+
+def stopAzrael(clerk, clacks):
+    """
+    Kill all processes related to Azrael.
+
+    :param clerk: handle to Clerk process.
+    :param clacks: handle to Clacks process.
+    """
+    # Terminate the Clerk.
+    clerk.terminate()
+    clerk.join(timeout=3)
+
+    # Terminate Clacks (if one was started).
+    if clacks is not None:
+        clacks.terminate()
+        clacks.join(timeout=3)
+
+    # Forcefully terminate everything.
+    killall()
+
+
 @pytest.mark.parametrize('clsLeonard',
    [azrael.leonard.LeonardBase,
     azrael.leonard.LeonardBaseWorkpackages,
@@ -31,19 +91,9 @@ def test_move_single_object(clsLeonard):
     Create a single object and ensure Leonard moves it according
     to the initial speed.
     """
-    killall()
+    # Start the necessary services.
+    clerk, ctrl, clacks = startAzrael('ZeroMQ')
     
-    # Start server and client.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    clacks = azrael.clacks.ClacksServer()
-    clacks.start()
-
-    # Get a controller.
-    ctrl = azrael.controller.ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
-
     leonard = clsLeonard()
     leonard.setup()
     
@@ -77,13 +127,8 @@ def test_move_single_object(clsLeonard):
     assert 0.9 <= sv.position[0] < 1.1
     assert sv.position[1] == sv.position[2] == 0
 
-    # Shutdown.
-    clacks.terminate()
-    clerk.terminate()
-    clacks.join()
-    clerk.join()
-
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -97,18 +142,8 @@ def test_move_two_objects_no_collision(clsLeonard):
     Create two objects with different initial velocity and make sure they move
     accordingly.
     """
-    killall()
-    
-    # Start server and client.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    clacks = azrael.clacks.ClacksServer()
-    clacks.start()
-
-    # Get a controller.
-    ctrl = azrael.controller.ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Start the necessary services.
+    clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     # Instantiate Leonard.
     leonard = clsLeonard()
@@ -136,13 +171,8 @@ def test_move_two_objects_no_collision(clsLeonard):
     assert pos_1[0] == pos_1[2] == 0
     assert pos_1[1] < 9.6
 
-    # Shutdown.
-    clacks.terminate()
-    clerk.terminate()
-    clacks.join()
-    clerk.join()
-
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -154,18 +184,8 @@ def test_multiple_workers(clsWorker):
     Create several objects on parallel trajectories and advance their positions
     with multiple LeonardWorkers.
     """
-    killall()
-    
-    # Start server and client.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    clacks = azrael.clacks.ClacksServer()
-    clacks.start()
-
-    # Get a controller.
-    ctrl = azrael.controller.ControllerBase()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Start the necessary services.
+    clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     # Specify the number of objects and workers.
     num_workers, num_objects = 10, 20
@@ -201,13 +221,8 @@ def test_multiple_workers(clsWorker):
     # All workers should have been utilised.
     assert len(leonard.used_workers) == num_workers
 
-    # Shutdown.
-    clacks.terminate()
-    clerk.terminate()
-    clacks.join()
-    clerk.join()
-
-    killall()
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
