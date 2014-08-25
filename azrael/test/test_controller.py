@@ -34,10 +34,10 @@ import subprocess
 import numpy as np
 
 import azrael.clerk
+import azrael.clacks
 import azrael.wscontroller
 import azrael.controller
 import azrael.parts as parts
-import azrael.clacks as clacks
 import azrael.protocol as protocol
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
@@ -54,6 +54,17 @@ def killall():
 
 
 def startAzrael(ctrl_type):
+    """
+    Start all Azrael services and return their handles.
+    
+    ``ctrl_type`` may be  either 'ZeroMQ' or 'Websocket'. The only
+    difference this makes is that the 'Websocket' version will also
+    start a Clacks server, whereas for 'ZeroMQ' the respective handle
+    will be **None**.
+
+    :param str ctrl_type: the controller type ('ZeroMQ' or 'Websocket').
+    :return: handles to (clerk, ctrl, clacks)
+    """
     killall()
     
     # Start Clerk and instantiate Controller.
@@ -61,31 +72,42 @@ def startAzrael(ctrl_type):
     clerk.start()
 
     if ctrl_type == 'ZeroMQ':
+        # Instantiate the ZeroMQ version of the Controller.
         ctrl = ControllerBase()
         ctrl.setupZMQ()
         ctrl.connectToClerk()
-        server = None
-    elif ctrl_type == 'Websocket':
-        server = clacks.ClacksServer()
-        server.start()
 
+        # Do not start a Clacks process.
+        clacks = None
+    elif ctrl_type == 'Websocket':
+        # Start a Clacks process.
+        clacks = azrael.clacks.ClacksServer()
+        clacks.start()
+
+        # Instantiate the Websocket version of the Controller.
         ctrl = WSControllerBase('ws://127.0.0.1:8080/websocket', 1)
         assert ctrl.ping()
     else:
         print('Unknown controller type <{}>'.format(ctrl_type))
         assert False
-    return clerk, ctrl, server
+    return clerk, ctrl, clacks
 
 
-def stopAzrael(clerk, server):
+def stopAzrael(clerk, clacks):
+    """
+    Kill all processes related to Azrael.
+
+    :param clerk: handle to Clerk process.
+    :param clacks: handle to Clacks process.
+    """
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join(timeout=3)
 
-    # Terminate the Server (if one was started).
-    if server is not None:
-        server.terminate()
-        server.join(timeout=3)
+    # Terminate the Clacks (if one was started).
+    if clacks is not None:
+        clacks.terminate()
+        clacks.join(timeout=3)
 
     # Forcefully terminate everything.
     killall()
@@ -96,13 +118,13 @@ def test_ping():
     Send a ping to the Clerk and check the response is correct.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael('ZeroMQ')
+    clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     ok, ret = ctrl.ping()
     assert (ok, ret) == (True, 'pong clerk'.encode('utf8'))
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -112,11 +134,11 @@ def test_spawn_one_controller(ctrl_type):
     Ask Clerk to spawn one (echo) controller.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael(ctrl_type)
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
 
-    # Instruct the server to spawn a Controller named 'Echo'. The call will
-    # return the ID of the controller which must be '2' ('0' is invalid and '1'
-    # was already given to the controller in the WS handler).
+    # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
+    # the ID of the controller which must be '2' ('0' is invalid and '1' was
+    # already given to the controller in the WS handler).
     templateID = '_templateNone'.encode('utf8')
     ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
@@ -130,7 +152,7 @@ def test_spawn_one_controller(ctrl_type):
     assert (ok, ctrl_id) == (True, int2id(3))
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -141,11 +163,11 @@ def test_spawn_and_talk_to_one_controller(ctrl_type):
     controller to ensure everything works.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael(ctrl_type)
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
 
-    # Instruct the server to spawn a Controller named 'Echo'. The call will
-    # return the ID of the controller which must be '2' ('0' is invalid and '1'
-    # was already given to the Controller).
+    # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
+    # the ID of the controller which must be '2' ('0' is invalid and '1' was
+    # already given to the Controller).
     templateID = '_templateNone'.encode('utf8')
     ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
@@ -178,7 +200,7 @@ def test_spawn_and_talk_to_one_controller(ctrl_type):
     assert ctrl_id + msg_orig == msg_ret
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -188,11 +210,11 @@ def test_spawn_and_get_state_variables(ctrl_type):
     Spawn a new Controller and query its state variables.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael(ctrl_type)
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
 
-    # Instruct the server to spawn a Controller named 'Echo'. The call will
-    # return the ID of the controller which must be '2' ('0' is invalid and '1'
-    # was already given to the controller in the WS handler).
+    # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
+    # the ID of the controller which must be '2' ('0' is invalid and '1' was
+    # already given to the controller in the WS handler).
     templateID = '_templateNone'.encode('utf8')
     ok, id0 = ctrl.spawn(echo_ctrl, templateID, pos=np.ones(3), vel=-np.ones(3))
     assert (ok, id0) == (True, int2id(2))
@@ -206,7 +228,7 @@ def test_spawn_and_get_state_variables(ctrl_type):
     assert ok
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -217,7 +239,7 @@ def test_multi_controller(ctrl_type):
     Controller instance to bounce messages off the other controllers.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael(ctrl_type)
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Launch the Controllers (default implementation is an echo).
     num_proc = 10
@@ -262,7 +284,7 @@ def test_multi_controller(ctrl_type):
         raise err
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -272,7 +294,7 @@ def test_getAllObjectIDs(ctrl_type):
     Ensure the getAllObjectIDs command reaches Clerk.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael(ctrl_type)
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
     
     # Parameters and constants for this test.
     objID_2 = int2id(2)
@@ -292,7 +314,7 @@ def test_getAllObjectIDs(ctrl_type):
     assert (ok, ret) == (True, [objID_2])
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -302,7 +324,7 @@ def test_get_template(ctrl_type):
     Spawn some objects from the default templates and query their template IDs.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael(ctrl_type)
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
     id_0, id_1 = int2id(2), int2id(3)
@@ -331,7 +353,7 @@ def test_get_template(ctrl_type):
     assert not ok
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
     print('Test passed')
     
 
@@ -341,7 +363,7 @@ def test_create_fetch_template(ctrl_type):
     Add a new object to the templateID DB and query it again.
     """
     # Start the necessary services.
-    clerk, ctrl, server = startAzrael(ctrl_type)
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Request an invalid ID.
     ok, ret = ctrl.getTemplate('blah'.encode('utf8'))
@@ -414,7 +436,7 @@ def test_create_fetch_template(ctrl_type):
     assert parts.factory_tostring(f0) in out_factories
 
     # Shutdown the services.
-    stopAzrael(clerk, server)
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
