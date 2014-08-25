@@ -37,7 +37,7 @@ def killall():
 
 def test_encoding_add_get_template(clientType='ZeroMQ'):
     """
-    The the {en,de}coding related to the {add,get}Template functions.
+    Test codec for {add,get}Template functions.
     """
 
     killall()
@@ -70,6 +70,9 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
 
 
 def test_send_command():
+    """
+    Test codec for controlBooster command.
+    """
     cmd_0 = parts.controlBooster(unitID=0, force=0.2)
     cmd_1 = parts.controlBooster(unitID=1, force=0.4)
     objID = int2id(1)
