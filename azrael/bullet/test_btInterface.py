@@ -107,7 +107,7 @@ def test_add_get_multiple():
     assert out[1] == data_1
 
     # Query all objects at once.
-    ok, out = btInterface.getAll()
+    ok, out = btInterface.getAllStateVariables()
     assert ok
     assert len(out) == 2
     assert out[id_0] == data_0

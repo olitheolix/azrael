@@ -44,7 +44,7 @@ class LeonardBase(multiprocessing.Process):
     
     def step(self, dt, max_sub_steps):
         # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAll()
+        ok, allSV = btInterface.getAllStateVariables()
         ok, all_ids = btInterface.getAllObjectIDs()
         ok, all_sv = btInterface.getStateVariables(all_ids)
 
@@ -110,7 +110,7 @@ class LeonardBaseWorkpackages(LeonardBase):
         
     def step(self, dt, maxsteps):
         # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAll()
+        ok, allSV = btInterface.getAllStateVariables()
 
         # --------------------------------------------------------------------
         # Create a single work list that features all objects.
@@ -169,7 +169,7 @@ class LeonardBulletMonolithic(LeonardBase):
             self.bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
 
         # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAll()
+        ok, allSV = btInterface.getAllStateVariables()
 
         # Iterate over all SV entries and update them.
         for obj_id, sv in allSV.items():
@@ -388,7 +388,7 @@ class LeonardBaseWPRMQ(LeonardBase):
 
     def step(self, dt, maxsteps):
         # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAll()
+        ok, allSV = btInterface.getAllStateVariables()
         IDs = list(allSV.keys())
         
         # Update the token value for this iteration.
