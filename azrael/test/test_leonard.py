@@ -17,7 +17,7 @@ ipshell = IPython.embed
 echo_ctrl = 'Echo'.encode('utf8')
 
 
-def killall():
+def killAzrael():
     subprocess.call(['pkill', 'killme'])
 
 
@@ -32,7 +32,7 @@ def startAzrael(ctrl_type):
     :param str ctrl_type: the controller type ('ZeroMQ' or 'Websocket').
     :return: handles to (clerk, ctrl, clacks)
     """
-    killall()
+    killAzrael()
     
     # Start Clerk and instantiate Controller.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -78,7 +78,7 @@ def stopAzrael(clerk, clacks):
         clacks.join(timeout=3)
 
     # Forcefully terminate everything.
-    killall()
+    killAzrael()
 
 
 @pytest.mark.parametrize('clsLeonard',

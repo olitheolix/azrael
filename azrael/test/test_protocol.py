@@ -27,12 +27,9 @@ import azrael.protocol as protocol
 import azrael.bullet.btInterface as btInterface
 
 from azrael.util import int2id, id2int
+from azrael.test.test_leonard import killAzrael
 
 ipshell = IPython.embed
-
-
-def killall():
-    subprocess.call(['pkill', 'killme'])
 
 
 def test_encoding_add_get_template(clientType='ZeroMQ'):
@@ -40,7 +37,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     Test codec for {add,get}Template functions.
     """
 
-    killall()
+    killAzrael()
     
     # Test parameters and constants.
     cs = btInterface.defaultData().cshape

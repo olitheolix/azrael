@@ -39,6 +39,7 @@ import azrael.wscontroller as wscontroller
 import azrael.bullet.btInterface as btInterface
 
 from azrael.util import int2id, id2int
+from azrael.test.test_leonard import startAzrael, stopAzrael, killAzrael
 
 ipshell = IPython.embed
 
@@ -64,33 +65,18 @@ class ControllerTest(controller.ControllerBase):
             return False, msg
 
 
-def killall():
-    subprocess.call(['pkill', 'killme'])
-
-
 def test_connect():
     """
     Connect to Clerk and make sure we get correct ID.
     """
-    killall()
+    # Start the necessary services and instantiate a Controller.
+    clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
-    # Start a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-
-    # Instantiate a Controller and connect it the Clerk (would happen
-    # automatically if we ran it as a process and called the 'run' method, but
-    # for this test we will not start it as a separate process).
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Since only one Controller was instantiated it must have objID=1.
     assert ctrl.objID == int2id(1)
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
-    killall()
-
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -98,7 +84,7 @@ def test_invalid():
     """
     Send an invalid command to the Clerk.
     """
-    killall()
+    killAzrael()
 
     # Start Clerk and instantiate a Controller.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -114,8 +100,8 @@ def test_invalid():
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join()
-    killall()
 
+    killAzrael()
     print('Test passed')
 
 
@@ -123,24 +109,15 @@ def test_ping():
     """
     Send a ping to the Clerk and check the response is correct.
     """
-    killall()
-
-    # Start Clerk and instantiate a Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
-    ctrl.connectToClerk()
+    # Start the necessary services and instantiate a Controller.
+    clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     # Send the Ping command.
     ok, ret = ctrl.ping()
     assert (ok, ret) == (True, 'pong clerk'.encode('utf8'))
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
-    killall()
-
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -148,13 +125,8 @@ def test_get_id():
     """
     Request a new ID for this controller.
     """
-    killall()
-
-    # Start Clerk and instantiate a Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
-    clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
+    # Start the necessary services and instantiate a Controller.
+    clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     # Request new IDs. It must increase with every request, starting at 1.
     for ii in range(3):
@@ -165,11 +137,8 @@ def test_get_id():
         # request a new one.
         ctrl.objID = None
 
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join()
-    killall()
-
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -179,7 +148,7 @@ def test_send_receive_message():
     matter because the Clerk silently drops messages for non-existing
     controllers.
     """
-    killall()
+    killAzrael()
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -213,7 +182,7 @@ def test_spawn():
     """
     Test the 'spawn' command in the Clerk.
     """
-    killall()
+    killAzrael()
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -245,7 +214,7 @@ def test_get_statevar():
     """
     Test the 'get_statevar' command in the Clerk.
     """
-    killall()
+    killAzrael()
 
     # Test parameters and constants.
     objID_1 = int2id(1)
@@ -311,7 +280,7 @@ def test_set_force():
     The logic for the 'set_force' and 'suggest_pos' commands are
     identical. Therefore test them both with a single function here.
     """
-    killall()
+    killAzrael()
 
     # Parameters and constants for this test.
     id_1 = int2id(1)
@@ -343,7 +312,7 @@ def test_suggest_position():
     The logic for the 'set_force' and 'suggest_pos' commands are
     identical. Therefore thest them both with a single function here.
     """
-    killall()
+    killAzrael()
 
     # Parameters and constants for this test.
     id_1 = int2id(1)
@@ -373,7 +342,7 @@ def test_create_fetch_template():
     """
     Add a new object to the templateID DB and query it again.
     """
-    killall()
+    killAzrael()
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -454,7 +423,7 @@ def test_get_object_template_id():
     Spawn two objects from different templates. Then query the template ID
     based on the object ID.
     """
-    killall()
+    killAzrael()
 
     # Parameters and constants for this test.
     id_0, id_1 = int2id(1), int2id(2)
@@ -486,8 +455,7 @@ def test_get_object_template_id():
     assert not ok
 
     # Shutdown.
-    killall()
-
+    killAzrael()
     print('Test passed')
 
 
@@ -496,7 +464,7 @@ def test_processControlCommand():
     Create an object with some boosters and factories and send control
     commands to them.
     """
-    killall()
+    killAzrael()
     
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
@@ -552,7 +520,8 @@ def test_processControlCommand():
     assert ok
     assert np.array_equal(force, [0.2, 0.4, 0])
 
-    killall()
+    # Clean up.
+    killAzrael()
     print('Test passed')
     
 
@@ -560,7 +529,7 @@ def test_get_all_objectids():
     """
     Test getAllObjects.
     """
-    killall()
+    killAzrael()
     
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
@@ -591,8 +560,7 @@ def test_get_all_objectids():
     assert (ok, out) == (True, [objID_1, objID_2])
 
     # Kill all spawned Controller processes.
-    killall()
-
+    killAzrael()
     print('Test passed')
 
     
