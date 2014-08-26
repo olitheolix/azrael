@@ -566,7 +566,6 @@ def test_get_all_objectids():
     
 if __name__ == '__main__':
     test_get_all_objectids()
-    test_controlParts()
     test_get_object_template_id()
     test_get_statevar()
     test_spawn()

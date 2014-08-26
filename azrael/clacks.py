@@ -16,11 +16,10 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Webserver to interface with Azrael.
+Clacks is a Websocket interface into Azrael.
 
-The Webserver provides a Websocket interface into Azrael. Every Websocket holds
-its own Controller instance to communicate with Azrael and has thus exactly the
-same means to interact with the simulation as any other controller.
+It does little more than wrapping a ``ControllerBase`` instance. As such it has
+the same capabilities.
 """
 
 import sys
@@ -30,23 +29,31 @@ import multiprocessing
 import tornado.websocket
 import tornado.httpserver
 import zmq.eventloop.zmqstream
+
 import numpy as np
 
 import azrael.util as util
 import azrael.config as config
 import azrael.controller as controller
 
+from azrael.typecheck import typecheck
+
 
 class WebsocketHandler(tornado.websocket.WebSocketHandler):
     """
-    A simple request/reply handler for Websocket clients.
+    Clacks server.
 
-    Tornado creates a new instance of this class for every client that
-    connects.
+    Clacks is nothing more than a Websocket wrapper around a Controller. Its
+    main purpose is to facilitate browser access to Azrael since most browsers
+    support it natively, unlike ZeroMQ.
 
-    The handler instantiates a controller to interact with Azrael. This implies
-    that Azrael will assign a unique ID to that controller and, in turn, this
-    handler.
+    Every Websocket connection has its own Controller instance. It is created
+    once when the Websocket is opened and processes (almost) every request sent
+    through the Websocket.
+
+    Among the few exceptions that are not passed to the Controller are Pings
+    directed specifically to this Clacks server and the `get_id` command which
+    directly returns the ID of the associated Controller.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,64 +64,69 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         """
-        Create a controller instance and set it up manually instead
-        of starting it as a process. This instance will be the gateway into
-        Azrael.
+        Create a controller instance as an instance variable.
+
+        This method is a Tornado callback and triggers when a client initiates
+        a new Websocket connection.
         """
         self.controller = controller.ControllerBase()
         self.controller.setupZMQ()
         self.controller.connectToClerk()
 
-    def controllerWrap(self, cmd, payload):
-        if len(payload) == 0:
-            ok, ret = self.controller.sendToClerk(cmd)
-        else:
-            ok, ret = self.controller.sendToClerk(cmd + payload)
-
-        if ok:
-            ret = b'\x00' + ret
-        else:
-            ret = b'\x01' + ret
-        self.write_message(ret, binary=True)
-
-    def on_message(self, msg):
+    @typecheck
+    def on_message(self, msg: bytes):
         """
-        Parse client request and act upon it.
+        Parse client request and return reply.
 
-        The requests can be admin tasks like a ping to verify the connection is
-        live, but are most likely tasks passed on to the self.controller
-        instance to interact with Azrael.
+        This method is a Tornado callback and triggers whenever a message
+        arrives from the client. By definition, every message starts with a
+        command byte (always exactly one byte) plus an optional payload.
 
-        .. Note:
+        Based on the command Byte this handler will either respond directly to
+        that command or pass it on to the Controller instances associated with
+        this Websocket/client.
 
-          * all requests are blocking.
-          * all Websocket message are binary.
-
-        The command word is always the first byte (and only one byte).
+        :param bytes msg: message from client.
         """
         if len(msg) == 0:
             return
 
-        # Extract command word and (optional) payload.
+        # Extract command word (always first byte) and the payload.
         cmd, payload = msg[:1], msg[1:]
 
         if cmd == config.cmd['ping_clacks']:
-            # Return the pong.
+            # Handle ourselves: return the pong.
             msg = b'\x00' + 'pong clacks'.encode('utf8')
             self.write_message(msg, binary=True)
         elif cmd == config.cmd['get_id']:
+            # Handle ourselves: return the ID of the associated Controller.
             msg = b'\x00' + self.controller.objID
             self.write_message(msg, binary=True)
         else:
-            self.controllerWrap(cmd, payload)
+            # Pass all other commands directly to the Controller which will
+            # (probably) send it to Clerk for processing.
+            ok, ret = self.controller.sendToClerk(cmd + payload)
+    
+            # Return the Controller's response to the Websocket client. Convert
+            # the Boolean `ok` to a byte for the wire transfer.
+            if ok:
+                ret = b'\x00' + ret
+            else:
+                ret = b'\x01' + ret
+            self.write_message(ret, binary=True)
 
     def on_close(self):
         """
-        Clean up, most notably the REQ 0MQ sockets which cause problems when
-        disconnected without the knowledge of the server. This is still a
-        potential bug that needs a test to reproduce it reliably. For now
-        however it is a safe assumption that the handler is not forcefully
-        terminated by the OS.
+        Shutdown Controller.
+
+        This method is a Tornado callback and triggers whenever the Websocket
+        is closed.
+
+        Cleanly shutdown the Controller, most notably the REQ ZeroMQ sockets
+        which may cause problems when disconnected without the knowledge of the
+        server. This is still a  potential bug that needs a test to reproduce
+        it reliably. For now however it is a safe assumption that the handler
+        is not forcefully terminated by the OS.
         """
         self.controller.close()
         self.logit.debug('Connection closed')
@@ -122,7 +134,10 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
 class ClacksServer(multiprocessing.Process):
     """
-    Webserver wrapped in a Python Process for convenience.
+    Tornado server that constitutes Clacks.
+
+    The server itself only responds to Websocket requests. The entire logic for
+    these is defined in ``WebsocketHandler``.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -141,7 +156,7 @@ class ClacksServer(multiprocessing.Process):
         ioloop = zmq.eventloop.ioloop
         ioloop.install()
 
-        # Install the websocket handler.
+        # Install the Websocket handler.
         app = tornado.web.Application([(r"/websocket", WebsocketHandler)])
         http = tornado.httpserver.HTTPServer(app)
 
