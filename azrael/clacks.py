@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Clacks is a Websocket interface into Azrael.
+Bridge between Websocket Controller and Clerk.
 
 It does little more than wrapping a ``ControllerBase`` instance. As such it has
 the same capabilities.

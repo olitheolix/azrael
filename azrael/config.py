@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Global configuration parameters.
+"""
 import sys
 import logging
 

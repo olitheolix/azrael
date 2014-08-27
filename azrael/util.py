@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Various utility functions.
+Utility functions.
 """
 
 import numpy as np

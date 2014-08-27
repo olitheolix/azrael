@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Clerk is the API for Azrael.
+Azrael's API.
 
 Clients can send commands to Clerk via ZeroMQ to influence the simulation, for
 instance spawn new objects, query existing objects, their state variables

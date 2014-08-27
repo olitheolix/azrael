@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Defines object parts like Boosters and their commands.
+"""
 import numpy as np
 
 from collections import namedtuple as NT

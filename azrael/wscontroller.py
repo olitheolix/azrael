@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-A version Websocket version of ``ControllerBase``.
+Websocket version of ``ControllerBase``.
 
 This version of the `Controller` exists as a proof-of-concept to demonstrate
 that web browser (ie JavaScript) can interact with Azrael.

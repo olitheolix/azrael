@@ -16,6 +16,8 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
+Python agnostic Codecs for data transmission to and from Clerk.
+
 The encoders and decoders in this module specify the binary protocol for
 sending/receiving messages to/from Clerk.
 

@@ -16,8 +16,10 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Provide a decorator to automatically type check arguments based on
-the annotations in the function signature.
+Decorator for automatic type checking.
+
+The decorator automatically verifies function arguments based on their
+annotations in the signature.
 
 Usage example::
 

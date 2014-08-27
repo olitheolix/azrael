@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-The Controller class wraps the available commands for Azrael (via Clerk).
+Python interface for Clerk/Azrael.
 
 You should inherit this class and overload the ``run`` method with your own
 version to intelligently control the object based on its position, speed, and
