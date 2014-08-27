@@ -342,9 +342,9 @@ def test_create_fetch_template(ctrl_type):
     # automatically assign any).
     cs = np.array([1, 2, 3, 4], np.float64)
     geo = np.array([5, 6, 7, 8], np.float64)
-    b0 = parts.booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
-    b1 = parts.booster(1, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
-    f0 = parts.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
+    b0 = parts.Booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
+    b1 = parts.Booster(1, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
+    f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
@@ -366,11 +366,11 @@ def test_create_fetch_template(ctrl_type):
     # Explicitly verify the booster- and factory units. The easiest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
-    out_boosters = [parts.booster_tostring(_) for _ in ret.boosters]
-    out_factories = [parts.factory_tostring(_) for _ in ret.factories]
-    assert parts.booster_tostring(b0) in out_boosters
-    assert parts.booster_tostring(b1) in out_boosters
-    assert parts.factory_tostring(f0) in out_factories
+    out_boosters = [_.tostring() for _ in ret.boosters]
+    out_factories = [_.tostring() for _ in ret.factories]
+    assert b0.tostring() in out_boosters
+    assert b1.tostring() in out_boosters
+    assert f0.tostring() in out_factories
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

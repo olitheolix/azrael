@@ -388,9 +388,9 @@ def test_create_fetch_template():
     # automatically assign any IDs).
     cs = np.array([1, 2, 3, 4], np.float64)
     geo = np.array([5, 6, 7, 8], np.float64)
-    b0 = parts.booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
-    b1 = parts.booster(1, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
-    f0 = parts.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
+    b0 = parts.Booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
+    b1 = parts.Booster(1, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
+    f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
@@ -409,11 +409,11 @@ def test_create_fetch_template():
     # Explicitly verify the booster- and factory units. The easisest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
-    out_boosters = [parts.booster_tostring(_) for _ in out[2]]
-    out_factories = [parts.factory_tostring(_) for _ in out[3]]
-    assert parts.booster_tostring(b0) in out_boosters
-    assert parts.booster_tostring(b1) in out_boosters
-    assert parts.factory_tostring(f0) in out_factories
+    out_boosters = [_.tostring() for _ in out[2]]
+    out_factories = [_.tostring() for _ in out[3]]
+    assert b0.tostring() in out_boosters
+    assert b1.tostring() in out_boosters
+    assert f0.tostring() in out_factories
 
     print('Test passed')
 
@@ -480,7 +480,7 @@ def test_processControlCommand():
     assert (ok, ctrl_id) == (True, objID_1)
 
     # Create booster control command.
-    cmd_0 = parts.controlBooster(unitID=0, force=0.2)
+    cmd_0 = parts.CmdBooster(partID=0, force=0.2)
 
     # Call 'controlParts'. It must fail because the default object
     # does not have any boosters.
@@ -498,9 +498,9 @@ def test_processControlCommand():
     # will automatically enumerate them in any way).
     cs = np.array([1, 2, 3, 4], np.float64)
     geo = np.array([5, 6, 7, 8], np.float64)
-    b0 = parts.booster(0, pos=np.zeros(3), orient=[1, 0, 0], max_force=0.5)
-    b1 = parts.booster(1, pos=np.zeros(3), orient=[0, 1, 0], max_force=0.5)
-    f0 = parts.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
+    b0 = parts.Booster(0, pos=np.zeros(3), orient=[1, 0, 0], max_force=0.5)
+    b1 = parts.Booster(1, pos=np.zeros(3), orient=[0, 1, 0], max_force=0.5)
+    f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # Add it to Azrael and spawn an instance.
     templateID_2 = 't1'.encode('utf8')
@@ -510,8 +510,8 @@ def test_processControlCommand():
     
     # Call 'controlParts'. It must fail because the default object has
     # no boosters.
-    cmd_0 = parts.controlBooster(unitID=0, force=0.2)
-    cmd_1 = parts.controlBooster(unitID=1, force=0.4)
+    cmd_0 = parts.CmdBooster(partID=0, force=0.2)
+    cmd_1 = parts.CmdBooster(partID=1, force=0.4)
     ok, msg = clerk.controlParts(objID_2, [cmd_0, cmd_1], [])
     assert ok
 
@@ -565,6 +565,7 @@ def test_get_all_objectids():
 
     
 if __name__ == '__main__':
+    test_processControlCommand()
     test_get_all_objectids()
     test_get_object_template_id()
     test_get_statevar()

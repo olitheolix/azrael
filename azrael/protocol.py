@@ -36,6 +36,7 @@ should make it possible to write clients in other languages.
 """
 
 import json
+import IPython
 import cytoolz
 import collections
 import numpy as np
@@ -43,6 +44,8 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
 from azrael.typecheck import typecheck
+
+ipshell = IPython.embed
 
 
 class AzraelEncoder(json.JSONEncoder):
@@ -86,8 +89,14 @@ def ToClerk_GetTemplate_Decode(payload: bytes):
 def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
                                  boosters: (list, tuple),
                                  factories: (list, tuple)):
-    d = {'cs': cs, 'geo': geo, 'boosters': boosters,
-         'factories': factories}
+    for b in boosters:
+        assert isinstance(b, parts.Booster)
+    for f in factories:
+        assert isinstance(f, parts.Factory)
+        
+    d = {'cs': cs, 'geo': geo,
+         'boosters': [_.tostring() for _ in boosters],
+         'factories': [_.tostring() for _ in factories]}
     return True, dumps(d).encode('utf8')
 
 
@@ -100,8 +109,8 @@ def FromClerk_GetTemplate_Decode(payload: bytes):
         return False, 'JSON decoding error'
 
     # Wrap the Booster- and Factory data into their dedicated named tuples.
-    boosters = [parts.booster(*_) for _ in data['boosters']]
-    factories = [parts.factory(*_) for _ in data['factories']]
+    boosters = [parts.fromstring(bytes(_)) for _ in data['boosters']]
+    factories = [parts.fromstring(bytes(_)) for _ in data['factories']]
 
     # Return the complete information in a named tuple.
     nt = collections.namedtuple('Template', 'cs geo boosters factories')
@@ -144,8 +153,15 @@ def FromClerk_GetTemplateID_Decode(payload: bytes):
 @typecheck
 def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray, geo:
                                np.ndarray, boosters, factories):
+    for b in boosters:
+        assert isinstance(b, parts.Booster)
+    for f in factories:
+        assert isinstance(f, parts.Factory)
+
     d = {'name': templateID, 'cs': cs.tostring(), 'geo': geo.tostring(),
-         'boosters': boosters, 'factories': factories}
+         'boosters': [_.tostring() for _ in boosters],
+         'factories': [_.tostring() for _ in factories]}
+
     try:
         d = dumps(d).encode('utf8')
     except TypeError:
@@ -162,8 +178,8 @@ def ToClerk_AddTemplate_Decode(payload: bytes):
         return False, 'JSON decoding error'
 
     # Wrap the Booster- and Factory data into their dedicated named tuples.
-    boosters = [parts.booster(*_) for _ in data['boosters']]
-    factories = [parts.factory(*_) for _ in data['factories']]
+    boosters = [parts.fromstring(bytes(_)) for _ in data['boosters']]
+    factories = [parts.fromstring(bytes(_)) for _ in data['factories']]
 
     # Convert template ID to a byte string.
     templateID = bytes(data['name'])
@@ -526,8 +542,10 @@ def ToClerk_ControlParts_Encode(objID: bytes, cmds_b: list, cmds_f: list):
     assert len(cmds_b) < 256
     assert len(cmds_f) < 256
 
-    d = {'objID': objID, 'cmd_boosters': cmds_b, 'cmd_factories': cmds_f}
-    # Encode data as JSON.
+    # Compile dictionary with data and encode it as JSON.
+    d = {'objID': objID,
+         'cmd_boosters': [_.tostring() for _ in cmds_b],
+         'cmd_factories': [_.tostring() for _ in cmds_f]}
     try:
         d = dumps(d).encode('utf8')
     except TypeError:
@@ -544,8 +562,8 @@ def ToClerk_ControlParts_Decode(payload: bytes):
         return False, 'JSON decoding error'
 
     objID = bytes(data['objID'])
-    cmds_b = [parts.CmdBooster(*_) for _ in data['cmd_boosters']]
-    cmds_f = [parts.CmdFactory(*_) for _ in data['cmd_factories']]
+    cmds_b = [parts.fromstring(bytes(_)) for _ in data['cmd_boosters']]
+    cmds_f = [parts.fromstring(bytes(_)) for _ in data['cmd_factories']]
         
     return True, (objID, cmds_b, cmds_f)
 

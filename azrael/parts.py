@@ -21,10 +21,52 @@ import numpy as np
 from collections import namedtuple as NT
 from azrael.typecheck import typecheck
 
+
+@typecheck
+def fromstring(data: bytes):
+    """
+    Decode the part of command in ``data``.
+
+    If the content in ``data`` is invalid then ``ValueError`` will be raised.
+
+    :param bytes data: input data to de-serialise.
+    :return: (ok, decoded-data)
+    :rtype: (bool, part)
+    :raises: None
+    """
+    # Decode JSON.
+    try:
+        d = loads(data)
+    except ValueError:
+        return False, 'JSON decoding error'
+
+    # Sanity check.
+    if not isinstance(d, dict):
+        return False, 'Corrupt part description.'
+
+    # The 'part' field must be present.
+    if 'part' not in d:
+        return False, 'Corrupt part data'
+    
+    # Identify what we want to decode.
+    if d['part'] == 'Booster':
+        args = [d[_] for _ in Booster._fields]
+        return Booster(*args)
+    elif d['part'] == 'Factory':
+        args = [d[_] for _ in Factory._fields]
+        return Factory(*args)
+    elif d['part'] == 'CmdBooster':
+        args = [d[_] for _ in CmdBooster._fields]
+        return CmdBooster(*args)
+    else:
+        return False, 'Unknown part <{}>'.format(d['part'])
+
+
 class AzraelEncoder(json.JSONEncoder):
     """
     Augment default JSON encoder to handle bytes and NumPy arrays.
     """
+    @typecheck
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
@@ -40,143 +82,183 @@ def dumps(data):
     # Convenience function for encoding ``data`` with custom JSON encoder.
     return json.dumps(data, cls=AzraelEncoder)
 
+@typecheck
 def loads(data: bytes):
     # Convenience function for decoding ``data``.
     return json.loads(data.decode('utf8'))
 
 
-# ----------------------------------------------------------------------
-# Define available parts.
-# ----------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Booster
+# 
+# Boosters exert a force on an object. Boosters have an ID (user can specify
+# it), a position relative to the object's centre of mass, an orientation
+# relative to the object's overall orientation, and a maximum force. Note that
+# the force is a scalar not a vector. The direction of the force is governed by
+# the orientation of the Booster.
+# -----------------------------------------------------------------------------
 
-# Booster exert a force on an ojbect.
-# Boosters have an ID (user can specify it), a position relative to the
-# object's centre of mass, an orientation relative to the object's overall
-# orientation, and a maximum force. Note that the force is a scalar not a
-# vector. The direction of the force is governed by the orientation of the
-# Booster.
-Booster = NT('Booster', 'bid pos orient max_force')
-
-# Factories can spawn objects. Like Boosters, they have custom ID, and a
-# position and  orientation relative to the object they are attached
-# to. Furthermore, they can only spawn a particular template and provide it
-# with an initial speed along its orientation.
-Factory = NT('Factory', 'fid pos orient speed')
-
-# ----------------------------------------------------------------------
-# Define available commands to parts.
-# ----------------------------------------------------------------------
-
-CmdBooster = NT('CmdBooster', 'unitID force_mag')
-CmdFactory = NT('CmdFactory', 'unitID')
+# Define named tuples to describe a Booster and the commands it can receive.
+_Booster = NT('Booster', 'partID pos orient max_force')
+_CmdBooster = NT('CmdBooster', 'partID force_mag')
 
 
-@typecheck
-def controlBooster(unitID: int, force: (int, float, np.float64)):
-    """
-    Return a ``CmdBooster`` instance.
-
-    This wrapper only ensures that the provided data types are sane.
-
-    :param int unitID: custom ID of this booster.
-    :param float force: force magnitude to apply.
-    """
-    unitID = np.int64(unitID)
-    force = np.float64(force)
-    return CmdBooster(unitID, force)
-
-
-@typecheck
-def booster(bid: int, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5):
+class Booster(_Booster):
     """
     Return a ``Booster`` instance.
 
-    The unit is located at ``pos`` relative to the parent's center of mass. The
+    The unit is located at ``pos`` relative to the parent's centre of mass. The
     Booster points into the direction ``orient``.
 
     .. note::
        ``orient`` is *not* a Quaternion but merely a unit vector that points
        in the direction of the force.
 
-    :param int bid: Booster ID (arbitrary)
+    :param int partID: Booster ID (arbitrary)
     :param ndarray pos: position vector (3-elements)
     :param ndarray orient: orientation (3-elements)
     :param float max_force: maximum force this Booster can generate.
     :return Booster: compiled booster description.
     """
-    # Convert the booster ID and force threshold to NumPy types.
-    bid = np.int64(bid)
-    max_force = np.float64(max_force)
+    @typecheck
+    def __new__(cls, partID: int, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5):
+        # Convert the booster ID and force threshold to NumPy types.
+        partID = np.int64(partID)
+        max_force = np.float64(max_force)
+    
+        # Position must be a 3-element vector.
+        pos = np.array(pos, np.float64)
+        assert len(pos) == 3
+    
+        # Orientation must be a 3-element vector.
+        orient = np.array(orient, np.float64)
+        assert len(orient) == 3
+    
+        # Normalise the direction vector or raise an error if invalid.
+        np.sum(orient) > 1E-5
+        orient = orient / np.sqrt(np.dot(orient, orient))
+        self = super().__new__(cls, partID, pos, orient, max_force)
+        return self
+    
+    def __eq__(self, ref):
+        if not isinstance(ref, type(self)):
+            return False
 
-    # Position must be a 3-element vector.
-    pos = np.array(pos, np.float64)
-    assert len(pos) == 3
-
-    # Orientation must be a 3-element vector.
-    orient = np.array(orient, np.float64)
-    assert len(orient) == 3
-
-    # Normalise the direction vector or raise an error if invalid.
-    assert np.sum(orient) > 1E-5
-    orient = orient / np.sqrt(np.dot(orient, orient))
-
-    # Return a valid Booster instance based on the arguments.
-    return Booster(bid, pos, orient, max_force)
+        for f in self._fields:
+            if not np.array_equal(getattr(self, f), getattr(ref, f)):
+                return False
+        return True
+    
+    def tostring(self):
+        d = {'part': 'Booster'}
+        for f in self._fields:
+            d[f] = getattr(self, f)
+        return dumps(d).encode('utf8')
 
 
-def factory(fid, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5]):
+class CmdBooster(_CmdBooster):
     """
-    Return a ``Factory`` instance.
+    Return Booster command wrapped into a ``CmdBooster`` instance.
 
-    The unit is located at ``pos`` relative to the parent's center of
-    mass. The objects it spawns can exit the factory at any speed specified by
-    the ``speed`` interval.
+    This wrapper only ensures the provided data is sane.
 
-    .. note::
-       ``orient`` is *not* a Quaternion but merely a unit vector that points
-       in the nozzle direction of the factory (it the direction in which new
-       objects will be spawned).
-
-    :param int fid: factory ID (arbitrary)
-    :param ndarray pos: position vector (3-elements)
-    :param ndarray orient: orientation (3-elements)
-    :param ndarray speed: min/max exit speed of spawned object.
-    :return Factory: compiled factory description.
+    :param int partID: Booster ID (arbitrary)
+    :param float force: magnitude of force (a scalar!)
+    :return Booster: compiled description of booster command.
     """
-    # Factory ID.
-    fid = np.int64(fid)
+    @typecheck
+    def __new__(cls, partID: int, force: (int, float, np.float64)):
+        partID = np.int64(partID)
+        force = np.float64(force)
 
-    # Position must be a 3-element vector.
-    pos = np.array(pos, np.float64)
-    assert len(pos) == 3
+        self = super().__new__(cls, partID, force)
+        return self
+    
+    def __eq__(self, ref):
+        if not isinstance(ref, type(self)):
+            return False
 
-    # Orientation must be a 3-element vector.
-    orient = np.array(orient, np.float64)
-    assert len(orient) == 3
-
-    # Normalise the direction vector or raise an error if invalid.
-    assert np.sum(orient) > 1E-5
-    orient = orient / np.sqrt(np.dot(orient, orient))
-
-    # This defines exit speed range of the spawned object.
-    speed = np.array(speed, np.float64)
-    assert len(speed) == 2
-
-    # Return a valid Factory instance based on the arguments.
-    return Factory(fid, pos, orient, speed)
-
-
-def booster_tostring(b: Booster):
-    return dumps(b).encode('utf8')
+        for f in self._fields:
+            if not np.array_equal(getattr(self, f), getattr(ref, f)):
+                return False
+        return True
+    
+    def tostring(self):
+        d = {'part': 'CmdBooster'}
+        for f in self._fields:
+            d[f] = getattr(self, f)
+        return dumps(d).encode('utf8')
 
 
-def booster_fromstring(b: bytes):
-    return booster(*(loads(b)))
+# -----------------------------------------------------------------------------
+# Factory
+# 
+# Factories can spawn objects. Like Boosters, they have a custom ID, position,
+# orientation (both relative to the object). Furthermore, they can only spawn a
+# particular template. The newly spawned object can exit with the specified
+# speed along, but only along the orientation of the factory unit.
+# -----------------------------------------------------------------------------
+
+# Define named tuples to describe a Factory and the commands it can receive.
+_Factory = NT('Factory', 'partID pos orient speed')
+CmdFactory = NT('CmdFactory', 'partID')
 
 
-def factory_tostring(f: Factory):
-    return dumps(f).encode('utf8')
+class Factory(_Factory):
+    @typecheck
+    def __new__(cls, partID, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5]):
+        """
+        Return a ``Factory`` instance.
+    
+        The unit is located at ``pos`` relative to the parent's centre of
+        mass. The objects it spawns can exit the factory at any speed specified by
+        the ``speed`` interval.
+    
+        .. note::
+           ``orient`` is *not* a Quaternion but merely a unit vector that points
+           in the nozzle direction of the factory (it the direction in which new
+           objects will be spawned).
+    
+        :param int partID: factory ID (arbitrary)
+        :param ndarray pos: position vector (3-elements)
+        :param ndarray orient: orientation (3-elements)
+        :param ndarray speed: min/max exit speed of spawned object.
+        :return Factory: compiled factory description.
+        """
+        # Factory ID.
+        partID = np.int64(partID)
+    
+        # Position must be a 3-element vector.
+        pos = np.array(pos, np.float64)
+        assert len(pos) == 3
+    
+        # Orientation must be a 3-element vector.
+        orient = np.array(orient, np.float64)
+        assert len(orient) == 3
+    
+        # Normalise the direction vector or raise an error if invalid.
+        assert np.sum(orient) > 1E-5
+        orient = orient / np.sqrt(np.dot(orient, orient))
+    
+        # This defines exit speed range of the spawned object.
+        speed = np.array(speed, np.float64)
+        assert len(speed) == 2
+    
+        # Return a valid Factory instance based on the arguments.
+        self = super().__new__(cls, partID, pos, orient, speed)
+        return self
+    
+    def __eq__(self, ref):
+        if not isinstance(ref, type(self)):
+            return False
 
-
-def factory_fromstring(f: bytes):
-    return factory(*(loads(f)))
+        for f in self._fields:
+            if not np.array_equal(getattr(self, f), getattr(ref, f)):
+                return False
+        return True
+    
+    def tostring(self):
+        d = {'part': 'Factory'}
+        for f in self._fields:
+            d[f] = getattr(self, f)
+        return dumps(d).encode('utf8')

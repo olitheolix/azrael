@@ -408,8 +408,8 @@ class Clerk(multiprocessing.Process):
         'geometry': b''}
 
         :param bytes templateID: templateID
-        :return: (cs, geo, boosters, factories)
-        :rtype: tuple
+        :return: (ok, (cs, geo, boosters, factories))
+        :rtype: (True, tuple) or (False, str)
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
@@ -425,8 +425,7 @@ class Clerk(multiprocessing.Process):
         # Extract the booster parts.
         if 'boosters' in doc:
             # Convert byte string to Booster objects.
-            b = doc['boosters'].values()
-            boosters = [parts.booster_fromstring(_) for _ in b]
+            boosters = [parts.fromstring(_) for _ in doc['boosters'].values()]
         else:
             # Object has no boosters.
             boosters = []
@@ -434,8 +433,7 @@ class Clerk(multiprocessing.Process):
         # Extract the factory parts.
         if 'factories' in doc:
             # Convert byte string to Factory objects.
-            f = doc['factories'].values()
-            factories = [parts.factory_fromstring(_) for _ in f]
+            factories = [parts.fromstring(_) for _ in doc['factories'].values()]
         else:
             # Object has no factories.
             factories = []
@@ -480,24 +478,24 @@ class Clerk(multiprocessing.Process):
             cshape, geo, boosters, factories = data
 
         # Extract all booster- and factory IDs.
-        bid = dict(zip([int(_.bid) for _ in boosters], boosters))
-        fid = dict(zip([int(_.fid) for _ in factories], factories))
+        bid = dict(zip([int(_.partID) for _ in boosters], boosters))
+        fid = dict(zip([int(_.partID) for _ in factories], factories))
         
         # Verify that all boosters- and factories addressed in the commands
         # actually exist.
         tot_torque = np.zeros(3, np.float64)
         tot_central_force = np.zeros(3, np.float64)
         for cmd in cmd_boosters:
-            if int(cmd.unitID) not in bid:
+            if int(cmd.partID) not in bid:
                 return False, 'Invalid booster ID'
             
             # Rotate the unit force vector into the orientation given by the
             # Quaternion. Fixme: the orientation of the unit must still be
             # multiplied by the Quaternion of the object orientation.
-            f = bid[int(cmd.unitID)].orient * cmd.force_mag
+            f = bid[int(cmd.partID)].orient * cmd.force_mag
     
             # Accumulate torque and central force.
-            pos = bid[int(cmd.unitID)].pos
+            pos = bid[int(cmd.partID)].pos
             tot_torque += np.cross(pos, f)
             tot_central_force += f
 
@@ -506,7 +504,7 @@ class Clerk(multiprocessing.Process):
 
         # Let the factories spawn the objects.
         for cmd in cmd_factories:
-            if int(cmd.unitID) not in fid:
+            if int(cmd.partID) not in fid:
                 return False, 'Invalid factory ID'
 
         return True, ('', )
@@ -536,11 +534,11 @@ class Clerk(multiprocessing.Process):
         data = {'templateID': templateID,
                 'cshape': cshape.tostring(), 'geometry': geometry.tostring()}
 
-        # ... as well as boosters- and factory parts.
+        # ... as well as booster- and factory parts.
         for b in boosters:
-            data['boosters.{0:03d}'.format(b.bid)] = parts.booster_tostring(b)
+            data['boosters.{0:03d}'.format(b.partID)] = b.tostring()
         for f in factories:
-            data['factories.{0:03d}'.format(f.fid)] = parts.factory_tostring(f)
+            data['factories.{0:03d}'.format(f.partID)] = f.tostring()
 
         # Insert the document only if it does not exist already. The return
         # value contains the old document, ie. **None** if the document

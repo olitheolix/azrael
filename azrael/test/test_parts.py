@@ -19,40 +19,29 @@ import numpy as np
 import azrael.parts as parts
 
 
-def test_booster():
+def test_booster_factory_serialisation():
     """
-    Test (de)serialisation of Booster tuple.
+    Serialise and de-serialise a Booster- and Factory part.
     """
-    # Serialise a Booster tuple.
-    orig = parts.booster(1)
-    a = parts.booster_tostring(orig)
-    assert isinstance(a, bytes)
+    p = parts.Booster(1, [1,2,3])
+    assert p == parts.fromstring(p.tostring())
 
-    # De-serialise it again and compare to the original.
-    new = parts.booster_fromstring(a)
-    for ii in range(len(orig)):
-        assert np.array_equal(orig[ii], new[ii])
+    p = parts.Factory(1, [1,2,3])
+    assert p == parts.fromstring(p.tostring())
 
     print('Test passed')
 
 
-def test_factory():
+def test_command_serialisation():
     """
-    Test (de)serialisation of Booster tuple.
+    Serialise and de-serialise a Booster- and Factory command.
     """
-    # Serialise a Factory tuple.
-    orig = parts.factory(1)
-    a = parts.factory_tostring(orig)
-    assert isinstance(a, bytes)
-
-    # De-serialise it again and compare to the original.
-    new = parts.factory_fromstring(a)
-    for ii in range(len(orig)):
-        assert np.array_equal(orig[ii], new[ii])
+    c = parts.CmdBooster(1, 5)
+    assert c == parts.fromstring(c.tostring())
 
     print('Test passed')
 
 
 if __name__ == '__main__':
-    test_booster()
-    test_factory()
+    test_command_serialisation()
+    test_booster_factory_serialisation()

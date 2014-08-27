@@ -42,9 +42,9 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Test parameters and constants.
     cs = btInterface.defaultData().cshape
     geo = np.array([1,2,3], np.float64)
-    b0 = parts.booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
-    b1 = parts.booster(0, pos=np.zeros(3), orient=[1, 1, 0], max_force=0.6)
-    f0 = parts.factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
+    b0 = parts.Booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
+    b1 = parts.Booster(0, pos=np.zeros(3), orient=[1, 1, 0], max_force=0.6)
+    f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
 
     # ----------------------------------------------------------------------
     # Controller --> Clerk.
@@ -70,8 +70,8 @@ def test_send_command():
     """
     Test codec for controlBooster command.
     """
-    cmd_0 = parts.controlBooster(unitID=0, force=0.2)
-    cmd_1 = parts.controlBooster(unitID=1, force=0.4)
+    cmd_0 = parts.CmdBooster(partID=0, force=0.2)
+    cmd_1 = parts.CmdBooster(partID=1, force=0.4)
     objID = int2id(1)
 
     enc = protocol.ToClerk_ControlParts_Encode
@@ -86,10 +86,8 @@ def test_send_command():
     assert len(cmd_factory) == 0
 
     # Use getattr to automatically test all attributes.
-    assert cmd_booster[0].unitID == cmd_0.unitID
-    assert cmd_booster[0].force_mag == cmd_0.force_mag
-    assert cmd_booster[1].unitID == cmd_1.unitID
-    assert cmd_booster[1].force_mag == cmd_1.force_mag
+    assert cmd_booster[0] ==  cmd_0
+    assert cmd_booster[1] ==  cmd_1
 
     print('Test passed')
     
