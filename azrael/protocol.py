@@ -35,7 +35,6 @@ agnostic encodings of strings, JSON objects, or C-arrays (via NumPy). This
 should make it possible to write clients in other languages.
 """
 
-import json
 import IPython
 import cytoolz
 import collections
@@ -43,33 +42,12 @@ import numpy as np
 import azrael.parts as parts
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
+
 from azrael.typecheck import typecheck
+from azrael.protocol_json import loads, dumps
 
 ipshell = IPython.embed
 
-
-class AzraelEncoder(json.JSONEncoder):
-    """
-    Augment default JSON encoder to handle bytes and NumPy arrays.
-    """
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, bytes):
-            return list(obj)
-        if isinstance(obj, np.int64):
-            return int(obj)
-        if isinstance(obj, np.float64):
-            return float(obj)
-        return json.JSONEncoder.default(self, obj)
-
-def dumps(data):
-    # Convenience function for encoding ``data`` with custom JSON encoder.
-    return json.dumps(data, cls=AzraelEncoder)
-
-def loads(data: bytes):
-    # Convenience function for decoding ``data``.
-    return json.loads(data.decode('utf8'))
 
 # ---------------------------------------------------------------------------
 # GetTemplate
