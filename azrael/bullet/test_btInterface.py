@@ -42,7 +42,7 @@ def test_add_get_single():
     ok, data = btInterface.getStateVariables([id_0])
     assert not ok
 
-    # Query an object. Since none exist yet this must return with an error.
+    # Query an object. Since none exists yet this must return with an error.
     ok, data = btInterface.getStateVariables([id_0])
     assert not ok
 
@@ -101,15 +101,13 @@ def test_add_get_multiple():
     
     # Manually query multiple objects.
     ok, out = btInterface.getStateVariables([id_0, id_1])
-    assert ok
-    assert len(out) == 2
+    assert (ok, len(out)) == (True, 2)
     assert out[0] == data_0
     assert out[1] == data_1
 
     # Query all objects at once.
     ok, out = btInterface.getAllStateVariables()
-    assert ok
-    assert len(out) == 2
+    assert (ok, len(out)) == (True, 2)
     assert out[id_0] == data_0
     assert out[id_1] == data_1
 
@@ -143,11 +141,11 @@ def test_add_same():
     # Add the objects to the DB.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
 
-    # Add the same object with the same ID -- this should work because nothing
+    # Add the same object with the same ID -- this must work since nothing
     # has changed.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
 
-    # Add a different object with the same ID -- this should not work.
+    # Add a different object with the same ID -- this must fail.
     assert not btInterface.spawn(id_0, data_1, np.int64(1).tostring())
 
     print('Test passed')
@@ -164,7 +162,7 @@ def test_get_set_force():
     id_0 = int2id(0)
     id_1 = int2id(1)
 
-    # Create an object and serialise it.
+    # Create two objects and serialise them.
     data_0 = btInterface.defaultData()
     data_0.position[:] = 0
     data_0 = btInterface.pack(data_0).tostring()
@@ -177,12 +175,13 @@ def test_get_set_force():
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
     assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
 
-    # Specify the forces and their position with respect to the center of mass.
+    # Convenince: forces and their positions.
     f0 = np.zeros(3, np.float64)
     f1 = np.zeros(3, np.float64)
     p0 = np.zeros(3, np.float64)
     p1 = np.zeros(3, np.float64)
 
+    # The force and positions must match the defaults.
     ok, force, rel_pos = btInterface.getForce(id_0)
     assert ok
     assert np.array_equal(force, f0)
@@ -192,12 +191,12 @@ def test_get_set_force():
     assert np.array_equal(force, f1)
     assert np.array_equal(rel_pos, p1)
 
-    # Update the force vector of the second object.
+    # Update the force vector of only the second object.
     f1 = np.ones(3, np.float64)
     p1 = 2 * np.ones(3, np.float64)
     assert btInterface.setForce(id_1, f1, p1)
 
-    # Only the force of the second object must have changed.
+    # Check again. The force of only the second object must have changed.
     ok, force, rel_pos = btInterface.getForce(id_0)
     assert ok
     assert np.array_equal(force, f0)
@@ -220,7 +219,7 @@ def test_update_statevar():
     # Create an object ID for the test.
     id_0 = int2id(0)
 
-    # Create an object and serialise it.
+    # Create an SV object and serialise it.
     data_0 = btInterface.defaultData()
     data_0 = btInterface.pack(data_0).tostring()
 
@@ -231,7 +230,7 @@ def test_update_statevar():
     ok, out = btInterface.getStateVariables([id_0])
     assert (ok, out) == (True, [data_0])
     
-    # Create an object and serialise it.
+    # Create another SV object and serialise it as well.
     data_1 = btInterface.defaultData()
     data_1.position[:] += 10
     data_1 = btInterface.pack(data_1).tostring()
@@ -241,7 +240,7 @@ def test_update_statevar():
     ok, out = btInterface.getStateVariables([id_0])
     assert (ok, out) == (True, [data_1])
 
-    # Change the SV data and check it was updated correctly.
+    # Updating an invalid object must fail.
     assert not btInterface.update(int2id(10), data_1)
 
     print('Test passed')
@@ -249,7 +248,7 @@ def test_update_statevar():
 
 def test_suggest_position():
     """
-    Set and retrieve a position suggestion.
+    Set and retrieve a suggested position .
     """
     # Reset the SV database.
     btInterface.initSVDB(reset=True)
@@ -261,33 +260,32 @@ def test_suggest_position():
     data_0 = btInterface.defaultData()
     data_0 = btInterface.pack(data_0).tostring()
 
-    # Query suggested position for non-existing object.
+    # Query suggested position for a non-existing object. This must fail.
     ok, data = btInterface.getSuggestedPosition(id_0)
     assert not ok
 
-    # Suggest a position for a non-existing object.
+    # Suggest a position for a non-existing object. This must fail.
     p = np.array([1, 2, 5])
     assert not btInterface.setSuggestedPosition(int2id(10), p)
 
     # Add the object to the DB with ID=0.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
 
-    # Query suggested position for existing object. This must suceed. However,
-    # since no position has been suggested yet the returned values must be
-    # None.
+    # Query the suggested position for ID0. This must suceed. However, the
+    # returned values must be None since no position has been suggested yet.
     ok, data = btInterface.getSuggestedPosition(id_0)
     assert (ok, data) == (True, None)
 
-    # Suggest a position for the just inserted object.
+    # Suggest a new position for the just inserted object.
     p = np.array([1, 2, 5])
     assert btInterface.setSuggestedPosition(id_0, p)
 
-    # Retrieve the suggested position.
+    # Retrieve the suggested position and make sure it matches.
     ok, data = btInterface.getSuggestedPosition(id_0)
     assert ok
     assert np.array_equal(data, p)
 
-    # Void the suggested position.
+    # Void the suggested position and verify.
     assert btInterface.setSuggestedPosition(id_0, None)
     ok, data = btInterface.getSuggestedPosition(id_0)
     assert (ok, data) == (True, None)
@@ -298,34 +296,37 @@ def test_suggest_position():
 def test_create_work_package_without_objects():
     """
     Create, fetch, and update Bullet work packages.
+
+    This test does not insert any objects into the simulation. It only tests
+    the general functionality to add, retrieve, and update work packages.
     """
     # Reset the SV database.
     btInterface.initSVDB(reset=True)
 
-    # The token to use.
+    # The token to use for this test.
     token = 1
 
     # This call is invalid because the IDs must be a non-empty list.
     ok, wpid = btInterface.createWorkPackage([], token, 1, 2)
     assert not ok
 
-    # Valid function call. The first WPID must be 1.
+    # Create a work package for two object IDs. The WPID must be 1.
     IDs = [int2id(_) for _ in range(3, 5)]
     ok, wpid = btInterface.createWorkPackage(IDs, token, 1, 2)
     assert (ok, wpid) == (True, 1)
 
-    # Valid function call. The second WPID must be 2.
+    # Repeat. This WPID must be 2.
     IDs = [int2id(_) for _ in range(3, 5)]
     ok, _ = btInterface.createWorkPackage(IDs, token, 1, 2)
     assert (ok, _) == (True, 2)
     del _
 
-    # Retrieving a non-existing ID must fail.
+    # The attempt to retrie a non-existing ID must fail.
     ok, data, _ = btInterface.getWorkPackage(0)
     assert not ok
     
-    # Retrieving an existing ID must succeed. In this case, it must also return
-    # an empty list because there are no objects in the DB yet.
+    # Retrieve an existing ID. It must return an empty list because there are
+    # no objects in the DB yet.
     ok, data, admin = btInterface.getWorkPackage(wpid)
     assert (ok, data) == (True, [])
     assert (admin.token, admin.dt, admin.maxsteps) == (token, 1, 2)
@@ -338,8 +339,8 @@ def test_create_work_package_without_objects():
     # of SV data elements is irrelevant to the function.
     assert btInterface.updateWorkPackage(wpid, token, {})
 
-    # Try to update it once more. This must now fail since it was just updated
-    # (and the WP thus removed).
+    # Try to update it once more. This must fail since the WPID was
+    # automatically removed by the previous updateWorkPackage command.
     assert not btInterface.updateWorkPackage(wpid, token, {})
     
     print('Test passed')
@@ -348,11 +349,14 @@ def test_create_work_package_without_objects():
 def test_create_work_package_with_objects():
     """
     Create, fetch, and update Bullet work packages.
+
+    Similar to test_create_work_package_without_objects but now the there are
+    actual objects in the simulation.
     """
     # Reset the SV database.
     btInterface.initSVDB(reset=True)
 
-    # The token to use.
+    # The token to use in this test.
     token = 1
 
     # Create two objects.
@@ -362,26 +366,26 @@ def test_create_work_package_with_objects():
     data_2 = btInterface.defaultData(imass=2)
     data_2 = btInterface.pack(data_2).tostring()
 
+    # Spawn them.
     id_1, id_2 = int2id(1), int2id(2)
     assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
     assert btInterface.spawn(id_2, data_2, np.int64(1).tostring())
 
-    # Valid function call. The first WPID must be 1.
+    # Add ID1 to the WP. The WPID must be 1.
     ok, wpid_1 = btInterface.createWorkPackage([id_1], token, 1, 2)
     assert (ok, wpid_1) == (True, 1)
 
-    # Valid function call. The second WPID must be 2.
+    # Add ID1 and ID2 to the second WP. The WPID must be 2.
     ok, wpid_2 = btInterface.createWorkPackage([id_1, id_2], token, 3, 4)
     assert (ok, wpid_2) == (True, 2)
 
     # Retrieve the first work package.
     ok, ret, admin = btInterface.getWorkPackage(wpid_1)
-    assert (len(ret), ok) == (1, True)
+    assert (ok, len(ret)) == (True, 1)
     assert (admin.token, admin.dt, admin.maxsteps) == (token, 1, 2)
-    ret = ret[0]
-    assert ret.id == id_1
-    assert ret.sv == data_1
-    assert np.array_equal(np.fromstring(ret.force), [0, 0, 0])
+    assert ret[0].id == id_1
+    assert ret[0].sv == data_1
+    assert np.array_equal(np.fromstring(ret[0].force), [0, 0, 0])
     
     # Retrieve the second work package.
     ok, ret, admin = btInterface.getWorkPackage(wpid_2)
@@ -391,7 +395,7 @@ def test_create_work_package_with_objects():
     assert (ret[0].sv, ret[1].sv) == (data_1, data_2)
     assert np.array_equal(np.fromstring(ret[0].force), [0, 0, 0])
     
-    # Create a new data set to replace the old one.
+    # Create a new SV data to replace the old one.
     data_3 = btInterface.defaultData(imass=3)
     data_3 = btInterface.pack(data_3).tostring()
 
@@ -403,8 +407,7 @@ def test_create_work_package_with_objects():
     assert not btInterface.updateWorkPackage(wpid_1, token + 1, {id_1: data_3})
     assert btInterface.getStateVariables([id_1]) == (True, [data_1])
     
-    # Update the first work package with the correct token. The data should now
-    # have been updated.
+    # Update the first work package with the correct token. This must succeed.
     assert btInterface.updateWorkPackage(wpid_1, token, {id_1: data_3})
     assert btInterface.getStateVariables([id_1]) == (True, [data_3])
 
@@ -431,16 +434,17 @@ def test_get_set_forceandtorque():
     data_1.position[:] = 10 * np.ones(3)
     data_1 = btInterface.pack(data_1).tostring()
 
-    # Add the two objects to the DB.
+    # Add the two objects to the simulation.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
     assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
 
-    # Specify the forces and torques.
+    # Convenience: specify the forces and torques.
     f0 = np.zeros(3, np.float64)
     f1 = np.zeros(3, np.float64)
     t0 = np.zeros(3, np.float64)
     t1 = np.zeros(3, np.float64)
 
+    # Retrieve the force and torque and verify they are correct.
     ok, force, torque = btInterface.getForceAndTorque(id_0)
     assert ok
     assert np.array_equal(force, f0)
@@ -450,7 +454,7 @@ def test_get_set_forceandtorque():
     assert np.array_equal(force, f1)
     assert np.array_equal(torque, t1)
 
-    # Update the force and torque vectors of the second object.
+    # Update the force and torque of the second object only.
     f1 = np.ones(3, np.float64)
     t1 = 2 * np.ones(3, np.float64)
     assert btInterface.setForceAndTorque(id_1, f1, t1)
