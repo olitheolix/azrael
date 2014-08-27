@@ -75,7 +75,7 @@ def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
     d = {'cs': cs, 'geo': geo,
          'boosters': [_.tostring() for _ in boosters],
          'factories': [_.tostring() for _ in factories]}
-    return True, dumps(d).encode('utf8')
+    return True, dumps(d)
 
 
 @typecheck
@@ -141,7 +141,7 @@ def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray, geo:
          'factories': [_.tostring() for _ in factories]}
 
     try:
-        d = dumps(d).encode('utf8')
+        d = dumps(d)
     except TypeError:
         return False, 'JSON encoding error'
     return True, d
@@ -220,7 +220,7 @@ def ToClerk_SuggestPosition_Encode(objID: bytes, pos: np.ndarray):
 
     # Encode data as JSON.
     try:
-        d = dumps(d).encode('utf8')
+        d = dumps(d)
     except TypeError:
         return False, 'JSON encoding error'
     return True, d
@@ -261,7 +261,7 @@ def ToClerk_SetForce_Encode(objID: bytes, force: np.ndarray, rel_pos: np.ndarray
 
     # Encode data as JSON.
     try:
-        d = dumps(d).encode('utf8')
+        d = dumps(d)
     except TypeError:
         return False, 'JSON encoding error'
     return True, d
@@ -378,7 +378,7 @@ def ToClerk_Spawn_Encode(name: bytes, templateID: bytes, sv:
                          btInterface.BulletData):
     sv = btInterface.pack(sv).tostring()
     d = {'name': name, 'templateID': templateID, 'sv': sv}
-    return True, dumps(d).encode('utf8')
+    return True, dumps(d)
 
 
 @typecheck
@@ -436,7 +436,7 @@ def FromClerk_RecvMsg_Encode(objID: bytes, msg: bytes):
     d = {'objID': objID, 'msg': msg}
     # Encode data as JSON.
     try:
-        d = dumps(d).encode('utf8')
+        d = dumps(d)
     except TypeError:
         return False, 'JSON encoding error'
     return True, d
@@ -469,7 +469,7 @@ def ToClerk_SendMsg_Encode(objID: bytes, target: bytes, msg: bytes):
     d = {'src': objID, 'dst': target, 'msg': msg}
     # Encode data as JSON.
     try:
-        d = dumps(d).encode('utf8')
+        d = dumps(d)
     except TypeError:
         return False, 'JSON encoding error'
     return True, d
@@ -525,7 +525,7 @@ def ToClerk_ControlParts_Encode(objID: bytes, cmds_b: list, cmds_f: list):
          'cmd_boosters': [_.tostring() for _ in cmds_b],
          'cmd_factories': [_.tostring() for _ in cmds_f]}
     try:
-        d = dumps(d).encode('utf8')
+        d = dumps(d)
     except TypeError:
         return False, 'JSON encoding error'
     return True, d

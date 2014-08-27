@@ -20,7 +20,7 @@ class AzraelEncoder(json.JSONEncoder):
 
 def dumps(data):
     # Convenience function for encoding ``data`` with custom JSON encoder.
-    return json.dumps(data, cls=AzraelEncoder)
+    return json.dumps(data, cls=AzraelEncoder).encode('utf8')
 
 @typecheck
 def loads(data: bytes):

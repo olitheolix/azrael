@@ -127,7 +127,7 @@ class Booster(_Booster):
         d = {'part': 'Booster'}
         for f in self._fields:
             d[f] = getattr(self, f)
-        return dumps(d).encode('utf8')
+        return dumps(d)
 
 
 class CmdBooster(_CmdBooster):
@@ -161,7 +161,7 @@ class CmdBooster(_CmdBooster):
         d = {'part': 'CmdBooster'}
         for f in self._fields:
             d[f] = getattr(self, f)
-        return dumps(d).encode('utf8')
+        return dumps(d)
 
 
 # -----------------------------------------------------------------------------
@@ -235,4 +235,4 @@ class Factory(_Factory):
         d = {'part': 'Factory'}
         for f in self._fields:
             d[f] = getattr(self, f)
-        return dumps(d).encode('utf8')
+        return dumps(d)
