@@ -18,7 +18,6 @@
 import sys
 import pytest
 import IPython
-import subprocess
 import numpy as np
 
 import azrael.parts as parts
