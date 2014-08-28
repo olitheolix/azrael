@@ -43,9 +43,6 @@ from azrael.test.test_leonard import startAzrael, stopAzrael, killAzrael
 
 ipshell = IPython.embed
 
-# Name of Echo controller (for convenience).
-echo_ctrl = 'Echo'.encode('utf8')
-
 
 class ControllerTest(controller.ControllerBase):
     def testSend(self, data):
@@ -190,6 +187,7 @@ def test_spawn():
     # Test parameters (the 'Echo' controller is a hard coded dummy controller
     # that is always available).
     sv = btInterface.defaultData()
+    prog = 'Echo'.encode('utf8')
 
     # Unknown controller name.
     templateID = '_templateNone'.encode('utf8')
@@ -198,13 +196,13 @@ def test_spawn():
 
     # Invalid templateID.
     templateID = np.int64(100).tostring()
-    ok, ret = clerk.spawn(echo_ctrl, templateID, sv)
+    ok, ret = clerk.spawn(prog, templateID, sv)
     assert (ok, ret) == (False, 'Invalid Template ID')
 
     # All parameters are now valid. We must be assigne ID=1 because this is the
     # first ID in an otherwise pristine system.
     templateID = '_templateNone'.encode('utf8')
-    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
+    ok, (ret,) = clerk.spawn(prog, templateID, sv)
     assert (ok, ret) == (True, int2id(1))
 
     print('Test passed')
@@ -222,6 +220,7 @@ def test_get_statevar():
     sv_1 = btInterface.defaultData(position=np.arange(3), vlin=[2, 4, 6])
     sv_2 = btInterface.defaultData(position=[2, 4, 6], vlin=[6, 8, 10])
     templateID = '_templateNone'.encode('utf8')
+    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -231,7 +230,7 @@ def test_get_statevar():
     assert (ok, ret) == (False, 'One or more IDs do not exist')
 
     # Spawn a new object. It must have ID=1.
-    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv_1)
+    ok, (ret,) = clerk.spawn(prog, templateID, sv_1)
     assert (ok, ret) == (True, objID_1)
 
     # Retrieve the SV for a non-existing ID --> must fail.
@@ -249,7 +248,7 @@ def test_get_statevar():
         assert np.array_equal(ret_sv[ii], sv_1[ii])
 
     # Spawn a second object.
-    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv_2)
+    ok, (ret,) = clerk.spawn(prog, templateID, sv_2)
     assert (ok, ret) == (True, objID_2)
 
     # Retrieve the state variables for both objects individually.
@@ -287,6 +286,7 @@ def test_set_force():
     sv = btInterface.defaultData()
     force = np.array([1, 2, 3], np.float64)
     relpos = np.array([4, 5, 6], np.float64)
+    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -297,12 +297,17 @@ def test_set_force():
 
     # Spawn a new object. It must have ID=1.
     templateID = '_templateNone'.encode('utf8')
-    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
+    ok, (ret,) = clerk.spawn(prog, templateID, sv)
     assert (ok, ret) == (True, id_1)
 
-    # Invalid/non-existing ID.
+    # Apply the force.
     ok, (ret, ) = clerk.setForce(id_1, force, relpos)
     assert (ok, ret) == (True, '')
+
+    ok, ret_force, ret_relpos = btInterface.getForce(id_1)
+    assert ok
+    assert np.array_equal(ret_force, force)
+    assert np.array_equal(ret_relpos, relpos)
 
     print('Test passed')
 
@@ -319,6 +324,7 @@ def test_suggest_position():
     sv = btInterface.defaultData()
     force = np.array([1, 2, 3], np.float64)
     templateID = '_templateNone'.encode('utf8')
+    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -328,7 +334,7 @@ def test_suggest_position():
     assert (ok, ret) == (False, 'ID does not exist')
 
     # Spawn a new object. It must have ID=1.
-    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
+    ok, (ret,) = clerk.spawn(prog, templateID, sv)
     assert (ok, ret) == (True, id_1)
 
     # Invalid/non-existing ID.
@@ -430,16 +436,17 @@ def test_get_object_template_id():
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
     sv = btInterface.defaultData()
+    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Spawn a new object. It must have ID=1.
-    ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_0, sv)
+    ok, (ctrl_id,) = clerk.spawn(prog, templateID_0, sv)
     assert (ok, ctrl_id) == (True, id_0)
 
     # Spawn another object from a different template.
-    ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_1, sv)
+    ok, (ctrl_id,) = clerk.spawn(prog, templateID_1, sv)
     assert (ok, ctrl_id) == (True, id_1)
 
     # Retrieve template of first object.
@@ -470,13 +477,14 @@ def test_processControlCommand():
     objID_1, objID_2 = int2id(1), int2id(2)
     templateID_1 = '_templateNone'.encode('utf8')
     sv = btInterface.defaultData()
+    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Create a fake object. We will not need it but for this test one must
     # exist as other commands would otherwise fail.
-    ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_1, sv)
+    ok, (ctrl_id,) = clerk.spawn(prog, templateID_1, sv)
     assert (ok, ctrl_id) == (True, objID_1)
 
     # Create booster control command.
@@ -505,7 +513,7 @@ def test_processControlCommand():
     # Add it to Azrael and spawn an instance.
     templateID_2 = 't1'.encode('utf8')
     ok, _ = clerk.addTemplate(templateID_2, cs, geo, [b0, b1], [f0])
-    ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_2, sv)
+    ok, (ctrl_id,) = clerk.spawn(prog, templateID_2, sv)
     assert (ok, ctrl_id) == (True, objID_2)
 
     # Call 'controlParts'. It must fail because the default object has
@@ -535,6 +543,7 @@ def test_get_all_objectids():
     objID_1, objID_2 = int2id(1), int2id(2)
     templateID = '_templateNone'.encode('utf8')
     sv = btInterface.defaultData()
+    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -544,7 +553,7 @@ def test_get_all_objectids():
     assert (ok, out) == (True, [])
 
     # Spawn a new object.
-    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
+    ok, (ret,) = clerk.spawn(prog, templateID, sv)
     assert (ok, ret) == (True, objID_1)
 
     # The object list must now contain the ID of the just spawned object.
@@ -552,7 +561,7 @@ def test_get_all_objectids():
     assert (ok, out) == (True, [objID_1])
 
     # Spawn another object.
-    ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
+    ok, (ret,) = clerk.spawn(prog, templateID, sv)
     assert (ok, ret) == (True, objID_2)
 
     # The object list must now contain the ID of both spawned objects.
