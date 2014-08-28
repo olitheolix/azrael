@@ -17,11 +17,12 @@
 
 import sys
 import pytest
+import IPython
 import cytoolz
 import azrael.bullet.cython_bullet
 import azrael.bullet.btInterface as btInterface
+
 import numpy as np
-import IPython
 
 ipshell = IPython.embed
 
@@ -40,8 +41,7 @@ def test_pack_unpack():
 
 def test_getset_object():
     """
-    Create object, send it to Bullet, request it back, and make sure it is
-    intact.
+    Send/retrieve object to/from Bullet and verify the integrity.
     """
     # Create an object and serialise it.
     obj_a = btInterface.defaultData()
@@ -59,10 +59,10 @@ def test_getset_object():
     ok, ret_buf = bullet.getObjectData([0])
     assert ok == 0
 
-    # De-serialise the data and verify it is identical (rounding errors
-    # due to floating point conversion are expected but should be small). The
-    # only field that need not match is the collision shape because I still
-    # have not decided how to handle it.
+    # De-serialise the data and verify it is identical (small rounding errors
+    # are admissible because Bullet uses float32 types). The only field that
+    # need not match is the collision shape since I still have not decided how
+    # to handle it.
     obj_a.cshape[:] = 0
     obj_b = btInterface.unpack(ret_buf)
     for v1, v2 in zip(obj_a, obj_b):
@@ -73,11 +73,12 @@ def test_getset_object():
 def test_apply_force():
     """
     Create object, send it to Bullet, apply a force, progress the simulation,
-    and check the object moved accordingly.
+    and verify the object moved correctly.
     """
+    # Object ID for this test (value is irrelevant).
     IDs = np.array([0], np.int64)
 
-    # Create an object and overwrite the CShape data.
+    # Create an object and overwrite the CShape data to obtain a sphere.
     obj_a = btInterface.defaultData()
     obj_a.cshape[0] = 3
 
@@ -85,24 +86,24 @@ def test_apply_force():
     bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
     
     # Send object to Bullet and progress the simulation by one second.
-    # This should not move the objects because no forces are at play.
+    # The objects must not move because no forces are at play.
     bullet.setObjectData(IDs, btInterface.pack(obj_a))
     bullet.compute(IDs, 1.0, 60)
     ok, ret_buf = bullet.getObjectData([0])
     assert ok == 0
 
-    # De-serialise the data and verify it is identical (rounding errors due to
-    # floating point conversion are expected but should be small). The only
-    # field that need not match is the collision shape because I still have not
-    # decided how to handle it.
+    # De-serialise the data and verify it is identical (small rounding errors
+    # are admissible because Bullet uses float32 types). The only field that
+    # need not match is the collision shape since I still have not decided how
+    # to handle it.
     obj_b = btInterface.unpack(ret_buf)
     obj_a.cshape[:] = 0
     for v1, v2 in zip(obj_a, obj_b):
         assert np.allclose(v1, v2, atol=1E-9)
 
-    # Now apply a central force of one Newton straight up, run the simulation
-    # again and verify that the object has moved roughly 0.5m upwards because
-    # s = 0.5 * a * t^2.
+    # Now apply a central force of one Newton in z-direction, run the
+    # simulation again. The object must have moved roughly 0.5m in z-direction
+    # because s = 0.5 * a * t^2. 
     force = np.array([0, 0, 1], np.float64)
     bullet.applyForce(0, force, np.zeros(3, np.float64))
 
@@ -112,8 +113,8 @@ def test_apply_force():
     ret = btInterface.unpack(ret_buf)
     assert np.allclose(ret.position, obj_a.position, atol=1E-9)
 
-    # Now progress the simulation and make sure the object moved in the right
-    # direction by (roughly) the correct amount.
+    # Progress the simulation again. The object must have moved in z-direction
+    # by (roughly) 0.5 meters.
     bullet.compute(IDs, 1.0, 60)
     ok, ret_buf = bullet.getObjectData([0])
     assert ok == 0
@@ -125,9 +126,9 @@ def test_apply_force():
 
 def test_get_pair_cache():
     """
-    Test the pair cache with three objects, only two of them overlapping.
+    Test the pair cache with three objects. Two of the objects overlap.
     """
-    # Create an object and serialise it.
+    # Create a sphere.
     obj = btInterface.defaultData()
     obj.cshape[0] = 3
     a = btInterface.pack(obj)
@@ -137,13 +138,13 @@ def test_get_pair_cache():
     ok, pairs = bullet.getPairCache()
     assert ok
     
-    # Create an object and serialise it.
+    # Create two more spheres (both identical).
     obj = btInterface.defaultData(cshape=[3,0,0,0], position=[10, 10, 10])
     a = btInterface.pack(obj)
     b = btInterface.pack(obj)
 
     # Send object to Bullet and progress the simulation by one second.
-    # This should not move the objects because no forces are at play.
+    # The objects must not have moved because no forces are at play.
     bullet.setObjectData([0], a)
     bullet.setObjectData([1], a)
     bullet.setObjectData([2], b)
@@ -161,10 +162,9 @@ def test_get_pair_cache():
 
 def test_remove_object():
     """
-    Create object, send it to Bullet, request it back, and make sure it is
-    intact.
+    Remove an object from the Bullet cache.
     """
-    # Create an object and serialise it.
+    # Create a spherical object.
     obj = btInterface.defaultData()
     obj.cshape[0] = 3
     a = btInterface.pack(obj)
@@ -181,7 +181,7 @@ def test_remove_object():
     ok, ret_buf = bullet.getObjectData([0])
     assert ok == 0
 
-    # Delete the object and try to request it again.
+    # Delete the object. The attempt to request it afterwards must fail.
     assert bullet.removeObject([0]) == 1
     ok, ret_buf = bullet.getObjectData([0])
     assert ok == 1
