@@ -13,9 +13,6 @@ import numpy as np
 
 ipshell = IPython.embed
 
-# Name of Echo controller (for convenience).
-echo_ctrl = 'Echo'.encode('utf8')
-
 
 def killAzrael():
     subprocess.call(['pkill', 'killme'])
@@ -88,23 +85,26 @@ def stopAzrael(clerk, clacks):
     azrael.leonard.LeonardBulletMonolithic])
 def test_move_single_object(clsLeonard):
     """
-    Create a single object and ensure Leonard moves it according
-    to the initial speed.
+    Create a single object with non-zero initial speed and ensure Leonard moves
+    it accordingly.
     """
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael('ZeroMQ')
-    
+
+    # Instantiate Leonard.
     leonard = clsLeonard()
     leonard.setup()
     
-    # Create a spherical object (a default spherical object exists by default
-    # and is associated with templateID=2).
+    # Constants and parameters for this test.
+    prog = 'Echo'.encode('utf8')
     templateID = '_templateCube'.encode('utf8')
-    ok, id_0 = ctrl.spawn(echo_ctrl, templateID, [0, 0, 0], [0, 0, 0])
+
+    # Create a cube (a cube always exists in Azrael's template database).
+    ok, id_0 = ctrl.spawn(prog, templateID, pos=[0, 0, 0], vel=[0, 0, 0])
     assert ok
 
-    # Advance the simulation by 1s and check that nothing has moved.
-    leonard.step(1, 60)
+    # Advance the simulation by 1s and verify that nothing moved.
+    leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
     sv = btInterface.unpack(np.fromstring(sv[0]))
@@ -118,9 +118,8 @@ def test_move_single_object(clsLeonard):
     sv = btInterface.pack(sv).tostring()
     assert btInterface.update(id_0, sv)
 
-    # Advance the simulation by another second and test if the object moved
-    # accordingly.
-    leonard.step(1, 60)
+    # Advance the simulation by 1s and verify the objects moved accordingly.
+    leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
     sv = btInterface.unpack(np.fromstring(sv[0]))
@@ -139,8 +138,7 @@ def test_move_single_object(clsLeonard):
     azrael.leonard.LeonardBulletMonolithic])
 def test_move_two_objects_no_collision(clsLeonard):
     """
-    Create two objects with different initial velocity and make sure they move
-    accordingly.
+    Same as previous test but with two objects.
     """
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael('ZeroMQ')
@@ -149,27 +147,30 @@ def test_move_two_objects_no_collision(clsLeonard):
     leonard = clsLeonard()
     leonard.setup()
     
-    # Create two spherical object.
+    # Constants and parameters for this test.
+    prog = 'Echo'.encode('utf8')
     templateID = '_templateCube'.encode('utf8')
-    ok, id_0 = ctrl.spawn(echo_ctrl, templateID, [0, 0, 0], [1, 0, 0])
+
+    # Create two cubic objects.
+    ok, id_0 = ctrl.spawn(prog, templateID, pos=[0, 0, 0], vel=[1, 0, 0])
     assert ok
-    ok, id_1 = ctrl.spawn(echo_ctrl, templateID, [0, 10, 0], [0, -1, 0])
+    ok, id_1 = ctrl.spawn(prog, templateID, pos=[0, 10, 0], vel=[0, -1, 0])
     assert ok
 
-    # Advance the simulation by one second and test if the objects moved
-    # accordingly.
-    leonard.step(1, 60)
+    # Advance the simulation by 1s and verify the objects moved accordingly.
+    leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
     pos_0 = btInterface.unpack(np.fromstring(sv[0])).position
+
     ok, sv = btInterface.getStateVariables([id_1])
     assert ok
     pos_1 = btInterface.unpack(np.fromstring(sv[0])).position
     
     assert pos_0[1] == pos_0[2] == 0
-    assert 0.9 <= pos_0[0] <= 1.1
     assert pos_1[0] == pos_1[2] == 0
-    assert pos_1[1] < 9.6
+    assert 0.9 <= pos_0[0] <= 1.1
+    assert 8.9 <= pos_1[1] <= 9.1
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -181,13 +182,15 @@ def test_move_two_objects_no_collision(clsLeonard):
     azrael.leonard.LeonardRMQWorkerBullet])
 def test_multiple_workers(clsWorker):
     """
-    Create several objects on parallel trajectories and advance their positions
-    with multiple LeonardWorkers.
+    Create several objects on parallel trajectories. Use multiple
+    instances of LeonardWorkers.
     """
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
-    # Specify the number of objects and workers.
+    # Constants and parameters for this test.
+    prog = 'Echo'.encode('utf8')
+    templateID = '_templateCube'.encode('utf8')
     num_workers, num_objects = 10, 20
     assert num_objects >= num_workers
 
@@ -195,19 +198,18 @@ def test_multiple_workers(clsWorker):
     leonard = azrael.leonard.LeonardBaseWPRMQ(num_workers, clsWorker)
     leonard.setup()
     
-    # Create several spherical objects.
+    # Create several cubic objects.
     templateID = '_templateCube'.encode('utf8')
     list_ids = []
-
     for ii in range(num_objects):
-        ok, cur_id = ctrl.spawn(echo_ctrl, templateID, pos=[0, 10 * ii, 0],
-                                vel=[1,0, 0])
+        ok, cur_id = ctrl.spawn(
+            prog, templateID, pos=[0, 10 * ii, 0], vel=[1, 0, 0])
         assert ok
         list_ids.append(cur_id)
     del cur_id, ok
 
     # Advance the simulation by one second.
-    leonard.step(1, 60)
+    leonard.step(1.0, 60)
 
     # All objects must have moved the same distance.
     for ii, cur_id in enumerate(list_ids):
