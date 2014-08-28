@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -32,6 +32,7 @@ import azrael.bullet.cython_bullet
 import azrael.bullet.btInterface as btInterface
 
 from azrael.typecheck import typecheck
+
 
 class LeonardBase(multiprocessing.Process):
     """
@@ -58,7 +59,7 @@ class LeonardBase(multiprocessing.Process):
         constructor because it executes before the process forks.
         """
         pass
-    
+
     @typecheck
     def step(self, dt: (int, float), maxsteps: int):
         """
@@ -107,7 +108,7 @@ class LeonardBase(multiprocessing.Process):
     def run(self):
         """
         Update loop.
-        
+
         Execute once Leonard has been spawned as its own process.
         """
         setproctitle.setproctitle('killme Leonard')
@@ -115,7 +116,7 @@ class LeonardBase(multiprocessing.Process):
         # Initialisation.
         self.setup()
         self.logit.debug('Setup complete.')
-        
+
         # Reset the database.
         btInterface.initSVDB(reset=False)
 
@@ -150,7 +151,7 @@ class LeonardBaseWorkpackages(LeonardBase):
     def __init__(self):
         super().__init__()
         self.token = 0
-        
+
     @typecheck
     def step(self, dt: (int, float), maxsteps: int):
         """
@@ -172,7 +173,7 @@ class LeonardBaseWorkpackages(LeonardBase):
         ok, wpid = btInterface.createWorkPackage(IDs, self.token, dt, maxsteps)
         if not ok:
             return
-        
+
         # --------------------------------------------------------------------
         # Process the work list.
         # --------------------------------------------------------------------
@@ -265,7 +266,7 @@ class LeonardBulletMonolithic(LeonardBase):
         # Wait for Bullet to advance the simulation by one step.
         IDs = [util.id2int(_) for _ in allSV.keys()]
         self.bullet.compute(IDs, dt, maxsteps)
-        
+
         # Retrieve all objects from Bullet and write them back to the database.
         for objID, sv in allSV.items():
             ok, sv = self.bullet.getObjectData([util.id2int(objID)])
@@ -291,7 +292,7 @@ class LeonardRMQWorker(multiprocessing.Process):
         # ID of this worker. Keep both the integer and binary version handy.
         self.id = np.int64(worker_id)
         self.id_binary = self.id.tostring()
-        
+
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
@@ -359,7 +360,7 @@ class LeonardRMQWorker(multiprocessing.Process):
         """
         setproctitle.setproctitle('killme LeonardWorker')
         btInterface.initSVDB(reset=False)
-        
+
         # Perform any pending initialisation.
         self.setup()
 
@@ -367,7 +368,7 @@ class LeonardRMQWorker(multiprocessing.Process):
         param = pika.ConnectionParameters(host=config.rabbitMQ_host)
         self.rmqconn = pika.BlockingConnection(param)
         del param
-        
+
         # Create (or attach to) a named channel. The name is 'config.ex_msg'.
         self.rmq = self.rmqconn.channel()
         self.rmq.queue_declare(queue=config.rmq_wp, durable=False)
@@ -406,7 +407,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
 
         # No Bullet engine is attached by default.
         self.bullet = None
-        
+
         # Create a Class-specific logger.
         self.logit = logging.getLogger(
             __name__ + '.' + self.__class__.__name__)
@@ -414,7 +415,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
     def setup(self):
         # Instantiate Bullet engine.
         self.bullet = azrael.bullet.cython_bullet.PyBulletPhys(self.id, 0)
-        
+
     def advanceSimulation(self, wpid):
         # Fetch the work package.
         ok, worklist, admin = btInterface.getWorkPackage(wpid)
@@ -445,7 +446,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
         # work list.
         IDs = [util.id2int(_.id) for _ in worklist]
         self.bullet.compute(IDs, admin.dt, admin.maxsteps)
-        
+
         # Retrieve these objects again and update their values in the database.
         out = {}
         for cur_id in IDs:
@@ -459,7 +460,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
         # Update the data and delete the WP.
         ok = btInterface.updateWorkPackage(wpid, admin.token, out)
         if not ok:
-            self.logit.warning('Update for work package {} failed'.format(wpid))
+            self.logit.warning('Faild to update work package {}'.format(wpid))
 
 
 class LeonardBaseWPRMQ(LeonardBase):
@@ -499,7 +500,7 @@ class LeonardBaseWPRMQ(LeonardBase):
             if worker.is_alive():
                 worker.terminate()
                 worker.join()
-        
+
     @typecheck
     def announceWorkpackage(self, wpid: int):
         """
@@ -523,7 +524,7 @@ class LeonardBaseWPRMQ(LeonardBase):
         # Retrieve the SV for all objects.
         ok, allSV = btInterface.getAllStateVariables()
         IDs = list(allSV.keys())
-        
+
         # Update the token value for this iteration.
         self.token += 1
 
@@ -588,7 +589,7 @@ class LeonardBaseWPRMQ(LeonardBase):
         param = pika.ConnectionParameters(host=config.rabbitMQ_host)
         self.rmqconn = pika.BlockingConnection(param)
         del param
-        
+
         # Create the channel.
         self.rmq = self.rmqconn.channel()
 
@@ -601,7 +602,7 @@ class LeonardBaseWPRMQ(LeonardBase):
             self.rmq.queue_delete(queue=config.rmq_ack)
         except pika.exceptions.ChannelClosed as err:
             pass
-            
+
         # Declare the queues and give RabbitMQ some time to setup.
         self.rmq.queue_declare(queue=config.rmq_wp, durable=False)
         self.rmq.queue_declare(queue=config.rmq_ack, durable=False)

@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -50,7 +50,7 @@ def fromstring(data: bytes):
     # The 'part' field must be present.
     if 'part' not in d:
         return False, 'Corrupt part data'
-    
+
     # Identify what we want to decode.
     if d['part'] == 'Booster':
         args = [d[_] for _ in Booster._fields]
@@ -67,7 +67,7 @@ def fromstring(data: bytes):
 
 # -----------------------------------------------------------------------------
 # Booster
-# 
+#
 # Boosters exert a force on an object. Boosters have an ID (user can specify
 # it), a position relative to the object's centre of mass, an orientation
 # relative to the object's overall orientation, and a maximum force. Note that
@@ -98,25 +98,26 @@ class Booster(_Booster):
     :return Booster: compiled booster description.
     """
     @typecheck
-    def __new__(cls, partID: int, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5):
+    def __new__(
+            cls, partID: int, pos=[0, 0, 0], orient=[0, 0, 1], max_force=0.5):
         # Convert the booster ID and force threshold to NumPy types.
         partID = np.int64(partID)
         max_force = np.float64(max_force)
-    
+
         # Position must be a 3-element vector.
         pos = np.array(pos, np.float64)
         assert len(pos) == 3
-    
+
         # Orientation must be a 3-element vector.
         orient = np.array(orient, np.float64)
         assert len(orient) == 3
-    
+
         # Normalise the direction vector or raise an error if invalid.
         np.sum(orient) > 1E-5
         orient = orient / np.sqrt(np.dot(orient, orient))
         self = super().__new__(cls, partID, pos, orient, max_force)
         return self
-    
+
     def __eq__(self, ref):
         if not isinstance(ref, type(self)):
             return False
@@ -125,7 +126,7 @@ class Booster(_Booster):
             if not np.array_equal(getattr(self, f), getattr(ref, f)):
                 return False
         return True
-    
+
     def tostring(self):
         d = {'part': 'Booster'}
         for f in self._fields:
@@ -150,7 +151,7 @@ class CmdBooster(_CmdBooster):
 
         self = super().__new__(cls, partID, force)
         return self
-    
+
     def __eq__(self, ref):
         if not isinstance(ref, type(self)):
             return False
@@ -159,7 +160,7 @@ class CmdBooster(_CmdBooster):
             if not np.array_equal(getattr(self, f), getattr(ref, f)):
                 return False
         return True
-    
+
     def tostring(self):
         d = {'part': 'CmdBooster'}
         for f in self._fields:
@@ -169,7 +170,7 @@ class CmdBooster(_CmdBooster):
 
 # -----------------------------------------------------------------------------
 # Factory
-# 
+#
 # Factories can spawn objects. Like Boosters, they have a custom ID, position,
 # orientation (both relative to the object). Furthermore, they can only spawn a
 # particular template. The newly spawned object can exit with the specified
@@ -183,19 +184,19 @@ CmdFactory = NT('CmdFactory', 'partID')
 
 class Factory(_Factory):
     @typecheck
-    def __new__(cls, partID, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5]):
+    def __new__(cls, partID, pos=np.zeros(3), orient=[0, 0, 1], speed=[0, 1]):
         """
         Return a ``Factory`` instance.
-    
+
         The unit is located at ``pos`` relative to the parent's centre of
-        mass. The objects it spawns can exit the factory at any speed specified by
-        the ``speed`` interval.
-    
+        mass. The objects it spawns can exit the factory at any speed specified
+        by the ``speed`` interval.
+
         .. note::
-           ``orient`` is *not* a Quaternion but merely a unit vector that points
-           in the nozzle direction of the factory (it the direction in which new
-           objects will be spawned).
-    
+           ``orient`` is *not* a Quaternion but merely a unit vector that
+           points in the nozzle direction of the factory (it the direction in
+           which new objects will be spawned).
+
         :param int partID: factory ID (arbitrary)
         :param ndarray pos: position vector (3-elements)
         :param ndarray orient: orientation (3-elements)
@@ -204,27 +205,27 @@ class Factory(_Factory):
         """
         # Factory ID.
         partID = np.int64(partID)
-    
+
         # Position must be a 3-element vector.
         pos = np.array(pos, np.float64)
         assert len(pos) == 3
-    
+
         # Orientation must be a 3-element vector.
         orient = np.array(orient, np.float64)
         assert len(orient) == 3
-    
+
         # Normalise the direction vector or raise an error if invalid.
         assert np.sum(orient) > 1E-5
         orient = orient / np.sqrt(np.dot(orient, orient))
-    
+
         # This defines exit speed range of the spawned object.
         speed = np.array(speed, np.float64)
         assert len(speed) == 2
-    
+
         # Return a valid Factory instance based on the arguments.
         self = super().__new__(cls, partID, pos, orient, speed)
         return self
-    
+
     def __eq__(self, ref):
         if not isinstance(ref, type(self)):
             return False
@@ -233,7 +234,7 @@ class Factory(_Factory):
             if not np.array_equal(getattr(self, f), getattr(ref, f)):
                 return False
         return True
-    
+
     def tostring(self):
         d = {'part': 'Factory'}
         for f in self._fields:

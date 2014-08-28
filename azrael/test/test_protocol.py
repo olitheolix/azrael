@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -37,10 +37,10 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     """
 
     killAzrael()
-    
+
     # Test parameters and constants.
     cs = btInterface.defaultData().cshape
-    geo = np.array([1,2,3], np.float64)
+    geo = np.array([1, 2, 3], np.float64)
     b0 = parts.Booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
     b1 = parts.Booster(0, pos=np.zeros(3), orient=[1, 1, 0], max_force=0.6)
     f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
@@ -85,11 +85,11 @@ def test_send_command():
     assert len(cmd_factory) == 0
 
     # Use getattr to automatically test all attributes.
-    assert cmd_booster[0] ==  cmd_0
-    assert cmd_booster[1] ==  cmd_1
+    assert cmd_booster[0] == cmd_0
+    assert cmd_booster[1] == cmd_1
 
     print('Test passed')
-    
+
 
 def test_recvMsg():
     """
@@ -102,7 +102,7 @@ def test_recvMsg():
     assert ok
     ok, out = protocol.FromClerk_RecvMsg_Decode(aux)
     assert ok
-    
+
 
 if __name__ == '__main__':
     test_recvMsg()

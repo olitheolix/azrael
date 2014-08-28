@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -22,9 +22,6 @@ The controller class is merely a convenience class to wrap the Clerk
 commands. As such the tests here merely test these wrappers. See `test_clerk`
 if you want to see thorough tests for the Clerk functionality.
 """
-
-# Name of Echo controller (for convenience).
-echo_ctrl = 'Echo'.encode('utf8')
 
 import sys
 import time
@@ -70,21 +67,23 @@ def test_spawn_one_controller(ctrl_type):
     """
     Ask Clerk to spawn one (echo) controller.
     """
+    # Constants and parameters for this test.
+    prog = 'Echo'.encode('utf8')
+    templateID = '_templateNone'.encode('utf8')
+
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
     # the ID of the controller which must be '2' ('0' is invalid and '1' was
     # already given to the controller in the WS handler).
-    templateID = '_templateNone'.encode('utf8')
-    ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(prog, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
     # Spawn another template but this time without also createing a new
     # controller process to control the object. We cannot explicitly verify
     # that not controller process was created but we can verify that the spawn
     # command itself worked.
-    templateID = '_templateNone'.encode('utf8')
     ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(3))
 
@@ -99,14 +98,17 @@ def test_spawn_and_talk_to_one_controller(ctrl_type):
     Ask Clerk to spawn one (echo) controller. Then send a message to that
     controller to ensure everything works.
     """
+    # Constants and parameters for this test.
+    prog = 'Echo'.encode('utf8')
+    templateID = '_templateNone'.encode('utf8')
+
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
     # the ID of the controller which must be '2' ('0' is invalid and '1' was
     # already given to the Controller).
-    templateID = '_templateNone'.encode('utf8')
-    ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(prog, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
     # Send a message to `ctrl_id`.
@@ -146,14 +148,17 @@ def test_spawn_and_get_state_variables(ctrl_type):
     """
     Spawn a new Controller and query its state variables.
     """
+    # Constants and parameters for this test.
+    prog = 'Echo'.encode('utf8')
+    templateID = '_templateNone'.encode('utf8')
+
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
     # the ID of the controller which must be '2' ('0' is invalid and '1' was
     # already given to the controller in the WS handler).
-    templateID = '_templateNone'.encode('utf8')
-    ok, id0 = ctrl.spawn(echo_ctrl, templateID, pos=np.ones(3), vel=-np.ones(3))
+    ok, id0 = ctrl.spawn(prog, templateID, pos=np.ones(3), vel=-np.ones(3))
     assert (ok, id0) == (True, int2id(2))
 
     ok, sv = ctrl.getStateVariables(id0)
@@ -230,20 +235,22 @@ def test_getAllObjectIDs(ctrl_type):
     """
     Ensure the getAllObjectIDs command reaches Clerk.
     """
+    # Constants and parameters for this test.
+    prog = 'Echo'.encode('utf8')
+    templateID = '_templateNone'.encode('utf8')
+
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael(ctrl_type)
-    
+
     # Parameters and constants for this test.
     objID_2 = int2id(2)
-    templateID = '_templateNone'.encode('utf8')
 
     # So far no objects have been spawned.
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [])
 
     # Spawn a new object.
-    templateID = '_templateNone'.encode('utf8')
-    ok, ret = ctrl.spawn(echo_ctrl, templateID, np.zeros(3))
+    ok, ret = ctrl.spawn(prog, templateID, np.zeros(3))
     assert (ok, ret) == (True, objID_2)
 
     # The object list must now contain the ID of the just spawned object.
@@ -264,27 +271,28 @@ def test_get_template(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
+    prog = 'Echo'.encode('utf8')
     id_0, id_1 = int2id(2), int2id(3)
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
-    
+
     # Spawn a new object. It must have ID=2 because ID=1 was already given to
     # the controller.
-    ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID_0, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(prog, templateID_0, np.zeros(3))
     assert (ok, ctrl_id) == (True, id_0)
 
     # Spawn another object from a different template.
-    ok, ctrl_id = ctrl.spawn(echo_ctrl, templateID_1, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(prog, templateID_1, np.zeros(3))
     assert (ok, ctrl_id) == (True, id_1)
 
     # Retrieve template of first object.
     ok, ret = ctrl.getTemplateID(id_0)
     assert (ok, ret) == (True, templateID_0)
-    
+
     # Retrieve template of second object.
     ok, ret = ctrl.getTemplateID(id_1)
     assert (ok, ret) == (True, templateID_1)
-    
+
     # Attempt to retrieve a non-existing object.
     ok, ret = ctrl.getTemplateID(int2id(100))
     assert not ok
@@ -292,7 +300,7 @@ def test_get_template(ctrl_type):
     # Shutdown the services.
     stopAzrael(clerk, clacks)
     print('Test passed')
-    
+
 
 @pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
 def test_create_fetch_template(ctrl_type):
@@ -350,7 +358,7 @@ def test_create_fetch_template(ctrl_type):
     templateID = 't2'.encode('utf8')
     ok, templateID = ctrl.addTemplate(templateID, cs, geo, [b0, b1], [f0])
 
-    # Retrieve the geometry of the just created object and verify it is correct.
+    # Retrieve the geometry of the new object and verify it is correct.
     ok, ret = ctrl.getGeometry(templateID)
     assert np.array_equal(ret, geo)
 

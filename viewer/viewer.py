@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -309,7 +309,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
     def loadGeometry(self):
         ok, all_ids = self.ctrl.getAllObjectIDs()
-        
+
         for ctrl_id in all_ids:
             # Do not add anything if we already have the object.
             if ctrl_id in self.controllers:
@@ -416,7 +416,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         else:
             self.cube_id = templateID
             print('Created ID <{}>'.format(self.cube_id))
-            
+
         # Spawn a cube (templateID=3 defaults to one).
         ok, tmp = self.ctrl.spawn(
             'Echo'.encode('utf8'), self.cube_id, np.zeros(3), np.zeros(3))
@@ -480,7 +480,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
             # Build the scaling matrix.
             scale_mat = sv.scale * np.eye(4)
-            scale_mat[3,3] = 1
+            scale_mat[3, 3] = 1
 
             # Convert the Quaternion into a rotation matrix.
             q = sv.orientation

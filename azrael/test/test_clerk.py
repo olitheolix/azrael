@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -155,7 +155,7 @@ def test_send_receive_message():
 
     # Test parameters.
     src, dst, data = int2id(5), int2id(10), 'blah'.encode('utf8')
-    
+
     # Retrieve a non-existing message.
     ok, (_, msg) = clerk.recvMessage(src)
     assert (ok, msg) == (True, b'')
@@ -225,7 +225,7 @@ def test_get_statevar():
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
-    
+
     # Retrieve the SV for a non-existing ID.
     ok, ret = clerk.getStateVariables([int2id(10)])
     assert (ok, ret) == (False, 'One or more IDs do not exist')
@@ -251,7 +251,7 @@ def test_get_statevar():
     # Spawn a second object.
     ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv_2)
     assert (ok, ret) == (True, objID_2)
-    
+
     # Retrieve the state variables for both objects individually.
     for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
         ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
@@ -430,7 +430,7 @@ def test_get_object_template_id():
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
     sv = btInterface.defaultData()
-    
+
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
@@ -445,11 +445,11 @@ def test_get_object_template_id():
     # Retrieve template of first object.
     ok, (ret,) = clerk.getTemplateID(id_0)
     assert (ok, ret) == (True, templateID_0)
-    
+
     # Retrieve template of second object.
     ok, (ret,) = clerk.getTemplateID(id_1)
     assert (ok, ret) == (True, templateID_1)
-    
+
     # Attempt to retrieve a non-existing object.
     ok, ret = clerk.getTemplateID(int2id(100))
     assert not ok
@@ -465,7 +465,7 @@ def test_processControlCommand():
     commands to them.
     """
     killAzrael()
-    
+
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
     templateID_1 = '_templateNone'.encode('utf8')
@@ -507,7 +507,7 @@ def test_processControlCommand():
     ok, _ = clerk.addTemplate(templateID_2, cs, geo, [b0, b1], [f0])
     ok, (ctrl_id,) = clerk.spawn(echo_ctrl, templateID_2, sv)
     assert (ok, ctrl_id) == (True, objID_2)
-    
+
     # Call 'controlParts'. It must fail because the default object has
     # no boosters.
     cmd_0 = parts.CmdBooster(partID=0, force=0.2)
@@ -523,14 +523,14 @@ def test_processControlCommand():
     # Clean up.
     killAzrael()
     print('Test passed')
-    
+
 
 def test_get_all_objectids():
     """
     Test getAllObjects.
     """
     killAzrael()
-    
+
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
     templateID = '_templateNone'.encode('utf8')
@@ -546,7 +546,7 @@ def test_get_all_objectids():
     # Spawn a new object.
     ok, (ret,) = clerk.spawn(echo_ctrl, templateID, sv)
     assert (ok, ret) == (True, objID_1)
-    
+
     # The object list must now contain the ID of the just spawned object.
     ok, (out,) = clerk.getAllObjectIDs()
     assert (ok, out) == (True, [objID_1])
@@ -563,7 +563,7 @@ def test_get_all_objectids():
     killAzrael()
     print('Test passed')
 
-    
+
 if __name__ == '__main__':
     test_processControlCommand()
     test_get_all_objectids()

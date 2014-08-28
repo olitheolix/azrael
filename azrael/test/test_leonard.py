@@ -21,7 +21,7 @@ def killAzrael():
 def startAzrael(ctrl_type):
     """
     Start all Azrael services and return their handles.
-    
+
     ``ctrl_type`` may be  either 'ZeroMQ' or 'Websocket'. The only difference
     this makes is that the 'Websocket' version will also start a Clacks server,
     whereas for 'ZeroMQ' the respective handle will be **None**.
@@ -30,7 +30,7 @@ def startAzrael(ctrl_type):
     :return: handles to (clerk, ctrl, clacks)
     """
     killAzrael()
-    
+
     # Start Clerk and instantiate Controller.
     clerk = azrael.clerk.Clerk(reset=True)
     clerk.start()
@@ -78,11 +78,12 @@ def stopAzrael(clerk, clacks):
     killAzrael()
 
 
-@pytest.mark.parametrize('clsLeonard',
-   [azrael.leonard.LeonardBase,
-    azrael.leonard.LeonardBaseWorkpackages,
-    azrael.leonard.LeonardBaseWPRMQ,
-    azrael.leonard.LeonardBulletMonolithic])
+@pytest.mark.parametrize(
+    'clsLeonard',
+    [azrael.leonard.LeonardBase,
+     azrael.leonard.LeonardBaseWorkpackages,
+     azrael.leonard.LeonardBaseWPRMQ,
+     azrael.leonard.LeonardBulletMonolithic])
 def test_move_single_object(clsLeonard):
     """
     Create a single object with non-zero initial speed and ensure Leonard moves
@@ -94,7 +95,7 @@ def test_move_single_object(clsLeonard):
     # Instantiate Leonard.
     leonard = clsLeonard()
     leonard.setup()
-    
+
     # Constants and parameters for this test.
     prog = 'Echo'.encode('utf8')
     templateID = '_templateCube'.encode('utf8')
@@ -131,11 +132,12 @@ def test_move_single_object(clsLeonard):
     print('Test passed')
 
 
-@pytest.mark.parametrize('clsLeonard',
-   [azrael.leonard.LeonardBase,
-    azrael.leonard.LeonardBaseWorkpackages,
-    azrael.leonard.LeonardBaseWPRMQ,
-    azrael.leonard.LeonardBulletMonolithic])
+@pytest.mark.parametrize(
+    'clsLeonard',
+    [azrael.leonard.LeonardBase,
+     azrael.leonard.LeonardBaseWorkpackages,
+     azrael.leonard.LeonardBaseWPRMQ,
+     azrael.leonard.LeonardBulletMonolithic])
 def test_move_two_objects_no_collision(clsLeonard):
     """
     Same as previous test but with two objects.
@@ -146,7 +148,7 @@ def test_move_two_objects_no_collision(clsLeonard):
     # Instantiate Leonard.
     leonard = clsLeonard()
     leonard.setup()
-    
+
     # Constants and parameters for this test.
     prog = 'Echo'.encode('utf8')
     templateID = '_templateCube'.encode('utf8')
@@ -166,7 +168,7 @@ def test_move_two_objects_no_collision(clsLeonard):
     ok, sv = btInterface.getStateVariables([id_1])
     assert ok
     pos_1 = btInterface.unpack(np.fromstring(sv[0])).position
-    
+
     assert pos_0[1] == pos_0[2] == 0
     assert pos_1[0] == pos_1[2] == 0
     assert 0.9 <= pos_0[0] <= 1.1
@@ -177,9 +179,10 @@ def test_move_two_objects_no_collision(clsLeonard):
     print('Test passed')
 
 
-@pytest.mark.parametrize('clsWorker',
-   [azrael.leonard.LeonardRMQWorker,
-    azrael.leonard.LeonardRMQWorkerBullet])
+@pytest.mark.parametrize(
+    'clsWorker',
+    [azrael.leonard.LeonardRMQWorker,
+     azrael.leonard.LeonardRMQWorkerBullet])
 def test_multiple_workers(clsWorker):
     """
     Create several objects on parallel trajectories. Use multiple
@@ -197,7 +200,7 @@ def test_multiple_workers(clsWorker):
     # Instantiate Leonard.
     leonard = azrael.leonard.LeonardBaseWPRMQ(num_workers, clsWorker)
     leonard.setup()
-    
+
     # Create several cubic objects.
     templateID = '_templateCube'.encode('utf8')
     list_ids = []

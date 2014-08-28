@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -56,7 +56,7 @@ def test_add_get_single():
 
     # Query the object. This must return the SV data directly.
     assert btInterface.getStateVariables([id_0]) == (True, [data])
-    
+
     # Query the same object but supply it as a list. This must return a list
     # with one element which is the exact same object as before.
     assert btInterface.getStateVariables([id_0]) == (True, [data])
@@ -98,7 +98,7 @@ def test_add_get_multiple():
     assert (ok, out) == (True, [data_0])
     ok, out = btInterface.getStateVariables([id_1])
     assert (ok, out) == (True, [data_1])
-    
+
     # Manually query multiple objects.
     ok, out = btInterface.getStateVariables([id_0, id_1])
     assert (ok, len(out)) == (True, 2)
@@ -229,7 +229,7 @@ def test_update_statevar():
     # Query the object. This must return the SV data directly.
     ok, out = btInterface.getStateVariables([id_0])
     assert (ok, out) == (True, [data_0])
-    
+
     # Create another SV object and serialise it as well.
     data_1 = btInterface.defaultData()
     data_1.position[:] += 10
@@ -289,7 +289,7 @@ def test_suggest_position():
     assert btInterface.setSuggestedPosition(id_0, None)
     ok, data = btInterface.getSuggestedPosition(id_0)
     assert (ok, data) == (True, None)
-    
+
     print('Test passed')
 
 
@@ -324,17 +324,17 @@ def test_create_work_package_without_objects():
     # The attempt to retrie a non-existing ID must fail.
     ok, data, _ = btInterface.getWorkPackage(0)
     assert not ok
-    
+
     # Retrieve an existing ID. It must return an empty list because there are
     # no objects in the DB yet.
     ok, data, admin = btInterface.getWorkPackage(wpid)
     assert (ok, data) == (True, [])
     assert (admin.token, admin.dt, admin.maxsteps) == (token, 1, 2)
-    
+
     # Update (and thus remove) a non-existing work package. The number of SV
     # data elements is irrelevant to this function.
     assert not btInterface.updateWorkPackage(0, token, {})
-    
+
     # Update (and thus remove) an existing work package. Once again, the number
     # of SV data elements is irrelevant to the function.
     assert btInterface.updateWorkPackage(wpid, token, {})
@@ -342,7 +342,7 @@ def test_create_work_package_without_objects():
     # Try to update it once more. This must fail since the WPID was
     # automatically removed by the previous updateWorkPackage command.
     assert not btInterface.updateWorkPackage(wpid, token, {})
-    
+
     print('Test passed')
 
 
@@ -386,7 +386,7 @@ def test_create_work_package_with_objects():
     assert ret[0].id == id_1
     assert ret[0].sv == data_1
     assert np.array_equal(np.fromstring(ret[0].force), [0, 0, 0])
-    
+
     # Retrieve the second work package.
     ok, ret, admin = btInterface.getWorkPackage(wpid_2)
     assert (admin.token, admin.dt, admin.maxsteps) == (token, 3, 4)
@@ -394,7 +394,7 @@ def test_create_work_package_with_objects():
     assert (ret[0].id, ret[1].id) == (id_1, id_2)
     assert (ret[0].sv, ret[1].sv) == (data_1, data_2)
     assert np.array_equal(np.fromstring(ret[0].force), [0, 0, 0])
-    
+
     # Create a new SV data to replace the old one.
     data_3 = btInterface.defaultData(imass=3)
     data_3 = btInterface.pack(data_3).tostring()
@@ -406,13 +406,13 @@ def test_create_work_package_with_objects():
     # and the data must remain intact.
     assert not btInterface.updateWorkPackage(wpid_1, token + 1, {id_1: data_3})
     assert btInterface.getStateVariables([id_1]) == (True, [data_1])
-    
+
     # Update the first work package with the correct token. This must succeed.
     assert btInterface.updateWorkPackage(wpid_1, token, {id_1: data_3})
     assert btInterface.getStateVariables([id_1]) == (True, [data_3])
 
     print('Test passed')
-    
+
 
 def test_get_set_forceandtorque():
     """

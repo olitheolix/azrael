@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -73,7 +73,7 @@ def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
         assert isinstance(b, parts.Booster)
     for f in factories:
         assert isinstance(f, parts.Factory)
-        
+
     d = {'cs': cs, 'geo': geo,
          'boosters': [_.tostring() for _ in boosters],
          'factories': [_.tostring() for _ in factories]}
@@ -258,8 +258,8 @@ def FromClerk_SuggestPosition_Decode(payload: bytes):
 
 
 @typecheck
-def ToClerk_SetForce_Encode(objID: bytes, force: np.ndarray, rel_pos: np.ndarray):
-    d = {'objID': objID, 'rel_pos': rel_pos, 'force': force}
+def ToClerk_SetForce_Encode(objID: bytes, force: np.ndarray, rpos: np.ndarray):
+    d = {'objID': objID, 'rel_pos': rpos, 'force': force}
 
     # Encode data as JSON.
     try:
@@ -433,6 +433,7 @@ def ToClerk_RecvMsg_Decode(payload: bytes):
     else:
         return True, (obj_id, )
 
+
 @typecheck
 def FromClerk_RecvMsg_Encode(objID: bytes, msg: bytes):
     d = {'objID': objID, 'msg': msg}
@@ -544,7 +545,7 @@ def ToClerk_ControlParts_Decode(payload: bytes):
     objID = bytes(data['objID'])
     cmds_b = [parts.fromstring(bytes(_)) for _ in data['cmd_boosters']]
     cmds_f = [parts.fromstring(bytes(_)) for _ in data['cmd_factories']]
-        
+
     return True, (objID, cmds_b, cmds_f)
 
 

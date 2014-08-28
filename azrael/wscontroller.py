@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -78,7 +78,7 @@ class WSControllerBase(azrael.controller.ControllerBase):
         # Retrieve the object ID. Fixme: if user has specified an ID via the
         # constructor then the Controller instance in Clacks must heed it.
         ok, self.objID = self.sendToClacks(config.cmd['get_id'])
-        
+
     def __del__(self):
         """
         Shutdown the Websocket when this object is garbage collected.

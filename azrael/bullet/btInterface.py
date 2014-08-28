@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -39,8 +39,8 @@ _DB_WP = None
 
 # All relevant physics data.
 BulletData = namedtuple('BulletData',
-                'radius scale imass restitution orientation position '
-                'velocityLin velocityRot cshape')
+                        'radius scale imass restitution orientation position '
+                        'velocityLin velocityRot cshape')
 
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv force sugPos')
@@ -75,7 +75,7 @@ def getNumObjects():
     :returns int: number of objects in simulation.
     """
     return _DB_SV.count()
-    
+
 
 @typecheck
 def spawn(objID: bytes, sv: bytes, templateID: bytes):
@@ -92,7 +92,7 @@ def spawn(objID: bytes, sv: bytes, templateID: bytes):
     # Sanity checks.
     if (len(objID) != config.LEN_ID) or (len(sv) != config.LEN_SV_BYTES):
         return False
-    
+
     # Dummy variable to specify the initial force and its relative position.
     z = np.zeros(3).tostring()
 
@@ -109,7 +109,7 @@ def spawn(objID: bytes, sv: bytes, templateID: bytes):
     # identical SV. In any other case there will be no match because the
     # objID already existed.
     return doc['sv'] == sv
-    
+
 
 @typecheck
 def getStateVariables(objIDs: (list, tuple)):
@@ -139,7 +139,7 @@ def getStateVariables(objIDs: (list, tuple)):
     # Return the list of state variables.
     out = [_['sv'] for _ in out]
     return True, out
-    
+
 
 @typecheck
 def update(objID: bytes, sv: bytes):
@@ -163,7 +163,7 @@ def update(objID: bytes, sv: bytes):
 
     # This function was successful if exactly one document was updated.
     return doc['n'] == 1
-    
+
 
 def getAllStateVariables():
     """
@@ -181,7 +181,7 @@ def getAllStateVariables():
         key, value = doc['objid'], doc['sv']
         out[key] = value
     return True, out
-    
+
 
 def getAllObjectIDs():
     """
@@ -195,7 +195,7 @@ def getAllObjectIDs():
     """
     # Compile and return the list of all object IDs.
     return True, [_['objid'] for _ in _DB_SV.find()]
-    
+
 
 @typecheck
 def getForce(objID: bytes):
@@ -223,7 +223,7 @@ def getForce(objID: bytes):
 
     # Return the result.
     return True, force, relpos
-    
+
 
 @typecheck
 def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
@@ -253,7 +253,7 @@ def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
 
     # This function was successful if exactly one document was updated.
     return ret['n'] == 1
-    
+
 
 @typecheck
 def getForceAndTorque(objID: bytes):
@@ -288,7 +288,7 @@ def getForceAndTorque(objID: bytes):
 
     # Return the result.
     return True, force, torque
-    
+
 
 @typecheck
 def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
@@ -300,7 +300,7 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
        ``setForce`` function which allows for position relative to the centre
        of mass.
 
-    :param bytes objID: the object 
+    :param bytes objID: the object
     :param ndarray force: central force to apply
     :param ndarray torque: torque to apply
     :return bool: Success
@@ -310,7 +310,7 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
         return False
     if not (len(force) == len(torque) == 3):
         return False
-    
+
     # Serialise the force and torque.
     force = force.astype(np.float64).tostring()
     torque = torque.astype(np.float64).tostring()
@@ -321,7 +321,7 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
 
     # This function was successful if exactly one document was updated.
     return ret['n'] == 1
-    
+
 
 @typecheck
 def setSuggestedPosition(objID: bytes, pos: np.ndarray):
@@ -351,7 +351,7 @@ def setSuggestedPosition(objID: bytes, pos: np.ndarray):
 
     # This function was successful if exactly one document was updated.
     return ret['n'] == 1
-    
+
 
 @typecheck
 def getSuggestedPosition(objID: bytes):
@@ -379,7 +379,7 @@ def getSuggestedPosition(objID: bytes):
         return True, None
     else:
         return True, np.fromstring(doc['sugPos'])
-    
+
 
 @typecheck
 def getTemplateID(objID: bytes):
@@ -400,17 +400,17 @@ def getTemplateID(objID: bytes):
         return False, 'Could not query objID={}'.format(objID)
     else:
         return True, doc['templateID']
-    
+
 
 @typecheck
 def defaultData(
         radius: (int, float)=1, scale: (int, float)=1, imass: (int, float)=1,
         restitution: (int, float)=0.9,
-        orientation: (list, np.ndarray)=[0,0,0,1],
-        position: (list, np.ndarray)=[0,0,0],
-        vlin: (list, np.ndarray)=[0,0,0],
-        vrot: (list, np.ndarray)=[0,0,0],
-        cshape: (list, np.ndarray)=[0,1,1,1]):
+        orientation: (list, np.ndarray)=[0, 0, 0, 1],
+        position: (list, np.ndarray)=[0, 0, 0],
+        vlin: (list, np.ndarray)=[0, 0, 0],
+        vrot: (list, np.ndarray)=[0, 0, 0],
+        cshape: (list, np.ndarray)=[0, 1, 1, 1]):
     """
     Return a ``BulletData`` object.
 

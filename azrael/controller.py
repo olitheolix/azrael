@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -191,7 +191,7 @@ class ControllerBase(multiprocessing.Process):
         this method accepts a variable number of parameters in ``args`` yet
         does not actually inspect them. Instead it passes them on verbatim to
         the respective encoding function in the ``protocol`` module.
-        
+
         The method returns an (ok, data) tuple. If the `ok` flag is **True**
         then `data` will contain the de-serialised content in terms of
         Python/NumPy types. Otherwise it contains an error message.
@@ -338,7 +338,7 @@ class ControllerBase(multiprocessing.Process):
         """
         Add a new ``templateID`` to the system.
 
-        Henceforth it is possible to ``spawn`` objects from this ``templateID``.
+        Henceforth Clerk can spawn ``templateID`` objects.
 
         Return an error if ``templateID`` already exists.
 

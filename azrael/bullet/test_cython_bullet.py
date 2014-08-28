@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -53,7 +53,7 @@ def test_getset_object():
     # Request an invalid object ID.
     ok, ret_buf = bullet.getObjectData([0])
     assert ok == 1
-    
+
     # Send object to Bullet and request it back.
     bullet.setObjectData([0], btInterface.pack(obj_a))
     ok, ret_buf = bullet.getObjectData([0])
@@ -84,7 +84,7 @@ def test_apply_force():
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
-    
+
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
     bullet.setObjectData(IDs, btInterface.pack(obj_a))
@@ -103,7 +103,7 @@ def test_apply_force():
 
     # Now apply a central force of one Newton in z-direction, run the
     # simulation again. The object must have moved roughly 0.5m in z-direction
-    # because s = 0.5 * a * t^2. 
+    # because s = 0.5 * a * t^2.
     force = np.array([0, 0, 1], np.float64)
     bullet.applyForce(0, force, np.zeros(3, np.float64))
 
@@ -137,9 +137,9 @@ def test_get_pair_cache():
     bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 1)
     ok, pairs = bullet.getPairCache()
     assert ok
-    
+
     # Create two more spheres (both identical).
-    obj = btInterface.defaultData(cshape=[3,0,0,0], position=[10, 10, 10])
+    obj = btInterface.defaultData(cshape=[3, 0, 0, 0], position=[10, 10, 10])
     a = btInterface.pack(obj)
     b = btInterface.pack(obj)
 
@@ -158,7 +158,7 @@ def test_get_pair_cache():
     assert ok
     for pair in cytoolz.partition(2, pairs):
         assert set(pair) == set([0, 1])
-    
+
 
 def test_remove_object():
     """
@@ -175,7 +175,7 @@ def test_remove_object():
     # Request an invalid object ID.
     ok, ret_buf = bullet.getObjectData([0])
     assert ok == 1
-    
+
     # Send object to Bullet and request it back.
     bullet.setObjectData([0], a)
     ok, ret_buf = bullet.getObjectData([0])

@@ -6,12 +6,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -184,11 +184,14 @@ class Clerk(multiprocessing.Process):
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
         self.addTemplate('_templateNone'.encode('utf8'),
-            np.array([0, 1, 1, 1], np.float64), np.array([]), [], [])
+                         np.array([0, 1, 1, 1], np.float64),
+                         np.array([]), [], [])
         self.addTemplate('_templateSphere'.encode('utf8'),
-            np.array([3, 1, 1, 1], np.float64), np.array([]), [], [])
+                         np.array([3, 1, 1, 1], np.float64),
+                         np.array([]), [], [])
         self.addTemplate('_templateCube'.encode('utf8'),
-            np.array([4, 1, 1, 1], np.float64), np.array([]), [], [])
+                         np.array([4, 1, 1, 1], np.float64),
+                         np.array([]), [], [])
 
         # Initialise the SV database.
         btInterface.initSVDB(reset)
@@ -218,7 +221,7 @@ class Clerk(multiprocessing.Process):
         success, and the ``some_tuple`` can contain arbitrarily many return
         types. Note however that ``some_tuple`` *must* always be a tuple, even
         if it contains only one entry, or no entry at all.
-        
+
         :param callable fun_decode: converter function (bytes --> Python)
         :param callable fun_process: processes the client request.
         :param callable fun_encode: converter function (Python --> bytes)
@@ -272,15 +275,15 @@ class Clerk(multiprocessing.Process):
             assert len(msg) == 3
             self.last_addr, empty, msg = msg[0], msg[1], msg[2]
             assert empty == b''
-    
+
             # Sanity check: every message must contain at least a command byte.
             if len(msg) == 0:
                 self.returnErr(self.last_addr, 'Did not receive command word.')
                 return
-    
+
             # Split message into command word and payload.
             cmd, self.payload = msg[:1], msg[1:]
-    
+
             # Determine the command.
             if cmd == config.cmd['ping_clerk']:
                 # Return a hard coded 'pong' message.
@@ -433,13 +436,13 @@ class Clerk(multiprocessing.Process):
         # Extract the factory parts.
         if 'factories' in doc:
             # Convert byte string to Factory objects.
-            factories = [parts.fromstring(_) for _ in doc['factories'].values()]
+            fac = [parts.fromstring(_) for _ in doc['factories'].values()]
         else:
             # Object has no factories.
-            factories = []
+            fac = []
 
-        return True, (cs, geo, boosters, factories)
-        
+        return True, (cs, geo, boosters, fac)
+
     # ----------------------------------------------------------------------
     # These methods service Controller requests.
     # ----------------------------------------------------------------------
@@ -480,7 +483,7 @@ class Clerk(multiprocessing.Process):
         # Extract all booster- and factory IDs.
         bid = dict(zip([int(_.partID) for _ in boosters], boosters))
         fid = dict(zip([int(_.partID) for _ in factories], factories))
-        
+
         # Verify that all boosters- and factories addressed in the commands
         # actually exist.
         tot_torque = np.zeros(3, np.float64)
@@ -488,12 +491,12 @@ class Clerk(multiprocessing.Process):
         for cmd in cmd_boosters:
             if int(cmd.partID) not in bid:
                 return False, 'Invalid booster ID'
-            
+
             # Rotate the unit force vector into the orientation given by the
             # Quaternion. Fixme: the orientation of the unit must still be
             # multiplied by the Quaternion of the object orientation.
             f = bid[int(cmd.partID)].orient * cmd.force_mag
-    
+
             # Accumulate torque and central force.
             pos = bid[int(cmd.partID)].pos
             tot_torque += np.cross(pos, f)
@@ -508,7 +511,7 @@ class Clerk(multiprocessing.Process):
                 return False, 'Invalid factory ID'
 
         return True, ('', )
-        
+
     @typecheck
     def addTemplate(self, templateID: bytes, cshape: np.ndarray,
                     geometry: np.ndarray, boosters: (list, tuple),
@@ -544,9 +547,7 @@ class Clerk(multiprocessing.Process):
         # value contains the old document, ie. **None** if the document
         # did not yet exist.
         ret = self.db_templateID.find_and_modify(
-                {'templateID': templateID},
-                {'$setOnInsert': data},
-                upsert=True)
+            {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
 
         if ret is None:
             # No template with name ``templateID`` existed --> success.
@@ -555,7 +556,7 @@ class Clerk(multiprocessing.Process):
             # A template with name ``templateID`` already existed --> failure.
             msg = 'Template ID <{}> already exists'.format(templateID)
             return False, (msg, )
-    
+
     @typecheck
     def sendMessage(self, src: bytes, dst: bytes, data: bytes):
         """
@@ -633,7 +634,7 @@ class Clerk(multiprocessing.Process):
         else:
             # No dedicated Controller process was requested. Do nothing.
             prog = None
-    
+
         # Request unique object ID.
         new_id = util.int2id(self.getUniqueID())
 
@@ -739,7 +740,7 @@ class Clerk(multiprocessing.Process):
         if ok:
             return True, (templateID, )
         else:
-            return False, 'Could not find templateID for <{}>'.format(templateID)
+            return False, 'Could not find templateID <{}>'.format(templateID)
 
     @typecheck
     def getAllObjectIDs(self, dummy=None):
