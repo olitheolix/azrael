@@ -16,10 +16,10 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-OpenGL demo (runs with Python 3).
+OpenGL viewer for Azrael (Python 3 only).
 
-You will need 'python3-pyside.qtopengl' and 'pyopengl'. On Ubuntu 14.04 this
-should be all you need:
+You will need 'python3-pyside.qtopengl' and 'pyopengl'. On Ubuntu 14.04 you can
+install them with the following commands:
 
   >> sudo apt-get install python3-pyside.qtopengl python3-opengl
 
