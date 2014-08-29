@@ -22,6 +22,8 @@ import IPython
 import numpy as np
 
 import azrael.bullet.btInterface as btInterface
+import azrael.bullet.bullet_data as bullet_data
+
 from azrael.util import int2id, id2int
 
 ipshell = IPython.embed
@@ -47,8 +49,7 @@ def test_add_get_single():
     assert not ok
 
     # Create an object and serialise it.
-    data = btInterface.defaultData()
-    data = btInterface.pack(data).tostring()
+    data = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
     ok = btInterface.spawn(id_0, data, np.int64(1).tostring())
@@ -81,13 +82,11 @@ def test_add_get_multiple():
     assert not ok
 
     # Create an object and serialise it.
-    data_0 = btInterface.defaultData()
+    data_0 = bullet_data.BulletData()
     data_0.position[:] = 0
-    data_0 = btInterface.pack(data_0).tostring()
 
-    data_1 = btInterface.defaultData()
+    data_1 = bullet_data.BulletData()
     data_1.position[:] = 10 * np.ones(3)
-    data_1 = btInterface.pack(data_1).tostring()
 
     # Add the objects to the DB.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
@@ -130,13 +129,11 @@ def test_add_same():
     assert not ok
 
     # Create an object and serialise it.
-    data_0 = btInterface.defaultData()
+    data_0 = bullet_data.BulletData()
     data_0.position[:] = np.zeros(3)
-    data_0 = btInterface.pack(data_0).tostring()
 
-    data_1 = btInterface.defaultData()
+    data_1 = bullet_data.BulletData()
     data_1.position[:] = 10 * np.ones(3)
-    data_1 = btInterface.pack(data_1).tostring()
 
     # Add the objects to the DB.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
@@ -163,13 +160,11 @@ def test_get_set_force():
     id_1 = int2id(1)
 
     # Create two objects and serialise them.
-    data_0 = btInterface.defaultData()
+    data_0 = bullet_data.BulletData()
     data_0.position[:] = 0
-    data_0 = btInterface.pack(data_0).tostring()
 
-    data_1 = btInterface.defaultData()
+    data_1 = bullet_data.BulletData()
     data_1.position[:] = 10 * np.ones(3)
-    data_1 = btInterface.pack(data_1).tostring()
 
     # Add the two objects to the DB.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
@@ -220,8 +215,7 @@ def test_update_statevar():
     id_0 = int2id(0)
 
     # Create an SV object and serialise it.
-    data_0 = btInterface.defaultData()
-    data_0 = btInterface.pack(data_0).tostring()
+    data_0 = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
@@ -231,9 +225,8 @@ def test_update_statevar():
     assert (ok, out) == (True, [data_0])
 
     # Create another SV object and serialise it as well.
-    data_1 = btInterface.defaultData()
+    data_1 = bullet_data.BulletData()
     data_1.position[:] += 10
-    data_1 = btInterface.pack(data_1).tostring()
 
     # Change the SV data and check it was updated correctly.
     assert btInterface.update(id_0, data_1)
@@ -257,8 +250,7 @@ def test_suggest_position():
     id_0 = int2id(0)
 
     # Create an object and serialise it.
-    data_0 = btInterface.defaultData()
-    data_0 = btInterface.pack(data_0).tostring()
+    data_0 = bullet_data.BulletData()
 
     # Query suggested position for a non-existing object. This must fail.
     ok, data = btInterface.getSuggestedPosition(id_0)
@@ -360,11 +352,8 @@ def test_create_work_package_with_objects():
     token = 1
 
     # Create two objects.
-    data_1 = btInterface.defaultData(imass=1)
-    data_1 = btInterface.pack(data_1).tostring()
-
-    data_2 = btInterface.defaultData(imass=2)
-    data_2 = btInterface.pack(data_2).tostring()
+    data_1 = bullet_data.BulletData(imass=1)
+    data_2 = bullet_data.BulletData(imass=2)
 
     # Spawn them.
     id_1, id_2 = int2id(1), int2id(2)
@@ -396,8 +385,7 @@ def test_create_work_package_with_objects():
     assert np.array_equal(np.fromstring(ret[0].force), [0, 0, 0])
 
     # Create a new SV data to replace the old one.
-    data_3 = btInterface.defaultData(imass=3)
-    data_3 = btInterface.pack(data_3).tostring()
+    data_3 = bullet_data.BulletData(imass=3)
 
     # Manually retrieve the original data for id_1.
     assert btInterface.getStateVariables([id_1]) == (True, [data_1])
@@ -426,13 +414,11 @@ def test_get_set_forceandtorque():
     id_1 = int2id(1)
 
     # Create two objects and serialise them.
-    data_0 = btInterface.defaultData()
+    data_0 = bullet_data.BulletData()
     data_0.position[:] = 0
-    data_0 = btInterface.pack(data_0).tostring()
 
-    data_1 = btInterface.defaultData()
+    data_1 = bullet_data.BulletData()
     data_1.position[:] = 10 * np.ones(3)
-    data_1 = btInterface.pack(data_1).tostring()
 
     # Add the two objects to the simulation.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
@@ -472,7 +458,31 @@ def test_get_set_forceandtorque():
     print('Test passed')
 
 
+def test_StateVariable_tuple():
+    """
+    Test the BulletData class, most notably comparison and (de)serialisation.
+    """
+    # Compare two identical objects.
+    sv1 = bullet_data.BulletData()
+    sv2 = bullet_data.BulletData()
+    assert sv1 == sv2
+
+    # Compare two different objects.
+    sv1 = bullet_data.BulletData()
+    sv2 = bullet_data.BulletData(position=[1, 2, 3])
+    assert not (sv1 == sv2)
+    assert sv1 != sv2
+
+    # Ensure (de)serialisation works.
+    assert sv1 == bullet_data.fromjson(sv1.tojson())
+
+    # Ensure (de)serialisation works.
+    assert sv1 == bullet_data.fromNumPyString(sv1.toNumPyString())
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_StateVariable_tuple()
     test_get_set_forceandtorque()
     test_create_work_package_with_objects()
     test_create_work_package_without_objects()

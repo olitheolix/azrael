@@ -46,6 +46,7 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.bullet.btInterface as btInterface
+import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
 
@@ -596,7 +597,7 @@ class Clerk(multiprocessing.Process):
 
     @typecheck
     def spawn(self, ctrl_name: bytes, templateID: bytes,
-              sv: btInterface.BulletData):
+              sv: bullet_data.BulletData):
         """
         Spawn a new object based on ``templateID``.
 
@@ -623,7 +624,6 @@ class Clerk(multiprocessing.Process):
         # version. This will the other quantities, most notably position and
         # speed intact. However, this all rather hackey at the moment.
         sv.cshape[:] = np.fromstring(cshape)
-        sv = btInterface.pack(sv).tostring()
 
         # Determine the full path to the Controller script. Return with an
         # error if no matching script was found.

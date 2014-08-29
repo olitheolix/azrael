@@ -17,6 +17,8 @@ To compile and test this extension:
 import numpy as np
 cimport numpy as np
 
+import azrael.bullet.bullet_data as bullet_data
+
 from azrael.config import LEN_SV_FLOATS
 
 """
@@ -73,11 +75,12 @@ cdef class PyBulletPhys:
         # Call the C++ function.
         ret = self.thisptr.getObjectData(
             len(IDs), <long*>ids.data, len(buf), <double*>buf.data)
-        return ret, buf
+        return ret, bullet_data.fromNumPyString(np.fromstring(buf))
 
-    def setObjectData(self, IDs, np.ndarray[np.float64_t,ndim=1] buf):
+    def setObjectData(self, IDs, buf_in):
         # Convert the inputs to the correct data format.
         cdef np.ndarray[long] ids = np.array(IDs, np.int64)
+        cdef np.ndarray[double] buf = buf_in.toNumPyString()
 
         # Call the C++ function.
         return self.thisptr.setObjectData(

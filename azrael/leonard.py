@@ -30,6 +30,7 @@ import azrael.util as util
 import azrael.config as config
 import azrael.bullet.cython_bullet
 import azrael.bullet.btInterface as btInterface
+import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
 
@@ -75,15 +76,11 @@ class LeonardBase(multiprocessing.Process):
         ``dt`` update.
         """
         # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAllStateVariables()
         ok, all_ids = btInterface.getAllObjectIDs()
         ok, all_sv = btInterface.getStateVariables(all_ids)
 
         # Iterate over all objects and update their SV information in Bullet.
         for objID, sv in zip(all_ids, all_sv):
-            # Convert the SV Bytes into a named tuple.
-            sv = btInterface.unpack(np.fromstring(sv))
-
             # Retrieve the force vector for the current object.
             ok, force, relpos = btInterface.getForce(objID)
             if not ok:
@@ -102,7 +99,6 @@ class LeonardBase(multiprocessing.Process):
                 btInterface.setSuggestedPosition(objID, None)
 
             # Serialise the state variables and update them in the DB.
-            sv = btInterface.pack(sv).tostring()
             btInterface.update(objID, sv)
 
     def run(self):
@@ -186,13 +182,11 @@ class LeonardBaseWorkpackages(LeonardBase):
         # SV information.
         out = {}
         for obj in worklist:
-            # Convert the SV to a named tuple.
-            sv = btInterface.unpack(np.fromstring(obj.sv))
-
             # Retrieve the force vector.
             force = np.fromstring(obj.force)
 
             # Update the velocity and position.
+            sv = obj.sv
             sv.velocityLin[:] += force * 0.001
             sv.position[:] += dt * sv.velocityLin
 
@@ -203,7 +197,7 @@ class LeonardBaseWorkpackages(LeonardBase):
                 sv.position[:] = np.fromstring(obj.sugPos)
 
             # Add the new SV data to the output dictionary.
-            out[obj.id] = btInterface.pack(sv).tostring()
+            out[obj.id] = sv
 
         # --------------------------------------------------------------------
         # Update the work list and mark it as completed.
@@ -241,9 +235,6 @@ class LeonardBulletMonolithic(LeonardBase):
 
         # Iterate over all objects and update them.
         for objID, sv in allSV.items():
-            # Convert the SV Bytes into a named tuple.
-            sv = btInterface.unpack(np.fromstring(sv))
-
             # See if there is a suggested position available for this
             # object. If so, use it.
             ok, sug_pos = btInterface.getSuggestedPosition(objID)
@@ -256,7 +247,7 @@ class LeonardBulletMonolithic(LeonardBase):
             btID = util.id2int(objID)
 
             # Pass the SV data from the DB to Bullet.
-            self.bullet.setObjectData([btID], btInterface.pack(sv))
+            self.bullet.setObjectData([btID], sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
             ok, force, relpos = btInterface.getForce(objID)
@@ -271,7 +262,7 @@ class LeonardBulletMonolithic(LeonardBase):
         for objID, sv in allSV.items():
             ok, sv = self.bullet.getObjectData([util.id2int(objID)])
             if ok == 0:
-                btInterface.update(objID, sv.tostring())
+                btInterface.update(objID, sv)
 
 
 class LeonardRMQWorker(multiprocessing.Process):
@@ -317,13 +308,11 @@ class LeonardRMQWorker(multiprocessing.Process):
         # SV data after Bullet updated it.
         out = {}
         for obj in worklist:
-            # Convert the SV Bytes to a named tuple.
-            sv = btInterface.unpack(np.fromstring(obj.sv))
-
             # Retrieve the force vector.
             force = np.fromstring(obj.force)
 
             # Update the velocity and position.
+            sv = obj.sv
             sv.velocityLin[:] += force * 0.001
             sv.position[:] += admin.dt * sv.velocityLin
 
@@ -334,7 +323,7 @@ class LeonardRMQWorker(multiprocessing.Process):
                 sv.position[:] = np.fromstring(obj.sugPos)
 
             # Add the processed SV into the output dictionary.
-            out[obj.id] = btInterface.pack(sv).tostring()
+            out[obj.id] = sv
 
         # --------------------------------------------------------------------
         # Update the work list and mark it as completed.
@@ -424,9 +413,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
 
         # Download the information into Bullet.
         for obj in worklist:
-            # Convert the SV Bytes into a named tuple.
-            sv = btInterface.unpack(np.fromstring(obj.sv))
-
+            sv = obj.sv
             # See if there is a suggested position available for this
             # object. If so, use it because the next call to updateWorkPackage
             # will void it.
@@ -435,7 +422,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
 
             # Update the object in Bullet.
             btID = util.id2int(obj.id)
-            self.bullet.setObjectData([btID], btInterface.pack(sv))
+            self.bullet.setObjectData([btID], sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
             force = np.fromstring(obj.force)
@@ -455,7 +442,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
                 self.logit.error('Could not retrieve all objects from Bullet')
                 sv = worklist[cur_id].sv
             cur_id = util.int2id(cur_id)
-            out[cur_id] = sv.tostring()
+            out[cur_id] = sv
 
         # Update the data and delete the WP.
         ok = btInterface.updateWorkPackage(wpid, admin.token, out)

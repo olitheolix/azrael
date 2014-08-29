@@ -43,6 +43,7 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.bullet.btInterface as btInterface
+import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
 
@@ -302,8 +303,8 @@ class ControllerBase(multiprocessing.Process):
         :rtype: (bool, np.ndarray) or (bool, str)
         """
         cshape = [0, 1, 1, 1]
-        sv = btInterface.defaultData(position=pos, vlin=vel, cshape=cshape,
-                                     scale=scale, radius=radius, imass=imass)
+        sv = bullet_data.BulletData(position=pos, vlin=vel, cshape=cshape,
+                                    scale=scale, radius=radius, imass=imass)
         return self.serialiseAndSend('spawn', name, templateID, sv)
 
     @typecheck

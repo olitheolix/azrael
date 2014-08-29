@@ -8,6 +8,7 @@ import azrael.clacks
 import azrael.leonard
 import azrael.controller
 import azrael.bullet.btInterface as btInterface
+import azrael.bullet.bullet_data as bullet_data
 
 import numpy as np
 
@@ -108,24 +109,20 @@ def test_move_single_object(clsLeonard):
     leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    sv = btInterface.unpack(np.fromstring(sv[0]))
-    np.array_equal(sv.position, [0, 0, 0])
+    np.array_equal(sv[0].position, [0, 0, 0])
 
     # Give the object a velocity.
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    sv = btInterface.unpack(np.fromstring(sv[0]))
-    sv.velocityLin[:] = [1, 0, 0]
-    sv = btInterface.pack(sv).tostring()
-    assert btInterface.update(id_0, sv)
+    sv[0].velocityLin[:] = [1, 0, 0]
+    assert btInterface.update(id_0, sv[0])
 
     # Advance the simulation by 1s and verify the objects moved accordingly.
     leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    sv = btInterface.unpack(np.fromstring(sv[0]))
-    assert 0.9 <= sv.position[0] < 1.1
-    assert sv.position[1] == sv.position[2] == 0
+    assert 0.9 <= sv[0].position[0] < 1.1
+    assert sv[0].position[1] == sv[0].position[2] == 0
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -163,11 +160,11 @@ def test_move_two_objects_no_collision(clsLeonard):
     leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    pos_0 = btInterface.unpack(np.fromstring(sv[0])).position
+    pos_0 = sv[0].position
 
     ok, sv = btInterface.getStateVariables([id_1])
     assert ok
-    pos_1 = btInterface.unpack(np.fromstring(sv[0])).position
+    pos_1 = sv[0].position
 
     assert pos_0[1] == pos_0[2] == 0
     assert pos_1[0] == pos_1[2] == 0
@@ -218,7 +215,7 @@ def test_multiple_workers(clsWorker):
     for ii, cur_id in enumerate(list_ids):
         ok, sv = btInterface.getStateVariables([cur_id])
         assert ok
-        cur_pos = btInterface.unpack(np.fromstring(sv[0])).position
+        cur_pos = sv[0].position
         assert 0.9 <= cur_pos[0] <= 1.1
         assert cur_pos[1] == 10 * ii
         assert cur_pos[2] == 0

@@ -119,13 +119,18 @@ class Booster(_Booster):
         return self
 
     def __eq__(self, ref):
+        # Sanity check.
         if not isinstance(ref, type(self)):
             return False
 
+        # Test if all fields are essentially identical.
         for f in self._fields:
-            if not np.array_equal(getattr(self, f), getattr(ref, f)):
+            if not np.allclose(getattr(self, f), getattr(ref, f), atol=1E-9):
                 return False
         return True
+
+    def __ne__(self, ref):
+        return not self.__eq__(ref)
 
     def tostring(self):
         d = {'part': 'Booster'}
@@ -153,13 +158,18 @@ class CmdBooster(_CmdBooster):
         return self
 
     def __eq__(self, ref):
+        # Sanity check.
         if not isinstance(ref, type(self)):
             return False
 
+        # Test if all fields are essentially identical.
         for f in self._fields:
-            if not np.array_equal(getattr(self, f), getattr(ref, f)):
+            if not np.allclose(getattr(self, f), getattr(ref, f), atol=1E-9):
                 return False
         return True
+
+    def __ne__(self, ref):
+        return not self.__eq__(ref)
 
     def tostring(self):
         d = {'part': 'CmdBooster'}

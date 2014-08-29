@@ -24,6 +24,7 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.bullet.btInterface as btInterface
+import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int
 from azrael.test.test_leonard import killAzrael
@@ -39,7 +40,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     killAzrael()
 
     # Test parameters and constants.
-    cs = btInterface.defaultData().cshape
+    cs = bullet_data.BulletData().cshape
     geo = np.array([1, 2, 3], np.float64)
     b0 = parts.Booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
     b1 = parts.Booster(0, pos=np.zeros(3), orient=[1, 1, 0], max_force=0.6)
@@ -104,7 +105,43 @@ def test_recvMsg():
     assert ok
 
 
+def test_GetStateVariable():
+    """
+    Test codec for BulletData tuple.
+    """
+    objs = [bullet_data.BulletData(), bullet_data.BulletData()]
+    objIDs = [int2id(1), int2id(2)]
+
+    # ----------------------------------------------------------------------
+    # Controller --> Clerk.
+    # ----------------------------------------------------------------------
+    ok, out = protocol.ToClerk_GetStateVariable_Encode(objIDs)
+    assert ok
+    assert isinstance(out, bytes)
+
+    ok, (out_ids, ) = protocol.ToClerk_GetStateVariable_Decode(out)
+    assert ok
+    assert len(out_ids) == 2
+    assert out_ids == objIDs
+
+    # ----------------------------------------------------------------------
+    # Clerk --> Controller.
+    # ----------------------------------------------------------------------
+    ok, out = protocol.FromClerk_GetStateVariable_Encode(objIDs, objs)
+    assert ok
+    assert isinstance(out, bytes)
+
+    ok, out_sv = protocol.FromClerk_GetStateVariable_Decode(out)
+    assert ok
+    assert len(out_sv) == 2
+    assert out_sv[int2id(1)] == objs[0]
+    assert out_sv[int2id(2)] == objs[1]
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_GetStateVariable()
     test_recvMsg()
     test_send_command()
     test_encoding_add_get_template()

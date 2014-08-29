@@ -27,9 +27,11 @@ import IPython
 import numpy as np
 import azrael.util
 import azrael.config as config
+import azrael.bullet.bullet_data as bullet_data
 
 from collections import namedtuple
 from azrael.typecheck import typecheck
+from azrael.protocol_json import loads, dumps
 
 ipshell = IPython.embed
 
@@ -37,10 +39,6 @@ ipshell = IPython.embed
 _DB_SV = None
 _DB_WP = None
 
-# All relevant physics data.
-BulletData = namedtuple('BulletData',
-                        'radius scale imass restitution orientation position '
-                        'velocityLin velocityRot cshape')
 
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv force sugPos')
@@ -78,7 +76,7 @@ def getNumObjects():
 
 
 @typecheck
-def spawn(objID: bytes, sv: bytes, templateID: bytes):
+def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes):
     """
     Add the new ``objID`` and return success.
 
@@ -89,8 +87,11 @@ def spawn(objID: bytes, sv: bytes, templateID: bytes):
     :param bytes templateID: the template from which the object is spawned.
     :return bool: success.
     """
+    # Serialise SV.
+    sv = sv.tojson()
+
     # Sanity checks.
-    if (len(objID) != config.LEN_ID) or (len(sv) != config.LEN_SV_BYTES):
+    if len(objID) != config.LEN_ID:
         return False
 
     # Dummy variable to specify the initial force and its relative position.
@@ -100,8 +101,8 @@ def spawn(objID: bytes, sv: bytes, templateID: bytes):
     # fictional 'insert_if_not_exists' command.
     doc = _DB_SV.find_and_modify(
         {'objid': objID},
-        {'$setOnInsert': {'sv': sv, 'force': z, 'relpos': z, 'sugPos': None,
-                          'templateID': templateID}},
+        {'$setOnInsert': {'sv': sv, 'force': z, 'relpos': z,
+                          'sugPos': None, 'templateID': templateID}},
         upsert=True, new=True)
 
     # The SV in the returned document will only match ``sv`` if either no
@@ -121,7 +122,7 @@ def getStateVariables(objIDs: (list, tuple)):
     exist.
 
     :param iterable objIDs: list of object ID for which to return the SV.
-    :return list: list of binary state variables.
+    :return list: list of BulletData instances.
     """
     # Sanity check.
     for _ in objIDs:
@@ -137,12 +138,12 @@ def getStateVariables(objIDs: (list, tuple)):
         return False, []
 
     # Return the list of state variables.
-    out = [_['sv'] for _ in out]
+    out = [bullet_data.fromjson(_['sv']) for _ in out]
     return True, out
 
 
 @typecheck
-def update(objID: bytes, sv: bytes):
+def update(objID: bytes, sv: bullet_data.BulletData):
     """
     Update the ``sv`` data for object ``objID`` return the success.
     fixme: `sv` must be of type `BulletData`
@@ -155,11 +156,11 @@ def update(objID: bytes, sv: bytes):
     :return bool: success.
     """
     # Sanity check.
-    if (len(objID) != config.LEN_ID) or (len(sv) != config.LEN_SV_BYTES):
+    if len(objID) != config.LEN_ID:
         return False
 
     # Update an existing object only.
-    doc = _DB_SV.update({'objid': objID}, {'$set': {'sv': sv}})
+    doc = _DB_SV.update({'objid': objID}, {'$set': {'sv': sv.tojson()}})
 
     # This function was successful if exactly one document was updated.
     return doc['n'] == 1
@@ -178,7 +179,7 @@ def getAllStateVariables():
     # Compile all objects IDs and state variables into a dictionary.
     out = {}
     for doc in _DB_SV.find():
-        key, value = doc['objid'], doc['sv']
+        key, value = doc['objid'], bullet_data.fromjson(doc['sv'])
         out[key] = value
     return True, out
 
@@ -403,41 +404,6 @@ def getTemplateID(objID: bytes):
 
 
 @typecheck
-def defaultData(
-        radius: (int, float)=1, scale: (int, float)=1, imass: (int, float)=1,
-        restitution: (int, float)=0.9,
-        orientation: (list, np.ndarray)=[0, 0, 0, 1],
-        position: (list, np.ndarray)=[0, 0, 0],
-        vlin: (list, np.ndarray)=[0, 0, 0],
-        vrot: (list, np.ndarray)=[0, 0, 0],
-        cshape: (list, np.ndarray)=[0, 1, 1, 1]):
-    """
-    Return a ``BulletData`` object.
-
-    Without any arguments this function will return a valid ``BulletData``
-    specimen with sensible defaults.
-    """
-    data = BulletData(
-        radius=radius,
-        scale=scale,
-        imass=imass,
-        restitution=restitution,
-        orientation=np.float64(orientation),
-        position=np.float64(position),
-        velocityLin=np.float64(vlin),
-        velocityRot=np.float64(vrot),
-        cshape=np.float64(cshape))
-
-    # Sanity checks.
-    assert len(data.orientation) == 4
-    assert len(data.position) == 3
-    assert len(data.velocityLin) == 3
-    assert len(data.velocityRot) == 3
-    assert len(data.cshape) == 4
-    return data
-
-
-@typecheck
 def createWorkPackage(
         objIDs: (tuple, list), token: int, dt: (int, float), maxsteps: int):
     """
@@ -507,7 +473,9 @@ def getWorkPackage(wpid: int):
     # non-existing objects.
     data = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
     data = [_ for _ in data if _ is not None]
-    data = [WPData(_['objid'], _['sv'], _['force'], _['sugPos']) for _ in data]
+    data = [WPData(_['objid'], bullet_data.fromjson(_['sv']),
+                   _['force'], _['sugPos'])
+            for _ in data]
 
     # Put the meta data of the work package into another named tuple.
     admin = WPAdmin(doc['token'], doc['dt'], doc['maxsteps'])
@@ -536,66 +504,6 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     # provided values.
     for objID in svdict:
         _DB_SV.update({'objid': objID, 'token': token},
-                      {'$set': {'sv': svdict[objID], 'sugPos': None},
+                      {'$set': {'sv': svdict[objID].tojson(), 'sugPos': None},
                        '$unset': {'token': 1}})
     return True
-
-
-@typecheck
-def pack(obj: BulletData):
-    """
-    Return the NumPy array that corresponds to ``obj``.
-
-    The returned NumPy array is binary compatible with the `cython_bullet`
-    wrapper and, ideally, the only way how data is encoded for Bullet.
-
-    :param BulletData obj: state variable to serialise.
-    :return ndarray: ``obj`` as a NumPy.float64 array.
-    """
-    # Allocate a NumPy array for the state variable data.
-    buf = np.zeros(config.LEN_SV_FLOATS, dtype=np.float64)
-
-    # Convert the content of ``obj`` to float64 NumPy data and insert them into
-    # the buffer. The order *matters*, as it is the exact order in which the
-    # C++ wrapper for Bullet expects the data.
-    buf[0] = np.float64(obj.radius)
-    buf[1] = np.float64(obj.scale)
-    buf[2] = np.float64(obj.imass)
-    buf[3] = np.float64(obj.restitution)
-    buf[4:8] = np.float64(obj.orientation)
-    buf[8:11] = np.float64(obj.position)
-    buf[11:14] = np.float64(obj.velocityLin)
-    buf[14:17] = np.float64(obj.velocityRot)
-    buf[17:21] = np.float64(obj.cshape)
-
-    # Just to be sure because an error here may lead to subtle bugs with the
-    # Bullet C++ interface.
-    assert buf.dtype == np.float64
-    return buf
-
-
-@typecheck
-def unpack(buf: np.ndarray):
-    """
-    Return the ``BulletData`` instance that corresponds to ``buf``.
-
-    This is the inverse of :func:`pack`.
-
-    :param ndarray obj: state variables as a single NumPy array.
-    :return BulletData: state variables as a BulletData instance.
-    """
-    # Sanity checks.
-    assert buf.dtype == np.float64
-    assert len(buf) == config.LEN_SV_FLOATS
-
-    data = BulletData(
-        radius=buf[0],
-        scale=buf[1],
-        imass=buf[2],
-        restitution=buf[3],
-        orientation=buf[4:8],
-        position=buf[8:11],
-        velocityLin=buf[11:14],
-        velocityRot=buf[14:17],
-        cshape=buf[17:21])
-    return data

@@ -37,6 +37,8 @@ import azrael.protocol as protocol
 import azrael.controller as controller
 import azrael.wscontroller as wscontroller
 import azrael.bullet.btInterface as btInterface
+import azrael.bullet.bullet_data as bullet_data
+
 
 from azrael.util import int2id, id2int
 from azrael.test.test_leonard import startAzrael, stopAzrael, killAzrael
@@ -186,7 +188,7 @@ def test_spawn():
 
     # Test parameters (the 'Echo' controller is a hard coded dummy controller
     # that is always available).
-    sv = btInterface.defaultData()
+    sv = bullet_data.BulletData()
     prog = 'Echo'.encode('utf8')
 
     # Unknown controller name.
@@ -217,8 +219,8 @@ def test_get_statevar():
     # Test parameters and constants.
     objID_1 = int2id(1)
     objID_2 = int2id(2)
-    sv_1 = btInterface.defaultData(position=np.arange(3), vlin=[2, 4, 6])
-    sv_2 = btInterface.defaultData(position=[2, 4, 6], vlin=[6, 8, 10])
+    sv_1 = bullet_data.BulletData(position=np.arange(3), vlin=[2, 4, 6])
+    sv_2 = bullet_data.BulletData(position=[2, 4, 6], vlin=[6, 8, 10])
     templateID = '_templateNone'.encode('utf8')
     prog = 'Echo'.encode('utf8')
 
@@ -241,11 +243,7 @@ def test_get_statevar():
     ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID_1])
     assert (ok, len(ret_objIDs), len(ret_SVs)) == (True, 1, 1)
     assert ret_objIDs == [objID_1]
-
-    # Verify the SV data.
-    ret_sv = btInterface.unpack(np.fromstring(ret_SVs[0]))
-    for ii in range(len(sv_1)):
-        assert np.array_equal(ret_sv[ii], sv_1[ii])
+    assert ret_SVs[0] == sv_1
 
     # Spawn a second object.
     ok, (ret,) = clerk.spawn(prog, templateID, sv_2)
@@ -256,20 +254,14 @@ def test_get_statevar():
         ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
         assert (ok, len(ret_objIDs), len(ret_SVs)) == (True, 1, 1)
         assert ret_objIDs == [objID]
-
-        ret_sv = btInterface.unpack(np.fromstring(ret_SVs[0]))
-        for ii in range(len(sv_1)):
-            assert np.array_equal(ret_sv[ii], ref_sv[ii])
+        assert ret_SVs[0] == ref_sv
 
     # Retrieve the state variables for both objects at once.
     ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID_1, objID_2])
     assert (ok, len(ret_objIDs), len(ret_SVs)) == (True, 2, 2)
     assert ret_objIDs == [objID_1, objID_2]
-
-    for ii, ref_sv in enumerate([sv_1, sv_2]):
-        ret_sv = btInterface.unpack(np.fromstring(ret_SVs[ii]))
-        for jj in range(len(sv_1)):
-            assert np.array_equal(ret_sv[jj], ref_sv[jj])
+    assert ret_SVs[0] == sv_1
+    assert ret_SVs[1] == sv_2
 
     print('Test passed')
 
@@ -283,7 +275,7 @@ def test_set_force():
 
     # Parameters and constants for this test.
     id_1 = int2id(1)
-    sv = btInterface.defaultData()
+    sv = bullet_data.BulletData()
     force = np.array([1, 2, 3], np.float64)
     relpos = np.array([4, 5, 6], np.float64)
     prog = 'Echo'.encode('utf8')
@@ -321,7 +313,7 @@ def test_suggest_position():
 
     # Parameters and constants for this test.
     id_1 = int2id(1)
-    sv = btInterface.defaultData()
+    sv = bullet_data.BulletData()
     force = np.array([1, 2, 3], np.float64)
     templateID = '_templateNone'.encode('utf8')
     prog = 'Echo'.encode('utf8')
@@ -435,7 +427,7 @@ def test_get_object_template_id():
     id_0, id_1 = int2id(1), int2id(2)
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
-    sv = btInterface.defaultData()
+    sv = bullet_data.BulletData()
     prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
@@ -476,7 +468,7 @@ def test_processControlCommand():
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
     templateID_1 = '_templateNone'.encode('utf8')
-    sv = btInterface.defaultData()
+    sv = bullet_data.BulletData()
     prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
@@ -542,7 +534,7 @@ def test_get_all_objectids():
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
     templateID = '_templateNone'.encode('utf8')
-    sv = btInterface.defaultData()
+    sv = bullet_data.BulletData()
     prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.

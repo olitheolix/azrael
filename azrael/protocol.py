@@ -44,6 +44,7 @@ import numpy as np
 import azrael.parts as parts
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
+import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
 from azrael.protocol_json import loads, dumps
@@ -325,49 +326,45 @@ def FromClerk_GetGeometry_Decode(payload: bytes):
 
 
 @typecheck
-def ToClerk_GetStateVariable_Encode(objIDs: (tuple, list)):
-    return True, b''.join(objIDs)
+def ToClerk_GetStateVariable_Encode(objIDs: (list, tuple)):
+    for objID in objIDs:
+        assert isinstance(objID, bytes)
+    d = {'objids': objIDs}
+    return True, dumps(d)
 
 
 @typecheck
 def ToClerk_GetStateVariable_Decode(payload: bytes):
-    # We need at least one ID.
-    if len(payload) < config.LEN_ID:
-        return False, 'Insufficient arguments'
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
 
-    # The byte string must be an integer multiple of the object ID.
-    if (len(payload) % config.LEN_ID) != 0:
-        return False, 'Not divisible by objID length'
-
-    # Turn the byte string into a list of object IDs.
-    objIDs = [bytes(_) for _ in cytoolz.partition(config.LEN_ID, payload)]
-
-    # Return the result.
+    objIDs = [bytes(_) for _ in data['objids']]
     return True, (objIDs, )
 
 
 @typecheck
-def FromClerk_GetStateVariable_Encode(objIDs: (list, tuple),
-                                      sv: (list, tuple)):
-    data = [_[0] + _[1] for _ in zip(objIDs, sv)]
-    return True, b''.join(data)
+def FromClerk_GetStateVariable_Encode(
+        objIDs: (list, tuple), sv: (list, tuple)):
+    for _ in sv:
+        assert isinstance(_, bullet_data.BulletData)
+    d = {'objids': objIDs, 'sv': [_.tojson() for _ in sv]}
+    return True, dumps(d)
 
 
 @typecheck
 def FromClerk_GetStateVariable_Decode(payload: bytes):
-    # The available data must be an integer multiple of an ID plus SV.
-    l = config.LEN_ID + config.LEN_SV_BYTES
-    assert (len(payload) % l) == 0
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
 
-    # Return a dictionary of SV variables. The dictionary key is the
-    # object ID (the state variables - incidentally - are another
-    # dictionary).
-    out = {}
-    for data in cytoolz.partition(l, payload):
-        data = bytes(data)
-        sv = np.fromstring(data[config.LEN_ID:])
-        out[data[:config.LEN_ID]] = btInterface.unpack(sv)
-    return True, out
+    objIDs = [bytes(_) for _ in data['objids']]
+    sv = [bullet_data.fromjson(bytes(_)) for _ in data['sv']]
+    return True, dict(zip(objIDs, sv))
 
 
 # ---------------------------------------------------------------------------
@@ -377,9 +374,8 @@ def FromClerk_GetStateVariable_Decode(payload: bytes):
 
 @typecheck
 def ToClerk_Spawn_Encode(name: bytes, templateID: bytes, sv:
-                         btInterface.BulletData):
-    sv = btInterface.pack(sv).tostring()
-    d = {'name': name, 'templateID': templateID, 'sv': sv}
+                         bullet_data.BulletData):
+    d = {'name': name, 'templateID': templateID, 'sv': sv.tojson()}
     return True, dumps(d)
 
 
@@ -391,8 +387,7 @@ def ToClerk_Spawn_Decode(payload: bytes):
     else:
         ctrl_name = bytes(data['name'])
     templateID = bytes(data['templateID'])
-    sv = np.fromstring(bytes(data['sv']), np.float64)
-    sv = btInterface.unpack(sv)
+    sv = bullet_data.fromjson(bytes(data['sv']))
 
     if sv is None:
         return False, 'Invalid State Variable data'
