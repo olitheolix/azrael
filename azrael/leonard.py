@@ -82,7 +82,7 @@ class LeonardBase(multiprocessing.Process):
         # Iterate over all objects and update their SV information in Bullet.
         for objID, sv in zip(all_ids, all_sv):
             # Retrieve the force vector for the current object.
-            ok, force, relpos = btInterface.getForce(objID)
+            ok, force, relpos = btInterface.getForceAndTorque(objID)
             if not ok:
                 continue
 
@@ -183,7 +183,7 @@ class LeonardBaseWorkpackages(LeonardBase):
         out = {}
         for obj in worklist:
             # Retrieve the force vector.
-            force = np.fromstring(obj.force)
+            force = np.fromstring(obj.central_force)
 
             # Update the velocity and position.
             sv = obj.sv
@@ -250,9 +250,9 @@ class LeonardBulletMonolithic(LeonardBase):
             self.bullet.setObjectData([btID], sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
-            ok, force, relpos = btInterface.getForce(objID)
+            ok, force, relpos = btInterface.getForceAndTorque(objID)
             if ok:
-                self.bullet.applyForce(btID, 0.01 * force, relpos)
+                self.bullet.applyForceAndTorque(btID, 0.01 * force, relpos)
 
         # Wait for Bullet to advance the simulation by one step.
         IDs = [util.id2int(_) for _ in allSV.keys()]
@@ -309,7 +309,7 @@ class LeonardRMQWorker(multiprocessing.Process):
         out = {}
         for obj in worklist:
             # Retrieve the force vector.
-            force = np.fromstring(obj.force)
+            force = np.fromstring(obj.central_force)
 
             # Update the velocity and position.
             sv = obj.sv
@@ -425,9 +425,9 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
             self.bullet.setObjectData([btID], sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
-            force = np.fromstring(obj.force)
-            relpos = np.zeros(3, np.float64)
-            self.bullet.applyForce(btID, 0.01 * force, relpos)
+            force = np.fromstring(obj.central_force)
+            torque = np.fromstring(obj.torque)
+            self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
 
         # Let Bullet advance the simulation for all the objects in the current
         # work list.

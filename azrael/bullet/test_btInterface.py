@@ -177,14 +177,14 @@ def test_get_set_force():
     p1 = np.zeros(3, np.float64)
 
     # The force and positions must match the defaults.
-    ok, force, rel_pos = btInterface.getForce(id_0)
+    ok, force, torque = btInterface.getForceAndTorque(id_0)
     assert ok
     assert np.array_equal(force, f0)
-    assert np.array_equal(rel_pos, p0)
-    ok, force, rel_pos = btInterface.getForce(id_1)
+    assert np.array_equal(torque, p0)
+    ok, force, torque = btInterface.getForceAndTorque(id_1)
     assert ok
     assert np.array_equal(force, f1)
-    assert np.array_equal(rel_pos, p1)
+    assert np.array_equal(torque, p1)
 
     # Update the force vector of only the second object.
     f1 = np.ones(3, np.float64)
@@ -192,14 +192,14 @@ def test_get_set_force():
     assert btInterface.setForce(id_1, f1, p1)
 
     # Check again. The force of only the second object must have changed.
-    ok, force, rel_pos = btInterface.getForce(id_0)
+    ok, force, torque = btInterface.getForceAndTorque(id_0)
     assert ok
     assert np.array_equal(force, f0)
-    assert np.array_equal(rel_pos, p0)
-    ok, force, rel_pos = btInterface.getForce(id_1)
+    assert np.array_equal(torque, p0)
+    ok, force, torque = btInterface.getForceAndTorque(id_1)
     assert ok
     assert np.array_equal(force, f1)
-    assert np.array_equal(rel_pos, p1)
+    assert np.array_equal(torque, np.cross(p1, f1))
 
     print('Test passed')
 
@@ -374,7 +374,7 @@ def test_create_work_package_with_objects():
     assert (admin.token, admin.dt, admin.maxsteps) == (token, 1, 2)
     assert ret[0].id == id_1
     assert ret[0].sv == data_1
-    assert np.array_equal(np.fromstring(ret[0].force), [0, 0, 0])
+    assert np.array_equal(np.fromstring(ret[0].central_force), [0, 0, 0])
 
     # Retrieve the second work package.
     ok, ret, admin = btInterface.getWorkPackage(wpid_2)
@@ -382,7 +382,7 @@ def test_create_work_package_with_objects():
     assert (ok, len(ret)) == (True, 2)
     assert (ret[0].id, ret[1].id) == (id_1, id_2)
     assert (ret[0].sv, ret[1].sv) == (data_1, data_2)
-    assert np.array_equal(np.fromstring(ret[0].force), [0, 0, 0])
+    assert np.array_equal(np.fromstring(ret[0].central_force), [0, 0, 0])
 
     # Create a new SV data to replace the old one.
     data_3 = bullet_data.BulletData(imass=3)

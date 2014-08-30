@@ -41,7 +41,7 @@ _DB_WP = None
 
 
 # Work package related.
-WPData = namedtuple('WPRecord', 'id sv force sugPos')
+WPData = namedtuple('WPRecord', 'id sv central_force torque sugPos')
 WPAdmin = namedtuple('WPAdmin', 'token dt maxsteps')
 
 
@@ -101,8 +101,9 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes):
     # fictional 'insert_if_not_exists' command.
     doc = _DB_SV.find_and_modify(
         {'objid': objID},
-        {'$setOnInsert': {'sv': sv, 'force': z, 'relpos': z,
-                          'sugPos': None, 'templateID': templateID}},
+        {'$setOnInsert': {'sv': sv, 'templateID': templateID,
+                          'central_force': z, 'torque': z,
+                          'sugPos': None}},
         upsert=True, new=True)
 
     # The SV in the returned document will only match ``sv`` if either no
@@ -199,39 +200,11 @@ def getAllObjectIDs():
 
 
 @typecheck
-def getForce(objID: bytes):
-    """
-    Return the force and its relative position with respect to the centre of
-    mass.
-
-    :param bytes objID: object ID for which to query the force.
-    :return: (True, force, relpos) if the query was successful, otherwise
-             (False, None, None).
-    :rtype: (ok, ndarray, ndarray)
-    """
-    # Sanity check.
-    if (len(objID) != config.LEN_ID):
-        return False, None, None
-
-    # Query the object.
-    doc = _DB_SV.find_one({'objid': objID})
-    if doc is None:
-        return False, None, None
-
-    # Unpack the force and its position relative to the center of mass.
-    force, relpos = doc['force'], doc['relpos']
-    force, relpos = np.fromstring(force), np.fromstring(relpos)
-
-    # Return the result.
-    return True, force, relpos
-
-
-@typecheck
 def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
     """
     Update the ``force`` acting on ``objID``.
 
-    The force applies at positions ``relpos`` relative to the centre of mass.
+    This function is a wrapper around ``setForceAndTorque``.
 
     :param bytes objID: the object to which the force applies.
     :param np.ndarray force: force
@@ -244,16 +217,9 @@ def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
     if not (len(force) == len(relpos) == 3):
         return False
 
-    # Serialise the force and position.
-    force = force.astype(np.float64).tostring()
-    relpos = relpos.astype(np.float64).tostring()
-
-    # Update the DB.
-    ret = _DB_SV.update({'objid': objID},
-                        {'$set': {'force': force, 'relpos': relpos}})
-
-    # This function was successful if exactly one document was updated.
-    return ret['n'] == 1
+    # Compute the torque and then call setForceAndTorque.
+    torque = np.cross(relpos, force)
+    return setForceAndTorque(objID, force, torque)
 
 
 @typecheck
@@ -473,8 +439,8 @@ def getWorkPackage(wpid: int):
     # non-existing objects.
     data = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
     data = [_ for _ in data if _ is not None]
-    data = [WPData(_['objid'], bullet_data.fromjson(_['sv']),
-                   _['force'], _['sugPos'])
+    data = [WPData(_['objid'], bullet_data.fromjson(_['sv']), 
+                  _['central_force'], _['torque'], _['sugPos'])
             for _ in data]
 
     # Put the meta data of the work package into another named tuple.

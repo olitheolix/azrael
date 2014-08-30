@@ -296,10 +296,10 @@ def test_set_force():
     ok, (ret, ) = clerk.setForce(id_1, force, relpos)
     assert (ok, ret) == (True, '')
 
-    ok, ret_force, ret_relpos = btInterface.getForce(id_1)
+    ok, ret_force, ret_torque = btInterface.getForceAndTorque(id_1)
     assert ok
     assert np.array_equal(ret_force, force)
-    assert np.array_equal(ret_relpos, relpos)
+    assert np.array_equal(ret_torque, np.cross(relpos, force))
 
     print('Test passed')
 
