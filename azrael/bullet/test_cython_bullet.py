@@ -57,11 +57,17 @@ def test_getset_object():
     print('Test passed')
 
 
-def test_apply_force():
+@pytest.mark.parametrize('force_fun_id', ['applyForce', 'applyForceAndTorque'])
+def test_apply_force(force_fun_id):
     """
     Create object, send it to Bullet, apply a force, progress the simulation,
     and verify the object moved correctly.
     """
+    # Constants and paramters for this test.
+    objID = 10
+    force = np.array([0, 0, 1], np.float64)
+    dt, maxsteps = 1.0, 60
+
     # Create an object and overwrite the CShape data to obtain a sphere.
     obj_a = bullet_data.BulletData()
     obj_a.cshape[0] = 3
@@ -71,29 +77,106 @@ def test_apply_force():
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
-    bullet.setObjectData([0], obj_a)
-    bullet.compute([0], 1.0, 60)
-    ok, obj_b = bullet.getObjectData([0])
+    bullet.setObjectData([objID], obj_a)
+    bullet.compute([objID], dt, maxsteps)
+    ok, obj_b = bullet.getObjectData([objID])
     assert ok == 0
     assert obj_a == obj_b
 
-    # Now apply a central force of one Newton in z-direction, run the
-    # simulation again. The object must have moved roughly 0.5m in z-direction
-    # because s = 0.5 * a * t^2.
-    force = np.array([0, 0, 1], np.float64)
-    bullet.applyForce(0, force, np.zeros(3, np.float64))
+    # Now apply a central force of one Newton in z-direction.
+    if force_fun_id == 'applyForce':
+        applyForceFun = bullet.applyForce
+    elif force_fun_id == 'applyForceAndTorque':
+        applyForceFun = bullet.applyForceAndTorque
+    else:
+        assert False
+    applyForceFun(objID, force, np.zeros(3, np.float64))
 
     # Nothing must have happened because the simulation has not progressed.
-    ok, obj_b = bullet.getObjectData([0])
+    ok, obj_b = bullet.getObjectData([objID])
     assert ok == 0
     assert obj_a == obj_b
 
-    # Progress the simulation again. The object must have moved in z-direction
-    # by (roughly) 0.5 meters.
-    bullet.compute([0], 1.0, 60)
-    ok, obj_b = bullet.getObjectData([0])
+    # Progress the simulation by another 'dt' seconds.
+    bullet.compute([objID], dt, maxsteps)
+    ok, obj_b = bullet.getObjectData([objID])
     assert ok == 0
-    assert np.allclose(obj_b.position, [0, 0, 0.5], atol=1E-2)
+
+    # The object must have accelerated to the linear velocity
+    #   v = a * t                  (1)
+    # where the acceleration $a$ follows from
+    #   F = m * a --> a = F / m    (2)
+    # Substitue (2) into (1) to obtain
+    #   v = t * F / m
+    # or in terms of the inverse mass:
+    #   v = t * F * imass
+    assert np.allclose(obj_b.velocityLin, dt * force * 1, atol=1E-2)
+
+    print('Test passed')
+
+
+def test_apply_force_and_torque():
+    """
+    Create object, send it to Bullet, apply a force, progress the simulation,
+    and verify the object moved correctly.
+    """
+    # Constants and paramters for this test.
+    objID = 10
+    force = np.array([0, 0, 1], np.float64)
+    torque = np.array([0, 0, 1], np.float64)
+    dt, maxsteps = 1.0, 60
+
+    # Create a spherical object. Adjust the mass so that the sphere's inertia
+    # is roughly unity.
+    obj_a = bullet_data.BulletData(cshape=[3, 1, 1, 1], imass=2 / 5)
+    obj_a.cshape[0] = 3
+
+    # Instantiate Bullet engine.
+    bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
+
+    # Send object to Bullet and progress the simulation by one second.
+    # The objects must not move because no forces are at play.
+    bullet.setObjectData([objID], obj_a)
+    bullet.compute([objID], dt, maxsteps)
+    ok, obj_b = bullet.getObjectData([objID])
+    assert ok == 0
+    assert obj_a == obj_b
+
+    # Now apply a central force of one Newton in z-direction and a torque of
+    # two NewtonMeters.
+    bullet.applyForceAndTorque(objID, force, torque)
+
+    # Nothing must have happened because the simulation has not progressed.
+    ok, obj_b = bullet.getObjectData([objID])
+    assert ok == 0
+    assert obj_a == obj_b
+
+    # Progress the simulation for another second.
+    bullet.compute([objID], dt, maxsteps)
+    ok, obj_b = bullet.getObjectData([objID])
+    assert ok == 0
+    velLin, velRot = obj_b.velocityLin, obj_b.velocityRot
+
+    # The object must have accelerated to the linear velocity
+    #   v = a * t                  (1)
+    # where the acceleration $a$ follows from
+    #   F = m * a --> a = F / m    (2)
+    # Substitue (2) into (1) to obtain
+    #   v = t * F / m
+    # or in terms of the inverse mass:
+    #   v = t * F * imass
+    assert np.allclose(velLin, dt * force * (2 / 5), atol=1E-2)
+
+    # The object must have accelerated to the angular velocity omega
+    #   omega = OMEGA * t                  (1)
+    # where the torque $T$ follows from angular acceleration OMEGA
+    #   T = I * OMEGA --> OMEGA = T / I    (2)
+    # Substitue (2) into (1) to obtain
+    #   omega = t * (T / I)
+    # Our Inertia is roughly unity because we adjusted the sphere's mass
+    # accordingly when we created it (ie. set it 5/2kg or 2/5 for the inverse
+    # mass).
+    assert np.allclose(velRot, dt * torque * 1, atol=1E-2)
 
     print('Test passed')
 
@@ -164,5 +247,6 @@ def test_remove_object():
 if __name__ == '__main__':
     test_remove_object()
     test_get_pair_cache()
-    test_apply_force()
+    test_apply_force('applyForce')
+    test_apply_force_and_torque()
     test_getset_object()

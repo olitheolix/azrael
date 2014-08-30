@@ -34,6 +34,7 @@ cdef extern from "bullet.hpp":
                           const long &bufLen, double *buf)
         int getPairCache(const long &N, long *buf)
         int applyForce(const long &ID, double *force, double *rel_pos)
+        int applyForceAndTorque(const long &ID, double *force, double *torque)
         int getPairCacheSize()
         int removeObject(const long &numIDs, long *IDs)
 
@@ -87,12 +88,27 @@ cdef class PyBulletPhys:
             len(IDs), <long*>ids.data, len(buf), <double*>buf.data)
 
     def applyForce(self, ID, force, rel_pos):
+        assert len(force) == 3
+        assert len(rel_pos) == 3
+
         # Convert the inputs to the correct data format.
         cdef np.ndarray[double] f = np.array(force, np.float64)
         cdef np.ndarray[double] p = np.array(rel_pos, np.float64)
 
         # Call the C++ function.
         return self.thisptr.applyForce(ID, <double*>f.data, <double*>p.data)
+
+    def applyForceAndTorque(self, ID, force, torque):
+        assert len(force) == 3
+        assert len(torque) == 3
+
+        # Convert the inputs to the correct data format.
+        cdef np.ndarray[double] f = np.array(force, np.float64)
+        cdef np.ndarray[double] p = np.array(torque, np.float64)
+
+        # Call the C++ function.
+        return self.thisptr.applyForceAndTorque(
+            ID, <double*>f.data, <double*>p.data)
 
     def removeObject(self, IDs):
         # Convert the inputs to the correct data format.

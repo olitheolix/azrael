@@ -73,6 +73,8 @@ public:
                     const long &bufLen, double *buf);
   int getPairCache(const long &N, long *buf);
   int applyForce(const long &ID, const double *force, const double *rel_pos);
+  int applyForceAndTorque(const long &ID, const double *force,
+                          const double *torque);
   int getPairCacheSize();
   int removeObject(const long &numIDs, long *IDs);
 };

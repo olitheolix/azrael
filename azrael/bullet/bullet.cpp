@@ -263,6 +263,28 @@ int BulletPhys::applyForce(
   return 0;
 }
 
+int BulletPhys::applyForceAndTorque(
+    const long &ID, const double *force, const double *torque) {
+
+  if (object_cache.find(ID) == object_cache.end()) {
+    // There is no such object.
+    return 1;
+  }
+
+  // Convert force and torque to btVector3.
+  btVector3 b_force, b_torque;
+  for (int ii=0; ii < 3; ii++) {
+    b_force[ii] = btScalar(force[ii]);
+    b_torque[ii] = btScalar(torque[ii]);
+  }
+  
+  // Apply force and torque to object.
+  object_cache.at(ID)->clearForces();
+  object_cache.at(ID)->applyCentralForce(b_force);
+  object_cache.at(ID)->applyTorque(b_torque);
+  return 0;
+}
+
 
 /*
   Serialise the objects with ``IDs`` and write the result into ``buf``.
