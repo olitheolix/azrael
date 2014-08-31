@@ -26,7 +26,7 @@ def test_booster_factory_serialisation():
     p = parts.Booster(1, [1, 2, 3])
     assert p == parts.fromstring(p.tostring())
 
-    p = parts.Factory(1, [1, 2, 3])
+    p = parts.Factory(1, [1, 2, 3], [4, 5, 6], b'x', [0, 1])
     assert p == parts.fromstring(p.tostring())
 
     print('Test passed')

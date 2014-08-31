@@ -80,10 +80,10 @@ def test_spawn_one_controller(ctrl_type):
     ok, ctrl_id = ctrl.spawn(prog, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
-    # Spawn another template but this time without also createing a new
-    # controller process to control the object. We cannot explicitly verify
-    # that not controller process was created but we can verify that the spawn
-    # command itself worked.
+    # Spawn another template but this time without creating a new controller
+    # process to control the object. We cannot explicitly verify that not
+    # controller process was created but we can verify that the spawn command
+    # itself worked.
     ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(3))
 
@@ -350,9 +350,10 @@ def test_create_fetch_template(ctrl_type):
     # automatically assign any).
     cs = np.array([1, 2, 3, 4], np.float64)
     geo = np.array([5, 6, 7, 8], np.float64)
+    tid_0 = '_templateCube'.encode('utf8')
     b0 = parts.Booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
     b1 = parts.Booster(1, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
-    f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
+    f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1], templateID=tid_0, speed=[0.1, 0.5])
 
     # Add the new template.
     templateID = 't2'.encode('utf8')

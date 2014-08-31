@@ -113,7 +113,7 @@ class Booster(_Booster):
         assert len(orient) == 3
 
         # Normalise the direction vector or raise an error if invalid.
-        np.sum(orient) > 1E-5
+        assert np.dot(orient, orient) > 1E-5
         orient = orient / np.sqrt(np.dot(orient, orient))
         self = super().__new__(cls, partID, pos, orient, max_force)
         return self
@@ -188,13 +188,13 @@ class CmdBooster(_CmdBooster):
 # -----------------------------------------------------------------------------
 
 # Define named tuples to describe a Factory and the commands it can receive.
-_Factory = NT('Factory', 'partID pos orient speed')
-CmdFactory = NT('CmdFactory', 'partID')
+_Factory = NT('Factory', 'partID pos orient templateID speed')
+CmdFactory = NT('CmdFactory', 'partID speed')
 
 
 class Factory(_Factory):
     @typecheck
-    def __new__(cls, partID, pos=np.zeros(3), orient=[0, 0, 1], speed=[0, 1]):
+    def __new__(cls, partID, pos, orient, templateID, speed):
         """
         Return a ``Factory`` instance.
 
@@ -216,6 +216,9 @@ class Factory(_Factory):
         # Factory ID.
         partID = np.int64(partID)
 
+        if isinstance(templateID, (tuple, list)):
+            templateID = bytes(templateID)
+            
         # Position must be a 3-element vector.
         pos = np.array(pos, np.float64)
         assert len(pos) == 3
@@ -225,7 +228,7 @@ class Factory(_Factory):
         assert len(orient) == 3
 
         # Normalise the direction vector or raise an error if invalid.
-        assert np.sum(orient) > 1E-5
+        assert np.dot(orient, orient) > 1E-5
         orient = orient / np.sqrt(np.dot(orient, orient))
 
         # This defines exit speed range of the spawned object.
@@ -233,7 +236,7 @@ class Factory(_Factory):
         assert len(speed) == 2
 
         # Return a valid Factory instance based on the arguments.
-        self = super().__new__(cls, partID, pos, orient, speed)
+        self = super().__new__(cls, partID, pos, orient, templateID, speed)
         return self
 
     def __eq__(self, ref):
@@ -241,8 +244,13 @@ class Factory(_Factory):
             return False
 
         for f in self._fields:
-            if not np.array_equal(getattr(self, f), getattr(ref, f)):
-                return False
+            a, b = getattr(self, f), getattr(ref, f)
+            if isinstance(a, np.ndarray):
+                if not np.allclose(a, b, 1E-9):
+                    return False
+            else:
+                if a != b:
+                    return False
         return True
 
     def tostring(self):

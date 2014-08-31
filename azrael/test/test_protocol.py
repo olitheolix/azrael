@@ -44,7 +44,8 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     geo = np.array([1, 2, 3], np.float64)
     b0 = parts.Booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
     b1 = parts.Booster(0, pos=np.zeros(3), orient=[1, 1, 0], max_force=0.6)
-    f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1], speed=[0.1, 0.5])
+    f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1],
+    templateID='_templateCube'.encode('utf8'), speed=[0.1, 0.5])
 
     # ----------------------------------------------------------------------
     # Controller --> Clerk.

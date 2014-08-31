@@ -51,6 +51,91 @@ import azrael.bullet.bullet_data as bullet_data
 from azrael.typecheck import typecheck
 
 
+class Quaternion:
+    """
+    A Quaternion class.
+
+    This class implements a sub-set of the available Quaternion
+    algebra. The operations should suffice for most 3D related tasks.
+    """
+    def __init__(self, w=None, v=None):
+        """
+        Construct Quaternion with scalar ``w`` and vector ``v``.
+        """
+        # Sanity checks. 'w' must be a scalar, and 'v' a 3D vector.
+        assert isinstance(w, float)
+        assert isinstance(v, np.ndarray)
+        assert len(v) == 3
+
+        # Store 'w' and 'v' as Numpy types in the class.
+        self.w = np.float64(w)
+        self.v = np.array(v, dtype=np.float64)
+
+    def __mul__(self, q):
+        """
+        Multiplication.
+
+        The following combination of (Q)uaternions, (V)ectors, and (S)calars
+        are supported:
+
+        * Q * S
+        * Q * V
+        * Q * Q2
+
+        Note that V * Q and S * Q are *not* supported.
+        """
+        if isinstance(q, Quaternion):
+            # Q * Q2:
+            w = self.w * q.w - np.inner(self.v, q.v)
+            v = self.w * q.v + q.w * self.v + np.cross(self.v, q.v)
+            return Quaternion(w, v)
+        elif isinstance(q, (int, float)):
+            # Q * S:
+            return Quaternion(q * self.w, q * self.v)
+        elif isinstance(q, (np.ndarray, tuple, list)):
+            # Q * V: convert Quaternion to 4x4 matrix and multiply it
+            # with the input vector.
+            assert len(q) == 3
+            tmp = np.zeros(4, dtype=np.float64)
+            tmp[:3] = np.array(q)
+            res = np.inner(self.toMatrix(), tmp)
+            return res[:3]
+        else:
+            print('Unsupported Quaternion product.')
+            return None
+
+    def __repr__(self):
+        """
+        Represent Quaternion as a vector with 4 elements.
+        """
+        tmp = np.zeros(4, dtype=np.float64)
+        tmp[:3] = self.v
+        tmp[3] = self.w
+        return str(tmp)
+
+    def norm(self):
+        """
+        Norm of Quaternion.
+        """
+        return np.sqrt(self.w ** 2 + np.inner(self.v, self.v))
+
+    def toMatrix(self):
+        """
+        Return the corresponding rotation matrix for this Quaternion.
+        """
+        # Shorthands.
+        x, y, z = self.v
+        w = self.w
+
+        # Standard formula.
+        mat = np.array([
+            [1 - 2*y*y - 2*z*z, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
+            [2*x*y + 2*z*w, 1 - 2*x*x - 2*z*z, 2*y*z - 2*x*w, 0],
+            [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x*x - 2*y*y, 0],
+            [0, 0, 0, 1]])
+        return mat.astype(np.float32)
+
+
 class PythonInstance(multiprocessing.Process):
     """
     Replace existing process with pristine Python interpreter.
@@ -472,46 +557,113 @@ class Clerk(multiprocessing.Process):
         # Query the templateID for the current object.
         ok, templateID = btInterface.getTemplateID(objID)
         if not ok:
+            msg = 'Could not retrieve templateID for objID={}'.format(objID)
+            self.logit.warning(msg)
             return False, msg
 
-        # Query the capabilities of the current object.
+        # Fetch the template for the current object.
         ok, data = self.getTemplate(templateID)
         if not ok:
-            return False, 'Problem'
+            msg = 'Could not retrieve template for objID={}'.format(objID)
+            self.logit.warning(msg)
+            return False, msg
         else:
             cshape, geo, boosters, factories = data
 
-        # Extract all booster- and factory IDs.
-        bid = dict(zip([int(_.partID) for _ in boosters], boosters))
-        fid = dict(zip([int(_.partID) for _ in factories], factories))
+        # Fetch the SV for objID.
+        ok, tmp = self.getStateVariables([objID])
+        if not ok:
+            msg = 'Could not retrieve SV for objID={}'.format(objID)
+            self.logit.warning(msg)
+            return False, msg
+        (_, sv_parent) = tmp
+        sv_parent = sv_parent[0]
+        tmp = sv_parent.orientation
+        quat = Quaternion(tmp[3], tmp[:3])
+        del _, tmp
 
-        # Verify that all boosters- and factories addressed in the commands
-        # actually exist.
+        # Compile a list of all parts defined in the template.
+        booster_t = dict(zip([int(_.partID) for _ in boosters], boosters))
+        factory_t = dict(zip([int(_.partID) for _ in factories], factories))
+
+        # Verify that all Booster commands have the correct type and are
+        # directed to an existing Booster ID.
+        for cmd in cmd_boosters:
+            if not isinstance(cmd, parts.CmdBooster):
+                msg = 'Invalid Booster type'
+                self.logit.warning(msg)
+                return False, msg
+            if cmd.partID not in booster_t:
+                msg = 'Template <{}> has no Booster ID <{}>'
+                msg = msg.format(templateID, cmd.partID)
+                self.logit.warning(msg)
+                return False, msg
+
+        # Verify that all Factory commands have the correct type and are
+        # directed to an existing Factory ID.
+        for cmd in cmd_factories:
+            if not isinstance(cmd, parts.CmdFactory):
+                msg = 'Invalid Factory type'
+                self.logit.warning(msg)
+                return False, msg
+            if cmd.partID not in factory_t:
+                msg = 'Template <{}> has no Factory ID <{}>'
+                msg = msg.format(templateID, cmd.partID)
+                self.logit.warning(msg)
+                return False, msg
+
+        # Tally up the central force and torque exerted by all boosters.
         tot_torque = np.zeros(3, np.float64)
         tot_central_force = np.zeros(3, np.float64)
         for cmd in cmd_boosters:
-            if int(cmd.partID) not in bid:
-                return False, 'Invalid booster ID'
+            # Template for this very factory.
+            this = booster_t[cmd.partID]
+
+            # Booster position after taking the parent's orientation into
+            # account. The position is relative to the parent, *not* an
+            # absolute position in world coordinates.
+            force_pos = quat * this.pos
+            force_dir = quat * this.orient
 
             # Rotate the unit force vector into the orientation given by the
-            # Quaternion. Fixme: the orientation of the unit must still be
-            # multiplied by the Quaternion of the object orientation.
-            f = bid[int(cmd.partID)].orient * cmd.force_mag
+            # Quaternion.
+            force = cmd.force_mag * force_dir
 
             # Accumulate torque and central force.
-            pos = bid[int(cmd.partID)].pos
-            tot_torque += np.cross(pos, f)
-            tot_central_force += f
+            tot_torque += np.cross(force_pos, force)
+            tot_central_force += force
 
         # Apply the net- force and torque.
         btInterface.setForceAndTorque(objID, tot_central_force, tot_torque)
 
         # Let the factories spawn the objects.
+        objIDs = []
         for cmd in cmd_factories:
-            if int(cmd.partID) not in fid:
-                return False, 'Invalid factory ID'
+            # Template for this very factory.
+            this = factory_t[cmd.partID]
 
-        return True, ('', )
+            # Position (in world coordinates) where the new object will be
+            # spawned.
+            pos = quat * this.pos + sv_parent.position
+
+            # Rotate the exit velocity according to the parent's orientation.
+            velocityLin = cmd.speed * (quat * this.orient)
+
+            # Add the parent's velocity to the exit velocity.
+            velocityLin += sv_parent.velocityLin
+
+            # Create the state variables that encode the just determined
+            # position and speed.
+            sv = bullet_data.BulletData(position=pos, vlin=velocityLin)
+
+            # Spawn the actual object that this factory can create. Retain
+            # the objID as it will be returned to the caller.
+            ok, (objID, ) = self.spawn(None, this.templateID, sv)
+            if ok:
+                objIDs.append(objID)
+
+        # Success. Return the IDs of all spawned objects.
+        return True, objIDs
 
     @typecheck
     def addTemplate(self, templateID: bytes, cshape: np.ndarray,
@@ -655,7 +807,7 @@ class Clerk(multiprocessing.Process):
         :param bytes src: object ID of sender.
         :param bytes dst: object ID of receiver.
         :param bytes data: message to pass along.
-        :return: (ok, (object ID, ))
+        :return: (ok, (object ID, SV))
         :rtype: (bool, (bytes, ))
         """
         # Get the State Variables.
