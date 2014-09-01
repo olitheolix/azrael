@@ -97,8 +97,8 @@ class Booster(_Booster):
     :return Booster: compiled booster description.
     """
     @typecheck
-    def __new__(
-            cls, partID: int, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5):
+    def __new__(cls, partID: int, pos: (list, np.ndarray),
+                direction: (list, np.ndarray), max_force: float):
         # Convert the booster ID and force threshold to NumPy types.
         partID = np.int64(partID)
         max_force = np.float64(max_force)

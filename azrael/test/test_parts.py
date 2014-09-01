@@ -23,10 +23,13 @@ def test_booster_factory_serialisation():
     """
     Serialise and de-serialise a Booster- and Factory part.
     """
-    p = parts.Booster(1, [1, 2, 3])
+    p = parts.Booster(
+        partID=1, pos=[1, 2, 3], direction=[0,0,1], max_force=0.5)
     assert p == parts.fromstring(p.tostring())
 
-    p = parts.Factory(1, [1, 2, 3], [4, 5, 6], b'x', [0, 1])
+    p = parts.Factory(
+        partID=1, pos=[1, 2, 3], direction=[4, 5, 6], templateID=b'x',
+        exit_speed=[0, 1])
     assert p == parts.fromstring(p.tostring())
 
     print('Test passed')
