@@ -24,7 +24,7 @@ def test_booster_factory_serialisation():
     Serialise and de-serialise a Booster- and Factory part.
     """
     p = parts.Booster(
-        partID=1, pos=[1, 2, 3], direction=[0,0,1], max_force=0.5)
+        partID=1, pos=[1, 2, 3], direction=[0, 0, 1], max_force=0.5)
     assert p == parts.fromstring(p.tostring())
 
     p = parts.Factory(

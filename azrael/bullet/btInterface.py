@@ -147,7 +147,6 @@ def getStateVariables(objIDs: (list, tuple)):
 def update(objID: bytes, sv: bullet_data.BulletData):
     """
     Update the ``sv`` data for object ``objID`` return the success.
-    fixme: `sv` must be of type `BulletData`
 
     Return **False** if the update failed, most likely because the ``objID``
     was invalid.
@@ -439,8 +438,8 @@ def getWorkPackage(wpid: int):
     # non-existing objects.
     data = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
     data = [_ for _ in data if _ is not None]
-    data = [WPData(_['objid'], bullet_data.fromjson(_['sv']), 
-                  _['central_force'], _['torque'], _['sugPos'])
+    data = [WPData(_['objid'], bullet_data.fromjson(_['sv']),
+                   _['central_force'], _['torque'], _['sugPos'])
             for _ in data]
 
     # Put the meta data of the work package into another named tuple.

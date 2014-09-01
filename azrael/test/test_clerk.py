@@ -338,9 +338,6 @@ def test_create_fetch_template():
     """
     killAzrael()
 
-    # Parameters and constants for this test.
-    tid_0 = '_templateCube'.encode('utf8')
-    
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
@@ -391,8 +388,8 @@ def test_create_fetch_template():
     b1 = parts.Booster(
         partID=1, pos=z, direction=[0, 0, 1], max_force=0.5)
     f0 = parts.Factory(
-        partID=0, pos=z, direction=[0, 0, 1], templateID=tid_0,
-        exit_speed=[0.1, 0.5])
+        partID=0, pos=z, direction=[0, 0, 1],
+        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
     del z
 
     # Add the new template.
@@ -513,17 +510,15 @@ def test_controlParts_invalid_commands():
     # Create a template with a booster and a factory. Then send invalid
     # commands to them.
     # ------------------------------------------------------------------------
-    
-    tid_0 = '_templateCube'.encode('utf8')
 
     # Define a new object with two factory parts. The Factory parts are
     # named tuples passed to addTemplate. The must assign the partIDs
     # manually.
-    z = np.ones(3)
-    b0 = parts.Booster(partID=0, pos=z, direction=z, max_force=0.5)
+    b0 = parts.Booster(
+        partID=0, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5)
     f0 = parts.Factory(
-        partID=0, pos=z, direction=z, templateID=tid_0, exit_speed=[0, 1])
-    del z
+        partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
+        templateID='_templateCube'.encode('utf8'), exit_speed=[0, 1])
 
     # Add the template to Azrael...
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -651,18 +646,16 @@ def test_controlParts_Factories_notmoving():
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
     pos_1 = np.array([-1, -1, 0], np.float64)
-    tid_0 = '_templateCube'.encode('utf8')
-    tid_1 = '_templateSphere'.encode('utf8')
 
     # Define a new object with two factory parts. The Factory parts are
     # named tuples passed to addTemplate. The must assign the partIDs
     # manually.
     f0 = parts.Factory(
-        partID=0, pos=pos_0, direction=dir_0, templateID=tid_0,
-        exit_speed=[0.1, 0.5])
+        partID=0, pos=pos_0, direction=dir_0,
+        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
-        partID=1, pos=pos_1, direction=dir_1, templateID=tid_1,
-        exit_speed=[1, 5])
+        partID=1, pos=pos_1, direction=dir_1,
+        templateID='_templateSphere'.encode('utf8'), exit_speed=[1, 5])
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
@@ -678,7 +671,7 @@ def test_controlParts_Factories_notmoving():
     # Send commands to the factories. Tell them to spawn their object with
     # the specified velocity.
     # ------------------------------------------------------------------------
-    
+
     # Create the commands to let each factory spawn an object.
     exit_speed_0, exit_speed_1 = 0.2, 2
     cmd_0 = parts.CmdFactory(partID=0, exit_speed=exit_speed_0)
@@ -726,8 +719,6 @@ def test_controlParts_Factories_moving():
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
     pos_1 = np.array([-1, -1, 0], np.float64)
-    tid_0 = '_templateCube'.encode('utf8')
-    tid_1 = '_templateSphere'.encode('utf8')
 
     # State variables for parent object.
     sv = bullet_data.BulletData(position=pos_parent, velocityLin=vel_parent)
@@ -743,11 +734,11 @@ def test_controlParts_Factories_moving():
     # named tuples passed to addTemplate. The must assign the partIDs
     # manually.
     f0 = parts.Factory(
-        partID=0, pos=pos_0, direction=dir_0, templateID=tid_0,
-        exit_speed=[0.1, 0.5])
+        partID=0, pos=pos_0, direction=dir_0,
+        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
-        partID=1, pos=pos_1, direction=dir_1, templateID=tid_1,
-        exit_speed=[1, 5])
+        partID=1, pos=pos_1, direction=dir_1,
+        templateID='_templateSphere'.encode('utf8'), exit_speed=[1, 5])
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
@@ -763,7 +754,7 @@ def test_controlParts_Factories_moving():
     # Send commands to the factories. Tell them to spawn their object with
     # the specified velocity.
     # ------------------------------------------------------------------------
-    
+
     # Create the commands to let each factory spawn an object.
     exit_speed_0, exit_speed_1 = 0.2, 2
     cmd_0 = parts.CmdFactory(partID=0, exit_speed=exit_speed_0)
@@ -810,8 +801,6 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
     geo = np.array([5, 6, 7, 8], np.float64)
-    tid_0 = '_templateCube'.encode('utf8')
-    tid_1 = '_templateSphere'.encode('utf8')
 
     # Part positions relative to parent.
     dir_0 = np.array([0, 0, +2], np.float64)
@@ -823,9 +812,9 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     orient_parent = [1, 0, 0, 0]
 
     # Part position in world coordinates if the parent is rotated by 180
-    # degrees around the x-axis. The normalisation of the direction is necessary
-    # because the parts will automatically normalise all direction vectors,
-    # including dir_0 and dir_1 which are not unit vectors.
+    # degrees around the x-axis. The normalisation of the direction is
+    # necessary because the parts will automatically normalise all direction
+    # vectors, including dir_0 and dir_1 which are not unit vectors.
     dir_0_out = np.array(-dir_0) / np.sum(abs(dir_0))
     dir_1_out = np.array(-dir_1) / np.sum(abs(dir_1))
     pos_0_out = np.array(-pos_0)
@@ -853,11 +842,11 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     b1 = parts.Booster(
         partID=1, pos=pos_1, direction=dir_1, max_force=1.0)
     f0 = parts.Factory(
-        partID=0, pos=pos_0, direction=dir_0, templateID=tid_0,
-        exit_speed=[0.1, 0.5])
+        partID=0, pos=pos_0, direction=dir_0,
+        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
-        partID=1, pos=pos_1, direction=dir_1, templateID=tid_1,
-        exit_speed=[1, 5])
+        partID=1, pos=pos_1, direction=dir_1,
+        templateID='_templateSphere'.encode('utf8'), exit_speed=[1, 5])
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
@@ -874,7 +863,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # torque is correct, as well as that the spawned objects have the correct
     # state variables attached to them.
     # ------------------------------------------------------------------------
-    
+
     # Create the commands to let each factory spawn an object.
     exit_speed_0, exit_speed_1 = 0.2, 2
     forcemag_0, forcemag_1 = 0.2, 0.4
@@ -886,17 +875,17 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
     # given to the controller object.
-    ok, spawnedIDs = clerk.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
-    assert (ok, len(spawnedIDs)) == (True, 2)
-    assert spawnedIDs == [int2id(2), int2id(3)]
+    ok, spawnIDs = clerk.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
+    assert (ok, len(spawnIDs)) == (True, 2)
+    assert spawnIDs == [int2id(2), int2id(3)]
 
     # Query the state variables of the objects spawned by the factories.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables(spawnedIDs)
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables(spawnIDs)
     assert (ok, len(ret_objIDs)) == (True, 2)
     ret_SVs = dict(zip(ret_objIDs, ret_SVs))
 
     # Verify the position and velocity of the spawned objects is correct.
-    sv_2, sv_3 = [ret_SVs[_] for _ in spawnedIDs]
+    sv_2, sv_3 = [ret_SVs[_] for _ in spawnIDs]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
     assert np.allclose(sv_2.position, pos_0_out + pos_parent)
     assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
@@ -905,14 +894,15 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # Manually compute the total force and torque exerted by the boosters.
     forcevec_0, forcevec_1 = forcemag_0 * dir_0_out, forcemag_1 * dir_1_out
     tot_force = forcevec_0 + forcevec_1
-    tot_torque = np.cross(pos_0_out, forcevec_0) + np.cross(pos_1_out, forcevec_1)
+    tot_torque = (np.cross(pos_0_out, forcevec_0) +
+                  np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
     ok, ret_force, ret_torque = btInterface.getForceAndTorque(objID_1)
     assert ok
     assert np.array_equal(ret_force, tot_force)
     assert np.array_equal(ret_torque, tot_torque)
-    
+
     # Clean up.
     killAzrael()
     print('Test passed')

@@ -344,18 +344,13 @@ def test_create_fetch_template(ctrl_type):
     # The 'boosters' and 'factories' arguments are a list of named
     # tuples. Their first argument is the unit ID (Azrael does not
     # automatically assign any).
-    cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
-    tid_0 = '_templateCube'.encode('utf8')
-    z, d = np.zeros(3), [0, 0, 1]
     b0 = parts.Booster(
-        partID=0, pos=z, direction=d, max_force=0.5)
+        partID=0, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5)
     b1 = parts.Booster(
-        partID=1, pos=z, direction=d, max_force=0.5)
+        partID=1, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5)
     f0 = parts.Factory(
-        partID=0, pos=z, direction=d, templateID=tid_0,
-        exit_speed=[0.1, 0.5])
-    del z, d
+        partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
+        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
