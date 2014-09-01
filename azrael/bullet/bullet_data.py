@@ -54,28 +54,26 @@ class BulletData(_BulletData):
     :return Booster: compiled booster description.
     """
     @typecheck
-    def __new__(cls, radius: (int, float)=1, scale: (int, float)=1,
+    def __new__(cls, radius: (int, float)=1,
+                scale: (int, float)=1,
                 imass: (int, float)=1,
                 restitution: (int, float)=0.9,
                 orientation: (list, np.ndarray)=[0, 0, 0, 1],
                 position: (list, np.ndarray)=[0, 0, 0],
-                vlin: (list, np.ndarray)=[0, 0, 0],
-                vrot: (list, np.ndarray)=[0, 0, 0],
+                velocityLin: (list, np.ndarray)=[0, 0, 0],
+                velocityRot: (list, np.ndarray)=[0, 0, 0],
                 cshape: (list, np.ndarray)=[0, 1, 1, 1]):
 
         # Convert arguments to NumPy types where necessary.
-        orientation = np.array(orientation, np.float64)
         position = np.array(position, np.float64)
-        velocityLin = np.array(vlin, np.float64)
-        velocityRot = np.array(vrot, np.float64)
+        orientation = np.array(orientation, np.float64)
+        velocityLin = np.array(velocityLin, np.float64)
+        velocityRot = np.array(velocityRot, np.float64)
         cshape = np.array(cshape, np.float64)
 
         # Sanity checks.
-        assert len(orientation) == 4
-        assert len(position) == 3
-        assert len(velocityLin) == 3
-        assert len(velocityRot) == 3
-        assert len(cshape) == 4
+        assert len(orientation) == len(cshape) == 4
+        assert len(position) == len(velocityLin) == len(velocityRot) == 3
 
         # Build the actual named tuple.
         self = super().__new__(
@@ -84,11 +82,11 @@ class BulletData(_BulletData):
             scale=scale,
             imass=imass,
             restitution=restitution,
-            orientation=np.float64(orientation),
-            position=np.float64(position),
-            velocityLin=np.float64(vlin),
-            velocityRot=np.float64(vrot),
-            cshape=np.float64(cshape))
+            orientation=orientation,
+            position=position,
+            velocityLin=velocityLin,
+            velocityRot=velocityRot,
+            cshape=cshape)
         return self
 
     def __eq__(self, ref):
@@ -184,7 +182,7 @@ def fromNumPyString(buf: np.ndarray):
         restitution=buf[3],
         orientation=buf[4:8],
         position=buf[8:11],
-        vlin=buf[11:14],
-        vrot=buf[14:17],
+        velocityLin=buf[11:14],
+        velocityRot=buf[14:17],
         cshape=buf[17:21])
     return data

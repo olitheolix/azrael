@@ -303,8 +303,9 @@ class ControllerBase(multiprocessing.Process):
         :rtype: (bool, np.ndarray) or (bool, str)
         """
         cshape = [0, 1, 1, 1]
-        sv = bullet_data.BulletData(position=pos, vlin=vel, cshape=cshape,
-                                    scale=scale, radius=radius, imass=imass)
+        sv = bullet_data.BulletData(position=pos, velocityLin=vel,
+                                    cshape=cshape, scale=scale,
+                                    radius=radius, imass=imass)
         return self.serialiseAndSend('spawn', name, templateID, sv)
 
     @typecheck

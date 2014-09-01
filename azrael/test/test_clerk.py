@@ -219,8 +219,8 @@ def test_get_statevar():
     # Test parameters and constants.
     objID_1 = int2id(1)
     objID_2 = int2id(2)
-    sv_1 = bullet_data.BulletData(position=np.arange(3), vlin=[2, 4, 6])
-    sv_2 = bullet_data.BulletData(position=[2, 4, 6], vlin=[6, 8, 10])
+    sv_1 = bullet_data.BulletData(position=np.arange(3), velocityLin=[2, 4, 6])
+    sv_2 = bullet_data.BulletData(position=[2, 4, 6], velocityLin=[6, 8, 10])
     templateID = '_templateNone'.encode('utf8')
     prog = 'Echo'.encode('utf8')
 
@@ -391,11 +391,12 @@ def test_create_fetch_template():
     geo = np.array([5, 6, 7, 8], np.float64)
     z = np.zeros(3)
     b0 = parts.Booster(
-        partID=0, pos=z, orient=[0, 0, 1], max_force=0.5)
+        partID=0, pos=z, direction=[0, 0, 1], max_force=0.5)
     b1 = parts.Booster(
-        partID=1, pos=z, orient=[0, 0, 1], max_force=0.5)
+        partID=1, pos=z, direction=[0, 0, 1], max_force=0.5)
     f0 = parts.Factory(
-        partID=0, pos=z, orient=[0, 0, 1], templateID=tid_0, speed=[0.1, 0.5])
+        partID=0, pos=z, direction=[0, 0, 1], templateID=tid_0,
+        exit_speed=[0.1, 0.5])
     del z
 
     # Add the new template.
@@ -488,7 +489,7 @@ def test_controlParts_invalid_commands():
 
     # Create commands for a Booster and a Factory.
     cmd_b = parts.CmdBooster(partID=0, force=0.2)
-    cmd_f = parts.CmdFactory(partID=0, speed=0.5)
+    cmd_f = parts.CmdFactory(partID=0, exit_speed=0.5)
 
     # Call 'controlParts'. This must fail because the chosen template has no
     # boosters or factory units.
@@ -524,9 +525,9 @@ def test_controlParts_invalid_commands():
     # named tuples passed to addTemplate. The must assign the partIDs
     # manually.
     z = np.ones(3)
-    b0 = parts.Booster(partID=0, pos=z, orient=z, max_force=0.5)
+    b0 = parts.Booster(partID=0, pos=z, direction=z, max_force=0.5)
     f0 = parts.Factory(
-        partID=0, pos=z, orient=z, templateID=tid_0, speed=[0, 1])
+        partID=0, pos=z, direction=z, templateID=tid_0, exit_speed=[0, 1])
     del z
 
     # Add the template to Azrael...
@@ -544,7 +545,7 @@ def test_controlParts_invalid_commands():
 
     # Create the commands to let each factory spawn an object.
     cmd_b = parts.CmdBooster(partID=0, force=0.5)
-    cmd_f = parts.CmdFactory(partID=0, speed=0.5)
+    cmd_f = parts.CmdFactory(partID=0, exit_speed=0.5)
 
     # Send some valid commands to verify the new template is correct.
     ok, spawnedIDs = clerk.controlParts(objID_2, [cmd_b], [cmd_f])
@@ -588,8 +589,8 @@ def test_controlParts_Boosters_notmoving():
     pos_1 = np.array([-1, -1, 0], np.float64)
 
     # Define two boosters.
-    b0 = parts.Booster(partID=0, pos=pos_0, orient=dir_0, max_force=0.5)
-    b1 = parts.Booster(partID=1, pos=pos_1, orient=dir_1, max_force=0.5)
+    b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0, max_force=0.5)
+    b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1, max_force=0.5)
 
     # Create a new template in Azrael of an object with two boosters.
     templateID_2 = 't1'.encode('utf8')
@@ -662,9 +663,11 @@ def test_controlParts_Factories_notmoving():
     # named tuples passed to addTemplate. The must assign the partIDs
     # manually.
     f0 = parts.Factory(
-        partID=0, pos=pos_0, orient=dir_0, templateID=tid_0, speed=[0.1, 0.5])
+        partID=0, pos=pos_0, direction=dir_0, templateID=tid_0,
+        exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
-        partID=1, pos=pos_1, orient=dir_1, templateID=tid_1, speed=[1, 5])
+        partID=1, pos=pos_1, direction=dir_1, templateID=tid_1,
+        exit_speed=[1, 5])
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
@@ -682,9 +685,9 @@ def test_controlParts_Factories_notmoving():
     # ------------------------------------------------------------------------
     
     # Create the commands to let each factory spawn an object.
-    exit_vel_0, exit_vel_1 = 0.2, 2
-    cmd_0 = parts.CmdFactory(partID=0, speed=exit_vel_0)
-    cmd_1 = parts.CmdFactory(partID=1, speed=exit_vel_1)
+    exit_speed_0, exit_speed_1 = 0.2, 2
+    cmd_0 = parts.CmdFactory(partID=0, exit_speed=exit_speed_0)
+    cmd_1 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
@@ -700,9 +703,9 @@ def test_controlParts_Factories_notmoving():
 
     # Verify the position and velocity of the spawned objects is correct.
     sv_2, sv_3 = [ret_SVs[_] for _ in spawnedIDs]
-    assert np.allclose(sv_2.velocityLin, exit_vel_0 * dir_0)
+    assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0)
     assert np.allclose(sv_2.position, pos_0)
-    assert np.allclose(sv_3.velocityLin, exit_vel_1 * dir_1)
+    assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1)
     assert np.allclose(sv_3.position, pos_1)
 
     # Clean up.
@@ -732,7 +735,7 @@ def test_controlParts_Factories_moving():
     tid_1 = '_templateSphere'.encode('utf8')
 
     # State variables for parent object.
-    sv = bullet_data.BulletData(position=pos_parent, vlin=vel_parent)
+    sv = bullet_data.BulletData(position=pos_parent, velocityLin=vel_parent)
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -745,9 +748,11 @@ def test_controlParts_Factories_moving():
     # named tuples passed to addTemplate. The must assign the partIDs
     # manually.
     f0 = parts.Factory(
-        partID=0, pos=pos_0, orient=dir_0, templateID=tid_0, speed=[0.1, 0.5])
+        partID=0, pos=pos_0, direction=dir_0, templateID=tid_0,
+        exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
-        partID=1, pos=pos_1, orient=dir_1, templateID=tid_1, speed=[1, 5])
+        partID=1, pos=pos_1, direction=dir_1, templateID=tid_1,
+        exit_speed=[1, 5])
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
@@ -765,9 +770,9 @@ def test_controlParts_Factories_moving():
     # ------------------------------------------------------------------------
     
     # Create the commands to let each factory spawn an object.
-    exit_vel_0, exit_vel_1 = 0.2, 2
-    cmd_0 = parts.CmdFactory(partID=0, speed=exit_vel_0)
-    cmd_1 = parts.CmdFactory(partID=1, speed=exit_vel_1)
+    exit_speed_0, exit_speed_1 = 0.2, 2
+    cmd_0 = parts.CmdFactory(partID=0, exit_speed=exit_speed_0)
+    cmd_1 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
@@ -783,9 +788,9 @@ def test_controlParts_Factories_moving():
 
     # Verify the position and velocity of the spawned objects is correct.
     sv_2, sv_3 = [ret_SVs[_] for _ in spawnedIDs]
-    assert np.allclose(sv_2.velocityLin, exit_vel_0 * dir_0 + vel_parent)
+    assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0 + vel_parent)
     assert np.allclose(sv_2.position, pos_0 + pos_parent)
-    assert np.allclose(sv_3.velocityLin, exit_vel_1 * dir_1 + vel_parent)
+    assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1 + vel_parent)
     assert np.allclose(sv_3.position, pos_1 + pos_parent)
 
     # Clean up.
@@ -836,7 +841,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # forces (boosters) and exit speeds (factory spawned objects) must be
     # inverted.
     sv = bullet_data.BulletData(
-        position=pos_parent, vlin=vel_parent, orientation=orient_parent)
+        position=pos_parent, velocityLin=vel_parent, orientation=orient_parent)
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -849,13 +854,15 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # named tuples passed to addTemplate. The must assign the partIDs
     # manually.
     b0 = parts.Booster(
-        partID=0, pos=pos_0, orient=dir_0, max_force=0.5)
+        partID=0, pos=pos_0, direction=dir_0, max_force=0.5)
     b1 = parts.Booster(
-        partID=1, pos=pos_1, orient=dir_1, max_force=1.0)
+        partID=1, pos=pos_1, direction=dir_1, max_force=1.0)
     f0 = parts.Factory(
-        partID=0, pos=pos_0, orient=dir_0, templateID=tid_0, speed=[0.1, 0.5])
+        partID=0, pos=pos_0, direction=dir_0, templateID=tid_0,
+        exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
-        partID=1, pos=pos_1, orient=dir_1, templateID=tid_1, speed=[1, 5])
+        partID=1, pos=pos_1, direction=dir_1, templateID=tid_1,
+        exit_speed=[1, 5])
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
@@ -874,12 +881,12 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # ------------------------------------------------------------------------
     
     # Create the commands to let each factory spawn an object.
-    exit_vel_0, exit_vel_1 = 0.2, 2
+    exit_speed_0, exit_speed_1 = 0.2, 2
     forcemag_0, forcemag_1 = 0.2, 0.4
     cmd_0 = parts.CmdBooster(partID=0, force=forcemag_0)
     cmd_1 = parts.CmdBooster(partID=1, force=forcemag_1)
-    cmd_2 = parts.CmdFactory(partID=0, speed=exit_vel_0)
-    cmd_3 = parts.CmdFactory(partID=1, speed=exit_vel_1)
+    cmd_2 = parts.CmdFactory(partID=0, exit_speed=exit_speed_0)
+    cmd_3 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
@@ -895,9 +902,9 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
 
     # Verify the position and velocity of the spawned objects is correct.
     sv_2, sv_3 = [ret_SVs[_] for _ in spawnedIDs]
-    assert np.allclose(sv_2.velocityLin, exit_vel_0 * dir_0_out + vel_parent)
+    assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
     assert np.allclose(sv_2.position, pos_0_out + pos_parent)
-    assert np.allclose(sv_3.velocityLin, exit_vel_1 * dir_1_out + vel_parent)
+    assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
     assert np.allclose(sv_3.position, pos_1_out + pos_parent)
 
     # Manually compute the total force and torque exerted by the boosters.

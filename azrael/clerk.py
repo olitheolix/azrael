@@ -571,16 +571,17 @@ class Clerk(multiprocessing.Process):
             cshape, geo, boosters, factories = data
 
         # Fetch the SV for objID.
-        ok, tmp = self.getStateVariables([objID])
+        ok, svdata = self.getStateVariables([objID])
         if not ok:
             msg = 'Could not retrieve SV for objID={}'.format(objID)
             self.logit.warning(msg)
             return False, msg
-        (_, sv_parent) = tmp
-        sv_parent = sv_parent[0]
-        tmp = sv_parent.orientation
-        quat = Quaternion(tmp[3], tmp[:3])
-        del _, tmp
+
+        # Extract the parent's orientation from svdata.
+        sv_parent = svdata[1][0]
+        parent_orient = sv_parent.orientation
+        quat = Quaternion(parent_orient[3], parent_orient[:3])
+        del svdata
 
         # Compile a list of all parts defined in the template.
         booster_t = dict(zip([int(_.partID) for _ in boosters], boosters))
@@ -623,7 +624,7 @@ class Clerk(multiprocessing.Process):
             # account. The position is relative to the parent, *not* an
             # absolute position in world coordinates.
             force_pos = quat * this.pos
-            force_dir = quat * this.orient
+            force_dir = quat * this.direction
 
             # Rotate the unit force vector into the orientation given by the
             # Quaternion.
@@ -647,14 +648,14 @@ class Clerk(multiprocessing.Process):
             pos = quat * this.pos + sv_parent.position
 
             # Rotate the exit velocity according to the parent's orientation.
-            velocityLin = cmd.speed * (quat * this.orient)
+            velocityLin = cmd.exit_speed * (quat * this.direction)
 
             # Add the parent's velocity to the exit velocity.
             velocityLin += sv_parent.velocityLin
 
             # Create the state variables that encode the just determined
             # position and speed.
-            sv = bullet_data.BulletData(position=pos, vlin=velocityLin)
+            sv = bullet_data.BulletData(position=pos, velocityLin=velocityLin)
 
             # Spawn the actual object that this factory can create. Retain
             # the objID as it will be returned to the caller.

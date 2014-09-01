@@ -69,14 +69,13 @@ def fromstring(data: bytes):
 # Booster
 #
 # Boosters exert a force on an object. Boosters have an ID (user can specify
-# it), a position relative to the object's centre of mass, an orientation
+# it), a position relative to the object's centre of mass, a force direction
 # relative to the object's overall orientation, and a maximum force. Note that
-# the force is a scalar not a vector. The direction of the force is governed by
-# the orientation of the Booster.
+# the force is a scalar not a vector.
 # -----------------------------------------------------------------------------
 
 # Define named tuples to describe a Booster and the commands it can receive.
-_Booster = NT('Booster', 'partID pos orient max_force')
+_Booster = NT('Booster', 'partID pos direction max_force')
 _CmdBooster = NT('CmdBooster', 'partID force_mag')
 
 
@@ -85,21 +84,21 @@ class Booster(_Booster):
     Return a ``Booster`` instance.
 
     The unit is located at ``pos`` relative to the parent's centre of mass. The
-    Booster points into the direction ``orient``.
+    Booster points into ``direction``.
 
     .. note::
-       ``orient`` is *not* a Quaternion but merely a unit vector that points
+       ``direction`` is *not* a Quaternion but merely a unit vector that points
        in the direction of the force.
 
     :param int partID: Booster ID (arbitrary)
     :param ndarray pos: position vector (3-elements)
-    :param ndarray orient: orientation (3-elements)
+    :param ndarray direction: force direction (3-elements)
     :param float max_force: maximum force this Booster can generate.
     :return Booster: compiled booster description.
     """
     @typecheck
     def __new__(
-            cls, partID: int, pos=[0, 0, 0], orient=[0, 0, 1], max_force=0.5):
+            cls, partID: int, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5):
         # Convert the booster ID and force threshold to NumPy types.
         partID = np.int64(partID)
         max_force = np.float64(max_force)
@@ -108,14 +107,14 @@ class Booster(_Booster):
         pos = np.array(pos, np.float64)
         assert len(pos) == 3
 
-        # Orientation must be a 3-element vector.
-        orient = np.array(orient, np.float64)
-        assert len(orient) == 3
+        # Direction must be a 3-element vector.
+        direction = np.array(direction, np.float64)
+        assert len(direction) == 3
 
         # Normalise the direction vector or raise an error if invalid.
-        assert np.dot(orient, orient) > 1E-5
-        orient = orient / np.sqrt(np.dot(orient, orient))
-        self = super().__new__(cls, partID, pos, orient, max_force)
+        assert np.dot(direction, direction) > 1E-5
+        direction = direction / np.sqrt(np.dot(direction, direction))
+        self = super().__new__(cls, partID, pos, direction, max_force)
         return self
 
     def __eq__(self, ref):
@@ -182,35 +181,35 @@ class CmdBooster(_CmdBooster):
 # Factory
 #
 # Factories can spawn objects. Like Boosters, they have a custom ID, position,
-# orientation (both relative to the object). Furthermore, they can only spawn a
+# direction (both relative to the object). Furthermore, they can only spawn a
 # particular template. The newly spawned object can exit with the specified
-# speed along, but only along the orientation of the factory unit.
+# speed along the factory direction.
 # -----------------------------------------------------------------------------
 
 # Define named tuples to describe a Factory and the commands it can receive.
-_Factory = NT('Factory', 'partID pos orient templateID speed')
-CmdFactory = NT('CmdFactory', 'partID speed')
+_Factory = NT('Factory', 'partID pos direction templateID exit_speed')
+CmdFactory = NT('CmdFactory', 'partID exit_speed')
 
 
 class Factory(_Factory):
     @typecheck
-    def __new__(cls, partID, pos, orient, templateID, speed):
+    def __new__(cls, partID, pos, direction, templateID, exit_speed):
         """
         Return a ``Factory`` instance.
 
         The unit is located at ``pos`` relative to the parent's centre of
-        mass. The objects it spawns can exit the factory at any speed specified
-        by the ``speed`` interval.
+        mass. The initial velocity of the spawned objects is constrained by the
+        ``exit_speed`` variable.
 
         .. note::
-           ``orient`` is *not* a Quaternion but merely a unit vector that
+           ``direction`` is *not* a Quaternion but merely a unit vector that
            points in the nozzle direction of the factory (it the direction in
            which new objects will be spawned).
 
         :param int partID: factory ID (arbitrary)
         :param ndarray pos: position vector (3-elements)
-        :param ndarray orient: orientation (3-elements)
-        :param ndarray speed: min/max exit speed of spawned object.
+        :param ndarray direction: exit direction of new objects (3-elements)
+        :param ndarray exit_speed: min/max exit speed of spawned object.
         :return Factory: compiled factory description.
         """
         # Factory ID.
@@ -223,20 +222,21 @@ class Factory(_Factory):
         pos = np.array(pos, np.float64)
         assert len(pos) == 3
 
-        # Orientation must be a 3-element vector.
-        orient = np.array(orient, np.float64)
-        assert len(orient) == 3
+        # Direction must be a 3-element vector.
+        direction = np.array(direction, np.float64)
+        assert len(direction) == 3
 
         # Normalise the direction vector or raise an error if invalid.
-        assert np.dot(orient, orient) > 1E-5
-        orient = orient / np.sqrt(np.dot(orient, orient))
+        assert np.dot(direction, direction) > 1E-5
+        direction = direction / np.sqrt(np.dot(direction, direction))
 
         # This defines exit speed range of the spawned object.
-        speed = np.array(speed, np.float64)
-        assert len(speed) == 2
+        exit_speed = np.array(exit_speed, np.float64)
+        assert len(exit_speed) == 2
 
         # Return a valid Factory instance based on the arguments.
-        self = super().__new__(cls, partID, pos, orient, templateID, speed)
+        self = super().__new__(
+            cls, partID, pos, direction, templateID, exit_speed)
         return self
 
     def __eq__(self, ref):

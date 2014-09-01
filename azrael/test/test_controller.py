@@ -351,9 +351,15 @@ def test_create_fetch_template(ctrl_type):
     cs = np.array([1, 2, 3, 4], np.float64)
     geo = np.array([5, 6, 7, 8], np.float64)
     tid_0 = '_templateCube'.encode('utf8')
-    b0 = parts.Booster(0, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
-    b1 = parts.Booster(1, pos=np.zeros(3), orient=[0, 0, 1], max_force=0.5)
-    f0 = parts.Factory(0, pos=np.zeros(3), orient=[0, 0, 1], templateID=tid_0, speed=[0.1, 0.5])
+    z, d = np.zeros(3), [0, 0, 1]
+    b0 = parts.Booster(
+        partID=0, pos=z, direction=d, max_force=0.5)
+    b1 = parts.Booster(
+        partID=1, pos=z, direction=d, max_force=0.5)
+    f0 = parts.Factory(
+        partID=0, pos=z, direction=d, templateID=tid_0,
+        exit_speed=[0.1, 0.5])
+    del z, d
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
