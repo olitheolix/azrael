@@ -189,7 +189,6 @@ def test_spawn():
     # Test parameters (the 'Echo' controller is a hard coded dummy controller
     # that is always available).
     sv = bullet_data.BulletData()
-    prog = 'Echo'.encode('utf8')
 
     # Unknown controller name.
     templateID = '_templateNone'.encode('utf8')
@@ -198,13 +197,13 @@ def test_spawn():
 
     # Invalid templateID.
     templateID = np.int64(100).tostring()
-    ok, ret = clerk.spawn(prog, templateID, sv)
+    ok, ret = clerk.spawn(None, templateID, sv)
     assert (ok, ret) == (False, 'Invalid Template ID')
 
-    # All parameters are now valid. We must be assigne ID=1 because this is the
-    # first ID in an otherwise pristine system.
+    # All parameters are now valid. This must spawn and object with ID=1
+    # because this is the first ID in an otherwise pristine system.
     templateID = '_templateNone'.encode('utf8')
-    ok, (ret,) = clerk.spawn(prog, templateID, sv)
+    ok, (ret,) = clerk.spawn(None, templateID, sv)
     assert (ok, ret) == (True, int2id(1))
 
     print('Test passed')
@@ -222,7 +221,6 @@ def test_get_statevar():
     sv_1 = bullet_data.BulletData(position=np.arange(3), velocityLin=[2, 4, 6])
     sv_2 = bullet_data.BulletData(position=[2, 4, 6], velocityLin=[6, 8, 10])
     templateID = '_templateNone'.encode('utf8')
-    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -232,7 +230,7 @@ def test_get_statevar():
     assert (ok, ret) == (False, 'One or more IDs do not exist')
 
     # Spawn a new object. It must have ID=1.
-    ok, (ret,) = clerk.spawn(prog, templateID, sv_1)
+    ok, (ret,) = clerk.spawn(None, templateID, sv_1)
     assert (ok, ret) == (True, objID_1)
 
     # Retrieve the SV for a non-existing ID --> must fail.
@@ -246,7 +244,7 @@ def test_get_statevar():
     assert ret_SVs[0] == sv_1
 
     # Spawn a second object.
-    ok, (ret,) = clerk.spawn(prog, templateID, sv_2)
+    ok, (ret,) = clerk.spawn(None, templateID, sv_2)
     assert (ok, ret) == (True, objID_2)
 
     # Retrieve the state variables for both objects individually.
@@ -278,7 +276,6 @@ def test_set_force():
     sv = bullet_data.BulletData()
     force = np.array([1, 2, 3], np.float64)
     relpos = np.array([4, 5, 6], np.float64)
-    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -289,7 +286,7 @@ def test_set_force():
 
     # Spawn a new object. It must have ID=1.
     templateID = '_templateNone'.encode('utf8')
-    ok, (ret,) = clerk.spawn(prog, templateID, sv)
+    ok, (ret,) = clerk.spawn(None, templateID, sv)
     assert (ok, ret) == (True, id_1)
 
     # Apply the force.
@@ -316,7 +313,6 @@ def test_suggest_position():
     sv = bullet_data.BulletData()
     force = np.array([1, 2, 3], np.float64)
     templateID = '_templateNone'.encode('utf8')
-    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -326,7 +322,7 @@ def test_suggest_position():
     assert (ok, ret) == (False, 'ID does not exist')
 
     # Spawn a new object. It must have ID=1.
-    ok, (ret,) = clerk.spawn(prog, templateID, sv)
+    ok, (ret,) = clerk.spawn(None, templateID, sv)
     assert (ok, ret) == (True, id_1)
 
     # Invalid/non-existing ID.
@@ -437,17 +433,16 @@ def test_get_object_template_id():
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
     sv = bullet_data.BulletData()
-    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Spawn a new object. It must have ID=1.
-    ok, (ctrl_id,) = clerk.spawn(prog, templateID_0, sv)
+    ok, (ctrl_id,) = clerk.spawn(None, templateID_0, sv)
     assert (ok, ctrl_id) == (True, id_0)
 
     # Spawn another object from a different template.
-    ok, (ctrl_id,) = clerk.spawn(prog, templateID_1, sv)
+    ok, (ctrl_id,) = clerk.spawn(None, templateID_1, sv)
     assert (ok, ctrl_id) == (True, id_1)
 
     # Retrieve template of first object.
@@ -933,7 +928,6 @@ def test_get_all_objectids():
     objID_1, objID_2 = int2id(1), int2id(2)
     templateID = '_templateNone'.encode('utf8')
     sv = bullet_data.BulletData()
-    prog = 'Echo'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -943,7 +937,7 @@ def test_get_all_objectids():
     assert (ok, out) == (True, [])
 
     # Spawn a new object.
-    ok, (ret,) = clerk.spawn(prog, templateID, sv)
+    ok, (ret,) = clerk.spawn(None, templateID, sv)
     assert (ok, ret) == (True, objID_1)
 
     # The object list must now contain the ID of the just spawned object.
@@ -951,7 +945,7 @@ def test_get_all_objectids():
     assert (ok, out) == (True, [objID_1])
 
     # Spawn another object.
-    ok, (ret,) = clerk.spawn(prog, templateID, sv)
+    ok, (ret,) = clerk.spawn(None, templateID, sv)
     assert (ok, ret) == (True, objID_2)
 
     # The object list must now contain the ID of both spawned objects.

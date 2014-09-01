@@ -98,11 +98,10 @@ def test_move_single_object(clsLeonard):
     leonard.setup()
 
     # Constants and parameters for this test.
-    prog = 'Echo'.encode('utf8')
     templateID = '_templateCube'.encode('utf8')
 
     # Create a cube (a cube always exists in Azrael's template database).
-    ok, id_0 = ctrl.spawn(prog, templateID, pos=[0, 0, 0], vel=[0, 0, 0])
+    ok, id_0 = ctrl.spawn(None, templateID, pos=[0, 0, 0], vel=[0, 0, 0])
     assert ok
 
     # Advance the simulation by 1s and verify that nothing moved.
@@ -147,13 +146,12 @@ def test_move_two_objects_no_collision(clsLeonard):
     leonard.setup()
 
     # Constants and parameters for this test.
-    prog = 'Echo'.encode('utf8')
     templateID = '_templateCube'.encode('utf8')
 
     # Create two cubic objects.
-    ok, id_0 = ctrl.spawn(prog, templateID, pos=[0, 0, 0], vel=[1, 0, 0])
+    ok, id_0 = ctrl.spawn(None, templateID, pos=[0, 0, 0], vel=[1, 0, 0])
     assert ok
-    ok, id_1 = ctrl.spawn(prog, templateID, pos=[0, 10, 0], vel=[0, -1, 0])
+    ok, id_1 = ctrl.spawn(None, templateID, pos=[0, 10, 0], vel=[0, -1, 0])
     assert ok
 
     # Advance the simulation by 1s and verify the objects moved accordingly.
@@ -189,7 +187,6 @@ def test_multiple_workers(clsWorker):
     clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     # Constants and parameters for this test.
-    prog = 'Echo'.encode('utf8')
     templateID = '_templateCube'.encode('utf8')
     num_workers, num_objects = 10, 20
     assert num_objects >= num_workers
@@ -203,7 +200,7 @@ def test_multiple_workers(clsWorker):
     list_ids = []
     for ii in range(num_objects):
         ok, cur_id = ctrl.spawn(
-            prog, templateID, pos=[0, 10 * ii, 0], vel=[1, 0, 0])
+            None, templateID, pos=[0, 10 * ii, 0], vel=[1, 0, 0])
         assert ok
         list_ids.append(cur_id)
     del cur_id, ok

@@ -68,7 +68,6 @@ def test_spawn_one_controller(ctrl_type):
     Ask Clerk to spawn one (echo) controller.
     """
     # Constants and parameters for this test.
-    prog = 'Echo'.encode('utf8')
     templateID = '_templateNone'.encode('utf8')
 
     # Start the necessary services.
@@ -77,7 +76,7 @@ def test_spawn_one_controller(ctrl_type):
     # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
     # the ID of the controller which must be '2' ('0' is invalid and '1' was
     # already given to the controller in the WS handler).
-    ok, ctrl_id = ctrl.spawn(prog, templateID, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
     # Spawn another template but this time without creating a new controller
@@ -149,7 +148,6 @@ def test_spawn_and_get_state_variables(ctrl_type):
     Spawn a new Controller and query its state variables.
     """
     # Constants and parameters for this test.
-    prog = 'Echo'.encode('utf8')
     templateID = '_templateNone'.encode('utf8')
 
     # Start the necessary services.
@@ -158,7 +156,7 @@ def test_spawn_and_get_state_variables(ctrl_type):
     # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
     # the ID of the controller which must be '2' ('0' is invalid and '1' was
     # already given to the controller in the WS handler).
-    ok, id0 = ctrl.spawn(prog, templateID, pos=np.ones(3), vel=-np.ones(3))
+    ok, id0 = ctrl.spawn(None, templateID, pos=np.ones(3), vel=-np.ones(3))
     assert (ok, id0) == (True, int2id(2))
 
     ok, sv = ctrl.getStateVariables(id0)
@@ -236,7 +234,6 @@ def test_getAllObjectIDs(ctrl_type):
     Ensure the getAllObjectIDs command reaches Clerk.
     """
     # Constants and parameters for this test.
-    prog = 'Echo'.encode('utf8')
     templateID = '_templateNone'.encode('utf8')
 
     # Start the necessary services.
@@ -250,7 +247,7 @@ def test_getAllObjectIDs(ctrl_type):
     assert (ok, ret) == (True, [])
 
     # Spawn a new object.
-    ok, ret = ctrl.spawn(prog, templateID, np.zeros(3))
+    ok, ret = ctrl.spawn(None, templateID, np.zeros(3))
     assert (ok, ret) == (True, objID_2)
 
     # The object list must now contain the ID of the just spawned object.
@@ -271,18 +268,17 @@ def test_get_template(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
-    prog = 'Echo'.encode('utf8')
     id_0, id_1 = int2id(2), int2id(3)
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
 
     # Spawn a new object. It must have ID=2 because ID=1 was already given to
     # the controller.
-    ok, ctrl_id = ctrl.spawn(prog, templateID_0, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(None, templateID_0, np.zeros(3))
     assert (ok, ctrl_id) == (True, id_0)
 
     # Spawn another object from a different template.
-    ok, ctrl_id = ctrl.spawn(prog, templateID_1, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(None, templateID_1, np.zeros(3))
     assert (ok, ctrl_id) == (True, id_1)
 
     # Retrieve template of first object.
