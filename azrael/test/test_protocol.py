@@ -72,26 +72,48 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
 
 def test_send_command():
     """
-    Test codec for controlBooster command.
+    Test controlParts codec.
     """
+    # Define the commands.
     cmd_0 = parts.CmdBooster(partID=0, force=0.2)
     cmd_1 = parts.CmdBooster(partID=1, force=0.4)
+    cmd_2 = parts.CmdFactory(partID=0, exit_speed=0)
+    cmd_3 = parts.CmdFactory(partID=2, exit_speed=0.4)
+    cmd_4 = parts.CmdFactory(partID=3, exit_speed=4)
     objID = int2id(1)
 
+    # Convenience.
     enc = protocol.ToClerk_ControlParts_Encode
     dec = protocol.ToClerk_ControlParts_Decode
-    ok, data = enc(objID, [cmd_0, cmd_1], [])
+
+    # Encode the booster- and factory commands.
+    ok, data = enc(objID, [cmd_0, cmd_1], [cmd_2, cmd_3, cmd_4])
     assert ok
 
+    # Decode the data and verify the correct number of commands was returned.
     ok, (out_objID, cmd_booster, cmd_factory) = dec(data)
     assert ok
     assert out_objID == objID
     assert len(cmd_booster) == 2
-    assert len(cmd_factory) == 0
+    assert len(cmd_factory) == 3
 
     # Use getattr to automatically test all attributes.
     assert cmd_booster[0] == cmd_0
     assert cmd_booster[1] == cmd_1
+    assert cmd_factory[0] == cmd_2
+    assert cmd_factory[1] == cmd_3
+    assert cmd_factory[2] == cmd_4
+
+    # Convenience.
+    enc = protocol.FromClerk_ControlParts_Encode
+    dec = protocol.FromClerk_ControlParts_Decode
+    objIDs = [int2id(1), int2id(2)]
+    ok, data = enc(objIDs)
+    assert ok
+
+    ok, ret_objIDs = dec(data)
+    assert ok
+    assert objIDs == ret_objIDs
 
     print('Test passed')
 

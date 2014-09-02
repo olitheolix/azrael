@@ -545,10 +545,21 @@ def ToClerk_ControlParts_Decode(payload: bytes):
 
 
 @typecheck
-def FromClerk_ControlParts_Encode(dummyarg=None):
-    return True, b''
+def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
+    d = {'objIDs': objIDs}
+    # Encode data as JSON.
+    try:
+        d = dumps(d)
+    except TypeError:
+        return False, 'JSON encoding error'
+    return True, d
 
 
 @typecheck
 def FromClerk_ControlParts_Decode(payload: bytes):
-    return True, tuple()
+    # Decode JSON.
+    try:
+        data = loads(payload)
+    except ValueError:
+        return False, 'JSON decoding error'
+    return True, [bytes(_) for _ in data['objIDs']]

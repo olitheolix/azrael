@@ -61,6 +61,9 @@ def fromstring(data: bytes):
     elif d['part'] == 'CmdBooster':
         args = [d[_] for _ in CmdBooster._fields]
         return CmdBooster(*args)
+    elif d['part'] == 'CmdFactory':
+        args = [d[_] for _ in CmdFactory._fields]
+        return CmdFactory(*args)
     else:
         return False, 'Unknown part <{}>'.format(d['part'])
 
@@ -188,7 +191,7 @@ class CmdBooster(_CmdBooster):
 
 # Define named tuples to describe a Factory and the commands it can receive.
 _Factory = NT('Factory', 'partID pos direction templateID exit_speed')
-CmdFactory = NT('CmdFactory', 'partID exit_speed')
+_CmdFactory = NT('CmdFactory', 'partID exit_speed')
 
 
 class Factory(_Factory):
@@ -260,6 +263,45 @@ class Factory(_Factory):
 
     def tostring(self):
         d = {'part': 'Factory'}
+        for f in self._fields:
+            d[f] = getattr(self, f)
+        return dumps(d)
+
+
+class CmdFactory(_CmdFactory):
+    """
+    Return Factory command wrapped into a ``CmdFactory`` instance.
+
+    This wrapper only ensures the provided data is sane.
+
+    :param int partID: Factory ID (arbitrary)
+    :param float force: magnitude of force (a scalar!)
+    :return Factory: compiled description of factory command.
+    """
+    @typecheck
+    def __new__(cls, partID: int, exit_speed: (int, float, np.float64)):
+        partID = np.int64(partID)
+        exit_speed = np.float64(exit_speed)
+
+        self = super().__new__(cls, partID, exit_speed)
+        return self
+
+    def __eq__(self, ref):
+        # Sanity check.
+        if not isinstance(ref, type(self)):
+            return False
+
+        # Test if all fields are essentially identical.
+        for f in self._fields:
+            if not np.allclose(getattr(self, f), getattr(ref, f), atol=1E-9):
+                return False
+        return True
+
+    def __ne__(self, ref):
+        return not self.__eq__(ref)
+
+    def tostring(self):
+        d = {'part': 'CmdFactory'}
         for f in self._fields:
             d[f] = getattr(self, f)
         return dumps(d)
