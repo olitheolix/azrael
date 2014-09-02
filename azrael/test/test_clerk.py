@@ -512,7 +512,7 @@ def test_controlParts_invalid_commands():
     # ------------------------------------------------------------------------
 
     # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplate. The must assign the partIDs
+    # named tuples passed to addTemplate. The user must assign the partIDs
     # manually.
     b0 = parts.Booster(
         partID=0, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5)
@@ -648,7 +648,7 @@ def test_controlParts_Factories_notmoving():
     pos_1 = np.array([-1, -1, 0], np.float64)
 
     # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplate. The must assign the partIDs
+    # named tuples passed to addTemplate. The user must assign the partIDs
     # manually.
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
@@ -681,7 +681,9 @@ def test_controlParts_Factories_notmoving():
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
     # given to the controller object.
     ok, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
-    assert (ok, len(spawnedIDs)) == (True, 2)
+    assert ok
+    spawnedIDs = spawnedIDs[0]
+    assert len(spawnedIDs) == 2
     assert spawnedIDs == [int2id(2), int2id(3)]
 
     # Query the state variables of the objects spawned by the factories.
@@ -731,7 +733,7 @@ def test_controlParts_Factories_moving():
     # ------------------------------------------------------------------------
 
     # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplate. The must assign the partIDs
+    # named tuples passed to addTemplate. The user must assign the partIDs
     # manually.
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
@@ -764,7 +766,9 @@ def test_controlParts_Factories_moving():
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
     # given to the controller object.
     ok, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
-    assert (ok, len(spawnedIDs)) == (True, 2)
+    assert ok
+    spawnedIDs = spawnedIDs[0]
+    assert len(spawnedIDs) == 2
     assert spawnedIDs == [int2id(2), int2id(3)]
 
     # Query the state variables of the objects spawned by the factories.
@@ -835,7 +839,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # ------------------------------------------------------------------------
 
     # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplate. The must assign the partIDs
+    # named tuples passed to addTemplate. The user must assign the partIDs
     # manually.
     b0 = parts.Booster(
         partID=0, pos=pos_0, direction=dir_0, max_force=0.5)
@@ -876,7 +880,9 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
     # given to the controller object.
     ok, spawnIDs = clerk.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
-    assert (ok, len(spawnIDs)) == (True, 2)
+    assert ok
+    spawnIDs = spawnIDs[0]
+    assert len(spawnIDs) == 2
     assert spawnIDs == [int2id(2), int2id(3)]
 
     # Query the state variables of the objects spawned by the factories.

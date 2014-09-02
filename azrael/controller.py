@@ -108,6 +108,9 @@ class ControllerBase(multiprocessing.Process):
             'suggest_pos': (
                 protocol.ToClerk_SuggestPosition_Encode,
                 protocol.FromClerk_SuggestPosition_Decode),
+            'control_parts': (
+                protocol.ToClerk_ControlParts_Encode,
+                protocol.FromClerk_ControlParts_Decode),
             }
 
     def setupZMQ(self):
@@ -280,8 +283,11 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_geometry', templateID)
 
     @typecheck
-    def spawn(self, name: bytes, templateID: bytes, pos: (np.ndarray, list),
-              vel: (np.ndarray, list)=np.zeros(3), scale=1, radius=1, imass=1):
+    def spawn(self, name: bytes, templateID: bytes,
+              pos: (np.ndarray, list),
+              vel: (np.ndarray, list)=np.zeros(3),
+              orient: (np.ndarray, list)=[0, 0, 0, 1],
+              scale=1, radius=1, imass=1):
         """
         Spawn the ``templateID`` object at ``pos`` with velocity ``vel``.
 
@@ -296,6 +302,7 @@ class ControllerBase(multiprocessing.Process):
         :param bytes templateID: template from which to spawn the object.
         :param 3-vec pos: object position
         :param 3-vec vel: initial velocity
+        :param 4-vec orient: initial orientation
         :param float scale: scale entire object by this factor.
         :param float radius: specify the bounding sphere radius of the object.
         :param float imass: inverse of object mass.
@@ -305,8 +312,32 @@ class ControllerBase(multiprocessing.Process):
         cshape = [0, 1, 1, 1]
         sv = bullet_data.BulletData(position=pos, velocityLin=vel,
                                     cshape=cshape, scale=scale,
-                                    radius=radius, imass=imass)
+                                    radius=radius, imass=imass,
+                                    orientation=orient)
         return self.serialiseAndSend('spawn', name, templateID, sv)
+
+    def controlParts(self, objID: bytes, cmd_boosters: (list, tuple),
+                     cmd_factories: (list, tuple)):
+        """
+        Issue control commands to object parts.
+
+        Boosters can be activated with a scalar force that will apply according
+        to their orientation. The commands themselves must be
+        ``parts.CmdBooster`` instances.
+
+        Factories can spawn objects. Their command syntax is defined in the
+        ``parts`` module. The commands themselves must be
+        ``parts.CmdFactory`` instances.
+
+        :param bytes objID: object ID.
+        :param list cmd_booster: booster commands.
+        :param list cmd_factory: factory commands.
+        :return: (True, (b'',)) or (False, error-message)
+        :rtype: (bool, (bytes, )) or (bool, str)
+        :raises: None
+        """
+        return self.serialiseAndSend(
+            'control_parts', objID, cmd_boosters, cmd_factories)
 
     @typecheck
     def getTemplateID(self, objID: bytes):

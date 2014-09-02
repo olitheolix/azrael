@@ -51,91 +51,6 @@ import azrael.bullet.bullet_data as bullet_data
 from azrael.typecheck import typecheck
 
 
-class Quaternion:
-    """
-    A Quaternion class.
-
-    This class implements a sub-set of the available Quaternion
-    algebra. The operations should suffice for most 3D related tasks.
-    """
-    def __init__(self, w=None, v=None):
-        """
-        Construct Quaternion with scalar ``w`` and vector ``v``.
-        """
-        # Sanity checks. 'w' must be a scalar, and 'v' a 3D vector.
-        assert isinstance(w, float)
-        assert isinstance(v, np.ndarray)
-        assert len(v) == 3
-
-        # Store 'w' and 'v' as Numpy types in the class.
-        self.w = np.float64(w)
-        self.v = np.array(v, dtype=np.float64)
-
-    def __mul__(self, q):
-        """
-        Multiplication.
-
-        The following combination of (Q)uaternions, (V)ectors, and (S)calars
-        are supported:
-
-        * Q * S
-        * Q * V
-        * Q * Q2
-
-        Note that V * Q and S * Q are *not* supported.
-        """
-        if isinstance(q, Quaternion):
-            # Q * Q2:
-            w = self.w * q.w - np.inner(self.v, q.v)
-            v = self.w * q.v + q.w * self.v + np.cross(self.v, q.v)
-            return Quaternion(w, v)
-        elif isinstance(q, (int, float)):
-            # Q * S:
-            return Quaternion(q * self.w, q * self.v)
-        elif isinstance(q, (np.ndarray, tuple, list)):
-            # Q * V: convert Quaternion to 4x4 matrix and multiply it
-            # with the input vector.
-            assert len(q) == 3
-            tmp = np.zeros(4, dtype=np.float64)
-            tmp[:3] = np.array(q)
-            res = np.inner(self.toMatrix(), tmp)
-            return res[:3]
-        else:
-            print('Unsupported Quaternion product.')
-            return None
-
-    def __repr__(self):
-        """
-        Represent Quaternion as a vector with 4 elements.
-        """
-        tmp = np.zeros(4, dtype=np.float64)
-        tmp[:3] = self.v
-        tmp[3] = self.w
-        return str(tmp)
-
-    def norm(self):
-        """
-        Norm of Quaternion.
-        """
-        return np.sqrt(self.w ** 2 + np.inner(self.v, self.v))
-
-    def toMatrix(self):
-        """
-        Return the corresponding rotation matrix for this Quaternion.
-        """
-        # Shorthands.
-        x, y, z = self.v
-        w = self.w
-
-        # Standard formula.
-        mat = np.array([
-            [1 - 2*y*y - 2*z*z, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
-            [2*x*y + 2*z*w, 1 - 2*x*x - 2*z*z, 2*y*z - 2*x*w, 0],
-            [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x*x - 2*y*y, 0],
-            [0, 0, 0, 1]])
-        return mat.astype(np.float32)
-
-
 class PythonInstance(multiprocessing.Process):
     """
     Replace existing process with pristine Python interpreter.
@@ -265,6 +180,10 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_GetAllObjectIDs_Decode,
                 self.getAllObjectIDs,
                 protocol.FromClerk_GetAllObjectIDs_Encode),
+            config.cmd['control_parts']: (
+                protocol.ToClerk_ControlParts_Decode,
+                self.controlParts,
+                protocol.FromClerk_ControlParts_Encode),
             }
 
         # Insert default objects. None of them has an actual geometry but
@@ -580,7 +499,7 @@ class Clerk(multiprocessing.Process):
         # Extract the parent's orientation from svdata.
         sv_parent = svdata[1][0]
         parent_orient = sv_parent.orientation
-        quat = Quaternion(parent_orient[3], parent_orient[:3])
+        quat = util.Quaternion(parent_orient[3], parent_orient[:3])
         del svdata
 
         # Compile a list of all parts defined in the template.
@@ -664,7 +583,7 @@ class Clerk(multiprocessing.Process):
                 objIDs.append(objID)
 
         # Success. Return the IDs of all spawned objects.
-        return True, objIDs
+        return True, (objIDs, )
 
     @typecheck
     def addTemplate(self, templateID: bytes, cshape: np.ndarray,

@@ -75,7 +75,7 @@ LEN_SV_BYTES = 21 * 8
 commands = ('invalid_cmd', 'ping_clerk', 'ping_clacks', 'get_id', 'spawn',
             'get_statevar', 'new_template', 'get_geometry', 'set_force',
             'suggest_pos', 'send_msg', 'recv_msg', 'get_template_id',
-            'get_template', 'add_template', 'get_all_objids')
+            'get_template', 'add_template', 'get_all_objids', 'control_parts')
 cmd = dict(zip(commands, [bytes([_]) for _ in range(len(commands))]))
 del commands
 
