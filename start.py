@@ -36,14 +36,15 @@ import logging
 import argparse
 import subprocess
 import model_import
-import numpy as np
 import azrael.clerk
+import azrael.parts as parts
 import azrael.config as config
 import azrael.clacks as clacks
 import azrael.leonard as leonard
 import azrael.wscontroller as wscontroller
 import azrael.bullet.btInterface as btInterface
 
+import numpy as np
 
 def setupLogging(loglevel):
     # Create the logger instance.
@@ -127,13 +128,72 @@ def loadGroundModel(scale, model_name):
     cs = np.zeros(4, np.float64)
     templateID = 'ground'.encode('utf8')
     ok, _ = ctrl.addTemplate(templateID, cs, buf_vert, [], [])
-
+    
     # Tell Azrael to spawn the 'ground' object near the center of the scene.
     print('  Spawning object... ', end='', flush=True)
     ok, objID = ctrl.spawn(None, templateID, 2 * np.array([0, -2, 1],
                            np.float64), np.zeros(3))
     print('done (ID=<{}>)'.format(objID))
 
+
+def defineBoosterCube():
+    """
+    Define a BoosterCube object.
+
+    The cube has two boosters and two factories.
+    """
+    # Establish connection to Azrael.
+    ctrl = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
+    assert ctrl.pingClerk()
+
+    # Collision shape for a cube.
+    cs = np.array([4, 1, 1, 1], np.float64)
+
+    # Geometry of a unit cube.
+    geo = 0.5 * np.array([
+        -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
+        +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
+        +1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,   +1.0, -1.0, -1.0,
+        +1.0, +1.0, -1.0,   +1.0, -1.0, -1.0,   -1.0, -1.0, -1.0,
+        -1.0, -1.0, -1.0,   -1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,
+        +1.0, -1.0, +1.0,   -1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,
+        -1.0, +1.0, +1.0,   -1.0, -1.0, +1.0,   +1.0, -1.0, +1.0,
+        +1.0, +1.0, +1.0,   +1.0, -1.0, -1.0,   +1.0, +1.0, -1.0,
+        +1.0, -1.0, -1.0,   +1.0, +1.0, +1.0,   +1.0, -1.0, +1.0,
+        +1.0, +1.0, +1.0,   +1.0, +1.0, -1.0,   -1.0, +1.0, -1.0,
+        +1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,   -1.0, +1.0, +1.0,
+        +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0])
+
+    # Convenience.
+    dir_0, dir_1 = [0, 0, +1], [0, 0, -1]
+    pos_0, pos_1 = [+1.5, 0, 0], [-1.5, 0, 0]
+    
+    # Create templates for what the factory will be able to spawn.
+    tID_1 = 'Product1'.encode('utf8')
+    tID_2 = 'Product2'.encode('utf8')
+    ctrl.addTemplate(tID_1, np.array([4, 1, 1, 1], np.float64), 0.75 * geo, [], [])
+    ctrl.addTemplate(tID_2, np.array([4, 1, 1, 1], np.float64), 0.24 * geo, [], [])
+
+    # Two boosters, one left, one right. Both point in the same direction.
+    b0 = parts.Booster(
+        partID=0, pos=pos_0, direction=dir_0, max_force=1.0)
+    b1 = parts.Booster(
+        partID=1, pos=pos_1, direction=dir_0, max_force=1.0)
+
+    # Two factories, one left one right. The spawned objects exit forwards and
+    # backwards, respectively.
+    f0 = parts.Factory(
+        partID=0, pos=pos_0, direction=[+1, 0, 0],
+        templateID=tID_1, exit_speed=[0.1, 1])
+    f1 = parts.Factory(
+        partID=1, pos=pos_1, direction=[-1, 0, 0],
+        templateID=tID_2, exit_speed=[0.1, 1])
+
+    # Add the template.
+    templateID_2 = 'BoosterCube'.encode('utf8')
+    ok, _ = ctrl.addTemplate(templateID_2, cs, geo, [b0, b1], [f0, f1])
+    assert ok
+    
 
 def main():
     # Parse the command line.
@@ -171,6 +231,9 @@ def main():
         model_name = (1, 'viewer/models/sphere/sphere.obj')
         #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
         loadGroundModel(*model_name)
+
+        # Define additional templates.
+        defineBoosterCube()
         print('Azrael now live')
     else:
         print('Azrael already live')
