@@ -574,7 +574,8 @@ class Clerk(multiprocessing.Process):
 
             # Create the state variables that encode the just determined
             # position and speed.
-            sv = bullet_data.BulletData(position=pos, velocityLin=velocityLin)
+            sv = bullet_data.BulletData(position=pos, velocityLin=velocityLin,
+                                        orientation=sv_parent.orientation)
 
             # Spawn the actual object that this factory can create. Retain
             # the objID as it will be returned to the caller.

@@ -691,12 +691,15 @@ def test_controlParts_Factories_notmoving():
     assert (ok, len(ret_objIDs)) == (True, 2)
     ret_SVs = dict(zip(ret_objIDs, ret_SVs))
 
-    # Verify the position and velocity of the spawned objects is correct.
+    # Ensure the position, velocity, and orientation of the spawned objects are
+    # correct. 
     sv_2, sv_3 = [ret_SVs[_] for _ in spawnedIDs]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0)
     assert np.allclose(sv_2.position, pos_0)
+    assert np.allclose(sv_2.orientation, [0, 0, 0, 1])
     assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1)
     assert np.allclose(sv_3.position, pos_1)
+    assert np.allclose(sv_3.orientation, [0, 0, 0, 1])
 
     # Clean up.
     killAzrael()
@@ -776,12 +779,15 @@ def test_controlParts_Factories_moving():
     assert (ok, len(ret_objIDs)) == (True, 2)
     ret_SVs = dict(zip(ret_objIDs, ret_SVs))
 
-    # Verify the position and velocity of the spawned objects is correct.
+    # Ensure the position, velocity, and orientation of the spawned objects are
+    # correct.
     sv_2, sv_3 = [ret_SVs[_] for _ in spawnedIDs]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0 + vel_parent)
     assert np.allclose(sv_2.position, pos_0 + pos_parent)
+    assert np.allclose(sv_2.orientation, [0, 0, 0, 1])
     assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1 + vel_parent)
     assert np.allclose(sv_3.position, pos_1 + pos_parent)
+    assert np.allclose(sv_3.orientation, [0, 0, 0, 1])
 
     # Clean up.
     killAzrael()
@@ -894,8 +900,10 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     sv_2, sv_3 = [ret_SVs[_] for _ in spawnIDs]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
     assert np.allclose(sv_2.position, pos_0_out + pos_parent)
+    assert np.allclose(sv_2.orientation, orient_parent)
     assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
     assert np.allclose(sv_3.position, pos_1_out + pos_parent)
+    assert np.allclose(sv_3.orientation, orient_parent)
 
     # Manually compute the total force and torque exerted by the boosters.
     forcevec_0, forcevec_1 = forcemag_0 * dir_0_out, forcemag_1 * dir_1_out
