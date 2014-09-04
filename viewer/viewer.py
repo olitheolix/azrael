@@ -227,8 +227,11 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         ok, all_ids = self.ctrl.getAllObjectIDs()
 
         for ctrl_id in all_ids:
-            # Do not add anything if we already have the object.
+            # Do not add anything if we already have the object, or if it is
+            # the player object itself.
             if ctrl_id in self.controllers:
+                continue
+            if ctrl_id == self.player_id:
                 continue
 
             # Query the template ID associated with ctrl_id.
@@ -319,30 +322,34 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             return
         print('Client connected')
 
-        # Create a projectile object. The collision shape is a cube (hence the
-        # 'cs[0] = 4' statement).
+        # Add template for projectiles. The geometry and collision shape are
+        # those of a cube.
         buf_vert = self.getGeometryCube()
-        cs = np.ones(4, np.float64)
-        cs[0] = 4
-        templateID = 'cube'.encode('utf8')
-        ok, _ = self.ctrl.addTemplate(templateID, cs, buf_vert, [], [])
+        cs = [4, 1, 1, 1]
+        self.t_projectile = 'cube'.encode('utf8')
+        ok, _ = self.ctrl.getTemplate(self.t_projectile)
         if not ok:
-            print('Could not add new object template')
-            self.close()
+            ok, _ = self.ctrl.addTemplate(self.t_projectile, cs, buf_vert, [], [])
+            if not ok:
+                print('Could not add new object template')
+                self.close()
+            else:
+                print('Created template <{}>'.format(self.t_projectile))
+            del buf_vert, cs
         else:
-            self.cube_id = templateID
-            print('Created ID <{}>'.format(self.cube_id))
+            print('Template {} already exists'.format(self.t_projectile))
+        del ok, _
 
-        # Spawn a cube (templateID=3 defaults to one).
+        # Spawn the player object.
         ok, tmp = self.ctrl.spawn(
-            'Echo'.encode('utf8'), self.cube_id, np.zeros(3), np.zeros(3))
+            None, self.t_projectile, np.zeros(3), np.zeros(3))
         if not ok:
-            print('Cannot spawn object (<{}>)'.format(tmp))
+            print('Cannot spawn player object (<{}>)'.format(tmp))
             self.close()
         else:
             self.player_id = tmp
-            del tmp
-        print('Spawned object <{}>'.format(self.player_id))
+        del ok, tmp
+        print('Spawned player object <{}>'.format(self.player_id))
 
         self.controllers = set()
         self.numVertices = {}
@@ -482,7 +489,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             self.camera.strafeLeft()
 
         pos = self.camera.position
-        pos = pos + 30 * self.camera.view
         self.ctrl.suggestPosition(self.player_id, pos)
 
         # Do not update the camera rotation if the mouse is not grabbed.
@@ -575,25 +581,29 @@ class ViewerWidget(QtOpenGL.QGLWidget):
     def mousePressEvent(self, event):
         button = event.button()
         if button == 1:
-            pos = self.camera.position
+            # Determine initial position and velocity of new object.
+            pos = self.camera.position + 2 * self.camera.view
             vel = 2 * self.camera.view
 
+            # Spawn the object.
             ok, ctrl_id = self.ctrl.spawn(
-                'Echo'.encode('utf8'), self.cube_id, pos, vel=vel,
-                scale=0.25, imass=20)
+                None, self.t_projectile, pos, vel=vel, scale=0.25, imass=20)
             if not ok:
-                print('Could not spawn Echo (<{}>)'.format(ctrl_id))
-                return
+                print('Could not spawn <{}>'.format(self.t_projectile))
         elif button == 2:
-            pos = self.camera.position
+            # Determine initial position and velocity of new object.
+            pos = self.camera.position + 2 * self.camera.view
             vel = 0.5 * self.camera.view
 
+            # Spawn the object.
+            tid = 'BoosterCube'.encode('utf8')
+            prog = 'EchoBoost'.encode('utf8')
             ok, ctrl_id = self.ctrl.spawn(
-                'EchoBoost'.encode('utf8'), self.cube_id, pos, vel=vel,
-                scale=1, imass=1)
+                prog, tid, pos=pos, vel=vel, scale=1, imass=1)
             if not ok:
-                print('Could not spawn EchoBoost (<{}>)'.format(ctrl_id))
-                return
+                msg = 'Could not spawn template <{}> with controller <{}>'
+                print(msg.format(prog.decode('utf8'), tid))
+                print(ctrl_id)
         else:
             print('Unknown button <{}>'.format(button))
 

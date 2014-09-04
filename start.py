@@ -176,9 +176,9 @@ def defineBoosterCube():
 
     # Two boosters, one left, one right. Both point in the same direction.
     b0 = parts.Booster(
-        partID=0, pos=pos_0, direction=dir_0, max_force=1.0)
+        partID=0, pos=pos_0, direction=dir_0, max_force=10.0)
     b1 = parts.Booster(
-        partID=1, pos=pos_1, direction=dir_0, max_force=1.0)
+        partID=1, pos=pos_1, direction=dir_0, max_force=10.0)
 
     # Two factories, one left one right. The spawned objects exit forwards and
     # backwards, respectively.

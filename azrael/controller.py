@@ -366,8 +366,9 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_template', templateID)
 
     @typecheck
-    def addTemplate(self, templateID: bytes, cs: np.ndarray, geo: np.ndarray,
-                    boosters: (list, tuple), factories: (list, tuple)):
+    def addTemplate(self, templateID: bytes, cs: (tuple, list, np.ndarray),
+                    geo: np.ndarray, boosters: (list, tuple),
+                    factories: (list, tuple)):
         """
         Add a new ``templateID`` to the system.
 
@@ -384,6 +385,7 @@ class ControllerBase(multiprocessing.Process):
         :rtype: (bool, bytes)
         :raises: None
         """
+        cs = np.array(cs, np.float64)
         return self.serialiseAndSend(
             'add_template', templateID, cs, geo, boosters, factories)
 

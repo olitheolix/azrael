@@ -629,7 +629,7 @@ class Clerk(multiprocessing.Process):
         else:
             # A template with name ``templateID`` already existed --> failure.
             msg = 'Template ID <{}> already exists'.format(templateID)
-            return False, (msg, )
+            return False, msg
 
     @typecheck
     def sendMessage(self, src: bytes, dst: bytes, data: bytes):
