@@ -164,7 +164,8 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         it reliably. For now however it is a safe assumption that the handler
         is not forcefully terminated by the OS.
         """
-        self.controller.close()
+        if self.controller is not None:
+            self.controller.close()
         self.logit.debug('Connection closed')
 
 
