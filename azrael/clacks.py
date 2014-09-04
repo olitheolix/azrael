@@ -69,9 +69,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         This method is a Tornado callback and triggers when a client initiates
         a new Websocket connection.
         """
-        self.controller = controller.ControllerBase()
-        self.controller.setupZMQ()
-        self.controller.connectToClerk()
+        self.controller = None
 
     @typecheck
     def on_message(self, msg: bytes):
@@ -102,6 +100,14 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             # Handle ourselves: return the ID of the associated Controller.
             msg = b'\x00' + self.controller.objID
             self.write_message(msg, binary=True)
+        elif cmd == config.cmd['set_id']:
+            # Handle ourselves: create a controller with a specific ID.
+            ok, ret = self.createController(payload)
+            if ok:
+                ret = b'\x00' + ret
+            else:
+                ret = b'\x01' + ret
+            self.write_message(ret, binary=True)
         else:
             # Pass all other commands directly to the Controller which will
             # (probably) send it to Clerk for processing.
@@ -115,6 +121,36 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
                 ret = b'\x01' + ret
             self.write_message(ret, binary=True)
 
+    def createController(self, objID: bytes):
+        """
+        Create a Controller for ``objID``.
+
+        The created controller object is an instance variable for this
+        Websocket connection.
+
+        If ``objID`` is invalid then Clerk will assign the Controller a new and
+        unique ID.
+
+        :param bytes objID: desired object ID.
+        :return: (ok, objID)
+        """
+        # This command is only allowed for as long as no controller has
+        # been created yet.
+        if self.controller is not None:
+            msg = 'Controller already has an ID'.encode('utf8')
+            self.write_message(msg, binary=True)
+            return False, msg
+            
+        if objID == b'\x00':
+            # Constructor of WSControllerBase requests a new objID.
+            objID = None
+
+        # Instantiate the controller for the desired objID.
+        self.controller = controller.ControllerBase(objID)
+        self.controller.setupZMQ()
+        self.controller.connectToClerk()
+        return True, self.controller.objID
+        
     def on_close(self):
         """
         Shutdown Controller.

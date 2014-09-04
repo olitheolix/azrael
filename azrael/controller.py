@@ -66,7 +66,7 @@ class ControllerBase(multiprocessing.Process):
     def __init__(self, obj_id: bytes=None):
         super().__init__()
 
-        # The object ID with which this controller is associated.
+        # The object ID associated with this controller.
         self.objID = obj_id
 
         # Create a Class-specific logger.
