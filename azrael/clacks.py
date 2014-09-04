@@ -109,6 +109,13 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
                 ret = b'\x01' + ret
             self.write_message(ret, binary=True)
         else:
+            if self.controller is None:
+                # Skip the command if no controller has been instantiated yet
+                # to actually process the command.
+                msg = 'No controller has been instantiated yet'
+                self.write_message(b'\x01' + msg.encode('utf8'))
+                return
+
             # Pass all other commands directly to the Controller which will
             # (probably) send it to Clerk for processing.
             ok, ret = self.controller.sendToClerk(cmd + payload)

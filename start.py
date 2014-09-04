@@ -62,7 +62,7 @@ def parseCommandLine():
     padd('--noviewer', action='store_true', default=False,
          help='Do not spawn a viewer')
     padd('--port', metavar='port', type=int, default=8080,
-         help='Port of Clacks')
+         help='Port number')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
 
