@@ -46,6 +46,30 @@ import azrael.bullet.btInterface as btInterface
 
 import numpy as np
 
+def parseCommandLine():
+    """
+    Parse program arguments.
+    """
+    # Create the parser.
+    parser = argparse.ArgumentParser(
+        description=('Azrael Demo Script'),
+        formatter_class=argparse.RawTextHelpFormatter)
+
+    # Shorthand.
+    padd = parser.add_argument
+
+    # Add the command line options.
+    padd('--noviewer', action='store_true', default=False,
+         help='Do not spawn a viewer')
+    padd('--port', metavar='port', type=int, default=8080,
+         help='Port of Clacks')
+    padd('--loglevel', type=int, metavar='level', default=1,
+         help='Specify error log level (0: Debug, 1:Info)')
+
+    # run the parser.
+    return parser.parse_args()
+
+
 def setupLogging(loglevel):
     # Create the logger instance.
     logger = logging.getLogger('azrael')
@@ -80,32 +104,6 @@ def setupLogging(loglevel):
     logger.addHandler(console)
     logger.addHandler(fileHandler)
     del formatter, console, fileHandler
-
-
-def parseCommandline():
-    """
-    Parse the command line arguments.
-    """
-    # Instantiate parser and add program description.
-    parser = argparse.ArgumentParser(
-        description=('Azrael Demo Script'),
-        formatter_class=argparse.RawTextHelpFormatter)
-
-    # Convenience.
-    padd = parser.add_argument
-
-    # Add the command line options.
-    padd('--loglevel', type=int, metavar='level', default=1,
-         help='Specify error log level (0: Debug, 1:Info)')
-
-    # Parse the command line.
-    args = parser.parse_args()
-
-    # Set the log level of Azrael.
-    logging.getLogger('azrael').setLevel(logging.DEBUG)
-
-    # Return all parsed arguments.
-    return args
 
 
 def loadGroundModel(scale, model_name):
@@ -197,12 +195,13 @@ def defineBoosterCube():
 
 def main():
     # Parse the command line.
-    param = parseCommandline()
+    param = parseCommandLine()
     setupLogging(param.loglevel)
 
     # Determine if Azrael is live.
     try:
-        wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
+        addr = 'ws://127.0.0.1:{}/websocket'.format(param.port)
+        wscontroller.WSControllerBase(addr)
         is_azrael_live = True
     except ConnectionRefusedError as err:
         is_azrael_live = False
@@ -240,7 +239,11 @@ def main():
 
     # Launch the viewer process.
     try:
-        subprocess.call(['python3', 'viewer/viewer.py'])
+        if param.noviewer:
+            while True:
+                time.sleep(360000)
+        else:
+            subprocess.call(['python3', 'viewer/viewer.py'])
     except KeyboardInterrupt:
         pass
 

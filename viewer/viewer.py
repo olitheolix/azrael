@@ -33,6 +33,7 @@ p = os.path.join(_this_directory, '..')
 sys.path.insert(0, p)
 del p
 
+import argparse
 import subprocess
 import numpy as np
 import model_import
@@ -42,6 +43,27 @@ import azrael.util as util
 import azrael.wscontroller as wscontroller
 
 from PySide import QtCore, QtGui, QtOpenGL
+
+
+def parseCommandLine():
+    """
+    Parse program arguments.
+    """
+    # Create the parser.
+    parser = argparse.ArgumentParser(
+        description='Start an OpenGL viewer for Azrael')
+
+    # Shorthand.
+    padd = parser.add_argument
+
+    # Add the command line options.
+    padd('--ip', metavar='addr', type=str, default='localhost',
+         help='IP address of Clacks')
+    padd('--port', metavar='port', type=int, default=8080,
+         help='Port of Clacks')
+
+    # run the parser.
+    return parser.parse_args()
 
 
 def perspective(fov, ar, near, far):
@@ -155,11 +177,13 @@ class Camera:
 
 
 class ViewerWidget(QtOpenGL.QGLWidget):
-    def __init__(self, parent=None):
+    def __init__(self, clacks_ip='localhost', clacks_port=8080, parent=None):
         super().__init__(parent)
 
         # Camera instance.
         self.camera = Camera()
+
+        self.ip_clacks = 'ws://{}:{}/websocket'.format(clacks_ip, clacks_port)
 
         # Handle to shader program (will be set later).
         self.shaders = None
@@ -307,8 +331,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         # Make sure the system is live.
         try:
-            self.ctrl = wscontroller.WSControllerBase(
-                'ws://127.0.0.1:8080/websocket')
+            self.ctrl = wscontroller.WSControllerBase(self.ip_clacks)
+
         except ConnectionRefusedError as err:
             print('Viewer: could not connect to Clacks')
             self.close()
@@ -620,9 +644,11 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
 
 def main():
+    param = parseCommandLine()
+
     # Boiler plate for Qt application.
     app = QtGui.QApplication(['Viewer 3D'])
-    widget = ViewerWidget()
+    widget = ViewerWidget(param.ip, param.port)
     widget.show()
     app.exec_()
 

@@ -101,7 +101,7 @@ viewer) like this:
    py.test
 
 To also test the OpenGL viewer you will need a GPU that supports OpenGL 3.x (if
-you bought it in the last 2 years GPU it probably does). 
+you bought it in the last 2 years it probably does). 
 
 .. code-block:: bash
 
