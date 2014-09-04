@@ -707,7 +707,7 @@ def test_controlParts_Factories_notmoving():
     ret_SVs = dict(zip(ret_objIDs, ret_SVs))
 
     # Ensure the position, velocity, and orientation of the spawned objects are
-    # correct. 
+    # correct.
     sv_2, sv_3 = [ret_SVs[_] for _ in spawnedIDs]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0)
     assert np.allclose(sv_2.position, pos_0)

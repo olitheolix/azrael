@@ -63,7 +63,7 @@ class ControllerCube(azrael.controller.ControllerBase):
         cmd_1 = parts.CmdBooster(partID=1, force=0.9)
         self.controlParts(self.objID, [cmd_0, cmd_1], [])
         time.sleep(0.1)
-            
+
         # Turn off the boosters and prevent further angular acceleration.
         cmd_0 = parts.CmdBooster(partID=0, force=0)
         cmd_1 = parts.CmdBooster(partID=1, force=0)

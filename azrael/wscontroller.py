@@ -82,7 +82,7 @@ class WSControllerBase(azrael.controller.ControllerBase):
         else:
             ok, ret = self.sendToClacks(config.cmd['set_id'] + objID)
         assert ok
-            
+
         # Retrieve the object ID. Fixme: if user has specified an ID via the
         # constructor then the Controller instance in Clacks must heed it.
         ok, self.objID = self.sendToClacks(config.cmd['get_id'])

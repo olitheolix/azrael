@@ -95,4 +95,3 @@ def test_custom_objid():
 
 if __name__ == '__main__':
     test_custom_objid()
-    

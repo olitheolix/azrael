@@ -329,7 +329,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.t_projectile = 'cube'.encode('utf8')
         ok, _ = self.ctrl.getTemplate(self.t_projectile)
         if not ok:
-            ok, _ = self.ctrl.addTemplate(self.t_projectile, cs, buf_vert, [], [])
+            ok, _ = self.ctrl.addTemplate(
+                self.t_projectile, cs, buf_vert, [], [])
             if not ok:
                 print('Could not add new object template')
                 self.close()

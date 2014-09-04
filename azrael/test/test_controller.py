@@ -383,6 +383,7 @@ def test_create_fetch_template(ctrl_type):
     stopAzrael(clerk, clacks)
     print('Test passed')
 
+
 @pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
 def test_controlParts(ctrl_type):
     """

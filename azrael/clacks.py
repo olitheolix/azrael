@@ -140,7 +140,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             msg = 'Controller already has an ID'.encode('utf8')
             self.write_message(msg, binary=True)
             return False, msg
-            
+
         if objID == b'\x00':
             # Constructor of WSControllerBase requests a new objID.
             objID = None
@@ -150,7 +150,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         self.controller.setupZMQ()
         self.controller.connectToClerk()
         return True, self.controller.objID
-        
+
     def on_close(self):
         """
         Shutdown Controller.
