@@ -37,9 +37,10 @@ import time
 import setproctitle
 import numpy as np
 
-import azrael.util as util
-import azrael.config as config
 import azrael.controller
+import azrael.util as util
+import azrael.parts as parts
+import azrael.config as config
 
 
 class ControllerCube(azrael.controller.ControllerBase):
@@ -55,27 +56,41 @@ class ControllerCube(azrael.controller.ControllerBase):
         self.connectToClerk()
 
         # Specify the toggle interval in seconds.
-        toggle_interval = 1
+        toggle_interval = 4.0
 
-        # The force point in all three directions.
-        force = 1 * np.ones(3)
-
-        # Apply the force.
-        self.setForce(self.objID, force)
+        # Fire the booster asymmetrically to get the object spinning.
+        cmd_0 = parts.CmdBooster(partID=0, force=1.0)
+        cmd_1 = parts.CmdBooster(partID=1, force=0.9)
+        self.controlParts(self.objID, [cmd_0, cmd_1], [])
+        time.sleep(0.1)
+            
+        # Turn off the boosters and prevent further angular acceleration.
+        cmd_0 = parts.CmdBooster(partID=0, force=0)
+        cmd_1 = parts.CmdBooster(partID=1, force=0)
+        self.controlParts(self.objID, [cmd_0, cmd_1], [])
         time.sleep(toggle_interval)
 
-        # Reverse the force and apply it again.
-        force = -force
-        self.setForce(self.objID, force)
-        time.sleep(2 * toggle_interval)
+        # Define the commands to spawn objects from factory.
+        cmd_2 = parts.CmdFactory(partID=0, exit_speed=0.1)
+        cmd_3 = parts.CmdFactory(partID=1, exit_speed=0.9)
 
-        # Periodically reverse and apply the force.
-        self.setForce(self.objID, np.zeros(3))
-        time.sleep(toggle_interval)
+        # Periodically apply a boost and spawn objects.
         while True:
-            force = -force
-            self.setForce(self.objID, force)
-            time.sleep(2 * toggle_interval)
+            # Turn the boosters on (symmetrically).
+            cmd_0 = parts.CmdBooster(partID=0, force=5)
+            cmd_1 = parts.CmdBooster(partID=1, force=5)
+            self.controlParts(self.objID, [cmd_0, cmd_1], [])
+            time.sleep(1)
+
+            # Turn the boosters off.
+            cmd_0 = parts.CmdBooster(partID=0, force=0)
+            cmd_1 = parts.CmdBooster(partID=1, force=0)
+            self.controlParts(self.objID, [cmd_0, cmd_1], [])
+            time.sleep(toggle_interval)
+
+            # Spawn objects.
+            self.controlParts(self.objID, [], [cmd_2, cmd_3])
+            time.sleep(toggle_interval)
 
 
 if __name__ == '__main__':
