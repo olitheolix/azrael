@@ -615,6 +615,21 @@ def test_controlParts_Boosters_notmoving():
     assert np.array_equal(ret_force, tot_force)
     assert np.array_equal(ret_torque, tot_torque)
 
+    # ------------------------------------------------------------------------
+    # Send an empty command. The total force and torque must not change, ie
+    # nothing must happen at all.
+    # ------------------------------------------------------------------------
+
+    # Send booster commands to Clerk.
+    ok, msg = clerk.controlParts(objID_1, [], [])
+    assert ok
+
+    # Query the torque and force from Azrael and verify they are correct.
+    ok, ret_force, ret_torque = btInterface.getForceAndTorque(objID_1)
+    assert ok
+    assert np.array_equal(ret_force, tot_force)
+    assert np.array_equal(ret_torque, tot_torque)
+
     # Clean up.
     killAzrael()
     print('Test passed')

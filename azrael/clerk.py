@@ -553,8 +553,10 @@ class Clerk(multiprocessing.Process):
             tot_torque += np.cross(force_pos, force)
             tot_central_force += force
 
-        # Apply the net- force and torque.
-        btInterface.setForceAndTorque(objID, tot_central_force, tot_torque)
+        # Apply the net- force and torque. Skip this step if booster commands
+        # were supplied.
+        if len(cmd_boosters) > 0:
+            btInterface.setForceAndTorque(objID, tot_central_force, tot_torque)
 
         # Let the factories spawn the objects.
         objIDs = []
