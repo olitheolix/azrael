@@ -22,6 +22,7 @@ offers and test purely the Clerk.
 """
 
 import sys
+import json
 import time
 import pytest
 import IPython
@@ -49,19 +50,18 @@ ipshell = IPython.embed
 class ControllerTest(controller.ControllerBase):
     def testSend(self, data):
         """
-        For testing only. Pass data verbatim to Clerk.
+        Pass data verbatim to Clerk.
+
+        For testing only.
+
+        This method allows to test Clerk's ability to handle corrupt and
+        invalid commands. Otherwise the codecs would probably pick up many
+        errors and never pass on the request to Clerk.
         """
-        assert isinstance(data, bytes)
         self.sock_cmd.send(data)
         data = self.sock_cmd.recv()
-        ok, msg = data[0], data[1:]
-        if not ok:
-            return False, 'Invalid response from Clerk'
-
-        if ok == 0:
-            return True, msg
-        else:
-            return False, msg
+        data = json.loads(data.decode('utf8'))
+        return data['ok'], data['payload']
 
 
 def test_connect():
@@ -92,9 +92,20 @@ def test_invalid():
     ctrl.setupZMQ()
     ctrl.connectToClerk()
 
-    # Send an invalid command and ensure Clerk returns an error code.
-    ok, ret = ctrl.testSend(config.cmd['invalid_cmd'])
-    assert (ok, ret) == (False, 'Invalid Command'.encode('utf8'))
+    # Send a corrupt JSON to Clerk.
+    msg = 'invalid_cmd'
+    ok, ret = ctrl.testSend(msg.encode('utf8'))
+    assert (ok, ret) == (False, 'Corrupt JSON')
+
+    # Send a malformatted JSON (it misses the 'payload' field).
+    msg = json.dumps({'cmd': 'blah'})
+    ok, ret = ctrl.testSend(msg.encode('utf8'))
+    assert (ok, ret) == (False, 'Invalid command format')
+
+    # Send an invalid command.
+    msg = json.dumps({'cmd': 'blah', 'payload': ''})
+    ok, ret = ctrl.testSend(msg.encode('utf8'))
+    assert (ok, ret) == (False, 'Invalid command <blah>')
 
     # Terminate the Clerk.
     clerk.terminate()
@@ -113,7 +124,7 @@ def test_ping():
 
     # Send the Ping command.
     ok, ret = ctrl.ping()
-    assert (ok, ret) == (True, 'pong clerk'.encode('utf8'))
+    assert (ok, ret) == (True, 'pong clerk')
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

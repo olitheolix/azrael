@@ -24,6 +24,7 @@ the same capabilities.
 
 import sys
 import time
+import json
 import logging
 import multiprocessing
 import tornado.websocket
@@ -72,7 +73,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         self.controller = None
 
     @typecheck
-    def on_message(self, msg: bytes):
+    def on_message(self, msg: str):
         """
         Parse client request and return reply.
 
@@ -89,44 +90,48 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         if len(msg) == 0:
             return
 
-        # Extract command word (always first byte) and the payload.
-        cmd, payload = msg[:1], msg[1:]
+        # fixme: error check
+        msg = json.loads(msg)
 
-        if cmd == config.cmd['ping_clacks']:
+        # Extract command word (always first byte) and the payload.
+        cmd, payload = msg['cmd'], msg['payload']
+
+        if cmd == 'ping_clacks':
             # Handle ourselves: return the pong.
-            msg = b'\x00' + 'pong clacks'.encode('utf8')
-            self.write_message(msg, binary=True)
-        elif cmd == config.cmd['get_id']:
+            msg = {'ok': True, 'payload': {'response': 'pong clacks'}}
+            msg = json.dumps(msg)
+            self.write_message(msg, binary=False)
+        elif cmd == 'get_id':
             # Handle ourselves: return the ID of the associated Controller.
-            msg = b'\x00' + self.controller.objID
-            self.write_message(msg, binary=True)
-        elif cmd == config.cmd['set_id']:
-            # Handle ourselves: create a controller with a specific ID.
-            ok, ret = self.createController(payload)
-            if ok:
-                ret = b'\x00' + ret
+            msg = {'ok': True,
+                   'payload': {'objID': list(self.controller.objID)}}
+            self.write_message(json.dumps(msg), binary=False)
+        elif cmd == 'set_id':
+            if payload['objID'] is None:
+                objID = None
             else:
-                ret = b'\x01' + ret
-            self.write_message(ret, binary=True)
+                objID = bytes(payload['objID'])
+            # Handle ourselves: create a controller with a specific ID.
+            ok, ret = self.createController(objID)
+            ret = {'ok': ok, 'payload': list(ret)}
+            self.write_message(json.dumps(ret), binary=False)
         else:
             if self.controller is None:
                 # Skip the command if no controller has been instantiated yet
                 # to actually process the command.
-                msg = 'No controller has been instantiated yet'
-                self.write_message(b'\x01' + msg.encode('utf8'))
+                msg = {'ok': False,
+                       'payload': 'No controller has been instantiated yet'}
+                msg = json.dumps(msg)
+                self.write_message(msg, binary=False)
                 return
 
             # Pass all other commands directly to the Controller which will
             # (probably) send it to Clerk for processing.
-            ok, ret = self.controller.sendToClerk(cmd + payload)
+            ok, ret = self.controller.sendToClerk(cmd, payload)
 
-            # Return the Controller's response to the Websocket client. Convert
-            # the Boolean `ok` to a byte for the wire transfer.
-            if ok:
-                ret = b'\x00' + ret
-            else:
-                ret = b'\x01' + ret
-            self.write_message(ret, binary=True)
+            ret = {'ok': ok, 'payload': ret}
+            ret = json.dumps(ret)
+            self.write_message(ret, binary=False)
 
     def createController(self, objID: bytes):
         """
@@ -148,7 +153,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             self.write_message(msg, binary=True)
             return False, msg
 
-        if objID == b'\x00':
+        if objID == None:
             # Constructor of WSControllerBase requests a new objID.
             objID = None
 

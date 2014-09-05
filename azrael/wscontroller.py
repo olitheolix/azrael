@@ -33,6 +33,7 @@ This client uses the Websocket library from
 https://github.com/liris/websocket-client
 """
 import time
+import json
 import IPython
 import websocket
 import numpy as np
@@ -78,16 +79,19 @@ class WSControllerBase(azrael.controller.ControllerBase):
         # Tell Clacks the object we want to connect to. If we do not have
         # a specific object an ID will be created for us automatically.
         if objID is None:
-            ok, ret = self.sendToClacks(config.cmd['set_id'] + b'\x00')
+            payload = {'objID': None}
         else:
-            ok, ret = self.sendToClacks(config.cmd['set_id'] + objID)
+            payload = {'objID': list(objID)}
+        ok, ret = self.sendToClacks('set_id', payload)
         assert ok
 
         # Retrieve the object ID. Fixme: if user has specified an ID via the
         # constructor then the Controller instance in Clacks must heed it.
-        ok, self.objID = self.sendToClacks(config.cmd['get_id'])
+        ok, tmp = self.sendToClacks('get_id', '')
 
-        # Sanity check: if an objID was specified then it must match.
+        self.objID = bytes(tmp['objID'])
+        
+        # Sanity check: if an custom objID was specified then it must match.
         if objID is not None:
             assert objID == self.objID
 
@@ -99,7 +103,7 @@ class WSControllerBase(azrael.controller.ControllerBase):
             self.ws.close()
 
     @typecheck
-    def sendToClerk(self, data: bytes):
+    def sendToClerk(self, cmd: str, data: str):
         """
         Proxy all communication via the Controller in Clerk.
 
@@ -109,10 +113,10 @@ class WSControllerBase(azrael.controller.ControllerBase):
         :param bytes data: this data will be sent to Clacks server.
         :return: see ``sendToClacks``.
         """
-        return self.sendToClacks(data)
+        return self.sendToClacks(cmd, data)
 
     @typecheck
-    def sendToClacks(self, data: bytes):
+    def sendToClacks(self, cmd: str, data):
         """
         Send ``data`` to Clacks, wait for reply and return its content.
 
@@ -121,19 +125,18 @@ class WSControllerBase(azrael.controller.ControllerBase):
         :rtype: (bool, bytes)
         """
         # Send payload to Clacks and wait for reply.
-        self.ws.send_binary(data)
-        ret = self.ws.recv()
+        d = {'cmd': cmd, 'payload': data}
+        self.ws.send(json.dumps(d))
 
-        # Check for errors.
-        assert isinstance(ret, bytes)
-        if len(ret) == 0:
-            return 'Invalid response from Clacks', False
+        ret = self.ws.recv()
+        ret = json.loads(ret)
+
+        # Check for errors. fixme
+        if not (('ok' in ret) and ('payload' in ret)):
+            return False, 'Invalid response from Clacks'
 
         # Extract the 'Ok' flag and return the rest verbatim.
-        if ret[0] == 0:
-            return True, ret[1:]
-        else:
-            return False, ret[1:]
+        return ret['ok'], ret['payload']
 
     def pingClerk(self):
         """
@@ -145,8 +148,8 @@ class WSControllerBase(azrael.controller.ControllerBase):
         :return: ok flag.
         :rtype: bool
         """
-        ok, msg = self.sendToClacks(config.cmd['ping_clerk'])
+        ok, msg = self.sendToClacks('ping_clerk', '')
         if not ok:
             return False
         else:
-            return (msg.decode('utf8') == 'pong clerk')
+            return (msg['response'] == 'pong clerk')

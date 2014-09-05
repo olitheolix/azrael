@@ -33,6 +33,7 @@ the same time and and on multiple machines.
 import os
 import sys
 import zmq
+import json
 import cytoolz
 import logging
 import pymongo
@@ -136,51 +137,51 @@ class Clerk(multiprocessing.Process):
         # administrative commands (eg. ping). This dictionary will be used
         # in the digest loop.
         self.codec = {
-            config.cmd['send_msg']: (
+            'send_msg': (
                 protocol.ToClerk_SendMsg_Decode,
                 self.sendMessage,
                 protocol.FromClerk_SendMsg_Encode),
-            config.cmd['recv_msg']: (
+            'recv_msg': (
                 protocol.ToClerk_RecvMsg_Decode,
                 self.recvMessage,
                 protocol.FromClerk_RecvMsg_Encode),
-            config.cmd['spawn']: (
+            'spawn': (
                 protocol.ToClerk_Spawn_Decode,
                 self.spawn,
                 protocol.FromClerk_Spawn_Encode),
-            config.cmd['get_statevar']: (
+            'get_statevar': (
                 protocol.ToClerk_GetStateVariable_Decode,
                 self.getStateVariables,
                 protocol.FromClerk_GetStateVariable_Encode),
-            config.cmd['get_geometry']: (
+            'get_geometry': (
                 protocol.ToClerk_GetGeometry_Decode,
                 self.getGeometry,
                 protocol.FromClerk_GetGeometry_Encode),
-            config.cmd['set_force']: (
+            'set_force': (
                 protocol.ToClerk_SetForce_Decode,
                 self.setForce,
                 protocol.FromClerk_SetForce_Encode),
-            config.cmd['suggest_pos']: (
+            'suggest_pos': (
                 protocol.ToClerk_SuggestPosition_Decode,
                 self.suggestPosition,
                 protocol.FromClerk_SuggestPosition_Encode),
-            config.cmd['get_template']: (
+            'get_template': (
                 protocol.ToClerk_GetTemplate_Decode,
                 self.getTemplate,
                 protocol.FromClerk_GetTemplate_Encode),
-            config.cmd['get_template_id']: (
+            'get_template_id': (
                 protocol.ToClerk_GetTemplateID_Decode,
                 self.getTemplateID,
                 protocol.FromClerk_GetTemplateID_Encode),
-            config.cmd['add_template']: (
+            'add_template': (
                 protocol.ToClerk_AddTemplate_Decode,
                 self.addTemplate,
                 protocol.FromClerk_AddTemplate_Encode),
-            config.cmd['get_all_objids']: (
+            'get_all_objids': (
                 protocol.ToClerk_GetAllObjectIDs_Decode,
                 self.getAllObjectIDs,
                 protocol.FromClerk_GetAllObjectIDs_Encode),
-            config.cmd['control_parts']: (
+            'control_parts': (
                 protocol.ToClerk_ControlParts_Decode,
                 self.controlParts,
                 protocol.FromClerk_ControlParts_Encode),
@@ -276,26 +277,38 @@ class Clerk(multiprocessing.Process):
                 continue
 
             # Read from ROUTER socket and perform sanity checks.
-            msg = self.sock_cmd.recv_multipart()
-            assert len(msg) == 3
-            self.last_addr, empty, msg = msg[0], msg[1], msg[2]
+            data = self.sock_cmd.recv_multipart()
+            assert len(data) == 3
+            self.last_addr, empty, msg = data[0], data[1], data[2]
             assert empty == b''
+            del data
 
+            # fixme: catch all JSON decoding errors
+            try:
+                msg = json.loads(msg.decode('utf8'))
+            except ValueError:
+                self.returnErr(self.last_addr, 'Corrupt JSON')
+                continue
+                
             # Sanity check: every message must contain at least a command byte.
-            if len(msg) == 0:
-                self.returnErr(self.last_addr, 'Did not receive command word.')
-                return
+            # fixme: check for presence of 'payload' as well
+            if not (('cmd' in msg) and ('payload' in msg)):
+                self.returnErr(self.last_addr, 'Invalid command format')
+                continue
 
             # Split message into command word and payload.
-            cmd, self.payload = msg[:1], msg[1:]
+            cmd, self.payload = msg['cmd'], msg['payload']
 
             # Determine the command.
-            if cmd == config.cmd['ping_clerk']:
+            if cmd == 'ping_clerk':
                 # Return a hard coded 'pong' message.
-                self.returnOk(self.last_addr, 'pong clerk'.encode('utf8'))
-            elif cmd == config.cmd['get_id']:
+                tmp = {'response': 'pong clerk'}
+                tmp = json.dumps(tmp)
+                self.returnOk(self.last_addr, tmp)
+            elif cmd == 'get_id':
                 # Return a new and unique Controller ID to client.
                 new_id = util.int2id(self.getUniqueID())
+                new_id = json.dumps({'objID': list(new_id)})
                 self.returnOk(self.last_addr, new_id)
             elif cmd in self.codec:
                 # Look up the decode-process-encode functions for the current
@@ -304,7 +317,7 @@ class Clerk(multiprocessing.Process):
                 self.runCommand(enc, proc, dec)
             else:
                 # Unknown command.
-                self.returnErr(self.last_addr, 'Invalid Command')
+                self.returnErr(self.last_addr, 'Invalid command <{}>'.format(cmd))
 
     @typecheck
     def getControllerClass(self, ctrl_name: bytes):
@@ -359,7 +372,7 @@ class Clerk(multiprocessing.Process):
         return new_id['cnt']
 
     @typecheck
-    def returnOk(self, addr, data: (bytes, str)=b''):
+    def returnOk(self, addr, data):
         """
         Send positive reply.
 
@@ -370,11 +383,12 @@ class Clerk(multiprocessing.Process):
         :return: None
         """
         # Convert the data to a byte string if necessary.
-        if isinstance(data, str):
-            data = data.encode('utf8')
+        data = json.loads(data)
+        ret = {'ok': True, 'payload': data}
+        ret = json.dumps(ret).encode('utf8')
 
         # The first \x00 bytes tells the receiver that everything is ok.
-        self.sock_cmd.send_multipart([addr, b'', b'\x00' + data])
+        self.sock_cmd.send_multipart([addr, b'', ret])
 
     def returnErr(self, addr, msg: (bytes, str)=b''):
         """
@@ -387,14 +401,12 @@ class Clerk(multiprocessing.Process):
         :return: None
         """
         # Convert the message to a byte string if it is not already.
-        if isinstance(msg, str):
-            msg = msg.encode('utf8')
-
+        ret = json.dumps({'ok': False, 'payload': msg}).encode('utf8')
         # For record keeping.
         self.logit.warning(msg)
 
         # The first \x01 bytes tells the receiver that something went wrong.
-        self.sock_cmd.send_multipart([addr, b'', b'\x01' + msg])
+        self.sock_cmd.send_multipart([addr, b'', ret])
 
     @typecheck
     def getTemplate(self, templateID: bytes):

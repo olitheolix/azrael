@@ -26,7 +26,7 @@ from azrael.protocol_json import loads, dumps
 
 
 @typecheck
-def fromstring(data: bytes):
+def fromstring(data):
     """
     Decode the part of command in ``data``.
 

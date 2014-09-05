@@ -58,24 +58,6 @@ def test_ping_clerk():
     print('Test passed')
 
 
-def test_timeout():
-    """
-    WS connection must timeout if it is inactive for too long.
-    """
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael('Websocket')
-
-    # Read from the WS. Since Clacks is not writing to that socket the call
-    # will block and must raise a timeout eventually.
-    with pytest.raises(websocket.WebSocketTimeoutException):
-        ctrl.sendToClacks(b'')
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
-
-    print('Test passed')
-
-
 def test_websocket_getID():
     """
     Query the controller ID associated with this WebSocket.
@@ -95,5 +77,4 @@ def test_websocket_getID():
 if __name__ == '__main__':
     test_ping_clacks()
     test_ping_clerk()
-    test_timeout()
     test_websocket_getID()

@@ -130,7 +130,7 @@ class ControllerBase(multiprocessing.Process):
         self.logit.debug('Controller for <{}> has shutdown'.format(self.objID))
 
     @typecheck
-    def sendToClerk(self, data: bytes):
+    def sendToClerk(self, cmd: str, data):
         """
         Send data to Clerk and return the response.
 
@@ -142,21 +142,28 @@ class ControllerBase(multiprocessing.Process):
         :return: (ok, data)
         :rtype: (bool, bytes)
         """
+        data = {'cmd': cmd, 'payload': data}
+
+        import json
+        data = json.dumps(data).encode('utf8')
+
         # Send data and wait for response.
         self.sock_cmd.send(data)
         ret = self.sock_cmd.recv()
 
+        ret = json.loads(ret.decode('utf8'))
+        
         # We should always receive at least one byte to indicate whether the
         # command was successful or not.
-        if len(ret) == 0:
+        if not (('ok' in ret) and ('payload' in ret)):
             return False, 'Invalid response from Clerk'
 
-        if ret[0] == 0:
+        if ret['ok'] is True:
             # Command was successful.
-            return True, ret[1:]
+            return True, ret['payload']
         else:
             # Command was unsuccessful.
-            return False, ret[1:]
+            return False, ret['payload']
 
     def connectToClerk(self):
         """
@@ -177,9 +184,9 @@ class ControllerBase(multiprocessing.Process):
         """
         if self.objID is None:
             # Ask Clerk for a new ID.
-            ok, ret = self.sendToClerk(config.cmd['get_id'])
+            ok, ret = self.sendToClerk('get_id', '')
             if ok:
-                self.objID = ret
+                self.objID = bytes(ret['objID'])
         return self.objID
 
     @typecheck
@@ -213,7 +220,7 @@ class ControllerBase(multiprocessing.Process):
 
         # Encode the arguments and send them to Clerk.
         ok, data = ToClerk_Encode(*args)
-        ok, data = self.sendToClerk(config.cmd[cmd] + data)
+        ok, data = self.sendToClerk(cmd, data)
         if not ok:
             # There was an error. The 'data' field will thus contain an error
             # message.
@@ -232,7 +239,8 @@ class ControllerBase(multiprocessing.Process):
         :return: (ok, data)
         :rtype: (bool, bytes) or (bool, str)
         """
-        return self.sendToClerk(config.cmd['ping_clerk'])
+        ok, ret = self.sendToClerk('ping_clerk', '')
+        return ok, ret['response']
 
     @typecheck
     def sendMessage(self, target: bytes, msg: bytes):

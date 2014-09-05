@@ -41,12 +41,10 @@ should make it possible to write clients in other languages.
 """
 
 import IPython
-import cytoolz
 import collections
 import numpy as np
 import azrael.parts as parts
 import azrael.config as config
-import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
@@ -76,17 +74,17 @@ def encodeJSON(data):
 
 @typecheck
 def ToClerk_GetTemplate_Encode(templateID: bytes):
-    d = {'templateID': list(templateID)}
-    return encodeJSON(d)
+    return encodeJSON({'templateID': templateID})
 
 
 @typecheck
-def ToClerk_GetTemplate_Decode(payload: bytes):
+def ToClerk_GetTemplate_Decode(payload):
     ok, data = decodeJSON(payload)
-    if not ok:
+    if ok:
+        return True, (bytes(data['templateID']), )
+    else:
         return False, data
-    return True, (bytes(data['templateID']), )
-
+    
 
 @typecheck
 def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
@@ -104,14 +102,10 @@ def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
 
 
 @typecheck
-def FromClerk_GetTemplate_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return False, data
-
+def FromClerk_GetTemplate_Decode(data):
     # Wrap the Booster- and Factory data into their dedicated named tuples.
-    boosters = [parts.fromstring(bytes(_)) for _ in data['boosters']]
-    factories = [parts.fromstring(bytes(_)) for _ in data['factories']]
+    boosters = [parts.fromstring(_) for _ in data['boosters']]
+    factories = [parts.fromstring(_) for _ in data['factories']]
 
     # Return the complete information in a named tuple.
     nt = collections.namedtuple('Template', 'cs geo boosters factories')
@@ -132,7 +126,7 @@ def ToClerk_GetTemplateID_Encode(objID: bytes):
 
 
 @typecheck
-def ToClerk_GetTemplateID_Decode(payload: bytes):
+def ToClerk_GetTemplateID_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return ok, data
@@ -145,10 +139,11 @@ def FromClerk_GetTemplateID_Encode(templateID: bytes):
 
 
 @typecheck
-def FromClerk_GetTemplateID_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return ok, data
+def FromClerk_GetTemplateID_Decode(payload):
+    data = payload
+#    ok, data = decodeJSON(payload)
+#    if not ok:
+#        return ok, data
     return True, bytes(data['templateID'])
 
 
@@ -173,14 +168,14 @@ def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray, geo:
 
 
 @typecheck
-def ToClerk_AddTemplate_Decode(payload: bytes):
+def ToClerk_AddTemplate_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
 
     # Wrap the Booster- and Factory data into their dedicated named tuples.
-    boosters = [parts.fromstring(bytes(_)) for _ in data['boosters']]
-    factories = [parts.fromstring(bytes(_)) for _ in data['factories']]
+    boosters = [parts.fromstring(_) for _ in data['boosters']]
+    factories = [parts.fromstring(_) for _ in data['factories']]
 
     # Convert template ID to a byte string.
     templateID = bytes(data['name'])
@@ -199,10 +194,11 @@ def FromClerk_AddTemplate_Encode(templateID: bytes):
 
 
 @typecheck
-def FromClerk_AddTemplate_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return False, data
+def FromClerk_AddTemplate_Decode(payload):
+#    ok, data = decodeJSON(payload)
+#    if not ok:
+#        return False, data
+    data = payload
     return True, bytes(data['templateID'])
 
 
@@ -217,7 +213,7 @@ def ToClerk_GetAllObjectIDs_Encode(dummyarg=None):
 
 
 @typecheck
-def ToClerk_GetAllObjectIDs_Decode(payload: bytes):
+def ToClerk_GetAllObjectIDs_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
@@ -230,10 +226,12 @@ def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
 
 
 @typecheck
-def FromClerk_GetAllObjectIDs_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return False, data
+def FromClerk_GetAllObjectIDs_Decode(payload):
+#    ok, data = decodeJSON(payload)
+#    if not ok:
+#        return False, data
+    data = payload
+
     
     # Partition the byte stream into individual object IDs.
     data = [bytes(_) for _ in data['objIDs']]
@@ -252,7 +250,7 @@ def ToClerk_SuggestPosition_Encode(objID: bytes, pos: np.ndarray):
 
 
 @typecheck
-def ToClerk_SuggestPosition_Decode(payload: bytes):
+def ToClerk_SuggestPosition_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
@@ -269,10 +267,12 @@ def FromClerk_SuggestPosition_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_SuggestPosition_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return False, data
+def FromClerk_SuggestPosition_Decode(payload):
+#    ok, data = decodeJSON(payload)
+#    if not ok:
+#        return False, data
+    data = payload
+
     return True, data
 
 
@@ -288,7 +288,7 @@ def ToClerk_SetForce_Encode(objID: bytes, force: np.ndarray, rpos: np.ndarray):
 
 
 @typecheck
-def ToClerk_SetForce_Decode(payload: bytes):
+def ToClerk_SetForce_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
@@ -306,7 +306,9 @@ def FromClerk_SetForce_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_SetForce_Decode(payload: bytes):
+def FromClerk_SetForce_Decode(payload):
+    data = payload
+
     return decodeJSON(payload)
 
 
@@ -321,7 +323,7 @@ def ToClerk_GetGeometry_Encode(templateID: bytes):
 
 
 @typecheck
-def ToClerk_GetGeometry_Decode(payload: bytes):
+def ToClerk_GetGeometry_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
@@ -334,10 +336,11 @@ def FromClerk_GetGeometry_Encode(geo: np.ndarray):
 
 
 @typecheck
-def FromClerk_GetGeometry_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return False, data
+def FromClerk_GetGeometry_Decode(payload):
+    data = payload
+#    ok, data = decodeJSON(payload)
+#    if not ok:
+#        return False, data
     return True, np.array(data['geo'], np.float64)
 
 
@@ -354,7 +357,7 @@ def ToClerk_GetStateVariable_Encode(objIDs: (list, tuple)):
 
 
 @typecheck
-def ToClerk_GetStateVariable_Decode(payload: bytes):
+def ToClerk_GetStateVariable_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
@@ -374,15 +377,16 @@ def FromClerk_GetStateVariable_Encode(
 
 
 @typecheck
-def FromClerk_GetStateVariable_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return False, data
+def FromClerk_GetStateVariable_Decode(payload):
+#    ok, data = decodeJSON(payload)
+#    if not ok:
+#        return False, data
 
+    data = payload
     data = data['data']
     out = {}
     for d in data:
-        out[bytes(d['objID'])] = bullet_data.fromjson(bytes(d['sv']))
+        out[bytes(d['objID'])] = bullet_data.fromjson(d['sv'])
     return True, out
 
 
@@ -399,7 +403,7 @@ def ToClerk_Spawn_Encode(
 
 
 @typecheck
-def ToClerk_Spawn_Decode(payload: bytes):
+def ToClerk_Spawn_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
@@ -409,7 +413,7 @@ def ToClerk_Spawn_Decode(payload: bytes):
     else:
         ctrl_name = bytes(data['name'])
     templateID = bytes(data['templateID'])
-    sv = bullet_data.fromjson(bytes(data['sv']))
+    sv = bullet_data.fromjson(data['sv'])
 
     if sv is None:
         return False, 'Invalid State Variable data'
@@ -423,10 +427,11 @@ def FromClerk_Spawn_Encode(objID: bytes):
 
 
 @typecheck
-def FromClerk_Spawn_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return False, data
+def FromClerk_Spawn_Decode(payload):
+#    ok, data = decodeJSON(payload)
+#    if not ok:
+#        return False, data
+    data = payload
 
     return True, bytes(data['objID'])
 
@@ -442,7 +447,7 @@ def ToClerk_RecvMsg_Encode(objID: bytes):
 
 
 @typecheck
-def ToClerk_RecvMsg_Decode(payload: bytes):
+def ToClerk_RecvMsg_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
@@ -456,10 +461,11 @@ def FromClerk_RecvMsg_Encode(objID: bytes, msg: bytes):
 
 
 @typecheck
-def FromClerk_RecvMsg_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return False, data
+def FromClerk_RecvMsg_Decode(payload):
+    data = payload
+#    ok, data = decodeJSON(payload)
+#    if not ok:
+#        return False, data
 
     # Unpack the message source. If this string is invalid (most likely empty)
     # then it means no message was available for us.
@@ -483,7 +489,7 @@ def ToClerk_SendMsg_Encode(srcID: bytes, dstID: bytes, msg: bytes):
 
 
 @typecheck
-def ToClerk_SendMsg_Decode(payload: bytes):
+def ToClerk_SendMsg_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
@@ -504,8 +510,9 @@ def FromClerk_SendMsg_Encode(dummyarg=None):
 
 
 @typecheck
-def FromClerk_SendMsg_Decode(payload: bytes):
-    return decodeJSON(payload)
+def FromClerk_SendMsg_Decode(payload):
+    data = payload
+    return True, payload
 
 
 # ---------------------------------------------------------------------------
@@ -534,14 +541,14 @@ def ToClerk_ControlParts_Encode(objID: bytes, cmds_b: list, cmds_f: list):
 
 
 @typecheck
-def ToClerk_ControlParts_Decode(payload: bytes):
+def ToClerk_ControlParts_Decode(payload):
     ok, data = decodeJSON(payload)
     if not ok:
         return False, data
 
     objID = bytes(data['objID'])
-    cmds_b = [parts.fromstring(bytes(_)) for _ in data['cmd_boosters']]
-    cmds_f = [parts.fromstring(bytes(_)) for _ in data['cmd_factories']]
+    cmds_b = [parts.fromstring(_) for _ in data['cmd_boosters']]
+    cmds_f = [parts.fromstring(_) for _ in data['cmd_factories']]
 
     return True, (objID, cmds_b, cmds_f)
 
@@ -552,8 +559,9 @@ def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
 
 
 @typecheck
-def FromClerk_ControlParts_Decode(payload: bytes):
-    ok, data = decodeJSON(payload)
-    if not ok:
-        return False, data
+def FromClerk_ControlParts_Decode(payload):
+#    ok, data = decodeJSON(payload)
+#    if not ok:
+#        return False, data
+    data = payload
     return True, [bytes(_) for _ in data['objIDs']]

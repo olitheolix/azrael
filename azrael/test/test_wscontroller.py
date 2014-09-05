@@ -64,7 +64,7 @@ def test_custom_objid():
 
     # Ping Clerk to verify the connection is live.
     ok, ret = ctrl_0.ping()
-    assert (ok, ret) == (True, 'pong clerk'.encode('utf8'))
+    assert (ok, ret) == (True, 'pong clerk')
 
     # We must be attached to objID=1 because no other object has been added to
     # the simulation.
@@ -77,7 +77,7 @@ def test_custom_objid():
 
     # Ping Clerk again to verify the connection is live.
     ok, ret = ctrl_1.ping()
-    assert (ok, ret) == (True, 'pong clerk'.encode('utf8'))
+    assert (ok, ret) == (True, 'pong clerk')
 
     # Verify that we use the requested ID.
     assert ctrl_1.objID == int2id(10)

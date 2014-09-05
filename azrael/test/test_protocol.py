@@ -16,6 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import json
 import pytest
 import IPython
 import numpy as np
@@ -61,7 +62,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Clerk --> Controller.
     # ----------------------------------------------------------------------
     ok, enc = protocol.FromClerk_GetTemplate_Encode(cs, geo, [b0, b1], [f0])
-    ok, dec = protocol.FromClerk_GetTemplate_Decode(enc)
+    ok, dec = protocol.FromClerk_GetTemplate_Decode(json.loads(enc))
     assert np.array_equal(dec.cs, cs)
     assert np.array_equal(dec.geo, geo)
     assert len(dec.boosters) == 2
@@ -111,7 +112,7 @@ def test_send_command():
     ok, data = enc(objIDs)
     assert ok
 
-    ok, ret_objIDs = dec(data)
+    ok, ret_objIDs = dec(json.loads(data))
     assert ok
     assert objIDs == ret_objIDs
 
@@ -127,7 +128,8 @@ def test_recvMsg():
 
     ok, aux = protocol.FromClerk_RecvMsg_Encode(sender, msg)
     assert ok
-    ok, out = protocol.FromClerk_RecvMsg_Decode(aux)
+
+    ok, out = protocol.FromClerk_RecvMsg_Decode(json.loads(aux))
     assert ok
 
 
@@ -143,7 +145,6 @@ def test_GetStateVariable():
     # ----------------------------------------------------------------------
     ok, out = protocol.ToClerk_GetStateVariable_Encode(objIDs)
     assert ok
-    assert isinstance(out, bytes)
 
     ok, (out_ids, ) = protocol.ToClerk_GetStateVariable_Decode(out)
     assert ok
@@ -155,8 +156,8 @@ def test_GetStateVariable():
     # ----------------------------------------------------------------------
     ok, out = protocol.FromClerk_GetStateVariable_Encode(objIDs, objs)
     assert ok
-    assert isinstance(out, bytes)
 
+    out = json.loads(out)
     ok, out_sv = protocol.FromClerk_GetStateVariable_Decode(out)
     assert ok
     assert len(out_sv) == 2

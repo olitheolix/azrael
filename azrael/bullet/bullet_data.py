@@ -154,7 +154,7 @@ class BulletData(_BulletData):
 
 
 @typecheck
-def fromjson(data: bytes):
+def fromjson(data):
     """
     Unpack the JSON encoded ``BulletData`` in ``data``.
     """

@@ -43,10 +43,10 @@ class AzraelEncoder(json.JSONEncoder):
 
 def dumps(data):
     # Convenience function for encoding ``data`` with custom JSON encoder.
-    return json.dumps(data, cls=AzraelEncoder).encode('utf8')
+    return json.dumps(data, cls=AzraelEncoder)
 
 
 @typecheck
-def loads(data: bytes):
+def loads(data: str):
     # Convenience function for decoding ``data``.
-    return json.loads(data.decode('utf8'))
+    return json.loads(data)

@@ -56,7 +56,7 @@ def test_ping():
     clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     ok, ret = ctrl.ping()
-    assert (ok, ret) == (True, 'pong clerk'.encode('utf8'))
+    assert (ok, ret) == (True, 'pong clerk')
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -77,6 +77,7 @@ def test_spawn_one_controller(ctrl_type):
     # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
     # the ID of the controller which must be '2' ('0' is invalid and '1' was
     # already given to the controller in the WS handler).
+    print('check')
     ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
@@ -485,7 +486,6 @@ def test_controlParts(ctrl_type):
 
     # Verify the position and velocity of the spawned objects is correct.
     sv_2, sv_3 = [ret_SVs[_] for _ in spawnIDs]
-    print(sv_2)
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
     assert np.allclose(sv_2.position, pos_0_out + pos_parent)
     assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
@@ -509,12 +509,12 @@ def test_controlParts(ctrl_type):
 
 
 if __name__ == '__main__':
-    test_controlParts('ZeroMQ')
+    test_spawn_one_controller('ZeroMQ')
     test_ping()
     test_get_template('ZeroMQ')
+    test_controlParts('ZeroMQ')
     test_getAllObjectIDs('ZeroMQ')
     test_create_fetch_template('ZeroMQ')
-    test_spawn_one_controller('ZeroMQ')
     test_spawn_and_talk_to_one_controller('ZeroMQ')
     test_spawn_and_get_state_variables('ZeroMQ')
     test_multi_controller('ZeroMQ')
