@@ -18,6 +18,9 @@
 """
 Python agnostic Codecs for data transmission to and from Clerk.
 
+The codecs in this module specify the JSON format between Clerk and the
+clients.
+
 The encoders and decoders in this module specify the binary protocol for
 sending/receiving messages to/from Clerk.
 
@@ -52,18 +55,37 @@ from azrael.protocol_json import loads, dumps
 ipshell = IPython.embed
 
 
+def decodeJSON(data):
+    # Decode JSON.
+    try:
+        d = loads(data)
+    except ValueError:
+        return False, 'JSON decoding error'
+    return True, d
+
+def encodeJSON(data):
+    try:
+        d = dumps(data)
+    except TypeError:
+        return False, 'JSON encoding error'
+    return True, d
+    
 # ---------------------------------------------------------------------------
 # GetTemplate
 # ---------------------------------------------------------------------------
 
 @typecheck
 def ToClerk_GetTemplate_Encode(templateID: bytes):
-    return True, templateID
+    d = {'templateID': list(templateID)}
+    return encodeJSON(d)
 
 
 @typecheck
 def ToClerk_GetTemplate_Decode(payload: bytes):
-    return True, (payload, )
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
+    return True, (bytes(data['templateID']), )
 
 
 @typecheck
@@ -78,16 +100,14 @@ def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
     d = {'cs': cs, 'geo': geo,
          'boosters': [_.tostring() for _ in boosters],
          'factories': [_.tostring() for _ in factories]}
-    return True, dumps(d)
+    return encodeJSON(d)
 
 
 @typecheck
 def FromClerk_GetTemplate_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
     # Wrap the Booster- and Factory data into their dedicated named tuples.
     boosters = [parts.fromstring(bytes(_)) for _ in data['boosters']]
@@ -108,22 +128,28 @@ def FromClerk_GetTemplate_Decode(payload: bytes):
 
 @typecheck
 def ToClerk_GetTemplateID_Encode(objID: bytes):
-    return True, objID
+    return encodeJSON({'objID': list(objID)})
 
 
 @typecheck
 def ToClerk_GetTemplateID_Decode(payload: bytes):
-    return True, (payload, )
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return ok, data
+    return True, (bytes(data['objID']), )
 
 
 @typecheck
 def FromClerk_GetTemplateID_Encode(templateID: bytes):
-    return True, templateID
+    return encodeJSON({'templateID': list(templateID)})
 
 
 @typecheck
 def FromClerk_GetTemplateID_Decode(payload: bytes):
-    return True, payload
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return ok, data
+    return True, bytes(data['templateID'])
 
 
 # ---------------------------------------------------------------------------
@@ -143,20 +169,14 @@ def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray, geo:
          'boosters': [_.tostring() for _ in boosters],
          'factories': [_.tostring() for _ in factories]}
 
-    try:
-        d = dumps(d)
-    except TypeError:
-        return False, 'JSON encoding error'
-    return True, d
+    return encodeJSON(d)
 
 
 @typecheck
 def ToClerk_AddTemplate_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
     # Wrap the Booster- and Factory data into their dedicated named tuples.
     boosters = [parts.fromstring(bytes(_)) for _ in data['boosters']]
@@ -175,12 +195,15 @@ def ToClerk_AddTemplate_Decode(payload: bytes):
 
 @typecheck
 def FromClerk_AddTemplate_Encode(templateID: bytes):
-    return True, templateID
+    return encodeJSON({'templateID': list(templateID)})
 
 
 @typecheck
 def FromClerk_AddTemplate_Decode(payload: bytes):
-    return True, payload
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
+    return True, bytes(data['templateID'])
 
 
 # ---------------------------------------------------------------------------
@@ -190,25 +213,30 @@ def FromClerk_AddTemplate_Decode(payload: bytes):
 
 @typecheck
 def ToClerk_GetAllObjectIDs_Encode(dummyarg=None):
-    return True, b''
+    return encodeJSON({})
 
 
 @typecheck
 def ToClerk_GetAllObjectIDs_Decode(payload: bytes):
-    return True, b''
-
-
-@typecheck
-def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
-    # Join all object IDs into a single byte stream.
-    data = b''.join(data)
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
     return True, data
 
 
 @typecheck
+def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
+    return encodeJSON({'objIDs': [list(_) for _ in data]})
+
+
+@typecheck
 def FromClerk_GetAllObjectIDs_Decode(payload: bytes):
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
+    
     # Partition the byte stream into individual object IDs.
-    data = [bytes(_) for _ in cytoolz.partition(config.LEN_ID, payload)]
+    data = [bytes(_) for _ in data['objIDs']]
     return True, data
 
 
@@ -220,22 +248,14 @@ def FromClerk_GetAllObjectIDs_Decode(payload: bytes):
 @typecheck
 def ToClerk_SuggestPosition_Encode(objID: bytes, pos: np.ndarray):
     d = {'objID': objID, 'pos': pos}
-
-    # Encode data as JSON.
-    try:
-        d = dumps(d)
-    except TypeError:
-        return False, 'JSON encoding error'
-    return True, d
+    return encodeJSON(d)
 
 
 @typecheck
 def ToClerk_SuggestPosition_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
     # Convert to native Python types and return to caller.
     objID = bytes(data['objID'])
@@ -244,13 +264,16 @@ def ToClerk_SuggestPosition_Decode(payload: bytes):
 
 
 @typecheck
-def FromClerk_SuggestPosition_Encode(ret):
-    return True, ret.encode('utf8')
+def FromClerk_SuggestPosition_Encode(dummyarg):
+    return encodeJSON({})
 
 
 @typecheck
 def FromClerk_SuggestPosition_Decode(payload: bytes):
-    return True, payload
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
+    return True, data
 
 
 # ---------------------------------------------------------------------------
@@ -261,22 +284,14 @@ def FromClerk_SuggestPosition_Decode(payload: bytes):
 @typecheck
 def ToClerk_SetForce_Encode(objID: bytes, force: np.ndarray, rpos: np.ndarray):
     d = {'objID': objID, 'rel_pos': rpos, 'force': force}
-
-    # Encode data as JSON.
-    try:
-        d = dumps(d)
-    except TypeError:
-        return False, 'JSON encoding error'
-    return True, d
+    return encodeJSON(d)
 
 
 @typecheck
 def ToClerk_SetForce_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
     # Convert to native Python types and return to caller.
     objID = bytes(data['objID'])
@@ -286,13 +301,13 @@ def ToClerk_SetForce_Decode(payload: bytes):
 
 
 @typecheck
-def FromClerk_SetForce_Encode(ret):
-    return True, ret.encode('utf8')
+def FromClerk_SetForce_Encode(dummyarg):
+    return encodeJSON({})
 
 
 @typecheck
 def FromClerk_SetForce_Decode(payload: bytes):
-    return True, payload
+    return decodeJSON(payload)
 
 
 # ---------------------------------------------------------------------------
@@ -301,23 +316,29 @@ def FromClerk_SetForce_Decode(payload: bytes):
 
 
 @typecheck
-def ToClerk_GetGeometry_Encode(target: bytes):
-    return True, target
+def ToClerk_GetGeometry_Encode(templateID: bytes):
+    return encodeJSON({'templateID': list(templateID)})
 
 
 @typecheck
 def ToClerk_GetGeometry_Decode(payload: bytes):
-    return True, (payload, )
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
+    return True, (bytes(data['templateID']), )
 
 
 @typecheck
 def FromClerk_GetGeometry_Encode(geo: np.ndarray):
-    return True, geo.tostring()
+    return encodeJSON({'geo': geo.tolist()})
 
 
 @typecheck
 def FromClerk_GetGeometry_Decode(payload: bytes):
-    return True, np.fromstring(payload)
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
+    return True, np.array(data['geo'], np.float64)
 
 
 # ---------------------------------------------------------------------------
@@ -329,19 +350,16 @@ def FromClerk_GetGeometry_Decode(payload: bytes):
 def ToClerk_GetStateVariable_Encode(objIDs: (list, tuple)):
     for objID in objIDs:
         assert isinstance(objID, bytes)
-    d = {'objids': objIDs}
-    return True, dumps(d)
+    return encodeJSON({'objIDs': [list(_) for _ in objIDs]})
 
 
 @typecheck
 def ToClerk_GetStateVariable_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
-    objIDs = [bytes(_) for _ in data['objids']]
+    objIDs = [bytes(_) for _ in data['objIDs']]
     return True, (objIDs, )
 
 
@@ -350,21 +368,22 @@ def FromClerk_GetStateVariable_Encode(
         objIDs: (list, tuple), sv: (list, tuple)):
     for _ in sv:
         assert isinstance(_, bullet_data.BulletData)
-    d = {'objids': objIDs, 'sv': [_.tojson() for _ in sv]}
-    return True, dumps(d)
+    d = {'data': [{'objID': objID, 'sv': sv.tojson()}
+                  for (objID, sv) in zip(objIDs, sv)]}
+    return encodeJSON(d)
 
 
 @typecheck
 def FromClerk_GetStateVariable_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
-    objIDs = [bytes(_) for _ in data['objids']]
-    sv = [bullet_data.fromjson(bytes(_)) for _ in data['sv']]
-    return True, dict(zip(objIDs, sv))
+    data = data['data']
+    out = {}
+    for d in data:
+        out[bytes(d['objID'])] = bullet_data.fromjson(bytes(d['sv']))
+    return True, out
 
 
 # ---------------------------------------------------------------------------
@@ -373,15 +392,18 @@ def FromClerk_GetStateVariable_Decode(payload: bytes):
 
 
 @typecheck
-def ToClerk_Spawn_Encode(name: bytes, templateID: bytes, sv:
-                         bullet_data.BulletData):
+def ToClerk_Spawn_Encode(
+        name: bytes, templateID: bytes, sv: bullet_data.BulletData):
     d = {'name': name, 'templateID': templateID, 'sv': sv.tojson()}
-    return True, dumps(d)
+    return encodeJSON(d)
 
 
 @typecheck
 def ToClerk_Spawn_Decode(payload: bytes):
-    data = loads(payload)
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
+
     if data['name'] is None:
         ctrl_name = None
     else:
@@ -397,12 +419,16 @@ def ToClerk_Spawn_Decode(payload: bytes):
 
 @typecheck
 def FromClerk_Spawn_Encode(objID: bytes):
-    return True, objID
+    return encodeJSON({'objID': list(objID)})
 
 
 @typecheck
 def FromClerk_Spawn_Decode(payload: bytes):
-    return True, payload
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
+
+    return True, bytes(data['objID'])
 
 
 # ---------------------------------------------------------------------------
@@ -412,45 +438,33 @@ def FromClerk_Spawn_Decode(payload: bytes):
 
 @typecheck
 def ToClerk_RecvMsg_Encode(objID: bytes):
-    return True, objID
+    return encodeJSON({'objID': list(objID)})
 
 
 @typecheck
 def ToClerk_RecvMsg_Decode(payload: bytes):
-    # Check if any messages for a particular controller ID are
-    # pending. Return the first such message if there are any and
-    # remove them from the queue. The controller ID is the only
-    # payload.
-    obj_id = payload[:config.LEN_ID]
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
-    if len(obj_id) != config.LEN_ID:
-        return False, 'Insufficient arguments'
-    else:
-        return True, (obj_id, )
+    return True, (bytes(data['objID']), )
 
 
 @typecheck
 def FromClerk_RecvMsg_Encode(objID: bytes, msg: bytes):
-    d = {'objID': objID, 'msg': msg}
-    # Encode data as JSON.
-    try:
-        d = dumps(d)
-    except TypeError:
-        return False, 'JSON encoding error'
-    return True, d
+    return encodeJSON({'objID': list(objID), 'msg': list(msg)})
 
 
 @typecheck
 def FromClerk_RecvMsg_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
     # Unpack the message source. If this string is invalid (most likely empty)
     # then it means no message was available for us.
     src = bytes(data['objID'])
+    msg = bytes(data['msg'])
     if len(src) < config.LEN_ID:
         return True, (None, b'')
     else:
@@ -463,23 +477,16 @@ def FromClerk_RecvMsg_Decode(payload: bytes):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_SendMsg_Encode(objID: bytes, target: bytes, msg: bytes):
-    d = {'src': objID, 'dst': target, 'msg': msg}
-    # Encode data as JSON.
-    try:
-        d = dumps(d)
-    except TypeError:
-        return False, 'JSON encoding error'
-    return True, d
+def ToClerk_SendMsg_Encode(srcID: bytes, dstID: bytes, msg: bytes):
+    return encodeJSON({'src': list(srcID), 'dst': list(dstID),
+                       'msg': list(msg)})
 
 
 @typecheck
 def ToClerk_SendMsg_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
     src = bytes(data['src'])
     dst = bytes(data['dst'])
@@ -493,12 +500,12 @@ def ToClerk_SendMsg_Decode(payload: bytes):
 
 @typecheck
 def FromClerk_SendMsg_Encode(dummyarg=None):
-    return True, b''
+    return encodeJSON({})
 
 
 @typecheck
 def FromClerk_SendMsg_Decode(payload: bytes):
-    return True, tuple()
+    return decodeJSON(payload)
 
 
 # ---------------------------------------------------------------------------
@@ -522,20 +529,15 @@ def ToClerk_ControlParts_Encode(objID: bytes, cmds_b: list, cmds_f: list):
     d = {'objID': objID,
          'cmd_boosters': [_.tostring() for _ in cmds_b],
          'cmd_factories': [_.tostring() for _ in cmds_f]}
-    try:
-        d = dumps(d)
-    except TypeError:
-        return False, 'JSON encoding error'
-    return True, d
+
+    return encodeJSON(d)
 
 
 @typecheck
 def ToClerk_ControlParts_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
 
     objID = bytes(data['objID'])
     cmds_b = [parts.fromstring(bytes(_)) for _ in data['cmd_boosters']]
@@ -546,20 +548,12 @@ def ToClerk_ControlParts_Decode(payload: bytes):
 
 @typecheck
 def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
-    d = {'objIDs': objIDs}
-    # Encode data as JSON.
-    try:
-        d = dumps(d)
-    except TypeError:
-        return False, 'JSON encoding error'
-    return True, d
+    return encodeJSON({'objIDs': objIDs})
 
 
 @typecheck
 def FromClerk_ControlParts_Decode(payload: bytes):
-    # Decode JSON.
-    try:
-        data = loads(payload)
-    except ValueError:
-        return False, 'JSON decoding error'
+    ok, data = decodeJSON(payload)
+    if not ok:
+        return False, data
     return True, [bytes(_) for _ in data['objIDs']]
