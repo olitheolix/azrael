@@ -37,9 +37,9 @@ import argparse
 import subprocess
 import model_import
 import azrael.clerk
+import azrael.clacks
 import azrael.parts as parts
 import azrael.config as config
-import azrael.clacks as clacks
 import azrael.leonard as leonard
 import azrael.wscontroller as wscontroller
 import azrael.bullet.btInterface as btInterface
@@ -61,6 +61,8 @@ def parseCommandLine():
     # Add the command line options.
     padd('--noviewer', action='store_true', default=False,
          help='Do not spawn a viewer')
+    padd('--noinit', action='store_true', default=False,
+         help='Do not load any models')
     padd('--port', metavar='port', type=int, default=8080,
          help='Port number')
     padd('--loglevel', type=int, metavar='level', default=1,
@@ -219,20 +221,21 @@ def main():
         leo.start()
         clerk = azrael.clerk.Clerk(reset=True)
         clerk.start()
-        server = clacks.ClacksServer()
-        server.start()
+        clacks = azrael.clacks.ClacksServer()
+        clacks.start()
         btInterface.initSVDB(reset=True)
 
-        # Add a model to the center. The sphere is included. You can get the
-        # Vatican model here:
-        # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
-        # uid=3290&count=count
-        model_name = (1, 'viewer/models/sphere/sphere.obj')
-        #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
-        loadGroundModel(*model_name)
-
-        # Define additional templates.
-        defineBoosterCube()
+        if not param.noinit:
+            # Add a model to the center. The sphere is included. You can get the
+            # Vatican model here:
+            # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
+            # uid=3290&count=count
+            model_name = (1, 'viewer/models/sphere/sphere.obj')
+            #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
+            loadGroundModel(*model_name)
+    
+            # Define additional templates.
+            defineBoosterCube()
         print('Azrael now live')
     else:
         print('Azrael already live')
@@ -250,10 +253,10 @@ def main():
     if not is_azrael_live:
         # Shutdown Azrael.
         clerk.terminate()
-        server.terminate()
+        clacks.terminate()
         leo.terminate()
         clerk.join()
-        server.join()
+        clacks.join()
         leo.join()
 
     print('Clean shutdown')

@@ -238,12 +238,12 @@ class Clerk(multiprocessing.Process):
             # Error during decoding.
             self.returnErr(self.last_addr, out)
         else:
-            # Decoding was successfull. Pass all returned parameters directly
+            # Decoding was successful. Pass all returned parameters directly
             # to the processing method.
             ok, out = fun_process(*out)
 
             if ok:
-                # Encode the out into a byte stream and return it.
+                # Encode the output into a byte stream and return it.
                 ok, out = fun_encode(*out)
                 self.returnOk(self.last_addr, out)
             else:
