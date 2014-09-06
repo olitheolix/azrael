@@ -42,11 +42,11 @@ import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
+import azrael.protocol_json as json
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
-
 
 class ControllerBase(multiprocessing.Process):
     """
@@ -130,7 +130,7 @@ class ControllerBase(multiprocessing.Process):
         self.logit.debug('Controller for <{}> has shutdown'.format(self.objID))
 
     @typecheck
-    def sendToClerk(self, cmd: str, data):
+    def sendToClerk(self, cmd: str, data: dict):
         """
         Send data to Clerk and return the response.
 
@@ -138,32 +138,31 @@ class ControllerBase(multiprocessing.Process):
         the response to determine whether the request succeeded or not. This is
         returned as the first argument in the 'ok' flag.
 
-        :param bytes data: this will be sent verbatim to Clerk.
+        .. note::
+           JSON must be able to serialise the content of ``data``.
+
+        :param str cmd: command word
+        :param dict data: payload (must be JSON encodeable)
         :return: (ok, data)
-        :rtype: (bool, bytes)
+        :rtype: (bool, dict)
         """
         data = {'cmd': cmd, 'payload': data}
-
-        import json
-        data = json.dumps(data).encode('utf8')
+        data = json.dumps(data)
 
         # Send data and wait for response.
-        self.sock_cmd.send(data)
+        self.sock_cmd.send(data.encode('utf8'))
         ret = self.sock_cmd.recv()
+        ret = ret.decode('utf8')
 
-        ret = json.loads(ret.decode('utf8'))
+        # Decode the response.
+        ret = json.loads(ret)
         
-        # We should always receive at least one byte to indicate whether the
-        # command was successful or not.
+        # Returned JSON must always contain an 'ok' and 'payload' field.
         if not (('ok' in ret) and ('payload' in ret)):
             return False, 'Invalid response from Clerk'
 
-        if ret['ok'] is True:
-            # Command was successful.
-            return True, ret['payload']
-        else:
-            # Command was unsuccessful.
-            return False, ret['payload']
+        # Extract the 'Ok' flag and return the rest verbatim.
+        return ret['ok'], ret['payload']
 
     def connectToClerk(self):
         """
@@ -184,7 +183,7 @@ class ControllerBase(multiprocessing.Process):
         """
         if self.objID is None:
             # Ask Clerk for a new ID.
-            ok, ret = self.sendToClerk('get_id', '')
+            ok, ret = self.sendToClerk('get_id', None)
             if ok:
                 self.objID = bytes(ret['objID'])
         return self.objID
@@ -212,7 +211,6 @@ class ControllerBase(multiprocessing.Process):
         :rtype: (bool, bytes) or (bool, str)
         """
         # Sanity checks.
-        assert cmd in config.cmd
         assert cmd in self.codec
 
         # Convenience.
@@ -239,7 +237,7 @@ class ControllerBase(multiprocessing.Process):
         :return: (ok, data)
         :rtype: (bool, bytes) or (bool, str)
         """
-        ok, ret = self.sendToClerk('ping_clerk', '')
+        ok, ret = self.sendToClerk('ping_clerk', None)
         return ok, ret['response']
 
     @typecheck

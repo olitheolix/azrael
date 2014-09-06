@@ -33,7 +33,6 @@ the same time and and on multiple machines.
 import os
 import sys
 import zmq
-import json
 import cytoolz
 import logging
 import pymongo
@@ -41,6 +40,7 @@ import setproctitle
 import multiprocessing
 
 import numpy as np
+import azrael.protocol_json as json
 
 import azrael.util as util
 import azrael.parts as parts
@@ -281,38 +281,36 @@ class Clerk(multiprocessing.Process):
             assert len(data) == 3
             self.last_addr, empty, msg = data[0], data[1], data[2]
             assert empty == b''
-            del data
+            del data, empty
 
-            # fixme: catch all JSON decoding errors
+            # Decode the data.
             try:
                 msg = json.loads(msg.decode('utf8'))
-            except ValueError:
-                self.returnErr(self.last_addr, 'Corrupt JSON')
+            except (ValueError, TypeError) as err:
+                self.returnErr(self.last_addr, 'JSON decoding error')
                 continue
                 
             # Sanity check: every message must contain at least a command byte.
-            # fixme: check for presence of 'payload' as well
             if not (('cmd' in msg) and ('payload' in msg)):
                 self.returnErr(self.last_addr, 'Invalid command format')
                 continue
 
-            # Split message into command word and payload.
+            # Extract the command word and payload.
             cmd, self.payload = msg['cmd'], msg['payload']
 
-            # Determine the command.
+            # The command word determines the action...
             if cmd == 'ping_clerk':
-                # Return a hard coded 'pong' message.
+                # Return a 'pong'.
                 tmp = {'response': 'pong clerk'}
-                tmp = json.dumps(tmp)
                 self.returnOk(self.last_addr, tmp)
             elif cmd == 'get_id':
-                # Return a new and unique Controller ID to client.
+                # Return a new and unique Controller ID.
                 new_id = util.int2id(self.getUniqueID())
-                new_id = json.dumps({'objID': list(new_id)})
+                new_id = {'objID': list(new_id)}
                 self.returnOk(self.last_addr, new_id)
             elif cmd in self.codec:
                 # Look up the decode-process-encode functions for the current
-                # command and execute them.
+                # command. Then execute them.
                 enc, proc, dec = self.codec[cmd]
                 self.runCommand(enc, proc, dec)
             else:
@@ -372,9 +370,9 @@ class Clerk(multiprocessing.Process):
         return new_id['cnt']
 
     @typecheck
-    def returnOk(self, addr, data):
+    def returnOk(self, addr, data: dict):
         """
-        Send positive reply.
+        Send affirmative reply.
 
         This is a convenience method to enhance readability.
 
@@ -382,14 +380,14 @@ class Clerk(multiprocessing.Process):
         :param bytes data: arbitrary data that should be passed back as well.
         :return: None
         """
-        # Convert the data to a byte string if necessary.
-        data = json.loads(data)
+        # Wrap the ``data`` into a proper protocol frame and transmit it.
         ret = {'ok': True, 'payload': data}
-        ret = json.dumps(ret).encode('utf8')
 
-        # The first \x00 bytes tells the receiver that everything is ok.
+        # fixme: catch json errors
+        ret = json.dumps(ret).encode('utf8')
         self.sock_cmd.send_multipart([addr, b'', ret])
 
+    @typecheck
     def returnErr(self, addr, msg: (bytes, str)=b''):
         """
         Send negative reply and log a warning message.
@@ -400,8 +398,10 @@ class Clerk(multiprocessing.Process):
         :param bytes msg: message to pass along.
         :return: None
         """
+        # fixme: catch JSON errors
         # Convert the message to a byte string if it is not already.
         ret = json.dumps({'ok': False, 'payload': msg}).encode('utf8')
+
         # For record keeping.
         self.logit.warning(msg)
 

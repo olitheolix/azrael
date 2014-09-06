@@ -77,7 +77,6 @@ def test_spawn_one_controller(ctrl_type):
     # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
     # the ID of the controller which must be '2' ('0' is invalid and '1' was
     # already given to the controller in the WS handler).
-    print('check')
     ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
@@ -135,8 +134,6 @@ def test_spawn_and_talk_to_one_controller(ctrl_type):
     # The source must be the newly created process and the response must be the
     # original messages prefixed with the controller ID.
     assert src == ctrl_id
-    if (ctrl_id + msg_orig) != msg_ret:
-        print(ok, src, msg_ret)
     assert ctrl_id + msg_orig == msg_ret
 
     # Shutdown the services.
@@ -509,12 +506,12 @@ def test_controlParts(ctrl_type):
 
 
 if __name__ == '__main__':
-    test_spawn_one_controller('ZeroMQ')
+    test_spawn_one_controller('Websocket')
     test_ping()
-    test_get_template('ZeroMQ')
-    test_controlParts('ZeroMQ')
-    test_getAllObjectIDs('ZeroMQ')
-    test_create_fetch_template('ZeroMQ')
-    test_spawn_and_talk_to_one_controller('ZeroMQ')
-    test_spawn_and_get_state_variables('ZeroMQ')
-    test_multi_controller('ZeroMQ')
+    test_get_template('Websocket')
+    test_controlParts('Websocket')
+    test_getAllObjectIDs('Websocket')
+    test_create_fetch_template('Websocket')
+    test_spawn_and_talk_to_one_controller('Websocket')
+    test_spawn_and_get_state_variables('Websocket')
+    test_multi_controller('Websocket')

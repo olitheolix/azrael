@@ -31,7 +31,6 @@ import azrael.bullet.bullet_data as bullet_data
 
 from collections import namedtuple
 from azrael.typecheck import typecheck
-from azrael.protocol_json import loads, dumps
 
 ipshell = IPython.embed
 

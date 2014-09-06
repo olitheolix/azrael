@@ -33,13 +33,13 @@ This client uses the Websocket library from
 https://github.com/liris/websocket-client
 """
 import time
-import json
 import IPython
 import websocket
 import numpy as np
 
 import azrael.controller
 import azrael.config as config
+import azrael.protocol_json as json
 
 from azrael.typecheck import typecheck
 
@@ -87,11 +87,11 @@ class WSControllerBase(azrael.controller.ControllerBase):
 
         # Retrieve the object ID. Fixme: if user has specified an ID via the
         # constructor then the Controller instance in Clacks must heed it.
-        ok, tmp = self.sendToClacks('get_id', '')
+        ok, tmp = self.sendToClacks('get_id', None)
 
         self.objID = bytes(tmp['objID'])
         
-        # Sanity check: if an custom objID was specified then it must match.
+        # Sanity check: if a custom objID was specified then it must match.
         if objID is not None:
             assert objID == self.objID
 
@@ -103,35 +103,42 @@ class WSControllerBase(azrael.controller.ControllerBase):
             self.ws.close()
 
     @typecheck
-    def sendToClerk(self, cmd: str, data: str):
+    def sendToClerk(self, cmd: str, data: dict):
         """
         Proxy all communication via the Controller in Clerk.
 
         This method replaces the original ``sendToClerk`` method and relays the
         data to ``sendToClacks`` instead.
 
-        :param bytes data: this data will be sent to Clacks server.
+        :param str cmd: command word
+        :param dict data: payload (must be JSON encodeable)
         :return: see ``sendToClacks``.
         """
         return self.sendToClacks(cmd, data)
 
     @typecheck
-    def sendToClacks(self, cmd: str, data):
+    def sendToClacks(self, cmd: str, data: dict):
         """
         Send ``data`` to Clacks, wait for reply and return its content.
 
-        :param bytes data: the payload
+        .. note::
+           JSON must be able to serialise the content of ``data``.
+
+        :param str cmd: command word
+        :param dict data: payload (must be JSON encodeable)
         :return: (ok, data)
-        :rtype: (bool, bytes)
+        :rtype: (bool, dict)
         """
         # Send payload to Clacks and wait for reply.
-        d = {'cmd': cmd, 'payload': data}
-        self.ws.send(json.dumps(d))
+        data = {'cmd': cmd, 'payload': data}
+        data = json.dumps(data)
+
+        self.ws.send(data)
 
         ret = self.ws.recv()
         ret = json.loads(ret)
 
-        # Check for errors. fixme
+        # Returned JSON must always contain an 'ok' and 'payload' field.
         if not (('ok' in ret) and ('payload' in ret)):
             return False, 'Invalid response from Clacks'
 
@@ -148,7 +155,7 @@ class WSControllerBase(azrael.controller.ControllerBase):
         :return: ok flag.
         :rtype: bool
         """
-        ok, msg = self.sendToClacks('ping_clerk', '')
+        ok, msg = self.sendToClacks('ping_clerk', None)
         if not ok:
             return False
         else:

@@ -24,7 +24,6 @@ the same capabilities.
 
 import sys
 import time
-import json
 import logging
 import multiprocessing
 import tornado.websocket
@@ -35,6 +34,7 @@ import numpy as np
 
 import azrael.util as util
 import azrael.config as config
+import azrael.protocol_json as json
 import azrael.controller as controller
 
 from azrael.typecheck import typecheck
@@ -90,8 +90,16 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         if len(msg) == 0:
             return
 
-        # fixme: error check
-        msg = json.loads(msg)
+        # fixme: implement a returnOK and returnErr function and use it in
+        # if/else branches below, as well as in the except branch.
+
+        try:
+            msg = json.loads(msg)
+        except (TypeError, ValueError) as err:
+            msg = {'ok': False, 'payload': '', 'msg': 'JSON decoding error'}
+            msg = json.dumps(msg)
+            self.write_message(msg, binary=False)
+            return
 
         # Extract command word (always first byte) and the payload.
         cmd, payload = msg['cmd'], msg['payload']

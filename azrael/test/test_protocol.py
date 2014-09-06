@@ -16,7 +16,6 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import json
 import pytest
 import IPython
 import numpy as np
@@ -24,6 +23,7 @@ import numpy as np
 import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
+import azrael.protocol_json as json
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
@@ -54,15 +54,29 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # ----------------------------------------------------------------------
     # Controller --> Clerk.
     # ----------------------------------------------------------------------
+    # Encode source data.
     ok, enc = protocol.ToClerk_GetTemplate_Encode(np.int64(1).tostring())
+
+    # Convert output to JSON and back (simulates the wire transmission).
+    enc = json.loads(json.dumps(enc))
+
+    # Decode the data.
     ok, dec = protocol.ToClerk_GetTemplate_Decode(enc)
     assert dec[0] == np.int64(1).tostring()
 
     # ----------------------------------------------------------------------
     # Clerk --> Controller.
     # ----------------------------------------------------------------------
+    # Encode source data.
     ok, enc = protocol.FromClerk_GetTemplate_Encode(cs, geo, [b0, b1], [f0])
-    ok, dec = protocol.FromClerk_GetTemplate_Decode(json.loads(enc))
+
+    # Convert output to JSON and back (simulates the wire transmission).
+    enc = json.loads(json.dumps(enc))
+
+    # Decode the data.
+    ok, dec = protocol.FromClerk_GetTemplate_Decode(enc)
+
+    # Verify.
     assert np.array_equal(dec.cs, cs)
     assert np.array_equal(dec.geo, geo)
     assert len(dec.boosters) == 2
@@ -83,38 +97,53 @@ def test_send_command():
     cmd_4 = parts.CmdFactory(partID=3, exit_speed=4)
     objID = int2id(1)
 
+    # ----------------------------------------------------------------------
+    # Controller --> Clerk.
+    # ----------------------------------------------------------------------
+
     # Convenience.
-    enc = protocol.ToClerk_ControlParts_Encode
-    dec = protocol.ToClerk_ControlParts_Decode
+    enc_fun = protocol.ToClerk_ControlParts_Encode
+    dec_fun = protocol.ToClerk_ControlParts_Decode
 
     # Encode the booster- and factory commands.
-    ok, data = enc(objID, [cmd_0, cmd_1], [cmd_2, cmd_3, cmd_4])
+    ok, enc = enc_fun(objID, [cmd_0, cmd_1], [cmd_2, cmd_3, cmd_4])
     assert ok
+
+    # Convert output to JSON and back (simulates the wire transmission).
+    enc = json.loads(json.dumps(enc))
 
     # Decode the data and verify the correct number of commands was returned.
-    ok, (out_objID, cmd_booster, cmd_factory) = dec(data)
-    assert ok
-    assert out_objID == objID
-    assert len(cmd_booster) == 2
-    assert len(cmd_factory) == 3
+    ok, (dec_objID, dec_booster, dec_factory) = dec_fun(enc)
+    assert (ok, dec_objID) == (True, objID)
+    assert len(dec_booster) == 2
+    assert len(dec_factory) == 3
 
     # Use getattr to automatically test all attributes.
-    assert cmd_booster[0] == cmd_0
-    assert cmd_booster[1] == cmd_1
-    assert cmd_factory[0] == cmd_2
-    assert cmd_factory[1] == cmd_3
-    assert cmd_factory[2] == cmd_4
+    assert dec_booster[0] == cmd_0
+    assert dec_booster[1] == cmd_1
+    assert dec_factory[0] == cmd_2
+    assert dec_factory[1] == cmd_3
+    assert dec_factory[2] == cmd_4
+
+    # ----------------------------------------------------------------------
+    # Clerk --> Controller
+    # ----------------------------------------------------------------------
 
     # Convenience.
-    enc = protocol.FromClerk_ControlParts_Encode
-    dec = protocol.FromClerk_ControlParts_Decode
+    enc_fun = protocol.FromClerk_ControlParts_Encode
+    dec_fun = protocol.FromClerk_ControlParts_Decode
     objIDs = [int2id(1), int2id(2)]
-    ok, data = enc(objIDs)
+
+    # Encode source data.
+    ok, enc = enc_fun(objIDs)
     assert ok
 
-    ok, ret_objIDs = dec(json.loads(data))
-    assert ok
-    assert objIDs == ret_objIDs
+    # Convert output to JSON and back (simulates the wire transmission).
+    enc = json.loads(json.dumps(enc))
+
+    # Decode the data.
+    ok, dec_objIDs = dec_fun(enc)
+    assert (ok, dec_objIDs) == (True, objIDs)
 
     print('Test passed')
 
@@ -126,11 +155,15 @@ def test_recvMsg():
     sender = int2id(5)
     msg = 'test'.encode('utf8')
 
-    ok, aux = protocol.FromClerk_RecvMsg_Encode(sender, msg)
-    assert ok
+    # Encode source data.
+    ok, enc = protocol.FromClerk_RecvMsg_Encode(sender, msg)
 
-    ok, out = protocol.FromClerk_RecvMsg_Decode(json.loads(aux))
-    assert ok
+    # Convert output to JSON and back (simulates the wire transmission).
+    enc = json.loads(json.dumps(enc))
+
+    # Decode the data.
+    ok, dec = protocol.FromClerk_RecvMsg_Decode(enc)
+    assert (ok, dec) == (True, (sender, msg))
 
 
 def test_GetStateVariable():
@@ -143,26 +176,35 @@ def test_GetStateVariable():
     # ----------------------------------------------------------------------
     # Controller --> Clerk.
     # ----------------------------------------------------------------------
-    ok, out = protocol.ToClerk_GetStateVariable_Encode(objIDs)
-    assert ok
+    # Encode source data.
+    ok, enc = protocol.ToClerk_GetStateVariable_Encode(objIDs)
 
-    ok, (out_ids, ) = protocol.ToClerk_GetStateVariable_Decode(out)
-    assert ok
-    assert len(out_ids) == 2
-    assert out_ids == objIDs
+    # Convert output to JSON and back (simulates the wire transmission).
+    enc = json.loads(json.dumps(enc))
+
+    # Decode the data.
+    ok, (dec_ids, ) = protocol.ToClerk_GetStateVariable_Decode(enc)
+    assert (ok, len(dec_ids)) == (True, 2)
+
+    # Verify.
+    assert dec_ids == objIDs
 
     # ----------------------------------------------------------------------
     # Clerk --> Controller.
     # ----------------------------------------------------------------------
-    ok, out = protocol.FromClerk_GetStateVariable_Encode(objIDs, objs)
-    assert ok
+    # Encode source data.
+    ok, enc = protocol.FromClerk_GetStateVariable_Encode(objIDs, objs)
 
-    out = json.loads(out)
-    ok, out_sv = protocol.FromClerk_GetStateVariable_Decode(out)
-    assert ok
-    assert len(out_sv) == 2
-    assert out_sv[int2id(1)] == objs[0]
-    assert out_sv[int2id(2)] == objs[1]
+    # Convert output to JSON and back (simulates the wire transmission).
+    enc = json.loads(json.dumps(enc))
+
+    # Decode the data.
+    ok, dec_sv = protocol.FromClerk_GetStateVariable_Decode(enc)
+    assert (ok, len(dec_sv)) == (True, 2)
+
+    # Verify.
+    assert dec_sv[int2id(1)] == objs[0]
+    assert dec_sv[int2id(2)] == objs[1]
 
     print('Test passed')
 

@@ -69,17 +69,6 @@ LEN_SV_FLOATS = 21
 # Length of a single state variable record in terms of Bytes.
 LEN_SV_BYTES = 21 * 8
 
-# Specify all commands. Every command will be assigned a unique ID encoded as a
-# byte. For instance: 'cmd' could be {'recv_msg': bytes([0]), 'clerk':
-# bytes([1])}. Note: the 'invalid_cmd' is purely for testing the Clerk.
-commands = ('invalid_cmd', 'ping_clerk', 'ping_clacks', 'get_id', 'spawn',
-            'get_statevar', 'new_template', 'get_geometry', 'set_force',
-            'suggest_pos', 'send_msg', 'recv_msg', 'get_template_id',
-            'get_template', 'add_template', 'get_all_objids', 'control_parts',
-            'set_id')
-cmd = dict(zip(commands, [bytes([_]) for _ in range(len(commands))]))
-del commands
-
 # Port of Tornado server.
 webserver_port = 8080
 

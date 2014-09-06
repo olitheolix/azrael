@@ -22,7 +22,6 @@ offers and test purely the Clerk.
 """
 
 import sys
-import json
 import time
 import pytest
 import IPython
@@ -35,11 +34,11 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.clacks as clacks
 import azrael.protocol as protocol
+import azrael.protocol_json as json
 import azrael.controller as controller
 import azrael.wscontroller as wscontroller
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
-
 
 from azrael.util import int2id, id2int
 from azrael.test.test_leonard import startAzrael, stopAzrael, killAzrael
@@ -95,7 +94,7 @@ def test_invalid():
     # Send a corrupt JSON to Clerk.
     msg = 'invalid_cmd'
     ok, ret = ctrl.testSend(msg.encode('utf8'))
-    assert (ok, ret) == (False, 'Corrupt JSON')
+    assert (ok, ret) == (False, 'JSON decoding error')
 
     # Send a malformatted JSON (it misses the 'payload' field).
     msg = json.dumps({'cmd': 'blah'})
