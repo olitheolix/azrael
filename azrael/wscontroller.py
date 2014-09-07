@@ -102,7 +102,8 @@ class WSControllerBase(azrael.controller.ControllerBase):
         if self.ws is not None:
             self.ws.close()
 
-    def send(self, data):
+    @typecheck
+    def send(self, data: str):
         """
         Overloaded method to write to the Websocket instead.
 
@@ -120,18 +121,21 @@ class WSControllerBase(azrael.controller.ControllerBase):
         """
         return self.ws.recv()
 
-    def pingClerk(self):
+    def pingClacks(self):
         """
-        Ping Clerk.
+        Ping Clacks.
 
-        This method return **True** if the Ping was successful. Otherwise the
-        Websocket library will (most likely) raise a Timeout error.
+        This method returns **True** if Clacks responds. If Clacks does not
+        respond then the Websocket will (most likely) raise a Timeout error
+        because it does not receive anything.
 
-        :return: ok flag.
+        fixme: intercept the timeout and return False
+
+        :return: **True** if Ping was successful.
         :rtype: bool
         """
-        ok, msg = self.sendToClerk('ping_clerk', None)
+        ok, msg = self.sendToClerk('ping_clacks', None)
         if not ok:
             return False
         else:
-            return (msg['response'] == 'pong clerk')
+            return (msg['response'] == 'pong clacks')

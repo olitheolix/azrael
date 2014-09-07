@@ -73,6 +73,22 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         self.controller = None
 
     @typecheck
+    def returnErr(self, msg: str):
+        msg = {'ok': False, 'payload': '', 'msg': msg}
+        msg = json.dumps(msg)
+        self.write_message(msg, binary=False)
+
+    @typecheck
+    def returnOk(self, msg: str, data: dict):
+        out = {'ok': True, 'msg': msg, 'payload': data}
+        try: 
+            ret = json.dumps(out)
+        except (ValueError, TypeError) as err:
+            self.returnErr(addr, 'JSON encoding error')
+
+        self.write_message(ret, binary=False)
+
+    @typecheck
     def on_message(self, msg: str):
         """
         Parse client request and return reply.
@@ -90,56 +106,47 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         if len(msg) == 0:
             return
 
-        # fixme: implement a returnOK and returnErr function and use it in
-        # if/else branches below, as well as in the except branch.
-
         try:
             msg = json.loads(msg)
         except (TypeError, ValueError) as err:
-            msg = {'ok': False, 'payload': '', 'msg': 'JSON decoding error'}
-            msg = json.dumps(msg)
-            self.write_message(msg, binary=False)
-            return
+            self.returnErr('JSON decoding error in Clacks')
 
         # Extract command word (always first byte) and the payload.
         cmd, payload = msg['cmd'], msg['payload']
 
         if cmd == 'ping_clacks':
             # Handle ourselves: return the pong.
-            msg = {'ok': True, 'payload': {'response': 'pong clacks'}}
-            msg = json.dumps(msg)
-            self.write_message(msg, binary=False)
+            self.returnOk('', {'response': 'pong clacks'})
         elif cmd == 'get_id':
             # Handle ourselves: return the ID of the associated Controller.
-            msg = {'ok': True,
-                   'payload': {'objID': list(self.controller.objID)}}
-            self.write_message(json.dumps(msg), binary=False)
+            self.returnOk('', {'objID': self.controller.objID})
         elif cmd == 'set_id':
+            # Handle ourselves: create a controller with a specific ID.
             if payload['objID'] is None:
+                # Client did not request a specific objID
                 objID = None
             else:
+                # Convert the objID specified by the client to a byte string.
                 objID = bytes(payload['objID'])
-            # Handle ourselves: create a controller with a specific ID.
+
+            # Create the Controller instance.
             ok, ret = self.createController(objID)
-            ret = {'ok': ok, 'payload': list(ret)}
-            self.write_message(json.dumps(ret), binary=False)
+            self.returnOk('', {'objID': ret})
         else:
             if self.controller is None:
                 # Skip the command if no controller has been instantiated yet
                 # to actually process the command.
-                msg = {'ok': False,
-                       'payload': 'No controller has been instantiated yet'}
-                msg = json.dumps(msg)
-                self.write_message(msg, binary=False)
+                self.returnErr('No controller has been instantiated yet')
                 return
 
             # Pass all other commands directly to the Controller which will
             # (probably) send it to Clerk for processing.
             ok, ret = self.controller.sendToClerk(cmd, payload)
-
-            ret = {'ok': ok, 'payload': ret}
-            ret = json.dumps(ret)
-            self.write_message(ret, binary=False)
+        
+            if ok:
+                self.returnOk('', ret)
+            else:
+                self.returnErr(ret)
 
     def createController(self, objID: bytes):
         """

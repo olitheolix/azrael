@@ -174,15 +174,20 @@ class ControllerBase(multiprocessing.Process):
         :return: (ok, data)
         :rtype: (bool, dict)
         """
-        data = {'cmd': cmd, 'payload': data}
-        data = json.dumps(data)
+        try:
+            payload = json.dumps({'cmd': cmd, 'payload': data})
+        except (ValueError, TypeError) as err:
+            return False, 'JSON encoding error'
 
         # Send data and wait for response.
-        self.send(data)
-        ret = self.recv()
+        self.send(payload)
+        payload = self.recv()
 
         # Decode the response.
-        ret = json.loads(ret)
+        try:
+            ret = json.loads(payload)
+        except (ValueError, TypeError) as err:
+            return False, 'JSON decoding error in Controller'
         
         # Returned JSON must always contain an 'ok' and 'payload' field.
         if not (('ok' in ret) and ('payload' in ret)):

@@ -94,7 +94,7 @@ def test_invalid():
     # Send a corrupt JSON to Clerk.
     msg = 'invalid_cmd'
     ok, ret = ctrl.testSend(msg.encode('utf8'))
-    assert (ok, ret) == (False, 'JSON decoding error')
+    assert (ok, ret) == (False, 'JSON decoding error in Clerk')
 
     # Send a malformatted JSON (it misses the 'payload' field).
     msg = json.dumps({'cmd': 'blah'})

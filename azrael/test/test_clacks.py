@@ -50,7 +50,7 @@ def test_ping_clerk():
     clerk, ctrl, clacks = startAzrael('Websocket')
 
     # And send 'PING' command.
-    assert ctrl.pingClerk()
+    assert ctrl.pingClacks()
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

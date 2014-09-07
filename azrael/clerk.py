@@ -287,7 +287,7 @@ class Clerk(multiprocessing.Process):
             try:
                 msg = json.loads(msg.decode('utf8'))
             except (ValueError, TypeError) as err:
-                self.returnErr(self.last_addr, 'JSON decoding error')
+                self.returnErr(self.last_addr, 'JSON decoding error in Clerk')
                 continue
                 
             # Sanity check: every message must contain at least a command byte.
@@ -380,12 +380,13 @@ class Clerk(multiprocessing.Process):
         :param bytes data: arbitrary data that should be passed back as well.
         :return: None
         """
-        # Wrap the ``data`` into a proper protocol frame and transmit it.
-        ret = {'ok': True, 'payload': data}
-
-        # fixme: catch json errors
-        ret = json.dumps(ret).encode('utf8')
-        self.sock_cmd.send_multipart([addr, b'', ret])
+        try: 
+            ret = json.dumps({'ok': True, 'payload': data})
+        except (ValueError, TypeError) as err:
+            self.returnErr(addr, 'JSON encoding error')
+            return
+            
+        self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
     @typecheck
     def returnErr(self, addr, msg: (bytes, str)=b''):
@@ -398,15 +399,17 @@ class Clerk(multiprocessing.Process):
         :param bytes msg: message to pass along.
         :return: None
         """
-        # fixme: catch JSON errors
-        # Convert the message to a byte string if it is not already.
-        ret = json.dumps({'ok': False, 'payload': msg}).encode('utf8')
+        try:
+            # Convert the message to a byte string (if it is not already).
+            ret = json.dumps({'ok': False, 'payload': msg})
+        except (ValueError, TypeError) as err:
+            ret = json.dumps({'ok': False, 'payload': 'JSON encoding error'})
 
         # For record keeping.
         self.logit.warning(msg)
 
-        # The first \x01 bytes tells the receiver that something went wrong.
-        self.sock_cmd.send_multipart([addr, b'', ret])
+        # Send the message.
+        self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
     @typecheck
     def getTemplate(self, templateID: bytes):
