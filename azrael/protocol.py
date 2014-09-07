@@ -53,6 +53,30 @@ ipshell = IPython.embed
 
 
 # ---------------------------------------------------------------------------
+# Ping
+# ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_Ping_Encode(dummyarg=None):
+    return True, {}
+
+
+@typecheck
+def ToClerk_Ping_Decode(data: dict):
+    return True, data
+    
+
+@typecheck
+def FromClerk_Ping_Encode(response: str):
+    return True, {'response': response}
+
+
+@typecheck
+def FromClerk_Ping_Decode(data: dict):
+    return True, data['response']
+
+
+# ---------------------------------------------------------------------------
 # GetID
 # ---------------------------------------------------------------------------
 

@@ -137,6 +137,10 @@ class Clerk(multiprocessing.Process):
         # administrative commands (eg. ping). This dictionary will be used
         # in the digest loop.
         self.codec = {
+            'ping_clerk': (
+                protocol.ToClerk_Ping_Decode,
+                self.pingClerk,
+                protocol.FromClerk_Ping_Encode),
             'get_id': (
                 protocol.ToClerk_GetID_Decode,
                 self.getID,
@@ -303,11 +307,7 @@ class Clerk(multiprocessing.Process):
             cmd, self.payload = msg['cmd'], msg['payload']
 
             # The command word determines the action...
-            if cmd == 'ping_clerk':
-                # Return a 'pong'.
-                tmp = {'response': 'pong clerk'}
-                self.returnOk(self.last_addr, tmp, '')
-            elif cmd in self.codec:
+            if cmd in self.codec:
                 # Look up the decode-process-encode functions for the current
                 # command. Then execute them.
                 enc, proc, dec = self.codec[cmd]
@@ -414,12 +414,22 @@ class Clerk(multiprocessing.Process):
         # Send the message.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
+    def pingClerk(self):
+        """
+        Return a 'pong'.
+
+        :return: (ok, (, ))
+        :rtype: (Bool, tuple)
+        :raises: None
+        """
+        return True, ('pong clerk', )
+        
     def getID(self):
         """
         Return a new ID.
 
         :return: (ok, (objID, ))
-        :rtype: (True, bytes)
+        :rtype: (Bool, bytes)
         :raises: None
         """
         # Return a new and unique Controller ID.

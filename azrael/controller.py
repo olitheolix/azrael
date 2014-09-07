@@ -75,6 +75,9 @@ class ControllerBase(multiprocessing.Process):
 
         # Associate the encoding and decoding functions for every command.
         self.codec = {
+            'ping_clerk': (
+                protocol.ToClerk_Ping_Encode,
+                protocol.FromClerk_Ping_Decode),
             'get_id': (
                 protocol.ToClerk_GetID_Encode,
                 protocol.FromClerk_GetID_Decode),
@@ -272,8 +275,7 @@ class ControllerBase(multiprocessing.Process):
         :return: (ok, data)
         :rtype: (bool, bytes) or (bool, str)
         """
-        ok, ret, msg = self.sendToClerk('ping_clerk', None)
-        return ok, ret['response']
+        return self.serialiseAndSend('ping_clerk', None)
 
     @typecheck
     def sendMessage(self, target: bytes, msg: bytes):
