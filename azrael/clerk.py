@@ -237,7 +237,7 @@ class Clerk(multiprocessing.Process):
         ok, out = fun_decode(self.payload)
         if not ok:
             # Error during decoding.
-            self.returnErr(self.last_addr, out)
+            self.returnErr(self.last_addr, {}, out)
         else:
             # Decoding was successful. Pass all returned parameters directly
             # to the processing method.
@@ -246,10 +246,10 @@ class Clerk(multiprocessing.Process):
             if ok:
                 # Encode the output into a byte stream and return it.
                 ok, out = fun_encode(*out)
-                self.returnOk(self.last_addr, out)
+                self.returnOk(self.last_addr, out, '')
             else:
                 # The processing method encountered an error.
-                self.returnErr(self.last_addr, out)
+                self.returnErr(self.last_addr, {}, out)
 
     def run(self):
         """
@@ -287,12 +287,12 @@ class Clerk(multiprocessing.Process):
             try:
                 msg = json.loads(msg.decode('utf8'))
             except (ValueError, TypeError) as err:
-                self.returnErr(self.last_addr, 'JSON decoding error in Clerk')
+                self.returnErr(self.last_addr, {}, 'JSON decoding error in Clerk')
                 continue
                 
             # Sanity check: every message must contain at least a command byte.
             if not (('cmd' in msg) and ('payload' in msg)):
-                self.returnErr(self.last_addr, 'Invalid command format')
+                self.returnErr(self.last_addr, {}, 'Invalid command format')
                 continue
 
             # Extract the command word and payload.
@@ -302,12 +302,12 @@ class Clerk(multiprocessing.Process):
             if cmd == 'ping_clerk':
                 # Return a 'pong'.
                 tmp = {'response': 'pong clerk'}
-                self.returnOk(self.last_addr, tmp)
+                self.returnOk(self.last_addr, tmp, '')
             elif cmd == 'get_id':
                 # Return a new and unique Controller ID.
                 new_id = util.int2id(self.getUniqueID())
                 new_id = {'objID': list(new_id)}
-                self.returnOk(self.last_addr, new_id)
+                self.returnOk(self.last_addr, new_id, '')
             elif cmd in self.codec:
                 # Look up the decode-process-encode functions for the current
                 # command. Then execute them.
@@ -315,7 +315,7 @@ class Clerk(multiprocessing.Process):
                 self.runCommand(enc, proc, dec)
             else:
                 # Unknown command.
-                self.returnErr(self.last_addr, 'Invalid command <{}>'.format(cmd))
+                self.returnErr(self.last_addr, {}, 'Invalid command <{}>'.format(cmd))
 
     @typecheck
     def getControllerClass(self, ctrl_name: bytes):
@@ -370,40 +370,43 @@ class Clerk(multiprocessing.Process):
         return new_id['cnt']
 
     @typecheck
-    def returnOk(self, addr, data: dict):
+    def returnOk(self, addr, data: dict, msg: str=''):
         """
         Send affirmative reply.
 
         This is a convenience method to enhance readability.
 
         :param addr: ZeroMQ address as returned by the router socket.
-        :param bytes data: arbitrary data that should be passed back as well.
+        :param dict data: arbitrary data to pass back to client.
+        :param str msg: text message to pass along.
         :return: None
         """
         try: 
-            ret = json.dumps({'ok': True, 'payload': data})
+            ret = json.dumps({'ok': True, 'payload': data, 'msg': msg})
         except (ValueError, TypeError) as err:
-            self.returnErr(addr, 'JSON encoding error')
+            self.returnErr(addr, {}, 'JSON encoding error in Clerk')
             return
             
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
     @typecheck
-    def returnErr(self, addr, msg: (bytes, str)=b''):
+    def returnErr(self, addr, data: dict, msg: str=''):
         """
         Send negative reply and log a warning message.
 
         This is a convenience method to enhance readability.
 
         :param addr: ZeroMQ address as returned by the router socket.
-        :param bytes msg: message to pass along.
+        :param dict data: arbitrary data to pass back to client.
+        :param str msg: message to pass along.
         :return: None
         """
         try:
             # Convert the message to a byte string (if it is not already).
-            ret = json.dumps({'ok': False, 'payload': msg})
+            ret = json.dumps({'ok': False, 'payload': msg, 'msg': msg})
         except (ValueError, TypeError) as err:
-            ret = json.dumps({'ok': False, 'payload': 'JSON encoding error'})
+            ret = json.dumps({'ok': False, 'payload': {},
+                              'msg': 'JSON encoding error in Clerk'})
 
         # For record keeping.
         self.logit.warning(msg)

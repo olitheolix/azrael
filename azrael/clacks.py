@@ -73,20 +73,37 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         self.controller = None
 
     @typecheck
-    def returnErr(self, msg: str):
-        msg = {'ok': False, 'payload': '', 'msg': msg}
-        msg = json.dumps(msg)
-        self.write_message(msg, binary=False)
+    def returnOk(self, data: dict, msg: str):
+        """
+        Send affirmative reply.
 
-    @typecheck
-    def returnOk(self, msg: str, data: dict):
-        out = {'ok': True, 'msg': msg, 'payload': data}
+        This is a convenience method to enhance readability.
+
+        :param dict data: arbitrary data to pass back to client.
+        :param str msg: text message to pass along.
+        :return: None
+        """
         try: 
-            ret = json.dumps(out)
+            ret = json.dumps({'ok': True, 'payload': data, 'msg': msg})
         except (ValueError, TypeError) as err:
-            self.returnErr(addr, 'JSON encoding error')
+            self.returnErr({}, 'JSON encoding error')
 
         self.write_message(ret, binary=False)
+
+    @typecheck
+    def returnErr(self, data: dict, msg: str):
+        """
+        Send negative reply and log a warning message.
+
+        This is a convenience method to enhance readability.
+
+        :param dict data: arbitrary data to pass back to client.
+        :param str msg: text message to pass along.
+        :return: None
+        """
+        msg = {'ok': False, 'payload': {}, 'msg': msg}
+        msg = json.dumps(msg)
+        self.write_message(msg, binary=False)
 
     @typecheck
     def on_message(self, msg: str):
@@ -109,17 +126,17 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         try:
             msg = json.loads(msg)
         except (TypeError, ValueError) as err:
-            self.returnErr('JSON decoding error in Clacks')
+            self.returnErr({}, 'JSON decoding error in Clacks')
 
         # Extract command word (always first byte) and the payload.
         cmd, payload = msg['cmd'], msg['payload']
 
         if cmd == 'ping_clacks':
             # Handle ourselves: return the pong.
-            self.returnOk('', {'response': 'pong clacks'})
+            self.returnOk({'response': 'pong clacks'}, '')
         elif cmd == 'get_id':
             # Handle ourselves: return the ID of the associated Controller.
-            self.returnOk('', {'objID': self.controller.objID})
+            self.returnOk({'objID': self.controller.objID}, '')
         elif cmd == 'set_id':
             # Handle ourselves: create a controller with a specific ID.
             if payload['objID'] is None:
@@ -131,22 +148,22 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
             # Create the Controller instance.
             ok, ret = self.createController(objID)
-            self.returnOk('', {'objID': ret})
+            self.returnOk({'objID': ret}, '')
         else:
             if self.controller is None:
                 # Skip the command if no controller has been instantiated yet
                 # to actually process the command.
-                self.returnErr('No controller has been instantiated yet')
+                self.returnErr({}, 'No controller has been instantiated yet')
                 return
 
             # Pass all other commands directly to the Controller which will
             # (probably) send it to Clerk for processing.
-            ok, ret = self.controller.sendToClerk(cmd, payload)
+            ok, ret, msg = self.controller.sendToClerk(cmd, payload)
         
             if ok:
-                self.returnOk('', ret)
+                self.returnOk(ret, msg)
             else:
-                self.returnErr(ret)
+                self.returnErr({}, msg)
 
     def createController(self, objID: bytes):
         """

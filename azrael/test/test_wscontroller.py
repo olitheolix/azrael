@@ -54,7 +54,7 @@ def test_custom_objid():
     clerk = azrael.clerk.Clerk(reset=True)
     clerk.start()
 
-    # Start a Clacks.
+    # Start Clacks.
     clacks = azrael.clacks.ClacksServer()
     clacks.start()
 
@@ -67,7 +67,7 @@ def test_custom_objid():
     assert (ok, ret) == (True, 'pong clerk')
 
     # We must be attached to objID=1 because no other object has been added to
-    # the simulation.
+    # the simulation yet.
     assert ctrl_0.objID == int2id(1)
 
     # Instantiate another WSController. This time specify an ID. Note: the ID

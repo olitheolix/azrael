@@ -177,7 +177,7 @@ class ControllerBase(multiprocessing.Process):
         try:
             payload = json.dumps({'cmd': cmd, 'payload': data})
         except (ValueError, TypeError) as err:
-            return False, 'JSON encoding error'
+            return False, {}, 'JSON encoding error'
 
         # Send data and wait for response.
         self.send(payload)
@@ -187,14 +187,14 @@ class ControllerBase(multiprocessing.Process):
         try:
             ret = json.loads(payload)
         except (ValueError, TypeError) as err:
-            return False, 'JSON decoding error in Controller'
+            return False, {}, 'JSON decoding error in Controller'
         
         # Returned JSON must always contain an 'ok' and 'payload' field.
         if not (('ok' in ret) and ('payload' in ret)):
-            return False, 'Invalid response from Clerk'
+            return False, {}, 'Invalid response from Clerk'
 
         # Extract the 'Ok' flag and return the rest verbatim.
-        return ret['ok'], ret['payload']
+        return ret['ok'], ret['payload'], ret['msg']
 
     def connectToClerk(self):
         """
@@ -215,7 +215,7 @@ class ControllerBase(multiprocessing.Process):
         """
         if self.objID is None:
             # Ask Clerk for a new ID.
-            ok, ret = self.sendToClerk('get_id', None)
+            ok, ret, msg = self.sendToClerk('get_id', None)
             if ok:
                 self.objID = bytes(ret['objID'])
         return self.objID
@@ -250,14 +250,14 @@ class ControllerBase(multiprocessing.Process):
 
         # Encode the arguments and send them to Clerk.
         ok, data = ToClerk_Encode(*args)
-        ok, data = self.sendToClerk(cmd, data)
+        ok, data, msg = self.sendToClerk(cmd, data)
         if not ok:
             # There was an error. The 'data' field will thus contain an error
             # message.
             return False, data
-        else:
-            # Command completed without error. Return the decode output.
-            return FromClerk_Decode(data)
+
+        # Command completed without error. Return the decode output.
+        return FromClerk_Decode(data)
 
     def ping(self):
         """
@@ -269,7 +269,7 @@ class ControllerBase(multiprocessing.Process):
         :return: (ok, data)
         :rtype: (bool, bytes) or (bool, str)
         """
-        ok, ret = self.sendToClerk('ping_clerk', None)
+        ok, ret, msg = self.sendToClerk('ping_clerk', None)
         return ok, ret['response']
 
     @typecheck

@@ -82,14 +82,14 @@ class WSControllerBase(azrael.controller.ControllerBase):
             payload = {'objID': None}
         else:
             payload = {'objID': list(objID)}
-        ok, ret = self.sendToClerk('set_id', payload)
+        ok, ret, msg = self.sendToClerk('set_id', payload)
         assert ok
 
         # Retrieve the object ID. Fixme: if user has specified an ID via the
         # constructor then the Controller instance in Clacks must heed it.
-        ok, tmp = self.sendToClerk('get_id', None)
+        ok, data, msg = self.sendToClerk('get_id', None)
 
-        self.objID = bytes(tmp['objID'])
+        self.objID = bytes(data['objID'])
         
         # Sanity check: if a custom objID was specified then it must match.
         if objID is not None:
@@ -133,11 +133,11 @@ class WSControllerBase(azrael.controller.ControllerBase):
         :rtype: bool
         """
         try:
-            ok, msg = self.sendToClerk('ping_clacks', None)
+            ok, data, msg = self.sendToClerk('ping_clacks', None)
         except websocket.WebSocketConnectionClosedException as err:
             return False
 
         if not ok:
             return False
         else:
-            return (msg['response'] == 'pong clacks')
+            return (data['response'] == 'pong clacks')

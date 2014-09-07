@@ -74,18 +74,15 @@ def test_spawn_one_controller(ctrl_type):
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
-    # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
-    # the ID of the controller which must be '2' ('0' is invalid and '1' was
-    # already given to the controller in the WS handler).
+    # Instruct Clerk to spawn a new template. The new object must have objID=2
+    # because '0' is invalid and '1' was already given to the `ctrl` object.
     ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, int2id(2))
 
-    # Spawn another template but this time without creating a new controller
-    # process to control the object. We cannot explicitly verify that not
-    # controller process was created but we can verify that the spawn command
-    # itself worked.
+    # Attempt to spawn a non-existing template.
+    templateID += 'blah'.encode('utf8')
     ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
-    assert (ok, ctrl_id) == (True, int2id(3))
+    assert not ok
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
