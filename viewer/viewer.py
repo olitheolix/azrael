@@ -339,7 +339,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             sys.exit(1)
             return
 
-        if not self.ctrl.pingClerk():
+        if not self.ctrl.pingClacks():
             print('Viewer: could not ping Clerk')
             self.close()
             sys.exit(1)

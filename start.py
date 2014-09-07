@@ -111,7 +111,7 @@ def setupLogging(loglevel):
 def loadGroundModel(scale, model_name):
     # Establish connection to Azrael.
     ctrl = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
-    assert ctrl.pingClerk()
+    assert ctrl.pingClacks()
 
     # Load the model mesh.
     print('  Importing <{}>... '.format(model_name), end='', flush=True)
@@ -144,7 +144,7 @@ def defineBoosterCube():
     """
     # Establish connection to Azrael.
     ctrl = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
-    assert ctrl.pingClerk()
+    assert ctrl.pingClacks()
 
     # Collision shape for a cube.
     cs = np.array([4, 1, 1, 1], np.float64)
