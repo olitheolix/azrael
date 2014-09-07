@@ -75,6 +75,9 @@ class ControllerBase(multiprocessing.Process):
 
         # Associate the encoding and decoding functions for every command.
         self.codec = {
+            'get_id': (
+                protocol.ToClerk_GetID_Encode,
+                protocol.FromClerk_GetID_Decode),
             'send_msg': (
                 protocol.ToClerk_SendMsg_Encode,
                 protocol.FromClerk_SendMsg_Decode),
@@ -215,9 +218,9 @@ class ControllerBase(multiprocessing.Process):
         """
         if self.objID is None:
             # Ask Clerk for a new ID.
-            ok, ret, msg = self.sendToClerk('get_id', None)
+            ok, objID = self.serialiseAndSend('get_id', None)
             if ok:
-                self.objID = bytes(ret['objID'])
+                self.objID = objID
         return self.objID
 
     @typecheck
@@ -239,7 +242,7 @@ class ControllerBase(multiprocessing.Process):
         Python/NumPy types. Otherwise it contains an error message.
 
         :param str cmd: name of command.
-        :return: (ok, data)
+        :return: (ok, data, msg)
         :rtype: (bool, bytes) or (bool, str)
         """
         # Sanity checks.

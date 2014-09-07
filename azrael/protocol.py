@@ -53,6 +53,30 @@ ipshell = IPython.embed
 
 
 # ---------------------------------------------------------------------------
+# GetID
+# ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_GetID_Encode(dummyarg=None):
+    return True, {}
+
+
+@typecheck
+def ToClerk_GetID_Decode(data: dict):
+    return True, data
+    
+
+@typecheck
+def FromClerk_GetID_Encode(objID: bytes):
+    return True, {'objID': objID}
+
+
+@typecheck
+def FromClerk_GetID_Decode(data: dict):
+    return True, bytes(data['objID'])
+
+
+# ---------------------------------------------------------------------------
 # GetTemplate
 # ---------------------------------------------------------------------------
 
@@ -181,8 +205,8 @@ def ToClerk_GetAllObjectIDs_Encode(dummyarg=None):
 
 
 @typecheck
-def ToClerk_GetAllObjectIDs_Decode(payload: dict):
-    return True, payload
+def ToClerk_GetAllObjectIDs_Decode(data: dict):
+    return True, data
 
 
 @typecheck

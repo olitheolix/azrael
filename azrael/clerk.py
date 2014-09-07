@@ -137,6 +137,10 @@ class Clerk(multiprocessing.Process):
         # administrative commands (eg. ping). This dictionary will be used
         # in the digest loop.
         self.codec = {
+            'get_id': (
+                protocol.ToClerk_GetID_Decode,
+                self.getID,
+                protocol.FromClerk_GetID_Encode),
             'send_msg': (
                 protocol.ToClerk_SendMsg_Decode,
                 self.sendMessage,
@@ -303,11 +307,6 @@ class Clerk(multiprocessing.Process):
                 # Return a 'pong'.
                 tmp = {'response': 'pong clerk'}
                 self.returnOk(self.last_addr, tmp, '')
-            elif cmd == 'get_id':
-                # Return a new and unique Controller ID.
-                new_id = util.int2id(self.getUniqueID())
-                new_id = {'objID': list(new_id)}
-                self.returnOk(self.last_addr, new_id, '')
             elif cmd in self.codec:
                 # Look up the decode-process-encode functions for the current
                 # command. Then execute them.
@@ -315,7 +314,8 @@ class Clerk(multiprocessing.Process):
                 self.runCommand(enc, proc, dec)
             else:
                 # Unknown command.
-                self.returnErr(self.last_addr, {}, 'Invalid command <{}>'.format(cmd))
+                self.returnErr(self.last_addr, {},
+                               'Invalid command <{}>'.format(cmd))
 
     @typecheck
     def getControllerClass(self, ctrl_name: bytes):
@@ -413,6 +413,18 @@ class Clerk(multiprocessing.Process):
 
         # Send the message.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
+
+    def getID(self):
+        """
+        Return a new ID.
+
+        :return: (ok, (objID, ))
+        :rtype: (True, bytes)
+        :raises: None
+        """
+        # Return a new and unique Controller ID.
+        objID = util.int2id(self.getUniqueID())
+        return True, (objID, )
 
     @typecheck
     def getTemplate(self, templateID: bytes):
