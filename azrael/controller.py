@@ -130,6 +130,34 @@ class ControllerBase(multiprocessing.Process):
         self.logit.debug('Controller for <{}> has shutdown'.format(self.objID))
 
     @typecheck
+    def send(self, data: str):
+        """
+        Send ``data`` via the ZeroMQ socket.
+
+        This method primarily exists to abstract away the underlying socket
+        type. In this case, it is a ZeroMQ socket, in the case of
+        ``WSControllerBase`` it is a Websocket.
+
+        :param str data: data in string format (usually a JSON string).
+        :return: None
+        """
+        self.sock_cmd.send(data.encode('utf8'))
+
+    def recv(self):
+        """
+        Read next message from ZeroMQ socket.
+
+        This method primarily exists to abstract away the underlying socket
+        type. In this case, it is a ZeroMQ socket, in the case of
+        ``WSControllerBase`` it is a Websocket.
+
+        :return: received data as a string (usuallay a JSON string).
+        :rtype: ste
+        """
+        ret = self.sock_cmd.recv()
+        return ret.decode('utf8')
+
+    @typecheck
     def sendToClerk(self, cmd: str, data: dict):
         """
         Send data to Clerk and return the response.
@@ -150,9 +178,8 @@ class ControllerBase(multiprocessing.Process):
         data = json.dumps(data)
 
         # Send data and wait for response.
-        self.sock_cmd.send(data.encode('utf8'))
-        ret = self.sock_cmd.recv()
-        ret = ret.decode('utf8')
+        self.send(data)
+        ret = self.recv()
 
         # Decode the response.
         ret = json.loads(ret)

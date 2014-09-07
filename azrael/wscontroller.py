@@ -82,12 +82,12 @@ class WSControllerBase(azrael.controller.ControllerBase):
             payload = {'objID': None}
         else:
             payload = {'objID': list(objID)}
-        ok, ret = self.sendToClacks('set_id', payload)
+        ok, ret = self.sendToClerk('set_id', payload)
         assert ok
 
         # Retrieve the object ID. Fixme: if user has specified an ID via the
         # constructor then the Controller instance in Clacks must heed it.
-        ok, tmp = self.sendToClacks('get_id', None)
+        ok, tmp = self.sendToClerk('get_id', None)
 
         self.objID = bytes(tmp['objID'])
         
@@ -102,48 +102,23 @@ class WSControllerBase(azrael.controller.ControllerBase):
         if self.ws is not None:
             self.ws.close()
 
-    @typecheck
-    def sendToClerk(self, cmd: str, data: dict):
+    def send(self, data):
         """
-        Proxy all communication via the Controller in Clerk.
+        Overloaded method to write to the Websocket instead.
 
-        This method replaces the original ``sendToClerk`` method and relays the
-        data to ``sendToClacks`` instead.
-
-        :param str cmd: command word
-        :param dict data: payload (must be JSON encodeable)
-        :return: see ``sendToClacks``.
+        :param str data: data in string format (usually a JSON string).
+        :return: None
         """
-        return self.sendToClacks(cmd, data)
-
-    @typecheck
-    def sendToClacks(self, cmd: str, data: dict):
-        """
-        Send ``data`` to Clacks, wait for reply and return its content.
-
-        .. note::
-           JSON must be able to serialise the content of ``data``.
-
-        :param str cmd: command word
-        :param dict data: payload (must be JSON encodeable)
-        :return: (ok, data)
-        :rtype: (bool, dict)
-        """
-        # Send payload to Clacks and wait for reply.
-        data = {'cmd': cmd, 'payload': data}
-        data = json.dumps(data)
-
         self.ws.send(data)
 
-        ret = self.ws.recv()
-        ret = json.loads(ret)
+    def recv(self):
+        """
+        Overloaded method to read from the Websocket instead.
 
-        # Returned JSON must always contain an 'ok' and 'payload' field.
-        if not (('ok' in ret) and ('payload' in ret)):
-            return False, 'Invalid response from Clacks'
-
-        # Extract the 'Ok' flag and return the rest verbatim.
-        return ret['ok'], ret['payload']
+        :return: received data as a string (usuallay a JSON string).
+        :rtype: ste
+        """
+        return self.ws.recv()
 
     def pingClerk(self):
         """
@@ -155,7 +130,7 @@ class WSControllerBase(azrael.controller.ControllerBase):
         :return: ok flag.
         :rtype: bool
         """
-        ok, msg = self.sendToClacks('ping_clerk', None)
+        ok, msg = self.sendToClerk('ping_clerk', None)
         if not ok:
             return False
         else:
