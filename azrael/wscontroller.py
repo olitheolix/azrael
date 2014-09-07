@@ -90,7 +90,7 @@ class WSControllerBase(azrael.controller.ControllerBase):
         ok, data, msg = self.sendToClerk('get_id', None)
 
         self.objID = bytes(data['objID'])
-        
+
         # Sanity check: if a custom objID was specified then it must match.
         if objID is not None:
             assert objID == self.objID

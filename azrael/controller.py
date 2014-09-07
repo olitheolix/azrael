@@ -48,6 +48,7 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
 
+
 class ControllerBase(multiprocessing.Process):
     """
     A Client for Clerk/Azrael.
@@ -194,7 +195,7 @@ class ControllerBase(multiprocessing.Process):
             ret = json.loads(payload)
         except (ValueError, TypeError) as err:
             return False, {}, 'JSON decoding error in Controller'
-        
+
         # Returned JSON must always contain an 'ok' and 'payload' field.
         if not (('ok' in ret) and ('payload' in ret)):
             return False, {}, 'Invalid response from Clerk'

@@ -64,7 +64,7 @@ def ToClerk_Ping_Encode(dummyarg=None):
 @typecheck
 def ToClerk_Ping_Decode(data: dict):
     return True, data
-    
+
 
 @typecheck
 def FromClerk_Ping_Encode(response: str):
@@ -88,7 +88,7 @@ def ToClerk_GetID_Encode(dummyarg=None):
 @typecheck
 def ToClerk_GetID_Decode(data: dict):
     return True, data
-    
+
 
 @typecheck
 def FromClerk_GetID_Encode(objID: bytes):
@@ -115,7 +115,7 @@ def ToClerk_GetTemplate_Decode(data: dict):
         return True, (bytes(data['templateID']), )
     else:
         return False, 'Corrupt payload'
-    
+
 
 @typecheck
 def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,

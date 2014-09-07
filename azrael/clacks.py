@@ -83,7 +83,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         :param str msg: text message to pass along.
         :return: None
         """
-        try: 
+        try:
             ret = json.dumps({'ok': True, 'payload': data, 'msg': msg})
         except (ValueError, TypeError) as err:
             self.returnErr({}, 'JSON encoding error')
@@ -120,13 +120,15 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
         :param bytes msg: message from client.
         """
-        if len(msg) == 0:
-            return
-
         try:
             msg = json.loads(msg)
         except (TypeError, ValueError) as err:
             self.returnErr({}, 'JSON decoding error in Clacks')
+            return
+
+        if not (('cmd' in msg) and ('payload' in msg)):
+            self.returnErr({}, 'Invalid command format')
+            return
 
         # Extract command word (always first byte) and the payload.
         cmd, payload = msg['cmd'], msg['payload']
@@ -159,7 +161,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             # Pass all other commands directly to the Controller which will
             # (probably) send it to Clerk for processing.
             ok, ret, msg = self.controller.sendToClerk(cmd, payload)
-        
+
             if ok:
                 self.returnOk(ret, msg)
             else:
@@ -185,7 +187,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             self.write_message(msg, binary=True)
             return False, msg
 
-        if objID == None:
+        if objID is None:
             # Constructor of WSControllerBase requests a new objID.
             objID = None
 

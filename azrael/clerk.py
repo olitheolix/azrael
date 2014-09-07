@@ -295,9 +295,10 @@ class Clerk(multiprocessing.Process):
             try:
                 msg = json.loads(msg.decode('utf8'))
             except (ValueError, TypeError) as err:
-                self.returnErr(self.last_addr, {}, 'JSON decoding error in Clerk')
+                self.returnErr(self.last_addr, {},
+                               'JSON decoding error in Clerk')
                 continue
-                
+
             # Sanity check: every message must contain at least a command byte.
             if not (('cmd' in msg) and ('payload' in msg)):
                 self.returnErr(self.last_addr, {}, 'Invalid command format')
@@ -381,12 +382,12 @@ class Clerk(multiprocessing.Process):
         :param str msg: text message to pass along.
         :return: None
         """
-        try: 
+        try:
             ret = json.dumps({'ok': True, 'payload': data, 'msg': msg})
         except (ValueError, TypeError) as err:
             self.returnErr(addr, {}, 'JSON encoding error in Clerk')
             return
-            
+
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
     @typecheck
@@ -423,7 +424,7 @@ class Clerk(multiprocessing.Process):
         :raises: None
         """
         return True, ('pong clerk', )
-        
+
     def getID(self):
         """
         Return a new ID.
