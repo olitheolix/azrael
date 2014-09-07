@@ -22,6 +22,7 @@ It does little more than wrapping a ``ControllerBase`` instance. As such it has
 the same capabilities.
 """
 
+import os
 import sys
 import time
 import logging
@@ -221,6 +222,14 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         self.logit.debug('Connection closed')
 
 
+class ServeViewer(tornado.web.RequestHandler):
+    """
+    Serve start page.
+    """
+    def get(self):
+        self.redirect("/static/webviewer.html", permanent=True)
+
+
 class ClacksServer(multiprocessing.Process):
     """
     Tornado server that constitutes Clacks.
@@ -236,7 +245,7 @@ class ClacksServer(multiprocessing.Process):
 
     def run(self):
         # Not sure if this really does anything but it certainly does not
-        # hurt.
+        # hurt. 
         self.daemon = True
         time.sleep(0.02)
 
@@ -245,8 +254,23 @@ class ClacksServer(multiprocessing.Process):
         ioloop = zmq.eventloop.ioloop
         ioloop.install()
 
+        # Initialise the list of Tornado handlers.
+        handlers = []
+
+        # Redirect to the viewer file.
+        handlers.append(('/', ServeViewer))
+
+        # Static HTML files.
+        staticDir = os.path.dirname(__file__)
+        staticDir = os.path.join(staticDir, 'static')
+        handlers.append(('/static/(.*)', tornado.web.StaticFileHandler,
+                         {'path': staticDir}))
+
+        # Websocket to Clacks.
+        handlers.append(('/websocket', WebsocketHandler))
+
         # Install the Websocket handler.
-        app = tornado.web.Application([(r"/websocket", WebsocketHandler)])
+        app = tornado.web.Application(handlers)
         http = tornado.httpserver.HTTPServer(app)
 
         # Specify the server port and create Tornado instance.
