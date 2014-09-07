@@ -138,19 +138,25 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             self.returnOk({'response': 'pong clacks'}, '')
         elif cmd == 'get_id':
             # Handle ourselves: return the ID of the associated Controller.
-            self.returnOk({'objID': self.controller.objID}, '')
-        elif cmd == 'set_id':
-            # Handle ourselves: create a controller with a specific ID.
-            if payload['objID'] is None:
-                # Client did not request a specific objID
-                objID = None
+            if self.controller is None:
+                self.returnErr({}, 'No Controller has been instantiate yet')
             else:
-                # Convert the objID specified by the client to a byte string.
-                objID = bytes(payload['objID'])
-
-            # Create the Controller instance.
-            ok, ret = self.createController(objID)
-            self.returnOk({'objID': ret}, '')
+                self.returnOk({'objID': self.controller.objID}, '')
+        elif cmd == 'set_id':
+            if (isinstance(payload, dict)) and ('objID' in payload):
+                # Handle ourselves: create a controller with a specific ID.
+                if payload['objID'] is None:
+                    # Client did not request a specific objID
+                    objID = None
+                else:
+                    # Convert the objID specified by the client to a byte
+                    # string.
+                    objID = bytes(payload['objID'])
+                # Create the Controller instance.
+                ok, ret = self.createController(objID)
+                self.returnOk({'objID': ret}, '')
+            else:
+                self.returnErr({}, 'Payload misses the objID field')
         else:
             if self.controller is None:
                 # Skip the command if no controller has been instantiated yet

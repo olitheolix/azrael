@@ -668,6 +668,7 @@ class Clerk(multiprocessing.Process):
 
         if ret is None:
             # No template with name ``templateID`` existed --> success.
+            self.logit.info('Added template <{}>'.format(templateID))
             return True, (templateID, )
         else:
             # A template with name ``templateID`` already existed --> failure.
