@@ -55,6 +55,9 @@ def test_ping_clerk():
     # Shutdown the services.
     stopAzrael(clerk, clacks)
 
+    # And send 'PING' command.
+    assert not ctrl.pingClacks()
+
     print('Test passed')
 
 

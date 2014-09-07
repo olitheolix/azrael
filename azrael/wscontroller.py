@@ -129,12 +129,14 @@ class WSControllerBase(azrael.controller.ControllerBase):
         respond then the Websocket will (most likely) raise a Timeout error
         because it does not receive anything.
 
-        fixme: intercept the timeout and return False
-
         :return: **True** if Ping was successful.
         :rtype: bool
         """
-        ok, msg = self.sendToClerk('ping_clacks', None)
+        try:
+            ok, msg = self.sendToClerk('ping_clacks', None)
+        except websocket.WebSocketConnectionClosedException as err:
+            return False
+
         if not ok:
             return False
         else:
