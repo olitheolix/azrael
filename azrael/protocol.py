@@ -184,7 +184,7 @@ def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray, geo:
     for f in factories:
         assert isinstance(f, parts.Factory)
 
-    d = {'name': templateID, 'cs': cs.tostring(), 'geo': geo.tostring(),
+    d = {'name': templateID, 'cs': cs.tolist(), 'geo': geo.tolist(),
          'boosters': [_.tostring() for _ in boosters],
          'factories': [_.tostring() for _ in factories]}
 
@@ -201,8 +201,8 @@ def ToClerk_AddTemplate_Decode(data: dict):
     templateID = bytes(data['name'])
 
     # Convert collision shape and geometry to NumPy array (via byte string).
-    cs = np.fromstring(bytes(data['cs']), np.float64)
-    geo = np.fromstring(bytes(data['geo']), np.float64)
+    cs = np.array(data['cs'], np.float64)
+    geo = np.array(data['geo'], np.float64)
 
     # Return decoded quantities.
     return True, (templateID, cs, geo, boosters, factories)
