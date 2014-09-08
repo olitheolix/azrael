@@ -87,7 +87,7 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes):
     :return bool: success.
     """
     # Serialise SV.
-    sv = sv.tojson()
+    sv = sv.toJsonDict()
 
     # Sanity checks.
     if len(objID) != config.LEN_ID:
@@ -138,7 +138,7 @@ def getStateVariables(objIDs: (list, tuple)):
         return False, []
 
     # Return the list of state variables.
-    out = [bullet_data.fromjson(_['sv']) for _ in out]
+    out = [bullet_data.fromJsonDict(_['sv']) for _ in out]
     return True, out
 
 
@@ -159,7 +159,7 @@ def update(objID: bytes, sv: bullet_data.BulletData):
         return False
 
     # Update an existing object only.
-    doc = _DB_SV.update({'objid': objID}, {'$set': {'sv': sv.tojson()}})
+    doc = _DB_SV.update({'objid': objID}, {'$set': {'sv': sv.toJsonDict()}})
 
     # This function was successful if exactly one document was updated.
     return doc['n'] == 1
@@ -178,7 +178,7 @@ def getAllStateVariables():
     # Compile all objects IDs and state variables into a dictionary.
     out = {}
     for doc in _DB_SV.find():
-        key, value = doc['objid'], bullet_data.fromjson(doc['sv'])
+        key, value = doc['objid'], bullet_data.fromJsonDict(doc['sv'])
         out[key] = value
     return True, out
 
@@ -437,7 +437,7 @@ def getWorkPackage(wpid: int):
     # non-existing objects.
     data = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
     data = [_ for _ in data if _ is not None]
-    data = [WPData(_['objid'], bullet_data.fromjson(_['sv']),
+    data = [WPData(_['objid'], bullet_data.fromJsonDict(_['sv']),
                    _['central_force'], _['torque'], _['sugPos'])
             for _ in data]
 
@@ -468,6 +468,7 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     # provided values.
     for objID in svdict:
         _DB_SV.update({'objid': objID, 'token': token},
-                      {'$set': {'sv': svdict[objID].tojson(), 'sugPos': None},
+                      {'$set': {'sv': svdict[objID].toJsonDict(),
+                                'sugPos': None},
                        '$unset': {'token': 1}})
     return True

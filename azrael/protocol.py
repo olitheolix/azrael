@@ -351,7 +351,7 @@ def FromClerk_GetStateVariable_Encode(
         objIDs: (list, tuple), sv: (list, tuple)):
     for _ in sv:
         assert isinstance(_, bullet_data.BulletData)
-    d = {'data': [{'objID': objID, 'sv': sv.tojson()}
+    d = {'data': [{'objID': objID, 'sv': sv.toJsonDict()}
                   for (objID, sv) in zip(objIDs, sv)]}
     return True, d
 
@@ -360,7 +360,7 @@ def FromClerk_GetStateVariable_Encode(
 def FromClerk_GetStateVariable_Decode(data: dict):
     out = {}
     for d in data['data']:
-        out[bytes(d['objID'])] = bullet_data.fromjson(d['sv'])
+        out[bytes(d['objID'])] = bullet_data.fromJsonDict(d['sv'])
     return True, out
 
 
@@ -372,7 +372,8 @@ def FromClerk_GetStateVariable_Decode(data: dict):
 @typecheck
 def ToClerk_Spawn_Encode(
         name: bytes, templateID: bytes, sv: bullet_data.BulletData):
-    return True, {'name': name, 'templateID': templateID, 'sv': sv.tojson()}
+    return True, {'name': name, 'templateID': templateID,
+                  'sv': sv.toJsonDict()}
 
 
 @typecheck
@@ -383,7 +384,7 @@ def ToClerk_Spawn_Decode(data: dict):
         ctrl_name = bytes(data['name'])
 
     templateID = bytes(data['templateID'])
-    sv = bullet_data.fromjson(data['sv'])
+    sv = bullet_data.fromJsonDict(data['sv'])
 
     if sv is None:
         return False, 'Invalid State Variable data'

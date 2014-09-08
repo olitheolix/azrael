@@ -112,14 +112,20 @@ class BulletData(_BulletData):
     def __ne__(self, ref):
         return not self.__eq__(ref)
 
-    def tojson(self):
+    def toJsonDict(self):
         """
-        Convert ``BulletData`` to UTF8 encoded JSON.
+        Convert ``BulletData`` to JSON encodeable dictionary.
         """
         d = {'part': 'BulletData'}
         for f in self._fields:
             d[f] = getattr(self, f)
-        return dumps(d)
+
+        # The dictionary 'd' is alreay what we want. However, it still contains
+        # some NumPy arrays which JSON cannot serialise. To avoid manually
+        # converting all of them to lists we simply use our own JSON encoder
+        # which does that automatically, and then decode it again. The result
+        # is the same.
+        return loads(dumps(d))
 
     @typecheck
     def toNumPyString(self):
@@ -154,12 +160,11 @@ class BulletData(_BulletData):
 
 
 @typecheck
-def fromjson(data):
+def fromJsonDict(data):
     """
     Unpack the JSON encoded ``BulletData`` in ``data``.
     """
-    d = loads(data)
-    args = [d[_] for _ in BulletData._fields]
+    args = [data[_] for _ in BulletData._fields]
     return BulletData(*args)
 
 

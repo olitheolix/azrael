@@ -474,7 +474,7 @@ def test_StateVariable_tuple():
     assert sv1 != sv2
 
     # Ensure (de)serialisation works.
-    assert sv1 == bullet_data.fromjson(sv1.tojson())
+    assert sv1 == bullet_data.fromJsonDict(sv1.toJsonDict())
 
     # Ensure (de)serialisation works.
     assert sv1 == bullet_data.fromNumPyString(sv1.toNumPyString())
