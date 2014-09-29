@@ -415,16 +415,19 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Clear the scene.
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
-        for ctrl_id in self.controllers:
+        allObjectIDs = list(self.controllers)
+        ok, allSVs = self.ctrl.getStateVariables(allObjectIDs)
+        if not ok:
+            print('Could not retrieve SV')
+            sys.exit()
+
+        for idx, ctrl_id in enumerate(allObjectIDs):
             # Activate the VAO and shader program.
             gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
             gl.glUseProgram(self.shaders)
 
-            # Query the object's position to construct the model matrix.
-            ok, sv = self.ctrl.getStateVariables(ctrl_id)
-            if not ok:
-                continue
-            sv = sv[ctrl_id]
+            # Convenience.
+            sv = allSVs[ctrl_id]
 
             # Build the scaling matrix.
             scale_mat = sv.scale * np.eye(4)
