@@ -361,7 +361,7 @@ function* mycoroutine(connection) {
 
 window.onload = function() {
     // Create a websocket connection.
-    var connection = new WebSocket('ws://localhost:8080/websocket');
+    var connection = new WebSocket('ws://' + window.location.host + '/websocket');
     var protocol = mycoroutine(connection);
 
     // Error handler.
