@@ -278,16 +278,25 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # Add to set.
             self.controllers.add(ctrl_id)
 
-            # GPU needs float32 values.
+            # fixme: getGeometry must provide this (what about getTemplate?).
+            width = height = int(np.sqrt(len(buf_rgb) // 3))
+
+            # fixme: remove once I have modifed start to create the random
+            # texture.
+            if len(buf_uv) != (2 * (len(buf_vert) // 3)):
+                # Create artificial texture and UV map.
+                width = height = 2
+                buf_rgb = np.random.randint(0, 256, width * height * 3)
+                buf_uv = np.random.randint(0, 2, 2 * (len(buf_vert) // 3))
+                buf_uv = 0.25 + buf_uv / 2
+
+            # GPU needs float32 values for vertices and UV, and uint8 for RGB.
             buf_vert = buf_vert.astype(np.float32)
+            buf_uv = buf_uv.astype(np.float32)
+            buf_rgb = buf_rgb.astype(np.uint8)
 
             # Store the number of vertices.
             self.numVertices[ctrl_id] = len(buf_vert) // 3
-
-            # Create random colors for every vertex; each color consists of
-            # four float32 values that denote RGBA, respectively.
-            buf_col = np.random.rand(4 * self.numVertices[ctrl_id])
-            buf_col = buf_col.astype(np.float32)
 
             # Create a new VAO (Vertex Array Object) and bind it. All GPU
             # buffers created below can then be activated at once by binding
@@ -311,14 +320,34 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # Repeat with color data. Each vertex gets a color, specified in
             # terms of RGBA values (each a float32).
             gl.glBindBuffer(gl.GL_ARRAY_BUFFER, colorBuffer)
-            gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_col, gl.GL_STATIC_DRAW)
+            gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_uv, gl.GL_STATIC_DRAW)
 
             # Color data is associated with Layout 1 (first parameter), has
             # four elements per vertex (second parameter), and each element is
             # a float32 (third parameter). The other three parameters are of no
             # interest here.
-            gl.glVertexAttribPointer(1, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+            gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
             gl.glEnableVertexAttribArray(1)
+
+            # fixme: remove dashed lines.
+            # --------------------------------------------------
+            # Create texture buffer and bind it.
+            self.textureBuffer[ctrl_id] = gl.glGenTextures(1)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
+
+            # fixme: delete this comment too?
+            #gl.glUniform1i(gl.glGetUniformLocation(self.shaders, b'gSampler'), 0)
+             
+            # Upload texture to GPU.
+            print('Width: ', width, height)
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height, 0,
+                            gl.GL_RGB, gl.GL_UNSIGNED_BYTE, buf_rgb)
+             
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER,
+                               gl.GL_NEAREST)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER,
+                               gl.GL_NEAREST)
+            # --------------------------------------------------
 
             # Only draw visible triangles.
             gl.glEnable(gl.GL_DEPTH_TEST)
@@ -396,11 +425,21 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.controllers = set()
         self.numVertices = {}
         self.vertex_array_object = {}
+        self.textureBuffer = {}
 
         # Background color.
         gl.glClearColor(0, 0, 0, 0)
-        self.shaders = self.linkShaders(_this_directory + '/passthrough.vs',
-                                        _this_directory + '/passthrough.fs')
+        # fixme: remove if clause
+        # fixme: delete shader files and check in the new ones.
+        # fixme: document the shaders.
+        if False:
+            vs = os.path.join(_this_directory, 'passthrough.vs')
+            fs = os.path.join(_this_directory, 'passthrough.fs')
+        else:
+            vs = os.path.join(_this_directory, 'uv.vs')
+            fs = os.path.join(_this_directory, 'uv.fs')
+            
+        self.shaders = self.linkShaders(vs, fs)
 
         # Activate the shader to obtain handles to the global variables defined
         # in the vertex shader.
@@ -439,10 +478,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             sys.exit()
 
         for idx, ctrl_id in enumerate(allObjectIDs):
-            # Activate the VAO and shader program.
-            gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
-            gl.glUseProgram(self.shaders)
-
             # Convenience.
             sv = allSVs[ctrl_id]
 
@@ -470,12 +505,23 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             matVP = matVP.astype(np.float32)
             matVP = matVP.flatten(order='F')
 
+            # Activate the VAO and shader program.
+            gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
+            gl.glUseProgram(self.shaders)
+
             # Upload the model- and projection matrices to the GPU.
             gl.glUniformMatrix4fv(self.h_modMat, 1, gl.GL_FALSE, model_mat)
             gl.glUniformMatrix4fv(self.h_prjMat, 1, gl.GL_FALSE, matVP)
 
             # Draw all triangles, and unbind the VAO again.
+            gl.glActiveTexture(gl.GL_TEXTURE0)
+            gl.glEnableVertexAttribArray(0)
+            gl.glEnableVertexAttribArray(1)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
             gl.glDrawArrays(gl.GL_TRIANGLES, 0, self.numVertices[ctrl_id])
+            gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+            gl.glDisableVertexAttribArray(1)
+            gl.glDisableVertexAttribArray(0)
             gl.glBindVertexArray(0)
 
     def resizeGL(self, width, height):
@@ -628,7 +674,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if button == 1:
             # Determine initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
-            vel = 2 * self.camera.view
+            # fixme: uncomment the 0*
+            vel = 0 * 2 * self.camera.view
 
             # Spawn the object.
             ok, ctrl_id = self.ctrl.spawn(
