@@ -14,7 +14,7 @@ var StateVariable = function(pos, vel, orientation, scale, imass) {
 /*
   Create a ThreeJS geometry object.
 */
-function compileMesh (p, scale) {
+function compileMesh (p, uv, scale) {
     var geo = new THREE.Geometry()
 
     console.log('Compiling mesh with ' + p.length + ' vertices');
@@ -23,15 +23,23 @@ function compileMesh (p, scale) {
     for (ii=0; ii < p.length; ii ++) p[ii] *= scale;
 
     // Compile the geometry.
+    geo.faceVertexUvs[0] = []
+    var jj = 0
     for (ii=0; ii < p.length; ii += 9) {
-        // Add the three vertex that define a triangle.
+        // Add the three vertices that define a triangle.
         var v1 = new THREE.Vector3(p[ii+0], p[ii+1], p[ii+2])
         var v2 = new THREE.Vector3(p[ii+3], p[ii+4], p[ii+5])
         var v3 = new THREE.Vector3(p[ii+6], p[ii+7], p[ii+8])
         geo.vertices.push(v1, v2, v3);
 
-        // Define the current face in terms of the three just added
-        // vertices.
+        // fixme: use the actual UV coordinates instead of the fake uv_x, uv_y
+        geo.faceVertexUvs[0].push([
+            new THREE.Vector2(uv[jj+0], uv[jj+1]),
+            new THREE.Vector2(uv[jj+2], uv[jj+3]),
+            new THREE.Vector2(uv[jj+4], uv[jj+5])])
+        jj += 6
+
+        // Define the current face in terms of the three just added vertices.
         var facecnt = Math.floor(ii / 3)
         geo.faces.push( new THREE.Face3(facecnt, facecnt+1, facecnt+2))
     }
@@ -104,7 +112,9 @@ function getTemplate(templateID) {
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
         return {'ok': parsed.ok,
-                'geometry': parsed.payload.geo,
+                'vert': parsed.payload.vert,
+                'UV': parsed.payload.UV,
+                'RGB': parsed.payload.RGB,
                 'cs': parsed.payload.cs}
     };
 
@@ -113,8 +123,8 @@ function getTemplate(templateID) {
 
 function addTemplate(templateID, cs, vertices) {
     var cmd = {'cmd': 'add_template', 'payload':
-               {'name': templateID, 'cs': cs, 'geo': vertices,
-                'boosters': [], 'factories': []}}
+               {'name': templateID, 'cs': cs, 'vert': vertices,
+                'UV': [], 'RGB': [], 'boosters': [], 'factories': []}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
@@ -264,14 +274,26 @@ function* mycoroutine(connection) {
                 console.log('Added template ' + msg.templateID + ' to cache')
                 msg = yield getTemplate(msg.templateID);
                 if (msg.ok == false) {console.log('Error'); return;}
-                var geo = compileMesh(msg.geometry, scale)
+                var geo = compileMesh(msg.vert, msg.UV, scale)
 
                 // Build a new object in ThreeJS.
                 var mat = new THREE.MeshBasicMaterial(
                     {vertexColors: THREE.FaceColors,
                      wireframe: false,
                      wireframeLinewidth: 3})
-                var new_geo = new THREE.Mesh(geo, mat)
+
+                // Create a textured material.
+                // fixme: download the texture via an URL from the server.
+                var texture = THREE.ImageUtils.loadTexture('house.jpg');
+                var mat2 = new THREE.MeshBasicMaterial({
+                    'map': texture,
+                    'wireframe': false,
+                    'overdraw': true
+                });
+
+                // fixme: use 'mat' if no textures are available. Otherwise
+                // use 'mat2'.
+                var new_geo = new THREE.Mesh(geo, mat2)
 
                 // Add the object to the cache and scene.
                 obj_cache[objIDs[ii]] = new_geo
