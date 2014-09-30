@@ -325,13 +325,19 @@ def ToClerk_GetGeometry_Decode(data: dict):
 
 
 @typecheck
-def FromClerk_GetGeometry_Encode(geo: np.ndarray):
-    return True, {'geo': geo.tolist()}
+def FromClerk_GetGeometry_Encode(
+        vert: np.ndarray, uv: np.ndarray, rgb: np.ndarray):
+    return True, {'vert': vert.tolist(),
+                  'UV': uv.tolist(),
+                  'RGB': rgb.tolist()}
 
 
 @typecheck
 def FromClerk_GetGeometry_Decode(data: dict):
-    return True, np.array(data['geo'], np.float64)
+    vert = np.array(data['vert'], np.float64)
+    uv = np.array(data['UV'], np.uint8)
+    rgb = np.array(data['RGB'], np.uint8)
+    return True, (vert, uv, rgb)
 
 
 # ---------------------------------------------------------------------------

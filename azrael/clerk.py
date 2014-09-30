@@ -799,7 +799,9 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def getGeometry(self, templateID: bytes):
         """
-        Return the geometry for the template ``templateID``.
+        Return the vertices, UV map, and RGB map for ``templateID``.
+
+        All returned values are NumPy arrays.
 
         If the ID does not exist return an error.
 
@@ -808,8 +810,8 @@ class Clerk(multiprocessing.Process):
            be returned in that case.
 
         :param bytes templateID: template ID
-        :return: (ok, (object ID, ))
-        :rtype: (bool, (bytes, np.ndarray))
+        :return: (ok, (vert, UV, RGB))
+        :rtype: (bool, (np.ndarray, np.ndarray, np.ndarray))
         """
         # Retrieve the geometry. Return an error if the ID does not
         # exist. Note: an empty geometry field is valid.
@@ -817,8 +819,10 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             return False, 'ID does not exist'
         else:
-            geo = np.fromstring(doc['vertices'], np.float64)
-            return True, (geo,)
+            vert = np.fromstring(doc['vertices'], np.float64)
+            uv = np.fromstring(doc['UV'], np.float64)
+            rgb = np.fromstring(doc['RGB'], np.uint8)
+            return True, (vert, uv, rgb)
 
     @typecheck
     def setForce(self, objID: bytes, force: np.ndarray, rpos: np.ndarray):

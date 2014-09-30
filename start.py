@@ -32,6 +32,7 @@ sys.path.insert(0, p)
 del p
 
 import time
+import IPython
 import logging
 import argparse
 import subprocess
@@ -45,6 +46,8 @@ import azrael.wscontroller as wscontroller
 import azrael.bullet.btInterface as btInterface
 
 import numpy as np
+
+ipshell = IPython.embed
 
 
 def parseCommandLine():
@@ -116,22 +119,29 @@ def loadGroundModel(scale, model_name):
 
     # Load the model mesh.
     print('  Importing <{}>... '.format(model_name), end='', flush=True)
-    mesh = model_import.loadModelMesh(model_name)
-    mesh = mesh['vertices']
+    mesh = model_import.loadModelAll(model_name)
+
+    # The model data may contain several sub-models. The following code will
+    # concatenate the vertices, UV- and textures map into a single buffer.
     buf_vert = []
-    for l in mesh:
+    buf_uv = []
+    buf_rgb = []
+    for l in mesh['vertices']:
         buf_vert.extend(l)
+    for l in mesh['UV']:
+        buf_uv.extend(l)
+    for l in mesh['RGB']:
+        buf_rgb.extend(l)
     buf_vert = scale * np.array(buf_vert)
+    buf_uv = np.array(buf_uv, np.float32)
+    buf_rgb = np.array(buf_rgb, np.uint8)
     print('done')
 
-    # Set the geometry of the object in Azrael.
+    # Add another template to Azrael.
     print('  Adding geometry to Azrael... ', end='', flush=True)
     templateID = 'ground'.encode('utf8')
     cs = np.zeros(4, np.float64)
-    uv = np.array([], np.float64)
-    rgb = np.array([], np.uint8)
-
-    ok, _ = ctrl.addTemplate(templateID, cs, buf_vert, uv, rgb, [], [])
+    ok, _ = ctrl.addTemplate(templateID, cs, buf_vert, buf_uv, buf_rgb, [], [])
 
     # Tell Azrael to spawn the 'ground' object near the center of the scene.
     print('  Spawning object... ', end='', flush=True)

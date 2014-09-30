@@ -358,8 +358,11 @@ def test_create_fetch_template(ctrl_type):
         templateID, cs, vert, uv, rgb, [b0, b1], [f0])
 
     # Retrieve the geometry of the new object and verify it is correct.
-    ok, ret = ctrl.getGeometry(templateID)
-    assert np.array_equal(ret, vert)
+    ok, (out_vert, out_uv, out_rgb) = ctrl.getGeometry(templateID)
+    assert np.array_equal(vert, out_vert)
+    assert np.array_equal(uv, out_uv)
+    assert np.array_equal(rgb, out_rgb)
+    assert out_rgb.dtype == np.uint8
 
     # Retrieve the entire template and verify the CS and geometry.
     ok, ret = ctrl.getTemplate(templateID)

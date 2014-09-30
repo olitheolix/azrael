@@ -264,7 +264,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Query the object template.
-            ok, buf_vert = self.ctrl.getGeometry(templateID)
+            ok, (buf_vert, buf_uv, buf_rgb) = self.ctrl.getGeometry(templateID)
             if not ok:
                 continue
 
