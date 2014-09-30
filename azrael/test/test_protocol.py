@@ -41,8 +41,11 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     killAzrael()
 
     # Test parameters and constants.
-    cs = bullet_data.BulletData().cshape
-    geo = np.array([1, 2, 3], np.float64)
+    cs = np.array([1, 2, 3, 4], np.float64)
+    vert = np.array([5, 6, 7, 8], np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
+
     b0 = parts.Booster(
         partID=0, pos=np.zeros(3), direction=[0, 0, 1], max_force=0.5)
     b1 = parts.Booster(
@@ -68,7 +71,8 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Clerk --> Controller.
     # ----------------------------------------------------------------------
     # Encode source data.
-    ok, enc = protocol.FromClerk_GetTemplate_Encode(cs, geo, [b0, b1], [f0])
+    ok, enc = protocol.FromClerk_GetTemplate_Encode(
+        cs, vert, uv, rgb, [b0, b1], [f0])
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))
@@ -78,7 +82,9 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
 
     # Verify.
     assert np.array_equal(dec.cs, cs)
-    assert np.array_equal(dec.geo, geo)
+    assert np.array_equal(dec.vert, vert)
+    assert np.array_equal(dec.uv, uv)
+    assert np.array_equal(dec.rgb, rgb)
     assert len(dec.boosters) == 2
     assert len(dec.factories) == 1
 

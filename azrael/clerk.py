@@ -199,13 +199,16 @@ class Clerk(multiprocessing.Process):
         # their collision shapes are: none, sphere, cube.
         self.addTemplate('_templateNone'.encode('utf8'),
                          np.array([0, 1, 1, 1], np.float64),
-                         np.array([]), [], [])
+                         np.array([]), np.array([]), np.array([]),
+                         [], [])
         self.addTemplate('_templateSphere'.encode('utf8'),
                          np.array([3, 1, 1, 1], np.float64),
-                         np.array([]), [], [])
+                         np.array([]), np.array([]), np.array([]),
+                         [], [])
         self.addTemplate('_templateCube'.encode('utf8'),
                          np.array([4, 1, 1, 1], np.float64),
-                         np.array([]), [], [])
+                         np.array([]), np.array([]), np.array([]),
+                         [], [])
 
         # Initialise the SV database.
         btInterface.initSVDB(reset)
@@ -437,58 +440,6 @@ class Clerk(multiprocessing.Process):
         objID = util.int2id(self.getUniqueID())
         return True, (objID, )
 
-    @typecheck
-    def getTemplate(self, templateID: bytes):
-        """
-        Return the template for ``templateID``.
-
-        Templates describe the geometry, collision shape, and capabilities
-        (eg. boosters and factories) of an object.
-        parts like boo
-
-        This method return (cs, geo, boosters, factories).
-
-        A template object has the following structure in Mongo:
-        {'_id': ObjectId('53eeb55062d05244dfec278f'),
-        'boosters': {'000': b'', '001': b'', ..},
-        'factories': {'000':b'', ...},
-        'cshape': b'',
-        'templateID': b'',
-        'geometry': b''}
-
-        :param bytes templateID: templateID
-        :return: (ok, (cs, geo, boosters, factories))
-        :rtype: (True, tuple) or (False, str)
-        :raises: None
-        """
-        # Retrieve the template. Return immediately if it does not exist.
-        doc = self.db_templateID.find_one({'templateID': templateID})
-        if doc is None:
-            msg = 'Invalid template ID <{}>'.format(templateID)
-            self.logit.info(msg)
-            return False, msg
-
-        # Extract the collision shape and object geometry.
-        cs, geo = np.fromstring(doc['cshape']), np.fromstring(doc['geometry'])
-
-        # Extract the booster parts.
-        if 'boosters' in doc:
-            # Convert byte string to Booster objects.
-            boosters = [parts.fromstring(_) for _ in doc['boosters'].values()]
-        else:
-            # Object has no boosters.
-            boosters = []
-
-        # Extract the factory parts.
-        if 'factories' in doc:
-            # Convert byte string to Factory objects.
-            fac = [parts.fromstring(_) for _ in doc['factories'].values()]
-        else:
-            # Object has no factories.
-            fac = []
-
-        return True, (cs, geo, boosters, fac)
-
     # ----------------------------------------------------------------------
     # These methods service Controller requests.
     # ----------------------------------------------------------------------
@@ -528,7 +479,7 @@ class Clerk(multiprocessing.Process):
             self.logit.warning(msg)
             return False, msg
         else:
-            cshape, geo, boosters, factories = data
+            cshape, vert, UV, RGB, boosters, factories = data
 
         # Fetch the SV for objID.
         ok, svdata = self.getStateVariables([objID])
@@ -631,7 +582,8 @@ class Clerk(multiprocessing.Process):
 
     @typecheck
     def addTemplate(self, templateID: bytes, cshape: np.ndarray,
-                    geometry: np.ndarray, boosters: (list, tuple),
+                    vertices: np.ndarray, UV: np.ndarray,
+                    RGB: np.ndarray, boosters: (list, tuple),
                     factories: (list, tuple)):
         """
         Add a new ``templateID`` to the system.
@@ -642,7 +594,9 @@ class Clerk(multiprocessing.Process):
 
         :param bytes templateID: the name of the new template.
         :param bytes cshape: collision shape
-        :param bytes geometry: object geometry
+        :param bytes vert: object vertices
+        :param bytes UV: UV map for textures
+        :param bytes RGB: texture
         :param parts.Booster boosters: list of Booster instances.
         :param parts.Factory boosters: list of Factory instances.
         :return: (ok, template ID)
@@ -652,7 +606,10 @@ class Clerk(multiprocessing.Process):
         # Compile the Mongo document for the new template. This document
         # contains the collision shape and geometry...
         data = {'templateID': templateID,
-                'cshape': cshape.tostring(), 'geometry': geometry.tostring()}
+                'cshape': cshape.tostring(),
+                'vertices': vertices.tostring(),
+                'UV': UV.tostring(),
+                'RGB': RGB.tostring()}
 
         # ... as well as booster- and factory parts.
         for b in boosters:
@@ -674,6 +631,61 @@ class Clerk(multiprocessing.Process):
             # A template with name ``templateID`` already existed --> failure.
             msg = 'Template ID <{}> already exists'.format(templateID)
             return False, msg
+
+    @typecheck
+    def getTemplate(self, templateID: bytes):
+        """
+        Return the template for ``templateID``.
+
+        Templates describe the geometry, collision shape, and capabilities
+        (eg. boosters and factories) of an object.
+        parts like boo
+
+        This method return (cs, geo, boosters, factories).
+
+        A template object has the following structure in Mongo:
+        {'_id': ObjectId('53eeb55062d05244dfec278f'),
+        'boosters': {'000': b'', '001': b'', ..},
+        'factories': {'000':b'', ...},
+        'cshape': b'',
+        'templateID': b'',
+        'geometry': b''}
+
+        :param bytes templateID: templateID
+        :return: (ok, (cs, geo, boosters, factories))
+        :rtype: (True, tuple) or (False, str)
+        :raises: None
+        """
+        # Retrieve the template. Return immediately if it does not exist.
+        doc = self.db_templateID.find_one({'templateID': templateID})
+        if doc is None:
+            msg = 'Invalid template ID <{}>'.format(templateID)
+            self.logit.info(msg)
+            return False, msg
+
+        # Extract the collision shape, geometry, UV- and texture map.
+        cs = np.fromstring(doc['cshape'], np.float64)
+        vert = np.fromstring(doc['vertices'], np.float64)
+        uv = np.fromstring(doc['UV'], np.float64)
+        rgb = np.fromstring(doc['RGB'], np.uint8)
+
+        # Extract the booster parts.
+        if 'boosters' in doc:
+            # Convert byte string to Booster objects.
+            boosters = [parts.fromstring(_) for _ in doc['boosters'].values()]
+        else:
+            # Object has no boosters.
+            boosters = []
+
+        # Extract the factory parts.
+        if 'factories' in doc:
+            # Convert byte string to Factory objects.
+            fac = [parts.fromstring(_) for _ in doc['factories'].values()]
+        else:
+            # Object has no factories.
+            fac = []
+
+        return True, (cs, vert, uv, rgb, boosters, fac)
 
     @typecheck
     def sendMessage(self, src: bytes, dst: bytes, data: bytes):
@@ -735,7 +747,7 @@ class Clerk(multiprocessing.Process):
         if not ok:
             return False, 'Invalid Template ID'
         else:
-            cshape, geo, boosters, factories = data
+            cshape, vert, UV, RGB, boosters, factories = data
 
         # Overwrite the supplied collision shape with the template
         # version. This will the other quantities, most notably position and
@@ -805,7 +817,7 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             return False, 'ID does not exist'
         else:
-            geo = np.fromstring(doc['geometry'], np.float64)
+            geo = np.fromstring(doc['vertices'], np.float64)
             return True, (geo,)
 
     @typecheck

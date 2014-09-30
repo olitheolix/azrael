@@ -310,30 +310,34 @@ def test_create_fetch_template(ctrl_type):
     ok, ret = ctrl.getTemplate('_templateNone'.encode('utf8'))
     assert ok
     assert np.array_equal(ret.cs, [0, 1, 1, 1])
-    assert len(ret.geo) == len(ret.boosters) == len(ret.factories) == 0
+    assert len(ret.vert) == len(ret.boosters) == len(ret.factories) == 0
 
     # ... this one is a sphere...
     ok, ret = ctrl.getTemplate('_templateSphere'.encode('utf8'))
     assert ok
     assert np.array_equal(ret.cs, [3, 1, 1, 1])
-    assert len(ret.geo) == len(ret.boosters) == len(ret.factories) == 0
+    assert len(ret.vert) == len(ret.boosters) == len(ret.factories) == 0
 
     # ... and this one is a cube.
     ok, ret = ctrl.getTemplate('_templateCube'.encode('utf8'))
     assert ok
     assert np.array_equal(ret.cs, [4, 1, 1, 1])
-    assert len(ret.geo) == len(ret.boosters) == len(ret.factories) == 0
+    assert len(ret.vert) == len(ret.boosters) == len(ret.factories) == 0
 
     # Add a new object template.
     cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
+    vert = np.array([5, 6, 7, 8], np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
     templateID = 't1'.encode('utf8')
-    ok, templateID = ctrl.addTemplate(templateID, cs, geo, [], [])
+    ok, templateID = ctrl.addTemplate(templateID, cs, vert, uv, rgb, [], [])
 
     # Fetch the just added template again.
     ok, ret = ctrl.getTemplate(templateID)
     assert np.array_equal(ret.cs, cs)
-    assert np.array_equal(ret.geo, geo)
+    assert np.array_equal(ret.vert, vert)
+    assert np.array_equal(ret.uv, uv)
+    assert np.array_equal(ret.rgb, rgb)
     assert len(ret.boosters) == len(ret.factories) == 0
 
     # Define a new object with two boosters and one factory unit.
@@ -350,16 +354,19 @@ def test_create_fetch_template(ctrl_type):
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
-    ok, templateID = ctrl.addTemplate(templateID, cs, geo, [b0, b1], [f0])
+    ok, templateID = ctrl.addTemplate(
+        templateID, cs, vert, uv, rgb, [b0, b1], [f0])
 
     # Retrieve the geometry of the new object and verify it is correct.
     ok, ret = ctrl.getGeometry(templateID)
-    assert np.array_equal(ret, geo)
+    assert np.array_equal(ret, vert)
 
     # Retrieve the entire template and verify the CS and geometry.
     ok, ret = ctrl.getTemplate(templateID)
     assert np.array_equal(ret.cs, cs)
-    assert np.array_equal(ret.geo, geo)
+    assert np.array_equal(ret.vert, vert)
+    assert np.array_equal(ret.uv, uv)
+    assert np.array_equal(ret.rgb, rgb)
 
     # The template must also feature two boosters and one factory.
     assert len(ret.boosters) == 2
@@ -397,7 +404,9 @@ def test_controlParts(ctrl_type):
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
+    vert = np.array([5, 6, 7, 8], np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
 
     # Part positions relative to parent.
     dir_0 = np.array([0, 0, +2], np.float64)
@@ -444,7 +453,8 @@ def test_controlParts(ctrl_type):
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = ctrl.addTemplate(templateID_2, cs, geo, [b0, b1], [f0, f1])
+    ok, _ = ctrl.addTemplate(
+        templateID_2, cs, vert, uv, rgb, [b0, b1], [f0, f1])
     assert ok
 
     # ... and spawn an instance thereof.

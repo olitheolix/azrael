@@ -342,7 +342,7 @@ def test_suggest_position():
     print('Test passed')
 
 
-def test_create_fetch_template():
+def test_add_get_template():
     """
     Add a new object to the templateID DB and query it again.
     """
@@ -372,26 +372,28 @@ def test_create_fetch_template():
 
     # Add a new object template.
     cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
+    vert = np.array([5, 6, 7, 8], np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
     templateID = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID, cs, geo, [], [])
+    ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
 
-    # Add a different template with the same name. This must fail.
-    ok, _ = clerk.addTemplate(templateID, 2 * cs, 2 * geo, [], [])
+    # Attempt to add another template with the same name. This must fail.
+    ok, _ = clerk.addTemplate(templateID, 2 * cs, 2 * vert, uv, rgb, [], [])
     assert not ok
 
-    # Fetch the just added template again.
+    # Fetch the just added template again and verify CS, vertices, UV, and RGB.
     ok, out = clerk.getTemplate(templateID)
     assert ok
-    assert np.array_equal(out[0], np.array([1, 2, 3, 4]))
-    assert np.array_equal(out[1], np.array([5, 6, 7, 8]))
+    assert np.array_equal(out[0], cs)
+    assert np.array_equal(out[1], vert)
+    assert np.array_equal(out[2], uv)
+    assert np.array_equal(out[3], rgb)
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
     # tuples. Their first argument is the unit ID (Azrael does not assign
     # automatically assign any IDs).
-    cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
     z = np.zeros(3)
     b0 = parts.Booster(
         partID=0, pos=z, direction=[0, 0, 1], max_force=0.5)
@@ -404,23 +406,25 @@ def test_create_fetch_template():
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID, cs, geo, [b0, b1], [f0])
+    ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [b0, b1], [f0])
 
     # Retrieve the just created object and verify the CS and geometry.
     ok, out = clerk.getTemplate(templateID)
     assert ok
     assert np.array_equal(out[0], cs)
-    assert np.array_equal(out[1], geo)
+    assert np.array_equal(out[1], vert)
+    assert np.array_equal(out[2], uv)
+    assert np.array_equal(out[3], rgb)
 
     # The template must also feature two boosters and one factory.
-    assert len(out[2]) == 2
-    assert len(out[3]) == 1
+    assert len(out[4]) == 2
+    assert len(out[5]) == 1
 
     # Explicitly verify the booster- and factory units. The easisest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
-    out_boosters = [_.tostring() for _ in out[2]]
-    out_factories = [_.tostring() for _ in out[3]]
+    out_boosters = [_.tostring() for _ in out[4]]
+    out_factories = [_.tostring() for _ in out[5]]
     assert b0.tostring() in out_boosters
     assert b1.tostring() in out_boosters
     assert f0.tostring() in out_factories
@@ -532,9 +536,11 @@ def test_controlParts_invalid_commands():
 
     # Add the template to Azrael...
     cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
+    vert = np.array([5, 6, 7, 8], np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID_2, cs, geo, [b0], [f0])
+    ok, _ = clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [b0], [f0])
     assert ok
 
     # ... and spawn an instance thereof.
@@ -582,7 +588,10 @@ def test_controlParts_Boosters_notmoving():
 
     # Constants for the new template object.
     cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
+    vert = np.array([5, 6, 7, 8], np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
+
     dir_0 = np.array([1, 0, 0], np.float64)
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
@@ -594,7 +603,7 @@ def test_controlParts_Boosters_notmoving():
 
     # Create a new template in Azrael of an object with two boosters.
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID_2, cs, geo, [b0, b1], [])
+    ok, _ = clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [b0, b1], [])
 
     # Spawn the object.
     ok, (ctrl_id,) = clerk.spawn(None, templateID_2, sv)
@@ -666,7 +675,9 @@ def test_controlParts_Factories_notmoving():
 
     # Constants for the new template object.
     cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
+    vert = np.array([5, 6, 7, 8], np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
     dir_0 = np.array([1, 0, 0], np.float64)
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
@@ -684,7 +695,7 @@ def test_controlParts_Factories_notmoving():
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID_2, cs, geo, [], [f0, f1])
+    ok, _ = clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [], [f0, f1])
     assert ok
 
     # ... and spawn an instance thereof.
@@ -744,7 +755,9 @@ def test_controlParts_Factories_moving():
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
+    vert = np.array([5, 6, 7, 8], np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
     dir_0 = np.array([1, 0, 0], np.float64)
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
@@ -772,7 +785,7 @@ def test_controlParts_Factories_moving():
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID_2, cs, geo, [], [f0, f1])
+    ok, _ = clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [], [f0, f1])
     assert ok
 
     # ... and spawn an instance thereof.
@@ -835,7 +848,9 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
-    geo = np.array([5, 6, 7, 8], np.float64)
+    vert = np.array([5, 6, 7, 8], np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
 
     # Part positions relative to parent.
     dir_0 = np.array([0, 0, +2], np.float64)
@@ -885,7 +900,8 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID_2, cs, geo, [b0, b1], [f0, f1])
+    ok, _ = clerk.addTemplate(
+        templateID_2, cs, vert, uv, rgb, [b0, b1], [f0, f1])
     assert ok
 
     # ... and spawn an instance thereof.
@@ -996,7 +1012,7 @@ if __name__ == '__main__':
     test_get_object_template_id()
     test_get_statevar()
     test_spawn()
-    test_create_fetch_template()
+    test_add_get_template()
     test_set_force()
     test_suggest_position()
     test_send_receive_message()

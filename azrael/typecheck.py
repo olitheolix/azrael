@@ -102,6 +102,10 @@ def typecheck(func_handle):
         # If the check failed then raise a TypeError.
         if not type_ok:
             args = (var_name, func_handle.__name__, var_anno, type(var_val))
+            msg = ('Expected the variable <{}> in function <{}> to have\n'
+                   'type {} but has {}\n')
+            msg = msg.format(*args)
+            print(msg)
             raise TypeError(*args)
 
     @functools.wraps(func_handle)

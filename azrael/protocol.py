@@ -41,12 +41,12 @@ should make it possible to write clients in other languages.
 """
 
 import IPython
-import collections
 import numpy as np
 import azrael.parts as parts
 import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
+from collections import namedtuple
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
@@ -101,52 +101,6 @@ def FromClerk_GetID_Decode(data: dict):
 
 
 # ---------------------------------------------------------------------------
-# GetTemplate
-# ---------------------------------------------------------------------------
-
-@typecheck
-def ToClerk_GetTemplate_Encode(templateID: bytes):
-    return True, {'templateID': list(templateID)}
-
-
-@typecheck
-def ToClerk_GetTemplate_Decode(data: dict):
-    if 'templateID' in data:
-        return True, (bytes(data['templateID']), )
-    else:
-        return False, 'Corrupt payload'
-
-
-@typecheck
-def FromClerk_GetTemplate_Encode(cs: np.ndarray, geo: np.ndarray,
-                                 boosters: (list, tuple),
-                                 factories: (list, tuple)):
-    for b in boosters:
-        assert isinstance(b, parts.Booster)
-    for f in factories:
-        assert isinstance(f, parts.Factory)
-
-    d = {'cs': cs, 'geo': geo,
-         'boosters': [_.tostring() for _ in boosters],
-         'factories': [_.tostring() for _ in factories]}
-    return True, d
-
-
-@typecheck
-def FromClerk_GetTemplate_Decode(data: dict):
-    # Wrap the Booster- and Factory data into their dedicated named tuples.
-    boosters = [parts.fromstring(_) for _ in data['boosters']]
-    factories = [parts.fromstring(_) for _ in data['factories']]
-
-    # Return the complete information in a named tuple.
-    nt = collections.namedtuple('Template', 'cs geo boosters factories')
-    ret = nt(np.array(data['cs'], np.float64),
-             np.array(data['geo'], np.float64),
-             boosters, factories)
-    return True, ret
-
-
-# ---------------------------------------------------------------------------
 # GetTemplateID
 # ---------------------------------------------------------------------------
 
@@ -172,19 +126,69 @@ def FromClerk_GetTemplateID_Decode(data: dict):
 
 
 # ---------------------------------------------------------------------------
-# AddTemplate
+# GetTemplate
 # ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_GetTemplate_Encode(templateID: bytes):
+    return True, {'templateID': list(templateID)}
 
 
 @typecheck
-def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray, geo:
-                               np.ndarray, boosters, factories):
+def ToClerk_GetTemplate_Decode(data: dict):
+    if 'templateID' in data:
+        return True, (bytes(data['templateID']), )
+    else:
+        return False, 'Corrupt payload'
+
+
+@typecheck
+def FromClerk_GetTemplate_Encode(
+        cs: np.ndarray, vert: np.ndarray, UV: np.ndarray, RGB: np.ndarray,
+        boosters: (list, tuple), factories: (list, tuple)):
     for b in boosters:
         assert isinstance(b, parts.Booster)
     for f in factories:
         assert isinstance(f, parts.Factory)
 
-    d = {'name': templateID, 'cs': cs.tolist(), 'geo': geo.tolist(),
+    d = {'cs': cs, 'vert': vert, 'UV': UV, 'RGB': RGB,
+         'boosters': [_.tostring() for _ in boosters],
+         'factories': [_.tostring() for _ in factories]}
+    return True, d
+
+
+@typecheck
+def FromClerk_GetTemplate_Decode(data: dict):
+    # Wrap the Booster- and Factory data into their dedicated named tuples.
+    boosters = [parts.fromstring(_) for _ in data['boosters']]
+    factories = [parts.fromstring(_) for _ in data['factories']]
+
+    # Return the complete information in a named tuple.
+    nt = namedtuple('Template', 'cs vert uv rgb boosters factories')
+    ret = nt(np.array(data['cs'], np.float64),
+             np.array(data['vert'], np.float64),
+             np.array(data['UV'], np.float64),
+             np.array(data['RGB'], np.uint8),
+             boosters, factories)
+    return True, ret
+
+
+# ---------------------------------------------------------------------------
+# AddTemplate
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray,
+                               vert: np.ndarray, UV: np.ndarray,
+                               RGB: np.ndarray, boosters, factories):
+    for b in boosters:
+        assert isinstance(b, parts.Booster)
+    for f in factories:
+        assert isinstance(f, parts.Factory)
+
+    d = {'name': templateID, 'cs': cs.tolist(), 'vert': vert.tolist(),
+         'UV': UV.tolist(), 'RGB': RGB.tolist(),
          'boosters': [_.tostring() for _ in boosters],
          'factories': [_.tostring() for _ in factories]}
 
@@ -202,10 +206,12 @@ def ToClerk_AddTemplate_Decode(data: dict):
 
     # Convert collision shape and geometry to NumPy array (via byte string).
     cs = np.array(data['cs'], np.float64)
-    geo = np.array(data['geo'], np.float64)
+    vert = np.array(data['vert'], np.float64)
+    UV = np.array(data['UV'], np.float64)
+    RGB = np.array(data['RGB'], np.uint8)
 
     # Return decoded quantities.
-    return True, (templateID, cs, geo, boosters, factories)
+    return True, (templateID, cs, vert, UV, RGB, boosters, factories)
 
 
 @typecheck

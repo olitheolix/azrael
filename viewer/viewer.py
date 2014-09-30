@@ -329,6 +329,21 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         Create the graphic buffers and compile the shaders.
         """
+        try:
+            self._initializeGL()
+        except Exception as err:
+            print('OpenGL initialisation failed with the following error:')
+            print('\n' + '-' * 79)
+            print(err)
+            import traceback
+            traceback.print_exc(file=sys.stdout)
+            print('-' * 79 + '\n')
+            sys.exit(1)
+
+    def _initializeGL(self):
+        """
+        Create the graphic buffers and compile the shaders.
+        """
         # Make sure the system is live.
         try:
             self.ctrl = wscontroller.WSControllerBase(self.ip_clacks)
@@ -350,11 +365,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # those of a cube.
         buf_vert = self.getGeometryCube()
         cs = [4, 1, 1, 1]
+        uv = np.array([], np.float64)
+        rgb = np.array([], np.uint8)
         self.t_projectile = 'cube'.encode('utf8')
         ok, _ = self.ctrl.getTemplate(self.t_projectile)
         if not ok:
             ok, _ = self.ctrl.addTemplate(
-                self.t_projectile, cs, buf_vert, [], [])
+                self.t_projectile, cs, buf_vert, uv, rgb, [], [])
             if not ok:
                 print('Could not add new object template')
                 self.close()

@@ -8,12 +8,12 @@
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # Azrael is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
@@ -46,6 +46,7 @@ import azrael.bullet.btInterface as btInterface
 
 import numpy as np
 
+
 def parseCommandLine():
     """
     Parse program arguments.
@@ -76,10 +77,10 @@ def setupLogging(loglevel):
     # Create the logger instance.
     logger = logging.getLogger('azrael')
     logger.setLevel(logging.DEBUG)
-    
+
     # Prevent it from logging to console no matter what.
     logger.propagate = False
-    
+
     # Create a handler instance to log the messages to stdout.
     logFormat = '%(levelname)s - %(name)s - %(message)s'
     formatter = logging.Formatter(logFormat)
@@ -94,14 +95,14 @@ def setupLogging(loglevel):
         print('Unknown log level {}'.format(loglevel))
         sys.exit(1)
     console.setFormatter(formatter)
-    
+
     # Create a handler instance to log the messages to a file.
     logFormat = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     formatter = logging.Formatter(logFormat)
     fileHandler = logging.FileHandler(config.log_file, mode='a')
     fileHandler.setLevel(logging.DEBUG)
     fileHandler.setFormatter(formatter)
-    
+
     # Install the handler.
     logger.addHandler(console)
     logger.addHandler(fileHandler)
@@ -125,10 +126,13 @@ def loadGroundModel(scale, model_name):
 
     # Set the geometry of the object in Azrael.
     print('  Adding geometry to Azrael... ', end='', flush=True)
-    cs = np.zeros(4, np.float64)
     templateID = 'ground'.encode('utf8')
-    ok, _ = ctrl.addTemplate(templateID, cs, buf_vert, [], [])
-    
+    cs = np.zeros(4, np.float64)
+    uv = np.array([], np.float64)
+    rgb = np.array([], np.uint8)
+
+    ok, _ = ctrl.addTemplate(templateID, cs, buf_vert, uv, rgb, [], [])
+
     # Tell Azrael to spawn the 'ground' object near the center of the scene.
     print('  Spawning object... ', end='', flush=True)
     ok, objID = ctrl.spawn(None, templateID, 2 * np.array([0, -2, 1],
@@ -150,7 +154,7 @@ def defineBoosterCube():
     cs = np.array([4, 1, 1, 1], np.float64)
 
     # Geometry of a unit cube.
-    geo = 0.5 * np.array([
+    vert = 0.5 * np.array([
         -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
         +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
         +1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,   +1.0, -1.0, -1.0,
@@ -167,12 +171,15 @@ def defineBoosterCube():
     # Convenience.
     dir_0, dir_1 = [0, 0, +1], [0, 0, -1]
     pos_0, pos_1 = [+1.5, 0, 0], [-1.5, 0, 0]
-    
+    cs = np.array([4, 1, 1, 1], np.float64)
+    uv = np.array([], np.float64)
+    rgb = np.array([], np.uint8)
+
     # Create templates for what the factory will be able to spawn.
     tID_1 = 'Product1'.encode('utf8')
     tID_2 = 'Product2'.encode('utf8')
-    ctrl.addTemplate(tID_1, np.array([4, 1, 1, 1], np.float64), 0.75 * geo, [], [])
-    ctrl.addTemplate(tID_2, np.array([4, 1, 1, 1], np.float64), 0.24 * geo, [], [])
+    ctrl.addTemplate(tID_1, cs, 0.75 * vert, uv, rgb, [], [])
+    ctrl.addTemplate(tID_2, cs, 0.24 * vert, uv, rgb, [], [])
 
     # Two boosters, one left, one right. Both point in the same direction.
     b0 = parts.Booster(
@@ -191,9 +198,10 @@ def defineBoosterCube():
 
     # Add the template.
     templateID_2 = 'BoosterCube'.encode('utf8')
-    ok, _ = ctrl.addTemplate(templateID_2, cs, geo, [b0, b1], [f0, f1])
+    ok, _ = ctrl.addTemplate(
+        templateID_2, cs, vert, uv, rgb, [b0, b1], [f0, f1])
     assert ok
-    
+
 
 def main():
     # Parse the command line.
@@ -226,14 +234,14 @@ def main():
         btInterface.initSVDB(reset=True)
 
         if not param.noinit:
-            # Add a model to the center. The sphere is included. You can get the
-            # Vatican model here:
+            # Add a model to the center. The sphere is included. You can get
+            # the Vatican model here:
             # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
             # uid=3290&count=count
             model_name = (1, 'viewer/models/sphere/sphere.obj')
             #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
             loadGroundModel(*model_name)
-    
+
             # Define additional templates.
             defineBoosterCube()
         print('Azrael now live')

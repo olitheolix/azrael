@@ -245,7 +245,7 @@ class ClacksServer(multiprocessing.Process):
 
     def run(self):
         # Not sure if this really does anything but it certainly does not
-        # hurt. 
+        # hurt.
         self.daemon = True
         time.sleep(0.02)
 

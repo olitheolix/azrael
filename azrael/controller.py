@@ -411,7 +411,8 @@ class ControllerBase(multiprocessing.Process):
 
     @typecheck
     def addTemplate(self, templateID: bytes, cs: (tuple, list, np.ndarray),
-                    geo: np.ndarray, boosters: (list, tuple),
+                    vert: np.ndarray, UV: np.ndarray, RGB: np.ndarray,
+                    boosters: (list, tuple),
                     factories: (list, tuple)):
         """
         Add a new ``templateID`` to the system.
@@ -422,7 +423,9 @@ class ControllerBase(multiprocessing.Process):
 
         :param bytes templateID: the name of the new template.
         :param bytes cs: collision shape
-        :param bytes geo: object geometry
+        :param bytes vert: object geometry
+        :param bytes UV: UV map for textures
+        :param bytes RGB: texture
         :param parts.Booster boosters: list of Booster instances.
         :param parts.Factory boosters: list of Factory instances.
         :return: (ok, template ID)
@@ -431,7 +434,7 @@ class ControllerBase(multiprocessing.Process):
         """
         cs = np.array(cs, np.float64)
         return self.serialiseAndSend(
-            'add_template', templateID, cs, geo, boosters, factories)
+            'add_template', templateID, cs, vert, UV, RGB, boosters, factories)
 
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple, bytes)):
