@@ -40,9 +40,22 @@ class ControllerDemo(azrael.controller.ControllerBase):
         self.connectToClerk()
 
         # Fire the central booster.
-        cmd_1 = parts.CmdBooster(partID=1, force=10)
+        cmd_1 = parts.CmdBooster(partID=1, force=100)
         self.controlParts(self.objID, [cmd_1], [])
         time.sleep(2)
+
+        # Turn off central booster and fire the peripheral booster to
+        # induce spinning.
+        cmd_0 = parts.CmdBooster(partID=0, force=0.1)
+        cmd_1 = parts.CmdBooster(partID=1, force=0)
+        cmd_2 = parts.CmdBooster(partID=2, force=0.1)
+        self.controlParts(self.objID, [cmd_0, cmd_1, cmd_2], [])
+        time.sleep(2)
+
+        # Turn off peripheral boosters.
+        cmd_0 = parts.CmdBooster(partID=0, force=0)
+        cmd_2 = parts.CmdBooster(partID=2, force=0)
+        self.controlParts(self.objID, [cmd_0, cmd_2], [])
 
 
 if __name__ == '__main__':
