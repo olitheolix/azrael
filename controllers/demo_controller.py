@@ -16,11 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Default controller that does nothing other than returning messages.
-
-Clerk knows about the ``ControllerCube`` by default. Its spawn command can
-hence start a new Python process for it, pass it the object ID, and leave it to
-its own devices.
+Demo of a simple controller for an object.
 """
 
 import os
@@ -34,10 +30,19 @@ import time
 import setproctitle
 import azrael.controller
 import azrael.util as util
+import azrael.parts as parts
 
 
-class ControllerCube(azrael.controller.ControllerBase):
-    pass
+class ControllerDemo(azrael.controller.ControllerBase):
+    def run(self):
+        # Setup.
+        self.setupZMQ()
+        self.connectToClerk()
+
+        # Fire the central booster.
+        cmd_1 = parts.CmdBooster(partID=1, force=10)
+        self.controlParts(self.objID, [cmd_1], [])
+        time.sleep(2)
 
 
 if __name__ == '__main__':
@@ -53,5 +58,6 @@ if __name__ == '__main__':
     setproctitle.setproctitle(name)
 
     # Instantiate the controller and start it in this thread.
-    ctrl = ControllerCube(obj_id)
+    ctrl = ControllerDemo(obj_id)
     ctrl.run()
+    print('done')
