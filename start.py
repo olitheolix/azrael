@@ -77,93 +77,86 @@ def parseCommandLine():
 
 
 def setupLogging(loglevel):
-    # Create the logger instance.
+    """
+    Change the log level of the 'Azrael' loggers (defined in azrael.config).
+    """
     logger = logging.getLogger('azrael')
-    logger.setLevel(logging.DEBUG)
-
-    # Prevent it from logging to console no matter what.
-    logger.propagate = False
-
-    # Create a handler instance to log the messages to stdout.
-    logFormat = '%(levelname)s - %(name)s - %(message)s'
-    formatter = logging.Formatter(logFormat)
-    console = logging.StreamHandler(sys.stdout)
     if loglevel == 0:
-        console.setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
     elif loglevel == 1:
-        console.setLevel(logging.INFO)
+        logger.setLevel(logging.INFO)
     elif loglevel == 2:
-        console.setLevel(logging.WARNING)
+        logger.setLevel(logging.WARNING)
     else:
         print('Unknown log level {}'.format(loglevel))
         sys.exit(1)
-    console.setFormatter(formatter)
-
-    # Create a handler instance to log the messages to a file.
-    logFormat = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    formatter = logging.Formatter(logFormat)
-    fileHandler = logging.FileHandler(config.log_file, mode='a')
-    fileHandler.setLevel(logging.DEBUG)
-    fileHandler.setFormatter(formatter)
-
-    # Install the handler.
-    logger.addHandler(console)
-    logger.addHandler(fileHandler)
-    del formatter, console, fileHandler
 
 
 def loadGroundModel(scale, model_name):
-    # Establish connection to Azrael.
+    """
+    Import a new template and spawn it.
+
+    This will become the first object to populate the simulation.
+    """
+    # Create a controller and connect to Azrael.
     ctrl = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
     assert ctrl.pingClacks()
 
-    # Load the model mesh.
+    # Load the model.
     print('  Importing <{}>... '.format(model_name), end='', flush=True)
     mesh = model_import.loadModelAll(model_name)
 
-    # The model data may contain several sub-models. The following code will
-    # concatenate the vertices, UV- and textures map into a single buffer.
-    buf_vert = []
-    buf_uv = []
-    buf_rgb = []
-    for l in mesh['vertices']:
-        buf_vert.extend(l)
-    for l in mesh['UV']:
-        buf_uv.extend(l)
-    for l in mesh['RGB']:
-        buf_rgb.extend(l)
-    buf_vert = scale * np.array(buf_vert)
-    buf_uv = np.array(buf_uv, np.float32)
-    buf_rgb = np.array(buf_rgb, np.uint8)
+    # The model may contain several sub-models. Each one has a set of vertices,
+    # UV- and texture maps. The following code simply turns the three list of
+    # lists to three lists.
+    vert = np.array(mesh['vertices']).flatten()
+    uv = np.array(mesh['UV']).flatten()
+    rgb = np.array(mesh['RGB']).flatten()
+
+    # Ensure the data has the correct format.
+    vert = scale * np.array(vert)
+    uv = np.array(uv, np.float32)
+    rgb = np.array(rgb, np.uint8)
     print('done')
 
-    # Add another template to Azrael.
-    print('  Adding geometry to Azrael... ', end='', flush=True)
-    templateID = 'ground'.encode('utf8')
-    cs = np.zeros(4, np.float64)
-    ok, _ = ctrl.addTemplate(templateID, cs, buf_vert, buf_uv, buf_rgb, [], [])
+    # Attach trhee boosters to the mode: left, center, and right.
+    dir_0, dir_1, dir_2 = [0, 0, -1], [0, 0, -1], [0, 0, +1]
+    pos_0, pos_1, pos_2 = [-1.5, 0, 0], [0, 0, 0], [+1.5, 0, 0]
+    b0 = parts.Booster(
+        partID=0, pos=pos_0, direction=dir_0, max_force=10.0)
+    b1 = parts.Booster(
+        partID=1, pos=pos_1, direction=dir_1, max_force=100.0)
+    b2 = parts.Booster(
+        partID=2, pos=pos_2, direction=dir_2, max_force=10.0)
 
-    # Tell Azrael to spawn the 'ground' object near the center of the scene.
+    # Add the template to Azrael.
+    print('  Adding template to Azrael... ', end='', flush=True)
+    tID = 'ground'.encode('utf8')
+    cs = np.array([3, 1, 1, 1], np.float64)
+    ok, _ = ctrl.addTemplate(tID, cs, vert, uv, rgb, [b0, b1, b2], [])
+
+    # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
-    ok, objID = ctrl.spawn(None, templateID, 2 * np.array([0, -2, 1],
-                           np.float64), np.zeros(3))
-    print('done (ID=<{}>)'.format(objID))
+    pos = [0, 0, 10]
+    orient = [0, 1, 0, 0]
+    ret = ctrl.spawn(None, tID, pos, orient=orient, imass=0.1, scale=scale)
+    print('done (ID=<{}>)'.format(ret[1]))
 
 
-def defineBoosterCube():
+def spawnCubes(numInstances):
     """
-    Define a BoosterCube object.
+    Define a cubic template and spawn ``numInstances`` of it.
 
-    The cube has two boosters and two factories.
+    Every cube has two boosters and two factories. The factories can themselves
+    spawn more (purely passive) cubes.
+
+    The cubes will be arranged regularly in the scene.
     """
     # Establish connection to Azrael.
     ctrl = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
     assert ctrl.pingClacks()
 
-    # Collision shape for a cube.
-    cs = np.array([4, 1, 1, 1], np.float64)
-
-    # Geometry of a unit cube.
+    # Cube vertices.
     vert = 0.5 * np.array([
         -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
         +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
@@ -185,20 +178,25 @@ def defineBoosterCube():
     uv = np.array([], np.float64)
     rgb = np.array([], np.uint8)
 
-    # Create templates for what the factory will be able to spawn.
+    # ----------------------------------------------------------------------
+    # Create templates for the factory output.
+    # ----------------------------------------------------------------------
     tID_1 = 'Product1'.encode('utf8')
     tID_2 = 'Product2'.encode('utf8')
     ctrl.addTemplate(tID_1, cs, 0.75 * vert, uv, rgb, [], [])
     ctrl.addTemplate(tID_2, cs, 0.24 * vert, uv, rgb, [], [])
 
+    # ----------------------------------------------------------------------
+    # Define a cube with boosters and factories.
+    # ----------------------------------------------------------------------
     # Two boosters, one left, one right. Both point in the same direction.
     b0 = parts.Booster(
         partID=0, pos=pos_0, direction=dir_0, max_force=10.0)
     b1 = parts.Booster(
         partID=1, pos=pos_1, direction=dir_0, max_force=10.0)
 
-    # Two factories, one left one right. The spawned objects exit forwards and
-    # backwards, respectively.
+    # Two factories, one left one right. They will eject the new objects
+    # forwards and backwards, respectively.
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=[+1, 0, 0],
         templateID=tID_1, exit_speed=[0.1, 1])
@@ -207,10 +205,29 @@ def defineBoosterCube():
         templateID=tID_2, exit_speed=[0.1, 1])
 
     # Add the template.
-    templateID_2 = 'BoosterCube'.encode('utf8')
-    ok, _ = ctrl.addTemplate(
-        templateID_2, cs, vert, uv, rgb, [b0, b1], [f0, f1])
+    tID_3 = 'BoosterCube'.encode('utf8')
+    ok, _ = ctrl.addTemplate(tID_3, cs, vert, uv, rgb, [b0, b1], [f0, f1])
     assert ok
+
+    # ----------------------------------------------------------------------
+    # Spawn the cubes in a regular grid.
+    # ----------------------------------------------------------------------
+    numRows = int(np.sqrt(numInstances))
+    numCols = numInstances // numRows
+    spacing = 0.5
+    for ii in range(numInstances):
+        # Compute grid position.
+        x, y = ii // numRows, ii % numRows
+
+        # Add some space in between the cubes.
+        x, y = (1 + spacing) * x, (1 + spacing) * y
+
+        # Center the positions.
+        x -= (numCols // 2) * (1 + spacing)
+        y -= (numRows // 2) * (1 + spacing)
+
+        # Spawn the cube.
+        ok, objID = ctrl.spawn(None, tID_3, [x, y, 15], orient=[0, 1, 0, 0])
 
 
 def main():
@@ -244,16 +261,17 @@ def main():
         btInterface.initSVDB(reset=True)
 
         if not param.noinit:
-            # Add a model to the center. The sphere is included. You can get
-            # the Vatican model here:
+            # Add a model to the otherwise empty simulation. The sphere is
+            # in the repo whereas the Vatican model is available here:
             # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
             # uid=3290&count=count
-            model_name = (1, 'viewer/models/sphere/sphere.obj')
+            model_name = (1.25, 'viewer/models/sphere/sphere.obj')
             #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
+            #model_name = (1.25, 'viewer/models/house/house.3ds')
             loadGroundModel(*model_name)
 
             # Define additional templates.
-            defineBoosterCube()
+            spawnCubes(20)
         print('Azrael now live')
     else:
         print('Azrael already live')
