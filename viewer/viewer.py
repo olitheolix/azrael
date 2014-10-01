@@ -185,9 +185,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         self.ip_clacks = 'ws://{}:{}/websocket'.format(clacks_ip, clacks_port)
 
-        # Handle to shader program (will be set later).
-        self.shaders = None
-
         # Place the window in the top left corner.
         self.setGeometry(0, 0, 640, 480)
 
@@ -281,21 +278,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # fixme: getGeometry must provide this (what about getTemplate?).
             width = height = int(np.sqrt(len(buf_rgb) // 3))
 
-            # fixme: remove once I have modifed start to create the random
-            # texture.
-            if (len(buf_uv) // 2 != len(buf_vert) // 3) or (len(buf_uv) == 0):
-                # Create artificial texture and UV map.
-                width = height = 2
-                buf_rgb = np.random.randint(0, 256, width * height * 3)
-                buf_uv = np.random.randint(0, 2, 2 * (len(buf_vert) // 3))
-                buf_uv = 0.25 + buf_uv / 2
-            else:
-                buf_uv = np.reshape(buf_uv, (len(buf_uv) // 2, 2))
-#                buf_uv = 0.99 * buf_uv + 0.0
-#                buf_uv[:,0] += 0.5
-#                buf_uv[:,1] += 0.5
-                buf_uv = buf_uv.flatten()
-
             # GPU needs float32 values for vertices and UV, and uint8 for RGB.
             buf_vert = buf_vert.astype(np.float32)
             buf_uv = buf_uv.astype(np.float32)
@@ -305,11 +287,18 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             assert (len(buf_vert) % 9) == 0
             assert (len(buf_uv) % 2) == 0
             assert (len(buf_rgb) % 3) == 0
-            assert len(buf_vert) // 3 == len(buf_uv) // 2
-            print('Extrema: ', np.amin(buf_uv), np.amax(buf_uv))
+            if len(buf_uv) > 0:
+                assert len(buf_vert) // 3 == len(buf_uv) // 2
 
             # Store the number of vertices.
             self.numVertices[ctrl_id] = len(buf_vert) // 3
+
+            if len(buf_uv) == 0:
+                vs, fs = self.shaderDict['passthrough']
+            else:
+                vs, fs = self.shaderDict['uv']
+            shader = self.linkShaders(vs, fs)
+            gl.glUseProgram(shader)
 
             # Create a new VAO (Vertex Array Object) and bind it. All GPU
             # buffers created below can then be activated at once by binding
@@ -330,38 +319,51 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             gl.glVertexAttribPointer(0, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
             gl.glEnableVertexAttribArray(0)
 
-            # Repeat with UV data. Each vertex has one associated (U,V) pair
-            # to specify the position in the texture.
-            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
-            gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_uv, gl.GL_STATIC_DRAW)
+            if len(buf_uv) == 0:
+                buf_col = np.random.rand(4 * self.numVertices[ctrl_id])
+                buf_col = buf_col.astype(np.float32)
 
-            # Color data is associated with Layout 1 (first parameter), has
-            # two elements per vertex (second parameter), and each element is
-            # a float32 (third parameter). The other three parameters are of no
-            # interest here.
-            gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-            gl.glEnableVertexAttribArray(1)
-
-            # fixme: remove dashed lines.
-            # --------------------------------------------------
-            # Create texture buffer and bind it.
-            assert ctrl_id not in self.textureBuffer
-            self.textureBuffer[ctrl_id] = gl.glGenTextures(1)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
-
-            # fixme: delete this comment too?
-            #gl.glUniform1i(gl.glGetUniformLocation(self.shaders, b'gSampler'), 0)
-             
-            # Upload texture to GPU.
-            print('Width: ', width, height)
-            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height, 0,
-                            gl.GL_RGB, gl.GL_UNSIGNED_BYTE, buf_rgb)
-             
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER,
-                               gl.GL_NEAREST)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER,
-                               gl.GL_NEAREST)
-            # --------------------------------------------------
+                # Repeat with UV data. Each vertex has one associated (U,V) pair
+                # to specify the position in the texture.
+                gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
+                gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_col, gl.GL_STATIC_DRAW)
+                
+                # Color data is associated with Layout 1 (first parameter), has
+                # two elements per vertex (second parameter), and each element is
+                # a float32 (third parameter). The other three parameters are of no
+                # interest here.
+                gl.glVertexAttribPointer(1, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+                gl.glEnableVertexAttribArray(1)
+                self.textureBuffer[ctrl_id] = None
+            else:
+                # Repeat with UV data. Each vertex has one associated (U,V) pair
+                # to specify the position in the texture.
+                gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
+                gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_uv, gl.GL_STATIC_DRAW)
+    
+                # Color data is associated with Layout 1 (first parameter), has
+                # two elements per vertex (second parameter), and each element is
+                # a float32 (third parameter). The other three parameters are of no
+                # interest here.
+                gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+                gl.glEnableVertexAttribArray(1)
+    
+                # fixme: remove dashed lines.
+                # --------------------------------------------------
+                # Create texture buffer and bind it.
+                assert ctrl_id not in self.textureBuffer
+                self.textureBuffer[ctrl_id] = gl.glGenTextures(1)
+                gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
+    
+                # Upload texture to GPU.
+                gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height, 0,
+                                gl.GL_RGB, gl.GL_UNSIGNED_BYTE, buf_rgb)
+                 
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER,
+                                   gl.GL_NEAREST)
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER,
+                                   gl.GL_NEAREST)
+                # --------------------------------------------------
 
             # Only draw visible triangles.
             gl.glEnable(gl.GL_DEPTH_TEST)
@@ -446,26 +448,30 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # fixme: remove if clause
         # fixme: delete shader files and check in the new ones.
         # fixme: document the shaders.
-        if False:
-            vs = os.path.join(_this_directory, 'passthrough.vs')
-            fs = os.path.join(_this_directory, 'passthrough.fs')
-        else:
-            vs = os.path.join(_this_directory, 'uv.vs')
-            fs = os.path.join(_this_directory, 'uv.fs')
-            
-        self.shaders = self.linkShaders(vs, fs)
+        vs = os.path.join(_this_directory, 'passthrough.vs')
+        fs = os.path.join(_this_directory, 'passthrough.fs')
+        self.shaderDict = {}
+        self.shaderDict['passthrough'] = (vs, fs)
 
-        # Activate the shader to obtain handles to the global variables defined
-        # in the vertex shader.
-        gl.glUseProgram(self.shaders)
-        tmp1 = 'projection_matrix'.encode('utf8')
-        tmp2 = 'model_matrix'.encode('utf8')
-        self.h_prjMat = gl.glGetUniformLocation(self.shaders, tmp1)
-        self.h_modMat = gl.glGetUniformLocation(self.shaders, tmp2)
+        vs = os.path.join(_this_directory, 'uv.vs')
+        fs = os.path.join(_this_directory, 'uv.fs')
+        self.shaderDict['uv'] = (vs, fs)
 
         self.loadGeometry()
         
     def paintGL(self):
+        try:
+            self._paintGL()
+        except Exception as err:
+            print('Error in paintGL:')
+            print('\n' + '-' * 79)
+            print(err)
+            import traceback
+            traceback.print_exc(file=sys.stdout)
+            print('-' * 79 + '\n')
+            sys.exit(1)
+
+    def _paintGL(self):
         """
         Paint the OpenGL scene.
 
@@ -521,21 +527,38 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             matVP = matVP.astype(np.float32)
             matVP = matVP.flatten(order='F')
 
+            textureHandle = self.textureBuffer[ctrl_id]
+
+            # Activate the shader to obtain handles to the global variables
+            # defined in the vertex shader.
+            if textureHandle is None:
+                shader = self.linkShaders(*self.shaderDict['passthrough'])
+            else:
+                shader = self.linkShaders(*self.shaderDict['uv'])
+            gl.glUseProgram(shader)
+            tmp1 = 'projection_matrix'.encode('utf8')
+            tmp2 = 'model_matrix'.encode('utf8')
+            h_prjMat = gl.glGetUniformLocation(shader, tmp1)
+            h_modMat = gl.glGetUniformLocation(shader, tmp2)
+            del tmp1, tmp2
+
             # Activate the VAO and shader program.
             gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
-            gl.glUseProgram(self.shaders)
+
+            if textureHandle is not None:
+                gl.glBindTexture(gl.GL_TEXTURE_2D, textureHandle)
+                gl.glActiveTexture(gl.GL_TEXTURE0)
 
             # Upload the model- and projection matrices to the GPU.
-            gl.glUniformMatrix4fv(self.h_modMat, 1, gl.GL_FALSE, model_mat)
-            gl.glUniformMatrix4fv(self.h_prjMat, 1, gl.GL_FALSE, matVP)
+            gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, model_mat)
+            gl.glUniformMatrix4fv(h_prjMat, 1, gl.GL_FALSE, matVP)
 
             # Draw all triangles and unbind the VAO again.
-            gl.glActiveTexture(gl.GL_TEXTURE0)
             gl.glEnableVertexAttribArray(0)
             gl.glEnableVertexAttribArray(1)
             gl.glDrawArrays(gl.GL_TRIANGLES, 0, self.numVertices[ctrl_id])
-            gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+            if textureHandle is not None:
+                gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
             gl.glDisableVertexAttribArray(1)
             gl.glDisableVertexAttribArray(0)
             gl.glBindVertexArray(0)
