@@ -69,9 +69,9 @@ def loadMaterials(scene, fname):
 
             del mat_aux, model_dir, texture_file, img
         else:
-            RGB = (255 * np.array(mat.properties['diffuse']))
-            RGB = RGB.astype(np.uint8)
-            width = height = 1
+            # No texture available.
+            width = height = 0
+            RGB = np.array([], np.float64)
 
         assert (len(RGB) == width * height * 3)
         material_list.append({'RGB': RGB.tolist(),
@@ -149,6 +149,11 @@ def loadModelAll(fname):
     for ii in range(len(UV)):
         assert (len(UV[ii]) // 2 == len(vert[ii]) // 3)
 
+    # Clear the UV data if there is no texture.
+    for ii in range(len(UV)):
+        if width[ii] == height[ii] == 0:
+            UV[ii] = np.array([], np.float64)
+    
     # Return the data as a dictionary.
     data = {'vertices': vert,
             'UV': UV,
