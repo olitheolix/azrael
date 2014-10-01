@@ -330,7 +330,7 @@ class ControllerBase(multiprocessing.Process):
 
     @typecheck
     def spawn(self, name: bytes, templateID: bytes,
-              pos: (np.ndarray, list),
+              pos: (np.ndarray, list)=np.zeros(3),
               vel: (np.ndarray, list)=np.zeros(3),
               orient: (np.ndarray, list)=[0, 0, 0, 1],
               scale=1, radius=1, imass=1):

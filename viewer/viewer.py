@@ -89,9 +89,9 @@ class Camera:
     """
     A basic FPS camera.
     """
-    def __init__(self):
+    def __init__(self, pos=[0, 0, 0]):
         # Camera at origin...
-        self.position = np.array([0, 0, 0], dtype=np.float64)
+        self.position = np.array(pos, dtype=np.float64)
 
         # looking along positive z-direction...
         self.view = np.array([0, 0, 1], dtype=np.float64)
@@ -181,7 +181,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         super().__init__(parent)
 
         # Camera instance.
-        self.camera = Camera()
+        self.camera = None
 
         self.ip_clacks = 'ws://{}:{}/websocket'.format(clacks_ip, clacks_port)
 
@@ -427,9 +427,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             print('Template {} already exists'.format(self.t_projectile))
         del ok, _
 
+        initPos = [0, 0, -10]
+        self.camera = Camera(initPos)
+
         # Spawn the player object.
         ok, tmp = self.ctrl.spawn(
-            None, self.t_projectile, np.zeros(3), np.zeros(3))
+            None, self.t_projectile, initPos, np.zeros(3))
         if not ok:
             print('Cannot spawn player object (<{}>)'.format(tmp))
             self.close()
@@ -438,25 +441,26 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         del ok, tmp
         print('Spawned player object <{}>'.format(self.player_id))
 
+        # Initialise instance variables.
         self.controllers = set()
         self.numVertices = {}
         self.vertex_array_object = {}
         self.textureBuffer = {}
+        self.shaderDict = {}
 
         # Background color.
         gl.glClearColor(0, 0, 0, 0)
-        # fixme: remove if clause
-        # fixme: delete shader files and check in the new ones.
-        # fixme: document the shaders.
+
+        # Put the two possible shaders into dictionaries.
         vs = os.path.join(_this_directory, 'passthrough.vs')
         fs = os.path.join(_this_directory, 'passthrough.fs')
-        self.shaderDict = {}
         self.shaderDict['passthrough'] = (vs, fs)
 
         vs = os.path.join(_this_directory, 'uv.vs')
         fs = os.path.join(_this_directory, 'uv.fs')
         self.shaderDict['uv'] = (vs, fs)
 
+        # Load and compile all objects.
         self.loadGeometry()
         
     def paintGL(self):

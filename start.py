@@ -137,9 +137,7 @@ def loadGroundModel(scale, model_name):
 
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
-    pos = [0, 0, 10]
-    orient = [0, 1, 0, 0]
-    ret = ctrl.spawn(None, tID, pos, orient=orient, imass=0.1, scale=scale)
+    ret = ctrl.spawn(None, tID, orient=[0, 1, 0, 0], imass=0.1, scale=scale)
     print('done (ID=<{}>)'.format(ret[1]))
 
 
@@ -172,8 +170,6 @@ def spawnCubes(numInstances):
         +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0])
 
     # Convenience.
-    dir_0, dir_1 = [0, 0, +1], [0, 0, -1]
-    pos_0, pos_1 = [+1.5, 0, 0], [-1.5, 0, 0]
     cs = np.array([4, 1, 1, 1], np.float64)
     uv = np.array([], np.float64)
     rgb = np.array([], np.uint8)
@@ -189,6 +185,10 @@ def spawnCubes(numInstances):
     # ----------------------------------------------------------------------
     # Define a cube with boosters and factories.
     # ----------------------------------------------------------------------
+    # Booster direction- and position.
+    dir_0, dir_1 = [0, 0, +1], [0, 0, -1]
+    pos_0, pos_1 = [+1.5, 0, 0], [-1.5, 0, 0]
+
     # Two boosters, one left, one right. Both point in the same direction.
     b0 = parts.Booster(
         partID=0, pos=pos_0, direction=dir_0, max_force=10.0)
@@ -227,7 +227,7 @@ def spawnCubes(numInstances):
         y -= (numRows // 2) * (1 + spacing)
 
         # Spawn the cube.
-        ok, objID = ctrl.spawn(None, tID_3, [x, y, 15], orient=[0, 1, 0, 0])
+        ok, objID = ctrl.spawn(None, tID_3, [x, y, 10], orient=[0, 1, 0, 0])
 
 
 def main():
