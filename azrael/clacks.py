@@ -244,8 +244,7 @@ class ClacksServer(multiprocessing.Process):
         self.terminate()
 
     def run(self):
-        # Not sure if this really does anything but it certainly does not
-        # hurt.
+        # Not sure if this really does anything but it certainly does not hurt.
         self.daemon = True
         time.sleep(0.02)
 

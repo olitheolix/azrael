@@ -283,17 +283,30 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
             # fixme: remove once I have modifed start to create the random
             # texture.
-            if len(buf_uv) != (2 * (len(buf_vert) // 3)):
+            if (len(buf_uv) // 2 != len(buf_vert) // 3) or (len(buf_uv) == 0):
                 # Create artificial texture and UV map.
                 width = height = 2
                 buf_rgb = np.random.randint(0, 256, width * height * 3)
                 buf_uv = np.random.randint(0, 2, 2 * (len(buf_vert) // 3))
                 buf_uv = 0.25 + buf_uv / 2
+            else:
+                buf_uv = np.reshape(buf_uv, (len(buf_uv) // 2, 2))
+#                buf_uv = 0.99 * buf_uv + 0.0
+#                buf_uv[:,0] += 0.5
+#                buf_uv[:,1] += 0.5
+                buf_uv = buf_uv.flatten()
 
             # GPU needs float32 values for vertices and UV, and uint8 for RGB.
             buf_vert = buf_vert.astype(np.float32)
             buf_uv = buf_uv.astype(np.float32)
             buf_rgb = buf_rgb.astype(np.uint8)
+
+            # Sanity checks.
+            assert (len(buf_vert) % 9) == 0
+            assert (len(buf_uv) % 2) == 0
+            assert (len(buf_rgb) % 3) == 0
+            assert len(buf_vert) // 3 == len(buf_uv) // 2
+            print('Extrema: ', np.amin(buf_uv), np.amax(buf_uv))
 
             # Store the number of vertices.
             self.numVertices[ctrl_id] = len(buf_vert) // 3
@@ -305,25 +318,25 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
 
             # Create two GPU buffers (no need to specify a size here).
-            vertexBuffer, colorBuffer = gl.glGenBuffers(2)
+            vertexBuffer, uvBuffer = gl.glGenBuffers(2)
 
             # Copy the vertex data to the first GPU buffer.
             gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vertexBuffer)
             gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_vert, gl.GL_STATIC_DRAW)
 
             # Associate the vertex buffer with the Layout 0 variable in the
-            # shader (see 'passthrough.vs') and specify its layout. Then enable
+            # shader (see 'uv.vs') and specify its layout. Then enable
             # the buffer to ensure the GPU will draw it.
             gl.glVertexAttribPointer(0, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
             gl.glEnableVertexAttribArray(0)
 
-            # Repeat with color data. Each vertex gets a color, specified in
-            # terms of RGBA values (each a float32).
-            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, colorBuffer)
+            # Repeat with UV data. Each vertex has one associated (U,V) pair
+            # to specify the position in the texture.
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
             gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_uv, gl.GL_STATIC_DRAW)
 
             # Color data is associated with Layout 1 (first parameter), has
-            # four elements per vertex (second parameter), and each element is
+            # two elements per vertex (second parameter), and each element is
             # a float32 (third parameter). The other three parameters are of no
             # interest here.
             gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
@@ -332,6 +345,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # fixme: remove dashed lines.
             # --------------------------------------------------
             # Create texture buffer and bind it.
+            assert ctrl_id not in self.textureBuffer
             self.textureBuffer[ctrl_id] = gl.glGenTextures(1)
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
 
@@ -449,6 +463,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.h_prjMat = gl.glGetUniformLocation(self.shaders, tmp1)
         self.h_modMat = gl.glGetUniformLocation(self.shaders, tmp2)
 
+        self.loadGeometry()
+        
     def paintGL(self):
         """
         Paint the OpenGL scene.
@@ -507,17 +523,17 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
             # Activate the VAO and shader program.
             gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
             gl.glUseProgram(self.shaders)
 
             # Upload the model- and projection matrices to the GPU.
             gl.glUniformMatrix4fv(self.h_modMat, 1, gl.GL_FALSE, model_mat)
             gl.glUniformMatrix4fv(self.h_prjMat, 1, gl.GL_FALSE, matVP)
 
-            # Draw all triangles, and unbind the VAO again.
+            # Draw all triangles and unbind the VAO again.
             gl.glActiveTexture(gl.GL_TEXTURE0)
             gl.glEnableVertexAttribArray(0)
             gl.glEnableVertexAttribArray(1)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
             gl.glDrawArrays(gl.GL_TRIANGLES, 0, self.numVertices[ctrl_id])
             gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
             gl.glDisableVertexAttribArray(1)
@@ -674,8 +690,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if button == 1:
             # Determine initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
-            # fixme: uncomment the 0*
-            vel = 0 * 2 * self.camera.view
+            vel = 2 * self.camera.view
 
             # Spawn the object.
             ok, ctrl_id = self.ctrl.spawn(

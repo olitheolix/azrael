@@ -213,9 +213,9 @@ class ControllerBase(multiprocessing.Process):
         .. note::
            Every object in the simulation should have at most one controller
            associated with it but this is currently not enforced. It is thus
-           currently possible via this method to create a Controller for a
-           non-existing object. This is fine for debugging and demo
-           purposes. In the long term this method will probably vanish.
+           possible to create a Controller for a non-existing object. This is
+           fine for debugging and demo purposes. In the long term this method
+           will probably vanish.
 
         :return bytes: the ID of the object with which we are associated.
         :rtype: bytes

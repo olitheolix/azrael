@@ -774,7 +774,8 @@ class Clerk(multiprocessing.Process):
 
         # Add the object to the physics simulation.
         btInterface.spawn(new_id, sv, templateID)
-        msg = 'Spawned template <{}> as objID=<{}>'.format(templateID, new_id)
+        msg = 'Spawned template <{}> as objID=<{}> (0x{:0X})'
+        msg = msg.format(templateID, new_id, util.id2int(new_id))
         self.logit.debug(msg)
         return True, (new_id, )
 
@@ -822,6 +823,8 @@ class Clerk(multiprocessing.Process):
             vert = np.fromstring(doc['vertices'], np.float64)
             uv = np.fromstring(doc['UV'], np.float64)
             rgb = np.fromstring(doc['RGB'], np.uint8)
+#            width = int(doc['width'])
+#            height = int(doc['height'])
             return True, (vert, uv, rgb)
 
     @typecheck
