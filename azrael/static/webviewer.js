@@ -200,6 +200,7 @@ function getStateVariable(objID) {
 
 
 function arrayEqual(arr1, arr2) {
+    if ((arr1 == undefined) || (arr2 == undefined)) return false;
     if (arr1.length != arr2.length) return false;
     var isequal = true
     for (var jj in arr1) {
@@ -235,9 +236,15 @@ function* mycoroutine(connection) {
 
     // Spawn the just defined player template.
     var initPos = [0, 0, -10]
-    msg = yield spawn(templateID, initPos, [0, 0, 0], [0, 0, 0, 1], 1, 1)
-    var playerID = msg.objID
-    console.log('Spawned player object with objID=' + playerID);
+    if (false) {
+        // Spawn a player object.
+        msg = yield spawn(templateID, initPos, [0, 0, 0], [0, 0, 0, 1], 1, 1)
+        var playerID = msg.objID
+        console.log('Spawned player object with objID=' + playerID);
+    } else {
+        // Do not spawn a dedicated player object.
+        var playerID = undefined
+    }
 
     // ----------------------------------------------------------------------
     // Rendering.
@@ -378,7 +385,10 @@ function* mycoroutine(connection) {
         pos[0] = camera.position.x
         pos[1] = camera.position.y
         pos[2] = camera.position.z
-        msg = yield suggestPosition(playerID, pos);
+
+        if (playerID != undefined) {
+            msg = yield suggestPosition(playerID, pos);
+        }
     }
 
     console.log('All done')
@@ -401,7 +411,7 @@ window.onload = function() {
 
     // Initialise the clicked flag.
     window.myClick = false
-    window.onclick = function (event) {window.myClick = true}
+    //window.onclick = function (event) {window.myClick = true}
 
     // Define callback for WS on-open.
     connection.onopen = function() {
