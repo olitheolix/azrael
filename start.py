@@ -125,7 +125,7 @@ def loadGroundModel(scale, model_name):
     b0 = parts.Booster(
         partID=0, pos=pos_0, direction=dir_0, max_force=10.0)
     b1 = parts.Booster(
-        partID=1, pos=pos_1, direction=dir_1, max_force=100.0)
+        partID=1, pos=pos_1, direction=dir_1, max_force=1000.0)
     b2 = parts.Booster(
         partID=2, pos=pos_2, direction=dir_2, max_force=10.0)
 
@@ -141,7 +141,7 @@ def loadGroundModel(scale, model_name):
     print('done (ID=<{}>)'.format(ret[1]))
 
 
-def spawnCubes(numInstances):
+def spawnCubes(numRows, numCols, numLayers):
     """
     Define a cubic template and spawn ``numInstances`` of it.
 
@@ -212,22 +212,22 @@ def spawnCubes(numInstances):
     # ----------------------------------------------------------------------
     # Spawn the cubes in a regular grid.
     # ----------------------------------------------------------------------
-    numRows = int(np.sqrt(numInstances))
-    numCols = numInstances // numRows
-    spacing = 0.5
-    for ii in range(numInstances):
-        # Compute grid position.
-        x, y = ii // numRows, ii % numRows
+    spacing = 0.1
+    for row in range(numRows):
+        for col in range(numCols):
+            for lay in range(numLayers):
+                pos = np.array([col, row, lay], np.float64)
 
-        # Add some space in between the cubes.
-        x, y = (1 + spacing) * x, (1 + spacing) * y
+                # Add some space in between the cubes.
+                pos *= 1 + spacing
 
-        # Center the positions.
-        x -= (numCols // 2) * (1 + spacing)
-        y -= (numRows // 2) * (1 + spacing)
+                # Center the positions.
+                pos[0] -= (numCols // 2) * (1 + spacing)
+                pos[1] -= (numRows // 2) * (1 + spacing)
+                pos[2] += 10
 
-        # Spawn the cube.
-        ok, objID = ctrl.spawn(None, tID_3, [x, y, 10], orient=[0, 1, 0, 0])
+                # Spawn the cube.
+                ok, objID = ctrl.spawn(None, tID_3, pos)
 
 
 def main():
@@ -271,7 +271,7 @@ def main():
             loadGroundModel(*model_name)
 
             # Define additional templates.
-            spawnCubes(20)
+            spawnCubes(5, 5, 2)
         print('Azrael now live')
     else:
         print('Azrael already live')
