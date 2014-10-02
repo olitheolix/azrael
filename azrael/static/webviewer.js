@@ -22,9 +22,11 @@ function compileMesh (p, uv, scale) {
     // Apply the scaling.
     for (ii=0; ii < p.length; ii ++) p[ii] *= scale;
 
+    var hasUV = (uv.length > 0)
+
     // Compile the geometry.
     geo.faceVertexUvs[0] = []
-    var jj = 0
+    var uvIdx = 0
     for (ii=0; ii < p.length; ii += 9) {
         // Add the three vertices that define a triangle.
         var v1 = new THREE.Vector3(p[ii+0], p[ii+1], p[ii+2])
@@ -32,25 +34,44 @@ function compileMesh (p, uv, scale) {
         var v3 = new THREE.Vector3(p[ii+6], p[ii+7], p[ii+8])
         geo.vertices.push(v1, v2, v3);
 
-        // fixme: use the actual UV coordinates instead of the fake uv_x, uv_y
-        geo.faceVertexUvs[0].push([
-            new THREE.Vector2(uv[jj+0], uv[jj+1]),
-            new THREE.Vector2(uv[jj+2], uv[jj+3]),
-            new THREE.Vector2(uv[jj+4], uv[jj+5])])
-        jj += 6
+        if (hasUV) {
+            // fixme: use the actual UV coordinates instead of the fake uv_x, uv_y
+            geo.faceVertexUvs[0].push([
+                new THREE.Vector2(uv[uvIdx+0], uv[uvIdx+1]),
+                new THREE.Vector2(uv[uvIdx+2], uv[uvIdx+3]),
+                new THREE.Vector2(uv[uvIdx+4], uv[uvIdx+5])])
+            uvIdx += 6
+        }
 
         // Define the current face in terms of the three just added vertices.
         var facecnt = Math.floor(ii / 3)
         geo.faces.push( new THREE.Face3(facecnt, facecnt+1, facecnt+2))
     }
 
-    // Assign random face colors.
-    for (var i = 0; i < geo.faces.length; i++) {
-        var face = geo.faces[i];
-        face.color.setHex(Math.random() * 0xffffff);
+    if (!hasUV) {
+        // Assign random face colors.
+        for (var i = 0; i < geo.faces.length; i++) {
+            var face = geo.faces[i];
+            face.color.setHex(Math.random() * 0xffffff);
+        }
+
+        // Build a new object in ThreeJS.
+        var mat = new THREE.MeshBasicMaterial(
+            {'vertexColors': THREE.FaceColors,
+             'wireframe': false,
+             'wireframeLinewidth': 3})
+    } else {
+        // Create a textured material.
+        // fixme: download the texture via an URL from the server.
+        var texture = THREE.ImageUtils.loadTexture('house.jpg');
+        var mat = new THREE.MeshBasicMaterial({
+            'map': texture,
+            'wireframe': false,
+            'overdraw': true
+        })
     }
 
-    return geo;
+    return new THREE.Mesh(geo, mat)
 }
 
 var getGeometryCube = function () {
@@ -212,8 +233,9 @@ function* mycoroutine(connection) {
     msg = yield addTemplate(templateID, cs, buf_vert);
     console.log('Added player template')
 
-    // Spawn the just defined template.
-    msg = yield spawn(templateID, [0, 0, 0], [0, 0, 50], [0, 0, 0, 1], 1, 1)
+    // Spawn the just defined player template.
+    var initPos = [0, 0, -10]
+    msg = yield spawn(templateID, initPos, [0, 0, 0], [0, 0, 0, 1], 1, 1)
     var playerID = msg.objID
     console.log('Spawned player object with objID=' + playerID);
 
@@ -228,7 +250,7 @@ function* mycoroutine(connection) {
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(FOV, AR, 0.1, 1000);
     
-    camera.position.set( 0, 5, -10 );
+    camera.position.set(initPos[0], initPos[1], initPos[2]);
     camera.lookAt(new THREE.Vector3(0, 0, 0))
     
     // Initialise the renderer and add it to the page.
@@ -274,26 +296,7 @@ function* mycoroutine(connection) {
                 console.log('Added template ' + msg.templateID + ' to cache')
                 msg = yield getTemplate(msg.templateID);
                 if (msg.ok == false) {console.log('Error'); return;}
-                var geo = compileMesh(msg.vert, msg.UV, scale)
-
-                // Build a new object in ThreeJS.
-                var mat = new THREE.MeshBasicMaterial(
-                    {vertexColors: THREE.FaceColors,
-                     wireframe: false,
-                     wireframeLinewidth: 3})
-
-                // Create a textured material.
-                // fixme: download the texture via an URL from the server.
-                var texture = THREE.ImageUtils.loadTexture('house.jpg');
-                var mat2 = new THREE.MeshBasicMaterial({
-                    'map': texture,
-                    'wireframe': false,
-                    'overdraw': true
-                });
-
-                // fixme: use 'mat' if no textures are available. Otherwise
-                // use 'mat2'.
-                var new_geo = new THREE.Mesh(geo, mat2)
+                var new_geo = compileMesh(msg.vert, msg.UV, scale)
 
                 // Add the object to the cache and scene.
                 obj_cache[objIDs[ii]] = new_geo
