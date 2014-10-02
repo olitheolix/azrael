@@ -120,6 +120,9 @@ class ControllerBase(multiprocessing.Process):
                 protocol.FromClerk_ControlParts_Decode),
             }
 
+    def __del__(self):
+        self.close()
+        
     def setupZMQ(self):
         """
         Create and connect ZeroMQ sockets.

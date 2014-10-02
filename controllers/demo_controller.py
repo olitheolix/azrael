@@ -21,13 +21,15 @@ Demo of a simple controller for an object.
 
 import os
 import sys
+import time
+import setproctitle
+
+# Augment the Python path so that we can include the main project.
 p = os.path.dirname(os.path.abspath(__file__))
 p = os.path.join(p, '..')
 sys.path.insert(0, p)
 del p
 
-import time
-import setproctitle
 import azrael.controller
 import azrael.util as util
 import azrael.parts as parts
@@ -35,27 +37,39 @@ import azrael.parts as parts
 
 class ControllerDemo(azrael.controller.ControllerBase):
     def run(self):
-        # Setup.
+        # Boiler plate: setup
         self.setupZMQ()
         self.connectToClerk()
 
-        # Fire the central booster.
-        cmd_1 = parts.CmdBooster(partID=1, force=100)
-        self.controlParts(self.objID, [cmd_1], [])
-        time.sleep(2)
+        # ---------------------------------------------------------------------
+        # Central booster (partID=1)
+        # ---------------------------------------------------------------------
+        # Engage. This will accelerate the sphere forwards.
+        print('Fire central booster...', end='', flush=True)
+        central = parts.CmdBooster(partID=1, force=100)
+        self.controlParts(self.objID, [central], [])
 
-        # Turn off central booster and fire the peripheral booster to
-        # induce spinning.
-        cmd_0 = parts.CmdBooster(partID=0, force=0.1)
-        cmd_1 = parts.CmdBooster(partID=1, force=0)
-        cmd_2 = parts.CmdBooster(partID=2, force=0.1)
-        self.controlParts(self.objID, [cmd_0, cmd_1, cmd_2], [])
-        time.sleep(2)
+        # Turn off after 4s.
+        time.sleep(4)
+        central = parts.CmdBooster(partID=1, force=0)
+        self.controlParts(self.objID, [central], [])
+        print('done')
 
-        # Turn off peripheral boosters.
-        cmd_0 = parts.CmdBooster(partID=0, force=0)
-        cmd_2 = parts.CmdBooster(partID=2, force=0)
-        self.controlParts(self.objID, [cmd_0, cmd_2], [])
+        # ---------------------------------------------------------------------
+        # Peripheral booster to the left and right (partID=0 and partID=2)
+        # ---------------------------------------------------------------------
+        # Engage. This will induce spinning due to the booster positions.
+        print('Fire peripheral boosters...', end='', flush=True)
+        left = parts.CmdBooster(partID=0, force=0.1)
+        right = parts.CmdBooster(partID=2, force=0.1)
+        self.controlParts(self.objID, [left, right], [])
+
+        # Turn off after 2s.
+        time.sleep(2)
+        left = parts.CmdBooster(partID=0, force=0)
+        right = parts.CmdBooster(partID=2, force=0)
+        self.controlParts(self.objID, [left, right], [])
+        print('done')
 
 
 if __name__ == '__main__':
