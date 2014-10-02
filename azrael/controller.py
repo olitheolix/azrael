@@ -122,7 +122,7 @@ class ControllerBase(multiprocessing.Process):
 
     def __del__(self):
         self.close()
-        
+
     def setupZMQ(self):
         """
         Create and connect ZeroMQ sockets.

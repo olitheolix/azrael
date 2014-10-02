@@ -323,47 +323,46 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 buf_col = np.random.rand(4 * self.numVertices[ctrl_id])
                 buf_col = buf_col.astype(np.float32)
 
-                # Repeat with UV data. Each vertex has one associated (U,V) pair
-                # to specify the position in the texture.
+                # Repeat with UV data. Each vertex has one associated (U,V)
+                # pair to specify the position in the texture.
                 gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
                 gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_col, gl.GL_STATIC_DRAW)
-                
+
                 # Color data is associated with Layout 1 (first parameter), has
-                # two elements per vertex (second parameter), and each element is
-                # a float32 (third parameter). The other three parameters are of no
-                # interest here.
-                gl.glVertexAttribPointer(1, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+                # four elements per vertex (second parameter), and each element
+                # is a float32 (third parameter). The other three parameters
+                # are of no interest here.
+                gl.glVertexAttribPointer(
+                    1, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
                 gl.glEnableVertexAttribArray(1)
                 self.textureBuffer[ctrl_id] = None
             else:
-                # Repeat with UV data. Each vertex has one associated (U,V) pair
-                # to specify the position in the texture.
+                # Repeat with UV data. Each vertex has one associated (U,V)
+                # pair to specify the position in the texture.
                 gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
                 gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_uv, gl.GL_STATIC_DRAW)
-    
-                # Color data is associated with Layout 1 (first parameter), has
-                # two elements per vertex (second parameter), and each element is
-                # a float32 (third parameter). The other three parameters are of no
-                # interest here.
-                gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+
+                # UV data is associated with Layout 1 (first parameter), has
+                # two elements per vertex (second parameter), and each element
+                # is a float32 (third parameter). The other three parameters
+                # are of no interest here.
+                gl.glVertexAttribPointer(
+                    1, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
                 gl.glEnableVertexAttribArray(1)
-    
-                # fixme: remove dashed lines.
-                # --------------------------------------------------
-                # Create texture buffer and bind it.
+
+                # Create a new texture buffer on the GPU and bind it.
                 assert ctrl_id not in self.textureBuffer
                 self.textureBuffer[ctrl_id] = gl.glGenTextures(1)
                 gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
-    
+
                 # Upload texture to GPU.
-                gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height, 0,
-                                gl.GL_RGB, gl.GL_UNSIGNED_BYTE, buf_rgb)
-                 
+                gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height,
+                                0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE, buf_rgb)
+
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER,
                                    gl.GL_NEAREST)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER,
                                    gl.GL_NEAREST)
-                # --------------------------------------------------
 
             # Only draw visible triangles.
             gl.glEnable(gl.GL_DEPTH_TEST)
@@ -462,7 +461,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Load and compile all objects.
         self.loadGeometry()
-        
+
     def paintGL(self):
         try:
             self._paintGL()

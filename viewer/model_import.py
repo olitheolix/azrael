@@ -153,7 +153,7 @@ def loadModelAll(fname):
     for ii in range(len(UV)):
         if width[ii] == height[ii] == 0:
             UV[ii] = np.array([], np.float64)
-    
+
     # Return the data as a dictionary.
     data = {'vertices': vert,
             'UV': UV,

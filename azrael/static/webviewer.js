@@ -22,6 +22,7 @@ function compileMesh (p, uv, scale) {
     // Apply the scaling.
     for (ii=0; ii < p.length; ii ++) p[ii] *= scale;
 
+    // Determine if there are any UV coordinates available.
     var hasUV = (uv.length > 0)
 
     // Compile the geometry.
@@ -34,8 +35,8 @@ function compileMesh (p, uv, scale) {
         var v3 = new THREE.Vector3(p[ii+6], p[ii+7], p[ii+8])
         geo.vertices.push(v1, v2, v3);
 
+        // Add UV coordinates if they are available.
         if (hasUV) {
-            // fixme: use the actual UV coordinates instead of the fake uv_x, uv_y
             geo.faceVertexUvs[0].push([
                 new THREE.Vector2(uv[uvIdx+0], uv[uvIdx+1]),
                 new THREE.Vector2(uv[uvIdx+2], uv[uvIdx+3]),
@@ -62,7 +63,6 @@ function compileMesh (p, uv, scale) {
              'wireframeLinewidth': 3})
     } else {
         // Create a textured material.
-        // fixme: download the texture via an URL from the server.
         var texture = THREE.ImageUtils.loadTexture('house.jpg');
         var mat = new THREE.MeshBasicMaterial({
             'map': texture,
