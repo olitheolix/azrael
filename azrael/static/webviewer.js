@@ -1,3 +1,7 @@
+// Track the state of mouse buttons.
+_mouseDown = 0;
+
+
 var StateVariable = function(pos, vel, orientation, scale, imass) {
     var d = {'radius': scale,
          'scale': scale,
@@ -376,9 +380,13 @@ function* mycoroutine(connection) {
             window.myClick = false
         }
 
-        // Render the sence and update the camera position.
+        // Render the sence.
         renderer.render(scene, camera);
-        controls.update(0.01)
+
+        //  Update the camera position only if the mouse button is
+        //  pressed. This avoids accidental camera movements when you
+        //  use your mouse to eg switch to a different application.
+        if (_mouseDown > 0) controls.update(0.01);
 
         // Put the player object at the camera's position.
         var pos = [0, 0, 0]
@@ -409,6 +417,10 @@ window.onload = function() {
     // the Clerk/Clacks command functions.
     this.decoder = undefined;
 
+    // Track the state of mouse buttons.
+    document.body.onmousedown = function() {++_mouseDown;}
+    document.body.onmouseup = function() {--_mouseDown;}
+
     // Initialise the clicked flag.
     window.myClick = false
     //window.onclick = function (event) {window.myClick = true}
@@ -417,11 +429,12 @@ window.onload = function() {
     connection.onopen = function() {
         console.log('Established Websocket Connection')
 
-        // Start the co-routine. It will return with a command to send
-        // to Clerk, as well as a function that can interpret the result.
+        // Start the co-routine. It will return with two variables: 1)
+        // the command for Clerk and 2) the Websocket callback
+        // function that can interpret Clerk's response.
         var next = protocol.next()
 
-        // Store the call back function and send the command to Clacks.
+        // Store the callback function and send the command to Clacks.
         this.decoder = next.value[1]
         connection.send(next.value[0])
     }
