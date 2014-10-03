@@ -1,7 +1,3 @@
-// Track the state of mouse buttons.
-_mouseDown = 0;
-
-
 var StateVariable = function(pos, vel, orientation, scale, imass) {
     var d = {'radius': scale,
          'scale': scale,
@@ -275,7 +271,7 @@ function* mycoroutine(connection) {
     controls.movementSpeed = 25;
     controls.rollSpeed = 10 * Math.PI / 24;
     controls.autoForward = false;
-    controls.dragToLook = false;
+    controls.dragToLook = true;
     controls.update(1)
 
     // Query the State variables of all objects and update their
@@ -387,7 +383,7 @@ function* mycoroutine(connection) {
         //  Update the camera position only if the mouse button is
         //  pressed. This avoids accidental camera movements when you
         //  use your mouse to eg switch to a different application.
-        if (_mouseDown > 0) controls.update(0.01);
+        controls.update(0.01);
 
         // Put the player object at the camera's position.
         var pos = [0, 0, 0]
@@ -417,10 +413,6 @@ window.onload = function() {
     // will be set in the message handler itself and is supplied by
     // the Clerk/Clacks command functions.
     this.decoder = undefined;
-
-    // Track the state of mouse buttons.
-    document.body.onmousedown = function() {++_mouseDown;}
-    document.body.onmouseup = function() {--_mouseDown;}
 
     // Initialise the clicked flag.
     window.myClick = false
