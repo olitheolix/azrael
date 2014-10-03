@@ -18,13 +18,13 @@ var StateVariable = function(pos, vel, orientation, scale, imass) {
 /*
   Create a ThreeJS geometry object.
 */
-function compileMesh (p, uv, scale) {
+function compileMesh (objID, vert, uv, scale) {
     var geo = new THREE.Geometry()
 
-    console.log('Compiling mesh with ' + p.length + ' vertices');
+    console.log('Compiling mesh with ' + vert.length + ' vertices');
 
     // Apply the scaling.
-    for (ii=0; ii < p.length; ii ++) p[ii] *= scale;
+    for (ii=0; ii < vert.length; ii ++) vert[ii] *= scale;
 
     // Determine if there are any UV coordinates available.
     var hasUV = (uv.length > 0)
@@ -32,11 +32,11 @@ function compileMesh (p, uv, scale) {
     // Compile the geometry.
     geo.faceVertexUvs[0] = []
     var uvIdx = 0
-    for (ii=0; ii < p.length; ii += 9) {
+    for (ii=0; ii < vert.length; ii += 9) {
         // Add the three vertices that define a triangle.
-        var v1 = new THREE.Vector3(p[ii+0], p[ii+1], p[ii+2])
-        var v2 = new THREE.Vector3(p[ii+3], p[ii+4], p[ii+5])
-        var v3 = new THREE.Vector3(p[ii+6], p[ii+7], p[ii+8])
+        var v1 = new THREE.Vector3(vert[ii+0], vert[ii+1], vert[ii+2])
+        var v2 = new THREE.Vector3(vert[ii+3], vert[ii+4], vert[ii+5])
+        var v3 = new THREE.Vector3(vert[ii+6], vert[ii+7], vert[ii+8])
         geo.vertices.push(v1, v2, v3);
 
         // Add UV coordinates if they are available.
@@ -67,7 +67,8 @@ function compileMesh (p, uv, scale) {
              'wireframeLinewidth': 3})
     } else {
         // Create a textured material.
-        var texture = THREE.ImageUtils.loadTexture('house.jpg');
+        var fname = 'img/texture_' + objID[0] + '.jpg'
+        var texture = THREE.ImageUtils.loadTexture(fname);
         var mat = new THREE.MeshBasicMaterial({
             'map': texture,
             'wireframe': false,
@@ -307,7 +308,7 @@ function* mycoroutine(connection) {
                 console.log('Added template ' + msg.templateID + ' to cache')
                 msg = yield getTemplate(msg.templateID);
                 if (msg.ok == false) {console.log('Error'); return;}
-                var new_geo = compileMesh(msg.vert, msg.UV, scale)
+                var new_geo = compileMesh(objIDs[ii], msg.vert, msg.UV, scale)
 
                 // Add the object to the cache and scene.
                 obj_cache[objIDs[ii]] = new_geo
