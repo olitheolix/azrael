@@ -137,7 +137,7 @@ def loadGroundModel(scale, model_name):
 
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
-    ret = ctrl.spawn(None, tID, orient=[0, 1, 0, 0], imass=0.1, scale=scale)
+    ret = ctrl.spawn(None, tID, [0, 0, -10], orient=[0, 1, 0, 0], imass=0.1, scale=scale)
     print('done (ID=<{}>)'.format(ret[1]))
 
 
@@ -213,23 +213,19 @@ def spawnCubes(numRows, numCols, numLayers):
     # ----------------------------------------------------------------------
     # Define a cube with boosters and factories.
     # ----------------------------------------------------------------------
-    # Booster direction- and position.
-    dir_0, dir_1 = [0, 0, +1], [0, 0, -1]
-    pos_0, pos_1 = [+1.5, 0, 0], [-1.5, 0, 0]
-
     # Two boosters, one left, one right. Both point in the same direction.
     b0 = parts.Booster(
-        partID=0, pos=pos_0, direction=dir_0, max_force=10.0)
+        partID=0, pos=[+0.005, 0, 0], direction=[0, 0, 1], max_force=1.0)
     b1 = parts.Booster(
-        partID=1, pos=pos_1, direction=dir_0, max_force=10.0)
+        partID=1, pos=[-0.005, 0, 0], direction=[0, 0, 1], max_force=1.0)
 
     # Two factories, one left one right. They will eject the new objects
     # forwards and backwards, respectively.
     f0 = parts.Factory(
-        partID=0, pos=pos_0, direction=[+1, 0, 0],
+        partID=0, pos=[+1.5, 0, 0], direction=[+1, 0, 0],
         templateID=tID_1, exit_speed=[0.1, 1])
     f1 = parts.Factory(
-        partID=1, pos=pos_1, direction=[-1, 0, 0],
+        partID=1, pos=[-1.5, 0, 0], direction=[-1, 0, 0],
         templateID=tID_2, exit_speed=[0.1, 1])
 
     # Add the template.

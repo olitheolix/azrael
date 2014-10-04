@@ -44,13 +44,14 @@ class ControllerDemo(azrael.controller.ControllerBase):
         # ---------------------------------------------------------------------
         # Central booster (partID=1)
         # ---------------------------------------------------------------------
+        time.sleep(2)
         # Engage. This will accelerate the sphere forwards.
         print('Fire central booster...', end='', flush=True)
         central = parts.CmdBooster(partID=1, force=600)
         self.controlParts(self.objID, [central], [])
 
         # Turn off after 4s.
-        time.sleep(4)
+        time.sleep(2)
         central = parts.CmdBooster(partID=1, force=0)
         self.controlParts(self.objID, [central], [])
         print('done')
