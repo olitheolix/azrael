@@ -115,7 +115,7 @@ def test_spawn_and_talk_to_one_controller(ctrl_type):
 
     # Fetch the response. Poll for it a few times because it may not arrive
     # immediately.
-    for ii in range(5):
+    for ii in range(10):
         ok, data = ctrl.recvMessage()
         assert isinstance(ok, bool)
         if ok:
@@ -125,7 +125,7 @@ def test_spawn_and_talk_to_one_controller(ctrl_type):
 
         if ok and (src is not None):
             break
-        time.sleep(0.1)
+        time.sleep(0.2)
     assert src is not None
 
     # The source must be the newly created process and the response must be the
