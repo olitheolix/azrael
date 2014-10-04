@@ -20,6 +20,7 @@ Global configuration parameters.
 """
 import sys
 import logging
+import netifaces
 
 # ---------------------------------------------------------------------------
 # Configure logging.
@@ -54,7 +55,7 @@ fileHandler.setLevel(logging.DEBUG)
 # Install the handler.
 logger.addHandler(fileHandler)
 
-del logger, console, logFormat, formatter, fileHandler
+del console, logFormat, formatter, fileHandler
 
 # ---------------------------------------------------------------------------
 # Global variables.
@@ -72,8 +73,17 @@ LEN_SV_BYTES = 21 * 8
 # Port of Tornado server.
 webserver_port = 8080
 
-# Address of Clerk.
-addr_clerk = 'tcp://127.0.0.1:5555'
+# Determine the IP address where Clerk will listen for ZeroMQ requests.
+# eth0 is first choice, localhost is the fallback.
+try:
+    addr_clerk = netifaces.ifaddresses('eth0')[2][0]['addr']
+except (ValueError, KeyError):
+    try:
+        addr_clerk = netifaces.ifaddresses('lo')[2][0]['addr']
+    except (ValueError, KeyError):
+        logger.critical('Could not find a valid network interface')
+        sys.exit(1)
+addr_clerk = 'tcp://' + addr_clerk + ':5555'
 
 # ---------------------------------------------------------------------------
 # RabbitMQ parameters.

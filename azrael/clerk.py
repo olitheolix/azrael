@@ -275,11 +275,15 @@ class Clerk(multiprocessing.Process):
 
         # Initialise ZeroMQ and create the command socket. All client request
         # will come through this socket.
+        addr = config.addr_clerk
+        self.logit.info('Attempt to bind <{}>'.format(addr))
         ctx = zmq.Context()
         self.sock_cmd = ctx.socket(zmq.ROUTER)
-        self.sock_cmd.bind(config.addr_clerk)
+        self.sock_cmd.bind(addr)
         poller = zmq.Poller()
         poller.register(self.sock_cmd, zmq.POLLIN)
+        self.logit.info('Listening on <{}>'.format(addr))
+        del addr
 
         # Wait for socket activity.
         while True:
