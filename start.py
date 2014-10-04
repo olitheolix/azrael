@@ -176,7 +176,7 @@ def spawnCubes(numRows, numCols, numLayers):
     rgb = np.array([], np.uint8)
 
     uv = np.zeros(12 * 6, np.float64)
-    uv[0:6] =  [0, 0, 1, 0, 1, 1]
+    uv[0:6] = [0, 0, 1, 0, 1, 1]
     uv[6:12] = [0, 0, 1, 1, 0, 1]
     uv[12:18] = [1, 0, 0, 1, 0, 0]
     uv[18:24] = [1, 0, 1, 1, 0, 1]
@@ -190,7 +190,7 @@ def spawnCubes(numRows, numCols, numLayers):
     uv[66:72] = [1, 1, 0, 1, 1, 0]
 
     uv = np.array(uv, np.float64)
-    
+
     import matplotlib.pyplot as plt
     img = plt.imread('olicat.jpg')
     img = np.flipud(img)
@@ -299,7 +299,7 @@ def main():
             loadGroundModel(*model_name)
 
             # Define additional templates.
-            spawnCubes(5, 5, 2)
+            spawnCubes(4, 4, 1)
         print('Azrael now live')
     else:
         print('Azrael already live')
