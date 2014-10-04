@@ -59,17 +59,20 @@ class ControllerBase(multiprocessing.Process):
     result to Clerk, wait for a replay, decode the reply back to Python types,
     and pass that back to the caller.
 
-    :param str name: name of Python script to start.
-    :param bytes objID: ID of object with which this controller is associated.
+    :param bytes objID: ID of object to connect to.
+    :param str addr: Address of Clerk.
     :raises: None
     """
     @typecheck
-    def __init__(self, obj_id: bytes=None):
+    def __init__(self, obj_id: bytes=None, addr_clerk: str=config.addr_clerk):
         super().__init__()
 
         # The object ID associated with this controller.
         self.objID = obj_id
 
+        # Address of Clerk (ZeroMQ sockets will connect to that address).
+        self.addr_clerk = addr_clerk
+        
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
@@ -125,18 +128,20 @@ class ControllerBase(multiprocessing.Process):
 
     def setupZMQ(self):
         """
-        Create and connect ZeroMQ sockets.
+        Create ZeroMQ sockets and connect them to Clerk.
         """
+        self.sock_cmd = None
         self.ctx = zmq.Context()
         self.sock_cmd = self.ctx.socket(zmq.REQ)
         self.sock_cmd.linger = 0
-        self.sock_cmd.connect(config.addr_clerk)
+        self.sock_cmd.connect(self.addr_clerk)
 
     def close(self):
         """
         Close all ZeroMQ sockets.
         """
-        self.sock_cmd.close()
+        if self.sock_cmd is not None:
+            self.sock_cmd.close()
         self.logit.debug('Controller for <{}> has shutdown'.format(self.objID))
 
     @typecheck
