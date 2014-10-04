@@ -192,7 +192,7 @@ def spawnCubes(numRows, numCols, numLayers):
     uv = np.array(uv, np.float64)
 
     import matplotlib.pyplot as plt
-    img = plt.imread('olicat.jpg')
+    img = plt.imread('azrael/static/img/texture_1.jpg')
     img = np.flipud(img)
     rgb = np.zeros(np.prod(img.shape), np.uint8)
     idx = 0
