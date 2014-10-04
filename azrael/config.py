@@ -79,9 +79,6 @@ addr_clerk = 'tcp://127.0.0.1:5555'
 # RabbitMQ parameters.
 # ---------------------------------------------------------------------------
 
-# Address of the message Clerk.
-clerk_msg = 'tcp://127.0.0.1:5555'
-
 # Name of RabbitMQ exchange for messages.
 rmq_wp = 'wp'
 rmq_ack = 'ack'
