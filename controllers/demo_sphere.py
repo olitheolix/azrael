@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Demo of a simple controller for an object.
+Move the sphere in the default simulation.
 """
 
 import os
@@ -73,19 +73,25 @@ class ControllerDemo(azrael.controller.ControllerBase):
         print('done')
 
 
-if __name__ == '__main__':
+def main():
     if len(sys.argv) < 2:
-        print('You forgot to supply the object ID')
-        sys.exit(1)
+        objID = 2
+    else:
+        objID = sys.argv[1]
 
     # Read the object from the command line.
-    obj_id = util.int2id(int(sys.argv[1]))
+    objID = util.int2id(int(objID))
 
     # Rename this process to ensure it is easy to find and kill.
-    name = 'killme Controller {}'.format(util.id2int(obj_id))
+    name = 'killme Controller {}'.format(util.id2int(objID))
     setproctitle.setproctitle(name)
 
     # Instantiate the controller and start it in this thread.
-    ctrl = ControllerDemo(obj_id)
+    ctrl = ControllerDemo(objID)
     ctrl.run()
     print('done')
+
+    
+if __name__ == '__main__':
+    main()
+    
