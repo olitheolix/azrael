@@ -46,9 +46,9 @@ multiple computers to simulate worlds of unprecedented size, detail, and
 accuracy. All hail cloud computing :)
 
 Why do I bother? Because in a virtual world that behaves reasonably similar to
-the real world I can have my own space shuttle, design a sub-marine, invent my
-own Mars rover and test its navigation abilities on a fictitious terrain, or
-build a fully automated port. And so can you. No job at NASA required.
+the real world I can have my own space shuttle, design my own sub-marine,
+invent my own Mars rover with awesome navigation abilities on a fictitious
+terrain. And so can you. No job at NASA required.
 
 
 Project Status
@@ -67,49 +67,49 @@ The first major milestone towards a minimum viable prototype (MVP) are:
 This proved surprisingly difficult (read "fun") due to the many loosely coupled
 components. However, once the basics are in place it will hopefully become
 easier to hone the individual components... with Oculus Rift support,
-contemporary 3D rendering (maybe cloud based?), a scalable physics engine to
-create the largest Newtonian simulation on the planet...
+contemporary 3D rendering (maybe cloud based?), and a scalable physics engine
+to create the largest Newtonian simulation on the planet...
 
-
-Help Wanted
-===========
-
-The project spans a multitude of technologies and challenges: ZeroMQ, RabbitMQ,
-MongoDB, OpenGL (via PyQt), Websockets, Tornado, Python, Cython, some C++
-around Bullet, Sphinx documentation, 3D models that can be distributed via
-GitHub without violating any licenses, and more. The skill threshold is rather
-low for almost all components since they are ludicrously primitive for now.
+Please drop me a line if you have any questions.
 
 
 Installation
 ============
 
-On Ubuntu 14.04, you can install and test Azrael (without the OpenGL
-viewer) like this:
+On Ubuntu 14.04 you can install and start the Azrael core like so:
 
 .. code-block:: bash
 
-   sudo apt-get install libassimp3 libassimp-dev python3-pymongo scons cython3
-   sudo apt-get install python3-zmq libbullet-dev mongodb rabbitmq-server
-   sudo apt-get install python3-pip python3-numpy python3-pytest IPython3
-   sudo apt-get install python3-tornado python3-pil git
-   sudo pip3 install cytoolz setproctitle websocket-client==0.15
    git clone https://github.com/olitheolix/azrael
-   cd azrael/azrael/bullet
-   scons
-   cd ../../
-   py.test
+   cd azrael
+   sudo bash install.sh
 
-To also test the OpenGL viewer you will need a GPU that supports OpenGL 3.x (if
-you bought it in the last 2 years it probably does). 
+
+Try It Out
+==========
+
+Start Azrael with
 
 .. code-block:: bash
 
-   sudo apt-get install python3-opengl libglu1-mesa-dev python3-pyside.qtopengl
-   ./start.py
+   python3 start.py --noviewer
 
-One day it would be nice if you could simply use the browser. The Websocket
-interface in in place but JavaScript is not my forte...
+Then point Firefox to http://localhost:8080 to render the scene. Chrome will
+work as well if you turn on experimental JavaScript first (browse to
+chrome://flags to enable it).
+
+To see some movement run one of the demo controllers in a separate shell:
+
+.. code-block:: bash
+
+    python3 controllers/demo_sphere.py 
+
+or
+
+.. code-block:: bash
+
+    python3 controllers/demo_swarm.py 
+
 
 License
 =======
