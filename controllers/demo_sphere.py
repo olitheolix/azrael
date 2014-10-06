@@ -33,9 +33,10 @@ del p
 import azrael.controller
 import azrael.util as util
 import azrael.parts as parts
+import azrael.config as config
 
 
-class ControllerDemo(azrael.controller.ControllerBase):
+class ControllerSphere(azrael.controller.ControllerBase):
     def run(self):
         # Boiler plate: setup
         self.setupZMQ()
@@ -87,11 +88,10 @@ def main():
     setproctitle.setproctitle(name)
 
     # Instantiate the controller and start it in this thread.
-    ctrl = ControllerDemo(objID)
+    ctrl = ControllerSphere(objID, config.addr_clerk)
     ctrl.run()
     print('done')
 
-    
+
 if __name__ == '__main__':
     main()
-    

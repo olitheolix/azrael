@@ -32,16 +32,17 @@ del p
 
 import azrael.controller
 import azrael.parts as parts
+import azrael.config as config
 
 from azrael.util import int2id, id2int
 
 
-class ControllerDemo(azrael.controller.ControllerBase):
+class ControllerCubeLeft(azrael.controller.ControllerBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.left = 0
         self.right = 1
-        
+
     def run(self):
         # Boiler plate: setup
         self.setupZMQ()
@@ -78,19 +79,22 @@ class ControllerDemo(azrael.controller.ControllerBase):
         self.close()
 
 
-class ControllerDemoReverse(ControllerDemo):
+class ControllerCubeRight(ControllerCubeLeft):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.left = 1
         self.right = 0
 
 
-if __name__ == '__main__':
+def main():
+    addr = config.addr_clerk
+
     # Controllers for columns 1, 2, 3, 4.
-    group_1 = [ControllerDemo(int2id(4 * _ + 0)) for _ in range(1, 5)]
-    group_2 = [ControllerDemo(int2id(4 * _ + 1)) for _ in range(1, 5)]
-    group_3 = [ControllerDemoReverse(int2id(4 * _ + 2)) for _ in range(1, 5)]
-    group_4 = [ControllerDemoReverse(int2id(4 * _ + 3)) for _ in range(1, 5)]
+    CCL, CCR = ControllerCubeLeft, ControllerCubeRight
+    group_1 = [CCL(int2id(4 * _ + 0), addr) for _ in range(1, 5)]
+    group_2 = [CCL(int2id(4 * _ + 1), addr) for _ in range(1, 5)]
+    group_3 = [CCR(int2id(4 * _ + 2), addr) for _ in range(1, 5)]
+    group_4 = [CCR(int2id(4 * _ + 3), addr) for _ in range(1, 5)]
 
     # Start the cubes in the two outer columns.
     time.sleep(0.5)
@@ -98,7 +102,7 @@ if __name__ == '__main__':
         p0.start()
         p1.start()
         time.sleep(0.5)
-        
+
     # Start the cubes in the two inner columns.
     time.sleep(1)
     for p0, p1 in zip(group_2, group_3):
@@ -106,3 +110,7 @@ if __name__ == '__main__':
         p1.start()
         time.sleep(0.5)
     print('done')
+
+
+if __name__ == '__main__':
+    main()
