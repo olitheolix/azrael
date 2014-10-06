@@ -67,6 +67,11 @@ class ControllerBase(multiprocessing.Process):
     def __init__(self, obj_id: bytes=None, addr_clerk: str=config.addr_clerk):
         super().__init__()
 
+        # Declare the socket variable. This is necessary because the destructor
+        # will use and depending on whether the Controller runs as a process
+        # or in the main thread this variable may otherwise be unavailable.
+        self.sock_cmd = None
+
         # The object ID associated with this controller.
         self.objID = obj_id
 
@@ -130,7 +135,6 @@ class ControllerBase(multiprocessing.Process):
         """
         Create ZeroMQ sockets and connect them to Clerk.
         """
-        self.sock_cmd = None
         self.ctx = zmq.Context()
         self.sock_cmd = self.ctx.socket(zmq.REQ)
         self.sock_cmd.linger = 0
@@ -143,6 +147,7 @@ class ControllerBase(multiprocessing.Process):
         if self.sock_cmd is not None:
             self.sock_cmd.close()
         self.logit.debug('Controller for <{}> has shutdown'.format(self.objID))
+        self.sock_cmd = None
 
     @typecheck
     def send(self, data: str):
