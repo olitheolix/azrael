@@ -355,7 +355,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 self.textureBuffer[ctrl_id] = gl.glGenTextures(1)
                 gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
 
-                # Upload texture to GPU.
+                # Upload texture to GPU (transpose the image first).
+                buf_rgb = np.reshape(buf_rgb, (width, height, 3))
+                buf_rgb[:, :, 0] = buf_rgb[:, :, 0].T
+                buf_rgb[:, :, 1] = buf_rgb[:, :, 1].T
+                buf_rgb[:, :, 2] = buf_rgb[:, :, 2].T
+                buf_rgb = buf_rgb.flatten()
                 gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height,
                                 0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE, buf_rgb)
 
@@ -426,7 +431,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             print('Template {} already exists'.format(self.t_projectile))
         del ok, _
 
-        initPos = [0, 0, -10]
+        initPos = [0, 0, -5]
         self.camera = Camera(initPos)
 
         # Spawn the player object.
