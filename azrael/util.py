@@ -19,33 +19,33 @@
 Utility functions.
 """
 
+import time
+import pymongo
 import numpy as np
 import azrael.config as config
 
 from azrael.typecheck import typecheck
 
 
-class Timer(object):
-    def __init__(self, verbose=False, msg='Elapsed Time: '):
-        self.verbose = verbose
-        self.prefix = msg
+dbTiming = pymongo.MongoClient()['timing']['timing']
+
+def resetTiming():
+    dbTiming.drop()
+
+
+class Timeit(object):
+    def __init__(self, name):
+        self.name = name
 
     def __enter__(self):
         self.start = time.time()
         return self
 
     def __exit__(self, *args):
-        self.end = time.time()
-        self.elapsed = self.end - self.start
-        self.secs = int(self.elapsed)
-        self.msecs = int(self.elapsed * 1E3)
-        self.usecs = int(self.elapsed * 1E6)
-
-        if self.verbose:
-            print(self.prefix + '{}'.format(self.format(self.elapsed)))
-
-    def format(self, elapsed):
-        return '{0:,}us'.format(int(elapsed * 1E6))
+        doc = {'start': self.start,
+               'elapsed': time.time() - self.start,
+               'name': self.name}
+        dbTiming.insert(doc, j=0, w=0)
 
 
 @typecheck

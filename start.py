@@ -39,6 +39,7 @@ import subprocess
 import model_import
 import azrael.clerk
 import azrael.clacks
+import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 import azrael.leonard as leonard
@@ -284,6 +285,9 @@ def main():
     # Parse the command line.
     param = parseCommandLine()
     setupLogging(param.loglevel)
+
+    # Flush the timing database.
+    util.resetTiming()
 
     # Determine if Azrael is live.
     try:
