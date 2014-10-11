@@ -46,6 +46,8 @@ import azrael.wscontroller as wscontroller
 import azrael.bullet.btInterface as btInterface
 
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 ipshell = IPython.embed
 
@@ -137,7 +139,8 @@ def loadGroundModel(scale, model_name):
 
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
-    ret = ctrl.spawn(None, tID, [0, 0, -10], orient=[0, 1, 0, 0], imass=0.1, scale=scale)
+    ret = ctrl.spawn(None, tID, [0, 0, -10], orient=[0, 1, 0, 0],
+                     imass=0.1, scale=scale)
     print('done (ID=<{}>)'.format(ret[1]))
 
 
@@ -191,16 +194,8 @@ def spawnCubes(numRows, numCols, numLayers):
 
     uv = np.array(uv, np.float64)
 
-    import matplotlib.pyplot as plt
-    img = plt.imread('azrael/static/img/texture_1.jpg')
-    img = np.flipud(img)
-    rgb = np.zeros(np.prod(img.shape), np.uint8)
-    idx = 0
-    for yy in range(img.shape[1]):
-        for xx in range(img.shape[0]):
-            for zz in range(3):
-                rgb[idx] = img[xx, yy, zz]
-                idx += 1
+    img = plt.imread('azrael/static/img/texture_5.jpg')
+    rgb = np.rollaxis(np.flipud(img), 1).flatten()
 
     # ----------------------------------------------------------------------
     # Create templates for the factory output.
@@ -234,24 +229,55 @@ def spawnCubes(numRows, numCols, numLayers):
     assert ok
 
     # ----------------------------------------------------------------------
-    # Spawn the cubes in a regular grid.
+    # Define more booster cubes, each with a different texture.
     # ----------------------------------------------------------------------
+    tID_cube = {}
+    for ii in range(numRows * numCols * numLayers):
+        # File name of texture.
+        fname = 'azrael/static/img/texture_{}.jpg'.format(ii + 1)
+
+        # Load the texture image. If the image is unavailable do not endow the
+        # cube with a texture.
+        try:
+            img = plt.imread(fname)
+            rgb = np.rollaxis(np.flipud(img), 1).flatten()
+            curUV = uv
+        except FileNotFoundError:
+            print('Could not load texture <{}>'.format(fname))
+            rgb = curUV = np.array([])
+
+        # Create the template.
+        tID = ('BoosterCube_{}'.format(ii)).encode('utf8')
+        ok, _ = ctrl.addTemplate(tID, cs, vert, curUV, rgb, [b0, b1], [])
+        assert ok
+
+        # Add the templateID to a dictionary because we will need it in the
+        # next step to spawn the templates.
+        tID_cube[ii] = tID
+
+    # ----------------------------------------------------------------------
+    # Spawn the differently textures cubes in a regular grid.
+    # ----------------------------------------------------------------------
+    idx = 0
     spacing = 0.1
     for row in range(numRows):
         for col in range(numCols):
             for lay in range(numLayers):
+                # Base position of cube.
                 pos = np.array([col, row, lay], np.float64)
 
-                # Add some space in between the cubes.
+                # Add space in between cubes.
                 pos *= -(1 + spacing)
 
-                # Center the positions.
+                # Correct the cube position to ensure the center of the
+                # grid coincides with (0, 0, 0) in world coordinates.
                 pos[0] += (numCols // 2) * (1 + spacing)
                 pos[1] += (numRows // 2) * (1 + spacing)
                 pos[2] += 10
 
-                # Spawn the cube.
-                ok, objID = ctrl.spawn(None, tID_3, pos)
+                # Spawn the cube and update the index counter.
+                ok, objID = ctrl.spawn(None, tID_cube[idx], pos)
+                idx += 1
 
 
 def main():
@@ -274,10 +300,6 @@ def main():
         subprocess.call(['pkill', 'killme'])
 
         # Start the Azrael processes.
-        #leo = leonard.LeonardBase()
-        #leo = leonard.LeonardBaseWPRMQ()
-        leo = leonard.LeonardBulletMonolithic()
-        leo.start()
         clerk = azrael.clerk.Clerk(reset=True)
         clerk.start()
         clacks = azrael.clacks.ClacksServer()
@@ -296,6 +318,13 @@ def main():
 
             # Define additional templates.
             spawnCubes(4, 4, 1)
+
+        # Start the physics engine.
+        #leo = leonard.LeonardBase()
+        #leo = leonard.LeonardBaseWPRMQ()
+        leo = leonard.LeonardBulletMonolithic()
+        leo.start()
+
         print('Azrael now live')
     else:
         print('Azrael already live')
