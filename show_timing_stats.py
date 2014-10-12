@@ -23,6 +23,7 @@ Plot timing statistics to console.
 The timing statistics are collected with the ``azrael.util.Timeit`` class.
 """
 
+import io
 import sys
 import time
 import IPython
@@ -48,17 +49,15 @@ def main():
         data = list(db.find(query))
 
         if len(data) > 0:
-            # Create a temporary CSV file with the timing data for Pandas to
-            # load.
-            fname = 'delme.csv'
-            with open(fname, 'w') as f:
-                f.write('Name|Start|Elapsed\n')
-                for e in data:
-                    f.write('{} | {} | {}\n'.format(
-                        e['name'], e['start'], e['elapsed']))
+            # Create a temporary CSV file with the timing data for Pandas.
+            s = '{} | {} | {}\n'
+            csv = [s.format(_['name'], _['start'], _['elapsed']) for _ in data]
+            csv = 'Name|Start|Elapsed\n' + ''.join(csv)
+            csv = io.StringIO(csv)
+            del s
 
             # Load the data into Pandas.
-            df = pd.read_csv(fname, sep='|')
+            df = pd.read_csv(csv, sep='|')
     
             # Convert the elapsed time to ms.
             df.Elapsed *= 1000

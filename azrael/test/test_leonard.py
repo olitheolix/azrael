@@ -225,7 +225,90 @@ def test_multiple_workers(clsWorker):
     print('Test passed')
 
 
+def test_sweeping_2objects():
+    """
+    Ensure the Sweeping algorithm finds the correct sets.
+
+    The algorithm takes a list of dictionarys and returns a list of lists.
+
+    The input dictionary each contains the AABB coordinates. The output list
+    contains the set of overlapping AABBs.
+    """
+    sweeping = azrael.leonard.sweeping
+
+    aabbs = [{'x': [4, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
+             {'x': [1, 2], 'y': [3.5, 4], 'z': [5, 6.5]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    res = sweeping(aabbs, 'x')
+    assert sorted(res) == sorted([set([1]), set([0])])
+    
+    aabbs = [{'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]},
+             {'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    res = sweeping(aabbs, 'x')
+    assert sorted(res) == sorted([set([1, 0])])
+    
+    aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
+             {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    res = sweeping(aabbs, 'x')
+    assert sorted(res) == sorted([set([1, 0])])
+    
+    aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
+             {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    res = sweeping(aabbs, 'x')
+    assert sorted(res) == sorted([set([1, 0])])
+
+    # Test the other dimensions.
+    aabbs = [{'x': [1, 5], 'y': [1, 5], 'z': [1, 5]},
+             {'x': [2, 4], 'y': [2, 4], 'z': [2, 4]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    assert sweeping(aabbs, 'x') == sweeping(aabbs, 'y')
+    assert sweeping(aabbs, 'x') == sweeping(aabbs, 'z')
+
+    print('Test passed')
+    
+    
+def test_sweeping_3objects():
+    """
+    Same as test_sweeping_2objects but with three objects.
+    """
+    sweeping = azrael.leonard.sweeping
+
+    # Three non-overlapping objects.
+    aabbs = [{'x': [1, 2]}, {'x': [3, 4]}, {'x': [5, 6]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    res = sweeping(aabbs, 'x')
+    assert sorted(res) == sorted([set([0]), set([1]), set([2])])
+    
+    # First and second overlap.
+    aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [5, 6]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    res = sweeping(aabbs, 'x')
+    assert sorted(res) == sorted([set([0, 1]), set([2])])
+    
+    # First overlaps with second, second overlaps with third, but third does
+    # not overlap with first. The algorithm must nevertheless return all three
+    # in a single set.
+    aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [3, 6]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    res = sweeping(aabbs, 'x')
+    assert sorted(res) == sorted([set([0, 1, 2])])
+    
+    # First and third overlap.
+    aabbs = [{'x': [1, 2]}, {'x': [10, 11]}, {'x': [0, 1.5]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    res = sweeping(aabbs, 'x')
+    assert sorted(res) == sorted([set([0, 2]), set([1])])
+    
+    print('Test passed')
+    
+
 if __name__ == '__main__':
+    test_sweeping_2objects()
+    test_sweeping_3objects()
+    sys.exit()
     test_multiple_workers(azrael.leonard.LeonardRMQWorker)
     test_multiple_workers(azrael.leonard.LeonardRMQWorkerBullet)
     test_move_single_object(azrael.leonard.LeonardBaseWPRMQ)

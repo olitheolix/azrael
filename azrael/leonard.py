@@ -21,6 +21,7 @@ Physics manager.
 import sys
 import time
 import pika
+import IPython
 import logging
 import setproctitle
 import multiprocessing
@@ -34,6 +35,63 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
 
+ipshell = IPython.embed
+
+
+def sweeping(data: list, dim: str):
+    """
+    Return sets of overlapping AABBs.
+
+    This function implements the 'Sweeping' algorithm to determine which sets
+    of AABBs overlap.
+
+    The algorithm is straightforward: sort all start/stop positions and
+    determine the overlapping sets.
+
+    :param list data: list of dictionaries which must contain ['aabb']
+    :param str dim: the axis dimension of the AABB.
+    """
+    # Convenience.
+    N = 2 * len(data)
+
+    # Pre-allocate arrays for start/stop position, objID, and an
+    # increment/decrement array used for convenient processing afterwars.
+    arr_pos = np.zeros(N, np.float64)
+    arr_oid = np.zeros(N, np.int64)
+    arr_inc = np.zeros(N, np.int8)
+
+    # Fill the arrays.
+    for ii in range(len(data)):
+        arr_pos[2 * ii: 2 * ii + 2] = np.array(data[ii]['aabb'][dim])
+        arr_oid[2 * ii: 2 * ii + 2] = ii
+        arr_inc[2 * ii: 2 * ii + 2] = [+1, -1]
+
+    # Sort all three arrays according to the start/stop positions.
+    idx = np.argsort(arr_pos)
+    arr_oid = arr_oid[idx]
+    arr_inc = arr_inc[idx]
+
+    # Output array.
+    out = []
+    
+    # Sweep over the sorted data and compile the list of object sets.
+    sumVal = 0
+    setObjs = set()
+    for (inc, objID) in zip(arr_inc, arr_oid):
+        # Update the index variable and add the current object to the set.
+        sumVal += inc
+        setObjs.add(objID)
+
+        # Anoterh set of overlapping AABBs is completed whenever the index
+        # variable reaches zero.
+        if sumVal == 0:
+            out.append(setObjs)
+            setObjs = set()
+
+        # Safety check: this must never happen.
+        assert sumVal >= 0
+    return out
+        
 
 class LeonardBase(multiprocessing.Process):
     """
@@ -128,7 +186,8 @@ class LeonardBase(multiprocessing.Process):
 
             # Take the current time.
             t0 = time.time()
-            self.step(0.1, 10)
+            with util.Timeit('step') as timeit:
+                self.step(0.1, 10)
 
 
 class LeonardBaseWorkpackages(LeonardBase):
@@ -256,7 +315,8 @@ class LeonardBulletMonolithic(LeonardBase):
 
         # Wait for Bullet to advance the simulation by one step.
         IDs = [util.id2int(_) for _ in allSV.keys()]
-        self.bullet.compute(IDs, dt, maxsteps)
+        with util.Timeit('compute') as timeit:
+            self.bullet.compute(IDs, dt, maxsteps)
 
         # Retrieve all objects from Bullet and write them back to the database.
         for objID, sv in allSV.items():
