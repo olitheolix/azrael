@@ -33,6 +33,7 @@ p = os.path.join(_this_directory, '..')
 sys.path.insert(0, p)
 del p
 
+import time
 import argparse
 import subprocess
 import numpy as np
@@ -83,6 +84,71 @@ def perspective(fov, ar, near, far):
     mat[2, 3] = -2 * far * near / (far - near)
     mat[3, 2] = 1
     return mat.astype(np.float32)
+
+
+class ImageWriter(QtCore.QObject):
+    """
+    Write screenshots to file.
+
+    This instance can/should run in its own thread to avoid blocking the main
+    thread.
+    """
+
+    # Signals must be class variables.
+    sigUpdate = QtCore.Signal(float, QtGui.QImage)
+    sigReset = QtCore.Signal()
+
+    def __init__(self, baseDir):
+        super().__init__()
+
+        # Sanity check.
+        assert isinstance(baseDir, str)
+
+        # Remember the base directory.
+        self.baseDir = baseDir
+
+        # Connect the signals. The signals will be triggered from the main
+        # thread.
+        self.sigUpdate.connect(self.work)
+        self.sigReset.connect(self.reset)
+
+        # Auxiliary variables.
+        self.imgCnt = 0
+        self.videoDir = None
+
+    @QtCore.Slot()
+    def work(self, grabTime, img):
+        """
+        Write the images to disk (PNG format).
+        """
+        # Return immediately if the recorder has not been explicitly reset
+        # yet.
+        if self.videoDir is None:
+            return
+
+        # Build the file name and write the image.
+        fname = 'frame_{0:05d}.png'.format(self.imgCnt)
+        fname = os.path.join(self.videoDir, fname)
+        img.save(fname)
+
+        # Increase the image counter.
+        self.imgCnt += 1
+
+    @QtCore.Slot()
+    def reset(self):
+        """
+        Create a new recording directory and reset the image counter.
+        """
+        # Reset the image counter.
+        self.imgCnt = 0
+
+        # Create a new time stamped directory.
+        ts = time.strftime('%Y-%m-%d-%H:%M:%S', time.gmtime())
+        self.videoDir = os.path.join(self.baseDir, ts)
+        try:
+            os.makedirs(self.videoDir)
+        except FileExistsError:
+            pass
 
 
 class Camera:
@@ -221,8 +287,23 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # The timer will re-start itself and trigger OpenGL updates.
         self.drawTimer = self.startTimer(500)
 
-        # Frame counter. Mostly for debugging purposes.
+        # Frame counter.
         self.frameCnt = 0
+
+        # Do no record a movie by default.
+        self.recording = False
+
+        # Instantiate ImageWriter...
+        tmp = os.path.dirname(os.path.realpath(__file__))
+        tmp = os.path.join(tmp, 'video')
+        self.imgWriter = ImageWriter(tmp)
+
+        # ... push it into a new thread...
+        self.thread = QtCore.QThread()
+        self.imgWriter.moveToThread(self.thread)
+
+        # ... and start the thread.
+        self.thread.start()
 
     def getGeometryCube(self, pos=np.zeros(3)):
         buf_vert = 0.5 * np.array([
@@ -571,6 +652,28 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             gl.glDisableVertexAttribArray(0)
             gl.glBindVertexArray(0)
 
+        # Display HUD for this frame.
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
+        gl.glUseProgram(0)
+        gl.glColor3f(0.5, 0.5, 0.5)
+        hud = 'Frame {}'.format(self.frameCnt)
+        if self.recording:
+            hud += ', Recording On'
+        self.renderText(0, 15, hud)
+
+        # Save the frame buffer content to disk.
+        if self.recording:
+            # Time how long it takes to grab the framebuffer.
+            t0 = time.time()
+            img = self.grabFrameBuffer()
+            elapsed = float(1E3 * (time.time() - t0))
+
+            # Send the image to a dedicated writer thread to avoid blocking
+            # this thread more than necessary.
+            self.imgWriter.sigUpdate.emit(elapsed, img)
+            del t0, img, elapsed
+        self.frameCnt += 1
+
     def resizeGL(self, width, height):
         """
         Qt will call this if the viewport size changes.
@@ -694,9 +797,17 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             self.setCursor(c)
             del c
         elif char == 'q':
+            self.thread.quit()
             self.close()
+        elif char == 'M':
+            if self.recording:
+                self.recording = False
+            else:
+                self.recording = True
+                self.imgWriter.sigReset.emit()
         else:
-            print('Unknown key <{}>'.format(key.text()))
+            if len(key.text()) > 0:
+                print('Unknown key <{}>'.format(key.text()))
 
     def keyReleaseEvent(self, key):
         """
@@ -753,7 +864,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.killTimer(event.timerId())
         self.drawTimer = self.startTimer(20)
         self.updateGL()
-        self.frameCnt += 1
 
 
 def main():
