@@ -124,10 +124,8 @@ class LeonardBase(multiprocessing.Process):
         """
         Advance the simulation by ``dt`` using at most ``maxsteps``.
 
-        This method will query all SV objects from the database and update the
-        Bullet engine. Then it defers the to Bullet to do the
-        update. Afterwards, it queries all objects from Bullet and updates the
-        values in the database.
+        This method will use a primitive Euler step to update the state
+        variables. This suffices as a proof of concept.
 
         :param float dt: time step in seconds.
         :param int maxsteps: maximum number of sub-steps to simulate for one
@@ -139,7 +137,7 @@ class LeonardBase(multiprocessing.Process):
 
         # Iterate over all objects and update their SV information in Bullet.
         for objID, sv in zip(all_ids, all_sv):
-            # Retrieve the force vector for the current object.
+            # Fetch the force vector for the current object from the DB.
             ok, force, relpos = btInterface.getForceAndTorque(objID)
             if not ok:
                 continue
@@ -161,9 +159,7 @@ class LeonardBase(multiprocessing.Process):
 
     def run(self):
         """
-        Update loop.
-
-        Execute once Leonard has been spawned as its own process.
+        Drive the periodic phyiscs updates.
         """
         setproctitle.setproctitle('killme Leonard')
 
@@ -174,20 +170,86 @@ class LeonardBase(multiprocessing.Process):
         # Reset the database.
         btInterface.initSVDB(reset=False)
 
-        # Run the loop forever and trigger the `step` method every 10ms, if
-        # possible.
+        # Trigger the `step` method every 10ms, if possible.
         t0 = time.time()
         while True:
-            # Wait until 10ms have passed since we were here last. Proceed
-            # immediately if more than 10ms have already passed.
+            # Wait, if less than 10ms have passed, or proceed immediately.
             sleep_time = 0.01 - (time.time() - t0)
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
-            # Take the current time.
+            # Backup the time stamp.
             t0 = time.time()
+
+            # Trigger the physics update step.
             with util.Timeit('step') as timeit:
                 self.step(0.1, 10)
+
+
+class LeonardBulletMonolithic(LeonardBase):
+    """
+    An extension of ``LeonardBase`` that uses Bullet for the physics.
+
+    Unlike ``LeonardBase`` this class actually *does* update the physics.
+    """
+    def __init__(self):
+        super().__init__()
+        self.bullet = None
+
+    def setup(self):
+        # Instantiate the Bullet engine. The (1, 0) parameters mean
+        # the engine has ID '1' and does not build explicit pair caches.
+        self.bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
+
+    @typecheck
+    def step(self, dt, maxsteps):
+        """
+        Advance the simulation by ``dt`` using at most ``maxsteps``.
+
+        This method will query all SV objects from the database and updates
+        them in the Bullet engine. Then it defers to Bullet for the physics
+        update.  Finally it copies the updated values in Bullet back to the
+        database.
+
+        :param float dt: time step in seconds.
+        :param int maxsteps: maximum number of sub-steps to simulate for one
+                             ``dt`` update.
+        """
+
+        # Retrieve the SV for all objects.
+        ok, allSV = btInterface.getAllStateVariables()
+
+        # Iterate over all objects and update them.
+        for objID, sv in allSV.items():
+            # See if there is a suggested position available for this
+            # object. If so, use it.
+            ok, sug_pos = btInterface.getSuggestedPosition(objID)
+            if ok and sug_pos is not None:
+                # Assign the position and delete the suggestion.
+                sv.position[:] = sug_pos
+                btInterface.setSuggestedPosition(objID, None)
+
+            # Convert the objID to an integer.
+            btID = util.id2int(objID)
+
+            # Pass the SV data from the DB to Bullet.
+            self.bullet.setObjectData([btID], sv)
+
+            # Retrieve the force vector and tell Bullet to apply it.
+            ok, force, relpos = btInterface.getForceAndTorque(objID)
+            if ok:
+                self.bullet.applyForceAndTorque(btID, 0.01 * force, relpos)
+
+        # Wait for Bullet to advance the simulation by one step.
+        IDs = [util.id2int(_) for _ in allSV.keys()]
+        with util.Timeit('compute') as timeit:
+            self.bullet.compute(IDs, dt, maxsteps)
+
+        # Retrieve all objects from Bullet and write them back to the database.
+        for objID, sv in allSV.items():
+            ok, sv = self.bullet.getObjectData([util.id2int(objID)])
+            if ok == 0:
+                btInterface.update(objID, sv)
 
 
 class LeonardBaseWorkpackages(LeonardBase):
@@ -195,8 +257,9 @@ class LeonardBaseWorkpackages(LeonardBase):
     A variation of ``LeonardBase`` that uses Work Packages.
 
     This class is a test dummy and should not be used in production. Like
-    ``LeonardBase`` it does not actually compute any physics but only creates
-    and processes the work packages, all in a single process.
+    ``LeonardBase`` it does not actually compute any physics. It only creates
+    work packages and does some dummy processing for them. Everything runs in
+    the same process.
 
     A work package contains a sub-set of all objects in the simulation and a
     token. While this class segments the world, worker nodes will retrieve the
@@ -264,23 +327,93 @@ class LeonardBaseWorkpackages(LeonardBase):
         btInterface.updateWorkPackage(wpid, admin.token, out)
 
 
-class LeonardBulletMonolithic(LeonardBase):
+class LeonardBaseWPRMQ(LeonardBase):
     """
-    An extension of ``LeonardBase`` that uses Bullet for the physics.
+    A variation of ``LeonardWorkpackages`` with RabbitMQ and work packages.
 
-    Unlike ``LeonardBase`` this class actually *does* update the physics.
+    This class is a test dummy and should not be used in production.
+
+    This class is tailor made to test
+
+    * RabbitMQ communication between Leonard and a separate Worker process
+    * work packages.
+
+    To this end it spawns a single ``LeonardRMQWorker`` and wraps each
+    object into a dedicated work package.
     """
-    def __init__(self):
+    @typecheck
+    def __init__(self, num_workers: int=1, clsWorker=None):
         super().__init__()
-        self.bullet = None
+
+        # Current token.
+        self.token = 0
+        self.workers = []
+        self.num_workers = num_workers
+        self.used_workers = set()
+
+        if clsWorker is None:
+            self.clsWorker = LeonardRMQWorker
+        else:
+            self.clsWorker = clsWorker
+
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
+
+    def __del__(self):
+        """
+        Kill all worker processes.
+        """
+        for worker in self.workers:
+            if worker.is_alive():
+                worker.terminate()
+                worker.join()
 
     def setup(self):
-        # Instantiate the Bullet engine. The (1, 0) parameters mean
-        # the engine has ID '1' and does not build explicit pair caches.
-        self.bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
+        """
+        Setup RabbitMQ and spawn the worker processes.
+        """
+        # Create a RabbitMQ exchange.
+        param = pika.ConnectionParameters(host=config.rabbitMQ_host)
+        self.rmqconn = pika.BlockingConnection(param)
+        del param
+
+        # Create the channel.
+        self.rmq = self.rmqconn.channel()
+
+        # Delete the queues if they already exist.
+        try:
+            self.rmq.queue_delete(queue=config.rmq_wp)
+        except pika.exceptions.ChannelClosed as err:
+            pass
+        try:
+            self.rmq.queue_delete(queue=config.rmq_ack)
+        except pika.exceptions.ChannelClosed as err:
+            pass
+
+        # Declare the queues and give RabbitMQ some time to setup.
+        self.rmq.queue_declare(queue=config.rmq_wp, durable=False)
+        self.rmq.queue_declare(queue=config.rmq_ack, durable=False)
+        time.sleep(0.2)
+
+        # Spawn the workers.
+        for ii in range(self.num_workers):
+            self.workers.append(self.clsWorker(ii + 1))
+            self.workers[-1].start()
+        self.logit.debug('Setup complete.')
 
     @typecheck
-    def step(self, dt, maxsteps):
+    def announceWorkpackage(self, wpid: int):
+        """
+        Announce the new work package with ID ``wpid``.
+
+        :param int wpid: work package ID.
+        """
+        self.rmq.basic_publish(
+            exchange='', routing_key=config.rmq_wp, body=util.int2id(wpid))
+
+    @typecheck
+    def step(self, dt: (int, float), maxsteps: int):
         """
         Advance the simulation by ``dt`` using at most ``maxsteps``.
 
@@ -288,41 +421,64 @@ class LeonardBulletMonolithic(LeonardBase):
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
-
         # Retrieve the SV for all objects.
         ok, allSV = btInterface.getAllStateVariables()
+        IDs = list(allSV.keys())
 
-        # Iterate over all objects and update them.
-        for objID, sv in allSV.items():
-            # See if there is a suggested position available for this
-            # object. If so, use it.
-            ok, sug_pos = btInterface.getSuggestedPosition(objID)
-            if ok and sug_pos is not None:
-                # Assign the position and delete the suggestion.
-                sv.position[:] = sug_pos
-                btInterface.setSuggestedPosition(objID, None)
+        # Update the token value for this iteration.
+        self.token += 1
 
-            # Convert the objID to an integer.
-            btID = util.id2int(objID)
+        # Create one work package for every object. This is inefficient but
+        # useful as a test to ensure nothing breaks when there are many work
+        # packages available at the same time.
+        all_wpids = set()
+        cwp = btInterface.createWorkPackage
+        for cur_id in IDs:
+            # Upload the work package into the DB.
+            ok, wpid = cwp([cur_id], self.token, dt, maxsteps)
+            if not ok:
+                continue
 
-            # Pass the SV data from the DB to Bullet.
-            self.bullet.setObjectData([btID], sv)
+            # Announce the new WP and track its ID.
+            self.announceWorkpackage(wpid)
+            all_wpids.add(wpid)
+            del cur_id, wpid, ok
+        del IDs, allSV
 
-            # Retrieve the force vector and tell Bullet to apply it.
-            ok, force, relpos = btInterface.getForceAndTorque(objID)
-            if ok:
-                self.bullet.applyForceAndTorque(btID, 0.01 * force, relpos)
+        # Wait until all work packages have been processed.
+        self.waitUntilWorkpackagesComplete(all_wpids)
 
-        # Wait for Bullet to advance the simulation by one step.
-        IDs = [util.id2int(_) for _ in allSV.keys()]
-        with util.Timeit('compute') as timeit:
-            self.bullet.compute(IDs, dt, maxsteps)
+    @typecheck
+    def waitUntilWorkpackagesComplete(self, all_wpids: set):
+        """
+        Wait until ``all_wpids`` have been acknowledged.
 
-        # Retrieve all objects from Bullet and write them back to the database.
-        for objID, sv in allSV.items():
-            ok, sv = self.bullet.getObjectData([util.id2int(objID)])
-            if ok == 0:
-                btInterface.update(objID, sv)
+        :param set all_wpids: set of all work packages.
+        """
+        self.used_workers.clear()
+
+        def callback(ch, method, properties, body):
+            # Unpack the IDs of the WP and worker.
+            wpid, workerid = body[:config.LEN_ID], body[config.LEN_ID:]
+            wpid = util.id2int(wpid)
+
+            # Remove the WP from the set. The set will not contain the ID if
+            # another worker has finished first with the same WP. Furthermore,
+            # add the WorkerID to 'used_workers' for testing purposes.
+            if wpid in all_wpids:
+                all_wpids.discard(wpid)
+                self.used_workers.add(int(np.fromstring(workerid, dtype=int)))
+
+            # Acknowledge message receipt to RabbitMQ server.
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            # Quit the event loop when all WPs have been processed.
+            if len(all_wpids) == 0:
+                ch.stop_consuming()
+
+        # Start Pika event loop to consume all messages in the ACK channel.
+        self.rmq.basic_consume(callback, queue=config.rmq_ack)
+        self.rmq.start_consuming()
 
 
 class LeonardRMQWorker(multiprocessing.Process):
@@ -376,9 +532,8 @@ class LeonardRMQWorker(multiprocessing.Process):
             sv.velocityLin[:] += force * 0.001
             sv.position[:] += admin.dt * sv.velocityLin
 
-            # See if there is a suggested position available for this
-            # object. If so, use it. The next call to updateWorkPackage will
-            # void it.
+            # Update the object position if one was explicitly provided because
+            # `updateWorkPackage` will void it later.
             if obj.sugPos is not None:
                 sv.position[:] = np.fromstring(obj.sugPos)
 
@@ -386,9 +541,8 @@ class LeonardRMQWorker(multiprocessing.Process):
             out[obj.id] = sv
 
         # --------------------------------------------------------------------
-        # Update the work list and mark it as completed.
+        # Mark the WP as completed and delete it.
         # --------------------------------------------------------------------
-        # Update the data and delete the WP.
         btInterface.updateWorkPackage(wpid, admin.token, out)
 
     def setup(self):
@@ -413,7 +567,7 @@ class LeonardRMQWorker(multiprocessing.Process):
         # Perform any pending initialisation.
         self.setup()
 
-        # Create a RabbitMQ exchange.
+        # Connect to RabbitMQ exchange.
         param = pika.ConnectionParameters(host=config.rabbitMQ_host)
         self.rmqconn = pika.BlockingConnection(param)
         del param
@@ -454,7 +608,8 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
     def __init__(self, *args):
         super().__init__(*args)
 
-        # No Bullet engine is attached by default.
+        # The Bullet engine will not be instantiated until this worker runs in
+        # its own process. This avoids data duplication during the fork.
         self.bullet = None
 
         # Create a Class-specific logger.
@@ -474,9 +629,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
         # Download the information into Bullet.
         for obj in worklist:
             sv = obj.sv
-            # See if there is a suggested position available for this
-            # object. If so, use it because the next call to updateWorkPackage
-            # will void it.
+            # Use the suggested position if we got one.
             if obj.sugPos is not None:
                 sv.position[:] = np.fromstring(obj.sugPos)
 
@@ -489,12 +642,12 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
             torque = np.fromstring(obj.torque)
             self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
 
-        # Let Bullet advance the simulation for all the objects in the current
+        # Tell Bullet to advance the simulation for all objects in the current
         # work list.
         IDs = [util.id2int(_.id) for _ in worklist]
         self.bullet.compute(IDs, admin.dt, admin.maxsteps)
 
-        # Retrieve these objects again and update their values in the database.
+        # Retrieve the objects from Bullet again and update them in the DB.
         out = {}
         for cur_id in IDs:
             ok, sv = self.bullet.getObjectData([cur_id])
@@ -507,156 +660,4 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
         # Update the data and delete the WP.
         ok = btInterface.updateWorkPackage(wpid, admin.token, out)
         if not ok:
-            self.logit.warning('Faild to update work package {}'.format(wpid))
-
-
-class LeonardBaseWPRMQ(LeonardBase):
-    """
-    A variation of ``LeonardWorkpackages`` with RabbitMQ and work packages.
-
-    This class is a test dummy and should not be used in production.
-
-    This class is tailor made to test
-
-    * RabbitMQ communication between Leonard and a separate Worker process
-    * work packages.
-
-    To this end it spawn a single ``LeonardRMQWorker`` and wraps every single
-    object into a dedicated work package.
-    """
-    @typecheck
-    def __init__(self, num_workers: int=1, clsWorker=LeonardRMQWorker):
-        super().__init__()
-
-        # Current token.
-        self.token = 0
-        self.workers = []
-        self.num_workers = num_workers
-        self.used_workers = set()
-        self.clsWorker = clsWorker
-
-        # Create a Class-specific logger.
-        name = '.'.join([__name__, self.__class__.__name__])
-        self.logit = logging.getLogger(name)
-
-    def __del__(self):
-        """
-        Kill all worker processes.
-        """
-        for worker in self.workers:
-            if worker.is_alive():
-                worker.terminate()
-                worker.join()
-
-    @typecheck
-    def announceWorkpackage(self, wpid: int):
-        """
-        Tell everyone that a new work package with ``wpid`` has become
-        available.
-
-        :param int wpid: work package ID.
-        """
-        self.rmq.basic_publish(
-            exchange='', routing_key=config.rmq_wp, body=util.int2id(wpid))
-
-    @typecheck
-    def step(self, dt: (int, float), maxsteps: int):
-        """
-        Advance the simulation by ``dt`` using at most ``maxsteps``.
-
-        :param float dt: time step in seconds.
-        :param int maxsteps: maximum number of sub-steps to simulate for one
-                             ``dt`` update.
-        """
-        # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAllStateVariables()
-        IDs = list(allSV.keys())
-
-        # Update the token value for this iteration.
-        self.token += 1
-
-        # Create one work package for every object. This is inefficient but
-        # useful as a test to ensure nothing breaks when there are many work
-        # packages available at the same time.
-        all_wpids = set()
-        cwp = btInterface.createWorkPackage
-        for cur_id in IDs:
-            # Upload the work package into the DB.
-            ok, wpid = cwp([cur_id], self.token, dt, maxsteps)
-            if not ok:
-                continue
-
-            # Announce that a new WP is available and add its ID to the set.
-            self.announceWorkpackage(wpid)
-            all_wpids.add(wpid)
-            del cur_id, wpid, ok
-        del IDs, allSV
-
-        # Wait until all work packages have been processed.
-        self.waitUntilWorkpackagesComplete(all_wpids)
-
-    @typecheck
-    def waitUntilWorkpackagesComplete(self, all_wpids: set):
-        """
-        Wait until ``all_wpids`` have been acknowledged.
-
-        :param set all_wpids: set of all work packages.
-        """
-        self.used_workers.clear()
-
-        def callback(ch, method, properties, body):
-            # Unpack the ID of the WP and the worker which processed it.
-            wpid, workerid = body[:config.LEN_ID], body[config.LEN_ID:]
-            wpid = util.id2int(wpid)
-
-            # Remove the WP from the set if it is still in there. Also track
-            # the Worker which completed the job. Note that other workers which
-            # completed the same job will not be added to the 'used_workers'
-            # list. This is mostly for debug reasons.
-            if wpid in all_wpids:
-                all_wpids.discard(wpid)
-                self.used_workers.add(int(np.fromstring(workerid, dtype=int)))
-
-            # Acknowledge message receipt to RabbitMQ server.
-            ch.basic_ack(delivery_tag=method.delivery_tag)
-
-            # Quit the event loop when all WPs have been processed.
-            if len(all_wpids) == 0:
-                ch.stop_consuming()
-
-        # Start Pika event loop to consume all messages in the ACK channel.
-        self.rmq.basic_consume(callback, queue=config.rmq_ack)
-        self.rmq.start_consuming()
-
-    def setup(self):
-        """
-        Setup RabbitMQ and spawn the worker processes.
-        """
-        # Create a RabbitMQ exchange.
-        param = pika.ConnectionParameters(host=config.rabbitMQ_host)
-        self.rmqconn = pika.BlockingConnection(param)
-        del param
-
-        # Create the channel.
-        self.rmq = self.rmqconn.channel()
-
-        # Delete the queues if they happen to already exist.
-        try:
-            self.rmq.queue_delete(queue=config.rmq_wp)
-        except pika.exceptions.ChannelClosed as err:
-            pass
-        try:
-            self.rmq.queue_delete(queue=config.rmq_ack)
-        except pika.exceptions.ChannelClosed as err:
-            pass
-
-        # Declare the queues and give RabbitMQ some time to setup.
-        self.rmq.queue_declare(queue=config.rmq_wp, durable=False)
-        self.rmq.queue_declare(queue=config.rmq_ack, durable=False)
-        time.sleep(0.2)
-
-        # Spawn the workers.
-        for ii in range(self.num_workers):
-            self.workers.append(self.clsWorker(ii + 1))
-            self.workers[-1].start()
-        self.logit.debug('Setup complete.')
+            self.logit.warning('Failed to update work package {}'.format(wpid))
