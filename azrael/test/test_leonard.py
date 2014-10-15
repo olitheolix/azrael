@@ -116,7 +116,8 @@ def test_move_single_object(clsLeonard):
     sv[0].velocityLin[:] = [1, 0, 0]
     assert btInterface.update(id_0, sv[0])
 
-    # Advance the simulation by 1s and verify the objects moved accordingly.
+    # Advance the simulation by another second and verify the objects have
+    # moved accordingly. 
     leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok

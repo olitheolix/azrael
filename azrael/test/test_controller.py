@@ -326,7 +326,7 @@ def test_create_fetch_template(ctrl_type):
 
     # Add a new object template.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.array([5, 6, 7, 8], np.float64)
+    vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
     templateID = 't1'.encode('utf8')
@@ -407,7 +407,7 @@ def test_controlParts(ctrl_type):
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.array([5, 6, 7, 8], np.float64)
+    vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
 

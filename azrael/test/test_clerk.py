@@ -370,13 +370,21 @@ def test_add_get_template():
     assert ok
     assert np.array_equal(out[0], np.array([4, 1, 1, 1]))
 
-    # Add a new object template.
+    # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.array([5, 6, 7, 8], np.float64)
+    vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
     templateID = 't1'.encode('utf8')
+
+    # Attempt to add a template where the number of vertices is not a multiple
+    # of 9. This must fail.
+    ok, _ = clerk.addTemplate(templateID, cs, vert[:-1], uv, rgb, [], [])
+    assert (ok, _) == (False, 'Number of vertices must be a multiple of Nine')
+
+    # Add valid template. This must succeed.
     ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
+    assert ok
 
     # Attempt to add another template with the same name. This must fail.
     ok, _ = clerk.addTemplate(templateID, 2 * cs, 2 * vert, uv, rgb, [], [])
@@ -536,7 +544,7 @@ def test_controlParts_invalid_commands():
 
     # Add the template to Azrael...
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.array([5, 6, 7, 8], np.float64)
+    vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
     templateID_2 = 't1'.encode('utf8')
@@ -588,7 +596,7 @@ def test_controlParts_Boosters_notmoving():
 
     # Constants for the new template object.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.array([5, 6, 7, 8], np.float64)
+    vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
 
@@ -675,7 +683,7 @@ def test_controlParts_Factories_notmoving():
 
     # Constants for the new template object.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.array([5, 6, 7, 8], np.float64)
+    vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
     dir_0 = np.array([1, 0, 0], np.float64)
@@ -755,7 +763,7 @@ def test_controlParts_Factories_moving():
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.array([5, 6, 7, 8], np.float64)
+    vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
     dir_0 = np.array([1, 0, 0], np.float64)
@@ -848,7 +856,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.array([5, 6, 7, 8], np.float64)
+    vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
 

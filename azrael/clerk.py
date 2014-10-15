@@ -607,6 +607,12 @@ class Clerk(multiprocessing.Process):
         :rtype: (bool, bytes)
         :raises: None
         """
+        # The number of vertices must be an integer multiple of 9 to constitute
+        # a valid triangle mesh (every triangle has three edges and every edge
+        # requires an (x, y, z) triplet to describe its position).
+        if len(vertices) % 9 != 0:
+            return False, 'Number of vertices must be a multiple of Nine'
+
         # Compile the Mongo document for the new template. This document
         # contains the collision shape and geometry...
         data = {'templateID': templateID,
