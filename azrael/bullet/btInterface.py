@@ -75,9 +75,10 @@ def getNumObjects():
 
 
 @typecheck
-def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes):
+def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
+          aabb: (int, float)):
     """
-    Add the new ``objID`` and return success.
+    Add the new ``objID`` to the physics DB and return success.
 
     Returns **False** if ``objID`` already exists in the simulation.
 
@@ -92,6 +93,9 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes):
     # Sanity checks.
     if len(objID) != config.LEN_ID:
         return False
+    if aabb < 0:
+        logit.warning('AABB must be non-negative')
+        return False
 
     # Dummy variable to specify the initial force and its relative position.
     z = np.zeros(3).tostring()
@@ -102,7 +106,7 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes):
         {'objid': objID},
         {'$setOnInsert': {'sv': sv, 'templateID': templateID,
                           'central_force': z, 'torque': z,
-                          'sugPos': None}},
+                          'sugPos': None, 'AABB': float(aabb)}},
         upsert=True, new=True)
 
     # The SV in the returned document will only match ``sv`` if either no
@@ -140,6 +144,35 @@ def getStateVariables(objIDs: (list, tuple)):
     # Return the list of state variables.
     out = [bullet_data.fromJsonDict(_['sv']) for _ in out]
     return True, out
+
+
+@typecheck
+def getAABB(objIDs: (list, tuple)):
+    """
+    Retrieve the AABBs for all ``objIDs``.
+
+    This function either return the AABBs for all requested ``objIDs`` or
+    an empty list. The latter case happens if one or more object IDs in
+    ``objIDs`` do not exist.
+
+    :param iterable objIDs: list of object ID for which to return the SV.
+    :return list: list of *floats*.
+    """
+    # Sanity check.
+    for _ in objIDs:
+        if not isinstance(_, bytes) or (len(_) != config.LEN_ID):
+            logit.warning('Object ID has invalid type')
+            return False, []
+
+    # Retrieve the state variables.
+    out = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
+
+    # Return with an error if one or more documents were unavailable.
+    if None in out:
+        return False, []
+
+    # Return the AABB values.
+    return True, np.array([_['AABB'] for _ in out], np.float64)
 
 
 @typecheck

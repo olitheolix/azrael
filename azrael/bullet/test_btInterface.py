@@ -52,7 +52,7 @@ def test_add_get_single():
     data = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
-    ok = btInterface.spawn(id_0, data, np.int64(1).tostring())
+    ok = btInterface.spawn(id_0, data, np.int64(1).tostring(), 0)
     assert ok
 
     # Query the object. This must return the SV data directly.
@@ -89,8 +89,8 @@ def test_add_get_multiple():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the objects to the DB.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
-    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0)
 
     # Query the objects individually.
     ok, out = btInterface.getStateVariables([id_0])
@@ -136,14 +136,14 @@ def test_add_same():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the objects to the DB.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
 
     # Add the same object with the same ID -- this must work since nothing
     # has changed.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
 
     # Add a different object with the same ID -- this must fail.
-    assert not btInterface.spawn(id_0, data_1, np.int64(1).tostring())
+    assert not btInterface.spawn(id_0, data_1, np.int64(1).tostring(), 0)
 
     print('Test passed')
 
@@ -167,8 +167,8 @@ def test_get_set_force():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the two objects to the DB.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
-    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0)
 
     # Convenince: forces and their positions.
     f0 = np.zeros(3, np.float64)
@@ -218,7 +218,7 @@ def test_update_statevar():
     data_0 = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
 
     # Query the object. This must return the SV data directly.
     ok, out = btInterface.getStateVariables([id_0])
@@ -261,7 +261,7 @@ def test_suggest_position():
     assert not btInterface.setSuggestedPosition(int2id(10), p)
 
     # Add the object to the DB with ID=0.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
 
     # Query the suggested position for ID0. This must suceed. However, the
     # returned values must be None since no position has been suggested yet.
@@ -357,8 +357,8 @@ def test_create_work_package_with_objects():
 
     # Spawn them.
     id_1, id_2 = int2id(1), int2id(2)
-    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
-    assert btInterface.spawn(id_2, data_2, np.int64(1).tostring())
+    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_2, data_2, np.int64(1).tostring(), 0)
 
     # Add ID1 to the WP. The WPID must be 1.
     ok, wpid_1 = btInterface.createWorkPackage([id_1], token, 1, 2)
@@ -421,8 +421,8 @@ def test_get_set_forceandtorque():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the two objects to the simulation.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring())
-    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring())
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0)
 
     # Convenience: specify the forces and torques.
     f0 = np.zeros(3, np.float64)
@@ -481,7 +481,39 @@ def test_StateVariable_tuple():
     print('Test passed')
 
 
+def test_set_get_AABB():
+    """
+    Create a new object with an AABB and query it back again.
+    """
+    # Reset the SV database.
+    btInterface.initSVDB(reset=True)
+
+    # Create two object IDs and a BulletData instances for this test.
+    id_0, id_1 = int2id(0), int2id(1)
+    data = bullet_data.BulletData()
+
+    # Attempt to add an object with a negative AABB value. This must fail.
+    assert not btInterface.spawn(id_0, data, np.int64(1).tostring(), -1.5)
+
+    # Add two new objects to the DB.
+    assert btInterface.spawn(id_0, data, np.int64(1).tostring(), 1.5)
+    assert btInterface.spawn(id_1, data, np.int64(1).tostring(), 2.5)
+
+    # Query the AABB of the first.
+    ok, aabb = btInterface.getAABB([id_0])
+    assert np.array_equal(aabb, [1.5])
+
+    # Query the AABB of the second.
+    ok, aabb = btInterface.getAABB([id_1])
+    assert np.array_equal(aabb, [2.5])
+
+    # Query the AABB of both simultaneously.
+    ok, aabb = btInterface.getAABB([id_0, id_1])
+    assert np.array_equal(aabb, [1.5, 2.5])
+
+    
 if __name__ == '__main__':
+    test_set_get_AABB()
     test_StateVariable_tuple()
     test_get_set_forceandtorque()
     test_create_work_package_with_objects()
