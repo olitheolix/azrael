@@ -45,6 +45,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     vert = np.array([5, 6, 7, 8], np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
+    aabb = float(1)
 
     b0 = parts.Booster(
         partID=0, pos=np.zeros(3), direction=[0, 0, 1], max_force=0.5)
@@ -72,7 +73,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # ----------------------------------------------------------------------
     # Encode source data.
     ok, enc = protocol.FromClerk_GetTemplate_Encode(
-        cs, vert, uv, rgb, [b0, b1], [f0])
+        cs, vert, uv, rgb, [b0, b1], [f0], aabb)
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))

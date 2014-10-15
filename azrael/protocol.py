@@ -145,13 +145,13 @@ def ToClerk_GetTemplate_Decode(data: dict):
 @typecheck
 def FromClerk_GetTemplate_Encode(
         cs: np.ndarray, vert: np.ndarray, UV: np.ndarray, RGB: np.ndarray,
-        boosters: (list, tuple), factories: (list, tuple)):
+        boosters: (list, tuple), factories: (list, tuple), aabb: float):
     for b in boosters:
         assert isinstance(b, parts.Booster)
     for f in factories:
         assert isinstance(f, parts.Factory)
 
-    d = {'cs': cs, 'vert': vert, 'UV': UV, 'RGB': RGB,
+    d = {'cs': cs, 'vert': vert, 'UV': UV, 'RGB': RGB, 'AABB': aabb,
          'boosters': [_.tostring() for _ in boosters],
          'factories': [_.tostring() for _ in factories]}
     return True, d
@@ -164,12 +164,12 @@ def FromClerk_GetTemplate_Decode(data: dict):
     factories = [parts.fromstring(_) for _ in data['factories']]
 
     # Return the complete information in a named tuple.
-    nt = namedtuple('Template', 'cs vert uv rgb boosters factories')
+    nt = namedtuple('Template', 'cs vert uv rgb boosters factories aabb')
     ret = nt(np.array(data['cs'], np.float64),
              np.array(data['vert'], np.float64),
              np.array(data['UV'], np.float64),
              np.array(data['RGB'], np.uint8),
-             boosters, factories)
+             boosters, factories, data['AABB'])
     return True, ret
 
 

@@ -483,7 +483,7 @@ class Clerk(multiprocessing.Process):
             self.logit.warning(msg)
             return False, msg
         else:
-            cshape, vert, UV, RGB, boosters, factories = data
+            cshape, vert, UV, RGB, boosters, factories, aabb = data
 
         # Fetch the SV for objID.
         ok, svdata = self.getStateVariables([objID])
@@ -613,13 +613,28 @@ class Clerk(multiprocessing.Process):
         if len(vertices) % 9 != 0:
             return False, 'Number of vertices must be a multiple of Nine'
 
+        # Determine the largest possible side length of the AABB. To find it,
+        # just determine the largest spatial extent in any axis direction. That
+        # is the side length of the AABB cube. Then multiply it with sqrt(3) to
+        # ensure that any rotation angle of the object is covered. The slightly
+        # larger value of sqrt(3.1) adds some slack.
+        if len(vertices) == 0:
+            # Empty geometries have a zero sized AABB.
+            aabb = 0
+        else:
+            len_x = max(vertices[0::3]) - min(vertices[0::3])
+            len_y = max(vertices[1::3]) - min(vertices[1::3])
+            len_z = max(vertices[2::3]) - min(vertices[2::3])
+            aabb = np.sqrt(3.1) * max(len_x, len_y, len_z)
+    
         # Compile the Mongo document for the new template. This document
         # contains the collision shape and geometry...
         data = {'templateID': templateID,
                 'cshape': cshape.tostring(),
                 'vertices': vertices.tostring(),
                 'UV': UV.tostring(),
-                'RGB': RGB.tostring()}
+                'RGB': RGB.tostring(),
+                'AABB': float(aabb)}
 
         # ... as well as booster- and factory parts.
         for b in boosters:
@@ -678,6 +693,7 @@ class Clerk(multiprocessing.Process):
         vert = np.fromstring(doc['vertices'], np.float64)
         uv = np.fromstring(doc['UV'], np.float64)
         rgb = np.fromstring(doc['RGB'], np.uint8)
+        aabb = float(doc['AABB'])
 
         # Extract the booster parts.
         if 'boosters' in doc:
@@ -695,7 +711,7 @@ class Clerk(multiprocessing.Process):
             # Object has no factories.
             fac = []
 
-        return True, (cs, vert, uv, rgb, boosters, fac)
+        return True, (cs, vert, uv, rgb, boosters, fac, aabb)
 
     @typecheck
     def sendMessage(self, src: bytes, dst: bytes, data: bytes):
@@ -757,7 +773,7 @@ class Clerk(multiprocessing.Process):
         if not ok:
             return False, 'Invalid Template ID'
         else:
-            cshape, vert, UV, RGB, boosters, factories = data
+            cshape, vert, UV, RGB, boosters, factories, aabb = data
 
         # Overwrite the supplied collision shape with the template
         # version. This will the other quantities, most notably position and

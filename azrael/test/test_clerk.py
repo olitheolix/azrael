@@ -440,6 +440,56 @@ def test_add_get_template():
     print('Test passed')
 
 
+def test_add_get_template_AABB():
+    """
+    Similarly to test_add_get_template but focuses exclusively on the AABB.
+    """
+    killAzrael()
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk(reset=True)
+
+    # Convenience.
+    cs = np.array([1, 2, 3, 4], np.float64)
+    uv = rgb = np.zeros([])
+    tID1, tID2 = 't1'.encode('utf8'), 't2'.encode('utf8')
+
+    # Manually specify the vertices.
+    vert = np.array([-4, 0, 0,
+                     1, 2, 3,
+                     4, 5, 6], np.float64)
+    max_sidelen = max(8, 5, 6)
+
+    # Add template and retrieve it again.
+    ok, _ = clerk.addTemplate(tID1, cs, vert, uv, rgb, [], [])
+    assert ok
+    ok, out = clerk.getTemplate(tID1)
+    assert ok
+
+    # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
+    assert (out[6] - np.sqrt(3.1) * max_sidelen) < 1E-10
+
+    # Repeat the experiment with a larger mesh.
+    vert = np.array([0, 0, 0,
+                     1, 2, 3,
+                     4, 5, 6,
+                     8, 2, 7,
+                    -5, -9, 8,
+                     3, 2, 3], np.float64)
+    max_sidelen = max(8, 14, 8)
+
+    # Add template and retrieve it again.
+    ok, _ = clerk.addTemplate(tID2, cs, vert, uv, rgb, [], [])
+    assert ok
+    ok, out = clerk.getTemplate(tID2)
+    assert ok
+
+    # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
+    assert (out[6] - np.sqrt(3.1) * max_sidelen) < 1E-10
+
+    print('Test passed')
+
+
 def test_get_object_template_id():
     """
     Spawn two objects from different templates. Then query the template ID
@@ -1011,6 +1061,7 @@ def test_get_all_objectids():
 
 
 if __name__ == '__main__':
+    test_add_get_template_AABB()
     test_controlParts_invalid_commands()
     test_controlParts_Boosters_notmoving()
     test_controlParts_Factories_notmoving()
