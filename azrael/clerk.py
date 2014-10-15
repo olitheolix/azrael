@@ -776,8 +776,8 @@ class Clerk(multiprocessing.Process):
             cshape, vert, UV, RGB, boosters, factories, aabb = data
 
         # Overwrite the supplied collision shape with the template
-        # version. This will the other quantities, most notably position and
-        # speed intact. However, this all rather hackey at the moment.
+        # version. This has no effect on the other quantities including
+        # position and speed. However, this all rather hackey at the moment.
         sv.cshape[:] = np.fromstring(cshape)
 
         # Determine the full path to the Controller script. Return with an
