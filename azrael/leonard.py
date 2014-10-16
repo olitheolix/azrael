@@ -197,7 +197,7 @@ class LeonardBase(multiprocessing.Process):
         # Iterate over all objects and update their SV information in Bullet.
         for objID, sv in zip(all_ids, all_sv):
             # Fetch the force vector for the current object from the DB.
-            ok, force, relpos = btInterface.getForceAndTorque(objID)
+            ok, force, torque = btInterface.getForceAndTorque(objID)
             if not ok:
                 continue
 
@@ -295,9 +295,9 @@ class LeonardBulletMonolithic(LeonardBase):
             self.bullet.setObjectData([btID], sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
-            ok, force, relpos = btInterface.getForceAndTorque(objID)
+            ok, force, torque = btInterface.getForceAndTorque(objID)
             if ok:
-                self.bullet.applyForceAndTorque(btID, 0.01 * force, relpos)
+                self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
 
         # Wait for Bullet to advance the simulation by one step.
         IDs = [util.id2int(_) for _ in allSV.keys()]
@@ -378,9 +378,9 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
                 self.bullet.setObjectData([btID], sv)
 
                 # Retrieve the force vector and tell Bullet to apply it.
-                ok, force, relpos = btInterface.getForceAndTorque(objID)
+                ok, force, torque = btInterface.getForceAndTorque(objID)
                 if ok:
-                    self.bullet.applyForceAndTorque(btID, 0.01 * force, relpos)
+                    self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
 
             # Wait for Bullet to advance the simulation by one step.
             IDs = [util.id2int(_) for _ in coll_SV.keys()]
