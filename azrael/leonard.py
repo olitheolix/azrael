@@ -472,7 +472,7 @@ class LeonardBulletSweepingWorkers(LeonardBulletMonolithic):
         for wpid in allWPIDs:
             ok, worklist, admin = btInterface.getWorkPackage(wpid)
             assert ok
-            
+
             engineIdx = engineIdx % len(self.bulletEngines)
             engineIdx = int(np.random.randint(len(self.bulletEngines)))
             engine = self.bulletEngines[engineIdx]
@@ -486,21 +486,21 @@ class LeonardBulletSweepingWorkers(LeonardBulletMonolithic):
                 # Use the suggested position if we got one.
                 if obj.sugPos is not None:
                     sv.position[:] = np.fromstring(obj.sugPos)
-    
+
                 # Update the object in Bullet.
                 btID = util.id2int(obj.id)
                 engine.setObjectData([btID], sv)
-    
+
                 # Retrieve the force vector and tell Bullet to apply it.
                 force = np.fromstring(obj.central_force)
                 torque = np.fromstring(obj.torque)
                 engine.applyForceAndTorque(btID, 0.01 * force, torque)
-    
-            # Tell Bullet to advance the simulation for all objects in the current
-            # work list.
+
+            # Tell Bullet to advance the simulation for all objects in the
+            # current work list.
             IDs = [util.id2int(_.id) for _ in worklist]
             engine.compute(IDs, admin.dt, admin.maxsteps)
-    
+
             # Retrieve the objects from Bullet again and update them in the DB.
             out = {}
             for obj in worklist:
@@ -508,17 +508,18 @@ class LeonardBulletSweepingWorkers(LeonardBulletMonolithic):
                 if ok != 0:
                     # Something went wrong. Reuse the old SV.
                     sv = obj.sv
-                    self.logit.error('Could not retrieve all objects from Bullet')
+                    self.logit.error('Unable to get all objects from Bullet')
 
                 # Restore the original cshape because Bullet will always return
                 # zeros here.
                 sv.cshape[:] = obj.sv.cshape[:]
                 out[obj.id] = sv
-    
+
             # Update the data and delete the WP.
             ok = btInterface.updateWorkPackage(wpid, admin.token, out)
             if not ok:
-                self.logit.warning('Failed to update work package {}'.format(wpid))
+                msg = 'Failed to update work package {}'.format(wpid)
+                self.logit.warning(msg)
 
 
 class LeonardBaseWorkpackages(LeonardBase):
