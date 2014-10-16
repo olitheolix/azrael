@@ -497,11 +497,10 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     if ret['n'] == 0:
         return False
 
-    # Iterate over all object IDs and update the state variable with the
-    # provided values.
+    # Iterate over all object IDs and update the state variables.
     for objID in svdict:
-        _DB_SV.update({'objid': objID, 'token': token},
-                      {'$set': {'sv': svdict[objID].toJsonDict(),
-                                'sugPos': None},
-                       '$unset': {'token': 1}})
+        _DB_SV.update(
+            {'objid': objID, 'token': token},
+            {'$set': {'sv': svdict[objID].toJsonDict(), 'sugPos': None},
+             '$unset': {'token': 1}})
     return True
