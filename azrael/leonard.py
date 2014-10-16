@@ -392,6 +392,126 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
                     btInterface.update(objID, sv)
 
 
+class LeonardBulletSweepingWorkers(LeonardBulletMonolithic):
+    """
+    Compute physics on independent collision sets.
+
+    This is a modified version of ``LeonardBulletMonolithic`` that uses
+    Sweeping to compile the collision sets and then updates the physics for
+    each set independently.
+
+    This class is single threaded and uses a single Bullet instance to
+    sequentially update the physics for each collision set.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.token = 0
+
+    def setup(self):
+        # Instantiate several Bullet engine. The (1, 0) parameters mean
+        # the engine has ID '1' and does not build explicit pair caches.
+        engine = azrael.bullet.cython_bullet.PyBulletPhys
+        self.bulletEngines = [engine(_ + 1, 0) for _ in range(5)]
+
+    @typecheck
+    def step(self, dt, maxsteps):
+        """
+        Advance the simulation by ``dt`` using at most ``maxsteps``.
+
+        This method will query all SV objects from the database and updates
+        them in the Bullet engine. Then it defers to Bullet for the physics
+        update.  Finally it copies the updated values in Bullet back to the
+        database.
+
+        :param float dt: time step in seconds.
+        :param int maxsteps: maximum number of sub-steps to simulate for one
+                             ``dt`` update.
+        """
+
+        # Retrieve the SV for all objects.
+        ok, allSV = btInterface.getAllStateVariables()
+
+        # Compile a dedicated list of IDs and their SVs for the collision
+        # detection algorithm.
+        IDs = list(allSV.keys())
+        sv = [allSV[_] for _ in IDs]
+
+        # Compute the collision sets.
+        with util.Timeit('CCS') as timeit:
+            ok, res = computeCollisionSetsAABB(IDs, sv)
+        assert ok
+
+        # Log the number of created collision sets.
+        util.logMetricQty('#CollSets', len(res))
+
+        # Convenience.
+        cwp = btInterface.createWorkPackage
+
+        # Update the token value for this iteration.
+        self.token += 1
+
+        allWPIDs = []
+        # Process all subsets individually.
+        for subset in res:
+            # Compile the subset dictionary for the current collision set.
+            coll_SV = {_: allSV[_] for _ in subset}
+
+            # Upload the work package into the DB.
+            ok, wpid = cwp(list(subset), self.token, dt, maxsteps)
+
+            allWPIDs.append(wpid)
+
+        # Process each WP individually.
+        engineIdx = 0
+        for wpid in allWPIDs:
+            ok, worklist, admin = btInterface.getWorkPackage(wpid)
+            assert ok
+            
+            engineIdx = engineIdx % len(self.bulletEngines)
+            engineIdx = int(np.random.randint(len(self.bulletEngines)))
+            engine = self.bulletEngines[engineIdx]
+
+            # Log the number of created collision sets.
+            util.logMetricQty('Engine_{}'.format(engineIdx), len(worklist))
+
+            # Iterate over all objects and update them.
+            for obj in worklist:
+                sv = obj.sv
+                # Use the suggested position if we got one.
+                if obj.sugPos is not None:
+                    sv.position[:] = np.fromstring(obj.sugPos)
+    
+                # Update the object in Bullet.
+                btID = util.id2int(obj.id)
+                engine.setObjectData([btID], sv)
+    
+                # Retrieve the force vector and tell Bullet to apply it.
+                force = np.fromstring(obj.central_force)
+                torque = np.fromstring(obj.torque)
+                engine.applyForceAndTorque(btID, 0.01 * force, torque)
+    
+            # Tell Bullet to advance the simulation for all objects in the current
+            # work list.
+            IDs = [util.id2int(_.id) for _ in worklist]
+            engine.compute(IDs, admin.dt, admin.maxsteps)
+    
+            # Retrieve the objects from Bullet again and update them in the DB.
+            out = {}
+            for obj in worklist:
+                ok, sv = engine.getObjectData([util.id2int(obj.id)])
+                if ok != 0:
+                    # Something went wrong. Reuse the old SV.
+                    sv = obj.sv
+                    self.logit.error('Could not retrieve all objects from Bullet')
+                sv.cshape[:] = obj.sv.cshape[:]
+                out[obj.id] = sv
+    
+            # Update the data and delete the WP.
+            ok = btInterface.updateWorkPackage(wpid, admin.token, out)
+            if not ok:
+                self.logit.warning('Failed to update work package {}'.format(wpid))
+
+
 class LeonardBaseWorkpackages(LeonardBase):
     """
     A variation of ``LeonardBase`` that uses Work Packages.

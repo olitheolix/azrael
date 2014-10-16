@@ -87,7 +87,8 @@ def stopAzrael(clerk, clacks):
      azrael.leonard.LeonardBaseWorkpackages,
      azrael.leonard.LeonardBaseWPRMQ,
      azrael.leonard.LeonardBulletMonolithic,
-     azrael.leonard.LeonardBulletSweeping])
+     azrael.leonard.LeonardBulletSweeping,
+     azrael.leonard.LeonardBulletSweepingWorkers])
 def test_move_single_object(clsLeonard):
     """
     Create a single object with non-zero initial speed and ensure Leonard moves
@@ -138,7 +139,8 @@ def test_move_single_object(clsLeonard):
      azrael.leonard.LeonardBaseWorkpackages,
      azrael.leonard.LeonardBaseWPRMQ,
      azrael.leonard.LeonardBulletMonolithic,
-     azrael.leonard.LeonardBulletSweeping])
+     azrael.leonard.LeonardBulletSweeping,
+     azrael.leonard.LeonardBulletSweepingWorkers])
 def test_move_two_objects_no_collision(clsLeonard):
     """
     Same as previous test but with two objects.
