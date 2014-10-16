@@ -308,6 +308,9 @@ class LeonardBulletMonolithic(LeonardBase):
         for objID, sv in allSV.items():
             ok, sv = self.bullet.getObjectData([util.id2int(objID)])
             if ok == 0:
+                # Restore the original cshape because Bullet will always
+                # return zeros here.
+                sv.cshape[:] = allSV[objID].cshape[:]
                 btInterface.update(objID, sv)
 
 
@@ -389,6 +392,9 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
             for objID, sv in coll_SV.items():
                 ok, sv = self.bullet.getObjectData([util.id2int(objID)])
                 if ok == 0:
+                    # Restore the original cshape because Bullet will always
+                    # return zeros here.
+                    sv.cshape[:] = coll_SV[objID].cshape[:]
                     btInterface.update(objID, sv)
 
 
@@ -503,6 +509,9 @@ class LeonardBulletSweepingWorkers(LeonardBulletMonolithic):
                     # Something went wrong. Reuse the old SV.
                     sv = obj.sv
                     self.logit.error('Could not retrieve all objects from Bullet')
+
+                # Restore the original cshape because Bullet will always return
+                # zeros here.
                 sv.cshape[:] = obj.sv.cshape[:]
                 out[obj.id] = sv
     
@@ -909,13 +918,17 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
 
         # Retrieve the objects from Bullet again and update them in the DB.
         out = {}
-        for cur_id in IDs:
-            ok, sv = self.bullet.getObjectData([cur_id])
+        for obj in worklist:
+            ok, sv = self.bullet.getObjectData([util.id2int(obj.id)])
             if ok != 0:
+                # Something went wrong. Reuse the old SV.
+                sv = obj.sv
                 self.logit.error('Could not retrieve all objects from Bullet')
-                sv = worklist[cur_id].sv
-            cur_id = util.int2id(cur_id)
-            out[cur_id] = sv
+
+            # Restore the original cshape because Bullet will always return
+            # zeros here.
+            sv.cshape[:] = obj.sv.cshape[:]
+            out[obj.id] = sv
 
         # Update the data and delete the WP.
         ok = btInterface.updateWorkPackage(wpid, admin.token, out)
