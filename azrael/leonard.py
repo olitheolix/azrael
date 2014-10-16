@@ -350,6 +350,9 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
             ok, res = computeCollisionSetsAABB(IDs, sv)
         assert ok
 
+        # Log the number of created collision sets.
+        util.logMetricQty('#CollSets', len(res))
+
         # Process all subsets individually.
         for subset in res:
             # Compile the subset dictionary for the current collision set.
