@@ -72,11 +72,24 @@ def parseCommandLine():
          help='Do not load any models')
     padd('--port', metavar='port', type=int, default=8080,
          help='Port number')
+    padd('--numcubes', metavar='X,Y,Z', type=str, default='1,1,1',
+         help='Number of cubes in each dimension')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
 
     # run the parser.
-    return parser.parse_args()
+    param = parser.parse_args()
+    try:
+        numcubes = [int(_) for _ in param.numcubes.split(',')]
+        assert len(numcubes) == 3
+        assert min(numcubes) >= 0
+        assert sum(numcubes) >= 1
+        param.numcubes = numcubes
+    except (TypeError, ValueError, AssertionError):
+        print('The <numcubes> argument is invalid')
+        sys.exit(1)
+
+    return param
 
 
 def setupLogging(loglevel):
@@ -145,7 +158,7 @@ def loadGroundModel(scale, model_name):
     print('done (ID=<{}>)'.format(ret[1]))
 
 
-def spawnCubes(numRows, numCols, numLayers):
+def spawnCubes(numCols, numRows, numLayers):
     """
     Define a cubic template and spawn ``numInstances`` of it.
 
@@ -321,7 +334,7 @@ def main():
             loadGroundModel(*model_name)
 
             # Define additional templates.
-            spawnCubes(4, 4, 1)
+            spawnCubes(*param.numcubes)
 
         # Start the physics engine.
         #leo = leonard.LeonardBase()
