@@ -18,7 +18,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Plot timing statistics to console.
+Print timing statistics to terminal.
 
 The timing statistics are collected with the ``azrael.util.Timeit`` class.
 """

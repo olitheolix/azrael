@@ -26,14 +26,23 @@ import azrael.config as config
 
 from azrael.typecheck import typecheck
 
+# Global handle to the collection for timing metrics.
 dbTiming = pymongo.MongoClient()['timing']['timing']
 
 
 def resetTiming():
+    """
+    Flush the timing metrics.
+    """
     dbTiming.drop()
 
 
 class Timeit(object):
+    """
+    Context manager to time code execution.
+
+    The elapsed time will automatically be added to the timing database.
+    """
     def __init__(self, name):
         self.name = name
 
