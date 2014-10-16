@@ -492,15 +492,29 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     :param dict svdict: {objID: sv} dictionary
     :return bool: Success.
     """
-    # Remove the specified work package.
-    ret = _DB_WP.remove({'wpid': wpid, 'token': token}, multi=True)
-    if ret['n'] == 0:
-        return False
-
     # Iterate over all object IDs and update the state variables.
     for objID in svdict:
         _DB_SV.update(
             {'objid': objID, 'token': token},
             {'$set': {'sv': svdict[objID].toJsonDict(), 'sugPos': None},
              '$unset': {'token': 1}})
+
+    # Remove the specified work package. This MUST happen AFTER the SVs were
+    # updated because btInterface.countWorkPackages will count the number of WP
+    # to determine if all objects have been updated.
+    ret = _DB_WP.remove({'wpid': wpid, 'token': token}, multi=True)
+    if ret['n'] == 0:
+        return False
+
     return True
+
+
+@typecheck
+def countWorkPackages(token):
+    """
+    Return the number of unprocessed work packages.
+
+    :param int token: token value associated with this work package.
+    :return bool: Success.
+    """
+    return True, _DB_WP.find({'token': token}).count()

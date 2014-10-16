@@ -287,7 +287,7 @@ def test_suggest_position():
 
 def test_create_work_package_without_objects():
     """
-    Create, fetch, and update Bullet work packages.
+    Create, fetch, update, and count Bullet work packages.
 
     This test does not insert any objects into the simulation. It only tests
     the general functionality to add, retrieve, and update work packages.
@@ -298,42 +298,80 @@ def test_create_work_package_without_objects():
     # The token to use for this test.
     token = 1
 
+    # There must not be any work packages yet.
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 0)
+
     # This call is invalid because the IDs must be a non-empty list.
-    ok, wpid = btInterface.createWorkPackage([], token, 1, 2)
+    ok, wpid_0 = btInterface.createWorkPackage([], token, 1, 2)
     assert not ok
+
+    # There must still not be any work packages.
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 0)
 
     # Create a work package for two object IDs. The WPID must be 1.
     IDs = [int2id(_) for _ in range(3, 5)]
-    ok, wpid = btInterface.createWorkPackage(IDs, token, 1, 2)
-    assert (ok, wpid) == (True, 1)
+    ok, wpid_0 = btInterface.createWorkPackage(IDs, token, 1, 2)
+    assert (ok, wpid_0) == (True, 1)
+
+    # There must now be exactly one work package.
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 1)
 
     # Repeat. This WPID must be 2.
     IDs = [int2id(_) for _ in range(3, 5)]
-    ok, _ = btInterface.createWorkPackage(IDs, token, 1, 2)
-    assert (ok, _) == (True, 2)
-    del _
+    ok, wpid_1 = btInterface.createWorkPackage(IDs, token, 1, 2)
+    assert (ok, wpid_1) == (True, 2)
 
-    # The attempt to retrie a non-existing ID must fail.
+    # There must now be exactly two work package.
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 2)
+
+    # The attempt to retrie a non-existing ID must fail. The number of work
+    # packages must remain unchanged.
     ok, data, _ = btInterface.getWorkPackage(0)
     assert not ok
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 2)
 
-    # Retrieve an existing ID. It must return an empty list because there are
-    # no objects in the DB yet.
-    ok, data, admin = btInterface.getWorkPackage(wpid)
+    # Retrieve an existing WPID. It must return an empty list because no
+    # objects were added to the WP.
+    ok, data, admin = btInterface.getWorkPackage(wpid_0)
     assert (ok, data) == (True, [])
     assert (admin.token, admin.dt, admin.maxsteps) == (token, 1, 2)
+
+    # There must still be two work packages because retrieving one does not
+    # remove it from the DB (only updating does).
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 2)
 
     # Update (and thus remove) a non-existing work package. The number of SV
     # data elements is irrelevant to this function.
     assert not btInterface.updateWorkPackage(0, token, {})
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 2)
+
+    # For in invalid token the count must be zero.
+    ok, cnt = btInterface.countWorkPackages(token + 1)
+    assert (ok, cnt) == (True, 0)
 
     # Update (and thus remove) an existing work package. Once again, the number
     # of SV data elements is irrelevant to the function.
-    assert btInterface.updateWorkPackage(wpid, token, {})
+    assert btInterface.updateWorkPackage(wpid_0, token, {})
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 1)
 
     # Try to update it once more. This must fail since the WPID was
     # automatically removed by the previous updateWorkPackage command.
-    assert not btInterface.updateWorkPackage(wpid, token, {})
+    assert not btInterface.updateWorkPackage(wpid_0, token, {})
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 1)
+
+    # Update (and thus remove) the other work package.
+    assert btInterface.updateWorkPackage(wpid_1, token, {})
+    ok, cnt = btInterface.countWorkPackages(token)
+    assert (ok, cnt) == (True, 0)
 
     print('Test passed')
 
