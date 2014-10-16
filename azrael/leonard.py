@@ -313,8 +313,14 @@ class LeonardBulletMonolithic(LeonardBase):
 
 class LeonardBulletSweeping(LeonardBulletMonolithic):
     """
-    An modified of ``LeonardBulletMonolithic`` that uses Sweeping to update the
-    physics of objects in batches of collision pairs.
+    Compute physics on independent collision sets.
+
+    This is a modified version of ``LeonardBulletMonolithic`` that uses
+    Sweeping to compile the collision sets and then updates the physics for
+    each set independently.
+
+    This class is single threaded and uses a single Bullet instance to
+    sequentially update the physics for each collision set.
     """
     @typecheck
     def step(self, dt, maxsteps):
@@ -332,22 +338,25 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
         """
 
         # Retrieve the SV for all objects.
-        ok, allSV2 = btInterface.getAllStateVariables()
+        ok, allSV = btInterface.getAllStateVariables()
 
-        IDs = list(allSV2.keys())
-        sv = [allSV2[_] for _ in IDs]
+        # Compile a dedicated list of IDs and their SVs for the collision
+        # detection algorithm.
+        IDs = list(allSV.keys())
+        sv = [allSV[_] for _ in IDs]
 
+        # Compute the collision sets.
         with util.Timeit('CCS') as timeit:
             ok, res = computeCollisionSetsAABB(IDs, sv)
         assert ok
 
+        # Process all subsets individually.
         for subset in res:
-            allSV = {}
-            for s in subset:
-                allSV[s] = allSV2[s]
+            # Compile the subset dictionary for the current collision set.
+            coll_SV = {_: allSV[_] for _ in subset}
 
             # Iterate over all objects and update them.
-            for objID, sv in allSV.items():
+            for objID, sv in coll_SV.items():
                 # See if there is a suggested position available for this
                 # object. If so, use it.
                 ok, sug_pos = btInterface.getSuggestedPosition(objID)
@@ -368,13 +377,13 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
                     self.bullet.applyForceAndTorque(btID, 0.01 * force, relpos)
 
             # Wait for Bullet to advance the simulation by one step.
-            IDs = [util.id2int(_) for _ in allSV.keys()]
+            IDs = [util.id2int(_) for _ in coll_SV.keys()]
             with util.Timeit('compute') as timeit:
                 self.bullet.compute(IDs, dt, maxsteps)
 
             # Retrieve all objects from Bullet and write them back to the
             # database.
-            for objID, sv in allSV.items():
+            for objID, sv in coll_SV.items():
                 ok, sv = self.bullet.getObjectData([util.id2int(objID)])
                 if ok == 0:
                     btInterface.update(objID, sv)
