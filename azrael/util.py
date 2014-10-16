@@ -37,6 +37,34 @@ def resetTiming():
     dbTiming.drop()
 
 
+def logMetricQty(metric, value, ts=None):
+    """
+    Log a Quantity ``metric`` and its integer ``value``.
+
+    The time stamp ``ts`` is optional and defaults to the time when this
+    function is called.
+
+    :param str metric: name of metric
+    :param int value: value
+    :param float value: unix time stamp as supplied by eg. time.time()
+    """
+    if ts is None:
+        ts = time.time()
+
+    if not isinstance(metric, str):
+        return
+    if not isinstance(value, int):
+        return
+    if not isinstance(value, float) and (value > 1413435882):
+        return
+
+    doc = {'Timestamp': ts,
+           'Metric': metric,
+           'Value': value,
+           'Type': 'Quantity'}
+    dbTiming.insert(doc, j=0, w=0)
+
+
 class Timeit(object):
     """
     Context manager to time code execution.
@@ -51,9 +79,10 @@ class Timeit(object):
         return self
 
     def __exit__(self, *args):
-        doc = {'start': self.start,
-               'elapsed': time.time() - self.start,
-               'name': self.name}
+        doc = {'Timestamp': self.start,
+               'Metric': self.name,
+               'Value': time.time() - self.start,
+               'Type': 'Time'}
         dbTiming.insert(doc, j=0, w=0)
 
 
