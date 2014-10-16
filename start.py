@@ -327,7 +327,8 @@ def main():
         #leo = leonard.LeonardBase()
         #leo = leonard.LeonardBaseWPRMQ(1, leonard.LeonardRMQWorker)
         #leo = leonard.LeonardBaseWPRMQ(1, leonard.LeonardRMQWorkerBullet)
-        leo = leonard.LeonardBulletMonolithic()
+        #leo = leonard.LeonardBulletMonolithic()
+        leo = leonard.LeonardBulletSweeping()
         leo.start()
 
         print('Azrael now live')

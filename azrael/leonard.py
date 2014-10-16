@@ -311,6 +311,75 @@ class LeonardBulletMonolithic(LeonardBase):
                 btInterface.update(objID, sv)
 
 
+class LeonardBulletSweeping(LeonardBulletMonolithic):
+    """
+    An modified of ``LeonardBulletMonolithic`` that uses Sweeping to update the
+    physics of objects in batches of collision pairs.
+    """
+    @typecheck
+    def step(self, dt, maxsteps):
+        """
+        Advance the simulation by ``dt`` using at most ``maxsteps``.
+
+        This method will query all SV objects from the database and updates
+        them in the Bullet engine. Then it defers to Bullet for the physics
+        update.  Finally it copies the updated values in Bullet back to the
+        database.
+
+        :param float dt: time step in seconds.
+        :param int maxsteps: maximum number of sub-steps to simulate for one
+                             ``dt`` update.
+        """
+
+        # Retrieve the SV for all objects.
+        ok, allSV2 = btInterface.getAllStateVariables()
+
+        IDs = list(allSV2.keys())
+        sv = [allSV2[_] for _ in IDs]
+
+        with util.Timeit('CCS') as timeit:
+            ok, res = computeCollisionSetsAABB(IDs, sv)
+        assert ok
+
+        for subset in res:
+            allSV = {}
+            for s in subset:
+                allSV[s] = allSV2[s]
+
+            # Iterate over all objects and update them.
+            for objID, sv in allSV.items():
+                # See if there is a suggested position available for this
+                # object. If so, use it.
+                ok, sug_pos = btInterface.getSuggestedPosition(objID)
+                if ok and sug_pos is not None:
+                    # Assign the position and delete the suggestion.
+                    sv.position[:] = sug_pos
+                    btInterface.setSuggestedPosition(objID, None)
+
+                # Convert the objID to an integer.
+                btID = util.id2int(objID)
+
+                # Pass the SV data from the DB to Bullet.
+                self.bullet.setObjectData([btID], sv)
+
+                # Retrieve the force vector and tell Bullet to apply it.
+                ok, force, relpos = btInterface.getForceAndTorque(objID)
+                if ok:
+                    self.bullet.applyForceAndTorque(btID, 0.01 * force, relpos)
+
+            # Wait for Bullet to advance the simulation by one step.
+            IDs = [util.id2int(_) for _ in allSV.keys()]
+            with util.Timeit('compute') as timeit:
+                self.bullet.compute(IDs, dt, maxsteps)
+
+            # Retrieve all objects from Bullet and write them back to the
+            # database.
+            for objID, sv in allSV.items():
+                ok, sv = self.bullet.getObjectData([util.id2int(objID)])
+                if ok == 0:
+                    btInterface.update(objID, sv)
+
+
 class LeonardBaseWorkpackages(LeonardBase):
     """
     A variation of ``LeonardBase`` that uses Work Packages.
