@@ -398,16 +398,15 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
                     btInterface.update(objID, sv)
 
 
-class LeonardBulletSweepingWorkers(LeonardBulletMonolithic):
+class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
     """
-    Compute physics on independent collision sets.
+    Compute physics on independent collision sets with multiple engines.
 
-    This is a modified version of ``LeonardBulletMonolithic`` that uses
-    Sweeping to compile the collision sets and then updates the physics for
-    each set independently.
+    This is a modified version of ``LeonardBulletMonolithic`` and similar to
+    LeonardBulletSweeping but employes work packages and multiple engines.
 
-    This class is single threaded and uses a single Bullet instance to
-    sequentially update the physics for each collision set.
+    This class is single threaded. All Bullet engines run sequentially in the
+    main thread. The work packages are distributed at random to the engines.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -465,15 +464,15 @@ class LeonardBulletSweepingWorkers(LeonardBulletMonolithic):
             # Upload the work package into the DB.
             ok, wpid = cwp(list(subset), self.token, dt, maxsteps)
 
+            # Keep track of the WPID.
             allWPIDs.append(wpid)
 
         # Process each WP individually.
-        engineIdx = 0
         for wpid in allWPIDs:
             ok, worklist, admin = btInterface.getWorkPackage(wpid)
             assert ok
 
-            engineIdx = engineIdx % len(self.bulletEngines)
+            # Pick an engine at random.
             engineIdx = int(np.random.randint(len(self.bulletEngines)))
             engine = self.bulletEngines[engineIdx]
 
