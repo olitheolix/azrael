@@ -842,7 +842,6 @@ class LeonardRMQWorker(multiprocessing.Process):
         will pick them up and process them.
         """
         setproctitle.setproctitle('killme LeonardWorker')
-        btInterface.initSVDB(reset=False)
 
         # Perform any pending initialisation.
         self.setup()
