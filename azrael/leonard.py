@@ -38,37 +38,44 @@ from azrael.typecheck import typecheck
 ipshell = IPython.embed
 
 
-def sweeping(data: list, dim: str):
+@typecheck
+def sweeping(data: list, labels: np.ndarray, dim: str):
     """
-    Return sets of overlapping AABBs.
+    Return sets of overlapping AABBs in the dimension ``dim``.
 
     This function implements the 'Sweeping' algorithm to determine which sets
     of AABBs overlap.
 
-    The algorithm is straightforward: sort all start/stop positions and
-    determine the overlapping sets.
+    Sweeping is straightforward: sort all start/stop positions and determine
+    the overlapping sets.
+
+    The returned sets does not contain the elements of data, but their
+    corresponding label from the list of ``labels``.
 
     :param list data: list of dictionaries which must contain ['aabb']
-    :param str dim: the axis dimension of the AABB.
+    :param np.int64 labels: integer array to label the elements in data.
+    :param str dim: the axis to check (must be one of ['x', 'y', 'z'])
     """
+    assert len(labels) == len(data)
+
     # Convenience.
     N = 2 * len(data)
 
     # Pre-allocate arrays for start/stop position, objID, and an
-    # increment/decrement array used for convenient processing afterwars.
+    # increment/decrement array used for convenient processing afterwards.
     arr_pos = np.zeros(N, np.float64)
-    arr_oid = np.zeros(N, np.int64)
+    arr_lab = np.zeros(N, np.int64)
     arr_inc = np.zeros(N, np.int8)
 
     # Fill the arrays.
     for ii in range(len(data)):
         arr_pos[2 * ii: 2 * ii + 2] = np.array(data[ii]['aabb'][dim])
-        arr_oid[2 * ii: 2 * ii + 2] = ii
+        arr_lab[2 * ii: 2 * ii + 2] = labels[ii]
         arr_inc[2 * ii: 2 * ii + 2] = [+1, -1]
 
     # Sort all three arrays according to the start/stop positions.
     idx = np.argsort(arr_pos)
-    arr_oid = arr_oid[idx]
+    arr_lab = arr_lab[idx]
     arr_inc = arr_inc[idx]
 
     # Output array.
@@ -77,13 +84,13 @@ def sweeping(data: list, dim: str):
     # Sweep over the sorted data and compile the list of object sets.
     sumVal = 0
     setObjs = set()
-    for (inc, objID) in zip(arr_inc, arr_oid):
+    for (inc, objID) in zip(arr_inc, arr_lab):
         # Update the index variable and add the current object to the set.
         sumVal += inc
         setObjs.add(objID)
 
-        # Anoterh set of overlapping AABBs is completed whenever the index
-        # variable reaches zero.
+        # A new set of overlapping AABBs is complete whenever `sumVal`
+        # reaches zero.
         if sumVal == 0:
             out.append(setObjs)
             setObjs = set()
@@ -92,6 +99,58 @@ def sweeping(data: list, dim: str):
         assert sumVal >= 0
     return out
         
+
+@typecheck
+def computeCollisionSetsAABB(IDs: list, SVs: list):
+    """
+    Return potential collision sets among all ``IDs`` and associated ``SVs``.
+
+    :param IDs: list of object IDs.
+    :param SVs: list of object BulletData instances. Corresponds to IDs.
+    """
+    # Sanity check.
+    if len(IDs) != len(SVs):
+        return False, None
+
+    # Fetch all AABBs.
+    ok, aabbs = btInterface.getAABB(IDs)
+    if not ok:
+        return False, None
+
+    # Create the correct data format for 'sweeping'.
+    data = []
+    for objID, sv, aabb in zip(IDs, SVs, aabbs):
+        pos = sv.position
+        x0, x1 = pos[0] - aabb, pos[0] + aabb
+        y0, y1 = pos[1] - aabb, pos[1] + aabb
+        z0, z1 = pos[2] - aabb, pos[2] + aabb
+
+        data.append({'aabb': {'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]}})
+
+    # Enumerate the objects.
+    labels = np.arange(len(IDs))
+
+    # Determine the overlapping objects in 'x' di
+    stage_0 = sweeping(data, labels, 'x')
+    
+    # Analyse every subset of the previous output further.
+    stage_1 = []
+    for subset in stage_0:
+        tmpData = [data[_] for _ in subset]
+        tmpLabels = np.array(tuple(subset), np.int64)
+        stage_1.extend(sweeping(tmpData, tmpLabels, 'y'))
+
+    # Analyse every subset of the previous output further.
+    stage_2 = []
+    for subset in stage_1:
+        tmpData = [data[_] for _ in subset]
+        tmpLabels = np.array(tuple(subset), np.int64)
+        stage_2.extend(sweeping(tmpData, tmpLabels, 'z'))
+
+    # Convert the labels back to object IDs.
+    out = [[IDs[_] for _ in __] for __ in stage_2]
+    return True, out
+
 
 class LeonardBase(multiprocessing.Process):
     """

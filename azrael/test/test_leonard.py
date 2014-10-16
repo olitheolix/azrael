@@ -10,6 +10,8 @@ import azrael.controller
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
+from azrael.util import int2id, id2int
+
 import numpy as np
 
 ipshell = IPython.embed
@@ -235,38 +237,57 @@ def test_sweeping_2objects():
     The input dictionary each contains the AABB coordinates. The output list
     contains the set of overlapping AABBs.
     """
+    # Convenience variables.
     sweeping = azrael.leonard.sweeping
+    labels = np.arange(2)
 
+    # Two orthogonal objects.
     aabbs = [{'x': [4, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [1, 2], 'y': [3.5, 4], 'z': [5, 6.5]}]
     aabbs = [{'aabb': _} for _ in aabbs]
-    res = sweeping(aabbs, 'x')
+    res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1]), set([0])])
     
+    # Repeat the test but use a different set of labels.
+    res = sweeping(aabbs, np.array([3, 10], np.int64), 'x')
+    assert sorted(res) == sorted([set([10]), set([3])])
+    
+    # One object inside the other.
     aabbs = [{'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
     aabbs = [{'aabb': _} for _ in aabbs]
-    res = sweeping(aabbs, 'x')
+    res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1, 0])])
     
+    # Partially overlapping to the right of the first object.
     aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
     aabbs = [{'aabb': _} for _ in aabbs]
-    res = sweeping(aabbs, 'x')
+    res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1, 0])])
     
+    # Partially overlapping to the left of the first object.
     aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
     aabbs = [{'aabb': _} for _ in aabbs]
-    res = sweeping(aabbs, 'x')
+    res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1, 0])])
 
-    # Test the other dimensions.
+    # Test Sweeping in the 'y' and 'z' dimension as well.
     aabbs = [{'x': [1, 5], 'y': [1, 5], 'z': [1, 5]},
              {'x': [2, 4], 'y': [2, 4], 'z': [2, 4]}]
     aabbs = [{'aabb': _} for _ in aabbs]
-    assert sweeping(aabbs, 'x') == sweeping(aabbs, 'y')
-    assert sweeping(aabbs, 'x') == sweeping(aabbs, 'z')
+    assert sweeping(aabbs, labels, 'x') == sweeping(aabbs, labels, 'y')
+    assert sweeping(aabbs, labels, 'x') == sweeping(aabbs, labels, 'z')
+
+    # Pass no object to the Sweeping algorithm.
+    assert sweeping([], np.array([], np.int64), 'x') == []
+
+    # Pass only a single object to the Sweeping algorithm.
+    aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
+    aabbs = [{'aabb': _} for _ in aabbs]
+    res = sweeping(aabbs, np.array([0], np.int64), 'x')
+    assert sorted(res) == sorted([set([0])])
 
     print('Test passed')
     
@@ -275,41 +296,133 @@ def test_sweeping_3objects():
     """
     Same as test_sweeping_2objects but with three objects.
     """
+    # Convenience variable.
     sweeping = azrael.leonard.sweeping
+    labels = np.arange(3)
 
     # Three non-overlapping objects.
     aabbs = [{'x': [1, 2]}, {'x': [3, 4]}, {'x': [5, 6]}]
     aabbs = [{'aabb': _} for _ in aabbs]
-    res = sweeping(aabbs, 'x')
+    res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0]), set([1]), set([2])])
     
     # First and second overlap.
     aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [5, 6]}]
     aabbs = [{'aabb': _} for _ in aabbs]
-    res = sweeping(aabbs, 'x')
+    res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0, 1]), set([2])])
+
+    # Repeat test with different labels.
+    res = sweeping(aabbs, np.array([2, 4, 10], np.int64), 'x')
+    assert sorted(res) == sorted([set([2, 4]), set([10])])
     
     # First overlaps with second, second overlaps with third, but third does
     # not overlap with first. The algorithm must nevertheless return all three
     # in a single set.
     aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [3, 6]}]
     aabbs = [{'aabb': _} for _ in aabbs]
-    res = sweeping(aabbs, 'x')
+    res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0, 1, 2])])
     
     # First and third overlap.
     aabbs = [{'x': [1, 2]}, {'x': [10, 11]}, {'x': [0, 1.5]}]
     aabbs = [{'aabb': _} for _ in aabbs]
-    res = sweeping(aabbs, 'x')
+    res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0, 2]), set([1])])
     
     print('Test passed')
     
 
+@pytest.mark.parametrize('dim', [0, 1, 2])
+def test_computeCollisionSetsAABB(dim):
+    """
+    Create a sequence of 10 test objects. Their position only differs in the
+    ``dim`` dimension.
+
+    Then use subsets of these 10 objects to test basic collision detection.
+    """
+    # Reset the SV database.
+    btInterface.initSVDB(reset=True)
+
+    # Create several objects for this test.
+    all_id = [int2id(_) for _ in range(10)]
+
+    if dim == 0:
+        SVs = [bullet_data.BulletData(position=[_, 0, 0]) for _ in range(10)]
+    elif dim == 1:
+        SVs = [bullet_data.BulletData(position=[0, _, 0]) for _ in range(10)]
+    elif dim == 2:
+        SVs = [bullet_data.BulletData(position=[0, 0, _]) for _ in range(10)]
+    else:
+        print('Invalid dimension for this test')
+        assert False
+
+    # Add all objects to the SV DB.
+    for objID, sv in zip(all_id, SVs):
+        assert btInterface.spawn(objID, sv, np.int64(1).tostring(), 1.0)
+
+    # Retrieve all SVs as Leonard does.
+    ok, all_sv = btInterface.getStateVariables(all_id)
+    assert (ok, len(all_id)) == (True, len(all_sv))
+
+    # Delete auxiliaray variables.
+    del SVs
+
+    def ccsWrapper(IDs_hr, expected_hr):
+        """
+        Assert that the ``IDs_hr`` were split into the ``expected_hr`` lists.
+
+        This is merely a convenience wrapper to facilitate readable tests.
+
+        This wrapper converts the human readable entries in ``IDs_hr``  into
+        the internally used binary format. It then passes this new list, along
+        with the corresponding SVs to the collision detection algorithm.
+        Finally, it converts the returned list of object sets back into human
+        readable list of object sets and compares them for equality.
+        """
+        # Compile the set of SVs for curIDs.
+        sv = [all_sv[_] for _ in IDs_hr]
+
+        # Convert the human readable IDs to the binary format.
+        test_objIDs = [int2id(_) for _ in IDs_hr]
+
+        # Determine the list of potential collision sets.
+        ok, res = azrael.leonard.computeCollisionSetsAABB(test_objIDs, sv)
+        assert ok
+
+        # Convert the IDs in res back to human readable format. 
+        res_hr = [[id2int(_) for _ in __] for __ in res]
+
+        # Convert the reference data to a sorted list of sets.
+        expected_hr = sorted([set(_) for _ in expected_hr])
+        res_hr = sorted([set(_) for _ in res_hr])
+
+        # Return the equality of the two list of lists.
+        assert expected_hr == res_hr
+
+    # Two non-overlapping objects.
+    ccsWrapper([0, 9], [[0], [9]])
+
+    # Two overlapping objects.
+    ccsWrapper([0, 1], [[0, 1]])
+
+    # Three sets.
+    ccsWrapper([0, 1, 5, 8, 9], [[0, 1], [5], [8, 9]])
+
+    # Same test, but objects are passed in a different sequence. This must not
+    # alter the test outcome.
+    ccsWrapper([0, 5, 1, 9, 8], [[0, 1], [5], [8, 9]])
+
+    # All objects must form one connected set.
+    ccsWrapper(list(range(10)), [list(range(10))])
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_computeCollisionSetsAABB(0)
     test_sweeping_2objects()
     test_sweeping_3objects()
-    sys.exit()
     test_multiple_workers(azrael.leonard.LeonardRMQWorker)
     test_multiple_workers(azrael.leonard.LeonardRMQWorkerBullet)
     test_move_single_object(azrael.leonard.LeonardBaseWPRMQ)
