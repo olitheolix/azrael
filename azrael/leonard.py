@@ -19,6 +19,7 @@
 Physics manager.
 """
 import sys
+import zmq
 import time
 import pika
 import IPython
@@ -455,7 +456,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         # Update the token value for this iteration.
         self.token += 1
 
-        allWPIDs = []
+        all_wpids = []
         # Process all subsets individually.
         for subset in res:
             # Compile the subset dictionary for the current collision set.
@@ -465,11 +466,20 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
             ok, wpid = cwp(list(subset), self.token, dt, maxsteps)
 
             # Keep track of the WPID.
-            allWPIDs.append(wpid)
+            all_wpids.append(wpid)
 
         # Process each WP individually.
-        for wpid in allWPIDs:
+        for wpid in all_wpids:
             self.processWorkPackage(wpid)
+
+        self.waitUntilWorkpackagesComplete(all_wpids, self.token)
+
+    def waitUntilWorkpackagesComplete(self, all_wpids, token):
+        """
+        Block until all work packages have been completed.
+        """
+        while btInterface.countWorkPackages(token)[1] > 0:
+            time.sleep(0.001)
 
     @typecheck
     def processWorkPackage(self, wpid: int):
@@ -515,6 +525,141 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         out = {}
         for obj in worklist:
             ok, sv = engine.getObjectData([util.id2int(obj.id)])
+            if ok != 0:
+                # Something went wrong. Reuse the old SV.
+                sv = obj.sv
+                self.logit.error('Unable to get all objects from Bullet')
+
+            # Restore the original cshape because Bullet will always return
+            # zeros here.
+            sv.cshape[:] = obj.sv.cshape[:]
+            out[obj.id] = sv
+
+        # Update the data and delete the WP.
+        ok = btInterface.updateWorkPackage(wpid, admin.token, out)
+        if not ok:
+            msg = 'Failed to update work package {}'.format(wpid)
+            self.logit.warning(msg)
+
+
+class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
+    """
+    Compute physics on independent collision sets with multiple engines.
+
+    Leverage LeonardBulletSweepingMultiST but process the work packages in
+    dedicated Worker processes.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.workers = []
+
+    def __del__(self):
+        """
+        Kill all worker processes.
+        """
+        for worker in self.workers:
+            if worker.is_alive():
+                worker.terminate()
+                worker.join()
+
+    def setup(self):
+        self.ctx = zmq.Context()
+        self.sock = self.ctx.socket(zmq.PUSH)
+        self.sock.bind('tcp://127.0.0.1:6666')
+
+        # Spawn the workers.
+        cls = LeonardBulletSweepingMultiMTWorker
+        for ii in range(5):
+            self.workers.append(cls(ii + 1))
+            self.workers[-1].start()
+        self.logit.info('Setup complete')
+
+    def processWorkPackage(self, wpid: int):
+        """
+        Ensure "someone" processes the work package with ID ``wpid``.
+
+        This method will usually be overloaded in sub-classes to actually send
+        the WPs to a Bullet engine or worker processes.
+
+        :param int wpid: work package ID to process.
+        """
+        self.sock.send(np.int64(wpid).tostring())
+            
+
+class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
+    """
+    Distributed Physics Engine based on collision sets and work packages.
+
+    The distribution of Work Packages happens via ZeroMQ push/pull sockets.
+    """
+    def __init__(self, workerID):
+        super().__init__()
+        self.workerID = workerID
+
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
+
+    @typecheck
+    def run(self):
+        """
+        Update the physics for all objects in ``wpid``.
+
+        :param int wpid: work package ID.
+        """
+        # Rename process to make it easy to find and kill them in the process
+        # table.
+        setproctitle.setproctitle('killme LeonardWorker')
+
+        # Instantiate a Bullet engine.
+        engine = azrael.bullet.cython_bullet.PyBulletPhys
+        self.bullet = engine(self.workerID, 0)
+
+        # Setup ZeroMQ.
+        self.logit.info('Worker {} started'.format(self.workerID))
+        ctx = zmq.Context()
+        sock = ctx.socket(zmq.PULL)
+        sock.connect('tcp://127.0.0.1:6666')
+        self.logit.info('Worker {} connected'.format(self.workerID))
+        
+        # Process work packages as they arrive.
+        while True:
+            wpid = sock.recv()
+            wpid = np.fromstring(wpid, np.int64)
+            self.processWorkPackage(int(wpid))
+
+    def processWorkPackage(self, wpid: int):
+        ok, worklist, admin = btInterface.getWorkPackage(wpid)
+        assert ok
+
+        # Log the number of collision sets to process.
+        util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
+
+        # Iterate over all objects and update them.
+        for obj in worklist:
+            sv = obj.sv
+            # Use the suggested position if we got one.
+            if obj.sugPos is not None:
+                sv.position[:] = np.fromstring(obj.sugPos)
+
+            # Update the object in Bullet.
+            btID = util.id2int(obj.id)
+            self.bullet.setObjectData([btID], sv)
+
+            # Retrieve the force vector and tell Bullet to apply it.
+            force = np.fromstring(obj.central_force)
+            torque = np.fromstring(obj.torque)
+            self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
+
+        # Tell Bullet to advance the simulation for all objects in the
+        # current work list.
+        IDs = [util.id2int(_.id) for _ in worklist]
+        self.bullet.compute(IDs, admin.dt, admin.maxsteps)
+
+        # Retrieve the objects from Bullet again and update them in the DB.
+        out = {}
+        for obj in worklist:
+            ok, sv = self.bullet.getObjectData([util.id2int(obj.id)])
             if ok != 0:
                 # Something went wrong. Reuse the old SV.
                 sv = obj.sv
