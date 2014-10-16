@@ -469,56 +469,67 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
 
         # Process each WP individually.
         for wpid in allWPIDs:
-            ok, worklist, admin = btInterface.getWorkPackage(wpid)
-            assert ok
+            self.processWorkPackage(wpid)
 
-            # Pick an engine at random.
-            engineIdx = int(np.random.randint(len(self.bulletEngines)))
-            engine = self.bulletEngines[engineIdx]
+    @typecheck
+    def processWorkPackage(self, wpid: int):
+        """
+        Update the physics for all objects in ``wpid``.
 
-            # Log the number of created collision sets.
-            util.logMetricQty('Engine_{}'.format(engineIdx), len(worklist))
+        The Bullet engine is picked at random.
 
-            # Iterate over all objects and update them.
-            for obj in worklist:
+        :param int wpid: work package ID.
+        """
+        ok, worklist, admin = btInterface.getWorkPackage(wpid)
+        assert ok
+
+        # Pick an engine at random.
+        engineIdx = int(np.random.randint(len(self.bulletEngines)))
+        engine = self.bulletEngines[engineIdx]
+
+        # Log the number of created collision sets.
+        util.logMetricQty('Engine_{}'.format(engineIdx), len(worklist))
+
+        # Iterate over all objects and update them.
+        for obj in worklist:
+            sv = obj.sv
+            # Use the suggested position if we got one.
+            if obj.sugPos is not None:
+                sv.position[:] = np.fromstring(obj.sugPos)
+
+            # Update the object in Bullet.
+            btID = util.id2int(obj.id)
+            engine.setObjectData([btID], sv)
+
+            # Retrieve the force vector and tell Bullet to apply it.
+            force = np.fromstring(obj.central_force)
+            torque = np.fromstring(obj.torque)
+            engine.applyForceAndTorque(btID, 0.01 * force, torque)
+
+        # Tell Bullet to advance the simulation for all objects in the
+        # current work list.
+        IDs = [util.id2int(_.id) for _ in worklist]
+        engine.compute(IDs, admin.dt, admin.maxsteps)
+
+        # Retrieve the objects from Bullet again and update them in the DB.
+        out = {}
+        for obj in worklist:
+            ok, sv = engine.getObjectData([util.id2int(obj.id)])
+            if ok != 0:
+                # Something went wrong. Reuse the old SV.
                 sv = obj.sv
-                # Use the suggested position if we got one.
-                if obj.sugPos is not None:
-                    sv.position[:] = np.fromstring(obj.sugPos)
+                self.logit.error('Unable to get all objects from Bullet')
 
-                # Update the object in Bullet.
-                btID = util.id2int(obj.id)
-                engine.setObjectData([btID], sv)
+            # Restore the original cshape because Bullet will always return
+            # zeros here.
+            sv.cshape[:] = obj.sv.cshape[:]
+            out[obj.id] = sv
 
-                # Retrieve the force vector and tell Bullet to apply it.
-                force = np.fromstring(obj.central_force)
-                torque = np.fromstring(obj.torque)
-                engine.applyForceAndTorque(btID, 0.01 * force, torque)
-
-            # Tell Bullet to advance the simulation for all objects in the
-            # current work list.
-            IDs = [util.id2int(_.id) for _ in worklist]
-            engine.compute(IDs, admin.dt, admin.maxsteps)
-
-            # Retrieve the objects from Bullet again and update them in the DB.
-            out = {}
-            for obj in worklist:
-                ok, sv = engine.getObjectData([util.id2int(obj.id)])
-                if ok != 0:
-                    # Something went wrong. Reuse the old SV.
-                    sv = obj.sv
-                    self.logit.error('Unable to get all objects from Bullet')
-
-                # Restore the original cshape because Bullet will always return
-                # zeros here.
-                sv.cshape[:] = obj.sv.cshape[:]
-                out[obj.id] = sv
-
-            # Update the data and delete the WP.
-            ok = btInterface.updateWorkPackage(wpid, admin.token, out)
-            if not ok:
-                msg = 'Failed to update work package {}'.format(wpid)
-                self.logit.warning(msg)
+        # Update the data and delete the WP.
+        ok = btInterface.updateWorkPackage(wpid, admin.token, out)
+        if not ok:
+            msg = 'Failed to update work package {}'.format(wpid)
+            self.logit.warning(msg)
 
 
 class LeonardBaseWorkpackages(LeonardBase):
