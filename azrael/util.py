@@ -26,8 +26,8 @@ import azrael.config as config
 
 from azrael.typecheck import typecheck
 
-
 dbTiming = pymongo.MongoClient()['timing']['timing']
+
 
 def resetTiming():
     dbTiming.drop()

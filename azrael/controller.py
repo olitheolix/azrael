@@ -77,7 +77,7 @@ class ControllerBase(multiprocessing.Process):
 
         # Address of Clerk (ZeroMQ sockets will connect to that address).
         self.addr_clerk = addr_clerk
-        
+
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)

@@ -626,7 +626,7 @@ class Clerk(multiprocessing.Process):
             len_y = max(vertices[1::3]) - min(vertices[1::3])
             len_z = max(vertices[2::3]) - min(vertices[2::3])
             aabb = np.sqrt(3.1) * max(len_x, len_y, len_z)
-    
+
         # Compile the Mongo document for the new template. This document
         # contains the collision shape and geometry...
         data = {'templateID': templateID,

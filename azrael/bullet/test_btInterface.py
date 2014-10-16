@@ -511,7 +511,7 @@ def test_set_get_AABB():
     ok, aabb = btInterface.getAABB([id_0, id_1])
     assert np.array_equal(aabb, [1.5, 2.5])
 
-    
+
 if __name__ == '__main__':
     test_set_get_AABB()
     test_StateVariable_tuple()

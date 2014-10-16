@@ -119,7 +119,7 @@ def test_move_single_object(clsLeonard):
     assert btInterface.update(id_0, sv[0])
 
     # Advance the simulation by another second and verify the objects have
-    # moved accordingly. 
+    # moved accordingly.
     leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
@@ -247,25 +247,25 @@ def test_sweeping_2objects():
     aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1]), set([0])])
-    
+
     # Repeat the test but use a different set of labels.
     res = sweeping(aabbs, np.array([3, 10], np.int64), 'x')
     assert sorted(res) == sorted([set([10]), set([3])])
-    
+
     # One object inside the other.
     aabbs = [{'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
     aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1, 0])])
-    
+
     # Partially overlapping to the right of the first object.
     aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
     aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1, 0])])
-    
+
     # Partially overlapping to the left of the first object.
     aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
@@ -290,8 +290,8 @@ def test_sweeping_2objects():
     assert sorted(res) == sorted([set([0])])
 
     print('Test passed')
-    
-    
+
+
 def test_sweeping_3objects():
     """
     Same as test_sweeping_2objects but with three objects.
@@ -305,7 +305,7 @@ def test_sweeping_3objects():
     aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0]), set([1]), set([2])])
-    
+
     # First and second overlap.
     aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [5, 6]}]
     aabbs = [{'aabb': _} for _ in aabbs]
@@ -315,7 +315,7 @@ def test_sweeping_3objects():
     # Repeat test with different labels.
     res = sweeping(aabbs, np.array([2, 4, 10], np.int64), 'x')
     assert sorted(res) == sorted([set([2, 4]), set([10])])
-    
+
     # First overlaps with second, second overlaps with third, but third does
     # not overlap with first. The algorithm must nevertheless return all three
     # in a single set.
@@ -323,15 +323,15 @@ def test_sweeping_3objects():
     aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0, 1, 2])])
-    
+
     # First and third overlap.
     aabbs = [{'x': [1, 2]}, {'x': [10, 11]}, {'x': [0, 1.5]}]
     aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0, 2]), set([1])])
-    
+
     print('Test passed')
-    
+
 
 @pytest.mark.parametrize('dim', [0, 1, 2])
 def test_computeCollisionSetsAABB(dim):
@@ -390,7 +390,7 @@ def test_computeCollisionSetsAABB(dim):
         ok, res = azrael.leonard.computeCollisionSetsAABB(test_objIDs, sv)
         assert ok
 
-        # Convert the IDs in res back to human readable format. 
+        # Convert the IDs in res back to human readable format.
         res_hr = [[id2int(_) for _ in __] for __ in res]
 
         # Convert the reference data to a sorted list of sets.

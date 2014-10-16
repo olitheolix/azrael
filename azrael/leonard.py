@@ -80,7 +80,7 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
 
     # Output array.
     out = []
-    
+
     # Sweep over the sorted data and compile the list of object sets.
     sumVal = 0
     setObjs = set()
@@ -98,7 +98,7 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
         # Safety check: this must never happen.
         assert sumVal >= 0
     return out
-        
+
 
 @typecheck
 def computeCollisionSetsAABB(IDs: list, SVs: list):
@@ -132,7 +132,7 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
 
     # Determine the overlapping objects in 'x' di
     stage_0 = sweeping(data, labels, 'x')
-    
+
     # Analyse every subset of the previous output further.
     stage_1 = []
     for subset in stage_0:
