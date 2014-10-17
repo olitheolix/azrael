@@ -502,8 +502,8 @@ class Clerk(multiprocessing.Process):
         booster_t = dict(zip([int(_.partID) for _ in boosters], boosters))
         factory_t = dict(zip([int(_.partID) for _ in factories], factories))
 
-        # Verify that all Booster commands have the correct type and are
-        # directed to an existing Booster ID.
+        # Verify that all Booster commands have the correct type and specify
+        # a valid Booster ID.
         for cmd in cmd_boosters:
             if not isinstance(cmd, parts.CmdBooster):
                 msg = 'Invalid Booster type'
@@ -515,8 +515,8 @@ class Clerk(multiprocessing.Process):
                 self.logit.warning(msg)
                 return False, msg
 
-        # Verify that all Factory commands have the correct type and are
-        # directed to an existing Factory ID.
+        # Verify that all Factory commands have the correct type and specify
+        # a valid Factory ID.
         for cmd in cmd_factories:
             if not isinstance(cmd, parts.CmdFactory):
                 msg = 'Invalid Factory type'
@@ -527,6 +527,20 @@ class Clerk(multiprocessing.Process):
                 msg = msg.format(templateID, cmd.partID)
                 self.logit.warning(msg)
                 return False, msg
+
+        # Ensure all booster- and factory parts receive at most one command
+        # each.
+        partIDs = [_.partID for _ in cmd_boosters]
+        if len(set(partIDs)) != len(partIDs):
+            msg = 'Same booster received multiple commands'
+            self.logit.warning(msg)
+            return False, msg
+        partIDs = [_.partID for _ in cmd_factories]
+        if len(set(partIDs)) != len(partIDs):
+            msg = 'Same factory received multiple commands'
+            self.logit.warning(msg)
+            return False, msg
+        del partIDs
 
         # Tally up the central force and torque exerted by all boosters.
         tot_torque = np.zeros(3, np.float64)

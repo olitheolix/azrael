@@ -533,7 +533,7 @@ def test_get_object_template_id():
 
 def test_controlParts_invalid_commands():
     """
-    Send invalid commands to object.
+    Send invalid control commands to object.
     """
     killAzrael()
 
@@ -568,13 +568,11 @@ def test_controlParts_invalid_commands():
     ok, msg = clerk.controlParts(objID_1, [cmd_b], [cmd_f])
     assert not ok
 
-    # Pass invalid commands (ie. a Factory command where a Booster is expected
-    # and vice versa.
+    # Must fail: Factory command where a Booster is expected and vice versa.
     ok, msg = clerk.controlParts(objID_1, [cmd_f], [cmd_b])
     assert not ok
 
-    # Pass invalid commands (ie. a Factory command where a Booster is expected
-    # and vice versa.
+    # Must fail: Booster command among Factory commands.
     ok, msg = clerk.controlParts(objID_1, [], [cmd_f, cmd_b])
     assert not ok
 
@@ -611,12 +609,18 @@ def test_controlParts_invalid_commands():
     cmd_b = parts.CmdBooster(partID=0, force=0.5)
     cmd_f = parts.CmdFactory(partID=0, exit_speed=0.5)
 
-    # Send some valid commands to verify the new template is correct.
+    # Valid commands: simply verify the new template works correctly.
     ok, spawnedIDs = clerk.controlParts(objID_2, [cmd_b], [cmd_f])
     assert ok
 
-    # Send invalid commands.
+    # Must fail: Booster where Factory is expected and vice versa.
     ok, msg = clerk.controlParts(objID_2, [cmd_f], [cmd_b])
+    assert not ok
+
+    # Must fail: every part can only receive one command per call.
+    ok, spawnedIDs = clerk.controlParts(objID_2, [cmd_b, cmd_b], [])
+    assert not ok
+    ok, spawnedIDs = clerk.controlParts(objID_2, [], [cmd_f, cmd_f])
     assert not ok
 
     # Clean up.
