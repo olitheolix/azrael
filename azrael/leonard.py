@@ -565,7 +565,7 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
     def setup(self):
         self.ctx = zmq.Context()
         self.sock = self.ctx.socket(zmq.PUSH)
-        self.sock.bind('tcp://127.0.0.1:6666')
+        self.sock.bind(config.addr_leonard_pushpull)
 
         # Spawn the workers.
         cls = LeonardBulletSweepingMultiMTWorker
@@ -584,7 +584,7 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
         :param int wpid: work package ID to process.
         """
         self.sock.send(np.int64(wpid).tostring())
-            
+
 
 class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
     """
@@ -619,9 +619,9 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         self.logit.info('Worker {} started'.format(self.workerID))
         ctx = zmq.Context()
         sock = ctx.socket(zmq.PULL)
-        sock.connect('tcp://127.0.0.1:6666')
+        sock.connect(config.addr_leonard_pushpull)
         self.logit.info('Worker {} connected'.format(self.workerID))
-        
+
         # Process work packages as they arrive.
         while True:
             wpid = sock.recv()
