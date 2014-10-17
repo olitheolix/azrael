@@ -250,7 +250,6 @@ def test_sweeping_2objects():
     # Two orthogonal objects.
     aabbs = [{'x': [4, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [1, 2], 'y': [3.5, 4], 'z': [5, 6.5]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1]), set([0])])
 
@@ -261,28 +260,24 @@ def test_sweeping_2objects():
     # One object inside the other.
     aabbs = [{'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1, 0])])
 
     # Partially overlapping to the right of the first object.
     aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1, 0])])
 
     # Partially overlapping to the left of the first object.
     aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
              {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([1, 0])])
 
     # Test Sweeping in the 'y' and 'z' dimension as well.
     aabbs = [{'x': [1, 5], 'y': [1, 5], 'z': [1, 5]},
              {'x': [2, 4], 'y': [2, 4], 'z': [2, 4]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     assert sweeping(aabbs, labels, 'x') == sweeping(aabbs, labels, 'y')
     assert sweeping(aabbs, labels, 'x') == sweeping(aabbs, labels, 'z')
 
@@ -291,7 +286,6 @@ def test_sweeping_2objects():
 
     # Pass only a single object to the Sweeping algorithm.
     aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, np.array([0], np.int64), 'x')
     assert sorted(res) == sorted([set([0])])
 
@@ -308,13 +302,11 @@ def test_sweeping_3objects():
 
     # Three non-overlapping objects.
     aabbs = [{'x': [1, 2]}, {'x': [3, 4]}, {'x': [5, 6]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0]), set([1]), set([2])])
 
     # First and second overlap.
     aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [5, 6]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0, 1]), set([2])])
 
@@ -326,13 +318,11 @@ def test_sweeping_3objects():
     # not overlap with first. The algorithm must nevertheless return all three
     # in a single set.
     aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [3, 6]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0, 1, 2])])
 
     # First and third overlap.
     aabbs = [{'x': [1, 2]}, {'x': [10, 11]}, {'x': [0, 1.5]}]
-    aabbs = [{'aabb': _} for _ in aabbs]
     res = sweeping(aabbs, labels, 'x')
     assert sorted(res) == sorted([set([0, 2]), set([1])])
 
@@ -426,9 +416,9 @@ def test_computeCollisionSetsAABB(dim):
 
 
 if __name__ == '__main__':
-    test_computeCollisionSetsAABB(0)
     test_sweeping_2objects()
     test_sweeping_3objects()
+    test_computeCollisionSetsAABB(0)
     test_multiple_workers(azrael.leonard.LeonardRMQWorker)
     test_multiple_workers(azrael.leonard.LeonardRMQWorkerBullet)
     test_move_single_object(azrael.leonard.LeonardBaseWPRMQ)

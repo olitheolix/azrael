@@ -70,7 +70,7 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
 
     # Fill the arrays.
     for ii in range(len(data)):
-        arr_pos[2 * ii: 2 * ii + 2] = np.array(data[ii]['aabb'][dim])
+        arr_pos[2 * ii: 2 * ii + 2] = np.array(data[ii][dim])
         arr_lab[2 * ii: 2 * ii + 2] = labels[ii]
         arr_inc[2 * ii: 2 * ii + 2] = [+1, -1]
 
@@ -118,7 +118,8 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
     if not ok:
         return False, None
 
-    # Create the correct data format for 'sweeping'.
+    # The 'sweeping' function requires a list of dictionaries. Each dictionary
+    # must contain the min/max spatial extend in x/y/z direction.
     data = []
     for objID, sv, aabb in zip(IDs, SVs, aabbs):
         pos = sv.position
@@ -126,7 +127,7 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
         y0, y1 = pos[1] - aabb, pos[1] + aabb
         z0, z1 = pos[2] - aabb, pos[2] + aabb
 
-        data.append({'aabb': {'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]}})
+        data.append({'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]})
 
     # Enumerate the objects.
     labels = np.arange(len(IDs))
