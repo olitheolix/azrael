@@ -26,25 +26,12 @@ A new Azrael instance will be created if none is live yet.
 # Add the viewer directory to the Python path.
 import os
 import sys
-p = os.path.dirname(os.path.abspath(__file__))
-p = os.path.join(p, 'viewer')
-sys.path.insert(0, p)
-del p
-
 import time
+import pymongo
 import IPython
 import logging
 import argparse
 import subprocess
-import model_import
-import azrael.clerk
-import azrael.clacks
-import azrael.util as util
-import azrael.parts as parts
-import azrael.config as config
-import azrael.leonard as leonard
-import azrael.wscontroller as wscontroller
-import azrael.bullet.btInterface as btInterface
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -294,9 +281,30 @@ def spawnCubes(numCols, numRows, numLayers):
                 idx += 1
 
 
+def waitForMongo():
+    """
+    Block until MongoDB can be contacted.
+
+    The main purpose of this function is to avoid problems when running from a
+    Docker container because MongoDB takes a while (up to 1min) to actually
+    start up and accept connections.
+    """
+    print('Waiting for MongoDB to come online', end='', flush=True)
+    t0 = time.time()
+    while True:
+        try:
+            client = pymongo.MongoClient()
+            break
+        except pymongo.errors.ConnectionFailure:
+            print('.', end='', flush=True)
+            time.sleep(1)
+    print('. Done ({}s)'.format(int(time.time() - t0)))
+
+
 def main():
     # Parse the command line.
     param = parseCommandLine()
+
     setupLogging(param.loglevel)
 
     # Flush the timing database.
@@ -373,4 +381,22 @@ def main():
 
 
 if __name__ == '__main__':
+    # Wait until MongoDB is live.
+    waitForMongo()
+
+    # Import the necessary Azrael modules.
+    p = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.join(p, 'viewer'))
+    import model_import
+    import azrael.clerk
+    import azrael.clacks
+    import azrael.util as util
+    import azrael.parts as parts
+    import azrael.config as config
+    import azrael.leonard as leonard
+    import azrael.wscontroller as wscontroller
+    import azrael.bullet.btInterface as btInterface
+    del p
+
+    # Start Azrael.
     main()
