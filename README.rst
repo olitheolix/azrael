@@ -28,54 +28,72 @@ Websockets (JavaScript/browsers) and ZeroMQ (anything but JavaScript).
 How and Why
 ===========
 
-The cornerstone of Azrael is the clean separation between physics, rendering,
-and object control (or AI). The physics engine moves object according to the
-forces that act upon them, and the object controllers can influence these
-forces from any computer according to the objects abilities.
+The cornerstone of Azrael is the clean separation of physics, object control
+(or AI), and rendering. The physics engine moves object according to the 
+forces acting upon them, the object controllers can send commands to force
+generators (eg booster) via the network, and the rendering engine can query the
+simulation to visualise it.
 
 Ideally, every object in the simulation will be remote controlled from a
 different computer, virtual machine, or at least a separate process on a single
-computer. The programming language does not matter.
+computer. The programming language does not matter as long as it has ZeroMQ
+bindings.
 
 This is in stark contrast to contemporary game engines which usually prescribe
-the programming language and your controllers/AI have to compete for computing
-resources.
+the programming language and your controllers/AI have to compete for CPU and
+memory.
 
 The goal is to eventually make the physics engine itself scalable across
 multiple computers to simulate worlds of unprecedented size, detail, and
 accuracy. All hail cloud computing :)
 
-Why do I bother? Because in a virtual world that behaves reasonably similar to
-the real world I can have my own space shuttle, design my own sub-marine,
+Why do I bother? Because in a reasonably realistic virtual world
+I can have my own space shuttle, design my own sub-marine,
 invent my own Mars rover with awesome navigation abilities on a fictitious
-terrain. And so can you. No job at NASA required.
+terrain or build an automated fleet of space ships. And so can you. No job at
+NASA required.
+
+How It (Might) Work
+===================
+
+Classical Physics engines assume they run on a single computer, which means
+data access is fast/free and the number of CPU cores is limited. In the Cloud
+it is the other way around. Beating the network latency and designing a loosely
+coupled system that nevertheless produces coherent physics are the two major
+challenges.
+
+My current idea to meet these challenges, without re-inventing more wheels than
+necessary, is
+
+* compile potential collision sets (broadphase) in Azrael,
+* send each set to the next available Worker for processing,
+* wait until all sets have been updated in a central database.
+
+The Workers are little more than standard Physics Engines (currently Bullet)
+with some wrapper code to interface with Azrael.
+
+Can this even work? It already does. Is it anywhere near real time: not yet.
+
+Please drop me a line if you have any questions or suggestions.
 
 
 Project Status
 ==============
 
-So far it is mostly useful for developers. It wraps Bullet for the physics,
-provides basic APIs to control objects, and ships with a simple 3D viewer.
+Azrael currently features a basic API to upload meshes, define force generators
+(mimics eg boosters wheels, etc), send commands to these force generators, and
+query the scene in general (for rendering).
 
-The first major milestone towards a minimum viable prototype (MVP) are:
-
-* decent physics,
-* ability to combine primitive objects to form more complex ones
-* API to connect and control these objects
-* ability to query the world (mostly for visualisation).
-
-This proved surprisingly difficult (read "fun") due to the many loosely coupled
-components. However, once the basics are in place it will hopefully become
-easier to hone the individual components... with Oculus Rift support,
-contemporary 3D rendering (maybe cloud based?), and a scalable physics engine
-to create the largest Newtonian simulation on the planet...
-
-Please drop me a line if you have any questions.
+It also ships with two simple viewers to visualise the scene. One is a
+standalone PyQT/OpenGL program, the other uses JavaScript and runs in a
+browser.
 
 
 Installation
 ============
 
+From Source
+-----------
 On Ubuntu 14.04 you can install Azrael and all required support libraries with
 the following commands:
 
@@ -84,43 +102,43 @@ the following commands:
    git clone https://github.com/olitheolix/azrael
    cd azrael
    sudo bash install.sh
+   python3 start.py --noviewer --numcubes 4,4,1
 
-Alternatively, you may download the pre-built Docker image:
+Docker
+------
 
 .. code-block:: bash
 
    docker run -p 8080:8080 -ti "olitheolix/azrael:v0.1"
 
-Then point your browser to http://localhost:8080 (you may have to wait a minute
-or two before this link works because the MongoDB inside the Docker container
-takes a while to initialise itself).
 
+View the Scene
+--------------
 
-Try It Out
-==========
+Go to http://localhost:8080 once Azrael is up and running (may take a minute or
+two if you use a Docker container). Firefox will work out of the box. Chrome
+will work if you enable experimental JavaScript first (browse to chrome://flags
+for the respective option). Other browser may work as well.
 
-Start Azrael with
+Use the WASD keys to fly through the scene, or navigate with the mouse
+while pressing the left button.
 
-.. code-block:: bash
-
-   python3 start.py --noviewer
-
-Then point Firefox to http://localhost:8080 to render the scene. Chrome will
-work as well if you turn on experimental JavaScript first (browse to
-chrome://flags to enable it).
-
-To see some movement run one of the demo controllers in a separate shell:
+To see some action in the scene run one (or several) of the demo controllers in
+a separate shell. For instance,
 
 .. code-block:: bash
 
     python3 controllers/demo_sphere.py 
 
-or
+will send commands to the sphere's boosters to make it spin and accelerate into
+the wall of cubes, whereas
 
 .. code-block:: bash
 
     python3 controllers/demo_swarm.py 
 
+will send commands to the cubes' boosters and make them move out in a
+semi-orderly fashion.
 
 License
 =======
