@@ -76,13 +76,24 @@ Please drop me a line if you have any questions.
 Installation
 ============
 
-On Ubuntu 14.04 you can install and start the Azrael core like so:
+On Ubuntu 14.04 you can install Azrael and all required support libraries with
+the following commands:
 
 .. code-block:: bash
 
    git clone https://github.com/olitheolix/azrael
    cd azrael
    sudo bash install.sh
+
+Alternatively, you may download the pre-built Docker image:
+
+.. code-block:: bash
+
+   docker run -p 8080:8080 -ti "olitheolix/azrael:v0.1"
+
+Then point your browser to http://localhost:8080 (you may have to wait a minute
+or two before this link works because the MongoDB inside the Docker container
+takes a while to initialise itself).
 
 
 Try It Out
