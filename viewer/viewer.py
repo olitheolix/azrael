@@ -287,8 +287,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # The timer will re-start itself and trigger OpenGL updates.
         self.drawTimer = self.startTimer(500)
 
-        # Frame counter.
+        # Frame counter and frame timer.
         self.frameCnt = 0
+        self.lastFrameCnt = 0
+        self.lastFrameTime = 0
 
         # Do no record a movie by default.
         self.recording = False
@@ -373,13 +375,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
             # Store the number of vertices.
             self.numVertices[ctrl_id] = len(buf_vert) // 3
-
-            if len(buf_uv) == 0:
-                vs, fs = self.shaderDict['passthrough']
-            else:
-                vs, fs = self.shaderDict['uv']
-            shader = self.linkShaders(vs, fs)
-            gl.glUseProgram(shader)
 
             # Create a new VAO (Vertex Array Object) and bind it. All GPU
             # buffers created below can then be activated at once by binding
@@ -539,18 +534,19 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Put the two possible shaders into dictionaries.
         vs = os.path.join(_this_directory, 'passthrough.vs')
         fs = os.path.join(_this_directory, 'passthrough.fs')
-        self.shaderDict['passthrough'] = (vs, fs)
+        self.shaderDict['passthrough'] = self.linkShaders(vs, fs)
 
         vs = os.path.join(_this_directory, 'uv.vs')
         fs = os.path.join(_this_directory, 'uv.fs')
-        self.shaderDict['uv'] = (vs, fs)
+        self.shaderDict['uv'] = self.linkShaders(vs, fs)
 
         # Load and compile all objects.
         self.loadGeometry()
 
     def paintGL(self):
         try:
-            self._paintGL()
+            with util.Timeit('paintGL') as timeit:
+                self._paintGL()
         except Exception as err:
             print('Error in paintGL:')
             print('\n' + '-' * 79)
@@ -588,70 +584,72 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             print('Could not retrieve SV')
             sys.exit()
 
-        for idx, ctrl_id in enumerate(allObjectIDs):
-            # Convenience.
-            sv = allSVs[ctrl_id]
-
-            # Build the scaling matrix.
-            scale_mat = sv.scale * np.eye(4)
-            scale_mat[3, 3] = 1
-
-            # Convert the Quaternion into a rotation matrix.
-            q = sv.orientation
-            rot_mat = util.Quaternion(q[3], q[:3]).toMatrix()
-            del q
-
-            # Build the model matrix.
-            model_mat = np.eye(4)
-            model_mat[:3, 3] = sv.position
-            model_mat = np.dot(model_mat, np.dot(rot_mat, scale_mat))
-
-            # Compute the combined camera- and projection matrix.
-            cameraMat = self.camera.cameraMatrix()
-            matVP = np.array(np.dot(self.matPerspective, cameraMat))
-
-            # The GPU needs 32bit floats.
-            model_mat = model_mat.astype(np.float32)
-            model_mat = model_mat.flatten(order='F')
-            matVP = matVP.astype(np.float32)
-            matVP = matVP.flatten(order='F')
-
-            textureHandle = self.textureBuffer[ctrl_id]
-
-            # Activate the shader to obtain handles to the global variables
-            # defined in the vertex shader.
-            if textureHandle is None:
-                shader = self.linkShaders(*self.shaderDict['passthrough'])
-            else:
-                shader = self.linkShaders(*self.shaderDict['uv'])
-            gl.glUseProgram(shader)
-            tmp1 = 'projection_matrix'.encode('utf8')
-            tmp2 = 'model_matrix'.encode('utf8')
-            h_prjMat = gl.glGetUniformLocation(shader, tmp1)
-            h_modMat = gl.glGetUniformLocation(shader, tmp2)
-            del tmp1, tmp2
-
-            # Activate the VAO and shader program.
-            gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
-
-            if textureHandle is not None:
-                gl.glBindTexture(gl.GL_TEXTURE_2D, textureHandle)
-                gl.glActiveTexture(gl.GL_TEXTURE0)
-
-            # Upload the model- and projection matrices to the GPU.
-            gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, model_mat)
-            gl.glUniformMatrix4fv(h_prjMat, 1, gl.GL_FALSE, matVP)
-
-            # Draw all triangles and unbind the VAO again.
-            gl.glEnableVertexAttribArray(0)
-            gl.glEnableVertexAttribArray(1)
-            gl.glDrawArrays(gl.GL_TRIANGLES, 0, self.numVertices[ctrl_id])
-            if textureHandle is not None:
-                gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
-            gl.glDisableVertexAttribArray(1)
-            gl.glDisableVertexAttribArray(0)
-            gl.glBindVertexArray(0)
-
+        with util.Timeit('shader') as timeit:
+            for idx, ctrl_id in enumerate(allObjectIDs):
+                # Convenience.
+                sv = allSVs[ctrl_id]
+    
+                # Build the scaling matrix.
+                scale_mat = sv.scale * np.eye(4)
+                scale_mat[3, 3] = 1
+    
+                # Convert the Quaternion into a rotation matrix.
+                q = sv.orientation
+                rot_mat = util.Quaternion(q[3], q[:3]).toMatrix()
+                del q
+    
+                # Build the model matrix.
+                model_mat = np.eye(4)
+                model_mat[:3, 3] = sv.position
+                model_mat = np.dot(model_mat, np.dot(rot_mat, scale_mat))
+    
+                # Compute the combined camera- and projection matrix.
+                cameraMat = self.camera.cameraMatrix()
+                matVP = np.array(np.dot(self.matPerspective, cameraMat))
+    
+                # The GPU needs 32bit floats.
+                model_mat = model_mat.astype(np.float32)
+                model_mat = model_mat.flatten(order='F')
+                matVP = matVP.astype(np.float32)
+                matVP = matVP.flatten(order='F')
+    
+                textureHandle = self.textureBuffer[ctrl_id]
+    
+                # Activate the shader to obtain handles to the global variables
+                # defined in the vertex shader.
+                if textureHandle is None:
+                    shader = self.shaderDict['passthrough']
+                else:
+                    shader = self.shaderDict['uv']
+    
+                gl.glUseProgram(shader)
+                tmp1 = 'projection_matrix'.encode('utf8')
+                tmp2 = 'model_matrix'.encode('utf8')
+                h_prjMat = gl.glGetUniformLocation(shader, tmp1)
+                h_modMat = gl.glGetUniformLocation(shader, tmp2)
+                del tmp1, tmp2
+    
+                # Activate the VAO and shader program.
+                gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
+    
+                if textureHandle is not None:
+                    gl.glBindTexture(gl.GL_TEXTURE_2D, textureHandle)
+                    gl.glActiveTexture(gl.GL_TEXTURE0)
+    
+                # Upload the model- and projection matrices to the GPU.
+                gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, model_mat)
+                gl.glUniformMatrix4fv(h_prjMat, 1, gl.GL_FALSE, matVP)
+    
+                # Draw all triangles and unbind the VAO again.
+                gl.glEnableVertexAttribArray(0)
+                gl.glEnableVertexAttribArray(1)
+                gl.glDrawArrays(gl.GL_TRIANGLES, 0, self.numVertices[ctrl_id])
+                if textureHandle is not None:
+                    gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+                gl.glDisableVertexAttribArray(1)
+                gl.glDisableVertexAttribArray(0)
+                gl.glBindVertexArray(0)
+    
         # Display HUD for this frame.
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
         gl.glUseProgram(0)
@@ -861,6 +859,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Periodically call updateGL to process mouse/keyboard events and
         update the scene.
         """
+        etime = time.time() - self.lastFrameTime
+        if etime > 1:
+            numFrames = self.frameCnt - self.lastFrameCnt
+            util.logMetricQty('#FPS', int(numFrames / etime))
+            self.lastFrameCnt = self.frameCnt
+            self.lastFrameTime = time.time()
+
         self.killTimer(event.timerId())
         self.drawTimer = self.startTimer(20)
         self.updateGL()
