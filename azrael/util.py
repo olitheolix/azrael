@@ -67,23 +67,47 @@ def logMetricQty(metric, value, ts=None):
 
 class Timeit(object):
     """
-    Context manager to time code execution.
+    Context manager to measure execution time.
 
     The elapsed time will automatically be added to the timing database.
     """
-    def __init__(self, name):
+    def __init__(self, name, show=False):
         self.name = name
+        self.show = show
+        self.cpCnt = 0
 
     def __enter__(self):
         self.start = time.time()
         return self
 
-    def __exit__(self, *args):
+    def tick(self, suffix=''):
+        elapsed = time.time() - self.start
+        name = self.name + suffix
         doc = {'Timestamp': self.start,
-               'Metric': self.name,
-               'Value': time.time() - self.start,
+               'Metric': name,
+               'Value': elapsed,
                'Type': 'Time'}
         dbTiming.insert(doc, j=0, w=0)
+
+        if self.show:
+            print('-- TIMING {}: {:,}ms'.format(name, int(1000 * elapsed)))
+        self.start = time.time()
+
+    def __exit__(self, *args):
+        self.tick()
+
+
+def timefunc(func):
+    """
+    Profile execution time of entire function.
+    """
+    def wrapper(*args, **kwargs):
+        with Timeit(func.__name__, True) as timeit:
+            res = func(*args, **kwargs)
+        return res
+
+    # Return a new function that wrapped the original with a Timeit instance.
+    return wrapper
 
 
 @typecheck
