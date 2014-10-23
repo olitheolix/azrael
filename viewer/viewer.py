@@ -249,7 +249,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Camera instance.
         self.camera = None
 
-        # Compile the complete address where Clerk resides.
+        # Address of Clerk.
         self.addr_server = 'tcp://{}:{}'.format(ip, port)
 
         # Place the window in the top left corner.
@@ -331,16 +331,16 @@ class ViewerWidget(QtOpenGL.QGLWidget):
     def loadGeometry(self):
         ok, all_ids = self.ctrl.getAllObjectIDs()
 
-        for ctrl_id in all_ids:
+        for objID in all_ids:
             # Do not add anything if we already have the object, or if it is
             # the player object itself.
-            if ctrl_id in self.controllers:
+            if objID in self.objIDs:
                 continue
-            if ctrl_id == self.player_id:
+            if objID == self.player_id:
                 continue
 
-            # Query the template ID associated with ctrl_id.
-            ok, templateID = self.ctrl.getTemplateID(ctrl_id)
+            # Query the template ID associated with objID.
+            ok, templateID = self.ctrl.getTemplateID(objID)
             if not ok:
                 continue
 
@@ -357,7 +357,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Add to set.
-            self.controllers.add(ctrl_id)
+            self.objIDs.add(objID)
 
             # fixme: getGeometry must provide this (what about getTemplate?).
             width = height = int(np.sqrt(len(buf_rgb) // 3))
@@ -375,13 +375,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 assert len(buf_vert) // 3 == len(buf_uv) // 2
 
             # Store the number of vertices.
-            self.numVertices[ctrl_id] = len(buf_vert) // 3
+            self.numVertices[objID] = len(buf_vert) // 3
 
             # Create a new VAO (Vertex Array Object) and bind it. All GPU
             # buffers created below can then be activated at once by binding
             # this VAO (see paintGL).
-            self.vertex_array_object[ctrl_id] = gl.glGenVertexArrays(1)
-            gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
+            self.vertex_array_object[objID] = gl.glGenVertexArrays(1)
+            gl.glBindVertexArray(self.vertex_array_object[objID])
 
             # Create two GPU buffers (no need to specify a size here).
             vertexBuffer, uvBuffer = gl.glGenBuffers(2)
@@ -397,7 +397,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             gl.glEnableVertexAttribArray(0)
 
             if len(buf_uv) == 0:
-                buf_col = np.random.rand(4 * self.numVertices[ctrl_id])
+                buf_col = np.random.rand(4 * self.numVertices[objID])
                 buf_col = buf_col.astype(np.float32)
 
                 # Repeat with UV data. Each vertex has one associated (U,V)
@@ -412,7 +412,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 gl.glVertexAttribPointer(
                     1, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
                 gl.glEnableVertexAttribArray(1)
-                self.textureBuffer[ctrl_id] = None
+                self.textureBuffer[objID] = None
             else:
                 # Repeat with UV data. Each vertex has one associated (U,V)
                 # pair to specify the position in the texture.
@@ -428,9 +428,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 gl.glEnableVertexAttribArray(1)
 
                 # Create a new texture buffer on the GPU and bind it.
-                assert ctrl_id not in self.textureBuffer
-                self.textureBuffer[ctrl_id] = gl.glGenTextures(1)
-                gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[ctrl_id])
+                assert objID not in self.textureBuffer
+                self.textureBuffer[objID] = gl.glGenTextures(1)
+                gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[objID])
 
                 # Upload texture to GPU (transpose the image first).
                 buf_rgb = np.reshape(buf_rgb, (width, height, 3))
@@ -449,7 +449,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # Only draw visible triangles.
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glDepthFunc(gl.GL_LESS)
-            print('Added geometry for <{}>'.format(ctrl_id))
+            print('Added geometry for <{}>'.format(objID))
 
     def initializeGL(self):
         """
@@ -513,7 +513,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         print('Spawned player object <{}>'.format(self.player_id))
 
         # Initialise instance variables.
-        self.controllers = set()
+        self.objIDs = set()
         self.numVertices = {}
         self.vertex_array_object = {}
         self.textureBuffer = {}
@@ -569,16 +569,17 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Clear the scene.
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
-        allObjectIDs = list(self.controllers)
-        ok, allSVs = self.ctrl.getStateVariables(allObjectIDs)
+        with util.Timeit('getSV') as timeit:
+            allObjectIDs = list(self.objIDs)
+            ok, allSVs = self.ctrl.getStateVariables(allObjectIDs)
         if not ok:
             print('Could not retrieve SV')
             sys.exit()
 
-        with util.Timeit('shader') as timeit:
-            for idx, ctrl_id in enumerate(allObjectIDs):
+        with util.Timeit('loop') as timeit:
+            for idx, objID in enumerate(allObjectIDs):
                 # Convenience.
-                sv = allSVs[ctrl_id]
+                sv = allSVs[objID]
     
                 # Build the scaling matrix.
                 scale_mat = sv.scale * np.eye(4)
@@ -604,7 +605,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 matVP = matVP.astype(np.float32)
                 matVP = matVP.flatten(order='F')
     
-                textureHandle = self.textureBuffer[ctrl_id]
+                textureHandle = self.textureBuffer[objID]
     
                 # Activate the shader to obtain handles to the global variables
                 # defined in the vertex shader.
@@ -621,7 +622,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 del tmp1, tmp2
     
                 # Activate the VAO and shader program.
-                gl.glBindVertexArray(self.vertex_array_object[ctrl_id])
+                gl.glBindVertexArray(self.vertex_array_object[objID])
     
                 if textureHandle is not None:
                     gl.glBindTexture(gl.GL_TEXTURE_2D, textureHandle)
@@ -634,7 +635,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 # Draw all triangles and unbind the VAO again.
                 gl.glEnableVertexAttribArray(0)
                 gl.glEnableVertexAttribArray(1)
-                gl.glDrawArrays(gl.GL_TRIANGLES, 0, self.numVertices[ctrl_id])
+                gl.glDrawArrays(gl.GL_TRIANGLES, 0, self.numVertices[objID])
                 if textureHandle is not None:
                     gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
                 gl.glDisableVertexAttribArray(1)
@@ -824,7 +825,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 2 * self.camera.view
 
             # Spawn the object.
-            ok, ctrl_id = self.ctrl.spawn(
+            ok, objID = self.ctrl.spawn(
                 None, self.t_projectile, pos, vel=vel, scale=0.25, imass=20)
             if not ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
@@ -836,12 +837,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # Spawn the object.
             tid = 'BoosterCube'.encode('utf8')
             prog = 'EchoBoost'.encode('utf8')
-            ok, ctrl_id = self.ctrl.spawn(
+            ok, objID = self.ctrl.spawn(
                 prog, tid, pos=pos, vel=vel, scale=1, imass=1)
             if not ok:
                 msg = 'Could not spawn template <{}> with controller <{}>'
                 print(msg.format(prog.decode('utf8'), tid))
-                print(ctrl_id)
+                print(objID)
         else:
             print('Unknown button <{}>'.format(button))
 
