@@ -102,8 +102,9 @@ def loadGroundModel(scale, model_name):
     This will become the first object to populate the simulation.
     """
     # Create a controller and connect to Azrael.
-    ctrl = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
-    assert ctrl.pingClacks()
+    ctrl = controller.ControllerBase(addr_clerk='tcp://127.0.0.1:5555')
+    ctrl.setupZMQ()
+    ctrl.connectToClerk()
 
     # Load the model.
     print('  Importing <{}>... '.format(model_name), end='', flush=True)
@@ -155,8 +156,9 @@ def spawnCubes(numCols, numRows, numLayers):
     The cubes will be arranged regularly in the scene.
     """
     # Establish connection to Azrael.
-    ctrl = wscontroller.WSControllerBase('ws://127.0.0.1:8080/websocket')
-    assert ctrl.pingClacks()
+    ctrl = controller.ControllerBase(addr_clerk='tcp://127.0.0.1:5555')
+    ctrl.setupZMQ()
+    ctrl.connectToClerk()
 
     # Cube vertices.
     vert = 0.5 * np.array([
@@ -257,7 +259,7 @@ def spawnCubes(numCols, numRows, numLayers):
         tID_cube[ii] = tID
 
     # ----------------------------------------------------------------------
-    # Spawn the differently textures cubes in a regular grid.
+    # Spawn the differently textured cubes in a regular grid.
     # ----------------------------------------------------------------------
     idx = 0
     spacing = 0.1
@@ -310,15 +312,7 @@ def main():
     # Flush the timing database.
     util.resetTiming()
 
-    # Determine if Azrael is live.
-    try:
-        addr = 'ws://127.0.0.1:{}/websocket'.format(param.port)
-        wscontroller.WSControllerBase(addr)
-        is_azrael_live = True
-    except ConnectionRefusedError as err:
-        is_azrael_live = False
-
-    if not is_azrael_live:
+    with util.Timeit('Startup Time', True):
         print('Starting Azrael...')
 
         # Kill all left over processes from previous runs.
@@ -354,9 +348,7 @@ def main():
         leo = leonard.LeonardBulletSweepingMultiMT()
         leo.start()
 
-        print('Azrael now live')
-    else:
-        print('Azrael already live')
+    print('Azrael now live')
 
     # Launch the viewer process.
     try:
@@ -368,14 +360,13 @@ def main():
     except KeyboardInterrupt:
         pass
 
-    if not is_azrael_live:
-        # Shutdown Azrael.
-        clerk.terminate()
-        clacks.terminate()
-        leo.terminate()
-        clerk.join()
-        clacks.join()
-        leo.join()
+    # Shutdown Azrael.
+    clerk.terminate()
+    clacks.terminate()
+    leo.terminate()
+    clerk.join()
+    clacks.join()
+    leo.join()
 
     print('Clean shutdown')
 
@@ -394,7 +385,7 @@ if __name__ == '__main__':
     import azrael.parts as parts
     import azrael.config as config
     import azrael.leonard as leonard
-    import azrael.wscontroller as wscontroller
+    import azrael.controller as controller
     import azrael.bullet.btInterface as btInterface
     del p
 
