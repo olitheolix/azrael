@@ -41,7 +41,7 @@ import model_import
 import OpenGL.GL as gl
 
 import azrael.util as util
-import azrael.wscontroller as wscontroller
+import azrael.controller as controller
 
 from PySide import QtCore, QtGui, QtOpenGL
 
@@ -60,7 +60,7 @@ def parseCommandLine():
     # Add the command line options.
     padd('--ip', metavar='addr', type=str, default='localhost',
          help='IP address of Clacks')
-    padd('--port', metavar='port', type=int, default=8080,
+    padd('--port', metavar='port', type=int, default=5555,
          help='Port of Clacks')
 
     # run the parser.
@@ -243,13 +243,14 @@ class Camera:
 
 
 class ViewerWidget(QtOpenGL.QGLWidget):
-    def __init__(self, clacks_ip='localhost', clacks_port=8080, parent=None):
+    def __init__(self, ip, port, parent=None):
         super().__init__(parent)
 
         # Camera instance.
         self.camera = None
 
-        self.ip_clacks = 'ws://{}:{}/websocket'.format(clacks_ip, clacks_port)
+        # Compile the complete address where Clerk resides.
+        self.addr_server = 'tcp://{}:{}'.format(ip, port)
 
         # Place the window in the top left corner.
         self.setGeometry(0, 0, 640, 480)
@@ -470,20 +471,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Create the graphic buffers and compile the shaders.
         """
         # Make sure the system is live.
-        try:
-            self.ctrl = wscontroller.WSControllerBase(self.ip_clacks)
+        self.ctrl = controller.ControllerBase(addr_clerk=self.addr_server)
+        self.ctrl.setupZMQ()
+        self.ctrl.connectToClerk()
 
-        except ConnectionRefusedError as err:
-            print('Viewer: could not connect to Clacks')
-            self.close()
-            sys.exit(1)
-            return
-
-        if not self.ctrl.pingClacks():
-            print('Viewer: could not ping Clerk')
-            self.close()
-            sys.exit(1)
-            return
         print('Client connected')
 
         # Add template for projectiles. The geometry and collision shape are
