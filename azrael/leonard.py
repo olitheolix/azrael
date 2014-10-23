@@ -608,26 +608,28 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
 
         :param int wpid: work package ID.
         """
-        # Rename process to make it easy to find and kill them in the process
-        # table.
-        setproctitle.setproctitle('killme LeonardWorker')
+        try:
+            # Rename process to make it easy to find and kill them in the
+            # process table.
+            setproctitle.setproctitle('killme LeonardWorker')
 
-        # Instantiate a Bullet engine.
-        engine = azrael.bullet.cython_bullet.PyBulletPhys
-        self.bullet = engine(self.workerID, 0)
+            # Instantiate a Bullet engine.
+            engine = azrael.bullet.cython_bullet.PyBulletPhys
+            self.bullet = engine(self.workerID, 0)
 
-        # Setup ZeroMQ.
-        self.logit.info('Worker {} started'.format(self.workerID))
-        ctx = zmq.Context()
-        sock = ctx.socket(zmq.PULL)
-        sock.connect(config.addr_leonard_pushpull)
-        self.logit.info('Worker {} connected'.format(self.workerID))
+            # Setup ZeroMQ.
+            ctx = zmq.Context()
+            sock = ctx.socket(zmq.PULL)
+            sock.connect(config.addr_leonard_pushpull)
+            self.logit.info('Worker {} connected'.format(self.workerID))
 
-        # Process work packages as they arrive.
-        while True:
-            wpid = sock.recv()
-            wpid = np.fromstring(wpid, np.int64)
-            self.processWorkPackage(int(wpid))
+            # Process work packages as they arrive.
+            while True:
+                wpid = sock.recv()
+                wpid = np.fromstring(wpid, np.int64)
+                self.processWorkPackage(int(wpid))
+        except KeyboardInterrupt:
+            print('Worker {} quit'.format(self.workerID))
 
     def processWorkPackage(self, wpid: int):
         ok, worklist, admin = btInterface.getWorkPackage(wpid)
