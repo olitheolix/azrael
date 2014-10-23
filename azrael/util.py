@@ -78,11 +78,25 @@ class Timeit(object):
 
     def __enter__(self):
         self.start = time.time()
+        self.last_tick = time.time()
         return self
 
     def tick(self, suffix=''):
-        elapsed = time.time() - self.start
+        """
+        Save an intermediate timinig result.
+
+        The name of this tick is the concatenation of the original name (passed
+        to constructore) plus ``suffix``.
+        """
+        elapsed = time.time() - self.last_tick
         name = self.name + suffix
+        self.save(name, elapsed)
+        self.last_tick = time.time()
+
+    def save(self, name, elapsed):
+        """
+        Write the measurement to the DB.
+        """
         doc = {'Timestamp': self.start,
                'Metric': name,
                'Value': elapsed,
@@ -90,11 +104,11 @@ class Timeit(object):
         dbTiming.insert(doc, j=0, w=0)
 
         if self.show:
+            # Print the value to screen.
             print('-- TIMING {}: {:,}ms'.format(name, int(1000 * elapsed)))
-        self.start = time.time()
 
     def __exit__(self, *args):
-        self.tick()
+        self.save(self.name, time.time() - self.start)
 
 
 def timefunc(func):
@@ -102,7 +116,7 @@ def timefunc(func):
     Profile execution time of entire function.
     """
     def wrapper(*args, **kwargs):
-        with Timeit(func.__name__, True) as timeit:
+        with Timeit(func.__name__, False) as timeit:
             res = func(*args, **kwargs)
         return res
 
