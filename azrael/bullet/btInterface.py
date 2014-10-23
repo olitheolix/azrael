@@ -25,7 +25,7 @@ import logging
 import pymongo
 import IPython
 import numpy as np
-import azrael.util
+import azrael.util as util
 import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
@@ -125,7 +125,7 @@ def getStateVariables(objIDs: (list, tuple)):
     case usually only happens if one or more object IDs in ``objIDs`` do not
     exist.
 
-    :param iterable objIDs: list of object ID for which to return the SV.
+    :param iterable objIDs: list of object IDs for which to return the SV.
     :return list: list of BulletData instances.
     """
     # Sanity check.
@@ -135,10 +135,14 @@ def getStateVariables(objIDs: (list, tuple)):
             return False, []
 
     # Retrieve the state variables.
-    out = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
+    out = list(_DB_SV.find({'objid': {'$in': objIDs}}))
 
-    # Return with an error if one or more documents were unavailable.
-    if None in out:
+    # Re-order the list to match the original order in objIDs.
+    tmp = {_['objid']: _ for _ in out}
+    try:
+        out = [tmp[_] for _ in objIDs]
+    except KeyError:
+        # Return with an error if one or more objIDs were unavailable.
         return False, []
 
     # Return the list of state variables.
