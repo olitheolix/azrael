@@ -303,70 +303,80 @@ def waitForMongo():
     print('. Done ({}s)'.format(int(time.time() - t0)))
 
 
-def main():
-    # Parse the command line.
-    param = parseCommandLine()
+def startAzrael(param):
+    """
+    Start all Azrael processes and return their process handles.
+    """
+    clerk = azrael.clerk.Clerk(reset=True)
+    clerk.start()
+    clacks = azrael.clacks.ClacksServer()
+    clacks.start()
+    btInterface.initSVDB(reset=True)
 
-    setupLogging(param.loglevel)
+    if not param.noinit:
+        # Add a model to the otherwise empty simulation. The sphere is
+        # in the repo whereas the Vatican model is available here:
+        # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
+        # uid=3290&count=count
+        model_name = (1.25, 'viewer/models/sphere/sphere.obj')
+        #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
+        #model_name = (1.25, 'viewer/models/house/house.3ds')
+        loadGroundModel(*model_name)
 
-    # Flush the timing database.
-    util.resetTiming()
+        # Define additional templates.
+        spawnCubes(*param.numcubes)
 
-    with util.Timeit('Startup Time', True):
-        print('Starting Azrael...')
+    # Start the physics engine.
+    #leo = leonard.LeonardBase()
+    #leo = leonard.LeonardBaseWPRMQ(1, leonard.LeonardRMQWorker)
+    #leo = leonard.LeonardBaseWPRMQ(1, leonard.LeonardRMQWorkerBullet)
+    #leo = leonard.LeonardBulletMonolithic()
+    #leo = leonard.LeonardBulletSweeping()
+    #leo = leonard.LeonardBulletSweepingMultiST()
+    leo = leonard.LeonardBulletSweepingMultiMT()
+    leo.start()
 
-        # Kill all left over processes from previous runs.
-        subprocess.call(['pkill', 'killme'])
+    return clerk, clacks, leo
 
-        # Start the Azrael processes.
-        clerk = azrael.clerk.Clerk(reset=True)
-        clerk.start()
-        clacks = azrael.clacks.ClacksServer()
-        clacks.start()
-        btInterface.initSVDB(reset=True)
 
-        if not param.noinit:
-            # Add a model to the otherwise empty simulation. The sphere is
-            # in the repo whereas the Vatican model is available here:
-            # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
-            # uid=3290&count=count
-            model_name = (1.25, 'viewer/models/sphere/sphere.obj')
-            #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
-            #model_name = (1.25, 'viewer/models/house/house.3ds')
-            loadGroundModel(*model_name)
-
-            # Define additional templates.
-            spawnCubes(*param.numcubes)
-
-        # Start the physics engine.
-        #leo = leonard.LeonardBase()
-        #leo = leonard.LeonardBaseWPRMQ(1, leonard.LeonardRMQWorker)
-        #leo = leonard.LeonardBaseWPRMQ(1, leonard.LeonardRMQWorkerBullet)
-        #leo = leonard.LeonardBulletMonolithic()
-        #leo = leonard.LeonardBulletSweeping()
-        #leo = leonard.LeonardBulletSweepingMultiST()
-        leo = leonard.LeonardBulletSweepingMultiMT()
-        leo.start()
-
-    print('Azrael now live')
-
-    # Launch the viewer process.
-    try:
-        if param.noviewer:
-            while True:
-                time.sleep(360000)
-        else:
-            subprocess.call(['python3', 'viewer/viewer.py'])
-    except KeyboardInterrupt:
-        pass
-
-    # Shutdown Azrael.
+def stopAzrael(clerk, clacks, leo):
+    """
+    Stop ``clerk``, ``clacks``, and ``leo``.
+    """
     clerk.terminate()
     clacks.terminate()
     leo.terminate()
     clerk.join()
     clacks.join()
     leo.join()
+
+
+def main():
+    # Parse the command line.
+    param = parseCommandLine()
+
+    # Setup.
+    setupLogging(param.loglevel)
+    util.resetTiming()
+
+    while True:
+        # Start the Azrael processes.
+        with util.Timeit('Startup Time', True):
+            subprocess.call(['pkill', 'killme'])
+            procs = startAzrael(param)
+        print('Azrael now live')
+    
+        # Launch the viewer process.
+        try:
+            if param.noviewer:
+                time.sleep(3600000)
+            else:
+                subprocess.call(['python3', 'viewer/viewer.py'])
+        except KeyboardInterrupt:
+            pass
+    
+        # Shutdown Azrael.
+        stopAzrael(*procs)
 
     print('Clean shutdown')
 
