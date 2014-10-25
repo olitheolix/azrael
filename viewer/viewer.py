@@ -41,6 +41,7 @@ import model_import
 import OpenGL.GL as gl
 
 import azrael.util as util
+import azrael.config as config
 import azrael.controller as controller
 
 from PySide import QtCore, QtGui, QtOpenGL
@@ -58,13 +59,16 @@ def parseCommandLine():
     padd = parser.add_argument
 
     # Add the command line options.
-    padd('--ip', metavar='addr', type=str, default='localhost',
-         help='IP address of Clacks')
-    padd('--port', metavar='port', type=int, default=5555,
-         help='Port of Clacks')
+    padd('--addr', metavar='addr', type=str, default=None,
+         help='ZeroMQ address of Clacks (eg. tcp://127.0.0.1:5555')
+
+    param = parser.parse_args()
+
+    if param.addr is None:
+        param.addr = config.addr_clerk
 
     # run the parser.
-    return parser.parse_args()
+    return param
 
 
 def perspective(fov, ar, near, far):
@@ -243,14 +247,14 @@ class Camera:
 
 
 class ViewerWidget(QtOpenGL.QGLWidget):
-    def __init__(self, ip, port, parent=None):
+    def __init__(self, addr, parent=None):
         super().__init__(parent)
 
         # Camera instance.
         self.camera = None
 
         # Address of Clerk.
-        self.addr_server = 'tcp://{}:{}'.format(ip, port)
+        self.addr_server = addr
 
         # Place the window in the top left corner.
         self.setGeometry(0, 0, 640, 480)
@@ -868,7 +872,7 @@ def main():
 
     # Boiler plate for Qt application.
     app = QtGui.QApplication(['Viewer 3D'])
-    widget = ViewerWidget(param.ip, param.port)
+    widget = ViewerWidget(param.addr)
     widget.show()
     app.exec_()
 

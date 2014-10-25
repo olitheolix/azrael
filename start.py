@@ -102,7 +102,7 @@ def loadGroundModel(scale, model_name):
     This will become the first object to populate the simulation.
     """
     # Create a controller and connect to Azrael.
-    ctrl = controller.ControllerBase(addr_clerk='tcp://127.0.0.1:5555')
+    ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
     ctrl.setupZMQ()
     ctrl.connectToClerk()
 
@@ -111,8 +111,8 @@ def loadGroundModel(scale, model_name):
     mesh = model_import.loadModelAll(model_name)
 
     # The model may contain several sub-models. Each one has a set of vertices,
-    # UV- and texture maps. The following code simply turns the three list of
-    # lists to three lists.
+    # UV- and texture maps. The following code simply flattens the three lists
+    # of lists into just three lists.
     vert = np.array(mesh['vertices']).flatten()
     uv = np.array(mesh['UV']).flatten()
     rgb = np.array(mesh['RGB']).flatten()
@@ -156,7 +156,7 @@ def spawnCubes(numCols, numRows, numLayers):
     The cubes will be arranged regularly in the scene.
     """
     # Establish connection to Azrael.
-    ctrl = controller.ControllerBase(addr_clerk='tcp://127.0.0.1:5555')
+    ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
     ctrl.setupZMQ()
     ctrl.connectToClerk()
 
