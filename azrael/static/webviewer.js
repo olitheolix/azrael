@@ -400,6 +400,13 @@ function* mycoroutine(connection) {
 }
 
 window.onload = function() {
+    // Use the ThreeJS Detector module to determine browser support for WebGL.
+    if (!Detector.webgl) {
+        document.body.innerHTML =
+            '<strong>Your browser does not seem to support WebGL</strong>';
+        return
+    }
+
     // Create a websocket connection.
     var connection = new WebSocket('ws://' + window.location.host + '/websocket');
     var protocol = mycoroutine(connection);
