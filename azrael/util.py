@@ -32,9 +32,17 @@ dbTiming = pymongo.MongoClient()['timing']['timing']
 
 def resetTiming():
     """
-    Flush the timing metrics.
+    Flush existing timing metrics and create a new capped collection.
     """
-    dbTiming.drop()
+    global dbTiming
+
+    # Drop existing collection.
+    col = pymongo.MongoClient()['timing']
+    col.drop_collection('timing')
+
+    # Create a new capped collection and update the dbTiming variable.
+    col.create_collection(name='timing', size=100000000, capped=True)
+    dbTiming = col['timing']
 
 
 def logMetricQty(metric, value, ts=None):

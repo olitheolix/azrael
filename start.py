@@ -373,7 +373,8 @@ def main():
             else:
                 subprocess.call(['python3', 'viewer/viewer.py'])
         except KeyboardInterrupt:
-            pass
+            stopAzrael(*procs)
+            break
     
         # Shutdown Azrael.
         stopAzrael(*procs)
