@@ -365,7 +365,7 @@ def main():
             subprocess.call(['pkill', 'killme'])
             procs = startAzrael(param)
         print('Azrael now live')
-    
+
         # Launch the viewer process.
         try:
             if param.noviewer:
@@ -375,7 +375,7 @@ def main():
         except KeyboardInterrupt:
             stopAzrael(*procs)
             break
-    
+
         # Shutdown Azrael.
         stopAzrael(*procs)
 

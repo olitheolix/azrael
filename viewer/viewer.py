@@ -584,58 +584,58 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             for idx, objID in enumerate(allObjectIDs):
                 # Convenience.
                 sv = allSVs[objID]
-    
+
                 # Build the scaling matrix.
                 scale_mat = sv.scale * np.eye(4)
                 scale_mat[3, 3] = 1
-    
+
                 # Convert the Quaternion into a rotation matrix.
                 q = sv.orientation
                 rot_mat = util.Quaternion(q[3], q[:3]).toMatrix()
                 del q
-    
+
                 # Build the model matrix.
                 model_mat = np.eye(4)
                 model_mat[:3, 3] = sv.position
                 model_mat = np.dot(model_mat, np.dot(rot_mat, scale_mat))
-    
+
                 # Compute the combined camera- and projection matrix.
                 cameraMat = self.camera.cameraMatrix()
                 matVP = np.array(np.dot(self.matPerspective, cameraMat))
-    
+
                 # The GPU needs 32bit floats.
                 model_mat = model_mat.astype(np.float32)
                 model_mat = model_mat.flatten(order='F')
                 matVP = matVP.astype(np.float32)
                 matVP = matVP.flatten(order='F')
-    
+
                 textureHandle = self.textureBuffer[objID]
-    
+
                 # Activate the shader to obtain handles to the global variables
                 # defined in the vertex shader.
                 if textureHandle is None:
                     shader = self.shaderDict['passthrough']
                 else:
                     shader = self.shaderDict['uv']
-    
+
                 gl.glUseProgram(shader)
                 tmp1 = 'projection_matrix'.encode('utf8')
                 tmp2 = 'model_matrix'.encode('utf8')
                 h_prjMat = gl.glGetUniformLocation(shader, tmp1)
                 h_modMat = gl.glGetUniformLocation(shader, tmp2)
                 del tmp1, tmp2
-    
+
                 # Activate the VAO and shader program.
                 gl.glBindVertexArray(self.vertex_array_object[objID])
-    
+
                 if textureHandle is not None:
                     gl.glBindTexture(gl.GL_TEXTURE_2D, textureHandle)
                     gl.glActiveTexture(gl.GL_TEXTURE0)
-    
+
                 # Upload the model- and projection matrices to the GPU.
                 gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, model_mat)
                 gl.glUniformMatrix4fv(h_prjMat, 1, gl.GL_FALSE, matVP)
-    
+
                 # Draw all triangles and unbind the VAO again.
                 gl.glEnableVertexAttribArray(0)
                 gl.glEnableVertexAttribArray(1)
@@ -645,7 +645,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 gl.glDisableVertexAttribArray(1)
                 gl.glDisableVertexAttribArray(0)
                 gl.glBindVertexArray(0)
-    
+
         # Display HUD for this frame.
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
         gl.glUseProgram(0)
