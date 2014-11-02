@@ -17,13 +17,17 @@ Furthermore, you can ask the object for what it "sees" in its
 neighbourhood. Pass this information on to your favourite graphics engine and
 you can visualise the world.
 
-Unlike classical game engines the graphics engine, physics engine, and object
-control (AI) are independent components. Most likely they will not even run on
-the same machine, or even the same network.
+Unlike in traditiona game engines, the graphics engine, physics engine, and
+object control (AI) are independent components. Most likely they will not even
+run on the same machine.
 
 The network API also ensures that Azrael is language Agnostic. Albeit written
 in Python, the binary protocol is JSON based and provides interfaces for
 Websockets (JavaScript/browsers) and ZeroMQ (anything but JavaScript).
+
+For a high level overview including demo videos, please visit the
+`project page <https://olitheolix.com/azrael/>`_.
+
 
 How and Why
 ===========
@@ -87,7 +91,6 @@ query the scene in general (for rendering).
 It also ships with two simple viewers to visualise the scene. One is a
 standalone PyQT/OpenGL program, the other uses JavaScript and runs in a
 browser.
-
 
 Installation
 ============

@@ -64,7 +64,7 @@ def parseCommandLine():
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
 
-    # run the parser.
+    # Run the parser.
     param = parser.parse_args()
     try:
         numcubes = [int(_) for _ in param.numcubes.split(',')]
