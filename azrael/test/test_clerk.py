@@ -33,6 +33,7 @@ import azrael.clerk
 import azrael.parts as parts
 import azrael.config as config
 import azrael.clacks as clacks
+import azrael.leonard as leonard
 import azrael.protocol as protocol
 import azrael.protocol_json as json
 import azrael.controller as controller
@@ -313,31 +314,58 @@ def test_set_force():
 
 def test_suggest_position():
     """
-    The logic for the 'set_force' and 'suggest_pos' commands are
-    identical. Therefore thest them both with a single function here.
+    Spawn an object, suggest_position, and verify.
     """
     killAzrael()
 
     # Parameters and constants for this test.
     id_1 = int2id(1)
     sv = bullet_data.BulletData()
-    force = np.array([1, 2, 3], np.float64)
+    pos = np.array([1, 2, 3], np.float64)
     templateID = '_templateNone'.encode('utf8')
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Invalid/non-existing ID.
-    ok, ret = clerk.suggestPosition(int2id(0), force)
+    ok, ret = clerk.suggestPosition(int2id(0), pos)
     assert (ok, ret) == (False, 'ID does not exist')
 
     # Spawn a new object. It must have ID=1.
     ok, (ret,) = clerk.spawn(None, templateID, sv)
     assert (ok, ret) == (True, id_1)
 
-    # Invalid/non-existing ID.
-    ok, (ret,) = clerk.suggestPosition(id_1, force)
+    # Update the object's position.
+    ok, (ret,) = clerk.suggestPosition(id_1, pos)
     assert (ok, ret) == (True, '')
+
+    # Leonard must run to actually update the position.
+    leo = leonard.LeonardBase()
+    leo.start()
+
+    # Verify that the position is correct. Poll this value a few times since it
+    # may take Leonard a few milli seconds to update the variable.
+    passed = False
+    for cnt in range(500):
+        # Query the SV.
+        ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([id_1])
+        assert (ok, ret_objIDs) == (True, [id_1])
+
+        # Check if the position has changed.
+        if np.array_equal(ret_SVs[0].position, pos):
+            # Yes --> test passed.
+            passed = True
+            break
+
+        # Give Leonard a bit more time. The try again.
+        time.sleep(0.01)
+        
+    # Terminate Leonard.
+    leo.terminate()
+    leo.join()
+
+    # Only assert test outcome after Leonard was properly shut down.
+    assert passed
 
     print('Test passed')
 
