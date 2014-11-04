@@ -16,6 +16,17 @@ import numpy as np
 
 ipshell = IPython.embed
 
+# List all available engines. This simplifies the parameterisation of those
+# tests that must pass for all engines.
+allEngines = [
+    azrael.leonard.LeonardBase,
+    azrael.leonard.LeonardBaseWorkpackages,
+    azrael.leonard.LeonardBaseWPRMQ,
+    azrael.leonard.LeonardBulletMonolithic,
+    azrael.leonard.LeonardBulletSweeping,
+    azrael.leonard.LeonardBulletSweepingMultiST,
+    azrael.leonard.LeonardBulletSweepingMultiMT]
+
 
 def killAzrael():
     subprocess.call(['pkill', 'killme'])
@@ -81,15 +92,7 @@ def stopAzrael(clerk, clacks):
     killAzrael()
 
 
-@pytest.mark.parametrize(
-    'clsLeonard',
-    [azrael.leonard.LeonardBase,
-     azrael.leonard.LeonardBaseWorkpackages,
-     azrael.leonard.LeonardBaseWPRMQ,
-     azrael.leonard.LeonardBulletMonolithic,
-     azrael.leonard.LeonardBulletSweeping,
-     azrael.leonard.LeonardBulletSweepingMultiST,
-     azrael.leonard.LeonardBulletSweepingMultiMT])
+@pytest.mark.parametrize('clsLeonard', allEngines)
 def test_suggest_position(clsLeonard):
     """
     Spawn an object, suggest_position, and verify.
@@ -147,15 +150,7 @@ def test_suggest_position(clsLeonard):
     print('Test passed')
 
 
-@pytest.mark.parametrize(
-    'clsLeonard',
-    [azrael.leonard.LeonardBase,
-     azrael.leonard.LeonardBaseWorkpackages,
-     azrael.leonard.LeonardBaseWPRMQ,
-     azrael.leonard.LeonardBulletMonolithic,
-     azrael.leonard.LeonardBulletSweeping,
-     azrael.leonard.LeonardBulletSweepingMultiST,
-     azrael.leonard.LeonardBulletSweepingMultiMT])
+@pytest.mark.parametrize('clsLeonard', allEngines)
 def test_move_single_object(clsLeonard):
     """
     Create a single object with non-zero initial speed and ensure Leonard moves
@@ -200,15 +195,7 @@ def test_move_single_object(clsLeonard):
     print('Test passed')
 
 
-@pytest.mark.parametrize(
-    'clsLeonard',
-    [azrael.leonard.LeonardBase,
-     azrael.leonard.LeonardBaseWorkpackages,
-     azrael.leonard.LeonardBaseWPRMQ,
-     azrael.leonard.LeonardBulletMonolithic,
-     azrael.leonard.LeonardBulletSweeping,
-     azrael.leonard.LeonardBulletSweepingMultiST,
-     azrael.leonard.LeonardBulletSweepingMultiMT])
+@pytest.mark.parametrize('clsLeonard', allEngines)
 def test_move_two_objects_no_collision(clsLeonard):
     """
     Same as previous test but with two objects.
