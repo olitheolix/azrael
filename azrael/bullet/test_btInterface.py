@@ -249,6 +249,17 @@ def test_suggest_position():
     """
     Set and retrieve a suggested position .
     """
+    # Convenience.
+    PosVelAccOrient = btInterface.PosVelAccOrient
+
+    # Test constants.
+    p = np.array([1, 2, 5])
+    v = np.array([8, 9, 10.5])
+    a = np.array([2.5, 3.5, 4.5])
+    o = np.array([11, 12.5, 13, 13.5])
+    data = PosVelAccOrient(p, v, a, o)
+    del p, v, a, o
+
     # Reset the SV database.
     btInterface.initSVDB(reset=True)
 
@@ -256,37 +267,36 @@ def test_suggest_position():
     id_0 = int2id(0)
 
     # Create an object and serialise it.
-    data_0 = bullet_data.BulletData()
+    btdata = bullet_data.BulletData()
 
     # Query suggested position for a non-existing object. This must fail.
-    ok, data = btInterface.getSuggestedPosition(id_0)
+    ok, ret = btInterface.getSuggestedPosition(id_0)
     assert not ok
 
     # Suggest a position for a non-existing object. This must fail.
-    p = np.array([1, 2, 5])
-    assert not btInterface.setSuggestedPosition(int2id(10), p)
+    assert not btInterface.setSuggestedPosition(int2id(10), data)
 
     # Add the object to the DB with ID=0.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_0, btdata, np.int64(1).tostring(), 0)
 
     # Query the suggested position for ID0. This must suceed. However, the
     # returned values must be None since no position has been suggested yet.
-    ok, data = btInterface.getSuggestedPosition(id_0)
-    assert (ok, data) == (True, None)
+    ok, ret = btInterface.getSuggestedPosition(id_0)
+    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None))
 
     # Suggest a new position for the just inserted object.
-    p = np.array([1, 2, 5])
-    assert btInterface.setSuggestedPosition(id_0, p)
+    assert btInterface.setSuggestedPosition(id_0, data)
 
     # Retrieve the suggested position and make sure it matches.
-    ok, data = btInterface.getSuggestedPosition(id_0)
+    ok, ret = btInterface.getSuggestedPosition(id_0)
     assert ok
-    assert np.array_equal(data, p)
+    for a, b in zip(ret, data):
+        assert np.array_equal(a, b)
 
     # Void the suggested position and verify.
     assert btInterface.setSuggestedPosition(id_0, None)
-    ok, data = btInterface.getSuggestedPosition(id_0)
-    assert (ok, data) == (True, None)
+    ok, ret = btInterface.getSuggestedPosition(id_0)
+    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None))
 
     print('Test passed')
 

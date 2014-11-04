@@ -42,6 +42,7 @@ _DB_WP = None
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv central_force torque sugPos')
 WPAdmin = namedtuple('WPAdmin', 'token dt maxsteps')
+PosVelAccOrient = namedtuple('PosVelAccOrient', 'pos vel acc orient')
 
 
 # Create module logger.
@@ -326,30 +327,46 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
 
 
 @typecheck
-def setSuggestedPosition(objID: bytes, pos: np.ndarray):
+def setSuggestedPosition(objID: bytes, data: PosVelAccOrient):
     """
-    Suggest to place ``objID`` at ``pos`` in the world.
+    Suggest to place ``objID`` at ``data`` in the world.
 
     Clear any previously suggested position with ``pos``=None.
 
     :param bytes objID: suggest a position for this object.
-    :param ndarray pos: place the object at that position.
+    :param PosVelAccOrient pos: new object attributes.
     :return bool: Success
     """
     # Sanity check.
     if (len(objID) != config.LEN_ID):
         return False
 
-    if pos is not None:
-        if len(pos) != 3:
-            return False
-
-        # Serialise the position and add the suggested position to the DB.
-        pos = pos.astype(np.float64).tostring()
-        ret = _DB_SV.update({'objid': objID}, {'$set': {'sugPos': pos}})
-    else:
-        # If ``pos`` is None then clear any previously suggested positions.
+    if data is None:
+        # If ``data`` is None then clear any previously suggested positions.
         ret = _DB_SV.update({'objid': objID}, {'$set': {'sugPos': None}})
+        return ret['n'] == 1
+
+    # Every entry must either be None or a NumPy array.
+    for ii in data:
+        if (ii is not None) and not isinstance(ii, np.ndarray):
+            return False
+        
+    # Ensure the all NumPy arrays have the correct length.
+    if (data.pos is not None) and len(data.pos) != 3:
+        return False
+    if (data.vel is not None) and len(data.vel) != 3:
+        return False
+    if (data.acc is not None) and len(data.acc) != 3:
+        return False
+    if (data.orient is not None) and len(data.orient) != 4:
+        return False
+
+    # Convert eg. PosVelAccOrient(None, array([1,2,3]), ...) to the simple
+    # list [None, [1,2,3], ...].
+    data = [_ if _ is None else _.tolist() for _ in data]
+
+    # Serialise the position and add it to the DB.
+    ret = _DB_SV.update({'objid': objID}, {'$set': {'sugPos': data}})
 
     # This function was successful if exactly one document was updated.
     return ret['n'] == 1
@@ -376,11 +393,11 @@ def getSuggestedPosition(objID: bytes):
     if doc is None:
         return False, None
 
-    # There may, or may not be a recommended position for this object.
+    # There may or may not be a recommended position for this object.
     if doc['sugPos'] is None:
-        return True, None
+        return True, PosVelAccOrient(None, None, None, None)
     else:
-        return True, np.fromstring(doc['sugPos'])
+        return True, PosVelAccOrient(*doc['sugPos'])
 
 
 @typecheck
