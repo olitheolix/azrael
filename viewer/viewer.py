@@ -43,6 +43,7 @@ import OpenGL.GL as gl
 import azrael.util as util
 import azrael.config as config
 import azrael.controller as controller
+import azrael.bullet.btInterface as btInterface
 
 from PySide import QtCore, QtGui, QtOpenGL
 
@@ -724,7 +725,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             self.camera.strafeLeft()
 
         pos = self.camera.position
-        self.ctrl.overrideAttributes(self.player_id, pos)
+        attr = btInterface.PosVelAccOrient(pos, None, None, None, None)
+        self.ctrl.overrideAttributes(self.player_id, attr)
 
         # Do not update the camera rotation if the mouse is not grabbed.
         if not self.mouseGrab:
