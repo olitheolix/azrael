@@ -64,7 +64,7 @@ def parseCommandLine():
          help='Number of cubes in each dimension')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
-    padd('--resetinterval', type=int, metavar='T', default=2,
+    padd('--resetinterval', type=int, metavar='T', default=-1,
          help='Simulation will reset every T seconds')
 
     # Run the parser.
@@ -380,12 +380,14 @@ class ResetSim(multiprocessing.Process):
     """
     Periodically reset the simulation.
     """
-    def __init__(self, default_attributes, period=2):
+    def __init__(self, default_attributes, period=-1):
         """
         The ``default_attributes`` argument is a list of (objID, attr) tuples.
 
         This process override the attribtes of all objects in that list with
         the corresponding value. This happens every ``period`` seconds.
+
+        To prevent simulation resets altoghether set ``period`` to -1.
         """
         super().__init__()
         self.default_attributes = default_attributes
@@ -395,6 +397,10 @@ class ResetSim(multiprocessing.Process):
         """
         Create a Controller.
         """
+        # Return immediately if no resets are required.
+        if self.period == -1:
+            return
+
         ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
         ctrl.setupZMQ()
         ctrl.connectToClerk()
