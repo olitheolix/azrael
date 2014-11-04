@@ -42,7 +42,7 @@ _DB_WP = None
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv central_force torque sugPos')
 WPAdmin = namedtuple('WPAdmin', 'token dt maxsteps')
-PosVelAccOrient = namedtuple('PosVelAccOrient', 'pos vel acc orient')
+PosVelAccOrient = namedtuple('PosVelAccOrient', 'pos vLin vRot acc orient')
 
 
 # Create module logger.
@@ -354,15 +354,17 @@ def setSuggestedPosition(objID: bytes, data: PosVelAccOrient):
     # Ensure the all NumPy arrays have the correct length.
     if (data.pos is not None) and len(data.pos) != 3:
         return False
-    if (data.vel is not None) and len(data.vel) != 3:
+    if (data.vLin is not None) and len(data.vLin) != 3:
+        return False
+    if (data.vRot is not None) and len(data.vRot) != 3:
         return False
     if (data.acc is not None) and len(data.acc) != 3:
         return False
     if (data.orient is not None) and len(data.orient) != 4:
         return False
 
-    # Convert eg. PosVelAccOrient(None, array([1,2,3]), ...) to the simple
-    # list [None, [1,2,3], ...].
+    # Convert PosVelAccOrient(None, array([1,2,3]), ...) instances to simple
+    # lists like [None, [1,2,3], ...].
     data = [_ if _ is None else _.tolist() for _ in data]
 
     # Serialise the position and add it to the DB.
@@ -395,7 +397,7 @@ def getSuggestedPosition(objID: bytes):
 
     # There may or may not be a recommended position for this object.
     if doc['sugPos'] is None:
-        return True, PosVelAccOrient(None, None, None, None)
+        return True, PosVelAccOrient(None, None, None, None, None)
     else:
         return True, PosVelAccOrient(*doc['sugPos'])
 

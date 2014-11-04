@@ -254,11 +254,12 @@ def test_suggest_position():
 
     # Test constants.
     p = np.array([1, 2, 5])
-    v = np.array([8, 9, 10.5])
+    vl = np.array([8, 9, 10.5])
+    vr = 1 + vl
     a = np.array([2.5, 3.5, 4.5])
     o = np.array([11, 12.5, 13, 13.5])
-    data = PosVelAccOrient(p, v, a, o)
-    del p, v, a, o
+    data = PosVelAccOrient(p, vl, vr, a, o)
+    del p, vl, vr, a, o
 
     # Reset the SV database.
     btInterface.initSVDB(reset=True)
@@ -282,7 +283,7 @@ def test_suggest_position():
     # Query the suggested position for ID0. This must suceed. However, the
     # returned values must be None since no position has been suggested yet.
     ok, ret = btInterface.getSuggestedPosition(id_0)
-    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None))
+    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None, None))
 
     # Suggest a new position for the just inserted object.
     assert btInterface.setSuggestedPosition(id_0, data)
@@ -296,7 +297,7 @@ def test_suggest_position():
     # Void the suggested position and verify.
     assert btInterface.setSuggestedPosition(id_0, None)
     ok, ret = btInterface.getSuggestedPosition(id_0)
-    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None))
+    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None, None))
 
     print('Test passed')
 
