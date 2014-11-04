@@ -103,11 +103,12 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
 
     # Add the document. The find_and_modify command below implements the
     # fictional 'insert_if_not_exists' command.
+    attr = PosVelAccOrient(None, None, None, None, None)
     doc = _DB_SV.find_and_modify(
         {'objid': objID},
         {'$setOnInsert': {'sv': sv, 'templateID': templateID,
                           'central_force': z, 'torque': z,
-                          'attrOverride': None, 'AABB': float(aabb)}},
+                          'attrOverride': attr, 'AABB': float(aabb)}},
         upsert=True, new=True)
 
     # The SV in the returned document will only match ``sv`` if either no
@@ -348,7 +349,8 @@ def overrideAttributes(objID: bytes, data: PosVelAccOrient):
         # If ``data`` is None then the user wants us to clear any pending
         # attribute updates for ``objID``. Hence void the respective entry in
         # the DB.
-        ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': None}})
+        attr = PosVelAccOrient(None, None, None, None, None)
+        ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': attr}})
         return ret['n'] == 1
 
     # Every entry must either be None or a NumPy array.
@@ -370,10 +372,10 @@ def overrideAttributes(objID: bytes, data: PosVelAccOrient):
 
     # Convert PosVelAccOrient(None, array([1,2,3]), ...) instances to simple
     # lists like [None, [1,2,3], ...].
-    data = [_ if _ is None else _.tolist() for _ in data]
+    attr = [_ if _ is None else _.tolist() for _ in data]
 
     # Serialise the position and add it to the DB.
-    ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': data}})
+    ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': attr}})
 
     # This function was successful if exactly one document was updated.
     return ret['n'] == 1
@@ -503,7 +505,8 @@ def getWorkPackage(wpid: int):
     data = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
     data = [_ for _ in data if _ is not None]
     data = [WPData(_['objid'], bullet_data.fromJsonDict(_['sv']),
-                   _['central_force'], _['torque'], _['attrOverride'])
+                   _['central_force'], _['torque'],
+                   PosVelAccOrient(*_['attrOverride']))
             for _ in data]
 
     # Put the meta data of the work package into another named tuple.
@@ -525,10 +528,11 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     :return bool: Success.
     """
     # Iterate over all object IDs and update the state variables.
+    attr = PosVelAccOrient(None, None, None, None, None)
     for objID in svdict:
         _DB_SV.update(
             {'objid': objID, 'token': token},
-            {'$set': {'sv': svdict[objID].toJsonDict(), 'attrOverride': None},
+            {'$set': {'sv': svdict[objID].toJsonDict(), 'attrOverride': attr},
              '$unset': {'token': 1}})
 
     # Remove the specified work package. This MUST happen AFTER the SVs were

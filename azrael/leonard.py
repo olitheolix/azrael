@@ -513,11 +513,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.
         """
-        # fixme: should be unnecessary once btInterface.getWorkPackage treats
-        # attrOverride correctly.
-        if obj.attrOverride is None:
-            return sv
-        tmp = btInterface.PosVelAccOrient(*obj.attrOverride)
+        tmp = obj.attrOverride
 
         # Apply the specified values.
         if tmp.pos is not None:
@@ -742,11 +738,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.
         """
-        # fixme: should be unnecessary once btInterface.getWorkPackage treats
-        # attrOverride correctly.
-        if obj.attrOverride is None:
-            return sv
-        tmp = btInterface.PosVelAccOrient(*obj.attrOverride)
+        tmp = obj.attrOverride
 
         # Apply the specified values.
         if tmp.pos is not None:
@@ -845,11 +837,7 @@ class LeonardBaseWorkpackages(LeonardBase):
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.
         """
-        # fixme: should be unnecessary once btInterface.getWorkPackage treats
-        # attrOverride correctly.
-        if obj.attrOverride is None:
-            return sv
-        tmp = btInterface.PosVelAccOrient(*obj.attrOverride)
+        tmp = obj.attrOverride
 
         # Apply the specified values.
         if tmp.pos is not None:
@@ -1102,11 +1090,7 @@ class LeonardRMQWorker(multiprocessing.Process):
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.
         """
-        # fixme: should be unnecessary once btInterface.getWorkPackage treats
-        # attrOverride correctly.
-        if obj.attrOverride is None:
-            return sv
-        tmp = btInterface.PosVelAccOrient(*obj.attrOverride)
+        tmp = obj.attrOverride
 
         # Apply the specified values.
         if tmp.pos is not None:
@@ -1193,9 +1177,6 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
         # Download the information into Bullet.
         for obj in worklist:
             sv = obj.sv
-            # Use the suggested position if we got one.
-            if obj.attrOverride is not None:
-                sv.position[:] = np.fromstring(obj.attrOverride)
 
             # Update the object in Bullet.
             btID = util.id2int(obj.id)
@@ -1215,6 +1196,10 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
         out = {}
         for obj in worklist:
             ok, sv = self.bullet.getObjectData([util.id2int(obj.id)])
+
+            # Override SV with user specified values (if there are any).
+            sv = self.setObjectAttributes(obj, sv)
+
             if ok != 0:
                 # Something went wrong. Reuse the old SV.
                 sv = obj.sv
