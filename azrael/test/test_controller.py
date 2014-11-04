@@ -160,7 +160,15 @@ def test_spawn_and_get_state_variables(ctrl_type):
     assert id0 in sv
 
     # Set the suggested position.
-    ok, ret = ctrl.suggestPosition(id0, np.ones(3))
+    p = np.array([1, 2, 5])
+    vl = np.array([8, 9, 10.5])
+    vr = vl + 1
+    a = np.array([2.5, 3.5, 4.5])
+    o = np.array([11, 12.5, 13, 13.5])
+    data = btInterface.PosVelAccOrient(p, vl, vr, a, o)
+    print(id0)
+    ok, ret = ctrl.suggestPosition(id0, data)
+    print(ok, ret)
     assert ok
 
     # Shutdown the services.
@@ -516,6 +524,7 @@ def test_controlParts(ctrl_type):
 
 
 if __name__ == '__main__':
+    test_spawn_and_get_state_variables('Websocket')
     test_spawn_one_controller('Websocket')
     test_ping()
     test_get_template('Websocket')
@@ -523,5 +532,4 @@ if __name__ == '__main__':
     test_getAllObjectIDs('Websocket')
     test_create_fetch_template('Websocket')
     test_spawn_and_talk_to_one_controller('Websocket')
-    test_spawn_and_get_state_variables('Websocket')
     test_multi_controller('Websocket')

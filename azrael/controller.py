@@ -475,21 +475,17 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_statevar', objIDs)
 
     @typecheck
-    def suggestPosition(self, objID: bytes, pos: np.ndarray):
+    def suggestPosition(self, objID: bytes, data: btInterface.PosVelAccOrient):
         """
         Suggest to move ``objID`` instantly to ``pos``.
 
-        .. note::
-           This is a debug function. The physics engine may not heed this
-           request.
-
         :param bytes objID: the object to move.
+        :param PosVelAccOrient data: the object attributes to set.
         :return: (ok, b'')
         :rtype: (bool, bytes)
         :raises: None
         """
-        assert len(pos) == 3
-        return self.serialiseAndSend('suggest_pos', objID, pos)
+        return self.serialiseAndSend('suggest_pos', objID, data)
 
     @typecheck
     def setForce(self, objID: bytes, force: np.ndarray):

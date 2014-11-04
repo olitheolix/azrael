@@ -44,6 +44,7 @@ import IPython
 import numpy as np
 import azrael.parts as parts
 import azrael.config as config
+import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
 from collections import namedtuple
@@ -257,16 +258,19 @@ def FromClerk_GetAllObjectIDs_Decode(data: dict):
 
 
 @typecheck
-def ToClerk_SuggestPosition_Encode(objID: bytes, pos: np.ndarray):
-    return True, {'objID': objID, 'pos': pos}
+def ToClerk_SuggestPosition_Encode(
+        objID: bytes, data: btInterface.PosVelAccOrient):
+    return True, {'objID': objID, 'data': data}
 
 
 @typecheck
-def ToClerk_SuggestPosition_Decode(data: dict):
+def ToClerk_SuggestPosition_Decode(payload: dict):
     # Convert to native Python types and return to caller.
-    objID = bytes(data['objID'])
-    pos = np.array(data['pos'], np.float64)
-    return True, (objID, pos)
+    objID = bytes(payload['objID'])
+    data = payload['data']
+    data = [np.array(_) if isinstance(_, list) else _ for _ in data]
+    data = btInterface.PosVelAccOrient(*data)
+    return True, (objID, data)
 
 
 @typecheck
