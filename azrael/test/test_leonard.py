@@ -90,6 +90,71 @@ def stopAzrael(clerk, clacks):
      azrael.leonard.LeonardBulletSweeping,
      azrael.leonard.LeonardBulletSweepingMultiST,
      azrael.leonard.LeonardBulletSweepingMultiMT])
+def test_suggest_position(clsLeonard):
+    """
+    Spawn an object, suggest_position, and verify.
+    """
+    killAzrael()
+
+    # Parameters and constants for this test.
+    id_1 = int2id(1)
+    sv = bullet_data.BulletData()
+    templateID = '_templateNone'.encode('utf8')
+
+    p = np.array([1, 2, 5])
+    vl = np.array([8, 9, 10.5])
+    vr = vl + 1
+    a = np.array([2.5, 3.5, 4.5])
+    o = np.array([11, 12.5, 13, 13.5])
+    data = btInterface.PosVelAccOrient(p, vl, vr, a, o)
+    del p, vl, vr, a, o
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk(reset=True)
+
+    # Invalid/non-existing ID.
+    ok, ret = clerk.suggestPosition(int2id(0), data)
+    assert (ok, ret) == (False, 'ID does not exist')
+
+    # Spawn a new object. It must have ID=1.
+    ok, (ret,) = clerk.spawn(None, templateID, sv)
+    assert (ok, ret) == (True, id_1)
+
+    # Update the object's position.
+    ok, (ret,) = clerk.suggestPosition(id_1, data)
+    assert (ok, ret) == (True, '')
+
+    # Advance the simulation by exactly one step. This must pick up the new
+    # values and apply them.
+    btInterface.initSVDB(reset=False)
+    leo = clsLeonard()
+    leo.setup()
+    leo.step(0.1, 10)
+
+    # Verify that the position is correct. Poll this value a few times since it
+    # may take Leonard a few milli seconds to update the variable.
+    # Query the SV.
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([id_1])
+    assert (ok, ret_objIDs) == (True, [id_1])
+
+    # Verify if attributes were correctly updated.
+    assert (np.array_equal(ret_SVs[0].position, data.pos) and
+            np.array_equal(ret_SVs[0].velocityLin, data.vLin) and
+            np.array_equal(ret_SVs[0].velocityRot, data.vRot) and
+            np.array_equal(ret_SVs[0].orientation, data.orient))
+
+    print('Test passed')
+
+
+@pytest.mark.parametrize(
+    'clsLeonard',
+    [azrael.leonard.LeonardBase,
+     azrael.leonard.LeonardBaseWorkpackages,
+     azrael.leonard.LeonardBaseWPRMQ,
+     azrael.leonard.LeonardBulletMonolithic,
+     azrael.leonard.LeonardBulletSweeping,
+     azrael.leonard.LeonardBulletSweepingMultiST,
+     azrael.leonard.LeonardBulletSweepingMultiMT])
 def test_move_single_object(clsLeonard):
     """
     Create a single object with non-zero initial speed and ensure Leonard moves
@@ -416,6 +481,7 @@ def test_computeCollisionSetsAABB(dim):
 
 
 if __name__ == '__main__':
+    test_suggest_position(azrael.leonard.LeonardBase)
     test_sweeping_2objects()
     test_sweeping_3objects()
     test_computeCollisionSetsAABB(0)
