@@ -214,8 +214,10 @@ class LeonardBase(multiprocessing.Process):
                 # Apply the specified values.
                 if tmp.pos is not None:
                     sv.position[:] = tmp.pos
-                if tmp.vel is not None:
-                    sv.velocityLin[:] = tmp.vel
+                if tmp.vLin is not None:
+                    sv.velocityLin[:] = tmp.vLin
+                if tmp.vRot is not None:
+                    sv.velocityRot[:] = tmp.vRot
                 if tmp.orient is not None:
                     sv.orientation[:] = tmp.orient
                 # Clear the DB entry (they would otherwise be applied

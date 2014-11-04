@@ -323,11 +323,12 @@ def test_suggest_position():
     templateID = '_templateNone'.encode('utf8')
 
     p = np.array([1, 2, 5])
-    v = np.array([8, 9, 10.5])
+    vl = np.array([8, 9, 10.5])
+    vr = vl + 1
     a = np.array([2.5, 3.5, 4.5])
     o = np.array([11, 12.5, 13, 13.5])
-    data = btInterface.PosVelAccOrient(p, v, a, o)
-    del p, v, a, o
+    data = btInterface.PosVelAccOrient(p, vl, vr, a, o)
+    del p, vl, vr, a, o
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -358,7 +359,8 @@ def test_suggest_position():
 
         # Check if the position has changed.
         if (np.array_equal(ret_SVs[0].position, data.pos) and
-            np.array_equal(ret_SVs[0].velocityLin, data.vel) and
+            np.array_equal(ret_SVs[0].velocityLin, data.vLin) and
+            np.array_equal(ret_SVs[0].velocityRot, data.vRot) and
             np.array_equal(ret_SVs[0].orientation, data.orient)):
             # Yes --> test passed.
             passed = True
