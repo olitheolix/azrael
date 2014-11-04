@@ -351,7 +351,7 @@ def setSuggestedPosition(objID: bytes, data: PosVelAccOrient):
         if (ii is not None) and not isinstance(ii, np.ndarray):
             return False
         
-    # Ensure the all NumPy arrays have the correct length.
+    # Ensure that all NumPy arrays have the correct length.
     if (data.pos is not None) and len(data.pos) != 3:
         return False
     if (data.vLin is not None) and len(data.vLin) != 3:
@@ -434,6 +434,10 @@ def createWorkPackage(
 
     The ``dt`` and ``maxsteps`` arguments are for the underlying physics
     engine.
+
+    .. note::
+       A work package contains only the objIDs but not their SV. The
+       ``getWorkPackage`` function takes care of compiling this information.
 
     :param iterable objIDs: list of object IDs in the new work package.
     :param int token: token value associated with this work package.

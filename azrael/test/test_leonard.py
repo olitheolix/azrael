@@ -97,6 +97,7 @@ def test_suggest_position(clsLeonard):
     killAzrael()
 
     # Parameters and constants for this test.
+    id_0 = int2id(0)
     id_1 = int2id(1)
     sv = bullet_data.BulletData()
     templateID = '_templateNone'.encode('utf8')
@@ -113,8 +114,8 @@ def test_suggest_position(clsLeonard):
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Invalid/non-existing ID.
-    ok, ret = clerk.suggestPosition(int2id(0), data)
-    assert (ok, ret) == (False, 'ID does not exist')
+    ok, ret = clerk.suggestPosition(id_0, data)
+    assert not ok
 
     # Spawn a new object. It must have ID=1.
     ok, (ret,) = clerk.spawn(None, templateID, sv)

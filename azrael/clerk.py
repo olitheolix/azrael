@@ -900,7 +900,7 @@ class Clerk(multiprocessing.Process):
         if ok:
             return True, ('', )
         else:
-            return False, 'ID does not exist'
+            return False, 'ID <{}> does not exist'.format(objID)
 
     @typecheck
     def getTemplateID(self, objID: bytes):
