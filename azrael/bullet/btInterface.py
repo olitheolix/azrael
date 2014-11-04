@@ -357,7 +357,7 @@ def overrideAttributes(objID: bytes, data: PosVelAccOrient):
     for ii in data:
         if (ii is not None) and not isinstance(ii, np.ndarray):
             return False
-        
+
     # Ensure that all NumPy arrays have the correct length.
     if (data.pos is not None) and len(data.pos) != 3:
         return False

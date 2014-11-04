@@ -887,7 +887,8 @@ class Clerk(multiprocessing.Process):
             return False, 'ID does not exist'
 
     @typecheck
-    def overrideAttributes(self, objID: bytes, data: btInterface.PosVelAccOrient):
+    def overrideAttributes(self, objID: bytes,
+                           data: btInterface.PosVelAccOrient):
         """
         Set ``data`` for ``objID``.
 

@@ -302,7 +302,7 @@ def spawnCubes(numCols, numRows, numLayers):
     z = np.zeros(3, np.float64)
     o = np.array([0, 0, 0, 1], np.float64)
     default_attributes = [(_[0], btInterface.PosVelAccOrient(_[1], z, z, z, o))
-                 for _ in default_attributes]
+                          for _ in default_attributes]
     return default_attributes
 
 
@@ -390,7 +390,7 @@ class ResetSim(multiprocessing.Process):
         super().__init__()
         self.default_attributes = default_attributes
         self.period = period
-        
+
     def run(self):
         """
         Create a Controller.

@@ -475,7 +475,8 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_statevar', objIDs)
 
     @typecheck
-    def overrideAttributes(self, objID: bytes, data: btInterface.PosVelAccOrient):
+    def overrideAttributes(self, objID: bytes,
+                           data: btInterface.PosVelAccOrient):
         """
         Request to override the attributes of ``objID`` with ``data``.
 
