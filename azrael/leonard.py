@@ -207,25 +207,41 @@ class LeonardBase(multiprocessing.Process):
             sv.velocityLin[:] += force * 0.001
             sv.position[:] += dt * sv.velocityLin
 
-            # See if there is a suggested position available for this
-            # object. If so, use it.
-            ok, tmp = btInterface.getSuggestedPosition(objID)
-            if ok:
-                # Apply the specified values.
-                if tmp.pos is not None:
-                    sv.position[:] = tmp.pos
-                if tmp.vLin is not None:
-                    sv.velocityLin[:] = tmp.vLin
-                if tmp.vRot is not None:
-                    sv.velocityRot[:] = tmp.vRot
-                if tmp.orient is not None:
-                    sv.orientation[:] = tmp.orient
-                # Clear the DB entry (they would otherwise be applied
-                # at every frame).
-                btInterface.setSuggestedPosition(objID, None)
+            # Override SV with user specified values (if there are any).
+            sv = self.setObjectAttributes(objID, sv)
 
             # Serialise the state variables and update them in the DB.
             btInterface.update(objID, sv)
+
+    def setObjectAttributes(self, objID, sv):
+        """
+        Return update SV if the user wants to override some of them.
+
+        This method does nothing if the user did not override any values via a
+        call to 'suggestPosition'.
+
+        :param bytes objID: object ID
+        :param BulletData sv: SV for objID.
+        """
+        # Determine if the user actually specified any attributes.
+        ok, tmp = btInterface.getSuggestedPosition(objID)
+        if not ok:
+            return sv
+
+        # Apply the specified values.
+        if tmp.pos is not None:
+            sv.position[:] = tmp.pos
+        if tmp.vLin is not None:
+            sv.velocityLin[:] = tmp.vLin
+        if tmp.vRot is not None:
+            sv.velocityRot[:] = tmp.vRot
+        if tmp.orient is not None:
+            sv.orientation[:] = tmp.orient
+
+        # Clear the DB entry (they would otherwise be applied
+        # at every frame).
+        btInterface.setSuggestedPosition(objID, None)
+        return sv
 
     def run(self):
         """
@@ -291,14 +307,6 @@ class LeonardBulletMonolithic(LeonardBase):
 
         # Iterate over all objects and update them.
         for objID, sv in allSV.items():
-            # See if there is a suggested position available for this
-            # object. If so, use it.
-            ok, sug_pos = btInterface.getSuggestedPosition(objID)
-            if ok and sug_pos is not None:
-                # Assign the position and delete the suggestion.
-                sv.position[:] = sug_pos
-                btInterface.setSuggestedPosition(objID, None)
-
             # Convert the objID to an integer.
             btID = util.id2int(objID)
 
@@ -318,6 +326,10 @@ class LeonardBulletMonolithic(LeonardBase):
         # Retrieve all objects from Bullet and write them back to the database.
         for objID, sv in allSV.items():
             ok, sv = self.bullet.getObjectData([util.id2int(objID)])
+
+            # Override SV with user specified values (if there are any).
+            sv = self.setObjectAttributes(objID, sv)
+
             if ok == 0:
                 # Restore the original cshape because Bullet will always
                 # return zeros here.
@@ -374,14 +386,6 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
 
             # Iterate over all objects and update them.
             for objID, sv in coll_SV.items():
-                # See if there is a suggested position available for this
-                # object. If so, use it.
-                ok, sug_pos = btInterface.getSuggestedPosition(objID)
-                if ok and sug_pos is not None:
-                    # Assign the position and delete the suggestion.
-                    sv.position[:] = sug_pos
-                    btInterface.setSuggestedPosition(objID, None)
-
                 # Convert the objID to an integer.
                 btID = util.id2int(objID)
 
@@ -402,6 +406,9 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
             # database.
             for objID, sv in coll_SV.items():
                 ok, sv = self.bullet.getObjectData([util.id2int(objID)])
+
+                # Override SV with user specified values (if there are any).
+                sv = self.setObjectAttributes(objID, sv)
                 if ok == 0:
                     # Restore the original cshape because Bullet will always
                     # return zeros here.
@@ -491,6 +498,37 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         while btInterface.countWorkPackages(token)[1] > 0:
             time.sleep(0.001)
 
+    def setObjectAttributes(self, obj, sv):
+        """
+        Return update SV if the user wants to override some of them.
+
+        This method does nothing if the user did not override any values via a
+        call to 'suggestPosition'.
+
+        .. note::
+           It is unnecessary to explicity clear the sugPos data because
+           ``btInterface.updateWorkPackage`` takes care of that automatically.
+
+        :param bytes objID: object ID
+        :param BulletData sv: SV for objID.
+        """
+        # fixme: should be unnecessary once btInterface.getWorkPackage treats
+        # sugPos correctly.
+        if obj.sugPos is None:
+            return sv
+        tmp = btInterface.PosVelAccOrient(*obj.sugPos)
+
+        # Apply the specified values.
+        if tmp.pos is not None:
+            sv.position[:] = tmp.pos
+        if tmp.vLin is not None:
+            sv.velocityLin[:] = tmp.vLin
+        if tmp.vRot is not None:
+            sv.velocityRot[:] = tmp.vRot
+        if tmp.orient is not None:
+            sv.orientation[:] = tmp.orient
+        return sv
+
     @typecheck
     def processWorkPackage(self, wpid: int):
         """
@@ -513,9 +551,6 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         # Iterate over all objects and update them.
         for obj in worklist:
             sv = obj.sv
-            # Use the suggested position if we got one.
-            if obj.sugPos is not None:
-                sv.position[:] = np.fromstring(obj.sugPos)
 
             # Update the object in Bullet.
             btID = util.id2int(obj.id)
@@ -535,10 +570,14 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         out = {}
         for obj in worklist:
             ok, sv = engine.getObjectData([util.id2int(obj.id)])
+
             if ok != 0:
                 # Something went wrong. Reuse the old SV.
                 sv = obj.sv
                 self.logit.error('Unable to get all objects from Bullet')
+
+            # Override SV with user specified values (if there are any).
+            sv = self.setObjectAttributes(obj, sv)
 
             # Restore the original cshape because Bullet will always return
             # zeros here.
@@ -650,9 +689,6 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         # Iterate over all objects and update them.
         for obj in worklist:
             sv = obj.sv
-            # Use the suggested position if we got one.
-            if obj.sugPos is not None:
-                sv.position[:] = np.fromstring(obj.sugPos)
 
             # Update the object in Bullet.
             btID = util.id2int(obj.id)
@@ -677,6 +713,9 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
                 sv = obj.sv
                 self.logit.error('Unable to get all objects from Bullet')
 
+            # Override SV with user specified values (if there are any).
+            sv = self.setObjectAttributes(obj, sv)
+
             # Restore the original cshape because Bullet will always return
             # zeros here.
             sv.cshape[:] = obj.sv.cshape[:]
@@ -687,6 +726,37 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         if not ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
+
+    def setObjectAttributes(self, obj, sv):
+        """
+        Return update SV if the user wants to override some of them.
+
+        This method does nothing if the user did not override any values via a
+        call to 'suggestPosition'.
+
+        .. note::
+           It is unnecessary to explicity clear the sugPos data because
+           ``btInterface.updateWorkPackage`` takes care of that automatically.
+
+        :param bytes objID: object ID
+        :param BulletData sv: SV for objID.
+        """
+        # fixme: should be unnecessary once btInterface.getWorkPackage treats
+        # sugPos correctly.
+        if obj.sugPos is None:
+            return sv
+        tmp = btInterface.PosVelAccOrient(*obj.sugPos)
+
+        # Apply the specified values.
+        if tmp.pos is not None:
+            sv.position[:] = tmp.pos
+        if tmp.vLin is not None:
+            sv.velocityLin[:] = tmp.vLin
+        if tmp.vRot is not None:
+            sv.velocityRot[:] = tmp.vRot
+        if tmp.orient is not None:
+            sv.orientation[:] = tmp.orient
+        return sv
 
 
 class LeonardBaseWorkpackages(LeonardBase):
@@ -749,11 +819,8 @@ class LeonardBaseWorkpackages(LeonardBase):
             sv.velocityLin[:] += force * 0.001
             sv.position[:] += dt * sv.velocityLin
 
-            # See if there is a suggested position available for this
-            # object. If so, use it because the next call to updateWorkPackage
-            # will void it.
-            if obj.sugPos is not None:
-                sv.position[:] = np.fromstring(obj.sugPos)
+            # Override SV with user specified values (if there are any).
+            sv = self.setObjectAttributes(obj, sv)
 
             # Add the new SV data to the output dictionary.
             out[obj.id] = sv
@@ -762,6 +829,37 @@ class LeonardBaseWorkpackages(LeonardBase):
         # Update the work list and mark it as completed.
         # --------------------------------------------------------------------
         btInterface.updateWorkPackage(wpid, admin.token, out)
+
+    def setObjectAttributes(self, obj, sv):
+        """
+        Return update SV if the user wants to override some of them.
+
+        This method does nothing if the user did not override any values via a
+        call to 'suggestPosition'.
+
+        .. note::
+           It is unnecessary to explicity clear the sugPos data because
+           ``btInterface.updateWorkPackage`` takes care of that automatically.
+
+        :param bytes objID: object ID
+        :param BulletData sv: SV for objID.
+        """
+        # fixme: should be unnecessary once btInterface.getWorkPackage treats
+        # sugPos correctly.
+        if obj.sugPos is None:
+            return sv
+        tmp = btInterface.PosVelAccOrient(*obj.sugPos)
+
+        # Apply the specified values.
+        if tmp.pos is not None:
+            sv.position[:] = tmp.pos
+        if tmp.vLin is not None:
+            sv.velocityLin[:] = tmp.vLin
+        if tmp.vRot is not None:
+            sv.velocityRot[:] = tmp.vRot
+        if tmp.orient is not None:
+            sv.orientation[:] = tmp.orient
+        return sv
 
 
 class LeonardBaseWPRMQ(LeonardBase):
@@ -969,10 +1067,8 @@ class LeonardRMQWorker(multiprocessing.Process):
             sv.velocityLin[:] += force * 0.001
             sv.position[:] += admin.dt * sv.velocityLin
 
-            # Update the object position if one was explicitly provided because
-            # `updateWorkPackage` will void it later.
-            if obj.sugPos is not None:
-                sv.position[:] = np.fromstring(obj.sugPos)
+            # Override SV with user specified values (if there are any).
+            sv = self.setObjectAttributes(obj, sv)
 
             # Add the processed SV into the output dictionary.
             out[obj.id] = sv
@@ -990,6 +1086,37 @@ class LeonardRMQWorker(multiprocessing.Process):
         constructor because it executes before the process forks.
         """
         pass
+
+    def setObjectAttributes(self, obj, sv):
+        """
+        Return update SV if the user wants to override some of them.
+
+        This method does nothing if the user did not override any values via a
+        call to 'suggestPosition'.
+
+        .. note::
+           It is unnecessary to explicity clear the sugPos data because
+           ``btInterface.updateWorkPackage`` takes care of that automatically.
+
+        :param bytes objID: object ID
+        :param BulletData sv: SV for objID.
+        """
+        # fixme: should be unnecessary once btInterface.getWorkPackage treats
+        # sugPos correctly.
+        if obj.sugPos is None:
+            return sv
+        tmp = btInterface.PosVelAccOrient(*obj.sugPos)
+
+        # Apply the specified values.
+        if tmp.pos is not None:
+            sv.position[:] = tmp.pos
+        if tmp.vLin is not None:
+            sv.velocityLin[:] = tmp.vLin
+        if tmp.vRot is not None:
+            sv.velocityRot[:] = tmp.vRot
+        if tmp.orient is not None:
+            sv.orientation[:] = tmp.orient
+        return sv
 
     def run(self):
         """
