@@ -245,9 +245,10 @@ def test_update_statevar():
     print('Test passed')
 
 
-def test_suggest_position():
+def test_override_attributes():
     """
-    Set and retrieve a suggested position .
+    Set and retrieve a object attributes like position, velocity, acceleration,
+    and orientation.
     """
     # Convenience.
     PosVelAccOrient = btInterface.PosVelAccOrient
@@ -270,33 +271,34 @@ def test_suggest_position():
     # Create an object and serialise it.
     btdata = bullet_data.BulletData()
 
-    # Query suggested position for a non-existing object. This must fail.
-    ok, ret = btInterface.getSuggestedPosition(id_0)
+    # Query attributes of non-existing object. This must fail.
+    ok, ret = btInterface.getOverrideAttributes(id_0)
     assert not ok
 
-    # Suggest a position for a non-existing object. This must fail.
-    assert not btInterface.setSuggestedPosition(int2id(10), data)
+    # Override attributes for a non-existing object. This must fail.
+    assert not btInterface.overrideAttributes(int2id(10), data)
 
     # Add the object to the DB with ID=0.
     assert btInterface.spawn(id_0, btdata, np.int64(1).tostring(), 0)
 
-    # Query the suggested position for ID0. This must suceed. However, the
-    # returned values must be None since no position has been suggested yet.
-    ok, ret = btInterface.getSuggestedPosition(id_0)
+    # Query the attributes for ID0. This must suceed. However, the
+    # returned values must be None since no attribes have been forcefully set.
+    ok, ret = btInterface.getOverrideAttributes(id_0)
     assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None, None))
 
-    # Suggest a new position for the just inserted object.
-    assert btInterface.setSuggestedPosition(id_0, data)
+    # Request to overwrite attributes for the just inserted object.
+    assert btInterface.overrideAttributes(id_0, data)
 
-    # Retrieve the suggested position and make sure it matches.
-    ok, ret = btInterface.getSuggestedPosition(id_0)
+    # Retrieve the attributes and verify they are correct.
+    ok, ret = btInterface.getOverrideAttributes(id_0)
     assert ok
     for a, b in zip(ret, data):
         assert np.array_equal(a, b)
 
-    # Void the suggested position and verify.
-    assert btInterface.setSuggestedPosition(id_0, None)
-    ok, ret = btInterface.getSuggestedPosition(id_0)
+    # Void the request to set attributes and verify that the attributes were
+    # indeed reset.
+    assert btInterface.overrideAttributes(id_0, None)
+    ok, ret = btInterface.getOverrideAttributes(id_0)
     assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None, None))
 
     print('Test passed')
@@ -573,7 +575,7 @@ if __name__ == '__main__':
     test_get_set_forceandtorque()
     test_create_work_package_with_objects()
     test_create_work_package_without_objects()
-    test_suggest_position()
+    test_override_attributes()
     test_update_statevar()
     test_get_set_force()
     test_add_same()

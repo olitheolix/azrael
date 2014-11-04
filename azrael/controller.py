@@ -120,9 +120,9 @@ class ControllerBase(multiprocessing.Process):
             'get_all_objids': (
                 protocol.ToClerk_GetAllObjectIDs_Encode,
                 protocol.FromClerk_GetAllObjectIDs_Decode),
-            'suggest_pos': (
-                protocol.ToClerk_SuggestPosition_Encode,
-                protocol.FromClerk_SuggestPosition_Decode),
+            'override_attributes': (
+                protocol.ToClerk_AttributeOverride_Encode,
+                protocol.FromClerk_AttributeOverride_Decode),
             'control_parts': (
                 protocol.ToClerk_ControlParts_Encode,
                 protocol.FromClerk_ControlParts_Decode),
@@ -475,9 +475,13 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_statevar', objIDs)
 
     @typecheck
-    def suggestPosition(self, objID: bytes, data: btInterface.PosVelAccOrient):
+    def overrideAttributes(self, objID: bytes, data: btInterface.PosVelAccOrient):
         """
-        Suggest to move ``objID`` instantly to ``pos``.
+        Request to override the attributes of ``objID`` with ``data``.
+
+        This method tells Leonard to manually set attributes like position and
+        speed, irrespective of what the physics engine computes. The attributes
+        will be applied exactly once.
 
         :param bytes objID: the object to move.
         :param PosVelAccOrient data: the object attributes to set.
@@ -485,7 +489,7 @@ class ControllerBase(multiprocessing.Process):
         :rtype: (bool, bytes)
         :raises: None
         """
-        return self.serialiseAndSend('suggest_pos', objID, data)
+        return self.serialiseAndSend('override_attributes', objID, data)
 
     @typecheck
     def setForce(self, objID: bytes, force: np.ndarray):

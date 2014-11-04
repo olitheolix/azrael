@@ -218,13 +218,13 @@ class LeonardBase(multiprocessing.Process):
         Return update SV if the user wants to override some of them.
 
         This method does nothing if the user did not override any values via a
-        call to 'suggestPosition'.
+        call to 'overrideAttributes'.
 
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.
         """
         # Determine if the user actually specified any attributes.
-        ok, tmp = btInterface.getSuggestedPosition(objID)
+        ok, tmp = btInterface.getOverrideAttributes(objID)
         if not ok:
             return sv
 
@@ -240,7 +240,7 @@ class LeonardBase(multiprocessing.Process):
 
         # Clear the DB entry (they would otherwise be applied
         # at every frame).
-        btInterface.setSuggestedPosition(objID, None)
+        btInterface.overrideAttributes(objID, None)
         return sv
 
     def run(self):
@@ -503,20 +503,21 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         Return update SV if the user wants to override some of them.
 
         This method does nothing if the user did not override any values via a
-        call to 'suggestPosition'.
+        call to 'overrideAttributes'.
 
         .. note::
-           It is unnecessary to explicity clear the sugPos data because
-           ``btInterface.updateWorkPackage`` takes care of that automatically.
+           It is unnecessary to explicity clear the attribue override request
+           because ``btInterface.updateWorkPackage`` will take care of this
+           automatically.
 
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.
         """
         # fixme: should be unnecessary once btInterface.getWorkPackage treats
-        # sugPos correctly.
-        if obj.sugPos is None:
+        # attrOverride correctly.
+        if obj.attrOverride is None:
             return sv
-        tmp = btInterface.PosVelAccOrient(*obj.sugPos)
+        tmp = btInterface.PosVelAccOrient(*obj.attrOverride)
 
         # Apply the specified values.
         if tmp.pos is not None:
@@ -732,20 +733,20 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         Return update SV if the user wants to override some of them.
 
         This method does nothing if the user did not override any values via a
-        call to 'suggestPosition'.
+        call to 'overrideAttributes'.
 
         .. note::
-           It is unnecessary to explicity clear the sugPos data because
+           It is unnecessary to explicity clear the attrOverride data because
            ``btInterface.updateWorkPackage`` takes care of that automatically.
 
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.
         """
         # fixme: should be unnecessary once btInterface.getWorkPackage treats
-        # sugPos correctly.
-        if obj.sugPos is None:
+        # attrOverride correctly.
+        if obj.attrOverride is None:
             return sv
-        tmp = btInterface.PosVelAccOrient(*obj.sugPos)
+        tmp = btInterface.PosVelAccOrient(*obj.attrOverride)
 
         # Apply the specified values.
         if tmp.pos is not None:
@@ -835,20 +836,20 @@ class LeonardBaseWorkpackages(LeonardBase):
         Return update SV if the user wants to override some of them.
 
         This method does nothing if the user did not override any values via a
-        call to 'suggestPosition'.
+        call to 'overrideAttributes'.
 
         .. note::
-           It is unnecessary to explicity clear the sugPos data because
+           It is unnecessary to explicity clear the attrOverride data because
            ``btInterface.updateWorkPackage`` takes care of that automatically.
 
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.
         """
         # fixme: should be unnecessary once btInterface.getWorkPackage treats
-        # sugPos correctly.
-        if obj.sugPos is None:
+        # attrOverride correctly.
+        if obj.attrOverride is None:
             return sv
-        tmp = btInterface.PosVelAccOrient(*obj.sugPos)
+        tmp = btInterface.PosVelAccOrient(*obj.attrOverride)
 
         # Apply the specified values.
         if tmp.pos is not None:
@@ -1092,20 +1093,20 @@ class LeonardRMQWorker(multiprocessing.Process):
         Return update SV if the user wants to override some of them.
 
         This method does nothing if the user did not override any values via a
-        call to 'suggestPosition'.
+        call to 'overrideAttributes'.
 
         .. note::
-           It is unnecessary to explicity clear the sugPos data because
+           It is unnecessary to explicity clear the attrOverride data because
            ``btInterface.updateWorkPackage`` takes care of that automatically.
 
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.
         """
         # fixme: should be unnecessary once btInterface.getWorkPackage treats
-        # sugPos correctly.
-        if obj.sugPos is None:
+        # attrOverride correctly.
+        if obj.attrOverride is None:
             return sv
-        tmp = btInterface.PosVelAccOrient(*obj.sugPos)
+        tmp = btInterface.PosVelAccOrient(*obj.attrOverride)
 
         # Apply the specified values.
         if tmp.pos is not None:
@@ -1193,8 +1194,8 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
         for obj in worklist:
             sv = obj.sv
             # Use the suggested position if we got one.
-            if obj.sugPos is not None:
-                sv.position[:] = np.fromstring(obj.sugPos)
+            if obj.attrOverride is not None:
+                sv.position[:] = np.fromstring(obj.attrOverride)
 
             # Update the object in Bullet.
             btID = util.id2int(obj.id)

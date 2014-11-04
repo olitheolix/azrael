@@ -93,9 +93,9 @@ def stopAzrael(clerk, clacks):
 
 
 @pytest.mark.parametrize('clsLeonard', allEngines)
-def test_suggest_position(clsLeonard):
+def test_override_attributes(clsLeonard):
     """
-    Spawn an object, suggest_position, and verify.
+    Spawn an object, override_attributes, and verify.
     """
     killAzrael()
 
@@ -117,7 +117,7 @@ def test_suggest_position(clsLeonard):
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Invalid/non-existing ID.
-    ok, ret = clerk.suggestPosition(id_0, data)
+    ok, ret = clerk.overrideAttributes(id_0, data)
     assert not ok
 
     # Spawn a new object. It must have ID=1.
@@ -125,7 +125,7 @@ def test_suggest_position(clsLeonard):
     assert (ok, ret) == (True, id_1)
 
     # Update the object's position.
-    ok, (ret,) = clerk.suggestPosition(id_1, data)
+    ok, (ret,) = clerk.overrideAttributes(id_1, data)
     assert (ok, ret) == (True, '')
 
     # Advance the simulation by exactly one step. This must pick up the new
@@ -469,7 +469,7 @@ def test_computeCollisionSetsAABB(dim):
 
 
 if __name__ == '__main__':
-    test_suggest_position(azrael.leonard.LeonardBase)
+    test_override_attributes(azrael.leonard.LeonardBase)
     test_sweeping_2objects()
     test_sweeping_3objects()
     test_computeCollisionSetsAABB(0)

@@ -253,18 +253,18 @@ def FromClerk_GetAllObjectIDs_Decode(data: dict):
 
 
 # ---------------------------------------------------------------------------
-# SuggestPosition
+# AttributeOverride
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_SuggestPosition_Encode(
+def ToClerk_AttributeOverride_Encode(
         objID: bytes, data: btInterface.PosVelAccOrient):
     return True, {'objID': objID, 'data': data}
 
 
 @typecheck
-def ToClerk_SuggestPosition_Decode(payload: dict):
+def ToClerk_AttributeOverride_Decode(payload: dict):
     # Convert to native Python types and return to caller.
     objID = bytes(payload['objID'])
     data = payload['data']
@@ -274,12 +274,12 @@ def ToClerk_SuggestPosition_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_SuggestPosition_Encode(dummyarg):
+def FromClerk_AttributeOverride_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_SuggestPosition_Decode(payload):
+def FromClerk_AttributeOverride_Decode(payload):
     return True, payload
 
 

@@ -40,7 +40,7 @@ _DB_WP = None
 
 
 # Work package related.
-WPData = namedtuple('WPRecord', 'id sv central_force torque sugPos')
+WPData = namedtuple('WPRecord', 'id sv central_force torque attrOverride')
 WPAdmin = namedtuple('WPAdmin', 'token dt maxsteps')
 PosVelAccOrient = namedtuple('PosVelAccOrient', 'pos vLin vRot acc orient')
 
@@ -107,7 +107,7 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
         {'objid': objID},
         {'$setOnInsert': {'sv': sv, 'templateID': templateID,
                           'central_force': z, 'torque': z,
-                          'sugPos': None, 'AABB': float(aabb)}},
+                          'attrOverride': None, 'AABB': float(aabb)}},
         upsert=True, new=True)
 
     # The SV in the returned document will only match ``sv`` if either no
@@ -327,13 +327,16 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
 
 
 @typecheck
-def setSuggestedPosition(objID: bytes, data: PosVelAccOrient):
+def overrideAttributes(objID: bytes, data: PosVelAccOrient):
     """
-    Suggest to place ``objID`` at ``data`` in the world.
+    Request to manually update the attributes of ``objID``.
 
-    Clear any previously suggested position with ``pos``=None.
+    This function will merely place the request into the SV database.
+    Leonard will read the request and apply it during the next update.
 
-    :param bytes objID: suggest a position for this object.
+    Use ``pos``=None to void the request for overwriting attributes.
+
+    :param bytes objID: object to update.
     :param PosVelAccOrient pos: new object attributes.
     :return bool: Success
     """
@@ -342,8 +345,10 @@ def setSuggestedPosition(objID: bytes, data: PosVelAccOrient):
         return False
 
     if data is None:
-        # If ``data`` is None then clear any previously suggested positions.
-        ret = _DB_SV.update({'objid': objID}, {'$set': {'sugPos': None}})
+        # If ``data`` is None then the user wants us to clear any pending
+        # attribute updates for ``objID``. Hence void the respective entry in
+        # the DB.
+        ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': None}})
         return ret['n'] == 1
 
     # Every entry must either be None or a NumPy array.
@@ -368,22 +373,22 @@ def setSuggestedPosition(objID: bytes, data: PosVelAccOrient):
     data = [_ if _ is None else _.tolist() for _ in data]
 
     # Serialise the position and add it to the DB.
-    ret = _DB_SV.update({'objid': objID}, {'$set': {'sugPos': data}})
+    ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': data}})
 
     # This function was successful if exactly one document was updated.
     return ret['n'] == 1
 
 
 @typecheck
-def getSuggestedPosition(objID: bytes):
+def getOverrideAttributes(objID: bytes):
     """
-    Retrieve the suggested position for ``objID``.
+    Retrieve the override attributes for ``objID``.
 
-    This function returns **None** if no position suggestion is available.
+    This function returns **None** if no attributes are available for
+    ``objID``.
 
-    :param bytes objID: get the suggested position for this object.
-    :param ndarray pos: place the object at that position.
-    :return: (ok, suggest-position)
+    :param bytes objID: object for which to return the attribute request.
+    :return: (ok, attributes)
     :rtype: (bool, ndarray or None)
     """
     # Sanity check.
@@ -396,10 +401,10 @@ def getSuggestedPosition(objID: bytes):
         return False, None
 
     # There may or may not be a recommended position for this object.
-    if doc['sugPos'] is None:
+    if doc['attrOverride'] is None:
         return True, PosVelAccOrient(None, None, None, None, None)
     else:
-        return True, PosVelAccOrient(*doc['sugPos'])
+        return True, PosVelAccOrient(*doc['attrOverride'])
 
 
 @typecheck
@@ -498,7 +503,7 @@ def getWorkPackage(wpid: int):
     data = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
     data = [_ for _ in data if _ is not None]
     data = [WPData(_['objid'], bullet_data.fromJsonDict(_['sv']),
-                   _['central_force'], _['torque'], _['sugPos'])
+                   _['central_force'], _['torque'], _['attrOverride'])
             for _ in data]
 
     # Put the meta data of the work package into another named tuple.
@@ -523,7 +528,7 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     for objID in svdict:
         _DB_SV.update(
             {'objid': objID, 'token': token},
-            {'$set': {'sv': svdict[objID].toJsonDict(), 'sugPos': None},
+            {'$set': {'sv': svdict[objID].toJsonDict(), 'attrOverride': None},
              '$unset': {'token': 1}})
 
     # Remove the specified work package. This MUST happen AFTER the SVs were

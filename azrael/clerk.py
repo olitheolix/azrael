@@ -169,10 +169,10 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_SetForce_Decode,
                 self.setForce,
                 protocol.FromClerk_SetForce_Encode),
-            'suggest_pos': (
-                protocol.ToClerk_SuggestPosition_Decode,
-                self.suggestPosition,
-                protocol.FromClerk_SuggestPosition_Encode),
+            'override_attributes': (
+                protocol.ToClerk_AttributeOverride_Decode,
+                self.overrideAttributes,
+                protocol.FromClerk_AttributeOverride_Encode),
             'get_template': (
                 protocol.ToClerk_GetTemplate_Decode,
                 self.getTemplate,
@@ -887,7 +887,7 @@ class Clerk(multiprocessing.Process):
             return False, 'ID does not exist'
 
     @typecheck
-    def suggestPosition(self, objID: bytes, data: btInterface.PosVelAccOrient):
+    def overrideAttributes(self, objID: bytes, data: btInterface.PosVelAccOrient):
         """
         Set ``data`` for ``objID``.
 
@@ -896,7 +896,7 @@ class Clerk(multiprocessing.Process):
         :return: (ok, (b'', ))
         :rtype: (bool, (bytes, ))
         """
-        ok = btInterface.setSuggestedPosition(objID, data)
+        ok = btInterface.overrideAttributes(objID, data)
         if ok:
             return True, ('', )
         else:
