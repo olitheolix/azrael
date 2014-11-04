@@ -277,8 +277,7 @@ def test_get_statevar():
 
 def test_set_force():
     """
-    The logic for the 'set_force' and 'suggest_pos' commands are
-    identical. Therefore test them both with a single function here.
+    Set and retrieve force and torque values.
     """
     killAzrael()
 
@@ -321,14 +320,20 @@ def test_suggest_position():
     # Parameters and constants for this test.
     id_1 = int2id(1)
     sv = bullet_data.BulletData()
-    pos = np.array([1, 2, 3], np.float64)
     templateID = '_templateNone'.encode('utf8')
+
+    p = np.array([1, 2, 5])
+    v = np.array([8, 9, 10.5])
+    a = np.array([2.5, 3.5, 4.5])
+    o = np.array([11, 12.5, 13, 13.5])
+    data = btInterface.PosVelAccOrient(p, v, a, o)
+    del p, v, a, o
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Invalid/non-existing ID.
-    ok, ret = clerk.suggestPosition(int2id(0), pos)
+    ok, ret = clerk.suggestPosition(int2id(0), data)
     assert (ok, ret) == (False, 'ID does not exist')
 
     # Spawn a new object. It must have ID=1.
@@ -336,7 +341,7 @@ def test_suggest_position():
     assert (ok, ret) == (True, id_1)
 
     # Update the object's position.
-    ok, (ret,) = clerk.suggestPosition(id_1, pos)
+    ok, (ret,) = clerk.suggestPosition(id_1, data)
     assert (ok, ret) == (True, '')
 
     # Leonard must run to actually update the position.
@@ -352,7 +357,9 @@ def test_suggest_position():
         assert (ok, ret_objIDs) == (True, [id_1])
 
         # Check if the position has changed.
-        if np.array_equal(ret_SVs[0].position, pos):
+        if (np.array_equal(ret_SVs[0].position, data.pos) and
+            np.array_equal(ret_SVs[0].velocityLin, data.vel) and
+            np.array_equal(ret_SVs[0].orientation, data.orient)):
             # Yes --> test passed.
             passed = True
             break

@@ -887,19 +887,16 @@ class Clerk(multiprocessing.Process):
             return False, 'ID does not exist'
 
     @typecheck
-    def suggestPosition(self, objID: bytes, position: np.ndarray):
+    def suggestPosition(self, objID: bytes, data: btInterface.PosVelAccOrient):
         """
-        Suggest ``position`` for ``objID``.
-
-        This is purely a suggestion that the physics engine may ignore. This is
-        for debugging purposes only.
+        Set ``data`` for ``objID``.
 
         :param bytes objID: object ID
-        :param ndarray position: suggested position
+        :param PosVelAccOrient data: new object attributes.
         :return: (ok, (b'', ))
         :rtype: (bool, (bytes, ))
         """
-        ok = btInterface.setSuggestedPosition(objID, position)
+        ok = btInterface.setSuggestedPosition(objID, data)
         if ok:
             return True, ('', )
         else:

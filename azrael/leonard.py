@@ -209,10 +209,17 @@ class LeonardBase(multiprocessing.Process):
 
             # See if there is a suggested position available for this
             # object. If so, use it.
-            ok, sug_pos = btInterface.getSuggestedPosition(objID)
-            if ok and sug_pos is not None:
-                # Assign the position and delete the suggestion.
-                sv.position[:] = sug_pos
+            ok, tmp = btInterface.getSuggestedPosition(objID)
+            if ok:
+                # Apply the specified values.
+                if tmp.pos is not None:
+                    sv.position[:] = tmp.pos
+                if tmp.vel is not None:
+                    sv.velocityLin[:] = tmp.vel
+                if tmp.orient is not None:
+                    sv.orientation[:] = tmp.orient
+                # Clear the DB entry (they would otherwise be applied
+                # at every frame).
                 btInterface.setSuggestedPosition(objID, None)
 
             # Serialise the state variables and update them in the DB.
@@ -220,7 +227,7 @@ class LeonardBase(multiprocessing.Process):
 
     def run(self):
         """
-        Drive the periodic phyiscs updates.
+        Drive the periodic physics updates.
         """
         setproctitle.setproctitle('killme Leonard')
 
