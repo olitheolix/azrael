@@ -32,6 +32,7 @@ import IPython
 import logging
 import argparse
 import subprocess
+import multiprocessing
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -63,6 +64,8 @@ def parseCommandLine():
          help='Number of cubes in each dimension')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
+    padd('--resetinterval', type=int, metavar='T', default=2,
+         help='Simulation will reset every T seconds')
 
     # Run the parser.
     param = parser.parse_args()
@@ -141,9 +144,14 @@ def loadGroundModel(scale, model_name):
 
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
-    ret = ctrl.spawn(None, tID, [0, 0, -10], orient=[0, 1, 0, 0],
-                     imass=0.1, scale=scale)
-    print('done (ID=<{}>)'.format(ret[1]))
+    pos, ori = [0, 0, -10], [0, 1, 0, 0]
+    ok, objID = ctrl.spawn(None, tID, pos, orient=ori, imass=0.1, scale=scale)
+    print('done (ID=<{}>)'.format(objID))
+
+    # Construct an attribute object (will be needed to reset the simulation).
+    z = np.zeros(3, np.float64)
+    attr = btInterface.PosVelAccOrient(pos, z, z, z, ori)
+    return objID, attr
 
 
 def spawnCubes(numCols, numRows, numLayers):
@@ -261,8 +269,9 @@ def spawnCubes(numCols, numRows, numLayers):
     # ----------------------------------------------------------------------
     # Spawn the differently textured cubes in a regular grid.
     # ----------------------------------------------------------------------
-    idx = 0
-    spacing = 0.1
+    cube_idx = 0
+    cube_spacing = 0.1
+    default_attributes = []
     for row in range(numRows):
         for col in range(numCols):
             for lay in range(numLayers):
@@ -270,17 +279,31 @@ def spawnCubes(numCols, numRows, numLayers):
                 pos = np.array([col, row, lay], np.float64)
 
                 # Add space in between cubes.
-                pos *= -(1 + spacing)
+                pos *= -(1 + cube_spacing)
 
                 # Correct the cube position to ensure the center of the
                 # grid coincides with (0, 0, 0) in world coordinates.
-                pos[0] += (numCols // 2) * (1 + spacing)
-                pos[1] += (numRows // 2) * (1 + spacing)
+                pos[0] += (numCols // 2) * (1 + cube_spacing)
+                pos[1] += (numRows // 2) * (1 + cube_spacing)
                 pos[2] += 10
 
-                # Spawn the cube and update the index counter.
-                ok, objID = ctrl.spawn(None, tID_cube[idx], pos)
-                idx += 1
+                # Spawn the cube and update the index counter. The intitial
+                # velocity, acceleration, and orientation is neutral.
+                ok, objID = ctrl.spawn(None, tID_cube[cube_idx], pos)
+                cube_idx += 1
+
+                # Record the original position of the object (this will be
+                # needed when the simulation is reset).
+                default_attributes.append((objID, pos))
+
+    # Convert the positions to proper PosVecAccOrient tuples. In these tuples
+    # only the position differs. The inital velocities, accelerations, and
+    # orientations are all identical).
+    z = np.zeros(3, np.float64)
+    o = np.array([0, 0, 0, 1], np.float64)
+    default_attributes = [(_[0], btInterface.PosVelAccOrient(_[1], z, z, z, o))
+                 for _ in default_attributes]
+    return default_attributes
 
 
 def waitForMongo():
@@ -313,6 +336,7 @@ def startAzrael(param):
     clacks.start()
     btInterface.initSVDB(reset=True)
 
+    out_cubes = []
     if not param.noinit:
         # Add a model to the otherwise empty simulation. The sphere is
         # in the repo whereas the Vatican model is available here:
@@ -321,10 +345,11 @@ def startAzrael(param):
         model_name = (1.25, 'viewer/models/sphere/sphere.obj')
         #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
         #model_name = (1.25, 'viewer/models/house/house.3ds')
-        loadGroundModel(*model_name)
+        tmp = loadGroundModel(*model_name)
 
         # Define additional templates.
-        spawnCubes(*param.numcubes)
+        default_attributes = spawnCubes(*param.numcubes)
+        default_attributes.append(tmp)
 
     # Start the physics engine.
     #leo = leonard.LeonardBase()
@@ -336,7 +361,7 @@ def startAzrael(param):
     leo = leonard.LeonardBulletSweepingMultiMT()
     leo.start()
 
-    return clerk, clacks, leo
+    return (clerk, clacks, leo), default_attributes
 
 
 def stopAzrael(clerk, clacks, leo):
@@ -351,6 +376,43 @@ def stopAzrael(clerk, clacks, leo):
     leo.join()
 
 
+class ResetSim(multiprocessing.Process):
+    """
+    Periodically reset the simulation.
+    """
+    def __init__(self, default_attributes, period=2):
+        """
+        The ``default_attributes`` argument is a list of (objID, attr) tuples.
+
+        This process override the attribtes of all objects in that list with
+        the corresponding value. This happens every ``period`` seconds.
+        """
+        super().__init__()
+        self.default_attributes = default_attributes
+        self.period = period
+        
+    def run(self):
+        """
+        Create a Controller.
+        """
+        ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
+        ctrl.setupZMQ()
+        ctrl.connectToClerk()
+
+        # Periodically override the attributes with their default
+        # values. Override the attributes several times because it is well
+        # possible that not all override commands reach Leonard in the same
+        # frame, which means some objects will be reset, others will not, and
+        # that may cause strange artefacts in the next physics update step,
+        # especially when the objects now partially overlap.
+        while True:
+            time.sleep(self.period)
+            for ii in range(5):
+                for objID, pos in self.default_attributes:
+                    ctrl.overrideAttributes(objID, pos)
+                time.sleep(0.1)
+
+
 def main():
     # Parse the command line.
     param = parseCommandLine()
@@ -359,25 +421,29 @@ def main():
     setupLogging(param.loglevel)
     util.resetTiming()
 
-    while True:
-        # Start the Azrael processes.
-        with util.Timeit('Startup Time', True):
-            subprocess.call(['pkill', 'killme'])
-            procs = startAzrael(param)
-        print('Azrael now live')
+    # Start the Azrael processes.
+    with util.Timeit('Startup Time', True):
+        subprocess.call(['pkill', 'killme'])
+        procs, default_attributes = startAzrael(param)
+    print('Azrael now live')
 
-        # Launch the viewer process.
-        try:
-            if param.noviewer:
-                time.sleep(3600000)
-            else:
-                subprocess.call(['python3', 'viewer/viewer.py'])
-        except KeyboardInterrupt:
-            stopAzrael(*procs)
-            break
+    # Launch process to periodically reset the simulation.
+    rs = ResetSim(default_attributes, period=param.resetinterval)
+    rs.start()
 
-        # Shutdown Azrael.
-        stopAzrael(*procs)
+    # Launch the viewer process.
+    try:
+        if param.noviewer:
+            time.sleep(3600000000)
+        else:
+            subprocess.call(['python3', 'viewer/viewer.py'])
+    except KeyboardInterrupt:
+        pass
+
+    # Shutdown Azrael.
+    rs.terminate()
+    rs.join()
+    stopAzrael(*procs)
 
     print('Clean shutdown')
 
