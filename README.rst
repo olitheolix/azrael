@@ -2,28 +2,26 @@
 Azrael
 ======
 
-Create interactive virtual worlds governed by real world physics.
+A game engine for scientists, engineers, and enthusiasts.
 
 Azrael is a proof-of-concept project where every object is subject to the laws
 of physics and can be controlled via the network.
 
 Once connected to an object you can send commands to its constituent parts, for
-instance its engines to accelerate a space ship in certain direction, or a car,
-or a submarine. Whether you want to control these parts manually, or use a
-program that employs the latest and greatest machine learning to automate it is
-up to you.
+instance its engines to accelerate a space-ship/car/submarine whatever. Whether
+you want to control these parts manually, or use a program that employs the
+latest and greatest machine learning to automate it is up to you.
 
-Furthermore, you can ask the object for what it "sees" in its
-neighbourhood. Pass this information on to your favourite graphics engine and
-you can visualise the world.
+You can also query the environments and pass this information on to your
+favourite graphics engine to visualise it for you.
 
-Unlike in traditiona game engines, the graphics engine, physics engine, and
-object control (AI) are independent components. Most likely they will not even
-run on the same machine.
+Unlike traditional game engines, the graphics engine, physics engine, and
+object control (AI) are independent and will most likely not even run on the
+same machine.
 
-The network API also ensures that Azrael is language Agnostic. Albeit written
-in Python, the binary protocol is JSON based and provides interfaces for
-Websockets (JavaScript/browsers) and ZeroMQ (anything but JavaScript).
+The API is language Agnostic. Albeit written in Python, the data exchange is
+JSON based and the transport layer is either a Websocket (JavaScript/browsers)
+or a ZeroMQ socket (pretty much everything but JavaScript).
 
 For a high level overview including demo videos, please visit the
 `project page <https://olitheolix.com/azrael/>`_.
@@ -40,22 +38,17 @@ simulation to visualise it.
 
 Ideally, every object in the simulation will be remote controlled from a
 different computer, virtual machine, or at least a separate process on a single
-computer. The programming language does not matter as long as it has ZeroMQ
-bindings.
-
-This is in stark contrast to contemporary game engines which usually prescribe
-the programming language and your controllers/AI have to compete for CPU and
-memory.
+computer. The programming language should not matter to allow system designers
+to use whatever they are comfortable with to develop the algorithms.
 
 The goal is to eventually make the physics engine itself scalable across
 multiple computers to simulate worlds of unprecedented size, detail, and
 accuracy. All hail cloud computing :)
 
-Why do I bother? Because in a reasonably realistic virtual world
-I can have my own space shuttle, design my own sub-marine,
-invent my own Mars rover with awesome navigation abilities on a fictitious
-terrain or build an automated fleet of space ships. And so can you. No job at
-NASA required.
+Why do I bother? Because in a reasonably realistic virtual world I can have my
+own space shuttle, design my own sub-marine, invent my own Mars rover with
+awesome navigation abilities, launch my own Rosetta mission, or build an
+automated fleet of space ships. And so can you. No job at NASA required.
 
 How It (Might) Work
 ===================
@@ -66,7 +59,7 @@ it is the other way around. Beating the network latency and designing a loosely
 coupled system that nevertheless produces coherent physics are the two major
 challenges.
 
-My current idea to meet these challenges, without re-inventing more wheels than
+My current approach to meet these challenges, without re-inventing more wheels than
 necessary, is
 
 * compile potential collision sets (broadphase) in Azrael,
@@ -76,21 +69,26 @@ necessary, is
 The Workers are little more than standard Physics Engines (currently Bullet)
 with some wrapper code to interface with Azrael.
 
-Can this even work? It already does. Is it anywhere near real time: not yet.
+All in all, this approach is the usual divide and conquer principle to
+distribute tasks in the cloud - nothing new here, except that it is about a
+physics engine.
 
-Please drop me a line if you have any questions or suggestions.
+Can this even work? Well, it already does. Is it anywhere near real time: not
+yet.
+
+Feel free to drop my a line if you have any questions or suggestions.
 
 
 Project Status
 ==============
 
 Azrael currently features a basic API to upload meshes, define force generators
-(mimics eg boosters wheels, etc), send commands to these force generators, and
+(mimics eg boosters, wheels, etc), send commands to these force generators, and
 query the scene in general (for rendering).
 
-It also ships with two simple viewers to visualise the scene. One is a
-standalone PyQT/OpenGL program, the other uses JavaScript and runs in a
-browser.
+It also ships with two simple viewers. One is a standalone PyQT/OpenGL program,
+the other uses JavaScript and runs in a browser.
+
 
 Installation
 ============
