@@ -20,8 +20,9 @@ Define the State Variables structure and its cencoding.
 
 The state variables are encapsulated by the named tuple ``BulletData``. This
 module contains the necessary conversions to/from binary, as well as a
-conversion to NumPy. The NumPy conversion is only necessary for the Cython
-wrapper to Bullet and will eventually move out of here.
+conversion to NumPy. The NumPy conversion was necessary for the Cython
+wrapper to Bullet. This has become redundant and will be cleaned up at some
+point.
 """
 
 import sys
