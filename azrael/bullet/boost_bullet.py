@@ -281,14 +281,13 @@ class PyBulletPhys():
             return
         
         # Instantiate a new collision shape.
-        new_inv_mass = float(obj.imass)
         if obj.cshape[0] == 3:
+            # Sphere.
             cshape = pybullet.btSphereShape(obj.scale * obj.radius)
         elif obj.cshape[0] == 4:
-            width = obj.scale * obj.cshape[1] / 2
-            height = obj.scale * obj.cshape[2] / 2
-            length = obj.scale * obj.cshape[3] / 2
-            cshape = pybullet.btBoxShape(btVector3(width, height, length))
+            # Prism.
+            w, h, l = obj.scale * obj.cshape[1:] / 2
+            cshape = pybullet.btBoxShape(btVector3(w, h, l))
         else:
             # Empty- or unrecognised collision shape.
             if obj.cshape[0] != 0:
@@ -296,10 +295,6 @@ class PyBulletPhys():
 
             # The actual collision shape.
             cshape = pybullet.btEmptyShape()
-
-            # The inverse mass must be zero for empty collision sets or strange
-            # things will happen once Bullet tries to estimate the inertia.
-            new_inv_mass = 0.0
 
         # Create a motion state for the initial orientation and position.
         ms = pybullet.btDefaultMotionState(pybullet.btTransform(rot, pos))
@@ -312,13 +307,14 @@ class PyBulletPhys():
         self.collision_shapes[objID] = cshape
         self.motion_states[objID] = ms
 
-        # Ask Bullet to compute the mass and inertia for us.
+        # Ask Bullet to compute the mass and inertia for us. The inertia will
+        # be passed as a reference whereas the 'mass' is irrelevant due to how
+        # the C++ function was wrapped.
         inertia = btVector3(0, 0, 0)
-        mass = 0
-        if new_inv_mass > 1E-4:
+        mass = 1.0 / obj.imass
+        if obj.imass > 1E-4:
             # The calcuate_local_inertia function will update the `inertia`
             # variable directly.
-            mass = 1.0 / new_inv_mass
             cshape.calculate_local_inertia(mass, inertia)
 
         # Compute inertia magnitude and warn about unreasonable values.
