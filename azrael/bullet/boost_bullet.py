@@ -38,9 +38,17 @@ BulletData = bullet_data.BulletData
 
 
 class PyBulletPhys():
+    """
+    High level wrapper around the low level Bullet bindings.
+
+    The Bullet bindings use here are courtesy of Hogni Gylfaso
+    https://github.com/Klumhru/boost-python-bullet
+    """
     def __init__(self, engineID: int):
+        # To distinguish engines.
         self.engineID = engineID
 
+        # Instnatiate a solver for a dynamic world.
         self.broadphase = pybullet.btDbvtBroadphase()
         self.collisionConfig = pybullet.btDefaultCollisionConfiguration()
         self.dispatcher = pybullet.btCollisionDispatcher(self.collisionConfig)
@@ -51,6 +59,8 @@ class PyBulletPhys():
             self.solver,
             self.collisionConfig
         )
+
+        # Gravity is disabled by default.
         self.dynamicsWorld.gravity = pybullet.btVector3(0, 0, 0)
 
         # Not sure what this does but it was recommended at
@@ -58,22 +68,56 @@ class PyBulletPhys():
         # dynamicsWorld->getSolverInfo().m_solverMode |= \
         #     SOLVER_USE_2_FRICTION_DIRECTIONS
 
+        # Dictionary of all objects.
         self.all_objs = {}
+
+        # Auxiliary dictionary to avoid motion states and collision shapes to
+        # be garbage collected because Bullet will internally only hold
+        # pointers to them.
         self.motion_states = {}
         self.collision_shapes = {}
 
     def removeObject(self, objIDs: (list, tuple)):
+        """
+        Remove ``objIDs`` from Bullet and return the number of removed objects.
+
+        Non-existing objects are ignored and not counted.
+
+        :param list objIDs: list of objIDs to remove.
+        :return: number of actually removed objects.
+        :rtype: int
+        """
         cnt = 0
+        # Remove every object, skipping non-existing ones.
         for objID in objIDs:
+            # Skip non-existing objects.
             if objID not in self.all_objs:
                 continue
+
+            # Delete the object from all caches.
             del self.all_objs[objID]
             del self.motion_states[objID]
             del self.collision_shapes[objID]
             cnt += 1
+
+        # Return the total number of removed objects.
         return cnt
         
-    def compute(self, objIDs, delta_t, max_substeps):
+    def compute(self, objIDs: (tuple, list), dt: float, max_substeps: int):
+        """
+        Step the simulation for all ``objIDs`` by ``dt``.
+
+        This method aborts immediately if one or more objIDs do not exist.
+
+        The ``max_substeps`` parameter tells Bullet the maximum allowed
+        granularity. Typiclal values for ``dt`` and ``max_substeps`` are
+        (1, 60).
+
+        :param list objIDs: list of objIDs for which to update the physics.
+        :param float dt: time step in seconds
+        :param int max_substeps: maximum number of sub-steps.
+        :return: **None**
+        """
         # Add the objects from the cache to the Bullet simulation.
         for objID in objIDs:
             # Abort immediately if the object does not exist in the local
@@ -89,46 +133,90 @@ class PyBulletPhys():
             self.dynamicsWorld.add_rigid_body(obj)
             obj.activate()
         
-        # The max_substeps parameter instructs Bullet to subdivide the specified
-        # timestep (delta_t) into at most max_substeps. For example, if
-        # delta_t = 0.1 and max_substeps=10, then, internally, Bullet will
-        # simulate no finer than delta_t / max_substeps = 0.01s.
-        self.dynamicsWorld.step_simulation(delta_t, max_substeps)
+        # The max_substeps parameter instructs Bullet to subdivide the
+        # specified timestep (dt) into at most max_substeps. For example, if
+        # dt= 0.1 and max_substeps=10, then, internally, Bullet will simulate
+        # no finer than dt / max_substeps = 0.01s.
+        self.dynamicsWorld.step_simulation(dt, max_substeps)
         
         # Remove the object from the simulation again.
         for objID in objIDs:
             self.dynamicsWorld.remove_rigidbody(self.all_objs[objID])
         
     def applyForceAndTorque(self, objID, force, torque):
+        """
+        Apply a ``force`` and ``torque`` to the center of mass of ``objID``.
+
+        :param int objID: the ID of the object to update
+        :param 3-array force: force applied directly to center of mass
+        :param 3-array torque: torque around center of mass.
+        :return: **None**
+        """
+        # Sanity check.
         if objID not in self.all_objs:
             print('Cannot set force of unknown object <{}>'.format(objID))
             return 1
 
+        # Convenience.
         obj = self.all_objs[objID]
+
+        # Convert the force and torque to btVector3.
         b_force = btVector3(*force)
         b_torque = btVector3(*torque)
+
+        # Clear pending forces (should be cleared automatically by Bullet when
+        # it steps the simulation) and apply the new ones.
         obj.clear_forces()
         obj.apply_central_force(b_force)
         obj.apply_torque(b_torque)
 
-    def applyForce(self, objID, force, rel_pos):
+    def applyForce(self, objID: int, force, rel_pos):
+        """
+        Apply a ``force`` at ``rel_pos`` to ``objID``.
+
+        :param int objID: the ID of the object to update
+        :param 3-array force: force applied directly to center of mass
+        :param 3-array rel_pos: position of force relative to center of mass
+        :return: **None**
+        """
+        # Sanity check.
         if objID not in self.all_objs:
             print('Cannot set force of unknown object <{}>'.format(objID))
             return 1
 
+        # Convenience.
         obj = self.all_objs[objID]
+
+        # Convert the force and torque to btVector3.
         b_force = btVector3(*force)
         b_relpos = btVector3(*rel_pos)
+
+        # Clear pending forces (should be cleared automatically by Bullet when
+        # it steps the simulation) and apply the new ones.
         obj.clear_forces()
         obj.apply_force(b_force, b_relpos)
 
-    def getObjectData(self, IDs: (list, tuple)):
+    def getObjectData(self, objIDs: (list, tuple)):
+        """
+        Fetch the state of all ``objIDs``.
+
+        This method aborts immediately if one or more objects in ``objIDs`` do
+        not exists.
+
+        :param list objIDs: the IDs of all objects to retrieve.
+        :return: list of ``BulletData`` instances.
+        :rtype: (bool, list)
+        """
         out = []
-        for objID in IDs:
+
+        # Compile a list of object attributes.
+        for objID in objIDs:
+            # Abort immediately if one or more objects don't exist.
             if objID not in self.all_objs:
                 print('Cannot find object with ID <{}>'.format(objID))
                 return 1, []
 
+            # Convenience.
             obj = self.all_objs[objID]
             _, radius, scale = obj.azrael
 
@@ -146,38 +234,54 @@ class PyBulletPhys():
 
             # Dummy value for the collision shape.
             cshape = np.zeros(4, np.float64)
-            out.append(BulletData(radius, scale, obj.inv_mass, obj.restitution,
-                        rot, pos, vLin, vRot, cshape))
+
+            # Construct a new BulletData structure and add it to the list that
+            # will eventually be returned to the caller.
+            out.append(
+                BulletData(radius, scale, obj.inv_mass, obj.restitution,
+                           rot, pos, vLin, vRot, cshape))
         return 0, out[0]
 
-    def setObjectData(self, IDs: (list, tuple), obj):
-        objID = IDs[0]
+    def setObjectData(self, objIDs: (list, tuple), obj):
+        """
+        Create new rigid objects or update existing ones.
 
+        This method aborts immediately if one or more objects in ``objIDs`` do
+        not exists.
+
+        :param list objIDs: the IDs of all objects to retrieve.
+        :param ``BulletData`` obj: object description.
+        :return: **None**
+        """
+        objID = objIDs[0]
+
+        # Convert orientation and position to btVector3.
         rot = btQuaternion(*obj.orientation)
         pos = btVector3(*obj.position)
 
-        # Assign the inverse mass.
-        new_inv_mass = float(obj.imass)
-
         if objID in self.all_objs:
             # Object already downloaded --> just update.
-            tmp = pybullet.btTransform(rot, pos)
             body = self.all_objs[objID]
+
+            tmp = pybullet.btTransform(rot, pos)
             body.set_center_of_mass_transform(tmp)
             body.linear_velocity = btVector3(*obj.velocityLin)
             body.angular_velocity = btVector3(*obj.velocityRot)
             body.friction = 1
             body.restitution = obj.restitution
             body.azrael = (objID, obj.radius, obj.scale)
+
+            # Update the mass but leave the inertia intact.
             m = obj.imass
             i = body.get_inv_inertia_diag_local()
-            i.z = 1 / i.z
-            i.z = 1 / i.z
+            i.x = 1 / i.x
+            i.y = 1 / i.y
             i.z = 1 / i.z
             body.set_mass_props(1 / m, i)
-            return True
+            return
         
         # Instantiate a new collision shape.
+        new_inv_mass = float(obj.imass)
         if obj.cshape[0] == 3:
             cshape = pybullet.btSphereShape(obj.scale * obj.radius)
         elif obj.cshape[0] == 4:
@@ -186,13 +290,15 @@ class PyBulletPhys():
             length = obj.scale * obj.cshape[3] / 2
             cshape = pybullet.btBoxShape(btVector3(width, height, length))
         else:
+            # Empty- or unrecognised collision shape.
             if obj.cshape[0] != 0:
                 print('Unrecognised collision shape ', obj.cshape)
+
+            # The actual collision shape.
             cshape = pybullet.btEmptyShape()
 
-            # Ensure the object cannot collide (strange things will happen
-            # otherwise once Bullet tries to estimate the inertia for an empty
-            # shape).
+            # The inverse mass must be zero for empty collision sets or strange
+            # things will happen once Bullet tries to estimate the inertia.
             new_inv_mass = 0.0
 
         # Create a motion state for the initial orientation and position.
@@ -210,26 +316,28 @@ class PyBulletPhys():
         inertia = btVector3(0, 0, 0)
         mass = 0
         if new_inv_mass > 1E-4:
-          # The calcuate_local_inertia function will update the `inertia`
-          # variable directly.
-          mass = 1.0 / new_inv_mass
-          cshape.calculate_local_inertia(mass, inertia)
+            # The calcuate_local_inertia function will update the `inertia`
+            # variable directly.
+            mass = 1.0 / new_inv_mass
+            cshape.calculate_local_inertia(mass, inertia)
 
         # Compute inertia magnitude and warn about unreasonable values.
         if (inertia.length > 20) or (inertia.length < 1E-5):
             print('Bullet warning: Inertia = {}'.format(inertia.length))
         
-        # Instantiate the admin structure for the rigid object.
-        body_CI = pybullet.btRigidBodyConstructionInfo(mass, ms, cshape, inertia)
+        # Bullet requires this admin structure to constructe the rigid body.
+        ci = pybullet.btRigidBodyConstructionInfo(mass, ms, cshape, inertia)
         
-        # Based on the admin structure, instantiate the actual object.
-        body = pybullet.btRigidBody(body_CI)
+        # Instantiate the actual rigid body object.
+        body = pybullet.btRigidBody(ci)
+
+        # Set additionl parameters.
+        body.friction = 1
+        body.set_damping(0.02, 0.02)
+        body.restitution = obj.restitution
+        body.set_sleeping_thresholds(0.1, 0.1)
         body.linear_velocity = btVector3(*obj.velocityLin)
         body.angular_velocity = btVector3(*obj.velocityRot)
-        body.set_damping(0.02, 0.02)
-        body.set_sleeping_thresholds(0.1, 0.1)
-        body.friction = 1
-        body.restitution = obj.restitution
 
         # Attach my own admin structure to the object.
         body.azrael = (objID, obj.radius, obj.scale)
