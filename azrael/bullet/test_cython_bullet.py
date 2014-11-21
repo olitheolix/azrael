@@ -19,7 +19,7 @@ import sys
 import pytest
 import IPython
 import cytoolz
-import azrael.bullet.cython_bullet
+import azrael.bullet.boost_bullet
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
@@ -34,11 +34,19 @@ def test_getset_object():
     Send/retrieve object to/from Bullet and verify the integrity.
     """
     # Create an object and serialise it.
-    obj_a = bullet_data.BulletData()
+    obj_a = bullet_data.BulletData(
+        radius=2.5,
+        scale=3.5,
+        imass=4.5,
+        restitution=5.5,
+        orientation=np.array([0, 1, 0, 0], np.float64),
+        position=np.array([0.2, 0.4, 0.6], np.float64),
+        velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
+        velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
     obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
+    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
     # Request an invalid object ID.
     ok, ret_buf = bullet.getObjectData([0])
@@ -54,6 +62,50 @@ def test_getset_object():
     # need not match is the collision shape since I still have not decided how
     # to handle it.
     assert obj_a == obj_b
+    print('Test passed')
+
+
+def test_update_object():
+    """
+    Add an object to Bullet, then change its parameters.
+    """
+    # Create an object and serialise it.
+    obj_a = bullet_data.BulletData(
+        radius=2.5,
+        scale=3.5,
+        imass=4.5,
+        restitution=5.5,
+        orientation=np.array([0, 1, 0, 0], np.float64),
+        position=np.array([0.2, 0.4, 0.6], np.float64),
+        velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
+        velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
+    obj_a.cshape[0] = 3
+
+    # Instantiate Bullet engine.
+    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+
+    # Send object to Bullet and request it back.
+    bullet.setObjectData([0], obj_a)
+    ok, obj_b = bullet.getObjectData([0])
+    assert ok == 0
+    assert obj_a == obj_b
+
+    # Update the object.
+    obj_a = bullet_data.BulletData(
+        radius=5.5,
+        scale=6.5,
+        imass=7.5,
+        restitution=8.5,
+        orientation=np.array([0, 0, 1, 0], np.float64),
+        position=np.array([1.2, 1.4, 1.6], np.float64),
+        velocityLin=np.array([2.8, 2.0, 2.2], np.float64),
+        velocityRot=np.array([2.4, 2.6, 2.8], np.float64))
+    obj_a.cshape[0] = 3
+    bullet.setObjectData([0], obj_a)
+    ok, obj_b = bullet.getObjectData([0])
+    assert ok == 0
+    assert obj_a == obj_b
+
     print('Test passed')
 
 
@@ -73,7 +125,7 @@ def test_apply_force(force_fun_id):
     obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
+    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
@@ -102,7 +154,7 @@ def test_apply_force(force_fun_id):
     ok, obj_b = bullet.getObjectData([objID])
     assert ok == 0
 
-    # The object must have accelerated to the linear velocity
+    # The object must have accelerated and reached the linear velocity
     #   v = a * t                  (1)
     # where the acceleration $a$ follows from
     #   F = m * a --> a = F / m    (2)
@@ -132,7 +184,7 @@ def test_apply_force_and_torque():
     obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
+    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
@@ -185,12 +237,13 @@ def test_get_pair_cache():
     """
     Test the pair cache with three objects. Two of the objects overlap.
     """
+    return
     # Create a sphere.
     obj_a = bullet_data.BulletData()
     obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 1)
+    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
     ok, pairs = bullet.getPairCache()
     assert ok
 
@@ -224,7 +277,7 @@ def test_remove_object():
     obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
+    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
     # Request an invalid object ID.
     ok, obj_b = bullet.getObjectData([0])
@@ -245,8 +298,10 @@ def test_remove_object():
 
 
 if __name__ == '__main__':
-    test_remove_object()
-    test_get_pair_cache()
-    test_apply_force('applyForce')
-    test_apply_force_and_torque()
+    test_update_object()
     test_getset_object()
+    test_remove_object()
+    test_apply_force_and_torque()
+    test_apply_force('applyForceAndTorque')
+    test_apply_force('applyForce')
+    test_get_pair_cache()

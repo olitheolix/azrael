@@ -30,7 +30,7 @@ import numpy as np
 
 import azrael.util as util
 import azrael.config as config
-import azrael.bullet.cython_bullet
+import azrael.bullet.boost_bullet
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
@@ -285,7 +285,7 @@ class LeonardBulletMonolithic(LeonardBase):
     def setup(self):
         # Instantiate the Bullet engine. The (1, 0) parameters mean
         # the engine has ID '1' and does not build explicit pair caches.
-        self.bullet = azrael.bullet.cython_bullet.PyBulletPhys(1, 0)
+        self.bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
     @typecheck
     def step(self, dt, maxsteps):
@@ -433,8 +433,8 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
     def setup(self):
         # Instantiate several Bullet engine. The (1, 0) parameters mean
         # the engine has ID '1' and does not build explicit pair caches.
-        engine = azrael.bullet.cython_bullet.PyBulletPhys
-        self.bulletEngines = [engine(_ + 1, 0) for _ in range(5)]
+        engine = azrael.bullet.boost_bullet.PyBulletPhys
+        self.bulletEngines = [engine(_ + 1) for _ in range(5)]
 
     @typecheck
     def step(self, dt, maxsteps):
@@ -659,8 +659,8 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             setproctitle.setproctitle('killme LeonardWorker')
 
             # Instantiate a Bullet engine.
-            engine = azrael.bullet.cython_bullet.PyBulletPhys
-            self.bullet = engine(self.workerID, 0)
+            engine = azrael.bullet.boost_bullet.PyBulletPhys
+            self.bullet = engine(self.workerID)
 
             # Setup ZeroMQ.
             ctx = zmq.Context()
@@ -1166,7 +1166,7 @@ class LeonardRMQWorkerBullet(LeonardRMQWorker):
 
     def setup(self):
         # Instantiate Bullet engine.
-        self.bullet = azrael.bullet.cython_bullet.PyBulletPhys(self.id, 0)
+        self.bullet = azrael.bullet.boost_bullet.PyBulletPhys(self.id)
 
     def advanceSimulation(self, wpid):
         # Fetch the work package.
