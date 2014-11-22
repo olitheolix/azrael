@@ -1,10 +1,21 @@
 #!/bin/bash
 
 # (K)Ubuntu repos.
-apt-get install -y libassimp3 libassimp-dev python3-pymongo \
-python3-zmq mongodb rabbitmq-server libboost-python-dev \
-python3-pip python3-numpy python3-pytest IPython3 python3-matplotlib \
-python3-tornado python3-pil python3-netifaces
+apt-get install -y \
+  IPython3 \
+  libassimp-dev \
+  libassimp3 \
+  libboost-python-dev \
+  mongodb \
+  python3-matplotlib \
+  python3-netifaces \
+  python3-numpy \
+  python3-pil \
+  python3-pip \
+  python3-pymongo \
+  python3-pytest \
+  python3-tornado \
+  python3-zmq
 
 # PIP repos.
 pip3 install cytoolz setproctitle websocket-client==0.15
