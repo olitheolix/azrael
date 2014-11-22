@@ -20,16 +20,9 @@ apt-get install -y \
 # PIP repos.
 pip3 install cytoolz setproctitle websocket-client==0.15
 
-# Clone the Python bindings for Bullet.
-cwd=$(pwd)
-bpb_dir=/tmp/boost-python-bullet
-git clone https://github.com/Klumhru/boost-python-bullet.git $bpb_dir
-cd $bpb_dir
-python3 setup.py install -j
-
-# Unit tests for Boost-Python-Bullet library.
-nosetests3
-cd "$cwd"
+# PIP install boost-python-wrapper directory from GitHub.
+pip3 install --install-option="-j" \
+ -e git+https://github.com/Klumhru/boost-python-bullet.git#egg=boost-python-bullet
 
 # Unit tests for Azrael.
 py.test-3
