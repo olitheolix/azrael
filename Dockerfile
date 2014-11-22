@@ -17,11 +17,10 @@ RUN echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart' \
 # Install Ubuntu packages for Azrael.
 RUN apt-get update && apt-get install -y \
     IPython3 \
-    cython3 \
     git \
     libassimp-dev \
     libassimp3 \
-    libbullet-dev \
+    libboost-python-dev \
     mongodb-10gen \
     python3-matplotlib \
     python3-netifaces \
@@ -31,21 +30,19 @@ RUN apt-get update && apt-get install -y \
     python3-pymongo \
     python3-pytest \
     python3-tornado \
-    python3-zmq \
-    rabbitmq-server \
-    scons
+    python3-zmq
 
 # Install PIP packages for Azrael.
 RUN pip3 install cytoolz setproctitle websocket-client==0.15
 
+# Clone and compile the Boost-Python-Bullet wrapper.
+WORKDIR /tmp
+RUN pip3 install --install-option="-j" \
+ -e git+https://github.com/Klumhru/boost-python-bullet.git#egg=boost-python-bullet
+
 # Clone Azrael from GitHub.
 WORKDIR /demo
 RUN git clone https://github.com/olitheolix/azrael
-WORKDIR /demo/azrael
-
-# Compile the Cython extensions.
-WORKDIR /demo/azrael/azrael/bullet
-RUN scons
 WORKDIR /demo/azrael
 
 # Expose the webserver port.
