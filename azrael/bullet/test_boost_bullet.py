@@ -237,7 +237,10 @@ def test_get_pair_cache():
     """
     Test the pair cache with three objects. Two of the objects overlap.
     """
+    # This test is currently disabled because the boost-wrappers do not support
+    # it yet.
     return
+
     # Create a sphere.
     obj_a = bullet_data.BulletData()
     obj_a.cshape[0] = 3
