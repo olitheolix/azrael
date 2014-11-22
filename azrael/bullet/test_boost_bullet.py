@@ -233,44 +233,6 @@ def test_apply_force_and_torque():
     print('Test passed')
 
 
-def test_get_pair_cache():
-    """
-    Test the pair cache with three objects. Two of the objects overlap.
-    """
-    # This test is currently disabled because the boost-wrappers do not support
-    # it yet.
-    return
-
-    # Create a sphere.
-    obj_a = bullet_data.BulletData()
-    obj_a.cshape[0] = 3
-
-    # Instantiate Bullet engine.
-    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
-    ok, pairs = bullet.getPairCache()
-    assert ok
-
-    # Create two more spheres (both identical).
-    obj_a = bullet_data.BulletData(cshape=[3, 0, 0, 0], position=[10, 10, 10])
-    obj_b = bullet_data.BulletData(cshape=[3, 0, 0, 0], position=[10, 10, 10])
-
-    # Send object to Bullet and progress the simulation by one second.
-    # The objects must not have moved because no forces are at play.
-    bullet.setObjectData([0], obj_a)
-    bullet.setObjectData([1], obj_a)
-    bullet.setObjectData([2], obj_b)
-    bullet.compute([0, 1], 1.0, 60)
-
-    # The first two objects must "touch" each other and thus be in the pair
-    # cache, whereas the third object is nowhere near them and thus not part of
-    # any pair. Note: many identical pairs may be returned because Bullet runs
-    # the broadphase algorithm several times.
-    ok, pairs = bullet.getPairCache()
-    assert ok
-    for pair in cytoolz.partition(2, pairs):
-        assert set(pair) == set([0, 1])
-
-
 def test_remove_object():
     """
     Remove an object from the Bullet cache.
@@ -307,4 +269,3 @@ if __name__ == '__main__':
     test_apply_force_and_torque()
     test_apply_force('applyForceAndTorque')
     test_apply_force('applyForce')
-    test_get_pair_cache()
