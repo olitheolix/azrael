@@ -102,7 +102,7 @@ class PyBulletPhys():
 
         # Return the total number of removed objects.
         return cnt
-        
+
     def compute(self, objIDs: (tuple, list), dt: float, max_substeps: int):
         """
         Step the simulation for all ``objIDs`` by ``dt``.
@@ -132,17 +132,17 @@ class PyBulletPhys():
             obj = self.all_objs[objID]
             self.dynamicsWorld.add_rigid_body(obj)
             obj.activate()
-        
+
         # The max_substeps parameter instructs Bullet to subdivide the
         # specified timestep (dt) into at most max_substeps. For example, if
         # dt= 0.1 and max_substeps=10, then, internally, Bullet will simulate
         # no finer than dt / max_substeps = 0.01s.
         self.dynamicsWorld.step_simulation(dt, max_substeps)
-        
+
         # Remove the object from the simulation again.
         for objID in objIDs:
             self.dynamicsWorld.remove_rigidbody(self.all_objs[objID])
-        
+
     def applyForceAndTorque(self, objID, force, torque):
         """
         Apply a ``force`` and ``torque`` to the center of mass of ``objID``.
@@ -279,7 +279,7 @@ class PyBulletPhys():
             i.z = 1 / i.z
             body.set_mass_props(1 / m, i)
             return
-        
+
         # Instantiate a new collision shape.
         if obj.cshape[0] == 3:
             # Sphere.
@@ -320,10 +320,10 @@ class PyBulletPhys():
         # Compute inertia magnitude and warn about unreasonable values.
         if (inertia.length > 20) or (inertia.length < 1E-5):
             print('Bullet warning: Inertia = {}'.format(inertia.length))
-        
+
         # Bullet requires this admin structure to constructe the rigid body.
         ci = pybullet.btRigidBodyConstructionInfo(mass, ms, cshape, inertia)
-        
+
         # Instantiate the actual rigid body object.
         body = pybullet.btRigidBody(ci)
 
@@ -337,6 +337,6 @@ class PyBulletPhys():
 
         # Attach my own admin structure to the object.
         body.azrael = (objID, obj.radius, obj.scale)
-        
+
         # Add the rigid body to the object cache.
         self.all_objs[objID] = body
