@@ -21,7 +21,6 @@ ipshell = IPython.embed
 allEngines = [
     azrael.leonard.LeonardBase,
     azrael.leonard.LeonardBaseWorkpackages,
-    azrael.leonard.LeonardBaseWPRMQ,
     azrael.leonard.LeonardBulletMonolithic,
     azrael.leonard.LeonardBulletSweeping,
     azrael.leonard.LeonardBulletSweepingMultiST,
@@ -216,71 +215,20 @@ def test_move_two_objects_no_collision(clsLeonard):
     ok, id_1 = ctrl.spawn(None, templateID, pos=[0, 10, 0], vel=[0, -1, 0])
     assert ok
 
-    # Advance the simulation by 1s and verify the objects moved accordingly.
+    # Advance the simulation by 1s and query the states of both objects.
     leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
     pos_0 = sv[0].position
-
     ok, sv = btInterface.getStateVariables([id_1])
     assert ok
     pos_1 = sv[0].position
 
+    # Verify that the objects have moved according to their initial velocity.
     assert pos_0[1] == pos_0[2] == 0
     assert pos_1[0] == pos_1[2] == 0
     assert 0.9 <= pos_0[0] <= 1.1
     assert 8.9 <= pos_1[1] <= 9.1
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
-    print('Test passed')
-
-
-@pytest.mark.parametrize(
-    'clsWorker',
-    [azrael.leonard.LeonardRMQWorker,
-     azrael.leonard.LeonardRMQWorkerBullet])
-def test_multiple_workers(clsWorker):
-    """
-    Create several objects on parallel trajectories. Use multiple
-    instances of LeonardWorkers.
-    """
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael('ZeroMQ')
-
-    # Constants and parameters for this test.
-    templateID = '_templateCube'.encode('utf8')
-    num_workers, num_objects = 10, 20
-    assert num_objects >= num_workers
-
-    # Instantiate Leonard.
-    leonard = azrael.leonard.LeonardBaseWPRMQ(num_workers, clsWorker)
-    leonard.setup()
-
-    # Create several cubic objects.
-    templateID = '_templateCube'.encode('utf8')
-    list_ids = []
-    for ii in range(num_objects):
-        ok, cur_id = ctrl.spawn(
-            None, templateID, pos=[0, 10 * ii, 0], vel=[1, 0, 0])
-        assert ok
-        list_ids.append(cur_id)
-    del cur_id, ok
-
-    # Advance the simulation by one second.
-    leonard.step(1.0, 60)
-
-    # All objects must have moved the same distance.
-    for ii, cur_id in enumerate(list_ids):
-        ok, sv = btInterface.getStateVariables([cur_id])
-        assert ok
-        cur_pos = sv[0].position
-        assert 0.9 <= cur_pos[0] <= 1.1
-        assert cur_pos[1] == 10 * ii
-        assert cur_pos[2] == 0
-
-    # All workers should have been utilised.
-    assert len(leonard.used_workers) == num_workers
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -473,10 +421,6 @@ if __name__ == '__main__':
     test_sweeping_2objects()
     test_sweeping_3objects()
     test_computeCollisionSetsAABB(0)
-    test_multiple_workers(azrael.leonard.LeonardRMQWorker)
-    test_multiple_workers(azrael.leonard.LeonardRMQWorkerBullet)
-    test_move_single_object(azrael.leonard.LeonardBaseWPRMQ)
-    test_move_two_objects_no_collision(azrael.leonard.LeonardBaseWPRMQ)
     test_move_single_object(azrael.leonard.LeonardBaseWorkpackages)
     test_move_two_objects_no_collision(azrael.leonard.LeonardBaseWorkpackages)
     test_move_single_object(azrael.leonard.LeonardBulletMonolithic)

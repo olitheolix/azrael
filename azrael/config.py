@@ -87,21 +87,3 @@ except (ValueError, KeyError):
 # Address of the various Azrael services.
 addr_clerk = 'tcp://' + host_ip + ':5555'
 addr_leonard_pushpull = 'tcp://' + host_ip + ':5556'
-
-
-# ---------------------------------------------------------------------------
-# RabbitMQ parameters.
-# ---------------------------------------------------------------------------
-
-# Name of RabbitMQ exchange for messages.
-rmq_wp = 'wp'
-rmq_ack = 'ack'
-
-# Routing key 1
-route_key1 = 'key1'
-
-# Routing key 2
-route_key2 = 'key2'
-
-# RabbitMQ address.
-rabbitMQ_host = 'localhost'
