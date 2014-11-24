@@ -50,7 +50,7 @@ function compileMesh (objID, vert, uv, scale) {
     }
 
     if (!hasUV) {
-        // Assign random face colors.
+        // Assign random face colours.
         for (var i = 0; i < geo.faces.length; i++) {
             var face = geo.faces[i];
             face.color.setHex(Math.random() * 0xffffff);
@@ -221,7 +221,7 @@ function* mycoroutine(connection) {
     // Ensure we are live.
     var msg = yield ping()
     if (msg.ok == false) {console.log('Error'); return;}
-    console.log('Ping successfull')
+    console.log('Ping successful')
 
     // Request a new ID for the controller assigned to us.
     msg = yield setID(null)
@@ -368,13 +368,13 @@ function* mycoroutine(connection) {
             pos[1] = camera.position.y
             pos[2] = camera.position.z
 
-            // Extract camera quaternion.
+            // Extract camera Quaternion.
             var x = camera.quaternion.x
             var y = camera.quaternion.y
             var z = camera.quaternion.z
             var w = camera.quaternion.w
 
-            // Obtain the view-direction of the camer. For this
+            // Obtain the view-direction of the camera. For this
             // purpose multiply the (0, 0, 1) position vector with the
             // camera Quaternion. The multiplication works via the
             // rotation matrix that corresponds to the Quaternion,
@@ -409,7 +409,7 @@ function* mycoroutine(connection) {
             window.myClick = false
         }
 
-        // Render the sence.
+        // Render the scene.
         renderer.render(scene, camera);
 
         //  Update the camera position only if the mouse button is
@@ -449,7 +449,7 @@ window.onload = function() {
         return
     }
 
-    // Create a websocket connection.
+    // Create a Websocket connection.
     var connection = new WebSocket('ws://' + window.location.host + '/websocket');
     var protocol = mycoroutine(connection);
 
