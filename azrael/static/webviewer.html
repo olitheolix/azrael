@@ -13,20 +13,21 @@
   </head>
 
   <body>
-    <!-- Make sure the canvas elements are centred -->
     <style>
+      <!-- Center canvas elements -->
       canvas {padding-left: 0; padding-right: 0; margin-left: auto;
               margin-right: auto; display: block;
               border-style: solid; border-color: #003300;}
       body {margin: 0;
             background: url('background.jpg') no-repeat center center;
             background-repeat: no-repeat;}
+      <!-- Miscellaneous -->
       h1 {color:white;}
       div {color:lavender;}
     </style>
 
     <!-- Bootstrap container -->
-    <div class="container" id="MainBody">
+    <div class="container" id="MainContainer">
       <h1 class="text-center" style="display: block">WebViewer Demo for Azrael</h1>
 
       <!-- Default page content. Will be replaced if there is an error -->
@@ -37,7 +38,7 @@
         and move backward, respectively.
         <p>
         
-        <!-- The ThreeJS Canvas -->
+        <!-- JS will add the ThreeJS Canvas to this div -->
         <div id="ThreeJSDiv"></div>
 
         <!-- Progress bar to show how many objects have been loaded -->

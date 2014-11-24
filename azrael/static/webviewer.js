@@ -269,9 +269,9 @@ function* mycoroutine(connection) {
 
     // Update the canvas size and aspect ratio of the camera.
     var resizeCanvas = function() {
-        // Query width and height of MainBody div.
-        var w = $("#MainBody").width()
-            h = $("#MainBody").height()
+        // Query width and height of MainContainer div.
+        var w = $("#MainContainer").width()
+            h = $("#MainContainer").height()
 
         // Compute the available height for the Canvas element:
         //
@@ -434,7 +434,7 @@ function* mycoroutine(connection) {
 window.onload = function() {
     // Use the ThreeJS Detector module to determine browser support for WebGL.
     var msg =
-        ['<div class="container" id="MainBody">',
+        ['<div class="container" id="MainContainer">',
          '<div class="panel panel-danger" style="max-width:400px;\
           margin-left:auto; margin-right:auto;">',
          '<div class="panel-heading">',
