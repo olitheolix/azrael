@@ -1,22 +1,60 @@
+<!DOCTYPE html>
 <html>
-  <head> <title>Azrael (Powered by Three.js)</title>
+  <head>
+    <title>Azrael's WebViewer</title>
     <meta charset="utf-8">
-    <h1>Demo of Azrael</h1>
-    <style> canvas { width: 100%; height: 80%}</style>
 
-    <h2>Instructions</h2>
-    Use left button to rotate, right button to move forward, and
-    middle button to move back.
+    <!-- Include meta tag to ensure proper rendering and touch zooming -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <ul>
-      <li> Firefox: recent versions work out of the box.</li>
-      <li> Chrome: will work once you enable experimental JavaScript under
-        <tt>chrome://flags</tt>.</li>
-      <li> Other browsers: untested.</li>
-    </ul>
+    <!-- Include Bootstrap stylesheets -->
+    <link rel="stylesheet"
+     href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
   </head>
 
   <body>
+    <!-- Make sure the canvas elements are centered -->
+    <style>
+      canvas {padding-left: 0; padding-right: 0; margin-left: auto;
+              margin-right: auto; display: block;
+              border-style: solid; border-color: #003300;}
+      body {margin: 0;
+            background: url('background.jpg') no-repeat center center;
+            background-repeat: no-repeat;}
+      h1 {color:white;}
+      div {color:lavender;}
+    </style>
+
+    <!-- Bootstrap container -->
+    <div class="container" id="MainBody">
+      <h1 class="text-center" style="display: block">WebViewer Demo for Azrael</h1>
+
+      <!-- Default page content. Will be replaced if there is an error -->
+      <div id="Instructions">
+        <!-- Some basic instructions on how to use this demo -->
+        <p class="text-center">
+        Use the left-, right- and middle mouse button to rotate, move forward,
+        and move backward, respectively.
+        <p>
+        
+        <!-- The ThreeJS Canvas -->
+        <div id="ThreeJSDiv"></div>
+
+        <!-- Progress bar to show how many objects have been loaded -->
+        <div class="progress">
+          <div class="progress-bar progress-bar-success" role="progressbar"
+               id="PBLoading" style="width: 0%"> 50% </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JavaScript libraries -->
+    <script 
+       src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js">
+    </script>
+    <script 
+       src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js">
+    </script>
     <script src="three.js"></script>
     <script src="FlyControls.js"></script>
     <script src="webviewer.js"> </script>

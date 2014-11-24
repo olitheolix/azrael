@@ -258,13 +258,40 @@ function* mycoroutine(connection) {
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(FOV, AR, 0.1, 1000);
     
+    // Initialise camera.
     camera.position.set(initPos[0], initPos[1], initPos[2]);
     camera.lookAt(new THREE.Vector3(0, 0, 0))
+    camera.updateProjectionMatrix();
     
     // Initialise the renderer and add it to the page.
     var renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    $("#ThreeJSDiv").append(renderer.domElement)
+
+    // Update the canvas size and aspect ratio of the camera.
+    var resizeCanvas = function() {
+        // Query width and height of MainBody div.
+        var w = $("#MainBody").width()
+            h = $("#MainBody").height()
+
+        // Compute the available height for the Canvas element:
+        //
+        // (95% of page height) - (content height) + (current canvas height)
+        //
+        // The 95% mark ensures that there is a bit of space left at
+        // the bottom -- looks better.
+        h = Math.floor(0.95 * window.innerHeight) - h
+        h += $("#ThreeJSDiv").height()
+
+        // Change the canvas size and update the camera.
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+    };
+
+    // Manually update the canvas. Afterwards, do it automatically
+    // whenever the window size changes.
+    resizeCanvas()
+    window.addEventListener('resize', resizeCanvas)
 
     // Initialise the camera controller to emulate FPS navigation.
     controls = new THREE.FlyControls(camera);
@@ -274,8 +301,8 @@ function* mycoroutine(connection) {
     controls.dragToLook = true;
     controls.update(1)
 
-    // Query the State variables of all objects and update their
-    // position on screen.
+    // Query the state variables of all visible objects and update
+    // their position on the screen.
     var obj_cache = {}
     while (true) {
         // Retrieve all object IDs.
@@ -290,7 +317,11 @@ function* mycoroutine(connection) {
 
         // Update the position and orientation of all objects. Add objects if
         // they are not yet part of the scene.
+        $(".progress-bar").css('width', '0%')
         for (var ii in objIDs) {
+            var tmp = 100 * (parseInt(ii) + 1) / objIDs.length
+                txt = (parseInt(ii) + 1) + ' of ' + objIDs.length
+            $("#PBLoading").css('width', tmp + '%').text('Loading ' + txt)
             // Do not render ourselves.
             if (arrayEqual(playerID, objIDs[ii])) continue;
 
@@ -324,6 +355,7 @@ function* mycoroutine(connection) {
             obj_cache[objIDs[ii]].quaternion.z = q[2]
             obj_cache[objIDs[ii]].quaternion.w = q[3]
         }
+        $("#PBLoading").css('width', '100%').text('All Models Loaded')
 
         // The myClick attribute is set in the mouse click handler but
         // processed here to keep everything inside the co-routine.
@@ -401,9 +433,19 @@ function* mycoroutine(connection) {
 
 window.onload = function() {
     // Use the ThreeJS Detector module to determine browser support for WebGL.
+    var msg =
+        ['<div class="container" id="MainBody">',
+         '<div class="panel panel-danger" style="max-width:400px;\
+          margin-left:auto; margin-right:auto;">',
+         '<div class="panel-heading">',
+         '<h3 class="panel-title">WebGL Error</h3>',
+         '</div>',
+         '<div class="panel-body">',
+         'Your Browser does not support WebGL',
+         '</div>',
+         '</div></div>'].join('\n')
     if (!Detector.webgl) {
-        document.body.innerHTML =
-            '<strong>Your browser does not seem to support WebGL</strong>';
+        $("#Instructions").replaceWith(msg)
         return
     }
 
