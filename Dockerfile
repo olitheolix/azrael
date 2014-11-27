@@ -6,8 +6,9 @@
 FROM ubuntu:14.04
 MAINTAINER Oliver Nagy <olitheolix@gmail.com>
 
-# Create Mongo data directory and Azrael project directory.
-RUN mkdir -p /data/db && mkdir demo
+# Create "/demo" and "/demo/mongodb" to hold the Azrael repo and
+# MongoDB files, respectively.
+RUN mkdir -p /demo/mongodb
 
 # Add APT credentials for MongoDB.
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
@@ -48,5 +49,10 @@ WORKDIR /demo/azrael
 # Expose the webserver port.
 EXPOSE 8080
 
+# Tell Docker not to track any changes in "/demo" directory (this is
+# where the MongoDB is stored and where Azrael writes its log files).
+VOLUME /demo
+
 # Default command: start MongoDB and Azrael.
-CMD /usr/bin/mongod --smallfiles & ./start.py --noviewer --numcubes 4,4,1
+CMD /usr/bin/mongod --smallfiles --dbpath /demo/mongodb \
+    & ./start.py --noviewer --numcubes 4,4,1

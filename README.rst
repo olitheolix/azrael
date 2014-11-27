@@ -111,7 +111,7 @@ Docker
 
 .. code-block:: bash
 
-   docker run -p 8080:8080 -ti "olitheolix/azrael:v0.1"
+   docker run -p 8080:8080 -ti "olitheolix/azrael:latest"
 
 
 View the Scene
