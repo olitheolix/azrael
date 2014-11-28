@@ -13,16 +13,12 @@ apt-get install -y \
   python3-pil \
   python3-pip \
   python3-pymongo \
-  python3-pytest \
   python3-tornado \
   python3-zmq
 
 # PIP repos.
-pip3 install cytoolz setproctitle websocket-client==0.15
+pip3 install cytoolz setproctitle websocket-client==0.15 pytest pytest-cov
 
 # PIP install boost-python-wrapper directory from GitHub.
 pip3 install --install-option="-j" \
  -e git+https://github.com/Klumhru/boost-python-bullet.git#egg=boost-python-bullet
-
-# Unit tests for Azrael.
-py.test-3
