@@ -620,7 +620,7 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
 
     def setup(self):
         self.ctx = zmq.Context()
-        self.sock = self.ctx.socket(zmq.PUSH)
+        self.sock = self.ctx.socket(zmq.REP)
         self.sock.bind(config.addr_leonard_pushpull)
 
         # Spawn the workers.
@@ -639,6 +639,7 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
 
         :param int wpid: work package ID to process.
         """
+        self.sock.recv()
         self.sock.send(np.int64(wpid).tostring())
 
 
@@ -682,7 +683,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
 
             # Setup ZeroMQ.
             ctx = zmq.Context()
-            sock = ctx.socket(zmq.PULL)
+            sock = ctx.socket(zmq.REQ)
             sock.connect(config.addr_leonard_pushpull)
             self.logit.info('Worker {} connected'.format(self.workerID))
 
@@ -690,6 +691,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             numSteps = 0
             suq = self.stepsUntilQuit
             while numSteps < suq:
+                sock.send(b'')
                 wpid = sock.recv()
                 wpid = np.fromstring(wpid, np.int64)
                 self.processWorkPackage(int(wpid))
@@ -701,8 +703,10 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             new_worker.start()
 
             # Log a last status message and terminate.
-            self.logit.info('Worker {} terminated iteself after {} steps'
+            self.logit.info('Worker {} terminated itself after {} steps'
                             .format(self.workerID, numSteps))
+            sock.close(linger=0)
+            ctx.destroy()
         except KeyboardInterrupt:
             print('Aborted Worker {}'.format(self.workerID))
 
