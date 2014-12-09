@@ -16,7 +16,8 @@ RUN echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart' \
          ' dist 10gen' | tee /etc/apt/sources.list.d/10gen.list
 
 # Install Ubuntu packages for Azrael.
-RUN apt-get update && apt-get install -y \
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    apt-get update && apt-get install -y \
     IPython3 \
     git \
     libassimp-dev \
