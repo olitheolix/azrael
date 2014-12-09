@@ -39,7 +39,7 @@ RUN pip3 install cytoolz setproctitle websocket-client==0.15
 
 # Clone and compile the Boost-Python-Bullet wrapper.
 WORKDIR /tmp
-RUN pip3 install --install-option="-j" \
+RUN pip3 install \
  -e git+https://github.com/Klumhru/boost-python-bullet.git#egg=boost-python-bullet
 
 # Clone Azrael from GitHub.
