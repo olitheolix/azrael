@@ -420,7 +420,8 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
     Compute physics on independent collision sets with multiple engines.
 
     This is a modified version of ``LeonardBulletMonolithic`` and similar to
-    ``LeonardBulletSweeping`` but employes work packages and multiple engines.
+    ``LeonardBulletSweeping``. It employs work packages and multiple engines,
+    all of which run in the same thread.
 
     This class is single threaded. All Bullet engines run sequentially in the
     main thread. The work packages are distributed at random to the engines.
@@ -430,7 +431,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         self.token = 0
 
     def setup(self):
-        # Instantiate several Bullet engine. The (1, 0) parameters mean
+        # Instantiate several Bullet engines. The (1, 0) parameters mean
         # the engine has ID '1' and does not build explicit pair caches.
         engine = azrael.bullet.boost_bullet.PyBulletPhys
         self.bulletEngines = [engine(_ + 1) for _ in range(5)]
@@ -499,13 +500,13 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
 
     def setObjectAttributes(self, obj, sv):
         """
-        Return update SV if the user wants to override some of them.
+        Return updated SV if the user wants to override some of them.
 
         This method does nothing if the user did not override any values via a
         call to 'overrideAttributes'.
 
         .. note::
-           It is unnecessary to explicity clear the attribue override request
+           It is unnecessary to explicitly clear the attribute override request
            because ``btInterface.updateWorkPackage`` will take care of this
            automatically.
 
@@ -761,7 +762,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         call to 'overrideAttributes'.
 
         .. note::
-           It is unnecessary to explicity clear the attrOverride data because
+           It is unnecessary to explicitly clear the attrOverride data because
            ``btInterface.updateWorkPackage`` takes care of that automatically.
 
         :param bytes objID: object ID
@@ -860,7 +861,7 @@ class LeonardBaseWorkpackages(LeonardBase):
         call to 'overrideAttributes'.
 
         .. note::
-           It is unnecessary to explicity clear the attrOverride data because
+           It is unnecessary to explicitly clear the attrOverride data because
            ``btInterface.updateWorkPackage`` takes care of that automatically.
 
         :param bytes objID: object ID
