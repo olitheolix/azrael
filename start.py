@@ -453,6 +453,12 @@ def main():
 
 
 if __name__ == '__main__':
+    # Parse the command line but ignore the result since the command line will
+    # be parsed again in main(). The only reason why this happens twice is to
+    # intercept the '-h' flag and print the help message, regardless of whether
+    # MongoDB is available or not (see ``waitForMongo`` command below).
+    parseCommandLine()
+
     # Wait until MongoDB is live.
     waitForMongo()
 

@@ -246,7 +246,7 @@ class LeonardBase(multiprocessing.Process):
         """
         Drive the periodic physics updates.
         """
-        setproctitle.setproctitle('killme Leonard')
+        setproctitle.setproctitle('killme ' + self.__class__.__name__)
 
         # Initialisation.
         self.setup()
