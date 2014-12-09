@@ -247,7 +247,7 @@ def test_worker_respawn():
 
     # Instantiate Leonard.
     leonard = azrael.leonard.LeonardBulletSweepingMultiMT()
-    leonard.workerStepsUntilQuit = 2
+    leonard.workerStepsUntilQuit = (1, 10)
     leonard.setup()
 
     # Constants and parameters for this test.

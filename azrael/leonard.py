@@ -588,6 +588,84 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
             self.logit.warning(msg)
 
 
+class WorkerManager(multiprocessing.Process):
+    """
+    Launch Worker processes and restart them as necessary.
+
+    This class merely launches the inital set of workers and periodically
+    checks if any have died. If so, it joins these processes and replaces it
+    with a new Worker that has the same ID.
+
+    :param int numWorker: number of Workers processes to spawn.
+    :param int minSteps: see Worker
+    :param int maxSteps: see Worker
+    :param class workerCls: the class to instantiate.
+    """
+    def __init__(self, numWorkers: int, minSteps: int, maxSteps: int,
+                 workerCls):
+        super().__init__()
+
+        # Sanity checks.
+        assert numWorkers > 0
+        assert isinstance(minSteps, int)
+        assert isinstance(maxSteps, int)
+        assert 0 < minSteps <= maxSteps
+
+        # Backup the arguments.
+        self.numWorkers = numWorkers
+        self.workerCls = workerCls
+        self.minSteps, self.maxSteps = minSteps, maxSteps
+
+    def _run(self):
+        """
+        Start the inital collection of Workers and ensure the remain alive.
+        """
+        # Rename the process.
+        setproctitle.setproctitle('killme ' + self.__class__.__name__)
+            
+        # Spawn the initial collection of Workers.
+        workers = []
+        delta = self.maxSteps - self.minSteps
+        cls = LeonardBulletSweepingMultiMTWorker
+        for ii in range(self.numWorkers):
+            # Random number in [minSteps, maxSteps]. The process will
+            # automatically terminate after `suq` steps.
+            suq = self.minSteps + int(np.random.rand() * delta)
+
+            # Instantiate the process and add it to the list.
+            workers.append(cls(ii + 1, suq))
+            workers[-1].start()
+
+        # Periodically monitor the processes and restart any that have died.
+        while True:
+            # Only check once a second.
+            time.sleep(1)
+            for workerID, proc in enumerate(workers):
+                # Skip current process if it is still running.
+                if proc.is_alive():
+                    continue
+
+                # Process has died --> join it to clear up the process table.
+                proc.join()
+
+                # Create a new Worker with the same ID but a (possibly)
+                # different number of steps after which it must terminate.
+                suq = self.minSteps + int(np.random.rand() * delta)
+                proc = cls(workerID, suq)
+                proc.start()
+                workers[workerID] = proc
+                print('Restarted Worker {}'.format(workerID))
+
+    def run(self):
+        """
+        Wrapper around ``_run`` to intercept SIGTERM.
+        """
+        try:
+            self._run()
+        except KeyboardInterrupt:
+            pass
+
+
 class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
     """
     Compute physics on independent collision sets with multiple engines.
@@ -600,14 +678,11 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
         self.workers = []
         self.numWorkers = 5
 
-        # Every Worker will respawn after this many steps. This prevents stale
-        # workers, compounds memory leaks that may build up over time, and also
-        # emphasises that there is no guarantee of a particular Worker being
-        # around forever. The current value restart a worker approximately once
-        # per hour. The precise number is slightly randomised to ensure that
-        # not all Workers restart at exactly the same time.
-        ofs = 60 * 3600 * (1 + (np.random.rand() - 0.5) / 5)
-        self.workerStepsUntilQuit = int(ofs)
+        # Every Worker will respawn after somewhere between [minSteps,
+        # maxSteps] physics updates. The ``ManageWorker`` instance will
+        # randomly pick a number from this interval to decorrelate the restart
+        # times of the Workers.
+        self.minSteps, self.maxSteps = (60 * 3500, 60 * 3700)
 
     def __del__(self):
         """
@@ -624,10 +699,9 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
         self.sock.bind(config.addr_leonard_pushpull)
 
         # Spawn the workers.
-        cls = LeonardBulletSweepingMultiMTWorker
-        for ii in range(self.numWorkers):
-            self.workers.append(cls(ii + 1, self.workerStepsUntilQuit))
-            self.workers[-1].start()
+        workermanager = WorkerManager(self.numWorkers, self.minSteps,
+            self.maxSteps, LeonardBulletSweepingMultiMTWorker)
+        workermanager.start()
         self.logit.info('Setup complete')
 
     def processWorkPackage(self, wpid: int):
@@ -696,11 +770,6 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
                 wpid = np.fromstring(wpid, np.int64)
                 self.processWorkPackage(int(wpid))
                 numSteps += 1
-
-            # Start a new worker with the same ID.
-            cls = LeonardBulletSweepingMultiMTWorker
-            new_worker = cls(self.workerID, self.stepsUntilQuit)
-            new_worker.start()
 
             # Log a last status message and terminate.
             self.logit.info('Worker {} terminated itself after {} steps'
