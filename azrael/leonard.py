@@ -597,6 +597,16 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workers = []
+        self.numWorkers = 5
+
+        # Every Worker will respawn after this many steps. This prevents stale
+        # workers, compounds memory leaks that may build up over time, and also
+        # emphasises that there is no guarantee of a particular Worker being
+        # around forever. The current value restart a worker approximately once
+        # per hour. The precise number is slightly randomised to ensure that
+        # not all Workers restart at exactly the same time.
+        ofs = 60 * 3600 * (1 + (np.random.rand() - 0.5) / 5)
+        self.workerStepsUntilQuit = int(ofs)
 
     def __del__(self):
         """
@@ -614,8 +624,8 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
 
         # Spawn the workers.
         cls = LeonardBulletSweepingMultiMTWorker
-        for ii in range(5):
-            self.workers.append(cls(ii + 1))
+        for ii in range(self.numWorkers):
+            self.workers.append(cls(ii + 1, self.workerStepsUntilQuit))
             self.workers[-1].start()
         self.logit.info('Setup complete')
 
@@ -636,10 +646,18 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
     Distributed Physics Engine based on collision sets and work packages.
 
     The distribution of Work Packages happens via ZeroMQ push/pull sockets.
+
+    :param int workerID: the ID of this worker.
+    :param int stepsUntilQuit: Worker will restart after this many steps.
     """
-    def __init__(self, workerID):
+    def __init__(self, workerID, stepsUntilQuit: int):
         super().__init__()
         self.workerID = workerID
+
+        # After ``stepsUntilQuit`` this Worker will spawn a new Worker with the
+        # same ID and quit.
+        assert stepsUntilQuit > 0
+        self.stepsUntilQuit = stepsUntilQuit
 
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
@@ -668,12 +686,24 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             self.logit.info('Worker {} connected'.format(self.workerID))
 
             # Process work packages as they arrive.
-            while True:
+            numSteps = 0
+            suq = self.stepsUntilQuit
+            while numSteps < suq:
                 wpid = sock.recv()
                 wpid = np.fromstring(wpid, np.int64)
                 self.processWorkPackage(int(wpid))
+                numSteps += 1
+
+            # Start a new worker with the same ID.
+            cls = LeonardBulletSweepingMultiMTWorker
+            new_worker = cls(self.workerID, self.stepsUntilQuit)
+            new_worker.start()
+
+            # Log a last status message and terminate.
+            self.logit.info('Worker {} terminated iteself after {} steps'
+                            .format(self.workerID, numSteps))
         except KeyboardInterrupt:
-            print('Worker {} quit'.format(self.workerID))
+            print('Aborted Worker {}'.format(self.workerID))
 
     def processWorkPackage(self, wpid: int):
         ok, worklist, admin = btInterface.getWorkPackage(wpid)

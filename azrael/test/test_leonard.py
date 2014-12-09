@@ -235,6 +235,54 @@ def test_move_two_objects_no_collision(clsLeonard):
     print('Test passed')
 
 
+def test_worker_respawn():
+    """
+    Ensure the objects move correctly even though the Workers will restart
+    themselves after every step.
+
+    The test code is similar to ``test_move_two_objects_no_collision``.
+    """
+    # Start the necessary services.
+    clerk, ctrl, clacks = startAzrael('ZeroMQ')
+
+    # Instantiate Leonard.
+    leonard = azrael.leonard.LeonardBulletSweepingMultiMT()
+    leonard.workerStepsUntilQuit = 1
+    leonard.setup()
+
+    # Constants and parameters for this test.
+    templateID = '_templateCube'.encode('utf8')
+
+    # Create two cubic objects.
+    ok, id_0 = ctrl.spawn(None, templateID, pos=[0, 0, 0], vel=[1, 0, 0])
+    assert ok
+    ok, id_1 = ctrl.spawn(None, templateID, pos=[0, 10, 0], vel=[0, -1, 0])
+    assert ok
+
+    # Advance the simulation by 1s, but use many small time steps. This ensures
+    # that the Workers will restart themselves many times.
+    for ii in range(60):
+        leonard.step(1.0 / 60, 1)
+
+    # Query the states of both objects.
+    ok, sv = btInterface.getStateVariables([id_0])
+    assert ok
+    pos_0 = sv[0].position
+    ok, sv = btInterface.getStateVariables([id_1])
+    assert ok
+    pos_1 = sv[0].position
+
+    # Verify that the objects have moved according to their initial velocity.
+    assert pos_0[1] == pos_0[2] == 0
+    assert pos_1[0] == pos_1[2] == 0
+    assert 0.9 <= pos_0[0] <= 1.1
+    assert 8.9 <= pos_1[1] <= 9.1
+
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
+    print('Test passed')
+
+
 def test_sweeping_2objects():
     """
     Ensure the Sweeping algorithm finds the correct sets.
@@ -417,6 +465,7 @@ def test_computeCollisionSetsAABB(dim):
 
 
 if __name__ == '__main__':
+    test_worker_respawn()
     test_override_attributes(azrael.leonard.LeonardBase)
     test_sweeping_2objects()
     test_sweeping_3objects()
