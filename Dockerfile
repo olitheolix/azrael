@@ -27,6 +27,7 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* && \
     python3-matplotlib \
     python3-netifaces \
     python3-numpy \
+    python3-pandas \
     python3-pil \
     python3-pip \
     python3-pymongo \
