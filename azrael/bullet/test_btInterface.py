@@ -29,7 +29,7 @@ from azrael.util import int2id, id2int
 ipshell = IPython.embed
 
 
-def test_add_get_single():
+def test_add_get_remove_single():
     """
     Add an object to the SV database.
     """
@@ -38,6 +38,7 @@ def test_add_get_single():
 
     # Create an object ID for the test.
     id_0 = int2id(0)
+    id_1 = int2id(1)
 
     # The number of SV entries must now be zero.
     assert btInterface.getNumObjects() == 0
@@ -52,8 +53,7 @@ def test_add_get_single():
     data = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
-    ok = btInterface.spawn(id_0, data, np.int64(1).tostring(), 0)
-    assert ok
+    assert btInterface.spawn(id_0, data, np.int64(1).tostring(), 0)
 
     # Query the object. This must return the SV data directly.
     assert btInterface.getStateVariables([id_0]) == (True, [data])
@@ -61,6 +61,20 @@ def test_add_get_single():
     # Query the same object but supply it as a list. This must return a list
     # with one element which is the exact same object as before.
     assert btInterface.getStateVariables([id_0]) == (True, [data])
+
+    # Attempt to remove non-existing ID --> must fail.
+    ok, msg = btInterface.deleteObject(id_1)
+    assert not ok
+    assert btInterface.getStateVariables([id_0]) == (True, [data])
+    ok, out = btInterface.getAllStateVariables()
+    assert (ok, len(out)) == (True, 1)
+
+    # Remove existing ID --> must succeed.
+    ok, msg = btInterface.deleteObject(id_0)
+    assert ok
+    assert btInterface.getStateVariables([id_0]) == (False, [])
+    ok, out = btInterface.getAllStateVariables()
+    assert (ok, len(out)) == (True, 0)
 
     print('Test passed')
 
@@ -580,4 +594,4 @@ if __name__ == '__main__':
     test_get_set_force()
     test_add_same()
     test_add_get_multiple()
-    test_add_get_single()
+    test_add_get_remove_single()

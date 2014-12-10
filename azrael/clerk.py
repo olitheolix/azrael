@@ -820,6 +820,16 @@ class Clerk(multiprocessing.Process):
         return True, (new_id, )
 
     @typecheck
+    def deleteObject(self, objID: bytes):
+        """
+        Remove ``objID`` from the physics simulation.
+
+        :param bytes objID: ID of object to remove.
+        """
+        ok, msg = btInterface.deleteObject(objID)
+        return ok, (msg, )
+
+    @typecheck
     def getStateVariables(self, objIDs: (list, tuple)):
         """
         Return the current state variables for all ``objIDs``.

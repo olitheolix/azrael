@@ -197,8 +197,7 @@ def test_spawn():
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
-    # Test parameters (the 'Echo' controller is a hard coded dummy controller
-    # that is always available).
+    # Default object.
     sv = bullet_data.BulletData()
 
     # Unknown controller name.
@@ -211,11 +210,61 @@ def test_spawn():
     ok, ret = clerk.spawn(None, templateID, sv)
     assert (ok, ret) == (False, 'Invalid Template ID')
 
-    # All parameters are now valid. This must spawn and object with ID=1
+    # All parameters are now valid. This must spawn an object with ID=1
     # because this is the first ID in an otherwise pristine system.
     templateID = '_templateNone'.encode('utf8')
     ok, (ret,) = clerk.spawn(None, templateID, sv)
     assert (ok, ret) == (True, int2id(1))
+
+    print('Test passed')
+
+
+def test_delete():
+    """
+    Test the 'deleteObject' command in the Clerk.
+
+    Spawn an object and ensure it exists, then delete it and ensure it does not
+    exist anymore.
+    """
+    killAzrael()
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk(reset=True)
+
+    # No objects must exist at this point.
+    ok, (out,) = clerk.getAllObjectIDs()
+    assert (ok, out) == (True, [])
+
+    # Spawn two default objects.
+    sv = bullet_data.BulletData()
+    templateID = '_templateNone'.encode('utf8')
+    ok, (objID_0,) = clerk.spawn(None, templateID, sv)
+    assert (ok, objID_0) == (True, int2id(1))
+    ok, (objID_1,) = clerk.spawn(None, templateID, sv)
+    assert (ok, objID_1) == (True, int2id(2))
+
+    # Two objects must now exist.
+    ok, (out,) = clerk.getAllObjectIDs()
+    assert ok and (len(out) == 2)
+    assert (objID_0 in out) and (objID_1 in out)
+
+    # Delete the first object.
+    ok, (out, ) = clerk.deleteObject(objID_0)
+    assert ok
+
+    # Only the second object must still exist.
+    ok, (out,) = clerk.getAllObjectIDs()
+    assert (ok, out) == (True, [objID_1])
+
+    # Deleting the same object again must result in an error.
+    ok, (out, ) = clerk.deleteObject(objID_0)
+    assert not ok
+
+    # Delete the second object.
+    ok, (out, ) = clerk.deleteObject(objID_1)
+    assert ok
+    ok, (out,) = clerk.getAllObjectIDs()
+    assert (ok, out) == (True, [])
 
     print('Test passed')
 
@@ -1044,6 +1093,7 @@ if __name__ == '__main__':
     test_get_object_template_id()
     test_get_statevar()
     test_spawn()
+    test_delete()
     test_add_get_template()
     test_set_force()
     test_send_receive_message()

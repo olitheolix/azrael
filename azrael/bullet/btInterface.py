@@ -102,7 +102,8 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     z = np.zeros(3).tostring()
 
     # Add the document. The find_and_modify command below implements the
-    # fictional 'insert_if_not_exists' command.
+    # fictional 'insert_if_not_exists' command. This ensures that we will not
+    # overwrite any possibly existing object.
     attr = PosVelAccOrient(None, None, None, None, None)
     doc = _DB_SV.find_and_modify(
         {'objid': objID},
@@ -116,6 +117,22 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     # identical SV. In any other case there will be no match because the
     # objID already existed.
     return doc['sv'] == sv
+
+
+@typecheck
+def deleteObject(objID: bytes):
+    """
+    Delete ``objID`` from the physics simulation.
+
+    :param bytes objID: ID of object to delete.
+    :return: (ok, msg)
+    :rtype: tuple
+    """
+    ret = _DB_SV.remove({'objid': objID})
+    if ret['n'] == 1:
+        return True, ''
+    else:
+        return False, 'Object not found'
 
 
 @typecheck
