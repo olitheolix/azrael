@@ -676,13 +676,13 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workers = []
-        self.numWorkers = 5
+        self.numWorkers = 3
 
         # Every Worker will respawn after somewhere between [minSteps,
         # maxSteps] physics updates. The ``ManageWorker`` instance will
         # randomly pick a number from this interval to decorrelate the restart
         # times of the Workers.
-        self.minSteps, self.maxSteps = (60 * 3500, 60 * 3700)
+        self.minSteps, self.maxSteps = (500, 700)
 
     def __del__(self):
         """
