@@ -622,7 +622,7 @@ class WorkerManager(multiprocessing.Process):
         """
         # Rename the process.
         setproctitle.setproctitle('killme ' + self.__class__.__name__)
-            
+
         # Spawn the initial collection of Workers.
         workers = []
         delta = self.maxSteps - self.minSteps
@@ -699,7 +699,8 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
         self.sock.bind(config.addr_leonard_pushpull)
 
         # Spawn the workers.
-        workermanager = WorkerManager(self.numWorkers, self.minSteps,
+        workermanager = WorkerManager(
+            self.numWorkers, self.minSteps,
             self.maxSteps, LeonardBulletSweepingMultiMTWorker)
         workermanager.start()
         self.logit.info('Setup complete')
