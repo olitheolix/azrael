@@ -102,6 +102,9 @@ class ControllerBase(multiprocessing.Process):
             'spawn': (
                 protocol.ToClerk_Spawn_Encode,
                 protocol.FromClerk_Spawn_Decode),
+            'remove': (
+                protocol.ToClerk_Remove_Encode,
+                protocol.FromClerk_Remove_Decode),
             'get_template_id': (
                 protocol.ToClerk_GetTemplateID_Encode,
                 protocol.FromClerk_GetTemplateID_Decode),
@@ -374,6 +377,17 @@ class ControllerBase(multiprocessing.Process):
                                     radius=radius, imass=imass,
                                     orientation=orient)
         return self.serialiseAndSend('spawn', name, templateID, sv)
+
+    @typecheck
+    def deleteObject(self, objID: bytes):
+        """
+        Remove ``objID`` from the physics simulation.
+
+        :param bytes objID: ID of object to remove.
+        :return: (ok, (msg,))
+        :rtype: tuple
+        """
+        return self.serialiseAndSend('remove', objID)
 
     def controlParts(self, objID: bytes, cmd_boosters: (list, tuple),
                      cmd_factories: (list, tuple)):

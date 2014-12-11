@@ -64,10 +64,12 @@ def test_ping():
 
 
 @pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_spawn_one_controller(ctrl_type):
+def test_spawn_and_delete_one_controller(ctrl_type):
     """
     Ask Clerk to spawn one (echo) controller.
     """
+    id_2 = int2id(2)
+
     # Constants and parameters for this test.
     templateID = '_templateNone'.encode('utf8')
 
@@ -77,12 +79,28 @@ def test_spawn_one_controller(ctrl_type):
     # Instruct Clerk to spawn a new template. The new object must have objID=2
     # because '0' is invalid and '1' was already given to the `ctrl` object.
     ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
-    assert (ok, ctrl_id) == (True, int2id(2))
+    assert (ok, ctrl_id) == (True, id_2)
 
     # Attempt to spawn a non-existing template.
     templateID += 'blah'.encode('utf8')
     ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
     assert not ok
+
+    # Exactly one object must exist at this point.
+    ok, ret = ctrl.getAllObjectIDs()
+    assert (ok, ret) == (True, [id_2])
+
+    # Attempt to delete a non-existing object.
+    ok, ret = ctrl.deleteObject(int2id(100))
+    assert not ok
+    ok, ret = ctrl.getAllObjectIDs()
+    assert (ok, ret) == (True, [id_2])
+
+    # Delete an existing object.
+    ok, ret = ctrl.deleteObject(id_2)
+    assert ok
+    ok, ret = ctrl.getAllObjectIDs()
+    assert (ok, ret) == (True, [])
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -522,8 +540,8 @@ def test_controlParts(ctrl_type):
 
 
 if __name__ == '__main__':
+    test_spawn_and_delete_one_controller('Websocket')
     test_spawn_and_get_state_variables('Websocket')
-    test_spawn_one_controller('Websocket')
     test_ping()
     test_get_template('Websocket')
     test_controlParts('Websocket')

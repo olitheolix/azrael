@@ -419,6 +419,32 @@ def FromClerk_Spawn_Decode(data: dict):
 
 
 # ---------------------------------------------------------------------------
+# Remove
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_Remove_Encode(objID: bytes):
+    return True, {'objID': objID}
+
+
+@typecheck
+def ToClerk_Remove_Decode(data: dict):
+    objID = bytes(data['objID'])
+    return True, (objID, )
+
+
+@typecheck
+def FromClerk_Remove_Encode(dummyarg):
+    return True, {}
+
+
+@typecheck
+def FromClerk_Remove_Decode(payload):
+    return True, payload
+
+
+# ---------------------------------------------------------------------------
 # RecvMsg
 # ---------------------------------------------------------------------------
 
