@@ -403,6 +403,10 @@ class ResetSim(multiprocessing.Process):
         ctrl.setupZMQ()
         ctrl.connectToClerk()
 
+        # Query all objects in the scene. These are the only objects that will
+        # survive the reset.
+        ok, allowed_objIDs = ctrl.getAllObjectIDs()
+
         # Periodically override the attributes with their default
         # values. Override the attributes several times because it is well
         # possible that not all override commands reach Leonard in the same
@@ -410,7 +414,18 @@ class ResetSim(multiprocessing.Process):
         # that may cause strange artefacts in the next physics update step,
         # especially when the objects now partially overlap.
         while True:
+            # Wait until the timeout expires.
             time.sleep(self.period)
+
+            # Remove all newly added objects.
+            ok, cur_objIDs = ctrl.getAllObjectIDs()
+            for objID in cur_objIDs:
+                if objID not in allowed_objIDs:
+                    ctrl.deleteObject(objID)
+
+            # Forcefully reset the position and velocity of every object. Do
+            # this several times since network latency may result in some
+            # objects being reset sooner than others.
             for ii in range(5):
                 for objID, pos in self.default_attributes:
                     ctrl.overrideAttributes(objID, pos)
