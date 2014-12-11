@@ -574,6 +574,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Clear the scene.
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
+        # Query the State Variables for every object known to this Viewer (this
+        # may include objects that have been deleted in the mean time).
         with util.Timeit('getSV') as timeit:
             allObjectIDs = list(self.objIDs)
             ok, allSVs = self.ctrl.getStateVariables(allObjectIDs)
@@ -585,6 +587,18 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             for idx, objID in enumerate(allObjectIDs):
                 # Convenience.
                 sv = allSVs[objID]
+
+                # Skip all objects that do not exists anymore according to
+                # Azrael.
+                if sv is None:
+                    if objID in self.objIDs:
+                        self.objIDs.discard(objID)
+                        del self.numVertices[objID]
+                        del self.vertex_array_object[objID]
+                        del self.textureBuffer[objID]
+
+                    # Proceed to next object.
+                    continue
 
                 # Build the scaling matrix.
                 scale_mat = sv.scale * np.eye(4)
@@ -826,7 +840,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
     def mousePressEvent(self, event):
         button = event.button()
         if button == 1:
-            # Determine initial position and velocity of new object.
+            # Determine the initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
             vel = 2 * self.camera.view
 
