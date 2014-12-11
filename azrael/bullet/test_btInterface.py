@@ -556,6 +556,7 @@ def test_set_get_AABB():
 
     # Create two object IDs and a BulletData instances for this test.
     id_0, id_1 = int2id(0), int2id(1)
+    id_2, id_3 = int2id(2), int2id(3)
     data = bullet_data.BulletData()
 
     # Attempt to add an object with a negative AABB value. This must fail.
@@ -576,6 +577,11 @@ def test_set_get_AABB():
     # Query the AABB of both simultaneously.
     ok, aabb = btInterface.getAABB([id_0, id_1])
     assert np.array_equal(aabb, [1.5, 2.5])
+
+    # Query the AABB of a non-existing ID.
+    ok, aabb = btInterface.getAABB([id_0, id_3])
+    assert ok
+    assert np.array_equal(aabb, [1.5, None])
 
 
 if __name__ == '__main__':

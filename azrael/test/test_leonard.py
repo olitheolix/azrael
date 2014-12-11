@@ -405,13 +405,11 @@ def test_computeCollisionSetsAABB(dim):
     # Add all objects to the SV DB.
     for objID, sv in zip(all_id, SVs):
         assert btInterface.spawn(objID, sv, np.int64(1).tostring(), 1.0)
+    del SVs
 
     # Retrieve all SVs as Leonard does.
     ok, all_sv = btInterface.getStateVariables(all_id)
     assert (ok, len(all_id)) == (True, len(all_sv))
-
-    # Delete auxiliaray variables.
-    del SVs
 
     def ccsWrapper(IDs_hr, expected_hr):
         """
@@ -421,7 +419,7 @@ def test_computeCollisionSetsAABB(dim):
 
         This wrapper converts the human readable entries in ``IDs_hr``  into
         the internally used binary format. It then passes this new list, along
-        with the corresponding SVs to the collision detection algorithm.
+        with the corresponding SVs, to the collision detection algorithm.
         Finally, it converts the returned list of object sets back into human
         readable list of object sets and compares them for equality.
         """

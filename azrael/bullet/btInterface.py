@@ -170,9 +170,8 @@ def getAABB(objIDs: (list, tuple)):
     """
     Retrieve the AABBs for all ``objIDs``.
 
-    This function either return the AABBs for all requested ``objIDs`` or
-    an empty list. The latter case happens if one or more object IDs in
-    ``objIDs`` do not exist.
+    This function returns the AABBs (or *None* if it does not exist) for all
+    ``objIDs``.
 
     :param iterable objIDs: list of object ID for which to return the SV.
     :return list: list of *floats*.
@@ -184,14 +183,18 @@ def getAABB(objIDs: (list, tuple)):
             return False, []
 
     # Retrieve the state variables.
-    out = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
+    out = list(_DB_SV.find({'objid': {'$in': objIDs}}))
 
-    # Return with an error if one or more documents were unavailable.
-    if None in out:
-        return False, []
+    # Put all AABBs into a dictionary to simplify sorting afterwards.
+    out = {_['objid']: np.array(_['AABB'], np.float64) for _ in out}
+
+    # Compile the AABB values into a list ordered by ``objIDs``. Insert a None
+    # element if a particular objID has not AABB (probably means the object was
+    # recently deleted).
+    out = [out[_] if _ in out else None for _ in objIDs]
 
     # Return the AABB values.
-    return True, np.array([_['AABB'] for _ in out], np.float64)
+    return True, out
 
 
 @typecheck
@@ -227,7 +230,7 @@ def getAllStateVariables():
     :return: (ok, dictionary of state variables)
     :rtype: (bool, dict)
     """
-    # Compile all objects IDs and state variables into a dictionary.
+    # Compile all object IDs and state variables into a dictionary.
     out = {}
     for doc in _DB_SV.find():
         key, value = doc['objid'], bullet_data.fromJsonDict(doc['sv'])

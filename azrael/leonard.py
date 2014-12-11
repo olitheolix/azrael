@@ -118,30 +118,36 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
         return False, None
 
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
-    # must contain the min/max spatial extend in x/y/z direction.
+    # must contain the min/max spatial extent in x/y/z direction.
     data = []
+    IDs_new = []
     for objID, sv, aabb in zip(IDs, SVs, aabbs):
+        if (sv is None) or (aabb is None):
+            continue
+        IDs_new.append(objID)
         pos = sv.position
         x0, x1 = pos[0] - aabb, pos[0] + aabb
         y0, y1 = pos[1] - aabb, pos[1] + aabb
         z0, z1 = pos[2] - aabb, pos[2] + aabb
 
         data.append({'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]})
+    IDs = IDs_new
+    del IDs_new, SVs, aabbs
 
     # Enumerate the objects.
     labels = np.arange(len(IDs))
 
-    # Determine the overlapping objects in 'x' di
+    # Determine the overlapping objects in 'x' direction.
     stage_0 = sweeping(data, labels, 'x')
 
-    # Analyse every subset of the previous output further.
+    # Determine which of the objects that overlap in 'x' also overlap in 'y'.
     stage_1 = []
     for subset in stage_0:
         tmpData = [data[_] for _ in subset]
         tmpLabels = np.array(tuple(subset), np.int64)
         stage_1.extend(sweeping(tmpData, tmpLabels, 'y'))
 
-    # Analyse every subset of the previous output further.
+    # Now determine the objects that overlap in all three dimensions.
     stage_2 = []
     for subset in stage_1:
         tmpData = [data[_] for _ in subset]
@@ -462,7 +468,9 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         # Compute the collision sets.
         with util.Timeit('CCS') as timeit:
             ok, res = computeCollisionSetsAABB(IDs, sv)
-        assert ok
+        if not ok:
+            self.logit.error('ComputeCollisionSetsAABB returned an error')
+            sys.exit(1)
 
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(res))
