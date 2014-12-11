@@ -42,12 +42,9 @@ def test_add_get_remove_single():
 
     # The number of SV entries must now be zero.
     assert btInterface.getNumObjects() == 0
-    ok, data = btInterface.getStateVariables([id_0])
-    assert not ok
 
     # Query an object. Since none exists yet this must return with an error.
-    ok, data = btInterface.getStateVariables([id_0])
-    assert not ok
+    assert btInterface.getStateVariables([id_0]) == (True, [None])
 
     # Create an object and serialise it.
     data = bullet_data.BulletData()
@@ -72,7 +69,7 @@ def test_add_get_remove_single():
     # Remove existing ID --> must succeed.
     ok, msg = btInterface.deleteObject(id_0)
     assert ok
-    assert btInterface.getStateVariables([id_0]) == (False, [])
+    assert btInterface.getStateVariables([id_0]) == (True, [None])
     ok, out = btInterface.getAllStateVariables()
     assert (ok, len(out)) == (True, 0)
 
@@ -92,8 +89,7 @@ def test_add_get_multiple():
 
     # The number of SV entries must now be zero.
     assert btInterface.getNumObjects() == 0
-    ok, data = btInterface.getStateVariables([id_0])
-    assert not ok
+    assert btInterface.getStateVariables([id_0]) == (True, [None])
 
     # Create an object and serialise it.
     data_0 = bullet_data.BulletData()
@@ -145,8 +141,7 @@ def test_add_same():
 
     # The number of SV entries must now be zero.
     assert btInterface.getNumObjects() == 0
-    ok, data = btInterface.getStateVariables([id_0])
-    assert not ok
+    assert btInterface.getStateVariables([id_0]) == (True, [None])
 
     # Create an object and serialise it.
     data_0 = bullet_data.BulletData()

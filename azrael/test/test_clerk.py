@@ -257,14 +257,13 @@ def test_delete():
     assert (ok, out) == (True, [objID_1])
 
     # Deleting the same object again must result in an error.
-    ok, (out, ) = clerk.deleteObject(objID_0)
+    ok, _ = clerk.deleteObject(objID_0)
     assert not ok
 
     # Delete the second object.
-    ok, (out, ) = clerk.deleteObject(objID_1)
+    ok, _ = clerk.deleteObject(objID_1)
     assert ok
-    ok, (out,) = clerk.getAllObjectIDs()
-    assert (ok, out) == (True, [])
+    assert clerk.getAllObjectIDs() == (True, ([],))
 
     print('Test passed')
 
@@ -287,7 +286,7 @@ def test_get_statevar():
 
     # Retrieve the SV for a non-existing ID.
     ok, ret = clerk.getStateVariables([int2id(10)])
-    assert (ok, ret) == (False, 'One or more IDs do not exist')
+    assert (ok, ret) == (True, ([int2id(10)], [None]))
 
     # Spawn a new object. It must have ID=1.
     ok, (ret,) = clerk.spawn(None, templateID, sv_1)
@@ -295,7 +294,7 @@ def test_get_statevar():
 
     # Retrieve the SV for a non-existing ID --> must fail.
     ok, ret = clerk.getStateVariables([int2id(10)])
-    assert (ok, ret) == (False, 'One or more IDs do not exist')
+    assert (ok, ret) == (True, ([int2id(10)], [None]))
 
     # Retrieve the SV for the existing ID=1.
     ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID_1])

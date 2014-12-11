@@ -366,8 +366,9 @@ def ToClerk_GetStateVariable_Decode(data: dict):
 def FromClerk_GetStateVariable_Encode(
         objIDs: (list, tuple), sv: (list, tuple)):
     for _ in sv:
-        assert isinstance(_, bullet_data.BulletData)
-    d = {'data': [{'objID': objID, 'sv': sv.toJsonDict()}
+        assert isinstance(_, bullet_data.BulletData) or (_ is None)
+    d = {'data': [{'objID': objID,
+                   'sv': None if sv is None else sv.toJsonDict()}
                   for (objID, sv) in zip(objIDs, sv)]}
     return True, d
 
@@ -375,8 +376,9 @@ def FromClerk_GetStateVariable_Encode(
 @typecheck
 def FromClerk_GetStateVariable_Decode(data: dict):
     out = {}
+    fun = bullet_data.fromJsonDict
     for d in data['data']:
-        out[bytes(d['objID'])] = bullet_data.fromJsonDict(d['sv'])
+        out[bytes(d['objID'])] = None if d['sv'] is None else fun(d['sv'])
     return True, out
 
 

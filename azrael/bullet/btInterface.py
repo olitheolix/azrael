@@ -140,9 +140,8 @@ def getStateVariables(objIDs: (list, tuple)):
     """
     Retrieve the state variables for all ``objIDs``.
 
-    This function returns either all requested ``objIDs`` or None. The latter
-    case usually only happens if one or more object IDs in ``objIDs`` do not
-    exist.
+    If one or more objIDs int ``objIDs`` do not not exist then the respective
+    entry will return *None*.
 
     :param iterable objIDs: list of object IDs for which to return the SV.
     :return list: list of BulletData instances.
@@ -156,16 +155,13 @@ def getStateVariables(objIDs: (list, tuple)):
     # Retrieve the state variables.
     out = list(_DB_SV.find({'objid': {'$in': objIDs}}))
 
-    # Re-order the list to match the original order in objIDs.
-    tmp = {_['objid']: _ for _ in out}
-    try:
-        out = [tmp[_] for _ in objIDs]
-    except KeyError:
-        # Return with an error if one or more objIDs were unavailable.
-        return False, []
+    # Put all SV into a dictionary to simplify sorting afterwards.
+    out = {_['objid']: _ for _ in out}
+    out = [out[_] if _ in out else None for _ in objIDs]
 
-    # Return the list of state variables.
-    out = [bullet_data.fromJsonDict(_['sv']) for _ in out]
+    # Compile a list of SVs in the order of the supplied ``objIDs``.
+    fun = bullet_data.fromJsonDict
+    out = [fun(_['sv']) if _ is not None else None for _ in out]
     return True, out
 
 

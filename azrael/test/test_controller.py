@@ -97,7 +97,7 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     assert (ok, ret) == (True, [id_2])
 
     # Delete an existing object.
-    ok, ret = ctrl.deleteObject(id_2)
+    ok, _ = ctrl.deleteObject(id_2)
     assert ok
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [])
@@ -166,6 +166,12 @@ def test_spawn_and_get_state_variables(ctrl_type):
 
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael(ctrl_type)
+
+    # Query state variables for non existing object.
+    id_tmp = int2id(100)
+    ok, sv = ctrl.getStateVariables(id_tmp)
+    assert (ok, sv) == (True, {id_tmp: None})
+    del id_tmp
 
     # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
     # the ID of the controller which must be '2' ('0' is invalid and '1' was
