@@ -306,26 +306,53 @@ function* mycoroutine(connection) {
     var obj_cache = {}
     while (true) {
         // Retrieve all object IDs.
-        msg = yield getAllObjectIDs();
+        var msg = yield getAllObjectIDs();
         if (msg.data == false) {console.log('Error'); return;}
-        objIDs = msg.objIDs
+        var objIDs = msg.objIDs
 
         // Get the SV for all objects.
         msg = yield getStateVariable(objIDs)
         if (msg.ok == false) {console.log('Error'); return;}
         var allSVs = msg.sv
 
+        // Convert the 8-Byte arrays in objID to a single
+        // integer. This integer will internally be used for the keys
+        // in the "obj_cache map" because otherwise... strange things
+        // happen.
+        var objIDs_num = []
+        for (var ii in objIDs) {
+            var res = 0;
+            for (var jj in objIDs[ii]) {
+                res += Math.pow(256, jj) * objIDs[ii][jj];
+            }
+            objIDs_num[ii] = res;
+        }
+
         // Update the position and orientation of all objects. Add objects if
         // they are not yet part of the scene.
         $(".progress-bar").css('width', '0%')
         for (var ii in objIDs) {
+            // Update text in Progress bar.
             var tmp = 100 * (parseInt(ii) + 1) / objIDs.length
                 txt = (parseInt(ii) + 1) + ' of ' + objIDs.length
             $("#PBLoading").css('width', tmp + '%').text('Loading ' + txt)
+
+            // Skip/remove all objects with undefined SVs. Remove the
+            // object from the local cache as well.
+            if (allSVs[ii].sv == null) {
+                if (objIDs[ii] in obj_cache) {
+                    scene.remove(obj_cache[objIDs_num[ii]]);
+                    delete obj_cache[objIDs_num[ii]];
+                }
+                continue;
+            }
+
             // Do not render ourselves.
             if (arrayEqual(playerID, objIDs[ii])) continue;
 
-            if (obj_cache[objIDs[ii]] == undefined) {
+            // Download the entire object template if we do not have
+            // in the local cache.
+            if (obj_cache[objIDs_num[ii]] == undefined) {
                 // Get SV for current object.
                 var scale = allSVs[ii].sv.scale
 
@@ -338,23 +365,39 @@ function* mycoroutine(connection) {
                 var new_geo = compileMesh(objIDs[ii], msg.vert, msg.UV, scale)
 
                 // Add the object to the cache and scene.
-                obj_cache[objIDs[ii]] = new_geo
+                obj_cache[objIDs_num[ii]] = new_geo
                 scene.add(new_geo);
             }
 
             // Update object position.
             var sv = allSVs[ii].sv
-            obj_cache[objIDs[ii]].position.x = sv.position[0]
-            obj_cache[objIDs[ii]].position.y = sv.position[1]
-            obj_cache[objIDs[ii]].position.z = sv.position[2]
+            obj_cache[objIDs_num[ii]].position.x = sv.position[0]
+            obj_cache[objIDs_num[ii]].position.y = sv.position[1]
+            obj_cache[objIDs_num[ii]].position.z = sv.position[2]
 
             // Update object orientation.
             var q = sv.orientation
-            obj_cache[objIDs[ii]].quaternion.x = q[0]
-            obj_cache[objIDs[ii]].quaternion.y = q[1]
-            obj_cache[objIDs[ii]].quaternion.z = q[2]
-            obj_cache[objIDs[ii]].quaternion.w = q[3]
+            obj_cache[objIDs_num[ii]].quaternion.x = q[0]
+            obj_cache[objIDs_num[ii]].quaternion.y = q[1]
+            obj_cache[objIDs_num[ii]].quaternion.z = q[2]
+            obj_cache[objIDs_num[ii]].quaternion.w = q[3]
         }
+
+        // Remove models that do not exist anymore.
+        for (var objID in obj_cache) {
+            // Yes, the keys of obj_cache are integers but objID is of
+            // type string -- I have no idea why.
+            objID = parseInt(objID);
+
+            // If the objID is in our cache but not in the simulation
+            // then it is time to remove it.
+            if (objIDs_num.indexOf(objID) == -1) {
+                scene.remove(obj_cache[objID]);
+                delete obj_cache[objID];
+            }
+        }
+
+        // Finalise message in progress bar.
         $("#PBLoading").css('width', '100%').text('All Models Loaded')
 
         // The myClick attribute is set in the mouse click handler but
