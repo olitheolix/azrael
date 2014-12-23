@@ -126,9 +126,9 @@ def loadGroundModel(scale, model_name):
     rgb = np.array(rgb, np.uint8)
     print('done')
 
-    # Attach four boosters: left, front, right, and back. The left and back
-    # booster point "forwards", the other two point "backwards".
-    dir_0, dir_1, dir_2 = [0, 0, -1], [0, 0, -1], [0, 0, +1]
+    # Attach four boosters: left (points down), front (points back), right
+    # (points up), and back (point forward).
+    dir_0, dir_1, dir_2, dir_3 = [0, -1, 0], [0, 0, -1], [0, +1, 0], [0, 0, +1]
     pos_0, pos_1, pos_2 = [-1.5, 0, 0], [0, 0, 0], [+1.5, 0, 0]
     b0 = parts.Booster(
         partID=0, pos=pos_0, direction=dir_0, max_force=10.0)
@@ -137,7 +137,7 @@ def loadGroundModel(scale, model_name):
     b2 = parts.Booster(
         partID=2, pos=pos_2, direction=dir_2, max_force=10.0)
     b3 = parts.Booster(
-        partID=3, pos=pos_1, direction=dir_2, max_force=10.0)
+        partID=3, pos=pos_1, direction=dir_3, max_force=1000.0)
 
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
@@ -148,7 +148,9 @@ def loadGroundModel(scale, model_name):
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
     pos, ori = [0, 0, -10], [0, 1, 0, 0]
-    ok, objID = ctrl.spawn(None, tID, pos, orient=ori, imass=0.1, scale=scale)
+    ok, objID = ctrl.spawn(
+        None, tID, pos, orient=ori, imass=0.1, scale=scale,
+        axesLockLin=[1, 1, 1], axesLockRot=[0, 0, 1])
     print('done (ID=<{}>)'.format(objID))
 
     # Construct an attribute object (will be needed to reset the simulation).
