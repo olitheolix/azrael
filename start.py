@@ -126,7 +126,8 @@ def loadGroundModel(scale, model_name):
     rgb = np.array(rgb, np.uint8)
     print('done')
 
-    # Attach trhee boosters to the mode: left, center, and right.
+    # Attach four boosters: left, front, right, and back. The left and back
+    # booster point "forwards", the other two point "backwards".
     dir_0, dir_1, dir_2 = [0, 0, -1], [0, 0, -1], [0, 0, +1]
     pos_0, pos_1, pos_2 = [-1.5, 0, 0], [0, 0, 0], [+1.5, 0, 0]
     b0 = parts.Booster(
@@ -135,12 +136,14 @@ def loadGroundModel(scale, model_name):
         partID=1, pos=pos_1, direction=dir_1, max_force=1000.0)
     b2 = parts.Booster(
         partID=2, pos=pos_2, direction=dir_2, max_force=10.0)
+    b3 = parts.Booster(
+        partID=3, pos=pos_1, direction=dir_2, max_force=10.0)
 
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'.encode('utf8')
     cs = np.array([3, 1, 1, 1], np.float64)
-    ok, _ = ctrl.addTemplate(tID, cs, vert, uv, rgb, [b0, b1, b2], [])
+    ok, _ = ctrl.addTemplate(tID, cs, vert, uv, rgb, [b0, b1, b2, b3], [])
 
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
