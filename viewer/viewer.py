@@ -159,28 +159,31 @@ class ImageWriter(QtCore.QObject):
 class Camera:
     """
     A basic FPS camera.
+
+    :param pos: Initial camera position
+    :param phi: Horizontal angle (in Radians)
+    :param theta: Vertical angle (in Radians)
     """
-    def __init__(self, pos=[0, 0, 0]):
-        # Camera at origin...
+    def __init__(self, pos=[0, 0, 0], phi=0, theta=0):
+        # Initial camera position.
         self.position = np.array(pos, dtype=np.float64)
 
-        # looking along positive z-direction...
-        self.view = np.array([0, 0, 1], dtype=np.float64)
+        # Initial camera orientation.
+        self.phi = phi
+        self.theta = theta
 
-        # ... with its head up.
-        self.up = np.array([0, 1, 0], dtype=np.float64)
+        # Allocate the camera vectors.
+        self.view = np.zeros(3, np.float64)
+        self.right = np.zeros(3, np.float64)
+        self.up = np.zeros(3, np.float64)
 
-        # This vector points to the right when viewed through
-        # the camera, yet coincides with *negative* 'x' in world coordinates.
-        self.right = np.cross(self.view, self.up)
+        # Update the 'view', 'right', and 'up' vectors according to 'phi' and
+        # 'theta'.
+        self.rotate(0, 0)
 
         # Sensitivity; only used in the convenience methods moveForward,
         # moveBackward, strafeLeft, strafeRight.
         self.translationSensitivity = 0.2
-
-        # Initial camera orientation.
-        self.phi = 0
-        self.theta = 0
 
     def cameraMatrix(self):
         """
@@ -503,8 +506,11 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             print('Template {} already exists'.format(self.t_projectile))
         del ok, _
 
-        initPos = [0, 0, -5]
-        self.camera = Camera(initPos)
+        # Create the camera. In z-direction place it in between the Cubes and
+        # Sphere generated  by the 'start' script, but out of their way to the
+        # side.
+        initPos = [-25, 0, 0]
+        self.camera = Camera(initPos, 90 * np.pi / 180, 0)
 
         # Spawn the player object.
         ok, tmp = self.ctrl.spawn(
