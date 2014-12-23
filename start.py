@@ -73,7 +73,7 @@ def parseCommandLine():
         numcubes = [int(_) for _ in param.numcubes.split(',')]
         assert len(numcubes) == 3
         assert min(numcubes) >= 0
-        assert sum(numcubes) >= 1
+        assert sum(numcubes) >= 0
         param.numcubes = numcubes
     except (TypeError, ValueError, AssertionError):
         print('The <numcubes> argument is invalid')
@@ -128,16 +128,20 @@ def loadGroundModel(scale, model_name):
 
     # Attach four boosters: left (points down), front (points back), right
     # (points up), and back (point forward).
-    dir_0, dir_1, dir_2, dir_3 = [0, -1, 0], [0, 0, -1], [0, +1, 0], [0, 0, +1]
-    pos_0, pos_1, pos_2 = [-1.5, 0, 0], [0, 0, 0], [+1.5, 0, 0]
+    dir_up = np.array([0, +1, 0])
+    dir_forward = np.array([0, 0, -1])
+    pos_left = np.array([-1.5, 0, 0])
+    pos_center = np.zeros(3)
+
     b0 = parts.Booster(
-        partID=0, pos=pos_0, direction=dir_0, max_force=10.0)
+        partID=0, pos=pos_left, direction=-dir_up, max_force=10.0)
     b1 = parts.Booster(
-        partID=1, pos=pos_1, direction=dir_1, max_force=1000.0)
+        partID=1, pos=pos_center, direction=dir_forward, max_force=1000.0)
     b2 = parts.Booster(
-        partID=2, pos=pos_2, direction=dir_2, max_force=10.0)
+        partID=2, pos=-pos_left, direction=dir_up, max_force=10.0)
     b3 = parts.Booster(
-        partID=3, pos=pos_1, direction=dir_3, max_force=1000.0)
+        partID=3, pos=pos_center, direction=-dir_forward, max_force=1000.0)
+    del dir_up, dir_forward, pos_left, pos_center
 
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
