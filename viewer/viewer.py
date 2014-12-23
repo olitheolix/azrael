@@ -856,19 +856,15 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             if not ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
         elif button == 2:
-            # Determine initial position and velocity of new object.
+            # Determine the initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
-            vel = 0.5 * self.camera.view
+            vel = 2 * self.camera.view
 
             # Spawn the object.
-            tid = 'BoosterCube'.encode('utf8')
-            prog = 'EchoBoost'.encode('utf8')
             ok, objID = self.ctrl.spawn(
-                prog, tid, pos=pos, vel=vel, scale=1, imass=1)
+                None, self.t_projectile, pos, vel=vel, scale=0.25, imass=2)
             if not ok:
-                msg = 'Could not spawn template <{}> with controller <{}>'
-                print(msg.format(prog.decode('utf8'), tid))
-                print(objID)
+                print('Could not spawn <{}>'.format(self.t_projectile))
         else:
             print('Unknown button <{}>'.format(button))
 
