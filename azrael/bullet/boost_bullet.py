@@ -235,11 +235,18 @@ class PyBulletPhys():
             # Dummy value for the collision shape.
             cshape = np.zeros(4, np.float64)
 
+            # Linear/angular factors.
+            _ = obj.linear_factor
+            axesLockLin = np.array([_.x, _.y, _.z], np.float64)
+            _ = obj.angular_factor
+            axesLockRot = np.array([_.x, _.y, _.z], np.float64)
+
             # Construct a new BulletData structure and add it to the list that
             # will eventually be returned to the caller.
             out.append(
                 BulletData(radius, scale, obj.inv_mass, obj.restitution,
-                           rot, pos, vLin, vRot, cshape))
+                           rot, pos, vLin, vRot, cshape, axesLockLin,
+                           axesLockRot))
         return 0, out[0]
 
     def setObjectData(self, objIDs: (list, tuple), obj):
@@ -263,6 +270,7 @@ class PyBulletPhys():
             # Object already downloaded --> just update.
             body = self.all_objs[objID]
 
+            # Assign body properties.
             tmp = pybullet.btTransform(rot, pos)
             body.set_center_of_mass_transform(tmp)
             body.linear_velocity = btVector3(*obj.velocityLin)
@@ -270,6 +278,8 @@ class PyBulletPhys():
             body.friction = 1
             body.restitution = obj.restitution
             body.azrael = (objID, obj.radius, obj.scale)
+            body.linear_factor = btVector3(*obj.axesLockLin)
+            body.angular_factor = btVector3(*obj.axesLockRot)
 
             # Update the mass but leave the inertia intact.
             m = obj.imass
@@ -334,6 +344,10 @@ class PyBulletPhys():
         body.set_sleeping_thresholds(0.1, 0.1)
         body.linear_velocity = btVector3(*obj.velocityLin)
         body.angular_velocity = btVector3(*obj.velocityRot)
+
+        # Assign the axes locks.
+        body.linear_factor = btVector3(*obj.axesLockLin)
+        body.angular_factor = btVector3(*obj.axesLockRot)
 
         # Attach my own admin structure to the object.
         body.azrael = (objID, obj.radius, obj.scale)

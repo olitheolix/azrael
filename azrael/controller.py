@@ -349,7 +349,9 @@ class ControllerBase(multiprocessing.Process):
               pos: (np.ndarray, list)=np.zeros(3),
               vel: (np.ndarray, list)=np.zeros(3),
               orient: (np.ndarray, list)=[0, 0, 0, 1],
-              scale=1, radius=1, imass=1):
+              scale=1, radius=1, imass=1,
+              axesLockLin: (list, np.ndarray)=[1, 1, 1],
+              axesLockRot: (list, np.ndarray)=[1, 1, 1]):
         """
         Spawn the ``templateID`` object at ``pos`` with velocity ``vel``.
 
@@ -372,10 +374,11 @@ class ControllerBase(multiprocessing.Process):
         :rtype: (bool, np.ndarray) or (bool, str)
         """
         cshape = [0, 1, 1, 1]
-        sv = bullet_data.BulletData(position=pos, velocityLin=vel,
-                                    cshape=cshape, scale=scale,
-                                    radius=radius, imass=imass,
-                                    orientation=orient)
+        sv = bullet_data.BulletData(
+            position=pos, velocityLin=vel, cshape=cshape,
+            scale=scale, radius=radius, imass=imass,
+            orientation=orient, axesLockLin=axesLockLin,
+            axesLockRot=axesLockRot)
         return self.serialiseAndSend('spawn', name, templateID, sv)
 
     @typecheck

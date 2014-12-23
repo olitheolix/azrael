@@ -42,7 +42,8 @@ ipshell = IPython.embed
 # All relevant physics data.
 _BulletData = namedtuple('BulletData',
                          'radius scale imass restitution orientation '
-                         'position velocityLin velocityRot cshape')
+                         'position velocityLin velocityRot cshape '
+                         'axesLockLin axesLockRot')
 
 
 class BulletData(_BulletData):
@@ -63,7 +64,10 @@ class BulletData(_BulletData):
                 position: (list, np.ndarray)=[0, 0, 0],
                 velocityLin: (list, np.ndarray)=[0, 0, 0],
                 velocityRot: (list, np.ndarray)=[0, 0, 0],
-                cshape: (list, np.ndarray)=[0, 1, 1, 1]):
+                cshape: (list, np.ndarray)=[0, 1, 1, 1],
+                axesLockLin: (list, np.ndarray)=[1, 1, 1],
+                axesLockRot: (list, np.ndarray)=[1, 1, 1]
+                ):
 
         # Convert arguments to NumPy types where necessary.
         position = np.array(position, np.float64)
@@ -71,8 +75,11 @@ class BulletData(_BulletData):
         velocityLin = np.array(velocityLin, np.float64)
         velocityRot = np.array(velocityRot, np.float64)
         cshape = np.array(cshape, np.float64)
+        axesLockLin = np.array(axesLockLin, np.float64)
+        axesLockRot = np.array(axesLockRot, np.float64)
 
         # Sanity checks.
+        assert len(axesLockLin) == len(axesLockRot) == 3
         assert len(orientation) == len(cshape) == 4
         assert len(position) == len(velocityLin) == len(velocityRot) == 3
 
@@ -87,7 +94,9 @@ class BulletData(_BulletData):
             position=position,
             velocityLin=velocityLin,
             velocityRot=velocityRot,
-            cshape=cshape)
+            cshape=cshape,
+            axesLockLin=axesLockLin,
+            axesLockRot=axesLockRot)
         return self
 
     def __eq__(self, ref):
