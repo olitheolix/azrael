@@ -16,8 +16,12 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-A Proportional-Differential (PD) controller to maintain the sphere's position
-at a constant value.
+A Proportional-Differential (PD) controller to maintain the sphere's position.
+
+The parameters for the PD controller were empirically chosen because Azrael's
+current implementation neither guarantees constant update intervals provides
+the internal simulation time. For now, these shortcomings severely limit the
+use of control theory methods.
 """
 
 import os
@@ -66,18 +70,21 @@ class ControllerSphere(azrael.controller.ControllerBase):
         # need it to compute the rate of change. This array has several
         # elements to allow for some smoothing.
         filter_len = 3
-        err_log = [ref_pos_z - pos] * (filter_len + 1)
+        err_log = [ref_pos_z - pos] * filter_len
 
         # Run the controller.
         while True:
-            # Compute the error between current and expected position.
-            err = ref_pos_z - pos
-            err_log.pop(0)
-            err_log.append(err)
+            # Determine the value and slope of the tracking error.
+            err_value = ref_pos_z - pos
+            err_slope = (err_value - err_log[0]) / (filter_len * dt)
 
-            # PD Controller.
-            force = K_p * err_log[-1]
-            force += K_d * (err_log[-1] - err_log[0]) / (filter_len * dt)
+            # Compute the PD control law.
+            force = K_p * err_value + K_d * err_slope
+
+            # Record the error value for the next iteration.
+            err_log.pop(0)
+            err_log.append(err_value)
+            del err_value, err_slope
 
             # The sign of the desired force determines which booster (front or
             # back) to activate. This is necessary because boosters can only
