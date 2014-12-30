@@ -122,6 +122,7 @@ def defineGrid(name: str, elDim: int, granularity: (int, float)):
     db = _DB_Grid[name]
     db.drop()
     db.insert({'admin': 'admin', 'elDim': elDim, 'gran': granularity})
+    db.ensure_index([('x', 1), ('y', 1), ('z', 1)])
 
     # All good.
     return RetVal(True, None, None)
@@ -269,7 +270,8 @@ def getRegion(name: str, ofs: np.ndarray,
                 # Convert the (floating point) position to an integer according
                 # to the grid granularity.
                 pos = (pos / admin['gran']).astype(np.int64)
-                doc = db.find_one({'pos': pos.tolist()})
+                px, py, pz = pos.tolist()
+                doc = db.find_one({'x': px, 'y': py, 'z': pz})
 
                 # Populate the output data structure.
                 if doc is not None:
@@ -318,10 +320,10 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
             for z in range(value.shape[2]):
                 pos = ofs + np.array([x, y, z])
                 pos = (pos / admin['gran']).astype(np.int64)
-                pos = pos.tolist()
+                px, py, pz = pos.tolist()
                 val = value[x, y, z, :].tolist()
-                ret = db.update({'pos': pos},
-                                {'pos': pos, 'val': val},
+                ret = db.update({'x': px, 'y': py, 'z': pz},
+                                {'x': px, 'y': py, 'z': pz, 'val': val},
                                 upsert=True)
 
     return RetVal(True, None, None)
