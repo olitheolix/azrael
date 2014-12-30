@@ -42,11 +42,11 @@ from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
 
-# Global database handles.
-_DB_Grid = None
+# Global database handle.
+_DB_Grid = pymongo.MongoClient()['azrael_grid']
 
 
-# Work package related.
+# Return value specification.
 RetVal = namedtuple('RetVal', 'ok msg data')
 
 
@@ -235,6 +235,10 @@ def getRegion(name: str, ofs: np.ndarray,
     :param 3D-vector regionDim: number of values to read in each dimension.
     :return: 4D matrix.
     """
+    # DB handle must have been initialised.
+    if _DB_Grid is None:
+        return RetVal(False, 'Not initialised', None)
+
     # Return with an error if the grid ``name`` does not exist.
     if name not in _DB_Grid.collection_names():
         msg = 'Unknown grid <{}>'.format(name)
@@ -300,6 +304,10 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
     :param 4D-vector value: the data values.
     :return: None
     """
+    # DB handle must have been initialised.
+    if _DB_Grid is None:
+        return RetVal(False, 'Not initialised', None)
+
     # Return with an error if the grid ``name`` does not exist.
     if name not in _DB_Grid.collection_names():
         msg = 'Unknown grid <{}>'.format(name)
