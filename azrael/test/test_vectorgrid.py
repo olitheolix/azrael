@@ -318,8 +318,39 @@ def test_granularity():
     print('Test passed')
 
 
+def test_auto_delete():
+    """
+    Ensure that vectorgrid automatically removes zero values.
+    """
+    # Test parameters.
+    vg = vectorgrid
+    pos = np.array([1, 2, 3], np.float64)
+    value = np.array([-1, 0, 1], np.float64)
+    elDim = 3
+    name = 'force'
+
+    # Delete all grids used in this test.
+    assert vg.deleteAllGrids().ok
+
+    # Define a new grid.
+    assert vg.defineGrid(name=name, elDim=elDim, granularity=1).ok
+
+    # Initially only the admin element must be present.
+    assert vg._DB_Grid[name].count() == 1
+
+    # Add an element and ensure the document count increased to 2.
+    assert vg.setValue(name, pos, value).ok
+    assert vg._DB_Grid[name].count() == 2
+
+    # Update the value to zero. This must decrease the count to 1 again.
+    assert vg.setValue(name, pos, 0 * value).ok
+    assert vg._DB_Grid[name].count() == 1
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
-    test_granularity()
+    test_auto_delete()
 
     test_deleteAll()
     test_define_reset_delete_grid()
@@ -327,3 +358,4 @@ if __name__ == '__main__':
     test_set_get_single()
     test_set_get_single_invalid()
     test_set_get_region()
+    test_granularity()

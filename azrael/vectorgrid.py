@@ -260,22 +260,32 @@ def getRegion(name: str, ofs: np.ndarray,
     # Allocate the output array.
     out = np.zeros(np.hstack((regionDim, admin['elDim'])), np.float64)
 
-    # Populate the output array.
-    for x in range(regionDim[0]):
-        for y in range(regionDim[1]):
-            for z in range(regionDim[2]):
-                # Fetch the vector field at the corresponding position.
-                pos = ofs + np.array([x, y, z])
+    # Compute the grid index of ``ofs``. That index is
+    # determined uniquly by the position (``ofs``) and the grid granularity.
+    gran = admin['gran']
+    x0 = int(ofs[0] / gran)
+    y0 = int(ofs[1] / gran)
+    z0 = int(ofs[2] / gran)
 
-                # Convert the (floating point) position to an integer according
-                # to the grid granularity.
-                pos = (pos / admin['gran']).astype(np.int64)
-                px, py, pz = pos.tolist()
-                doc = db.find_one({'x': px, 'y': py, 'z': pz})
+    # Convenience: the ``regionDim`` parameter uniquely specifies the number of
+    # grid positions to query in each dimension.
+    x1 = int(x0 + regionDim[0])
+    y1 = int(y0 + regionDim[1])
+    z1 = int(z0 + regionDim[2])
 
-                # Populate the output data structure.
-                if doc is not None:
-                    out[x, y, z, :] = np.array(doc['val'], np.float64)
+    # Query the values of all the specified grid positions.
+    res = db.find({'x': {'$gte': x0, '$lt': x1},
+                   'y': {'$gte': y0, '$lt': y1},
+                   'z': {'$gte': z0, '$lt': z1}})
+
+    # Populate the output data structure.
+    for doc in res:
+        # Convert the grid index to an array index, ie simply compute all grid
+        # indices relative to the ``ofs`` position.
+        x = int(doc['x'] - x0)
+        y = int(doc['y'] - y0)
+        z = int(doc['z'] - z0)
+        out[x, y, z, :] = np.array(doc['val'], np.float64)
 
     return RetVal(True, None, out)
 
@@ -318,12 +328,23 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
     for x in range(value.shape[0]):
         for y in range(value.shape[1]):
             for z in range(value.shape[2]):
+                # Compute the grid position of the current data value.
                 pos = ofs + np.array([x, y, z])
                 pos = (pos / admin['gran']).astype(np.int64)
+
+                # Convenience.
                 px, py, pz = pos.tolist()
-                val = value[x, y, z, :].tolist()
-                ret = db.update({'x': px, 'y': py, 'z': pz},
-                                {'x': px, 'y': py, 'z': pz, 'val': val},
-                                upsert=True)
+                val = value[x, y, z, :]
+
+                # Either update the value in the DB (|value| != 0) or delete
+                # all documents (there should only be one....) for this
+                # position (|value| = 0).
+                if np.sum(np.abs(val)) < 1E-9:
+                    db.remove({'x': px, 'y': py, 'z': pz}, multi=True)
+                else:
+                    ret = db.update({'x': px, 'y': py, 'z': pz},
+                                    {'x': px, 'y': py, 'z': pz,
+                                     'val': val.tolist()},
+                                    upsert=True)
 
     return RetVal(True, None, None)
