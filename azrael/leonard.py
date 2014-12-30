@@ -27,6 +27,7 @@ import setproctitle
 import multiprocessing
 import numpy as np
 
+import azrael.vectorgrid
 import azrael.util as util
 import azrael.config as config
 import azrael.bullet.boost_bullet
@@ -185,6 +186,28 @@ class LeonardBase(multiprocessing.Process):
         """
         pass
 
+    def applyGridForce(self, force, pos):
+        """
+        Return updated ``force`` that takes the force grid value at ``pos``
+        into account.
+
+        Covenience function to minimise code duplication.
+
+        :param 3d-vec force: original force value.
+        :param 3d-vec pos: position in world coordinates.
+        :return: updated ``force`` value.
+        :rtype: 3d-vec.
+        """
+        # Convenience.
+        vg = azrael.vectorgrid
+
+        # Add the force from the grid.
+        tmp = vg.getValue('force', pos)
+        if tmp.ok and len(tmp.data) == 3:
+            return force + tmp.data
+        else:
+            return force
+        
     @typecheck
     def step(self, dt: (int, float), maxsteps: int):
         """
@@ -208,8 +231,11 @@ class LeonardBase(multiprocessing.Process):
             if not ok:
                 continue
 
+            # Add the force defined on the 'force' grid.
+            force = self.applyGridForce(force, sv.position)
+
             # Update velocity and position.
-            sv.velocityLin[:] += force * 0.001
+            sv.velocityLin[:] += force * 0.005
             sv.position[:] += dt * sv.velocityLin
 
             # Override SV with user specified values (if there are any).
@@ -307,6 +333,9 @@ class LeonardBulletMonolithic(LeonardBase):
                              ``dt`` update.
         """
 
+        # Convenience.
+        vg = azrael.vectorgrid
+
         # Retrieve the SV for all objects.
         ok, allSV = btInterface.getAllStateVariables()
 
@@ -321,6 +350,10 @@ class LeonardBulletMonolithic(LeonardBase):
             # Retrieve the force vector and tell Bullet to apply it.
             ok, force, torque = btInterface.getForceAndTorque(objID)
             if ok:
+                # Add the force defined on the 'force' grid.
+                force = self.applyGridForce(force, sv.position)
+
+                # Apply the force to the object.
                 self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
 
         # Wait for Bullet to advance the simulation by one step.
@@ -384,6 +417,9 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(res))
 
+        # Convenience.
+        vg = azrael.vectorgrid
+
         # Process all subsets individually.
         for subset in res:
             # Compile the subset dictionary for the current collision set.
@@ -400,6 +436,10 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
                 # Retrieve the force vector and tell Bullet to apply it.
                 ok, force, torque = btInterface.getForceAndTorque(objID)
                 if ok:
+                    # Add the force defined on the 'force' grid.
+                    force = self.applyGridForce(force, sv.position)
+
+                    # Apply the final force to the object.
                     self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
 
             # Wait for Bullet to advance the simulation by one step.
@@ -564,6 +604,11 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
             # Retrieve the force vector and tell Bullet to apply it.
             force = np.fromstring(obj.central_force)
             torque = np.fromstring(obj.torque)
+
+            # Add the force defined on the 'force' grid.
+            force = self.applyGridForce(force, sv.position)
+
+            # Apply all forces and torques.
             engine.applyForceAndTorque(btID, 0.01 * force, torque)
 
         # Tell Bullet to advance the simulation for all objects in the
@@ -748,6 +793,28 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
 
+    def applyGridForce(self, force, pos):
+        """
+        Return updated ``force`` that takes the force grid value at ``pos``
+        into account.
+
+        Covenience function to minimise code duplication.
+
+        :param 3d-vec force: original force value.
+        :param 3d-vec pos: position in world coordinates.
+        :return: updated ``force`` value.
+        :rtype: 3d-vec.
+        """
+        # Convenience.
+        vg = azrael.vectorgrid
+
+        # Add the force from the grid.
+        tmp = vg.getValue('force', pos)
+        if tmp.ok and len(tmp.data) == 3:
+            return force + tmp.data
+        else:
+            return force
+        
     @typecheck
     def run(self):
         """
@@ -806,6 +873,11 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             # Retrieve the force vector and tell Bullet to apply it.
             force = np.fromstring(obj.central_force)
             torque = np.fromstring(obj.torque)
+
+            # Add the force defined on the 'force' grid.
+            force = self.applyGridForce(force, sv.position)
+
+            # Apply all forces and torques.
             self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
 
         # Tell Bullet to advance the simulation for all objects in the
@@ -916,12 +988,17 @@ class LeonardBaseWorkpackages(LeonardBase):
         # SV information.
         out = {}
         for obj in worklist:
+            # Retrieve SV data.
+            sv = obj.sv
+
             # Retrieve the force vector.
             force = np.fromstring(obj.central_force)
 
+            # Add the force defined on the 'force' grid.
+            force = self.applyGridForce(force, sv.position)
+
             # Update the velocity and position.
-            sv = obj.sv
-            sv.velocityLin[:] += force * 0.001
+            sv.velocityLin[:] += force * 0.005
             sv.position[:] += dt * sv.velocityLin
 
             # Override SV with user specified values (if there are any).

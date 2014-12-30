@@ -466,7 +466,74 @@ def test_computeCollisionSetsAABB(dim):
     print('Test passed')
 
 
+@pytest.mark.parametrize('clsLeonard', allEngines)
+def test_force_grid(clsLeonard):
+    """
+    Create a force grid and ensure Leonard applies its values to the center of
+    the mass.
+    """
+    # Convenience.
+    vg = azrael.vectorgrid
+    
+    # Start the necessary services.
+    clerk, ctrl, clacks = startAzrael('ZeroMQ')
+
+    # Instantiate Leonard.
+    leonard = clsLeonard()
+    leonard.setup()
+
+    # Constants and parameters for this test.
+    templateID = '_templateCube'.encode('utf8')
+
+    # Create a cube (a cube always exists in Azrael's template database).
+    ok, id_0 = ctrl.spawn(None, templateID, pos=[0, 0, 0], vel=[0, 0, 0])
+    assert ok
+
+    # Advance the simulation by 1s and verify that nothing has moved.
+    leonard.step(1.0, 60)
+    ok, sv = btInterface.getStateVariables([id_0])
+    assert ok
+    assert np.array_equal(sv[0].position, [0, 0, 0])
+
+    # Define a force grid.
+    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
+
+    # Specify a non-zero value somewhere away from the object. This means the
+    # object must still not move.
+    pos = np.array([1, 2, 3], np.float64)
+    value = np.ones(3, np.float64)
+    assert vg.setValue('force', pos, value).ok
+
+    # Step the simulation and verify the object remained where it was.
+    leonard.step(1.0, 60)
+    ok, sv = btInterface.getStateVariables([id_0])
+    assert ok
+    assert np.array_equal(sv[0].position, [0, 0, 0])
+
+    # Specify a grid value of 1N in x-direction.
+    pos = np.array([0, 0, 0], np.float64)
+    value = np.array([1, 0, 0], np.float64)
+    assert vg.setValue('force', pos, value).ok
+
+    # Step the simulation and verify the object remained where it was.
+    leonard.step(1.0, 60)
+    ok, sv = btInterface.getStateVariables([id_0])
+    assert ok
+    assert 0.004 <= sv[0].position[0] < 0.006
+    assert sv[0].position[1] == sv[0].position[2] == 0
+
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    for cls in allEngines:
+        print(cls)
+        test_force_grid(cls)
+    sys.exit()
+
+    test_force_grid(azrael.leonard.LeonardBase)
     test_worker_respawn()
     test_override_attributes(azrael.leonard.LeonardBase)
     test_sweeping_2objects()
