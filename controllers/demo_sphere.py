@@ -48,7 +48,7 @@ class ControllerSphere(azrael.controller.ControllerBase):
         time.sleep(2)
         # Engage. This will accelerate the sphere forwards.
         print('Fire central booster...', end='', flush=True)
-        central = parts.CmdBooster(partID=1, force=600)
+        central = parts.CmdBooster(partID=1, force=20)
         self.controlParts(self.objID, [central], [])
 
         # Turn off after 4s.
@@ -62,8 +62,8 @@ class ControllerSphere(azrael.controller.ControllerBase):
         # ---------------------------------------------------------------------
         # Engage. This will induce spinning due to the booster positions.
         print('Fire peripheral boosters...', end='', flush=True)
-        left = parts.CmdBooster(partID=0, force=1)
-        right = parts.CmdBooster(partID=2, force=1)
+        left = parts.CmdBooster(partID=0, force=0.01)
+        right = parts.CmdBooster(partID=2, force=0.01)
         self.controlParts(self.objID, [left, right], [])
 
         # Turn off after 2s.

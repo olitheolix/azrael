@@ -207,7 +207,7 @@ class LeonardBase(multiprocessing.Process):
             return force + tmp.data
         else:
             return force
-        
+
     @typecheck
     def step(self, dt: (int, float), maxsteps: int):
         """
@@ -235,7 +235,7 @@ class LeonardBase(multiprocessing.Process):
             force = self.applyGridForce(force, sv.position)
 
             # Update velocity and position.
-            sv.velocityLin[:] += force * 0.005
+            sv.velocityLin[:] += 0.5 * force
             sv.position[:] += dt * sv.velocityLin
 
             # Override SV with user specified values (if there are any).
@@ -354,7 +354,7 @@ class LeonardBulletMonolithic(LeonardBase):
                 force = self.applyGridForce(force, sv.position)
 
                 # Apply the force to the object.
-                self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
+                self.bullet.applyForceAndTorque(btID, force, torque)
 
         # Wait for Bullet to advance the simulation by one step.
         IDs = [util.id2int(_) for _ in allSV.keys()]
@@ -440,7 +440,7 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
                     force = self.applyGridForce(force, sv.position)
 
                     # Apply the final force to the object.
-                    self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
+                    self.bullet.applyForceAndTorque(btID, force, torque)
 
             # Wait for Bullet to advance the simulation by one step.
             IDs = [util.id2int(_) for _ in coll_SV.keys()]
@@ -609,7 +609,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
             force = self.applyGridForce(force, sv.position)
 
             # Apply all forces and torques.
-            engine.applyForceAndTorque(btID, 0.01 * force, torque)
+            engine.applyForceAndTorque(btID, force, torque)
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
@@ -814,7 +814,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             return force + tmp.data
         else:
             return force
-        
+
     @typecheck
     def run(self):
         """
@@ -878,7 +878,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             force = self.applyGridForce(force, sv.position)
 
             # Apply all forces and torques.
-            self.bullet.applyForceAndTorque(btID, 0.01 * force, torque)
+            self.bullet.applyForceAndTorque(btID, force, torque)
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
@@ -998,7 +998,7 @@ class LeonardBaseWorkpackages(LeonardBase):
             force = self.applyGridForce(force, sv.position)
 
             # Update the velocity and position.
-            sv.velocityLin[:] += force * 0.005
+            sv.velocityLin[:] += 0.5 * force
             sv.position[:] += dt * sv.velocityLin
 
             # Override SV with user specified values (if there are any).

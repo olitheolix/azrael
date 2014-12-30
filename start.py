@@ -230,9 +230,9 @@ def spawnCubes(numCols, numRows, numLayers):
     # ----------------------------------------------------------------------
     # Two boosters, one left, one right. Both point in the same direction.
     b0 = parts.Booster(
-        partID=0, pos=[+0.005, 0, 0], direction=[0, 0, 1], max_force=10.0)
+        partID=0, pos=[+0.05, 0, 0], direction=[0, 0, 1], max_force=10.0)
     b1 = parts.Booster(
-        partID=1, pos=[-0.005, 0, 0], direction=[0, 0, 1], max_force=10.0)
+        partID=1, pos=[-0.05, 0, 0], direction=[0, 0, 1], max_force=10.0)
 
     # Two factories, one left one right. They will eject the new objects
     # forwards and backwards, respectively.

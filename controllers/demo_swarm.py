@@ -16,7 +16,10 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Manoeuvre the swarm of cubes in a controlled fashion.
+Manoeuvre the swarm of cubes in an orchestrated fashion.
+
+Due to the lack of any feedback control the cubes may not move too orderly but
+it suffices to demonstrate the principle.
 """
 
 import os
@@ -52,29 +55,34 @@ class ControllerCubeLeft(azrael.controller.ControllerBase):
         # Edit here to change the force of boosters.
         # ---------------------------------------------------------------------
         # Turn both boosters on after 2s.
-        left = parts.CmdBooster(self.left, force=10)
-        right = parts.CmdBooster(self.right, force=10)
+        left = parts.CmdBooster(self.left, force=0.1)
+        right = parts.CmdBooster(self.right, force=0.1)
         self.controlParts(self.objID, [right, left], [])
         print('{0:02d}: Manoeuvre 1'.format(id2int(self.objID)))
-
-        # Turn both boosters off after another 2s.
         time.sleep(2)
+
+        # Fire the booster assymetrically to make the cube turn.
         left = parts.CmdBooster(self.left, force=0)
-        right = parts.CmdBooster(self.right, force=2)
+        right = parts.CmdBooster(self.right, force=1)
         self.controlParts(self.objID, [right, left], [])
         print('{0:02d}: Manoeuvre 2'.format(id2int(self.objID)))
-
         time.sleep(2)
-        left = parts.CmdBooster(self.left, force=2)
+
+        # Reverse the force settings to stop the spinning.
+        left = parts.CmdBooster(self.left, force=1)
         right = parts.CmdBooster(self.right, force=0)
         self.controlParts(self.objID, [right, left], [])
         print('{0:02d}: Manoeuvre 3'.format(id2int(self.objID)))
-
         time.sleep(2)
-        left = parts.CmdBooster(self.left, force=10)
-        right = parts.CmdBooster(self.right, force=10)
+
+        # Use the same force on both boosters to just move forward without
+        # inducing any more spinning.
+        left = parts.CmdBooster(self.left, force=0.1)
+        right = parts.CmdBooster(self.right, force=0.1)
         self.controlParts(self.objID, [right, left], [])
         time.sleep(4)
+
+        # Done.
         print('{0:02d}: Manoeuvre 4'.format(id2int(self.objID)))
         self.close()
 

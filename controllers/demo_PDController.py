@@ -60,7 +60,7 @@ class ControllerSphere(azrael.controller.ControllerBase):
         dt = 0.3
 
         # Parameters of PD controller (work in tandem with time step dt).
-        K_p, K_d = 5, 10
+        K_p, K_d = 0.1, 0.1
 
         # Query the sphere's initial position.
         pos = self.getStateVariables([self.objID])

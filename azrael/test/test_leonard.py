@@ -474,7 +474,7 @@ def test_force_grid(clsLeonard):
     """
     # Convenience.
     vg = azrael.vectorgrid
-    
+
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
@@ -515,11 +515,11 @@ def test_force_grid(clsLeonard):
     value = np.array([1, 0, 0], np.float64)
     assert vg.setValue('force', pos, value).ok
 
-    # Step the simulation and verify the object remained where it was.
+    # Step the simulation and verify the object moved accordingly.
     leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    assert 0.004 <= sv[0].position[0] < 0.006
+    assert 0.4 <= sv[0].position[0] < 0.6
     assert sv[0].position[1] == sv[0].position[2] == 0
 
     # Shutdown the services.
@@ -528,11 +528,6 @@ def test_force_grid(clsLeonard):
 
 
 if __name__ == '__main__':
-    for cls in allEngines:
-        print(cls)
-        test_force_grid(cls)
-    sys.exit()
-
     test_force_grid(azrael.leonard.LeonardBase)
     test_worker_respawn()
     test_override_attributes(azrael.leonard.LeonardBase)
