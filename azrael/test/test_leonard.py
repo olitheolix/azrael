@@ -7,6 +7,7 @@ import azrael.clerk
 import azrael.clacks
 import azrael.leonard
 import azrael.controller
+import azrael.vectorgrid
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
@@ -43,6 +44,9 @@ def startAzrael(ctrl_type):
     :return: handles to (clerk, ctrl, clacks)
     """
     killAzrael()
+
+    # Delete all grids used in this test.
+    assert azrael.vectorgrid.deleteAllGrids().ok
 
     # Start Clerk and instantiate Controller.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -173,7 +177,7 @@ def test_move_single_object(clsLeonard):
     leonard.step(1.0, 60)
     ok, sv = btInterface.getStateVariables([id_0])
     assert ok
-    np.array_equal(sv[0].position, [0, 0, 0])
+    assert np.array_equal(sv[0].position, [0, 0, 0])
 
     # Give the object a velocity.
     ok, sv = btInterface.getStateVariables([id_0])
