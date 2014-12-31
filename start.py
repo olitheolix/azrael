@@ -37,6 +37,21 @@ import multiprocessing
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Import the necessary Azrael modules.
+p = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(p, 'viewer'))
+import model_import
+import azrael.clerk
+import azrael.clacks
+import azrael.util as util
+import azrael.parts as parts
+import azrael.config as config
+import azrael.leonard as leonard
+import azrael.controller as controller
+import azrael.vectorgrid as vectorgrid
+import azrael.bullet.btInterface as btInterface
+del p
+
 
 ipshell = IPython.embed
 
@@ -163,14 +178,15 @@ def loadGroundModel(scale, model_name):
     return objID, attr
 
 
-def spawnCubes(numCols, numRows, numLayers):
+def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     """
-    Define a cubic template and spawn ``numInstances`` of it.
+    Spawn multiple cubes in a regular grid.
+
+    The number of cubes equals ``numCols`` * ``numRows`` * ``numLayers``. The
+    center of this "prism" is at ``center``.
 
     Every cube has two boosters and two factories. The factories can themselves
     spawn more (purely passive) cubes.
-
-    The cubes will be arranged regularly in the scene.
     """
     # Establish connection to Azrael.
     ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
@@ -290,11 +306,14 @@ def spawnCubes(numCols, numRows, numLayers):
                 # Add space in between cubes.
                 pos *= -(1 + cube_spacing)
 
-                # Correct the cube position to ensure the center of the
-                # grid coincides with (0, 0, 0) in world coordinates.
+                # Correct the cube's position to ensure the center of the
+                # grid coincides with the origin.
                 pos[0] += (numCols // 2) * (1 + cube_spacing)
                 pos[1] += (numRows // 2) * (1 + cube_spacing)
-                pos[2] += 10
+                pos[2] += (numLayers // 2) * (1 + cube_spacing)
+
+                # Move the grid to position ``center``.
+                pos += np.array(center)
 
                 # Spawn the cube and update the index counter. The intitial
                 # velocity, acceleration, and orientation is neutral.
@@ -339,13 +358,18 @@ def startAzrael(param):
     """
     Start all Azrael processes and return their process handles.
     """
+    # Delete all grids but define a force grid (will not be used but
+    # Leonard throws a lot of harmless warnings otherwise).
+    assert vectorgrid.deleteAllGrids().ok
+    assert vectorgrid.defineGrid(name='force', elDim=3, granularity=1).ok
+
+    # Spawn Azrael's APIs.
     clerk = azrael.clerk.Clerk(reset=True)
     clerk.start()
     clacks = azrael.clacks.ClacksServer()
     clacks.start()
     btInterface.initSVDB(reset=True)
 
-    out_cubes = []
     if not param.noinit:
         # Add a model to the otherwise empty simulation. The sphere is
         # in the repo whereas the Vatican model is available here:
@@ -357,7 +381,7 @@ def startAzrael(param):
         tmp = loadGroundModel(*model_name)
 
         # Define additional templates.
-        default_attributes = spawnCubes(*param.numcubes)
+        default_attributes = spawnCubes(*param.numcubes, center=(0, 0, 10))
         default_attributes.append(tmp)
 
     # Start the physics engine.
@@ -485,20 +509,6 @@ if __name__ == '__main__':
 
     # Wait until MongoDB is live.
     waitForMongo()
-
-    # Import the necessary Azrael modules.
-    p = os.path.dirname(os.path.abspath(__file__))
-    sys.path.insert(0, os.path.join(p, 'viewer'))
-    import model_import
-    import azrael.clerk
-    import azrael.clacks
-    import azrael.util as util
-    import azrael.parts as parts
-    import azrael.config as config
-    import azrael.leonard as leonard
-    import azrael.controller as controller
-    import azrael.bullet.btInterface as btInterface
-    del p
 
     # Start Azrael.
     main()
