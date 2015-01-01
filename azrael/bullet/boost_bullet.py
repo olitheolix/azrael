@@ -284,7 +284,8 @@ class PyBulletPhys():
 
         # Build and assign the new collision shape, if necessary.
         old = body.azrael[1]
-        if (old.scale != obj.scale) or (np.array_equal(old.cshape, obj.cshape)):
+        if (old.scale != obj.scale) or \
+           not (np.array_equal(old.cshape, obj.cshape)):
             body.collision_shape = self.compileCollisionShape(objID, obj)
         del old
 

@@ -358,7 +358,61 @@ def test_modify_size():
     print('Test passed')
 
 
+def test_modify_cshape():
+    """
+    Change the collision shape type. This is more intricate than
+    changing the mass (see previous test) because this time the entire
+    collision shape must be swapped out underneath.
+
+    To test this we create two spheres that (just) do not touch. They are
+    offset along the x/y axis. Once we change the spheres to cubes the their
+    edges will interpenetrate and Bullet will move them apart. We can identify
+    this movement.
+    """
+    # Constants and paramters for this test.
+    objID_a, objID_b = 10, 20
+    pos_a = [-0.8, -0.8, 0]
+    pos_b = [0.8, 0.8, 0]
+    cs_cube = [4, 2, 2, 2]
+    cs_sphere = [3, 1, 1, 1]
+
+    # Create two identical unit spheres, offset along the x/y axis.
+    obj_a = bullet_data.BulletData(position=pos_a, cshape=cs_sphere)
+    obj_b = bullet_data.BulletData(position=pos_b, cshape=cs_sphere)
+
+    # Instantiate Bullet engine.
+    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+
+    # Send objects to Bullet and progress the simulation by one second.
+    # The objects must not move because no forces are at play and the spheres
+    # do not touch.
+    bullet.setObjectData([objID_a], obj_a)
+    bullet.setObjectData([objID_b], obj_b)
+    bullet.compute([objID_a, objID_b], 1.0, 60)
+    ok, tmp = bullet.getObjectData([objID_a])
+    assert obj_a == tmp
+    ok, tmp = bullet.getObjectData([objID_b])
+    assert obj_b == tmp
+    
+    # Change the collision shape of both objects to a unit cube.
+    obj_a = bullet_data.BulletData(position=pos_a, cshape=cs_cube)
+    obj_b = bullet_data.BulletData(position=pos_b, cshape=cs_cube)
+    bullet.setObjectData([objID_a], obj_a)
+    bullet.setObjectData([objID_b], obj_b)
+
+    # Progress the simulation for one second. Bullet must move the objects away
+    # from each other.
+    bullet.compute([objID_a, objID_b], 1.0, 60)
+    ok, tmp = bullet.getObjectData([objID_a])
+    assert tmp.position[0] < obj_a.position[0]
+    ok, tmp = bullet.getObjectData([objID_b])
+    assert tmp.position[0] > obj_b.position[0]
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_modify_cshape()
     test_modify_size()
     test_modify_mass()
     test_update_object()
