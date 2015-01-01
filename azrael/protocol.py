@@ -345,6 +345,33 @@ def FromClerk_GetGeometry_Decode(data: dict):
 
 
 # ---------------------------------------------------------------------------
+# SetGeometry
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_SetGeometry_Encode(
+        objID: bytes, vert: np.ndarray, uv: np.ndarray, rgb: np.ndarray):
+    return True, {'objID': objID, 'vert': vert.tolist(), 'UV': uv.tolist(),
+                  'RGB': rgb.tolist()}
+
+
+@typecheck
+def ToClerk_SetGeometry_Decode(data: dict):
+    return True, (bytes(data['objID']), data['vert'], data['UV'], data['RGB'])
+
+
+@typecheck
+def FromClerk_SetGeometry_Encode(dummyarg):
+    return True, {}
+
+
+@typecheck
+def FromClerk_SetGeometry_Decode(payload):
+    return True, payload
+
+
+# ---------------------------------------------------------------------------
 # GetStateVariables
 # ---------------------------------------------------------------------------
 

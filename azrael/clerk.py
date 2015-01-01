@@ -170,6 +170,10 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_GetGeometry_Decode,
                 self.getGeometry,
                 protocol.FromClerk_GetGeometry_Encode),
+            'set_geometry': (
+                protocol.ToClerk_SetGeometry_Decode,
+                self.setGeometry,
+                protocol.FromClerk_SetGeometry_Encode),
             'set_force': (
                 protocol.ToClerk_SetForce_Decode,
                 self.setForce,

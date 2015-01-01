@@ -553,7 +553,56 @@ def test_controlParts(ctrl_type):
     print('Test passed')
 
 
+@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
+def test_setGeometry(ctrl_type):
+    """
+    Spawn a new object and modify its geometry at runtime.
+    """
+    # Convenience.
+    cs = np.array([1, 2, 3, 4], np.float64)
+    vert = np.arange(9).astype(np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
+    templateID = 't1'.encode('utf8')
+
+    # Start the necessary services.
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
+
+    # Add a new template and spawn it.
+    ok, templateID = ctrl.addTemplate(templateID, cs, vert, uv, rgb, [], [])
+    assert ok
+    ok, objID = ctrl.spawn(None, templateID, pos=np.ones(3), vel=-np.ones(3))
+    assert ok
+
+    # Query the SV to obtain the geometry checksum value.
+    ok, sv = ctrl.getStateVariables(objID)
+    assert ok
+    checksumGeometry = sv[objID].checksumGeometry
+
+    # Fetch-, modify-, update- and verify the geometry.
+    ok, (ret_vert, ret_uv, ret_rgb) = ctrl.getGeometry(objID)
+    assert ok
+    assert np.allclose(vert, ret_vert) and np.allclose(uv, ret_uv)
+
+    ok, _ = clerk.setGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb)
+    assert ok
+
+    ok, (ret_vert, ret_uv, ret_rgb) = ctrl.getGeometry(objID)
+    assert ok
+    assert np.allclose(2 * vert, ret_vert) and np.allclose(2 * uv, ret_uv)
+
+    # Ensure the geometry checksum is different as well.
+    ok, sv = ctrl.getStateVariables(objID)
+    assert ok
+    assert sv[objID].checksumGeometry != checksumGeometry
+
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_setGeometry('Websocket')
     test_spawn_and_delete_one_controller('Websocket')
     test_spawn_and_get_state_variables('Websocket')
     test_ping()

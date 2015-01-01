@@ -340,6 +340,21 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_geometry', objID)
 
     @typecheck
+    def setGeometry(self, objID: bytes, vert: np.ndarray, uv: np.ndarray,
+                    rgb: np.ndarray):
+        """
+        Change the geometry parameters of ``objID``.
+
+        :param bytes objID: ID for which to return the geometry.
+        :param bytes vert: object geometry
+        :param bytes UV: UV map for textures
+        :param bytes RGB: texture
+        :return: (ok, ())
+        :rtype: (bool, tuple) or (bool, str)
+        """
+        return self.serialiseAndSend('set_geometry', objID, vert, uv, rgb)
+
+    @typecheck
     def spawn(self, name: bytes, templateID: bytes,
               pos: (np.ndarray, list)=np.zeros(3),
               vel: (np.ndarray, list)=np.zeros(3),
