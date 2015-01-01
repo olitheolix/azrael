@@ -892,7 +892,7 @@ class Clerk(multiprocessing.Process):
                 sv[idx] = sv[idx]._replace(checksumGeometry=docs[objID])
             else:
                 sv[idx] = None
-                
+
         return True, (objIDs, sv)
 
     @typecheck

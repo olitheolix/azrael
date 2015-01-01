@@ -330,10 +330,11 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # orientations are all identical).
     z = np.zeros(3, np.float64)
     o = np.array([0, 0, 0, 1], np.float64)
-    default_attributes = [
-        (_[0], btInterface.BulletDataOverride(
-            position=_[1], velocityLin=z, velocityRot=z, orientation=o))
-                          for _ in default_attributes]
+    default_attributes = []
+    for attr in default_attributes:
+        tmp = btInterface.BulletDataOverride(
+            position=_[1], velocityLin=z, velocityRot=z, orientation=o)
+        default_attributes.append((_[0], tmp))
     return default_attributes
 
 

@@ -343,7 +343,7 @@ class PyBulletPhys():
         # are kept alive (Bullet does not own them but accesses them).
         self.collision_shapes[objID] = cshape
         return cshape
-        
+
     @typecheck
     def createRigidBody(self, objID, obj):
         """

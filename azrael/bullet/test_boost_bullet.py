@@ -278,7 +278,7 @@ def test_modify_mass():
     # The objects must not move because no forces are at play.
     bullet.setObjectData([objID_a], obj_a)
     bullet.setObjectData([objID_b], obj_b)
-    
+
     # Update the mass of the second object.
     obj_b = obj_b._replace(imass=0.5 * obj_b.imass)
     bullet.setObjectData([objID_b], obj_b)
@@ -329,7 +329,7 @@ def test_modify_size():
     # The objects must not move because no forces are at play.
     bullet.setObjectData([objID_a], obj_a)
     bullet.setObjectData([objID_b], obj_b)
-    
+
     # Progress the simulation for one second. Nothing must happen.
     bullet.compute([objID_a, objID_b], 1.0, 60)
 
@@ -337,7 +337,7 @@ def test_modify_size():
     assert obj_a == tmp
     ok, tmp = bullet.getObjectData([objID_b])
     assert obj_b == tmp
-    
+
     # Enlarge the second object so that the spheres no overlap.
     obj_b = obj_b._replace(scale=2.5)
     bullet.setObjectData([objID_b], obj_b)
@@ -390,7 +390,7 @@ def test_modify_cshape():
     assert obj_a == tmp
     ok, tmp = bullet.getObjectData([objID_b])
     assert obj_b == tmp
-    
+
     # Change the collision shape of both objects to a unit cube.
     obj_a = bullet_data.BulletData(position=pos_a, cshape=cs_cube)
     obj_b = bullet_data.BulletData(position=pos_b, cshape=cs_cube)

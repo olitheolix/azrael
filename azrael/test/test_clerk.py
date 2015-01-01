@@ -1097,7 +1097,7 @@ def test_getGeometry():
     rgb = np.array([1, 2, 250], np.uint8)
     templateID = 't1'.encode('utf8')
     sv = bullet_data.BulletData()
-    
+
     # Add a valid template and verify it now exists in Azrael.
     ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
     assert ok
@@ -1122,11 +1122,11 @@ def test_getGeometry():
     # Delete the object.
     ok, _ = clerk.deleteObject(objID)
     assert ok
-    
+
     # Attempt to query the geometry of the now deleted object.
     ok, _ = clerk.getGeometry(objID)
     assert not ok
-    
+
     # Kill all spawned Controller processes.
     killAzrael()
     print('Test passed')
@@ -1149,7 +1149,7 @@ def test_instanceDB_checksum():
     rgb = np.array([1, 2, 250], np.uint8)
     templateID = 't1'.encode('utf8')
     sv = bullet_data.BulletData()
-    
+
     # Add a valid template and verify it now exists in Azrael.
     ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
     assert ok

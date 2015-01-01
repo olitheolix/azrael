@@ -268,7 +268,7 @@ def test_override_attributes():
     vr = 1 + vl
     o = np.array([11, 12.5, 13, 13.5])
     data = BulletDataOverride(position=p, velocityLin=vl, velocityRot=vr,
-                           orientation=o)
+                              orientation=o)
     del p, vl, vr, o
 
     # Reset the SV database.

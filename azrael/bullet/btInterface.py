@@ -549,7 +549,8 @@ def getWorkPackage(wpid: int):
         """
         Place ``data`` into a BulletDataOverride structure.
         """
-        return BulletDataOverride(**dict(zip(BulletDataOverride._fields, data)))
+        fields = BulletDataOverride._fields
+        return BulletDataOverride(**dict(zip(fields, data)))
 
     # Compile a list of WPData objects; one for every object in the WP. Skip
     # non-existing objects.
