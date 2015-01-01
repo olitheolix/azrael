@@ -262,33 +262,44 @@ class PyBulletPhys():
         """
         objID = objIDs[0]
 
+        # Create the Rigid Body if it does not yet exist.
+        if objID not in self.all_objs:
+            self.createRigidBody(objID, obj)
+
+        # Convenience.
+        body = self.all_objs[objID]
+
         # Convert orientation and position to btVector3.
         rot = btQuaternion(*obj.orientation)
         pos = btVector3(*obj.position)
 
-        if objID in self.all_objs:
-            # Object already downloaded --> just update.
-            body = self.all_objs[objID]
+        # Assign body properties.
+        tmp = pybullet.btTransform(rot, pos)
+        body.set_center_of_mass_transform(tmp)
+        body.linear_velocity = btVector3(*obj.velocityLin)
+        body.angular_velocity = btVector3(*obj.velocityRot)
+        body.restitution = obj.restitution
+        body.linear_factor = btVector3(*obj.axesLockLin)
+        body.angular_factor = btVector3(*obj.axesLockRot)
+        body.azrael = (objID, obj.radius, obj.scale)
 
-            # Assign body properties.
-            tmp = pybullet.btTransform(rot, pos)
-            body.set_center_of_mass_transform(tmp)
-            body.linear_velocity = btVector3(*obj.velocityLin)
-            body.angular_velocity = btVector3(*obj.velocityRot)
-            body.friction = 1
-            body.restitution = obj.restitution
-            body.azrael = (objID, obj.radius, obj.scale)
-            body.linear_factor = btVector3(*obj.axesLockLin)
-            body.angular_factor = btVector3(*obj.axesLockRot)
-
-            # Update the mass but leave the inertia intact.
-            m = obj.imass
-            i = body.get_inv_inertia_diag_local()
+        # Update the mass but leave the inertia intact.
+        m = obj.imass
+        i = body.get_inv_inertia_diag_local()
+        if (m < 1E-10) or (i.x < 1E-10) or (i.y < 1E-10) or (i.z < 1E-10):
+            m = i.x = i.y = i.z = 1
+        else:
             i.x = 1 / i.x
             i.y = 1 / i.y
             i.z = 1 / i.z
-            body.set_mass_props(1 / m, i)
-            return
+            m = 1 / m
+        body.set_mass_props(m, i)
+
+    @typecheck
+    def createRigidBody(self, objID, obj):
+        # Convert orientation and position to btVector3.
+        rot = btQuaternion(*obj.orientation)
+        pos = btVector3(*obj.position)
 
         # Instantiate a new collision shape.
         if obj.cshape[0] == 3:
@@ -309,14 +320,6 @@ class PyBulletPhys():
         # Create a motion state for the initial orientation and position.
         ms = pybullet.btDefaultMotionState(pybullet.btTransform(rot, pos))
 
-        # Add the collision shape and motion state to the local cache. Neither
-        # is explicitly used anymore but the pointers are were passed to Bullet
-        # calls and Bullet did not make a copy of it. Therefore, we have to
-        # keep a reference to them alive as the smart pointer logic would
-        # otherwise remove it.
-        self.collision_shapes[objID] = cshape
-        self.motion_states[objID] = ms
-
         # Ask Bullet to compute the mass and inertia for us. The inertia will
         # be passed as a reference whereas the 'mass' is irrelevant due to how
         # the C++ function was wrapped.
@@ -331,26 +334,25 @@ class PyBulletPhys():
         if (inertia.length > 20) or (inertia.length < 1E-5):
             print('Bullet warning: Inertia = {}'.format(inertia.length))
 
-        # Bullet requires this admin structure to constructe the rigid body.
+        # Bullet requires this admin structure to construct the rigid body.
         ci = pybullet.btRigidBodyConstructionInfo(mass, ms, cshape, inertia)
 
         # Instantiate the actual rigid body object.
         body = pybullet.btRigidBody(ci)
 
-        # Set additionl parameters.
+        # Set additional parameters.
         body.friction = 1
         body.set_damping(0.02, 0.02)
-        body.restitution = obj.restitution
         body.set_sleeping_thresholds(0.1, 0.1)
-        body.linear_velocity = btVector3(*obj.velocityLin)
-        body.angular_velocity = btVector3(*obj.velocityRot)
-
-        # Assign the axes locks.
-        body.linear_factor = btVector3(*obj.axesLockLin)
-        body.angular_factor = btVector3(*obj.axesLockRot)
 
         # Attach my own admin structure to the object.
         body.azrael = (objID, obj.radius, obj.scale)
 
         # Add the rigid body to the object cache.
         self.all_objs[objID] = body
+
+        # Add the collision shape and motion state to the local cache. Neither
+        # is explicitly used anymore but it keeps the underlying pointers
+        # alive since Bullet does not track them.
+        self.collision_shapes[objID] = cshape
+        self.motion_states[objID] = ms
