@@ -42,20 +42,18 @@ _DB_WP = None
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv central_force torque attrOverride')
 WPAdmin = namedtuple('WPAdmin', 'token dt maxsteps')
-PosVelAccOrient = namedtuple(
-    'PosVelAccOrient', 'position velocityLin velocityRot orientation')
 
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
 
 
-class PosVelAccOrient(bullet_data._BulletData):
+class BulletDataOverride(bullet_data._BulletData):
     """
     Create a ``_BulletData`` named tuple.
 
-    The only differenc between this class and ``bullet_data.BulletData`` is
-    that this class allows *None* values.
+    The only difference between this class and ``bullet_data.BulletData`` is
+    that this class permits *None* values.
     """
     @typecheck
     def __new__(cls, *args, **kwargs):
@@ -135,7 +133,7 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     # Add the document. The find_and_modify command below implements the
     # fictional 'insert_if_not_exists' command. This ensures that we will not
     # overwrite any possibly existing object.
-    attr = PosVelAccOrient()
+    attr = BulletDataOverride()
     doc = _DB_SV.find_and_modify(
         {'objid': objID},
         {'$setOnInsert': {'sv': sv, 'templateID': templateID,
@@ -375,7 +373,7 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
 
 
 @typecheck
-def overrideAttributes(objID: bytes, data: PosVelAccOrient):
+def overrideAttributes(objID: bytes, data: BulletDataOverride):
     """
     Request to manually update the attributes of ``objID``.
 
@@ -385,7 +383,7 @@ def overrideAttributes(objID: bytes, data: PosVelAccOrient):
     Use ``pos``=None to void the request for overwriting attributes.
 
     :param bytes objID: object to update.
-    :param PosVelAccOrient pos: new object attributes.
+    :param BulletDataOverride pos: new object attributes.
     :return bool: Success
     """
     # Sanity check.
@@ -396,7 +394,7 @@ def overrideAttributes(objID: bytes, data: PosVelAccOrient):
         # If ``data`` is None then the user wants us to clear any pending
         # attribute updates for ``objID``. Hence void the respective entry in
         # the DB.
-        attr = PosVelAccOrient()
+        attr = BulletDataOverride()
         ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': attr}})
         return ret['n'] == 1
 
@@ -415,7 +413,7 @@ def overrideAttributes(objID: bytes, data: PosVelAccOrient):
     if (data.orientation is not None) and len(data.orientation) != 4:
         return False
 
-    # Convert PosVelAccOrient(None, array([1,2,3]), ...) instances to simple
+    # Convert BulletDataOverride(None, array([1,2,3]), ...) instances to simple
     # lists like [None, [1,2,3], ...].
     attr = [_ if _ is None else _.tolist() for _ in data]
 
@@ -449,11 +447,11 @@ def getOverrideAttributes(objID: bytes):
 
     # There may or may not be a recommended position for this object.
     if doc['attrOverride'] is None:
-        return True, PosVelAccOrient()
+        return True, BulletDataOverride()
     else:
         tmp = doc['attrOverride']
-        tmp = dict(zip(PosVelAccOrient._fields, tmp))
-        return True, PosVelAccOrient(**tmp)
+        tmp = dict(zip(BulletDataOverride._fields, tmp))
+        return True, BulletDataOverride(**tmp)
 
 
 @typecheck
@@ -549,9 +547,9 @@ def getWorkPackage(wpid: int):
 
     def aux(data):
         """
-        Place ``data`` into a PosVelAccOrient structure.
+        Place ``data`` into a BulletDataOverride structure.
         """
-        return PosVelAccOrient(**dict(zip(PosVelAccOrient._fields, data)))
+        return BulletDataOverride(**dict(zip(BulletDataOverride._fields, data)))
 
     # Compile a list of WPData objects; one for every object in the WP. Skip
     # non-existing objects.
@@ -580,11 +578,11 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     :return bool: Success.
     """
     # Iterate over all object IDs and update the state variables.
-    attr = PosVelAccOrient()
     for objID in svdict:
         _DB_SV.update(
             {'objid': objID, 'token': token},
-            {'$set': {'sv': svdict[objID].toJsonDict(), 'attrOverride': attr},
+            {'$set': {'sv': svdict[objID].toJsonDict(),
+                      'attrOverride': BulletDataOverride()},
              '$unset': {'token': 1}})
 
     # Remove the specified work package. This MUST happen AFTER the SVs were

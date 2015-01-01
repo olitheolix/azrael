@@ -174,7 +174,7 @@ def loadGroundModel(scale, model_name):
 
     # Construct an attribute object (will be needed to reset the simulation).
     z = np.zeros(3, np.float64)
-    attr = btInterface.PosVelAccOrient(
+    attr = btInterface.BulletDataOverride(
         position=pos, velocityLin=z, velocityRot=z, orientation=ori)
     return objID, attr
 
@@ -331,7 +331,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     z = np.zeros(3, np.float64)
     o = np.array([0, 0, 0, 1], np.float64)
     default_attributes = [
-        (_[0], btInterface.PosVelAccOrient(
+        (_[0], btInterface.BulletDataOverride(
             position=_[1], velocityLin=z, velocityRot=z, orientation=o))
                           for _ in default_attributes]
     return default_attributes

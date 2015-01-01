@@ -259,7 +259,7 @@ def FromClerk_GetAllObjectIDs_Decode(data: dict):
 
 @typecheck
 def ToClerk_AttributeOverride_Encode(
-        objID: bytes, data: btInterface.PosVelAccOrient):
+        objID: bytes, data: btInterface.BulletDataOverride):
     return True, {'objID': objID, 'data': data}
 
 
@@ -269,8 +269,8 @@ def ToClerk_AttributeOverride_Decode(payload: dict):
     objID = bytes(payload['objID'])
     data = payload['data']
     data = [np.array(_) if isinstance(_, list) else _ for _ in data]
-    tmp = dict(zip(btInterface.PosVelAccOrient._fields, data))
-    data = btInterface.PosVelAccOrient(**tmp)
+    tmp = dict(zip(btInterface.BulletDataOverride._fields, data))
+    data = btInterface.BulletDataOverride(**tmp)
     return True, (objID, data)
 
 

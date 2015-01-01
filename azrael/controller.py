@@ -502,7 +502,7 @@ class ControllerBase(multiprocessing.Process):
 
     @typecheck
     def overrideAttributes(self, objID: bytes,
-                           data: btInterface.PosVelAccOrient):
+                           data: btInterface.BulletDataOverride):
         """
         Request to override the attributes of ``objID`` with ``data``.
 
@@ -511,7 +511,7 @@ class ControllerBase(multiprocessing.Process):
         will be applied exactly once.
 
         :param bytes objID: the object to move.
-        :param PosVelAccOrient data: the object attributes to set.
+        :param BulletDataOverride data: the object attributes to set.
         :return: (ok, b'')
         :rtype: (bool, bytes)
         :raises: None

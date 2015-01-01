@@ -740,7 +740,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             self.camera.strafeLeft()
 
         pos = self.camera.position
-        attr = btInterface.PosVelAccOrient(position=pos)
+        attr = btInterface.BulletDataOverride(position=pos)
         self.ctrl.overrideAttributes(self.player_id, attr)
 
         # Do not update the camera rotation if the mouse is not grabbed.

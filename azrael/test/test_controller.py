@@ -188,7 +188,7 @@ def test_spawn_and_get_state_variables(ctrl_type):
     vl = np.array([8, 9, 10.5])
     vr = vl + 1
     o = np.array([11, 12.5, 13, 13.5])
-    data = btInterface.PosVelAccOrient(
+    data = btInterface.BulletDataOverride(
         position=p, velocityLin=vl, velocityRot=vr, orientation=o)
     ok, ret = ctrl.overrideAttributes(id0, data)
     assert ok

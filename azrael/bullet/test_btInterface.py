@@ -260,14 +260,14 @@ def test_override_attributes():
     and orientation.
     """
     # Convenience.
-    PosVelAccOrient = btInterface.PosVelAccOrient
+    BulletDataOverride = btInterface.BulletDataOverride
 
     # Test constants.
     p = np.array([1, 2, 5])
     vl = np.array([8, 9, 10.5])
     vr = 1 + vl
     o = np.array([11, 12.5, 13, 13.5])
-    data = PosVelAccOrient(position=p, velocityLin=vl, velocityRot=vr,
+    data = BulletDataOverride(position=p, velocityLin=vl, velocityRot=vr,
                            orientation=o)
     del p, vl, vr, o
 
@@ -293,7 +293,7 @@ def test_override_attributes():
     # Query the attributes for ID0. This must succeed. However, the returned
     # values must all be None since no attributes have been set specifically.
     ok, ret = btInterface.getOverrideAttributes(id_0)
-    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None))
+    assert (ok, ret) == (True, BulletDataOverride(None, None, None, None))
 
     # Request to overwrite attributes for the just inserted object.
     assert btInterface.overrideAttributes(id_0, data)
@@ -308,7 +308,7 @@ def test_override_attributes():
     # indeed reset.
     assert btInterface.overrideAttributes(id_0, None)
     ok, ret = btInterface.getOverrideAttributes(id_0)
-    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None))
+    assert (ok, ret) == (True, BulletDataOverride(None, None, None, None))
 
     print('Test passed')
 

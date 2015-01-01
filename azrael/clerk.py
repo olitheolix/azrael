@@ -973,12 +973,12 @@ class Clerk(multiprocessing.Process):
 
     @typecheck
     def overrideAttributes(self, objID: bytes,
-                           data: btInterface.PosVelAccOrient):
+                           data: btInterface.BulletDataOverride):
         """
         Set ``data`` for ``objID``.
 
         :param bytes objID: object ID
-        :param PosVelAccOrient data: new object attributes.
+        :param BulletDataOverride data: new object attributes.
         :return: (ok, (b'', ))
         :rtype: (bool, (bytes, ))
         """
