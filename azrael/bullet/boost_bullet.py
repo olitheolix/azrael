@@ -218,7 +218,7 @@ class PyBulletPhys():
 
             # Convenience.
             obj = self.all_objs[objID]
-            radius, scale = obj.azrael[1].radius, obj.azrael[1].scale
+            scale = obj.azrael[1].scale
 
             # Determine rotation and position.
             _ = obj.get_center_of_mass_transform().get_rotation()
@@ -244,7 +244,7 @@ class PyBulletPhys():
             # Construct a new BulletData structure and add it to the list that
             # will eventually be returned to the caller.
             out.append(
-                BulletData(radius, scale, obj.inv_mass, obj.restitution,
+                BulletData(obj.azrael[1].scale, obj.inv_mass, obj.restitution,
                            rot, pos, vLin, vRot, cshape, axesLockLin,
                            axesLockRot))
         return 0, out[0]
@@ -325,7 +325,7 @@ class PyBulletPhys():
         # Instantiate a new collision shape.
         if obj.cshape[0] == 3:
             # Sphere.
-            cshape = pybullet.btSphereShape(obj.scale * obj.radius)
+            cshape = pybullet.btSphereShape(obj.scale)
         elif obj.cshape[0] == 4:
             # Prism.
             w, h, l = obj.scale * obj.cshape[1:] / 2

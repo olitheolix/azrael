@@ -35,7 +35,6 @@ def test_getset_object():
     """
     # Create an object and serialise it.
     obj_a = bullet_data.BulletData(
-        radius=2.5,
         scale=3.5,
         imass=4.5,
         cshape=[3, 1, 1, 1],
@@ -69,7 +68,6 @@ def test_update_object():
     """
     # Create an object and serialise it.
     obj_a = bullet_data.BulletData(
-        radius=2.5,
         scale=3.5,
         imass=4.5,
         cshape=[3, 1, 1, 1],
@@ -90,7 +88,6 @@ def test_update_object():
 
     # Update the object.
     obj_a = bullet_data.BulletData(
-        radius=5.5,
         scale=6.5,
         imass=7.5,
         cshape=[3, 1, 1, 1],

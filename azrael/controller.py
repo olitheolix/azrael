@@ -359,7 +359,7 @@ class ControllerBase(multiprocessing.Process):
               pos: (np.ndarray, list)=np.zeros(3),
               vel: (np.ndarray, list)=np.zeros(3),
               orient: (np.ndarray, list)=[0, 0, 0, 1],
-              scale=1, radius=1, imass=1,
+              scale=1, imass=1,
               axesLockLin: (list, np.ndarray)=[1, 1, 1],
               axesLockRot: (list, np.ndarray)=[1, 1, 1]):
         """
@@ -378,7 +378,6 @@ class ControllerBase(multiprocessing.Process):
         :param 3-vec vel: initial velocity
         :param 4-vec orient: initial orientation
         :param float scale: scale entire object by this factor.
-        :param float radius: specify the bounding sphere radius of the object.
         :param float imass: inverse of object mass.
         :return: (ok, data)
         :rtype: (bool, np.ndarray) or (bool, str)
@@ -386,7 +385,7 @@ class ControllerBase(multiprocessing.Process):
         cshape = [0, 1, 1, 1]
         sv = bullet_data.BulletData(
             position=pos, velocityLin=vel, cshape=cshape,
-            scale=scale, radius=radius, imass=imass,
+            scale=scale, imass=imass,
             orientation=orient, axesLockLin=axesLockLin,
             axesLockRot=axesLockRot)
         return self.serialiseAndSend('spawn', name, templateID, sv)

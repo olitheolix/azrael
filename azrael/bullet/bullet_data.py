@@ -41,7 +41,7 @@ ipshell = IPython.embed
 
 # All relevant physics data.
 _BulletData = namedtuple('BulletData',
-                         'radius scale imass restitution orientation '
+                         'scale imass restitution orientation '
                          'position velocityLin velocityRot cshape '
                          'axesLockLin axesLockRot checksumGeometry')
 
@@ -54,7 +54,7 @@ class BulletData(_BulletData):
     specimen with sensible defaults.
     """
     @typecheck
-    def __new__(cls, radius: (int, float)=1,
+    def __new__(cls,
                 scale: (int, float)=1,
                 imass: (int, float)=1,
                 restitution: (int, float)=0.9,
@@ -86,7 +86,6 @@ class BulletData(_BulletData):
         # Build the actual named tuple.
         self = super().__new__(
             cls,
-            radius=radius,
             scale=scale,
             imass=imass,
             restitution=restitution,
