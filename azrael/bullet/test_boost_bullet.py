@@ -304,7 +304,62 @@ def test_modify_mass():
     print('Test passed')
 
 
+def test_modify_size():
+    """
+    Change the size of the collision shape. This is more intricate than
+    changing the mass (see previous test) because this time the entire
+    collision shape must be swapped out underneath.
+
+    To test this we create two spheres that do not touch, which means nothing
+    must happen during a physics update. Then we enlarge one sphere so that it
+    touchs the other. This time Bullet must pick up on the interpenetration and
+    modify the sphere's position (somehow).
+    """
+    # Constants and paramters for this test.
+    objID_a, objID_b = 10, 20
+    pos_a = [0, 0, 0]
+    pos_b = [3, 0, 0]
+    cshape = [3, 1, 1, 1]
+
+    # Create two identical spheres, one left, one right (x-axis).
+    obj_a = bullet_data.BulletData(position=pos_a, cshape=cshape)
+    obj_b = bullet_data.BulletData(position=pos_b, cshape=cshape)
+
+    # Instantiate Bullet engine.
+    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+
+    # Send object to Bullet and progress the simulation by one second.
+    # The objects must not move because no forces are at play.
+    bullet.setObjectData([objID_a], obj_a)
+    bullet.setObjectData([objID_b], obj_b)
+    
+    # Progress the simulation for one second. Nothing must happen.
+    bullet.compute([objID_a, objID_b], 1.0, 60)
+
+    ok, tmp = bullet.getObjectData([objID_a])
+    assert obj_a == tmp
+    ok, tmp = bullet.getObjectData([objID_b])
+    assert obj_b == tmp
+    
+    # Enlarge the second object so that the spheres no overlap.
+    obj_b = obj_b._replace(scale=2.5)
+    bullet.setObjectData([objID_b], obj_b)
+
+    # Progress the simulation for one second. Bullet must move the spheres away
+    # from each other.
+    bullet.compute([objID_a, objID_b], 1.0, 60)
+
+    ok, tmp = bullet.getObjectData([objID_a])
+    assert tmp.position[0] < obj_a.position[0]
+
+    ok, tmp = bullet.getObjectData([objID_b])
+    assert tmp.position[0] > obj_b.position[0]
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_modify_size()
     test_modify_mass()
     test_update_object()
     test_getset_object()

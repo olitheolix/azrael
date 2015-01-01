@@ -218,7 +218,7 @@ class PyBulletPhys():
 
             # Convenience.
             obj = self.all_objs[objID]
-            _, radius, scale = obj.azrael
+            radius, scale = obj.azrael[1].radius, obj.azrael[1].scale
 
             # Determine rotation and position.
             _ = obj.get_center_of_mass_transform().get_rotation()
@@ -281,26 +281,46 @@ class PyBulletPhys():
         body.restitution = obj.restitution
         body.linear_factor = btVector3(*obj.axesLockLin)
         body.angular_factor = btVector3(*obj.axesLockRot)
-        body.azrael = (objID, obj.radius, obj.scale)
 
-        # Update the mass but leave the inertia intact.
+        # Build and assign the new collision shape, if necessary.
+        old = body.azrael[1]
+        if (old.scale != obj.scale) or (np.array_equal(old.cshape, obj.cshape)):
+            body.collision_shape = self.compileCollisionShape(objID, obj)
+        del old
+
+        # Update the mass but leave the inertia intact. This is somewhat
+        # awkward to implement because Bullet returns the inverse values yet
+        # expects the non-inverted ones in 'set_mass_props'.
         m = obj.imass
         i = body.get_inv_inertia_diag_local()
         if (m < 1E-10) or (i.x < 1E-10) or (i.y < 1E-10) or (i.z < 1E-10):
+            # Use safe values if either the inertia or the mass is too small
+            # for inversion.
             m = i.x = i.y = i.z = 1
         else:
+            # Inverse mass and inertia.
             i.x = 1 / i.x
             i.y = 1 / i.y
             i.z = 1 / i.z
             m = 1 / m
+
+        # Apply the new mass and inertia.
         body.set_mass_props(m, i)
 
-    @typecheck
-    def createRigidBody(self, objID, obj):
-        # Convert orientation and position to btVector3.
-        rot = btQuaternion(*obj.orientation)
-        pos = btVector3(*obj.position)
+        # Overwrite the old BulletData instance with the latest version.
+        body.azrael = (objID, obj)
 
+    @typecheck
+    def compileCollisionShape(self, objID: int, obj: BulletData):
+        """
+        Return the correct Bullet collision shape based on ``obj``.
+
+        This is a convenience method only.
+
+        :param int objID: object ID.
+        :param BulletData obj: Azrael's meta data that describes the body.
+        :return: Bullet collision shape.
+        """
         # Instantiate a new collision shape.
         if obj.cshape[0] == 3:
             # Sphere.
@@ -316,6 +336,24 @@ class PyBulletPhys():
 
             # The actual collision shape.
             cshape = pybullet.btEmptyShape()
+
+        # Add the collision shape to a list. Albeit not explicitly used
+        # anywhere this is necessary regradless to ensure the underlying points
+        # are kept alive (Bullet does not own them but accesses them).
+        self.collision_shapes[objID] = cshape
+        return cshape
+        
+    @typecheck
+    def createRigidBody(self, objID, obj):
+        """
+        :param bytes objID: object ID.
+        """
+        # Convert orientation and position to btVector3.
+        rot = btQuaternion(*obj.orientation)
+        pos = btVector3(*obj.position)
+
+        # Build the collision shape.
+        cshape = self.compileCollisionShape(objID, obj)
 
         # Create a motion state for the initial orientation and position.
         ms = pybullet.btDefaultMotionState(pybullet.btTransform(rot, pos))
@@ -346,13 +384,12 @@ class PyBulletPhys():
         body.set_sleeping_thresholds(0.1, 0.1)
 
         # Attach my own admin structure to the object.
-        body.azrael = (objID, obj.radius, obj.scale)
+        body.azrael = (objID, obj)
 
         # Add the rigid body to the object cache.
         self.all_objs[objID] = body
 
-        # Add the collision shape and motion state to the local cache. Neither
-        # is explicitly used anymore but it keeps the underlying pointers
-        # alive since Bullet does not track them.
-        self.collision_shapes[objID] = cshape
+        # Add the mostion state to a list. Albeit not explicitly used anywhere
+        # this is necessary regradless to ensure the underlying points are kept
+        # alive (Bullet does not own them but accesses them).
         self.motion_states[objID] = ms
