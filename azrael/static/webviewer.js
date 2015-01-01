@@ -143,6 +143,20 @@ function getTemplate(templateID) {
     return [cmd, dec]
 }
 
+function getGeometry(objID) {
+    var cmd = {'cmd': 'get_geometry', 'payload': {'objID': objID}}
+    cmd = JSON.stringify(cmd)
+    var dec = function (msg) {
+        var parsed = JSON.parse(msg.data)
+        return {'ok': parsed.ok,
+                'vert': parsed.payload.vert,
+                'UV': parsed.payload.UV,
+                'RGB': parsed.payload.RGB}
+    };
+
+    return [cmd, dec]
+}
+
 function addTemplate(templateID, cs, vertices) {
     var cmd = {'cmd': 'add_template', 'payload':
                {'name': templateID, 'cs': cs, 'vert': vertices,
@@ -356,11 +370,8 @@ function* mycoroutine(connection) {
                 // Get SV for current object.
                 var scale = allSVs[ii].sv.scale
 
-                // Object not yet in local cache --> get its template ID and
-                // then the template itself.
-                msg = yield getTemplateID(objIDs[ii]);
-                console.log('Added template ' + msg.templateID + ' to cache')
-                msg = yield getTemplate(msg.templateID);
+                // Object not yet in local cache --> fetch its geometry.
+                msg = yield getGeometry(objIDs[ii]);
                 if (msg.ok == false) {console.log('Error'); return;}
                 var new_geo = compileMesh(objIDs[ii], msg.vert, msg.UV, scale)
 
