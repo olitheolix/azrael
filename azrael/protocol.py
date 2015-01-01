@@ -269,7 +269,8 @@ def ToClerk_AttributeOverride_Decode(payload: dict):
     objID = bytes(payload['objID'])
     data = payload['data']
     data = [np.array(_) if isinstance(_, list) else _ for _ in data]
-    data = btInterface.PosVelAccOrient(*data)
+    tmp = dict(zip(btInterface.PosVelAccOrient._fields, data))
+    data = btInterface.PosVelAccOrient(**tmp)
     return True, (objID, data)
 
 

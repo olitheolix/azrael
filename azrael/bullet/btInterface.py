@@ -50,6 +50,36 @@ PosVelAccOrient = namedtuple(
 logit = logging.getLogger('azrael.' + __name__)
 
 
+class PosVelAccOrient(bullet_data._BulletData):
+    """
+    Create a ``_BulletData`` named tuple.
+
+    The only differenc between this class and ``bullet_data.BulletData`` is
+    that this class allows *None* values.
+    """
+    @typecheck
+    def __new__(cls, *args, **kwargs):
+        """
+        This method merely uses a default value of *None* for every unspecified
+        field in the named tuple.
+        """
+        # Convenience.
+        fields = bullet_data._BulletData._fields
+
+        # Skip all the fields for which the user specified positional values.
+        fields = fields[len(args):]
+
+        # Create keyword arguments for all missing fields (populate them all
+        # with *None*).
+        for f in fields:
+            if f not in kwargs:
+                kwargs[f] = None
+
+        # Create the ``_BulletData`` named tuple.
+        self = super().__new__(cls, *args, **kwargs)
+        return self
+
+
 @typecheck
 def initSVDB(reset=True):
     """
@@ -105,7 +135,7 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     # Add the document. The find_and_modify command below implements the
     # fictional 'insert_if_not_exists' command. This ensures that we will not
     # overwrite any possibly existing object.
-    attr = PosVelAccOrient(None, None, None, None)
+    attr = PosVelAccOrient()
     doc = _DB_SV.find_and_modify(
         {'objid': objID},
         {'$setOnInsert': {'sv': sv, 'templateID': templateID,
@@ -366,7 +396,7 @@ def overrideAttributes(objID: bytes, data: PosVelAccOrient):
         # If ``data`` is None then the user wants us to clear any pending
         # attribute updates for ``objID``. Hence void the respective entry in
         # the DB.
-        attr = PosVelAccOrient(None, None, None, None)
+        attr = PosVelAccOrient()
         ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': attr}})
         return ret['n'] == 1
 
@@ -419,9 +449,11 @@ def getOverrideAttributes(objID: bytes):
 
     # There may or may not be a recommended position for this object.
     if doc['attrOverride'] is None:
-        return True, PosVelAccOrient(None, None, None, None)
+        return True, PosVelAccOrient()
     else:
-        return True, PosVelAccOrient(*doc['attrOverride'])
+        tmp = doc['attrOverride']
+        tmp = dict(zip(PosVelAccOrient._fields, tmp))
+        return True, PosVelAccOrient(**tmp)
 
 
 @typecheck
@@ -515,13 +547,18 @@ def getWorkPackage(wpid: int):
     else:
         objIDs = doc['ids']
 
+    def aux(data):
+        """
+        Place ``data`` into a PosVelAccOrient structure.
+        """
+        return PosVelAccOrient(**dict(zip(PosVelAccOrient._fields, data)))
+
     # Compile a list of WPData objects; one for every object in the WP. Skip
     # non-existing objects.
     data = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
     data = [_ for _ in data if _ is not None]
     data = [WPData(_['objid'], bullet_data.fromJsonDict(_['sv']),
-                   _['central_force'], _['torque'],
-                   PosVelAccOrient(*_['attrOverride']))
+                   _['central_force'], _['torque'], aux(_['attrOverride']))
             for _ in data]
 
     # Put the meta data of the work package into another named tuple.
@@ -543,7 +580,7 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     :return bool: Success.
     """
     # Iterate over all object IDs and update the state variables.
-    attr = PosVelAccOrient(None, None, None, None)
+    attr = PosVelAccOrient()
     for objID in svdict:
         _DB_SV.update(
             {'objid': objID, 'token': token},

@@ -52,8 +52,6 @@ class BulletData(_BulletData):
 
     Without any arguments this function will return a valid ``BulletData``
     specimen with sensible defaults.
-
-    :return Booster: compiled booster description.
     """
     @typecheck
     def __new__(cls, radius: (int, float)=1,
