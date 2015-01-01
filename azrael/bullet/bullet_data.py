@@ -138,37 +138,6 @@ class BulletData(_BulletData):
         # is the same.
         return loads(dumps(d))
 
-    @typecheck
-    def toNumPyString(self):
-        """
-        Return the NumPy array of this BulletData structure.
-
-        The returned NumPy array is binary compatible with the `cython_bullet`
-        wrapper and, ideally, the only way how data is encoded for Bullet.
-
-        :return ndarray: NumPy.float64 array.
-        """
-        # Allocate a NumPy array for the state variable data.
-        buf = np.zeros(config.LEN_SV_FLOATS, dtype=np.float64)
-
-        # Convert the content of ``self`` to float64 NumPy data and insert them
-        # into the buffer. The order *matters*, as it is the exact order in
-        # which the C++ wrapper for Bullet expects the data.
-        buf[0] = np.float64(self.radius)
-        buf[1] = np.float64(self.scale)
-        buf[2] = np.float64(self.imass)
-        buf[3] = np.float64(self.restitution)
-        buf[4:8] = np.float64(self.orientation)
-        buf[8:11] = np.float64(self.position)
-        buf[11:14] = np.float64(self.velocityLin)
-        buf[14:17] = np.float64(self.velocityRot)
-        buf[17:21] = np.float64(self.cshape)
-
-        # Just to be sure because an error here may lead to subtle bugs with
-        # the Bullet C++ interface.
-        assert buf.dtype == np.float64
-        return buf
-
 
 @typecheck
 def fromJsonDict(data):
@@ -177,28 +146,3 @@ def fromJsonDict(data):
     """
     args = [data[_] for _ in BulletData._fields]
     return BulletData(*args)
-
-
-@typecheck
-def fromNumPyString(buf: np.ndarray):
-    """
-    Return the ``BulletData`` that corresponds to ``buf``.
-
-    The ``buf`` argument constitutes a serialised NumPy array.
-
-    :param ndarray obj: serialised NumPy array.
-    :return BulletData: ``BulletData`` instance.
-    """
-    assert len(buf) == config.LEN_SV_FLOATS
-
-    data = BulletData(
-        radius=buf[0],
-        scale=buf[1],
-        imass=buf[2],
-        restitution=buf[3],
-        orientation=buf[4:8],
-        position=buf[8:11],
-        velocityLin=buf[11:14],
-        velocityRot=buf[14:17],
-        cshape=buf[17:21])
-    return data

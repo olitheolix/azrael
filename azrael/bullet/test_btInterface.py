@@ -542,8 +542,6 @@ def test_StateVariable_tuple():
     # Ensure (de)serialisation works.
     assert sv1 == bullet_data.fromJsonDict(sv1.toJsonDict())
 
-    # Ensure (de)serialisation works.
-    assert sv1 == bullet_data.fromNumPyString(sv1.toNumPyString())
     print('Test passed')
 
 
