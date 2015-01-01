@@ -1154,21 +1154,31 @@ def test_instanceDB_checksum():
     ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
     assert ok
 
-    # Spawn an object from the previously added template.
-    ok, (objID,) = clerk.spawn(None, templateID, sv)
+    # Spawn two objects from the previously defined template.
+    ok, (objID0,) = clerk.spawn(None, templateID, sv)
+    assert ok
+    ok, (objID1,) = clerk.spawn(None, templateID, sv)
     assert ok
 
-    # Query the checksum of the object.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
-    assert (ok, ret_objIDs) == (True, [objID])
-    checksum = ret_SVs[0].checksumGeometry
-
-    # Modify the geometry and verify the checksum is now different.
-    ok, _ = clerk.setGeometry(objID, 2 * vert, 2 * uv, 2 * rgb)
+    # Query the checksum of the objects.
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID0, objID1])
     assert ok
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
-    assert (ok, ret_objIDs) == (True, [objID])
-    assert checksum != ret_SVs[0].checksumGeometry
+    assert (objID0 in ret_objIDs) and (objID1 in ret_objIDs)
+    checksums = {ret_objIDs[0]: ret_SVs[0].checksumGeometry,
+                 ret_objIDs[1]: ret_SVs[1].checksumGeometry}
+
+    # Modify the geometry of the first object.
+    ok, _ = clerk.setGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb)
+    assert ok
+
+    # Verify that the checksum of the first object has changed and that of the
+    # second object has not.
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID0])
+    assert (ok, ret_objIDs) == (True, [objID0])
+    assert checksums[objID0] != ret_SVs[0].checksumGeometry
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID1])
+    assert (ok, ret_objIDs) == (True, [objID1])
+    assert checksums[objID1] == ret_SVs[0].checksumGeometry
 
     # Kill all spawned Controller processes.
     killAzrael()
