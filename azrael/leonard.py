@@ -260,14 +260,14 @@ class LeonardBase(multiprocessing.Process):
             return sv
 
         # Apply the specified values.
-        if tmp.pos is not None:
-            sv.position[:] = tmp.pos
-        if tmp.vLin is not None:
-            sv.velocityLin[:] = tmp.vLin
-        if tmp.vRot is not None:
-            sv.velocityRot[:] = tmp.vRot
-        if tmp.orient is not None:
-            sv.orientation[:] = tmp.orient
+        if tmp.position is not None:
+            sv.position[:] = tmp.position
+        if tmp.velocityLin is not None:
+            sv.velocityLin[:] = tmp.velocityLin
+        if tmp.velocityRot is not None:
+            sv.velocityRot[:] = tmp.velocityRot
+        if tmp.orientation is not None:
+            sv.orientation[:] = tmp.orientation
 
         # Clear the DB entry (they would otherwise be applied
         # at every frame).
@@ -564,14 +564,14 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         tmp = obj.attrOverride
 
         # Apply the specified values.
-        if tmp.pos is not None:
-            sv.position[:] = tmp.pos
-        if tmp.vLin is not None:
-            sv.velocityLin[:] = tmp.vLin
-        if tmp.vRot is not None:
-            sv.velocityRot[:] = tmp.vRot
-        if tmp.orient is not None:
-            sv.orientation[:] = tmp.orient
+        if tmp.position is not None:
+            sv.position[:] = tmp.position
+        if tmp.velocityLin is not None:
+            sv.velocityLin[:] = tmp.velocityLin
+        if tmp.velocityRot is not None:
+            sv.velocityRot[:] = tmp.velocityRot
+        if tmp.orientation is not None:
+            sv.orientation[:] = tmp.orientation
         return sv
 
     @typecheck
@@ -925,14 +925,14 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         tmp = obj.attrOverride
 
         # Apply the specified values.
-        if tmp.pos is not None:
-            sv.position[:] = tmp.pos
-        if tmp.vLin is not None:
-            sv.velocityLin[:] = tmp.vLin
-        if tmp.vRot is not None:
-            sv.velocityRot[:] = tmp.vRot
-        if tmp.orient is not None:
-            sv.orientation[:] = tmp.orient
+        if tmp.position is not None:
+            sv.position[:] = tmp.position
+        if tmp.velocityLin is not None:
+            sv.velocityLin[:] = tmp.velocityLin
+        if tmp.velocityRot is not None:
+            sv.velocityRot[:] = tmp.velocityRot
+        if tmp.orientation is not None:
+            sv.orientation[:] = tmp.orientation
         return sv
 
 
@@ -1029,12 +1029,12 @@ class LeonardBaseWorkpackages(LeonardBase):
         tmp = obj.attrOverride
 
         # Apply the specified values.
-        if tmp.pos is not None:
-            sv.position[:] = tmp.pos
-        if tmp.vLin is not None:
-            sv.velocityLin[:] = tmp.vLin
-        if tmp.vRot is not None:
-            sv.velocityRot[:] = tmp.vRot
-        if tmp.orient is not None:
-            sv.orientation[:] = tmp.orient
+        if tmp.position is not None:
+            sv.position[:] = tmp.position
+        if tmp.velocityLin is not None:
+            sv.velocityLin[:] = tmp.velocityLin
+        if tmp.velocityRot is not None:
+            sv.velocityRot[:] = tmp.velocityRot
+        if tmp.orientation is not None:
+            sv.orientation[:] = tmp.orientation
         return sv

@@ -42,7 +42,8 @@ _DB_WP = None
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv central_force torque attrOverride')
 WPAdmin = namedtuple('WPAdmin', 'token dt maxsteps')
-PosVelAccOrient = namedtuple('PosVelAccOrient', 'pos vLin vRot acc orient')
+PosVelAccOrient = namedtuple(
+    'PosVelAccOrient', 'position velocityLin velocityRot orientation')
 
 
 # Create module logger.
@@ -104,7 +105,7 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     # Add the document. The find_and_modify command below implements the
     # fictional 'insert_if_not_exists' command. This ensures that we will not
     # overwrite any possibly existing object.
-    attr = PosVelAccOrient(None, None, None, None, None)
+    attr = PosVelAccOrient(None, None, None, None)
     doc = _DB_SV.find_and_modify(
         {'objid': objID},
         {'$setOnInsert': {'sv': sv, 'templateID': templateID,
@@ -365,7 +366,7 @@ def overrideAttributes(objID: bytes, data: PosVelAccOrient):
         # If ``data`` is None then the user wants us to clear any pending
         # attribute updates for ``objID``. Hence void the respective entry in
         # the DB.
-        attr = PosVelAccOrient(None, None, None, None, None)
+        attr = PosVelAccOrient(None, None, None, None)
         ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': attr}})
         return ret['n'] == 1
 
@@ -375,15 +376,13 @@ def overrideAttributes(objID: bytes, data: PosVelAccOrient):
             return False
 
     # Ensure that all NumPy arrays have the correct length.
-    if (data.pos is not None) and len(data.pos) != 3:
+    if (data.position is not None) and len(data.position) != 3:
         return False
-    if (data.vLin is not None) and len(data.vLin) != 3:
+    if (data.velocityLin is not None) and len(data.velocityLin) != 3:
         return False
-    if (data.vRot is not None) and len(data.vRot) != 3:
+    if (data.velocityRot is not None) and len(data.velocityRot) != 3:
         return False
-    if (data.acc is not None) and len(data.acc) != 3:
-        return False
-    if (data.orient is not None) and len(data.orient) != 4:
+    if (data.orientation is not None) and len(data.orientation) != 4:
         return False
 
     # Convert PosVelAccOrient(None, array([1,2,3]), ...) instances to simple
@@ -420,7 +419,7 @@ def getOverrideAttributes(objID: bytes):
 
     # There may or may not be a recommended position for this object.
     if doc['attrOverride'] is None:
-        return True, PosVelAccOrient(None, None, None, None, None)
+        return True, PosVelAccOrient(None, None, None, None)
     else:
         return True, PosVelAccOrient(*doc['attrOverride'])
 
@@ -544,7 +543,7 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     :return bool: Success.
     """
     # Iterate over all object IDs and update the state variables.
-    attr = PosVelAccOrient(None, None, None, None, None)
+    attr = PosVelAccOrient(None, None, None, None)
     for objID in svdict:
         _DB_SV.update(
             {'objid': objID, 'token': token},

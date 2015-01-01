@@ -111,10 +111,10 @@ def test_override_attributes(clsLeonard):
     p = np.array([1, 2, 5])
     vl = np.array([8, 9, 10.5])
     vr = vl + 1
-    a = np.array([2.5, 3.5, 4.5])
     o = np.array([11, 12.5, 13, 13.5])
-    data = btInterface.PosVelAccOrient(p, vl, vr, a, o)
-    del p, vl, vr, a, o
+    data = btInterface.PosVelAccOrient(
+        position=p, velocityLin=vl, velocityRot=vr, orientation=o)
+    del p, vl, vr, o
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -145,10 +145,10 @@ def test_override_attributes(clsLeonard):
     assert (ok, ret_objIDs) == (True, [id_1])
 
     # Verify if attributes were correctly updated.
-    assert (np.array_equal(ret_SVs[0].position, data.pos) and
-            np.array_equal(ret_SVs[0].velocityLin, data.vLin) and
-            np.array_equal(ret_SVs[0].velocityRot, data.vRot) and
-            np.array_equal(ret_SVs[0].orientation, data.orient))
+    assert (np.array_equal(ret_SVs[0].position, data.position) and
+            np.array_equal(ret_SVs[0].velocityLin, data.velocityLin) and
+            np.array_equal(ret_SVs[0].velocityRot, data.velocityRot) and
+            np.array_equal(ret_SVs[0].orientation, data.orientation))
 
     print('Test passed')
 

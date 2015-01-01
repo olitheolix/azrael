@@ -266,10 +266,10 @@ def test_override_attributes():
     p = np.array([1, 2, 5])
     vl = np.array([8, 9, 10.5])
     vr = 1 + vl
-    a = np.array([2.5, 3.5, 4.5])
     o = np.array([11, 12.5, 13, 13.5])
-    data = PosVelAccOrient(p, vl, vr, a, o)
-    del p, vl, vr, a, o
+    data = PosVelAccOrient(position=p, velocityLin=vl, velocityRot=vr,
+                           orientation=o)
+    del p, vl, vr, o
 
     # Reset the SV database.
     btInterface.initSVDB(reset=True)
@@ -290,10 +290,10 @@ def test_override_attributes():
     # Add the object to the DB with ID=0.
     assert btInterface.spawn(id_0, btdata, np.int64(1).tostring(), 0)
 
-    # Query the attributes for ID0. This must suceed. However, the
-    # returned values must be None since no attribes have been forcefully set.
+    # Query the attributes for ID0. This must succeed. However, the returned
+    # values must all be None since no attributes have been set specifically.
     ok, ret = btInterface.getOverrideAttributes(id_0)
-    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None, None))
+    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None))
 
     # Request to overwrite attributes for the just inserted object.
     assert btInterface.overrideAttributes(id_0, data)
@@ -308,7 +308,7 @@ def test_override_attributes():
     # indeed reset.
     assert btInterface.overrideAttributes(id_0, None)
     ok, ret = btInterface.getOverrideAttributes(id_0)
-    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None, None))
+    assert (ok, ret) == (True, PosVelAccOrient(None, None, None, None))
 
     print('Test passed')
 
