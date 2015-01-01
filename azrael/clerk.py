@@ -122,7 +122,8 @@ class Clerk(multiprocessing.Process):
         client = pymongo.MongoClient()
         self.db_msg = client['azrael']['msg']
         self.db_admin = client['azrael']['admin']
-        self.db_templateID = client['azrael']['templateID']
+        self.db_instance = client['azrael']['instance']
+        self.db_template = client['azrael']['template']
 
         if reset:
             # Flush the database.
@@ -663,7 +664,7 @@ class Clerk(multiprocessing.Process):
         # Insert the document only if it does not exist already. The return
         # value contains the old document, ie. **None** if the document
         # did not yet exist.
-        ret = self.db_templateID.find_and_modify(
+        ret = self.db_template.find_and_modify(
             {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
 
         if ret is None:
@@ -700,7 +701,7 @@ class Clerk(multiprocessing.Process):
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
-        doc = self.db_templateID.find_one({'templateID': templateID})
+        doc = self.db_template.find_one({'templateID': templateID})
         if doc is None:
             msg = 'Invalid template ID <{}>'.format(templateID)
             self.logit.info(msg)
@@ -811,6 +812,23 @@ class Clerk(multiprocessing.Process):
         # Request unique object ID.
         new_id = util.int2id(self.getUniqueID())
 
+        # Copy the template to the instance DB. Add the objID of the
+        # instantiated object as well.
+        # fixme: code duplication in 'getTemplate'.
+        doc = self.db_template.find_one({'templateID': templateID})
+        if doc is None:
+            msg = 'Invalid template ID <{}>'.format(templateID)
+            self.logit.error(msg)
+            print('Bug - really bad!')
+        else:
+            # Add objID and geometry checksum to the document; remove the
+            # _id field to avoid clashes.
+            doc['objID'] = new_id
+            doc['csGeo'] = 0
+            del doc['_id']
+            self.db_instance.insert(doc)
+        del doc
+
         if prog is not None:
             # Start the Python Controller.
             self.processes[new_id] = PythonInstance(prog, new_id)
@@ -833,6 +851,7 @@ class Clerk(multiprocessing.Process):
         :rtype: tuple
         """
         ok, msg = btInterface.deleteObject(objID)
+        self.db_instance.remove({'objID': objID}, mult=True)
         if ok:
             return True, ('', )
         else:
@@ -853,13 +872,29 @@ class Clerk(multiprocessing.Process):
         ok, sv = btInterface.getStateVariables(objIDs)
         if not ok:
             return False, 'One or more IDs do not exist'
-        else:
-            return True, (objIDs, sv)
+
+        # Query the geometry checksums for all objects.
+        docs = self.db_instance.find(
+            {'objID': {'$in': objIDs}},
+            {'csGeo': 1, 'objID': 1})
+
+        # Convert the list of [{objID1: cs1}, {objID2: cs2}, ...] into
+        # a simple {objID1: cs1, objID2: cs2, ...} dictionary.
+        docs = {_['objID']: _['csGeo'] for _ in docs}
+
+        # Manually update the geometry checksum field.
+        for idx, objID in enumerate(objIDs):
+            if objID in docs:
+                sv[idx] = sv[idx]._replace(checksumGeometry=docs[objID])
+            else:
+                sv[idx] = None
+                
+        return True, (objIDs, sv)
 
     @typecheck
-    def getGeometry(self, templateID: bytes):
+    def getGeometry(self, objID: bytes):
         """
-        Return the vertices, UV map, and RGB map for ``templateID``.
+        Return the vertices, UV map, and RGB map for ``objID``.
 
         All returned values are NumPy arrays.
 
@@ -875,8 +910,9 @@ class Clerk(multiprocessing.Process):
         """
         # Retrieve the geometry. Return an error if the ID does not
         # exist. Note: an empty geometry field is valid.
-        doc = self.db_templateID.find_one({'templateID': templateID})
+        doc = self.db_instance.find_one({'objID': objID})
         if doc is None:
+            # fixme: better message format.
             return False, 'ID does not exist'
         else:
             vert = np.fromstring(doc['vertices'], np.float64)
@@ -885,6 +921,32 @@ class Clerk(multiprocessing.Process):
 #            width = int(doc['width'])
 #            height = int(doc['height'])
             return True, (vert, uv, rgb)
+
+    @typecheck
+    def setGeometry(self, objID: bytes, vert: np.ndarray,
+                    uv: np.ndarray, rgb: np.ndarray):
+        """
+        Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
+
+        If the ID does not exist return an error.
+
+        :param bytes templateID: template ID
+        :return: (ok, (,))
+        :rtype: (bool, (,))
+        """
+        # Retrieve the geometry. Return an error if the ID does not
+        # exist. Note: an empty geometry field is valid.
+        doc = self.db_instance.find_one({'objID': objID})
+        if doc is None:
+            # fixme: better message format.
+            return False, 'ID does not exist'
+
+        doc['vertices'] = (vert.astype(np.float64)).tostring()
+        doc['UV'] = (uv.astype(np.float64)).tostring()
+        doc['RGB'] = (rgb.astype(np.uint8)).tostring()
+        doc['csGeo'] += 1
+        self.db_instance.save(doc)
+        return True, tuple()
 
     @typecheck
     def setForce(self, objID: bytes, force: np.ndarray, rpos: np.ndarray):

@@ -327,22 +327,17 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('recv_msg', self.objID)
 
     @typecheck
-    def getGeometry(self, templateID: bytes):
+    def getGeometry(self, objID: bytes):
         """
-        Return the vertices, UV map, and RGB map for ``templateID``.
+        Return the vertices, UV map, and RGB map for ``objID``.
 
         All returned values are NumPy arrays.
 
-        .. note::
-           This method will return the geometry for a particular *template*,
-           *not* a particular object from the simulation. Use ``getTemplateID``
-           to determine the template ID for a given object ID.
-
-        :param bytes templateID: ID for which to return the geometry.
+        :param bytes objID: ID for which to return the geometry.
         :return: (ok, (vert, UV, RGB))
         :rtype: (bool, np.ndarray) or (bool, str)
         """
-        return self.serialiseAndSend('get_geometry', templateID)
+        return self.serialiseAndSend('get_geometry', objID)
 
     @typecheck
     def spawn(self, name: bytes, templateID: bytes,

@@ -347,13 +347,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             if objID == self.player_id:
                 continue
 
-            # Query the template ID associated with objID.
-            ok, templateID = self.ctrl.getTemplateID(objID)
-            if not ok:
-                continue
-
             # Query the object template.
-            ok, (buf_vert, buf_uv, buf_rgb) = self.ctrl.getGeometry(templateID)
+            ok, (buf_vert, buf_uv, buf_rgb) = self.ctrl.getGeometry(objID)
             if not ok:
                 continue
 

@@ -1081,7 +1081,103 @@ def test_get_all_objectids():
     print('Test passed')
 
 
+def test_getGeometry():
+    """
+    Spawn an object and query its geometry.
+    """
+    killAzrael()
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk(reset=True)
+
+    # Convenience.
+    cs = np.array([1, 2, 3, 4], np.float64)
+    vert = np.arange(9).astype(np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
+    templateID = 't1'.encode('utf8')
+    sv = bullet_data.BulletData()
+    
+    # Add a valid template and verify it now exists in Azrael.
+    ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
+    assert ok
+    ok, _ = clerk.getTemplate(templateID)
+    assert ok
+
+    # Attempt to query the geometry of a non-existing object.
+    ok, _ = clerk.getGeometry(int2id(1))
+    assert not ok
+
+    # Spawn an object from the previously added template.
+    ok, (objID,) = clerk.spawn(None, templateID, sv)
+    assert ok
+
+    # Query the geometry of the object.
+    ok, (ret_vert, ret_uv, ret_rgb) = clerk.getGeometry(objID)
+    assert ok
+    assert np.array_equal(vert, ret_vert)
+    assert np.array_equal(uv, ret_uv)
+    assert np.array_equal(rgb, ret_rgb)
+
+    # Delete the object.
+    ok, _ = clerk.deleteObject(objID)
+    assert ok
+    
+    # Attempt to query the geometry of the now deleted object.
+    ok, _ = clerk.getGeometry(objID)
+    assert not ok
+    
+    # Kill all spawned Controller processes.
+    killAzrael()
+    print('Test passed')
+
+
+def test_instanceDB_checksum():
+    """
+    Spawn and object and verify that the checksum changes whenever the geometry
+    is modified.
+    """
+    killAzrael()
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk(reset=True)
+
+    # Convenience.
+    cs = np.array([1, 2, 3, 4], np.float64)
+    vert = np.arange(9).astype(np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
+    templateID = 't1'.encode('utf8')
+    sv = bullet_data.BulletData()
+    
+    # Add a valid template and verify it now exists in Azrael.
+    ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
+    assert ok
+
+    # Spawn an object from the previously added template.
+    ok, (objID,) = clerk.spawn(None, templateID, sv)
+    assert ok
+
+    # Query the checksum of the object.
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
+    assert (ok, ret_objIDs) == (True, [objID])
+    checksum = ret_SVs[0].checksumGeometry
+
+    # Modify the geometry and verify the checksum is now different.
+    ok, _ = clerk.setGeometry(objID, 2 * vert, 2 * uv, 2 * rgb)
+    assert ok
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
+    assert (ok, ret_objIDs) == (True, [objID])
+    assert checksum != ret_SVs[0].checksumGeometry
+
+    # Kill all spawned Controller processes.
+    killAzrael()
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_getGeometry()
+    test_instanceDB_checksum()
     test_add_get_template_AABB()
     test_controlParts_invalid_commands()
     test_controlParts_Boosters_notmoving()

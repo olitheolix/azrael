@@ -382,13 +382,21 @@ def test_create_fetch_template(ctrl_type):
         partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
         templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
 
+    # Attempt to query the geometry of a non-existing object.
+    ok, _ = ctrl.getGeometry(int2id(1))
+    assert not ok
+
     # Add the new template.
     templateID = 't2'.encode('utf8')
     ok, templateID = ctrl.addTemplate(
         templateID, cs, vert, uv, rgb, [b0, b1], [f0])
 
+    # ... and spawn an instance thereof.
+    ok, objID = ctrl.spawn(None, templateID)
+    assert ok
+
     # Retrieve the geometry of the new object and verify it is correct.
-    ok, (out_vert, out_uv, out_rgb) = ctrl.getGeometry(templateID)
+    ok, (out_vert, out_uv, out_rgb) = ctrl.getGeometry(objID)
     assert np.array_equal(vert, out_vert)
     assert np.array_equal(uv, out_uv)
     assert np.array_equal(rgb, out_rgb)

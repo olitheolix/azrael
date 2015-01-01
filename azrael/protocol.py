@@ -319,13 +319,13 @@ def FromClerk_SetForce_Decode(data: dict):
 
 
 @typecheck
-def ToClerk_GetGeometry_Encode(templateID: bytes):
-    return True, {'templateID': templateID}
+def ToClerk_GetGeometry_Encode(objID: bytes):
+    return True, {'objID': objID}
 
 
 @typecheck
 def ToClerk_GetGeometry_Decode(data: dict):
-    return True, (bytes(data['templateID']), )
+    return True, (bytes(data['objID']), )
 
 
 @typecheck
