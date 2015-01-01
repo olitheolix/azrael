@@ -262,7 +262,55 @@ def test_remove_object():
     print('Test passed')
 
 
+def test_modify_mass():
+    """
+    Create two identical spheres, double the mass of one, and apply the same
+    force to both. The heavier sphere must have moved only half as far.
+    """
+    # Constants and paramters for this test.
+    objID_a, objID_b = 10, 20
+    pos_a = [+5, 0, 0]
+    pos_b = [-5, 0, 0]
+    cshape = [3, 1, 1, 1]
+    force = np.array([0, 1, 0], np.float64)
+    torque = np.array([0, 0, 0], np.float64)
+
+    # Create two identical spheres, one left, one right (x-axis).
+    obj_a = bullet_data.BulletData(position=pos_a, cshape=cshape, imass=1)
+    obj_b = bullet_data.BulletData(position=pos_b, cshape=cshape, imass=1)
+
+    # Instantiate Bullet engine.
+    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+
+    # Send object to Bullet and progress the simulation by one second.
+    # The objects must not move because no forces are at play.
+    bullet.setObjectData([objID_a], obj_a)
+    bullet.setObjectData([objID_b], obj_b)
+    
+    # Update the mass of the second object.
+    obj_b = obj_b._replace(imass=0.5 * obj_b.imass)
+    bullet.setObjectData([objID_b], obj_b)
+
+    # Apply the same central force that pulls both spheres forward (y-axis).
+    bullet.applyForceAndTorque(objID_a, force, torque)
+    bullet.applyForceAndTorque(objID_b, force, torque)
+
+    # Progress the simulation for another second.
+    bullet.compute([objID_a, objID_b], 1.0, 60)
+
+    # The lighter sphere must have moved pretty exactly twice as far in
+    # y-direction.
+    ok, obj_a = bullet.getObjectData([objID_a])
+    assert ok == 0
+    ok, obj_b = bullet.getObjectData([objID_b])
+    assert ok == 0
+    assert abs(obj_a.position[1] - 2 * obj_b.position[1]) < 1E-5
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_modify_mass()
     test_update_object()
     test_getset_object()
     test_remove_object()
