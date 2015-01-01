@@ -38,12 +38,12 @@ def test_getset_object():
         radius=2.5,
         scale=3.5,
         imass=4.5,
+        cshape=[3, 1, 1, 1],
         restitution=5.5,
         orientation=np.array([0, 1, 0, 0], np.float64),
         position=np.array([0.2, 0.4, 0.6], np.float64),
         velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
         velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
-    obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -58,9 +58,7 @@ def test_getset_object():
     assert ok == 0
 
     # De-serialise the data and verify it is identical (small rounding errors
-    # are admissible because Bullet uses float32 types). The only field that
-    # need not match is the collision shape since I still have not decided how
-    # to handle it.
+    # are admissible because Bullet uses float32 types).
     assert obj_a == obj_b
     print('Test passed')
 
@@ -74,12 +72,12 @@ def test_update_object():
         radius=2.5,
         scale=3.5,
         imass=4.5,
+        cshape=[3, 1, 1, 1],
         restitution=5.5,
         orientation=np.array([0, 1, 0, 0], np.float64),
         position=np.array([0.2, 0.4, 0.6], np.float64),
         velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
         velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
-    obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -95,12 +93,12 @@ def test_update_object():
         radius=5.5,
         scale=6.5,
         imass=7.5,
+        cshape=[3, 1, 1, 1],
         restitution=8.5,
         orientation=np.array([0, 0, 1, 0], np.float64),
         position=np.array([1.2, 1.4, 1.6], np.float64),
         velocityLin=np.array([2.8, 2.0, 2.2], np.float64),
         velocityRot=np.array([2.4, 2.6, 2.8], np.float64))
-    obj_a.cshape[0] = 3
     bullet.setObjectData([0], obj_a)
     ok, obj_b = bullet.getObjectData([0])
     assert ok == 0
@@ -122,7 +120,6 @@ def test_apply_force(force_fun_id):
 
     # Create an object and overwrite the CShape data to obtain a sphere.
     obj_a = bullet_data.BulletData()
-    obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -181,7 +178,6 @@ def test_apply_force_and_torque():
     # Create a spherical object. Adjust the mass so that the sphere's inertia
     # is roughly unity.
     obj_a = bullet_data.BulletData(cshape=[3, 1, 1, 1], imass=2 / 5)
-    obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -239,7 +235,6 @@ def test_remove_object():
     """
     # Create a spherical object.
     obj_a = bullet_data.BulletData()
-    obj_a.cshape[0] = 3
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
