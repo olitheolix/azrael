@@ -80,11 +80,16 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     """
     Add the new ``objID`` to the physics DB and return success.
 
+    Contrary to the name ``aabb``, it actually denotes a bounding sphere and
+    thus requires only a scalar argument instead of 3 side lengths. This will
+    change eventually.
+
     Returns **False** if ``objID`` already exists in the simulation.
 
     :param bytes objID: object ID to insert.
     :param bytes sv: encoded state variable data.
     :param bytes templateID: the template from which the object is spawned.
+    :param float aabb: size of AABB.
     :return bool: success.
     """
     # Serialise SV.
