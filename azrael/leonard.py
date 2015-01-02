@@ -269,12 +269,12 @@ class LeonardBase(multiprocessing.Process):
             sv.position[:] += dt * sv.velocityLin
 
             # Override SV with user specified values (if there are any).
-            sv = self.setObjectAttributes(objID, sv)
+            sv = self.overloadStateVariables(objID, sv)
 
             # Serialise the state variables and update them in the DB.
             btInterface.update(objID, sv)
 
-    def setObjectAttributes(self, objID, sv):
+    def overloadStateVariables(self, objID, sv):
         """
         Set the SV of ``objID`` to the content of ``sv``.
 
@@ -389,7 +389,7 @@ class LeonardBulletMonolithic(LeonardBase):
         for objID, sv in allSV.items():
             ok, sv = self.bullet.getObjectData([util.id2int(objID)])
             if ok == 0:
-                sv = self.setObjectAttributes(objID, sv)
+                sv = self.overloadStateVariables(objID, sv)
                 btInterface.update(objID, sv)
 
 
@@ -470,7 +470,7 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
             for objID, sv in coll_SV.items():
                 ok, sv = self.bullet.getObjectData([util.id2int(objID)])
                 if ok == 0:
-                    sv = self.setObjectAttributes(objID, sv)
+                    sv = self.overloadStateVariables(objID, sv)
                     btInterface.update(objID, sv)
 
 
