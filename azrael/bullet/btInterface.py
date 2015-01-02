@@ -399,7 +399,7 @@ def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
 @typecheck
 def getOverrideAttributes(objID: bytes):
     """
-    Retrieve the override attributes for ``objID``.
+    Retrieve the explicitly specified State Variable for ``objID``.
 
     This function returns **None** if no attributes are available for
     ``objID``.
@@ -424,8 +424,7 @@ def getOverrideAttributes(objID: bytes):
 
     # Convert the data into a ``BulletDataOverride`` instance which means all
     # values that are not *None* must be converted to a NumPy array.
-    override_values = doc['attrOverride']
-    tmp = dict(zip(BulletDataOverride._fields, override_values))
+    tmp = dict(zip(BulletDataOverride._fields, doc['attrOverride']))
     try:
         for k, v in tmp.items():
             if isinstance(v, (list, tuple)):

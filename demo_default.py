@@ -421,7 +421,7 @@ class ResetSim(multiprocessing.Process):
         """
         The ``default_attributes`` argument is a list of (objID, attr) tuples.
 
-        This process override the attribtes of all objects in that list with
+        This process resets the attributes of all objects in that list with
         the corresponding value. This happens every ``period`` seconds.
 
         To prevent simulation resets altoghether set ``period`` to -1.
@@ -446,12 +446,11 @@ class ResetSim(multiprocessing.Process):
         # survive the reset.
         ok, allowed_objIDs = ctrl.getAllObjectIDs()
 
-        # Periodically override the attributes with their default
-        # values. Override the attributes several times because it is well
-        # possible that not all override commands reach Leonard in the same
-        # frame, which means some objects will be reset, others will not, and
-        # that may cause strange artefacts in the next physics update step,
-        # especially when the objects now partially overlap.
+        # Periodically reset the SV values. Set them several times because it
+        # is well possible that not all State Variables reach Leonard in the
+        # same frame, which means some objects will be reset while other are
+        # not. This in turn may cause strange artefacts in the next physics
+        # update step, especially when the objects now partially overlap.
         while True:
             # Wait until the timeout expires.
             time.sleep(self.period)
@@ -467,7 +466,7 @@ class ResetSim(multiprocessing.Process):
             # objects being reset sooner than others.
             for ii in range(5):
                 for objID, pos in self.default_attributes:
-                    ctrl.overrideAttributes(objID, pos)
+                    ctrl.setStateVariables(objID, pos)
                 time.sleep(0.1)
 
 

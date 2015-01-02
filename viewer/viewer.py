@@ -741,7 +741,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         pos = self.camera.position
         attr = btInterface.BulletDataOverride(position=pos)
-        self.ctrl.overrideAttributes(self.player_id, attr)
+        self.ctrl.setStateVariables(self.player_id, attr)
 
         # Do not update the camera rotation if the mouse is not grabbed.
         if not self.mouseGrab:

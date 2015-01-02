@@ -96,9 +96,10 @@ def stopAzrael(clerk, clacks):
 
 
 @pytest.mark.parametrize('clsLeonard', allEngines)
-def test_override_attributes_basic(clsLeonard):
+def test_setStateVariables_basic(clsLeonard):
     """
-    Spawn an object, override_attributes, and verify.
+    Spawn an object, specify its State Variables explicitly, and verify the
+    change propagated through Azrael.
     """
     killAzrael()
 
@@ -120,7 +121,7 @@ def test_override_attributes_basic(clsLeonard):
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Invalid/non-existing ID.
-    ok, ret = clerk.overrideAttributes(id_0, data)
+    ok, ret = clerk.setStateVariables(id_0, data)
     assert not ok
 
     # Spawn a new object. It must have ID=1.
@@ -128,7 +129,7 @@ def test_override_attributes_basic(clsLeonard):
     assert (ok, ret) == (True, id_1)
 
     # Update the object's position.
-    ok, (ret,) = clerk.overrideAttributes(id_1, data)
+    ok, (ret,) = clerk.setStateVariables(id_1, data)
     assert (ok, ret) == (True, '')
 
     # Advance the simulation by exactly one step. This must pick up the new
@@ -152,9 +153,9 @@ def test_override_attributes_basic(clsLeonard):
 
 
 @pytest.mark.parametrize('clsLeonard', allEngines)
-def test_override_attributes_advanced(clsLeonard):
+def test_setStateVariables_advanced(clsLeonard):
     """
-    Similar to test_override_attributes_basic but modify the collision shape
+    Similar to test_setStateVariables_basic but modify the collision shape
     information as well, namely mass and the collision shape itself.
     """
     killAzrael()
@@ -178,7 +179,7 @@ def test_override_attributes_advanced(clsLeonard):
 
     # Update the object's SV data.
     sv_new = bullet_data.BulletDataOverride(imass=4, scale=5, cshape=cs_cube)
-    ok, (ret,) = clerk.overrideAttributes(objID, sv_new)
+    ok, (ret,) = clerk.setStateVariables(objID, sv_new)
     assert (ok, ret) == (True, '')
 
     # Advance the simulation by exactly one step. This must pick up the new
@@ -574,8 +575,8 @@ def test_force_grid(clsLeonard):
 if __name__ == '__main__':
     test_force_grid(azrael.leonard.LeonardBase)
     test_worker_respawn()
-    test_override_attributes_basic(azrael.leonard.LeonardBase)
-    test_override_attributes_advanced(azrael.leonard.LeonardBase)
+    test_setStateVariables_basic(azrael.leonard.LeonardBase)
+    test_setStateVariables_advanced(azrael.leonard.LeonardBase)
     test_sweeping_2objects()
     test_sweeping_3objects()
     test_computeCollisionSetsAABB(0)

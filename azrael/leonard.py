@@ -276,10 +276,10 @@ class LeonardBase(multiprocessing.Process):
 
     def setObjectAttributes(self, objID, sv):
         """
-        Return update SV if the user wants to override some of them.
+        Set the SV of ``objID`` to the content of ``sv``.
 
-        This method does nothing if the user did not override any values via a
-        call to 'overrideAttributes'.
+        This method does nothing if the user did not specify explicit values
+        (see ``clerk.setStateVariables``).
 
         :param bytes objID: object ID
         :param BulletData sv: SV for objID.

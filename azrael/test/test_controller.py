@@ -190,9 +190,9 @@ def test_spawn_and_get_state_variables(ctrl_type):
 
 
 @pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_overrideAttribute(ctrl_type):
+def test_setStateVariables(ctrl_type):
     """
-    Spawn an object and override its state variables.
+    Spawn an object and specify its state variables directly.
     """
     # Constants and parameters for this test.
     templateID = '_templateNone'.encode('utf8')
@@ -209,7 +209,7 @@ def test_overrideAttribute(ctrl_type):
         position=[1, -1, 1], imass=2, scale=3, cshape=[4, 1, 1, 1])
 
     # Apply the new attributes.
-    ok, ret = ctrl.overrideAttributes(objID, new_sv)
+    ok, ret = ctrl.setStateVariables(objID, new_sv)
     assert ok
 
     # Advance the simulation by exactly one step. This must pick up the new
@@ -636,7 +636,7 @@ def test_setGeometry(ctrl_type):
 
 
 if __name__ == '__main__':
-    test_overrideAttribute('Websocket')
+    test_setStateVariables('Websocket')
     test_setGeometry('Websocket')
     test_spawn_and_delete_one_controller('Websocket')
     test_spawn_and_get_state_variables('Websocket')

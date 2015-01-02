@@ -254,7 +254,7 @@ def test_update_statevar():
     print('Test passed')
 
 
-def test_override_attributes():
+def test_overrideAttributes():
     """
     Set and retrieve a object attributes like position, velocity, acceleration,
     and orientation.
@@ -648,7 +648,7 @@ if __name__ == '__main__':
     test_get_set_forceandtorque()
     test_create_work_package_with_objects()
     test_create_work_package_without_objects()
-    test_override_attributes()
+    test_overrideAttributes()
     test_update_statevar()
     test_get_set_force()
     test_add_same()

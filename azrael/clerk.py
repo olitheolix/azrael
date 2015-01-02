@@ -166,6 +166,10 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_GetStateVariable_Decode,
                 self.getStateVariables,
                 protocol.FromClerk_GetStateVariable_Encode),
+            'set_statevar': (
+                protocol.ToClerk_AttributeOverride_Decode,
+                self.setStateVariables,
+                protocol.FromClerk_AttributeOverride_Encode),
             'get_geometry': (
                 protocol.ToClerk_GetGeometry_Decode,
                 self.getGeometry,
@@ -178,10 +182,6 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_SetForce_Decode,
                 self.setForce,
                 protocol.FromClerk_SetForce_Encode),
-            'override_attributes': (
-                protocol.ToClerk_AttributeOverride_Decode,
-                self.overrideAttributes,
-                protocol.FromClerk_AttributeOverride_Encode),
             'get_template': (
                 protocol.ToClerk_GetTemplate_Decode,
                 self.getTemplate,
@@ -970,8 +970,8 @@ class Clerk(multiprocessing.Process):
             return False, 'ID does not exist'
 
     @typecheck
-    def overrideAttributes(self, objID: bytes,
-                           data: bullet_data.BulletDataOverride):
+    def setStateVariables(self, objID: bytes,
+                          data: bullet_data.BulletDataOverride):
         """
         Set ``data`` for ``objID``.
 

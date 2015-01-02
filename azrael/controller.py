@@ -117,15 +117,15 @@ class ControllerBase(multiprocessing.Process):
             'get_statevar': (
                 protocol.ToClerk_GetStateVariable_Encode,
                 protocol.FromClerk_GetStateVariable_Decode),
+            'set_statevar': (
+                protocol.ToClerk_AttributeOverride_Encode,
+                protocol.FromClerk_AttributeOverride_Decode),
             'set_force': (
                 protocol.ToClerk_SetForce_Encode,
                 protocol.FromClerk_SetForce_Decode),
             'get_all_objids': (
                 protocol.ToClerk_GetAllObjectIDs_Encode,
                 protocol.FromClerk_GetAllObjectIDs_Decode),
-            'override_attributes': (
-                protocol.ToClerk_AttributeOverride_Encode,
-                protocol.FromClerk_AttributeOverride_Decode),
             'control_parts': (
                 protocol.ToClerk_ControlParts_Encode,
                 protocol.FromClerk_ControlParts_Decode),
@@ -501,22 +501,22 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('get_statevar', objIDs)
 
     @typecheck
-    def overrideAttributes(self, objID: bytes,
-                           data: bullet_data.BulletDataOverride):
+    def setStateVariables(self, objID: bytes,
+                          new_SV: bullet_data.BulletDataOverride):
         """
-        Request to override the attributes of ``objID`` with ``data``.
+        Overwrite the the State Variables of ``objID`` with ``data``.
 
         This method tells Leonard to manually set attributes like position and
         speed, irrespective of what the physics engine computes. The attributes
         will be applied exactly once.
 
         :param bytes objID: the object to move.
-        :param BulletDataOverride data: the object attributes to set.
+        :param BulletDataOverride new_SV: the object attributes to set.
         :return: (ok, b'')
         :rtype: (bool, bytes)
         :raises: None
         """
-        return self.serialiseAndSend('override_attributes', objID, data)
+        return self.serialiseAndSend('set_statevar', objID, new_SV)
 
     @typecheck
     def setForce(self, objID: bytes, force: np.ndarray):
