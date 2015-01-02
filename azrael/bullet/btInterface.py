@@ -375,17 +375,22 @@ def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
 
     # Make sure that ``data`` is really valid by constructing a new
     # BulletDataOverride instance from it.
-    if BulletDataOverride(*data) is None:
+    data = BulletDataOverride(*data)
+    if data is None:
         return False
 
-    # Convert the named tuple ``data`` to normal list. By defintion, ``data``
-    # (a BuleltDataOverride instance) contains only NumPy arrays or *None*
-    # values). For instance, BulletDataOverride(None, array([1,2,3]), ...)
-    # would become [None, [1,2,3], ...].
-    attr = [_ if _ is None else _.tolist() for _ in data]
+    # All fields in ``data`` (a BulletDataOverride instance) are, by
+    # definition, one of {None, int, float, np.ndarray}. The following code
+    # merely converts the  NumPy arrays to normal lists so that Mongo can store
+    # them.. For example, BulletDataOverride(None, 2, array([1,2,3]), ...)
+    # would become [None, 2, [1,2,3], ...].
+    data = list(data)
+    for idx, val in enumerate(data):
+        if isinstance(val, np.ndarray):
+            data[idx] = val.tolist()
 
     # Serialise the position and add it to the DB.
-    ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': attr}})
+    ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': data}})
 
     # This function was successful if exactly one document was updated.
     return ret['n'] == 1
