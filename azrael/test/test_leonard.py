@@ -96,7 +96,7 @@ def stopAzrael(clerk, clacks):
 
 
 @pytest.mark.parametrize('clsLeonard', allEngines)
-def test_override_attributes(clsLeonard):
+def test_override_attributes_basic(clsLeonard):
     """
     Spawn an object, override_attributes, and verify.
     """
@@ -138,9 +138,7 @@ def test_override_attributes(clsLeonard):
     leo.setup()
     leo.step(0.1, 10)
 
-    # Verify that the position is correct. Poll this value a few times since it
-    # may take Leonard a few milli seconds to update the variable.
-    # Query the SV.
+    # Verify that the position is correct.
     ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([id_1])
     assert (ok, ret_objIDs) == (True, [id_1])
 
@@ -149,6 +147,52 @@ def test_override_attributes(clsLeonard):
             np.array_equal(ret_SVs[0].velocityLin, data.velocityLin) and
             np.array_equal(ret_SVs[0].velocityRot, data.velocityRot) and
             np.array_equal(ret_SVs[0].orientation, data.orientation))
+
+    print('Test passed')
+
+
+@pytest.mark.parametrize('clsLeonard', allEngines)
+def test_override_attributes_advanced(clsLeonard):
+    """
+    Similar to test_override_attributes_basic but modify the collision shape
+    information as well, namely mass and the collision shape itself.
+    """
+    killAzrael()
+
+    # Parameters and constants for this test.
+    cs_cube = [3, 1, 1, 1]
+    cs_sphere = [3, 1, 1, 1]
+    sv = bullet_data.BulletData(imass=2, scale=3, cshape=cs_sphere)
+    templateID = '_templateSphere'.encode('utf8')
+
+    # Instantiate a Clerk and spawn an object.
+    clerk = azrael.clerk.Clerk(reset=True)
+    ok, (objID, ) = clerk.spawn(None, templateID, sv)
+    assert ok
+
+    # Verify the SV data.
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
+    assert (ok, ret_objIDs) == (True, [objID])
+    assert (ret_SVs[0].imass == 2) and (ret_SVs[0].scale == 3)
+    assert np.array_equal(ret_SVs[0].cshape, cs_sphere)
+
+    # Update the object's SV data.
+    sv_new = bullet_data.BulletDataOverride(imass=4, scale=5, cshape=cs_cube)
+    ok, (ret,) = clerk.overrideAttributes(objID, sv_new)
+    assert (ok, ret) == (True, '')
+
+    # Advance the simulation by exactly one step. This must pick up the new
+    # values and apply them.
+    btInterface.initSVDB(reset=False)
+    leo = clsLeonard()
+    leo.setup()
+    leo.step(0.1, 10)
+
+    # Verify the SV data.
+    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
+    assert (ok, ret_objIDs) == (True, [objID])
+    assert (ret_SVs[0].imass == 4) and (ret_SVs[0].scale == 5)
+    assert np.array_equal(ret_SVs[0].cshape, cs_cube)
 
     print('Test passed')
 
@@ -530,7 +574,8 @@ def test_force_grid(clsLeonard):
 if __name__ == '__main__':
     test_force_grid(azrael.leonard.LeonardBase)
     test_worker_respawn()
-    test_override_attributes(azrael.leonard.LeonardBase)
+    test_override_attributes_basic(azrael.leonard.LeonardBase)
+    test_override_attributes_advanced(azrael.leonard.LeonardBase)
     test_sweeping_2objects()
     test_sweeping_3objects()
     test_computeCollisionSetsAABB(0)
