@@ -112,7 +112,7 @@ def test_override_attributes(clsLeonard):
     vl = np.array([8, 9, 10.5])
     vr = vl + 1
     o = np.array([11, 12.5, 13, 13.5])
-    data = btInterface.BulletDataOverride(
+    data = bullet_data.BulletDataOverride(
         position=p, velocityLin=vl, velocityRot=vr, orientation=o)
     del p, vl, vr, o
 

@@ -973,7 +973,7 @@ class Clerk(multiprocessing.Process):
 
     @typecheck
     def overrideAttributes(self, objID: bytes,
-                           data: btInterface.BulletDataOverride):
+                           data: bullet_data.BulletDataOverride):
         """
         Set ``data`` for ``objID``.
 

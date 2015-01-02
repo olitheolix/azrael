@@ -41,7 +41,7 @@ ipshell = IPython.embed
 
 @typecheck
 def _updateBulletDataTuple(orig: bullet_data.BulletData,
-                           new: btInterface.BulletDataOverride):
+                           new: bullet_data.BulletDataOverride):
     """
     Overwrite all fields in ``orig`` with those of ``new`` unless they are
     **None**.

@@ -53,7 +53,9 @@ import azrael.bullet.btInterface as btInterface
 del p
 
 
+# Convenience.
 ipshell = IPython.embed
+BulletDataOverride = btInterface.BulletDataOverride
 
 
 def parseCommandLine():
@@ -174,7 +176,7 @@ def loadGroundModel(scale, model_name):
 
     # Construct an attribute object (will be needed to reset the simulation).
     z = np.zeros(3, np.float64)
-    attr = btInterface.BulletDataOverride(
+    attr = BulletDataOverride(
         position=pos, velocityLin=z, velocityRot=z, orientation=ori)
     return objID, attr
 
@@ -332,7 +334,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     o = np.array([0, 0, 0, 1], np.float64)
     default_attributes = []
     for attr in default_attributes:
-        tmp = btInterface.BulletDataOverride(
+        tmp = BulletDataOverride(
             position=_[1], velocityLin=z, velocityRot=z, orientation=o)
         default_attributes.append((_[0], tmp))
     return default_attributes

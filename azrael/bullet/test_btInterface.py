@@ -260,7 +260,7 @@ def test_override_attributes():
     and orientation.
     """
     # Convenience.
-    BulletDataOverride = btInterface.BulletDataOverride
+    BulletDataOverride = bullet_data.BulletDataOverride
 
     # Test constants.
     p = np.array([1, 2, 5])

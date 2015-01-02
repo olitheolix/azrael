@@ -502,7 +502,7 @@ class ControllerBase(multiprocessing.Process):
 
     @typecheck
     def overrideAttributes(self, objID: bytes,
-                           data: btInterface.BulletDataOverride):
+                           data: bullet_data.BulletDataOverride):
         """
         Request to override the attributes of ``objID`` with ``data``.
 

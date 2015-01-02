@@ -138,6 +138,36 @@ class BulletData(_BulletData):
         return loads(dumps(d))
 
 
+class BulletDataOverride(_BulletData):
+    """
+    Create a ``_BulletData`` named tuple.
+
+    The only difference between this class and ``bullet_data.BulletData`` is
+    that this class permits *None* values.
+    """
+    @typecheck
+    def __new__(cls, *args, **kwargs):
+        """
+        This method merely uses a default value of *None* for every unspecified
+        field in the named tuple.
+        """
+        # Convenience.
+        fields = _BulletData._fields
+
+        # Skip all the fields for which the user specified positional values.
+        fields = fields[len(args):]
+
+        # Create keyword arguments for all missing fields (populate them all
+        # with *None*).
+        for f in fields:
+            if f not in kwargs:
+                kwargs[f] = None
+
+        # Create the ``_BulletData`` named tuple.
+        self = super().__new__(cls, *args, **kwargs)
+        return self
+
+
 @typecheck
 def fromJsonDict(data):
     """
