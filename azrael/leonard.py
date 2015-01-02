@@ -621,7 +621,8 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
                 sv = obj.sv
                 self.logit.error('Unable to get all objects from Bullet')
 
-            # Override SV with user specified values (if there are any).
+            # Override SV with user specified values (the 'getWorkpackage'
+            # function will have populated that attribute).
             sv = _updateBulletDataTuple(sv, obj.attrOverride)
 
             # Restore the original cshape because Bullet will always return
@@ -889,7 +890,8 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
                 sv = obj.sv
                 self.logit.error('Unable to get all objects from Bullet')
 
-            # Override SV with user specified values (if there are any).
+            # Override SV with user specified values (the 'getWorkpackage'
+            # function will have populated that attribute).
             sv = _updateBulletDataTuple(sv, obj.attrOverride)
 
             # Restore the original cshape because Bullet will always return
@@ -969,7 +971,8 @@ class LeonardBaseWorkpackages(LeonardBase):
             sv.velocityLin[:] += 0.5 * force
             sv.position[:] += dt * sv.velocityLin
 
-            # Override SV with user specified values (if there are any).
+            # Override SV with user specified values (the 'getWorkpackage'
+            # function will have populated that attribute).
             sv = _updateBulletDataTuple(sv, obj.attrOverride)
 
             # Add the new SV data to the output dictionary.
