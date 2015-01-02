@@ -384,17 +384,12 @@ class LeonardBulletMonolithic(LeonardBase):
         with util.Timeit('compute') as timeit:
             self.bullet.compute(IDs, dt, maxsteps)
 
-        # Retrieve all objects from Bullet and write them back to the database.
+        # Retrieve all objects from Bullet, overwrite the state variables that
+        # the user wanted to change explicitly (if any)
         for objID, sv in allSV.items():
             ok, sv = self.bullet.getObjectData([util.id2int(objID)])
-
-            # Override SV with user specified values (if there are any).
-            sv = self.setObjectAttributes(objID, sv)
-
             if ok == 0:
-                # Restore the original cshape because Bullet will always
-                # return zeros here.
-                sv.cshape[:] = allSV[objID].cshape[:]
+                sv = self.setObjectAttributes(objID, sv)
                 btInterface.update(objID, sv)
 
 
@@ -470,17 +465,12 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
             with util.Timeit('compute') as timeit:
                 self.bullet.compute(IDs, dt, maxsteps)
 
-            # Retrieve all objects from Bullet and write them back to the
-            # database.
+            # Retrieve all objects from Bullet, overwrite the state variables
+            # that the user wanted to change explicitly (if any)
             for objID, sv in coll_SV.items():
                 ok, sv = self.bullet.getObjectData([util.id2int(objID)])
-
-                # Override SV with user specified values (if there are any).
-                sv = self.setObjectAttributes(objID, sv)
                 if ok == 0:
-                    # Restore the original cshape because Bullet will always
-                    # return zeros here.
-                    sv.cshape[:] = coll_SV[objID].cshape[:]
+                    sv = self.setObjectAttributes(objID, sv)
                     btInterface.update(objID, sv)
 
 
@@ -624,10 +614,6 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
             # Override SV with user specified values (the 'getWorkpackage'
             # function will have populated that attribute).
             sv = _updateBulletDataTuple(sv, obj.attrOverride)
-
-            # Restore the original cshape because Bullet will always return
-            # zeros here.
-            sv.cshape[:] = obj.sv.cshape[:]
             out[obj.id] = sv
 
         # Update the data and delete the WP.
@@ -893,10 +879,6 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             # Override SV with user specified values (the 'getWorkpackage'
             # function will have populated that attribute).
             sv = _updateBulletDataTuple(sv, obj.attrOverride)
-
-            # Restore the original cshape because Bullet will always return
-            # zeros here.
-            sv.cshape[:] = obj.sv.cshape[:]
             out[obj.id] = sv
 
         # Update the data and delete the WP.

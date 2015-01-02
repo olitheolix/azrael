@@ -233,7 +233,7 @@ class PyBulletPhys():
             vRot = np.array([_.x, _.y, _.z], np.float64)
 
             # Dummy value for the collision shape.
-            cshape = np.zeros(4, np.float64)
+            cshape = obj.azrael[1].cshape
 
             # Linear/angular factors.
             _ = obj.linear_factor
