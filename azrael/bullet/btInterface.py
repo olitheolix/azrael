@@ -368,23 +368,15 @@ def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
                             {'$set': {'attrOverride': BulletDataOverride()}})
         return ret['n'] == 1
 
-    # Every entry must be either None or a NumPy array.
-    for ii in data:
-        if (ii is not None) and not isinstance(ii, np.ndarray):
-            return False
-
-    # Ensure that all NumPy arrays have the correct length.
-    if (data.position is not None) and len(data.position) != 3:
-        return False
-    if (data.velocityLin is not None) and len(data.velocityLin) != 3:
-        return False
-    if (data.velocityRot is not None) and len(data.velocityRot) != 3:
-        return False
-    if (data.orientation is not None) and len(data.orientation) != 4:
+    # Make sure that ``data`` is really valid by constructing a new
+    # BulletDataOverride instance from it.
+    if BulletDataOverride(*data) is None:
         return False
 
-    # Convert BulletDataOverride(None, array([1,2,3]), ...) instances to simple
-    # lists like [None, [1,2,3], ...].
+    # Convert the named tuple ``data`` to normal list. By defintion, ``data``
+    # (a BuleltDataOverride instance) contains only NumPy arrays or *None*
+    # values). For instance, BulletDataOverride(None, array([1,2,3]), ...)
+    # would become [None, [1,2,3], ...].
     attr = [_ if _ is None else _.tolist() for _ in data]
 
     # Serialise the position and add it to the DB.
@@ -415,16 +407,31 @@ def getOverrideAttributes(objID: bytes):
     if doc is None:
         return False, None
 
-    # Convert the content of the override field into a ``BulletDataOverride``
-    # structure again. If no 'attrOverride' field exists then return the
-    # default ``BulletDataOverride`` instance (it will have all values set to
-    # *None*).
+    # If no 'attrOverride' field exists then return the default
+    # ``BulletDataOverride`` instance (it will have all values set to *None*).
     if doc['attrOverride'] is None:
         return True, BulletDataOverride()
+
+    # Convert the data into a ``BulletDataOverride`` instance which means all
+    # values that are not *None* must be converted to a NumPy array.
+    override_values = doc['attrOverride']
+    tmp = dict(zip(BulletDataOverride._fields, override_values))
+    try:
+        for k, v in tmp.items():
+            if v is not None:
+                tmp[k] = np.array(v, np.float64)
+    except TypeError:
+        return False, None
+
+    # Construct the BulletDataOverride instance and verify it was really
+    # created.
+    val = BulletDataOverride(**tmp)
+    if val is None:
+        # 'attrOverride' is valid.
+        return False, None
     else:
-        override_values = doc['attrOverride']
-        tmp = dict(zip(BulletDataOverride._fields, override_values))
-        return True, BulletDataOverride(**tmp)
+        # 'attrOverride' is invalid.
+        return True, val
 
 
 @typecheck

@@ -78,13 +78,16 @@ class BulletData(_BulletData):
         axesLockRot = np.array(axesLockRot, np.float64)
 
         # Sanity checks.
-        assert len(axesLockLin) == len(axesLockRot) == 3
-        assert len(orientation) == len(cshape) == 4
-        assert len(position) == len(velocityLin) == len(velocityRot) == 3
-        assert checksumGeometry >= 0
+        try:
+            assert len(axesLockLin) == len(axesLockRot) == 3
+            assert len(orientation) == len(cshape) == 4
+            assert len(position) == len(velocityLin) == len(velocityRot) == 3
+            assert checksumGeometry >= 0
+        except (AssertionError, TypeError) as err:
+            return None
 
         # Build the actual named tuple.
-        self = super().__new__(
+        return super().__new__(
             cls,
             scale=scale,
             imass=imass,
@@ -97,7 +100,6 @@ class BulletData(_BulletData):
             axesLockLin=axesLockLin,
             axesLockRot=axesLockRot,
             checksumGeometry=checksumGeometry)
-        return self
 
     def __eq__(self, ref):
         """
@@ -151,21 +153,39 @@ class BulletDataOverride(_BulletData):
         This method merely uses a default value of *None* for every unspecified
         field in the named tuple.
         """
-        # Convenience.
-        fields = _BulletData._fields
+        # Convert all positional- and keyword arguments that are not None to a
+        # dictionary of keyword arguments. Step 1: convert the positional
+        # arguments to a dictionary...
+        kwargs_tmp = dict(zip(_BulletData._fields, args))
 
-        # Skip all the fields for which the user specified positional values.
-        fields = fields[len(args):]
+        # ... Step 2: Remove all keys where the value is None...
+        kwargs_tmp = {k: v for (k, v) in kwargs_tmp.items() if v is not None}
 
-        # Create keyword arguments for all missing fields (populate them all
-        # with *None*).
-        for f in fields:
-            if f not in kwargs:
-                kwargs[f] = None
+        # ... Step 3: add the original keyword arguments that are not None.
+        for key, value in kwargs.items():
+            if value is not None:
+                kwargs_tmp[key] = value
+
+        # Create a BulletData instance. Return an error if this fails.
+        try:
+            tmp = BulletData(**kwargs_tmp)
+        except TypeError:
+            tmp = None
+        if tmp is None:
+            return None
+        kwargs = kwargs_tmp
+        del args, kwargs_tmp, tmp
+
+        # Create keyword arguments for all fields and populate them all
+        # with *None*.
+        kwargs_all = {f: None for f in BulletData._fields}
+
+        # Overwrite those keys for which we actually have a value.
+        for key, value in kwargs.items():
+            kwargs_all[key] = value
 
         # Create the ``_BulletData`` named tuple.
-        self = super().__new__(cls, *args, **kwargs)
-        return self
+        return super().__new__(cls, **kwargs_all)
 
 
 @typecheck

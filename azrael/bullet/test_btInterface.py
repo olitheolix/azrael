@@ -293,9 +293,9 @@ def test_override_attributes():
     # Query the attributes for ID0. This must succeed. However, the returned
     # values must all be None since no attributes have been set specifically.
     ok, ret = btInterface.getOverrideAttributes(id_0)
-    assert (ok, ret) == (True, BulletDataOverride(None, None, None, None))
+    assert (ok, ret) == (True, BulletDataOverride())
 
-    # Request to overwrite attributes for the just inserted object.
+    # Set the overwrite attributes for the just created object.
     assert btInterface.setOverrideAttributes(id_0, data)
 
     # Retrieve the attributes and verify they are correct.
@@ -308,7 +308,50 @@ def test_override_attributes():
     # indeed reset.
     assert btInterface.setOverrideAttributes(id_0, None)
     ok, ret = btInterface.getOverrideAttributes(id_0)
-    assert (ok, ret) == (True, BulletDataOverride(None, None, None, None))
+    assert (ok, ret) == (True, BulletDataOverride())
+
+    print('Test passed')
+
+
+def test_BulletDataOverride():
+    """
+    ``BulletDataOverride`` must only accept valid input where the
+    ``BulletData`` class defines what constitutes "valid".
+    """
+    # Convenience.
+    BulletData = bullet_data.BulletData
+    BulletDataOverride = bullet_data.BulletDataOverride
+
+    # Valid BulletData and BulletDataOverride calls.
+    assert BulletData() is not None
+    assert BulletDataOverride() is not None
+
+    assert BulletData(position=[1, 2, 3]) is not None
+    assert BulletDataOverride(position=[1, 2, 3]) is not None
+
+    # Pass positional arguments with None values.
+    assert BulletDataOverride(None, None) is not None
+
+    # Pass a dictionary with None values. This must still result in the default
+    # structure.
+    tmp = {'velocityRot': None, 'cshape': None}
+    assert BulletDataOverride(**tmp) is not None
+    tmp = {'velocityRot': np.array([1, 2, 3], np.float64), 'cshape': None}
+    out = BulletDataOverride(**tmp)
+    assert out is not None
+    assert np.array_equal(out.velocityRot, tmp['velocityRot'])
+
+    # Combine positional and keyword arguments.
+    assert BulletDataOverride(None, None, **tmp) is not None
+
+    # Invalid calls.
+    assert BulletData(position=[1, 2]) is None
+    assert BulletDataOverride(position=[1, 2]) is None
+    assert BulletData(position=np.array([1, 2])) is None
+    assert BulletDataOverride(position=np.array([1, 2])) is None
+
+    assert BulletDataOverride(position=1) is None
+    assert BulletDataOverride(position='blah') is None
 
     print('Test passed')
 
@@ -583,6 +626,7 @@ def test_set_get_AABB():
 
 
 if __name__ == '__main__':
+    test_BulletDataOverride()
     test_set_get_AABB()
     test_StateVariable_tuple()
     test_get_set_forceandtorque()
