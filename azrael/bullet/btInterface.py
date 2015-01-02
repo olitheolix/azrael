@@ -133,12 +133,12 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     # Add the document. The find_and_modify command below implements the
     # fictional 'insert_if_not_exists' command. This ensures that we will not
     # overwrite any possibly existing object.
-    attr = BulletDataOverride()
     doc = _DB_SV.find_and_modify(
         {'objid': objID},
         {'$setOnInsert': {'sv': sv, 'templateID': templateID,
                           'central_force': z, 'torque': z,
-                          'attrOverride': attr, 'AABB': float(aabb)}},
+                          'attrOverride': BulletDataOverride(),
+                          'AABB': float(aabb)}},
         upsert=True, new=True)
 
     # The SV in the returned document will only match ``sv`` if either no
@@ -394,11 +394,11 @@ def overrideAttributes(objID: bytes, data: BulletDataOverride):
         # If ``data`` is None then the user wants us to clear any pending
         # attribute updates for ``objID``. Hence void the respective entry in
         # the DB.
-        attr = BulletDataOverride()
-        ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': attr}})
+        ret = _DB_SV.update({'objid': objID},
+                            {'$set': {'attrOverride': BulletDataOverride()}})
         return ret['n'] == 1
 
-    # Every entry must either be None or a NumPy array.
+    # Every entry must be either None or a NumPy array.
     for ii in data:
         if (ii is not None) and not isinstance(ii, np.ndarray):
             return False
@@ -445,12 +445,15 @@ def getOverrideAttributes(objID: bytes):
     if doc is None:
         return False, None
 
-    # There may or may not be a recommended position for this object.
+    # Convert the content of the override field into a ``BulletDataOverride``
+    # structure again. If no 'attrOverride' field exists then return the
+    # default ``BulletDataOverride`` instance (it will have all values set to
+    # *None*).
     if doc['attrOverride'] is None:
         return True, BulletDataOverride()
     else:
-        tmp = doc['attrOverride']
-        tmp = dict(zip(BulletDataOverride._fields, tmp))
+        override_values = doc['attrOverride']
+        tmp = dict(zip(BulletDataOverride._fields, override_values))
         return True, BulletDataOverride(**tmp)
 
 
