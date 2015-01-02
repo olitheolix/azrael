@@ -344,6 +344,16 @@ def test_BulletDataOverride():
     # Combine positional and keyword arguments.
     assert BulletDataOverride(None, None, **tmp) is not None
 
+    # Pass Python- scalars and lists instead of NumPy types. The scalars must
+    # remain unaffected but the lists must become NumPy arrays.
+    ret = BulletData(imass=3, position=[1, 2, 3])
+    assert isinstance(ret.imass, int)
+    assert isinstance(ret.position, np.ndarray)
+
+    ret = BulletDataOverride(imass=3, position=[1, 2, 3])
+    assert isinstance(ret.imass, int)
+    assert isinstance(ret.position, np.ndarray)
+
     # Invalid calls.
     assert BulletData(position=[1, 2]) is None
     assert BulletDataOverride(position=[1, 2]) is None

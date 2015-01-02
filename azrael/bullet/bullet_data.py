@@ -165,24 +165,28 @@ class BulletDataOverride(_BulletData):
         for key, value in kwargs.items():
             if value is not None:
                 kwargs_tmp[key] = value
+        kwargs = kwargs_tmp
+        del args, kwargs_tmp
 
         # Create a BulletData instance. Return an error if this fails.
         try:
-            tmp = BulletData(**kwargs_tmp)
+            sv = BulletData(**kwargs)
         except TypeError:
-            tmp = None
-        if tmp is None:
+            sv = None
+        if sv is None:
             return None
-        kwargs = kwargs_tmp
-        del args, kwargs_tmp, tmp
 
         # Create keyword arguments for all fields and populate them all
         # with *None*.
         kwargs_all = {f: None for f in BulletData._fields}
 
-        # Overwrite those keys for which we actually have a value.
-        for key, value in kwargs.items():
-            kwargs_all[key] = value
+        # Overwrite those keys for which we actually have a value. Note that we
+        # will not use the valued supplied to this function directly but use
+        # the ones from the temporary BulletData object because this ensures
+        # the data types were correctly converted (mosty lists to NumPy
+        # arrays).
+        for key in kwargs:
+            kwargs_all[key] = getattr(sv, key)
 
         # Create the ``_BulletData`` named tuple.
         return super().__new__(cls, **kwargs_all)
