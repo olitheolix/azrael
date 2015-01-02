@@ -823,14 +823,14 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             msg = 'Invalid template ID <{}>'.format(templateID)
             self.logit.error(msg)
-            print('Bug - really bad!')
-        else:
-            # Add objID and geometry checksum to the document; remove the
-            # _id field to avoid clashes.
-            doc['objID'] = new_id
-            doc['csGeo'] = 0
-            del doc['_id']
-            self.db_instance.insert(doc)
+            return False, msg
+
+        # Add objID and geometry checksum to the document; remove the
+        # _id field to avoid clashes.
+        doc['objID'] = new_id
+        doc['csGeo'] = 0
+        del doc['_id']
+        self.db_instance.insert(doc)
         del doc
 
         if prog is not None:
