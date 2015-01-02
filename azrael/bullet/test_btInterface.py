@@ -267,8 +267,8 @@ def test_override_attributes():
     vl = np.array([8, 9, 10.5])
     vr = 1 + vl
     o = np.array([11, 12.5, 13, 13.5])
-    data = BulletDataOverride(position=p, velocityLin=vl, velocityRot=vr,
-                              orientation=o)
+    data = BulletDataOverride(imass=2, scale=3,
+        position=p, velocityLin=vl, velocityRot=vr, orientation=o)
     del p, vl, vr, o
 
     # Reset the SV database.
@@ -301,8 +301,14 @@ def test_override_attributes():
     # Retrieve the attributes and verify they are correct.
     ok, ret = btInterface.getOverrideAttributes(id_0)
     assert ok
+    assert ret is not None
     for a, b in zip(ret, data):
         assert np.array_equal(a, b)
+
+    # Ensure that scalars did not become stunted NumPy types.
+    print(ret.imass, type(ret.imass))
+    assert isinstance(ret.imass, (int, float))
+    assert isinstance(ret.scale, (int, float))
 
     # Void the request to set attributes and verify that the attributes were
     # indeed reset.

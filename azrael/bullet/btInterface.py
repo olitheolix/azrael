@@ -428,7 +428,7 @@ def getOverrideAttributes(objID: bytes):
     tmp = dict(zip(BulletDataOverride._fields, override_values))
     try:
         for k, v in tmp.items():
-            if v is not None:
+            if isinstance(v, (list, tuple)):
                 tmp[k] = np.array(v, np.float64)
     except TypeError:
         return False, None
