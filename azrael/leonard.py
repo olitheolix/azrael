@@ -40,6 +40,36 @@ ipshell = IPython.embed
 
 
 @typecheck
+def _updateBulletDataTuple(orig: bullet_data.BulletData,
+                           new: btInterface.BulletDataOverride):
+    """
+    Overwrite all fields in ``orig`` with those of ``new`` unless they are
+    **None**.
+
+    This is a convenience function. It avoids code duplication which was
+    otherwise unavoidable because not all Leonard implementations inherit the
+    same base class.
+
+    :param BulletData orig: the original tuple.
+    :param BulletDataOverride new: all None values will be copied to ``orig``.
+    :return: updated version of ``orig``.
+    :rtype: BulletData
+    """
+    # Convert the named tuple ``orig`` into a dictionary.
+    fields = orig._fields
+    dict_orig = {_: getattr(orig, _) for _ in fields}
+
+    # Iterate over all values in ``new`` copy all its not-None values to the
+    # dict_orig.
+    for k, v in zip(fields, new):
+        if v is not None:
+            dict_orig[k] = v
+
+    # Build a new BulletData instance and return it.
+    return bullet_data.BulletData(**dict_orig)
+
+
+@typecheck
 def sweeping(data: list, labels: np.ndarray, dim: str):
     """
     Return sets of overlapping AABBs in the dimension ``dim``.
@@ -255,19 +285,12 @@ class LeonardBase(multiprocessing.Process):
         :param BulletData sv: SV for objID.
         """
         # Determine if the user actually specified any attributes.
-        ok, tmp = btInterface.getOverrideAttributes(objID)
+        ok, new = btInterface.getOverrideAttributes(objID)
         if not ok:
             return sv
 
-        # Apply the specified values.
-        if tmp.position is not None:
-            sv.position[:] = tmp.position
-        if tmp.velocityLin is not None:
-            sv.velocityLin[:] = tmp.velocityLin
-        if tmp.velocityRot is not None:
-            sv.velocityRot[:] = tmp.velocityRot
-        if tmp.orientation is not None:
-            sv.orientation[:] = tmp.orientation
+        # Copy all not-None fields from 'new' to 'sv'.
+        sv = _updateBulletDataTuple(sv, new)
 
         # Clear the DB entry (they would otherwise be applied
         # at every frame).
@@ -546,34 +569,6 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         while btInterface.countWorkPackages(token)[1] > 0:
             time.sleep(0.001)
 
-    def setObjectAttributes(self, obj, sv):
-        """
-        Return updated SV if the user wants to override some of them.
-
-        This method does nothing if the user did not override any values via a
-        call to 'overrideAttributes'.
-
-        .. note::
-           It is unnecessary to explicitly clear the attribute override request
-           because ``btInterface.updateWorkPackage`` will take care of this
-           automatically.
-
-        :param bytes objID: object ID
-        :param BulletData sv: SV for objID.
-        """
-        tmp = obj.attrOverride
-
-        # Apply the specified values.
-        if tmp.position is not None:
-            sv.position[:] = tmp.position
-        if tmp.velocityLin is not None:
-            sv.velocityLin[:] = tmp.velocityLin
-        if tmp.velocityRot is not None:
-            sv.velocityRot[:] = tmp.velocityRot
-        if tmp.orientation is not None:
-            sv.orientation[:] = tmp.orientation
-        return sv
-
     @typecheck
     def processWorkPackage(self, wpid: int):
         """
@@ -627,7 +622,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
                 self.logit.error('Unable to get all objects from Bullet')
 
             # Override SV with user specified values (if there are any).
-            sv = self.setObjectAttributes(obj, sv)
+            sv = _updateBulletDataTuple(sv, obj.attrOverride)
 
             # Restore the original cshape because Bullet will always return
             # zeros here.
@@ -895,7 +890,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
                 self.logit.error('Unable to get all objects from Bullet')
 
             # Override SV with user specified values (if there are any).
-            sv = self.setObjectAttributes(obj, sv)
+            sv = _updateBulletDataTuple(sv, obj.attrOverride)
 
             # Restore the original cshape because Bullet will always return
             # zeros here.
@@ -907,34 +902,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         if not ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
-
-    def setObjectAttributes(self, obj, sv):
-        """
-        Return update SV if the user wants to override some of them.
-
-        This method does nothing if the user did not override any values via a
-        call to 'overrideAttributes'.
-
-        .. note::
-           It is unnecessary to explicitly clear the attrOverride data because
-           ``btInterface.updateWorkPackage`` takes care of that automatically.
-
-        :param bytes objID: object ID
-        :param BulletData sv: SV for objID.
-        """
-        tmp = obj.attrOverride
-
-        # Apply the specified values.
-        if tmp.position is not None:
-            sv.position[:] = tmp.position
-        if tmp.velocityLin is not None:
-            sv.velocityLin[:] = tmp.velocityLin
-        if tmp.velocityRot is not None:
-            sv.velocityRot[:] = tmp.velocityRot
-        if tmp.orientation is not None:
-            sv.orientation[:] = tmp.orientation
-        return sv
-
+        
 
 class LeonardBaseWorkpackages(LeonardBase):
     """
@@ -1002,7 +970,7 @@ class LeonardBaseWorkpackages(LeonardBase):
             sv.position[:] += dt * sv.velocityLin
 
             # Override SV with user specified values (if there are any).
-            sv = self.setObjectAttributes(obj, sv)
+            sv = _updateBulletDataTuple(sv, obj.attrOverride)
 
             # Add the new SV data to the output dictionary.
             out[obj.id] = sv
@@ -1011,30 +979,3 @@ class LeonardBaseWorkpackages(LeonardBase):
         # Update the work list and mark it as completed.
         # --------------------------------------------------------------------
         btInterface.updateWorkPackage(wpid, admin.token, out)
-
-    def setObjectAttributes(self, obj, sv):
-        """
-        Return update SV if the user wants to override some of them.
-
-        This method does nothing if the user did not override any values via a
-        call to 'overrideAttributes'.
-
-        .. note::
-           It is unnecessary to explicitly clear the attrOverride data because
-           ``btInterface.updateWorkPackage`` takes care of that automatically.
-
-        :param bytes objID: object ID
-        :param BulletData sv: SV for objID.
-        """
-        tmp = obj.attrOverride
-
-        # Apply the specified values.
-        if tmp.position is not None:
-            sv.position[:] = tmp.position
-        if tmp.velocityLin is not None:
-            sv.velocityLin[:] = tmp.velocityLin
-        if tmp.velocityRot is not None:
-            sv.velocityRot[:] = tmp.velocityRot
-        if tmp.orientation is not None:
-            sv.orientation[:] = tmp.orientation
-        return sv
