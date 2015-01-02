@@ -916,8 +916,7 @@ class Clerk(multiprocessing.Process):
         # exist. Note: an empty geometry field is valid.
         doc = self.db_instance.find_one({'objID': objID})
         if doc is None:
-            # fixme: better message format.
-            return False, 'ID does not exist'
+            return False, 'ID <{}> does not exist'.format(objID)
         else:
             vert = np.fromstring(doc['vertices'], np.float64)
             uv = np.fromstring(doc['UV'], np.float64)
@@ -942,8 +941,7 @@ class Clerk(multiprocessing.Process):
         # exist. Note: an empty geometry field is valid.
         doc = self.db_instance.find_one({'objID': objID})
         if doc is None:
-            # fixme: better message format.
-            return False, 'ID does not exist'
+            return False, 'ID <{}> does not exist'.format(objID)
 
         doc['vertices'] = (vert.astype(np.float64)).tostring()
         doc['UV'] = (uv.astype(np.float64)).tostring()

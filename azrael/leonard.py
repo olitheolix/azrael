@@ -904,7 +904,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         if not ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
-        
+
 
 class LeonardBaseWorkpackages(LeonardBase):
     """
