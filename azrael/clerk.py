@@ -982,7 +982,7 @@ class Clerk(multiprocessing.Process):
         :return: (ok, (b'', ))
         :rtype: (bool, (bytes, ))
         """
-        ok = btInterface.overrideAttributes(objID, data)
+        ok = btInterface.setOverrideAttributes(objID, data)
         if ok:
             return True, ('', )
         else:

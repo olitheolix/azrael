@@ -294,7 +294,7 @@ class LeonardBase(multiprocessing.Process):
 
         # Clear the DB entry (they would otherwise be applied
         # at every frame).
-        btInterface.overrideAttributes(objID, None)
+        btInterface.setOverrideAttributes(objID, None)
         return sv
 
     def run(self):

@@ -373,7 +373,7 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
 
 
 @typecheck
-def overrideAttributes(objID: bytes, data: BulletDataOverride):
+def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
     """
     Request to manually update the attributes of ``objID``.
 
