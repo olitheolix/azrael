@@ -908,10 +908,10 @@ class LeonardBaseWorkpackages(LeonardBase):
     """
     A variation of ``LeonardBase`` that uses Work Packages.
 
-    This class is a test dummy and should not be used in production. Like
-    ``LeonardBase`` it does not actually compute any physics. It only creates
-    work packages and does some dummy processing for them. Everything runs in
-    the same process.
+    This class is a simple demo dummy to illustrate how Work packages
+    work. No other class inherits or uses it. Like Base`` it does not
+    actually compute any physics. It only creates work packages and does
+    some dummy processing for them. Everything runs in the same process.
 
     A work package contains a sub-set of all objects in the simulation and a
     token. While this class segments the world, worker nodes will retrieve the
