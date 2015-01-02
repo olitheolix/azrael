@@ -32,9 +32,10 @@ import numpy as np
 
 import azrael.clerk
 import azrael.clacks
-import azrael.wscontroller
 import azrael.controller
+import azrael.wscontroller
 import azrael.parts as parts
+import azrael.leonard as leonard
 import azrael.protocol as protocol
 import azrael.config as config
 import azrael.bullet.btInterface as btInterface
@@ -183,15 +184,48 @@ def test_spawn_and_get_state_variables(ctrl_type):
     assert (ok, len(sv)) == (True, 1)
     assert id0 in sv
 
-    # Specify a set of object attributes.
-    p = np.array([1, 2, 5])
-    vl = np.array([8, 9, 10.5])
-    vr = vl + 1
-    o = np.array([11, 12.5, 13, 13.5])
-    data = bullet_data.BulletDataOverride(
-        position=p, velocityLin=vl, velocityRot=vr, orientation=o)
-    ok, ret = ctrl.overrideAttributes(id0, data)
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
+    print('Test passed')
+
+
+@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
+def test_overrideAttribute(ctrl_type):
+    """
+    Spawn an object and override its state variables.
+    """
+    # Constants and parameters for this test.
+    templateID = '_templateNone'.encode('utf8')
+
+    # Start the necessary services.
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
+
+    # Spawn one of the default templates.
+    ok, objID = ctrl.spawn(None, templateID, pos=np.ones(3), vel=-np.ones(3))
     assert ok
+
+    # Specify a new set of object attributes.
+    new_sv = bullet_data.BulletDataOverride(
+        position=[1, -1, 1], imass=2, scale=3, cshape=[4, 1, 1, 1])
+
+    # Apply the new attributes.
+    ok, ret = ctrl.overrideAttributes(objID, new_sv)
+    assert ok
+
+    # Advance the simulation by exactly one step. This must pick up the new
+    # values and apply them.
+    btInterface.initSVDB(reset=False)
+    leo = leonard.LeonardBase()
+    leo.setup()
+    leo.step(0.1, 10)
+
+    ok, ret_sv = ctrl.getStateVariables(objID)
+    ret_sv = ret_sv[objID]
+    assert isinstance(ret_sv, bullet_data.BulletData)
+    assert ret_sv.imass == new_sv.imass
+    assert ret_sv.scale == new_sv.scale
+    assert np.array_equal(ret_sv.position, new_sv.position)
+    assert np.array_equal(ret_sv.cshape, new_sv.cshape)
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -602,6 +636,7 @@ def test_setGeometry(ctrl_type):
 
 
 if __name__ == '__main__':
+    test_overrideAttribute('Websocket')
     test_setGeometry('Websocket')
     test_spawn_and_delete_one_controller('Websocket')
     test_spawn_and_get_state_variables('Websocket')
