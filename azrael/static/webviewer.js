@@ -315,6 +315,9 @@ function* mycoroutine(connection) {
     controls.dragToLook = true;
     controls.update(1)
 
+    // A Hashmap with all the SVs from previous objects.
+    old_SVs = {}
+
     // Query the state variables of all visible objects and update
     // their position on the screen.
     var obj_cache = {}
@@ -342,11 +345,11 @@ function* mycoroutine(connection) {
             objIDs_num[ii] = res;
         }
 
-        // Update the position and orientation of all objects. Add objects if
-        // they are not yet part of the scene.
+        // Update the position and orientation of all objects. If an
+        // object does not yet exist then create one.
         $(".progress-bar").css('width', '0%')
         for (var ii in objIDs) {
-            // Update text in Progress bar.
+            // Update text in progress bar.
             var tmp = 100 * (parseInt(ii) + 1) / objIDs.length
                 txt = (parseInt(ii) + 1) + ' of ' + objIDs.length
             $("#PBLoading").css('width', tmp + '%').text('Loading ' + txt)
@@ -358,13 +361,29 @@ function* mycoroutine(connection) {
                     scene.remove(obj_cache[objIDs_num[ii]]);
                     delete obj_cache[objIDs_num[ii]];
                 }
+                delete old_SVs[ii];
                 continue;
             }
+
+            // Remove the objects if its geometry has changed. The
+            // code further down below will then think the object has
+            // never existed and will download it from scratch.
+            if (old_SVs[ii] != undefined) {
+                if (allSVs[ii].sv.checksumGeometry !=
+                    old_SVs[ii].sv.checksumGeometry) {
+                    scene.remove(obj_cache[objIDs_num[ii]]);
+                    delete obj_cache[objIDs_num[ii]];
+                }
+            }
+
+            // Backup the SV of the current object so that we can
+            // verify the checksum again in the next frame.
+            old_SVs[ii] = allSVs[ii];
 
             // Do not render ourselves.
             if (arrayEqual(playerID, objIDs[ii])) continue;
 
-            // Download the entire object template if we do not have it
+            // Download the entire object data if we do not have it
             // in the local cache.
             if (obj_cache[objIDs_num[ii]] == undefined) {
                 // Get SV for current object.
