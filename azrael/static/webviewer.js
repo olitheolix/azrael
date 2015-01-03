@@ -364,7 +364,7 @@ function* mycoroutine(connection) {
             // Do not render ourselves.
             if (arrayEqual(playerID, objIDs[ii])) continue;
 
-            // Download the entire object template if we do not have
+            // Download the entire object template if we do not have it
             // in the local cache.
             if (obj_cache[objIDs_num[ii]] == undefined) {
                 // Get SV for current object.
@@ -392,6 +392,9 @@ function* mycoroutine(connection) {
             obj_cache[objIDs_num[ii]].quaternion.y = q[1]
             obj_cache[objIDs_num[ii]].quaternion.z = q[2]
             obj_cache[objIDs_num[ii]].quaternion.w = q[3]
+
+            // Apply the scale parameter.
+            obj_cache[objIDs_num[ii]].scale.set(sv.scale, sv.scale, sv.scale)
         }
 
         // Remove models that do not exist anymore.

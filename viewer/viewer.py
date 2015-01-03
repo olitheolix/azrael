@@ -347,7 +347,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             if objID == self.player_id:
                 continue
 
-            # Query the object template.
+            # Query the object geometry.
             ok, (buf_vert, buf_uv, buf_rgb) = self.ctrl.getGeometry(objID)
             if not ok:
                 continue
@@ -362,7 +362,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # Add to set.
             self.objIDs.add(objID)
 
-            # fixme: getGeometry must provide this (what about getTemplate?).
+            # fixme: getGeometry must provide this (what about getGeometry?).
             width = height = int(np.sqrt(len(buf_rgb) // 3))
 
             # GPU needs float32 values for vertices and UV, and uint8 for RGB.
