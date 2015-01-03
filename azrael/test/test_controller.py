@@ -618,7 +618,7 @@ def test_setGeometry(ctrl_type):
     assert ok
     assert np.allclose(vert, ret_vert) and np.allclose(uv, ret_uv)
 
-    ok, _ = clerk.setGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb)
+    ok, _ = ctrl.setGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb)
     assert ok
 
     ok, (ret_vert, ret_uv, ret_rgb) = ctrl.getGeometry(objID)

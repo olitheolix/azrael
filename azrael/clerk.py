@@ -948,7 +948,7 @@ class Clerk(multiprocessing.Process):
         doc['RGB'] = (rgb.astype(np.uint8)).tostring()
         doc['csGeo'] += 1
         self.db_instance.save(doc)
-        return True, tuple()
+        return True, ('', )
 
     @typecheck
     def setForce(self, objID: bytes, force: np.ndarray, rpos: np.ndarray):

@@ -359,7 +359,10 @@ def ToClerk_SetGeometry_Encode(
 
 @typecheck
 def ToClerk_SetGeometry_Decode(data: dict):
-    return True, (bytes(data['objID']), data['vert'], data['UV'], data['RGB'])
+    return True, (bytes(data['objID']),
+                  np.array(data['vert'], np.float64),
+                  np.array(data['UV'], np.float64),
+                  np.array(data['RGB'],np.float64))
 
 
 @typecheck

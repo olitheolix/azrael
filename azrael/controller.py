@@ -99,6 +99,9 @@ class ControllerBase(multiprocessing.Process):
             'get_geometry': (
                 protocol.ToClerk_GetGeometry_Encode,
                 protocol.FromClerk_GetGeometry_Decode),
+            'set_geometry': (
+                protocol.ToClerk_SetGeometry_Encode,
+                protocol.FromClerk_SetGeometry_Decode),
             'spawn': (
                 protocol.ToClerk_Spawn_Encode,
                 protocol.FromClerk_Spawn_Decode),
