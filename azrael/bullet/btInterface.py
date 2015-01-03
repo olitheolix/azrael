@@ -557,10 +557,13 @@ def getWorkPackage(wpid: int):
 @typecheck
 def updateWorkPackage(wpid: int, token, svdict: dict):
     """
-    Update the SV data for all objects in ``svdict``.
+    Update the objects in ``wpid`` with the values in ``svdict``.
 
-    Only those objects in the work package with ID ``wpid`` will be processed,
-    and even then only if their ``token`` value matches.
+    This function only makes changes to objects defined in the WP ``wpid``, and
+    even then only if the ``token`` value matches.
+
+    This function will also clear the token value and reset the
+    BulletDataOverride information in the DB.
 
     :param int wpid: work package ID.
     :param int token: token value associated with this work package.

@@ -500,10 +500,11 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         """
         Advance the simulation by ``dt`` using at most ``maxsteps``.
 
-        This method will query all SV objects from the database and updates
+        This method will query all SV objects from the database and update
         them in the Bullet engine. Then it defers to Bullet for the physics
-        update.  Finally it copies the updated values in Bullet back to the
-        database.
+        update. Finally, it replaces the SV fields with the user specified
+        values (only applies if the user called 'setStateVariables') and writes
+        the results back to the database.
 
         :param float dt: time step in seconds.
         :param int maxsteps: maximum number of sub-steps to simulate for one
@@ -613,8 +614,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
 
             # Override SV with user specified values (the 'getWorkpackage'
             # function will have populated that attribute).
-            sv = _updateBulletDataTuple(sv, obj.attrOverride)
-            out[obj.id] = sv
+            out[obj.id] = _updateBulletDataTuple(sv, obj.attrOverride)
 
         # Update the data and delete the WP.
         ok = btInterface.updateWorkPackage(wpid, admin.token, out)
@@ -878,8 +878,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
 
             # Override SV with user specified values (the 'getWorkpackage'
             # function will have populated that attribute).
-            sv = _updateBulletDataTuple(sv, obj.attrOverride)
-            out[obj.id] = sv
+            out[obj.id] = _updateBulletDataTuple(sv, obj.attrOverride)
 
         # Update the data and delete the WP.
         ok = btInterface.updateWorkPackage(wpid, admin.token, out)
@@ -955,10 +954,7 @@ class LeonardBaseWorkpackages(LeonardBase):
 
             # Override SV with user specified values (the 'getWorkpackage'
             # function will have populated that attribute).
-            sv = _updateBulletDataTuple(sv, obj.attrOverride)
-
-            # Add the new SV data to the output dictionary.
-            out[obj.id] = sv
+            out[obj.id] = _updateBulletDataTuple(sv, obj.attrOverride)
 
         # --------------------------------------------------------------------
         # Update the work list and mark it as completed.
