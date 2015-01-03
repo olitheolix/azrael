@@ -256,7 +256,7 @@ def test_update_statevar():
 
 def test_overrideAttributes():
     """
-    Set and retrieve a object attributes like position, velocity, acceleration,
+    Set and retrieve object attributes like position, velocity, acceleration,
     and orientation.
     """
     # Convenience.
@@ -306,7 +306,6 @@ def test_overrideAttributes():
         assert np.array_equal(a, b)
 
     # Ensure that scalars did not become stunted NumPy types.
-    print(ret.imass, type(ret.imass))
     assert isinstance(ret.imass, (int, float))
     assert isinstance(ret.scale, (int, float))
 

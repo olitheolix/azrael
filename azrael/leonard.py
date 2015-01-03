@@ -40,36 +40,6 @@ ipshell = IPython.embed
 
 
 @typecheck
-def _updateBulletDataTuple(orig: bullet_data.BulletData,
-                           new: bullet_data.BulletDataOverride):
-    """
-    Overwrite all fields in ``orig`` with those of ``new`` unless they are
-    **None**.
-
-    This is a convenience function. It avoids code duplication which was
-    otherwise unavoidable because not all Leonard implementations inherit the
-    same base class.
-
-    :param BulletData orig: the original tuple.
-    :param BulletDataOverride new: all None values will be copied to ``orig``.
-    :return: updated version of ``orig``.
-    :rtype: BulletData
-    """
-    # Convert the named tuple ``orig`` into a dictionary.
-    fields = orig._fields
-    dict_orig = {_: getattr(orig, _) for _ in fields}
-
-    # Iterate over all values in ``new`` copy all its not-None values to the
-    # dict_orig.
-    for k, v in zip(fields, new):
-        if v is not None:
-            dict_orig[k] = v
-
-    # Build a new BulletData instance and return it.
-    return bullet_data.BulletData(**dict_orig)
-
-
-@typecheck
 def sweeping(data: list, labels: np.ndarray, dim: str):
     """
     Return sets of overlapping AABBs in the dimension ``dim``.
@@ -268,34 +238,8 @@ class LeonardBase(multiprocessing.Process):
             sv.velocityLin[:] += 0.5 * force
             sv.position[:] += dt * sv.velocityLin
 
-            # Override SV with user specified values (if there are any).
-            sv = self.overloadStateVariables(objID, sv)
-
             # Serialise the state variables and update them in the DB.
             btInterface.update(objID, sv)
-
-    def overloadStateVariables(self, objID, sv):
-        """
-        Set the SV of ``objID`` to the content of ``sv``.
-
-        This method does nothing if the user did not specify explicit values
-        (see ``clerk.setStateVariables``).
-
-        :param bytes objID: object ID
-        :param BulletData sv: SV for objID.
-        """
-        # Determine if the user actually specified any attributes.
-        ok, new = btInterface.getOverrideAttributes(objID)
-        if not ok:
-            return sv
-
-        # Copy all not-None fields from 'new' to 'sv'.
-        sv = _updateBulletDataTuple(sv, new)
-
-        # Clear the DB entry (they would otherwise be applied
-        # at every frame).
-        btInterface.setOverrideAttributes(objID, None)
-        return sv
 
     def run(self):
         """
@@ -389,7 +333,6 @@ class LeonardBulletMonolithic(LeonardBase):
         for objID, sv in allSV.items():
             ok, sv = self.bullet.getObjectData([util.id2int(objID)])
             if ok == 0:
-                sv = self.overloadStateVariables(objID, sv)
                 btInterface.update(objID, sv)
 
 
@@ -470,7 +413,6 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
             for objID, sv in coll_SV.items():
                 ok, sv = self.bullet.getObjectData([util.id2int(objID)])
                 if ok == 0:
-                    sv = self.overloadStateVariables(objID, sv)
                     btInterface.update(objID, sv)
 
 
@@ -611,10 +553,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
                 # Something went wrong. Reuse the old SV.
                 sv = obj.sv
                 self.logit.error('Unable to get all objects from Bullet')
-
-            # Override SV with user specified values (the 'getWorkpackage'
-            # function will have populated that attribute).
-            out[obj.id] = _updateBulletDataTuple(sv, obj.attrOverride)
+            out[obj.id] = sv
 
         # Update the data and delete the WP.
         ok = btInterface.updateWorkPackage(wpid, admin.token, out)
@@ -876,9 +815,8 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
                 sv = obj.sv
                 self.logit.error('Unable to get all objects from Bullet')
 
-            # Override SV with user specified values (the 'getWorkpackage'
-            # function will have populated that attribute).
-            out[obj.id] = _updateBulletDataTuple(sv, obj.attrOverride)
+            # Save the results.
+            out[obj.id] = sv
 
         # Update the data and delete the WP.
         ok = btInterface.updateWorkPackage(wpid, admin.token, out)
@@ -952,9 +890,8 @@ class LeonardBaseWorkpackages(LeonardBase):
             sv.velocityLin[:] += 0.5 * force
             sv.position[:] += dt * sv.velocityLin
 
-            # Override SV with user specified values (the 'getWorkpackage'
-            # function will have populated that attribute).
-            out[obj.id] = _updateBulletDataTuple(sv, obj.attrOverride)
+            # Save the results.
+            out[obj.id] = sv
 
         # --------------------------------------------------------------------
         # Update the work list and mark it as completed.

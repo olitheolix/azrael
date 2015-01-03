@@ -40,7 +40,7 @@ _DB_WP = None
 
 
 # Work package related.
-WPData = namedtuple('WPRecord', 'id sv central_force torque attrOverride')
+WPData = namedtuple('WPRecord', 'id sv central_force torque')
 WPAdmin = namedtuple('WPAdmin', 'token dt maxsteps')
 BulletDataOverride = bullet_data.BulletDataOverride
 
@@ -202,9 +202,41 @@ def getAABB(objIDs: (list, tuple)):
 
 
 @typecheck
-def update(objID: bytes, sv: bullet_data.BulletData):
+def _updateBulletDataTuple(orig: bullet_data.BulletData,
+                           new: bullet_data.BulletDataOverride):
     """
-    Update the ``sv`` data for object ``objID`` return the success.
+    Overwrite all fields in ``orig`` with those of ``new`` unless they are
+    **None**.
+
+    This is a convenience function. It avoids code duplication which was
+    otherwise unavoidable because not all Leonard implementations inherit the
+    same base class.
+
+    :param BulletData orig: the original tuple.
+    :param BulletDataOverride new: all None values will be copied to ``orig``.
+    :return: updated version of ``orig``.
+    :rtype: BulletData
+    """
+    if new is None:
+        return orig
+    
+    # Convert the named tuple ``orig`` into a dictionary.
+    fields = orig._fields
+    dict_orig = {_: getattr(orig, _) for _ in fields}
+
+    # Copy all not-None values from ``new`` into ``dict_orig``.
+    for k, v in zip(fields, new):
+        if v is not None:
+            dict_orig[k] = v
+
+    # Build a new BulletData instance and return it.
+    return bullet_data.BulletData(**dict_orig)
+
+
+@typecheck
+def update(objID: bytes, sv: bullet_data.BulletData, token=None):
+    """
+    Update the ``sv`` data for object ``objID`` and return the success flag.
 
     Return **False** if the update failed, most likely because the ``objID``
     was invalid.
@@ -217,9 +249,26 @@ def update(objID: bytes, sv: bullet_data.BulletData):
     if len(objID) != config.LEN_ID:
         return False
 
-    # Update an existing object only.
-    doc = _DB_SV.update({'objid': objID}, {'$set': {'sv': sv.toJsonDict()}})
+    # Retrieve the State Variables for ``objID``.
+    query = {'objid': objID}
+    if token is not None:
+        query['token'] = token
+    doc = _DB_SV.find_and_modify(
+        query, {'$set': {'attrOverride': BulletDataOverride()}}, new=False)
+    if doc is None:
+        return False
 
+    # Import the overriden State Variables into a ``BulletDataOverride`` tuple.
+    fields = BulletDataOverride._fields
+    sv_new = BulletDataOverride(**dict(zip(fields, doc['attrOverride'])))
+    
+    # Copy all active variables from 'sv_new' to 'sv'.
+    sv = _updateBulletDataTuple(sv, sv_new)
+
+    # Update the State Variables and void the user specified ones.
+    doc = _DB_SV.update(query,
+            {'$set': {'sv': sv.toJsonDict()},
+             '$unset': {'token': 1}})
     # This function was successful if exactly one document was updated.
     return doc['n'] == 1
 
@@ -534,19 +583,12 @@ def getWorkPackage(wpid: int):
     else:
         objIDs = doc['ids']
 
-    def aux(data):
-        """
-        Place ``data`` into a BulletDataOverride structure.
-        """
-        fields = BulletDataOverride._fields
-        return BulletDataOverride(**dict(zip(fields, data)))
-
     # Compile a list of WPData objects; one for every object in the WP. Skip
     # non-existing objects.
     data = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
     data = [_ for _ in data if _ is not None]
     data = [WPData(_['objid'], bullet_data.fromJsonDict(_['sv']),
-                   _['central_force'], _['torque'], aux(_['attrOverride']))
+                   _['central_force'], _['torque'])
             for _ in data]
 
     # Put the meta data of the work package into another named tuple.
@@ -562,9 +604,6 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     This function only makes changes to objects defined in the WP ``wpid``, and
     even then only if the ``token`` value matches.
 
-    This function will also clear the token value and reset the
-    BulletDataOverride information in the DB.
-
     :param int wpid: work package ID.
     :param int token: token value associated with this work package.
     :param dict svdict: {objID: sv} dictionary
@@ -572,11 +611,7 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
     """
     # Iterate over all object IDs and update the state variables.
     for objID in svdict:
-        _DB_SV.update(
-            {'objid': objID, 'token': token},
-            {'$set': {'sv': svdict[objID].toJsonDict(),
-                      'attrOverride': BulletDataOverride()},
-             '$unset': {'token': 1}})
+        ret = update(objID, svdict[objID], token)
 
     # Remove the specified work package. This MUST happen AFTER the SVs were
     # updated because btInterface.countWorkPackages will count the number of WP
