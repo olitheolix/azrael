@@ -257,6 +257,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Camera instance.
         self.camera = None
 
+        # Copy of all SVs from last frame.
+        self.backup_allSVs = {}
+
         # Address of Clerk.
         self.addr_server = addr
 
@@ -337,14 +340,31 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         return buf_vert.flatten()
 
     def loadGeometry(self):
-        ok, all_ids = self.ctrl.getAllObjectIDs()
+        ok, objIDs = self.ctrl.getAllObjectIDs()
+        ok, allSVs = self.ctrl.getStateVariables(objIDs)
 
-        for objID in all_ids:
-            # Do not add anything if we already have the object, or if it is
-            # the player object itself.
-            if objID in self.objIDs:
-                continue
+        for objID in allSVs:
+            cs_old = allSVs[objID].checksumGeometry
+            if objID in self.backup_allSVs:
+                cs_new = self.backup_allSVs[objID].checksumGeometry
+            else:
+                cs_new = None
+            if cs_new is not None:
+                geometry_unchanged = (cs_old == cs_new)
+            else:
+                geometry_unchanged = False
+            del cs_old, cs_new
+
+            # Backup the currnet SV.
+            self.backup_allSVs[objID] = allSVs[objID]
+
+            # Do not add anything if it is the player object itself.
             if objID == self.player_id:
+                continue
+
+            # Skip the object if we already have its geometry and it has not
+            # changed.
+            if (objID in self.objIDs) and geometry_unchanged:
                 continue
 
             # Query the object geometry.
@@ -353,9 +373,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # This is to mask a bug in Clacks: newly spawned objects can become
-            # active before their geometry hits the DB. Since this viewer
-            # script does not check if the geometry has changed it may get an
-            # empty geometry first and then never check again.
+            # active before their geometry hits the DB.
             if len(buf_vert) == 0:
                 continue
 
@@ -431,7 +449,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 gl.glEnableVertexAttribArray(1)
 
                 # Create a new texture buffer on the GPU and bind it.
-                assert objID not in self.textureBuffer
                 self.textureBuffer[objID] = gl.glGenTextures(1)
                 gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureBuffer[objID])
 
