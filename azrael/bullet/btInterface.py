@@ -219,7 +219,7 @@ def _updateBulletDataTuple(orig: bullet_data.BulletData,
     """
     if new is None:
         return orig
-    
+
     # Convert the named tuple ``orig`` into a dictionary.
     fields = orig._fields
     dict_orig = {_: getattr(orig, _) for _ in fields}
@@ -261,14 +261,15 @@ def update(objID: bytes, sv: bullet_data.BulletData, token=None):
     # Import the overriden State Variables into a ``BulletDataOverride`` tuple.
     fields = BulletDataOverride._fields
     sv_new = BulletDataOverride(**dict(zip(fields, doc['attrOverride'])))
-    
+
     # Copy all active variables from 'sv_new' to 'sv'.
     sv = _updateBulletDataTuple(sv, sv_new)
 
     # Update the State Variables and void the user specified ones.
-    doc = _DB_SV.update(query,
-            {'$set': {'sv': sv.toJsonDict()},
-             '$unset': {'token': 1}})
+    doc = _DB_SV.update(
+        query,
+        {'$set': {'sv': sv.toJsonDict()},
+         '$unset': {'token': 1}})
     # This function was successful if exactly one document was updated.
     return doc['n'] == 1
 

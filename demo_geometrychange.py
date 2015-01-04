@@ -140,8 +140,8 @@ def startAzrael(param):
     #leo = leonard.LeonardBase()
     #leo = leonard.LeonardBulletMonolithic()
     #leo = leonard.LeonardBulletSweeping()
-    leo = leonard.LeonardBulletSweepingMultiST()
-    #leo = leonard.LeonardBulletSweepingMultiMT()
+    #leo = leonard.LeonardBulletSweepingMultiST()
+    leo = leonard.LeonardBulletSweepingMultiMT()
     leo.start()
 
     return (clerk, clacks, leo), attr
@@ -285,7 +285,7 @@ class UpdateGeometry(multiprocessing.Process):
                 if (cnt % 2) == 0:
                     ctrl.setGeometry(objID, sphere_vert, sphere_uv, sphere_rgb)
                 else:
-                    ctrl.setGeometry(objID, *geometries[objID])                
+                    ctrl.setGeometry(objID, *geometries[objID])
 
             # Modify the scale.
             scale = (cnt + 1) / 10
