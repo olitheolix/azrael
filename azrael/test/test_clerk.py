@@ -94,8 +94,8 @@ def test_invalid():
 
     # Send a corrupt JSON to Clerk.
     msg = 'invalid_cmd'
-    ok, ret = ctrl.testSend(msg.encode('utf8'))
-    assert (ok, ret) == (False, 'JSON decoding error in Clerk')
+    ret = ctrl.testSend(msg.encode('utf8'))
+    assert ret == (False, 'JSON decoding error in Clerk')
 
     # Send a malformatted JSON (it misses the 'payload' field).
     msg = json.dumps({'cmd': 'blah'})
@@ -167,23 +167,22 @@ def test_send_receive_message():
     src, dst, data = int2id(5), int2id(10), 'blah'.encode('utf8')
 
     # Retrieve a non-existing message.
-    ok, (_, msg) = clerk.recvMessage(src)
-    assert (ok, msg) == (True, b'')
+    ret = clerk.recvMessage(src)
+    assert (ret.ok, ret.data) == (True, (b'', b''))
 
     # Dispatch a message.
-    ok, msg = clerk.sendMessage(src, dst, data)
-    assert ok
+    assert clerk.sendMessage(src, dst, data).ok
 
     # Attempt to retrieve it with the wrong 'dst' -- we must get nothing.
-    ok, (_, msg) = clerk.recvMessage(src)
-    assert (ok, msg) == (True, b'')
+    ret = clerk.recvMessage(src)
+    assert (ret.ok, ret.data) == (True, (b'', b''))
 
     # Now retrieve it with the correct ID, and the retrieve it once more to
     # ensure that the same message is not delivered twice.
-    ok, (_, msg) = clerk.recvMessage(dst)
-    assert (ok, (_, msg)) == (True, (src, data))
-    ok, (_, msg) = clerk.recvMessage(dst)
-    assert (ok, msg) == (True, b'')
+    ret = clerk.recvMessage(dst)
+    assert (ret.ok, ret.data) == (True, (src, data))
+    ret = clerk.recvMessage(dst)
+    assert (ret.ok, ret.data) == (True, (b'', b''))
 
     print('Test passed')
 
@@ -202,19 +201,19 @@ def test_spawn():
 
     # Unknown controller name.
     templateID = '_templateNone'.encode('utf8')
-    ok, ret = clerk.spawn('aaaa'.encode('utf8'), templateID, sv)
-    assert (ok, ret) == (False, 'Unknown Controller Name')
+    ret = clerk.spawn('aaaa'.encode('utf8'), templateID, sv)
+    assert (ret.ok, ret.msg) == (False, 'Unknown Controller Name')
 
     # Invalid templateID.
     templateID = np.int64(100).tostring()
-    ok, ret = clerk.spawn(None, templateID, sv)
-    assert (ok, ret) == (False, 'Invalid Template ID')
+    ret = clerk.spawn(None, templateID, sv)
+    assert (ret.ok, ret.msg) == (False, 'Invalid Template ID')
 
     # All parameters are now valid. This must spawn an object with ID=1
     # because this is the first ID in an otherwise pristine system.
     templateID = '_templateNone'.encode('utf8')
-    ok, (ret,) = clerk.spawn(None, templateID, sv)
-    assert (ok, ret) == (True, int2id(1))
+    ret = clerk.spawn(None, templateID, sv)
+    assert (ret.ok, ret.data) == (True, int2id(1))
 
     print('Test passed')
 
@@ -228,42 +227,42 @@ def test_delete():
     """
     killAzrael()
 
+    # Test constants and parameters.
+    objID_1, objID_2 = int2id(1), int2id(2)
+
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
     # No objects must exist at this point.
-    ok, (out,) = clerk.getAllObjectIDs()
-    assert (ok, out) == (True, [])
+    ret = clerk.getAllObjectIDs()
+    assert (ret.ok, ret.data) == (True, [])
 
     # Spawn two default objects.
     sv = bullet_data.BulletData()
     templateID = '_templateNone'.encode('utf8')
-    ok, (objID_0,) = clerk.spawn(None, templateID, sv)
-    assert (ok, objID_0) == (True, int2id(1))
-    ok, (objID_1,) = clerk.spawn(None, templateID, sv)
-    assert (ok, objID_1) == (True, int2id(2))
+    ret = clerk.spawn(None, templateID, sv)
+    assert (ret.ok, ret.data) == (True, objID_1)
+    ret = clerk.spawn(None, templateID, sv)
+    assert (ret.ok, ret.data) == (True, objID_2)
 
     # Two objects must now exist.
-    ok, (out,) = clerk.getAllObjectIDs()
-    assert ok and (len(out) == 2)
-    assert (objID_0 in out) and (objID_1 in out)
+    ret = clerk.getAllObjectIDs()
+    assert ret.ok and (ret.data == [objID_1, objID_2])
 
     # Delete the first object.
-    ok, (out, ) = clerk.deleteObject(objID_0)
-    assert ok
+    assert clerk.deleteObject(objID_1).ok
 
     # Only the second object must still exist.
-    ok, (out,) = clerk.getAllObjectIDs()
-    assert (ok, out) == (True, [objID_1])
+    ret = clerk.getAllObjectIDs()
+    assert (ret.ok, ret.data) == (True, [objID_2])
 
     # Deleting the same object again must result in an error.
-    ok, _ = clerk.deleteObject(objID_0)
-    assert not ok
+    assert not clerk.deleteObject(objID_1).ok
 
     # Delete the second object.
-    ok, _ = clerk.deleteObject(objID_1)
-    assert ok
-    assert clerk.getAllObjectIDs() == (True, ([],))
+    assert clerk.deleteObject(objID_2).ok
+    ret = clerk.getAllObjectIDs()
+    assert (ret.ok, ret.data) == (True, [])
 
     print('Test passed')
 
@@ -285,40 +284,36 @@ def test_get_statevar():
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Retrieve the SV for a non-existing ID.
-    ok, ret = clerk.getStateVariables([int2id(10)])
-    assert (ok, ret) == (True, ([int2id(10)], [None]))
+    ret = clerk.getStateVariables([int2id(10)])
+    assert (ret.ok, ret.data) == (True, {int2id(10): None})
 
     # Spawn a new object. It must have ID=1.
-    ok, (ret,) = clerk.spawn(None, templateID, sv_1)
-    assert (ok, ret) == (True, objID_1)
+    ret = clerk.spawn(None, templateID, sv_1)
+    assert (ret.ok, ret.data) == (True, objID_1)
 
     # Retrieve the SV for a non-existing ID --> must fail.
-    ok, ret = clerk.getStateVariables([int2id(10)])
-    assert (ok, ret) == (True, ([int2id(10)], [None]))
+    ret = clerk.getStateVariables([int2id(10)])
+    assert (ret.ok, ret.data) == (True, {int2id(10): None})
 
     # Retrieve the SV for the existing ID=1.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID_1])
-    assert (ok, len(ret_objIDs), len(ret_SVs)) == (True, 1, 1)
-    assert ret_objIDs == [objID_1]
-    assert ret_SVs[0] == sv_1
+    ret = clerk.getStateVariables([objID_1])
+    assert (ret.ok, len(ret.data)) == (True, 1)
+    assert ret.data == {objID_1: sv_1}
 
     # Spawn a second object.
-    ok, (ret,) = clerk.spawn(None, templateID, sv_2)
-    assert (ok, ret) == (True, objID_2)
+    ret = clerk.spawn(None, templateID, sv_2)
+    assert (ret.ok, ret.data) == (True, objID_2)
 
     # Retrieve the state variables for both objects individually.
     for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
-        ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
-        assert (ok, len(ret_objIDs), len(ret_SVs)) == (True, 1, 1)
-        assert ret_objIDs == [objID]
-        assert ret_SVs[0] == ref_sv
+        ret = clerk.getStateVariables([objID])
+        assert (ret.ok, len(ret.data)) == (True, 1)
+        assert ret.data == {objID: ref_sv}
 
     # Retrieve the state variables for both objects at once.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID_1, objID_2])
-    assert (ok, len(ret_objIDs), len(ret_SVs)) == (True, 2, 2)
-    assert ret_objIDs == [objID_1, objID_2]
-    assert ret_SVs[0] == sv_1
-    assert ret_SVs[1] == sv_2
+    ret = clerk.getStateVariables([objID_1, objID_2])
+    assert (ret.ok, len(ret.data)) == (True, 2)
+    assert ret.data == {objID_1: sv_1, objID_2: sv_2}
 
     print('Test passed')
 
@@ -339,17 +334,16 @@ def test_set_force():
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Invalid/non-existing ID.
-    ok, ret = clerk.setForce(int2id(0), force, relpos)
-    assert (ok, ret) == (False, 'ID does not exist')
+    ret = clerk.setForce(int2id(0), force, relpos)
+    assert (ret.ok, ret.msg) == (False, 'ID does not exist')
 
     # Spawn a new object. It must have ID=1.
     templateID = '_templateNone'.encode('utf8')
-    ok, (ret,) = clerk.spawn(None, templateID, sv)
-    assert (ok, ret) == (True, id_1)
+    ret = clerk.spawn(None, templateID, sv)
+    assert (ret.ok, ret.data) == (True, id_1)
 
     # Apply the force.
-    ok, (ret, ) = clerk.setForce(id_1, force, relpos)
-    assert (ok, ret) == (True, '')
+    assert clerk.setForce(id_1, force, relpos).ok
 
     ok, ret_force, ret_torque = btInterface.getForceAndTorque(id_1)
     assert ok
@@ -368,24 +362,23 @@ def test_add_get_template():
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
-    # Request and invalid ID.
-    ok, out = clerk.getTemplate('blah'.encode('utf8'))
-    assert not ok
+    # Request an invalid ID.
+    assert not clerk.getTemplate('blah'.encode('utf8')).ok
 
     # Clerk has a few default objects. This one has no collision shape...
-    ok, out = clerk.getTemplate('_templateNone'.encode('utf8'))
-    assert ok
-    assert np.array_equal(out[0], np.array([0, 1, 1, 1]))
+    ret = clerk.getTemplate('_templateNone'.encode('utf8'))
+    assert ret.ok
+    assert np.array_equal(ret.data['cshape'], np.array([0, 1, 1, 1]))
 
     # ... this one is a sphere...
-    ok, out = clerk.getTemplate('_templateSphere'.encode('utf8'))
-    assert ok
-    assert np.array_equal(out[0], np.array([3, 1, 1, 1]))
+    ret = clerk.getTemplate('_templateSphere'.encode('utf8'))
+    assert ret.ok
+    assert np.array_equal(ret.data['cshape'], np.array([3, 1, 1, 1]))
 
     # ... and this one is a cube.
-    ok, out = clerk.getTemplate('_templateCube'.encode('utf8'))
-    assert ok
-    assert np.array_equal(out[0], np.array([4, 1, 1, 1]))
+    ret = clerk.getTemplate('_templateCube'.encode('utf8'))
+    assert ret.ok
+    assert np.array_equal(ret.data['cshape'], np.array([4, 1, 1, 1]))
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -396,24 +389,24 @@ def test_add_get_template():
 
     # Attempt to add a template where the number of vertices is not a multiple
     # of 9. This must fail.
-    ok, _ = clerk.addTemplate(templateID, cs, vert[:-1], uv, rgb, [], [])
-    assert (ok, _) == (False, 'Number of vertices must be a multiple of Nine')
+    ret = clerk.addTemplate(templateID, cs, vert[:-1], uv, rgb, [], [])
+    assert not ret.ok
+    assert ret.msg == 'Number of vertices must be a multiple of Nine'
 
     # Add valid template. This must succeed.
-    ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
-    assert ok
+    assert clerk.addTemplate(templateID, cs, vert, uv, rgb, [], []).ok
 
     # Attempt to add another template with the same name. This must fail.
-    ok, _ = clerk.addTemplate(templateID, 2 * cs, 2 * vert, uv, rgb, [], [])
-    assert not ok
+    args = templateID, 2 * cs, 2 * vert, uv, rgb, [], []
+    assert not clerk.addTemplate(*args).ok
 
     # Fetch the just added template again and verify CS, vertices, UV, and RGB.
-    ok, out = clerk.getTemplate(templateID)
-    assert ok
-    assert np.array_equal(out[0], cs)
-    assert np.array_equal(out[1], vert)
-    assert np.array_equal(out[2], uv)
-    assert np.array_equal(out[3], rgb)
+    ret = clerk.getTemplate(templateID)
+    assert ret.ok
+    assert np.array_equal(ret.data['cshape'], cs)
+    assert np.array_equal(ret.data['vert'], vert)
+    assert np.array_equal(ret.data['uv'], uv)
+    assert np.array_equal(ret.data['rgb'], rgb)
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
@@ -431,25 +424,25 @@ def test_add_get_template():
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [b0, b1], [f0])
+    assert clerk.addTemplate(templateID, cs, vert, uv, rgb, [b0, b1], [f0]).ok
 
     # Retrieve the just created object and verify the CS and geometry.
-    ok, out = clerk.getTemplate(templateID)
-    assert ok
-    assert np.array_equal(out[0], cs)
-    assert np.array_equal(out[1], vert)
-    assert np.array_equal(out[2], uv)
-    assert np.array_equal(out[3], rgb)
+    ret = clerk.getTemplate(templateID)
+    assert ret.ok
+    assert np.array_equal(ret.data['cshape'], cs)
+    assert np.array_equal(ret.data['vert'], vert)
+    assert np.array_equal(ret.data['uv'], uv)
+    assert np.array_equal(ret.data['rgb'], rgb)
 
     # The template must also feature two boosters and one factory.
-    assert len(out[4]) == 2
-    assert len(out[5]) == 1
+    assert len(ret.data['boosters']) == 2
+    assert len(ret.data['factories']) == 1
 
     # Explicitly verify the booster- and factory units. The easisest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
-    out_boosters = [_.tostring() for _ in out[4]]
-    out_factories = [_.tostring() for _ in out[5]]
+    out_boosters = [_.tostring() for _ in ret.data['boosters']]
+    out_factories = [_.tostring() for _ in ret.data['factories']]
     assert b0.tostring() in out_boosters
     assert b1.tostring() in out_boosters
     assert f0.tostring() in out_factories
@@ -478,13 +471,12 @@ def test_add_get_template_AABB():
     max_sidelen = max(8, 5, 6)
 
     # Add template and retrieve it again.
-    ok, _ = clerk.addTemplate(tID1, cs, vert, uv, rgb, [], [])
-    assert ok
-    ok, out = clerk.getTemplate(tID1)
-    assert ok
+    assert clerk.addTemplate(tID1, cs, vert, uv, rgb, [], []).ok
+    ret = clerk.getTemplate(tID1)
+    assert ret.ok
 
     # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-    assert (out[6] - np.sqrt(3.1) * max_sidelen) < 1E-10
+    assert (ret.data['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
 
     # Repeat the experiment with a larger mesh.
     vert = np.array([0, 0, 0,
@@ -496,13 +488,12 @@ def test_add_get_template_AABB():
     max_sidelen = max(8, 14, 8)
 
     # Add template and retrieve it again.
-    ok, _ = clerk.addTemplate(tID2, cs, vert, uv, rgb, [], [])
-    assert ok
-    ok, out = clerk.getTemplate(tID2)
-    assert ok
+    assert clerk.addTemplate(tID2, cs, vert, uv, rgb, [], []).ok
+    ret = clerk.getTemplate(tID2)
+    assert ret.ok
 
     # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-    assert (out[6] - np.sqrt(3.1) * max_sidelen) < 1E-10
+    assert (ret.data['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
 
     print('Test passed')
 
@@ -524,24 +515,23 @@ def test_get_object_template_id():
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Spawn a new object. It must have ID=1.
-    ok, (ctrl_id,) = clerk.spawn(None, templateID_0, sv)
-    assert (ok, ctrl_id) == (True, id_0)
+    ret = clerk.spawn(None, templateID_0, sv)
+    assert (ret.ok, ret.data) == (True, id_0)
 
     # Spawn another object from a different template.
-    ok, (ctrl_id,) = clerk.spawn(None, templateID_1, sv)
-    assert (ok, ctrl_id) == (True, id_1)
+    ret = clerk.spawn(None, templateID_1, sv)
+    assert (ret.ok, ret.data) == (True, id_1)
 
     # Retrieve template of first object.
-    ok, (ret,) = clerk.getTemplateID(id_0)
-    assert (ok, ret) == (True, templateID_0)
+    ret = clerk.getTemplateID(id_0)
+    assert (ret.ok, ret.data) == (True, templateID_0)
 
     # Retrieve template of second object.
-    ok, (ret,) = clerk.getTemplateID(id_1)
-    assert (ok, ret) == (True, templateID_1)
+    ret = clerk.getTemplateID(id_1)
+    assert (ret.ok, ret.data) == (True, templateID_1)
 
     # Attempt to retrieve a non-existing object.
-    ok, ret = clerk.getTemplateID(int2id(100))
-    assert not ok
+    assert not clerk.getTemplateID(int2id(100)).ok
 
     # Shutdown.
     killAzrael()
@@ -564,9 +554,8 @@ def test_controlParts_invalid_commands():
 
     # Create a fake object. We will not need it but for this test one must
     # exist as other commands would otherwise fail.
-    ok, (ctrl_id,) = clerk.spawn(None, templateID_1, sv)
-    assert (ok, ctrl_id) == (True, objID_1)
-    del ok, ctrl_id
+    ret = clerk.spawn(None, templateID_1, sv)
+    assert (ret.ok, ret.data) == (True, objID_1)
 
     # Create commands for a Booster and a Factory.
     cmd_b = parts.CmdBooster(partID=0, force=0.2)
@@ -574,24 +563,19 @@ def test_controlParts_invalid_commands():
 
     # Call 'controlParts'. This must fail because the chosen template has no
     # boosters or factory units.
-    ok, msg = clerk.controlParts(objID_1, [cmd_b], [])
-    assert not ok
+    assert not clerk.controlParts(objID_1, [cmd_b], []).ok
 
     # Must fail: objects has no factory.
-    ok, msg = clerk.controlParts(objID_1, [], [cmd_f])
-    assert not ok
+    assert not clerk.controlParts(objID_1, [], [cmd_f]).ok
 
     # Must fail: objects still has neither a booster nor a factory.
-    ok, msg = clerk.controlParts(objID_1, [cmd_b], [cmd_f])
-    assert not ok
+    assert not clerk.controlParts(objID_1, [cmd_b], [cmd_f]).ok
 
     # Must fail: Factory command where a Booster is expected and vice versa.
-    ok, msg = clerk.controlParts(objID_1, [cmd_f], [cmd_b])
-    assert not ok
+    assert not clerk.controlParts(objID_1, [cmd_f], [cmd_b]).ok
 
     # Must fail: Booster command among Factory commands.
-    ok, msg = clerk.controlParts(objID_1, [], [cmd_f, cmd_b])
-    assert not ok
+    assert not clerk.controlParts(objID_1, [], [cmd_f, cmd_b]).ok
 
     # ------------------------------------------------------------------------
     # Create a template with a booster and a factory. Then send invalid
@@ -613,32 +597,26 @@ def test_controlParts_invalid_commands():
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [b0], [f0])
-    assert ok
+    assert clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [b0], [f0]).ok
 
     # ... and spawn an instance thereof.
     sv = bullet_data.BulletData()
-    ok, (ctrl_id,) = clerk.spawn(None, templateID_2, sv)
-    assert (ok, ctrl_id) == (True, objID_2)
-    del ok, ctrl_id
+    ret = clerk.spawn(None, templateID_2, sv)
+    assert (ret.ok, ret.data) == (True, objID_2)
 
     # Create the commands to let each factory spawn an object.
     cmd_b = parts.CmdBooster(partID=0, force=0.5)
     cmd_f = parts.CmdFactory(partID=0, exit_speed=0.5)
 
     # Valid commands: simply verify the new template works correctly.
-    ok, spawnedIDs = clerk.controlParts(objID_2, [cmd_b], [cmd_f])
-    assert ok
+    assert clerk.controlParts(objID_2, [cmd_b], [cmd_f]).ok
 
     # Must fail: Booster where Factory is expected and vice versa.
-    ok, msg = clerk.controlParts(objID_2, [cmd_f], [cmd_b])
-    assert not ok
+    assert not clerk.controlParts(objID_2, [cmd_f], [cmd_b]).ok
 
     # Must fail: every part can only receive one command per call.
-    ok, spawnedIDs = clerk.controlParts(objID_2, [cmd_b, cmd_b], [])
-    assert not ok
-    ok, spawnedIDs = clerk.controlParts(objID_2, [], [cmd_f, cmd_f])
-    assert not ok
+    assert not clerk.controlParts(objID_2, [cmd_b, cmd_b], []).ok
+    assert not clerk.controlParts(objID_2, [], [cmd_f, cmd_f]).ok
 
     # Clean up.
     killAzrael()
@@ -682,12 +660,11 @@ def test_controlParts_Boosters_notmoving():
 
     # Create a new template in Azrael of an object with two boosters.
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [b0, b1], [])
+    assert clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [b0, b1], []).ok
 
     # Spawn the object.
-    ok, (ctrl_id,) = clerk.spawn(None, templateID_2, sv)
-    assert (ok, ctrl_id) == (True, objID_1)
-    del ok, ctrl_id
+    ret = clerk.spawn(None, templateID_2, sv)
+    assert (ret.ok, ret.data) == (True, objID_1)
 
     # ------------------------------------------------------------------------
     # Engage the boosters and verify the total force exerted on the object.
@@ -699,8 +676,7 @@ def test_controlParts_Boosters_notmoving():
     cmd_1 = parts.CmdBooster(partID=1, force=forcemag_1)
 
     # Send booster commands to Clerk.
-    ok, msg = clerk.controlParts(objID_1, [cmd_0, cmd_1], [])
-    assert ok
+    assert clerk.controlParts(objID_1, [cmd_0, cmd_1], []).ok
 
     # Manually compute the total force and torque exerted by the boosters.
     forcevec_0, forcevec_1 = forcemag_0 * dir_0, forcemag_1 * dir_1
@@ -719,8 +695,7 @@ def test_controlParts_Boosters_notmoving():
     # ------------------------------------------------------------------------
 
     # Send booster commands to Clerk.
-    ok, msg = clerk.controlParts(objID_1, [], [])
-    assert ok
+    assert clerk.controlParts(objID_1, [], []).ok
 
     # Query the torque and force from Azrael and verify they are correct.
     ok, ret_force, ret_torque = btInterface.getForceAndTorque(objID_1)
@@ -774,13 +749,11 @@ def test_controlParts_Factories_notmoving():
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [], [f0, f1])
-    assert ok
+    assert clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [], [f0, f1]).ok
 
     # ... and spawn an instance thereof.
-    ok, (ctrl_id,) = clerk.spawn(None, templateID_2, sv)
-    assert (ok, ctrl_id) == (True, objID_1)
-    del ok, ctrl_id
+    ret = clerk.spawn(None, templateID_2, sv)
+    assert (ret.ok, ret.data) == (True, objID_1)
 
     # ------------------------------------------------------------------------
     # Send commands to the factories. Tell them to spawn their object with
@@ -795,20 +768,18 @@ def test_controlParts_Factories_notmoving():
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
     # given to the controller object.
-    ok, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
+    ok, _, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
     assert ok
-    spawnedIDs = spawnedIDs[0]
     assert len(spawnedIDs) == 2
     assert spawnedIDs == [int2id(2), int2id(3)]
 
     # Query the state variables of the objects spawned by the factories.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables(spawnedIDs)
-    assert (ok, len(ret_objIDs)) == (True, 2)
-    ret_SVs = dict(zip(ret_objIDs, ret_SVs))
+    ret = clerk.getStateVariables(spawnedIDs)
+    assert (ret.ok, len(ret.data)) == (True, 2)
 
     # Ensure the position, velocity, and orientation of the spawned objects are
     # correct.
-    sv_2, sv_3 = [ret_SVs[_] for _ in spawnedIDs]
+    sv_2, sv_3 = [ret.data[_] for _ in spawnedIDs]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0)
     assert np.allclose(sv_2.position, pos_0)
     assert np.allclose(sv_2.orientation, [0, 0, 0, 1])
@@ -841,6 +812,7 @@ def test_controlParts_Factories_moving():
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
     pos_1 = np.array([-1, -1, 0], np.float64)
+    objID_2, objID_3 = int2id(2), int2id(3)
 
     # State variables for parent object.
     sv = bullet_data.BulletData(position=pos_parent, velocityLin=vel_parent)
@@ -864,13 +836,11 @@ def test_controlParts_Factories_moving():
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [], [f0, f1])
-    assert ok
+    assert clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [], [f0, f1]).ok
 
     # ... and spawn an instance thereof.
-    ok, (ctrl_id,) = clerk.spawn(None, templateID_2, sv)
-    assert (ok, ctrl_id) == (True, objID_1)
-    del ok, ctrl_id
+    ret = clerk.spawn(None, templateID_2, sv)
+    assert (ret.ok, ret.data) == (True, objID_1)
 
     # ------------------------------------------------------------------------
     # Send commands to the factories. Tell them to spawn their object with
@@ -885,20 +855,18 @@ def test_controlParts_Factories_moving():
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
     # given to the controller object.
-    ok, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
-    assert ok
-    spawnedIDs = spawnedIDs[0]
-    assert len(spawnedIDs) == 2
-    assert spawnedIDs == [int2id(2), int2id(3)]
+    ret = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
+    assert ret.ok and (len(ret.data) == 2)
+    spawnedIDs = ret.data
+    assert spawnedIDs == [objID_2, objID_3]
 
     # Query the state variables of the objects spawned by the factories.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables(spawnedIDs)
-    assert (ok, len(ret_objIDs)) == (True, 2)
-    ret_SVs = dict(zip(ret_objIDs, ret_SVs))
+    ret = clerk.getStateVariables(spawnedIDs)
+    assert (ret.ok, len(ret.data)) == (True, 2)
 
     # Ensure the position, velocity, and orientation of the spawned objects are
     # correct.
-    sv_2, sv_3 = [ret_SVs[_] for _ in spawnedIDs]
+    sv_2, sv_3 = ret.data[objID_2], ret.data[objID_3]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0 + vel_parent)
     assert np.allclose(sv_2.position, pos_0 + pos_parent)
     assert np.allclose(sv_2.orientation, [0, 0, 0, 1])
@@ -923,7 +891,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     killAzrael()
 
     # Parameters and constants for this test.
-    objID_1 = int2id(1)
+    objID_1, objID_2, objID_3 = int2id(1), int2id(2), int2id(3)
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -979,14 +947,12 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
-    ok, _ = clerk.addTemplate(
-        templateID_2, cs, vert, uv, rgb, [b0, b1], [f0, f1])
-    assert ok
+    args = templateID_2, cs, vert, uv, rgb, [b0, b1], [f0, f1]
+    assert clerk.addTemplate(*args).ok
 
     # ... and spawn an instance thereof.
-    ok, (ctrl_id,) = clerk.spawn(None, templateID_2, sv)
-    assert (ok, ctrl_id) == (True, objID_1)
-    del ok, ctrl_id
+    ret = clerk.spawn(None, templateID_2, sv)
+    assert (ret.ok, ret.data) == (True, objID_1)
 
     # ------------------------------------------------------------------------
     # Activate booster and factories and verify that the applied force and
@@ -1005,19 +971,17 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
     # given to the controller object.
-    ok, spawnIDs = clerk.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
-    assert ok
-    spawnIDs = spawnIDs[0]
-    assert len(spawnIDs) == 2
-    assert spawnIDs == [int2id(2), int2id(3)]
+    ret = clerk.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
+    assert ret.ok
+    spawnIDs = ret.data
+    assert spawnIDs == [objID_2, objID_3]
 
     # Query the state variables of the objects spawned by the factories.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables(spawnIDs)
-    assert (ok, len(ret_objIDs)) == (True, 2)
-    ret_SVs = dict(zip(ret_objIDs, ret_SVs))
+    ret = clerk.getStateVariables(spawnIDs)
+    assert (ret.ok, len(ret.data)) == (True, 2)
 
     # Verify the position and velocity of the spawned objects is correct.
-    sv_2, sv_3 = [ret_SVs[_] for _ in spawnIDs]
+    sv_2, sv_3 = ret.data[objID_2], ret.data[objID_3]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
     assert np.allclose(sv_2.position, pos_0_out + pos_parent)
     assert np.allclose(sv_2.orientation, orient_parent)
@@ -1057,24 +1021,24 @@ def test_get_all_objectids():
     clerk = azrael.clerk.Clerk(reset=True)
 
     # So far no objects have been spawned.
-    ok, (out,) = clerk.getAllObjectIDs()
-    assert (ok, out) == (True, [])
+    ret = clerk.getAllObjectIDs()
+    assert (ret.ok, ret.data) == (True, [])
 
     # Spawn a new object.
-    ok, (ret,) = clerk.spawn(None, templateID, sv)
-    assert (ok, ret) == (True, objID_1)
+    ret = clerk.spawn(None, templateID, sv)
+    assert (ret.ok, ret.data) == (True, objID_1)
 
     # The object list must now contain the ID of the just spawned object.
-    ok, (out,) = clerk.getAllObjectIDs()
-    assert (ok, out) == (True, [objID_1])
+    ret = clerk.getAllObjectIDs()
+    assert (ret.ok, ret.data) == (True, [objID_1])
 
     # Spawn another object.
-    ok, (ret,) = clerk.spawn(None, templateID, sv)
-    assert (ok, ret) == (True, objID_2)
+    ret = clerk.spawn(None, templateID, sv)
+    assert (ret.ok, ret.data) == (True, objID_2)
 
     # The object list must now contain the ID of both spawned objects.
-    ok, (out,) = clerk.getAllObjectIDs()
-    assert (ok, out) == (True, [objID_1, objID_2])
+    ret = clerk.getAllObjectIDs()
+    assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
     # Kill all spawned Controller processes.
     killAzrael()
@@ -1099,33 +1063,29 @@ def test_getGeometry():
     sv = bullet_data.BulletData()
 
     # Add a valid template and verify it now exists in Azrael.
-    ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
-    assert ok
-    ok, _ = clerk.getTemplate(templateID)
-    assert ok
+    assert clerk.addTemplate(templateID, cs, vert, uv, rgb, [], []).ok
+    assert clerk.getTemplate(templateID).ok
 
     # Attempt to query the geometry of a non-existing object.
-    ok, _ = clerk.getGeometry(int2id(1))
-    assert not ok
+    assert not clerk.getGeometry(int2id(1)).ok
 
     # Spawn an object from the previously added template.
-    ok, (objID,) = clerk.spawn(None, templateID, sv)
-    assert ok
+    ret = clerk.spawn(None, templateID, sv)
+    assert ret.ok
+    objID = ret.data
 
     # Query the geometry of the object.
-    ok, (ret_vert, ret_uv, ret_rgb) = clerk.getGeometry(objID)
-    assert ok
-    assert np.array_equal(vert, ret_vert)
-    assert np.array_equal(uv, ret_uv)
-    assert np.array_equal(rgb, ret_rgb)
+    ret = clerk.getGeometry(objID)
+    assert ret.ok
+    assert np.array_equal(vert, ret.data['vert'])
+    assert np.array_equal(uv, ret.data['uv'])
+    assert np.array_equal(rgb, ret.data['rgb'])
 
     # Delete the object.
-    ok, _ = clerk.deleteObject(objID)
-    assert ok
+    assert clerk.deleteObject(objID).ok
 
     # Attempt to query the geometry of the now deleted object.
-    ok, _ = clerk.getGeometry(objID)
-    assert not ok
+    assert not clerk.getGeometry(objID).ok
 
     # Kill all spawned Controller processes.
     killAzrael()
@@ -1151,34 +1111,31 @@ def test_instanceDB_checksum():
     sv = bullet_data.BulletData()
 
     # Add a valid template and verify it now exists in Azrael.
-    ok, _ = clerk.addTemplate(templateID, cs, vert, uv, rgb, [], [])
-    assert ok
+    assert clerk.addTemplate(templateID, cs, vert, uv, rgb, [], []).ok
 
     # Spawn two objects from the previously defined template.
-    ok, (objID0,) = clerk.spawn(None, templateID, sv)
+    (ok, msg, objID0) = clerk.spawn(None, templateID, sv)
     assert ok
-    ok, (objID1,) = clerk.spawn(None, templateID, sv)
+    (ok, msg, objID1) = clerk.spawn(None, templateID, sv)
     assert ok
 
     # Query the checksum of the objects.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID0, objID1])
-    assert ok
-    assert (objID0 in ret_objIDs) and (objID1 in ret_objIDs)
-    checksums = {ret_objIDs[0]: ret_SVs[0].checksumGeometry,
-                 ret_objIDs[1]: ret_SVs[1].checksumGeometry}
+    ret = clerk.getStateVariables([objID0, objID1])
+    assert ret.ok
+    ret_1 = ret.data
+    assert set((objID0, objID1)) == set(ret_1.keys())
 
     # Modify the geometry of the first object.
-    ok, _ = clerk.setGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb)
-    assert ok
+    assert clerk.setGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb).ok
 
     # Verify that the checksum of the first object has changed and that of the
     # second object has not.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID0])
-    assert (ok, ret_objIDs) == (True, [objID0])
-    assert checksums[objID0] != ret_SVs[0].checksumGeometry
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID1])
-    assert (ok, ret_objIDs) == (True, [objID1])
-    assert checksums[objID1] == ret_SVs[0].checksumGeometry
+    ret = clerk.getStateVariables([objID0])
+    assert ret.ok
+    assert ret_1[objID0].checksumGeometry != ret.data[objID0].checksumGeometry
+    ret = clerk.getStateVariables([objID1])
+    assert ret.ok
+    assert ret_1[objID1].checksumGeometry == ret.data[objID1].checksumGeometry
 
     # Kill all spawned Controller processes.
     killAzrael()

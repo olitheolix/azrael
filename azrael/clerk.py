@@ -51,6 +51,9 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
 
+# Convenience.
+RetVal = util.RetVal
+
 
 class PythonInstance(multiprocessing.Process):
     """
@@ -261,15 +264,15 @@ class Clerk(multiprocessing.Process):
         else:
             # Decoding was successful. Pass all returned parameters directly
             # to the processing method.
-            ok, out = fun_process(*out)
+            ret = fun_process(*out)
 
-            if ok:
+            if ret.ok:
                 # Encode the output into a byte stream and return it.
-                ok, out = fun_encode(*out)
-                self.returnOk(self.last_addr, out, '')
+                ok, ret = fun_encode(ret.data)
+                self.returnOk(self.last_addr, ret, '')
             else:
                 # The processing method encountered an error.
-                self.returnErr(self.last_addr, {}, out)
+                self.returnErr(self.last_addr, {}, ret.msg)
 
     def run(self):
         """
@@ -439,7 +442,7 @@ class Clerk(multiprocessing.Process):
         :rtype: (Bool, tuple)
         :raises: None
         """
-        return True, ('pong clerk', )
+        return RetVal(True, None, 'pong clerk')
 
     def getID(self):
         """
@@ -451,7 +454,7 @@ class Clerk(multiprocessing.Process):
         """
         # Return a new and unique Controller ID.
         objID = util.int2id(self.getUniqueID())
-        return True, (objID, )
+        return RetVal(True, None, objID)
 
     # ----------------------------------------------------------------------
     # These methods service Controller requests.
@@ -483,29 +486,30 @@ class Clerk(multiprocessing.Process):
         if not ok:
             msg = 'Could not retrieve templateID for objID={}'.format(objID)
             self.logit.warning(msg)
-            return False, msg
+            return RetVal(False, msg, None)
 
         # Fetch the template for the current object.
-        ok, data = self.getTemplate(templateID)
-        if not ok:
+        template = self.getTemplate(templateID)
+        if not template.ok:
             msg = 'Could not retrieve template for objID={}'.format(objID)
             self.logit.warning(msg)
-            return False, msg
+            return RetVal(False, msg, None)
         else:
-            cshape, vert, UV, RGB, boosters, factories, aabb = data
+            template = template.data
+            boosters, factories = template['boosters'], template['factories']
+            del template
 
         # Fetch the SV for objID.
-        ok, svdata = self.getStateVariables([objID])
-        if not ok:
+        sv_parent = self.getStateVariables([objID])
+        if not sv_parent.ok:
             msg = 'Could not retrieve SV for objID={}'.format(objID)
             self.logit.warning(msg)
-            return False, msg
+            return RetVal(False, msg, None)
 
         # Extract the parent's orientation from svdata.
-        sv_parent = svdata[1][0]
+        sv_parent = sv_parent.data[objID]
         parent_orient = sv_parent.orientation
         quat = util.Quaternion(parent_orient[3], parent_orient[:3])
-        del svdata
 
         # Compile a list of all parts defined in the template.
         booster_t = dict(zip([int(_.partID) for _ in boosters], boosters))
@@ -517,12 +521,12 @@ class Clerk(multiprocessing.Process):
             if not isinstance(cmd, parts.CmdBooster):
                 msg = 'Invalid Booster type'
                 self.logit.warning(msg)
-                return False, msg
+                return RetVal(False, msg, None)
             if cmd.partID not in booster_t:
                 msg = 'Template <{}> has no Booster ID <{}>'
                 msg = msg.format(templateID, cmd.partID)
                 self.logit.warning(msg)
-                return False, msg
+                return RetVal(False, msg, None)
 
         # Verify that all Factory commands have the correct type and specify
         # a valid Factory ID.
@@ -530,12 +534,12 @@ class Clerk(multiprocessing.Process):
             if not isinstance(cmd, parts.CmdFactory):
                 msg = 'Invalid Factory type'
                 self.logit.warning(msg)
-                return False, msg
+                return RetVal(False, msg, None)
             if cmd.partID not in factory_t:
                 msg = 'Template <{}> has no Factory ID <{}>'
                 msg = msg.format(templateID, cmd.partID)
                 self.logit.warning(msg)
-                return False, msg
+                return RetVal(False, msg, None)
 
         # Ensure all booster- and factory parts receive at most one command
         # each.
@@ -543,12 +547,12 @@ class Clerk(multiprocessing.Process):
         if len(set(partIDs)) != len(partIDs):
             msg = 'Same booster received multiple commands'
             self.logit.warning(msg)
-            return False, msg
+            return RetVal(False, msg, None)
         partIDs = [_.partID for _ in cmd_factories]
         if len(set(partIDs)) != len(partIDs):
             msg = 'Same factory received multiple commands'
             self.logit.warning(msg)
-            return False, msg
+            return RetVal(False, msg, None)
         del partIDs
 
         # Tally up the central force and torque exerted by all boosters.
@@ -600,12 +604,12 @@ class Clerk(multiprocessing.Process):
 
             # Spawn the actual object that this factory can create. Retain
             # the objID as it will be returned to the caller.
-            ok, (objID, ) = self.spawn(None, this.templateID, sv)
+            ok, msg, objID = self.spawn(None, this.templateID, sv)
             if ok:
                 objIDs.append(objID)
 
         # Success. Return the IDs of all spawned objects.
-        return True, (objIDs, )
+        return RetVal(True, None, objIDs)
 
     @typecheck
     def addTemplate(self, templateID: bytes, cshape: np.ndarray,
@@ -634,7 +638,8 @@ class Clerk(multiprocessing.Process):
         # a valid triangle mesh (every triangle has three edges and every edge
         # requires an (x, y, z) triplet to describe its position).
         if len(vertices) % 9 != 0:
-            return False, 'Number of vertices must be a multiple of Nine'
+            msg = 'Number of vertices must be a multiple of Nine'
+            return RetVal(False, msg, None)
 
         # Determine the largest possible side length of the AABB. To find it,
         # just determine the largest spatial extent in any axis direction. That
@@ -674,11 +679,11 @@ class Clerk(multiprocessing.Process):
         if ret is None:
             # No template with name ``templateID`` existed --> success.
             self.logit.info('Added template <{}>'.format(templateID))
-            return True, (templateID, )
+            return RetVal(True, None, templateID)
         else:
             # A template with name ``templateID`` already existed --> failure.
             msg = 'Template ID <{}> already exists'.format(templateID)
-            return False, msg
+            return RetVal(False, msg, None)
 
     @typecheck
     def getTemplate(self, templateID: bytes):
@@ -709,7 +714,7 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             msg = 'Invalid template ID <{}>'.format(templateID)
             self.logit.info(msg)
-            return False, msg
+            return RetVal(False, msg, None)
 
         # Extract the collision shape, geometry, UV- and texture map.
         cs = np.fromstring(doc['cshape'], np.float64)
@@ -734,7 +739,10 @@ class Clerk(multiprocessing.Process):
             # Object has no factories.
             fac = []
 
-        return True, (cs, vert, uv, rgb, boosters, fac, aabb)
+        ret = {'cshape': cs, 'vert': vert, 'uv': uv,
+               'rgb': rgb, 'boosters': boosters, 'factories': fac,
+               'aabb': aabb}
+        return RetVal(True, None, ret)
 
     @typecheck
     def sendMessage(self, src: bytes, dst: bytes, data: bytes):
@@ -750,7 +758,7 @@ class Clerk(multiprocessing.Process):
         # Add the message to the DB.
         doc = {'src': src, 'dst': dst, 'msg': data}
         self.db_msg.insert(doc)
-        return True, tuple()
+        return RetVal(True, None, None)
 
     @typecheck
     def recvMessage(self, objID: bytes):
@@ -768,10 +776,10 @@ class Clerk(multiprocessing.Process):
 
         if doc is None:
             # No message was available.
-            return True, (b'', b'')
+            return RetVal(True, None, (b'', b''))
         else:
             # Return the message- origin and content.
-            return True, (doc['src'], doc['msg'])
+            return RetVal(True, None, (doc['src'], doc['msg']))
 
     @typecheck
     def spawn(self, ctrl_name: bytes, templateID: bytes,
@@ -792,23 +800,22 @@ class Clerk(multiprocessing.Process):
         :rtype: (bool, (bytes, ))
         """
         # Retrieve the template.
-        ok, data = self.getTemplate(templateID)
-        if not ok:
-            return False, 'Invalid Template ID'
-        else:
-            cshape, vert, UV, RGB, boosters, factories, aabb = data
+        template = self.getTemplate(templateID)
+        if not template.ok:
+            return RetVal(False, 'Invalid Template ID', None)
+        template = template.data
 
         # Overwrite the supplied collision shape with the template
         # version. This has no effect on the other quantities including
         # position and speed. However, this all rather hackey at the moment.
-        sv.cshape[:] = np.fromstring(cshape)
+        sv.cshape[:] = np.fromstring(template['cshape'])
 
         # Determine the full path to the Controller script. Return with an
         # error if no matching script was found.
         if ctrl_name is not None:
             prog = self.getControllerClass(ctrl_name)
             if prog is None:
-                return False, 'Unknown Controller Name'
+                return RetVal(False, 'Unknown Controller Name', None)
         else:
             # No dedicated Controller process was requested. Do nothing.
             prog = None
@@ -823,7 +830,7 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             msg = 'Invalid template ID <{}>'.format(templateID)
             self.logit.error(msg)
-            return False, msg
+            return RetVal(False, msg, None)
 
         # Add objID and geometry checksum to the document; remove the
         # _id field to avoid clashes.
@@ -839,11 +846,11 @@ class Clerk(multiprocessing.Process):
             self.processes[new_id].start()
 
         # Add the object to the physics simulation.
-        btInterface.spawn(new_id, sv, templateID, aabb)
+        btInterface.spawn(new_id, sv, templateID, template['aabb'])
         msg = 'Spawned template <{}> as objID=<{}> (0x{:0X})'
         msg = msg.format(templateID, new_id, util.id2int(new_id))
         self.logit.debug(msg)
-        return True, (new_id, )
+        return RetVal(True, None, new_id)
 
     @typecheck
     def deleteObject(self, objID: bytes):
@@ -857,9 +864,9 @@ class Clerk(multiprocessing.Process):
         ok, msg = btInterface.deleteObject(objID)
         self.db_instance.remove({'objID': objID}, mult=True)
         if ok:
-            return True, ('', )
+            return RetVal(True, None, None)
         else:
-            return False, msg
+            return RetVal(False, msg, None)
 
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple)):
@@ -875,7 +882,7 @@ class Clerk(multiprocessing.Process):
         # Get the State Variables.
         ok, sv = btInterface.getStateVariables(objIDs)
         if not ok:
-            return False, 'One or more IDs do not exist'
+            return RetVal(False, 'One or more IDs do not exist', None)
 
         # Query the geometry checksums for all objects.
         docs = self.db_instance.find(
@@ -887,13 +894,14 @@ class Clerk(multiprocessing.Process):
         docs = {_['objID']: _['csGeo'] for _ in docs}
 
         # Manually update the geometry checksum field.
+        out = {}
         for idx, objID in enumerate(objIDs):
             if objID in docs:
-                sv[idx] = sv[idx]._replace(checksumGeometry=docs[objID])
+                out[objID] = sv[idx]._replace(checksumGeometry=docs[objID])
             else:
-                sv[idx] = None
-
-        return True, (objIDs, sv)
+                out[objID] = None
+        
+        return RetVal(True, None, out)
 
     @typecheck
     def getGeometry(self, objID: bytes):
@@ -916,14 +924,14 @@ class Clerk(multiprocessing.Process):
         # exist. Note: an empty geometry field is valid.
         doc = self.db_instance.find_one({'objID': objID})
         if doc is None:
-            return False, 'ID <{}> does not exist'.format(objID)
+            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
             vert = np.fromstring(doc['vertices'], np.float64)
             uv = np.fromstring(doc['UV'], np.float64)
             rgb = np.fromstring(doc['RGB'], np.uint8)
 #            width = int(doc['width'])
 #            height = int(doc['height'])
-            return True, (vert, uv, rgb)
+            return RetVal(True, None, {'vert': vert, 'uv': uv, 'rgb': rgb})
 
     @typecheck
     def setGeometry(self, objID: bytes, vert: np.ndarray,
@@ -941,14 +949,14 @@ class Clerk(multiprocessing.Process):
         # exist. Note: an empty geometry field is valid.
         doc = self.db_instance.find_one({'objID': objID})
         if doc is None:
-            return False, 'ID <{}> does not exist'.format(objID)
+            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
         doc['vertices'] = (vert.astype(np.float64)).tostring()
         doc['UV'] = (uv.astype(np.float64)).tostring()
         doc['RGB'] = (rgb.astype(np.uint8)).tostring()
         doc['csGeo'] += 1
         self.db_instance.save(doc)
-        return True, ('', )
+        return RetVal(True, None, None)
 
     @typecheck
     def setForce(self, objID: bytes, force: np.ndarray, rpos: np.ndarray):
@@ -965,9 +973,9 @@ class Clerk(multiprocessing.Process):
         """
         ok = btInterface.setForce(objID, force, rpos)
         if ok:
-            return True, ('', )
+            return RetVal(True, None, None)
         else:
-            return False, 'ID does not exist'
+            return RetVal(False, 'ID does not exist', None)
 
     @typecheck
     def setStateVariables(self, objID: bytes,
@@ -982,9 +990,9 @@ class Clerk(multiprocessing.Process):
         """
         ok = btInterface.setOverrideAttributes(objID, data)
         if ok:
-            return True, ('', )
+            return RetVal(True, None, None)
         else:
-            return False, 'ID <{}> does not exist'.format(objID)
+            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
     @typecheck
     def getTemplateID(self, objID: bytes):
@@ -997,9 +1005,10 @@ class Clerk(multiprocessing.Process):
         """
         ok, templateID = btInterface.getTemplateID(objID)
         if ok:
-            return True, (templateID, )
+            return RetVal(True, None, templateID)
         else:
-            return False, 'Could not find templateID <{}>'.format(templateID)
+            msg = 'Could not find templateID <{}>'.format(templateID)
+            return RetVal(False, msg, None)
 
     @typecheck
     def getAllObjectIDs(self, dummy=None):
@@ -1016,6 +1025,6 @@ class Clerk(multiprocessing.Process):
         """
         ok, data = btInterface.getAllObjectIDs()
         if not ok:
-            return False, data
+            return RetVal(False, data, None)
         else:
-            return True, (data, )
+            return RetVal(True, None, data)

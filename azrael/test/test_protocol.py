@@ -72,8 +72,9 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Clerk --> Controller.
     # ----------------------------------------------------------------------
     # Encode source data.
-    ok, enc = protocol.FromClerk_GetTemplate_Encode(
-        cs, vert, uv, rgb, [b0, b1], [f0], aabb)
+    data = {'cshape': cs, 'vert': vert, 'uv': uv, 'rgb': rgb,
+            'boosters': [b0, b1], 'factories': [f0], 'aabb': aabb}
+    ok, enc = protocol.FromClerk_GetTemplate_Encode(data)
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))
@@ -163,7 +164,7 @@ def test_recvMsg():
     msg = 'test'.encode('utf8')
 
     # Encode source data.
-    ok, enc = protocol.FromClerk_RecvMsg_Encode(sender, msg)
+    ok, enc = protocol.FromClerk_RecvMsg_Encode((sender, msg))
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))
@@ -200,7 +201,8 @@ def test_GetStateVariable():
     # Clerk --> Controller.
     # ----------------------------------------------------------------------
     # Encode source data.
-    ok, enc = protocol.FromClerk_GetStateVariable_Encode(objIDs, objs)
+    data = dict(zip(objIDs, objs))
+    ok, enc = protocol.FromClerk_GetStateVariable_Encode(data)
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))

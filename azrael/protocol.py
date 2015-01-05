@@ -144,18 +144,22 @@ def ToClerk_GetTemplate_Decode(data: dict):
 
 
 @typecheck
-def FromClerk_GetTemplate_Encode(
-        cs: np.ndarray, vert: np.ndarray, UV: np.ndarray, RGB: np.ndarray,
-        boosters: (list, tuple), factories: (list, tuple), aabb: float):
-    for b in boosters:
+def FromClerk_GetTemplate_Encode(data):
+    # Sanity checks.
+    for key in ['cshape', 'vert', 'uv', 'rgb']:
+        assert isinstance(data[key], np.ndarray)
+    assert isinstance(data['aabb'], float)
+    assert isinstance(data['boosters'], (list, tuple))
+    assert isinstance(data['factories'], (list, tuple))
+    for b in data['boosters']:
         assert isinstance(b, parts.Booster)
-    for f in factories:
+    for f in data['factories']:
         assert isinstance(f, parts.Factory)
 
-    d = {'cs': cs, 'vert': vert, 'UV': UV, 'RGB': RGB, 'AABB': aabb,
-         'boosters': [_.tostring() for _ in boosters],
-         'factories': [_.tostring() for _ in factories]}
-    return True, d
+    # Convert all booster- and factory descriptions to strings.
+    data['boosters'] = [_.tostring() for _ in data['boosters']]
+    data['factories'] = [_.tostring() for _ in data['factories']]
+    return True, data
 
 
 @typecheck
@@ -166,11 +170,11 @@ def FromClerk_GetTemplate_Decode(data: dict):
 
     # Return the complete information in a named tuple.
     nt = namedtuple('Template', 'cs vert uv rgb boosters factories aabb')
-    ret = nt(np.array(data['cs'], np.float64),
+    ret = nt(np.array(data['cshape'], np.float64),
              np.array(data['vert'], np.float64),
-             np.array(data['UV'], np.float64),
-             np.array(data['RGB'], np.uint8),
-             boosters, factories, data['AABB'])
+             np.array(data['uv'], np.float64),
+             np.array(data['rgb'], np.uint8),
+             boosters, factories, data['aabb'])
     return True, ret
 
 
@@ -330,11 +334,13 @@ def ToClerk_GetGeometry_Decode(data: dict):
 
 
 @typecheck
-def FromClerk_GetGeometry_Encode(
-        vert: np.ndarray, uv: np.ndarray, rgb: np.ndarray):
-    return True, {'vert': vert.tolist(),
-                  'UV': uv.tolist(),
-                  'RGB': rgb.tolist()}
+def FromClerk_GetGeometry_Encode(data):
+    assert isinstance(data['vert'], np.ndarray)
+    assert isinstance(data['uv'], np.ndarray)
+    assert isinstance(data['rgb'], np.ndarray)
+    return True, {'vert': data['vert'].tolist(),
+                  'UV': data['uv'].tolist(),
+                  'RGB': data['rgb'].tolist()}
 
 
 @typecheck
@@ -394,13 +400,15 @@ def ToClerk_GetStateVariable_Decode(data: dict):
 
 
 @typecheck
-def FromClerk_GetStateVariable_Encode(
-        objIDs: (list, tuple), sv: (list, tuple)):
-    for _ in sv:
+def FromClerk_GetStateVariable_Encode(data):
+    assert isinstance(data, dict)
+
+    for _ in data.values():
         assert isinstance(_, bullet_data.BulletData) or (_ is None)
+
     d = {'data': [{'objID': objID,
                    'sv': None if sv is None else sv.toJsonDict()}
-                  for (objID, sv) in zip(objIDs, sv)]}
+                  for (objID, sv) in data.items()]}
     return True, d
 
 
@@ -493,8 +501,10 @@ def ToClerk_RecvMsg_Decode(data: dict):
 
 
 @typecheck
-def FromClerk_RecvMsg_Encode(objID: bytes, msg: bytes):
-    return True, {'objID': objID, 'msg': msg}
+def FromClerk_RecvMsg_Encode(data):
+    isinstance(data[0], bytes)
+    isinstance(data[1], bytes)
+    return True, {'objID': data[0], 'msg': data[1]}
 
 
 @typecheck

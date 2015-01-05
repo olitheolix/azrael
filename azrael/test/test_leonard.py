@@ -121,16 +121,14 @@ def test_setStateVariables_basic(clsLeonard):
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Invalid/non-existing ID.
-    ok, ret = clerk.setStateVariables(id_0, data)
-    assert not ok
+    assert not clerk.setStateVariables(id_0, data).ok
 
     # Spawn a new object. It must have ID=1.
-    ok, (ret,) = clerk.spawn(None, templateID, sv)
-    assert (ok, ret) == (True, id_1)
+    ret = clerk.spawn(None, templateID, sv)
+    assert (ret.ok, ret.data) == (True, id_1)
 
     # Update the object's position.
-    ok, (ret,) = clerk.setStateVariables(id_1, data)
-    assert (ok, ret) == (True, '')
+    assert clerk.setStateVariables(id_1, data).ok
 
     # Advance the simulation by exactly one step. This must pick up the new
     # values and apply them.
@@ -140,14 +138,15 @@ def test_setStateVariables_basic(clsLeonard):
     leo.step(0.1, 10)
 
     # Verify that the position is correct.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([id_1])
-    assert (ok, ret_objIDs) == (True, [id_1])
+    ret = clerk.getStateVariables([id_1])
+    assert (ret.ok, len(ret.data)) == (True, 1)
 
+    sv = ret.data[id_1]
     # Verify if attributes were correctly updated.
-    assert (np.array_equal(ret_SVs[0].position, data.position) and
-            np.array_equal(ret_SVs[0].velocityLin, data.velocityLin) and
-            np.array_equal(ret_SVs[0].velocityRot, data.velocityRot) and
-            np.array_equal(ret_SVs[0].orientation, data.orientation))
+    assert (np.array_equal(sv.position, data.position) and
+            np.array_equal(sv.velocityLin, data.velocityLin) and
+            np.array_equal(sv.velocityRot, data.velocityRot) and
+            np.array_equal(sv.orientation, data.orientation))
 
     print('Test passed')
 
@@ -168,19 +167,20 @@ def test_setStateVariables_advanced(clsLeonard):
 
     # Instantiate a Clerk and spawn an object.
     clerk = azrael.clerk.Clerk(reset=True)
-    ok, (objID, ) = clerk.spawn(None, templateID, sv)
-    assert ok
+    ret = clerk.spawn(None, templateID, sv)
+    assert ret.ok
+    objID = ret.data
 
     # Verify the SV data.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
-    assert (ok, ret_objIDs) == (True, [objID])
-    assert (ret_SVs[0].imass == 2) and (ret_SVs[0].scale == 3)
-    assert np.array_equal(ret_SVs[0].cshape, cs_sphere)
+    ret = clerk.getStateVariables([objID])
+    assert ret.ok
+    assert ret.data[objID].imass == 2
+    assert ret.data[objID].scale == 3
+    assert np.array_equal(ret.data[objID].cshape, cs_sphere)
 
     # Update the object's SV data.
     sv_new = bullet_data.BulletDataOverride(imass=4, scale=5, cshape=cs_cube)
-    ok, (ret,) = clerk.setStateVariables(objID, sv_new)
-    assert (ok, ret) == (True, '')
+    assert clerk.setStateVariables(objID, sv_new).ok
 
     # Advance the simulation by exactly one step. This must pick up the new
     # values and apply them.
@@ -190,10 +190,11 @@ def test_setStateVariables_advanced(clsLeonard):
     leo.step(0.1, 10)
 
     # Verify the SV data.
-    ok, (ret_objIDs, ret_SVs) = clerk.getStateVariables([objID])
-    assert (ok, ret_objIDs) == (True, [objID])
-    assert (ret_SVs[0].imass == 4) and (ret_SVs[0].scale == 5)
-    assert np.array_equal(ret_SVs[0].cshape, cs_cube)
+    ret = clerk.getStateVariables([objID])
+    assert (ret.ok, len(ret.data)) == (True, 1)
+    sv = ret.data[objID]
+    assert (sv.imass == 4) and (sv.scale == 5)
+    assert np.array_equal(sv.cshape, cs_cube)
 
     print('Test passed')
 
