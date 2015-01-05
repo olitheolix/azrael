@@ -37,7 +37,6 @@ import azrael.util as util
 import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
-from collections import namedtuple
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
@@ -47,7 +46,7 @@ _DB_Grid = pymongo.MongoClient()['azrael_grid']
 
 
 # Return value specification.
-RetVal = namedtuple('RetVal', 'ok msg data')
+RetVal = util.RetVal
 
 
 # Create module logger.

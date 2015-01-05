@@ -24,10 +24,14 @@ import pymongo
 import numpy as np
 import azrael.config as config
 
+from collections import namedtuple
 from azrael.typecheck import typecheck
 
 # Global handle to the collection for timing metrics.
 dbTiming = pymongo.MongoClient()['timing']['timing']
+
+# Uniform return value signature.
+RetVal = namedtuple('RetVal', 'ok msg data')
 
 
 def resetTiming():
