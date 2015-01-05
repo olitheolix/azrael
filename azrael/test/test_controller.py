@@ -577,10 +577,10 @@ def test_controlParts(ctrl_type):
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    ok, ret_force, ret_torque = btInterface.getForceAndTorque(objID_1)
-    assert ok
-    assert np.array_equal(ret_force, tot_force)
-    assert np.array_equal(ret_torque, tot_torque)
+    ret = btInterface.getForceAndTorque(objID_1)
+    assert ret.ok
+    assert np.array_equal(ret.data['force'], tot_force)
+    assert np.array_equal(ret.data['torque'], tot_torque)
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

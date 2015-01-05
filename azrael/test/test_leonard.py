@@ -219,25 +219,26 @@ def test_move_single_object(clsLeonard):
     ok, id_0 = ctrl.spawn(None, templateID, pos=[0, 0, 0], vel=[0, 0, 0])
     assert ok
 
-    # Advance the simulation by 1s and verify that nothing moved.
+    # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
-    ok, sv = btInterface.getStateVariables([id_0])
-    assert ok
-    assert np.array_equal(sv[0].position, [0, 0, 0])
+    ret = btInterface.getStateVariables([id_0])
+    assert ret.ok
+    assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
     # Give the object a velocity.
-    ok, sv = btInterface.getStateVariables([id_0])
-    assert ok
-    sv[0].velocityLin[:] = [1, 0, 0]
-    assert btInterface.update(id_0, sv[0])
+    ret = btInterface.getStateVariables([id_0])
+    assert ret.ok
+    sv = ret.data[id_0]
+    sv.velocityLin[:] = [1, 0, 0]
+    assert btInterface.update(id_0, sv).ok
 
     # Advance the simulation by another second and verify the objects have
     # moved accordingly.
     leonard.step(1.0, 60)
-    ok, sv = btInterface.getStateVariables([id_0])
-    assert ok
-    assert 0.9 <= sv[0].position[0] < 1.1
-    assert sv[0].position[1] == sv[0].position[2] == 0
+    ret = btInterface.getStateVariables([id_0])
+    assert ret.ok
+    assert 0.9 <= ret.data[id_0].position[0] < 1.1
+    assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -267,12 +268,12 @@ def test_move_two_objects_no_collision(clsLeonard):
 
     # Advance the simulation by 1s and query the states of both objects.
     leonard.step(1.0, 60)
-    ok, sv = btInterface.getStateVariables([id_0])
-    assert ok
-    pos_0 = sv[0].position
-    ok, sv = btInterface.getStateVariables([id_1])
-    assert ok
-    pos_1 = sv[0].position
+    ret = btInterface.getStateVariables([id_0])
+    assert ret.ok
+    pos_0 = ret.data[id_0].position
+    ret = btInterface.getStateVariables([id_1])
+    assert ret.ok
+    pos_1 = ret.data[id_1].position
 
     # Verify that the objects have moved according to their initial velocity.
     assert pos_0[1] == pos_0[2] == 0
@@ -315,12 +316,12 @@ def test_worker_respawn():
         leonard.step(1.0 / 60, 1)
 
     # Query the states of both objects.
-    ok, sv = btInterface.getStateVariables([id_0])
-    assert ok
-    pos_0 = sv[0].position
-    ok, sv = btInterface.getStateVariables([id_1])
-    assert ok
-    pos_1 = sv[0].position
+    ret = btInterface.getStateVariables([id_0])
+    assert ret.ok
+    pos_0 = ret.data[id_0].position
+    ret = btInterface.getStateVariables([id_1])
+    assert ret.ok
+    pos_1 = ret.data[id_1].position
 
     # Verify that the objects have moved according to their initial velocity.
     assert pos_0[1] == pos_0[2] == 0
@@ -454,12 +455,13 @@ def test_computeCollisionSetsAABB(dim):
 
     # Add all objects to the SV DB.
     for objID, sv in zip(all_id, SVs):
-        assert btInterface.spawn(objID, sv, np.int64(1).tostring(), 1.0)
+        assert btInterface.spawn(objID, sv, np.int64(1).tostring(), 1.0).ok
     del SVs
 
     # Retrieve all SVs as Leonard does.
-    ok, all_sv = btInterface.getStateVariables(all_id)
-    assert (ok, len(all_id)) == (True, len(all_sv))
+    ret = btInterface.getStateVariables(all_id)
+    all_sv = ret.data
+    assert (ret.ok, len(all_id)) == (True, len(all_sv))
 
     def ccsWrapper(IDs_hr, expected_hr):
         """
@@ -473,11 +475,11 @@ def test_computeCollisionSetsAABB(dim):
         Finally, it converts the returned list of object sets back into human
         readable list of object sets and compares them for equality.
         """
-        # Compile the set of SVs for curIDs.
-        sv = [all_sv[_] for _ in IDs_hr]
-
         # Convert the human readable IDs to the binary format.
         test_objIDs = [int2id(_) for _ in IDs_hr]
+
+        # Compile the set of SVs for curIDs.
+        sv = [all_sv[_] for _ in test_objIDs]
 
         # Determine the list of potential collision sets.
         ok, res = azrael.leonard.computeCollisionSetsAABB(test_objIDs, sv)
@@ -537,9 +539,9 @@ def test_force_grid(clsLeonard):
 
     # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
-    ok, sv = btInterface.getStateVariables([id_0])
-    assert ok
-    assert np.array_equal(sv[0].position, [0, 0, 0])
+    ret = btInterface.getStateVariables([id_0])
+    assert ret.ok
+    assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
     # Define a force grid.
     assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
@@ -552,9 +554,9 @@ def test_force_grid(clsLeonard):
 
     # Step the simulation and verify the object remained where it was.
     leonard.step(1.0, 60)
-    ok, sv = btInterface.getStateVariables([id_0])
-    assert ok
-    assert np.array_equal(sv[0].position, [0, 0, 0])
+    ret = btInterface.getStateVariables([id_0])
+    assert ret.ok
+    assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
     # Specify a grid value of 1N in x-direction.
     pos = np.array([0, 0, 0], np.float64)
@@ -563,10 +565,10 @@ def test_force_grid(clsLeonard):
 
     # Step the simulation and verify the object moved accordingly.
     leonard.step(1.0, 60)
-    ok, sv = btInterface.getStateVariables([id_0])
-    assert ok
-    assert 0.4 <= sv[0].position[0] < 0.6
-    assert sv[0].position[1] == sv[0].position[2] == 0
+    ret = btInterface.getStateVariables([id_0])
+    assert ret.ok
+    assert 0.4 <= ret.data[id_0].position[0] < 0.6
+    assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

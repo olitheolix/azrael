@@ -345,10 +345,10 @@ def test_set_force():
     # Apply the force.
     assert clerk.setForce(id_1, force, relpos).ok
 
-    ok, ret_force, ret_torque = btInterface.getForceAndTorque(id_1)
-    assert ok
-    assert np.array_equal(ret_force, force)
-    assert np.array_equal(ret_torque, np.cross(relpos, force))
+    ret = btInterface.getForceAndTorque(id_1)
+    assert ret.ok
+    assert np.array_equal(ret.data['force'], force)
+    assert np.array_equal(ret.data['torque'], np.cross(relpos, force))
 
     print('Test passed')
 
@@ -684,10 +684,10 @@ def test_controlParts_Boosters_notmoving():
     tot_torque = np.cross(pos_0, forcevec_0) + np.cross(pos_1, forcevec_1)
 
     # Query the torque and force from Azrael and verify they are correct.
-    ok, ret_force, ret_torque = btInterface.getForceAndTorque(objID_1)
-    assert ok
-    assert np.array_equal(ret_force, tot_force)
-    assert np.array_equal(ret_torque, tot_torque)
+    ret = btInterface.getForceAndTorque(objID_1)
+    assert ret.ok
+    assert np.array_equal(ret.data['force'], tot_force)
+    assert np.array_equal(ret.data['torque'], tot_torque)
 
     # ------------------------------------------------------------------------
     # Send an empty command. The total force and torque must not change, ie
@@ -698,10 +698,10 @@ def test_controlParts_Boosters_notmoving():
     assert clerk.controlParts(objID_1, [], []).ok
 
     # Query the torque and force from Azrael and verify they are correct.
-    ok, ret_force, ret_torque = btInterface.getForceAndTorque(objID_1)
-    assert ok
-    assert np.array_equal(ret_force, tot_force)
-    assert np.array_equal(ret_torque, tot_torque)
+    ret = btInterface.getForceAndTorque(objID_1)
+    assert ret.ok
+    assert np.array_equal(ret.data['force'], tot_force)
+    assert np.array_equal(ret.data['torque'], tot_torque)
 
     # Clean up.
     killAzrael()
@@ -996,10 +996,10 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    ok, ret_force, ret_torque = btInterface.getForceAndTorque(objID_1)
-    assert ok
-    assert np.array_equal(ret_force, tot_force)
-    assert np.array_equal(ret_torque, tot_torque)
+    ret = btInterface.getForceAndTorque(objID_1)
+    assert ret.ok
+    assert np.array_equal(ret.data['force'], tot_force)
+    assert np.array_equal(ret.data['torque'], tot_torque)
 
     # Clean up.
     killAzrael()

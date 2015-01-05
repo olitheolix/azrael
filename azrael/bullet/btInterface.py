@@ -44,6 +44,9 @@ WPData = namedtuple('WPRecord', 'id sv central_force torque')
 WPAdmin = namedtuple('WPAdmin', 'token dt maxsteps')
 BulletDataOverride = bullet_data.BulletDataOverride
 
+# Return value signature.
+RetVal = util.RetVal
+
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
 
@@ -97,10 +100,11 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
 
     # Sanity checks.
     if len(objID) != config.LEN_ID:
-        return False
+        return RetVal(False, 'objID has wrong length', None)
     if aabb < 0:
-        logit.warning('AABB must be non-negative')
-        return False
+        msg = 'AABB must be non-negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
 
     # Dummy variable to specify the initial force and its relative position.
     z = np.zeros(3).tostring()
@@ -120,7 +124,7 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     # object with objID existed before the call, or the objID existed but with
     # identical SV. In any other case there will be no match because the
     # objID already existed.
-    return doc['sv'] == sv
+    return RetVal(doc['sv'] == sv, None, None)
 
 
 @typecheck
@@ -134,9 +138,9 @@ def deleteObject(objID: bytes):
     """
     ret = _DB_SV.remove({'objid': objID})
     if ret['n'] == 1:
-        return True, ''
+        return RetVal(True, None, None)
     else:
-        return False, 'Object not found'
+        return RetVal(False, 'Object <{}>not found'.format(objID), None)
 
 
 @typecheck
@@ -147,14 +151,16 @@ def getStateVariables(objIDs: (list, tuple)):
     If one or more objIDs int ``objIDs`` do not not exist then the respective
     entry will return *None*.
 
+    fixme: output changed to dict
     :param iterable objIDs: list of object IDs for which to return the SV.
     :return list: list of BulletData instances.
     """
     # Sanity check.
     for _ in objIDs:
         if not isinstance(_, bytes) or (len(_) != config.LEN_ID):
-            logit.warning('Object ID has invalid type')
-            return False, []
+            msg = 'Object ID has invalid type'
+            logit.warning(msg)
+            return RetVal(False, msg, None)
 
     # Retrieve the state variables.
     out = list(_DB_SV.find({'objid': {'$in': objIDs}}))
@@ -166,7 +172,8 @@ def getStateVariables(objIDs: (list, tuple)):
     # Compile a list of SVs in the order of the supplied ``objIDs``.
     fun = bullet_data.fromJsonDict
     out = [fun(_['sv']) if _ is not None else None for _ in out]
-    return True, out
+    out = dict(zip(objIDs, out))
+    return RetVal(True, None, out)
 
 
 @typecheck
@@ -183,8 +190,9 @@ def getAABB(objIDs: (list, tuple)):
     # Sanity check.
     for _ in objIDs:
         if not isinstance(_, bytes) or (len(_) != config.LEN_ID):
-            logit.warning('Object ID has invalid type')
-            return False, []
+            msg = 'Object ID has invalid type'
+            logit.warning(msg)
+            return RetVal(False, msg, None)
 
     # Retrieve the state variables.
     out = list(_DB_SV.find({'objid': {'$in': objIDs}}))
@@ -198,7 +206,7 @@ def getAABB(objIDs: (list, tuple)):
     out = [out[_] if _ in out else None for _ in objIDs]
 
     # Return the AABB values.
-    return True, out
+    return RetVal(True, None, out)
 
 
 @typecheck
@@ -247,7 +255,7 @@ def update(objID: bytes, sv: bullet_data.BulletData, token=None):
     """
     # Sanity check.
     if len(objID) != config.LEN_ID:
-        return False
+        return RetVal(False, 'objID has invalid length', None)
 
     # Retrieve the State Variables for ``objID``.
     query = {'objid': objID}
@@ -256,7 +264,7 @@ def update(objID: bytes, sv: bullet_data.BulletData, token=None):
     doc = _DB_SV.find_and_modify(
         query, {'$set': {'attrOverride': BulletDataOverride()}}, new=False)
     if doc is None:
-        return False
+        return RetVal(False, 'Could not find update <{}>'.format(objID), None)
 
     # Import the overriden State Variables into a ``BulletDataOverride`` tuple.
     fields = BulletDataOverride._fields
@@ -270,8 +278,9 @@ def update(objID: bytes, sv: bullet_data.BulletData, token=None):
         query,
         {'$set': {'sv': sv.toJsonDict()},
          '$unset': {'token': 1}})
+
     # This function was successful if exactly one document was updated.
-    return doc['n'] == 1
+    return RetVal(doc['n'] == 1, None, None)
 
 
 def getAllStateVariables():
@@ -289,7 +298,7 @@ def getAllStateVariables():
     for doc in _DB_SV.find():
         key, value = doc['objid'], bullet_data.fromJsonDict(doc['sv'])
         out[key] = value
-    return True, out
+    return RetVal(True, None, out)
 
 
 def getAllObjectIDs():
@@ -303,7 +312,8 @@ def getAllObjectIDs():
     :rtype: (bool, list)
     """
     # Compile and return the list of all object IDs.
-    return True, [_['objid'] for _ in _DB_SV.find()]
+    out = [_['objid'] for _ in _DB_SV.find()]
+    return RetVal(True, None, out)
 
 
 @typecheck
@@ -320,14 +330,17 @@ def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
     """
     # Sanity check.
     if (len(objID) != config.LEN_ID):
-        return False
+        return RetVal(False, 'objID has invalid length', None)
     if not (len(force) == len(relpos) == 3):
-        return False
+        return RetVal(False, 'force or relpos have invalid length', None)
 
     # Compute the torque and then call setForceAndTorque.
     torque = np.cross(relpos, force)
-    return setForceAndTorque(objID, force, torque)
-
+    ret = setForceAndTorque(objID, force, torque)
+    if ret.ok:
+        return RetVal(True, None, None)
+    else:
+        return RetVal(False, ret.msg, None)
 
 @typecheck
 def getForceAndTorque(objID: bytes):
@@ -341,12 +354,12 @@ def getForceAndTorque(objID: bytes):
     """
     # Sanity check.
     if (len(objID) != config.LEN_ID):
-        return False, None, None
+        return RetVal(False, 'objID has invalid length', None)
 
     # Query the object.
     doc = _DB_SV.find_one({'objid': objID})
     if doc is None:
-        return False, None, None
+        return RetVal(False, 'Could not find <{}>'.format(objID), None)
 
     # Unpack the force.
     try:
@@ -361,7 +374,7 @@ def getForceAndTorque(objID: bytes):
         torque = np.zeros(3)
 
     # Return the result.
-    return True, force, torque
+    return RetVal(True, None, {'force': force, 'torque': torque})
 
 
 @typecheck
@@ -381,9 +394,9 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
     """
     # Sanity check.
     if (len(objID) != config.LEN_ID):
-        return False
+        return RetVal(False, 'objID has invalid length', None)
     if not (len(force) == len(torque) == 3):
-        return False
+        return RetVal(False, 'force or torque has invalid length', None)
 
     # Serialise the force and torque.
     force = force.astype(np.float64).tostring()
@@ -394,8 +407,11 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
                         {'$set': {'central_force': force, 'torque': torque}})
 
     # This function was successful if exactly one document was updated.
-    return ret['n'] == 1
-
+    ok = ret['n'] == 1
+    if ok:
+        return RetVal(True, None, None)
+    else:
+        return RetVal(False, 'ID does not exist', None)
 
 @typecheck
 def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
@@ -413,7 +429,7 @@ def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
     """
     # Sanity check.
     if (len(objID) != config.LEN_ID):
-        return False
+        return RetVal(False, 'objID has invalid length', None)
 
     if data is None:
         # If ``data`` is None then the user wants us to clear any pending
@@ -421,13 +437,13 @@ def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
         # the DB.
         ret = _DB_SV.update({'objid': objID},
                             {'$set': {'attrOverride': BulletDataOverride()}})
-        return ret['n'] == 1
+        return RetVal(ret['n'] == 1, None, None)
 
     # Make sure that ``data`` is really valid by constructing a new
     # BulletDataOverride instance from it.
     data = BulletDataOverride(*data)
     if data is None:
-        return False
+        return RetVal(False, 'Invalid override data', None)
 
     # All fields in ``data`` (a BulletDataOverride instance) are, by
     # definition, one of {None, int, float, np.ndarray}. The following code
@@ -443,7 +459,7 @@ def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
     ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': data}})
 
     # This function was successful if exactly one document was updated.
-    return ret['n'] == 1
+    return RetVal(ret['n'] == 1, None, None)
 
 
 @typecheck
@@ -460,17 +476,17 @@ def getOverrideAttributes(objID: bytes):
     """
     # Sanity check.
     if len(objID) != config.LEN_ID:
-        return False, None
+        return RetVal(False, 'objID has invalid length', None)
 
     # Query the object.
     doc = _DB_SV.find_one({'objid': objID})
     if doc is None:
-        return False, None
+        return RetVal(False, 'Could not find <{}>'.format(objID), None)
 
     # If no 'attrOverride' field exists then return the default
     # ``BulletDataOverride`` instance (it will have all values set to *None*).
     if doc['attrOverride'] is None:
-        return True, BulletDataOverride()
+        return RetVal(True, None, BulletDataOverride())
 
     # Convert the data into a ``BulletDataOverride`` instance which means all
     # values that are not *None* must be converted to a NumPy array.
@@ -480,17 +496,17 @@ def getOverrideAttributes(objID: bytes):
             if isinstance(v, (list, tuple)):
                 tmp[k] = np.array(v, np.float64)
     except TypeError:
-        return False, None
+        return RetVal(False, 'Type conversion error', None)
 
     # Construct the BulletDataOverride instance and verify it was really
     # created.
     val = BulletDataOverride(**tmp)
     if val is None:
         # 'attrOverride' is valid.
-        return False, None
+        return RetVal(False, 'Invalid override attributes', None)
     else:
         # 'attrOverride' is invalid.
-        return True, val
+        return RetVal(True, None, val)
 
 
 @typecheck
@@ -504,14 +520,15 @@ def getTemplateID(objID: bytes):
     """
     # Sanity check.
     if len(objID) != config.LEN_ID:
-        return False, None
+        return RetVal(False, 'objID has invalid length', None)
 
     # Query the document.
     doc = _DB_SV.find_one({'objid': objID})
     if doc is None:
-        return False, 'Could not query objID={}'.format(objID)
+        msg = 'Could not retrieve templateID for objID={}'.format(objID)
+        return RetVal(False, msg, None)
     else:
-        return True, doc['templateID']
+        return RetVal(True, None, doc['templateID'])
 
 
 @typecheck
@@ -539,7 +556,7 @@ def createWorkPackage(
     """
     # Sanity check.
     if len(objIDs) == 0:
-        return False, None
+        return RetVal(False, 'objID has invalid length', None)
 
     # Obtain a new and unique work package ID.
     wpid = _DB_WP.find_and_modify(
@@ -558,13 +575,11 @@ def createWorkPackage(
     # Create a new work package.
     ret = _DB_WP.insert({'wpid': wpid, 'ids': objIDs, 'token': token,
                          'dt': dt, 'maxsteps': maxsteps})
-    if ret is None:
-        return False, wpid
 
     # Update the token value of every object in the work package.
     for objid in objIDs:
         _DB_SV.update({'objid': objid}, {'$set': {'token': token}})
-    return True, wpid
+    return RetVal(True, None, wpid)
 
 
 @typecheck
@@ -580,7 +595,7 @@ def getWorkPackage(wpid: int):
     # Retrieve the work package.
     doc = _DB_WP.find_one({'wpid': wpid})
     if doc is None:
-        return False, None, None
+        return RetVal(False, 'Unknown work package <{}>'.format(wpid), None)
     else:
         objIDs = doc['ids']
 
@@ -593,8 +608,8 @@ def getWorkPackage(wpid: int):
             for _ in data]
 
     # Put the meta data of the work package into another named tuple.
-    admin = WPAdmin(doc['token'], doc['dt'], doc['maxsteps'])
-    return True, data, admin
+    meta = WPAdmin(doc['token'], doc['dt'], doc['maxsteps'])
+    return RetVal(True, None, {'wpdata': data, 'wpmeta': meta})
 
 
 @typecheck
@@ -615,13 +630,13 @@ def updateWorkPackage(wpid: int, token, svdict: dict):
         ret = update(objID, svdict[objID], token)
 
     # Remove the specified work package. This MUST happen AFTER the SVs were
-    # updated because btInterface.countWorkPackages will count the number of WP
-    # to determine if all objects have been updated.
+    # updated because btInterface.countWorkPackages will count the number of
+    # WPs to determine if all objects have been updated.
     ret = _DB_WP.remove({'wpid': wpid, 'token': token}, multi=True)
     if ret['n'] == 0:
-        return False
+        return RetVal(False, 'Could not remove WP <{}>'.format(wpid), None)
 
-    return True
+    return RetVal(True, None, None)
 
 
 @typecheck
@@ -632,4 +647,5 @@ def countWorkPackages(token):
     :param int token: token value associated with this work package.
     :return bool: Success.
     """
-    return True, _DB_WP.find({'token': token}).count()
+    cnt = _DB_WP.find({'token': token}).count()
+    return RetVal(True, None, cnt)

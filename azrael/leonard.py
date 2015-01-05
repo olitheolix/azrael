@@ -106,6 +106,7 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
     """
     Return potential collision sets among all ``IDs`` and associated ``SVs``.
 
+    fixme: needs RetVal signature.
     :param IDs: list of object IDs.
     :param SVs: list of object BulletData instances. Corresponds to IDs.
     """
@@ -114,10 +115,11 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
         return False, None
 
     # Fetch all AABBs.
-    ok, aabbs = btInterface.getAABB(IDs)
-    if not ok:
+    ret = btInterface.getAABB(IDs)
+    if not ret.ok:
         return False, None
-
+    aabbs = ret.data
+    
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
     # must contain the min/max spatial extent in x/y/z direction.
     data = []
@@ -221,15 +223,17 @@ class LeonardBase(multiprocessing.Process):
                              ``dt`` update.
         """
         # Retrieve the SV for all objects.
-        ok, all_ids = btInterface.getAllObjectIDs()
-        ok, all_sv = btInterface.getStateVariables(all_ids)
+        ret = btInterface.getAllObjectIDs()
+        ret = btInterface.getStateVariables(ret.data)
 
         # Iterate over all objects and update their SV information in Bullet.
-        for objID, sv in zip(all_ids, all_sv):
+        for objID, sv in ret.data.items():
             # Fetch the force vector for the current object from the DB.
-            ok, force, torque = btInterface.getForceAndTorque(objID)
-            if not ok:
+            ret = btInterface.getForceAndTorque(objID)
+            if not ret.ok:
                 continue
+            else:
+                force, torque = ret.data['force'], ret.data['torque']
 
             # Add the force defined on the 'force' grid.
             force = self.applyGridForce(force, sv.position)
@@ -304,7 +308,8 @@ class LeonardBulletMonolithic(LeonardBase):
         vg = azrael.vectorgrid
 
         # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAllStateVariables()
+        ret = btInterface.getAllStateVariables()
+        allSV = ret.data
 
         # Iterate over all objects and update them.
         for objID, sv in allSV.items():
@@ -315,8 +320,9 @@ class LeonardBulletMonolithic(LeonardBase):
             self.bullet.setObjectData([btID], sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
-            ok, force, torque = btInterface.getForceAndTorque(objID)
-            if ok:
+            ret = btInterface.getForceAndTorque(objID)
+            if ret.ok:
+                force, torque = ret.data['force'], ret.data['torque']
                 # Add the force defined on the 'force' grid.
                 force = self.applyGridForce(force, sv.position)
 
@@ -363,7 +369,8 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
         """
 
         # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAllStateVariables()
+        ret = btInterface.getAllStateVariables()
+        allSV = ret.data
 
         # Compile a dedicated list of IDs and their SVs for the collision
         # detection algorithm.
@@ -395,8 +402,9 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
                 self.bullet.setObjectData([btID], sv)
 
                 # Retrieve the force vector and tell Bullet to apply it.
-                ok, force, torque = btInterface.getForceAndTorque(objID)
-                if ok:
+                ret = btInterface.getForceAndTorque(objID)
+                if ret.ok:
+                    force, torque = ret.data['force'], ret.data['torque']
                     # Add the force defined on the 'force' grid.
                     force = self.applyGridForce(force, sv.position)
 
@@ -454,7 +462,8 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         """
 
         # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAllStateVariables()
+        ret = btInterface.getAllStateVariables()
+        allSV = ret.data
 
         # Compile a dedicated list of IDs and their SVs for the collision
         # detection algorithm.
@@ -484,10 +493,10 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
             coll_SV = {_: allSV[_] for _ in subset}
 
             # Upload the work package into the DB.
-            ok, wpid = cwp(list(subset), self.token, dt, maxsteps)
+            ret = cwp(list(subset), self.token, dt, maxsteps)
 
             # Keep track of the WPID.
-            all_wpids.append(wpid)
+            all_wpids.append(ret.data)
 
         # Process each WP individually.
         for wpid in all_wpids:
@@ -499,7 +508,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         """
         Block until all work packages have been completed.
         """
-        while btInterface.countWorkPackages(token)[1] > 0:
+        while btInterface.countWorkPackages(token).data > 0:
             time.sleep(0.001)
 
     @typecheck
@@ -511,8 +520,9 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
 
         :param int wpid: work package ID.
         """
-        ok, worklist, admin = btInterface.getWorkPackage(wpid)
-        assert ok
+        ret = btInterface.getWorkPackage(wpid)
+        assert ret.ok
+        worklist, admin = ret.data['wpdata'], ret.data['wpmeta']
 
         # Pick an engine at random.
         engineIdx = int(np.random.randint(len(self.bulletEngines)))
@@ -556,8 +566,8 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
             out[obj.id] = sv
 
         # Update the data and delete the WP.
-        ok = btInterface.updateWorkPackage(wpid, admin.token, out)
-        if not ok:
+        ret = btInterface.updateWorkPackage(wpid, admin.token, out)
+        if not ret.ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
 
@@ -777,8 +787,9 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             print('Aborted Worker {}'.format(self.workerID))
 
     def processWorkPackage(self, wpid: int):
-        ok, worklist, admin = btInterface.getWorkPackage(wpid)
-        assert ok
+        ret = btInterface.getWorkPackage(wpid)
+        assert ret.ok
+        worklist, admin = ret.data['wpdata'], ret.data['wpmeta']
 
         # Log the number of collision sets to process.
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
@@ -819,8 +830,8 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             out[obj.id] = sv
 
         # Update the data and delete the WP.
-        ok = btInterface.updateWorkPackage(wpid, admin.token, out)
-        if not ok:
+        ret = btInterface.updateWorkPackage(wpid, admin.token, out)
+        if not ret.ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
 
@@ -854,24 +865,27 @@ class LeonardBaseWorkpackages(LeonardBase):
         """
 
         # Retrieve the SV for all objects.
-        ok, allSV = btInterface.getAllStateVariables()
+        ret = btInterface.getAllStateVariables()
+        allSV = ret.data
 
         # --------------------------------------------------------------------
         # Create a single work list containing all objects and a new token.
         # --------------------------------------------------------------------
         IDs = list(allSV.keys())
         self.token += 1
-        ok, wpid = btInterface.createWorkPackage(IDs, self.token, dt, maxsteps)
-        if not ok:
+        ret = btInterface.createWorkPackage(IDs, self.token, dt, maxsteps)
+        if not ret.ok:
             return
+        wpid = ret.data
 
         # --------------------------------------------------------------------
         # Process the work list.
         # --------------------------------------------------------------------
         # Fetch the work list.
-        ok, worklist, admin = btInterface.getWorkPackage(wpid)
-        if not ok:
+        ret = btInterface.getWorkPackage(wpid)
+        if not ret.ok:
             return
+        worklist, admin = ret.data['wpdata'], ret.data['wpmeta']
 
         # Process the objects one by one. The `out` dict will hold the updated
         # SV information.

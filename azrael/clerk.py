@@ -482,13 +482,13 @@ class Clerk(multiprocessing.Process):
         """
 
         # Query the templateID for the current object.
-        ok, templateID = btInterface.getTemplateID(objID)
-        if not ok:
-            msg = 'Could not retrieve templateID for objID={}'.format(objID)
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
+        ret = btInterface.getTemplateID(objID)
+        if not ret.ok:
+            self.logit.warning(ret.msg)
+            return RetVal(False, ret.msg, None)
 
         # Fetch the template for the current object.
+        templateID = ret.data
         template = self.getTemplate(templateID)
         if not template.ok:
             msg = 'Could not retrieve template for objID={}'.format(objID)
@@ -861,17 +861,19 @@ class Clerk(multiprocessing.Process):
         :return: (ok, (msg,))
         :rtype: tuple
         """
-        ok, msg = btInterface.deleteObject(objID)
+        ret = btInterface.deleteObject(objID)
         self.db_instance.remove({'objID': objID}, mult=True)
-        if ok:
+        if ret.ok:
             return RetVal(True, None, None)
         else:
-            return RetVal(False, msg, None)
+            return RetVal(False, ret.msg, None)
 
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple)):
         """
         Return the current state variables for all ``objIDs``.
+
+        fixme: output changed to dict
 
         :param bytes src: object ID of sender.
         :param bytes dst: object ID of receiver.
@@ -880,8 +882,8 @@ class Clerk(multiprocessing.Process):
         :rtype: (bool, (bytes, ))
         """
         # Get the State Variables.
-        ok, sv = btInterface.getStateVariables(objIDs)
-        if not ok:
+        ret = btInterface.getStateVariables(objIDs)
+        if not ret.ok:
             return RetVal(False, 'One or more IDs do not exist', None)
 
         # Query the geometry checksums for all objects.
@@ -894,10 +896,11 @@ class Clerk(multiprocessing.Process):
         docs = {_['objID']: _['csGeo'] for _ in docs}
 
         # Manually update the geometry checksum field.
+        sv = ret.data
         out = {}
-        for idx, objID in enumerate(objIDs):
+        for objID in objIDs:
             if objID in docs:
-                out[objID] = sv[idx]._replace(checksumGeometry=docs[objID])
+                out[objID] = sv[objID]._replace(checksumGeometry=docs[objID])
             else:
                 out[objID] = None
         
@@ -971,11 +974,11 @@ class Clerk(multiprocessing.Process):
         :return: (ok, (b'', ))
         :rtype: (bool, (bytes, ))
         """
-        ok = btInterface.setForce(objID, force, rpos)
-        if ok:
+        ret = btInterface.setForce(objID, force, rpos)
+        if ret.ok:
             return RetVal(True, None, None)
         else:
-            return RetVal(False, 'ID does not exist', None)
+            return RetVal(False, ret.msg, None)
 
     @typecheck
     def setStateVariables(self, objID: bytes,
@@ -988,11 +991,11 @@ class Clerk(multiprocessing.Process):
         :return: (ok, (b'', ))
         :rtype: (bool, (bytes, ))
         """
-        ok = btInterface.setOverrideAttributes(objID, data)
-        if ok:
+        ret = btInterface.setOverrideAttributes(objID, data)
+        if ret.ok:
             return RetVal(True, None, None)
         else:
-            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
+            return RetVal(False, ret.msg, None)
 
     @typecheck
     def getTemplateID(self, objID: bytes):
@@ -1003,12 +1006,11 @@ class Clerk(multiprocessing.Process):
         :return: (ok, (templateID, ))
         :rtype: (bool, (bytes, ))
         """
-        ok, templateID = btInterface.getTemplateID(objID)
-        if ok:
-            return RetVal(True, None, templateID)
+        ret = btInterface.getTemplateID(objID)
+        if ret.ok:
+            return RetVal(True, None, ret.data)
         else:
-            msg = 'Could not find templateID <{}>'.format(templateID)
-            return RetVal(False, msg, None)
+            return RetVal(False, ret.msg, None)
 
     @typecheck
     def getAllObjectIDs(self, dummy=None):
@@ -1023,8 +1025,8 @@ class Clerk(multiprocessing.Process):
         :return: (ok, (list of objIDs, ))
         :rtype: (bool, (list(bytes), ))
         """
-        ok, data = btInterface.getAllObjectIDs()
-        if not ok:
-            return RetVal(False, data, None)
+        ret = btInterface.getAllObjectIDs()
+        if not ret.ok:
+            return RetVal(False, ret.data, None)
         else:
-            return RetVal(True, None, data)
+            return RetVal(True, None, ret.data)
