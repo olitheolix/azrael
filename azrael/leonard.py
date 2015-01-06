@@ -37,6 +37,7 @@ import azrael.bullet.bullet_data as bullet_data
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
+RetVal = azrael.util.RetVal
 
 
 @typecheck
@@ -98,7 +99,7 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
 
         # Safety check: this must never happen.
         assert sumVal >= 0
-    return out
+    return RetVal(True, None, out)
 
 
 @typecheck
@@ -112,12 +113,12 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
     """
     # Sanity check.
     if len(IDs) != len(SVs):
-        return False, None
+        return RetVal(False, 'Inconsistent parameters', None)
 
     # Fetch all AABBs.
     ret = btInterface.getAABB(IDs)
     if not ret.ok:
-        return False, None
+        return RetVal(False, ret.msg, None)
     aabbs = ret.data
     
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
@@ -141,25 +142,25 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
     labels = np.arange(len(IDs))
 
     # Determine the overlapping objects in 'x' direction.
-    stage_0 = sweeping(data, labels, 'x')
+    stage_0 = sweeping(data, labels, 'x').data
 
     # Determine which of the objects that overlap in 'x' also overlap in 'y'.
     stage_1 = []
     for subset in stage_0:
         tmpData = [data[_] for _ in subset]
         tmpLabels = np.array(tuple(subset), np.int64)
-        stage_1.extend(sweeping(tmpData, tmpLabels, 'y'))
+        stage_1.extend(sweeping(tmpData, tmpLabels, 'y').data)
 
     # Now determine the objects that overlap in all three dimensions.
     stage_2 = []
     for subset in stage_1:
         tmpData = [data[_] for _ in subset]
         tmpLabels = np.array(tuple(subset), np.int64)
-        stage_2.extend(sweeping(tmpData, tmpLabels, 'z'))
+        stage_2.extend(sweeping(tmpData, tmpLabels, 'z').data)
 
     # Convert the labels back to object IDs.
     out = [[IDs[_] for _ in __] for __ in stage_2]
-    return True, out
+    return RetVal(True, None, out)
 
 
 class LeonardBase(multiprocessing.Process):
@@ -378,17 +379,19 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
 
         # Compute the collision sets.
         with util.Timeit('CCS') as timeit:
-            ok, res = computeCollisionSetsAABB(IDs, sv)
-        assert ok
+            ret = computeCollisionSetsAABB(IDs, sv)
+        assert ret.ok
+        collSets = ret.data
+        del ret
 
         # Log the number of created collision sets.
-        util.logMetricQty('#CollSets', len(res))
+        util.logMetricQty('#CollSets', len(collSets))
 
         # Convenience.
         vg = azrael.vectorgrid
 
         # Process all subsets individually.
-        for subset in res:
+        for subset in collSets:
             # Compile the subset dictionary for the current collision set.
             coll_SV = {_: allSV[_] for _ in subset}
 
@@ -471,13 +474,14 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
 
         # Compute the collision sets.
         with util.Timeit('CCS') as timeit:
-            ok, res = computeCollisionSetsAABB(IDs, sv)
-        if not ok:
+            ret = computeCollisionSetsAABB(IDs, sv)
+        if not ret.ok:
             self.logit.error('ComputeCollisionSetsAABB returned an error')
             sys.exit(1)
+        collSets = ret.data
 
         # Log the number of created collision sets.
-        util.logMetricQty('#CollSets', len(res))
+        util.logMetricQty('#CollSets', len(collSets))
 
         # Convenience.
         cwp = btInterface.createWorkPackage
@@ -487,7 +491,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
 
         all_wpids = []
         # Process all subsets individually.
-        for subset in res:
+        for subset in collSets:
             # Compile the subset dictionary for the current collision set.
             coll_SV = {_: allSV[_] for _ in subset}
 
