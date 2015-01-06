@@ -337,9 +337,9 @@ class LeonardBulletMonolithic(LeonardBase):
         # Retrieve all objects from Bullet, overwrite the state variables that
         # the user wanted to change explicitly (if any)
         for objID, sv in allSV.items():
-            ok, sv = self.bullet.getObjectData([util.id2int(objID)])
-            if ok == 0:
-                btInterface.update(objID, sv)
+            ret = self.bullet.getObjectData([util.id2int(objID)])
+            if ret.ok:
+                btInterface.update(objID, ret.data)
 
 
 class LeonardBulletSweeping(LeonardBulletMonolithic):
@@ -367,7 +367,6 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
-
         # Retrieve the SV for all objects.
         ret = btInterface.getAllStateVariables()
         allSV = ret.data
@@ -419,9 +418,9 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
             # Retrieve all objects from Bullet, overwrite the state variables
             # that the user wanted to change explicitly (if any)
             for objID, sv in coll_SV.items():
-                ok, sv = self.bullet.getObjectData([util.id2int(objID)])
-                if ok == 0:
-                    btInterface.update(objID, sv)
+                ret = self.bullet.getObjectData([util.id2int(objID)])
+                if ret.ok:
+                    btInterface.update(objID, ret.data)
 
 
 class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
@@ -557,9 +556,10 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         # Retrieve the objects from Bullet again and update them in the DB.
         out = {}
         for obj in worklist:
-            ok, sv = engine.getObjectData([util.id2int(obj.id)])
+            ret = engine.getObjectData([util.id2int(obj.id)])
+            sv = ret.data
 
-            if ok != 0:
+            if not ret.ok:
                 # Something went wrong. Reuse the old SV.
                 sv = obj.sv
                 self.logit.error('Unable to get all objects from Bullet')
@@ -820,8 +820,9 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         # Retrieve the objects from Bullet again and update them in the DB.
         out = {}
         for obj in worklist:
-            ok, sv = self.bullet.getObjectData([util.id2int(obj.id)])
-            if ok != 0:
+            ret = self.bullet.getObjectData([util.id2int(obj.id)])
+            sv = ret.data
+            if not ret.ok:
                 # Something went wrong. Reuse the old SV.
                 sv = obj.sv
                 self.logit.error('Unable to get all objects from Bullet')

@@ -35,6 +35,7 @@ ipshell = IPython.embed
 btVector3 = pybullet.btVector3
 btQuaternion = pybullet.btQuaternion
 BulletData = bullet_data.BulletData
+RetVal = azrael.util.RetVal
 
 
 class PyBulletPhys():
@@ -101,7 +102,7 @@ class PyBulletPhys():
             cnt += 1
 
         # Return the total number of removed objects.
-        return cnt
+        return RetVal(True, None, cnt)
 
     def compute(self, objIDs: (tuple, list), dt: float, max_substeps: int):
         """
@@ -123,7 +124,7 @@ class PyBulletPhys():
             # Abort immediately if the object does not exist in the local
             if objID not in self.all_objs:
                 print('Object <{}> does not exist'.format(objID))
-                return 1
+                return RetVal(False, None, None)
 
         for objID in objIDs:
             # Add the body to the world and make sure it is activated, as
@@ -142,6 +143,7 @@ class PyBulletPhys():
         # Remove the object from the simulation again.
         for objID in objIDs:
             self.dynamicsWorld.remove_rigidbody(self.all_objs[objID])
+        return RetVal(True, None, None)
 
     def applyForceAndTorque(self, objID, force, torque):
         """
@@ -155,7 +157,7 @@ class PyBulletPhys():
         # Sanity check.
         if objID not in self.all_objs:
             print('Cannot set force of unknown object <{}>'.format(objID))
-            return 1
+            return RetVal(False, None, None)
 
         # Convenience.
         obj = self.all_objs[objID]
@@ -169,6 +171,7 @@ class PyBulletPhys():
         obj.clear_forces()
         obj.apply_central_force(b_force)
         obj.apply_torque(b_torque)
+        return RetVal(True, None, None)
 
     def applyForce(self, objID: int, force, rel_pos):
         """
@@ -181,8 +184,8 @@ class PyBulletPhys():
         """
         # Sanity check.
         if objID not in self.all_objs:
-            print('Cannot set force of unknown object <{}>'.format(objID))
-            return 1
+            msg = 'Cannot set force of unknown object <{}>'.format(objID)
+            return RetVal(False, msg, None)
 
         # Convenience.
         obj = self.all_objs[objID]
@@ -195,6 +198,7 @@ class PyBulletPhys():
         # it steps the simulation) and apply the new ones.
         obj.clear_forces()
         obj.apply_force(b_force, b_relpos)
+        return RetVal(True, None, None)
 
     def getObjectData(self, objIDs: (list, tuple)):
         """
@@ -213,8 +217,8 @@ class PyBulletPhys():
         for objID in objIDs:
             # Abort immediately if one or more objects don't exist.
             if objID not in self.all_objs:
-                print('Cannot find object with ID <{}>'.format(objID))
-                return 1, []
+                msg = 'Cannot find object with ID <{}>'.format(objID)
+                return RetVal(False, msg, None)
 
             # Convenience.
             obj = self.all_objs[objID]
@@ -247,7 +251,7 @@ class PyBulletPhys():
                 BulletData(obj.azrael[1].scale, obj.inv_mass, obj.restitution,
                            rot, pos, vLin, vRot, cshape, axesLockLin,
                            axesLockRot))
-        return 0, out[0]
+        return RetVal(True, None, out[0])
 
     def setObjectData(self, objIDs: (list, tuple), obj):
         """
@@ -286,7 +290,7 @@ class PyBulletPhys():
         old = body.azrael[1]
         if (old.scale != obj.scale) or \
            not (np.array_equal(old.cshape, obj.cshape)):
-            body.collision_shape = self.compileCollisionShape(objID, obj)
+            body.collision_shape = self.compileCollisionShape(objID, obj).data
         del old
 
         # Update the mass but leave the inertia intact. This is somewhat
@@ -310,6 +314,7 @@ class PyBulletPhys():
 
         # Overwrite the old BulletData instance with the latest version.
         body.azrael = (objID, obj)
+        return RetVal(True, None, None)
 
     @typecheck
     def compileCollisionShape(self, objID: int, obj: BulletData):
@@ -342,7 +347,7 @@ class PyBulletPhys():
         # anywhere this is necessary regradless to ensure the underlying points
         # are kept alive (Bullet does not own them but accesses them).
         self.collision_shapes[objID] = cshape
-        return cshape
+        return RetVal(True, None, cshape)
 
     @typecheck
     def createRigidBody(self, objID, obj):
@@ -354,7 +359,8 @@ class PyBulletPhys():
         pos = btVector3(*obj.position)
 
         # Build the collision shape.
-        cshape = self.compileCollisionShape(objID, obj)
+        ret = self.compileCollisionShape(objID, obj)
+        cshape = ret.data
 
         # Create a motion state for the initial orientation and position.
         ms = pybullet.btDefaultMotionState(pybullet.btTransform(rot, pos))
@@ -394,3 +400,5 @@ class PyBulletPhys():
         # this is necessary regradless to ensure the underlying points are kept
         # alive (Bullet does not own them but accesses them).
         self.motion_states[objID] = ms
+
+        return RetVal(True, None, None)

@@ -48,17 +48,17 @@ def test_getset_object():
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
     # Request an invalid object ID.
-    ok, ret_buf = bullet.getObjectData([0])
-    assert ok == 1
+    ret = bullet.getObjectData([0])
+    assert not ret.ok
 
     # Send object to Bullet and request it back.
     bullet.setObjectData([0], obj_a)
-    ok, obj_b = bullet.getObjectData([0])
-    assert ok == 0
-
+    ret = bullet.getObjectData([0])
+    assert ret.ok
+    
     # De-serialise the data and verify it is identical (small rounding errors
     # are admissible because Bullet uses float32 types).
-    assert obj_a == obj_b
+    assert obj_a == ret.data
     print('Test passed')
 
 
@@ -82,9 +82,9 @@ def test_update_object():
 
     # Send object to Bullet and request it back.
     bullet.setObjectData([0], obj_a)
-    ok, obj_b = bullet.getObjectData([0])
-    assert ok == 0
-    assert obj_a == obj_b
+    ret = bullet.getObjectData([0])
+    assert ret.ok
+    assert obj_a == ret.data
 
     # Update the object.
     obj_a = bullet_data.BulletData(
@@ -97,9 +97,9 @@ def test_update_object():
         velocityLin=np.array([2.8, 2.0, 2.2], np.float64),
         velocityRot=np.array([2.4, 2.6, 2.8], np.float64))
     bullet.setObjectData([0], obj_a)
-    ok, obj_b = bullet.getObjectData([0])
-    assert ok == 0
-    assert obj_a == obj_b
+    ret = bullet.getObjectData([0])
+    assert ret.ok
+    assert obj_a == ret.data
 
     print('Test passed')
 
@@ -125,9 +125,9 @@ def test_apply_force(force_fun_id):
     # The objects must not move because no forces are at play.
     bullet.setObjectData([objID], obj_a)
     bullet.compute([objID], dt, maxsteps)
-    ok, obj_b = bullet.getObjectData([objID])
-    assert ok == 0
-    assert obj_a == obj_b
+    ret = bullet.getObjectData([objID])
+    assert ret.ok
+    assert obj_a == ret.data
 
     # Now apply a central force of one Newton in z-direction.
     if force_fun_id == 'applyForce':
@@ -139,14 +139,14 @@ def test_apply_force(force_fun_id):
     applyForceFun(objID, force, np.zeros(3, np.float64))
 
     # Nothing must have happened because the simulation has not progressed.
-    ok, obj_b = bullet.getObjectData([objID])
-    assert ok == 0
-    assert obj_a == obj_b
+    ret = bullet.getObjectData([objID])
+    assert ret.ok
+    assert obj_a == ret.data
 
     # Progress the simulation by another 'dt' seconds.
     bullet.compute([objID], dt, maxsteps)
-    ok, obj_b = bullet.getObjectData([objID])
-    assert ok == 0
+    ret = bullet.getObjectData([objID])
+    assert ret.ok
 
     # The object must have accelerated and reached the linear velocity
     #   v = a * t                  (1)
@@ -156,7 +156,7 @@ def test_apply_force(force_fun_id):
     #   v = t * F / m
     # or in terms of the inverse mass:
     #   v = t * F * imass
-    assert np.allclose(obj_b.velocityLin, dt * force * 1, atol=1E-2)
+    assert np.allclose(ret.data.velocityLin, dt * force * 1, atol=1E-2)
 
     print('Test passed')
 
@@ -183,24 +183,24 @@ def test_apply_force_and_torque():
     # The objects must not move because no forces are at play.
     bullet.setObjectData([objID], obj_a)
     bullet.compute([objID], dt, maxsteps)
-    ok, obj_b = bullet.getObjectData([objID])
-    assert ok == 0
-    assert obj_a == obj_b
+    ret = bullet.getObjectData([objID])
+    assert ret.ok
+    assert obj_a == ret.data
 
     # Now apply a central force of one Newton in z-direction and a torque of
     # two NewtonMeters.
     bullet.applyForceAndTorque(objID, force, torque)
 
     # Nothing must have happened because the simulation has not progressed.
-    ok, obj_b = bullet.getObjectData([objID])
-    assert ok == 0
-    assert obj_a == obj_b
+    ret = bullet.getObjectData([objID])
+    assert ret.ok
+    assert obj_a == ret.data
 
     # Progress the simulation for another second.
     bullet.compute([objID], dt, maxsteps)
-    ok, obj_b = bullet.getObjectData([objID])
-    assert ok == 0
-    velLin, velRot = obj_b.velocityLin, obj_b.velocityRot
+    ret = bullet.getObjectData([objID])
+    assert ret.ok
+    velLin, velRot = ret.data.velocityLin, ret.data.velocityRot
 
     # The object must have accelerated to the linear velocity
     #   v = a * t                  (1)
@@ -237,19 +237,18 @@ def test_remove_object():
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
     # Request an invalid object ID.
-    ok, obj_b = bullet.getObjectData([0])
-    assert ok == 1
+    ret = bullet.getObjectData([0])
+    assert not ret.ok
 
     # Send object to Bullet and request it back.
     bullet.setObjectData([0], obj_a)
-    ok, obj_b = bullet.getObjectData([0])
-    assert ok == 0
-    assert obj_a == obj_b
+    ret = bullet.getObjectData([0])
+    assert ret.ok
+    assert obj_a == ret.data
 
     # Delete the object. The attempt to request it afterwards must fail.
-    assert bullet.removeObject([0]) == 1
-    ok, obj_b = bullet.getObjectData([0])
-    assert ok == 1
+    assert bullet.removeObject([0]).ok
+    assert not bullet.getObjectData([0]).ok
 
     print('Test passed')
 
@@ -292,11 +291,11 @@ def test_modify_mass():
 
     # The lighter sphere must have moved pretty exactly twice as far in
     # y-direction.
-    ok, obj_a = bullet.getObjectData([objID_a])
-    assert ok == 0
-    ok, obj_b = bullet.getObjectData([objID_b])
-    assert ok == 0
-    assert abs(obj_a.position[1] - 2 * obj_b.position[1]) < 1E-5
+    ret_a = bullet.getObjectData([objID_a])
+    assert ret_a.ok
+    ret_b = bullet.getObjectData([objID_b])
+    assert ret_b.ok
+    assert abs(ret_a.data.position[1] - 2 * ret_b.data.position[1]) < 1E-5
 
     print('Test passed')
 
@@ -333,10 +332,10 @@ def test_modify_size():
     # Progress the simulation for one second. Nothing must happen.
     bullet.compute([objID_a, objID_b], 1.0, 60)
 
-    ok, tmp = bullet.getObjectData([objID_a])
-    assert obj_a == tmp
-    ok, tmp = bullet.getObjectData([objID_b])
-    assert obj_b == tmp
+    ret = bullet.getObjectData([objID_a])
+    assert (ret.ok, ret.data) == (True, obj_a)
+    ret = bullet.getObjectData([objID_b])
+    assert (ret.ok, ret.data) == (True, obj_b)
 
     # Enlarge the second object so that the spheres no overlap.
     obj_b = obj_b._replace(scale=2.5)
@@ -346,11 +345,11 @@ def test_modify_size():
     # from each other.
     bullet.compute([objID_a, objID_b], 1.0, 60)
 
-    ok, tmp = bullet.getObjectData([objID_a])
-    assert tmp.position[0] < obj_a.position[0]
+    ret = bullet.getObjectData([objID_a])
+    assert ret.data.position[0] < obj_a.position[0]
 
-    ok, tmp = bullet.getObjectData([objID_b])
-    assert tmp.position[0] > obj_b.position[0]
+    ret = bullet.getObjectData([objID_b])
+    assert ret.data.position[0] > obj_b.position[0]
 
     print('Test passed')
 
@@ -386,10 +385,10 @@ def test_modify_cshape():
     bullet.setObjectData([objID_a], obj_a)
     bullet.setObjectData([objID_b], obj_b)
     bullet.compute([objID_a, objID_b], 1.0, 60)
-    ok, tmp = bullet.getObjectData([objID_a])
-    assert obj_a == tmp
-    ok, tmp = bullet.getObjectData([objID_b])
-    assert obj_b == tmp
+    ret = bullet.getObjectData([objID_a])
+    assert (ret.ok, ret.data) == (True, obj_a)
+    ret = bullet.getObjectData([objID_b])
+    assert (ret.ok, ret.data) == (True, obj_b)
 
     # Change the collision shape of both objects to a unit cube.
     obj_a = bullet_data.BulletData(position=pos_a, cshape=cs_cube)
@@ -400,10 +399,10 @@ def test_modify_cshape():
     # Progress the simulation for one second. Bullet must move the objects away
     # from each other.
     bullet.compute([objID_a, objID_b], 1.0, 60)
-    ok, tmp = bullet.getObjectData([objID_a])
-    assert tmp.position[0] < obj_a.position[0]
-    ok, tmp = bullet.getObjectData([objID_b])
-    assert tmp.position[0] > obj_b.position[0]
+    ret = bullet.getObjectData([objID_a])
+    assert ret.data.position[0] < obj_a.position[0]
+    ret = bullet.getObjectData([objID_b])
+    assert ret.data.position[0] > obj_b.position[0]
 
     print('Test passed')
 
