@@ -150,11 +150,8 @@ def getStateVariables(objIDs: (list, tuple)):
     If one or more objIDs int ``objIDs`` do not not exist then the respective
     entry will return *None*.
 
-    fixme: output changed to dict
-    fixme: can this function now be simpler?
-
     :param iterable objIDs: list of object IDs for which to return the SV.
-    :return list: list of BulletData instances.
+    :return dict: dictionary of the form {objID_k: sv_k}
     """
     # Sanity check.
     for _ in objIDs:
@@ -164,16 +161,9 @@ def getStateVariables(objIDs: (list, tuple)):
             return RetVal(False, msg, None)
 
     # Retrieve the state variables.
-    out = list(_DB_SV.find({'objid': {'$in': objIDs}}))
-
-    # Put all SV into a dictionary to simplify sorting afterwards.
-    out = {_['objid']: _ for _ in out}
-    out = [out[_] if _ in out else None for _ in objIDs]
-
-    # Compile a list of SVs in the order of the supplied ``objIDs``.
-    fun = bullet_data.fromJsonDict
-    out = [fun(_['sv']) if _ is not None else None for _ in out]
-    out = dict(zip(objIDs, out))
+    out = {_: None for _ in objIDs}
+    for doc in _DB_SV.find({'objid': {'$in': objIDs}}):
+        out[doc['objid']] = bullet_data.fromJsonDict(doc['sv'])
     return RetVal(True, None, out)
 
 
@@ -186,7 +176,7 @@ def getAABB(objIDs: (list, tuple)):
     ``objIDs``.
 
     :param iterable objIDs: list of object ID for which to return the SV.
-    :return: 
+    :return: size of AABBs.
     :rtype: list of *floats*.
     """
     # Sanity check.
