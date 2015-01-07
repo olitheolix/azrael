@@ -52,7 +52,7 @@ def test_getset_object():
     assert not ret.ok
 
     # Send object to Bullet and request it back.
-    bullet.setObjectData([0], obj_a)
+    bullet.setObjectData(0, obj_a)
     ret = bullet.getObjectData([0])
     assert ret.ok
     
@@ -81,7 +81,7 @@ def test_update_object():
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
     # Send object to Bullet and request it back.
-    bullet.setObjectData([0], obj_a)
+    bullet.setObjectData(0, obj_a)
     ret = bullet.getObjectData([0])
     assert ret.ok
     assert obj_a == ret.data
@@ -96,7 +96,7 @@ def test_update_object():
         position=np.array([1.2, 1.4, 1.6], np.float64),
         velocityLin=np.array([2.8, 2.0, 2.2], np.float64),
         velocityRot=np.array([2.4, 2.6, 2.8], np.float64))
-    bullet.setObjectData([0], obj_a)
+    bullet.setObjectData(0, obj_a)
     ret = bullet.getObjectData([0])
     assert ret.ok
     assert obj_a == ret.data
@@ -123,7 +123,7 @@ def test_apply_force(force_fun_id):
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
-    bullet.setObjectData([objID], obj_a)
+    bullet.setObjectData(objID, obj_a)
     bullet.compute([objID], dt, maxsteps)
     ret = bullet.getObjectData([objID])
     assert ret.ok
@@ -181,7 +181,7 @@ def test_apply_force_and_torque():
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
-    bullet.setObjectData([objID], obj_a)
+    bullet.setObjectData(objID, obj_a)
     bullet.compute([objID], dt, maxsteps)
     ret = bullet.getObjectData([objID])
     assert ret.ok
@@ -241,7 +241,7 @@ def test_remove_object():
     assert not ret.ok
 
     # Send object to Bullet and request it back.
-    bullet.setObjectData([0], obj_a)
+    bullet.setObjectData(0, obj_a)
     ret = bullet.getObjectData([0])
     assert ret.ok
     assert obj_a == ret.data
@@ -275,12 +275,12 @@ def test_modify_mass():
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
-    bullet.setObjectData([objID_a], obj_a)
-    bullet.setObjectData([objID_b], obj_b)
+    bullet.setObjectData(objID_a, obj_a)
+    bullet.setObjectData(objID_b, obj_b)
 
     # Update the mass of the second object.
     obj_b = obj_b._replace(imass=0.5 * obj_b.imass)
-    bullet.setObjectData([objID_b], obj_b)
+    bullet.setObjectData(objID_b, obj_b)
 
     # Apply the same central force that pulls both spheres forward (y-axis).
     bullet.applyForceAndTorque(objID_a, force, torque)
@@ -326,8 +326,8 @@ def test_modify_size():
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
-    bullet.setObjectData([objID_a], obj_a)
-    bullet.setObjectData([objID_b], obj_b)
+    bullet.setObjectData(objID_a, obj_a)
+    bullet.setObjectData(objID_b, obj_b)
 
     # Progress the simulation for one second. Nothing must happen.
     bullet.compute([objID_a, objID_b], 1.0, 60)
@@ -339,7 +339,7 @@ def test_modify_size():
 
     # Enlarge the second object so that the spheres no overlap.
     obj_b = obj_b._replace(scale=2.5)
-    bullet.setObjectData([objID_b], obj_b)
+    bullet.setObjectData(objID_b, obj_b)
 
     # Progress the simulation for one second. Bullet must move the spheres away
     # from each other.
@@ -382,8 +382,8 @@ def test_modify_cshape():
     # Send objects to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play and the spheres
     # do not touch.
-    bullet.setObjectData([objID_a], obj_a)
-    bullet.setObjectData([objID_b], obj_b)
+    bullet.setObjectData(objID_a, obj_a)
+    bullet.setObjectData(objID_b, obj_b)
     bullet.compute([objID_a, objID_b], 1.0, 60)
     ret = bullet.getObjectData([objID_a])
     assert (ret.ok, ret.data) == (True, obj_a)
@@ -393,8 +393,8 @@ def test_modify_cshape():
     # Change the collision shape of both objects to a unit cube.
     obj_a = bullet_data.BulletData(position=pos_a, cshape=cs_cube)
     obj_b = bullet_data.BulletData(position=pos_b, cshape=cs_cube)
-    bullet.setObjectData([objID_a], obj_a)
-    bullet.setObjectData([objID_b], obj_b)
+    bullet.setObjectData(objID_a, obj_a)
+    bullet.setObjectData(objID_b, obj_b)
 
     # Progress the simulation for one second. Bullet must move the objects away
     # from each other.

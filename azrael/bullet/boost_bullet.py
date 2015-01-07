@@ -253,21 +253,17 @@ class PyBulletPhys():
                            axesLockRot))
         return RetVal(True, None, out[0])
 
-    def setObjectData(self, objIDs: (list, tuple), obj):
+    @typecheck
+    def setObjectData(self, objID: int, obj: BulletData):
         """
-        Create new rigid objects or update existing ones.
+        Update State Variables of ``objID`` to ``obj``.
 
-        This method aborts immediately if one or more objects in ``objIDs`` do
-        not exists.
+        Create a new object with ``objID`` if it does not yet exist.
 
-        fixme: objIDs must not be a list
-
-        :param list objIDs: the IDs of all objects to retrieve.
+        :param int objID: the IDs of all objects to retrieve.
         :param ``BulletData`` obj: object description.
         :return: Success
         """
-        objID = objIDs[0]
-
         # Create the Rigid Body if it does not yet exist.
         if objID not in self.all_objs:
             self.createRigidBody(objID, obj)

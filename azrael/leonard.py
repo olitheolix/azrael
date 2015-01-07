@@ -322,7 +322,7 @@ class LeonardBulletMonolithic(LeonardBase):
             btID = util.id2int(objID)
 
             # Pass the SV data from the DB to Bullet.
-            self.bullet.setObjectData([btID], sv)
+            self.bullet.setObjectData(btID, sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
             ret = btInterface.getForceAndTorque(objID)
@@ -405,7 +405,7 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
                 btID = util.id2int(objID)
 
                 # Pass the SV data from the DB to Bullet.
-                self.bullet.setObjectData([btID], sv)
+                self.bullet.setObjectData(btID, sv)
 
                 # Retrieve the force vector and tell Bullet to apply it.
                 ret = btInterface.getForceAndTorque(objID)
@@ -544,7 +544,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
 
             # Update the object in Bullet.
             btID = util.id2int(obj.id)
-            engine.setObjectData([btID], sv)
+            engine.setObjectData(btID, sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
             force = np.fromstring(obj.central_force)
@@ -808,7 +808,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
 
             # Update the object in Bullet.
             btID = util.id2int(obj.id)
-            self.bullet.setObjectData([btID], sv)
+            self.bullet.setObjectData(btID, sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
             force = np.fromstring(obj.central_force)
