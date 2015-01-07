@@ -34,7 +34,6 @@ import sys
 import zmq
 import time
 import logging
-import setproctitle
 import multiprocessing
 import numpy as np
 
@@ -49,7 +48,7 @@ import azrael.bullet.bullet_data as bullet_data
 from azrael.typecheck import typecheck
 
 
-class ControllerBase(multiprocessing.Process):
+class ControllerBase():
     """
     A Client for Clerk/Azrael.
 
@@ -504,32 +503,3 @@ class ControllerBase(multiprocessing.Process):
         :rtype: (bool, list)
         """
         return self.serialiseAndSend('get_all_objids')
-
-    def run(self):
-        """
-        Wait for messages sent to us and bounce them back.
-
-        This method is a stub. Override it with our own functionality to
-        control the associated object in an intelligent way.
-        """
-        # Initialise ZeroMQ and obtain an ID (no ID will be obtained if one
-        # the constructor already received one).
-        self.setupZMQ()
-        self.connectToClerk()
-
-        # Rename the process. I cannot do this earlier because objID may change
-        # in the `connectToClerk` call.
-        name = 'killme Controller {}'.format(util.id2int(self.objID))
-        setproctitle.setproctitle(name)
-
-        # Wait for messages, prefix them with our own controller ID, then send
-        # them back.
-        while True:
-            # Wait for the next message.
-            ok, data = self.recvMessage()
-            if ok and data[0] is not None:
-                sender, msg = data
-
-                # Prefix the message with our ID and return to sender.
-                self.sendMessage(sender, self.objID + msg)
-            time.sleep(0.1)
