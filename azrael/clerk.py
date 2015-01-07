@@ -382,7 +382,8 @@ class Clerk(multiprocessing.Process):
                               'msg': 'JSON encoding error in Clerk'})
 
         # For record keeping.
-        self.logit.warning(msg)
+        if isinstance(msg, str):
+            self.logit.warning(msg)
 
         # Send the message.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
