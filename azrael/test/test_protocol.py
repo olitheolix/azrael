@@ -156,24 +156,6 @@ def test_send_command():
     print('Test passed')
 
 
-def test_recvMsg():
-    """
-    Test codec for recvMsg command.
-    """
-    sender = int2id(5)
-    msg = 'test'.encode('utf8')
-
-    # Encode source data.
-    ok, enc = protocol.FromClerk_RecvMsg_Encode((sender, msg))
-
-    # Convert output to JSON and back (simulates the wire transmission).
-    enc = json.loads(json.dumps(enc))
-
-    # Decode the data.
-    ok, dec = protocol.FromClerk_RecvMsg_Decode(enc)
-    assert (ok, dec) == (True, (sender, msg))
-
-
 def test_GetStateVariable():
     """
     Test codec for BulletData tuple.
@@ -220,6 +202,5 @@ def test_GetStateVariable():
 
 if __name__ == '__main__':
     test_GetStateVariable()
-    test_recvMsg()
     test_send_command()
     test_encoding_add_get_template()

@@ -123,7 +123,6 @@ class Clerk(multiprocessing.Process):
 
         # Specify all database collections for Azrael.
         client = pymongo.MongoClient()
-        self.db_msg = client['azrael']['msg']
         self.db_admin = client['azrael']['admin']
         self.db_instance = client['azrael']['instance']
         self.db_template = client['azrael']['template']
@@ -149,14 +148,6 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_GetID_Decode,
                 self.getID,
                 protocol.FromClerk_GetID_Encode),
-            'send_msg': (
-                protocol.ToClerk_SendMsg_Decode,
-                self.sendMessage,
-                protocol.FromClerk_SendMsg_Encode),
-            'recv_msg': (
-                protocol.ToClerk_RecvMsg_Decode,
-                self.recvMessage,
-                protocol.FromClerk_RecvMsg_Encode),
             'spawn': (
                 protocol.ToClerk_Spawn_Decode,
                 self.spawn,
@@ -744,43 +735,6 @@ class Clerk(multiprocessing.Process):
                'rgb': rgb, 'boosters': boosters, 'factories': fac,
                'aabb': aabb}
         return RetVal(True, None, ret)
-
-    @typecheck
-    def sendMessage(self, src: bytes, dst: bytes, data: bytes):
-        """
-        Queue a new message with content ``data`` for ``dst`` from ``src``.
-
-        :param bytes src: object ID of sender.
-        :param bytes dst: object ID of receiver.
-        :param bytes data: message to pass along.
-        :return: Always (**True**, ())
-        :rtype: (bool, tuple)
-        """
-        # Add the message to the DB.
-        doc = {'src': src, 'dst': dst, 'msg': data}
-        self.db_msg.insert(doc)
-        return RetVal(True, None, None)
-
-    @typecheck
-    def recvMessage(self, objID: bytes):
-        """
-        Return the next message for ``objID``.
-
-        If no message is available for ``objID`` then return an empty message.
-
-        :param bytes objID: object ID.
-        :return: (ok, (src, message))
-        :rtype: (bool, (bytes, bytes))
-        """
-        # Fetch/remove the next available message for ``objID``.
-        doc = self.db_msg.find_and_modify({'dst': objID}, remove=True)
-
-        if doc is None:
-            # No message was available.
-            return RetVal(True, None, (b'', b''))
-        else:
-            # Return the message- origin and content.
-            return RetVal(True, None, (doc['src'], doc['msg']))
 
     @typecheck
     def spawn(self, ctrl_name: bytes, templateID: bytes,

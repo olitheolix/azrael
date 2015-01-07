@@ -152,41 +152,6 @@ def test_get_id():
     print('Test passed')
 
 
-def test_send_receive_message():
-    """
-    Try to send a message to a random controller ID. The ID itself does not
-    matter because the Clerk silently drops messages for non-existing
-    controllers.
-    """
-    killAzrael()
-
-    # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
-
-    # Test parameters.
-    src, dst, data = int2id(5), int2id(10), 'blah'.encode('utf8')
-
-    # Retrieve a non-existing message.
-    ret = clerk.recvMessage(src)
-    assert (ret.ok, ret.data) == (True, (b'', b''))
-
-    # Dispatch a message.
-    assert clerk.sendMessage(src, dst, data).ok
-
-    # Attempt to retrieve it with the wrong 'dst' -- we must get nothing.
-    ret = clerk.recvMessage(src)
-    assert (ret.ok, ret.data) == (True, (b'', b''))
-
-    # Now retrieve it with the correct ID, and the retrieve it once more to
-    # ensure that the same message is not delivered twice.
-    ret = clerk.recvMessage(dst)
-    assert (ret.ok, ret.data) == (True, (src, data))
-    ret = clerk.recvMessage(dst)
-    assert (ret.ok, ret.data) == (True, (b'', b''))
-
-    print('Test passed')
-
-
 def test_spawn():
     """
     Test the 'spawn' command in the Clerk.
@@ -1158,7 +1123,6 @@ if __name__ == '__main__':
     test_delete()
     test_add_get_template()
     test_set_force()
-    test_send_receive_message()
     test_connect()
     test_ping()
     test_invalid()

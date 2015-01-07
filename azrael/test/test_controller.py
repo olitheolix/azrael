@@ -109,55 +109,6 @@ def test_spawn_and_delete_one_controller(ctrl_type):
 
 
 @pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_spawn_and_talk_to_one_controller(ctrl_type):
-    """
-    Ask Clerk to spawn one (echo) controller. Then send a message to that
-    controller to ensure everything works.
-    """
-    # Constants and parameters for this test.
-    prog = 'Echo'.encode('utf8')
-    templateID = '_templateNone'.encode('utf8')
-
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
-
-    # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
-    # the ID of the controller which must be '2' ('0' is invalid and '1' was
-    # already given to the Controller).
-    ok, ctrl_id = ctrl.spawn(prog, templateID, np.zeros(3))
-    assert (ok, ctrl_id) == (True, int2id(2))
-
-    # Send a message to `ctrl_id`.
-    msg_orig = 'test'.encode('utf8')
-    ok, ret = ctrl.sendMessage(ctrl_id, msg_orig)
-    assert ok
-
-    # Fetch the response. Poll for it a few times because it may not arrive
-    # immediately.
-    for ii in range(10):
-        ok, data = ctrl.recvMessage()
-        assert isinstance(ok, bool)
-        if ok:
-            src, msg_ret = data
-        else:
-            src, msg_ret = None, None
-
-        if ok and (src is not None):
-            break
-        time.sleep(0.2)
-    assert src is not None
-
-    # The source must be the newly created process and the response must be the
-    # original messages prefixed with the controller ID.
-    assert src == ctrl_id
-    assert ctrl_id + msg_orig == msg_ret
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
-    print('Test passed')
-
-
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
 def test_spawn_and_get_state_variables(ctrl_type):
     """
     Spawn a new Controller and query its state variables.
@@ -226,62 +177,6 @@ def test_setStateVariables(ctrl_type):
     assert ret_sv.scale == new_sv.scale
     assert np.array_equal(ret_sv.position, new_sv.position)
     assert np.array_equal(ret_sv.cshape, new_sv.cshape)
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
-    print('Test passed')
-
-
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_multi_controller(ctrl_type):
-    """
-    Start a few echo Controllers processes. Then manually operate one
-    Controller instance to bounce messages off the other controllers.
-    """
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
-
-    # Launch the Controllers (default implementation is an echo).
-    num_proc = 10
-    proc = [ControllerBase() for _ in range(num_proc)]
-    for p in proc:
-        p.start()
-
-    # Send a random message to all Controllers (the Clerk object should have
-    # assigned them the numbers [0, num_proc-1])
-    err = None
-    try:
-        # The message.
-        t = 'test'.encode('utf8')
-
-        # Compile list of object IDs. The list starts with ID 2 because ID=0 is
-        # invalid and ID=1 was already given to the 'ctrl' controller,
-        obj_ids = [int2id(_) for _ in range(2, num_proc + 2)]
-
-        # Send the test message to every controller. Every controller gets a
-        # distinct one because it contains the ID of the target controller.
-        for dst in obj_ids:
-            assert ctrl.sendMessage(dst, t + dst)
-
-        # Every echo controller should return the same message prefixed with
-        # its own ID.
-        for ii in range(num_proc):
-            ok, (src, msg) = ctrl.recvMessage()
-            while len(msg) == 0:
-                time.sleep(.02)
-                ok, (src, msg) = ctrl.recvMessage()
-            # Start/end of message must both contain the dst ID.
-            assert msg[:config.LEN_ID] == msg[-config.LEN_ID:]
-    except AssertionError as e:
-        err = e
-
-    # Terminate controller processes.
-    for p in proc:
-        p.terminate()
-        p.join()
-
-    if err is not None:
-        raise err
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -645,5 +540,3 @@ if __name__ == '__main__':
     test_controlParts('Websocket')
     test_getAllObjectIDs('Websocket')
     test_create_fetch_template('Websocket')
-    test_spawn_and_talk_to_one_controller('Websocket')
-    test_multi_controller('Websocket')

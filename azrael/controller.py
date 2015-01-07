@@ -90,12 +90,6 @@ class ControllerBase(multiprocessing.Process):
             'get_id': (
                 protocol.ToClerk_GetID_Encode,
                 protocol.FromClerk_GetID_Decode),
-            'send_msg': (
-                protocol.ToClerk_SendMsg_Encode,
-                protocol.FromClerk_SendMsg_Decode),
-            'recv_msg': (
-                protocol.ToClerk_RecvMsg_Encode,
-                protocol.FromClerk_RecvMsg_Decode),
             'get_geometry': (
                 protocol.ToClerk_GetGeometry_Encode,
                 protocol.FromClerk_GetGeometry_Decode),
@@ -296,38 +290,6 @@ class ControllerBase(multiprocessing.Process):
         :rtype: (bool, bytes) or (bool, str)
         """
         return self.serialiseAndSend('ping_clerk', None)
-
-    @typecheck
-    def sendMessage(self, target: bytes, msg: bytes):
-        """
-        Send ``msg`` to ``target``.
-
-        There is no guarantee that ``target`` will actually receive the
-        message.
-
-        This method does not verify that ``target`` even exists.
-
-        :param str cmd: name of command.
-        :return: (ok, data)
-        :rtype: (bool, bytes) or (bool, str)
-        """
-        # Sanity checks.
-        assert len(target) == config.LEN_ID
-        return self.serialiseAndSend('send_msg', self.objID, target, msg)
-
-    def recvMessage(self):
-        """
-        Return the next message posted to us.
-
-        If there is no message for us then return an empty message (the 'ok'
-        flag will still be **True**).
-
-        :return: (ok, data)
-        :rtype: (bool, bytes) or (bool, str)
-        """
-        # Sanity check.
-        assert len(self.objID) == config.LEN_ID
-        return self.serialiseAndSend('recv_msg', self.objID)
 
     @typecheck
     def getGeometry(self, objID: bytes):
