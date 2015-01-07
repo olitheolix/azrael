@@ -282,7 +282,7 @@ def test_overrideAttributes():
     assert not btInterface.getOverrideAttributes(id_0).ok
 
     # Override attributes for a non-existing object. This must fail.
-    assert not btInterface.setOverrideAttributes(int2id(10), data).ok
+    assert not btInterface.setStateVariables(int2id(10), data).ok
 
     # Add the object to the DB with ID=0.
     assert btInterface.spawn(id_0, btdata, np.int64(1).tostring(), 0).ok
@@ -293,7 +293,7 @@ def test_overrideAttributes():
     assert (ret.ok, ret.data) == (True, BulletDataOverride())
 
     # Set the overwrite attributes for the just created object.
-    assert btInterface.setOverrideAttributes(id_0, data)
+    assert btInterface.setStateVariables(id_0, data)
 
     # Retrieve the attributes and verify they are correct.
     ret = btInterface.getOverrideAttributes(id_0)
@@ -308,7 +308,7 @@ def test_overrideAttributes():
 
     # Void the request to set attributes and verify that the attributes were
     # indeed reset.
-    assert btInterface.setOverrideAttributes(id_0, None)
+    assert btInterface.setStateVariables(id_0, None)
     ret = btInterface.getOverrideAttributes(id_0)
     assert (ret.ok, ret.data) == (True, BulletDataOverride())
 

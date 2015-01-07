@@ -881,14 +881,14 @@ class Clerk(multiprocessing.Process):
         """
         Set the State Variables of ``objID`` to ``data``.
 
-        For a detailed description see ``btInterface.setOverrideAttributes``
+        For a detailed description see ``btInterface.setStateVariables``
         since this method is only a wrapper for it.
 
         :param bytes objID: object ID
         :param BulletDataOverride data: new object attributes.
         :return: Success
         """
-        ret = btInterface.setOverrideAttributes(objID, data)
+        ret = btInterface.setStateVariables(objID, data)
         if ret.ok:
             return RetVal(True, None, None)
         else:

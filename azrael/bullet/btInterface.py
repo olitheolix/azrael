@@ -411,7 +411,7 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
         return RetVal(False, 'ID does not exist', None)
 
 @typecheck
-def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
+def setStateVariables(objID: bytes, data: BulletDataOverride):
     """
     Override State Variables of ``objID`` with those in ``data``.
 
