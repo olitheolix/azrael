@@ -213,7 +213,6 @@ class ResetSim(multiprocessing.Process):
 
         ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
         ctrl.setupZMQ()
-        ctrl.connectToClerk()
 
         # Periodically reset the SV values. Set them several times because it
         # is well possible that not all State Variables reach Leonard in the
@@ -260,7 +259,6 @@ class UpdateGeometry(multiprocessing.Process):
         # Get a Controller instance and connect it to Azrael.
         ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
         ctrl.setupZMQ()
-        ctrl.connectToClerk()
 
         # Query all object IDs. This happens only once which means the geometry
         # swap does not affect newly generated objects.

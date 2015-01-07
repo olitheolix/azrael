@@ -119,7 +119,6 @@ class ControllerSphere(azrael.controller.ControllerBase):
         # Boiler plate: setup
         print('Connecting to Azrael...', flush=True, end='')
         self.setupZMQ()
-        self.connectToClerk()
         print('done')
 
         # Wait a bit before starting the controller.

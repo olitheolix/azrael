@@ -64,21 +64,6 @@ class ControllerTest(controller.ControllerBase):
         return data['ok'], data['payload']
 
 
-def test_connect():
-    """
-    Connect to Clerk and make sure we get correct ID.
-    """
-    # Start the necessary services and instantiate a Controller.
-    clerk, ctrl, clacks = startAzrael('ZeroMQ')
-
-    # Since only one Controller was instantiated it must have objID=1.
-    assert ctrl.objID == int2id(1)
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
-    print('Test passed')
-
-
 def test_invalid():
     """
     Send an invalid command to the Clerk.
@@ -90,7 +75,6 @@ def test_invalid():
     clerk.start()
     ctrl = ControllerTest()
     ctrl.setupZMQ()
-    ctrl.connectToClerk()
 
     # Send a corrupt JSON to Clerk.
     msg = 'invalid_cmd'
@@ -125,27 +109,6 @@ def test_ping():
     # Send the Ping command.
     ok, ret = ctrl.ping()
     assert (ok, ret) == (True, 'pong clerk')
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
-    print('Test passed')
-
-
-def test_get_id():
-    """
-    Request a new ID for this controller.
-    """
-    # Start the necessary services and instantiate a Controller.
-    clerk, ctrl, clacks = startAzrael('ZeroMQ')
-
-    # Request new IDs. It must increase with every request, starting at 1.
-    for ii in range(3):
-        objID = ctrl.connectToClerk()
-        assert objID == int2id(ii + 1)
-
-        # Clear the objID as the `connectToClerk` method will otherwise not
-        # request a new one.
-        ctrl.objID = None
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -1118,7 +1081,5 @@ if __name__ == '__main__':
     test_delete()
     test_add_get_template()
     test_set_force()
-    test_connect()
     test_ping()
     test_invalid()
-    test_get_id()

@@ -58,21 +58,17 @@ class ControllerBase():
     result to Clerk, wait for a replay, decode the reply back to Python types,
     and pass that back to the caller.
 
-    :param bytes objID: ID of object to connect to.
     :param str addr: Address of Clerk.
     :raises: None
     """
     @typecheck
-    def __init__(self, obj_id: bytes=None, addr_clerk: str=config.addr_clerk):
+    def __init__(self, addr_clerk: str=config.addr_clerk):
         super().__init__()
 
         # Declare the socket variable. This is necessary because the destructor
         # will use and depending on whether the Controller runs as a process
         # or in the main thread this variable may otherwise be unavailable.
         self.sock_cmd = None
-
-        # The object ID associated with this controller.
-        self.objID = obj_id
 
         # Address of Clerk (ZeroMQ sockets will connect to that address).
         self.addr_clerk = addr_clerk
@@ -86,9 +82,6 @@ class ControllerBase():
             'ping_clerk': (
                 protocol.ToClerk_Ping_Encode,
                 protocol.FromClerk_Ping_Decode),
-            'get_id': (
-                protocol.ToClerk_GetID_Encode,
-                protocol.FromClerk_GetID_Decode),
             'get_geometry': (
                 protocol.ToClerk_GetGeometry_Encode,
                 protocol.FromClerk_GetGeometry_Decode),
@@ -145,7 +138,6 @@ class ControllerBase():
         """
         if self.sock_cmd is not None:
             self.sock_cmd.close()
-        self.logit.debug('Controller for <{}> has shutdown'.format(self.objID))
         self.sock_cmd = None
 
     @typecheck
@@ -214,30 +206,6 @@ class ControllerBase():
 
         # Extract the 'Ok' flag and return the rest verbatim.
         return ret['ok'], ret['payload'], ret['msg']
-
-    def connectToClerk(self):
-        """
-        Obtain a unique object ID from Clerk.
-
-        This command does nothing if the Controller already has an ID (ie. if
-        its self.objID attribute is not *None*).
-
-        .. note::
-           Every object in the simulation should have at most one controller
-           associated with it but this is currently not enforced. It is thus
-           possible to create a Controller for a non-existing object. This is
-           fine for debugging and demo purposes. In the long term this method
-           will probably vanish.
-
-        :return bytes: the ID of the object with which we are associated.
-        :rtype: bytes
-        """
-        if self.objID is None:
-            # Ask Clerk for a new ID.
-            ok, objID = self.serialiseAndSend('get_id', None)
-            if ok:
-                self.objID = objID
-        return self.objID
 
     @typecheck
     def serialiseAndSend(self, cmd: str, *args):

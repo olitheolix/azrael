@@ -69,7 +69,7 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     """
     Ask Clerk to spawn one (echo) controller.
     """
-    id_2 = int2id(2)
+    id_1 = int2id(1)
 
     # Constants and parameters for this test.
     templateID = '_templateNone'.encode('utf8')
@@ -77,28 +77,28 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
-    # Instruct Clerk to spawn a new template. The new object must have objID=2
-    # because '0' is invalid and '1' was already given to the `ctrl` object.
-    ok, ctrl_id = ctrl.spawn(templateID, np.zeros(3))
-    assert (ok, ctrl_id) == (True, id_2)
+    # Instruct Clerk to spawn a new template. The new object must have
+    # objID=1.
+    ok, objID = ctrl.spawn(templateID, np.zeros(3))
+    assert (ok, objID) == (True, id_1)
 
     # Attempt to spawn a non-existing template.
     templateID += 'blah'.encode('utf8')
-    ok, ctrl_id = ctrl.spawn(templateID, np.zeros(3))
+    ok, objID = ctrl.spawn(templateID, np.zeros(3))
     assert not ok
 
     # Exactly one object must exist at this point.
     ok, ret = ctrl.getAllObjectIDs()
-    assert (ok, ret) == (True, [id_2])
+    assert (ok, ret) == (True, [id_1])
 
     # Attempt to delete a non-existing object.
     ok, ret = ctrl.deleteObject(int2id(100))
     assert not ok
     ok, ret = ctrl.getAllObjectIDs()
-    assert (ok, ret) == (True, [id_2])
+    assert (ok, ret) == (True, [id_1])
 
     # Delete an existing object.
-    ok, _ = ctrl.deleteObject(id_2)
+    ok, _ = ctrl.deleteObject(id_1)
     assert ok
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [])
@@ -125,11 +125,9 @@ def test_spawn_and_get_state_variables(ctrl_type):
     assert (ok, sv) == (True, {id_tmp: None})
     del id_tmp
 
-    # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
-    # the ID of the controller which must be '2' ('0' is invalid and '1' was
-    # already given to the controller in the WS handler).
+    # Instruct Clerk to spawn a new object. Its objID must be '1'.
     ok, id0 = ctrl.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
-    assert (ok, id0) == (True, int2id(2))
+    assert (ok, id0) == (True, int2id(1))
 
     ok, sv = ctrl.getStateVariables(id0)
     assert (ok, len(sv)) == (True, 1)
@@ -195,7 +193,7 @@ def test_getAllObjectIDs(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
-    objID_2 = int2id(2)
+    objID_1 = int2id(1)
 
     # So far no objects have been spawned.
     ok, ret = ctrl.getAllObjectIDs()
@@ -203,11 +201,11 @@ def test_getAllObjectIDs(ctrl_type):
 
     # Spawn a new object.
     ok, ret = ctrl.spawn(templateID, np.zeros(3))
-    assert (ok, ret) == (True, objID_2)
+    assert (ok, ret) == (True, objID_1)
 
     # The object list must now contain the ID of the just spawned object.
     ok, ret = ctrl.getAllObjectIDs()
-    assert (ok, ret) == (True, [objID_2])
+    assert (ok, ret) == (True, [objID_1])
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -223,18 +221,18 @@ def test_get_template(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
-    id_0, id_1 = int2id(2), int2id(3)
+    id_0, id_1 = int2id(1), int2id(2)
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
 
     # Spawn a new object. It must have ID=2 because ID=1 was already given to
     # the controller.
-    ok, ctrl_id = ctrl.spawn(templateID_0, np.zeros(3))
-    assert (ok, ctrl_id) == (True, id_0)
+    ok, objID = ctrl.spawn(templateID_0, np.zeros(3))
+    assert (ok, objID) == (True, id_0)
 
     # Spawn another object from a different template.
-    ok, ctrl_id = ctrl.spawn(templateID_1, np.zeros(3))
-    assert (ok, ctrl_id) == (True, id_1)
+    ok, objID = ctrl.spawn(templateID_1, np.zeros(3))
+    assert (ok, objID) == (True, id_1)
 
     # Retrieve template of first object.
     ok, ret = ctrl.getTemplateID(id_0)
@@ -370,7 +368,7 @@ def test_controlParts(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
-    objID_1 = int2id(2)
+    objID_1 = int2id(1)
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -428,10 +426,10 @@ def test_controlParts(ctrl_type):
     assert ok
 
     # ... and spawn an instance thereof.
-    ok, ctrl_id = ctrl.spawn(templateID_2, pos=pos_parent,
+    ok, objID = ctrl.spawn(templateID_2, pos=pos_parent,
                              vel=vel_parent, orient=orient_parent)
-    assert (ok, ctrl_id) == (True, objID_1)
-    del ok, ctrl_id
+    assert (ok, objID) == (True, objID_1)
+    del ok, objID
 
     # ------------------------------------------------------------------------
     # Activate booster and factories and verify that the applied force and
@@ -452,7 +450,7 @@ def test_controlParts(ctrl_type):
     # given to the controller object.
     ok, spawnIDs = ctrl.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
     assert (ok, len(spawnIDs)) == (True, 2)
-    assert spawnIDs == [int2id(3), int2id(4)]
+    assert spawnIDs == [int2id(2), int2id(3)]
 
     # Query the state variables of the objects spawned by the factories.
     ok, ret_SVs = ctrl.getStateVariables(spawnIDs)
@@ -531,12 +529,16 @@ def test_setGeometry(ctrl_type):
 
 
 if __name__ == '__main__':
-    test_setStateVariables('Websocket')
-    test_setGeometry('Websocket')
-    test_spawn_and_delete_one_controller('Websocket')
-    test_spawn_and_get_state_variables('Websocket')
+    transport_type = 'Websocket'
     test_ping()
-    test_get_template('Websocket')
-    test_controlParts('Websocket')
-    test_getAllObjectIDs('Websocket')
-    test_create_fetch_template('Websocket')
+    test_spawn_and_delete_one_controller(transport_type)
+
+    test_setStateVariables(transport_type)
+    test_setGeometry(transport_type)
+    test_spawn_and_delete_one_controller(transport_type)
+    test_spawn_and_get_state_variables(transport_type)
+    test_ping()
+    test_get_template(transport_type)
+    test_controlParts(transport_type)
+    test_getAllObjectIDs(transport_type)
+    test_create_fetch_template(transport_type)

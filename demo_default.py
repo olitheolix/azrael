@@ -124,7 +124,6 @@ def loadGroundModel(scale, model_name):
     # Create a controller and connect to Azrael.
     ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
     ctrl.setupZMQ()
-    ctrl.connectToClerk()
 
     # Load the model.
     print('  Importing <{}>... '.format(model_name), end='', flush=True)
@@ -194,7 +193,6 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # Establish connection to Azrael.
     ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
     ctrl.setupZMQ()
-    ctrl.connectToClerk()
 
     # Cube vertices.
     vert = 0.5 * np.array([
@@ -440,7 +438,6 @@ class ResetSim(multiprocessing.Process):
 
         ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
         ctrl.setupZMQ()
-        ctrl.connectToClerk()
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.

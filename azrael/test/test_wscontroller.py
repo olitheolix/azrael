@@ -58,29 +58,22 @@ def test_custom_objid():
     clacks = azrael.clacks.ClacksServer()
     clacks.start()
 
+    address = 'ws://127.0.0.1:8080/websocket'
+
     # Instantiate a WSController without specifiying an object ID.
-    ctrl_0 = azrael.wscontroller.WSControllerBase(
-        'ws://127.0.0.1:8080/websocket', 1)
+    ctrl_0 = azrael.wscontroller.WSControllerBase(address)
 
     # Ping Clerk to verify the connection is live.
     ok, ret = ctrl_0.ping()
     assert (ok, ret) == (True, 'pong clerk')
 
-    # We must be attached to objID=1 because no other object has been added to
-    # the simulation yet.
-    assert ctrl_0.objID == int2id(1)
-
     # Instantiate another WSController. This time specify an ID. Note: the ID
     # need not exist albeit object specific commands will subsequently fail.
-    ctrl_1 = azrael.wscontroller.WSControllerBase(
-        'ws://127.0.0.1:8080/websocket', 1, int2id(10))
+    ctrl_1 = azrael.wscontroller.WSControllerBase(address)
 
     # Ping Clerk again to verify the connection is live.
     ok, ret = ctrl_1.ping()
     assert (ok, ret) == (True, 'pong clerk')
-
-    # Verify that we use the requested ID.
-    assert ctrl_1.objID == int2id(10)
 
     # Shutdown the system.
     clerk.terminate()

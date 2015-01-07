@@ -56,7 +56,7 @@ class WSControllerBase(azrael.controller.ControllerBase):
     :param float timeout: Websocket timeout.
     """
     @typecheck
-    def __init__(self, url: str, timeout: (int, float)=20, objID: bytes=None):
+    def __init__(self, url: str, timeout: (int, float)=20):
         super().__init__()
 
         # URL of Clacks server.
@@ -75,25 +75,6 @@ class WSControllerBase(azrael.controller.ControllerBase):
                     raise err
                 else:
                     time.sleep(0.1)
-
-        # Tell Clacks the object we want to connect to. If we do not have
-        # a specific object an ID will be created for us automatically.
-        if objID is None:
-            payload = {'objID': None}
-        else:
-            payload = {'objID': list(objID)}
-        ok, ret, msg = self.sendToClerk('set_id', payload)
-        assert ok
-
-        # Retrieve the object ID. Fixme: if user has specified an ID via the
-        # constructor then the Controller instance in Clacks must heed it.
-        ok, data, msg = self.sendToClerk('get_id', None)
-
-        self.objID = bytes(data['objID'])
-
-        # Sanity check: if a custom objID was specified then it must match.
-        if objID is not None:
-            assert objID == self.objID
 
     def __del__(self):
         """

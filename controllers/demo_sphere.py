@@ -40,7 +40,6 @@ class ControllerSphere(azrael.controller.ControllerBase):
     def run(self):
         # Boiler plate: setup
         self.setupZMQ()
-        self.connectToClerk()
 
         # ---------------------------------------------------------------------
         # Central booster (partID=1)

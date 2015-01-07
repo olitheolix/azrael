@@ -191,7 +191,6 @@ class ResetSim(multiprocessing.Process):
 
         ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
         ctrl.setupZMQ()
-        ctrl.connectToClerk()
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.

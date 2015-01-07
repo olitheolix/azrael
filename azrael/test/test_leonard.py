@@ -56,7 +56,6 @@ def startAzrael(ctrl_type):
         # Instantiate the ZeroMQ version of the Controller.
         ctrl = azrael.controller.ControllerBase()
         ctrl.setupZMQ()
-        ctrl.connectToClerk()
 
         # Do not start a Clacks process.
         clacks = None

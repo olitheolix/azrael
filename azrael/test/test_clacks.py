@@ -61,23 +61,6 @@ def test_ping_clerk():
     print('Test passed')
 
 
-def test_websocket_getID():
-    """
-    Query the controller ID associated with this WebSocket.
-    """
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael('Websocket')
-
-    # Make sure we are connected.
-    assert ctrl.objID == int2id(1)
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
-
-    print('Test passed')
-
-
 if __name__ == '__main__':
     test_ping_clacks()
     test_ping_clerk()
-    test_websocket_getID()

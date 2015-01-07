@@ -144,10 +144,6 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_Ping_Decode,
                 self.pingClerk,
                 protocol.FromClerk_Ping_Encode),
-            'get_id': (
-                protocol.ToClerk_GetID_Decode,
-                self.getID,
-                protocol.FromClerk_GetID_Encode),
             'spawn': (
                 protocol.ToClerk_Spawn_Decode,
                 self.spawn,

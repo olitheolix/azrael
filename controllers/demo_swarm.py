@@ -49,7 +49,6 @@ class ControllerCubeLeft(azrael.controller.ControllerBase):
     def run(self):
         # Boiler plate: setup
         self.setupZMQ()
-        self.connectToClerk()
 
         # ---------------------------------------------------------------------
         # Edit here to change the force of boosters.

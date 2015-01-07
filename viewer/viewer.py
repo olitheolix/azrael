@@ -493,7 +493,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Make sure the system is live.
         self.ctrl = controller.ControllerBase(addr_clerk=self.addr_server)
         self.ctrl.setupZMQ()
-        self.ctrl.connectToClerk()
 
         print('Client connected')
 

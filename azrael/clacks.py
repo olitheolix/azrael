@@ -54,8 +54,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
     through the Websocket.
 
     Among the few exceptions that are not passed to the Controller are Pings
-    directed specifically to this Clacks server and the `get_id` command which
-    directly returns the ID of the associated Controller.
+    directed specifically to this Clacks server.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -71,7 +70,8 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         This method is a Tornado callback and triggers when a client initiates
         a new Websocket connection.
         """
-        self.controller = None
+        self.controller = controller.ControllerBase()
+        self.controller.setupZMQ()
 
     @typecheck
     def returnOk(self, data: dict, msg: str):
@@ -137,34 +137,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         if cmd == 'ping_clacks':
             # Handle ourselves: return the pong.
             self.returnOk({'response': 'pong clacks'}, '')
-        elif cmd == 'get_id':
-            # Handle ourselves: return the ID of the associated Controller.
-            if self.controller is None:
-                self.returnErr({}, 'No Controller has been instantiate yet')
-            else:
-                self.returnOk({'objID': self.controller.objID}, '')
-        elif cmd == 'set_id':
-            if (isinstance(payload, dict)) and ('objID' in payload):
-                # Handle ourselves: create a controller with a specific ID.
-                if payload['objID'] is None:
-                    # Client did not request a specific objID
-                    objID = None
-                else:
-                    # Convert the objID specified by the client to a byte
-                    # string.
-                    objID = bytes(payload['objID'])
-                # Create the Controller instance.
-                ok, ret = self.createController(objID)
-                self.returnOk({'objID': ret}, '')
-            else:
-                self.returnErr({}, 'Payload misses the objID field')
         else:
-            if self.controller is None:
-                # Skip the command if no controller has been instantiated yet
-                # to actually process the command.
-                self.returnErr({}, 'No controller has been instantiated yet')
-                return
-
             # Pass all other commands directly to the Controller which will
             # (probably) send it to Clerk for processing.
             ok, ret, msg = self.controller.sendToClerk(cmd, payload)
@@ -173,36 +146,6 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
                 self.returnOk(ret, msg)
             else:
                 self.returnErr({}, msg)
-
-    def createController(self, objID: bytes):
-        """
-        Create a Controller for ``objID``.
-
-        The created controller object is an instance variable for this
-        Websocket connection.
-
-        If ``objID`` is invalid then Clerk will assign the Controller a new and
-        unique ID.
-
-        :param bytes objID: desired object ID.
-        :return: (ok, objID)
-        """
-        # This command is only allowed for as long as no controller has
-        # been created yet.
-        if self.controller is not None:
-            msg = 'Controller already has an ID'.encode('utf8')
-            self.write_message(msg, binary=True)
-            return False, msg
-
-        if objID is None:
-            # Constructor of WSControllerBase requests a new objID.
-            objID = None
-
-        # Instantiate the controller for the desired objID.
-        self.controller = controller.ControllerBase(objID)
-        self.controller.setupZMQ()
-        self.controller.connectToClerk()
-        return True, self.controller.objID
 
     def on_close(self):
         """

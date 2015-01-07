@@ -53,7 +53,6 @@ class ControllerCube(azrael.controller.ControllerBase):
     def run(self):
         # Setup.
         self.setupZMQ()
-        self.connectToClerk()
 
         # Specify the toggle interval in seconds.
         toggle_interval = 4.0

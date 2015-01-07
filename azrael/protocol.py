@@ -78,30 +78,6 @@ def FromClerk_Ping_Decode(data: dict):
 
 
 # ---------------------------------------------------------------------------
-# GetID
-# ---------------------------------------------------------------------------
-
-@typecheck
-def ToClerk_GetID_Encode(dummyarg=None):
-    return True, {}
-
-
-@typecheck
-def ToClerk_GetID_Decode(data: dict):
-    return True, data
-
-
-@typecheck
-def FromClerk_GetID_Encode(objID: bytes):
-    return True, {'objID': objID}
-
-
-@typecheck
-def FromClerk_GetID_Decode(data: dict):
-    return True, bytes(data['objID'])
-
-
-# ---------------------------------------------------------------------------
 # GetTemplateID
 # ---------------------------------------------------------------------------
 
