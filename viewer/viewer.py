@@ -525,7 +525,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Spawn the player object.
         ok, tmp = self.ctrl.spawn(
-            None, self.t_projectile, initPos, np.zeros(3))
+            self.t_projectile, initPos, np.zeros(3))
         if not ok:
             print('Cannot spawn player object (<{}>)'.format(tmp))
             self.close()
@@ -863,7 +863,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
             # Spawn the object.
             ok, objID = self.ctrl.spawn(
-                None, self.t_projectile, pos, vel=vel, scale=0.25, imass=20)
+                self.t_projectile, pos, vel=vel, scale=0.25, imass=20)
             if not ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
         elif button == 2:
@@ -873,7 +873,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
             # Spawn the object.
             ok, objID = self.ctrl.spawn(
-                None, self.t_projectile, pos, vel=vel, scale=0.25, imass=2)
+                self.t_projectile, pos, vel=vel, scale=0.25, imass=2)
             if not ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
         else:

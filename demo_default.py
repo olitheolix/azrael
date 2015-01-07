@@ -169,7 +169,7 @@ def loadGroundModel(scale, model_name):
     print('  Spawning object... ', end='', flush=True)
     pos, ori = [0, 0, -10], [0, 1, 0, 0]
     ok, objID = ctrl.spawn(
-        None, tID, pos, orient=ori, imass=0.1, scale=scale,
+        tID, pos, orient=ori, imass=0.1, scale=scale,
         axesLockLin=[1, 1, 1], axesLockRot=[0, 0, 1])
     print('done (ID=<{}>)'.format(objID))
 
@@ -318,7 +318,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
                 # Spawn the cube and update the index counter. The intitial
                 # velocity, acceleration, and orientation is neutral.
-                ok, objID = ctrl.spawn(None, tID_cube[cube_idx], pos)
+                ok, objID = ctrl.spawn(tID_cube[cube_idx], pos)
                 cube_idx += 1
 
                 # Record the original position of the object (this will be
