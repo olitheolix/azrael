@@ -55,7 +55,7 @@ def test_getset_object():
     bullet.setObjectData(0, obj_a)
     ret = bullet.getObjectData([0])
     assert ret.ok
-    
+
     # De-serialise the data and verify it is identical (small rounding errors
     # are admissible because Bullet uses float32 types).
     assert obj_a == ret.data

@@ -426,7 +426,7 @@ def test_controlParts(ctrl_type):
 
     # ... and spawn an instance thereof.
     ok, objID = ctrl.spawn(templateID_2, pos=pos_parent,
-                             vel=vel_parent, orient=orient_parent)
+                           vel=vel_parent, orient=orient_parent)
     assert (ok, objID) == (True, objID_1)
     del ok, objID
 

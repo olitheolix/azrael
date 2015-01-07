@@ -340,6 +340,7 @@ def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
     else:
         return RetVal(False, ret.msg, None)
 
+
 @typecheck
 def getForceAndTorque(objID: bytes):
     """
@@ -409,6 +410,7 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
         return RetVal(True, None, None)
     else:
         return RetVal(False, 'ID does not exist', None)
+
 
 @typecheck
 def setStateVariables(objID: bytes, data: BulletDataOverride):

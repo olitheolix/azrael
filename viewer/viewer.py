@@ -280,7 +280,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Collection of old and new state variables.
         self.oldSVs, self.newSVs = {}, {}
-        
+
         # Address of Clerk.
         self.addr_server = addr
 
@@ -346,7 +346,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         if objID not in self.oldSVs:
             return False
-        
+
         cs_old = self.newSVs[objID].checksumGeometry
         cs_new = self.oldSVs[objID].checksumGeometry
         return (cs_old != cs_new)
@@ -524,7 +524,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         t_projectile = 'cube'.encode('utf8')
         args = t_projectile, cs, buf_vert, uv, rgb, [], []
         ok, _ = self.ctrl.addTemplate(*args)
-            
+
         # The template was probably already defined (eg by a nother instance of
         # this script).
         if not ok:

@@ -123,7 +123,7 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
     if not ret.ok:
         return RetVal(False, ret.msg, None)
     aabbs = ret.data
-    
+
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
     # must contain the min/max spatial extent in x/y/z direction.
     data = []

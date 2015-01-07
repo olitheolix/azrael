@@ -493,9 +493,9 @@ def test_create_work_package_with_objects():
     ret = createWorkPackage([id_1], token, 1, 2)
     assert (ret.ok, ret.data) == (True, 1)
     wpid_1 = ret.data
-    
+
     # Add ID1 and ID2 to the second WP. The WPID must be 2.
-    ret= createWorkPackage([id_1, id_2], token, 3, 4)
+    ret = createWorkPackage([id_1, id_2], token, 3, 4)
     assert (ret.ok, ret.data) == (True, 2)
     wpid_2 = ret.data
 
