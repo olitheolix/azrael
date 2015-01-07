@@ -117,7 +117,7 @@ class PyBulletPhys():
         :param list objIDs: list of objIDs for which to update the physics.
         :param float dt: time step in seconds
         :param int max_substeps: maximum number of sub-steps.
-        :return: **None**
+        :return: Success
         """
         # Add the objects from the cache to the Bullet simulation.
         for objID in objIDs:
@@ -152,7 +152,7 @@ class PyBulletPhys():
         :param int objID: the ID of the object to update
         :param 3-array force: force applied directly to center of mass
         :param 3-array torque: torque around center of mass.
-        :return: **None**
+        :return: Success
         """
         # Sanity check.
         if objID not in self.all_objs:
@@ -180,7 +180,7 @@ class PyBulletPhys():
         :param int objID: the ID of the object to update
         :param 3-array force: force applied directly to center of mass
         :param 3-array rel_pos: position of force relative to center of mass
-        :return: **None**
+        :return: Success
         """
         # Sanity check.
         if objID not in self.all_objs:
@@ -202,14 +202,14 @@ class PyBulletPhys():
 
     def getObjectData(self, objIDs: (list, tuple)):
         """
-        Fetch the state of all ``objIDs``.
+        Return State Variables of all ``objIDs``.
 
         This method aborts immediately if one or more objects in ``objIDs`` do
         not exists.
 
         :param list objIDs: the IDs of all objects to retrieve.
         :return: list of ``BulletData`` instances.
-        :rtype: (bool, list)
+        :rtype: list
         """
         out = []
 
@@ -260,9 +260,11 @@ class PyBulletPhys():
         This method aborts immediately if one or more objects in ``objIDs`` do
         not exists.
 
+        fixme: objIDs must not be a list
+
         :param list objIDs: the IDs of all objects to retrieve.
         :param ``BulletData`` obj: object description.
-        :return: **None**
+        :return: Success
         """
         objID = objIDs[0]
 
@@ -352,7 +354,11 @@ class PyBulletPhys():
     @typecheck
     def createRigidBody(self, objID, obj):
         """
-        :param bytes objID: object ID.
+        Create a new rigid body ``obj`` with ``objID``.
+
+        :param bytes objID: ID of new rigid body.
+        :param BulletData obj: State Variables of rigid body.
+        :return: Success
         """
         # Convert orientation and position to btVector3.
         rot = btQuaternion(*obj.orientation)

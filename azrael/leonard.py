@@ -51,12 +51,14 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
     Sweeping is straightforward: sort all start/stop positions and determine
     the overlapping sets.
 
-    The returned sets does not contain the elements of data, but their
-    corresponding label from the list of ``labels``.
+    The returned sets do not contain the ``data`` elements but their
+    corresponding ``labels`` to be more memory efficient.
 
     :param list data: list of dictionaries which must contain ['aabb']
     :param np.int64 labels: integer array to label the elements in data.
     :param str dim: the axis to check (must be one of ['x', 'y', 'z'])
+    :return: list of sets. Each set contains elements from ``labels``.
+    :rtype: list of sets
     """
     assert len(labels) == len(data)
 
@@ -110,6 +112,8 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
     fixme: needs RetVal signature.
     :param IDs: list of object IDs.
     :param SVs: list of object BulletData instances. Corresponds to IDs.
+    :return: each list contains a unique set of overlapping objects.
+    :rtype: list of lists
     """
     # Sanity check.
     if len(IDs) != len(SVs):

@@ -438,8 +438,8 @@ class Clerk(multiprocessing.Process):
         """
         Return a 'pong'.
 
-        :return: (ok, (, ))
-        :rtype: (Bool, tuple)
+        :return: simple string to acknowledge the ping.
+        :rtype: str
         :raises: None
         """
         return RetVal(True, None, 'pong clerk')
@@ -448,8 +448,8 @@ class Clerk(multiprocessing.Process):
         """
         Return a new ID.
 
-        :return: (ok, (objID, ))
-        :rtype: (Bool, bytes)
+        :return: new ID as byte string.
+        :rtype: bytes
         :raises: None
         """
         # Return a new and unique Controller ID.
@@ -476,8 +476,8 @@ class Clerk(multiprocessing.Process):
         :param bytes objID: object ID.
         :param list cmd_booster: booster commands.
         :param list cmd_factory: factory commands.
-        :return: (True, (b'',)) or (False, error-message)
-        :rtype: (bool, (bytes, )) or (bool, str)
+        :return: **True** if no error occurred.
+        :rtype: bool
         :raises: None
         """
 
@@ -630,8 +630,8 @@ class Clerk(multiprocessing.Process):
         :param bytes RGB: texture
         :param parts.Booster boosters: list of Booster instances.
         :param parts.Factory boosters: list of Factory instances.
-        :return: (ok, template ID)
-        :rtype: (bool, bytes)
+        :return: the ID of the newly added template
+        :rtype: bytes
         :raises: None
         """
         # The number of vertices must be an integer multiple of 9 to constitute
@@ -705,8 +705,9 @@ class Clerk(multiprocessing.Process):
         'geometry': b''}
 
         :param bytes templateID: templateID
-        :return: (ok, (cs, geo, boosters, factories))
-        :rtype: (True, tuple) or (False, str)
+        :return: Dictionary with keys 'cshape', 'vert', 'uv', 'rgb', 'boosters'
+                 'factories', and 'aabb'.
+        :rtype: dict
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
@@ -796,8 +797,8 @@ class Clerk(multiprocessing.Process):
         :param bytes src: object ID of sender.
         :param bytes dst: object ID of receiver.
         :param bytes data: message to pass along.
-        :return: (ok, (object ID, ))
-        :rtype: (bool, (bytes, ))
+        :return: ID of new object
+        :rtype: bytes
         """
         # Retrieve the template.
         template = self.getTemplate(templateID)
@@ -858,8 +859,7 @@ class Clerk(multiprocessing.Process):
         Remove ``objID`` from the physics simulation.
 
         :param bytes objID: ID of object to remove.
-        :return: (ok, (msg,))
-        :rtype: tuple
+        :return: Success
         """
         ret = btInterface.deleteObject(objID)
         self.db_instance.remove({'objID': objID}, mult=True)
@@ -871,15 +871,17 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple)):
         """
-        Return the current state variables for all ``objIDs``.
+        Return the State Variables for all ``objIDs`` in a dictionary.
 
-        fixme: output changed to dict
+        The dictionary keys will be the elements of ``objIDs``, whereas the
+        values are either the State Variables (instance of ``BulletData``) or
+        *None* (if the objID does not exist).
 
-        :param bytes src: object ID of sender.
-        :param bytes dst: object ID of receiver.
-        :param bytes data: message to pass along.
-        :return: (ok, (object ID, SV))
-        :rtype: (bool, (bytes, ))
+        fixme: can this function now be simplified?
+
+        :param list(bytes) objIDS: list of objects for which to returns the SV.
+        :return: {objID_1: SV_k, ...}
+        :rtype: dict
         """
         # Get the State Variables.
         ret = btInterface.getStateVariables(objIDs)
@@ -920,8 +922,8 @@ class Clerk(multiprocessing.Process):
            be returned in that case.
 
         :param bytes templateID: template ID
-        :return: (ok, (vert, UV, RGB))
-        :rtype: (bool, (np.ndarray, np.ndarray, np.ndarray))
+        :return: Vertices, UV, and RGB data for ``objID``.
+        :rtype: {'vert': arr_float64, 'uv': arr_float64, 'rgb': arr_uint8}
         """
         # Retrieve the geometry. Return an error if the ID does not
         # exist. Note: an empty geometry field is valid.
@@ -945,8 +947,7 @@ class Clerk(multiprocessing.Process):
         If the ID does not exist return an error.
 
         :param bytes templateID: template ID
-        :return: (ok, (,))
-        :rtype: (bool, (,))
+        :return: Success
         """
         # Retrieve the geometry. Return an error if the ID does not
         # exist. Note: an empty geometry field is valid.
@@ -968,11 +969,10 @@ class Clerk(multiprocessing.Process):
 
         The force will be applied at ``rpos`` relative to the center of mass.
 
-        If the ID does not exist return an error.
+        If ``objID`` does not exist return an error.
 
         :param bytes templateID: template ID
-        :return: (ok, (b'', ))
-        :rtype: (bool, (bytes, ))
+        :return: Sucess
         """
         ret = btInterface.setForce(objID, force, rpos)
         if ret.ok:
@@ -984,12 +984,14 @@ class Clerk(multiprocessing.Process):
     def setStateVariables(self, objID: bytes,
                           data: bullet_data.BulletDataOverride):
         """
-        Set ``data`` for ``objID``.
+        Set the State Variables of ``objID`` to ``data``.
+
+        For a detailed description see ``btInterface.setOverrideAttributes``
+        since this method is only a wrapper for it.
 
         :param bytes objID: object ID
         :param BulletDataOverride data: new object attributes.
-        :return: (ok, (b'', ))
-        :rtype: (bool, (bytes, ))
+        :return: Success
         """
         ret = btInterface.setOverrideAttributes(objID, data)
         if ret.ok:
@@ -1002,9 +1004,8 @@ class Clerk(multiprocessing.Process):
         """
         Return the template ID from which ``objID`` was created.
 
-        :param bytes objID: object ID
-        :return: (ok, (templateID, ))
-        :rtype: (bool, (bytes, ))
+        :param bytes objID: object ID.
+        :return: templateID from which ``objID`` was created.
         """
         ret = btInterface.getTemplateID(objID)
         if ret.ok:
@@ -1022,8 +1023,8 @@ class Clerk(multiprocessing.Process):
            function assumes that every method takes at least one argument.
 
         :param bytes dummy: irrelevant
-        :return: (ok, (list of objIDs, ))
-        :rtype: (bool, (list(bytes), ))
+        :return: list of objIDs
+        :rtype: list(bytes)
         """
         ret = btInterface.getAllObjectIDs()
         if not ret.ok:

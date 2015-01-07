@@ -93,7 +93,7 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     :param bytes sv: encoded state variable data.
     :param bytes templateID: the template from which the object is spawned.
     :param float aabb: size of AABB.
-    :return bool: success.
+    :return: success.
     """
     # Serialise SV.
     sv = sv.toJsonDict()
@@ -133,8 +133,7 @@ def deleteObject(objID: bytes):
     Delete ``objID`` from the physics simulation.
 
     :param bytes objID: ID of object to delete.
-    :return: (ok, msg)
-    :rtype: tuple
+    :return: Success.
     """
     ret = _DB_SV.remove({'objid': objID})
     if ret['n'] == 1:
@@ -152,6 +151,8 @@ def getStateVariables(objIDs: (list, tuple)):
     entry will return *None*.
 
     fixme: output changed to dict
+    fixme: can this function now be simpler?
+
     :param iterable objIDs: list of object IDs for which to return the SV.
     :return list: list of BulletData instances.
     """
@@ -185,7 +186,8 @@ def getAABB(objIDs: (list, tuple)):
     ``objIDs``.
 
     :param iterable objIDs: list of object ID for which to return the SV.
-    :return list: list of *floats*.
+    :return: 
+    :rtype: list of *floats*.
     """
     # Sanity check.
     for _ in objIDs:
@@ -201,7 +203,7 @@ def getAABB(objIDs: (list, tuple)):
     out = {_['objid']: np.array(_['AABB'], np.float64) for _ in out}
 
     # Compile the AABB values into a list ordered by ``objIDs``. Insert a None
-    # element if a particular objID has not AABB (probably means the object was
+    # element if a particular objID has no AABB (probably means the object was
     # recently deleted).
     out = [out[_] if _ in out else None for _ in objIDs]
 
@@ -213,8 +215,10 @@ def getAABB(objIDs: (list, tuple)):
 def _updateBulletDataTuple(orig: bullet_data.BulletData,
                            new: bullet_data.BulletDataOverride):
     """
-    Overwrite all fields in ``orig`` with those of ``new`` unless they are
-    **None**.
+    Overwrite fields in ``orig`` with content of ``new``.
+
+    If one or more fields in ``new`` are *None* then the original value in
+    ``orig`` will not be modified.
 
     This is a convenience function. It avoids code duplication which was
     otherwise unavoidable because not all Leonard implementations inherit the
@@ -248,6 +252,10 @@ def update(objID: bytes, sv: bullet_data.BulletData, token=None):
 
     Return **False** if the update failed, most likely because the ``objID``
     was invalid.
+
+    .. warning::
+       Do not manually call this function unless you know what you are doing,
+       because it may well break the physics synchronisation cycle.
 
     :param bytes objID: the object for which to update the state variables.
     :param bytes sv: encoded state variables.
@@ -290,8 +298,8 @@ def getAllStateVariables():
     The keys and values of the returned dictionary correspond to the object ID
     and its associated state variables, respectively.
 
-    :return: (ok, dictionary of state variables)
-    :rtype: (bool, dict)
+    :return: dictionary of state variables with object IDs as keys.
+    :rtype: dict
     """
     # Compile all object IDs and state variables into a dictionary.
     out = {}
@@ -308,8 +316,8 @@ def getAllObjectIDs():
     Unlike ``getAllStateVariables`` this function merely returns object IDs but
     no associated data (eg. state variables).
 
-    :return: (ok, list-of-IDs).
-    :rtype: (bool, list)
+    :return: list of all object IDs present in the simulation.
+    :rtype: list
     """
     # Compile and return the list of all object IDs.
     out = [_['objid'] for _ in _DB_SV.find()]
@@ -325,7 +333,7 @@ def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
 
     :param bytes objID: the object to which the force applies.
     :param np.ndarray force: force
-    :param np.ndarray relpos: relative position of force
+    :param np.ndarray relpos: position of force relative to COM.
     :return bool: success.
     """
     # Sanity check.
@@ -348,9 +356,8 @@ def getForceAndTorque(objID: bytes):
     Return the force and torque for ``objID``.
 
     :param bytes objID: object for which to query the force and torque.
-    :returns: (True, force, torque) if the query was successful and (False,
-               None, None) if not.
-    :rtype: (bool, ndarray, ndarray)
+    :returns: force and torque as {'force': force, 'torque': torque}.
+    :rtype: dict
     """
     # Sanity check.
     if (len(objID) != config.LEN_ID):
@@ -416,12 +423,20 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
 @typecheck
 def setOverrideAttributes(objID: bytes, data: BulletDataOverride):
     """
-    Request to manually update the attributes of ``objID``.
+    Override State Variables of ``objID`` with those in ``data``.
 
-    This function will merely place the request into the SV database.
-    Leonard will read the request and apply it during the next update.
+    All *None* fields in ``data`` are ignored.
 
-    Use ``pos``=None to void the request for overwriting attributes.
+    Calling this function does not immediately update the State Variables for
+    ``objID``. Instead, it queues them whereupon the ``btInterface.update``
+    function will apply them.
+
+    If this function is invoked multiple times before ``btInterface.update``
+    runs then only the ``data`` of the last call will be applied.
+
+    .. note::
+       Do not manually call ``btInterface.update`` because it breaks the
+       synchronisation cycle for the physics update.
 
     :param bytes objID: object to update.
     :param BulletDataOverride pos: new object attributes.
@@ -467,12 +482,11 @@ def getOverrideAttributes(objID: bytes):
     """
     Retrieve the explicitly specified State Variable for ``objID``.
 
-    This function returns **None** if no attributes are available for
-    ``objID``.
+    Returns **None** if no attributes are available for ``objID``.
 
     :param bytes objID: object for which to return the attribute request.
-    :return: (ok, attributes)
-    :rtype: (bool, ndarray or None)
+    :return: return the queued State Variable (if any exists).
+    :rtype: ``BulletDataOverride``
     """
     # Sanity check.
     if len(objID) != config.LEN_ID:
@@ -512,11 +526,11 @@ def getOverrideAttributes(objID: bytes):
 @typecheck
 def getTemplateID(objID: bytes):
     """
-    Retrieve the template ID for object ``objID``.
+    Return the template ID for object ``objID``.
 
-    :param bytes objID: get the template ID of this object.
-    :return: (ok, templateID)
-    :rtype: (bool, bytes)
+    :param bytes objID: object ID
+    :return: Template ID
+    :rtype: bytes
     """
     # Sanity check.
     if len(objID) != config.LEN_ID:
@@ -551,8 +565,8 @@ def createWorkPackage(
     :param int token: token value associated with this work package.
     :param float dt: time step for this work package.
     :param int maxsteps: number of sub-steps for the time step.
-    :return: (ok, WPID)
-    :rtype: (bool, int)
+    :return: Work package ID
+    :rtype: int
     """
     # Sanity check.
     if len(objIDs) == 0:
@@ -585,11 +599,19 @@ def createWorkPackage(
 @typecheck
 def getWorkPackage(wpid: int):
     """
-    Return the SV data for all objects specified in the ``wpid`` list.
+    Return the SV data for all objects specified in ``wpid``.
+
+    This function returns a dictionary with two keys. The first key ('wpdata')
+    contains a list of ``WPData`` instances that describe the object states and
+    forces applied to them, and a 'wpmeta' field that is an instance of
+    ``WPAdmin``.
+
+    fixme: needs more efficient find query.
+    fixme: rename WPAdmin to WPMeta
 
     :param int wpid: work package ID.
-    :return: (ok, object-data, WP-admin-data)
-    :rtype: (bool, list-of-WPData, WPAdmin)
+    :return: {'wpdata': list of WPData instances, 'wpmeta': meta information}
+    :rtype: dict
     """
 
     # Retrieve the work package.

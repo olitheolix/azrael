@@ -57,7 +57,7 @@ def deleteAllGrids():
     """
     Delete all currently defined grids.
 
-    :return: None
+    :return: Success
     """
     global _DB_Grid
     client = pymongo.MongoClient()
@@ -97,7 +97,7 @@ def defineGrid(name: str, elDim: int, granularity: (int, float)):
     :param str name: grid name
     :param int elDim: number of data dimensions.
     :param float granularity: spatial granularity in Meters.
-    :return: None
+    :return: Success
     """
     # DB handle must have been initialised.
     if _DB_Grid is None:
@@ -133,7 +133,7 @@ def resetGrid(name: str):
     Reset all values of the grid ``name``.
 
     :param str name: grid name to reset.
-    :return: None
+    :return: Success
     """
     # DB handle must have been initialised.
     if _DB_Grid is None:
@@ -165,7 +165,7 @@ def deleteGrid(name: str):
     Delete the grid ``name``.
 
     :param str name: grid name.
-    :return: None
+    :return: Success
     """
     # DB handle must have been initialised.
     if _DB_Grid is None:
@@ -209,7 +209,7 @@ def setValue(name: str, pos: np.ndarray, value: np.ndarray):
     :param str name: grid name
     :param 3D-vec pos: position in grid
     :param vector value: the value to insert at ``pos``.
-    :return: None
+    :return: Success
     """
     # Leverage 'setRegion' to do the actual work. Wrap the ``value`` into a
     # 4-D data structure (the first three denote the position, the fourth holds
@@ -301,7 +301,7 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
     :param str name: grid name.
     :param 3D-vector ofs: start position in grid from where to read values.
     :param 4D-vector value: the data values.
-    :return: None
+    :return: Success
     """
     # DB handle must have been initialised.
     if _DB_Grid is None:
