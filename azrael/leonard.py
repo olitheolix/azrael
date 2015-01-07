@@ -528,7 +528,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         """
         ret = btInterface.getWorkPackage(wpid)
         assert ret.ok
-        worklist, admin = ret.data['wpdata'], ret.data['wpmeta']
+        worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
 
         # Pick an engine at random.
         engineIdx = int(np.random.randint(len(self.bulletEngines)))
@@ -558,7 +558,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
         IDs = [util.id2int(_.id) for _ in worklist]
-        engine.compute(IDs, admin.dt, admin.maxsteps)
+        engine.compute(IDs, meta.dt, meta.maxsteps)
 
         # Retrieve the objects from Bullet again and update them in the DB.
         out = {}
@@ -573,7 +573,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
             out[obj.id] = sv
 
         # Update the data and delete the WP.
-        ret = btInterface.updateWorkPackage(wpid, admin.token, out)
+        ret = btInterface.updateWorkPackage(wpid, meta.token, out)
         if not ret.ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
@@ -796,7 +796,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
     def processWorkPackage(self, wpid: int):
         ret = btInterface.getWorkPackage(wpid)
         assert ret.ok
-        worklist, admin = ret.data['wpdata'], ret.data['wpmeta']
+        worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
 
         # Log the number of collision sets to process.
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
@@ -822,7 +822,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
         IDs = [util.id2int(_.id) for _ in worklist]
-        self.bullet.compute(IDs, admin.dt, admin.maxsteps)
+        self.bullet.compute(IDs, meta.dt, meta.maxsteps)
 
         # Retrieve the objects from Bullet again and update them in the DB.
         out = {}
@@ -838,7 +838,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             out[obj.id] = sv
 
         # Update the data and delete the WP.
-        ret = btInterface.updateWorkPackage(wpid, admin.token, out)
+        ret = btInterface.updateWorkPackage(wpid, meta.token, out)
         if not ret.ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
@@ -893,7 +893,7 @@ class LeonardBaseWorkpackages(LeonardBase):
         ret = btInterface.getWorkPackage(wpid)
         if not ret.ok:
             return
-        worklist, admin = ret.data['wpdata'], ret.data['wpmeta']
+        worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
 
         # Process the objects one by one. The `out` dict will hold the updated
         # SV information.
@@ -918,4 +918,4 @@ class LeonardBaseWorkpackages(LeonardBase):
         # --------------------------------------------------------------------
         # Update the work list and mark it as completed.
         # --------------------------------------------------------------------
-        btInterface.updateWorkPackage(wpid, admin.token, out)
+        btInterface.updateWorkPackage(wpid, meta.token, out)

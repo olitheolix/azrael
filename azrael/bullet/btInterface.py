@@ -41,7 +41,7 @@ _DB_WP = None
 
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv central_force torque')
-WPAdmin = namedtuple('WPAdmin', 'token dt maxsteps')
+WPMeta = namedtuple('WPAdmin', 'token dt maxsteps')
 BulletDataOverride = bullet_data.BulletDataOverride
 
 # Return value signature.
@@ -594,9 +594,7 @@ def getWorkPackage(wpid: int):
     This function returns a dictionary with two keys. The first key ('wpdata')
     contains a list of ``WPData`` instances that describe the object states and
     forces applied to them, and a 'wpmeta' field that is an instance of
-    ``WPAdmin``.
-
-    fixme: rename WPAdmin to WPMeta
+    ``WPMeta``.
 
     :param int wpid: work package ID.
     :return: {'wpdata': list of WPData instances, 'wpmeta': meta information}
@@ -618,7 +616,7 @@ def getWorkPackage(wpid: int):
             for _ in cursor]
 
     # Put the meta data of the work package into another named tuple.
-    meta = WPAdmin(doc['token'], doc['dt'], doc['maxsteps'])
+    meta = WPMeta(doc['token'], doc['dt'], doc['maxsteps'])
     return RetVal(True, None, {'wpdata': data, 'wpmeta': meta})
 
 
