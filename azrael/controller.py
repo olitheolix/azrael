@@ -320,7 +320,7 @@ class ControllerBase(multiprocessing.Process):
         return self.serialiseAndSend('set_geometry', objID, vert, uv, rgb)
 
     @typecheck
-    def spawn(self, name: bytes, templateID: bytes,
+    def spawn(self, templateID: bytes,
               pos: (np.ndarray, list)=np.zeros(3),
               vel: (np.ndarray, list)=np.zeros(3),
               orient: (np.ndarray, list)=[0, 0, 0, 1],
@@ -328,16 +328,11 @@ class ControllerBase(multiprocessing.Process):
               axesLockLin: (list, np.ndarray)=[1, 1, 1],
               axesLockRot: (list, np.ndarray)=[1, 1, 1]):
         """
-        Spawn the ``templateID`` object at ``pos`` with velocity ``vel``.
+        Spawn a new object based on the template ``templateID``.
 
-        If ``name`` is not **None** then Clerk will launch a Controller process
-        for the newly create object. If it cannot find the correct program then
-        no object is spawned and the command returns with an error.
+        The new object will spawn at ``pos`` with velocity ``vel``,
+        orientation ``orient``.
 
-        To only spawn an object but not create a new Controller process pass
-        **None** for the ``name`` argument.
-
-        :param bytes name: specify the Controller process to launch.
         :param bytes templateID: template from which to spawn the object.
         :param 3-vec pos: object position
         :param 3-vec vel: initial velocity
@@ -353,7 +348,7 @@ class ControllerBase(multiprocessing.Process):
             scale=scale, imass=imass,
             orientation=orient, axesLockLin=axesLockLin,
             axesLockRot=axesLockRot)
-        return self.serialiseAndSend('spawn', name, templateID, sv)
+        return self.serialiseAndSend('spawn', templateID, sv)
 
     @typecheck
     def deleteObject(self, objID: bytes):

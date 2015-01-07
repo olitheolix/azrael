@@ -79,12 +79,12 @@ def test_spawn_and_delete_one_controller(ctrl_type):
 
     # Instruct Clerk to spawn a new template. The new object must have objID=2
     # because '0' is invalid and '1' was already given to the `ctrl` object.
-    ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(templateID, np.zeros(3))
     assert (ok, ctrl_id) == (True, id_2)
 
     # Attempt to spawn a non-existing template.
     templateID += 'blah'.encode('utf8')
-    ok, ctrl_id = ctrl.spawn(None, templateID, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(templateID, np.zeros(3))
     assert not ok
 
     # Exactly one object must exist at this point.
@@ -128,7 +128,7 @@ def test_spawn_and_get_state_variables(ctrl_type):
     # Instruct Clerk to spawn a Controller named 'Echo'. The call will return
     # the ID of the controller which must be '2' ('0' is invalid and '1' was
     # already given to the controller in the WS handler).
-    ok, id0 = ctrl.spawn(None, templateID, pos=np.ones(3), vel=-np.ones(3))
+    ok, id0 = ctrl.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
     assert (ok, id0) == (True, int2id(2))
 
     ok, sv = ctrl.getStateVariables(id0)
@@ -152,7 +152,7 @@ def test_setStateVariables(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Spawn one of the default templates.
-    ok, objID = ctrl.spawn(None, templateID, pos=np.ones(3), vel=-np.ones(3))
+    ok, objID = ctrl.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
     assert ok
 
     # Specify a new set of object attributes.
@@ -202,7 +202,7 @@ def test_getAllObjectIDs(ctrl_type):
     assert (ok, ret) == (True, [])
 
     # Spawn a new object.
-    ok, ret = ctrl.spawn(None, templateID, np.zeros(3))
+    ok, ret = ctrl.spawn(templateID, np.zeros(3))
     assert (ok, ret) == (True, objID_2)
 
     # The object list must now contain the ID of the just spawned object.
@@ -229,11 +229,11 @@ def test_get_template(ctrl_type):
 
     # Spawn a new object. It must have ID=2 because ID=1 was already given to
     # the controller.
-    ok, ctrl_id = ctrl.spawn(None, templateID_0, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(templateID_0, np.zeros(3))
     assert (ok, ctrl_id) == (True, id_0)
 
     # Spawn another object from a different template.
-    ok, ctrl_id = ctrl.spawn(None, templateID_1, np.zeros(3))
+    ok, ctrl_id = ctrl.spawn(templateID_1, np.zeros(3))
     assert (ok, ctrl_id) == (True, id_1)
 
     # Retrieve template of first object.
@@ -321,7 +321,7 @@ def test_create_fetch_template(ctrl_type):
         templateID, cs, vert, uv, rgb, [b0, b1], [f0])
 
     # ... and spawn an instance thereof.
-    ok, objID = ctrl.spawn(None, templateID)
+    ok, objID = ctrl.spawn(templateID)
     assert ok
 
     # Retrieve the geometry of the new object and verify it is correct.
@@ -428,7 +428,7 @@ def test_controlParts(ctrl_type):
     assert ok
 
     # ... and spawn an instance thereof.
-    ok, ctrl_id = ctrl.spawn(None, templateID_2, pos=pos_parent,
+    ok, ctrl_id = ctrl.spawn(templateID_2, pos=pos_parent,
                              vel=vel_parent, orient=orient_parent)
     assert (ok, ctrl_id) == (True, objID_1)
     del ok, ctrl_id
@@ -500,7 +500,7 @@ def test_setGeometry(ctrl_type):
     # Add a new template and spawn it.
     ok, templateID = ctrl.addTemplate(templateID, cs, vert, uv, rgb, [], [])
     assert ok
-    ok, objID = ctrl.spawn(None, templateID, pos=np.ones(3), vel=-np.ones(3))
+    ok, objID = ctrl.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
     assert ok
 
     # Query the SV to obtain the geometry checksum value.

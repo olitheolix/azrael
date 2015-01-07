@@ -124,7 +124,7 @@ def test_setStateVariables_basic(clsLeonard):
     assert not clerk.setStateVariables(id_0, data).ok
 
     # Spawn a new object. It must have ID=1.
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert (ret.ok, ret.data) == (True, id_1)
 
     # Update the object's position.
@@ -167,7 +167,7 @@ def test_setStateVariables_advanced(clsLeonard):
 
     # Instantiate a Clerk and spawn an object.
     clerk = azrael.clerk.Clerk(reset=True)
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert ret.ok
     objID = ret.data
 
@@ -216,7 +216,7 @@ def test_move_single_object(clsLeonard):
     templateID = '_templateCube'.encode('utf8')
 
     # Create a cube (a cube always exists in Azrael's template database).
-    ok, id_0 = ctrl.spawn(None, templateID, pos=[0, 0, 0], vel=[0, 0, 0])
+    ok, id_0 = ctrl.spawn(templateID, pos=[0, 0, 0], vel=[0, 0, 0])
     assert ok
 
     # Advance the simulation by 1s and verify that nothing has moved.
@@ -261,9 +261,9 @@ def test_move_two_objects_no_collision(clsLeonard):
     templateID = '_templateCube'.encode('utf8')
 
     # Create two cubic objects.
-    ok, id_0 = ctrl.spawn(None, templateID, pos=[0, 0, 0], vel=[1, 0, 0])
+    ok, id_0 = ctrl.spawn(templateID, pos=[0, 0, 0], vel=[1, 0, 0])
     assert ok
-    ok, id_1 = ctrl.spawn(None, templateID, pos=[0, 10, 0], vel=[0, -1, 0])
+    ok, id_1 = ctrl.spawn(templateID, pos=[0, 10, 0], vel=[0, -1, 0])
     assert ok
 
     # Advance the simulation by 1s and query the states of both objects.
@@ -305,9 +305,9 @@ def test_worker_respawn():
     templateID = '_templateCube'.encode('utf8')
 
     # Create two cubic objects.
-    ok, id_0 = ctrl.spawn(None, templateID, pos=[0, 0, 0], vel=[1, 0, 0])
+    ok, id_0 = ctrl.spawn(templateID, pos=[0, 0, 0], vel=[1, 0, 0])
     assert ok
-    ok, id_1 = ctrl.spawn(None, templateID, pos=[0, 10, 0], vel=[0, -1, 0])
+    ok, id_1 = ctrl.spawn(templateID, pos=[0, 10, 0], vel=[0, -1, 0])
     assert ok
 
     # Advance the simulation by 1s, but use many small time steps. This ensures
@@ -534,7 +534,7 @@ def test_force_grid(clsLeonard):
     templateID = '_templateCube'.encode('utf8')
 
     # Create a cube (a cube always exists in Azrael's template database).
-    ok, id_0 = ctrl.spawn(None, templateID, pos=[0, 0, 0], vel=[0, 0, 0])
+    ok, id_0 = ctrl.spawn(templateID, pos=[0, 0, 0], vel=[0, 0, 0])
     assert ok
 
     # Advance the simulation by 1s and verify that nothing has moved.

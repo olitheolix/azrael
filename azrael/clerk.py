@@ -216,10 +216,6 @@ class Clerk(multiprocessing.Process):
         # Initialise the SV database.
         btInterface.initSVDB(reset)
 
-        # A dictionary of all controllers launched by this Clerk. The object ID
-        # is the dictionary key and the Unise PID the value.
-        self.processes = {}
-
     def runCommand(self, fun_decode, fun_process, fun_encode):
         """
         Wrapper function to process a client request.
@@ -595,9 +591,9 @@ class Clerk(multiprocessing.Process):
 
             # Spawn the actual object that this factory can create. Retain
             # the objID as it will be returned to the caller.
-            ok, msg, objID = self.spawn(None, this.templateID, sv)
-            if ok:
-                objIDs.append(objID)
+            ret = self.spawn(this.templateID, sv)
+            if ret.ok:
+                objIDs.append(ret.data)
 
         # Success. Return the IDs of all spawned objects.
         return RetVal(True, None, objIDs)
@@ -737,20 +733,16 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, ret)
 
     @typecheck
-    def spawn(self, ctrl_name: bytes, templateID: bytes,
-              sv: bullet_data.BulletData):
+    def spawn(self, templateID: bytes, sv: bullet_data.BulletData):
         """
         Spawn a new object based on ``templateID``.
-
-        Automatically launch a new ``ctrl_name`` process.
 
         The new object will get ``sv`` as the initial state vector albeit the
         collision shape will be overwritten with that specified in the
         template.
 
-        :param bytes src: object ID of sender.
-        :param bytes dst: object ID of receiver.
-        :param bytes data: message to pass along.
+        :param bytes templateID: template from which to spawn new object.
+        :param bytes sv: State Variables of new object.
         :return: ID of new object
         :rtype: bytes
         """
@@ -764,16 +756,6 @@ class Clerk(multiprocessing.Process):
         # version. This has no effect on the other quantities including
         # position and speed. However, this all rather hackey at the moment.
         sv.cshape[:] = np.fromstring(template['cshape'])
-
-        # Determine the full path to the Controller script. Return with an
-        # error if no matching script was found.
-        if ctrl_name is not None:
-            prog = self.getControllerClass(ctrl_name)
-            if prog is None:
-                return RetVal(False, 'Unknown Controller Name', None)
-        else:
-            # No dedicated Controller process was requested. Do nothing.
-            prog = None
 
         # Request unique object ID.
         new_id = util.int2id(self.getUniqueID())
@@ -794,11 +776,6 @@ class Clerk(multiprocessing.Process):
         del doc['_id']
         self.db_instance.insert(doc)
         del doc
-
-        if prog is not None:
-            # Start the Python Controller.
-            self.processes[new_id] = PythonInstance(prog, new_id)
-            self.processes[new_id].start()
 
         # Add the object to the physics simulation.
         btInterface.spawn(new_id, sv, templateID, template['aabb'])

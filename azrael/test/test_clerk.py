@@ -164,20 +164,15 @@ def test_spawn():
     # Default object.
     sv = bullet_data.BulletData()
 
-    # Unknown controller name.
-    templateID = '_templateNone'.encode('utf8')
-    ret = clerk.spawn('aaaa'.encode('utf8'), templateID, sv)
-    assert (ret.ok, ret.msg) == (False, 'Unknown Controller Name')
-
     # Invalid templateID.
     templateID = np.int64(100).tostring()
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert (ret.ok, ret.msg) == (False, 'Invalid Template ID')
 
     # All parameters are now valid. This must spawn an object with ID=1
     # because this is the first ID in an otherwise pristine system.
     templateID = '_templateNone'.encode('utf8')
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert (ret.ok, ret.data) == (True, int2id(1))
 
     print('Test passed')
@@ -205,9 +200,9 @@ def test_delete():
     # Spawn two default objects.
     sv = bullet_data.BulletData()
     templateID = '_templateNone'.encode('utf8')
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert (ret.ok, ret.data) == (True, objID_2)
 
     # Two objects must now exist.
@@ -253,7 +248,7 @@ def test_get_statevar():
     assert (ret.ok, ret.data) == (True, {int2id(10): None})
 
     # Spawn a new object. It must have ID=1.
-    ret = clerk.spawn(None, templateID, sv_1)
+    ret = clerk.spawn(templateID, sv_1)
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # Retrieve the SV for a non-existing ID --> must fail.
@@ -266,7 +261,7 @@ def test_get_statevar():
     assert ret.data == {objID_1: sv_1}
 
     # Spawn a second object.
-    ret = clerk.spawn(None, templateID, sv_2)
+    ret = clerk.spawn(templateID, sv_2)
     assert (ret.ok, ret.data) == (True, objID_2)
 
     # Retrieve the state variables for both objects individually.
@@ -304,7 +299,7 @@ def test_set_force():
 
     # Spawn a new object. It must have ID=1.
     templateID = '_templateNone'.encode('utf8')
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert (ret.ok, ret.data) == (True, id_1)
 
     # Apply the force.
@@ -480,11 +475,11 @@ def test_get_object_template_id():
     clerk = azrael.clerk.Clerk(reset=True)
 
     # Spawn a new object. It must have ID=1.
-    ret = clerk.spawn(None, templateID_0, sv)
+    ret = clerk.spawn(templateID_0, sv)
     assert (ret.ok, ret.data) == (True, id_0)
 
     # Spawn another object from a different template.
-    ret = clerk.spawn(None, templateID_1, sv)
+    ret = clerk.spawn(templateID_1, sv)
     assert (ret.ok, ret.data) == (True, id_1)
 
     # Retrieve template of first object.
@@ -519,7 +514,7 @@ def test_controlParts_invalid_commands():
 
     # Create a fake object. We will not need it but for this test one must
     # exist as other commands would otherwise fail.
-    ret = clerk.spawn(None, templateID_1, sv)
+    ret = clerk.spawn(templateID_1, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # Create commands for a Booster and a Factory.
@@ -566,7 +561,7 @@ def test_controlParts_invalid_commands():
 
     # ... and spawn an instance thereof.
     sv = bullet_data.BulletData()
-    ret = clerk.spawn(None, templateID_2, sv)
+    ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_2)
 
     # Create the commands to let each factory spawn an object.
@@ -628,7 +623,7 @@ def test_controlParts_Boosters_notmoving():
     assert clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [b0, b1], []).ok
 
     # Spawn the object.
-    ret = clerk.spawn(None, templateID_2, sv)
+    ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # ------------------------------------------------------------------------
@@ -717,7 +712,7 @@ def test_controlParts_Factories_notmoving():
     assert clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [], [f0, f1]).ok
 
     # ... and spawn an instance thereof.
-    ret = clerk.spawn(None, templateID_2, sv)
+    ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # ------------------------------------------------------------------------
@@ -804,7 +799,7 @@ def test_controlParts_Factories_moving():
     assert clerk.addTemplate(templateID_2, cs, vert, uv, rgb, [], [f0, f1]).ok
 
     # ... and spawn an instance thereof.
-    ret = clerk.spawn(None, templateID_2, sv)
+    ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # ------------------------------------------------------------------------
@@ -916,7 +911,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     assert clerk.addTemplate(*args).ok
 
     # ... and spawn an instance thereof.
-    ret = clerk.spawn(None, templateID_2, sv)
+    ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # ------------------------------------------------------------------------
@@ -990,7 +985,7 @@ def test_get_all_objectids():
     assert (ret.ok, ret.data) == (True, [])
 
     # Spawn a new object.
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # The object list must now contain the ID of the just spawned object.
@@ -998,7 +993,7 @@ def test_get_all_objectids():
     assert (ret.ok, ret.data) == (True, [objID_1])
 
     # Spawn another object.
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert (ret.ok, ret.data) == (True, objID_2)
 
     # The object list must now contain the ID of both spawned objects.
@@ -1035,7 +1030,7 @@ def test_getGeometry():
     assert not clerk.getGeometry(int2id(1)).ok
 
     # Spawn an object from the previously added template.
-    ret = clerk.spawn(None, templateID, sv)
+    ret = clerk.spawn(templateID, sv)
     assert ret.ok
     objID = ret.data
 
@@ -1079,9 +1074,9 @@ def test_instanceDB_checksum():
     assert clerk.addTemplate(templateID, cs, vert, uv, rgb, [], []).ok
 
     # Spawn two objects from the previously defined template.
-    (ok, msg, objID0) = clerk.spawn(None, templateID, sv)
+    (ok, msg, objID0) = clerk.spawn(templateID, sv)
     assert ok
-    (ok, msg, objID1) = clerk.spawn(None, templateID, sv)
+    (ok, msg, objID1) = clerk.spawn(templateID, sv)
     assert ok
 
     # Query the checksum of the objects.

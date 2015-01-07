@@ -428,25 +428,19 @@ def FromClerk_GetStateVariable_Decode(data: dict):
 
 @typecheck
 def ToClerk_Spawn_Encode(
-        name: bytes, templateID: bytes, sv: bullet_data.BulletData):
-    return True, {'name': name, 'templateID': templateID,
-                  'sv': sv.toJsonDict()}
+        templateID: bytes, sv: bullet_data.BulletData):
+    return True, {'templateID': templateID, 'sv': sv.toJsonDict()}
 
 
 @typecheck
 def ToClerk_Spawn_Decode(data: dict):
-    if data['name'] is None:
-        ctrl_name = None
-    else:
-        ctrl_name = bytes(data['name'])
-
     templateID = bytes(data['templateID'])
     sv = bullet_data.fromJsonDict(data['sv'])
 
     if sv is None:
         return False, 'Invalid State Variable data'
     else:
-        return True, (ctrl_name, templateID, sv)
+        return True, (templateID, sv)
 
 
 @typecheck
