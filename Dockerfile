@@ -57,4 +57,4 @@ VOLUME /demo
 
 # Default command: start MongoDB and Azrael.
 CMD /usr/bin/mongod --smallfiles --dbpath /demo/mongodb \
-    & ./start.py --noviewer --numcubes 4,4,1
+    & ./demo_default.py --noviewer --numcubes 4,4,1
