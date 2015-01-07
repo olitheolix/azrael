@@ -596,7 +596,6 @@ def getWorkPackage(wpid: int):
     forces applied to them, and a 'wpmeta' field that is an instance of
     ``WPAdmin``.
 
-    fixme: needs more efficient find query.
     fixme: rename WPAdmin to WPMeta
 
     :param int wpid: work package ID.
@@ -613,11 +612,10 @@ def getWorkPackage(wpid: int):
 
     # Compile a list of WPData objects; one for every object in the WP. Skip
     # non-existing objects.
-    data = [_DB_SV.find_one({'objid': _}) for _ in objIDs]
-    data = [_ for _ in data if _ is not None]
+    cursor = _DB_SV.find({'objid': {'$in': objIDs}})
     data = [WPData(_['objid'], bullet_data.fromJsonDict(_['sv']),
                    _['central_force'], _['torque'])
-            for _ in data]
+            for _ in cursor]
 
     # Put the meta data of the work package into another named tuple.
     meta = WPAdmin(doc['token'], doc['dt'], doc['maxsteps'])

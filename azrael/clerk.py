@@ -877,8 +877,6 @@ class Clerk(multiprocessing.Process):
         values are either the State Variables (instance of ``BulletData``) or
         *None* (if the objID does not exist).
 
-        fixme: can this function now be simplified?
-
         :param list(bytes) objIDS: list of objects for which to returns the SV.
         :return: {objID_1: SV_k, ...}
         :rtype: dict
