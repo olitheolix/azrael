@@ -67,7 +67,7 @@ def test_ping():
 @pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
 def test_spawn_and_delete_one_controller(ctrl_type):
     """
-    Ask Clerk to spawn one (echo) controller.
+    Ask Clerk to spawn one object.
     """
     id_1 = int2id(1)
 

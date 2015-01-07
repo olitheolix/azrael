@@ -320,36 +320,6 @@ class Clerk(multiprocessing.Process):
                 self.returnErr(self.last_addr, {},
                                'Invalid command <{}>'.format(cmd))
 
-    @typecheck
-    def getControllerClass(self, ctrl_name: bytes):
-        """
-        Return the full path name of the Python script for ``ctrl_name``.
-
-        Return **None** if no Python script corresponds to ``ctrl_name``.
-
-        .. note::
-           This function is currently only a proof-of-concept to automatically
-           launch controller processes. As such it makes certain assumptions
-           (eg. location of controller scripts).
-
-        :param str ctrl_name: Controller name (eg. 'Echo').
-        :return: Name (with full path) to Python script.
-        :rtype: str
-        :raises: None
-        """
-
-        # Build the path to the Controller scripts (hard coded for now).
-        this_dir = os.path.dirname(os.path.abspath(__file__))
-        p = os.path.join(this_dir, '..', 'controllers')
-
-        # Pick the correct script.
-        if ctrl_name == 'Echo'.encode('utf8'):
-            return os.path.join(p, 'controller_cube.py')
-        elif ctrl_name == 'EchoBoost'.encode('utf8'):
-            return os.path.join(p, 'controller_cube_with_booster.py')
-        else:
-            return None
-
     def getUniqueID(self):
         """
         Return unique object ID.
