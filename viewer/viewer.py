@@ -91,6 +91,27 @@ def perspective(fov, ar, near, far):
     return mat.astype(np.float32)
 
 
+def getGeometryCube(pos=np.zeros(3)):
+    buf_vert = 0.5 * np.array([
+        -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
+        +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
+        +1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,   +1.0, -1.0, -1.0,
+        +1.0, +1.0, -1.0,   +1.0, -1.0, -1.0,   -1.0, -1.0, -1.0,
+        -1.0, -1.0, -1.0,   -1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,
+        +1.0, -1.0, +1.0,   -1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,
+        -1.0, +1.0, +1.0,   -1.0, -1.0, +1.0,   +1.0, -1.0, +1.0,
+        +1.0, +1.0, +1.0,   +1.0, -1.0, -1.0,   +1.0, +1.0, -1.0,
+        +1.0, -1.0, -1.0,   +1.0, +1.0, +1.0,   +1.0, -1.0, +1.0,
+        +1.0, +1.0, +1.0,   +1.0, +1.0, -1.0,   -1.0, +1.0, -1.0,
+        +1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,   -1.0, +1.0, +1.0,
+        +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0])
+
+    N = 3
+    M = len(buf_vert) // N
+    buf_vert = np.reshape(buf_vert, (M, N)) + pos
+    return buf_vert.flatten()
+
+
 class ImageWriter(QtCore.QObject):
     """
     Write screenshots to file.
@@ -257,9 +278,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Camera instance.
         self.camera = None
 
-        # Copy of all SVs from last frame.
-        self.backup_allSVs = {}
-
+        # Collection of old and new state variables.
+        self.oldSVs, self.newSVs = {}, {}
+        
         # Address of Clerk.
         self.addr_server = addr
 
@@ -319,66 +340,67 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # ... and start the thread.
         self.thread.start()
 
-    def getGeometryCube(self, pos=np.zeros(3)):
-        buf_vert = 0.5 * np.array([
-            -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
-            +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
-            +1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,   +1.0, -1.0, -1.0,
-            +1.0, +1.0, -1.0,   +1.0, -1.0, -1.0,   -1.0, -1.0, -1.0,
-            -1.0, -1.0, -1.0,   -1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,
-            +1.0, -1.0, +1.0,   -1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,
-            -1.0, +1.0, +1.0,   -1.0, -1.0, +1.0,   +1.0, -1.0, +1.0,
-            +1.0, +1.0, +1.0,   +1.0, -1.0, -1.0,   +1.0, +1.0, -1.0,
-            +1.0, -1.0, -1.0,   +1.0, +1.0, +1.0,   +1.0, -1.0, +1.0,
-            +1.0, +1.0, +1.0,   +1.0, +1.0, -1.0,   -1.0, +1.0, -1.0,
-            +1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,   -1.0, +1.0, +1.0,
-            +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0])
-
-        N = 3
-        M = len(buf_vert) // N
-        buf_vert = np.reshape(buf_vert, (M, N)) + pos
-        return buf_vert.flatten()
+    def hasGeometryChanged(self, objID):
+        """
+        Return *True* if the geometry of ``objID`` has changed.
+        """
+        if objID not in self.oldSVs:
+            return False
+        
+        cs_old = self.newSVs[objID].checksumGeometry
+        cs_new = self.oldSVs[objID].checksumGeometry
+        return (cs_old != cs_new)
 
     def loadGeometry(self):
+        # Retrieve all object IDs.
         ok, objIDs = self.ctrl.getAllObjectIDs()
-        ok, allSVs = self.ctrl.getStateVariables(objIDs)
+        if not ok:
+            print('Could not query the object IDs -- Abort')
+            self.close()
 
-        for objID in allSVs:
-            cs_old = allSVs[objID].checksumGeometry
-            if objID in self.backup_allSVs:
-                cs_new = self.backup_allSVs[objID].checksumGeometry
-            else:
-                cs_new = None
-            if cs_new is not None:
-                geometry_unchanged = (cs_old == cs_new)
-            else:
-                geometry_unchanged = False
-            del cs_old, cs_new
+        # Retrieve the state variables of all objects.
+        self.oldSVs = self.newSVs
+        with util.Timeit('getSV') as timeit:
+            ok, self.newSVs = self.ctrl.getStateVariables(objIDs)
+        if not ok:
+            print('Could not retrieve the state variables -- Abort')
+            self.close()
 
-            # Backup the currnet SV.
-            self.backup_allSVs[objID] = allSVs[objID]
+        # Delete those local objects that have been removed in Azrael.
+        for objID in self.oldSVs:
+            # Ignore the player object.
+            if objID == self.player_id:
+                continue
 
+            if objID in self.newSVs:
+                continue
+
+            gl.glDeleteTextures(self.textureBuffer[objID])
+#            gl.glDeleteBuffers(2, [1, 2])
+            del self.numVertices[objID]
+            del self.vertex_array_object[objID]
+            del self.textureBuffer[objID]
+
+        for objID in self.newSVs:
             # Do not add anything if it is the player object itself.
             if objID == self.player_id:
                 continue
 
-            # Skip the object if we already have its geometry and it has not
-            # changed.
-            if (objID in self.objIDs) and geometry_unchanged:
+            # Skip the object if we already have downloaded its geometry and it
+            # has not changed.
+            if (objID in self.oldSVs) and not self.hasGeometryChanged(objID):
                 continue
 
-            # Query the object geometry.
+            # Download the latest geometry for this object.
             ok, (buf_vert, buf_uv, buf_rgb) = self.ctrl.getGeometry(objID)
             if not ok:
                 continue
 
             # This is to mask a bug in Clacks: newly spawned objects can become
-            # active before their geometry hits the DB.
+            # active before their geometry data hits the DB.
+            # fixme: now unnecessary?
             if len(buf_vert) == 0:
                 continue
-
-            # Add to set.
-            self.objIDs.add(objID)
 
             # fixme: getGeometry must provide this (what about getGeometry?).
             width = height = int(np.sqrt(len(buf_rgb) // 3))
@@ -486,56 +508,61 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             print('-' * 79 + '\n')
             sys.exit(1)
 
+    def defineProjectileTemplate(self):
+        """
+        Add template for all projectiles and return its name.
+
+        Projectiles are cubes.
+        """
+        # Geometry.
+        buf_vert = getGeometryCube()
+        cs = [4, 1, 1, 1]
+        uv = np.array([], np.float64)
+        rgb = np.array([], np.uint8)
+
+        # Create the template with name 'cube'.
+        t_projectile = 'cube'.encode('utf8')
+        args = t_projectile, cs, buf_vert, uv, rgb, [], []
+        ok, _ = self.ctrl.addTemplate(*args)
+            
+        # The template was probably already defined (eg by a nother instance of
+        # this script).
+        if not ok:
+            print('Could not add new template')
+
+        print('Created template <{}>'.format(t_projectile))
+        return t_projectile
+
     def _initializeGL(self):
         """
         Create the graphic buffers and compile the shaders.
         """
-        # Make sure the system is live.
+        # Connect to Azrael.
         self.ctrl = controller.ControllerBase(addr_clerk=self.addr_server)
         self.ctrl.setupZMQ()
 
         print('Client connected')
 
-        # Add template for projectiles. The geometry and collision shape are
-        # those of a cube.
-        buf_vert = self.getGeometryCube()
-        cs = [4, 1, 1, 1]
-        uv = np.array([], np.float64)
-        rgb = np.array([], np.uint8)
-        self.t_projectile = 'cube'.encode('utf8')
-        ok, _ = self.ctrl.getTemplate(self.t_projectile)
-        if not ok:
-            ok, _ = self.ctrl.addTemplate(
-                self.t_projectile, cs, buf_vert, uv, rgb, [], [])
-            if not ok:
-                print('Could not add new object template')
-                self.close()
-            else:
-                print('Created template <{}>'.format(self.t_projectile))
-            del buf_vert, cs
-        else:
-            print('Template {} already exists'.format(self.t_projectile))
-        del ok, _
+        # Define a template for projectiles.
+        self.t_projectile = self.defineProjectileTemplate()
 
-        # Create the camera. In z-direction place it in between the Cubes and
-        # Sphere generated  by the 'start' script, but out of their way to the
-        # side.
+        # Create the camera and place it (in the z-direction) between the
+        # Cubes and Sphere generated  by the 'start' script, but out of their
+        # way to the side.
         initPos = [-25, 0, 0]
         self.camera = Camera(initPos, 90 * np.pi / 180, 0)
 
-        # Spawn the player object.
-        ok, tmp = self.ctrl.spawn(
-            self.t_projectile, initPos, np.zeros(3))
+        # Spawn the player object (it has the same shape as a projectile).
+        ok, tmp = self.ctrl.spawn(self.t_projectile, initPos, np.zeros(3))
         if not ok:
             print('Cannot spawn player object (<{}>)'.format(tmp))
             self.close()
-        else:
-            self.player_id = tmp
+
+        self.player_id = tmp
         del ok, tmp
         print('Spawned player object <{}>'.format(self.player_id))
 
         # Initialise instance variables.
-        self.objIDs = set()
         self.numVertices = {}
         self.vertex_array_object = {}
         self.textureBuffer = {}
@@ -591,30 +618,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Clear the scene.
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
-        # Query the State Variables for every object known to this Viewer (this
-        # may include objects that have been deleted in the mean time).
-        with util.Timeit('getSV') as timeit:
-            allObjectIDs = list(self.objIDs)
-            ok, allSVs = self.ctrl.getStateVariables(allObjectIDs)
-        if not ok:
-            print('Could not retrieve SV')
-            sys.exit()
-
         with util.Timeit('loop') as timeit:
-            for idx, objID in enumerate(allObjectIDs):
-                # Convenience.
-                sv = allSVs[objID]
-
-                # Skip all objects that do not exists anymore according to
-                # Azrael.
-                if sv is None:
-                    if objID in self.objIDs:
-                        self.objIDs.discard(objID)
-                        del self.numVertices[objID]
-                        del self.vertex_array_object[objID]
-                        del self.textureBuffer[objID]
-
-                    # Proceed to next object.
+            for objID, sv in self.newSVs.items():
+                # Do not add anything if it is the player object itself.
+                if objID == self.player_id:
                     continue
 
                 # Build the scaling matrix.
