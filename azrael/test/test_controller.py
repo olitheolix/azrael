@@ -111,7 +111,7 @@ def test_spawn_and_delete_one_controller(ctrl_type):
 @pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
 def test_spawn_and_get_state_variables(ctrl_type):
     """
-    Spawn a new Controller and query its state variables.
+    Spawn a new object and query its state variables.
     """
     # Constants and parameters for this test.
     templateID = '_templateNone'.encode('utf8')
@@ -221,25 +221,24 @@ def test_get_template(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
-    id_0, id_1 = int2id(1), int2id(2)
+    id_1, id_2 = int2id(1), int2id(2)
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
 
-    # Spawn a new object. It must have ID=2 because ID=1 was already given to
-    # the controller.
+    # Spawn a new object. Its ID must be 1.
     ok, objID = ctrl.spawn(templateID_0, np.zeros(3))
-    assert (ok, objID) == (True, id_0)
+    assert (ok, objID) == (True, id_1)
 
     # Spawn another object from a different template.
     ok, objID = ctrl.spawn(templateID_1, np.zeros(3))
-    assert (ok, objID) == (True, id_1)
+    assert (ok, objID) == (True, id_2)
 
     # Retrieve template of first object.
-    ok, ret = ctrl.getTemplateID(id_0)
+    ok, ret = ctrl.getTemplateID(id_1)
     assert (ok, ret) == (True, templateID_0)
 
     # Retrieve template of second object.
-    ok, ret = ctrl.getTemplateID(id_1)
+    ok, ret = ctrl.getTemplateID(id_2)
     assert (ok, ret) == (True, templateID_1)
 
     # Attempt to retrieve a non-existing object.
@@ -446,8 +445,7 @@ def test_controlParts(ctrl_type):
     cmd_3 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
 
     # Send the commands and ascertain that the returned object IDs now exist in
-    # the simulation. These IDS must be '3' and '4', since ID 1 was already
-    # given to the controller object.
+    # the simulation. These IDs must be '2' and '3'.
     ok, spawnIDs = ctrl.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
     assert (ok, len(spawnIDs)) == (True, 2)
     assert spawnIDs == [int2id(2), int2id(3)]
@@ -529,16 +527,14 @@ def test_setGeometry(ctrl_type):
 
 
 if __name__ == '__main__':
-    transport_type = 'Websocket'
-    test_ping()
-    test_spawn_and_delete_one_controller(transport_type)
+    _transport_type = 'Websocket'
 
-    test_setStateVariables(transport_type)
-    test_setGeometry(transport_type)
-    test_spawn_and_delete_one_controller(transport_type)
-    test_spawn_and_get_state_variables(transport_type)
+    test_setStateVariables(_transport_type)
+    test_setGeometry(_transport_type)
+    test_spawn_and_delete_one_controller(_transport_type)
+    test_spawn_and_get_state_variables(_transport_type)
     test_ping()
-    test_get_template(transport_type)
-    test_controlParts(transport_type)
-    test_getAllObjectIDs(transport_type)
-    test_create_fetch_template(transport_type)
+    test_get_template(_transport_type)
+    test_controlParts(_transport_type)
+    test_getAllObjectIDs(_transport_type)
+    test_create_fetch_template(_transport_type)
