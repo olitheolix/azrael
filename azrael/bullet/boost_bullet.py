@@ -352,11 +352,11 @@ class PyBulletPhys():
         return RetVal(True, None, cshape)
 
     @typecheck
-    def createRigidBody(self, objID, obj):
+    def createRigidBody(self, objID: int, obj: BulletData):
         """
         Create a new rigid body ``obj`` with ``objID``.
 
-        :param bytes objID: ID of new rigid body.
+        :param int objID: ID of new rigid body.
         :param BulletData obj: State Variables of rigid body.
         :return: Success
         """
