@@ -109,7 +109,6 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
     """
     Return potential collision sets among all ``IDs`` and associated ``SVs``.
 
-    fixme: needs RetVal signature.
     :param IDs: list of object IDs.
     :param SVs: list of object BulletData instances. Corresponds to IDs.
     :return: each list contains a unique set of overlapping objects.
