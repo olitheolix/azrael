@@ -455,59 +455,51 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         """
         Advance the simulation by ``dt`` using at most ``maxsteps``.
 
-        This method will query all SV objects from the database and update
-        them in the Bullet engine. Then it defers to Bullet for the physics
-        update. Finally, it replaces the SV fields with the user specified
-        values (only applies if the user called 'setStateVariables') and writes
-        the results back to the database.
+        This method moves all SV objects from the database to the Bullet
+        engine. Then it defers to Bullet for the physics update. Finally, it
+        replaces the SV fields with the user specified values (only applies if
+        the user called 'setStateVariables') and writes the results back to the
+        database.
 
         :param float dt: time step in seconds.
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
-
         # Retrieve the SV for all objects.
-        ret = btInterface.getAllStateVariables()
-        allSV = ret.data
-
-        # Compile a dedicated list of IDs and their SVs for the collision
-        # detection algorithm.
-        IDs = list(allSV.keys())
-        sv = [allSV[_] for _ in IDs]
+        allSVs = btInterface.getAllStateVariables()
+        if not allSVs.ok:
+            self.logit.warning('Could not retrieve the SVs')
+            return
 
         # Compute the collision sets.
+        allSVs = allSVs.data
         with util.Timeit('CCS') as timeit:
-            ret = computeCollisionSetsAABB(IDs, sv)
-        if not ret.ok:
+            labels = list(allSVs.keys())
+            SVs = list(allSVs.values())
+            collSets = computeCollisionSetsAABB(labels, SVs)
+            del labels, SVs
+        if not collSets.ok:
             self.logit.error('ComputeCollisionSetsAABB returned an error')
             sys.exit(1)
-        collSets = ret.data
+        collSets = collSets.data
 
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
 
-        # Convenience.
-        cwp = btInterface.createWorkPackage
-
         # Update the token value for this iteration.
         self.token += 1
 
+        # Put each collision set into its own Work Package.
         all_wpids = []
-        # Process all subsets individually.
+        cwp = btInterface.createWorkPackage
         for subset in collSets:
-            # Compile the subset dictionary for the current collision set.
-            coll_SV = {_: allSV[_] for _ in subset}
-
-            # Upload the work package into the DB.
             ret = cwp(list(subset), self.token, dt, maxsteps)
+            if ret.ok:
+                all_wpids.append(ret.data)
 
-            # Keep track of the WPID.
-            all_wpids.append(ret.data)
-
-        # Process each WP individually.
+        # Schedule all Work Packages for processing and wait until it is done.
         for wpid in all_wpids:
             self.processWorkPackage(wpid)
-
         self.waitUntilWorkpackagesComplete(all_wpids, self.token)
 
     def waitUntilWorkpackagesComplete(self, all_wpids, token):
@@ -609,7 +601,7 @@ class WorkerManager(multiprocessing.Process):
 
     def _run(self):
         """
-        Start the inital collection of Workers and ensure the remain alive.
+        Start the initial collection of Workers and ensure they remain alive.
         """
         # Rename the process.
         setproctitle.setproctitle('killme ' + self.__class__.__name__)
@@ -798,7 +790,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         assert ret.ok
         worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
 
-        # Log the number of collision sets to process.
+        # Log the number of collision-sets in the current Work Package.
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
 
         # Iterate over all objects and update them.
