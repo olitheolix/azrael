@@ -274,7 +274,7 @@ class LeonardBase(multiprocessing.Process):
             t0 = time.time()
 
             # Trigger the physics update step.
-            with util.Timeit('step') as timeit:
+            with util.Timeit('Leonard.step') as timeit:
                 self.step(0.1, 10)
 
 
@@ -466,14 +466,15 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
                              ``dt`` update.
         """
         # Retrieve the SV for all objects.
-        allSVs = btInterface.getAllStateVariables()
-        if not allSVs.ok:
-            self.logit.warning('Could not retrieve the SVs')
-            return
+        with util.Timeit('Leonard.getAllSVs') as timeit:
+            allSVs = btInterface.getAllStateVariables()
+            if not allSVs.ok:
+                self.logit.warning('Could not retrieve the SVs')
+                return
 
         # Compute the collision sets.
         allSVs = allSVs.data
-        with util.Timeit('CCS') as timeit:
+        with util.Timeit('Leonard.CCS') as timeit:
             labels = list(allSVs.keys())
             SVs = list(allSVs.values())
             collSets = computeCollisionSetsAABB(labels, SVs)
@@ -490,17 +491,21 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         self.token += 1
 
         # Put each collision set into its own Work Package.
-        all_wpids = []
-        cwp = btInterface.createWorkPackage
-        for subset in collSets:
-            ret = cwp(list(subset), self.token, dt, maxsteps)
-            if ret.ok:
-                all_wpids.append(ret.data)
+        with util.Timeit('Leonard.CreateWPs') as timeit:
+            all_wpids = []
+            cwp = btInterface.createWorkPackage
+            for subset in collSets:
+                ret = cwp(list(subset), self.token, dt, maxsteps)
+                if ret.ok:
+                    all_wpids.append(ret.data)
 
         # Schedule all Work Packages for processing and wait until it is done.
-        for wpid in all_wpids:
-            self.processWorkPackage(wpid)
-        self.waitUntilWorkpackagesComplete(all_wpids, self.token)
+        with util.Timeit('Leonard.ProcessWPs_1') as timeit:
+            for wpid in all_wpids:
+                self.processWorkPackage(wpid)
+
+        with util.Timeit('Leonard.ProcessWPs_2') as timeit:
+            self.waitUntilWorkpackagesComplete(all_wpids, self.token)
 
     def waitUntilWorkpackagesComplete(self, all_wpids, token):
         """
@@ -774,7 +779,8 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
                 sock.send(b'')
                 wpid = sock.recv()
                 wpid = np.fromstring(wpid, np.int64)
-                self.processWorkPackage(int(wpid))
+                with util.Timeit('Worker.0_All') as timeit:
+                    self.processWorkPackage(int(wpid))
                 numSteps += 1
 
             # Log a last status message and terminate.
@@ -786,7 +792,8 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
             print('Aborted Worker {}'.format(self.workerID))
 
     def processWorkPackage(self, wpid: int):
-        ret = btInterface.getWorkPackage(wpid)
+        with util.Timeit('Worker.1_fetchWP') as timeit:
+            ret = btInterface.getWorkPackage(wpid)
         assert ret.ok
         worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
 
@@ -794,43 +801,48 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
 
         # Iterate over all objects and update them.
-        for obj in worklist:
-            sv = obj.sv
+        with util.Timeit('Worker.2_applyforce') as timeit:
+            for obj in worklist:
+                sv = obj.sv
 
-            # Update the object in Bullet.
-            btID = util.id2int(obj.id)
-            self.bullet.setObjectData(btID, sv)
+                # Update the object in Bullet.
+                btID = util.id2int(obj.id)
+                self.bullet.setObjectData(btID, sv)
 
-            # Retrieve the force vector and tell Bullet to apply it.
-            force = np.fromstring(obj.central_force)
-            torque = np.fromstring(obj.torque)
+                # Retrieve the force vector and tell Bullet to apply it.
+                force = np.fromstring(obj.central_force)
+                torque = np.fromstring(obj.torque)
 
-            # Add the force defined on the 'force' grid.
-            force = self.applyGridForce(force, sv.position)
+                # Add the force defined on the 'force' grid.
+                with util.Timeit('Worker.2.2_grid') as timeit:
+                    force = self.applyGridForce(force, sv.position)
 
-            # Apply all forces and torques.
-            self.bullet.applyForceAndTorque(btID, force, torque)
+                # Apply all forces and torques.
+                self.bullet.applyForceAndTorque(btID, force, torque)
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
-        IDs = [util.id2int(_.id) for _ in worklist]
-        self.bullet.compute(IDs, meta.dt, meta.maxsteps)
+        with util.Timeit('Worker.3_compute') as timeit:
+            IDs = [util.id2int(_.id) for _ in worklist]
+            self.bullet.compute(IDs, meta.dt, meta.maxsteps)
 
-        # Retrieve the objects from Bullet again and update them in the DB.
-        out = {}
-        for obj in worklist:
-            ret = self.bullet.getObjectData([util.id2int(obj.id)])
-            sv = ret.data
-            if not ret.ok:
-                # Something went wrong. Reuse the old SV.
-                sv = obj.sv
-                self.logit.error('Unable to get all objects from Bullet')
+        with util.Timeit('Worker.4_fetchFromBullet') as timeit:
+            # Retrieve the objects from Bullet again and update them in the DB.
+            out = {}
+            for obj in worklist:
+                ret = self.bullet.getObjectData([util.id2int(obj.id)])
+                sv = ret.data
+                if not ret.ok:
+                    # Something went wrong. Reuse the old SV.
+                    sv = obj.sv
+                    self.logit.error('Unable to get all objects from Bullet')
 
-            # Save the results.
-            out[obj.id] = sv
+                # Save the results.
+                out[obj.id] = sv
 
         # Update the data and delete the WP.
-        ret = btInterface.updateWorkPackage(wpid, meta.token, out)
+        with util.Timeit('Worker.5_updateWP') as timeit:
+            ret = btInterface.updateWorkPackage(wpid, meta.token, out)
         if not ret.ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
