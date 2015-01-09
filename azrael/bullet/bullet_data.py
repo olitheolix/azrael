@@ -128,7 +128,8 @@ class BulletData(_BulletData):
         """
         Convert ``BulletData`` to JSON encodeable dictionary.
         """
-        d = {'part': 'BulletData'}
+        # fixme: use list comprehension
+        d = {}
         for f in self._fields:
             d[f] = getattr(self, f)
 

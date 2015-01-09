@@ -21,6 +21,7 @@ import cytoolz
 import IPython
 import numpy as np
 
+import azrael.leonard as leonard
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
@@ -33,8 +34,10 @@ def test_add_get_remove_single():
     """
     Add an object to the SV database.
     """
-    # Reset the SV database.
+    # Reset the SV database and instantiate a Leonard.
     btInterface.initSVDB(reset=True)
+    leo = leonard.LeonardBase()
+    leo.setup()
 
     # Create an object ID for the test.
     id_0 = int2id(0)
@@ -51,6 +54,7 @@ def test_add_get_remove_single():
 
     # Add the object to the DB with ID=0.
     assert btInterface.spawn(id_0, data, np.int64(1).tostring(), 0)
+    leo.processCommandsAndSync()
 
     # Query the object. This must return the SV data directly.
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
@@ -60,13 +64,17 @@ def test_add_get_remove_single():
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
 
     # Attempt to remove non-existing ID --> must fail.
-    assert not btInterface.deleteObject(id_1).ok
+    assert btInterface.deleteObject(id_1).ok
+    leo.processCommandsAndSync()
+
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
     ret = btInterface.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 1)
 
     # Remove existing ID --> must succeed.
     assert btInterface.deleteObject(id_0).ok
+    leo.processCommandsAndSync()
+
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: None})
     ret = btInterface.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 0)
@@ -80,6 +88,8 @@ def test_add_get_multiple():
     """
     # Reset the SV database.
     btInterface.initSVDB(reset=True)
+    leo = leonard.LeonardBase()
+    leo.setup()
 
     # Create two object IDs for this test.
     id_0 = int2id(0)
@@ -99,6 +109,7 @@ def test_add_get_multiple():
     # Add the objects to the DB.
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
     assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0)
+    leo.processCommandsAndSync()
 
     # Query the objects individually.
     ret = btInterface.getStateVariables([id_0])
@@ -167,6 +178,8 @@ def test_get_set_force():
     """
     # Reset the SV database.
     btInterface.initSVDB(reset=True)
+    leo = leonard.LeonardBase()
+    leo.setup()
 
     # Create two object IDs for this test.
     id_0 = int2id(0)
@@ -183,71 +196,26 @@ def test_get_set_force():
     assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
     assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0)
 
-    # Convenince: forces and their positions.
-    f0 = np.zeros(3, np.float64)
+    # Convenience: forces and their positions.
     f1 = np.zeros(3, np.float64)
-    p0 = np.zeros(3, np.float64)
     p1 = np.zeros(3, np.float64)
 
-    # The force and positions must match the defaults.
-    ret = btInterface.getForceAndTorque(id_0)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], f0)
-    assert np.array_equal(ret.data['torque'], p0)
-    ret = btInterface.getForceAndTorque(id_1)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], f1)
-    assert np.array_equal(ret.data['torque'], p1)
+    # No force commands must exist yet.
+    assert not btInterface.getForceAndTorque(id_0).ok
+    assert not btInterface.getForceAndTorque(id_1).ok
 
     # Update the force vector of only the second object.
     f1 = np.ones(3, np.float64)
     p1 = 2 * np.ones(3, np.float64)
     assert btInterface.setForce(id_1, f1, p1).ok
-
+    leo.processCommandsAndSync()
+    
     # Check again. The force of only the second object must have changed.
-    ret = btInterface.getForceAndTorque(id_0)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], f0)
-    assert np.array_equal(ret.data['torque'], p0)
+    assert not btInterface.getForceAndTorque(id_0).ok
     ret = btInterface.getForceAndTorque(id_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], f1)
     assert np.array_equal(ret.data['torque'], np.cross(p1, f1))
-
-    print('Test passed')
-
-
-def test_update_statevar():
-    """
-    Add an object to the SV database.
-    """
-    # Reset the SV database.
-    btInterface.initSVDB(reset=True)
-
-    # Create an object ID for the test.
-    id_0 = int2id(0)
-
-    # Create an SV object and serialise it.
-    data_0 = bullet_data.BulletData()
-
-    # Add the object to the DB with ID=0.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
-
-    # Query the object. This must return the SV data directly.
-    ret = btInterface.getStateVariables([id_0])
-    assert (ret.ok, ret.data) == (True, {id_0: data_0})
-
-    # Create another SV object and serialise it as well.
-    data_1 = bullet_data.BulletData()
-    data_1.position[:] += 10
-
-    # Change the SV data and check it was updated correctly.
-    assert btInterface.update(id_0, data_1)
-    ret = btInterface.getStateVariables([id_0])
-    assert (ret.ok, ret.data) == (True, {id_0: data_1})
-
-    # Updating an invalid object must fail.
-    assert not btInterface.update(int2id(10), data_1).ok
 
     print('Test passed')
 
@@ -257,6 +225,11 @@ def test_overrideAttributes():
     Set and retrieve object attributes like position, velocity, acceleration,
     and orientation.
     """
+    # Reset the SV database and instantiate a Leonard.
+    btInterface.initSVDB(reset=True)
+    leo = leonard.LeonardBase()
+    leo.setup()
+
     # Convenience.
     BulletDataOverride = bullet_data.BulletDataOverride
 
@@ -269,48 +242,29 @@ def test_overrideAttributes():
                               velocityRot=vr, orientation=o)
     del p, vl, vr, o
 
-    # Reset the SV database.
-    btInterface.initSVDB(reset=True)
-
     # Create an object ID for the test.
     id_0 = int2id(0)
 
     # Create an object and serialise it.
     btdata = bullet_data.BulletData()
 
-    # Query attributes of non-existing object. This must fail.
-    assert not btInterface.getOverrideAttributes(id_0).ok
-
-    # Override attributes for a non-existing object. This must fail.
-    assert not btInterface.setStateVariables(int2id(10), data).ok
-
     # Add the object to the DB with ID=0.
     assert btInterface.spawn(id_0, btdata, np.int64(1).tostring(), 0).ok
-
-    # Query the attributes for ID0. This must succeed. However, the returned
-    # values must all be None since no attributes have been set specifically.
-    ret = btInterface.getOverrideAttributes(id_0)
-    assert (ret.ok, ret.data) == (True, BulletDataOverride())
+    leo.processCommandsAndSync()
 
     # Set the overwrite attributes for the just created object.
-    assert btInterface.setStateVariables(id_0, data)
+    assert btInterface.setStateVariables(id_0, data).ok
+    leo.processCommandsAndSync()
 
-    # Retrieve the attributes and verify they are correct.
-    ret = btInterface.getOverrideAttributes(id_0)
+    ret = btInterface.getStateVariables([id_0])
     assert ret.ok
-    assert ret is not None
-    for a, b in zip(ret.data, data):
-        assert np.array_equal(a, b)
-
-    # Ensure that scalars did not become stunted NumPy types.
-    assert isinstance(ret.data.imass, (int, float))
-    assert isinstance(ret.data.scale, (int, float))
-
-    # Void the request to set attributes and verify that the attributes were
-    # indeed reset.
-    assert btInterface.setStateVariables(id_0, None)
-    ret = btInterface.getOverrideAttributes(id_0)
-    assert (ret.ok, ret.data) == (True, BulletDataOverride())
+    ret = ret.data[id_0]
+    assert ret.imass == data.imass
+    assert ret.scale == data.scale
+    assert np.array_equal(ret.position, data.position)
+    assert np.array_equal(ret.velocityLin, data.velocityLin)
+    assert np.array_equal(ret.velocityRot, data.velocityRot)
+    assert np.array_equal(ret.orientation, data.orientation)
 
     print('Test passed')
 
@@ -544,8 +498,10 @@ def test_get_set_forceandtorque():
     """
     Query and update the force- and torque vectors for an object.
     """
-    # Reset the SV database.
+    # Reset the SV database and instantiate a Leonard.
     btInterface.initSVDB(reset=True)
+    leo = leonard.LeonardBase()
+    leo.setup()
 
     # Create two object IDs for this test.
     id_0 = int2id(0)
@@ -559,35 +515,27 @@ def test_get_set_forceandtorque():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the two objects to the simulation.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
-    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0)
-
-    # Convenience: specify the forces and torques.
-    f0 = np.zeros(3, np.float64)
-    f1 = np.zeros(3, np.float64)
-    t0 = np.zeros(3, np.float64)
-    t1 = np.zeros(3, np.float64)
+    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0).ok
+    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0).ok
+    leo.processCommandsAndSync()
 
     # Retrieve the force and torque and verify they are correct.
-    ret = btInterface.getForceAndTorque(id_0)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], f0)
-    assert np.array_equal(ret.data['torque'], t0)
-    ret = btInterface.getForceAndTorque(id_1)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], f1)
-    assert np.array_equal(ret.data['torque'], t1)
+    assert not btInterface.getForceAndTorque(id_0).ok
+    assert not btInterface.getForceAndTorque(id_1).ok
+
+    # Convenience: specify the forces and torques.
+    f1 = np.zeros(3, np.float64)
+    t1 = np.zeros(3, np.float64)
 
     # Update the force and torque of the second object only.
     f1 = np.ones(3, np.float64)
     t1 = 2 * np.ones(3, np.float64)
     assert btInterface.setForceAndTorque(id_1, f1, t1)
+    leo.processCommandsAndSync()
 
     # Only the force an torque of the second object must have changed.
-    ret = btInterface.getForceAndTorque(id_0)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], f0)
-    assert np.array_equal(ret.data['torque'], t0)
+    assert not btInterface.getForceAndTorque(id_0).ok
+
     ret = btInterface.getForceAndTorque(id_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], f1)
@@ -623,6 +571,8 @@ def test_set_get_AABB():
     """
     # Reset the SV database.
     btInterface.initSVDB(reset=True)
+    leo = leonard.LeonardBase()
+    leo.setup()
 
     # Create two object IDs and a BulletData instances for this test.
     id_0, id_1 = int2id(0), int2id(1)
@@ -633,8 +583,9 @@ def test_set_get_AABB():
     assert not btInterface.spawn(id_0, data, np.int64(1).tostring(), -1.5).ok
 
     # Add two new objects to the DB.
-    assert btInterface.spawn(id_0, data, np.int64(1).tostring(), 1.5)
-    assert btInterface.spawn(id_1, data, np.int64(1).tostring(), 2.5)
+    assert btInterface.spawn(id_0, data, np.int64(1).tostring(), 1.5).ok
+    assert btInterface.spawn(id_1, data, np.int64(1).tostring(), 2.5).ok
+    leo.processCommandsAndSync()
 
     # Query the AABB of the first.
     ret = btInterface.getAABB([id_0])
@@ -655,6 +606,11 @@ def test_set_get_AABB():
 
 
 if __name__ == '__main__':
+#    test_get_set_forceandtorque()
+#    test_add_get_remove_single()
+#    test_overrideAttributes()
+#    sys.exit()
+
     test_BulletDataOverride()
     test_set_get_AABB()
     test_StateVariable_tuple()
@@ -662,7 +618,6 @@ if __name__ == '__main__':
     test_create_work_package_with_objects()
     test_create_work_package_without_objects()
     test_overrideAttributes()
-    test_update_statevar()
     test_get_set_force()
     test_add_same()
     test_add_get_multiple()

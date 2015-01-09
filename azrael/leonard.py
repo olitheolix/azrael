@@ -21,6 +21,7 @@ Physics manager.
 import sys
 import zmq
 import time
+import pymongo
 import IPython
 import logging
 import setproctitle
@@ -183,6 +184,16 @@ class LeonardBase(multiprocessing.Process):
         self.logit.debug('mydebug')
         self.logit.info('myinfo')
 
+        # Create the DB handles.
+        client = pymongo.MongoClient()
+        self._DB_SV = client['azrael']['sv']
+        self._DB_CMDSpawn = client['azrael']['CmdSpawn']
+        self._DB_CMDRemove = client['azrael']['CmdRemove']
+        self._DB_CMDModify = client['azrael']['CmdModify']
+
+        self.allObjects = {}
+        self.allAABBs = {}
+
     def setup(self):
         """
         Stub for initialisation code that cannot go into the constructor.
@@ -227,11 +238,15 @@ class LeonardBase(multiprocessing.Process):
                              ``dt`` update.
         """
         # Retrieve the SV for all objects.
-        ret = btInterface.getAllObjectIDs()
-        ret = btInterface.getStateVariables(ret.data)
+        ret = btInterface.getAllStateVariables()
+        if not ret.ok:
+            # fixme: proper error handling
+            print('bug: could not get all state variables')
+            return
+        self.allObjects = ret.data
 
         # Iterate over all objects and update their SV information in Bullet.
-        for objID, sv in ret.data.items():
+        for objID, sv in self.allObjects.items():
             # Fetch the force vector for the current object from the DB.
             ret = btInterface.getForceAndTorque(objID)
             if not ret.ok:
@@ -249,6 +264,66 @@ class LeonardBase(multiprocessing.Process):
             # Serialise the state variables and update them in the DB.
             btInterface.update(objID, sv)
 
+    def processCommandQueue(self):
+        """
+        Update the local object cache according to the new commands.
+
+        fixme: messy
+        """
+        # Remove objects.
+        docs = list(self._DB_CMDRemove.find())
+        for doc in docs:
+            objID = doc['objid']
+            if objID in self.allObjects:
+                self._DB_SV.remove({'objid': objID})
+                del self.allObjects[objID]
+        self._DB_CMDRemove.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
+
+        # Update existing objects.
+        docs = list(self._DB_CMDModify.find())
+        fun = btInterface._updateBulletDataTuple
+        BulletData = bullet_data.BulletData
+        BulletDataOverride = bullet_data.BulletDataOverride
+        fields = BulletDataOverride._fields
+        for doc in docs:
+            objID, sv_new = doc['objid'], doc['sv']
+            if objID in self.allObjects:
+                sv_new = BulletDataOverride(**dict(zip(fields, sv_new)))
+                sv_old = self.allObjects[objID]
+                sv_old = [getattr(sv_old, _) for _ in fields]
+                sv_old = BulletData(*sv_old)
+                self.allObjects[objID] = fun(sv_old, sv_new)
+        self._DB_CMDModify.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
+        del docs, fun
+
+        # Fetch all spawn commands and update the object cache.
+        docs = list(self._DB_CMDSpawn.find())
+        for doc in docs:
+            objID = doc['objid']
+            if objID in self.allObjects:
+                msg = 'Cannot spawn object since objID={} already exists'
+                self.logit.warning(msg.format(objID))
+            else:
+                sv_old = doc['sv']
+                self.allObjects[objID] = BulletData(**sv_old)
+                self.allAABBs[objID] = float(doc['AABB'])
+        self._DB_CMDSpawn.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
+
+    def syncObjects(self):
+        """
+        Copy all local SVs to DB.
+        """
+        for objID, sv in self.allObjects.items():
+            doc = self._DB_SV.update(
+                {'objid': objID},
+                {'$set': {'objid': objID, 'sv': sv.toJsonDict(),
+                          'AABB': self.allAABBs[objID]}},
+                upsert=True)
+
+    def processCommandsAndSync(self):
+        self.processCommandQueue()
+        self.syncObjects()
+        
     def run(self):
         """
         Drive the periodic physics updates.

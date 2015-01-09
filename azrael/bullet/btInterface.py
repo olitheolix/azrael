@@ -37,6 +37,10 @@ ipshell = IPython.embed
 # Global database handles.
 _DB_SV = None
 _DB_WP = None
+_DB_CMDSpawn = None
+_DB_CMDRemove = None
+_DB_CMDModify = None
+_DB_CMDForceAndTorque = None
 
 
 # Work package related.
@@ -58,14 +62,23 @@ def initSVDB(reset=True):
 
     :param bool reset: flush the database.
     """
-    global _DB_SV, _DB_WP
+    global _DB_SV, _DB_WP, _DB_CMDSpawn, _DB_CMDRemove, _DB_CMDModify
+    global _DB_CMDForceAndTorque
     client = pymongo.MongoClient()
     _DB_SV = client['azrael']['sv']
     _DB_WP = client['azrael']['wp']
+    _DB_CMDSpawn = client['azrael']['CmdSpawn']
+    _DB_CMDRemove = client['azrael']['CmdRemove']
+    _DB_CMDModify = client['azrael']['CmdModify']
+    _DB_CMDForceAndTorque = client['azrael']['CmdForceAndTorque']
     if reset:
         _DB_SV.drop()
         _DB_WP.drop()
         _DB_WP.insert({'name': 'wpcnt', 'cnt': 0})
+        _DB_CMDSpawn.drop()
+        _DB_CMDRemove.drop()
+        _DB_CMDModify.drop()
+        _DB_CMDForceAndTorque.drop()
 
 
 def getNumObjects():
@@ -109,22 +122,23 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
     # Dummy variable to specify the initial force and its relative position.
     z = np.zeros(3).tostring()
 
-    # Add the document. The find_and_modify command below implements the
+    # fixme: improve this and the next docu.
+    # Add the objects. The find_and_modify command below implements the
     # fictional 'insert_if_not_exists' command. This ensures that we will not
-    # overwrite any possibly existing object.
-    doc = _DB_SV.find_and_modify(
+    # overwrite an existing object.
+    data = {'objid': objID, 'sv': sv, 'AABB': float(aabb)}
+    doc = _DB_CMDSpawn.find_and_modify(
         {'objid': objID},
-        {'$setOnInsert': {'sv': sv, 'templateID': templateID,
-                          'central_force': z, 'torque': z,
-                          'attrOverride': BulletDataOverride(),
-                          'AABB': float(aabb)}},
+        {'$setOnInsert': data},
         upsert=True, new=True)
 
     # The SV in the returned document will only match ``sv`` if either no
     # object with objID existed before the call, or the objID existed but with
     # identical SV. In any other case there will be no match because the
     # objID already existed.
-    return RetVal(doc['sv'] == sv, None, None)
+    isNew = (doc['sv'] == sv)
+
+    return RetVal(isNew, None, None)
 
 
 @typecheck
@@ -132,14 +146,17 @@ def deleteObject(objID: bytes):
     """
     Delete ``objID`` from the physics simulation.
 
+    This function always suceeds.
+
+    fixme: must be able to delete multiple objects at once.
+
     :param bytes objID: ID of object to delete.
     :return: Success.
     """
-    ret = _DB_SV.remove({'objid': objID})
-    if ret['n'] == 1:
-        return RetVal(True, None, None)
-    else:
-        return RetVal(False, 'Object <{}>not found'.format(objID), None)
+    data = {'del': objID}
+    doc = _DB_CMDRemove.find_and_modify(
+        {'objid': objID}, {'$setOnInsert': data}, upsert=True, new=True)
+    return RetVal(True, None, None)
 
 
 @typecheck
@@ -355,7 +372,7 @@ def getForceAndTorque(objID: bytes):
         return RetVal(False, 'objID has invalid length', None)
 
     # Query the object.
-    doc = _DB_SV.find_one({'objid': objID})
+    doc = _DB_CMDForceAndTorque.find_one({'objid': objID})
     if doc is None:
         return RetVal(False, 'Could not find <{}>'.format(objID), None)
 
@@ -380,6 +397,8 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
     """
     Set the central ``force`` and ``torque`` acting on ``objID``.
 
+    This function always suceeds.
+
     .. note::
        The force always applies to the centre of the mass only, unlike the
        ``setForce`` function which allows for position relative to the centre
@@ -401,15 +420,12 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
     torque = torque.astype(np.float64).tostring()
 
     # Update the DB.
-    ret = _DB_SV.update({'objid': objID},
-                        {'$set': {'central_force': force, 'torque': torque}})
+    ret = _DB_CMDForceAndTorque.update(
+        {'objid': objID},
+        {'$set': {'central_force': force, 'torque': torque}},
+        upsert=True)
 
-    # This function was successful if exactly one document was updated.
-    ok = ret['n'] == 1
-    if ok:
-        return RetVal(True, None, None)
-    else:
-        return RetVal(False, 'ID does not exist', None)
+    return RetVal(True, None, None)
 
 
 @typecheck
@@ -438,13 +454,9 @@ def setStateVariables(objID: bytes, data: BulletDataOverride):
     if (len(objID) != config.LEN_ID):
         return RetVal(False, 'objID has invalid length', None)
 
+    # Do nothing if data is None.
     if data is None:
-        # If ``data`` is None then the user wants us to clear any pending
-        # attribute updates for ``objID``. Hence void the respective entry in
-        # the DB.
-        ret = _DB_SV.update({'objid': objID},
-                            {'$set': {'attrOverride': BulletDataOverride()}})
-        return RetVal(ret['n'] == 1, None, None)
+        return RetVal(True, None, None)
 
     # Make sure that ``data`` is really valid by constructing a new
     # BulletDataOverride instance from it.
@@ -455,18 +467,20 @@ def setStateVariables(objID: bytes, data: BulletDataOverride):
     # All fields in ``data`` (a BulletDataOverride instance) are, by
     # definition, one of {None, int, float, np.ndarray}. The following code
     # merely converts the  NumPy arrays to normal lists so that Mongo can store
-    # them.. For example, BulletDataOverride(None, 2, array([1,2,3]), ...)
+    # them. For example, BulletDataOverride(None, 2, array([1,2,3]), ...)
     # would become [None, 2, [1,2,3], ...].
     data = list(data)
     for idx, val in enumerate(data):
         if isinstance(val, np.ndarray):
             data[idx] = val.tolist()
 
-    # Serialise the position and add it to the DB.
-    ret = _DB_SV.update({'objid': objID}, {'$set': {'attrOverride': data}})
+    # Save the new SVs to the DB (overwrite existing ones).
+    doc = _DB_CMDModify.find_and_modify(
+        {'objid': objID}, {'$setOnInsert': {'sv': data}},
+        upsert=True, new=True)
 
     # This function was successful if exactly one document was updated.
-    return RetVal(ret['n'] == 1, None, None)
+    return RetVal(True, None, None)
 
 
 @typecheck
