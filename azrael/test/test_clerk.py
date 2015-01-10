@@ -64,6 +64,17 @@ class ControllerTest(controller.ControllerBase):
         return data['ok'], data['payload']
 
 
+def getLeonard():
+    """
+    fixme: docu
+    """
+    # Reset the SV database and instantiate a Leonard.
+    btInterface.initSVDB(reset=True)
+    leo = leonard.LeonardBase()
+    leo.setup()
+    return leo
+
+
 def test_invalid():
     """
     Send an invalid command to the Clerk.
@@ -150,6 +161,9 @@ def test_delete():
     """
     killAzrael()
 
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Test constants and parameters.
     objID_1, objID_2 = int2id(1), int2id(2)
 
@@ -169,6 +183,7 @@ def test_delete():
     assert (ret.ok, ret.data) == (True, objID_2)
 
     # Two objects must now exist.
+    leo.step(0, 1)
     ret = clerk.getAllObjectIDs()
     assert ret.ok and (ret.data == [objID_1, objID_2])
 
@@ -176,14 +191,16 @@ def test_delete():
     assert clerk.deleteObject(objID_1).ok
 
     # Only the second object must still exist.
+    leo.step(0, 1)
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [objID_2])
 
-    # Deleting the same object again must result in an error.
-    assert not clerk.deleteObject(objID_1).ok
+    # Deleting the same object again must silently fail.
+    assert clerk.deleteObject(objID_1).ok
 
     # Delete the second object.
     assert clerk.deleteObject(objID_2).ok
+    leo.step(0, 1)
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [])
 
@@ -195,6 +212,9 @@ def test_get_statevar():
     Test the 'get_statevar' command in the Clerk.
     """
     killAzrael()
+
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
 
     # Test parameters and constants.
     objID_1 = int2id(1)
@@ -215,6 +235,7 @@ def test_get_statevar():
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # Retrieve the SV for a non-existing ID --> must fail.
+    leo.step(0, 1)
     ret = clerk.getStateVariables([int2id(10)])
     assert (ret.ok, ret.data) == (True, {int2id(10): None})
 
@@ -228,6 +249,7 @@ def test_get_statevar():
     assert (ret.ok, ret.data) == (True, objID_2)
 
     # Retrieve the state variables for both objects individually.
+    leo.step(0, 1)
     for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
         ret = clerk.getStateVariables([objID])
         assert (ret.ok, len(ret.data)) == (True, 1)
@@ -247,6 +269,9 @@ def test_set_force():
     """
     killAzrael()
 
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Parameters and constants for this test.
     id_1 = int2id(1)
     sv = bullet_data.BulletData()
@@ -256,10 +281,6 @@ def test_set_force():
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
-    # Invalid/non-existing ID.
-    ret = clerk.setForce(int2id(0), force, relpos)
-    assert (ret.ok, ret.msg) == (False, 'ID does not exist')
-
     # Spawn a new object. It must have ID=1.
     templateID = '_templateNone'.encode('utf8')
     ret = clerk.spawn(templateID, sv)
@@ -268,6 +289,7 @@ def test_set_force():
     # Apply the force.
     assert clerk.setForce(id_1, force, relpos).ok
 
+    leo.step(0, 1)
     ret = btInterface.getForceAndTorque(id_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], force)
@@ -428,6 +450,9 @@ def test_get_object_template_id():
     """
     killAzrael()
 
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Parameters and constants for this test.
     id_0, id_1 = int2id(1), int2id(2)
     templateID_0 = '_templateNone'.encode('utf8')
@@ -446,6 +471,7 @@ def test_get_object_template_id():
     assert (ret.ok, ret.data) == (True, id_1)
 
     # Retrieve template of first object.
+    leo.step(0, 10)
     ret = clerk.getTemplateID(id_0)
     assert (ret.ok, ret.data) == (True, templateID_0)
 
@@ -467,6 +493,9 @@ def test_controlParts_invalid_commands():
     """
     killAzrael()
 
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
     templateID_1 = '_templateNone'.encode('utf8')
@@ -486,6 +515,7 @@ def test_controlParts_invalid_commands():
 
     # Call 'controlParts'. This must fail because the chosen template has no
     # boosters or factory units.
+    leo.step(0, 1)
     assert not clerk.controlParts(objID_1, [cmd_b], []).ok
 
     # Must fail: objects has no factory.
@@ -526,6 +556,7 @@ def test_controlParts_invalid_commands():
     sv = bullet_data.BulletData()
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_2)
+    leo.step(0, 1)
 
     # Create the commands to let each factory spawn an object.
     cmd_b = parts.CmdBooster(partID=0, force=0.5)
@@ -553,6 +584,9 @@ def test_controlParts_Boosters_notmoving():
     The parent object does not move in the world coordinate system.
     """
     killAzrael()
+
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
 
     # Parameters and constants for this test.
     objID_1 = int2id(1)
@@ -588,6 +622,7 @@ def test_controlParts_Boosters_notmoving():
     # Spawn the object.
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
+    leo.step(0, 1)
 
     # ------------------------------------------------------------------------
     # Engage the boosters and verify the total force exerted on the object.
@@ -639,6 +674,9 @@ def test_controlParts_Factories_notmoving():
     """
     killAzrael()
 
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Parameters and constants for this test.
     objID_1 = int2id(1)
     sv = bullet_data.BulletData()
@@ -677,6 +715,7 @@ def test_controlParts_Factories_notmoving():
     # ... and spawn an instance thereof.
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
+    leo.step(0, 1)
 
     # ------------------------------------------------------------------------
     # Send commands to the factories. Tell them to spawn their object with
@@ -689,12 +728,13 @@ def test_controlParts_Factories_notmoving():
     cmd_1 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
 
     # Send the commands and ascertain that the returned object IDs now exist in
-    # the simulation. These IDS must be '3' and '4', since ID 1 was already
+    # the simulation. These IDs must be '2' and '3', since ID 1 was already
     # given to the controller object.
     ok, _, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
     assert ok
     assert len(spawnedIDs) == 2
     assert spawnedIDs == [int2id(2), int2id(3)]
+    leo.step(0, 1)
 
     # Query the state variables of the objects spawned by the factories.
     ret = clerk.getStateVariables(spawnedIDs)
@@ -722,6 +762,9 @@ def test_controlParts_Factories_moving():
     In this test the parent object moves at a non-zero velocity.
     """
     killAzrael()
+
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
 
     # Parameters and constants for this test.
     objID_1 = int2id(1)
@@ -764,6 +807,7 @@ def test_controlParts_Factories_moving():
     # ... and spawn an instance thereof.
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
+    leo.step(0, 1)
 
     # ------------------------------------------------------------------------
     # Send commands to the factories. Tell them to spawn their object with
@@ -782,6 +826,7 @@ def test_controlParts_Factories_moving():
     assert ret.ok and (len(ret.data) == 2)
     spawnedIDs = ret.data
     assert spawnedIDs == [objID_2, objID_3]
+    leo.step(0, 1)
 
     # Query the state variables of the objects spawned by the factories.
     ret = clerk.getStateVariables(spawnedIDs)
@@ -812,6 +857,9 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     default.
     """
     killAzrael()
+
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
 
     # Parameters and constants for this test.
     objID_1, objID_2, objID_3 = int2id(1), int2id(2), int2id(3)
@@ -876,6 +924,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # ... and spawn an instance thereof.
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
+    leo.step(0, 1)
 
     # ------------------------------------------------------------------------
     # Activate booster and factories and verify that the applied force and
@@ -898,6 +947,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     assert ret.ok
     spawnIDs = ret.data
     assert spawnIDs == [objID_2, objID_3]
+    leo.step(0, 1)
 
     # Query the state variables of the objects spawned by the factories.
     ret = clerk.getStateVariables(spawnIDs)
@@ -935,6 +985,9 @@ def test_get_all_objectids():
     """
     killAzrael()
 
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Parameters and constants for this test.
     objID_1, objID_2 = int2id(1), int2id(2)
     templateID = '_templateNone'.encode('utf8')
@@ -952,6 +1005,7 @@ def test_get_all_objectids():
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # The object list must now contain the ID of the just spawned object.
+    leo.step(0, 10)
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [objID_1])
 
@@ -960,6 +1014,7 @@ def test_get_all_objectids():
     assert (ret.ok, ret.data) == (True, objID_2)
 
     # The object list must now contain the ID of both spawned objects.
+    leo.step(0, 10)
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
@@ -1025,6 +1080,9 @@ def test_instanceDB_checksum():
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
     vert = np.arange(9).astype(np.float64)
@@ -1043,6 +1101,7 @@ def test_instanceDB_checksum():
     assert ok
 
     # Query the checksum of the objects.
+    leo.step(0, 10)
     ret = clerk.getStateVariables([objID0, objID1])
     assert ret.ok
     ret_1 = ret.data

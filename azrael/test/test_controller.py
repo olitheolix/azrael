@@ -49,6 +49,17 @@ WSControllerBase = azrael.wscontroller.WSControllerBase
 ControllerBase = azrael.controller.ControllerBase
 
 
+def getLeonard():
+    """
+    fixme: docu
+    """
+    # Reset the SV database and instantiate a Leonard.
+    btInterface.initSVDB(reset=True)
+    leo = leonard.LeonardBase()
+    leo.setup()
+    return leo
+
+
 def test_ping():
     """
     Send a ping to the Clerk and check the response is correct.
@@ -69,6 +80,9 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     """
     Ask Clerk to spawn one object.
     """
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     id_1 = int2id(1)
 
     # Constants and parameters for this test.
@@ -81,6 +95,7 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     # objID=1.
     ok, objID = ctrl.spawn(templateID, np.zeros(3))
     assert (ok, objID) == (True, id_1)
+    leo.step(0, 1)
 
     # Attempt to spawn a non-existing template.
     templateID += 'blah'.encode('utf8')
@@ -91,15 +106,17 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [id_1])
 
-    # Attempt to delete a non-existing object.
+    # Attempt to delete a non-existing object. This must silently fail.
     ok, ret = ctrl.deleteObject(int2id(100))
-    assert not ok
+    assert ok
+    leo.step(0, 1)
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [id_1])
 
     # Delete an existing object.
     ok, _ = ctrl.deleteObject(id_1)
     assert ok
+    leo.step(0, 1)
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [])
 
@@ -143,6 +160,9 @@ def test_setStateVariables(ctrl_type):
     """
     Spawn an object and specify its state variables directly.
     """
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Constants and parameters for this test.
     templateID = '_templateNone'.encode('utf8')
 
@@ -153,21 +173,14 @@ def test_setStateVariables(ctrl_type):
     ok, objID = ctrl.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
     assert ok
 
-    # Specify a new set of object attributes.
+    # Create and apply a new State Vector.
     new_sv = bullet_data.BulletDataOverride(
         position=[1, -1, 1], imass=2, scale=3, cshape=[4, 1, 1, 1])
-
-    # Apply the new attributes.
     ok, ret = ctrl.setStateVariables(objID, new_sv)
     assert ok
 
-    # Advance the simulation by exactly one step. This must pick up the new
-    # values and apply them.
-    btInterface.initSVDB(reset=False)
-    leo = leonard.LeonardBase()
-    leo.setup()
-    leo.step(0.1, 10)
-
+    # Verify that the new attributes came into effect.
+    leo.step(0, 1)
     ok, ret_sv = ctrl.getStateVariables(objID)
     ret_sv = ret_sv[objID]
     assert isinstance(ret_sv, bullet_data.BulletData)
@@ -186,11 +199,14 @@ def test_getAllObjectIDs(ctrl_type):
     """
     Ensure the getAllObjectIDs command reaches Clerk.
     """
-    # Constants and parameters for this test.
-    templateID = '_templateNone'.encode('utf8')
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
 
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael(ctrl_type)
+
+    # Constants and parameters for this test.
+    templateID = '_templateNone'.encode('utf8')
 
     # Parameters and constants for this test.
     objID_1 = int2id(1)
@@ -204,6 +220,7 @@ def test_getAllObjectIDs(ctrl_type):
     assert (ok, ret) == (True, objID_1)
 
     # The object list must now contain the ID of the just spawned object.
+    leo.step(0, 1)
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [objID_1])
 
@@ -366,6 +383,9 @@ def test_controlParts(ctrl_type):
     # Start the necessary services.
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Parameters and constants for this test.
     objID_1 = int2id(1)
     pos_parent = np.array([1, 2, 3], np.float64)
@@ -429,6 +449,7 @@ def test_controlParts(ctrl_type):
                            vel=vel_parent, orient=orient_parent)
     assert (ok, objID) == (True, objID_1)
     del ok, objID
+    leo.step(0, 1)
 
     # ------------------------------------------------------------------------
     # Activate booster and factories and verify that the applied force and
@@ -449,6 +470,7 @@ def test_controlParts(ctrl_type):
     ok, spawnIDs = ctrl.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
     assert (ok, len(spawnIDs)) == (True, 2)
     assert spawnIDs == [int2id(2), int2id(3)]
+    leo.step(0, 1)
 
     # Query the state variables of the objects spawned by the factories.
     ok, ret_SVs = ctrl.getStateVariables(spawnIDs)
@@ -483,6 +505,9 @@ def test_setGeometry(ctrl_type):
     """
     Spawn a new object and modify its geometry at runtime.
     """
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
     vert = np.arange(9).astype(np.float64)
@@ -500,6 +525,7 @@ def test_setGeometry(ctrl_type):
     assert ok
 
     # Query the SV to obtain the geometry checksum value.
+    leo.step(0, 1)
     ok, sv = ctrl.getStateVariables(objID)
     assert ok
     checksumGeometry = sv[objID].checksumGeometry
@@ -507,7 +533,8 @@ def test_setGeometry(ctrl_type):
     # Fetch-, modify-, update- and verify the geometry.
     ok, (ret_vert, ret_uv, ret_rgb) = ctrl.getGeometry(objID)
     assert ok
-    assert np.allclose(vert, ret_vert) and np.allclose(uv, ret_uv)
+    assert np.allclose(uv, ret_uv)
+    assert np.allclose(vert, ret_vert)
 
     ok, _ = ctrl.setGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb)
     assert ok

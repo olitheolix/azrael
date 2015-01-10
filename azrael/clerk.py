@@ -33,6 +33,7 @@ the same time and and on multiple machines.
 import os
 import sys
 import zmq
+import IPython
 import cytoolz
 import logging
 import pymongo
@@ -52,6 +53,7 @@ import azrael.bullet.bullet_data as bullet_data
 from azrael.typecheck import typecheck
 
 # Convenience.
+ipshell = IPython.embed
 RetVal = util.RetVal
 
 
@@ -436,7 +438,7 @@ class Clerk(multiprocessing.Process):
         """
 
         # Query the templateID for the current object.
-        ret = btInterface.getTemplateID(objID)
+        ret = self.getTemplateID(objID)
         if not ret.ok:
             self.logit.warning(ret.msg)
             return RetVal(False, ret.msg, None)
@@ -631,7 +633,7 @@ class Clerk(multiprocessing.Process):
             {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
 
         if ret is None:
-            # No template with name ``templateID`` existed --> success.
+            # No template with name ``templateID`` exists yet --> success.
             self.logit.info('Added template <{}>'.format(templateID))
             return RetVal(True, None, templateID)
         else:
@@ -740,6 +742,7 @@ class Clerk(multiprocessing.Process):
         # _id field to avoid clashes.
         doc['objID'] = new_id
         doc['csGeo'] = 0
+        doc['templateID'] = templateID
         del doc['_id']
         self.db_instance.insert(doc)
         del doc
@@ -797,7 +800,7 @@ class Clerk(multiprocessing.Process):
         sv = ret.data
         out = {}
         for objID in objIDs:
-            if objID in docs:
+            if (objID in docs) and (sv[objID] is not None):
                 out[objID] = sv[objID]._replace(checksumGeometry=docs[objID])
             else:
                 out[objID] = None
@@ -903,11 +906,12 @@ class Clerk(multiprocessing.Process):
         :param bytes objID: object ID.
         :return: templateID from which ``objID`` was created.
         """
-        ret = btInterface.getTemplateID(objID)
-        if ret.ok:
-            return RetVal(True, None, ret.data)
+        doc = self.db_instance.find_one({'objID': objID})
+        if doc is None:
+            msg = 'Could not find template for objID {}'.format(objID)
+            return RetVal(False, msg, None)
         else:
-            return RetVal(False, ret.msg, None)
+            return RetVal(True, None, doc['templateID'])
 
     @typecheck
     def getAllObjectIDs(self, dummy=None):
