@@ -36,16 +36,13 @@ ipshell = IPython.embed
 
 # Global database handles.
 _DB_SV = None
-_DB_WP = None
 _DB_CMDSpawn = None
 _DB_CMDRemove = None
 _DB_CMDModify = None
 _DB_CMDForceAndTorque = None
 
 
-# Work package related.
-WPData = namedtuple('WPRecord', 'id sv central_force torque')
-WPMeta = namedtuple('WPAdmin', 'token dt maxsteps')
+# Convenience.
 BulletDataOverride = bullet_data.BulletDataOverride
 
 # Return value signature.
@@ -62,19 +59,16 @@ def initSVDB(reset=True):
 
     :param bool reset: flush the database.
     """
-    global _DB_SV, _DB_WP, _DB_CMDSpawn, _DB_CMDRemove, _DB_CMDModify
+    global _DB_SV, _DB_CMDSpawn, _DB_CMDRemove, _DB_CMDModify
     global _DB_CMDForceAndTorque
     client = pymongo.MongoClient()
     _DB_SV = client['azrael']['sv']
-    _DB_WP = client['azrael']['wp']
     _DB_CMDSpawn = client['azrael']['CmdSpawn']
     _DB_CMDRemove = client['azrael']['CmdRemove']
     _DB_CMDModify = client['azrael']['CmdModify']
     _DB_CMDForceAndTorque = client['azrael']['CmdForceAndTorque']
     if reset:
         _DB_SV.drop()
-        _DB_WP.drop()
-        _DB_WP.insert({'name': 'wpcnt', 'cnt': 0})
         _DB_CMDSpawn.drop()
         _DB_CMDRemove.drop()
         _DB_CMDModify.drop()
@@ -549,127 +543,3 @@ def getTemplateID(objID: bytes):
         return RetVal(False, msg, None)
     else:
         return RetVal(True, None, doc['templateID'])
-
-
-@typecheck
-def createWorkPackage(
-        objIDs: (tuple, list), token: int, dt: (int, float), maxsteps: int):
-    """
-    Create a new Work Package (WP) and return its ID.
-
-    The work package has an associated ``token`` value and all ``objIDs`` in
-    the work list will be marked with it to prevent accidental updates.
-
-    The ``dt`` and ``maxsteps`` arguments are for the underlying physics
-    engine.
-
-    .. note::
-       A work package contains only the objIDs but not their SV. The
-       ``getWorkPackage`` function takes care of compiling this information.
-
-    :param iterable objIDs: list of object IDs in the new work package.
-    :param int token: token value associated with this work package.
-    :param float dt: time step for this work package.
-    :param int maxsteps: number of sub-steps for the time step.
-    :return: Work package ID
-    :rtype: int
-    """
-    # Sanity check.
-    if len(objIDs) == 0:
-        return RetVal(False, 'objID has invalid length', None)
-
-    # Obtain a new and unique work package ID.
-    wpid = _DB_WP.find_and_modify(
-        {'name': 'wpcnt'}, {'$inc': {'cnt': 1}}, new=True)
-    if wpid is None:
-        logit.error('Could not fetch WPID counter - this is a bug!')
-        sys.exit(1)
-    wpid = wpid['cnt']
-
-    # Remove all WP with the current ID. This is a precaution since there
-    # should not be any to begin with.
-    ret = _DB_WP.remove({'wpid': wpid}, multi=True)
-    if ret['n'] > 0:
-        logit.warning('A previous WP with ID={} already existed'.format(wpid))
-
-    # Create a new work package.
-    ret = _DB_WP.insert({'wpid': wpid, 'ids': objIDs, 'token': token,
-                         'dt': dt, 'maxsteps': maxsteps})
-
-    # Update the token value of every object in the work package.
-    for objid in objIDs:
-        _DB_SV.update({'objid': objid}, {'$set': {'token': token}})
-    return RetVal(True, None, wpid)
-
-
-@typecheck
-def getWorkPackage(wpid: int):
-    """
-    Return the SV data for all objects specified in ``wpid``.
-
-    This function returns a dictionary with two keys. The first key ('wpdata')
-    contains a list of ``WPData`` instances that describe the object states and
-    forces applied to them, and a 'wpmeta' field that is an instance of
-    ``WPMeta``.
-
-    :param int wpid: work package ID.
-    :return: {'wpdata': list of WPData instances, 'wpmeta': meta information}
-    :rtype: dict
-    """
-
-    # Retrieve the work package.
-    doc = _DB_WP.find_one({'wpid': wpid})
-    if doc is None:
-        return RetVal(False, 'Unknown work package <{}>'.format(wpid), None)
-    else:
-        objIDs = doc['ids']
-
-    # Compile a list of WPData objects; one for every object in the WP. Skip
-    # non-existing objects.
-    cursor = _DB_SV.find({'objid': {'$in': objIDs}})
-    data = [WPData(_['objid'], bullet_data.fromJsonDict(_['sv']),
-                   _['central_force'], _['torque'])
-            for _ in cursor]
-
-    # Put the meta data of the work package into another named tuple.
-    meta = WPMeta(doc['token'], doc['dt'], doc['maxsteps'])
-    return RetVal(True, None, {'wpdata': data, 'wpmeta': meta})
-
-
-@typecheck
-def updateWorkPackage(wpid: int, token, svdict: dict):
-    """
-    Update the objects in ``wpid`` with the values in ``svdict``.
-
-    This function only makes changes to objects defined in the WP ``wpid``, and
-    even then only if the ``token`` value matches.
-
-    :param int wpid: work package ID.
-    :param int token: token value associated with this work package.
-    :param dict svdict: {objID: sv} dictionary
-    :return bool: Success.
-    """
-    # Iterate over all object IDs and update the state variables.
-    for objID in svdict:
-        ret = update(objID, svdict[objID], token)
-
-    # Remove the specified work package. This MUST happen AFTER the SVs were
-    # updated because btInterface.countWorkPackages will count the number of
-    # WPs to determine if all objects have been updated.
-    ret = _DB_WP.remove({'wpid': wpid, 'token': token}, multi=True)
-    if ret['n'] == 0:
-        return RetVal(False, 'Could not remove WP <{}>'.format(wpid), None)
-
-    return RetVal(True, None, None)
-
-
-@typecheck
-def countWorkPackages(token):
-    """
-    Return the number of unprocessed work packages.
-
-    :param int token: token value associated with this work package.
-    :return bool: Success.
-    """
-    cnt = _DB_WP.find({'token': token}).count()
-    return RetVal(True, None, cnt)

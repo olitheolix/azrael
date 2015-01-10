@@ -21,7 +21,6 @@ ipshell = IPython.embed
 # tests that must pass for all engines.
 allEngines = [
     azrael.leonard.LeonardBase,
-    azrael.leonard.LeonardBaseWorkpackages,
     azrael.leonard.LeonardBulletMonolithic,
     azrael.leonard.LeonardBulletSweeping,
     azrael.leonard.LeonardBulletSweepingMultiST,
@@ -102,50 +101,42 @@ def test_setStateVariables_basic(clsLeonard):
     """
     killAzrael()
 
+    # Reset the SV database and instantiate a Leonard.
+    btInterface.initSVDB(reset=True)
+    leo = clsLeonard()
+    leo.setup()
+
     # Parameters and constants for this test.
     id_0 = int2id(0)
     id_1 = int2id(1)
     sv = bullet_data.BulletData()
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateSphere'.encode('utf8')
 
+    # State Vector.
     p = np.array([1, 2, 5])
     vl = np.array([8, 9, 10.5])
     vr = vl + 1
-    o = np.array([11, 12.5, 13, 13.5])
     data = bullet_data.BulletDataOverride(
-        position=p, velocityLin=vl, velocityRot=vr, orientation=o)
-    del p, vl, vr, o
-
-    # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
-
-    # Invalid/non-existing ID.
-    assert not clerk.setStateVariables(id_0, data).ok
+        position=p, velocityLin=vl, velocityRot=vr)
+    del p, vl, vr
 
     # Spawn a new object. It must have ID=1.
-    ret = clerk.spawn(templateID, sv)
-    assert (ret.ok, ret.data) == (True, id_1)
+    assert btInterface.spawn(id_1, sv, np.int64(1).tostring(), 1.0).ok
+    
+    # Update the object's State Vector.
+    assert btInterface.setStateVariables(id_1, data).ok
 
-    # Update the object's position.
-    assert clerk.setStateVariables(id_1, data).ok
+    # Step the simulation by 0 seconds. This will not change the simulation
+    # state but pick up all the queued commands.
+    leo.step(0, 10)
 
-    # Advance the simulation by exactly one step. This must pick up the new
-    # values and apply them.
-    btInterface.initSVDB(reset=False)
-    leo = clsLeonard()
-    leo.setup()
-    leo.step(0.1, 10)
-
-    # Verify that the position is correct.
-    ret = clerk.getStateVariables([id_1])
+    # Verify that the attributes were correctly updated.
+    ret = btInterface.getStateVariables([id_1])
     assert (ret.ok, len(ret.data)) == (True, 1)
-
     sv = ret.data[id_1]
-    # Verify if attributes were correctly updated.
-    assert (np.array_equal(sv.position, data.position) and
-            np.array_equal(sv.velocityLin, data.velocityLin) and
-            np.array_equal(sv.velocityRot, data.velocityRot) and
-            np.array_equal(sv.orientation, data.orientation))
+    assert np.array_equal(sv.position, data.position)
+    assert np.array_equal(sv.velocityLin, data.velocityLin)
+    assert np.array_equal(sv.velocityRot, data.velocityRot)
 
     print('Test passed')
 
@@ -158,20 +149,24 @@ def test_setStateVariables_advanced(clsLeonard):
     """
     killAzrael()
 
+    # Reset the SV database and instantiate a Leonard.
+    btInterface.initSVDB(reset=True)
+    leo = clsLeonard()
+    leo.setup()
+
     # Parameters and constants for this test.
     cs_cube = [3, 1, 1, 1]
     cs_sphere = [3, 1, 1, 1]
     sv = bullet_data.BulletData(imass=2, scale=3, cshape=cs_sphere)
     templateID = '_templateSphere'.encode('utf8')
 
-    # Instantiate a Clerk and spawn an object.
-    clerk = azrael.clerk.Clerk(reset=True)
-    ret = clerk.spawn(templateID, sv)
-    assert ret.ok
-    objID = ret.data
+    # Spawn an object.
+    objID = int2id(1)
+    assert btInterface.spawn(objID, sv, np.int64(1).tostring(), 1.0).ok
 
     # Verify the SV data.
-    ret = clerk.getStateVariables([objID])
+    leo.step(0, 10)
+    ret = btInterface.getStateVariables([objID])
     assert ret.ok
     assert ret.data[objID].imass == 2
     assert ret.data[objID].scale == 3
@@ -179,17 +174,11 @@ def test_setStateVariables_advanced(clsLeonard):
 
     # Update the object's SV data.
     sv_new = bullet_data.BulletDataOverride(imass=4, scale=5, cshape=cs_cube)
-    assert clerk.setStateVariables(objID, sv_new).ok
-
-    # Advance the simulation by exactly one step. This must pick up the new
-    # values and apply them.
-    btInterface.initSVDB(reset=False)
-    leo = clsLeonard()
-    leo.setup()
-    leo.step(0.1, 10)
+    assert btInterface.setStateVariables(objID, sv_new).ok
 
     # Verify the SV data.
-    ret = clerk.getStateVariables([objID])
+    leo.step(0, 10)
+    ret = btInterface.getStateVariables([objID])
     assert (ret.ok, len(ret.data)) == (True, 1)
     sv = ret.data[objID]
     assert (sv.imass == 4) and (sv.scale == 5)
@@ -208,6 +197,7 @@ def test_move_single_object(clsLeonard):
     clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     # Instantiate Leonard.
+    btInterface.initSVDB(reset=True)
     leonard = clsLeonard()
     leonard.setup()
 
@@ -225,11 +215,8 @@ def test_move_single_object(clsLeonard):
     assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
     # Give the object a velocity.
-    ret = btInterface.getStateVariables([id_0])
-    assert ret.ok
-    sv = ret.data[id_0]
-    sv.velocityLin[:] = [1, 0, 0]
-    assert btInterface.update(id_0, sv).ok
+    sv = bullet_data.BulletDataOverride(velocityLin=np.array([1, 0, 0]))
+    assert btInterface.setStateVariables(id_0, sv).ok
 
     # Advance the simulation by another second and verify the objects have
     # moved accordingly.
@@ -253,6 +240,7 @@ def test_move_two_objects_no_collision(clsLeonard):
     clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     # Instantiate Leonard.
+    btInterface.initSVDB(reset=True)
     leonard = clsLeonard()
     leonard.setup()
 
@@ -436,8 +424,10 @@ def test_computeCollisionSetsAABB(dim):
 
     Then use subsets of these 10 objects to test basic collision detection.
     """
-    # Reset the SV database.
+    # Reset the SV database and instantiate a Leonard.
     btInterface.initSVDB(reset=True)
+    leo = azrael.leonard.LeonardBase()
+    leo.setup()
 
     # Create several objects for this test.
     all_id = [int2id(_) for _ in range(10)]
@@ -458,9 +448,8 @@ def test_computeCollisionSetsAABB(dim):
     del SVs
 
     # Retrieve all SVs as Leonard does.
-    ret = btInterface.getStateVariables(all_id)
-    all_sv = ret.data
-    assert (ret.ok, len(all_id)) == (True, len(all_sv))
+    leo.step(0, 60)
+    assert len(all_id) == len(leo.allObjects)
 
     def ccsWrapper(IDs_hr, expected_hr):
         """
@@ -478,10 +467,11 @@ def test_computeCollisionSetsAABB(dim):
         test_objIDs = [int2id(_) for _ in IDs_hr]
 
         # Compile the set of SVs for curIDs.
-        sv = [all_sv[_] for _ in test_objIDs]
+        sv = [leo.allObjects[_] for _ in test_objIDs]
+        aabb = [leo.allAABBs[_] for _ in test_objIDs]
 
         # Determine the list of potential collision sets.
-        ret = azrael.leonard.computeCollisionSetsAABB(test_objIDs, sv)
+        ret = azrael.leonard.computeCollisionSetsAABB(test_objIDs, sv, aabb)
         assert ret.ok
 
         # Convert the IDs in res back to human readable format.
@@ -526,6 +516,7 @@ def test_force_grid(clsLeonard):
     clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     # Instantiate Leonard.
+    btInterface.initSVDB(reset=True)
     leonard = clsLeonard()
     leonard.setup()
 
@@ -557,13 +548,14 @@ def test_force_grid(clsLeonard):
     assert ret.ok
     assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
-    # Specify a grid value of 1N in x-direction.
+    # Specify a grid value of 1 Newton in x-direction.
     pos = np.array([0, 0, 0], np.float64)
     value = np.array([1, 0, 0], np.float64)
     assert vg.setValue('force', pos, value).ok
 
     # Step the simulation and verify the object moved accordingly.
     leonard.step(1.0, 60)
+
     ret = btInterface.getStateVariables([id_0])
     assert ret.ok
     assert 0.4 <= ret.data[id_0].position[0] < 0.6
@@ -574,17 +566,211 @@ def test_force_grid(clsLeonard):
     print('Test passed')
 
 
+def test_create_work_package_without_objects():
+    """
+    Create, fetch, update, and count Bullet work packages.
+
+    This test does not insert any objects into the simulation. It only tests
+    the general functionality to add, retrieve, and update work packages.
+    """
+    # Reset the SV database and instantiate a Leonard.
+    btInterface.initSVDB(reset=True)
+    leo = azrael.leonard.LeonardBulletSweepingMultiST()
+    worker = azrael.leonard.LeonardBulletSweepingMultiMTWorker(1, 100000)
+
+    # The token to use for this test.
+    token = 1
+
+    # There must not be any work packages yet.
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 0)
+
+    # This call is invalid because the IDs must be a non-empty list.
+    assert not leo.createWorkPackage([], token, 1, 2).ok
+
+    # This call is invalid because the Leo has not object with this ID
+    assert not leo.createWorkPackage([10], token, 1, 2).ok
+
+    # There must still not be any work packages.
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 0)
+
+    # Test data.
+    data_0 = bullet_data.BulletData(imass=1)
+    id_1, id_2 = int2id(1), int2id(2)
+    templateID = np.int64(1).tostring()
+    aabb, dt, maxsteps = 1, 2, 3 
+
+    # Add two new objects to Leonard.
+    assert btInterface.spawn(id_1, data_0, templateID, aabb).ok
+    assert btInterface.spawn(id_2, data_0, templateID, aabb).ok
+    leo.processCommandsAndSync()
+
+    # Create a work package for two object IDs. The WPID must be 1.
+    ret = leo.createWorkPackage([id_1], token, dt, maxsteps)
+    assert (ret.ok, ret.data) == (True, 1)
+
+    # There must now be exactly one work package.
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 1)
+
+    # Create a second WP. This one must have WPID=2.
+    ret = leo.createWorkPackage([id_2], token, dt, maxsteps)
+    assert (ret.ok, ret.data) == (True, 2)
+
+    # There must now be exactly two work packages.
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 2)
+
+    # Attempt to fetch a non-existing ID. This must fail and the number of Work
+    # Packages must remain at 2.
+    assert not worker.getWorkPackage(0).ok
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 2)
+
+    # Retrieve first WP. It must return a list with one entry.
+    ret = worker.getWorkPackage(1)
+    assert (ret.ok, len(ret.data['wpdata'])) == (True, 1)
+    meta = ret.data['wpmeta']
+    assert (meta.token, meta.dt, meta.maxsteps) == (token, dt, maxsteps)
+
+    # There must still be two work packages because none has been updated yet.
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 2)
+
+    z = [0, 0, 0]
+    WPData = azrael.leonard.WPData
+    newWP = [WPData(id_1, data_0.toJsonDict(), z, z)]
+    del z
+
+    # Update a non-existing work package. The newWP argument is irrelevant
+    # for this test.
+    assert not worker.updateWorkPackage(10, token, newWP).ok
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 2)
+
+    # The WP count must be zero for an invalid token value.
+    ret = leo.countWorkPackages(token + 1)
+    assert (ret.ok, ret.data) == (True, 0)
+
+    # Update the first WP. Once again, the newWP argument is irrelevant for
+    # this test.
+    assert worker.updateWorkPackage(1, token, newWP).ok
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 1)
+
+    # Try to update the same WP once more. This must fail since the WPID was
+    # already updated.
+    assert not worker.updateWorkPackage(1, token, newWP).ok
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 1)
+
+    # Update (and thus mark as completed) the other work package.
+    assert worker.updateWorkPackage(2, token, newWP).ok
+    ret = leo.countWorkPackages(token)
+    assert (ret.ok, ret.data) == (True, 0)
+
+    print('Test passed')
+
+
+def test_create_work_package_with_objects():
+    """
+    Create, fetch, and update Bullet work packages.
+
+    Similar to test_create_work_package_without_objects but now the there are
+    actual objects in the simulation.
+    """
+    # Reset the SV database and instantiate a Leonard.
+    btInterface.initSVDB(reset=True)
+    leo = azrael.leonard.LeonardBulletSweepingMultiST()
+    worker = azrael.leonard.LeonardBulletSweepingMultiMTWorker(1, 100000)
+    leo.setup()
+
+    # The token to use in this test.
+    token = 1
+
+    # Convenience.
+    data_1 = bullet_data.BulletData(imass=1)
+    data_2 = bullet_data.BulletData(imass=2)
+    data_3 = bullet_data.BulletData(imass=3)
+    templateID = np.int64(1).tostring()
+    aabb = 1
+    id_1, id_2, id_3 = int2id(1), int2id(2), int2id(3)
+    
+    # Spawn new objects.
+    assert btInterface.spawn(id_1, data_1, templateID, aabb)
+    assert btInterface.spawn(id_2, data_2, templateID, aabb)
+    assert btInterface.spawn(id_3, data_3, templateID, aabb)
+    leo.processCommandsAndSync()
+
+    # Add ID1 to the WP. The WPID must be 1.
+    ret = leo.createWorkPackage([id_1], token, dt=1, maxsteps=2)
+    assert (ret.ok, ret.data) == (True, 1)
+    wpid_1 = ret.data
+
+    # Add ID1 and ID2 to the second WP. The WPID must be 2.
+    ret = leo.createWorkPackage([id_1, id_2], token, dt=3, maxsteps=4)
+    assert (ret.ok, ret.data) == (True, 2)
+    wpid_2 = ret.data
+
+    # Retrieve the first work package.
+    ret = worker.getWorkPackage(wpid_1)
+    assert (ret.ok, len(ret.data['wpdata'])) == (True, 1)
+    data = ret.data['wpdata']
+    meta = ret.data['wpmeta']
+    assert (meta.token, meta.dt, meta.maxsteps) == (token, 1, 2)
+    assert data[0].id == id_1
+    assert data[0].sv == data_1
+    assert np.array_equal(data[0].central_force, [0, 0, 0])
+
+    # Retrieve the second work package.
+    ret = worker.getWorkPackage(wpid_2)
+    data = ret.data['wpdata']
+    meta = ret.data['wpmeta']
+    assert (meta.token, meta.dt, meta.maxsteps) == (token, 3, 4)
+    assert (ret.ok, len(data)) == (True, 2)
+    assert (data[0].id, data[1].id) == (id_1, id_2)
+    assert (data[0].sv, data[1].sv) == (data_1, data_2)
+    assert np.array_equal(data[0].central_force, [0, 0, 0])
+    assert np.array_equal(data[1].central_force, [0, 0, 0])
+
+    # Create a new SV data to replace the old one.
+    data_4 = bullet_data.BulletData(imass=4)
+    z = [0, 0, 0]
+    WPData = azrael.leonard.WPData
+    newWP = [WPData(id_1, data_4.toJsonDict(), z, z)]
+    del z
+
+    # Leonard must still have the original object.
+    assert leo.allObjects[id_1] == data_1
+
+    # Update the first work package with the wrong token. The call must fail
+    # and the data in Leonard must remain intact.
+    assert not worker.updateWorkPackage(wpid_1, token + 1, newWP).ok
+    assert leo.allObjects[id_1] == data_1
+
+    # Update the first work package with the correct token. This must succeed
+    # and update the value in Leonard's instance variable.
+    assert worker.updateWorkPackage(wpid_1, token, newWP).ok
+    assert leo.pullCompletedWorkPackages().ok
+    assert leo.allObjects[id_1] == data_4
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
-    test_force_grid(azrael.leonard.LeonardBase)
+    test_create_work_package_with_objects()
+    test_create_work_package_without_objects()
+
     test_worker_respawn()
-    test_setStateVariables_basic(azrael.leonard.LeonardBase)
-    test_setStateVariables_advanced(azrael.leonard.LeonardBase)
     test_sweeping_2objects()
     test_sweeping_3objects()
     test_computeCollisionSetsAABB(0)
-    test_move_single_object(azrael.leonard.LeonardBaseWorkpackages)
-    test_move_two_objects_no_collision(azrael.leonard.LeonardBaseWorkpackages)
-    test_move_single_object(azrael.leonard.LeonardBulletMonolithic)
-    test_move_two_objects_no_collision(azrael.leonard.LeonardBulletMonolithic)
-    test_move_single_object(azrael.leonard.LeonardBase)
-    test_move_two_objects_no_collision(azrael.leonard.LeonardBase)
+
+    for _engine in allEngines:
+        print('\nEngine: {}'.format(_engine))
+        test_force_grid(_engine)
+        test_setStateVariables_advanced(_engine)
+        test_setStateVariables_basic(_engine)
+        test_move_single_object(_engine)
+        test_move_two_objects_no_collision(_engine)

@@ -35,10 +35,15 @@ import azrael.bullet.boost_bullet
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
+from collections import namedtuple
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
 RetVal = azrael.util.RetVal
+
+# Work package related.
+WPData = namedtuple('WPRecord', 'id sv central_force torque')
+WPMeta = namedtuple('WPAdmin', 'token dt maxsteps')
 
 
 @typecheck
@@ -106,7 +111,7 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
 
 
 @typecheck
-def computeCollisionSetsAABB(IDs: list, SVs: list):
+def computeCollisionSetsAABB(IDs: list, SVs: list, aabbs: list):
     """
     Return potential collision sets among all ``IDs`` and associated ``SVs``.
 
@@ -118,12 +123,6 @@ def computeCollisionSetsAABB(IDs: list, SVs: list):
     # Sanity check.
     if len(IDs) != len(SVs):
         return RetVal(False, 'Inconsistent parameters', None)
-
-    # Fetch all AABBs.
-    ret = btInterface.getAABB(IDs)
-    if not ret.ok:
-        return RetVal(False, ret.msg, None)
-    aabbs = ret.data
 
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
     # must contain the min/max spatial extent in x/y/z direction.
@@ -193,6 +192,8 @@ class LeonardBase(multiprocessing.Process):
 
         self.allObjects = {}
         self.allAABBs = {}
+        self.allForces = {}
+        self.allTorques = {}
 
     def setup(self):
         """
@@ -237,22 +238,12 @@ class LeonardBase(multiprocessing.Process):
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
-        # Retrieve the SV for all objects.
-        ret = btInterface.getAllStateVariables()
-        if not ret.ok:
-            # fixme: proper error handling
-            print('bug: could not get all state variables')
-            return
-        self.allObjects = ret.data
+        self.processCommandQueue()
 
         # Iterate over all objects and update their SV information in Bullet.
         for objID, sv in self.allObjects.items():
             # Fetch the force vector for the current object from the DB.
-            ret = btInterface.getForceAndTorque(objID)
-            if not ret.ok:
-                continue
-            else:
-                force, torque = ret.data['force'], ret.data['torque']
+            force = np.array(self.allForces[objID], np.float64)
 
             # Add the force defined on the 'force' grid.
             force = self.applyGridForce(force, sv.position)
@@ -261,8 +252,11 @@ class LeonardBase(multiprocessing.Process):
             sv.velocityLin[:] += 0.5 * force
             sv.position[:] += dt * sv.velocityLin
 
-            # Serialise the state variables and update them in the DB.
-            btInterface.update(objID, sv)
+            self.allForces[objID] = [0, 0, 0]
+            self.allTorques[objID] = [0, 0, 0]
+            self.allObjects[objID] = sv
+
+        self.syncObjects()
 
     def processCommandQueue(self):
         """
@@ -270,6 +264,10 @@ class LeonardBase(multiprocessing.Process):
 
         fixme: messy
         """
+        BulletData = bullet_data.BulletData
+        BulletDataOverride = bullet_data.BulletDataOverride
+        fields = BulletDataOverride._fields
+
         # Remove objects.
         docs = list(self._DB_CMDRemove.find())
         for doc in docs:
@@ -278,23 +276,6 @@ class LeonardBase(multiprocessing.Process):
                 self._DB_SV.remove({'objid': objID})
                 del self.allObjects[objID]
         self._DB_CMDRemove.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
-
-        # Update existing objects.
-        docs = list(self._DB_CMDModify.find())
-        fun = btInterface._updateBulletDataTuple
-        BulletData = bullet_data.BulletData
-        BulletDataOverride = bullet_data.BulletDataOverride
-        fields = BulletDataOverride._fields
-        for doc in docs:
-            objID, sv_new = doc['objid'], doc['sv']
-            if objID in self.allObjects:
-                sv_new = BulletDataOverride(**dict(zip(fields, sv_new)))
-                sv_old = self.allObjects[objID]
-                sv_old = [getattr(sv_old, _) for _ in fields]
-                sv_old = BulletData(*sv_old)
-                self.allObjects[objID] = fun(sv_old, sv_new)
-        self._DB_CMDModify.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
-        del docs, fun
 
         # Fetch all spawn commands and update the object cache.
         docs = list(self._DB_CMDSpawn.find())
@@ -307,7 +288,23 @@ class LeonardBase(multiprocessing.Process):
                 sv_old = doc['sv']
                 self.allObjects[objID] = BulletData(**sv_old)
                 self.allAABBs[objID] = float(doc['AABB'])
+                self.allForces[objID] = [0, 0, 0]
+                self.allTorques[objID] = [0, 0, 0]
         self._DB_CMDSpawn.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
+
+        # Update existing objects.
+        docs = list(self._DB_CMDModify.find())
+        fun = btInterface._updateBulletDataTuple
+        for doc in docs:
+            objID, sv_new = doc['objid'], doc['sv']
+            if objID in self.allObjects:
+                sv_new = BulletDataOverride(**dict(zip(fields, sv_new)))
+                sv_old = self.allObjects[objID]
+                sv_old = [getattr(sv_old, _) for _ in fields]
+                sv_old = BulletData(*sv_old)
+                self.allObjects[objID] = fun(sv_old, sv_new)
+        self._DB_CMDModify.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
+        del docs, fun
 
     def syncObjects(self):
         """
@@ -322,8 +319,19 @@ class LeonardBase(multiprocessing.Process):
 
     def processCommandsAndSync(self):
         self.processCommandQueue()
-        self.syncObjects()
+        self.syncObjects()                    
         
+    @typecheck
+    def countWorkPackages(self, token):
+        """
+        Return the number of unprocessed work packages.
+    
+        :param int token: token value associated with this work package.
+        :return bool: Success.
+        """
+        cnt = self._DB_WP.find({'token': token}).count()
+        return RetVal(True, None, cnt)
+    
     def run(self):
         """
         Drive the periodic physics updates.
@@ -386,39 +394,41 @@ class LeonardBulletMonolithic(LeonardBase):
         # Convenience.
         vg = azrael.vectorgrid
 
-        # Retrieve the SV for all objects.
-        ret = btInterface.getAllStateVariables()
-        allSV = ret.data
+        self.processCommandQueue()
 
         # Iterate over all objects and update them.
-        for objID, sv in allSV.items():
+        for objID, sv in self.allObjects.items():
             # Convert the objID to an integer.
             btID = util.id2int(objID)
 
             # Pass the SV data from the DB to Bullet.
             self.bullet.setObjectData(btID, sv)
 
-            # Retrieve the force vector and tell Bullet to apply it.
-            ret = btInterface.getForceAndTorque(objID)
-            if ret.ok:
-                force, torque = ret.data['force'], ret.data['torque']
-                # Add the force defined on the 'force' grid.
-                force = self.applyGridForce(force, sv.position)
+            # Convenience.
+            force = np.array(self.allForces[objID], np.float64)
+            torque = np.array(self.allTorques[objID], np.float64)
 
-                # Apply the force to the object.
-                self.bullet.applyForceAndTorque(btID, force, torque)
+            # Add the force defined on the 'force' grid.
+            force = self.applyGridForce(force, sv.position)
+
+            # Apply the force to the object.
+            self.bullet.applyForceAndTorque(btID, force, torque)
 
         # Wait for Bullet to advance the simulation by one step.
-        IDs = [util.id2int(_) for _ in allSV.keys()]
+        IDs = [util.id2int(_) for _ in self.allObjects.keys()]
         with util.Timeit('compute') as timeit:
             self.bullet.compute(IDs, dt, maxsteps)
 
         # Retrieve all objects from Bullet, overwrite the state variables that
         # the user wanted to change explicitly (if any)
-        for objID, sv in allSV.items():
+        for objID in self.allObjects:
             ret = self.bullet.getObjectData([util.id2int(objID)])
             if ret.ok:
-                btInterface.update(objID, ret.data)
+                self.allObjects[objID] = ret.data
+            self.allForces[objID] = [0, 0, 0]
+            self.allTorques[objID] = [0, 0, 0]
+
+        self.syncObjects()
 
 
 class LeonardBulletSweeping(LeonardBulletMonolithic):
@@ -446,21 +456,19 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
-        # Retrieve the SV for all objects.
-        ret = btInterface.getAllStateVariables()
-        allSV = ret.data
-
-        # Compile a dedicated list of IDs and their SVs for the collision
-        # detection algorithm.
-        IDs = list(allSV.keys())
-        sv = [allSV[_] for _ in IDs]
+        self.processCommandQueue()
 
         # Compute the collision sets.
         with util.Timeit('CCS') as timeit:
-            ret = computeCollisionSetsAABB(IDs, sv)
-        assert ret.ok
-        collSets = ret.data
-        del ret
+            labels = list(self.allObjects.keys())
+            SVs = list(self.allObjects.values())
+            AABBs = list(self.allAABBs.values())
+            collSets = computeCollisionSetsAABB(labels, SVs, AABBs)
+            del labels, SVs, AABBs
+        if not collSets.ok:
+            self.logit.error('ComputeCollisionSetsAABB returned an error')
+            sys.exit(1)
+        collSets = collSets.data
 
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
@@ -471,7 +479,7 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
         # Process all subsets individually.
         for subset in collSets:
             # Compile the subset dictionary for the current collision set.
-            coll_SV = {_: allSV[_] for _ in subset}
+            coll_SV = {_: self.allObjects[_] for _ in subset}
 
             # Iterate over all objects and update them.
             for objID, sv in coll_SV.items():
@@ -481,27 +489,29 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
                 # Pass the SV data from the DB to Bullet.
                 self.bullet.setObjectData(btID, sv)
 
-                # Retrieve the force vector and tell Bullet to apply it.
-                ret = btInterface.getForceAndTorque(objID)
-                if ret.ok:
-                    force, torque = ret.data['force'], ret.data['torque']
-                    # Add the force defined on the 'force' grid.
-                    force = self.applyGridForce(force, sv.position)
+                # Convenience.
+                force = np.array(self.allForces[objID], np.float64)
+                torque = np.array(self.allTorques[objID], np.float64)
 
-                    # Apply the final force to the object.
-                    self.bullet.applyForceAndTorque(btID, force, torque)
+                # Add the force defined on the 'force' grid.
+                force = self.applyGridForce(force, sv.position)
+
+                # Apply the final force to the object.
+                self.bullet.applyForceAndTorque(btID, force, torque)
 
             # Wait for Bullet to advance the simulation by one step.
             IDs = [util.id2int(_) for _ in coll_SV.keys()]
             with util.Timeit('compute') as timeit:
                 self.bullet.compute(IDs, dt, maxsteps)
 
-            # Retrieve all objects from Bullet, overwrite the state variables
-            # that the user wanted to change explicitly (if any)
+            # Retrieve all objects from Bullet.
             for objID, sv in coll_SV.items():
                 ret = self.bullet.getObjectData([util.id2int(objID)])
                 if ret.ok:
-                    btInterface.update(objID, ret.data)
+                    self.allObjects[objID] = ret.data
+                self.allForces[objID] = [0, 0, 0]
+                self.allTorques[objID] = [0, 0, 0]
+        self.syncObjects()
 
 
 class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
@@ -518,6 +528,12 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.token = 0
+
+        # Database handles.
+        client = pymongo.MongoClient()
+        self._DB_WP = client['azrael']['wp']
+        self._DB_WP.drop()
+        self._DB_WP.insert({'name': 'wpcnt', 'cnt': 0})
 
     def setup(self):
         # Instantiate several Bullet engines. The (1, 0) parameters mean
@@ -540,20 +556,15 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
-        # Retrieve the SV for all objects.
-        with util.Timeit('Leonard.getAllSVs') as timeit:
-            allSVs = btInterface.getAllStateVariables()
-            if not allSVs.ok:
-                self.logit.warning('Could not retrieve the SVs')
-                return
+        self.processCommandQueue()        
 
         # Compute the collision sets.
-        allSVs = allSVs.data
         with util.Timeit('Leonard.CCS') as timeit:
-            labels = list(allSVs.keys())
-            SVs = list(allSVs.values())
-            collSets = computeCollisionSetsAABB(labels, SVs)
-            del labels, SVs
+            labels = list(self.allObjects.keys())
+            SVs = list(self.allObjects.values())
+            AABBs = list(self.allAABBs.values())
+            collSets = computeCollisionSetsAABB(labels, SVs, AABBs)
+            del labels, SVs, AABBs
         if not collSets.ok:
             self.logit.error('ComputeCollisionSetsAABB returned an error')
             sys.exit(1)
@@ -568,7 +579,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         # Put each collision set into its own Work Package.
         with util.Timeit('Leonard.CreateWPs') as timeit:
             all_wpids = []
-            cwp = btInterface.createWorkPackage
+            cwp = self.createWorkPackage
             for subset in collSets:
                 ret = cwp(list(subset), self.token, dt, maxsteps)
                 if ret.ok:
@@ -582,11 +593,15 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         with util.Timeit('Leonard.ProcessWPs_2') as timeit:
             self.waitUntilWorkpackagesComplete(all_wpids, self.token)
 
+        # Synchronise the objects with the DB.
+        self.syncObjects()
+
     def waitUntilWorkpackagesComplete(self, all_wpids, token):
         """
         Block until all work packages have been completed.
         """
-        while btInterface.countWorkPackages(token).data > 0:
+        while self._DB_WP.find({'wpid': {'$exists': 1}}).count() > 0:
+            self.pullCompletedWorkPackages()
             time.sleep(0.001)
 
     @typecheck
@@ -598,7 +613,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
 
         :param int wpid: work package ID.
         """
-        ret = btInterface.getWorkPackage(wpid)
+        ret = self.getWorkPackage(wpid)
         assert ret.ok
         worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
 
@@ -618,8 +633,8 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
             engine.setObjectData(btID, sv)
 
             # Retrieve the force vector and tell Bullet to apply it.
-            force = np.fromstring(obj.central_force)
-            torque = np.fromstring(obj.torque)
+            force = np.array(obj.central_force, np.float64)
+            torque = np.array(obj.torque, np.float64)
 
             # Add the force defined on the 'force' grid.
             force = self.applyGridForce(force, sv.position)
@@ -633,7 +648,7 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
         engine.compute(IDs, meta.dt, meta.maxsteps)
 
         # Retrieve the objects from Bullet again and update them in the DB.
-        out = {}
+        out = []
         for obj in worklist:
             ret = engine.getObjectData([util.id2int(obj.id)])
             sv = ret.data
@@ -642,14 +657,158 @@ class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
                 # Something went wrong. Reuse the old SV.
                 sv = obj.sv
                 self.logit.error('Unable to get all objects from Bullet')
-            out[obj.id] = sv
+            out.append(WPData(obj.id, sv.toJsonDict(), [0, 0, 0], [0, 0, 0]))
 
         # Update the data and delete the WP.
-        ret = btInterface.updateWorkPackage(wpid, meta.token, out)
+        ret = self.updateWorkPackage(wpid, meta.token, out)
         if not ret.ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
 
+
+    @typecheck
+    def createWorkPackage(self, objIDs: (tuple, list), token: int,
+                          dt: (int, float), maxsteps: int):
+        """
+        Create a new Work Package (WP) and return its ID.
+    
+        The work package has an associated ``token`` value and all ``objIDs`` in
+        the work list will be marked with it to prevent accidental updates.
+    
+        The ``dt`` and ``maxsteps`` arguments are for the underlying physics
+        engine.
+    
+        .. note::
+           A work package contains only the objIDs but not their SV. The
+           ``getWorkPackage`` function takes care of compiling this information.
+    
+        :param iterable objIDs: list of object IDs in the new work package.
+        :param int token: token value associated with this work package.
+        :param float dt: time step for this work package.
+        :param int maxsteps: number of sub-steps for the time step.
+        :return: Work package ID
+        :rtype: int
+        """
+        # Sanity check.
+        if len(objIDs) == 0:
+            return RetVal(False, 'Work package is empty', None)
+    
+        # Create a new work package.
+        try:
+            wpdata = [WPData(objID,
+                                 self.allObjects[objID].toJsonDict(),
+                                 self.allForces[objID],
+                                 self.allTorques[objID])
+                              for objID in objIDs]
+        except KeyError as err:
+            return RetVal(False, 'Cannot form WP', None)
+
+        # Obtain a new and unique work package ID.
+        wpid = self._DB_WP.find_and_modify(
+            {'name': 'wpcnt'}, {'$inc': {'cnt': 1}}, new=True)
+        if wpid is None:
+            self.logit.error('Could not fetch WPID counter - this is a bug!')
+            return RetVal(False, 'Could not get new WP counter', None)
+        wpid = wpid['cnt']
+    
+        # Remove all WP with the current ID. This is a precaution since there
+        # should not be any to begin with.
+        ret = self._DB_WP.remove({'wpid': wpid}, multi=True)
+        if ret['n'] > 0:
+            self.logit.warning('A previous WP with ID={} already existed'.format(wpid))
+    
+        data = {'wpid': wpid, 'token': token, 'dt': dt, 'maxsteps': maxsteps,
+                'wpdata': wpdata}
+        
+        ret = self._DB_WP.insert(data)
+        return RetVal(True, None, wpid)
+    
+    @typecheck
+    def getWorkPackage(self, wpid: int):
+        """
+        Return the SV data for all objects specified in ``wpid``.
+    
+        This function returns a dictionary with two keys. The first key ('wpdata')
+        contains a list of ``WPData`` instances that describe the object states and
+        forces applied to them, and a 'wpmeta' field that is an instance of
+        ``WPMeta``.
+    
+        fixme: requires test that this function only returns a WP with token
+               (ie. it must never return an updated WP).
+
+        :param int wpid: work package ID.
+        :return: {'wpdata': list of WPData instances, 'wpmeta': meta information}
+        :rtype: dict
+        """
+    
+        # Retrieve the work package.
+        doc = self._DB_WP.find_one({'wpid': wpid, 'token': {'$exists': 1}})
+        if doc is None:
+            return RetVal(False, 'Unknown work package <{}>'.format(wpid), None)
+    
+        wpdata = [WPData(*_) for _ in doc['wpdata']]
+        for idx, val in enumerate(wpdata):
+            wpdata[idx] = val._replace(sv=bullet_data.fromJsonDict(val.sv))
+
+        # Put the meta data of the work package into another named tuple.
+        meta = WPMeta(doc['token'], doc['dt'], doc['maxsteps'])
+        return RetVal(True, None, {'wpdata': wpdata, 'wpmeta': meta})
+    
+    
+    @typecheck
+    def updateWorkPackage(self, wpid: int, token, wpdata: (tuple, list)):
+        """
+        Update the objects in ``wpid`` with the values in ``svdict``.
+    
+        This function only makes changes to objects defined in the WP ``wpid``,
+        and even then only if the ``token`` value matches.
+    
+        fixme: docu (new parameter types)
+
+        :param int wpid: work package ID.
+        :param int token: token value associated with this work package.
+        :param dict svdict: {objID: sv} dictionary
+        :return bool: Success.
+        """
+        doc = self._DB_WP.find_and_modify(
+            {'wpid': wpid, 'token': token},
+            {'$set': {'wpdata': wpdata},
+             '$unset': {'token': 1}})
+        return RetVal(doc is not None, None, None)
+
+    def pullCompletedWorkPackages(self):
+        """
+        Fetch newly available Work Packages.
+
+        fixme: most of this function is a duplicate of getWorkPackage
+        fixme: docu and parameters
+
+        All fetched work packages will be immediately removed from the DB and
+        all objects updated in the local cache. This method will also clear the
+        force and torque values.
+
+        :return int: number of fetched WPs.
+        """
+        cnt = 0
+        while True:
+            # fixme: improve this query once the counters were outsourced.
+            # Retrieve the work package.
+            doc = self._DB_WP.find_and_modify(
+                {'token': {'$exists': 0},
+                 'name': {'$exists': 0}},
+                remove=True)
+            if doc is None:
+                break
+        
+            # fixme: simplify
+            wpdata = [WPData(*_) for _ in doc['wpdata']]
+            for idx, val in enumerate(wpdata):
+                objID = val.id
+                self.allObjects[objID] = bullet_data.fromJsonDict(val.sv)
+                self.allForces[objID] = [0, 0, 0]
+                self.allTorques[objID] = [0, 0, 0]
+            cnt += 1
+        return RetVal(True, None, cnt)
 
 class WorkerManager(multiprocessing.Process):
     """
@@ -803,6 +962,12 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
 
+        # Database handles.
+        client = pymongo.MongoClient()
+        self._DB_WP = client['azrael']['wp']
+        self._DB_WP.drop()
+        self._DB_WP.insert({'name': 'wpcnt', 'cnt': 0})
+
     def applyGridForce(self, force, pos):
         """
         Return updated ``force`` that takes the force grid value at ``pos``
@@ -825,6 +990,59 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         else:
             return force
 
+    @typecheck
+    def getWorkPackage(self, wpid: int):
+        """
+        Return the SV data for all objects specified in ``wpid``.
+    
+        This function returns a dictionary with two keys. The first key ('wpdata')
+        contains a list of ``WPData`` instances that describe the object states and
+        forces applied to them, and a 'wpmeta' field that is an instance of
+        ``WPMeta``.
+    
+        fixme: requires test that this function only returns a WP with token
+               (ie. it must never return an updated WP).
+
+        :param int wpid: work package ID.
+        :return: {'wpdata': list of WPData instances, 'wpmeta': meta information}
+        :rtype: dict
+        """
+    
+        # Retrieve the work package.
+        doc = self._DB_WP.find_one({'wpid': wpid, 'token': {'$exists': 1}})
+        if doc is None:
+            return RetVal(False, 'Unknown work package <{}>'.format(wpid), None)
+    
+        wpdata = [WPData(*_) for _ in doc['wpdata']]
+        for idx, val in enumerate(wpdata):
+            wpdata[idx] = val._replace(sv=bullet_data.fromJsonDict(val.sv))
+
+        # Put the meta data of the work package into another named tuple.
+        meta = WPMeta(doc['token'], doc['dt'], doc['maxsteps'])
+        return RetVal(True, None, {'wpdata': wpdata, 'wpmeta': meta})
+    
+    
+    @typecheck
+    def updateWorkPackage(self, wpid: int, token, wpdata: (tuple, list)):
+        """
+        Update the objects in ``wpid`` with the values in ``svdict``.
+    
+        This function only makes changes to objects defined in the WP ``wpid``,
+        and even then only if the ``token`` value matches.
+    
+        fixme: docu (new parameter types)
+
+        :param int wpid: work package ID.
+        :param int token: token value associated with this work package.
+        :param dict svdict: {objID: sv} dictionary
+        :return bool: Success.
+        """
+        doc = self._DB_WP.find_and_modify(
+            {'wpid': wpid, 'token': token},
+            {'$set': {'wpdata': wpdata},
+             '$unset': {'token': 1}})
+        return RetVal(doc is not None, None, None)
+    
     @typecheck
     def run(self):
         """
@@ -868,7 +1086,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
 
     def processWorkPackage(self, wpid: int):
         with util.Timeit('Worker.1_fetchWP') as timeit:
-            ret = btInterface.getWorkPackage(wpid)
+            ret = self.getWorkPackage(wpid)
         assert ret.ok
         worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
 
@@ -885,8 +1103,8 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
                 self.bullet.setObjectData(btID, sv)
 
                 # Retrieve the force vector and tell Bullet to apply it.
-                force = np.fromstring(obj.central_force)
-                torque = np.fromstring(obj.torque)
+                force = np.array(obj.central_force, np.float64)
+                torque = np.array(obj.torque, np.float64)
 
                 # Add the force defined on the 'force' grid.
                 with util.Timeit('Worker.2.2_grid') as timeit:
@@ -903,7 +1121,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
 
         with util.Timeit('Worker.4_fetchFromBullet') as timeit:
             # Retrieve the objects from Bullet again and update them in the DB.
-            out = {}
+            out = []
             for obj in worklist:
                 ret = self.bullet.getObjectData([util.id2int(obj.id)])
                 sv = ret.data
@@ -911,13 +1129,11 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
                     # Something went wrong. Reuse the old SV.
                     sv = obj.sv
                     self.logit.error('Unable to get all objects from Bullet')
-
-                # Save the results.
-                out[obj.id] = sv
+                out.append(WPData(obj.id, sv.toJsonDict(), [0, 0, 0], [0, 0, 0]))
 
         # Update the data and delete the WP.
         with util.Timeit('Worker.5_updateWP') as timeit:
-            ret = btInterface.updateWorkPackage(wpid, meta.token, out)
+            ret = self.updateWorkPackage(wpid, meta.token, out)
         if not ret.ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
