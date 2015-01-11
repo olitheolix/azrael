@@ -30,6 +30,9 @@ allEngines = [
 def killAzrael():
     subprocess.call(['pkill', 'killme'])
 
+    # Delete all grids used in this test.
+    assert azrael.vectorgrid.deleteAllGrids().ok
+
 
 def startAzrael(ctrl_type):
     """
@@ -39,13 +42,13 @@ def startAzrael(ctrl_type):
     this makes is that the 'Websocket' version will also start a Clacks server,
     whereas for 'ZeroMQ' the respective handle will be **None**.
 
+    fixme: never used here. Move to test_harness that does use it
+           (eg. test_controller).
+
     :param str ctrl_type: the controller type ('ZeroMQ' or 'Websocket').
     :return: handles to (clerk, ctrl, clacks)
     """
     killAzrael()
-
-    # Delete all grids used in this test.
-    assert azrael.vectorgrid.deleteAllGrids().ok
 
     # Start Clerk and instantiate Controller.
     clerk = azrael.clerk.Clerk(reset=True)
@@ -193,8 +196,7 @@ def test_move_single_object(clsLeonard):
     Create a single object with non-zero initial speed and ensure Leonard moves
     it accordingly.
     """
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael('ZeroMQ')
+    killAzrael()
 
     # Instantiate Leonard.
     btInterface.initSVDB(reset=True)
@@ -202,11 +204,12 @@ def test_move_single_object(clsLeonard):
     leonard.setup()
 
     # Constants and parameters for this test.
-    templateID = '_templateCube'.encode('utf8')
+    templateID = np.int64(1).tostring()
+    id_0 = int2id(0)
+    sv = bullet_data.BulletData()
 
-    # Create a cube (a cube always exists in Azrael's template database).
-    ok, id_0 = ctrl.spawn(templateID, pos=[0, 0, 0], vel=[0, 0, 0])
-    assert ok
+    # Spawn an object.
+    assert btInterface.spawn(id_0, sv, templateID, aabb=1.0).ok
 
     # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
@@ -226,8 +229,6 @@ def test_move_single_object(clsLeonard):
     assert 0.9 <= ret.data[id_0].position[0] < 1.1
     assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
 
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
     print('Test passed')
 
 
@@ -236,22 +237,22 @@ def test_move_two_objects_no_collision(clsLeonard):
     """
     Same as previous test but with two objects.
     """
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael('ZeroMQ')
-
+    killAzrael()
+    
     # Instantiate Leonard.
     btInterface.initSVDB(reset=True)
     leonard = clsLeonard()
     leonard.setup()
 
     # Constants and parameters for this test.
-    templateID = '_templateCube'.encode('utf8')
+    templateID = np.int64(1).tostring()
+    id_0, id_1 = int2id(0), int2id(1)
+    sv_0 = bullet_data.BulletData(position=[0, 0, 0], velocityLin=[1, 0, 0])
+    sv_1 = bullet_data.BulletData(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
-    # Create two cubic objects.
-    ok, id_0 = ctrl.spawn(templateID, pos=[0, 0, 0], vel=[1, 0, 0])
-    assert ok
-    ok, id_1 = ctrl.spawn(templateID, pos=[0, 10, 0], vel=[0, -1, 0])
-    assert ok
+    # Create two objects.
+    assert btInterface.spawn(id_0, sv_0, templateID, aabb=1).ok
+    assert btInterface.spawn(id_1, sv_1, templateID, aabb=1).ok
 
     # Advance the simulation by 1s and query the states of both objects.
     leonard.step(1.0, 60)
@@ -268,8 +269,7 @@ def test_move_two_objects_no_collision(clsLeonard):
     assert 0.9 <= pos_0[0] <= 1.1
     assert 8.9 <= pos_1[1] <= 9.1
 
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
+    killAzrael()
     print('Test passed')
 
 
@@ -280,8 +280,7 @@ def test_worker_respawn():
 
     The test code is similar to ``test_move_two_objects_no_collision``.
     """
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael('ZeroMQ')
+    killAzrael()
 
     # Instantiate Leonard.
     leonard = azrael.leonard.LeonardBulletSweepingMultiMT()
@@ -289,13 +288,14 @@ def test_worker_respawn():
     leonard.setup()
 
     # Constants and parameters for this test.
-    templateID = '_templateCube'.encode('utf8')
+    templateID = np.int64(1).tostring()
+    id_0, id_1 = int2id(0), int2id(1)
+    sv_0 = bullet_data.BulletData(position=[0, 0, 0], velocityLin=[1, 0, 0])
+    sv_1 = bullet_data.BulletData(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
-    # Create two cubic objects.
-    ok, id_0 = ctrl.spawn(templateID, pos=[0, 0, 0], vel=[1, 0, 0])
-    assert ok
-    ok, id_1 = ctrl.spawn(templateID, pos=[0, 10, 0], vel=[0, -1, 0])
-    assert ok
+    # Create two objects.
+    assert btInterface.spawn(id_0, sv_0, templateID, aabb=1).ok
+    assert btInterface.spawn(id_1, sv_1, templateID, aabb=1).ok
 
     # Advance the simulation by 1s, but use many small time steps. This ensures
     # that the Workers will restart themselves many times.
@@ -316,8 +316,8 @@ def test_worker_respawn():
     assert 0.9 <= pos_0[0] <= 1.1
     assert 8.9 <= pos_1[1] <= 9.1
 
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
+    # Clean up.
+    killAzrael()
     print('Test passed')
 
 
@@ -509,11 +509,10 @@ def test_force_grid(clsLeonard):
     Create a force grid and ensure Leonard applies its values to the center of
     the mass.
     """
+    killAzrael()
+
     # Convenience.
     vg = azrael.vectorgrid
-
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael('ZeroMQ')
 
     # Instantiate Leonard.
     btInterface.initSVDB(reset=True)
@@ -521,11 +520,12 @@ def test_force_grid(clsLeonard):
     leonard.setup()
 
     # Constants and parameters for this test.
-    templateID = '_templateCube'.encode('utf8')
+    templateID = np.int64(1).tostring()
+    id_0 = int2id(0)
+    sv = bullet_data.BulletData()
 
-    # Create a cube (a cube always exists in Azrael's template database).
-    ok, id_0 = ctrl.spawn(templateID, pos=[0, 0, 0], vel=[0, 0, 0])
-    assert ok
+    # Spawn one object.
+    assert btInterface.spawn(id_0, sv, templateID, aabb=1).ok
 
     # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
@@ -561,8 +561,8 @@ def test_force_grid(clsLeonard):
     assert 0.4 <= ret.data[id_0].position[0] < 0.6
     assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
 
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
+    # Cleanup.
+    killAzrael()
     print('Test passed')
 
 
