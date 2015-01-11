@@ -967,8 +967,6 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         # Database handles.
         client = pymongo.MongoClient()
         self._DB_WP = client['azrael']['wp']
-        self._DB_WP.drop()
-        self._DB_WP.insert({'name': 'wpcnt', 'cnt': 0})
 
     def applyGridForce(self, force, pos):
         """
