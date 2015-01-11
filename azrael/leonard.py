@@ -326,6 +326,8 @@ class LeonardBase(multiprocessing.Process):
         """
         Return the number of unprocessed work packages.
     
+        fixme: should this method really be in this class?
+
         :param int token: token value associated with this work package.
         :return bool: Success.
         """
@@ -514,7 +516,7 @@ class LeonardBulletSweeping(LeonardBulletMonolithic):
         self.syncObjects()
 
 
-class LeonardBulletSweepingMultiST(LeonardBulletMonolithic):
+class LeonardBulletSweepingMultiST(LeonardBase):
     """
     Compute physics on independent collision sets with multiple engines.
 
@@ -1087,7 +1089,10 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
     def processWorkPackage(self, wpid: int):
         with util.Timeit('Worker.1_fetchWP') as timeit:
             ret = self.getWorkPackage(wpid)
-        assert ret.ok
+
+        # Skip this WP (may have been processed by another Worker already).
+        if not ret.ok:
+            return
         worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
 
         # Log the number of collision-sets in the current Work Package.
