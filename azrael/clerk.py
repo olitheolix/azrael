@@ -152,7 +152,7 @@ class Clerk(multiprocessing.Process):
                 protocol.FromClerk_Spawn_Encode),
             'remove': (
                 protocol.ToClerk_Remove_Decode,
-                self.deleteObject,
+                self.removeObject,
                 protocol.FromClerk_Remove_Encode),
             'get_statevar': (
                 protocol.ToClerk_GetStateVariable_Decode,
@@ -755,14 +755,14 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, new_id)
 
     @typecheck
-    def deleteObject(self, objID: bytes):
+    def removeObject(self, objID: bytes):
         """
         Remove ``objID`` from the physics simulation.
 
         :param bytes objID: ID of object to remove.
         :return: Success
         """
-        ret = btInterface.deleteObject(objID)
+        ret = btInterface.removeObject(objID)
         self.db_instance.remove({'objID': objID}, mult=True)
         if ret.ok:
             return RetVal(True, None, None)

@@ -64,7 +64,7 @@ def test_add_get_remove_single():
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
 
     # Attempt to remove non-existing ID --> must fail.
-    assert btInterface.deleteObject(id_1).ok
+    assert btInterface.removeObject(id_1).ok
     leo.processCommandsAndSync()
 
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
@@ -72,7 +72,7 @@ def test_add_get_remove_single():
     assert (ret.ok, len(ret.data)) == (True, 1)
 
     # Remove existing ID --> must succeed.
-    assert btInterface.deleteObject(id_0).ok
+    assert btInterface.removeObject(id_0).ok
     leo.processCommandsAndSync()
 
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: None})
@@ -213,7 +213,7 @@ def test_removeCommandsFromQueue():
     ret = btInterface.getCmdModify()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
-    assert btInterface.deleteObject(id_0).ok
+    assert btInterface.removeObject(id_0).ok
     ret = btInterface.getCmdRemove()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
@@ -231,7 +231,7 @@ def test_removeCommandsFromQueue():
     for objID in (id_0, id_1):
         assert btInterface.spawn(objID, data_0, aabb=1).ok
         assert btInterface.setStateVariables(objID, data_1).ok
-        assert btInterface.deleteObject(objID).ok
+        assert btInterface.removeObject(objID).ok
 
     # De-queue two objects --> two must have been de-queued.
     assert rcfq([id_1, id_0], [], []) == (True, None, (2, 0, 0))

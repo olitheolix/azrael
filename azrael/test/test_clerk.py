@@ -154,7 +154,7 @@ def test_spawn():
 
 def test_delete():
     """
-    Test the 'deleteObject' command in the Clerk.
+    Test the 'removeObject' command in the Clerk.
 
     Spawn an object and ensure it exists, then delete it and ensure it does not
     exist anymore.
@@ -188,7 +188,7 @@ def test_delete():
     assert ret.ok and (set(ret.data) == set([objID_1, objID_2]))
 
     # Delete the first object.
-    assert clerk.deleteObject(objID_1).ok
+    assert clerk.removeObject(objID_1).ok
 
     # Only the second object must still exist.
     leo.step(0, 1)
@@ -196,10 +196,10 @@ def test_delete():
     assert (ret.ok, ret.data) == (True, [objID_2])
 
     # Deleting the same object again must silently fail.
-    assert clerk.deleteObject(objID_1).ok
+    assert clerk.removeObject(objID_1).ok
 
     # Delete the second object.
-    assert clerk.deleteObject(objID_2).ok
+    assert clerk.removeObject(objID_2).ok
     leo.step(0, 1)
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [])
@@ -1060,7 +1060,7 @@ def test_getGeometry():
     assert np.array_equal(rgb, ret.data['rgb'])
 
     # Delete the object.
-    assert clerk.deleteObject(objID).ok
+    assert clerk.removeObject(objID).ok
 
     # Attempt to query the geometry of the now deleted object.
     assert not clerk.getGeometry(objID).ok

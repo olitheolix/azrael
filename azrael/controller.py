@@ -318,7 +318,7 @@ class ControllerBase():
         return self.serialiseAndSend('spawn', templateID, sv)
 
     @typecheck
-    def deleteObject(self, objID: bytes):
+    def removeObject(self, objID: bytes):
         """
         Remove ``objID`` from the physics simulation.
 

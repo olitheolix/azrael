@@ -164,7 +164,7 @@ def getCmdRemove():
     The commands remain in the DB and successive calls to this function will
     thus return the previous results.
 
-    :return: objects as inserted by ``deleteObject``.
+    :return: objects as inserted by ``removeObject``.
     :rtype: list of dicts.
     """
     return RetVal(True, None, list(_DB_CMDRemove.find()))
@@ -189,7 +189,7 @@ def removeCommandsFromQueue(spawn: list, modify: list, remove: list):
 
 
 @typecheck
-def deleteObject(objID: bytes):
+def removeObject(objID: bytes):
     """
     Delete ``objID`` from the physics simulation.
 

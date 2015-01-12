@@ -107,14 +107,14 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     assert (ok, ret) == (True, [id_1])
 
     # Attempt to delete a non-existing object. This must silently fail.
-    ok, ret = ctrl.deleteObject(int2id(100))
+    ok, ret = ctrl.removeObject(int2id(100))
     assert ok
     leo.step(0, 1)
     ok, ret = ctrl.getAllObjectIDs()
     assert (ok, ret) == (True, [id_1])
 
     # Delete an existing object.
-    ok, _ = ctrl.deleteObject(id_1)
+    ok, _ = ctrl.removeObject(id_1)
     assert ok
     leo.step(0, 1)
     ok, ret = ctrl.getAllObjectIDs()
