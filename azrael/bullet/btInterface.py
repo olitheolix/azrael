@@ -170,16 +170,19 @@ def getCmdRemove():
     return RetVal(True, None, list(_DB_CMDRemove.find()))
 
 @typecheck
-def removeCommandsFromQueue(spawn: list, modify: list, remove: list):
+def dequeueCommand(spawn: list, modify: list, remove: list):
     """
+    De-queue commands and return the count.
+
     Remove the documents in ``spawn``, ``modify`` and ``remove`` from the
-    command respective command queue.
+    command respective command queue. If a document does not exist it is
+    silently ignored but not added to the total count.
 
     :param list spawn: Mongo documents to remove from "spawn" queue.
     :param list modify: Mongo documents to remove from "modify" queue.
     :param list remove: Mongo documents to remove from "remove" queue.
-    :return: objects to spawn.
-    :rtype: list of {'objid': objID, 'sv': sv, 'AABB': float(aabb)}
+    :return: number of de-queued commands (num_spawn, num_modify, num_remove).
+    :rtype: tuple
     """
     ret_1 = _DB_CMDSpawn.remove({'objid': {'$in': spawn}})
     ret_2 = _DB_CMDModify.remove({'objid': {'$in': modify}})

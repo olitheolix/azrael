@@ -184,7 +184,7 @@ def test_add_same():
     print('Test passed')
 
 
-def test_removeCommandsFromQueue():
+def test_dequeueCommand():
     """
     Add-, query, and remove commands from the command queue.
     """
@@ -192,7 +192,7 @@ def test_removeCommandsFromQueue():
     btInterface.initSVDB(reset=True)
 
     # Convenience.
-    rcfq = btInterface.removeCommandsFromQueue
+    rcfq = btInterface.dequeueCommand
     data_0 = bullet_data.BulletData()
     data_1 = bullet_data.BulletDataOverride(imass=2, scale=3)
 
@@ -509,7 +509,7 @@ def test_set_get_AABB():
 
 
 if __name__ == '__main__':
-    test_removeCommandsFromQueue()
+    test_dequeueCommand()
     test_BulletDataOverride()
     test_set_get_AABB()
     test_StateVariable_tuple()
