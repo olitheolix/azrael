@@ -375,52 +375,6 @@ def _updateBulletDataTuple(orig: bullet_data.BulletData,
     return bullet_data.BulletData(**dict_orig)
 
 
-@typecheck
-def update(objID: bytes, sv: bullet_data.BulletData, token=None):
-    """
-    Update the ``sv`` data for object ``objID`` and return the success flag.
-
-    Return **False** if the update failed, most likely because the ``objID``
-    was invalid.
-
-    .. warning::
-       Do not manually call this function unless you know what you are doing,
-       because it may well break the physics synchronisation cycle.
-
-    :param bytes objID: the object for which to update the state variables.
-    :param bytes sv: encoded state variables.
-    :return bool: success.
-    """
-    # Sanity check.
-    if len(objID) != config.LEN_ID:
-        return RetVal(False, 'objID has invalid length', None)
-
-    # Retrieve the State Variables for ``objID``.
-    query = {'objid': objID}
-    if token is not None:
-        query['token'] = token
-    doc = _DB_SV.find_and_modify(
-        query, {'$set': {'attrOverride': BulletDataOverride()}}, new=False)
-    if doc is None:
-        return RetVal(False, 'Could not find update <{}>'.format(objID), None)
-
-    # Import the overriden State Variables into a ``BulletDataOverride`` tuple.
-    fields = BulletDataOverride._fields
-    sv_new = BulletDataOverride(**dict(zip(fields, doc['attrOverride'])))
-
-    # Copy all active variables from 'sv_new' to 'sv'.
-    sv = _updateBulletDataTuple(sv, sv_new)
-
-    # Update the State Variables and void the user specified ones.
-    doc = _DB_SV.update(
-        query,
-        {'$set': {'sv': sv.toJsonDict()},
-         '$unset': {'token': 1}})
-
-    # This function was successful if exactly one document was updated.
-    return RetVal(doc['n'] == 1, None, None)
-
-
 def getAllStateVariables():
     """
     Return the state variables for all objects in a dictionary.
