@@ -748,7 +748,7 @@ class Clerk(multiprocessing.Process):
         del doc
 
         # Add the object to the physics simulation.
-        btInterface.spawn(new_id, sv, template['aabb'])
+        btInterface.addCmdSpawn(new_id, sv, template['aabb'])
         msg = 'Spawned template <{}> as objID=<{}> (0x{:0X})'
         msg = msg.format(templateID, new_id, util.id2int(new_id))
         self.logit.debug(msg)
@@ -762,7 +762,7 @@ class Clerk(multiprocessing.Process):
         :param bytes objID: ID of object to remove.
         :return: Success
         """
-        ret = btInterface.removeObject(objID)
+        ret = btInterface.addCmdRemoveObject(objID)
         self.db_instance.remove({'objID': objID}, mult=True)
         if ret.ok:
             return RetVal(True, None, None)
@@ -885,14 +885,14 @@ class Clerk(multiprocessing.Process):
         """
         Set the State Variables of ``objID`` to ``data``.
 
-        For a detailed description see ``btInterface.setStateVariables``
+        For a detailed description see ``btInterface.addCmdModifyStateVariable``
         since this method is only a wrapper for it.
 
         :param bytes objID: object ID
         :param BulletDataOverride data: new object attributes.
         :return: Success
         """
-        ret = btInterface.setStateVariables(objID, data)
+        ret = btInterface.addCmdModifyStateVariable(objID, data)
         if ret.ok:
             return RetVal(True, None, None)
         else:

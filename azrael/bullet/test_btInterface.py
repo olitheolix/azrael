@@ -53,7 +53,7 @@ def test_add_get_remove_single():
     data = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
-    assert btInterface.spawn(id_0, data, aabb=0)
+    assert btInterface.addCmdSpawn(id_0, data, aabb=0)
     leo.processCommandsAndSync()
 
     # Query the object. This must return the SV data directly.
@@ -64,7 +64,7 @@ def test_add_get_remove_single():
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
 
     # Attempt to remove non-existing ID --> must fail.
-    assert btInterface.removeObject(id_1).ok
+    assert btInterface.addCmdRemoveObject(id_1).ok
     leo.processCommandsAndSync()
 
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
@@ -72,7 +72,7 @@ def test_add_get_remove_single():
     assert (ret.ok, len(ret.data)) == (True, 1)
 
     # Remove existing ID --> must succeed.
-    assert btInterface.removeObject(id_0).ok
+    assert btInterface.addCmdRemoveObject(id_0).ok
     leo.processCommandsAndSync()
 
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: None})
@@ -107,8 +107,8 @@ def test_add_get_multiple():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the objects to the DB.
-    assert btInterface.spawn(id_0, data_0, aabb=0)
-    assert btInterface.spawn(id_1, data_1, aabb=0)
+    assert btInterface.addCmdSpawn(id_0, data_0, aabb=0)
+    assert btInterface.addCmdSpawn(id_1, data_1, aabb=0)
     leo.processCommandsAndSync()
 
     # Query the objects individually.
@@ -166,13 +166,13 @@ def test_add_same():
     assert ret.ok and (ret.data == [])
 
     # Add the objects to the DB.
-    assert btInterface.spawn(id_0, data_0, aabb=0).ok
+    assert btInterface.addCmdSpawn(id_0, data_0, aabb=0).ok
     ret = btInterface.getCmdSpawn()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
     # Attempt to add another object with the same objID *before* Leonard gets
     # around to add the first one --> this must fail and not add anything.
-    assert not btInterface.spawn(id_0, data_1, aabb=0).ok
+    assert not btInterface.addCmdSpawn(id_0, data_1, aabb=0).ok
     ret = btInterface.getCmdSpawn()
     assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objid'] == id_0)
 
@@ -207,15 +207,15 @@ def test_dequeueCommands():
     assert ret.ok and (ret.data == [])
 
     # Queue one request for id_0.
-    assert btInterface.spawn(id_0, data_0, aabb=1).ok
+    assert btInterface.addCmdSpawn(id_0, data_0, aabb=1).ok
     ret = btInterface.getCmdSpawn()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
-    assert btInterface.setStateVariables(id_0, data_1).ok
+    assert btInterface.addCmdModifyStateVariable(id_0, data_1).ok
     ret = btInterface.getCmdModify()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
-    assert btInterface.removeObject(id_0).ok
+    assert btInterface.addCmdRemoveObject(id_0).ok
     ret = btInterface.getCmdRemove()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
@@ -231,9 +231,9 @@ def test_dequeueCommands():
 
     # Add two commands.
     for objID in (id_0, id_1):
-        assert btInterface.spawn(objID, data_0, aabb=1).ok
-        assert btInterface.setStateVariables(objID, data_1).ok
-        assert btInterface.removeObject(objID).ok
+        assert btInterface.addCmdSpawn(objID, data_0, aabb=1).ok
+        assert btInterface.addCmdModifyStateVariable(objID, data_1).ok
+        assert btInterface.addCmdRemoveObject(objID).ok
 
     # De-queue two objects --> two must have been de-queued.
     assert dcSpawn([id_1, id_0]) == (True, None, 2)
@@ -269,8 +269,8 @@ def test_get_set_force():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the two objects to the DB.
-    assert btInterface.spawn(id_0, data_0, aabb=0)
-    assert btInterface.spawn(id_1, data_1, aabb=0)
+    assert btInterface.addCmdSpawn(id_0, data_0, aabb=0)
+    assert btInterface.addCmdSpawn(id_1, data_1, aabb=0)
 
     # Convenience: forces and their positions.
     f1 = np.zeros(3, np.float64)
@@ -325,11 +325,11 @@ def test_overrideAttributes():
     btdata = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
-    assert btInterface.spawn(id_0, btdata, aabb=0).ok
+    assert btInterface.addCmdSpawn(id_0, btdata, aabb=0).ok
     leo.processCommandsAndSync()
 
     # Set the overwrite attributes for the just created object.
-    assert btInterface.setStateVariables(id_0, data).ok
+    assert btInterface.addCmdModifyStateVariable(id_0, data).ok
     leo.processCommandsAndSync()
 
     ret = btInterface.getStateVariables([id_0])
@@ -419,8 +419,8 @@ def test_get_set_forceandtorque():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the two objects to the simulation.
-    assert btInterface.spawn(id_0, data_0, aabb=0).ok
-    assert btInterface.spawn(id_1, data_1, aabb=0).ok
+    assert btInterface.addCmdSpawn(id_0, data_0, aabb=0).ok
+    assert btInterface.addCmdSpawn(id_1, data_1, aabb=0).ok
     leo.processCommandsAndSync()
 
     # Retrieve the force and torque and verify they are correct.
@@ -484,11 +484,11 @@ def test_set_get_AABB():
     data = bullet_data.BulletData()
 
     # Attempt to add an object with a negative AABB value. This must fail.
-    assert not btInterface.spawn(id_0, data, aabb=-1.5).ok
+    assert not btInterface.addCmdSpawn(id_0, data, aabb=-1.5).ok
 
     # Add two new objects to the DB.
-    assert btInterface.spawn(id_0, data, aabb=1.5).ok
-    assert btInterface.spawn(id_1, data, aabb=2.5).ok
+    assert btInterface.addCmdSpawn(id_0, data, aabb=1.5).ok
+    assert btInterface.addCmdSpawn(id_1, data, aabb=2.5).ok
     leo.processCommandsAndSync()
 
     # Query the AABB of the first.

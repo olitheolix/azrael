@@ -85,52 +85,6 @@ def getNumObjects():
 
 
 @typecheck
-def spawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
-    """
-    Enqueue a new object with ``objID`` for Leonard to spawn.
-
-    Contrary to what the name ``aabb`` suggests, this actually denotes a
-    bounding sphere and thus requires only a scalar argument instead of 3 side
-    lengths. This will change eventually to become a proper AABB.
-
-    Returns **False** if ``objID`` already exists or is already queued.
-
-    :param bytes objID: object ID to insert.
-    :param bytes sv: encoded state variable data.
-    :param float aabb: size of AABB.
-    :return: success.
-    """
-    # Serialise SV.
-    sv = sv.toJsonDict()
-
-    # Sanity checks.
-    if len(objID) != config.LEN_ID:
-        return RetVal(False, 'objID has wrong length', None)
-    if aabb < 0:
-        msg = 'AABB must be non-negative'
-        logit.warning(msg)
-        return RetVal(False, msg, None)
-
-    # Meta data for spawn command.
-    data = {'objid': objID, 'sv': sv, 'AABB': float(aabb)}
-
-    # This implements the fictitious "insert_if_not_yet_exists" command. It
-    # will return whatever the latest value from the DB, which is either the
-    # one we just inserted (success) or a previously inserted one (fail). The
-    # only way to distinguish them is to verify that the SVs are identical.
-    doc = _DB_CMDSpawn.find_and_modify({'objid': objID},
-                                       {'$setOnInsert': data},
-                                       upsert=True, new=True)
-    success = doc['sv'] == data['sv']
-
-    # Return success status to caller.
-    if success:
-        return RetVal(True, None, None)
-    else:
-        return RetVal(False, None, None)
-
-
-@typecheck
 def getCmdSpawn():
     """
     Return all queued "Spawn" commands.
@@ -214,11 +168,63 @@ def dequeueCmdRemove(remove: list):
 
 
 @typecheck
-def removeObject(objID: bytes):
+def addCmdSpawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
     """
-    Delete ``objID`` from the physics simulation.
+    Enqueue a new object with ``objID`` for Leonard to spawn.
 
-    This function always suceeds.
+    Contrary to what the name ``aabb`` suggests, this actually denotes a
+    bounding sphere and thus requires only a scalar argument instead of 3 side
+    lengths. This will change eventually to become a proper AABB.
+
+    Returns **False** if ``objID`` already exists or is already queued.
+
+    Leonard will apply this request once per physics cycle but it is impossible
+    to determine when exactly.
+
+    :param bytes objID: object ID to insert.
+    :param bytes sv: encoded state variable data.
+    :param float aabb: size of AABB.
+    :return: success.
+    """
+    # Serialise SV.
+    sv = sv.toJsonDict()
+
+    # Sanity checks.
+    if len(objID) != config.LEN_ID:
+        return RetVal(False, 'objID has wrong length', None)
+    if aabb < 0:
+        msg = 'AABB must be non-negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
+
+    # Meta data for spawn command.
+    data = {'objid': objID, 'sv': sv, 'AABB': float(aabb)}
+
+    # This implements the fictitious "insert_if_not_yet_exists" command. It
+    # will return whatever the latest value from the DB, which is either the
+    # one we just inserted (success) or a previously inserted one (fail). The
+    # only way to distinguish them is to verify that the SVs are identical.
+    doc = _DB_CMDSpawn.find_and_modify({'objid': objID},
+                                       {'$setOnInsert': data},
+                                       upsert=True, new=True)
+    success = doc['sv'] == data['sv']
+
+    # Return success status to caller.
+    if success:
+        return RetVal(True, None, None)
+    else:
+        return RetVal(False, None, None)
+
+
+@typecheck
+def addCmdRemoveObject(objID: bytes):
+    """
+    Remove ``objID`` from the physics simulation.
+
+    Leonard will apply this request once per physics cycle but it is impossible
+    to determine when exactly.
+
+    .. note:: This function always succeeds.
 
     fixme: must be able to delete multiple objects at once.
 
@@ -228,6 +234,51 @@ def removeObject(objID: bytes):
     data = {'del': objID}
     doc = _DB_CMDRemove.find_and_modify(
         {'objid': objID}, {'$setOnInsert': data}, upsert=True, new=True)
+    return RetVal(True, None, None)
+
+
+@typecheck
+def addCmdModifyStateVariable(objID: bytes, data: BulletDataOverride):
+    """
+    Queue request to Override State Variables of ``objID`` with ``data``.
+
+    Leonard will apply this request once per physics cycle but it is impossible
+    to determine when exactly.
+
+    :param bytes objID: object to update.
+    :param BulletDataOverride pos: new object attributes.
+    :return bool: Success
+    """
+    # Sanity check.
+    if (len(objID) != config.LEN_ID):
+        return RetVal(False, 'objID has invalid length', None)
+
+    # Do nothing if data is None.
+    if data is None:
+        return RetVal(True, None, None)
+
+    # Make sure that ``data`` is really valid by constructing a new
+    # BulletDataOverride instance from it.
+    data = BulletDataOverride(*data)
+    if data is None:
+        return RetVal(False, 'Invalid override data', None)
+
+    # All fields in ``data`` (a BulletDataOverride instance) are, by
+    # definition, one of {None, int, float, np.ndarray}. The following code
+    # merely converts the  NumPy arrays to normal lists so that Mongo can store
+    # them. For example, BulletDataOverride(None, 2, array([1,2,3]), ...)
+    # would become [None, 2, [1,2,3], ...].
+    data = list(data)
+    for idx, val in enumerate(data):
+        if isinstance(val, np.ndarray):
+            data[idx] = val.tolist()
+
+    # Save the new SVs to the DB (overwrite existing ones).
+    doc = _DB_CMDModify.find_and_modify(
+        {'objid': objID}, {'$setOnInsert': {'sv': data}},
+        upsert=True, new=True)
+
+    # This function was successful if exactly one document was updated.
     return RetVal(True, None, None)
 
 
@@ -497,61 +548,6 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
         {'$set': {'central_force': force, 'torque': torque}},
         upsert=True)
 
-    return RetVal(True, None, None)
-
-
-@typecheck
-def setStateVariables(objID: bytes, data: BulletDataOverride):
-    """
-    Override State Variables of ``objID`` with those in ``data``.
-
-    All *None* fields in ``data`` are ignored.
-
-    Calling this function does not immediately update the State Variables for
-    ``objID``. Instead, it queues them whereupon the ``btInterface.update``
-    function will apply them.
-
-    If this function is invoked multiple times before ``btInterface.update``
-    runs then only the ``data`` of the last call will be applied.
-
-    .. note::
-       Do not manually call ``btInterface.update`` because it breaks the
-       synchronisation cycle for the physics update.
-
-    :param bytes objID: object to update.
-    :param BulletDataOverride pos: new object attributes.
-    :return bool: Success
-    """
-    # Sanity check.
-    if (len(objID) != config.LEN_ID):
-        return RetVal(False, 'objID has invalid length', None)
-
-    # Do nothing if data is None.
-    if data is None:
-        return RetVal(True, None, None)
-
-    # Make sure that ``data`` is really valid by constructing a new
-    # BulletDataOverride instance from it.
-    data = BulletDataOverride(*data)
-    if data is None:
-        return RetVal(False, 'Invalid override data', None)
-
-    # All fields in ``data`` (a BulletDataOverride instance) are, by
-    # definition, one of {None, int, float, np.ndarray}. The following code
-    # merely converts the  NumPy arrays to normal lists so that Mongo can store
-    # them. For example, BulletDataOverride(None, 2, array([1,2,3]), ...)
-    # would become [None, 2, [1,2,3], ...].
-    data = list(data)
-    for idx, val in enumerate(data):
-        if isinstance(val, np.ndarray):
-            data[idx] = val.tolist()
-
-    # Save the new SVs to the DB (overwrite existing ones).
-    doc = _DB_CMDModify.find_and_modify(
-        {'objid': objID}, {'$setOnInsert': {'sv': data}},
-        upsert=True, new=True)
-
-    # This function was successful if exactly one document was updated.
     return RetVal(True, None, None)
 
 
