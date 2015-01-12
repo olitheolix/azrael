@@ -87,13 +87,13 @@ def getNumObjects():
 @typecheck
 def spawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
     """
-    Add the new ``objID`` to the physics DB and return success.
+    Enqueue a new object with ``objID`` for Leonard to spawn.
 
-    Contrary to the name ``aabb``, it actually denotes a bounding sphere and
-    thus requires only a scalar argument instead of 3 side lengths. This will
-    change eventually.
+    Contrary to what the name ``aabb`` suggests, this actually denotes a
+    bounding sphere and thus requires only a scalar argument instead of 3 side
+    lengths. This will change eventually to become a proper AABB.
 
-    Returns **False** if ``objID`` already exists in the simulation.
+    Returns **False** if ``objID`` already exists or is already queued.
 
     :param bytes objID: object ID to insert.
     :param bytes sv: encoded state variable data.
@@ -111,26 +111,81 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
         logit.warning(msg)
         return RetVal(False, msg, None)
 
-    # Dummy variable to specify the initial force and its relative position.
-    z = np.zeros(3).tostring()
-
-    # fixme: improve this and the next docu.
-    # Add the objects. The find_and_modify command below implements the
-    # fictional 'insert_if_not_exists' command. This ensures that we will not
-    # overwrite an existing object.
+    # Meta data for spawn command.
     data = {'objid': objID, 'sv': sv, 'AABB': float(aabb)}
-    doc = _DB_CMDSpawn.find_and_modify(
-        {'objid': objID},
-        {'$setOnInsert': data},
-        upsert=True, new=True)
 
-    # The SV in the returned document will only match ``sv`` if either no
-    # object with objID existed before the call, or the objID existed but with
-    # identical SV. In any other case there will be no match because the
-    # objID already existed.
-    isNew = (doc['sv'] == sv)
+    # This implements the fictitious "insert_if_not_yet_exists" command. It
+    # will return whatever the latest value from the DB, which is either the
+    # one we just inserted (success) or a previously inserted one (fail). The
+    # only way to distinguish them is to verify that the SVs are identical.
+    doc = _DB_CMDSpawn.find_and_modify({'objid': objID},
+                                       {'$setOnInsert': data},
+                                       upsert=True, new=True)
+    success = doc['sv'] == data['sv']
 
-    return RetVal(isNew, None, None)
+    # Return success status to caller.
+    if success:
+        return RetVal(True, None, None)
+    else:
+        return RetVal(False, None, None)
+
+
+@typecheck
+def getCmdSpawn():
+    """
+    Return all queued "Spawn" commands.
+
+    The commands remain in the DB and successive calls to this function will
+    thus return the previous results.
+
+    :return: objects as inserted by ``spawn``.
+    :rtype: list of dicts.
+    """
+    return RetVal(True, None, list(_DB_CMDSpawn.find()))
+
+@typecheck
+def getCmdModify():
+    """
+    Return all queued "Modify" commands.
+
+    The commands remain in the DB and successive calls to this function will
+    thus return the previous results.
+
+    :return: objects as inserted by ``setStateVariable``.
+    :rtype: list of dicts.
+    """
+    return RetVal(True, None, list(_DB_CMDModify.find()))
+
+@typecheck
+def getCmdRemove():
+    """
+    Return all queued "Remove" commands.
+
+    The commands remain in the DB and successive calls to this function will
+    thus return the previous results.
+
+    :return: objects as inserted by ``deleteObject``.
+    :rtype: list of dicts.
+    """
+    return RetVal(True, None, list(_DB_CMDRemove.find()))
+
+@typecheck
+def removeCommandsFromQueue(spawn: list, modify: list, remove: list):
+    """
+    Remove the documents in ``spawn``, ``modify`` and ``remove`` from the
+    command respective command queue.
+
+    :param list spawn: Mongo documents to remove from "spawn" queue.
+    :param list modify: Mongo documents to remove from "modify" queue.
+    :param list remove: Mongo documents to remove from "remove" queue.
+    :return: objects to spawn.
+    :rtype: list of {'objid': objID, 'sv': sv, 'AABB': float(aabb)}
+    """
+    ret_1 = _DB_CMDSpawn.remove({'objid': {'$in': spawn}})
+    ret_2 = _DB_CMDModify.remove({'objid': {'$in': modify}})
+    ret_3 = _DB_CMDRemove.remove({'objid': {'$in': remove}})
+
+    return RetVal(True, None, (ret_1['n'], ret_2['n'], ret_3['n']))
 
 
 @typecheck

@@ -260,26 +260,56 @@ class LeonardBase(multiprocessing.Process):
 
     def processCommandQueue(self):
         """
-        Update the local object cache according to the new commands.
+        Apply commands from queue to objects in local cache.
 
-        fixme: messy
+        Applied commands are automatically removed.
+
+        :return bool: Success.
         """
+        # Fetch all commands currently in queue.
+        docsModify = btInterface.getCmdModify()
+        if not docsModify.ok:
+            msg = 'Cannot fetch "Modify" commands'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
+        docsRemove = btInterface.getCmdRemove()
+        if not docsRemove.ok:
+            msg = 'Cannot fetch "Remove" commands'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
+        docsSpawn = btInterface.getCmdSpawn()
+        if not docsSpawn.ok:
+            msg = 'Cannot fetch "Spawn" commands'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
+
+        # Remove the fetched commands from queue.
+        tmp = [_['objid'] for _ in docsSpawn.data]
+        btInterface.removeCommandsFromQueue(tmp, [], [])
+        tmp = [_['objid'] for _ in docsModify.data]
+        btInterface.removeCommandsFromQueue([], tmp, [])
+        tmp = [_['objid'] for _ in docsRemove.data]
+        btInterface.removeCommandsFromQueue([], [], tmp)
+        del tmp
+
+        # Convenience.
+        docsSpawn = docsSpawn.data
+        docsModify = docsModify.data
+        docsRemove = docsRemove.data
+
         BulletData = bullet_data.BulletData
         BulletDataOverride = bullet_data.BulletDataOverride
         fields = BulletDataOverride._fields
 
         # Remove objects.
-        docs = list(self._DB_CMDRemove.find())
-        for doc in docs:
+        for doc in docsRemove:
             objID = doc['objid']
             if objID in self.allObjects:
                 self._DB_SV.remove({'objid': objID})
                 del self.allObjects[objID]
-        self._DB_CMDRemove.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
 
-        # Fetch all spawn commands and update the object cache.
-        docs = list(self._DB_CMDSpawn.find())
-        for doc in docs:
+        # Spawn objects.
+        for doc in docsSpawn:
             objID = doc['objid']
             if objID in self.allObjects:
                 msg = 'Cannot spawn object since objID={} already exists'
@@ -290,12 +320,10 @@ class LeonardBase(multiprocessing.Process):
                 self.allAABBs[objID] = float(doc['AABB'])
                 self.allForces[objID] = [0, 0, 0]
                 self.allTorques[objID] = [0, 0, 0]
-        self._DB_CMDSpawn.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
 
-        # Update existing objects.
-        docs = list(self._DB_CMDModify.find())
+        # Update State Vectors.
         fun = btInterface._updateBulletDataTuple
-        for doc in docs:
+        for doc in docsModify:
             objID, sv_new = doc['objid'], doc['sv']
             if objID in self.allObjects:
                 sv_new = BulletDataOverride(**dict(zip(fields, sv_new)))
@@ -303,8 +331,8 @@ class LeonardBase(multiprocessing.Process):
                 sv_old = [getattr(sv_old, _) for _ in fields]
                 sv_old = BulletData(*sv_old)
                 self.allObjects[objID] = fun(sv_old, sv_new)
-        self._DB_CMDModify.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
-        del docs, fun
+
+        return RetVal(True, None, None)
 
     def syncObjects(self):
         """

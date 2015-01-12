@@ -142,41 +142,116 @@ def test_add_same():
     """
     Try to add two objects with the same ID.
     """
-    # Reset the SV database.
+    # Reset the SV database and instantiate a Leonard.
     btInterface.initSVDB(reset=True)
+    leo = leonard.LeonardBase()
+    leo.setup()
 
-    # Create one object ID for this test.
+    # Convenience.
     id_0 = int2id(0)
 
     # The number of SV entries must now be zero.
     assert btInterface.getNumObjects() == 0
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: None})
 
-    # Create an object and serialise it.
+    # Create two State Vectors.
     data_0 = bullet_data.BulletData()
     data_0.position[:] = np.zeros(3)
 
     data_1 = bullet_data.BulletData()
     data_1.position[:] = 10 * np.ones(3)
 
+    # The command queue for spawning objects must be empty.
+    ret = btInterface.getCmdSpawn()
+    assert ret.ok and (ret.data == [])
+
     # Add the objects to the DB.
-    assert btInterface.spawn(id_0, data_0, aabb=0)
+    assert btInterface.spawn(id_0, data_0, aabb=0).ok
+    ret = btInterface.getCmdSpawn()
+    assert ret.ok and (ret.data[0]['objid'] == id_0)
 
-    # Add the same object with the same ID -- this must work since nothing
-    # has changed.
-    assert btInterface.spawn(id_0, data_0, aabb=0)
-
-    # Add a different object with the same ID -- this must fail.
+    # Attempt to add another object with the same objID *before* Leonard gets
+    # around to add the first one --> this must fail and not add anything.
     assert not btInterface.spawn(id_0, data_1, aabb=0).ok
+    ret = btInterface.getCmdSpawn()
+    assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objid'] == id_0)
+
+    # Let Leonard pick up the commands. This must flush the command queue.
+    leo.step(0, 1)
+    ret = btInterface.getCmdSpawn()
+    assert ret.ok and (ret.data == [])
 
     print('Test passed')
+
+
+def test_removeCommandsFromQueue():
+    """
+    Add-, query, and remove commands from the command queue.
+    """
+    # Reset the SV database and instantiate a Leonard.
+    btInterface.initSVDB(reset=True)
+
+    # Convenience.
+    rcfq = btInterface.removeCommandsFromQueue
+    data_0 = bullet_data.BulletData()
+    data_1 = bullet_data.BulletDataOverride(imass=2, scale=3)
+
+    id_0, id_1 = int2id(0), int2id(1)
+
+    # The command queue must be empty for every category.
+    ret = btInterface.getCmdSpawn()
+    assert ret.ok and (ret.data == [])
+    ret = btInterface.getCmdRemove()
+    assert ret.ok and (ret.data == [])
+
+    # Queue one request for id_0.
+    assert btInterface.spawn(id_0, data_0, aabb=1).ok
+    ret = btInterface.getCmdSpawn()
+    assert ret.ok and (ret.data[0]['objid'] == id_0)
+
+    assert btInterface.setStateVariables(id_0, data_1).ok
+    ret = btInterface.getCmdModify()
+    assert ret.ok and (ret.data[0]['objid'] == id_0)
+
+    assert btInterface.deleteObject(id_0).ok
+    ret = btInterface.getCmdRemove()
+    assert ret.ok and (ret.data[0]['objid'] == id_0)
+
+    # De-queue one object --> one objects must have been de-queued.
+    assert rcfq([id_0], [], []) == (True, None, (1, 0, 0))
+    assert rcfq([], [id_0], []) == (True, None, (0, 1, 0))
+    assert rcfq([], [], [id_0]) == (True, None, (0, 0, 1))
+
+    # Repeat --> none must have been de-queued.
+    assert rcfq([id_0], [], []) == (True, None, (0, 0, 0))
+    assert rcfq([], [id_0], []) == (True, None, (0, 0, 0))
+    assert rcfq([], [], [id_0]) == (True, None, (0, 0, 0))
+
+    # Add two commands.
+    for objID in (id_0, id_1):
+        assert btInterface.spawn(objID, data_0, aabb=1).ok
+        assert btInterface.setStateVariables(objID, data_1).ok
+        assert btInterface.deleteObject(objID).ok
+
+    # De-queue two objects --> two must have been de-queued.
+    assert rcfq([id_1, id_0], [], []) == (True, None, (2, 0, 0))
+    assert rcfq([], [id_1, id_0], []) == (True, None, (0, 2, 0))
+    assert rcfq([], [], [id_1, id_0]) == (True, None, (0, 0, 2))
+
+    # Repeat --> none must have been de-queued.
+    assert rcfq([id_1, id_0], [], []) == (True, None, (0, 0, 0))
+    assert rcfq([], [id_1, id_0], []) == (True, None, (0, 0, 0))
+    assert rcfq([], [], [id_1, id_0]) == (True, None, (0, 0, 0))
+
+    print('Test passed')
+
 
 
 def test_get_set_force():
     """
     Query and update the force vector for an object.
     """
-    # Reset the SV database.
+    # Reset the SV database and instantiate a Leonard.
     btInterface.initSVDB(reset=True)
     leo = leonard.LeonardBase()
     leo.setup()
@@ -434,6 +509,7 @@ def test_set_get_AABB():
 
 
 if __name__ == '__main__':
+    test_removeCommandsFromQueue()
     test_BulletDataOverride()
     test_set_get_AABB()
     test_StateVariable_tuple()
