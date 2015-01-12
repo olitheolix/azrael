@@ -285,11 +285,11 @@ class LeonardBase(multiprocessing.Process):
 
         # Remove the fetched commands from queue.
         tmp = [_['objid'] for _ in docsSpawn.data]
-        btInterface.dequeueCommand(tmp, [], [])
+        btInterface.dequeueCmdSpawn(tmp)
         tmp = [_['objid'] for _ in docsModify.data]
-        btInterface.dequeueCommand([], tmp, [])
+        btInterface.dequeueCmdModify( tmp)
         tmp = [_['objid'] for _ in docsRemove.data]
-        btInterface.dequeueCommand([], [], tmp)
+        btInterface.dequeueCmdRemove(tmp)
         del tmp
 
         # Convenience.

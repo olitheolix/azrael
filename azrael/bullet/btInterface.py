@@ -170,25 +170,47 @@ def getCmdRemove():
     return RetVal(True, None, list(_DB_CMDRemove.find()))
 
 @typecheck
-def dequeueCommand(spawn: list, modify: list, remove: list):
+def dequeueCmdSpawn(spawn: list):
     """
-    De-queue commands and return the count.
+    De-queue ``spawn`` commands from "Spawn" queue.
 
-    Remove the documents in ``spawn``, ``modify`` and ``remove`` from the
-    command respective command queue. If a document does not exist it is
-    silently ignored but not added to the total count.
+    Non-existing documents do not count and will be silently ignored.
 
-    :param list spawn: Mongo documents to remove from "spawn" queue.
-    :param list modify: Mongo documents to remove from "modify" queue.
-    :param list remove: Mongo documents to remove from "remove" queue.
-    :return: number of de-queued commands (num_spawn, num_modify, num_remove).
+    :param list spawn: Mongo documents to remove from "Spawn"
+    :return int: number of de-queued commands
+    """
+    ret = _DB_CMDSpawn.remove({'objid': {'$in': spawn}})
+    return RetVal(True, None, ret['n'])
+
+
+@typecheck
+def dequeueCmdModify(modify: list):
+    """
+    De-queue ``modify`` commands from "Modify" queue.
+
+    Non-existing documents do not count and will be silently ignored.
+
+    :param list modify: list of Mongo documents to de-queue.
+    :return: number of de-queued commands
     :rtype: tuple
     """
-    ret_1 = _DB_CMDSpawn.remove({'objid': {'$in': spawn}})
-    ret_2 = _DB_CMDModify.remove({'objid': {'$in': modify}})
-    ret_3 = _DB_CMDRemove.remove({'objid': {'$in': remove}})
+    ret = _DB_CMDModify.remove({'objid': {'$in': modify}})
+    return RetVal(True, None, ret['n'])
 
-    return RetVal(True, None, (ret_1['n'], ret_2['n'], ret_3['n']))
+
+@typecheck
+def dequeueCmdRemove(remove: list):
+    """
+    De-queue ``remove`` commands from "Remove" queue.
+
+    Non-existing documents do not count and will be silently ignored.
+
+    :param list spawn: list of Mongo documents to de-queue.
+    :return: number of de-queued commands
+    :rtype: tuple
+    """
+    ret = _DB_CMDRemove.remove({'objid': {'$in': remove}})
+    return RetVal(True, None, ret['n'])
 
 
 @typecheck

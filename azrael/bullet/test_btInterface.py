@@ -184,7 +184,7 @@ def test_add_same():
     print('Test passed')
 
 
-def test_dequeueCommand():
+def test_dequeueCommands():
     """
     Add-, query, and remove commands from the command queue.
     """
@@ -192,7 +192,9 @@ def test_dequeueCommand():
     btInterface.initSVDB(reset=True)
 
     # Convenience.
-    rcfq = btInterface.dequeueCommand
+    dcSpawn = btInterface.dequeueCmdSpawn
+    dcModify = btInterface.dequeueCmdModify
+    dcRemove= btInterface.dequeueCmdRemove
     data_0 = bullet_data.BulletData()
     data_1 = bullet_data.BulletDataOverride(imass=2, scale=3)
 
@@ -218,14 +220,14 @@ def test_dequeueCommand():
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
     # De-queue one object --> one objects must have been de-queued.
-    assert rcfq([id_0], [], []) == (True, None, (1, 0, 0))
-    assert rcfq([], [id_0], []) == (True, None, (0, 1, 0))
-    assert rcfq([], [], [id_0]) == (True, None, (0, 0, 1))
+    assert dcSpawn([id_0]) == (True, None, 1)
+    assert dcModify([id_0]) == (True, None, 1)
+    assert dcRemove([id_0]) == (True, None, 1)
 
     # Repeat --> none must have been de-queued.
-    assert rcfq([id_0], [], []) == (True, None, (0, 0, 0))
-    assert rcfq([], [id_0], []) == (True, None, (0, 0, 0))
-    assert rcfq([], [], [id_0]) == (True, None, (0, 0, 0))
+    assert dcSpawn([id_0]) == (True, None, 0)
+    assert dcModify([id_0]) == (True, None, 0)
+    assert dcRemove([id_0]) == (True, None, 0)
 
     # Add two commands.
     for objID in (id_0, id_1):
@@ -234,17 +236,16 @@ def test_dequeueCommand():
         assert btInterface.removeObject(objID).ok
 
     # De-queue two objects --> two must have been de-queued.
-    assert rcfq([id_1, id_0], [], []) == (True, None, (2, 0, 0))
-    assert rcfq([], [id_1, id_0], []) == (True, None, (0, 2, 0))
-    assert rcfq([], [], [id_1, id_0]) == (True, None, (0, 0, 2))
+    assert dcSpawn([id_1, id_0]) == (True, None, 2)
+    assert dcModify([id_1, id_0]) == (True, None, 2)
+    assert dcRemove([id_1, id_0]) == (True, None, 2)
 
     # Repeat --> none must have been de-queued.
-    assert rcfq([id_1, id_0], [], []) == (True, None, (0, 0, 0))
-    assert rcfq([], [id_1, id_0], []) == (True, None, (0, 0, 0))
-    assert rcfq([], [], [id_1, id_0]) == (True, None, (0, 0, 0))
+    assert dcSpawn([id_1, id_0]) == (True, None, 0)
+    assert dcModify([id_1, id_0]) == (True, None, 0)
+    assert dcRemove([id_1, id_0]) == (True, None, 0)
 
     print('Test passed')
-
 
 
 def test_get_set_force():
@@ -509,7 +510,7 @@ def test_set_get_AABB():
 
 
 if __name__ == '__main__':
-    test_dequeueCommand()
+    test_dequeueCommands()
     test_BulletDataOverride()
     test_set_get_AABB()
     test_StateVariable_tuple()
