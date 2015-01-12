@@ -53,7 +53,7 @@ def test_add_get_remove_single():
     data = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
-    assert btInterface.spawn(id_0, data, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_0, data, aabb=0)
     leo.processCommandsAndSync()
 
     # Query the object. This must return the SV data directly.
@@ -107,8 +107,8 @@ def test_add_get_multiple():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the objects to the DB.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
-    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_0, data_0, aabb=0)
+    assert btInterface.spawn(id_1, data_1, aabb=0)
     leo.processCommandsAndSync()
 
     # Query the objects individually.
@@ -160,14 +160,14 @@ def test_add_same():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the objects to the DB.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_0, data_0, aabb=0)
 
     # Add the same object with the same ID -- this must work since nothing
     # has changed.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_0, data_0, aabb=0)
 
     # Add a different object with the same ID -- this must fail.
-    assert not btInterface.spawn(id_0, data_1, np.int64(1).tostring(), 0).ok
+    assert not btInterface.spawn(id_0, data_1, aabb=0).ok
 
     print('Test passed')
 
@@ -193,8 +193,8 @@ def test_get_set_force():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the two objects to the DB.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0)
-    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0)
+    assert btInterface.spawn(id_0, data_0, aabb=0)
+    assert btInterface.spawn(id_1, data_1, aabb=0)
 
     # Convenience: forces and their positions.
     f1 = np.zeros(3, np.float64)
@@ -249,7 +249,7 @@ def test_overrideAttributes():
     btdata = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
-    assert btInterface.spawn(id_0, btdata, np.int64(1).tostring(), 0).ok
+    assert btInterface.spawn(id_0, btdata, aabb=0).ok
     leo.processCommandsAndSync()
 
     # Set the overwrite attributes for the just created object.
@@ -343,8 +343,8 @@ def test_get_set_forceandtorque():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the two objects to the simulation.
-    assert btInterface.spawn(id_0, data_0, np.int64(1).tostring(), 0).ok
-    assert btInterface.spawn(id_1, data_1, np.int64(1).tostring(), 0).ok
+    assert btInterface.spawn(id_0, data_0, aabb=0).ok
+    assert btInterface.spawn(id_1, data_1, aabb=0).ok
     leo.processCommandsAndSync()
 
     # Retrieve the force and torque and verify they are correct.
@@ -408,11 +408,11 @@ def test_set_get_AABB():
     data = bullet_data.BulletData()
 
     # Attempt to add an object with a negative AABB value. This must fail.
-    assert not btInterface.spawn(id_0, data, np.int64(1).tostring(), -1.5).ok
+    assert not btInterface.spawn(id_0, data, aabb=-1.5).ok
 
     # Add two new objects to the DB.
-    assert btInterface.spawn(id_0, data, np.int64(1).tostring(), 1.5).ok
-    assert btInterface.spawn(id_1, data, np.int64(1).tostring(), 2.5).ok
+    assert btInterface.spawn(id_0, data, aabb=1.5).ok
+    assert btInterface.spawn(id_1, data, aabb=2.5).ok
     leo.processCommandsAndSync()
 
     # Query the AABB of the first.

@@ -185,7 +185,7 @@ def test_delete():
     # Two objects must now exist.
     leo.step(0, 1)
     ret = clerk.getAllObjectIDs()
-    assert ret.ok and (ret.data == [objID_1, objID_2])
+    assert ret.ok and (set(ret.data) == set([objID_1, objID_2]))
 
     # Delete the first object.
     assert clerk.deleteObject(objID_1).ok

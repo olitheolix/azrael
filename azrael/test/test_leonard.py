@@ -124,7 +124,7 @@ def test_setStateVariables_basic(clsLeonard):
     del p, vl, vr
 
     # Spawn a new object. It must have ID=1.
-    assert btInterface.spawn(id_1, sv, np.int64(1).tostring(), 1.0).ok
+    assert btInterface.spawn(id_1, sv, aabb=1.0).ok
     
     # Update the object's State Vector.
     assert btInterface.setStateVariables(id_1, data).ok
@@ -165,7 +165,7 @@ def test_setStateVariables_advanced(clsLeonard):
 
     # Spawn an object.
     objID = int2id(1)
-    assert btInterface.spawn(objID, sv, np.int64(1).tostring(), 1.0).ok
+    assert btInterface.spawn(objID, sv, aabb=1.0).ok
 
     # Verify the SV data.
     leo.step(0, 10)
@@ -204,12 +204,11 @@ def test_move_single_object(clsLeonard):
     leonard.setup()
 
     # Constants and parameters for this test.
-    templateID = np.int64(1).tostring()
     id_0 = int2id(0)
     sv = bullet_data.BulletData()
 
     # Spawn an object.
-    assert btInterface.spawn(id_0, sv, templateID, aabb=1.0).ok
+    assert btInterface.spawn(id_0, sv, aabb=1.0).ok
 
     # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
@@ -245,14 +244,13 @@ def test_move_two_objects_no_collision(clsLeonard):
     leonard.setup()
 
     # Constants and parameters for this test.
-    templateID = np.int64(1).tostring()
     id_0, id_1 = int2id(0), int2id(1)
     sv_0 = bullet_data.BulletData(position=[0, 0, 0], velocityLin=[1, 0, 0])
     sv_1 = bullet_data.BulletData(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
     # Create two objects.
-    assert btInterface.spawn(id_0, sv_0, templateID, aabb=1).ok
-    assert btInterface.spawn(id_1, sv_1, templateID, aabb=1).ok
+    assert btInterface.spawn(id_0, sv_0, aabb=1).ok
+    assert btInterface.spawn(id_1, sv_1, aabb=1).ok
 
     # Advance the simulation by 1s and query the states of both objects.
     leonard.step(1.0, 60)
@@ -288,14 +286,13 @@ def test_worker_respawn():
     leonard.setup()
 
     # Constants and parameters for this test.
-    templateID = np.int64(1).tostring()
     id_0, id_1 = int2id(0), int2id(1)
     sv_0 = bullet_data.BulletData(position=[0, 0, 0], velocityLin=[1, 0, 0])
     sv_1 = bullet_data.BulletData(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
     # Create two objects.
-    assert btInterface.spawn(id_0, sv_0, templateID, aabb=1).ok
-    assert btInterface.spawn(id_1, sv_1, templateID, aabb=1).ok
+    assert btInterface.spawn(id_0, sv_0, aabb=1).ok
+    assert btInterface.spawn(id_1, sv_1, aabb=1).ok
 
     # Advance the simulation by 1s, but use many small time steps. This ensures
     # that the Workers will restart themselves many times.
@@ -444,7 +441,7 @@ def test_computeCollisionSetsAABB(dim):
 
     # Add all objects to the SV DB.
     for objID, sv in zip(all_id, SVs):
-        assert btInterface.spawn(objID, sv, np.int64(1).tostring(), 1.0).ok
+        assert btInterface.spawn(objID, sv, aabb=1.0).ok
     del SVs
 
     # Retrieve all SVs as Leonard does.
@@ -520,12 +517,11 @@ def test_force_grid(clsLeonard):
     leonard.setup()
 
     # Constants and parameters for this test.
-    templateID = np.int64(1).tostring()
     id_0 = int2id(0)
     sv = bullet_data.BulletData()
 
     # Spawn one object.
-    assert btInterface.spawn(id_0, sv, templateID, aabb=1).ok
+    assert btInterface.spawn(id_0, sv, aabb=1).ok
 
     # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
@@ -598,12 +594,11 @@ def test_create_work_package_without_objects():
     # Test data.
     data_0 = bullet_data.BulletData(imass=1)
     id_1, id_2 = int2id(1), int2id(2)
-    templateID = np.int64(1).tostring()
     aabb, dt, maxsteps = 1, 2, 3 
 
     # Add two new objects to Leonard.
-    assert btInterface.spawn(id_1, data_0, templateID, aabb).ok
-    assert btInterface.spawn(id_2, data_0, templateID, aabb).ok
+    assert btInterface.spawn(id_1, data_0, aabb).ok
+    assert btInterface.spawn(id_2, data_0, aabb).ok
     leo.processCommandsAndSync()
 
     # Create a work package for two object IDs. The WPID must be 1.
@@ -693,14 +688,13 @@ def test_create_work_package_with_objects():
     data_1 = bullet_data.BulletData(imass=1)
     data_2 = bullet_data.BulletData(imass=2)
     data_3 = bullet_data.BulletData(imass=3)
-    templateID = np.int64(1).tostring()
     aabb = 1
     id_1, id_2, id_3 = int2id(1), int2id(2), int2id(3)
     
     # Spawn new objects.
-    assert btInterface.spawn(id_1, data_1, templateID, aabb)
-    assert btInterface.spawn(id_2, data_2, templateID, aabb)
-    assert btInterface.spawn(id_3, data_3, templateID, aabb)
+    assert btInterface.spawn(id_1, data_1, aabb)
+    assert btInterface.spawn(id_2, data_2, aabb)
+    assert btInterface.spawn(id_3, data_3, aabb)
     leo.processCommandsAndSync()
 
     # Add ID1 to the WP. The WPID must be 1.

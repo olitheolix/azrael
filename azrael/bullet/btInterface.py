@@ -85,8 +85,7 @@ def getNumObjects():
 
 
 @typecheck
-def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
-          aabb: (int, float)):
+def spawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
     """
     Add the new ``objID`` to the physics DB and return success.
 
@@ -98,7 +97,6 @@ def spawn(objID: bytes, sv: bullet_data.BulletData, templateID: bytes,
 
     :param bytes objID: object ID to insert.
     :param bytes sv: encoded state variable data.
-    :param bytes templateID: the template from which the object is spawned.
     :param float aabb: size of AABB.
     :return: success.
     """

@@ -748,7 +748,7 @@ class Clerk(multiprocessing.Process):
         del doc
 
         # Add the object to the physics simulation.
-        btInterface.spawn(new_id, sv, templateID, template['aabb'])
+        btInterface.spawn(new_id, sv, template['aabb'])
         msg = 'Spawned template <{}> as objID=<{}> (0x{:0X})'
         msg = msg.format(templateID, new_id, util.id2int(new_id))
         self.logit.debug(msg)
