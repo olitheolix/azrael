@@ -549,25 +549,3 @@ def getOverrideAttributes(objID: bytes):
     else:
         # 'attrOverride' is invalid.
         return RetVal(True, None, val)
-
-
-@typecheck
-def getTemplateID(objID: bytes):
-    """
-    Return the template ID for object ``objID``.
-
-    :param bytes objID: object ID
-    :return: Template ID
-    :rtype: bytes
-    """
-    # Sanity check.
-    if len(objID) != config.LEN_ID:
-        return RetVal(False, 'objID has invalid length', None)
-
-    # Query the document.
-    doc = _DB_SV.find_one({'objid': objID})
-    if doc is None:
-        msg = 'Could not retrieve templateID for objID={}'.format(objID)
-        return RetVal(False, msg, None)
-    else:
-        return RetVal(True, None, doc['templateID'])
