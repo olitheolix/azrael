@@ -393,7 +393,7 @@ def startAzrael(param):
     #leo = leonard.LeonardBullet()
     #leo = leonard.LeonardBulletSweeping()
     #leo = leonard.LeonardWorkPackages()
-    leo = leonard.LeonardBulletSweepingMultiMT()
+    leo = leonard.LeonardDistributed()
     leo.start()
 
     return (clerk, clacks, leo), default_attributes

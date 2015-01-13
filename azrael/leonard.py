@@ -729,7 +729,7 @@ class LeonardWorkPackages(LeonardBase):
         return RetVal(True, None, cnt)
 
 
-class LeonardBulletSweepingMultiMT(LeonardWorkPackages):
+class LeonardDistributed(LeonardWorkPackages):
     """
     Compute physics on independent collision sets with multiple engines.
 

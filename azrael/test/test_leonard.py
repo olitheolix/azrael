@@ -24,7 +24,7 @@ allEngines = [
     azrael.leonard.LeonardBullet,
     azrael.leonard.LeonardBulletSweeping,
     azrael.leonard.LeonardWorkPackages,
-    azrael.leonard.LeonardBulletSweepingMultiMT]
+    azrael.leonard.LeonardDistributed]
 
 
 def killAzrael():
@@ -281,7 +281,7 @@ def test_worker_respawn():
     killAzrael()
 
     # Instantiate Leonard.
-    leonard = azrael.leonard.LeonardBulletSweepingMultiMT()
+    leonard = azrael.leonard.LeonardDistributed()
     leonard.workerStepsUntilQuit = (1, 10)
     leonard.setup()
 
