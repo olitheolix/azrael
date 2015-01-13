@@ -570,9 +570,6 @@ class LeonardWorkPackages(LeonardBase):
         self._DB_WP.insert({'name': 'wpcnt', 'cnt': 0})
 
     def setup(self):
-        """
-        No setup required.
-        """
         pass
 
     @typecheck
@@ -700,6 +697,8 @@ class LeonardWorkPackages(LeonardBase):
 
         fixme: most of this function is a duplicate of getWorkPackage
         fixme: docu and parameters
+        fixme: overhaul WP architecture so that this function can return how
+               many WPs are still in the queue.
 
         All fetched work packages will be immediately removed from the DB and
         all objects updated in the local cache. This method will also clear the
@@ -731,20 +730,19 @@ class LeonardWorkPackages(LeonardBase):
 
 class LeonardDistributed(LeonardWorkPackages):
     """
-    Compute physics on independent collision sets with multiple engines.
-
-    Leverage ``LeonardWorkPackages`` but process the work packages in
-    dedicated Worker processes.
+    Almost identical to ``LeonardWorkPackages`` except that it launches the
+    Worker processes into independent processes.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workers = []
         self.numWorkers = 3
 
-        # Every Worker will respawn after somewhere between [minSteps,
-        # maxSteps] physics updates. The ``ManageWorker`` instance will
-        # randomly pick a number from this interval to decorrelate the restart
-        # times of the Workers.
+        # Worker terminate automatically after a certain number of processed
+        # Work Packages. The precise number is a constructor argument and the
+        # following two variables simply specify the range. The final number
+        # will be chosen randomly from this interval (different for every Worke
+        # instance to avoid the situation where all die simultaneously).
         self.minSteps, self.maxSteps = (500, 700)
 
     def __del__(self):
@@ -770,10 +768,7 @@ class LeonardDistributed(LeonardWorkPackages):
 
     def processWorkPackage(self, wpid: int):
         """
-        Ensure "someone" processes the work package with ID ``wpid``.
-
-        This method will usually be overloaded in sub-classes to actually send
-        the WPs to a Bullet engine or worker processes.
+        Send the Work Package with ``wpid`` to the next available worker.
 
         :param int wpid: work package ID to process.
         """
