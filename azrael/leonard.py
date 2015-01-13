@@ -814,14 +814,13 @@ class WorkerManager(multiprocessing.Process):
         # Spawn the initial collection of Workers.
         workers = []
         delta = self.maxSteps - self.minSteps
-        cls = LeonardWorker
         for ii in range(self.numWorkers):
             # Random number in [minSteps, maxSteps]. The process will
             # automatically terminate after `suq` steps.
             suq = self.minSteps + int(np.random.rand() * delta)
 
             # Instantiate the process and add it to the list.
-            workers.append(cls(ii + 1, suq))
+            workers.append(LeonardWorker(ii + 1, suq))
             workers[-1].start()
 
         # Periodically monitor the processes and restart any that have died.
@@ -839,7 +838,7 @@ class WorkerManager(multiprocessing.Process):
                 # Create a new Worker with the same ID but a (possibly)
                 # different number of steps after which it must terminate.
                 suq = self.minSteps + int(np.random.rand() * delta)
-                proc = cls(workerID, suq)
+                proc = LeonardWorker(workerID, suq)
                 proc.start()
                 workers[workerID] = proc
                 print('Restarted Worker {}'.format(workerID))
@@ -960,44 +959,6 @@ class LeonardWorker(multiprocessing.Process):
              '$unset': {'token': 1}})
         return RetVal(doc is not None, None, None)
     
-    @typecheck
-    def run(self):
-        """
-        Update the physics for all objects in ``wpid``.
-
-        :param int wpid: work package ID.
-        """
-        try:
-            # Rename process to make it easy to find and kill them in the
-            # process table.
-            if os.getpid() != self.parentPID:
-                setproctitle.setproctitle('killme LeonardWorker')
-
-            # Setup ZeroMQ.
-            ctx = zmq.Context()
-            sock = ctx.socket(zmq.REQ)
-            sock.connect(config.addr_leonard_pushpull)
-            self.logit.info('Worker {} connected'.format(self.workerID))
-
-            # Process work packages as they arrive.
-            numSteps = 0
-            suq = self.stepsUntilQuit
-            while numSteps < suq:
-                sock.send(b'')
-                wpid = sock.recv()
-                wpid = np.fromstring(wpid, np.int64)
-                with util.Timeit('Worker.0_All') as timeit:
-                    self.processWorkPackage(int(wpid))
-                numSteps += 1
-
-            # Log a last status message and terminate.
-            self.logit.info('Worker {} terminated itself after {} steps'
-                            .format(self.workerID, numSteps))
-            sock.close(linger=0)
-            ctx.destroy()
-        except KeyboardInterrupt:
-            print('Aborted Worker {}'.format(self.workerID))
-
     def processWorkPackage(self, wpid: int):
         with util.Timeit('Worker.1_fetchWP') as timeit:
             ret = self.getWorkPackage(wpid)
@@ -1054,3 +1015,41 @@ class LeonardWorker(multiprocessing.Process):
         if not ret.ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)
+
+    @typecheck
+    def run(self):
+        """
+        Update the physics for all objects in ``wpid``.
+
+        :param int wpid: work package ID.
+        """
+        try:
+            # Rename process to make it easy to find and kill them in the
+            # process table.
+            if os.getpid() != self.parentPID:
+                setproctitle.setproctitle('killme LeonardWorker')
+
+            # Setup ZeroMQ.
+            ctx = zmq.Context()
+            sock = ctx.socket(zmq.REQ)
+            sock.connect(config.addr_leonard_pushpull)
+            self.logit.info('Worker {} connected'.format(self.workerID))
+
+            # Process work packages as they arrive.
+            numSteps = 0
+            suq = self.stepsUntilQuit
+            while numSteps < suq:
+                sock.send(b'')
+                wpid = sock.recv()
+                wpid = np.fromstring(wpid, np.int64)
+                with util.Timeit('Worker.0_All') as timeit:
+                    self.processWorkPackage(wpid)
+                numSteps += 1
+
+            # Log a last status message and terminate.
+            self.logit.info('Worker {} terminated itself after {} steps'
+                            .format(self.workerID, numSteps))
+            sock.close(linger=0)
+            ctx.destroy()
+        except KeyboardInterrupt:
+            print('Aborted Worker {}'.format(self.workerID))
