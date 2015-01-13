@@ -22,7 +22,7 @@ ipshell = IPython.embed
 allEngines = [
     azrael.leonard.LeonardBase,
     azrael.leonard.LeonardBullet,
-    azrael.leonard.LeonardBulletSweeping,
+    azrael.leonard.LeonardSweeping,
     azrael.leonard.LeonardWorkPackages,
     azrael.leonard.LeonardDistributed]
 

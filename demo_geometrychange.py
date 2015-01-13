@@ -139,7 +139,7 @@ def startAzrael(param):
     # Start the physics engine.
     #leo = leonard.LeonardBase()
     #leo = leonard.LeonardBullet()
-    #leo = leonard.LeonardBulletSweeping()
+    #leo = leonard.LeonardSweeping()
     #leo = leonard.LeonardWorkPackages()
     leo = leonard.LeonardDistributed()
     leo.start()

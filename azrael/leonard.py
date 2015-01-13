@@ -462,7 +462,7 @@ class LeonardBullet(LeonardBase):
         self.syncObjects()
 
 
-class LeonardBulletSweeping(LeonardBullet):
+class LeonardSweeping(LeonardBullet):
     """
     Compute physics on independent collision sets.
 
@@ -549,7 +549,7 @@ class LeonardWorkPackages(LeonardBase):
     """
     Compute physics on independent collision sets with multiple engines.
 
-    This version is similar to ``LeonardBulletSweeping`` but employs dedicated
+    This version is similar to ``LeonardSweeping`` but employs dedicated
     Worker instances.
 
     This class is single threaded. All Bullet engines run sequentially in the
