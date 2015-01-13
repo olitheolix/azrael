@@ -392,7 +392,7 @@ class LeonardBase(multiprocessing.Process):
                 self.step(0.1, 10)
 
 
-class LeonardBulletMonolithic(LeonardBase):
+class LeonardBullet(LeonardBase):
     """
     An extension of ``LeonardBase`` that uses Bullet for the physics.
 
@@ -462,11 +462,11 @@ class LeonardBulletMonolithic(LeonardBase):
         self.syncObjects()
 
 
-class LeonardBulletSweeping(LeonardBulletMonolithic):
+class LeonardBulletSweeping(LeonardBullet):
     """
     Compute physics on independent collision sets.
 
-    This is a modified version of ``LeonardBulletMonolithic`` that uses
+    This is a modified version of ``LeonardBullet`` that uses
     Sweeping to compile the collision sets and then updates the physics for
     each set independently.
 
@@ -549,7 +549,7 @@ class LeonardBulletSweepingMultiST(LeonardBase):
     """
     Compute physics on independent collision sets with multiple engines.
 
-    This is a modified version of ``LeonardBulletMonolithic`` and similar to
+    This is a modified version of ``LeonardBullet`` and similar to
     ``LeonardBulletSweeping``. It employs work packages and multiple engines,
     all of which run in the same thread.
 

@@ -21,7 +21,7 @@ ipshell = IPython.embed
 # tests that must pass for all engines.
 allEngines = [
     azrael.leonard.LeonardBase,
-    azrael.leonard.LeonardBulletMonolithic,
+    azrael.leonard.LeonardBullet,
     azrael.leonard.LeonardBulletSweeping,
     azrael.leonard.LeonardBulletSweepingMultiST,
     azrael.leonard.LeonardBulletSweepingMultiMT]
