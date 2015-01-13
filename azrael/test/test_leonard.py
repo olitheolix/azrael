@@ -575,7 +575,7 @@ def test_create_work_package_without_objects():
     # Reset the SV database and instantiate a Leonard.
     btInterface.initSVDB(reset=True)
     leo = azrael.leonard.LeonardBulletSweepingMultiST()
-    worker = azrael.leonard.LeonardBulletSweepingMultiMTWorker(1, 100000)
+    worker = azrael.leonard.LeonardWorker(1, 100000)
 
     # The token to use for this test.
     token = 1
@@ -681,7 +681,7 @@ def test_create_work_package_with_objects():
     # Reset the SV database and instantiate a Leonard.
     btInterface.initSVDB(reset=True)
     leo = azrael.leonard.LeonardBulletSweepingMultiST()
-    worker = azrael.leonard.LeonardBulletSweepingMultiMTWorker(1, 100000)
+    worker = azrael.leonard.LeonardWorker(1, 100000)
     leo.setup()
 
     # The token to use in this test.

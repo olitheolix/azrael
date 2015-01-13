@@ -621,7 +621,7 @@ class LeonardBulletSweepingMultiST(LeonardBase):
             for wpid in all_wpids:
                 # Create a dedicated engine. This is slow but ok because the
                 # single threaded version is only useful for testing anyway.
-                engine = LeonardBulletSweepingMultiMTWorker(1, 1)
+                engine = LeonardWorker(1, 1)
                 engine.processWorkPackage(wpid)
                 
         with util.Timeit('Leonard.ProcessWPs_2') as timeit:
@@ -767,7 +767,7 @@ class WorkerManager(multiprocessing.Process):
         # Spawn the initial collection of Workers.
         workers = []
         delta = self.maxSteps - self.minSteps
-        cls = LeonardBulletSweepingMultiMTWorker
+        cls = LeonardWorker
         for ii in range(self.numWorkers):
             # Random number in [minSteps, maxSteps]. The process will
             # automatically terminate after `suq` steps.
@@ -842,7 +842,7 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
         # Spawn the workers.
         workermanager = WorkerManager(
             self.numWorkers, self.minSteps,
-            self.maxSteps, LeonardBulletSweepingMultiMTWorker)
+            self.maxSteps, LeonardWorker)
         workermanager.start()
         self.logit.info('Setup complete')
 
@@ -859,11 +859,9 @@ class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
         self.sock.send(np.int64(wpid).tostring())
 
 
-class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
+class LeonardWorker(multiprocessing.Process):
     """
-    Distributed Physics Engine based on collision sets and work packages.
-
-    The distribution of Work Packages happens via ZeroMQ push/pull sockets.
+    Dedicated Worker to process Work Packages.
 
     :param int workerID: the ID of this worker.
     :param int stepsUntilQuit: Worker will restart after this many steps.
@@ -885,6 +883,7 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         client = pymongo.MongoClient()
         self._DB_WP = client['azrael']['wp']
 
+        # Record the PID of the parent.
         self.parentPID = os.getpid()
 
         # Instantiate a Bullet engine.
