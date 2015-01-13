@@ -630,18 +630,12 @@ class LeonardWorkPackages(LeonardBase):
                 LeonardWorker(1, 1).processWorkPackage(wpid)
                 
         with util.Timeit('Leonard.ProcessWPs_2') as timeit:
-            self.waitUntilWorkpackagesComplete(all_wpids, self.token)
+            while self._DB_WP.find({'wpid': {'$exists': 1}}).count() > 0:
+                self.pullCompletedWorkPackages()
+                time.sleep(0.001)
 
         # Synchronise the objects with the DB.
         self.syncObjects()
-
-    def waitUntilWorkpackagesComplete(self, all_wpids, token):
-        """
-        Block until all work packages have been completed.
-        """
-        while self._DB_WP.find({'wpid': {'$exists': 1}}).count() > 0:
-            self.pullCompletedWorkPackages()
-            time.sleep(0.001)
 
     @typecheck
     def createWorkPackage(self, objIDs: (tuple, list), token: int,
