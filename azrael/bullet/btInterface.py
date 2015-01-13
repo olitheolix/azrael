@@ -287,11 +287,10 @@ def getStateVariables(objIDs: (list, tuple)):
     """
     Retrieve the state variables for all ``objIDs``.
 
-    If one or more objIDs int ``objIDs`` do not not exist then the respective
-    entry will return *None*.
+    Return *None* for every entry non-existing objID.
 
     :param iterable objIDs: list of object IDs for which to return the SV.
-    :return dict: dictionary of the form {objID_k: sv_k}
+    :return dict: dictionary of the form {objID: sv}
     """
     # Sanity check.
     for _ in objIDs:
@@ -355,7 +354,7 @@ def _updateBulletDataTuple(orig: bullet_data.BulletData,
     same base class.
 
     :param BulletData orig: the original tuple.
-    :param BulletDataOverride new: all None values will be copied to ``orig``.
+    :param BulletDataOverride new: the new values (*None* entries are ignored).
     :return: updated version of ``orig``.
     :rtype: BulletData
     """
@@ -377,10 +376,10 @@ def _updateBulletDataTuple(orig: bullet_data.BulletData,
 
 def getAllStateVariables():
     """
-    Return the state variables for all objects in a dictionary.
+    Return a dictionary of {objID: SV} all objects in the simulation.
 
     The keys and values of the returned dictionary correspond to the object ID
-    and its associated state variables, respectively.
+    and their associated State Vectors, respectively.
 
     :return: dictionary of state variables with object IDs as keys.
     :rtype: dict
@@ -395,12 +394,9 @@ def getAllStateVariables():
 
 def getAllObjectIDs():
     """
-    Return all object IDs.
+    Return all object IDs in the simulation.
 
-    Unlike ``getAllStateVariables`` this function merely returns object IDs but
-    no associated data (eg. state variables).
-
-    :return: list of all object IDs present in the simulation.
+    :return: list of all object IDs in the simulation.
     :rtype: list
     """
     # Compile and return the list of all object IDs.
@@ -415,9 +411,9 @@ def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
 
     This function is a wrapper around ``setForceAndTorque``.
 
-    :param bytes objID: the object to which the force applies.
-    :param np.ndarray force: force
-    :param np.ndarray relpos: position of force relative to COM.
+    :param bytes objID: recipient of ``force``
+    :param np.ndarray force: the ``force`` (in Newton).
+    :param np.ndarray relpos: position of ``force`` relative to COM.
     :return bool: success.
     """
     # Sanity check.
@@ -440,7 +436,7 @@ def getForceAndTorque(objID: bytes):
     """
     Return the force and torque for ``objID``.
 
-    :param bytes objID: object for which to query the force and torque.
+    :param bytes objID: object for which to return the force and torque.
     :returns: force and torque as {'force': force, 'torque': torque}.
     :rtype: dict
     """
@@ -482,8 +478,8 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
        of mass.
 
     :param bytes objID: the object
-    :param ndarray force: central force to apply
-    :param ndarray torque: torque to apply
+    :param ndarray force: apply this central ``force`` to ``objID``.
+    :param ndarray torque: apply this ``torque`` to ``objID``.
     :return bool: Success
     """
     # Sanity check.
