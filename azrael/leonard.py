@@ -18,6 +18,7 @@
 """
 Physics manager.
 """
+import os
 import sys
 import zmq
 import time
@@ -566,10 +567,10 @@ class LeonardBulletSweepingMultiST(LeonardBase):
         self._DB_WP.insert({'name': 'wpcnt', 'cnt': 0})
 
     def setup(self):
-        # Instantiate several Bullet engines. The (1, 0) parameters mean
-        # the engine has ID '1' and does not build explicit pair caches.
-        engine = azrael.bullet.boost_bullet.PyBulletPhys
-        self.bulletEngines = [engine(_ + 1) for _ in range(5)]
+        """
+        No setup required.
+        """
+        pass
 
     @typecheck
     def step(self, dt, maxsteps):
@@ -618,8 +619,11 @@ class LeonardBulletSweepingMultiST(LeonardBase):
         # Schedule all Work Packages for processing and wait until it is done.
         with util.Timeit('Leonard.ProcessWPs_1') as timeit:
             for wpid in all_wpids:
-                self.processWorkPackage(wpid)
-
+                # Create a dedicated engine. This is slow but ok because the
+                # single threaded version is only useful for testing anyway.
+                engine = LeonardBulletSweepingMultiMTWorker(1, 1)
+                engine.processWorkPackage(wpid)
+                
         with util.Timeit('Leonard.ProcessWPs_2') as timeit:
             self.waitUntilWorkpackagesComplete(all_wpids, self.token)
 
@@ -996,6 +1000,12 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         client = pymongo.MongoClient()
         self._DB_WP = client['azrael']['wp']
 
+        self.parentPID = os.getpid()
+
+        # Instantiate a Bullet engine.
+        engine = azrael.bullet.boost_bullet.PyBulletPhys
+        self.bullet = engine(self.workerID)
+
     def applyGridForce(self, force, pos):
         """
         Return updated ``force`` that takes the force grid value at ``pos``
@@ -1081,11 +1091,8 @@ class LeonardBulletSweepingMultiMTWorker(multiprocessing.Process):
         try:
             # Rename process to make it easy to find and kill them in the
             # process table.
-            setproctitle.setproctitle('killme LeonardWorker')
-
-            # Instantiate a Bullet engine.
-            engine = azrael.bullet.boost_bullet.PyBulletPhys
-            self.bullet = engine(self.workerID)
+            if os.getpid() != self.parentPID:
+                setproctitle.setproctitle('killme LeonardWorker')
 
             # Setup ZeroMQ.
             ctx = zmq.Context()
