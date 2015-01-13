@@ -547,13 +547,17 @@ class LeonardSweeping(LeonardBullet):
 
 class LeonardWorkPackages(LeonardBase):
     """
-    Compute physics on independent collision sets with multiple engines.
+    Compute physics with separate engines.
 
-    This version is similar to ``LeonardSweeping`` but employs dedicated
-    Worker instances.
+    This class uses the concept of Work Packages to distribute work. Every Work
+    Package is self contained and holds all the information Bullet requires to
+    step the simulation.
 
     This class is single threaded. All Bullet engines run sequentially in the
     main thread. The work packages are distributed at random to the engines.
+
+    This class uses the sweeping algorithm to determine collision sets, just
+    like ``LeonardSweeping`` does.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -586,6 +590,7 @@ class LeonardWorkPackages(LeonardBase):
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
+        # Read queued commands and update the local object cache accordingly.
         self.processCommandQueue()        
 
         # Compute the collision sets.
@@ -615,13 +620,14 @@ class LeonardWorkPackages(LeonardBase):
                 if ret.ok:
                     all_wpids.append(ret.data)
 
-        # Schedule all Work Packages for processing and wait until it is done.
+        # Process each Work Package with a dedicated engine. Albeit wasteful
+        # and slow it is nevertheless simple and allows easy
+        # testing. Furthermore, this single threaded version is pointless in
+        # production because Azrael is about distributed physics, not single
+        # threaded physics.
         with util.Timeit('Leonard.ProcessWPs_1') as timeit:
             for wpid in all_wpids:
-                # Create a dedicated engine. This is slow but ok because the
-                # single threaded version is only useful for testing anyway.
-                engine = LeonardWorker(1, 1)
-                engine.processWorkPackage(wpid)
+                LeonardWorker(1, 1).processWorkPackage(wpid)
                 
         with util.Timeit('Leonard.ProcessWPs_2') as timeit:
             self.waitUntilWorkpackagesComplete(all_wpids, self.token)
