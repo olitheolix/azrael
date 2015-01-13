@@ -155,17 +155,15 @@ def test_add_same():
     assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create two State Vectors.
-    data_0 = bullet_data.BulletData()
-    data_0.position[:] = np.zeros(3)
-
-    data_1 = bullet_data.BulletData()
-    data_1.position[:] = 10 * np.ones(3)
+    data_0 = bullet_data.BulletData(imass=1)
+    data_1 = bullet_data.BulletData(imass=2)
+    data_2 = bullet_data.BulletData(imass=3)
 
     # The command queue for spawning objects must be empty.
     ret = btInterface.getCmdSpawn()
     assert ret.ok and (ret.data == [])
 
-    # Add the objects to the DB.
+    # Request to spawn the first object.
     assert btInterface.addCmdSpawn(id_0, data_0, aabb=0).ok
     ret = btInterface.getCmdSpawn()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
@@ -180,6 +178,24 @@ def test_add_same():
     leo.step(0, 1)
     ret = btInterface.getCmdSpawn()
     assert ret.ok and (ret.data == [])
+
+    # Similar test to before, but this time Leonard has already pulled id_0
+    # into the simulation, and only *afterwards* are we requesting to spawn yet
+    # another object with the same ID. the 'addSpawnCmd' must succeed because
+    # it cannot reliably verify if Leonard has an object id_0 (it can only
+    # verify if another such request is in the queue already -- see
+    # above). However, Leonard itself must ignore that request. To verify this,
+    # request to spawn a new object with the same id_0 but a different State
+    # Vectors, let Leonard evaluate the queue, and finally verify that Leonard
+    # did not add/modify id_0.
+    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data_0})
+    assert btInterface.addCmdSpawn(id_0, data_2, aabb=0).ok
+    ret = btInterface.getCmdSpawn()
+    assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objid'] == id_0)
+    leo.step(0, 1)
+
+    # Must still be original 'data_0' state vector, not 'data_2'.
+    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data_0})
 
     print('Test passed')
 
