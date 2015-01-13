@@ -729,6 +729,59 @@ class LeonardBulletSweepingMultiST(LeonardBase):
             cnt += 1
         return RetVal(True, None, cnt)
 
+
+class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
+    """
+    Compute physics on independent collision sets with multiple engines.
+
+    Leverage ``LeonardBulletSweepingMultiST`` but process the work packages in
+    dedicated Worker processes.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.workers = []
+        self.numWorkers = 3
+
+        # Every Worker will respawn after somewhere between [minSteps,
+        # maxSteps] physics updates. The ``ManageWorker`` instance will
+        # randomly pick a number from this interval to decorrelate the restart
+        # times of the Workers.
+        self.minSteps, self.maxSteps = (500, 700)
+
+    def __del__(self):
+        """
+        Kill all worker processes.
+        """
+        for worker in self.workers:
+            if worker.is_alive():
+                worker.terminate()
+                worker.join()
+
+    def setup(self):
+        self.ctx = zmq.Context()
+        self.sock = self.ctx.socket(zmq.REP)
+        self.sock.bind(config.addr_leonard_pushpull)
+
+        # Spawn the workers.
+        workermanager = WorkerManager(
+            self.numWorkers, self.minSteps,
+            self.maxSteps, LeonardWorker)
+        workermanager.start()
+        self.logit.info('Setup complete')
+
+    def processWorkPackage(self, wpid: int):
+        """
+        Ensure "someone" processes the work package with ID ``wpid``.
+
+        This method will usually be overloaded in sub-classes to actually send
+        the WPs to a Bullet engine or worker processes.
+
+        :param int wpid: work package ID to process.
+        """
+        self.sock.recv()
+        self.sock.send(np.int64(wpid).tostring())
+
+
 class WorkerManager(multiprocessing.Process):
     """
     Launch Worker processes and restart them as necessary.
@@ -805,58 +858,6 @@ class WorkerManager(multiprocessing.Process):
             self._run()
         except KeyboardInterrupt:
             pass
-
-
-class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
-    """
-    Compute physics on independent collision sets with multiple engines.
-
-    Leverage ``LeonardBulletSweepingMultiST`` but process the work packages in
-    dedicated Worker processes.
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.workers = []
-        self.numWorkers = 3
-
-        # Every Worker will respawn after somewhere between [minSteps,
-        # maxSteps] physics updates. The ``ManageWorker`` instance will
-        # randomly pick a number from this interval to decorrelate the restart
-        # times of the Workers.
-        self.minSteps, self.maxSteps = (500, 700)
-
-    def __del__(self):
-        """
-        Kill all worker processes.
-        """
-        for worker in self.workers:
-            if worker.is_alive():
-                worker.terminate()
-                worker.join()
-
-    def setup(self):
-        self.ctx = zmq.Context()
-        self.sock = self.ctx.socket(zmq.REP)
-        self.sock.bind(config.addr_leonard_pushpull)
-
-        # Spawn the workers.
-        workermanager = WorkerManager(
-            self.numWorkers, self.minSteps,
-            self.maxSteps, LeonardWorker)
-        workermanager.start()
-        self.logit.info('Setup complete')
-
-    def processWorkPackage(self, wpid: int):
-        """
-        Ensure "someone" processes the work package with ID ``wpid``.
-
-        This method will usually be overloaded in sub-classes to actually send
-        the WPs to a Bullet engine or worker processes.
-
-        :param int wpid: work package ID to process.
-        """
-        self.sock.recv()
-        self.sock.send(np.int64(wpid).tostring())
 
 
 class LeonardWorker(multiprocessing.Process):
