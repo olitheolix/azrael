@@ -287,8 +287,11 @@ def test_worker_respawn():
 
     # Constants and parameters for this test.
     id_0, id_1 = int2id(0), int2id(1)
-    sv_0 = bullet_data.BulletData(position=[0, 0, 0], velocityLin=[1, 0, 0])
-    sv_1 = bullet_data.BulletData(position=[0, 10, 0], velocityLin=[0, -1, 0])
+    cshape = [3, 1, 1, 1]
+    sv_0 = bullet_data.BulletData(
+        position=[0, 0, 0], velocityLin=[1, 0, 0], cshape=cshape)
+    sv_1 = bullet_data.BulletData(
+        position=[0, 10, 0], velocityLin=[0, -1, 0], cshape=cshape)
 
     # Create two objects.
     assert btInterface.addCmdSpawn(id_0, sv_0, aabb=1).ok

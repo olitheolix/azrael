@@ -639,68 +639,6 @@ class LeonardBulletSweepingMultiST(LeonardBase):
             time.sleep(0.001)
 
     @typecheck
-    def processWorkPackage(self, wpid: int):
-        """
-        Update the physics for all objects in ``wpid``.
-
-        The Bullet engine is picked at random.
-
-        :param int wpid: work package ID.
-        """
-        ret = self.getWorkPackage(wpid)
-        assert ret.ok
-        worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
-
-        # Pick an engine at random.
-        engineIdx = int(np.random.randint(len(self.bulletEngines)))
-        engine = self.bulletEngines[engineIdx]
-
-        # Log the number of created collision sets.
-        util.logMetricQty('Engine_{}'.format(engineIdx), len(worklist))
-
-        # Iterate over all objects and update them.
-        for obj in worklist:
-            sv = obj.sv
-
-            # Update the object in Bullet.
-            btID = util.id2int(obj.id)
-            engine.setObjectData(btID, sv)
-
-            # Retrieve the force vector and tell Bullet to apply it.
-            force = np.array(obj.central_force, np.float64)
-            torque = np.array(obj.torque, np.float64)
-
-            # Add the force defined on the 'force' grid.
-            force = self.applyGridForce(force, sv.position)
-
-            # Apply all forces and torques.
-            engine.applyForceAndTorque(btID, force, torque)
-
-        # Tell Bullet to advance the simulation for all objects in the
-        # current work list.
-        IDs = [util.id2int(_.id) for _ in worklist]
-        engine.compute(IDs, meta.dt, meta.maxsteps)
-
-        # Retrieve the objects from Bullet again and update them in the DB.
-        out = []
-        for obj in worklist:
-            ret = engine.getObjectData([util.id2int(obj.id)])
-            sv = ret.data
-
-            if not ret.ok:
-                # Something went wrong. Reuse the old SV.
-                sv = obj.sv
-                self.logit.error('Unable to get all objects from Bullet')
-            out.append(WPData(obj.id, sv.toJsonDict(), [0, 0, 0], [0, 0, 0]))
-
-        # Update the data and delete the WP.
-        ret = self.updateWorkPackage(wpid, meta.token, out)
-        if not ret.ok:
-            msg = 'Failed to update work package {}'.format(wpid)
-            self.logit.warning(msg)
-
-
-    @typecheck
     def createWorkPackage(self, objIDs: (tuple, list), token: int,
                           dt: (int, float), maxsteps: int):
         """
@@ -757,59 +695,6 @@ class LeonardBulletSweepingMultiST(LeonardBase):
         ret = self._DB_WP.insert(data)
         return RetVal(True, None, wpid)
     
-    @typecheck
-    def getWorkPackage(self, wpid: int):
-        """
-        Return the SV data for all objects specified in ``wpid``.
-    
-        This function returns a dictionary with two keys. The first key ('wpdata')
-        contains a list of ``WPData`` instances that describe the object states and
-        forces applied to them, and a 'wpmeta' field that is an instance of
-        ``WPMeta``.
-    
-        fixme: requires test that this function only returns a WP with token
-               (ie. it must never return an updated WP).
-
-        :param int wpid: work package ID.
-        :return: {'wpdata': list of WPData instances, 'wpmeta': meta information}
-        :rtype: dict
-        """
-    
-        # Retrieve the work package.
-        doc = self._DB_WP.find_one({'wpid': wpid, 'token': {'$exists': 1}})
-        if doc is None:
-            return RetVal(False, 'Unknown work package <{}>'.format(wpid), None)
-    
-        wpdata = [WPData(*_) for _ in doc['wpdata']]
-        for idx, val in enumerate(wpdata):
-            wpdata[idx] = val._replace(sv=bullet_data.fromJsonDict(val.sv))
-
-        # Put the meta data of the work package into another named tuple.
-        meta = WPMeta(doc['token'], doc['dt'], doc['maxsteps'])
-        return RetVal(True, None, {'wpdata': wpdata, 'wpmeta': meta})
-    
-    
-    @typecheck
-    def updateWorkPackage(self, wpid: int, token, wpdata: (tuple, list)):
-        """
-        Update the objects in ``wpid`` with the values in ``svdict``.
-    
-        This function only makes changes to objects defined in the WP ``wpid``,
-        and even then only if the ``token`` value matches.
-    
-        fixme: docu (new parameter types)
-
-        :param int wpid: work package ID.
-        :param int token: token value associated with this work package.
-        :param dict svdict: {objID: sv} dictionary
-        :return bool: Success.
-        """
-        doc = self._DB_WP.find_and_modify(
-            {'wpid': wpid, 'token': token},
-            {'$set': {'wpdata': wpdata},
-             '$unset': {'token': 1}})
-        return RetVal(doc is not None, None, None)
-
     def pullCompletedWorkPackages(self):
         """
         Fetch newly available Work Packages.
