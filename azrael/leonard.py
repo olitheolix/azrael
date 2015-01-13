@@ -545,13 +545,12 @@ class LeonardBulletSweeping(LeonardBullet):
         self.syncObjects()
 
 
-class LeonardBulletSweepingMultiST(LeonardBase):
+class LeonardWorkPackages(LeonardBase):
     """
     Compute physics on independent collision sets with multiple engines.
 
-    This is a modified version of ``LeonardBullet`` and similar to
-    ``LeonardBulletSweeping``. It employs work packages and multiple engines,
-    all of which run in the same thread.
+    This version is similar to ``LeonardBulletSweeping`` but employs dedicated
+    Worker instances.
 
     This class is single threaded. All Bullet engines run sequentially in the
     main thread. The work packages are distributed at random to the engines.
@@ -730,11 +729,11 @@ class LeonardBulletSweepingMultiST(LeonardBase):
         return RetVal(True, None, cnt)
 
 
-class LeonardBulletSweepingMultiMT(LeonardBulletSweepingMultiST):
+class LeonardBulletSweepingMultiMT(LeonardWorkPackages):
     """
     Compute physics on independent collision sets with multiple engines.
 
-    Leverage ``LeonardBulletSweepingMultiST`` but process the work packages in
+    Leverage ``LeonardWorkPackages`` but process the work packages in
     dedicated Worker processes.
     """
     def __init__(self, *args, **kwargs):

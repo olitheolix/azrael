@@ -145,7 +145,7 @@ def startAzrael(param):
     #leo = leonard.LeonardBase()
     #leo = leonard.LeonardBullet()
     #leo = leonard.LeonardBulletSweeping()
-    #leo = leonard.LeonardBulletSweepingMultiST()
+    #leo = leonard.LeonardWorkPackages()
     leo = leonard.LeonardBulletSweepingMultiMT()
     leo.start()
 

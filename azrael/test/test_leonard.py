@@ -23,7 +23,7 @@ allEngines = [
     azrael.leonard.LeonardBase,
     azrael.leonard.LeonardBullet,
     azrael.leonard.LeonardBulletSweeping,
-    azrael.leonard.LeonardBulletSweepingMultiST,
+    azrael.leonard.LeonardWorkPackages,
     azrael.leonard.LeonardBulletSweepingMultiMT]
 
 
@@ -574,7 +574,7 @@ def test_create_work_package_without_objects():
     """
     # Reset the SV database and instantiate a Leonard.
     btInterface.initSVDB(reset=True)
-    leo = azrael.leonard.LeonardBulletSweepingMultiST()
+    leo = azrael.leonard.LeonardWorkPackages()
     worker = azrael.leonard.LeonardWorker(1, 100000)
 
     # The token to use for this test.
@@ -680,7 +680,7 @@ def test_create_work_package_with_objects():
     """
     # Reset the SV database and instantiate a Leonard.
     btInterface.initSVDB(reset=True)
-    leo = azrael.leonard.LeonardBulletSweepingMultiST()
+    leo = azrael.leonard.LeonardWorkPackages()
     worker = azrael.leonard.LeonardWorker(1, 100000)
     leo.setup()
 
