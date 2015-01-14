@@ -44,6 +44,7 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int
 from azrael.test.test_leonard import startAzrael, stopAzrael, killAzrael
+from azrael.test.test_leonard import getLeonard
 
 ipshell = IPython.embed
 
@@ -63,20 +64,6 @@ class ControllerTest(controller.ControllerBase):
         data = self.sock_cmd.recv()
         data = json.loads(data.decode('utf8'))
         return data['ok'], data['payload']
-
-
-def getLeonard(LeonardCls=leonard.LeonardBase):
-    """
-    Reset all databases and return a ``LeonardCls`` instance.
-    """
-    # Reset all databases.
-    btInterface.initSVDB(reset=True)
-    azrael.database.reset()
-
-    # Return a Leonard instance.
-    leo = LeonardCls()
-    leo.setup()
-    return leo
 
 
 def test_invalid():

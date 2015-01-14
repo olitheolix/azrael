@@ -34,6 +34,25 @@ def killAzrael():
     assert azrael.vectorgrid.deleteAllGrids().ok
 
 
+def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
+    """
+    Reset all databases and return a ``LeonardCls`` instance.
+
+    This is a convenience function to reduce code duplication in test
+    functions.
+
+    :param cls LeonardCls: Leonard class to instantiate.
+    """
+    # Reset all databases.
+    btInterface.initSVDB(reset=True)
+    azrael.database.reset()
+
+    # Return a Leonard instance.
+    leo = LeonardCls()
+    leo.setup()
+    return leo
+
+
 def startAzrael(ctrl_type):
     """
     Start all Azrael services and return their handles.
