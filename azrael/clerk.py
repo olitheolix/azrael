@@ -126,17 +126,12 @@ class Clerk(multiprocessing.Process):
 
         # Specify all database collections for Azrael.
         client = pymongo.MongoClient()
-        self.db_admin = client['azrael']['admin']
         self.db_instance = client['azrael']['instance']
         self.db_template = client['azrael']['template']
 
         if reset:
             # Flush the database.
             client.drop_database('azrael')
-
-            # Reset the object counter. This counter will guarantee unique
-            # object IDs.
-            self.db_admin.insert({'name': 'objcnt', 'cnt': 0})
 
         # Specify the decoding-processing-encoding triplet functions for
         # (almost) every command supported by Clerk. The only exceptions are
