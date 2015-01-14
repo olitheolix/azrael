@@ -41,12 +41,13 @@ import setproctitle
 import multiprocessing
 
 import numpy as np
-import azrael.protocol_json as json
 
+import azrael.database
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
+import azrael.protocol_json as json
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
@@ -321,28 +322,6 @@ class Clerk(multiprocessing.Process):
                 # Unknown command.
                 self.returnErr(self.last_addr, {},
                                'Invalid command <{}>'.format(cmd))
-
-    def getUniqueID(self):
-        """
-        Return unique object ID.
-
-        All returned IDs are guarenteed unique within all of Azrael.
-
-        :returns: a unique object ID
-        :rtype: int
-        :raises: None
-        """
-        # Atomically increment the object counter to obtain a unique ID.
-        new_id = self.db_admin.find_and_modify(
-            {'name': 'objcnt'}, {'$inc': {'cnt': 1}}, new=True)
-
-        if new_id is None:
-            # This must not happen. If it does then the DB is corrupt.
-            self.logit.critical('Could not fetch counter - this is a bug!')
-            sys.exit(1)
-
-        # Return the ID.
-        return new_id['cnt']
 
     @typecheck
     def returnOk(self, addr, data: dict, msg: str=''):
@@ -715,7 +694,12 @@ class Clerk(multiprocessing.Process):
         sv.cshape[:] = np.fromstring(template['cshape'])
 
         # Request unique object ID.
-        new_id = util.int2id(self.getUniqueID())
+        # Obtain a new and unique work package ID.
+        objID = azrael.database.getNewObjectID()
+        if not objID.ok:
+            self.logit.error(msg)
+            return objID
+        objID = util.int2id(objID.data)
 
         # Copy the template to the instance DB. Add the objID of the
         # instantiated object as well.
@@ -728,7 +712,7 @@ class Clerk(multiprocessing.Process):
 
         # Add objID and geometry checksum to the document; remove the
         # _id field to avoid clashes.
-        doc['objID'] = new_id
+        doc['objID'] = objID
         doc['csGeo'] = 0
         doc['templateID'] = templateID
         del doc['_id']
@@ -736,11 +720,11 @@ class Clerk(multiprocessing.Process):
         del doc
 
         # Add the object to the physics simulation.
-        btInterface.addCmdSpawn(new_id, sv, template['aabb'])
+        btInterface.addCmdSpawn(objID, sv, template['aabb'])
         msg = 'Spawned template <{}> as objID=<{}> (0x{:0X})'
-        msg = msg.format(templateID, new_id, util.id2int(new_id))
+        msg = msg.format(templateID, objID, util.id2int(objID))
         self.logit.debug(msg)
-        return RetVal(True, None, new_id)
+        return RetVal(True, None, objID)
 
     @typecheck
     def removeObject(self, objID: bytes):

@@ -57,6 +57,8 @@ def initSVDB(reset=True):
     """
     Connect to the State Variable database. Flush it if ``reset`` is **True**.
 
+    fixme: merge this function with 'database.reset'.
+
     :param bool reset: flush the database.
     """
     global _DB_SV, _DB_CMDSpawn, _DB_CMDRemove, _DB_CMDModify

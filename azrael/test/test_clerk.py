@@ -77,7 +77,7 @@ def getLeonard():
 
 def test_invalid():
     """
-    Send an invalid command to the Clerk.
+    Send an invalid command to Clerk.
     """
     killAzrael()
 
