@@ -30,6 +30,7 @@ import subprocess
 import numpy as np
 
 import azrael.clerk
+import azrael.database
 import azrael.parts as parts
 import azrael.config as config
 import azrael.clacks as clacks
@@ -64,13 +65,16 @@ class ControllerTest(controller.ControllerBase):
         return data['ok'], data['payload']
 
 
-def getLeonard():
+def getLeonard(LeonardCls=leonard.LeonardBase):
     """
-    fixme: docu
+    Reset all databases and return a ``LeonardCls`` instance.
     """
-    # Reset the SV database and instantiate a Leonard.
+    # Reset all databases.
     btInterface.initSVDB(reset=True)
-    leo = leonard.LeonardBase()
+    azrael.database.reset()
+
+    # Return a Leonard instance.
+    leo = LeonardCls()
     leo.setup()
     return leo
 
