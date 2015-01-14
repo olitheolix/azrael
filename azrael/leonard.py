@@ -29,6 +29,7 @@ import setproctitle
 import multiprocessing
 import numpy as np
 
+import azrael.database
 import azrael.vectorgrid
 import azrael.util as util
 import azrael.config as config
@@ -177,6 +178,9 @@ class LeonardBase(multiprocessing.Process):
     """
     def __init__(self):
         super().__init__()
+
+        # Reset all data bases.
+        azrael.database.reset()
 
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
@@ -567,7 +571,6 @@ class LeonardWorkPackages(LeonardBase):
         client = pymongo.MongoClient()
         self._DB_WP = client['azrael']['wp']
         self._DB_WP.drop()
-        self._DB_WP.insert({'name': 'wpcnt', 'cnt': 0})
 
     def setup(self):
         pass
@@ -672,15 +675,14 @@ class LeonardWorkPackages(LeonardBase):
             return RetVal(False, 'Cannot form WP', None)
 
         # Obtain a new and unique work package ID.
-        wpid = self._DB_WP.find_and_modify(
-            {'name': 'wpcnt'}, {'$inc': {'cnt': 1}}, new=True)
-        if wpid is None:
-            self.logit.error('Could not fetch WPID counter - this is a bug!')
-            return RetVal(False, 'Could not get new WP counter', None)
-        wpid = wpid['cnt']
+        wpid = azrael.database.getNewWPID()
+        if not wpid.ok:
+            self.logit.error(msg)
+            return wpid
+        wpid = wpid.data
     
         # Remove all WP with the current ID. This is a precaution since there
-        # should not be any to begin with.
+        # should not be a WP with this ID to begin with.
         ret = self._DB_WP.remove({'wpid': wpid}, multi=True)
         if ret['n'] > 0:
             self.logit.warning('A previous WP with ID={} already existed'.format(wpid))
