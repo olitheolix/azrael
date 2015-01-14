@@ -124,9 +124,7 @@ def test_setStateVariables_basic(clsLeonard):
     killAzrael()
 
     # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = clsLeonard()
-    leo.setup()
+    leo = getLeonard(clsLeonard)
 
     # Parameters and constants for this test.
     id_0 = int2id(0)
@@ -172,9 +170,7 @@ def test_setStateVariables_advanced(clsLeonard):
     killAzrael()
 
     # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = clsLeonard()
-    leo.setup()
+    leo = getLeonard(clsLeonard)
 
     # Parameters and constants for this test.
     cs_cube = [3, 1, 1, 1]
@@ -217,10 +213,8 @@ def test_move_single_object(clsLeonard):
     """
     killAzrael()
 
-    # Instantiate Leonard.
-    btInterface.initSVDB(reset=True)
-    leonard = clsLeonard()
-    leonard.setup()
+    # Reset the SV database and instantiate a Leonard.
+    leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
     id_0 = int2id(0)
@@ -257,10 +251,8 @@ def test_move_two_objects_no_collision(clsLeonard):
     """
     killAzrael()
     
-    # Instantiate Leonard.
-    btInterface.initSVDB(reset=True)
-    leonard = clsLeonard()
-    leonard.setup()
+    # Reset the SV database and instantiate a Leonard.
+    leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
     id_0, id_1 = int2id(0), int2id(1)
@@ -444,9 +436,7 @@ def test_computeCollisionSetsAABB(dim):
     Then use subsets of these 10 objects to test basic collision detection.
     """
     # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = azrael.leonard.LeonardBase()
-    leo.setup()
+    leo = getLeonard(azrael.leonard.LeonardBase)
 
     # Create several objects for this test.
     all_id = [int2id(_) for _ in range(10)]
@@ -533,10 +523,8 @@ def test_force_grid(clsLeonard):
     # Convenience.
     vg = azrael.vectorgrid
 
-    # Instantiate Leonard.
-    btInterface.initSVDB(reset=True)
-    leonard = clsLeonard()
-    leonard.setup()
+    # Reset the SV database and instantiate a Leonard.
+    leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
     id_0 = int2id(0)
@@ -591,9 +579,8 @@ def test_create_work_package_without_objects():
     This test does not insert any objects into the simulation. It only tests
     the general functionality to add, retrieve, and update work packages.
     """
-    # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = azrael.leonard.LeonardWorkPackages()
+    # Reset the SV database and instantiate a Leonard and Worker.
+    leo = getLeonard(azrael.leonard.LeonardWorkPackages)
     worker = azrael.leonard.LeonardWorker(1, 100000)
 
     # The token to use for this test.
@@ -689,11 +676,9 @@ def test_create_work_package_with_objects():
     Similar to test_create_work_package_without_objects but now the there are
     actual objects in the simulation.
     """
-    # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = azrael.leonard.LeonardWorkPackages()
+    # Reset the SV database and instantiate a Leonard and Worker.
+    leo = getLeonard(azrael.leonard.LeonardWorkPackages)
     worker = azrael.leonard.LeonardWorker(1, 100000)
-    leo.setup()
 
     # The token to use in this test.
     token = 1
