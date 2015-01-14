@@ -400,18 +400,6 @@ class Clerk(multiprocessing.Process):
         """
         return RetVal(True, None, 'pong clerk')
 
-    def getID(self):
-        """
-        Return a new ID.
-
-        :return: new ID as byte string.
-        :rtype: bytes
-        :raises: None
-        """
-        # Return a new and unique Controller ID.
-        objID = util.int2id(self.getUniqueID())
-        return RetVal(True, None, objID)
-
     # ----------------------------------------------------------------------
     # These methods service Controller requests.
     # ----------------------------------------------------------------------
