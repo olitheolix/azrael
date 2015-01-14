@@ -632,10 +632,9 @@ class LeonardWorkPackages(LeonardBase):
                 LeonardWorker(1, 1).processWorkPackage()
                 
         with util.Timeit('Leonard.ProcessWPs_2') as timeit:
-            # fixme: use the return value of pullCompleted instead of the DB
-            # query to determine when all WPs have been processed.
-            while self._DB_WP.find({'wpid': {'$exists': 1}}).count() > 0:
-                self.pullCompletedWorkPackages()
+            # Wait until all Work Packages have been processed.
+            pcwp = self.pullCompletedWorkPackages
+            while pcwp().data[1]> 0:
                 time.sleep(0.001)
 
         # Synchronise the objects with the DB.
