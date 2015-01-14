@@ -713,8 +713,7 @@ class LeonardWorkPackages(LeonardBase):
             # fixme: improve this query once the counters were outsourced.
             # Retrieve the work package.
             doc = self._DB_WP.find_and_modify(
-                {'token': {'$exists': 0},
-                 'name': {'$exists': 0}},
+                {'token': {'$exists': 0}},
                 remove=True)
             if doc is None:
                 break
