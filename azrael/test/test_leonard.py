@@ -599,9 +599,9 @@ def test_create_work_package_without_objects():
     # The token to use for this test.
     token = 1
 
-    # There must not be any work packages yet.
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 0)
+    # There must not be any processed/unprocessed work packages yet.
+    ret = leo.countWorkPackages()
+    assert (ret.ok, ret.data) == (True, (0, 0))
 
     # This call is invalid because the IDs must be a non-empty list.
     assert not leo.createWorkPackage([], token, 1, 2).ok
@@ -609,9 +609,9 @@ def test_create_work_package_without_objects():
     # This call is invalid because the Leo has not object with this ID
     assert not leo.createWorkPackage([10], token, 1, 2).ok
 
-    # There must still not be any work packages.
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 0)
+    # There must still not be any processed/unprocessed work packages.
+    ret = leo.countWorkPackages()
+    assert (ret.ok, ret.data) == (True, (0, 0))
 
     # Test data.
     data_0 = bullet_data.BulletData(imass=1)
@@ -627,65 +627,57 @@ def test_create_work_package_without_objects():
     ret = leo.createWorkPackage([id_1], token, dt, maxsteps)
     assert (ret.ok, ret.data) == (True, 1)
 
-    # There must now be exactly one work package.
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 1)
+    # There must now be exactly one unprocessed work package.
+    ret = leo.countWorkPackages()
+    assert (ret.ok, ret.data) == (True, (1, 0))
 
     # Create a second WP. This one must have WPID=2.
     ret = leo.createWorkPackage([id_2], token, dt, maxsteps)
     assert (ret.ok, ret.data) == (True, 2)
 
     # There must now be exactly two work packages.
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 2)
+    ret = leo.countWorkPackages()
+    assert (ret.ok, ret.data) == (True, (2, 0))
 
-    # Attempt to fetch a non-existing ID. This must fail and the number of Work
-    # Packages must remain at 2.
-    assert not worker.getWorkPackage(0).ok
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 2)
-
-    # Retrieve first WP. It must return a list with one entry.
-    ret = worker.getWorkPackage(1)
+    # Retrieve the next available WP. The 'wpdata' field must contain the
+    # "id_1" object we specified for "createWorkPackage".
+    ret = worker.getWorkPackage()
     assert (ret.ok, len(ret.data['wpdata'])) == (True, 1)
     meta = ret.data['wpmeta']
     assert (meta.token, meta.dt, meta.maxsteps) == (token, dt, maxsteps)
 
     # There must still be two work packages because none has been updated yet.
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 2)
+    ret = leo.countWorkPackages()
+    assert (ret.ok, ret.data) == (True, (2, 0))
 
+    # Create a new Work Package.
     z = [0, 0, 0]
     WPData = azrael.leonard.WPData
     newWP = [WPData(id_1, data_0.toJsonDict(), z, z)]
     del z
 
-    # Update a non-existing work package. The newWP argument is irrelevant
-    # for this test.
+    # Update a non-existing work package ("newWP" is irrelevant for this test).
     assert not worker.updateWorkPackage(10, token, newWP).ok
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 2)
+    ret = leo.countWorkPackages()
+    assert (ret.ok, ret.data) == (True, (2, 0))
 
-    # The WP count must be zero for an invalid token value.
-    ret = leo.countWorkPackages(token + 1)
-    assert (ret.ok, ret.data) == (True, 0)
-
-    # Update the first WP. Once again, the newWP argument is irrelevant for
-    # this test.
+    # Update the first WP ("newWP" is once again irrelevant). There must
+    # now be one processed and one unprocessed WP.
     assert worker.updateWorkPackage(1, token, newWP).ok
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 1)
+    ret = leo.countWorkPackages()
+    assert (ret.ok, ret.data) == (True, (1, 1))
 
     # Try to update the same WP once more. This must fail since the WPID was
     # already updated.
     assert not worker.updateWorkPackage(1, token, newWP).ok
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 1)
+    ret = leo.countWorkPackages()
+    assert (ret.ok, ret.data) == (True, (1, 1))
 
-    # Update (and thus mark as completed) the other work package.
+    # Update the other work package. Now there must be two processed WPs and no
+    # unprocessed WP.
     assert worker.updateWorkPackage(2, token, newWP).ok
-    ret = leo.countWorkPackages(token)
-    assert (ret.ok, ret.data) == (True, 0)
+    ret = leo.countWorkPackages()
+    assert (ret.ok, ret.data) == (True, (0, 2))
 
     print('Test passed')
 
@@ -711,36 +703,23 @@ def test_create_work_package_with_objects():
     data_2 = bullet_data.BulletData(imass=2)
     data_3 = bullet_data.BulletData(imass=3)
     aabb = 1
-    id_1, id_2, id_3 = int2id(1), int2id(2), int2id(3)
+    wpid = 1
+    id_1, id_2 = int2id(1), int2id(2)
     
     # Spawn new objects.
     assert btInterface.addCmdSpawn(id_1, data_1, aabb)
     assert btInterface.addCmdSpawn(id_2, data_2, aabb)
-    assert btInterface.addCmdSpawn(id_3, data_3, aabb)
     leo.processCommandsAndSync()
 
-    # Add ID1 to the WP. The WPID must be 1.
-    ret = leo.createWorkPackage([id_1], token, dt=1, maxsteps=2)
-    assert (ret.ok, ret.data) == (True, 1)
-    wpid_1 = ret.data
-
-    # Add ID1 and ID2 to the second WP. The WPID must be 2.
+    # Add ID1 and ID2 to the WP. The WPID must be 1.
     ret = leo.createWorkPackage([id_1, id_2], token, dt=3, maxsteps=4)
-    assert (ret.ok, ret.data) == (True, 2)
-    wpid_2 = ret.data
+    assert (ret.ok, ret.data) == (True, wpid)
 
-    # Retrieve the first work package.
-    ret = worker.getWorkPackage(wpid_1)
-    assert (ret.ok, len(ret.data['wpdata'])) == (True, 1)
-    data = ret.data['wpdata']
-    meta = ret.data['wpmeta']
-    assert (meta.token, meta.dt, meta.maxsteps) == (token, 1, 2)
-    assert data[0].id == id_1
-    assert data[0].sv == data_1
-    assert np.array_equal(data[0].central_force, [0, 0, 0])
-
-    # Retrieve the second work package.
-    ret = worker.getWorkPackage(wpid_2)
+    # Retrieve the work package again.
+    ret = worker.getWorkPackage()
+    
+    # Check the WP content.
+    assert (ret.ok, len(ret.data['wpdata'])) == (True, 2)
     data = ret.data['wpdata']
     meta = ret.data['wpmeta']
     assert (meta.token, meta.dt, meta.maxsteps) == (token, 3, 4)
@@ -750,24 +729,24 @@ def test_create_work_package_with_objects():
     assert np.array_equal(data[0].central_force, [0, 0, 0])
     assert np.array_equal(data[1].central_force, [0, 0, 0])
 
-    # Create a new SV data to replace the old one.
+    # Create a new State Vector to replace the old one.
     data_4 = bullet_data.BulletData(imass=4)
     z = [0, 0, 0]
     WPData = azrael.leonard.WPData
     newWP = [WPData(id_1, data_4.toJsonDict(), z, z)]
     del z
 
-    # Leonard must still have the original object.
+    # Check the State Vector before we update the WP.
     assert leo.allObjects[id_1] == data_1
 
     # Update the first work package with the wrong token. The call must fail
-    # and the data in Leonard must remain intact.
-    assert not worker.updateWorkPackage(wpid_1, token + 1, newWP).ok
+    # and the data in Leonard must remain the same.
+    assert not worker.updateWorkPackage(wpid, token + 1, newWP).ok
     assert leo.allObjects[id_1] == data_1
 
     # Update the first work package with the correct token. This must succeed
     # and update the value in Leonard's instance variable.
-    assert worker.updateWorkPackage(wpid_1, token, newWP).ok
+    assert worker.updateWorkPackage(wpid, token, newWP).ok
     assert leo.pullCompletedWorkPackages().ok
     assert leo.allObjects[id_1] == data_4
 

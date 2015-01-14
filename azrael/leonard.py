@@ -45,7 +45,7 @@ RetVal = azrael.util.RetVal
 
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv central_force torque')
-WPMeta = namedtuple('WPAdmin', 'token dt maxsteps')
+WPMeta = namedtuple('WPAdmin', 'wpid token dt maxsteps')
 
 
 @typecheck
@@ -355,17 +355,19 @@ class LeonardBase(multiprocessing.Process):
         self.syncObjects()                    
         
     @typecheck
-    def countWorkPackages(self, token):
+    def countWorkPackages(self):
         """
-        Return the number of unprocessed work packages.
+        Return the number of (un)processed work packages.
     
-        fixme: should this method really be in this class?
+        This method is for testing only. Do not use in production because its
+        result may be inaccurate when WPs get frequently added and updated.
 
-        :param int token: token value associated with this work package.
-        :return bool: Success.
+        :return tuple: (#unprocessed, #processed)
         """
-        cnt = self._DB_WP.find({'token': token}).count()
-        return RetVal(True, None, cnt)
+        db = self._DB_WP
+        cntOpen = db.find({'token': {'$exists': 1}}).count()
+        cntDone = db.find({'token': {'$exists': 0}}).count()
+        return RetVal(True, None, (cntOpen, cntDone))
     
     def run(self):
         """
@@ -627,9 +629,11 @@ class LeonardWorkPackages(LeonardBase):
         # threaded physics.
         with util.Timeit('Leonard.ProcessWPs_1') as timeit:
             for wpid in all_wpids:
-                LeonardWorker(1, 1).processWorkPackage(wpid)
+                LeonardWorker(1, 1).processWorkPackage()
                 
         with util.Timeit('Leonard.ProcessWPs_2') as timeit:
+            # fixme: use the return value of pullCompleted instead of the DB
+            # query to determine when all WPs have been processed.
             while self._DB_WP.find({'wpid': {'$exists': 1}}).count() > 0:
                 self.pullCompletedWorkPackages()
                 time.sleep(0.001)
@@ -710,7 +714,6 @@ class LeonardWorkPackages(LeonardBase):
         """
         cnt = 0
         while True:
-            # fixme: improve this query once the counters were outsourced.
             # Retrieve the work package.
             doc = self._DB_WP.find_and_modify(
                 {'token': {'$exists': 0}},
@@ -767,14 +770,14 @@ class LeonardDistributed(LeonardWorkPackages):
         workermanager.start()
         self.logit.info('Setup complete')
 
-    def processWorkPackage(self, wpid: int):
+    def processWorkPackage(self):
         """
         Send the Work Package with ``wpid`` to the next available worker.
 
         :param int wpid: work package ID to process.
         """
         self.sock.recv()
-        self.sock.send(np.int64(wpid).tostring())
+        self.sock.send()
 
 
 class WorkerManager(multiprocessing.Process):
@@ -908,34 +911,29 @@ class LeonardWorker(multiprocessing.Process):
             return force
 
     @typecheck
-    def getWorkPackage(self, wpid: int):
+    def getWorkPackage(self):
         """
-        Return the SV data for all objects specified in ``wpid``.
+        Return the next available Work Package.
     
         This function returns a dictionary with two keys. The first key ('wpdata')
-        contains a list of ``WPData`` instances that describe the object states and
-        forces applied to them, and a 'wpmeta' field that is an instance of
-        ``WPMeta``.
+        contains a list of ``WPData`` with the State Vectors of all objects and
+        the forces that apply to them, and the second key ('wpmeta') is a
+        ``WPMeta`` instance.
     
-        fixme: requires test that this function only returns a WP with token
-               (ie. it must never return an updated WP).
-
-        :param int wpid: work package ID.
         :return: {'wpdata': list of WPData instances, 'wpmeta': meta information}
         :rtype: dict
         """
-    
-        # Retrieve the work package.
-        doc = self._DB_WP.find_one({'wpid': wpid, 'token': {'$exists': 1}})
+        # Retrieve next available work package.
+        doc = self._DB_WP.find_one({'token': {'$exists': 1}})
         if doc is None:
-            return RetVal(False, 'Unknown work package <{}>'.format(wpid), None)
+            return RetVal(False, 'No Work Package available', None)
     
         wpdata = [WPData(*_) for _ in doc['wpdata']]
         for idx, val in enumerate(wpdata):
             wpdata[idx] = val._replace(sv=bullet_data.fromJsonDict(val.sv))
 
         # Put the meta data of the work package into another named tuple.
-        meta = WPMeta(doc['token'], doc['dt'], doc['maxsteps'])
+        meta = WPMeta(doc['wpid'], doc['token'], doc['dt'], doc['maxsteps'])
         return RetVal(True, None, {'wpdata': wpdata, 'wpmeta': meta})
     
     
@@ -960,14 +958,15 @@ class LeonardWorker(multiprocessing.Process):
              '$unset': {'token': 1}})
         return RetVal(doc is not None, None, None)
     
-    def processWorkPackage(self, wpid: int):
+    def processWorkPackage(self):
         with util.Timeit('Worker.1_fetchWP') as timeit:
-            ret = self.getWorkPackage(wpid)
+            ret = self.getWorkPackage()
 
         # Skip this WP (may have been processed by another Worker already).
         if not ret.ok:
             return
         worklist, meta = ret.data['wpdata'], ret.data['wpmeta']
+        wpid = meta.wpid
 
         # Log the number of collision-sets in the current Work Package.
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
@@ -1044,7 +1043,7 @@ class LeonardWorker(multiprocessing.Process):
                 wpid = sock.recv()
                 wpid = np.fromstring(wpid, np.int64)
                 with util.Timeit('Worker.0_All') as timeit:
-                    self.processWorkPackage(wpid)
+                    self.processWorkPackage()
                 numSteps += 1
 
             # Log a last status message and terminate.
