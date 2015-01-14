@@ -26,6 +26,7 @@ import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int
+from azrael.test.test_leonard import getLeonard
 
 ipshell = IPython.embed
 
@@ -35,9 +36,7 @@ def test_add_get_remove_single():
     Add an object to the SV database.
     """
     # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = leonard.LeonardBase()
-    leo.setup()
+    leo = getLeonard()
 
     # Create an object ID for the test.
     id_0 = int2id(0)
@@ -86,10 +85,8 @@ def test_add_get_multiple():
     """
     Add multiple objects to the DB.
     """
-    # Reset the SV database.
-    btInterface.initSVDB(reset=True)
-    leo = leonard.LeonardBase()
-    leo.setup()
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
 
     # Create two object IDs for this test.
     id_0 = int2id(0)
@@ -143,9 +140,7 @@ def test_add_same():
     Try to add two objects with the same ID.
     """
     # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = leonard.LeonardBase()
-    leo.setup()
+    leo = getLeonard()
 
     # Convenience.
     id_0 = int2id(0)
@@ -205,7 +200,7 @@ def test_dequeueCommands():
     Add-, query, and remove commands from the command queue.
     """
     # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
+    leo = getLeonard()
 
     # Convenience.
     dcSpawn = btInterface.dequeueCmdSpawn
@@ -269,9 +264,7 @@ def test_get_set_force():
     Query and update the force vector for an object.
     """
     # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = leonard.LeonardBase()
-    leo.setup()
+    leo = getLeonard()
 
     # Create two object IDs for this test.
     id_0 = int2id(0)
@@ -318,9 +311,7 @@ def test_overrideAttributes():
     and orientation.
     """
     # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = leonard.LeonardBase()
-    leo.setup()
+    leo = getLeonard()
 
     # Convenience.
     BulletDataOverride = bullet_data.BulletDataOverride
@@ -419,9 +410,7 @@ def test_get_set_forceandtorque():
     Query and update the force- and torque vectors for an object.
     """
     # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = leonard.LeonardBase()
-    leo.setup()
+    leo = getLeonard()
 
     # Create two object IDs for this test.
     id_0 = int2id(0)
@@ -489,10 +478,8 @@ def test_set_get_AABB():
     """
     Create a new object with an AABB and query it back again.
     """
-    # Reset the SV database.
-    btInterface.initSVDB(reset=True)
-    leo = leonard.LeonardBase()
-    leo.setup()
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
 
     # Create two object IDs and a BulletData instances for this test.
     id_0, id_1 = int2id(0), int2id(1)
