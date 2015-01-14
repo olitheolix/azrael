@@ -179,9 +179,6 @@ class LeonardBase(multiprocessing.Process):
     def __init__(self):
         super().__init__()
 
-        # Reset all data bases.
-        azrael.database.reset()
-
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
