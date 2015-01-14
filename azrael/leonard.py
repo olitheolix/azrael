@@ -699,20 +699,21 @@ class LeonardWorkPackages(LeonardBase):
     
     def pullCompletedWorkPackages(self):
         """
-        Fetch newly available Work Packages.
-
-        fixme: most of this function is a duplicate of getWorkPackage
-        fixme: docu and parameters
-        fixme: overhaul WP architecture so that this function can return how
-               many WPs are still in the queue.
+        Fetch all completed Work Packages and update the local object cache.
 
         All fetched work packages will be immediately removed from the DB and
         all objects updated in the local cache. This method will also clear the
         force and torque values.
 
-        :return int: number of fetched WPs.
+        This method will return the number of fetched (ie completed) WPs, as
+        well as the number of WPs still waiting to be processed.
+
+        fixme: overhaul WP architecture so that this function can return how
+               many WPs are still in the queue.
+
+        :return tuple: (#fetched-WPs, #unprocessed-WPs).
         """
-        cnt = 0
+        cnt_fetch = 0
         while True:
             # Retrieve the work package.
             doc = self._DB_WP.find_and_modify(
@@ -728,8 +729,9 @@ class LeonardWorkPackages(LeonardBase):
                 self.allObjects[objID] = bullet_data.fromJsonDict(val.sv)
                 self.allForces[objID] = [0, 0, 0]
                 self.allTorques[objID] = [0, 0, 0]
-            cnt += 1
-        return RetVal(True, None, cnt)
+            cnt_fetch += 1
+        cnt_waiting = self._DB_WP.count()
+        return RetVal(True, None, (cnt_fetch, cnt_waiting))
 
 
 class LeonardDistributed(LeonardWorkPackages):

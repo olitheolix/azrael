@@ -599,7 +599,7 @@ def test_create_work_package_without_objects():
     # The token to use for this test.
     token = 1
 
-    # There must not be any processed/unprocessed work packages yet.
+    # There must not be any processed/pending Work Packages yet.
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (0, 0))
 
@@ -609,7 +609,7 @@ def test_create_work_package_without_objects():
     # This call is invalid because the Leo has not object with this ID
     assert not leo.createWorkPackage([10], token, 1, 2).ok
 
-    # There must still not be any processed/unprocessed work packages.
+    # There must still not be any processed/pending Work Packages.
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (0, 0))
 
@@ -627,7 +627,7 @@ def test_create_work_package_without_objects():
     ret = leo.createWorkPackage([id_1], token, dt, maxsteps)
     assert (ret.ok, ret.data) == (True, 1)
 
-    # There must now be exactly one unprocessed work package.
+    # There must now be exactly one pending Work Package.
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (1, 0))
 
@@ -662,7 +662,7 @@ def test_create_work_package_without_objects():
     assert (ret.ok, ret.data) == (True, (2, 0))
 
     # Update the first WP ("newWP" is once again irrelevant). There must
-    # now be one processed and one unprocessed WP.
+    # now be one processed and one pending WP.
     assert worker.updateWorkPackage(1, token, newWP).ok
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (1, 1))
@@ -674,7 +674,7 @@ def test_create_work_package_without_objects():
     assert (ret.ok, ret.data) == (True, (1, 1))
 
     # Update the other work package. Now there must be two processed WPs and no
-    # unprocessed WP.
+    # pending WP.
     assert worker.updateWorkPackage(2, token, newWP).ok
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (0, 2))
@@ -739,21 +739,47 @@ def test_create_work_package_with_objects():
     # Check the State Vector before we update the WP.
     assert leo.allObjects[id_1] == data_1
 
-    # Update the first work package with the wrong token. The call must fail
+    # Pull completed Work Packages. The call must succeed but the number of
+    # processed and pending WPs must still be 1 and 0, respectively.
+    ret = leo.pullCompletedWorkPackages()
+    assert ret.ok
+    assert ret.data == (0, 1)
+
+    # Update the Work Package with the wrong token. The call must fail
     # and the data in Leonard must remain the same.
     assert not worker.updateWorkPackage(wpid, token + 1, newWP).ok
     assert leo.allObjects[id_1] == data_1
 
-    # Update the first work package with the correct token. This must succeed
+    # Nothing must have changed in terms of processed and pending Work
+    # Packages.
+    ret = leo.pullCompletedWorkPackages()
+    assert ret.ok
+    assert ret.data == (0, 1)
+
+    # Update the Work Package with the correct token. This must succeed
     # and update the value in Leonard's instance variable.
     assert worker.updateWorkPackage(wpid, token, newWP).ok
-    assert leo.pullCompletedWorkPackages().ok
+
+    # Now one processed Work Packages must have been fetched. No pending
+    # Work Packages must remain.
+    ret = leo.pullCompletedWorkPackages()
+    assert ret.ok
+    assert ret.data == (1, 0)
+
+    # Verify that the State Vector was indeed updated correctly.
     assert leo.allObjects[id_1] == data_4
 
     print('Test passed')
 
 
+def test_work_package_timestamps():
+    """
+    Verify the getPackage
+    """
+    assert True
+
 if __name__ == '__main__':
+    test_work_package_timestamps()
     test_create_work_package_with_objects()
     test_create_work_package_without_objects()
 
