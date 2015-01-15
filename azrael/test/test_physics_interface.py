@@ -439,7 +439,7 @@ def test_get_set_forceandtorque():
     # Update the force and torque of the second object only.
     f1 = np.ones(3, np.float64)
     t1 = 2 * np.ones(3, np.float64)
-    assert physAPI.setForceAndTorque(id_1, f1, t1)
+    assert physAPI.addCmdSetForceAndTorque(id_1, f1, t1)
     leo.processCommandsAndSync()
 
     # Only the force an torque of the second object must have changed.

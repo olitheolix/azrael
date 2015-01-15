@@ -252,6 +252,42 @@ def addCmdModifyStateVariable(objID: bytes, data: BulletDataOverride):
 
 
 @typecheck
+def addCmdSetForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
+    """
+    Set the central ``force`` and ``torque`` acting on ``objID``.
+
+    This function always suceeds.
+
+    .. note::
+       The force always applies to the centre of the mass only, unlike the
+       ``setForce`` function which allows for position relative to the centre
+       of mass.
+
+    :param bytes objID: the object
+    :param ndarray force: apply this central ``force`` to ``objID``.
+    :param ndarray torque: apply this ``torque`` to ``objID``.
+    :return bool: Success
+    """
+    # Sanity check.
+    if (len(objID) != config.LEN_ID):
+        return RetVal(False, 'objID has invalid length', None)
+    if not (len(force) == len(torque) == 3):
+        return RetVal(False, 'force or torque has invalid length', None)
+
+    # Serialise the force and torque.
+    force = force.astype(np.float64).tostring()
+    torque = torque.astype(np.float64).tostring()
+
+    # Update the DB.
+    ret = database.dbHandles['CmdForce'].update(
+        {'objid': objID},
+        {'$set': {'central_force': force, 'torque': torque}},
+        upsert=True)
+
+    return RetVal(True, None, None)
+
+
+@typecheck
 def getStateVariables(objIDs: (list, tuple)):
     """
     Retrieve the state variables for all ``objIDs``.
@@ -378,7 +414,7 @@ def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
     """
     Update the ``force`` acting on ``objID``.
 
-    This function is a wrapper around ``setForceAndTorque``.
+    This function is a wrapper around ``addCmdSetForceAndTorque``.
 
     :param bytes objID: recipient of ``force``
     :param np.ndarray force: the ``force`` (in Newton).
@@ -391,9 +427,9 @@ def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
     if not (len(force) == len(relpos) == 3):
         return RetVal(False, 'force or relpos have invalid length', None)
 
-    # Compute the torque and then call setForceAndTorque.
+    # Compute the torque and then call addCmdSetForceAndTorque.
     torque = np.cross(relpos, force)
-    ret = setForceAndTorque(objID, force, torque)
+    ret = addCmdSetForceAndTorque(objID, force, torque)
     if ret.ok:
         return RetVal(True, None, None)
     else:
@@ -432,42 +468,6 @@ def getForceAndTorque(objID: bytes):
 
     # Return the result.
     return RetVal(True, None, {'force': force, 'torque': torque})
-
-
-@typecheck
-def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
-    """
-    Set the central ``force`` and ``torque`` acting on ``objID``.
-
-    This function always suceeds.
-
-    .. note::
-       The force always applies to the centre of the mass only, unlike the
-       ``setForce`` function which allows for position relative to the centre
-       of mass.
-
-    :param bytes objID: the object
-    :param ndarray force: apply this central ``force`` to ``objID``.
-    :param ndarray torque: apply this ``torque`` to ``objID``.
-    :return bool: Success
-    """
-    # Sanity check.
-    if (len(objID) != config.LEN_ID):
-        return RetVal(False, 'objID has invalid length', None)
-    if not (len(force) == len(torque) == 3):
-        return RetVal(False, 'force or torque has invalid length', None)
-
-    # Serialise the force and torque.
-    force = force.astype(np.float64).tostring()
-    torque = torque.astype(np.float64).tostring()
-
-    # Update the DB.
-    ret = database.dbHandles['CmdForce'].update(
-        {'objid': objID},
-        {'$set': {'central_force': force, 'torque': torque}},
-        upsert=True)
-
-    return RetVal(True, None, None)
 
 
 @typecheck

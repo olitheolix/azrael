@@ -479,7 +479,7 @@ class Clerk(multiprocessing.Process):
         # Apply the net- force and torque. Skip this step if booster commands
         # were supplied.
         if len(cmd_boosters) > 0:
-            physAPI.setForceAndTorque(objID, tot_central_force, tot_torque)
+            physAPI.addCmdSetForceAndTorque(objID, tot_central_force, tot_torque)
 
         # Let the factories spawn the objects.
         objIDs = []
