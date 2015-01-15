@@ -688,8 +688,12 @@ class LeonardWorkPackages(LeonardBase):
         if ret['n'] > 0:
             self.logit.warning('A previous WP with ID={} already existed'.format(wpid))
     
-        data = {'wpid': wpid, 'token': token, 'dt': dt, 'maxsteps': maxsteps,
-                'wpdata': wpdata, 'ts': None}
+        meta = WPMeta(wpid, token, dt, maxsteps)
+        data = {'wpid': wpid,
+                'token': token,
+                'wpmeta': meta,
+                'wpdata': wpdata,
+                'ts': None}
         
         ret = self._DB_WP.insert(data)
         return RetVal(True, None, wpid)
@@ -940,8 +944,8 @@ class LeonardWorker(multiprocessing.Process):
                             torque=torque))
 
         # Put the meta data of the work package into another named tuple.
-        meta = WPMeta(doc['wpid'], doc['token'], doc['dt'], doc['maxsteps'])
-        return RetVal(True, None, {'wpdata': wpdata, 'wpmeta': meta})
+        wpmeta = WPMeta(*doc['wpmeta'])
+        return RetVal(True, None, {'wpdata': wpdata, 'wpmeta': wpmeta})
     
     
     @typecheck
