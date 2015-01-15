@@ -45,7 +45,7 @@ RetVal = azrael.util.RetVal
 
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv central_force torque')
-WPMeta = namedtuple('WPAdmin', 'wpid token dt maxsteps')
+WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
 
 
 @typecheck
@@ -362,8 +362,8 @@ class LeonardBase(multiprocessing.Process):
         :return tuple: (#unprocessed, #processed)
         """
         db = self._DB_WP
-        cntOpen = db.find({'token': {'$exists': 1}}).count()
-        cntDone = db.find({'token': {'$exists': 0}}).count()
+        cntOpen = db.find({'wpid': {'$exists': 1}}).count()
+        cntDone = db.find({'wpid': {'$exists': 0}}).count()
         return RetVal(True, None, (cntOpen, cntDone))
     
     def run(self):
@@ -564,7 +564,6 @@ class LeonardWorkPackages(LeonardBase):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.token = 0
 
         # Database handles.
         client = pymongo.MongoClient()
@@ -607,15 +606,11 @@ class LeonardWorkPackages(LeonardBase):
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
 
-        # Update the token value for this iteration.
-        self.token += 1
-
         # Put each collision set into its own Work Package.
         with util.Timeit('Leonard.CreateWPs') as timeit:
             all_wpids = []
-            cwp = self.createWorkPackage
             for subset in collSets:
-                ret = cwp(list(subset), self.token, dt, maxsteps)
+                ret = self.createWorkPackage(list(subset), dt, maxsteps)
                 if ret.ok:
                     all_wpids.append(ret.data)
 
@@ -638,14 +633,18 @@ class LeonardWorkPackages(LeonardBase):
         self.syncObjects()
 
     @typecheck
-    def createWorkPackage(self, objIDs: (tuple, list), token: int,
+    def createWorkPackage(self, objIDs: (tuple, list),
                           dt: (int, float), maxsteps: int):
         """
         Create a new Work Package (WP) and return its ID.
     
-        The work package has an associated ``token`` value and all ``objIDs`` in
-        the work list will be marked with it to prevent accidental updates.
-    
+        The Work Package will not be returned but uploaded to the DB directly.
+
+        A Work Package carries the necessary information for another rigid body
+        physics steps. The Worker can thus start its work immediately, at least
+        in terms of the rigid bodies (it may still want to incorporate other
+        data like grid forces, but that is up to the Worker implementation).
+
         The ``dt`` and ``maxsteps`` arguments are for the underlying physics
         engine.
     
@@ -654,7 +653,6 @@ class LeonardWorkPackages(LeonardBase):
            ``getWorkPackage`` function takes care of compiling this information.
     
         :param iterable objIDs: list of object IDs in the new work package.
-        :param int token: token value associated with this work package.
         :param float dt: time step for this work package.
         :param int maxsteps: number of sub-steps for the time step.
         :return: Work package ID
@@ -688,9 +686,8 @@ class LeonardWorkPackages(LeonardBase):
         if ret['n'] > 0:
             self.logit.warning('A previous WP with ID={} already existed'.format(wpid))
     
-        meta = WPMeta(wpid, token, dt, maxsteps)
+        meta = WPMeta(wpid, dt, maxsteps)
         data = {'wpid': wpid,
-                'token': token,
                 'wpmeta': meta,
                 'wpdata': wpdata,
                 'ts': None}
@@ -718,7 +715,7 @@ class LeonardWorkPackages(LeonardBase):
         while True:
             # Retrieve the work package.
             doc = self._DB_WP.find_and_modify(
-                {'token': {'$exists': 0}},
+                {'wpid': {'$exists': 0}},
                 remove=True)
             if doc is None:
                 break
@@ -929,7 +926,7 @@ class LeonardWorker(multiprocessing.Process):
         # Fetch the next Work Package with the oldest timestamp, and also
         # update that very timestamp in the same query.
         fam = self._DB_WP.find_and_modify
-        doc = fam(query={'token': {'$exists': 1}},
+        doc = fam(query={'wpid': {'$exists': 1}},
                   update={'$currentDate': {'ts': True}},
                   sort=[('ts', pymongo.ASCENDING)])
         if doc is None:
@@ -949,24 +946,20 @@ class LeonardWorker(multiprocessing.Process):
     
     
     @typecheck
-    def updateWorkPackage(self, wpid: int, token, wpdata: (tuple, list)):
+    def updateWorkPackage(self, wpid: int, wpdata: (tuple, list)):
         """
         Update the objects in ``wpid`` with the values in ``svdict``.
     
-        This function only makes changes to objects defined in the WP ``wpid``,
-        and even then only if the ``token`` value matches.
+        This function only changes the WP with ``wpid``.
     
-        fixme: docu (new parameter types)
-
         :param int wpid: work package ID.
-        :param int token: token value associated with this work package.
-        :param dict svdict: {objID: sv} dictionary
+        :param list wpdata: List of ``WPData`` (named tuple) instances.
         :return bool: Success.
         """
         doc = self._DB_WP.find_and_modify(
-            {'wpid': wpid, 'token': token},
+            {'wpid': wpid},
             {'$set': {'wpdata': wpdata},
-             '$unset': {'token': 1}})
+             '$unset': {'wpid': 1}})
         return RetVal(doc is not None, None, None)
     
     def processWorkPackage(self):
@@ -1022,7 +1015,7 @@ class LeonardWorker(multiprocessing.Process):
 
         # Update the data and delete the WP.
         with util.Timeit('Worker.5_updateWP') as timeit:
-            ret = self.updateWorkPackage(wpid, meta.token, out)
+            ret = self.updateWorkPackage(wpid, out)
         if not ret.ok:
             msg = 'Failed to update work package {}'.format(wpid)
             self.logit.warning(msg)

@@ -583,18 +583,15 @@ def test_create_work_package_without_objects():
     leo = getLeonard(azrael.leonard.LeonardWorkPackages)
     worker = azrael.leonard.LeonardWorker(1, 100000)
 
-    # The token to use for this test.
-    token = 1
-
     # There must not be any processed/pending Work Packages yet.
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (0, 0))
 
     # This call is invalid because the IDs must be a non-empty list.
-    assert not leo.createWorkPackage([], token, 1, 2).ok
+    assert not leo.createWorkPackage([], 1, 2).ok
 
     # This call is invalid because the Leo has not object with this ID
-    assert not leo.createWorkPackage([10], token, 1, 2).ok
+    assert not leo.createWorkPackage([10], 1, 2).ok
 
     # There must still not be any processed/pending Work Packages.
     ret = leo.countWorkPackages()
@@ -611,7 +608,7 @@ def test_create_work_package_without_objects():
     leo.processCommandsAndSync()
 
     # Create a work package for two object IDs. The WPID must be 1.
-    ret = leo.createWorkPackage([id_1], token, dt, maxsteps)
+    ret = leo.createWorkPackage([id_1], dt, maxsteps)
     assert (ret.ok, ret.data) == (True, 1)
 
     # There must now be exactly one pending Work Package.
@@ -619,7 +616,7 @@ def test_create_work_package_without_objects():
     assert (ret.ok, ret.data) == (True, (1, 0))
 
     # Create a second WP. This one must have WPID=2.
-    ret = leo.createWorkPackage([id_2], token, dt, maxsteps)
+    ret = leo.createWorkPackage([id_2], dt, maxsteps)
     assert (ret.ok, ret.data) == (True, 2)
 
     # There must now be exactly two work packages.
@@ -631,7 +628,7 @@ def test_create_work_package_without_objects():
     ret = worker.getWorkPackage()
     assert (ret.ok, len(ret.data['wpdata'])) == (True, 1)
     meta = ret.data['wpmeta']
-    assert (meta.token, meta.dt, meta.maxsteps) == (token, dt, maxsteps)
+    assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
 
     # There must still be two work packages because none has been updated yet.
     ret = leo.countWorkPackages()
@@ -644,25 +641,25 @@ def test_create_work_package_without_objects():
     del z
 
     # Update a non-existing work package ("newWP" is irrelevant for this test).
-    assert not worker.updateWorkPackage(10, token, newWP).ok
+    assert not worker.updateWorkPackage(10, newWP).ok
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (2, 0))
 
     # Update the first WP ("newWP" is once again irrelevant). There must
     # now be one processed and one pending WP.
-    assert worker.updateWorkPackage(1, token, newWP).ok
+    assert worker.updateWorkPackage(1, newWP).ok
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (1, 1))
 
     # Try to update the same WP once more. This must fail since the WPID was
     # already updated.
-    assert not worker.updateWorkPackage(1, token, newWP).ok
+    assert not worker.updateWorkPackage(1, newWP).ok
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (1, 1))
 
     # Update the other work package. Now there must be two processed WPs and no
     # pending WP.
-    assert worker.updateWorkPackage(2, token, newWP).ok
+    assert worker.updateWorkPackage(2, newWP).ok
     ret = leo.countWorkPackages()
     assert (ret.ok, ret.data) == (True, (0, 2))
 
@@ -680,9 +677,6 @@ def test_create_work_package_with_objects():
     leo = getLeonard(azrael.leonard.LeonardWorkPackages)
     worker = azrael.leonard.LeonardWorker(1, 100000)
 
-    # The token to use in this test.
-    token = 1
-
     # Convenience.
     data_1 = bullet_data.BulletData(imass=1)
     data_2 = bullet_data.BulletData(imass=2)
@@ -696,7 +690,7 @@ def test_create_work_package_with_objects():
     leo.processCommandsAndSync()
 
     # Add ID1 and ID2 to the WP. The WPID must be 1.
-    ret = leo.createWorkPackage([id_1, id_2], token, dt=3, maxsteps=4)
+    ret = leo.createWorkPackage([id_1, id_2], dt=3, maxsteps=4)
     assert (ret.ok, ret.data) == (True, wpid)
 
     # Retrieve the work package again.
@@ -706,7 +700,7 @@ def test_create_work_package_with_objects():
     assert (ret.ok, len(ret.data['wpdata'])) == (True, 2)
     data = ret.data['wpdata']
     meta = ret.data['wpmeta']
-    assert (meta.token, meta.dt, meta.maxsteps) == (token, 3, 4)
+    assert (meta.dt, meta.maxsteps) == (3, 4)
     assert (ret.ok, len(data)) == (True, 2)
     assert (data[0].id, data[1].id) == (id_1, id_2)
     assert (data[0].sv, data[1].sv) == (data_1, data_2)
@@ -729,20 +723,15 @@ def test_create_work_package_with_objects():
     assert ret.ok
     assert ret.data == (0, 1)
 
-    # Update the Work Package with the wrong token. The call must fail
-    # and the data in Leonard must remain the same.
-    assert not worker.updateWorkPackage(wpid, token + 1, newWP).ok
-    assert leo.allObjects[id_1] == data_1
-
     # Nothing must have changed in terms of processed and pending Work
     # Packages.
     ret = leo.pullCompletedWorkPackages()
     assert ret.ok
     assert ret.data == (0, 1)
 
-    # Update the Work Package with the correct token. This must succeed
-    # and update the value in Leonard's instance variable.
-    assert worker.updateWorkPackage(wpid, token, newWP).ok
+    # Update the Work Package. This must succeed and update the value in
+    # Leonard's instance variable.
+    assert worker.updateWorkPackage(wpid, newWP).ok
 
     # Now one processed Work Packages must have been fetched. No pending
     # Work Packages must remain.
@@ -768,7 +757,6 @@ def test_work_package_timestamps():
     data_1 = bullet_data.BulletData(imass=1)
     id_1 = int2id(1)
     numWPs = 10
-    token = 1
 
     # Spawn new objects.
     assert btInterface.addCmdSpawn(id_1, data_1, aabb=1)
@@ -776,7 +764,7 @@ def test_work_package_timestamps():
 
     # Insert several Work Packages.
     for ii in range(numWPs):
-        ret = leo.createWorkPackage([id_1], token, dt=3, maxsteps=4)
+        ret = leo.createWorkPackage([id_1], dt=3, maxsteps=4)
         assert (ret.ok, ret.data) == (True, ii + 1)
 
     # The Work Packages must be returned in cyclic order.
