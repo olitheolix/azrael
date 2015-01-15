@@ -47,6 +47,8 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
 
+RetVal = util.RetVal
+
 
 class ControllerBase():
     """
@@ -188,7 +190,7 @@ class ControllerBase():
         try:
             payload = json.dumps({'cmd': cmd, 'payload': data})
         except (ValueError, TypeError) as err:
-            return False, {}, 'JSON encoding error'
+            return RetVal(False, 'JSON encoding error', None)
 
         # Send data and wait for response.
         self.send(payload)
@@ -198,14 +200,17 @@ class ControllerBase():
         try:
             ret = json.loads(payload)
         except (ValueError, TypeError) as err:
-            return False, {}, 'JSON decoding error in Controller'
+            return RetVal(False, 'JSON decoding error in Controller', None)
 
         # Returned JSON must always contain an 'ok' and 'payload' field.
         if not (('ok' in ret) and ('payload' in ret)):
-            return False, {}, 'Invalid response from Clerk'
+            return RetVal(False, 'Invalid response from Clerk', None)
 
         # Extract the 'Ok' flag and return the rest verbatim.
-        return ret['ok'], ret['payload'], ret['msg']
+        if not ret['ok']:
+            return RetVal(False, ret['msg'], ret['payload'])
+        else:
+            return RetVal(True, ret['msg'], ret['payload'])
 
     @typecheck
     def serialiseAndSend(self, cmd: str, *args):
@@ -237,14 +242,12 @@ class ControllerBase():
 
         # Encode the arguments and send them to Clerk.
         ok, data = ToClerk_Encode(*args)
-        ok, data, msg = self.sendToClerk(cmd, data)
-        if not ok:
-            # There was an error. The 'data' field will thus contain an error
-            # message.
-            return False, data
+        ret = self.sendToClerk(cmd, data)
+        if not ret.ok:
+            return ret
 
         # Command completed without error. Return the decode output.
-        return FromClerk_Decode(data)
+        return FromClerk_Decode(ret.data)
 
     def ping(self):
         """

@@ -42,6 +42,7 @@ should make it possible to write clients in other languages.
 
 import IPython
 import numpy as np
+import azrael.util
 import azrael.parts as parts
 import azrael.config as config
 import azrael.physics_interface as physAPI
@@ -51,6 +52,7 @@ from collections import namedtuple
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
+RetVal = azrael.util.RetVal
 
 
 # ---------------------------------------------------------------------------
@@ -74,7 +76,7 @@ def FromClerk_Ping_Encode(response: str):
 
 @typecheck
 def FromClerk_Ping_Decode(data: dict):
-    return True, data['response']
+    return RetVal(True, None, data['response'])
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +101,7 @@ def FromClerk_GetTemplateID_Encode(templateID: bytes):
 
 @typecheck
 def FromClerk_GetTemplateID_Decode(data: dict):
-    return True, bytes(data['templateID'])
+    return RetVal(True, None, bytes(data['templateID']))
 
 
 # ---------------------------------------------------------------------------
@@ -151,7 +153,7 @@ def FromClerk_GetTemplate_Decode(data: dict):
              np.array(data['uv'], np.float64),
              np.array(data['rgb'], np.uint8),
              boosters, factories, data['aabb'])
-    return True, ret
+    return RetVal(True, None, ret)
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +204,7 @@ def FromClerk_AddTemplate_Encode(templateID: bytes):
 
 @typecheck
 def FromClerk_AddTemplate_Decode(data: dict):
-    return True, bytes(data['templateID'])
+    return RetVal(True, None, bytes(data['templateID']))
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +231,7 @@ def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
 def FromClerk_GetAllObjectIDs_Decode(data: dict):
     # Partition the byte stream into individual object IDs.
     data = [bytes(_) for _ in data['objIDs']]
-    return True, data
+    return RetVal(True, None, data)
 
 
 # ---------------------------------------------------------------------------
@@ -261,7 +263,7 @@ def FromClerk_AttributeOverride_Encode(dummyarg):
 
 @typecheck
 def FromClerk_AttributeOverride_Decode(payload):
-    return True, payload
+    return RetVal(True, None, payload)
 
 
 # ---------------------------------------------------------------------------
@@ -291,7 +293,7 @@ def FromClerk_SetForce_Encode(dummyarg):
 
 @typecheck
 def FromClerk_SetForce_Decode(data: dict):
-    return True, payload
+    return RetVal(True, None, payload)
 
 
 # ---------------------------------------------------------------------------
@@ -324,7 +326,7 @@ def FromClerk_GetGeometry_Decode(data: dict):
     vert = np.array(data['vert'], np.float64)
     uv = np.array(data['UV'], np.uint8)
     rgb = np.array(data['RGB'], np.uint8)
-    return True, (vert, uv, rgb)
+    return RetVal(True, None, (vert, uv, rgb))
 
 
 # ---------------------------------------------------------------------------
@@ -354,7 +356,7 @@ def FromClerk_UpdateGeometry_Encode(dummyarg):
 
 @typecheck
 def FromClerk_UpdateGeometry_Decode(payload):
-    return True, payload
+    return RetVal(True, None, payload)
 
 
 # ---------------------------------------------------------------------------
@@ -394,7 +396,7 @@ def FromClerk_GetStateVariable_Decode(data: dict):
     fun = bullet_data.fromJsonDict
     for d in data['data']:
         out[bytes(d['objID'])] = None if d['sv'] is None else fun(d['sv'])
-    return True, out
+    return RetVal(True, None, out)
 
 
 # ---------------------------------------------------------------------------
@@ -426,7 +428,7 @@ def FromClerk_Spawn_Encode(objID: bytes):
 
 @typecheck
 def FromClerk_Spawn_Decode(data: dict):
-    return True, bytes(data['objID'])
+    return RetVal(True, None, bytes(data['objID']))
 
 
 # ---------------------------------------------------------------------------
@@ -452,7 +454,7 @@ def FromClerk_Remove_Encode(dummyarg):
 
 @typecheck
 def FromClerk_Remove_Decode(payload):
-    return True, payload
+    return RetVal(True, None, payload)
 
 
 # ---------------------------------------------------------------------------
@@ -496,4 +498,4 @@ def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
 
 @typecheck
 def FromClerk_ControlParts_Decode(data: dict):
-    return True, [bytes(_) for _ in data['objIDs']]
+    return RetVal(True, None, [bytes(_) for _ in data['objIDs']])
