@@ -195,7 +195,8 @@ class ResetSim(multiprocessing.Process):
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.
-        ok, allowed_objIDs = ctrl.getAllObjectIDs()
+        ret = ctrl.getAllObjectIDs()
+        allowed_objIDs = ret.data
 
         # Periodically reset the SV values. Set them several times because it
         # is well possible that not all State Variables reach Leonard in the
@@ -207,8 +208,8 @@ class ResetSim(multiprocessing.Process):
             time.sleep(self.period)
 
             # Remove all newly added objects.
-            ok, cur_objIDs = ctrl.getAllObjectIDs()
-            for objID in cur_objIDs:
+            ret = ctrl.getAllObjectIDs()
+            for objID in ret.data:
                 if objID not in allowed_objIDs:
                     ctrl.removeObject(objID)
 

@@ -225,8 +225,8 @@ class ResetSim(multiprocessing.Process):
             time.sleep(self.period)
 
             # Remove all newly added objects.
-            ok, cur_objIDs = ctrl.getAllObjectIDs()
-            for objID in cur_objIDs:
+            ret = ctrl.getAllObjectIDs()
+            for objID in ret.data:
                 if objID not in allowed_objIDs:
                     ctrl.removeObject(objID)
 
@@ -264,15 +264,12 @@ class UpdateGeometry(multiprocessing.Process):
         # Query all object IDs. This happens only once which means the geometry
         # swap does not affect newly generated objects.
         time.sleep(1)
-        ok, objIDs = ctrl.getAllObjectIDs()
-
-        # Query all objects in the scene. These are the only objects that will
-        # survive the reset.
-        ok, allowed_objIDs = ctrl.getAllObjectIDs()
+        ret = ctrl.getAllObjectIDs()
+        objIDs = ret.data
         print('\n-- {} objects --\n'.format(len(objIDs)))
 
         # Query the geometries of all these objects.
-        geometries = {_: ctrl.getGeometry(_)[1] for _ in objIDs}
+        geometries = {_: ctrl.getGeometry(_).data for _ in objIDs}
 
         sphere_vert, sphere_uv, sphere_rgb = loadSphere()
         cnt = 0

@@ -164,14 +164,15 @@ def loadGroundModel(scale, model_name):
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'.encode('utf8')
     cs = np.array([3, 1, 1, 1], np.float64)
-    ok, _ = ctrl.addTemplate(tID, cs, vert, uv, rgb, [b0, b1, b2, b3], [])
+    assert ctrl.addTemplate(tID, cs, vert, uv, rgb, [b0, b1, b2, b3], []).ok
 
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
     pos, ori = [0, 0, -10], [0, 1, 0, 0]
-    ok, objID = ctrl.spawn(
+    ret = ctrl.spawn(
         tID, pos, orient=ori, imass=0.1, scale=scale,
         axesLockLin=[1, 1, 1], axesLockRot=[0, 0, 1])
+    objID = ret.data
     print('done (ID=<{}>)'.format(objID))
 
     # Construct an attribute object (will be needed to reset the simulation).
@@ -240,8 +241,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     tID_1 = 'Product1'.encode('utf8')
     tID_2 = 'Product2'.encode('utf8')
-    ctrl.addTemplate(tID_1, cs, 0.75 * vert, uv, rgb, [], [])
-    ctrl.addTemplate(tID_2, cs, 0.24 * vert, uv, rgb, [], [])
+    assert ctrl.addTemplate(tID_1, cs, 0.75 * vert, uv, rgb, [], []).ok
+    assert ctrl.addTemplate(tID_2, cs, 0.24 * vert, uv, rgb, [], []).ok
 
     # ----------------------------------------------------------------------
     # Define a cube with boosters and factories.
@@ -263,8 +264,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Add the template.
     tID_3 = 'BoosterCube'.encode('utf8')
-    ok, _ = ctrl.addTemplate(tID_3, cs, vert, uv, rgb, [b0, b1], [f0, f1])
-    assert ok
+    assert ctrl.addTemplate(tID_3, cs, vert, uv, rgb, [b0, b1], [f0, f1]).ok
 
     # ----------------------------------------------------------------------
     # Define more booster cubes, each with a different texture.
@@ -286,8 +286,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii)).encode('utf8')
-        ok, _ = ctrl.addTemplate(tID, cs, vert, curUV, rgb, [b0, b1], [])
-        assert ok
+        assert ctrl.addTemplate(tID, cs, vert, curUV, rgb, [b0, b1], []).ok
 
         # Add the templateID to a dictionary because we will need it in the
         # next step to spawn the templates.
@@ -319,12 +318,13 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
                 # Spawn the cube and update the index counter. The intitial
                 # velocity, acceleration, and orientation is neutral.
-                ok, objID = ctrl.spawn(tID_cube[cube_idx], pos)
+                ret = ctrl.spawn(tID_cube[cube_idx], pos)
+                assert ret.ok
                 cube_idx += 1
 
                 # Record the original position of the object (this will be
                 # needed when the simulation is reset).
-                default_attributes.append((objID, pos))
+                default_attributes.append((ret.data, pos))
 
     # Convert the positions to proper PosVecAccOrient tuples. In these tuples
     # only the position differs. The inital velocities, accelerations, and
@@ -443,7 +443,9 @@ class ResetSim(multiprocessing.Process):
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.
-        ok, allowed_objIDs = ctrl.getAllObjectIDs()
+        ret = ctrl.getAllObjectIDs()
+        assert ret.data
+        allowed_objIDs = ret.data
 
         # Periodically reset the SV values. Set them several times because it
         # is well possible that not all State Variables reach Leonard in the
@@ -455,8 +457,8 @@ class ResetSim(multiprocessing.Process):
             time.sleep(self.period)
 
             # Remove all newly added objects.
-            ok, cur_objIDs = ctrl.getAllObjectIDs()
-            for objID in cur_objIDs:
+            ret = ctrl.getAllObjectIDs()
+            for objID in ret.data:
                 if objID not in allowed_objIDs:
                     ctrl.removeObject(objID)
 
