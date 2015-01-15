@@ -603,6 +603,34 @@ class Clerk(multiprocessing.Process):
 
         return self._unpackTemplateData(ret.data)
 
+    @typecheck
+    def getObjectInstance(self, objID: bytes):
+        """
+        Return the instance data for ``objID``.
+
+        This function is almost identical to ``getTemplate`` except that it
+        queries the `Instance` database, not the `Template` database (the data
+        structure are identical in both databases).
+
+        Internally, this method calls ``_unpackTemplateData`` to unpack the
+        data. The output of that method will then be returned verbatim by this
+        method (see ``_unpackTemplateData`` for details on that output).
+
+        :param bytes objID: objID
+        :return: Dictionary with keys 'cshape', 'vert', 'uv', 'rgb',
+                 'boosters', 'factories', and 'aabb'.
+        :rtype: dict
+        :raises: None
+        """
+        # Retrieve the template. Return immediately if it does not exist.
+        doc = self.db['ObjInstances'].find_one({'objID': objID})
+        if doc is None:
+            msg = 'Could not find instance data for objID <{}>'.format(objID)
+            self.logit.info(msg)
+            return RetVal(False, msg, None)
+
+        return self._unpackTemplateData(doc)
+
     def _unpackTemplateData(self, doc: dict):
         """
         Return unpacked template data.
