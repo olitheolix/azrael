@@ -704,15 +704,21 @@ class LeonardWorkPackages(LeonardBase):
             if doc is None:
                 break
         
-            # fixme: simplify
-            wpdata = [WPData(*_) for _ in doc['wpdata']]
-            for idx, val in enumerate(wpdata):
-                objID = val.id
-                self.allObjects[objID] = bullet_data.fromJsonDict(val.sv)
+            # Reset force and torque for all objects in the WP, and overwrite
+            # the old State Vector with the new one from the processed WP.
+            for (objID, sv, force, torque) in doc['wpdata']:
                 self.allForces[objID] = [0, 0, 0]
                 self.allTorques[objID] = [0, 0, 0]
+                self.allObjects[objID] = bullet_data.fromJsonDict(sv)
+
+            # Count how many WPs we retrieve in total.
             cnt_fetch += 1
+
+        # Determine how many WPs are still pending.
         cnt_waiting = self._DB_WP.count()
+
+        # Return the statistics of how many completed WPs we got and how many
+        # are still pending.
         return RetVal(True, None, (cnt_fetch, cnt_waiting))
 
 
