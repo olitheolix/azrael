@@ -156,9 +156,9 @@ class Clerk(multiprocessing.Process):
                 self.getGeometry,
                 protocol.FromClerk_GetGeometry_Encode),
             'update_geometry': (
-                protocol.ToClerk_SetGeometry_Decode,
+                protocol.ToClerk_UpdateGeometry_Decode,
                 self.updateGeometry,
-                protocol.FromClerk_SetGeometry_Encode),
+                protocol.FromClerk_UpdateGeometry_Encode),
             'set_force': (
                 protocol.ToClerk_SetForce_Decode,
                 self.setForce,
@@ -821,9 +821,9 @@ class Clerk(multiprocessing.Process):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
-        If the ID does not exist return an error.
+        If ``objID`` does not exist return an error.
 
-        :param bytes templateID: template ID
+        :param bytes objID: the object for which to update the geometry.
         :return: Success
         """
         # Update the geometry entries.

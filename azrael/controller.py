@@ -86,8 +86,8 @@ class ControllerBase():
                 protocol.ToClerk_GetGeometry_Encode,
                 protocol.FromClerk_GetGeometry_Decode),
             'update_geometry': (
-                protocol.ToClerk_SetGeometry_Encode,
-                protocol.FromClerk_SetGeometry_Decode),
+                protocol.ToClerk_UpdateGeometry_Encode,
+                protocol.FromClerk_UpdateGeometry_Decode),
             'spawn': (
                 protocol.ToClerk_Spawn_Encode,
                 protocol.FromClerk_Spawn_Decode),
