@@ -137,7 +137,7 @@ def dequeueCmdRemove(remove: list):
 
 
 @typecheck
-def addCmdSpawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
+def addCmdSpawn(objID: int, sv: bullet_data.BulletData, aabb: (int, float)):
     """
     Enqueue a new object with ``objID`` for Leonard to spawn.
 
@@ -150,7 +150,7 @@ def addCmdSpawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
     Leonard will apply this request once per physics cycle but it is impossible
     to determine when exactly.
 
-    :param bytes objID: object ID to insert.
+    :param int objID: object ID to insert.
     :param bytes sv: encoded state variable data.
     :param float aabb: size of AABB.
     :return: success.
@@ -159,8 +159,10 @@ def addCmdSpawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
     sv = sv.toJsonDict()
 
     # Sanity checks.
-    if len(objID) != config.LEN_ID:
-        return RetVal(False, 'objID has wrong length', None)
+    if objID < 0:
+        msg = 'Object ID is negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
     if aabb < 0:
         msg = 'AABB must be non-negative'
         logit.warning(msg)
@@ -186,7 +188,7 @@ def addCmdSpawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
 
 
 @typecheck
-def addCmdRemoveObject(objID: bytes):
+def addCmdRemoveObject(objID: int):
     """
     Remove ``objID`` from the physics simulation.
 
@@ -195,7 +197,7 @@ def addCmdRemoveObject(objID: bytes):
 
     .. note:: This function always succeeds.
 
-    :param bytes objID: ID of object to delete.
+    :param int objID: ID of object to delete.
     :return: Success.
     """
     data = {'del': objID}
@@ -205,20 +207,22 @@ def addCmdRemoveObject(objID: bytes):
 
 
 @typecheck
-def addCmdModifyStateVariable(objID: bytes, data: BulletDataOverride):
+def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
     """
     Queue request to Override State Variables of ``objID`` with ``data``.
 
     Leonard will apply this request once per physics cycle but it is impossible
     to determine when exactly.
 
-    :param bytes objID: object to update.
+    :param int objID: object to update.
     :param BulletDataOverride pos: new object attributes.
     :return bool: Success
     """
     # Sanity check.
-    if (len(objID) != config.LEN_ID):
-        return RetVal(False, 'objID has invalid length', None)
+    if objID < 0:
+        msg = 'Object ID is negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
 
     # Do nothing if data is None.
     if data is None:
@@ -250,7 +254,7 @@ def addCmdModifyStateVariable(objID: bytes, data: BulletDataOverride):
 
 
 @typecheck
-def addCmdSetForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
+def addCmdSetForceAndTorque(objID: int, force: np.ndarray, torque: np.ndarray):
     """
     Set the central ``force`` and ``torque`` acting on ``objID``.
 
@@ -261,14 +265,16 @@ def addCmdSetForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray)
        ``setForce`` function which allows for position relative to the centre
        of mass.
 
-    :param bytes objID: the object
+    :param int objID: the object
     :param ndarray force: apply this central ``force`` to ``objID``.
     :param ndarray torque: apply this ``torque`` to ``objID``.
     :return bool: Success
     """
     # Sanity check.
-    if (len(objID) != config.LEN_ID):
-        return RetVal(False, 'objID has invalid length', None)
+    if objID < 0:
+        msg = 'Object ID is negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
     if not (len(force) == len(torque) == 3):
         return RetVal(False, 'force or torque has invalid length', None)
 
@@ -296,9 +302,9 @@ def getStateVariables(objIDs: (list, tuple)):
     :return dict: dictionary of the form {objID: sv}
     """
     # Sanity check.
-    for _ in objIDs:
-        if not isinstance(_, bytes) or (len(_) != config.LEN_ID):
-            msg = 'Object ID has invalid type'
+    for objID in objIDs:
+        if objID < 0:
+            msg = 'Object ID is negative'
             logit.warning(msg)
             return RetVal(False, msg, None)
 
@@ -322,9 +328,9 @@ def getAABB(objIDs: (list, tuple)):
     :rtype: list of *floats*.
     """
     # Sanity check.
-    for _ in objIDs:
-        if not isinstance(_, bytes) or (len(_) != config.LEN_ID):
-            msg = 'Object ID has invalid type'
+    for objID in objIDs:
+        if objID < 0:
+            msg = 'Object ID is negative'
             logit.warning(msg)
             return RetVal(False, msg, None)
 
@@ -408,20 +414,22 @@ def getAllObjectIDs():
 
 
 @typecheck
-def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
+def setForce(objID: int, force: np.ndarray, relpos: np.ndarray):
     """
     Update the ``force`` acting on ``objID``.
 
     This function is a wrapper around ``addCmdSetForceAndTorque``.
 
-    :param bytes objID: recipient of ``force``
+    :param int objID: recipient of ``force``
     :param np.ndarray force: the ``force`` (in Newton).
     :param np.ndarray relpos: position of ``force`` relative to COM.
     :return bool: success.
     """
     # Sanity check.
-    if (len(objID) != config.LEN_ID):
-        return RetVal(False, 'objID has invalid length', None)
+    if objID < 0:
+        msg = 'Object ID is negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
     if not (len(force) == len(relpos) == 3):
         return RetVal(False, 'force or relpos have invalid length', None)
 
@@ -435,7 +443,7 @@ def setForce(objID: bytes, force: np.ndarray, relpos: np.ndarray):
 
 
 @typecheck
-def getForceAndTorque(objID: bytes):
+def getForceAndTorque(objID: int):
     """
     Return the force and torque for ``objID``.
 
@@ -444,8 +452,10 @@ def getForceAndTorque(objID: bytes):
     :rtype: dict
     """
     # Sanity check.
-    if (len(objID) != config.LEN_ID):
-        return RetVal(False, 'objID has invalid length', None)
+    if objID < 0:
+        msg = 'Object ID is negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
 
     # Query the object.
     doc = database.dbHandles['CmdForce'].find_one({'objID': objID})

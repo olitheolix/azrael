@@ -74,11 +74,11 @@ class PythonInstance(multiprocessing.Process):
     The called script receives the object ID as an argument.
 
     :param str name: name of Python script to start.
-    :param bytes objID: object ID.
+    :param int objID: object ID.
     :raises: None
     """
     @typecheck
-    def __init__(self, name: str, objID: bytes):
+    def __init__(self, name: str, objID: int):
         super().__init__()
 
         # Keep the variables around for after the fork.
@@ -368,7 +368,7 @@ class Clerk(multiprocessing.Process):
     # These methods service Controller requests.
     # ----------------------------------------------------------------------
     @typecheck
-    def controlParts(self, objID: bytes, cmd_boosters: (list, tuple),
+    def controlParts(self, objID: int, cmd_boosters: (list, tuple),
                      cmd_factories: (list, tuple)):
         """
         Issue commands to individual partos of the ``objID``.
@@ -381,7 +381,7 @@ class Clerk(multiprocessing.Process):
         ``parts`` module. The commands themselves must be
         ``parts.CmdFactory`` instances.
 
-        :param bytes objID: object ID.
+        :param int objID: object ID.
         :param list cmd_booster: booster commands.
         :param list cmd_factory: factory commands.
         :return: **True** if no error occurred.
@@ -599,7 +599,7 @@ class Clerk(multiprocessing.Process):
         return self._unpackTemplateData(ret.data)
 
     @typecheck
-    def getObjectInstance(self, objID: bytes):
+    def getObjectInstance(self, objID: int):
         """
         Return the instance data for ``objID``.
 
@@ -611,7 +611,7 @@ class Clerk(multiprocessing.Process):
         data. The output of that method will then be returned verbatim by this
         method (see ``_unpackTemplateData`` for details on that output).
 
-        :param bytes objID: objID
+        :param int objID: objID
         :return: Dictionary with keys 'cshape', 'vert', 'uv', 'rgb',
                  'boosters', 'factories', and 'aabb'.
         :rtype: dict
@@ -685,7 +685,7 @@ class Clerk(multiprocessing.Process):
         :param bytes templateID: template from which to spawn new object.
         :param bytes sv: State Variables of new object.
         :return: ID of new object
-        :rtype: bytes
+        :rtype: int
         """
         # Fetch the template for the new object.
         template = self.getTemplate(templateID)
@@ -733,11 +733,11 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, objID)
 
     @typecheck
-    def removeObject(self, objID: bytes):
+    def removeObject(self, objID: int):
         """
         Remove ``objID`` from the physics simulation.
 
-        :param bytes objID: ID of object to remove.
+        :param int objID: ID of object to remove.
         :return: Success
         """
         ret = physAPI.addCmdRemoveObject(objID)
@@ -756,7 +756,7 @@ class Clerk(multiprocessing.Process):
         values are either the State Variables (instance of ``BulletData``) or
         *None* (if the objID does not exist).
 
-        :param list(bytes) objIDs: list of objects for which to returns the SV.
+        :param list(int) objIDs: list of objects for which to returns the SV.
         :return: {objID_1: SV_k, ...}
         :rtype: dict
         """
@@ -786,7 +786,7 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, out)
 
     @typecheck
-    def getGeometry(self, objID: bytes):
+    def getGeometry(self, objID: int):
         """
         Return the vertices, UV map, and RGB map for ``objID``.
 
@@ -798,7 +798,7 @@ class Clerk(multiprocessing.Process):
            It is possible that an object has no geometry. An empty array will
            be returned in that case.
 
-        :param bytes templateID: template ID
+        :param int objID: object ID
         :return: Vertices, UV, and RGB data for ``objID``.
         :rtype: {'vert': arr_float64, 'uv': arr_float64, 'rgb': arr_uint8}
         """
@@ -816,14 +816,14 @@ class Clerk(multiprocessing.Process):
             return RetVal(True, None, {'vert': vert, 'uv': uv, 'rgb': rgb})
 
     @typecheck
-    def updateGeometry(self, objID: bytes, vert: np.ndarray,
+    def updateGeometry(self, objID: int, vert: np.ndarray,
                     uv: np.ndarray, rgb: np.ndarray):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
         If ``objID`` does not exist return an error.
 
-        :param bytes objID: the object for which to update the geometry.
+        :param int objID: the object for which to update the geometry.
         :return: Success
         """
         # Update the geometry entries.
@@ -840,7 +840,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
     @typecheck
-    def setForce(self, objID: bytes, force: np.ndarray, rpos: np.ndarray):
+    def setForce(self, objID: int, force: np.ndarray, rpos: np.ndarray):
         """
         Apply ``force`` to ``objID``.
 
@@ -848,7 +848,7 @@ class Clerk(multiprocessing.Process):
 
         If ``objID`` does not exist return an error.
 
-        :param bytes templateID: template ID
+        :param int templateID: template ID
         :return: Sucess
         """
         ret = physAPI.setForce(objID, force, rpos)
@@ -858,7 +858,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, ret.msg, None)
 
     @typecheck
-    def setStateVariables(self, objID: bytes,
+    def setStateVariables(self, objID: int,
                           data: bullet_data.BulletDataOverride):
         """
         Set the State Variables of ``objID`` to ``data``.
@@ -866,7 +866,7 @@ class Clerk(multiprocessing.Process):
         For a detailed description see ``physAPI.addCmdModifyStateVariable``
         since this method is only a wrapper for it.
 
-        :param bytes objID: object ID
+        :param int objID: object ID
         :param BulletDataOverride data: new object attributes.
         :return: Success
         """
@@ -877,11 +877,11 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, ret.msg, None)
 
     @typecheck
-    def getTemplateID(self, objID: bytes):
+    def getTemplateID(self, objID: int):
         """
         Return the template ID from which ``objID`` was created.
 
-        :param bytes objID: object ID.
+        :param int objID: object ID.
         :return: templateID from which ``objID`` was created.
         """
         doc = self.db['ObjInstances'].find_one({'objID': objID})
@@ -900,9 +900,9 @@ class Clerk(multiprocessing.Process):
            The ``dummy`` argument is a placeholder because the ``runCommand``
            function assumes that every method takes at least one argument.
 
-        :param bytes dummy: irrelevant
+        :param dummy: irrelevant
         :return: list of objIDs
-        :rtype: list(bytes)
+        :rtype: list(int)
         """
         ret = physAPI.getAllObjectIDs()
         if not ret.ok:

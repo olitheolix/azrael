@@ -144,11 +144,12 @@ def int2id(objID: int):
     :param int objID: object ID as integer.
     """
     assert 0 <= objID < 2 ** 63
+    return objID
     return np.int64(objID).tostring()
 
 
 @typecheck
-def id2int(objID: bytes):
+def id2int(objID: int):
     """
     Convert an binary object ID to the corresponding integer.
 
@@ -156,6 +157,7 @@ def id2int(objID: bytes):
        This function should not be called as it only serves debugging purposes.
        Azrael does not know or care about what the binary object ID means.
     """
+    return objID
     assert len(objID) == config.LEN_ID
     return int(np.fromstring(objID, np.int64)[0])
 

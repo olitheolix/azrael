@@ -262,25 +262,25 @@ class ControllerBase():
         return self.serialiseAndSend('ping_clerk', None)
 
     @typecheck
-    def getGeometry(self, objID: bytes):
+    def getGeometry(self, objID: int):
         """
         Return the vertices, UV map, and RGB map for ``objID``.
 
         All returned values are NumPy arrays.
 
-        :param bytes objID: ID for which to return the geometry.
+        :param int objID: ID for which to return the geometry.
         :return: (ok, (vert, UV, RGB))
         :rtype: (bool, np.ndarray) or (bool, str)
         """
         return self.serialiseAndSend('get_geometry', objID)
 
     @typecheck
-    def updateGeometry(self, objID: bytes, vert: np.ndarray, uv: np.ndarray,
+    def updateGeometry(self, objID: int, vert: np.ndarray, uv: np.ndarray,
                        rgb: np.ndarray):
         """
         Change the geometry parameters of ``objID``.
 
-        :param bytes objID: ID for which to return the geometry.
+        :param int objID: ID for which to return the geometry.
         :param bytes vert: object geometry
         :param bytes UV: UV map for textures
         :param bytes RGB: texture
@@ -321,17 +321,17 @@ class ControllerBase():
         return self.serialiseAndSend('spawn', templateID, sv)
 
     @typecheck
-    def removeObject(self, objID: bytes):
+    def removeObject(self, objID: int):
         """
         Remove ``objID`` from the physics simulation.
 
-        :param bytes objID: ID of object to remove.
+        :param int objID: ID of object to remove.
         :return: (ok, (msg,))
         :rtype: tuple
         """
         return self.serialiseAndSend('remove', objID)
 
-    def controlParts(self, objID: bytes, cmd_boosters: (list, tuple),
+    def controlParts(self, objID: int, cmd_boosters: (list, tuple),
                      cmd_factories: (list, tuple)):
         """
         Issue control commands to object parts.
@@ -344,24 +344,24 @@ class ControllerBase():
         ``parts`` module. The commands themselves must be
         ``parts.CmdFactory`` instances.
 
-        :param bytes objID: object ID.
+        :param int objID: object ID.
         :param list cmd_booster: booster commands.
         :param list cmd_factory: factory commands.
         :return: (True, (b'',)) or (False, error-message)
-        :rtype: (bool, (bytes, )) or (bool, str)
+        :rtype: (bool, (int, )) or (bool, str)
         :raises: None
         """
         return self.serialiseAndSend(
             'control_parts', objID, cmd_boosters, cmd_factories)
 
     @typecheck
-    def getTemplateID(self, objID: bytes):
+    def getTemplateID(self, objID: int):
         """
         Return the template ID from which ``objID`` was spawned.
 
         If ``objID`` does not exist in the simulation then return an error.
 
-        :param bytes objID: ID of spawned object.
+        :param int objID: ID of spawned object.
         :return: (ok, objID)
         :rtype: (bool, np.ndarray) or (bool, str)
         """
@@ -408,7 +408,7 @@ class ControllerBase():
             'add_template', templateID, cs, vert, UV, RGB, boosters, factories)
 
     @typecheck
-    def getStateVariables(self, objIDs: (list, tuple, bytes)):
+    def getStateVariables(self, objIDs: (list, tuple, int)):
         """
         Return the State Variables for all ``objIDs`` as a dictionary.
 
@@ -417,21 +417,21 @@ class ControllerBase():
         :rtype: (bool, bytes)
         :raises: None
         """
-        if isinstance(objIDs, bytes):
+        if isinstance(objIDs, int):
             # Wrap a single objID into a list for uniformity.
             objIDs = [objIDs]
 
         # Sanity check: every objID in the list must have the correct type and
         # length.
         for objID in objIDs:
-            assert isinstance(objID, bytes)
-            assert len(objID) == config.LEN_ID
+            assert isinstance(objID, int)
+            assert objID >= 0
 
         # Pass on the request to Clerk.
         return self.serialiseAndSend('get_statevar', objIDs)
 
     @typecheck
-    def setStateVariables(self, objID: bytes,
+    def setStateVariables(self, objID: int,
                           new_SV: bullet_data.BulletDataOverride):
         """
         Overwrite the the State Variables of ``objID`` with ``data``.
@@ -440,7 +440,7 @@ class ControllerBase():
         speed, irrespective of what the physics engine computes. The attributes
         will be applied exactly once.
 
-        :param bytes objID: the object to move.
+        :param int objID: the object to move.
         :param BulletDataOverride new_SV: the object attributes to set.
         :return: (ok, b'')
         :rtype: (bool, bytes)
@@ -449,13 +449,13 @@ class ControllerBase():
         return self.serialiseAndSend('set_statevar', objID, new_SV)
 
     @typecheck
-    def setForce(self, objID: bytes, force: np.ndarray):
+    def setForce(self, objID: int, force: np.ndarray):
         """
         Apply ``force`` to ``objID``.
 
         The force is always applied at the centre of mass.
 
-        :param bytes objID: the object for which to apply a force.
+        :param int objID: the object for which to apply a force.
         :param ndarray force: force vector.
         :return: (ok, b'')
         :rtype: (bool, bytes)
