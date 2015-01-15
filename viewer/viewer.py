@@ -353,18 +353,19 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
     def loadGeometry(self):
         # Retrieve all object IDs.
-        ok, objIDs = self.ctrl.getAllObjectIDs()
-        if not ok:
+        ret = self.ctrl.getAllObjectIDs()
+        if not ret.ok:
             print('Could not query the object IDs -- Abort')
             self.close()
 
         # Retrieve the state variables of all objects.
         self.oldSVs = self.newSVs
         with util.Timeit('getSV') as timeit:
-            ok, self.newSVs = self.ctrl.getStateVariables(objIDs)
-        if not ok:
+            ret = self.ctrl.getStateVariables(ret.data)
+        if not ret.ok:
             print('Could not retrieve the state variables -- Abort')
             self.close()
+        self.newSVs = ret.data
 
         # Delete those local objects that have been removed in Azrael.
         for objID in self.oldSVs:
@@ -392,9 +393,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Download the latest geometry for this object.
-            ok, (buf_vert, buf_uv, buf_rgb) = self.ctrl.getGeometry(objID)
-            if not ok:
+            ret = self.ctrl.getGeometry(objID)
+            if not ret.ok:
                 continue
+            buf_vert, buf_uv, buf_rgb = ret.data
 
             # This is to mask a bug in Clacks: newly spawned objects can become
             # active before their geometry data hits the DB.
@@ -523,11 +525,11 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Create the template with name 'cube'.
         t_projectile = 'cube'.encode('utf8')
         args = t_projectile, cs, buf_vert, uv, rgb, [], []
-        ok, _ = self.ctrl.addTemplate(*args)
+        ret = self.ctrl.addTemplate(*args)
 
         # The template was probably already defined (eg by a nother instance of
         # this script).
-        if not ok:
+        if not ret.ok:
             print('Could not add new template')
 
         print('Created template <{}>'.format(t_projectile))
@@ -553,13 +555,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.camera = Camera(initPos, 90 * np.pi / 180, 0)
 
         # Spawn the player object (it has the same shape as a projectile).
-        ok, tmp = self.ctrl.spawn(self.t_projectile, initPos, np.zeros(3))
-        if not ok:
-            print('Cannot spawn player object (<{}>)'.format(tmp))
+        ret = self.ctrl.spawn(self.t_projectile, initPos, np.zeros(3))
+        if not ret.ok:
+            print('Cannot spawn player object (<{}>)'.format(ret.data))
             self.close()
 
-        self.player_id = tmp
-        del ok, tmp
+        self.player_id = ret.data
         print('Spawned player object <{}>'.format(self.player_id))
 
         # Initialise instance variables.
@@ -764,7 +765,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         pos = self.camera.position
         attr = physAPI.BulletDataOverride(position=pos)
-        self.ctrl.setStateVariables(self.player_id, attr)
+        assert self.ctrl.setStateVariables(self.player_id, attr).ok
 
         # Do not update the camera rotation if the mouse is not grabbed.
         if not self.mouseGrab:
@@ -869,9 +870,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 2 * self.camera.view
 
             # Spawn the object.
-            ok, objID = self.ctrl.spawn(
+            ret = self.ctrl.spawn(
                 self.t_projectile, pos, vel=vel, scale=0.25, imass=20)
-            if not ok:
+            if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
         elif button == 2:
             # Determine the initial position and velocity of new object.
@@ -879,9 +880,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 2 * self.camera.view
 
             # Spawn the object.
-            ok, objID = self.ctrl.spawn(
+            ret = self.ctrl.spawn(
                 self.t_projectile, pos, vel=vel, scale=0.25, imass=2)
-            if not ok:
+            if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
         else:
             print('Unknown button <{}>'.format(button))
