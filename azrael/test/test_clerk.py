@@ -43,7 +43,7 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int
-from azrael.test.test_leonard import startAzrael, stopAzrael, killAzrael
+from azrael.test.test_clacks import startAzrael, stopAzrael, killAzrael
 from azrael.test.test_leonard import getLeonard
 
 ipshell = IPython.embed

@@ -14,11 +14,78 @@ import azrael.wscontroller as wscontroller
 import azrael.controller as controller
 
 from azrael.util import int2id, id2int
-from azrael.test.test_leonard import startAzrael, stopAzrael
 
 WSControllerBase = wscontroller.WSControllerBase
 
 ipshell = IPython.embed
+
+
+def killAzrael():
+    subprocess.call(['pkill', 'killme'])
+
+    # Delete all grids used in this test.
+    assert azrael.vectorgrid.deleteAllGrids().ok
+
+    azrael.database.init(reset=True)
+
+
+def startAzrael(ctrl_type):
+    """
+    Start all Azrael services and return their handles.
+
+    ``ctrl_type`` may be  either 'ZeroMQ' or 'Websocket'. The only difference
+    this makes is that the 'Websocket' version will also start a Clacks server,
+    whereas for 'ZeroMQ' the respective handle will be **None**.
+
+    :param str ctrl_type: the controller type ('ZeroMQ' or 'Websocket').
+    :return: handles to (clerk, ctrl, clacks)
+    """
+    killAzrael()
+
+    # Start Clerk and instantiate Controller.
+    clerk = azrael.clerk.Clerk()
+    clerk.start()
+
+    if ctrl_type == 'ZeroMQ':
+        # Instantiate the ZeroMQ version of the Controller.
+        ctrl = azrael.controller.ControllerBase()
+        ctrl.setupZMQ()
+
+        # Do not start a Clacks process.
+        clacks = None
+    elif ctrl_type == 'Websocket':
+        # Start a Clacks process.
+        clacks = azrael.clacks.ClacksServer()
+        clacks.start()
+
+        # Instantiate the Websocket version of the Controller.
+        ctrl = azrael.wscontroller.WSControllerBase(
+            'ws://127.0.0.1:8080/websocket', 1)
+        assert ctrl.ping()
+    else:
+        print('Unknown controller type <{}>'.format(ctrl_type))
+        assert False
+    return clerk, ctrl, clacks
+
+
+def stopAzrael(clerk, clacks):
+    """
+    Kill all processes related to Azrael.
+
+    :param clerk: handle to Clerk process.
+    :param clacks: handle to Clacks process.
+    """
+    # Terminate the Clerk.
+    clerk.terminate()
+    clerk.join(timeout=3)
+
+    # Terminate Clacks (if one was started).
+    if clacks is not None:
+        clacks.terminate()
+        clacks.join(timeout=3)
+
+    # Forcefully terminate everything.
+    killAzrael()
 
 
 def test_ping_clacks():
