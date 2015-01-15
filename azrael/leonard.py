@@ -662,36 +662,31 @@ class LeonardWorkPackages(LeonardBase):
         if len(objIDs) == 0:
             return RetVal(False, 'Work package is empty', None)
     
-        # Create a new work package.
+        # Compile the State Vectors and forces for all objects into a list of
+        # ``WPData`` named tuples.
         try:
             wpdata = [WPData(objID,
-                                 self.allObjects[objID].toJsonDict(),
-                                 self.allForces[objID],
-                                 self.allTorques[objID])
-                              for objID in objIDs]
+                             self.allObjects[objID].toJsonDict(),
+                             self.allForces[objID],
+                             self.allTorques[objID])
+                      for objID in objIDs]
         except KeyError as err:
             return RetVal(False, 'Cannot form WP', None)
 
-        # Obtain a new and unique work package ID.
+        # Request a unique ID for this Work Package.
         wpid = azrael.database.getNewWPID()
         if not wpid.ok:
             self.logit.error(msg)
             return wpid
         wpid = wpid.data
     
-        # Remove all WP with the current ID. This is a precaution since there
-        # should not be a WP with this ID to begin with.
-        # fixme: this operation should be unnecessary in the new setup
-        ret = self._DB_WP.remove({'wpid': wpid}, multi=True)
-        if ret['n'] > 0:
-            self.logit.warning('A previous WP with ID={} already existed'.format(wpid))
-    
-        meta = WPMeta(wpid, dt, maxsteps)
+        # Form the content of the Work Package as it will appear in the DB.
         data = {'wpid': wpid,
-                'wpmeta': meta,
+                'wpmeta': WPMeta(wpid, dt, maxsteps),
                 'wpdata': wpdata,
                 'ts': None}
         
+        # Insert the Work Package into the DB.
         ret = self._DB_WP.insert(data)
         return RetVal(True, None, wpid)
     
