@@ -140,12 +140,12 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         else:
             # Pass all other commands directly to the Controller which will
             # (probably) send it to Clerk for processing.
-            ok, ret, msg = self.controller.sendToClerk(cmd, payload)
+            ret = self.controller.sendToClerk(cmd, payload)
 
-            if ok:
-                self.returnOk(ret, msg)
+            if ret.ok:
+                self.returnOk(ret.data, ret.msg)
             else:
-                self.returnErr({}, msg)
+                self.returnErr({}, ret.msg)
 
     def on_close(self):
         """

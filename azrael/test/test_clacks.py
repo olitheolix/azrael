@@ -9,9 +9,10 @@ import numpy as np
 
 import azrael.clerk
 import azrael.clacks
+import azrael.vectorgrid
 import azrael.config as config
-import azrael.wscontroller as wscontroller
 import azrael.controller as controller
+import azrael.wscontroller as wscontroller
 
 from azrael.util import int2id, id2int
 
@@ -117,13 +118,13 @@ def test_ping_clerk():
     clerk, ctrl, clacks = startAzrael('Websocket')
 
     # And send 'PING' command.
-    assert ctrl.pingClacks()
+    assert ctrl.pingClacks().ok
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
 
     # And send 'PING' command.
-    assert not ctrl.pingClacks()
+    assert not ctrl.pingClacks().ok
 
     print('Test passed')
 

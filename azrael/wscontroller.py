@@ -37,6 +37,7 @@ import IPython
 import websocket
 import numpy as np
 
+import azrael.util
 import azrael.controller
 import azrael.config as config
 import azrael.protocol_json as json
@@ -44,6 +45,7 @@ import azrael.protocol_json as json
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
+RetVal = azrael.util.RetVal
 
 
 class WSControllerBase(azrael.controller.ControllerBase):
@@ -114,11 +116,11 @@ class WSControllerBase(azrael.controller.ControllerBase):
         :rtype: bool
         """
         try:
-            ok, data, msg = self.sendToClerk('ping_clacks', None)
+            ret = self.sendToClerk('ping_clacks', None)
         except websocket.WebSocketConnectionClosedException as err:
-            return False
+            return RetVal(False, 'Websocket Error', None)
 
-        if not ok:
-            return False
+        if not ret.ok:
+            return ret
         else:
-            return (data['response'] == 'pong clacks')
+            return RetVal(True, None, 'pong clacks')

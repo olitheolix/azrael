@@ -80,9 +80,11 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     enc = json.loads(json.dumps(enc))
 
     # Decode the data.
-    ok, dec = protocol.FromClerk_GetTemplate_Decode(enc)
+    dec = protocol.FromClerk_GetTemplate_Decode(enc)
 
     # Verify.
+    assert dec.ok
+    dec = dec.data
     assert np.array_equal(dec.cs, cs)
     assert np.array_equal(dec.vert, vert)
     assert np.array_equal(dec.uv, uv)
@@ -150,8 +152,8 @@ def test_send_command():
     enc = json.loads(json.dumps(enc))
 
     # Decode the data.
-    ok, dec_objIDs = dec_fun(enc)
-    assert (ok, dec_objIDs) == (True, objIDs)
+    ret = dec_fun(enc)
+    assert (ret.ok, ret.data) == (True, objIDs)
 
     print('Test passed')
 
@@ -190,10 +192,11 @@ def test_GetStateVariable():
     enc = json.loads(json.dumps(enc))
 
     # Decode the data.
-    ok, dec_sv = protocol.FromClerk_GetStateVariable_Decode(enc)
-    assert (ok, len(dec_sv)) == (True, 2)
+    dec_sv = protocol.FromClerk_GetStateVariable_Decode(enc)
+    assert (dec_sv.ok, len(dec_sv.data)) == (True, 2)
 
     # Verify.
+    dec_sv = dec_sv.data
     assert dec_sv[int2id(1)] == objs[0]
     assert dec_sv[int2id(2)] == objs[1]
 

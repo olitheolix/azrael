@@ -64,16 +64,16 @@ def test_custom_objid():
     ctrl_0 = azrael.wscontroller.WSControllerBase(address)
 
     # Ping Clerk to verify the connection is live.
-    ok, ret = ctrl_0.ping()
-    assert (ok, ret) == (True, 'pong clerk')
+    ret = ctrl_0.ping()
+    assert (ret.ok, ret.data) == (True, 'pong clerk')
 
     # Instantiate another WSController. This time specify an ID. Note: the ID
     # need not exist albeit object specific commands will subsequently fail.
     ctrl_1 = azrael.wscontroller.WSControllerBase(address)
 
     # Ping Clerk again to verify the connection is live.
-    ok, ret = ctrl_1.ping()
-    assert (ok, ret) == (True, 'pong clerk')
+    ret = ctrl_1.ping()
+    assert (ret.ok, ret.data) == (True, 'pong clerk')
 
     # Shutdown the system.
     clerk.terminate()
