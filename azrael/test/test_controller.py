@@ -39,7 +39,7 @@ import azrael.config as config
 import azrael.leonard as leonard
 import azrael.database as database
 import azrael.protocol as protocol
-import azrael.physics_interface as btInterface
+import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int
@@ -480,7 +480,7 @@ def test_controlParts(ctrl_type):
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    ret = btInterface.getForceAndTorque(objID_1)
+    ret = physAPI.getForceAndTorque(objID_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], tot_force)
     assert np.array_equal(ret.data['torque'], tot_torque)

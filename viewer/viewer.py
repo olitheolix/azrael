@@ -43,7 +43,7 @@ import OpenGL.GL as gl
 import azrael.util as util
 import azrael.config as config
 import azrael.controller as controller
-import azrael.physics_interface as btInterface
+import azrael.physics_interface as physAPI
 
 from PySide import QtCore, QtGui, QtOpenGL
 
@@ -763,7 +763,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             self.camera.strafeLeft()
 
         pos = self.camera.position
-        attr = btInterface.BulletDataOverride(position=pos)
+        attr = physAPI.BulletDataOverride(position=pos)
         self.ctrl.setStateVariables(self.player_id, attr)
 
         # Do not update the camera rotation if the mouse is not grabbed.

@@ -352,7 +352,7 @@ if __name__ == '__main__':
     import azrael.database as database
     import azrael.controller as controller
     import azrael.vectorgrid as vectorgrid
-    import azrael.physics_interface as btInterface
+    import azrael.physics_interface as physAPI
     del p
 
     # Start Azrael.

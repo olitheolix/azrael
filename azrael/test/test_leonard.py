@@ -9,7 +9,7 @@ import azrael.leonard
 import azrael.database
 import azrael.controller
 import azrael.vectorgrid
-import azrael.physics_interface as btInterface
+import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int
@@ -143,17 +143,17 @@ def test_setStateVariables_basic(clsLeonard):
     del p, vl, vr
 
     # Spawn a new object. It must have ID=1.
-    assert btInterface.addCmdSpawn(id_1, sv, aabb=1.0).ok
+    assert physAPI.addCmdSpawn(id_1, sv, aabb=1.0).ok
     
     # Update the object's State Vector.
-    assert btInterface.addCmdModifyStateVariable(id_1, data).ok
+    assert physAPI.addCmdModifyStateVariable(id_1, data).ok
 
     # Step the simulation by 0 seconds. This will not change the simulation
     # state but pick up all the queued commands.
     leo.step(0, 10)
 
     # Verify that the attributes were correctly updated.
-    ret = btInterface.getStateVariables([id_1])
+    ret = physAPI.getStateVariables([id_1])
     assert (ret.ok, len(ret.data)) == (True, 1)
     sv = ret.data[id_1]
     assert np.array_equal(sv.position, data.position)
@@ -182,11 +182,11 @@ def test_setStateVariables_advanced(clsLeonard):
 
     # Spawn an object.
     objID = int2id(1)
-    assert btInterface.addCmdSpawn(objID, sv, aabb=1.0).ok
+    assert physAPI.addCmdSpawn(objID, sv, aabb=1.0).ok
 
     # Verify the SV data.
     leo.step(0, 10)
-    ret = btInterface.getStateVariables([objID])
+    ret = physAPI.getStateVariables([objID])
     assert ret.ok
     assert ret.data[objID].imass == 2
     assert ret.data[objID].scale == 3
@@ -194,11 +194,11 @@ def test_setStateVariables_advanced(clsLeonard):
 
     # Update the object's SV data.
     sv_new = bullet_data.BulletDataOverride(imass=4, scale=5, cshape=cs_cube)
-    assert btInterface.addCmdModifyStateVariable(objID, sv_new).ok
+    assert physAPI.addCmdModifyStateVariable(objID, sv_new).ok
 
     # Verify the SV data.
     leo.step(0, 10)
-    ret = btInterface.getStateVariables([objID])
+    ret = physAPI.getStateVariables([objID])
     assert (ret.ok, len(ret.data)) == (True, 1)
     sv = ret.data[objID]
     assert (sv.imass == 4) and (sv.scale == 5)
@@ -223,22 +223,22 @@ def test_move_single_object(clsLeonard):
     sv = bullet_data.BulletData()
 
     # Spawn an object.
-    assert btInterface.addCmdSpawn(id_0, sv, aabb=1.0).ok
+    assert physAPI.addCmdSpawn(id_0, sv, aabb=1.0).ok
 
     # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
-    ret = btInterface.getStateVariables([id_0])
+    ret = physAPI.getStateVariables([id_0])
     assert ret.ok
     assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
     # Give the object a velocity.
     sv = bullet_data.BulletDataOverride(velocityLin=np.array([1, 0, 0]))
-    assert btInterface.addCmdModifyStateVariable(id_0, sv).ok
+    assert physAPI.addCmdModifyStateVariable(id_0, sv).ok
 
     # Advance the simulation by another second and verify the objects have
     # moved accordingly.
     leonard.step(1.0, 60)
-    ret = btInterface.getStateVariables([id_0])
+    ret = physAPI.getStateVariables([id_0])
     assert ret.ok
     assert 0.9 <= ret.data[id_0].position[0] < 1.1
     assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
@@ -262,15 +262,15 @@ def test_move_two_objects_no_collision(clsLeonard):
     sv_1 = bullet_data.BulletData(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
     # Create two objects.
-    assert btInterface.addCmdSpawn(id_0, sv_0, aabb=1).ok
-    assert btInterface.addCmdSpawn(id_1, sv_1, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_0, sv_0, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_1, sv_1, aabb=1).ok
 
     # Advance the simulation by 1s and query the states of both objects.
     leonard.step(1.0, 60)
-    ret = btInterface.getStateVariables([id_0])
+    ret = physAPI.getStateVariables([id_0])
     assert ret.ok
     pos_0 = ret.data[id_0].position
-    ret = btInterface.getStateVariables([id_1])
+    ret = physAPI.getStateVariables([id_1])
     assert ret.ok
     pos_1 = ret.data[id_1].position
 
@@ -307,8 +307,8 @@ def test_worker_respawn():
         position=[0, 10, 0], velocityLin=[0, -1, 0], cshape=cshape)
 
     # Create two objects.
-    assert btInterface.addCmdSpawn(id_0, sv_0, aabb=1).ok
-    assert btInterface.addCmdSpawn(id_1, sv_1, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_0, sv_0, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_1, sv_1, aabb=1).ok
 
     # Advance the simulation by 1s, but use many small time steps. This ensures
     # that the Workers will restart themselves many times.
@@ -316,10 +316,10 @@ def test_worker_respawn():
         leonard.step(1.0 / 60, 1)
 
     # Query the states of both objects.
-    ret = btInterface.getStateVariables([id_0])
+    ret = physAPI.getStateVariables([id_0])
     assert ret.ok
     pos_0 = ret.data[id_0].position
-    ret = btInterface.getStateVariables([id_1])
+    ret = physAPI.getStateVariables([id_1])
     assert ret.ok
     pos_1 = ret.data[id_1].position
 
@@ -455,7 +455,7 @@ def test_computeCollisionSetsAABB(dim):
 
     # Add all objects to the SV DB.
     for objID, sv in zip(all_id, SVs):
-        assert btInterface.addCmdSpawn(objID, sv, aabb=1.0).ok
+        assert physAPI.addCmdSpawn(objID, sv, aabb=1.0).ok
     del SVs
 
     # Retrieve all SVs as Leonard does.
@@ -533,11 +533,11 @@ def test_force_grid(clsLeonard):
     sv = bullet_data.BulletData()
 
     # Spawn one object.
-    assert btInterface.addCmdSpawn(id_0, sv, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_0, sv, aabb=1).ok
 
     # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
-    ret = btInterface.getStateVariables([id_0])
+    ret = physAPI.getStateVariables([id_0])
     assert ret.ok
     assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
@@ -552,7 +552,7 @@ def test_force_grid(clsLeonard):
 
     # Step the simulation and verify the object remained where it was.
     leonard.step(1.0, 60)
-    ret = btInterface.getStateVariables([id_0])
+    ret = physAPI.getStateVariables([id_0])
     assert ret.ok
     assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
@@ -564,7 +564,7 @@ def test_force_grid(clsLeonard):
     # Step the simulation and verify the object moved accordingly.
     leonard.step(1.0, 60)
 
-    ret = btInterface.getStateVariables([id_0])
+    ret = physAPI.getStateVariables([id_0])
     assert ret.ok
     assert 0.4 <= ret.data[id_0].position[0] < 0.6
     assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
@@ -605,8 +605,8 @@ def test_create_work_package_without_objects():
     dt, maxsteps = 2, 3
 
     # Add two new objects to Leonard.
-    assert btInterface.addCmdSpawn(id_1, data_0, aabb=1).ok
-    assert btInterface.addCmdSpawn(id_2, data_0, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_1, data_0, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_2, data_0, aabb=1).ok
     leo.processCommandsAndSync()
 
     # Create a work package for two object IDs. The WPID must be 1.
@@ -687,8 +687,8 @@ def test_create_work_package_with_objects():
     id_1, id_2 = int2id(1), int2id(2)
     
     # Spawn new objects.
-    assert btInterface.addCmdSpawn(id_1, data_1, aabb=1)
-    assert btInterface.addCmdSpawn(id_2, data_2, aabb=1)
+    assert physAPI.addCmdSpawn(id_1, data_1, aabb=1)
+    assert physAPI.addCmdSpawn(id_2, data_2, aabb=1)
     leo.processCommandsAndSync()
 
     # Add ID1 and ID2 to the WP. The WPID must be 1.
@@ -761,7 +761,7 @@ def test_work_package_timestamps():
     numWPs = 10
 
     # Spawn new objects.
-    assert btInterface.addCmdSpawn(id_1, data_1, aabb=1)
+    assert physAPI.addCmdSpawn(id_1, data_1, aabb=1)
     leo.processCommandsAndSync()
 
     # Insert several Work Packages.

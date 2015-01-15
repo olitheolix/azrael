@@ -48,7 +48,7 @@ import azrael.config as config
 import azrael.database as database
 import azrael.protocol as protocol
 import azrael.protocol_json as json
-import azrael.physics_interface as btInterface
+import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
@@ -484,7 +484,7 @@ class Clerk(multiprocessing.Process):
         # Apply the net- force and torque. Skip this step if booster commands
         # were supplied.
         if len(cmd_boosters) > 0:
-            btInterface.setForceAndTorque(objID, tot_central_force, tot_torque)
+            physAPI.setForceAndTorque(objID, tot_central_force, tot_torque)
 
         # Let the factories spawn the objects.
         objIDs = []
@@ -575,7 +575,7 @@ class Clerk(multiprocessing.Process):
         for f in factories:
             data['factories.{0:03d}'.format(f.partID)] = f.tostring()
 
-        return btInterface.addTemplate(templateID, data)
+        return physAPI.addTemplate(templateID, data)
 
     @typecheck
     def getTemplate(self, templateID: bytes):
@@ -603,7 +603,7 @@ class Clerk(multiprocessing.Process):
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
-        ret = btInterface.getTemplate(templateID)
+        ret = physAPI.getTemplate(templateID)
         if not ret.ok:
             self.logit.info(ret.msg)
             return ret
@@ -672,7 +672,7 @@ class Clerk(multiprocessing.Process):
 
         # To copy the template to the instance DB we first need to get the
         # template...
-        ret = btInterface.getTemplate(templateID)
+        ret = physAPI.getTemplate(templateID)
         if not ret.ok:
             self.logit.info(ret.msg)
             return ret
@@ -690,7 +690,7 @@ class Clerk(multiprocessing.Process):
         del doc
 
         # Add the object to the physics simulation.
-        btInterface.addCmdSpawn(objID, sv, template['aabb'])
+        physAPI.addCmdSpawn(objID, sv, template['aabb'])
         msg = 'Spawned template <{}> as objID=<{}> (0x{:0X})'
         msg = msg.format(templateID, objID, util.id2int(objID))
         self.logit.debug(msg)
@@ -704,7 +704,7 @@ class Clerk(multiprocessing.Process):
         :param bytes objID: ID of object to remove.
         :return: Success
         """
-        ret = btInterface.addCmdRemoveObject(objID)
+        ret = physAPI.addCmdRemoveObject(objID)
         database.dbHandles['Templates'].remove({'objID': objID}, mult=True)
         if ret.ok:
             return RetVal(True, None, None)
@@ -725,7 +725,7 @@ class Clerk(multiprocessing.Process):
         :rtype: dict
         """
         # Get the State Variables.
-        ret = btInterface.getStateVariables(objIDs)
+        ret = physAPI.getStateVariables(objIDs)
         if not ret.ok:
             return RetVal(False, 'One or more IDs do not exist', None)
 
@@ -815,7 +815,7 @@ class Clerk(multiprocessing.Process):
         :param bytes templateID: template ID
         :return: Sucess
         """
-        ret = btInterface.setForce(objID, force, rpos)
+        ret = physAPI.setForce(objID, force, rpos)
         if ret.ok:
             return RetVal(True, None, None)
         else:
@@ -827,14 +827,14 @@ class Clerk(multiprocessing.Process):
         """
         Set the State Variables of ``objID`` to ``data``.
 
-        For a detailed description see ``btInterface.addCmdModifyStateVariable``
+        For a detailed description see ``physAPI.addCmdModifyStateVariable``
         since this method is only a wrapper for it.
 
         :param bytes objID: object ID
         :param BulletDataOverride data: new object attributes.
         :return: Success
         """
-        ret = btInterface.addCmdModifyStateVariable(objID, data)
+        ret = physAPI.addCmdModifyStateVariable(objID, data)
         if ret.ok:
             return RetVal(True, None, None)
         else:
@@ -868,7 +868,7 @@ class Clerk(multiprocessing.Process):
         :return: list of objIDs
         :rtype: list(bytes)
         """
-        ret = btInterface.getAllObjectIDs()
+        ret = physAPI.getAllObjectIDs()
         if not ret.ok:
             return RetVal(False, ret.data, None)
         else:

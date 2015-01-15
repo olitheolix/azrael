@@ -44,7 +44,7 @@ import IPython
 import numpy as np
 import azrael.parts as parts
 import azrael.config as config
-import azrael.physics_interface as btInterface
+import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from collections import namedtuple

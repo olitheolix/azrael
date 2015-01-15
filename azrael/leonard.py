@@ -34,7 +34,7 @@ import azrael.vectorgrid
 import azrael.util as util
 import azrael.config as config
 import azrael.bullet.boost_bullet
-import azrael.physics_interface as btInterface
+import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from collections import namedtuple
@@ -265,17 +265,17 @@ class LeonardBase(multiprocessing.Process):
         :return bool: Success.
         """
         # Fetch all commands currently in queue.
-        docsModify = btInterface.getCmdModify()
+        docsModify = physAPI.getCmdModify()
         if not docsModify.ok:
             msg = 'Cannot fetch "Modify" commands'
             self.logit.error(msg)
             return RetVal(False, msg, None)
-        docsRemove = btInterface.getCmdRemove()
+        docsRemove = physAPI.getCmdRemove()
         if not docsRemove.ok:
             msg = 'Cannot fetch "Remove" commands'
             self.logit.error(msg)
             return RetVal(False, msg, None)
-        docsSpawn = btInterface.getCmdSpawn()
+        docsSpawn = physAPI.getCmdSpawn()
         if not docsSpawn.ok:
             msg = 'Cannot fetch "Spawn" commands'
             self.logit.error(msg)
@@ -283,11 +283,11 @@ class LeonardBase(multiprocessing.Process):
 
         # Remove the fetched commands from queue.
         tmp = [_['objid'] for _ in docsSpawn.data]
-        btInterface.dequeueCmdSpawn(tmp)
+        physAPI.dequeueCmdSpawn(tmp)
         tmp = [_['objid'] for _ in docsModify.data]
-        btInterface.dequeueCmdModify( tmp)
+        physAPI.dequeueCmdModify( tmp)
         tmp = [_['objid'] for _ in docsRemove.data]
-        btInterface.dequeueCmdRemove(tmp)
+        physAPI.dequeueCmdRemove(tmp)
         del tmp
 
         # Convenience.
@@ -320,7 +320,7 @@ class LeonardBase(multiprocessing.Process):
                 self.allTorques[objID] = [0, 0, 0]
 
         # Update State Vectors.
-        fun = btInterface._updateBulletDataTuple
+        fun = physAPI._updateBulletDataTuple
         for doc in docsModify:
             objID, sv_new = doc['objid'], doc['sv']
             if objID in self.allObjects:

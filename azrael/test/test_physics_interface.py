@@ -22,7 +22,7 @@ import IPython
 import numpy as np
 
 import azrael.leonard as leonard
-import azrael.physics_interface as btInterface
+import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int
@@ -43,39 +43,39 @@ def test_add_get_remove_single():
     id_1 = int2id(1)
 
     # The number of SV entries must now be zero.
-    assert btInterface.getNumObjects() == 0
+    assert physAPI.getNumObjects() == 0
 
     # Query an object. Since none exists yet this must return with an error.
-    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: None})
+    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create an object and serialise it.
     data = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
-    assert btInterface.addCmdSpawn(id_0, data, aabb=0)
+    assert physAPI.addCmdSpawn(id_0, data, aabb=0)
     leo.processCommandsAndSync()
 
     # Query the object. This must return the SV data directly.
-    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
+    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data})
 
     # Query the same object but supply it as a list. This must return a list
     # with one element which is the exact same object as before.
-    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
+    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data})
 
     # Attempt to remove non-existing ID --> must fail.
-    assert btInterface.addCmdRemoveObject(id_1).ok
+    assert physAPI.addCmdRemoveObject(id_1).ok
     leo.processCommandsAndSync()
 
-    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data})
-    ret = btInterface.getAllStateVariables()
+    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data})
+    ret = physAPI.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 1)
 
     # Remove existing ID --> must succeed.
-    assert btInterface.addCmdRemoveObject(id_0).ok
+    assert physAPI.addCmdRemoveObject(id_0).ok
     leo.processCommandsAndSync()
 
-    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: None})
-    ret = btInterface.getAllStateVariables()
+    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
+    ret = physAPI.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 0)
 
     print('Test passed')
@@ -93,8 +93,8 @@ def test_add_get_multiple():
     id_1 = int2id(1)
 
     # The number of SV entries must now be zero.
-    assert btInterface.getNumObjects() == 0
-    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: None})
+    assert physAPI.getNumObjects() == 0
+    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create an object and serialise it.
     data_0 = bullet_data.BulletData()
@@ -104,30 +104,30 @@ def test_add_get_multiple():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the objects to the DB.
-    assert btInterface.addCmdSpawn(id_0, data_0, aabb=0)
-    assert btInterface.addCmdSpawn(id_1, data_1, aabb=0)
+    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0)
+    assert physAPI.addCmdSpawn(id_1, data_1, aabb=0)
     leo.processCommandsAndSync()
 
     # Query the objects individually.
-    ret = btInterface.getStateVariables([id_0])
+    ret = physAPI.getStateVariables([id_0])
     assert (ret.ok, ret.data) == (True, {id_0: data_0})
-    ret = btInterface.getStateVariables([id_1])
+    ret = physAPI.getStateVariables([id_1])
     assert (ret.ok, ret.data) == (True, {id_1: data_1})
 
     # Manually query multiple objects.
-    ret = btInterface.getStateVariables([id_0, id_1])
+    ret = physAPI.getStateVariables([id_0, id_1])
     assert (ret.ok, len(ret.data)) == (True, 2)
     assert ret.data[id_0] == data_0
     assert ret.data[id_1] == data_1
 
     # Repeat, but change the order of the objects.
-    ret = btInterface.getStateVariables([id_1, id_0])
+    ret = physAPI.getStateVariables([id_1, id_0])
     assert (ret.ok, len(ret.data)) == (True, 2)
     assert ret.data[id_0] == data_0
     assert ret.data[id_1] == data_1
 
     # Query all objects at once.
-    ret = btInterface.getAllStateVariables()
+    ret = physAPI.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 2)
     assert ret.data[id_0] == data_0
     assert ret.data[id_1] == data_1
@@ -146,8 +146,8 @@ def test_add_same():
     id_0 = int2id(0)
 
     # The number of SV entries must now be zero.
-    assert btInterface.getNumObjects() == 0
-    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: None})
+    assert physAPI.getNumObjects() == 0
+    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create two State Vectors.
     data_0 = bullet_data.BulletData(imass=1)
@@ -155,23 +155,23 @@ def test_add_same():
     data_2 = bullet_data.BulletData(imass=3)
 
     # The command queue for spawning objects must be empty.
-    ret = btInterface.getCmdSpawn()
+    ret = physAPI.getCmdSpawn()
     assert ret.ok and (ret.data == [])
 
     # Request to spawn the first object.
-    assert btInterface.addCmdSpawn(id_0, data_0, aabb=0).ok
-    ret = btInterface.getCmdSpawn()
+    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
+    ret = physAPI.getCmdSpawn()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
     # Attempt to add another object with the same objID *before* Leonard gets
     # around to add the first one --> this must fail and not add anything.
-    assert not btInterface.addCmdSpawn(id_0, data_1, aabb=0).ok
-    ret = btInterface.getCmdSpawn()
+    assert not physAPI.addCmdSpawn(id_0, data_1, aabb=0).ok
+    ret = physAPI.getCmdSpawn()
     assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objid'] == id_0)
 
     # Let Leonard pick up the commands. This must flush the command queue.
     leo.step(0, 1)
-    ret = btInterface.getCmdSpawn()
+    ret = physAPI.getCmdSpawn()
     assert ret.ok and (ret.data == [])
 
     # Similar test to before, but this time Leonard has already pulled id_0
@@ -183,14 +183,14 @@ def test_add_same():
     # request to spawn a new object with the same id_0 but a different State
     # Vectors, let Leonard evaluate the queue, and finally verify that Leonard
     # did not add/modify id_0.
-    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data_0})
-    assert btInterface.addCmdSpawn(id_0, data_2, aabb=0).ok
-    ret = btInterface.getCmdSpawn()
+    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data_0})
+    assert physAPI.addCmdSpawn(id_0, data_2, aabb=0).ok
+    ret = physAPI.getCmdSpawn()
     assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objid'] == id_0)
     leo.step(0, 1)
 
     # Must still be original 'data_0' state vector, not 'data_2'.
-    assert btInterface.getStateVariables([id_0]) == (True, None, {id_0: data_0})
+    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data_0})
 
     print('Test passed')
 
@@ -203,31 +203,31 @@ def test_dequeueCommands():
     leo = getLeonard()
 
     # Convenience.
-    dcSpawn = btInterface.dequeueCmdSpawn
-    dcModify = btInterface.dequeueCmdModify
-    dcRemove= btInterface.dequeueCmdRemove
+    dcSpawn = physAPI.dequeueCmdSpawn
+    dcModify = physAPI.dequeueCmdModify
+    dcRemove= physAPI.dequeueCmdRemove
     data_0 = bullet_data.BulletData()
     data_1 = bullet_data.BulletDataOverride(imass=2, scale=3)
 
     id_0, id_1 = int2id(0), int2id(1)
 
     # The command queue must be empty for every category.
-    ret = btInterface.getCmdSpawn()
+    ret = physAPI.getCmdSpawn()
     assert ret.ok and (ret.data == [])
-    ret = btInterface.getCmdRemove()
+    ret = physAPI.getCmdRemove()
     assert ret.ok and (ret.data == [])
 
     # Queue one request for id_0.
-    assert btInterface.addCmdSpawn(id_0, data_0, aabb=1).ok
-    ret = btInterface.getCmdSpawn()
+    assert physAPI.addCmdSpawn(id_0, data_0, aabb=1).ok
+    ret = physAPI.getCmdSpawn()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
-    assert btInterface.addCmdModifyStateVariable(id_0, data_1).ok
-    ret = btInterface.getCmdModify()
+    assert physAPI.addCmdModifyStateVariable(id_0, data_1).ok
+    ret = physAPI.getCmdModify()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
-    assert btInterface.addCmdRemoveObject(id_0).ok
-    ret = btInterface.getCmdRemove()
+    assert physAPI.addCmdRemoveObject(id_0).ok
+    ret = physAPI.getCmdRemove()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
     # De-queue one object --> one objects must have been de-queued.
@@ -242,9 +242,9 @@ def test_dequeueCommands():
 
     # Add two commands.
     for objID in (id_0, id_1):
-        assert btInterface.addCmdSpawn(objID, data_0, aabb=1).ok
-        assert btInterface.addCmdModifyStateVariable(objID, data_1).ok
-        assert btInterface.addCmdRemoveObject(objID).ok
+        assert physAPI.addCmdSpawn(objID, data_0, aabb=1).ok
+        assert physAPI.addCmdModifyStateVariable(objID, data_1).ok
+        assert physAPI.addCmdRemoveObject(objID).ok
 
     # De-queue two objects --> two must have been de-queued.
     assert dcSpawn([id_1, id_0]) == (True, None, 2)
@@ -278,26 +278,26 @@ def test_get_set_force():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the two objects to the DB.
-    assert btInterface.addCmdSpawn(id_0, data_0, aabb=0)
-    assert btInterface.addCmdSpawn(id_1, data_1, aabb=0)
+    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0)
+    assert physAPI.addCmdSpawn(id_1, data_1, aabb=0)
 
     # Convenience: forces and their positions.
     f1 = np.zeros(3, np.float64)
     p1 = np.zeros(3, np.float64)
 
     # No force commands must exist yet.
-    assert not btInterface.getForceAndTorque(id_0).ok
-    assert not btInterface.getForceAndTorque(id_1).ok
+    assert not physAPI.getForceAndTorque(id_0).ok
+    assert not physAPI.getForceAndTorque(id_1).ok
 
     # Update the force vector of only the second object.
     f1 = np.ones(3, np.float64)
     p1 = 2 * np.ones(3, np.float64)
-    assert btInterface.setForce(id_1, f1, p1).ok
+    assert physAPI.setForce(id_1, f1, p1).ok
     leo.processCommandsAndSync()
     
     # Check again. The force of only the second object must have changed.
-    assert not btInterface.getForceAndTorque(id_0).ok
-    ret = btInterface.getForceAndTorque(id_1)
+    assert not physAPI.getForceAndTorque(id_0).ok
+    ret = physAPI.getForceAndTorque(id_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], f1)
     assert np.array_equal(ret.data['torque'], np.cross(p1, f1))
@@ -332,14 +332,14 @@ def test_overrideAttributes():
     btdata = bullet_data.BulletData()
 
     # Add the object to the DB with ID=0.
-    assert btInterface.addCmdSpawn(id_0, btdata, aabb=0).ok
+    assert physAPI.addCmdSpawn(id_0, btdata, aabb=0).ok
     leo.processCommandsAndSync()
 
     # Set the overwrite attributes for the just created object.
-    assert btInterface.addCmdModifyStateVariable(id_0, data).ok
+    assert physAPI.addCmdModifyStateVariable(id_0, data).ok
     leo.processCommandsAndSync()
 
-    ret = btInterface.getStateVariables([id_0])
+    ret = physAPI.getStateVariables([id_0])
     assert ret.ok
     ret = ret.data[id_0]
     assert ret.imass == data.imass
@@ -424,13 +424,13 @@ def test_get_set_forceandtorque():
     data_1.position[:] = 10 * np.ones(3)
 
     # Add the two objects to the simulation.
-    assert btInterface.addCmdSpawn(id_0, data_0, aabb=0).ok
-    assert btInterface.addCmdSpawn(id_1, data_1, aabb=0).ok
+    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
+    assert physAPI.addCmdSpawn(id_1, data_1, aabb=0).ok
     leo.processCommandsAndSync()
 
     # Retrieve the force and torque and verify they are correct.
-    assert not btInterface.getForceAndTorque(id_0).ok
-    assert not btInterface.getForceAndTorque(id_1).ok
+    assert not physAPI.getForceAndTorque(id_0).ok
+    assert not physAPI.getForceAndTorque(id_1).ok
 
     # Convenience: specify the forces and torques.
     f1 = np.zeros(3, np.float64)
@@ -439,13 +439,13 @@ def test_get_set_forceandtorque():
     # Update the force and torque of the second object only.
     f1 = np.ones(3, np.float64)
     t1 = 2 * np.ones(3, np.float64)
-    assert btInterface.setForceAndTorque(id_1, f1, t1)
+    assert physAPI.setForceAndTorque(id_1, f1, t1)
     leo.processCommandsAndSync()
 
     # Only the force an torque of the second object must have changed.
-    assert not btInterface.getForceAndTorque(id_0).ok
+    assert not physAPI.getForceAndTorque(id_0).ok
 
-    ret = btInterface.getForceAndTorque(id_1)
+    ret = physAPI.getForceAndTorque(id_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], f1)
     assert np.array_equal(ret.data['torque'], t1)
@@ -487,27 +487,27 @@ def test_set_get_AABB():
     data = bullet_data.BulletData()
 
     # Attempt to add an object with a negative AABB value. This must fail.
-    assert not btInterface.addCmdSpawn(id_0, data, aabb=-1.5).ok
+    assert not physAPI.addCmdSpawn(id_0, data, aabb=-1.5).ok
 
     # Add two new objects to the DB.
-    assert btInterface.addCmdSpawn(id_0, data, aabb=1.5).ok
-    assert btInterface.addCmdSpawn(id_1, data, aabb=2.5).ok
+    assert physAPI.addCmdSpawn(id_0, data, aabb=1.5).ok
+    assert physAPI.addCmdSpawn(id_1, data, aabb=2.5).ok
     leo.processCommandsAndSync()
 
     # Query the AABB of the first.
-    ret = btInterface.getAABB([id_0])
+    ret = physAPI.getAABB([id_0])
     assert np.array_equal(ret.data, [1.5])
 
     # Query the AABB of the second.
-    ret = btInterface.getAABB([id_1])
+    ret = physAPI.getAABB([id_1])
     assert np.array_equal(ret.data, [2.5])
 
     # Query the AABB of both simultaneously.
-    ret = btInterface.getAABB([id_0, id_1])
+    ret = physAPI.getAABB([id_0, id_1])
     assert np.array_equal(ret.data, [1.5, 2.5])
 
     # Query the AABB of a non-existing ID.
-    ret = btInterface.getAABB([id_0, id_3])
+    ret = physAPI.getAABB([id_0, id_3])
     assert ret.ok
     assert np.array_equal(ret.data, [1.5, None])
 

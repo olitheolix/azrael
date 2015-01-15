@@ -42,7 +42,7 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.protocol_json as json
-import azrael.physics_interface as btInterface
+import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
