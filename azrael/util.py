@@ -136,32 +136,6 @@ def timefunc(func):
     return wrapper
 
 
-@typecheck
-def int2id(objID: int):
-    """
-    Convert an integer to the binary object ID.
-
-    :param int objID: object ID as integer.
-    """
-    assert 0 <= objID < 2 ** 63
-    return objID
-    return np.int64(objID).tostring()
-
-
-@typecheck
-def id2int(objID: int):
-    """
-    Convert an binary object ID to the corresponding integer.
-
-    .. note::
-       This function should not be called as it only serves debugging purposes.
-       Azrael does not know or care about what the binary object ID means.
-    """
-    return objID
-    assert len(objID) == config.LEN_ID
-    return int(np.fromstring(objID, np.int64)[0])
-
-
 class Quaternion:
     """
     A Quaternion class.

@@ -42,9 +42,8 @@ import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
-from azrael.util import int2id, id2int
-from azrael.test.test_clerk import startAzrael, stopAzrael, getLeonard
-from azrael.test.test_clerk import killAzrael
+from azrael.test.test_clerk import getLeonard, killAzrael
+from azrael.test.test_clerk import startAzrael, stopAzrael
 
 ipshell = IPython.embed
 WSControllerBase = azrael.wscontroller.WSControllerBase
@@ -78,7 +77,7 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
-    id_1 = int2id(1)
+    id_1 = 1
 
     # Constants and parameters for this test.
     templateID = '_templateNone'.encode('utf8')
@@ -101,7 +100,7 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     assert (ok, ret) == (True, [id_1])
 
     # Attempt to delete a non-existing object. This must silently fail.
-    ok, _, ret = ctrl.removeObject(int2id(100))
+    ok, _, ret = ctrl.removeObject(100)
     assert ok
     leo.step(0, 1)
     ok, _, ret = ctrl.getAllObjectIDs()
@@ -132,14 +131,14 @@ def test_spawn_and_get_state_variables(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Query state variables for non existing object.
-    id_tmp = int2id(100)
+    id_tmp = 100
     ok, _, sv = ctrl.getStateVariables(id_tmp)
     assert (ok, sv) == (True, {id_tmp: None})
     del id_tmp
 
     # Instruct Clerk to spawn a new object. Its objID must be '1'.
     ok, _, id0 = ctrl.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
-    assert (ok, id0) == (True, int2id(1))
+    assert (ok, id0) == (True, 1)
 
     ok, _, sv = ctrl.getStateVariables(id0)
     assert (ok, len(sv)) == (True, 1)
@@ -207,7 +206,7 @@ def test_getAllObjectIDs(ctrl_type):
     templateID = '_templateNone'.encode('utf8')
 
     # Parameters and constants for this test.
-    objID_1 = int2id(1)
+    objID_1 = 1
 
     # So far no objects have been spawned.
     ret = ctrl.getAllObjectIDs()
@@ -238,7 +237,7 @@ def test_get_template(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
-    id_1, id_2 = int2id(1), int2id(2)
+    id_1, id_2 = 1, 2
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
 
@@ -259,7 +258,7 @@ def test_get_template(ctrl_type):
     assert (ok, ret) == (True, templateID_1)
 
     # Attempt to retrieve a non-existing object.
-    ok, _, ret = ctrl.getTemplateID(int2id(100))
+    ok, _, ret = ctrl.getTemplateID(100)
     assert not ok
 
     # Shutdown the services.
@@ -327,7 +326,7 @@ def test_create_fetch_template(ctrl_type):
         templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
 
     # Attempt to query the geometry of a non-existing object.
-    assert not ctrl.getGeometry(int2id(1)).ok
+    assert not ctrl.getGeometry(1).ok
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
@@ -389,7 +388,7 @@ def test_controlParts(ctrl_type):
     clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
-    objID_1 = int2id(1)
+    objID_1 = 1
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -470,7 +469,7 @@ def test_controlParts(ctrl_type):
     # the simulation. These IDs must be '2' and '3'.
     ok, _, spawnIDs = ctrl.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
     assert (ok, len(spawnIDs)) == (True, 2)
-    assert spawnIDs == [int2id(2), int2id(3)]
+    assert spawnIDs == [2, 3]
     leo.step(0, 1)
 
     # Query the state variables of the objects spawned by the factories.

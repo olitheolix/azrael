@@ -14,8 +14,6 @@ import azrael.config as config
 import azrael.controller as controller
 import azrael.wscontroller as wscontroller
 
-from azrael.util import int2id, id2int
-
 WSControllerBase = wscontroller.WSControllerBase
 
 ipshell = IPython.embed

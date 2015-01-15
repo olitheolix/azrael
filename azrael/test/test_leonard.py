@@ -12,7 +12,6 @@ import azrael.vectorgrid
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
-from azrael.util import int2id, id2int
 from azrael.test.test_clacks import killAzrael
 
 
@@ -57,8 +56,8 @@ def test_setStateVariables_basic(clsLeonard):
     leo = getLeonard(clsLeonard)
 
     # Parameters and constants for this test.
-    id_0 = int2id(0)
-    id_1 = int2id(1)
+    id_0 = 0
+    id_1 = 1
     sv = bullet_data.BulletData()
     templateID = '_templateSphere'.encode('utf8')
 
@@ -109,7 +108,7 @@ def test_setStateVariables_advanced(clsLeonard):
     templateID = '_templateSphere'.encode('utf8')
 
     # Spawn an object.
-    objID = int2id(1)
+    objID = 1
     assert physAPI.addCmdSpawn(objID, sv, aabb=1.0).ok
 
     # Verify the SV data.
@@ -147,7 +146,7 @@ def test_move_single_object(clsLeonard):
     leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
-    id_0 = int2id(0)
+    id_0 = 0
     sv = bullet_data.BulletData()
 
     # Spawn an object.
@@ -185,7 +184,7 @@ def test_move_two_objects_no_collision(clsLeonard):
     leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
-    id_0, id_1 = int2id(0), int2id(1)
+    id_0, id_1 = 0, 1
     sv_0 = bullet_data.BulletData(position=[0, 0, 0], velocityLin=[1, 0, 0])
     sv_1 = bullet_data.BulletData(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
@@ -227,7 +226,7 @@ def test_worker_respawn():
     leonard.setup()
 
     # Constants and parameters for this test.
-    id_0, id_1 = int2id(0), int2id(1)
+    id_0, id_1 = 0, 1
     cshape = [3, 1, 1, 1]
     sv_0 = bullet_data.BulletData(
         position=[0, 0, 0], velocityLin=[1, 0, 0], cshape=cshape)
@@ -375,7 +374,7 @@ def test_computeCollisionSetsAABB(dim):
     leo = getLeonard(azrael.leonard.LeonardBase)
 
     # Create several objects for this test.
-    all_id = [int2id(_) for _ in range(10)]
+    all_id = list(range(10))
 
     if dim == 0:
         SVs = [bullet_data.BulletData(position=[_, 0, 0]) for _ in range(10)]
@@ -396,9 +395,9 @@ def test_computeCollisionSetsAABB(dim):
     leo.step(0, 60)
     assert len(all_id) == len(leo.allObjects)
 
-    def ccsWrapper(IDs_hr, expected_hr):
+    def ccsWrapper(test_objIDs, expected_objIDs):
         """
-        Assert that the ``IDs_hr`` were split into the ``expected_hr`` lists.
+        Assert that the ``IDs_hr`` were split into the ``expected_objIDs`` lists.
 
         This is merely a convenience wrapper to facilitate readable tests.
 
@@ -408,9 +407,6 @@ def test_computeCollisionSetsAABB(dim):
         Finally, it converts the returned list of object sets back into human
         readable list of object sets and compares them for equality.
         """
-        # Convert the human readable IDs to the binary format.
-        test_objIDs = [int2id(_) for _ in IDs_hr]
-
         # Compile the set of SVs for curIDs.
         SVs = {_: leo.allObjects[_] for _ in test_objIDs}
         AABBs = {_: leo.allAABBs[_] for _ in test_objIDs}
@@ -419,15 +415,12 @@ def test_computeCollisionSetsAABB(dim):
         ret = azrael.leonard.computeCollisionSetsAABB(SVs, AABBs)
         assert ret.ok
 
-        # Convert the IDs in res back to human readable format.
-        res_hr = [[id2int(_) for _ in __] for __ in ret.data]
-
         # Convert the reference data to a sorted list of sets.
-        expected_hr = sorted([set(_) for _ in expected_hr])
-        res_hr = sorted([set(_) for _ in res_hr])
+        expected_objIDs = sorted([set(_) for _ in expected_objIDs])
+        res = sorted([set(_) for _ in ret.data])
 
         # Return the equality of the two list of lists.
-        assert expected_hr == res_hr
+        assert expected_objIDs == res
 
     # Two non-overlapping objects.
     ccsWrapper([0, 9], [[0], [9]])
@@ -463,7 +456,7 @@ def test_force_grid(clsLeonard):
     leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
-    id_0 = int2id(0)
+    id_0 = 0
     sv = bullet_data.BulletData()
 
     # Spawn one object.
@@ -537,7 +530,7 @@ def test_create_work_package_without_objects():
 
     # Test data.
     data_0 = bullet_data.BulletData(imass=1)
-    id_1, id_2 = int2id(1), int2id(2)
+    id_1, id_2 = 1, 2
     dt, maxsteps = 2, 3
 
     # Add two new objects to Leonard.
@@ -622,7 +615,7 @@ def test_create_work_package_with_objects():
     data_2 = bullet_data.BulletData(imass=2)
     data_3 = bullet_data.BulletData(imass=3)
     wpid = 1
-    id_1, id_2 = int2id(1), int2id(2)
+    id_1, id_2 = 1, 2
     
     # Spawn new objects.
     assert physAPI.addCmdSpawn(id_1, data_1, aabb=1)
@@ -697,7 +690,7 @@ def test_work_package_timestamps():
 
     # Convenience.
     data_1 = bullet_data.BulletData(imass=1)
-    id_1 = int2id(1)
+    id_1 = 1
     numWPs = 10
 
     # Spawn new objects.

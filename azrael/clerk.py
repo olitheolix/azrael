@@ -86,9 +86,9 @@ class PythonInstance(multiprocessing.Process):
         self.objID = objID
 
     def run(self):
-        # Convert objectID -> integer -> string so that it can be passed as a
+        # Convert the objectID to a string so that it can be passed as a
         # command line argument.
-        objID = '{}'.format(util.id2int(self.objID))
+        objID = '{}'.format(self.objID)
 
         # Replace the current process with a new Python process. The first
         # argument is the script name, followed by the command line
@@ -698,7 +698,7 @@ class Clerk(multiprocessing.Process):
         if not objID.ok:
             self.logit.error(msg)
             return objID
-        objID = util.int2id(objID.data)
+        objID = objID.data
 
         # Make a copy the raw template in the instance DB. To do so  we need to
         # get the template first...
@@ -727,8 +727,8 @@ class Clerk(multiprocessing.Process):
 
         # Add the object to the physics simulation.
         physAPI.addCmdSpawn(objID, sv, template['aabb'])
-        msg = 'Spawned template <{}> as objID=<{}> (0x{:0X})'
-        msg = msg.format(templateID, objID, util.id2int(objID))
+        msg = 'Spawned template <{}> as objID=<{}>'
+        msg = msg.format(templateID, objID)
         self.logit.debug(msg)
         return RetVal(True, None, objID)
 

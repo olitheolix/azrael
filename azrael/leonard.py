@@ -424,11 +424,8 @@ class LeonardBullet(LeonardBase):
 
         # Iterate over all objects and update them.
         for objID, sv in self.allObjects.items():
-            # Convert the objID to an integer.
-            btID = util.id2int(objID)
-
             # Pass the SV data from the DB to Bullet.
-            self.bullet.setObjectData(btID, sv)
+            self.bullet.setObjectData(objID, sv)
 
             # Convenience.
             force = np.array(self.allForces[objID], np.float64)
@@ -438,17 +435,16 @@ class LeonardBullet(LeonardBase):
             force = self.applyGridForce(force, sv.position)
 
             # Apply the force to the object.
-            self.bullet.applyForceAndTorque(btID, force, torque)
+            self.bullet.applyForceAndTorque(objID, force, torque)
 
         # Wait for Bullet to advance the simulation by one step.
-        IDs = [util.id2int(_) for _ in self.allObjects.keys()]
         with util.Timeit('compute') as timeit:
-            self.bullet.compute(IDs, dt, maxsteps)
+            self.bullet.compute(list(self.allObjects.keys()), dt, maxsteps)
 
         # Retrieve all objects from Bullet, overwrite the state variables that
         # the user wanted to change explicitly (if any)
         for objID in self.allObjects:
-            ret = self.bullet.getObjectData([util.id2int(objID)])
+            ret = self.bullet.getObjectData([objID])
             if ret.ok:
                 self.allObjects[objID] = ret.data
             self.allForces[objID] = [0, 0, 0]
@@ -505,11 +501,8 @@ class LeonardSweeping(LeonardBullet):
 
             # Iterate over all objects and update them.
             for objID, sv in coll_SV.items():
-                # Convert the objID to an integer.
-                btID = util.id2int(objID)
-
                 # Pass the SV data from the DB to Bullet.
-                self.bullet.setObjectData(btID, sv)
+                self.bullet.setObjectData(objID, sv)
 
                 # Convenience.
                 force = np.array(self.allForces[objID], np.float64)
@@ -519,16 +512,15 @@ class LeonardSweeping(LeonardBullet):
                 force = self.applyGridForce(force, sv.position)
 
                 # Apply the final force to the object.
-                self.bullet.applyForceAndTorque(btID, force, torque)
+                self.bullet.applyForceAndTorque(objID, force, torque)
 
             # Wait for Bullet to advance the simulation by one step.
-            IDs = [util.id2int(_) for _ in coll_SV.keys()]
             with util.Timeit('compute') as timeit:
-                self.bullet.compute(IDs, dt, maxsteps)
+                self.bullet.compute(list(coll_SV.keys()), dt, maxsteps)
 
             # Retrieve all objects from Bullet.
             for objID, sv in coll_SV.items():
-                ret = self.bullet.getObjectData([util.id2int(objID)])
+                ret = self.bullet.getObjectData([objID])
                 if ret.ok:
                     self.allObjects[objID] = ret.data
                 self.allForces[objID] = [0, 0, 0]
@@ -958,11 +950,8 @@ class LeonardWorker(multiprocessing.Process):
         # Iterate over all objects and update them.
         with util.Timeit('Worker.2_applyforce') as timeit:
             for obj in worklist:
-                sv = obj.sv
-
                 # Update the object in Bullet.
-                btID = util.id2int(obj.id)
-                self.bullet.setObjectData(btID, sv)
+                self.bullet.setObjectData(obj.id, obj.sv)
 
                 # Retrieve the force vector and tell Bullet to apply it.
                 force = np.array(obj.central_force, np.float64)
@@ -970,22 +959,22 @@ class LeonardWorker(multiprocessing.Process):
 
                 # Add the force defined on the 'force' grid.
                 with util.Timeit('Worker.2.2_grid') as timeit:
-                    force = self.applyGridForce(force, sv.position)
+                    force = self.applyGridForce(force, obj.sv.position)
 
                 # Apply all forces and torques.
-                self.bullet.applyForceAndTorque(btID, force, torque)
+                self.bullet.applyForceAndTorque(obj.id, force, torque)
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
         with util.Timeit('Worker.3_compute') as timeit:
-            IDs = [util.id2int(_.id) for _ in worklist]
+            IDs = [_.id for _ in worklist]
             self.bullet.compute(IDs, meta.dt, meta.maxsteps)
 
         with util.Timeit('Worker.4_fetchFromBullet') as timeit:
             # Retrieve the objects from Bullet again and update them in the DB.
             out = []
             for obj in worklist:
-                ret = self.bullet.getObjectData([util.id2int(obj.id)])
+                ret = self.bullet.getObjectData([obj.id])
                 sv = ret.data
                 if not ret.ok:
                     # Something went wrong. Reuse the old SV.

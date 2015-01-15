@@ -25,7 +25,6 @@ import azrael.leonard as leonard
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
-from azrael.util import int2id, id2int
 from azrael.test.test_clacks import killAzrael
 from azrael.test.test_leonard import getLeonard
 
@@ -42,8 +41,8 @@ def test_add_get_remove_single():
     leo = getLeonard()
 
     # Create an object ID for the test.
-    id_0 = int2id(0)
-    id_1 = int2id(1)
+    id_0 = 0
+    id_1 = 1
 
     # The number of SV entries must now be zero.
     assert physAPI.getNumObjects() == 0
@@ -94,8 +93,8 @@ def test_add_get_multiple():
     leo = getLeonard()
 
     # Create two object IDs for this test.
-    id_0 = int2id(0)
-    id_1 = int2id(1)
+    id_0 = 0
+    id_1 = 1
 
     # The number of SV entries must now be zero.
     assert physAPI.getNumObjects() == 0
@@ -150,7 +149,7 @@ def test_add_same():
     leo = getLeonard()
 
     # Convenience.
-    id_0 = int2id(0)
+    id_0 = 0
 
     # The number of SV entries must now be zero.
     assert physAPI.getNumObjects() == 0
@@ -218,7 +217,7 @@ def test_dequeueCommands():
     data_0 = bullet_data.BulletData()
     data_1 = bullet_data.BulletDataOverride(imass=2, scale=3)
 
-    id_0, id_1 = int2id(0), int2id(1)
+    id_0, id_1 = 0, 1
 
     # The command queue must be empty for every category.
     ret = physAPI.getCmdSpawn()
@@ -278,8 +277,8 @@ def test_get_set_force():
     leo = getLeonard()
 
     # Create two object IDs for this test.
-    id_0 = int2id(0)
-    id_1 = int2id(1)
+    id_0 = 0
+    id_1 = 1
 
     # Create two objects and serialise them.
     data_0 = bullet_data.BulletData()
@@ -339,7 +338,7 @@ def test_overrideAttributes():
     del p, vl, vr, o
 
     # Create an object ID for the test.
-    id_0 = int2id(0)
+    id_0 = 0
 
     # Create an object and serialise it.
     btdata = bullet_data.BulletData()
@@ -430,8 +429,8 @@ def test_get_set_forceandtorque():
     leo = getLeonard()
 
     # Create two object IDs for this test.
-    id_0 = int2id(0)
-    id_1 = int2id(1)
+    id_0 = 0
+    id_1 = 1
 
     # Create two objects and serialise them.
     data_0 = bullet_data.BulletData()
@@ -503,8 +502,8 @@ def test_set_get_AABB():
     leo = getLeonard()
 
     # Create two object IDs and a BulletData instances for this test.
-    id_0, id_1 = int2id(0), int2id(1)
-    id_2, id_3 = int2id(2), int2id(3)
+    id_0, id_1 = 0, 1
+    id_2, id_3 = 2, 3
     data = bullet_data.BulletData()
 
     # Attempt to add an object with a negative AABB value. This must fail.

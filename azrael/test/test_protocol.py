@@ -27,7 +27,6 @@ import azrael.protocol_json as json
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
-from azrael.util import int2id, id2int
 from azrael.test.test_clerk import killAzrael
 
 ipshell = IPython.embed
@@ -105,7 +104,7 @@ def test_send_command():
     cmd_2 = parts.CmdFactory(partID=0, exit_speed=0)
     cmd_3 = parts.CmdFactory(partID=2, exit_speed=0.4)
     cmd_4 = parts.CmdFactory(partID=3, exit_speed=4)
-    objID = int2id(1)
+    objID = 1
 
     # ----------------------------------------------------------------------
     # Controller --> Clerk.
@@ -142,7 +141,7 @@ def test_send_command():
     # Convenience.
     enc_fun = protocol.FromClerk_ControlParts_Encode
     dec_fun = protocol.FromClerk_ControlParts_Decode
-    objIDs = [int2id(1), int2id(2)]
+    objIDs = [1, 2]
 
     # Encode source data.
     ok, enc = enc_fun(objIDs)
@@ -163,7 +162,7 @@ def test_GetStateVariable():
     Test codec for BulletData tuple.
     """
     objs = [bullet_data.BulletData(), bullet_data.BulletData()]
-    objIDs = [int2id(1), int2id(2)]
+    objIDs = [1, 2]
 
     # ----------------------------------------------------------------------
     # Controller --> Clerk.
@@ -197,8 +196,8 @@ def test_GetStateVariable():
 
     # Verify.
     dec_sv = dec_sv.data
-    assert dec_sv[int2id(1)] == objs[0]
-    assert dec_sv[int2id(2)] == objs[1]
+    assert dec_sv[1] == objs[0]
+    assert dec_sv[2] == objs[1]
 
     print('Test passed')
 

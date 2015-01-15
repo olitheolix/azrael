@@ -42,7 +42,6 @@ import azrael.wscontroller as wscontroller
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
-from azrael.util import int2id, id2int
 from azrael.test.test_clacks import startAzrael, stopAzrael, killAzrael
 from azrael.test.test_leonard import getLeonard
 
@@ -139,7 +138,7 @@ def test_spawn():
     # because this is the first ID in an otherwise pristine system.
     templateID = '_templateNone'.encode('utf8')
     ret = clerk.spawn(templateID, sv)
-    assert (ret.ok, ret.data) == (True, int2id(1))
+    assert (ret.ok, ret.data) == (True, 1)
 
     print('Test passed')
 
@@ -157,7 +156,7 @@ def test_delete():
     leo = getLeonard()
 
     # Test constants and parameters.
-    objID_1, objID_2 = int2id(1), int2id(2)
+    objID_1, objID_2 = 1, 2
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
@@ -209,8 +208,8 @@ def test_get_statevar():
     leo = getLeonard()
 
     # Test parameters and constants.
-    objID_1 = int2id(1)
-    objID_2 = int2id(2)
+    objID_1 = 1
+    objID_2 = 2
     sv_1 = bullet_data.BulletData(position=np.arange(3), velocityLin=[2, 4, 6])
     sv_2 = bullet_data.BulletData(position=[2, 4, 6], velocityLin=[6, 8, 10])
     templateID = '_templateNone'.encode('utf8')
@@ -219,8 +218,8 @@ def test_get_statevar():
     clerk = azrael.clerk.Clerk()
 
     # Retrieve the SV for a non-existing ID.
-    ret = clerk.getStateVariables([int2id(10)])
-    assert (ret.ok, ret.data) == (True, {int2id(10): None})
+    ret = clerk.getStateVariables([10])
+    assert (ret.ok, ret.data) == (True, {10: None})
 
     # Spawn a new object. It must have ID=1.
     ret = clerk.spawn(templateID, sv_1)
@@ -228,8 +227,8 @@ def test_get_statevar():
 
     # Retrieve the SV for a non-existing ID --> must fail.
     leo.step(0, 1)
-    ret = clerk.getStateVariables([int2id(10)])
-    assert (ret.ok, ret.data) == (True, {int2id(10): None})
+    ret = clerk.getStateVariables([10])
+    assert (ret.ok, ret.data) == (True, {10: None})
 
     # Retrieve the SV for the existing ID=1.
     ret = clerk.getStateVariables([objID_1])
@@ -265,7 +264,7 @@ def test_set_force():
     leo = getLeonard()
 
     # Parameters and constants for this test.
-    id_1 = int2id(1)
+    id_1 = 1
     sv = bullet_data.BulletData()
     force = np.array([1, 2, 3], np.float64)
     relpos = np.array([4, 5, 6], np.float64)
@@ -446,7 +445,7 @@ def test_get_object_template_id():
     leo = getLeonard()
 
     # Parameters and constants for this test.
-    id_0, id_1 = int2id(1), int2id(2)
+    id_0, id_1 = 1, 2
     templateID_0 = '_templateNone'.encode('utf8')
     templateID_1 = '_templateCube'.encode('utf8')
     sv = bullet_data.BulletData()
@@ -472,7 +471,7 @@ def test_get_object_template_id():
     assert (ret.ok, ret.data) == (True, templateID_1)
 
     # Attempt to retrieve a non-existing object.
-    assert not clerk.getTemplateID(int2id(100)).ok
+    assert not clerk.getTemplateID(100).ok
 
     # Shutdown.
     killAzrael()
@@ -489,7 +488,7 @@ def test_controlParts_invalid_commands():
     leo = getLeonard()
 
     # Parameters and constants for this test.
-    objID_1, objID_2 = int2id(1), int2id(2)
+    objID_1, objID_2 = 1, 2
     templateID_1 = '_templateNone'.encode('utf8')
     sv = bullet_data.BulletData()
 
@@ -581,7 +580,7 @@ def test_controlParts_Boosters_notmoving():
     leo = getLeonard()
 
     # Parameters and constants for this test.
-    objID_1 = int2id(1)
+    objID_1 = 1
     tNone = '_templateNone'.encode('utf8')
     sv = bullet_data.BulletData()
 
@@ -670,7 +669,7 @@ def test_controlParts_Factories_notmoving():
     leo = getLeonard()
 
     # Parameters and constants for this test.
-    objID_1 = int2id(1)
+    objID_1 = 1
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
@@ -725,7 +724,7 @@ def test_controlParts_Factories_notmoving():
     ok, _, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
     assert ok
     assert len(spawnedIDs) == 2
-    assert spawnedIDs == [int2id(2), int2id(3)]
+    assert spawnedIDs == [2, 3]
     leo.step(0, 1)
 
     # Query the state variables of the objects spawned by the factories.
@@ -759,7 +758,7 @@ def test_controlParts_Factories_moving():
     leo = getLeonard()
 
     # Parameters and constants for this test.
-    objID_1 = int2id(1)
+    objID_1 = 1
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -770,7 +769,7 @@ def test_controlParts_Factories_moving():
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
     pos_1 = np.array([-1, -1, 0], np.float64)
-    objID_2, objID_3 = int2id(2), int2id(3)
+    objID_2, objID_3 = 2, 3
 
     # State variables for parent object.
     sv = bullet_data.BulletData(position=pos_parent, velocityLin=vel_parent)
@@ -854,7 +853,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     leo = getLeonard()
 
     # Parameters and constants for this test.
-    objID_1, objID_2, objID_3 = int2id(1), int2id(2), int2id(3)
+    objID_1, objID_2, objID_3 = 1, 2, 3
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -981,7 +980,7 @@ def test_get_all_objectids():
     leo = getLeonard()
 
     # Parameters and constants for this test.
-    objID_1, objID_2 = int2id(1), int2id(2)
+    objID_1, objID_2 = 1, 2
     templateID = '_templateNone'.encode('utf8')
     sv = bullet_data.BulletData()
 
@@ -1037,7 +1036,7 @@ def test_getGeometry():
     assert clerk.getTemplate(templateID).ok
 
     # Attempt to query the geometry of a non-existing object.
-    assert not clerk.getGeometry(int2id(1)).ok
+    assert not clerk.getGeometry(1).ok
 
     # Spawn an object from the previously added template.
     ret = clerk.spawn(templateID, sv)

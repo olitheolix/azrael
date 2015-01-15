@@ -30,7 +30,6 @@ import IPython
 import azrael.controller
 import azrael.wscontroller
 
-from azrael.util import int2id, id2int
 from azrael.test.test_clerk import killAzrael
 
 ipshell = IPython.embed

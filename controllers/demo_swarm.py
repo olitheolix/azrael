@@ -37,8 +37,6 @@ import azrael.controller
 import azrael.parts as parts
 import azrael.config as config
 
-from azrael.util import int2id, id2int
-
 
 class ControllerCubeLeft(azrael.controller.ControllerBase):
     def __init__(self, *args, **kwargs):
@@ -57,21 +55,21 @@ class ControllerCubeLeft(azrael.controller.ControllerBase):
         left = parts.CmdBooster(self.left, force=0.1)
         right = parts.CmdBooster(self.right, force=0.1)
         self.controlParts(self.objID, [right, left], [])
-        print('{0:02d}: Manoeuvre 1'.format(id2int(self.objID)))
+        print('{0:02d}: Manoeuvre 1'.format(self.objID))
         time.sleep(2)
 
         # Fire the booster assymetrically to make the cube turn.
         left = parts.CmdBooster(self.left, force=0)
         right = parts.CmdBooster(self.right, force=1)
         self.controlParts(self.objID, [right, left], [])
-        print('{0:02d}: Manoeuvre 2'.format(id2int(self.objID)))
+        print('{0:02d}: Manoeuvre 2'.format(self.objID))
         time.sleep(2)
 
         # Reverse the force settings to stop the spinning.
         left = parts.CmdBooster(self.left, force=1)
         right = parts.CmdBooster(self.right, force=0)
         self.controlParts(self.objID, [right, left], [])
-        print('{0:02d}: Manoeuvre 3'.format(id2int(self.objID)))
+        print('{0:02d}: Manoeuvre 3'.format(self.objID))
         time.sleep(2)
 
         # Use the same force on both boosters to just move forward without
@@ -82,7 +80,7 @@ class ControllerCubeLeft(azrael.controller.ControllerBase):
         time.sleep(4)
 
         # Done.
-        print('{0:02d}: Manoeuvre 4'.format(id2int(self.objID)))
+        print('{0:02d}: Manoeuvre 4'.format(self.objID))
         self.close()
 
 
@@ -98,10 +96,10 @@ def main():
 
     # Controllers for columns 1, 2, 3, 4.
     CCL, CCR = ControllerCubeLeft, ControllerCubeRight
-    group_1 = [CCL(int2id(4 * _ + 0), addr) for _ in range(1, 5)]
-    group_2 = [CCL(int2id(4 * _ + 1), addr) for _ in range(1, 5)]
-    group_3 = [CCR(int2id(4 * _ + 2), addr) for _ in range(1, 5)]
-    group_4 = [CCR(int2id(4 * _ + 3), addr) for _ in range(1, 5)]
+    group_1 = [CCL(4 * _ + 0, addr) for _ in range(1, 5)]
+    group_2 = [CCL(4 * _ + 1, addr) for _ in range(1, 5)]
+    group_3 = [CCR(4 * _ + 2, addr) for _ in range(1, 5)]
+    group_4 = [CCR(4 * _ + 3, addr) for _ in range(1, 5)]
 
     # Start the cubes in the two outer columns.
     time.sleep(0.5)

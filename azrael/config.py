@@ -61,15 +61,6 @@ del console, logFormat, formatter, fileHandler
 # Global variables.
 # ---------------------------------------------------------------------------
 
-# Length of object ID in bytes.
-LEN_ID = 8
-
-# Length of a single state variable record in terms of NumPy float64.
-LEN_SV_FLOATS = 21
-
-# Length of a single state variable record in terms of Bytes.
-LEN_SV_BYTES = 21 * 8
-
 # Port of Tornado server.
 webserver_port = 8080
 

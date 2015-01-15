@@ -46,10 +46,10 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Read the object from the command line.
-    obj_id = util.int2id(int(sys.argv[1]))
+    obj_id = int(sys.argv[1])
 
     # Rename this process to ensure it is easy to find and kill.
-    name = 'killme Controller {}'.format(util.id2int(obj_id))
+    name = 'killme Controller {}'.format(obj_id)
     setproctitle.setproctitle(name)
 
     # Instantiate the controller and start it in this thread.

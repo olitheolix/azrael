@@ -80,10 +80,10 @@ def main():
         objID = sys.argv[1]
 
     # Read the object from the command line.
-    objID = util.int2id(int(objID))
+    objID = int(objID)
 
     # Rename this process to ensure it is easy to find and kill.
-    name = 'killme Controller {}'.format(util.id2int(objID))
+    name = 'killme Controller {}'.format(objID)
     setproctitle.setproctitle(name)
 
     # Instantiate the controller and start it in this thread.
