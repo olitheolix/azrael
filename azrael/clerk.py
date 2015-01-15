@@ -591,7 +591,7 @@ class Clerk(multiprocessing.Process):
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
-        ret = physAPI.getTemplate(templateID)
+        ret = physAPI.getRawTemplate(templateID)
         if not ret.ok:
             self.logit.info(ret.msg)
             return ret
@@ -699,7 +699,6 @@ class Clerk(multiprocessing.Process):
         sv.cshape[:] = np.fromstring(template['cshape'])
 
         # Request unique object ID.
-        # Obtain a new and unique work package ID.
         objID = azrael.database.getNewObjectID()
         if not objID.ok:
             self.logit.error(msg)
@@ -708,7 +707,7 @@ class Clerk(multiprocessing.Process):
 
         # To copy the template to the instance DB we first need to get the
         # template...
-        ret = physAPI.getTemplate(templateID)
+        ret = physAPI.getRawTemplate(templateID)
         if not ret.ok:
             self.logit.info(ret.msg)
             return ret

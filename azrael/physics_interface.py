@@ -498,9 +498,9 @@ def addTemplate(templateID: bytes, data: dict):
 
 
 @typecheck
-def getTemplate(templateID: bytes):
+def getRawTemplate(templateID: bytes):
     """
-    Return the data set associated with ``templateID``.
+    Return the raw data in the database for ``templateID``.
 
     :param bytes templateID:
     :return dict: template data.
