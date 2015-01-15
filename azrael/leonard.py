@@ -650,7 +650,7 @@ class LeonardWorkPackages(LeonardBase):
     
         .. note::
            A work package contains only the objIDs but not their SV. The
-           ``getWorkPackage`` function takes care of compiling this information.
+           ``getNextWorkPackage`` function takes care of compiling this information.
     
         :param iterable objIDs: list of object IDs in the new work package.
         :param float dt: time step for this work package.
@@ -906,7 +906,7 @@ class LeonardWorker(multiprocessing.Process):
             return force
 
     @typecheck
-    def getWorkPackage(self):
+    def getNextWorkPackage(self):
         """
         Return the next available Work Package.
     
@@ -959,7 +959,7 @@ class LeonardWorker(multiprocessing.Process):
     
     def processWorkPackage(self):
         with util.Timeit('Worker.1_fetchWP') as timeit:
-            ret = self.getWorkPackage()
+            ret = self.getNextWorkPackage()
 
         # Skip this WP (may have been processed by another Worker already).
         if not ret.ok:

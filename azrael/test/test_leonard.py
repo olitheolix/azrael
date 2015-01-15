@@ -625,7 +625,7 @@ def test_create_work_package_without_objects():
 
     # Retrieve the next available WP. The 'wpdata' field must contain the
     # "id_1" object we specified for "createWorkPackage".
-    ret = worker.getWorkPackage()
+    ret = worker.getNextWorkPackage()
     assert (ret.ok, len(ret.data['wpdata'])) == (True, 1)
     meta = ret.data['wpmeta']
     assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
@@ -694,7 +694,7 @@ def test_create_work_package_with_objects():
     assert (ret.ok, ret.data) == (True, wpid)
 
     # Retrieve the work package again.
-    ret = worker.getWorkPackage()
+    ret = worker.getNextWorkPackage()
     
     # Check the WP content.
     assert (ret.ok, len(ret.data['wpdata'])) == (True, 2)
@@ -769,12 +769,12 @@ def test_work_package_timestamps():
 
     # The Work Packages must be returned in cyclic order.
     for ii in range(10 * numWPs):
-        ret = worker.getWorkPackage()
+        ret = worker.getNextWorkPackage()
         assert ret.ok
         assert ret.data['wpmeta'].wpid == (ii % numWPs) + 1
 
         # This artificial delay is necessary for this test only. It guarantees
-        # that the time stamps that 'getWorkPackage' updates at each call
+        # that the time stamps that 'getNextWorkPackage' updates at each call
         # differ by at least one milli second (which is the minimum resolution
         # in Mongo). Without this delay it may be possible that some Work
         # Packages are tagged with the same time stamp which, in turn, may
