@@ -388,25 +388,18 @@ class Clerk(multiprocessing.Process):
         :rtype: bool
         :raises: None
         """
-        # Query the templateID for the current object.
-        ret = self.getTemplateID(objID)
+        # Fetch the instance data for ``objID``.
+        ret = self.getObjectInstance(objID)
         if not ret.ok:
             self.logit.warning(ret.msg)
             return RetVal(False, ret.msg, None)
-
-        # Fetch the template for the current object.
-        templateID = ret.data
-        template = self.getTemplate(templateID)
-        if not template.ok:
-            msg = 'Could not retrieve template for objID={}'.format(objID)
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
         else:
-            template = template.data
-            boosters, factories = template['boosters'], template['factories']
-            del template
+            boosters = ret.data['boosters']
+            factories = ret.data['factories']
+            del ret
 
-        # Fetch the SV for objID.
+        # Fetch the SV for objID (we need this to determine the orientation of
+        # the base object to which the parts are attached).
         sv_parent = self.getStateVariables([objID])
         if not sv_parent.ok:
             msg = 'Could not retrieve SV for objID={}'.format(objID)
@@ -430,8 +423,8 @@ class Clerk(multiprocessing.Process):
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
             if cmd.partID not in booster_t:
-                msg = 'Template <{}> has no Booster ID <{}>'
-                msg = msg.format(templateID, cmd.partID)
+                msg = 'Object <{}> has no Booster ID <{}>'
+                msg = msg.format(objID, cmd.partID)
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
 
@@ -443,8 +436,8 @@ class Clerk(multiprocessing.Process):
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
             if cmd.partID not in factory_t:
-                msg = 'Template <{}> has no Factory ID <{}>'
-                msg = msg.format(templateID, cmd.partID)
+                msg = 'Object <{}> has no Factory ID <{}>'
+                msg = msg.format(objID, cmd.partID)
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
 
@@ -587,11 +580,13 @@ class Clerk(multiprocessing.Process):
         Templates describe the geometry, collision shape, and capabilities
         (eg. boosters and factories) of an object.
 
-        See ``_unpackTemplateData`` for details.
+        Internally, this method calls ``_unpackTemplateData`` to unpack the
+        data. The output of that method will then be returned verbatim by this
+        method (see ``_unpackTemplateData`` for details on that output).
 
         :param bytes templateID: templateID
-        :return: Dictionary with keys 'cshape', 'vert', 'uv', 'rgb', 'boosters'
-                 'factories', and 'aabb'.
+        :return: Dictionary with keys 'cshape', 'vert', 'uv', 'rgb',
+                 'boosters', 'factories', and 'aabb'.
         :rtype: dict
         :raises: None
         """
@@ -761,7 +756,7 @@ class Clerk(multiprocessing.Process):
         values are either the State Variables (instance of ``BulletData``) or
         *None* (if the objID does not exist).
 
-        :param list(bytes) objIDS: list of objects for which to returns the SV.
+        :param list(bytes) objIDs: list of objects for which to returns the SV.
         :return: {objID_1: SV_k, ...}
         :rtype: dict
         """
