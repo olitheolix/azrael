@@ -693,11 +693,6 @@ class Clerk(multiprocessing.Process):
             return template
         template = template.data
 
-        # Overwrite the supplied collision shape with the template
-        # version. This has no effect on the other quantities including
-        # position and speed. However, this all rather hackey at the moment.
-        sv.cshape[:] = np.fromstring(template['cshape'])
-
         # Request unique object ID.
         objID = azrael.database.getNewObjectID()
         if not objID.ok:
@@ -705,24 +700,30 @@ class Clerk(multiprocessing.Process):
             return objID
         objID = util.int2id(objID.data)
 
-        # To copy the template to the instance DB we first need to get the
-        # template...
-        ret = physAPI.getRawTemplate(templateID)
-        if not ret.ok:
-            self.logit.info(ret.msg)
-            return ret
+        # Make a copy the raw template in the instance DB. To do so  we need to
+        # get the template first...
+        t_raw = physAPI.getRawTemplate(templateID)
+        if not t_raw.ok:
+            self.logit.info(t_raw.msg)
+            return t_raw
         else:
             self.logit.info('Added template <{}>'.format(templateID))
+            t_raw = t_raw.data
 
         # ... then add objID and geometry checksum to the document, remove the
         # _id field, and insert it into the instance DB.
-        doc = ret.data
-        doc['objID'] = objID
-        doc['csGeo'] = 0
-        doc['templateID'] = templateID
-        del doc['_id']
-        self.db['ObjInstances'].insert(doc)
-        del doc
+        t_raw['objID'] = objID
+        t_raw['csGeo'] = 0
+        t_raw['templateID'] = templateID
+        del t_raw['_id']
+        self.db['ObjInstances'].insert(t_raw)
+
+        # Overwrite the user supplied collision shape with the one specified in
+        # the template. This is to enforce geometric consistency with the
+        # template data as otherwise the effect could be surprising (a
+        # space-ship collision shape in the template database and a simple
+        # sphere when it is spawned).
+        sv.cshape[:] = np.fromstring(template['cshape'])
 
         # Add the object to the physics simulation.
         physAPI.addCmdSpawn(objID, sv, template['aabb'])
