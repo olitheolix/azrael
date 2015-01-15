@@ -102,7 +102,7 @@ def dequeueCmdSpawn(spawn: list):
     :param list spawn: Mongo documents to remove from "Spawn"
     :return int: number of de-queued commands
     """
-    ret = database.dbHandles['CmdSpawn'].remove({'objid': {'$in': spawn}})
+    ret = database.dbHandles['CmdSpawn'].remove({'objID': {'$in': spawn}})
     return RetVal(True, None, ret['n'])
 
 
@@ -117,7 +117,7 @@ def dequeueCmdModify(modify: list):
     :return: number of de-queued commands
     :rtype: tuple
     """
-    ret = database.dbHandles['CmdModify'].remove({'objid': {'$in': modify}})
+    ret = database.dbHandles['CmdModify'].remove({'objID': {'$in': modify}})
     return RetVal(True, None, ret['n'])
 
 
@@ -132,7 +132,7 @@ def dequeueCmdRemove(remove: list):
     :return: number of de-queued commands
     :rtype: tuple
     """
-    ret = database.dbHandles['CmdRemove'].remove({'objid': {'$in': remove}})
+    ret = database.dbHandles['CmdRemove'].remove({'objID': {'$in': remove}})
     return RetVal(True, None, ret['n'])
 
 
@@ -167,13 +167,13 @@ def addCmdSpawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
         return RetVal(False, msg, None)
 
     # Meta data for spawn command.
-    data = {'objid': objID, 'sv': sv, 'AABB': float(aabb)}
+    data = {'objID': objID, 'sv': sv, 'AABB': float(aabb)}
 
     # This implements the fictitious "insert_if_not_yet_exists" command. It
     # will return whatever the latest value from the DB, which is either the
     # one we just inserted (success) or a previously inserted one (fail). The
     # only way to distinguish them is to verify that the SVs are identical.
-    doc = database.dbHandles['CmdSpawn'].find_and_modify({'objid': objID},
+    doc = database.dbHandles['CmdSpawn'].find_and_modify({'objID': objID},
                                        {'$setOnInsert': data},
                                        upsert=True, new=True)
     success = doc['sv'] == data['sv']
@@ -200,7 +200,7 @@ def addCmdRemoveObject(objID: bytes):
     """
     data = {'del': objID}
     doc = database.dbHandles['CmdRemove'].find_and_modify(
-        {'objid': objID}, {'$setOnInsert': data}, upsert=True, new=True)
+        {'objID': objID}, {'$setOnInsert': data}, upsert=True, new=True)
     return RetVal(True, None, None)
 
 
@@ -242,7 +242,7 @@ def addCmdModifyStateVariable(objID: bytes, data: BulletDataOverride):
 
     # Save the new SVs to the DB (overwrite existing ones).
     doc = database.dbHandles['CmdModify'].find_and_modify(
-        {'objid': objID}, {'$setOnInsert': {'sv': data}},
+        {'objID': objID}, {'$setOnInsert': {'sv': data}},
         upsert=True, new=True)
 
     # This function was successful if exactly one document was updated.
@@ -278,7 +278,7 @@ def addCmdSetForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray)
 
     # Update the DB.
     ret = database.dbHandles['CmdForce'].update(
-        {'objid': objID},
+        {'objID': objID},
         {'$set': {'central_force': force, 'torque': torque}},
         upsert=True)
 
@@ -304,8 +304,8 @@ def getStateVariables(objIDs: (list, tuple)):
 
     # Retrieve the state variables.
     out = {_: None for _ in objIDs}
-    for doc in database.dbHandles['SV'].find({'objid': {'$in': objIDs}}):
-        out[doc['objid']] = bullet_data.fromJsonDict(doc['sv'])
+    for doc in database.dbHandles['SV'].find({'objID': {'$in': objIDs}}):
+        out[doc['objID']] = bullet_data.fromJsonDict(doc['sv'])
     return RetVal(True, None, out)
 
 
@@ -329,10 +329,10 @@ def getAABB(objIDs: (list, tuple)):
             return RetVal(False, msg, None)
 
     # Retrieve the state variables.
-    out = list(database.dbHandles['SV'].find({'objid': {'$in': objIDs}}))
+    out = list(database.dbHandles['SV'].find({'objID': {'$in': objIDs}}))
 
     # Put all AABBs into a dictionary to simplify sorting afterwards.
-    out = {_['objid']: np.array(_['AABB'], np.float64) for _ in out}
+    out = {_['objID']: np.array(_['AABB'], np.float64) for _ in out}
 
     # Compile the AABB values into a list ordered by ``objIDs``. Insert a None
     # element if a particular objID has no AABB (probably means the object was
@@ -390,7 +390,7 @@ def getAllStateVariables():
     # Compile all object IDs and state variables into a dictionary.
     out = {}
     for doc in database.dbHandles['SV'].find():
-        key, value = doc['objid'], bullet_data.fromJsonDict(doc['sv'])
+        key, value = doc['objID'], bullet_data.fromJsonDict(doc['sv'])
         out[key] = value
     return RetVal(True, None, out)
 
@@ -403,7 +403,7 @@ def getAllObjectIDs():
     :rtype: list
     """
     # Compile and return the list of all object IDs.
-    out = [_['objid'] for _ in database.dbHandles['SV'].find()]
+    out = [_['objID'] for _ in database.dbHandles['SV'].find()]
     return RetVal(True, None, out)
 
 
@@ -448,7 +448,7 @@ def getForceAndTorque(objID: bytes):
         return RetVal(False, 'objID has invalid length', None)
 
     # Query the object.
-    doc = database.dbHandles['CmdForce'].find_one({'objid': objID})
+    doc = database.dbHandles['CmdForce'].find_one({'objID': objID})
     if doc is None:
         return RetVal(False, 'Could not find <{}>'.format(objID), None)
 

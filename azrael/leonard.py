@@ -281,11 +281,11 @@ class LeonardBase(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # Remove the fetched commands from queue.
-        tmp = [_['objid'] for _ in docsSpawn.data]
+        tmp = [_['objID'] for _ in docsSpawn.data]
         physAPI.dequeueCmdSpawn(tmp)
-        tmp = [_['objid'] for _ in docsModify.data]
+        tmp = [_['objID'] for _ in docsModify.data]
         physAPI.dequeueCmdModify( tmp)
-        tmp = [_['objid'] for _ in docsRemove.data]
+        tmp = [_['objID'] for _ in docsRemove.data]
         physAPI.dequeueCmdRemove(tmp)
         del tmp
 
@@ -300,14 +300,14 @@ class LeonardBase(multiprocessing.Process):
 
         # Remove objects.
         for doc in docsRemove:
-            objID = doc['objid']
+            objID = doc['objID']
             if objID in self.allObjects:
-                self._DB_SV.remove({'objid': objID})
+                self._DB_SV.remove({'objID': objID})
                 del self.allObjects[objID]
 
         # Spawn objects.
         for doc in docsSpawn:
-            objID = doc['objid']
+            objID = doc['objID']
             if objID in self.allObjects:
                 msg = 'Cannot spawn object since objID={} already exists'
                 self.logit.warning(msg.format(objID))
@@ -321,7 +321,7 @@ class LeonardBase(multiprocessing.Process):
         # Update State Vectors.
         fun = physAPI._updateBulletDataTuple
         for doc in docsModify:
-            objID, sv_new = doc['objid'], doc['sv']
+            objID, sv_new = doc['objID'], doc['sv']
             if objID in self.allObjects:
                 sv_new = BulletDataOverride(**dict(zip(fields, sv_new)))
                 sv_old = self.allObjects[objID]
@@ -337,8 +337,8 @@ class LeonardBase(multiprocessing.Process):
         """
         for objID, sv in self.allObjects.items():
             doc = self._DB_SV.update(
-                {'objid': objID},
-                {'$set': {'objid': objID, 'sv': sv.toJsonDict(),
+                {'objID': objID},
+                {'$set': {'objID': objID, 'sv': sv.toJsonDict(),
                           'AABB': self.allAABBs[objID]}},
                 upsert=True)
 

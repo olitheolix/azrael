@@ -168,13 +168,13 @@ def test_add_same():
     # Request to spawn the first object.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
     ret = physAPI.getCmdSpawn()
-    assert ret.ok and (ret.data[0]['objid'] == id_0)
+    assert ret.ok and (ret.data[0]['objID'] == id_0)
 
     # Attempt to add another object with the same objID *before* Leonard gets
     # around to add the first one --> this must fail and not add anything.
     assert not physAPI.addCmdSpawn(id_0, data_1, aabb=0).ok
     ret = physAPI.getCmdSpawn()
-    assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objid'] == id_0)
+    assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objID'] == id_0)
 
     # Let Leonard pick up the commands. This must flush the command queue.
     leo.step(0, 1)
@@ -193,7 +193,7 @@ def test_add_same():
     assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data_0})
     assert physAPI.addCmdSpawn(id_0, data_2, aabb=0).ok
     ret = physAPI.getCmdSpawn()
-    assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objid'] == id_0)
+    assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objID'] == id_0)
     leo.step(0, 1)
 
     # Must still be original 'data_0' state vector, not 'data_2'.
@@ -229,15 +229,15 @@ def test_dequeueCommands():
     # Queue one request for id_0.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=1).ok
     ret = physAPI.getCmdSpawn()
-    assert ret.ok and (ret.data[0]['objid'] == id_0)
+    assert ret.ok and (ret.data[0]['objID'] == id_0)
 
     assert physAPI.addCmdModifyStateVariable(id_0, data_1).ok
     ret = physAPI.getCmdModifyStateVariables()
-    assert ret.ok and (ret.data[0]['objid'] == id_0)
+    assert ret.ok and (ret.data[0]['objID'] == id_0)
 
     assert physAPI.addCmdRemoveObject(id_0).ok
     ret = physAPI.getCmdRemove()
-    assert ret.ok and (ret.data[0]['objid'] == id_0)
+    assert ret.ok and (ret.data[0]['objID'] == id_0)
 
     # De-queue one object --> one objects must have been de-queued.
     assert dcSpawn([id_0]) == (True, None, 1)
