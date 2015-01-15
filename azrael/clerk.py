@@ -586,17 +586,8 @@ class Clerk(multiprocessing.Process):
 
         Templates describe the geometry, collision shape, and capabilities
         (eg. boosters and factories) of an object.
-        parts like boo
 
-        This method return (cs, geo, boosters, factories).
-
-        A template object has the following structure in Mongo:
-        {'_id': ObjectId('53eeb55062d05244dfec278f'),
-        'boosters': {'000': b'', '001': b'', ..},
-        'factories': {'000':b'', ...},
-        'cshape': b'',
-        'templateID': b'',
-        'geometry': b''}
+        See ``_unpackTemplateData`` for details.
 
         :param bytes templateID: templateID
         :return: Dictionary with keys 'cshape', 'vert', 'uv', 'rgb', 'boosters'
@@ -610,8 +601,28 @@ class Clerk(multiprocessing.Process):
             self.logit.info(ret.msg)
             return ret
 
+        return self._unpackTemplateData(ret.data)
+
+    def _unpackTemplateData(self, doc: dict):
+        """
+        Return unpacked template data.
+
+        This method assumes that ``doc`` describes a template (or object
+        instance) and decompiles it into its constituents (boosters, factories,
+        geometry, etc).
+
+        .. note:: This method also unpacks instance objects as they their
+                  format is identical.
+
+        The return value is a dictionary like this:
+          {'cshape': cs, 'vert': vert, 'uv': uv, 'rgb': rgb,
+           'boosters': boosters, 'factories': fac, 'aabb': aabb}
+
+        :param dict doc: raw data from the DB.
+        :returns: decompiled objects
+        :rtype: dict
+        """
         # Extract the collision shape, geometry, UV- and texture map.
-        doc = ret.data
         cs = np.fromstring(doc['cshape'], np.float64)
         vert = np.fromstring(doc['vertices'], np.float64)
         uv = np.fromstring(doc['UV'], np.float64)
