@@ -51,7 +51,7 @@ def test_custom_objid():
     killAzrael()
 
     # Start Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
     clerk.start()
 
     # Start Clacks.

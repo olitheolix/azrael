@@ -73,7 +73,7 @@ def test_invalid():
     killAzrael()
 
     # Start Clerk and instantiate a Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
     clerk.start()
     ctrl = ControllerTest()
     ctrl.setupZMQ()
@@ -124,7 +124,7 @@ def test_spawn():
     killAzrael()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # Default object.
     sv = bullet_data.BulletData()
@@ -160,7 +160,7 @@ def test_delete():
     objID_1, objID_2 = int2id(1), int2id(2)
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # No objects must exist at this point.
     ret = clerk.getAllObjectIDs()
@@ -216,7 +216,7 @@ def test_get_statevar():
     templateID = '_templateNone'.encode('utf8')
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # Retrieve the SV for a non-existing ID.
     ret = clerk.getStateVariables([int2id(10)])
@@ -271,7 +271,7 @@ def test_set_force():
     relpos = np.array([4, 5, 6], np.float64)
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # Spawn a new object. It must have ID=1.
     templateID = '_templateNone'.encode('utf8')
@@ -297,7 +297,7 @@ def test_add_get_template():
     killAzrael()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # Request an invalid ID.
     assert not clerk.getTemplate('blah'.encode('utf8')).ok
@@ -394,7 +394,7 @@ def test_add_get_template_AABB():
     killAzrael()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -452,7 +452,7 @@ def test_get_object_template_id():
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # Spawn a new object. It must have ID=1.
     ret = clerk.spawn(templateID_0, sv)
@@ -494,7 +494,7 @@ def test_controlParts_invalid_commands():
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # Create a fake object. We will not need the actual object but other
     # commands tested here depend on the existence of an object.
@@ -586,7 +586,7 @@ def test_controlParts_Boosters_notmoving():
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # ------------------------------------------------------------------------
     # Define an object with a booster and spawn it.
@@ -674,7 +674,7 @@ def test_controlParts_Factories_notmoving():
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # ------------------------------------------------------------------------
     # Create a template with two factories and spawn it.
@@ -776,7 +776,7 @@ def test_controlParts_Factories_moving():
     sv = bullet_data.BulletData(position=pos_parent, velocityLin=vel_parent)
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # ------------------------------------------------------------------------
     # Create a template with two factories and spawn it.
@@ -888,7 +888,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
         position=pos_parent, velocityLin=vel_parent, orientation=orient_parent)
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # ------------------------------------------------------------------------
     # Create a template with two factories and spawn it.
@@ -986,7 +986,7 @@ def test_get_all_objectids():
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # So far no objects have been spawned.
     ret = clerk.getAllObjectIDs()
@@ -1022,7 +1022,7 @@ def test_getGeometry():
     killAzrael()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -1070,7 +1070,7 @@ def test_instanceDB_checksum():
     killAzrael()
 
     # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
 
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()

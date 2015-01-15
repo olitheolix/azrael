@@ -47,6 +47,7 @@ import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 import azrael.leonard as leonard
+import azrael.database as database
 import azrael.controller as controller
 import azrael.vectorgrid as vectorgrid
 import azrael.bullet.btInterface as btInterface
@@ -362,17 +363,18 @@ def startAzrael(param):
     """
     Start all Azrael processes and return their process handles.
     """
+    database.reset(reset=True)
+
     # Delete all grids but define a force grid (will not be used but
     # Leonard throws a lot of harmless warnings otherwise).
     assert vectorgrid.deleteAllGrids().ok
     assert vectorgrid.defineGrid(name='force', elDim=3, granularity=1).ok
 
     # Spawn Azrael's APIs.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
     clerk.start()
     clacks = azrael.clacks.ClacksServer()
     clacks.start()
-    btInterface.initSVDB(reset=True)
 
     if not param.noinit:
         # Add a model to the otherwise empty simulation. The sphere is

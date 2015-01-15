@@ -27,21 +27,13 @@ import IPython
 import numpy as np
 import azrael.util as util
 import azrael.config as config
+import azrael.database as database
 import azrael.bullet.bullet_data as bullet_data
 
 from collections import namedtuple
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
-
-# Global database handles.
-_DB_SV = None
-_DB_CMDSpawn = None
-_DB_CMDRemove = None
-_DB_CMDModify = None
-_DB_CMDForceAndTorque = None
-_DB_Templates = None
-
 
 # Convenience.
 BulletDataOverride = bullet_data.BulletDataOverride
@@ -53,40 +45,13 @@ RetVal = util.RetVal
 logit = logging.getLogger('azrael.' + __name__)
 
 
-@typecheck
-def initSVDB(reset=True):
-    """
-    Connect to the State Variable database. Flush it if ``reset`` is **True**.
-
-    fixme: merge this function with 'database.reset'.
-
-    :param bool reset: flush the database.
-    """
-    global _DB_SV, _DB_CMDSpawn, _DB_CMDRemove, _DB_CMDModify
-    global _DB_CMDForceAndTorque, _DB_Templates
-    client = pymongo.MongoClient()
-    _DB_SV = client['azrael']['sv']
-    _DB_CMDSpawn = client['azrael']['CmdSpawn']
-    _DB_CMDRemove = client['azrael']['CmdRemove']
-    _DB_CMDModify = client['azrael']['CmdModify']
-    _DB_CMDForceAndTorque = client['azrael']['CmdForceAndTorque']
-    _DB_Templates = client['azrael']['template']
-    if reset:
-        _DB_SV.drop()
-        _DB_CMDSpawn.drop()
-        _DB_CMDRemove.drop()
-        _DB_CMDModify.drop()
-        _DB_CMDForceAndTorque.drop()
-        _DB_Templates.drop()
-
-
 def getNumObjects():
     """
     Return the number of objects in the simulation.
 
     :returns int: number of objects in simulation.
     """
-    return _DB_SV.count()
+    return database.dbHandles['SV'].count()
 
 
 @typecheck
@@ -100,7 +65,7 @@ def getCmdSpawn():
     :return: objects as inserted by ``spawn``.
     :rtype: list of dicts.
     """
-    return RetVal(True, None, list(_DB_CMDSpawn.find()))
+    return RetVal(True, None, list(database.dbHandles['CmdSpawn'].find()))
 
 @typecheck
 def getCmdModify():
@@ -113,7 +78,7 @@ def getCmdModify():
     :return: objects as inserted by ``setStateVariable``.
     :rtype: list of dicts.
     """
-    return RetVal(True, None, list(_DB_CMDModify.find()))
+    return RetVal(True, None, list(database.dbHandles['CmdModify'].find()))
 
 @typecheck
 def getCmdRemove():
@@ -126,7 +91,7 @@ def getCmdRemove():
     :return: objects as inserted by ``removeObject``.
     :rtype: list of dicts.
     """
-    return RetVal(True, None, list(_DB_CMDRemove.find()))
+    return RetVal(True, None, list(database.dbHandles['CmdRemove'].find()))
 
 @typecheck
 def dequeueCmdSpawn(spawn: list):
@@ -138,7 +103,7 @@ def dequeueCmdSpawn(spawn: list):
     :param list spawn: Mongo documents to remove from "Spawn"
     :return int: number of de-queued commands
     """
-    ret = _DB_CMDSpawn.remove({'objid': {'$in': spawn}})
+    ret = database.dbHandles['CmdSpawn'].remove({'objid': {'$in': spawn}})
     return RetVal(True, None, ret['n'])
 
 
@@ -153,7 +118,7 @@ def dequeueCmdModify(modify: list):
     :return: number of de-queued commands
     :rtype: tuple
     """
-    ret = _DB_CMDModify.remove({'objid': {'$in': modify}})
+    ret = database.dbHandles['CmdModify'].remove({'objid': {'$in': modify}})
     return RetVal(True, None, ret['n'])
 
 
@@ -168,7 +133,7 @@ def dequeueCmdRemove(remove: list):
     :return: number of de-queued commands
     :rtype: tuple
     """
-    ret = _DB_CMDRemove.remove({'objid': {'$in': remove}})
+    ret = database.dbHandles['CmdRemove'].remove({'objid': {'$in': remove}})
     return RetVal(True, None, ret['n'])
 
 
@@ -209,7 +174,7 @@ def addCmdSpawn(objID: bytes, sv: bullet_data.BulletData, aabb: (int, float)):
     # will return whatever the latest value from the DB, which is either the
     # one we just inserted (success) or a previously inserted one (fail). The
     # only way to distinguish them is to verify that the SVs are identical.
-    doc = _DB_CMDSpawn.find_and_modify({'objid': objID},
+    doc = database.dbHandles['CmdSpawn'].find_and_modify({'objid': objID},
                                        {'$setOnInsert': data},
                                        upsert=True, new=True)
     success = doc['sv'] == data['sv']
@@ -237,7 +202,7 @@ def addCmdRemoveObject(objID: bytes):
     :return: Success.
     """
     data = {'del': objID}
-    doc = _DB_CMDRemove.find_and_modify(
+    doc = database.dbHandles['CmdRemove'].find_and_modify(
         {'objid': objID}, {'$setOnInsert': data}, upsert=True, new=True)
     return RetVal(True, None, None)
 
@@ -279,7 +244,7 @@ def addCmdModifyStateVariable(objID: bytes, data: BulletDataOverride):
             data[idx] = val.tolist()
 
     # Save the new SVs to the DB (overwrite existing ones).
-    doc = _DB_CMDModify.find_and_modify(
+    doc = database.dbHandles['CmdModify'].find_and_modify(
         {'objid': objID}, {'$setOnInsert': {'sv': data}},
         upsert=True, new=True)
 
@@ -306,7 +271,7 @@ def getStateVariables(objIDs: (list, tuple)):
 
     # Retrieve the state variables.
     out = {_: None for _ in objIDs}
-    for doc in _DB_SV.find({'objid': {'$in': objIDs}}):
+    for doc in database.dbHandles['SV'].find({'objid': {'$in': objIDs}}):
         out[doc['objid']] = bullet_data.fromJsonDict(doc['sv'])
     return RetVal(True, None, out)
 
@@ -331,7 +296,7 @@ def getAABB(objIDs: (list, tuple)):
             return RetVal(False, msg, None)
 
     # Retrieve the state variables.
-    out = list(_DB_SV.find({'objid': {'$in': objIDs}}))
+    out = list(database.dbHandles['SV'].find({'objid': {'$in': objIDs}}))
 
     # Put all AABBs into a dictionary to simplify sorting afterwards.
     out = {_['objid']: np.array(_['AABB'], np.float64) for _ in out}
@@ -391,7 +356,7 @@ def getAllStateVariables():
     """
     # Compile all object IDs and state variables into a dictionary.
     out = {}
-    for doc in _DB_SV.find():
+    for doc in database.dbHandles['SV'].find():
         key, value = doc['objid'], bullet_data.fromJsonDict(doc['sv'])
         out[key] = value
     return RetVal(True, None, out)
@@ -405,7 +370,7 @@ def getAllObjectIDs():
     :rtype: list
     """
     # Compile and return the list of all object IDs.
-    out = [_['objid'] for _ in _DB_SV.find()]
+    out = [_['objid'] for _ in database.dbHandles['SV'].find()]
     return RetVal(True, None, out)
 
 
@@ -450,7 +415,7 @@ def getForceAndTorque(objID: bytes):
         return RetVal(False, 'objID has invalid length', None)
 
     # Query the object.
-    doc = _DB_CMDForceAndTorque.find_one({'objid': objID})
+    doc = database.dbHandles['CmdForce'].find_one({'objid': objID})
     if doc is None:
         return RetVal(False, 'Could not find <{}>'.format(objID), None)
 
@@ -498,7 +463,7 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
     torque = torque.astype(np.float64).tostring()
 
     # Update the DB.
-    ret = _DB_CMDForceAndTorque.update(
+    ret = database.dbHandles['CmdForce'].update(
         {'objid': objID},
         {'$set': {'central_force': force, 'torque': torque}},
         upsert=True)
@@ -521,7 +486,7 @@ def addTemplate(templateID: bytes, data: dict):
     # Insert the document only if it does not exist already. The return
     # value contains the old document, ie. **None** if the document
     # did not yet exist.
-    ret = _DB_Templates.find_and_modify(
+    ret = database.dbHandles['Templates'].find_and_modify(
         {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
 
     if ret is None:
@@ -542,7 +507,7 @@ def getTemplate(templateID: bytes):
     :return dict: template data.
     """
     # Retrieve the template. Return immediately if it does not exist.
-    doc = _DB_Templates.find_one({'templateID': templateID})
+    doc = database.dbHandles['Templates'].find_one({'templateID': templateID})
     if doc is None:
         msg = 'Invalid template ID <{}>'.format(templateID)
         logit.info(msg)

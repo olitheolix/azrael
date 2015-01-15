@@ -6,6 +6,7 @@ import subprocess
 import azrael.clerk
 import azrael.clacks
 import azrael.leonard
+import azrael.database
 import azrael.controller
 import azrael.vectorgrid
 import azrael.bullet.btInterface as btInterface
@@ -33,6 +34,8 @@ def killAzrael():
     # Delete all grids used in this test.
     assert azrael.vectorgrid.deleteAllGrids().ok
 
+    azrael.database.reset(reset=True)
+
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     """
@@ -44,8 +47,7 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     :param cls LeonardCls: Leonard class to instantiate.
     """
     # Reset all databases.
-    btInterface.initSVDB(reset=True)
-    azrael.database.reset()
+    azrael.database.reset(reset=True)
 
     # Return a Leonard instance.
     leo = LeonardCls()
@@ -70,7 +72,7 @@ def startAzrael(ctrl_type):
     killAzrael()
 
     # Start Clerk and instantiate Controller.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
     clerk.start()
 
     if ctrl_type == 'ZeroMQ':

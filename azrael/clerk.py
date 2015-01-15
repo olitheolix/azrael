@@ -113,11 +113,10 @@ class Clerk(multiprocessing.Process):
     Clerk relies on the `protocol` module to convert the ZeroMQ byte strings
     to meaningful quantities.
 
-    :param bool reset: flush the database.
     :raises: None
     """
     @typecheck
-    def __init__(self, reset: bool):
+    def __init__(self):
         super().__init__()
 
         # Create a Class-specific logger.
@@ -127,11 +126,6 @@ class Clerk(multiprocessing.Process):
         # Specify all database collections for Azrael.
         client = pymongo.MongoClient()
         self.db_instance = client['azrael']['instance']
-
-        if reset:
-            # Flush the database.
-            client.drop_database('azrael')
-            btInterface.initSVDB(reset=True)
 
         # Specify the decoding-processing-encoding triplet functions for
         # (almost) every command supported by Clerk. The only exceptions are

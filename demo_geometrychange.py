@@ -122,16 +122,17 @@ def startAzrael(param):
     """
     Start all Azrael processes and return their process handles.
     """
+    database.reset(reset=True)
+
     # Delete all grids and define a pristine force grid.
     assert vectorgrid.deleteAllGrids().ok
     assert vectorgrid.defineGrid(name='force', elDim=3, granularity=1).ok
 
     # Spawn Azrael's APIs.
-    clerk = azrael.clerk.Clerk(reset=True)
+    clerk = azrael.clerk.Clerk()
     clerk.start()
     clacks = azrael.clacks.ClacksServer()
     clacks.start()
-    btInterface.initSVDB(reset=True)
 
     # Define additional templates.
     attr = demo_default.spawnCubes(*param.numcubes, center=(0, 0, 10))
@@ -356,6 +357,7 @@ if __name__ == '__main__':
     import azrael.parts as parts
     import azrael.config as config
     import azrael.leonard as leonard
+    import azrael.database as database
     import azrael.controller as controller
     import azrael.vectorgrid as vectorgrid
     import azrael.bullet.btInterface as btInterface

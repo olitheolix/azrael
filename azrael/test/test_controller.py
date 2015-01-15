@@ -35,29 +35,19 @@ import azrael.clacks
 import azrael.controller
 import azrael.wscontroller
 import azrael.parts as parts
-import azrael.leonard as leonard
-import azrael.protocol as protocol
 import azrael.config as config
+import azrael.leonard as leonard
+import azrael.database as database
+import azrael.protocol as protocol
 import azrael.bullet.btInterface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int
-from azrael.test.test_leonard import startAzrael, stopAzrael
+from azrael.test.test_leonard import startAzrael, stopAzrael, getLeonard
 
 ipshell = IPython.embed
 WSControllerBase = azrael.wscontroller.WSControllerBase
 ControllerBase = azrael.controller.ControllerBase
-
-
-def getLeonard():
-    """
-    fixme: docu
-    """
-    # Reset the SV database and instantiate a Leonard.
-    btInterface.initSVDB(reset=True)
-    leo = leonard.LeonardBase()
-    leo.setup()
-    return leo
 
 
 def test_ping():

@@ -373,9 +373,6 @@ class LeonardBase(multiprocessing.Process):
         self.setup()
         self.logit.debug('Setup complete.')
 
-        # Reset the database.
-        btInterface.initSVDB(reset=False)
-
         # Trigger the `step` method every 10ms, if possible.
         t0 = time.time()
         while True:
