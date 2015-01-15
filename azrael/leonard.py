@@ -113,35 +113,34 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
 
 
 @typecheck
-def computeCollisionSetsAABB(IDs: list, SVs: list, aabbs: list):
+def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     """
-    Return potential collision sets among all ``IDs`` and associated ``SVs``.
+    Return potential collision sets among all objects in ``SVs``.
 
-    :param IDs: list of object IDs.
-    :param SVs: list of object BulletData instances. Corresponds to IDs.
+    :param dict SVs: Dictionary of State Vectors.
+    :param dict AABBs: Dictionary of AABBs.
     :return: each list contains a unique set of overlapping objects.
     :rtype: list of lists
     """
     # Sanity check.
-    if len(IDs) != len(SVs):
-        return RetVal(False, 'Inconsistent parameters', None)
+    if set(SVs.keys()) != set(AABBs.keys()):
+        return RetVal(False, 'SVs and AABBs are inconsisten', None)
 
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
     # must contain the min/max spatial extent in x/y/z direction.
     data = []
-    IDs_new = []
-    for objID, sv, aabb in zip(IDs, SVs, aabbs):
-        if (sv is None) or (aabb is None):
+    IDs = list(SVs.keys())
+    for objID in IDs:
+        if (SVs[objID] is None) or (AABBs[objID] is None):
             continue
-        IDs_new.append(objID)
+        sv, aabb = SVs[objID], AABBs[objID]
         pos = sv.position
         x0, x1 = pos[0] - aabb, pos[0] + aabb
         y0, y1 = pos[1] - aabb, pos[1] + aabb
         z0, z1 = pos[2] - aabb, pos[2] + aabb
 
         data.append({'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]})
-    IDs = IDs_new
-    del IDs_new, SVs, aabbs
+    del SVs, AABBs
 
     # Enumerate the objects.
     labels = np.arange(len(IDs))
@@ -164,7 +163,7 @@ def computeCollisionSetsAABB(IDs: list, SVs: list, aabbs: list):
         stage_2.extend(sweeping(tmpData, tmpLabels, 'z').data)
 
     # Convert the labels back to object IDs.
-    out = [[IDs[_] for _ in __] for __ in stage_2]
+    out = [[IDs[objID] for objID in objIDs] for objIDs in stage_2]
     return RetVal(True, None, out)
 
 
@@ -487,11 +486,7 @@ class LeonardSweeping(LeonardBullet):
 
         # Compute the collision sets.
         with util.Timeit('CCS') as timeit:
-            labels = list(self.allObjects.keys())
-            SVs = list(self.allObjects.values())
-            AABBs = list(self.allAABBs.values())
-            collSets = computeCollisionSetsAABB(labels, SVs, AABBs)
-            del labels, SVs, AABBs
+            collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
         if not collSets.ok:
             self.logit.error('ComputeCollisionSetsAABB returned an error')
             sys.exit(1)
@@ -585,11 +580,7 @@ class LeonardWorkPackages(LeonardBase):
 
         # Compute the collision sets.
         with util.Timeit('Leonard.CCS') as timeit:
-            labels = list(self.allObjects.keys())
-            SVs = list(self.allObjects.values())
-            AABBs = list(self.allAABBs.values())
-            collSets = computeCollisionSetsAABB(labels, SVs, AABBs)
-            del labels, SVs, AABBs
+            collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
         if not collSets.ok:
             self.logit.error('ComputeCollisionSetsAABB returned an error')
             sys.exit(1)

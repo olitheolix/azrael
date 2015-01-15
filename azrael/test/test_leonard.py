@@ -412,11 +412,11 @@ def test_computeCollisionSetsAABB(dim):
         test_objIDs = [int2id(_) for _ in IDs_hr]
 
         # Compile the set of SVs for curIDs.
-        sv = [leo.allObjects[_] for _ in test_objIDs]
-        aabb = [leo.allAABBs[_] for _ in test_objIDs]
+        SVs = {_: leo.allObjects[_] for _ in test_objIDs}
+        AABBs = {_: leo.allAABBs[_] for _ in test_objIDs}
 
         # Determine the list of potential collision sets.
-        ret = azrael.leonard.computeCollisionSetsAABB(test_objIDs, sv, aabb)
+        ret = azrael.leonard.computeCollisionSetsAABB(SVs, AABBs)
         assert ret.ok
 
         # Convert the IDs in res back to human readable format.
