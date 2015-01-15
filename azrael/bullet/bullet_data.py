@@ -125,12 +125,10 @@ class BulletData(_BulletData):
 
     def toJsonDict(self):
         """
-        Convert ``BulletData`` to JSON encodeable dictionary.
+        Convert content of ``BulletData`` instance to JSON dictionary.
         """
-        # fixme: use list comprehension
-        d = {}
-        for f in self._fields:
-            d[f] = getattr(self, f)
+        # NamedTuple --> Dictionary.
+        d = {field: getattr(self, field) for field in self._fields}
 
         # The dictionary 'd' is alreay what we want. However, it still contains
         # some NumPy arrays which JSON cannot serialise. To avoid manually
