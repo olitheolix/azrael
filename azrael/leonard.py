@@ -932,13 +932,12 @@ class LeonardWorker(multiprocessing.Process):
             return RetVal(False, 'No Work Package available', None)
     
         # Put the objects from the Work Package into the WPData structure.
-        wpdata = [WPData(*_) for _ in doc['wpdata']]
-
-        # The "SV" field in the WPData entries will now contain the State
-        # Vectors in binary form. Replace them with the unpacked version.
-        # fixme: put the previous and next command into a clean loop.
-        for idx, val in enumerate(wpdata):
-            wpdata[idx] = val._replace(sv=bullet_data.fromJsonDict(val.sv))
+        wpdata = []
+        for (objID, sv, force, torque) in doc['wpdata']:
+            wpdata.append(WPData(id=objID,
+                            sv=bullet_data.fromJsonDict(sv),
+                            central_force=force,
+                            torque=torque))
 
         # Put the meta data of the work package into another named tuple.
         meta = WPMeta(doc['wpid'], doc['token'], doc['dt'], doc['maxsteps'])
