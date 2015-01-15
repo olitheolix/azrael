@@ -223,7 +223,7 @@ def test_dequeueCommands():
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
     assert physAPI.addCmdModifyStateVariable(id_0, data_1).ok
-    ret = physAPI.getCmdModify()
+    ret = physAPI.getCmdModifyStateVariables()
     assert ret.ok and (ret.data[0]['objid'] == id_0)
 
     assert physAPI.addCmdRemoveObject(id_0).ok

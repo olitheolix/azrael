@@ -67,7 +67,7 @@ def getCmdSpawn():
     return RetVal(True, None, list(database.dbHandles['CmdSpawn'].find()))
 
 @typecheck
-def getCmdModify():
+def getCmdModifyStateVariables():
     """
     Return all queued "Modify" commands.
 

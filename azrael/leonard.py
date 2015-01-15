@@ -265,7 +265,7 @@ class LeonardBase(multiprocessing.Process):
         :return bool: Success.
         """
         # Fetch all commands currently in queue.
-        docsModify = physAPI.getCmdModify()
+        docsModify = physAPI.getCmdModifyStateVariables()
         if not docsModify.ok:
             msg = 'Cannot fetch "Modify" commands'
             self.logit.error(msg)
