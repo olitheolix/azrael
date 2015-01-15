@@ -85,7 +85,7 @@ class ControllerBase():
             'get_geometry': (
                 protocol.ToClerk_GetGeometry_Encode,
                 protocol.FromClerk_GetGeometry_Decode),
-            'set_geometry': (
+            'update_geometry': (
                 protocol.ToClerk_SetGeometry_Encode,
                 protocol.FromClerk_SetGeometry_Decode),
             'spawn': (
@@ -272,8 +272,8 @@ class ControllerBase():
         return self.serialiseAndSend('get_geometry', objID)
 
     @typecheck
-    def setGeometry(self, objID: bytes, vert: np.ndarray, uv: np.ndarray,
-                    rgb: np.ndarray):
+    def updateGeometry(self, objID: bytes, vert: np.ndarray, uv: np.ndarray,
+                       rgb: np.ndarray):
         """
         Change the geometry parameters of ``objID``.
 
@@ -284,7 +284,7 @@ class ControllerBase():
         :return: (ok, ())
         :rtype: (bool, tuple) or (bool, str)
         """
-        return self.serialiseAndSend('set_geometry', objID, vert, uv, rgb)
+        return self.serialiseAndSend('update_geometry', objID, vert, uv, rgb)
 
     @typecheck
     def spawn(self, templateID: bytes,

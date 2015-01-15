@@ -162,9 +162,9 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_GetGeometry_Decode,
                 self.getGeometry,
                 protocol.FromClerk_GetGeometry_Encode),
-            'set_geometry': (
+            'update_geometry': (
                 protocol.ToClerk_SetGeometry_Decode,
-                self.setGeometry,
+                self.updateGeometry,
                 protocol.FromClerk_SetGeometry_Encode),
             'set_force': (
                 protocol.ToClerk_SetForce_Decode,
@@ -790,7 +790,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(True, None, {'vert': vert, 'uv': uv, 'rgb': rgb})
 
     @typecheck
-    def setGeometry(self, objID: bytes, vert: np.ndarray,
+    def updateGeometry(self, objID: bytes, vert: np.ndarray,
                     uv: np.ndarray, rgb: np.ndarray):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.

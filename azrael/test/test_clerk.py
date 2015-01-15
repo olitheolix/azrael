@@ -1100,7 +1100,7 @@ def test_instanceDB_checksum():
     assert set((objID0, objID1)) == set(ret_1.keys())
 
     # Modify the geometry of the first object.
-    assert clerk.setGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb).ok
+    assert clerk.updateGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb).ok
 
     # Verify that the checksum of the first object has changed and that of the
     # second object has not.

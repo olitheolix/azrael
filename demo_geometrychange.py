@@ -281,9 +281,9 @@ class UpdateGeometry(multiprocessing.Process):
             # Swap out the geometry.
             for objID in objIDs:
                 if (cnt % 2) == 0:
-                    ctrl.setGeometry(objID, sphere_vert, sphere_uv, sphere_rgb)
+                    ctrl.updateGeometry(objID, sphere_vert, sphere_uv, sphere_rgb)
                 else:
-                    ctrl.setGeometry(objID, *geometries[objID])
+                    ctrl.updateGeometry(objID, *geometries[objID])
 
             # Modify the scale.
             scale = (cnt + 1) / 10
