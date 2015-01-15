@@ -39,9 +39,6 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
 
     :param cls LeonardCls: Leonard class to instantiate.
     """
-    # Reset all databases.
-    azrael.database.init(reset=True)
-
     # Return a Leonard instance.
     leo = LeonardCls()
     leo.setup()
@@ -274,6 +271,8 @@ def test_sweeping_2objects():
     The input dictionary each contains the AABB coordinates. The output list
     contains the set of overlapping AABBs.
     """
+    killAzrael()
+
     # Convenience variables.
     sweeping = azrael.leonard.sweeping
     labels = np.arange(2)
@@ -327,6 +326,8 @@ def test_sweeping_3objects():
     """
     Same as test_sweeping_2objects but with three objects.
     """
+    killAzrael()
+
     # Convenience variable.
     sweeping = azrael.leonard.sweeping
     labels = np.arange(3)
@@ -368,6 +369,8 @@ def test_computeCollisionSetsAABB(dim):
 
     Then use subsets of these 10 objects to test basic collision detection.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard(azrael.leonard.LeonardBase)
 
@@ -512,6 +515,8 @@ def test_create_work_package_without_objects():
     This test does not insert any objects into the simulation. It only tests
     the general functionality to add, retrieve, and update work packages.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard and Worker.
     leo = getLeonard(azrael.leonard.LeonardWorkPackages)
     worker = azrael.leonard.LeonardWorker(1, 100000)
@@ -606,6 +611,8 @@ def test_create_work_package_with_objects():
     Similar to test_create_work_package_without_objects but now the there are
     actual objects in the simulation.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard and Worker.
     leo = getLeonard(azrael.leonard.LeonardWorkPackages)
     worker = azrael.leonard.LeonardWorker(1, 100000)
@@ -682,6 +689,8 @@ def test_work_package_timestamps():
     """
     Verify the getPackage
     """
+    killAzrael()
+
     # Reset the SV database and instantiate both a Leonard and a Worker.
     leo = getLeonard(azrael.leonard.LeonardWorkPackages)
     worker = azrael.leonard.LeonardWorker(1, 100000)

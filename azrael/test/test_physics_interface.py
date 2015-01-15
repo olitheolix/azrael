@@ -26,6 +26,7 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int
+from azrael.test.test_clacks import killAzrael
 from azrael.test.test_leonard import getLeonard
 
 ipshell = IPython.embed
@@ -35,6 +36,8 @@ def test_add_get_remove_single():
     """
     Add an object to the SV database.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
@@ -85,6 +88,8 @@ def test_add_get_multiple():
     """
     Add multiple objects to the DB.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
@@ -139,6 +144,8 @@ def test_add_same():
     """
     Try to add two objects with the same ID.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
@@ -199,6 +206,8 @@ def test_dequeueCommands():
     """
     Add-, query, and remove commands from the command queue.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
@@ -263,6 +272,8 @@ def test_get_set_force():
     """
     Query and update the force vector for an object.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
@@ -310,6 +321,8 @@ def test_overrideAttributes():
     Set and retrieve object attributes like position, velocity, acceleration,
     and orientation.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
@@ -357,6 +370,8 @@ def test_BulletDataOverride():
     ``BulletDataOverride`` must only accept valid input where the
     ``BulletData`` class defines what constitutes "valid".
     """
+    killAzrael()
+
     # Convenience.
     BulletData = bullet_data.BulletData
     BulletDataOverride = bullet_data.BulletDataOverride
@@ -409,6 +424,8 @@ def test_get_set_forceandtorque():
     """
     Query and update the force- and torque vectors for an object.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
@@ -457,6 +474,8 @@ def test_StateVariable_tuple():
     """
     Test the BulletData class, most notably comparison and (de)serialisation.
     """
+    killAzrael()
+
     # Compare two identical objects.
     sv1 = bullet_data.BulletData()
     sv2 = bullet_data.BulletData()
@@ -478,6 +497,8 @@ def test_set_get_AABB():
     """
     Create a new object with an AABB and query it back again.
     """
+    killAzrael()
+
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
