@@ -122,7 +122,7 @@ def startAzrael(param):
     """
     Start all Azrael processes and return their process handles.
     """
-    database.reset(reset=True)
+    database.init(reset=True)
 
     # Delete all grids and define a pristine force grid.
     assert vectorgrid.deleteAllGrids().ok

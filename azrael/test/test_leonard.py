@@ -34,7 +34,7 @@ def killAzrael():
     # Delete all grids used in this test.
     assert azrael.vectorgrid.deleteAllGrids().ok
 
-    azrael.database.reset(reset=True)
+    azrael.database.init(reset=True)
 
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
@@ -47,7 +47,7 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     :param cls LeonardCls: Leonard class to instantiate.
     """
     # Reset all databases.
-    azrael.database.reset(reset=True)
+    azrael.database.init(reset=True)
 
     # Return a Leonard instance.
     leo = LeonardCls()

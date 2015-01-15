@@ -363,7 +363,7 @@ def startAzrael(param):
     """
     Start all Azrael processes and return their process handles.
     """
-    database.reset(reset=True)
+    database.init(reset=True)
 
     # Delete all grids but define a force grid (will not be used but
     # Leonard throws a lot of harmless warnings otherwise).

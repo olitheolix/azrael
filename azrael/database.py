@@ -33,7 +33,7 @@ dbHandles = {}
 
 
 @typecheck
-def reset(reset=False):
+def init(reset=False):
     """
     Connect to the State Variable database. Flush it if ``reset`` is **True**.
 
