@@ -50,7 +50,7 @@ import azrael.leonard as leonard
 import azrael.database as database
 import azrael.controller as controller
 import azrael.vectorgrid as vectorgrid
-import azrael.bullet.btInterface as btInterface
+import azrael.physics_interface as btInterface
 del p
 
 

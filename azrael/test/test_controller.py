@@ -39,7 +39,7 @@ import azrael.config as config
 import azrael.leonard as leonard
 import azrael.database as database
 import azrael.protocol as protocol
-import azrael.bullet.btInterface as btInterface
+import azrael.physics_interface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.util import int2id, id2int

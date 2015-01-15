@@ -43,7 +43,7 @@ import OpenGL.GL as gl
 import azrael.util as util
 import azrael.config as config
 import azrael.controller as controller
-import azrael.bullet.btInterface as btInterface
+import azrael.physics_interface as btInterface
 
 from PySide import QtCore, QtGui, QtOpenGL
 

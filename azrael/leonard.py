@@ -34,7 +34,7 @@ import azrael.vectorgrid
 import azrael.util as util
 import azrael.config as config
 import azrael.bullet.boost_bullet
-import azrael.bullet.btInterface as btInterface
+import azrael.physics_interface as btInterface
 import azrael.bullet.bullet_data as bullet_data
 
 from collections import namedtuple
