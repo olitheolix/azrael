@@ -22,7 +22,6 @@ state variables.
 
 import sys
 import logging
-import pymongo
 import IPython
 import numpy as np
 import azrael.util as util

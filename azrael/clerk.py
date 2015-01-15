@@ -36,7 +36,6 @@ import zmq
 import IPython
 import cytoolz
 import logging
-import pymongo
 import setproctitle
 import multiprocessing
 
