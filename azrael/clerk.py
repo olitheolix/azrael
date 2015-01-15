@@ -800,18 +800,18 @@ class Clerk(multiprocessing.Process):
         :param bytes templateID: template ID
         :return: Success
         """
-        # Retrieve the geometry. Return an error if the ID does not
-        # exist. Note: an empty geometry field is valid.
-        doc = self.db_instance.find_one({'objID': objID})
-        if doc is None:
-            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
+        # Update the geometry entries.
+        ret = self.db_instance.update(
+            {'objID': objID},
+            {'$set': {'vertices': (vert.astype(np.float64)).tostring(),
+                      'UV': (uv.astype(np.float64)).tostring(),
+                      'RGB': (rgb.astype(np.uint8)).tostring()},
+             '$inc': {'csGeo': 1}})
 
-        doc['vertices'] = (vert.astype(np.float64)).tostring()
-        doc['UV'] = (uv.astype(np.float64)).tostring()
-        doc['RGB'] = (rgb.astype(np.uint8)).tostring()
-        doc['csGeo'] += 1
-        self.db_instance.save(doc)
-        return RetVal(True, None, None)
+        if ret['n'] == 1:
+            return RetVal(True, None, None)
+        else:
+            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
     @typecheck
     def setForce(self, objID: bytes, force: np.ndarray, rpos: np.ndarray):
