@@ -53,6 +53,7 @@ def init(reset=False):
     dbHandles['CmdModify'] = client[dbName]['CmdModify']
     dbHandles['CmdForce'] = client[dbName]['CmdForceAndTorque']
     dbHandles['Templates'] = client[dbName]['template']
+    dbHandles['ObjInstances'] = client[dbName]['objinstances']
     dbHandles['Counters'] = client[dbName]['Counters']
     dbHandles['WP'] = client[dbName]['WP']
 
