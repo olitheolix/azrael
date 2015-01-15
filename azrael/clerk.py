@@ -46,6 +46,7 @@ import azrael.database
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
+import azrael.database as database
 import azrael.protocol as protocol
 import azrael.protocol_json as json
 import azrael.bullet.btInterface as btInterface
@@ -122,10 +123,6 @@ class Clerk(multiprocessing.Process):
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
-
-        # Specify all database collections for Azrael.
-        client = pymongo.MongoClient()
-        self.db_instance = client['azrael']['instance']
 
         # Specify the decoding-processing-encoding triplet functions for
         # (almost) every command supported by Clerk. The only exceptions are
@@ -690,7 +687,7 @@ class Clerk(multiprocessing.Process):
         doc['csGeo'] = 0
         doc['templateID'] = templateID
         del doc['_id']
-        self.db_instance.insert(doc)
+        database.dbHandles['Templates'].insert(doc)
         del doc
 
         # Add the object to the physics simulation.
@@ -709,7 +706,7 @@ class Clerk(multiprocessing.Process):
         :return: Success
         """
         ret = btInterface.addCmdRemoveObject(objID)
-        self.db_instance.remove({'objID': objID}, mult=True)
+        database.dbHandles['Templates'].remove({'objID': objID}, mult=True)
         if ret.ok:
             return RetVal(True, None, None)
         else:
@@ -734,7 +731,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, 'One or more IDs do not exist', None)
 
         # Query the geometry checksums for all objects.
-        docs = self.db_instance.find(
+        docs = database.dbHandles['Templates'].find(
             {'objID': {'$in': objIDs}},
             {'csGeo': 1, 'objID': 1})
 
@@ -772,7 +769,7 @@ class Clerk(multiprocessing.Process):
         """
         # Retrieve the geometry. Return an error if the ID does not
         # exist. Note: an empty geometry field is valid.
-        doc = self.db_instance.find_one({'objID': objID})
+        doc = database.dbHandles['Templates'].find_one({'objID': objID})
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
@@ -795,7 +792,7 @@ class Clerk(multiprocessing.Process):
         :return: Success
         """
         # Update the geometry entries.
-        ret = self.db_instance.update(
+        ret = database.dbHandles['Templates'].update(
             {'objID': objID},
             {'$set': {'vertices': (vert.astype(np.float64)).tostring(),
                       'UV': (uv.astype(np.float64)).tostring(),
@@ -852,7 +849,7 @@ class Clerk(multiprocessing.Process):
         :param bytes objID: object ID.
         :return: templateID from which ``objID`` was created.
         """
-        doc = self.db_instance.find_one({'objID': objID})
+        doc = database.dbHandles['Templates'].find_one({'objID': objID})
         if doc is None:
             msg = 'Could not find template for objID {}'.format(objID)
             return RetVal(False, msg, None)
