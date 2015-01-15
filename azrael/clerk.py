@@ -119,6 +119,9 @@ class Clerk(multiprocessing.Process):
     def __init__(self):
         super().__init__()
 
+        # Convenience.
+        self.db = database.dbHandles
+
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
@@ -685,7 +688,7 @@ class Clerk(multiprocessing.Process):
         doc['csGeo'] = 0
         doc['templateID'] = templateID
         del doc['_id']
-        database.dbHandles['ObjInstances'].insert(doc)
+        self.db['ObjInstances'].insert(doc)
         del doc
 
         # Add the object to the physics simulation.
@@ -704,7 +707,7 @@ class Clerk(multiprocessing.Process):
         :return: Success
         """
         ret = physAPI.addCmdRemoveObject(objID)
-        database.dbHandles['ObjInstances'].remove({'objID': objID}, mult=True)
+        self.db['ObjInstances'].remove({'objID': objID}, mult=True)
         if ret.ok:
             return RetVal(True, None, None)
         else:
@@ -729,7 +732,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, 'One or more IDs do not exist', None)
 
         # Query the geometry checksums for all objects.
-        docs = database.dbHandles['ObjInstances'].find(
+        docs = self.db['ObjInstances'].find(
             {'objID': {'$in': objIDs}},
             {'csGeo': 1, 'objID': 1})
 
@@ -767,7 +770,7 @@ class Clerk(multiprocessing.Process):
         """
         # Retrieve the geometry. Return an error if the ID does not
         # exist. Note: an empty geometry field is valid.
-        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
+        doc = self.db['ObjInstances'].find_one({'objID': objID})
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
@@ -790,7 +793,7 @@ class Clerk(multiprocessing.Process):
         :return: Success
         """
         # Update the geometry entries.
-        ret = database.dbHandles['ObjInstances'].update(
+        ret = self.db['ObjInstances'].update(
             {'objID': objID},
             {'$set': {'vertices': (vert.astype(np.float64)).tostring(),
                       'UV': (uv.astype(np.float64)).tostring(),
@@ -847,7 +850,7 @@ class Clerk(multiprocessing.Process):
         :param bytes objID: object ID.
         :return: templateID from which ``objID`` was created.
         """
-        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
+        doc = self.db['ObjInstances'].find_one({'objID': objID})
         if doc is None:
             msg = 'Could not find template for objID {}'.format(objID)
             return RetVal(False, msg, None)
