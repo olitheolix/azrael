@@ -603,11 +603,11 @@ def test_create_work_package_without_objects():
     # Test data.
     data_0 = bullet_data.BulletData(imass=1)
     id_1, id_2 = int2id(1), int2id(2)
-    aabb, dt, maxsteps = 1, 2, 3 
+    dt, maxsteps = 2, 3
 
     # Add two new objects to Leonard.
-    assert btInterface.addCmdSpawn(id_1, data_0, aabb).ok
-    assert btInterface.addCmdSpawn(id_2, data_0, aabb).ok
+    assert btInterface.addCmdSpawn(id_1, data_0, aabb=1).ok
+    assert btInterface.addCmdSpawn(id_2, data_0, aabb=1).ok
     leo.processCommandsAndSync()
 
     # Create a work package for two object IDs. The WPID must be 1.
@@ -687,13 +687,12 @@ def test_create_work_package_with_objects():
     data_1 = bullet_data.BulletData(imass=1)
     data_2 = bullet_data.BulletData(imass=2)
     data_3 = bullet_data.BulletData(imass=3)
-    aabb = 1
     wpid = 1
     id_1, id_2 = int2id(1), int2id(2)
     
     # Spawn new objects.
-    assert btInterface.addCmdSpawn(id_1, data_1, aabb)
-    assert btInterface.addCmdSpawn(id_2, data_2, aabb)
+    assert btInterface.addCmdSpawn(id_1, data_1, aabb=1)
+    assert btInterface.addCmdSpawn(id_2, data_2, aabb=1)
     leo.processCommandsAndSync()
 
     # Add ID1 and ID2 to the WP. The WPID must be 1.
@@ -761,7 +760,42 @@ def test_work_package_timestamps():
     """
     Verify the getPackage
     """
-    assert True
+    # Reset the SV database and instantiate both a Leonard and a Worker.
+    leo = getLeonard(azrael.leonard.LeonardWorkPackages)
+    worker = azrael.leonard.LeonardWorker(1, 100000)
+
+    # Convenience.
+    data_1 = bullet_data.BulletData(imass=1)
+    id_1 = int2id(1)
+    numWPs = 10
+    token = 1
+
+    # Spawn new objects.
+    assert btInterface.addCmdSpawn(id_1, data_1, aabb=1)
+    leo.processCommandsAndSync()
+
+    # Insert several Work Packages.
+    for ii in range(numWPs):
+        ret = leo.createWorkPackage([id_1], token, dt=3, maxsteps=4)
+        assert (ret.ok, ret.data) == (True, ii + 1)
+
+    # The Work Packages must be returned in cyclic order.
+    for ii in range(10 * numWPs):
+        ret = worker.getWorkPackage()
+        assert ret.ok
+        assert ret.data['wpmeta'].wpid == (ii % numWPs) + 1
+
+        # This artificial delay is necessary for this test only. It guarantees
+        # that the time stamps that 'getWorkPackage' updates at each call
+        # differ by at least one milli second (which is the minimum resolution
+        # in Mongo). Without this delay it may be possible that some Work
+        # Packages are tagged with the same time stamp which, in turn, may
+        # corrupt the order. In practice this is mostly irrelevant, especially
+        # when the request do not come from the same machine.
+        time.sleep(0.001)
+
+    print('Test passed')
+
 
 if __name__ == '__main__':
     test_work_package_timestamps()

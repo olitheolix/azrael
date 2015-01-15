@@ -683,12 +683,13 @@ class LeonardWorkPackages(LeonardBase):
     
         # Remove all WP with the current ID. This is a precaution since there
         # should not be a WP with this ID to begin with.
+        # fixme: this operation should be unnecessary in the new setup
         ret = self._DB_WP.remove({'wpid': wpid}, multi=True)
         if ret['n'] > 0:
             self.logit.warning('A previous WP with ID={} already existed'.format(wpid))
     
         data = {'wpid': wpid, 'token': token, 'dt': dt, 'maxsteps': maxsteps,
-                'wpdata': wpdata}
+                'wpdata': wpdata, 'ts': None}
         
         ret = self._DB_WP.insert(data)
         return RetVal(True, None, wpid)
@@ -921,12 +922,21 @@ class LeonardWorker(multiprocessing.Process):
         :return: {'wpdata': list of WPData instances, 'wpmeta': meta information}
         :rtype: dict
         """
-        # Retrieve next available work package.
-        doc = self._DB_WP.find_one({'token': {'$exists': 1}})
+        # Fetch the next Work Package with the oldest timestamp, and also
+        # update that very timestamp in the same query.
+        fam = self._DB_WP.find_and_modify
+        doc = fam(query={'token': {'$exists': 1}},
+                  update={'$currentDate': {'ts': True}},
+                  sort=[('ts', pymongo.ASCENDING)])
         if doc is None:
             return RetVal(False, 'No Work Package available', None)
     
+        # Put the objects from the Work Package into the WPData structure.
         wpdata = [WPData(*_) for _ in doc['wpdata']]
+
+        # The "SV" field in the WPData entries will now contain the State
+        # Vectors in binary form. Replace them with the unpacked version.
+        # fixme: put the previous and next command into a clean loop.
         for idx, val in enumerate(wpdata):
             wpdata[idx] = val._replace(sv=bullet_data.fromJsonDict(val.sv))
 
