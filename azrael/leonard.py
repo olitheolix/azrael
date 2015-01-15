@@ -188,9 +188,6 @@ class LeonardBase(multiprocessing.Process):
         # Create the DB handles.
         client = pymongo.MongoClient()
         self._DB_SV = client['azrael']['sv']
-        self._DB_CMDSpawn = client['azrael']['CmdSpawn']
-        self._DB_CMDRemove = client['azrael']['CmdRemove']
-        self._DB_CMDModify = client['azrael']['CmdModify']
 
         self.allObjects = {}
         self.allAABBs = {}
