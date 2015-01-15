@@ -119,15 +119,6 @@ function suggestPosition(objID, pos) {
 }
 
 
-function setID(objID) {
-    var cmd = JSON.stringify({'cmd': 'set_id', 'payload': {'objID': objID}});
-    var dec = function (msg) {
-        var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'objID': parsed.payload.objID}
-    };
-    return [cmd, dec]
-}
-
 function getTemplate(templateID) {
     var cmd = {'cmd': 'get_template', 'payload': {'templateID': templateID}}
     cmd = JSON.stringify(cmd)
@@ -234,13 +225,8 @@ function arrayEqual(arr1, arr2) {
 function* mycoroutine(connection) {
     // Ensure we are live.
     var msg = yield ping()
-    if (msg.ok == false) {console.log('Error'); return;}
+    if (msg.ok == false) {console.log('Error ping'); return;}
     console.log('Ping successful')
-
-    // Request a new ID for the controller assigned to us.
-    msg = yield setID(null)
-    if (msg.ok == false) {console.log('Error'); return;}
-    console.log('Controller ID: ' + msg.objID);
 
     // Define a new template.
     var buf_vert = getGeometryCube();
@@ -324,12 +310,12 @@ function* mycoroutine(connection) {
     while (true) {
         // Retrieve all object IDs.
         var msg = yield getAllObjectIDs();
-        if (msg.data == false) {console.log('Error'); return;}
+        if (msg.data == false) {console.log('Error getAllObjects'); return;}
         var objIDs = msg.objIDs
 
         // Get the SV for all objects.
         msg = yield getStateVariable(objIDs)
-        if (msg.ok == false) {console.log('Error'); return;}
+        if (msg.ok == false) {console.log('Error getStateVariables'); return;}
         var allSVs = msg.sv
 
         // Convert the 8-Byte arrays in objID to a single
@@ -391,7 +377,7 @@ function* mycoroutine(connection) {
 
                 // Object not yet in local cache --> fetch its geometry.
                 msg = yield getGeometry(objIDs[ii]);
-                if (msg.ok == false) {console.log('Error'); return;}
+                if (msg.ok == false) {console.log('Error getGeometry'); return;}
                 var new_geo = compileMesh(objIDs[ii], msg.vert, msg.UV, scale)
 
                 // Add the object to the cache and scene.
