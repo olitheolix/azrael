@@ -186,8 +186,7 @@ class LeonardBase(multiprocessing.Process):
         self.logit.info('myinfo')
 
         # Create the DB handles.
-        client = pymongo.MongoClient()
-        self._DB_SV = client['azrael']['sv']
+        self._DB_SV = azrael.database.dbHandles['SV']
 
         self.allObjects = {}
         self.allAABBs = {}
@@ -560,8 +559,7 @@ class LeonardWorkPackages(LeonardBase):
         super().__init__(*args, **kwargs)
 
         # Database handles.
-        client = pymongo.MongoClient()
-        self._DB_WP = client['azrael']['wp']
+        self._DB_WP = azrael.database.dbHandles['WP']
         self._DB_WP.drop()
 
     def setup(self):
@@ -867,8 +865,7 @@ class LeonardWorker(multiprocessing.Process):
         self.logit = logging.getLogger(name)
 
         # Database handles.
-        client = pymongo.MongoClient()
-        self._DB_WP = client['azrael']['wp']
+        self._DB_WP = azrael.database.dbHandles['WP']
 
         # Record the PID of the parent.
         self.parentPID = os.getpid()

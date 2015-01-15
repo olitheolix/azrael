@@ -54,6 +54,7 @@ def reset(reset=False):
     dbHandles['CmdForce'] = client[dbName]['CmdForceAndTorque']
     dbHandles['Templates'] = client[dbName]['template']
     dbHandles['Counters'] = client[dbName]['Counters']
+    dbHandles['WP'] = client[dbName]['WP']
 
 
 def getNewWPID():
