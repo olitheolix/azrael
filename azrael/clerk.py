@@ -127,11 +127,11 @@ class Clerk(multiprocessing.Process):
         # Specify all database collections for Azrael.
         client = pymongo.MongoClient()
         self.db_instance = client['azrael']['instance']
-        self.db_template = client['azrael']['template']
 
         if reset:
             # Flush the database.
             client.drop_database('azrael')
+            btInterface.initSVDB(reset=True)
 
         # Specify the decoding-processing-encoding triplet functions for
         # (almost) every command supported by Clerk. The only exceptions are
@@ -206,9 +206,6 @@ class Clerk(multiprocessing.Process):
                          np.array([4, 1, 1, 1], np.float64),
                          np.array([]), np.array([]), np.array([]),
                          [], [])
-
-        # Initialise the SV database.
-        btInterface.initSVDB(reset)
 
     def runCommand(self, fun_decode, fun_process, fun_encode):
         """
@@ -588,20 +585,7 @@ class Clerk(multiprocessing.Process):
         for f in factories:
             data['factories.{0:03d}'.format(f.partID)] = f.tostring()
 
-        # Insert the document only if it does not exist already. The return
-        # value contains the old document, ie. **None** if the document
-        # did not yet exist.
-        ret = self.db_template.find_and_modify(
-            {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
-
-        if ret is None:
-            # No template with name ``templateID`` exists yet --> success.
-            self.logit.info('Added template <{}>'.format(templateID))
-            return RetVal(True, None, templateID)
-        else:
-            # A template with name ``templateID`` already existed --> failure.
-            msg = 'Template ID <{}> already exists'.format(templateID)
-            return RetVal(False, msg, None)
+        return btInterface.addTemplate(templateID, data)
 
     @typecheck
     def getTemplate(self, templateID: bytes):
@@ -629,13 +613,13 @@ class Clerk(multiprocessing.Process):
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
-        doc = self.db_template.find_one({'templateID': templateID})
-        if doc is None:
-            msg = 'Invalid template ID <{}>'.format(templateID)
-            self.logit.info(msg)
-            return RetVal(False, msg, None)
+        ret = btInterface.getTemplate(templateID)
+        if not ret.ok:
+            self.logit.info(ret.msg)
+            return ret
 
         # Extract the collision shape, geometry, UV- and texture map.
+        doc = ret.data
         cs = np.fromstring(doc['cshape'], np.float64)
         vert = np.fromstring(doc['vertices'], np.float64)
         uv = np.fromstring(doc['UV'], np.float64)
@@ -677,10 +661,10 @@ class Clerk(multiprocessing.Process):
         :return: ID of new object
         :rtype: bytes
         """
-        # Retrieve the template.
+        # Fetch the template for the new object.
         template = self.getTemplate(templateID)
         if not template.ok:
-            return RetVal(False, 'Invalid Template ID', None)
+            return template
         template = template.data
 
         # Overwrite the supplied collision shape with the template
@@ -696,17 +680,18 @@ class Clerk(multiprocessing.Process):
             return objID
         objID = util.int2id(objID.data)
 
-        # Copy the template to the instance DB. Add the objID of the
-        # instantiated object as well.
-        # fixme: code duplication in 'getTemplate'.
-        doc = self.db_template.find_one({'templateID': templateID})
-        if doc is None:
-            msg = 'Invalid template ID <{}>'.format(templateID)
-            self.logit.error(msg)
-            return RetVal(False, msg, None)
+        # To copy the template to the instance DB we first need to get the
+        # template...
+        ret = btInterface.getTemplate(templateID)
+        if not ret.ok:
+            self.logit.info(ret.msg)
+            return ret
+        else:
+            self.logit.info('Added template <{}>'.format(templateID))
 
-        # Add objID and geometry checksum to the document; remove the
-        # _id field to avoid clashes.
+        # ... then add objID and geometry checksum to the document, remove the
+        # _id field, and insert it into the instance DB.
+        doc = ret.data
         doc['objID'] = objID
         doc['csGeo'] = 0
         doc['templateID'] = templateID

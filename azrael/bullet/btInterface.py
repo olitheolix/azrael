@@ -40,6 +40,7 @@ _DB_CMDSpawn = None
 _DB_CMDRemove = None
 _DB_CMDModify = None
 _DB_CMDForceAndTorque = None
+_DB_Templates = None
 
 
 # Convenience.
@@ -62,19 +63,21 @@ def initSVDB(reset=True):
     :param bool reset: flush the database.
     """
     global _DB_SV, _DB_CMDSpawn, _DB_CMDRemove, _DB_CMDModify
-    global _DB_CMDForceAndTorque
+    global _DB_CMDForceAndTorque, _DB_Templates
     client = pymongo.MongoClient()
     _DB_SV = client['azrael']['sv']
     _DB_CMDSpawn = client['azrael']['CmdSpawn']
     _DB_CMDRemove = client['azrael']['CmdRemove']
     _DB_CMDModify = client['azrael']['CmdModify']
     _DB_CMDForceAndTorque = client['azrael']['CmdForceAndTorque']
+    _DB_Templates = client['azrael']['template']
     if reset:
         _DB_SV.drop()
         _DB_CMDSpawn.drop()
         _DB_CMDRemove.drop()
         _DB_CMDModify.drop()
         _DB_CMDForceAndTorque.drop()
+        _DB_Templates.drop()
 
 
 def getNumObjects():
@@ -501,3 +504,48 @@ def setForceAndTorque(objID: bytes, force: np.ndarray, torque: np.ndarray):
         upsert=True)
 
     return RetVal(True, None, None)
+
+
+@typecheck
+def addTemplate(templateID: bytes, data: dict):
+    """
+    Store the template ``data`` under the name ``templateID``.
+
+    This function does not care what ``data`` contains, as long as it can be
+    serialised.
+
+    :param bytes templateID: template name
+    :param dict data: arbitrary template data.
+    :return: Success
+    """
+    # Insert the document only if it does not exist already. The return
+    # value contains the old document, ie. **None** if the document
+    # did not yet exist.
+    ret = _DB_Templates.find_and_modify(
+        {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
+
+    if ret is None:
+        # No template with name ``templateID`` exists yet --> success.
+        return RetVal(True, None, templateID)
+    else:
+        # A template with name ``templateID`` already existed --> failure.
+        msg = 'Template ID <{}> already exists'.format(templateID)
+        return RetVal(False, msg, None)
+
+
+@typecheck
+def getTemplate(templateID: bytes):
+    """
+    Return the data set associated with ``templateID``.
+
+    :param bytes templateID:
+    :return dict: template data.
+    """
+    # Retrieve the template. Return immediately if it does not exist.
+    doc = _DB_Templates.find_one({'templateID': templateID})
+    if doc is None:
+        msg = 'Invalid template ID <{}>'.format(templateID)
+        logit.info(msg)
+        return RetVal(False, msg, None)
+    else:
+        return RetVal(True, None, doc)

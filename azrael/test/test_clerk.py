@@ -132,7 +132,8 @@ def test_spawn():
     # Invalid templateID.
     templateID = np.int64(100).tostring()
     ret = clerk.spawn(templateID, sv)
-    assert (ret.ok, ret.msg) == (False, 'Invalid Template ID')
+    assert not ret.ok
+    assert ret.msg.startswith('Invalid template ID')
 
     # All parameters are now valid. This must spawn an object with ID=1
     # because this is the first ID in an otherwise pristine system.
@@ -495,8 +496,8 @@ def test_controlParts_invalid_commands():
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk(reset=True)
 
-    # Create a fake object. We will not need it but for this test one must
-    # exist as other commands would otherwise fail.
+    # Create a fake object. We will not need the actual object but other
+    # commands tested here depend on the existence of an object.
     ret = clerk.spawn(templateID_1, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
 

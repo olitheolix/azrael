@@ -380,11 +380,11 @@ def test_controlParts(ctrl_type):
     In this test the parent object moves and is oriented away from its
     default.
     """
-    # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
-
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
+
+    # Start the necessary services.
+    clerk, ctrl, clacks = startAzrael(ctrl_type)
 
     # Parameters and constants for this test.
     objID_1 = int2id(1)
