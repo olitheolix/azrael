@@ -195,8 +195,6 @@ def addCmdRemoveObject(objID: bytes):
 
     .. note:: This function always succeeds.
 
-    fixme: must be able to delete multiple objects at once.
-
     :param bytes objID: ID of object to delete.
     :return: Success.
     """

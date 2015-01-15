@@ -693,9 +693,6 @@ class LeonardWorkPackages(LeonardBase):
         This method will return the number of fetched (ie completed) WPs, as
         well as the number of WPs still waiting to be processed.
 
-        fixme: overhaul WP architecture so that this function can return how
-               many WPs are still in the queue.
-
         :return tuple: (#fetched-WPs, #unprocessed-WPs).
         """
         cnt_fetch = 0

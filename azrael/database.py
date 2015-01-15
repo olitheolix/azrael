@@ -37,8 +37,6 @@ def init(reset=False):
     """
     Connect to the State Variable database. Flush it if ``reset`` is **True**.
 
-    fixme: merge this function with 'database.reset'.
-
     :param bool reset: flush the database.
     """
     global dbHandles
