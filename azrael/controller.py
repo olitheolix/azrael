@@ -30,24 +30,18 @@ Websocket version (eg. JavaScript developers) then use the version provided in
 `wscontroller.py`. Their feature set is identical.
 """
 
-import sys
 import zmq
-import time
 import logging
-import multiprocessing
 import numpy as np
 
 import azrael.util as util
-import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.protocol_json as json
-import azrael.physics_interface as physAPI
-import azrael.bullet.bullet_data as bullet_data
 
+from azrael.util import RetVal
 from azrael.typecheck import typecheck
-
-RetVal = util.RetVal
+from azrael.bullet.bullet_data import BulletData, BulletDataOverride
 
 
 class ControllerBase():
@@ -313,7 +307,7 @@ class ControllerBase():
         :rtype: (bool, np.ndarray) or (bool, str)
         """
         cshape = [0, 1, 1, 1]
-        sv = bullet_data.BulletData(
+        sv = BulletData(
             position=pos, velocityLin=vel, cshape=cshape,
             scale=scale, imass=imass,
             orientation=orient, axesLockLin=axesLockLin,
@@ -431,8 +425,7 @@ class ControllerBase():
         return self.serialiseAndSend('get_statevar', objIDs)
 
     @typecheck
-    def setStateVariables(self, objID: int,
-                          new_SV: bullet_data.BulletDataOverride):
+    def setStateVariables(self, objID: int, new_SV: BulletDataOverride):
         """
         Overwrite the the State Variables of ``objID`` with ``data``.
 

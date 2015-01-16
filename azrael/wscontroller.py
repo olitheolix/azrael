@@ -33,19 +33,13 @@ This client uses the Websocket library from
 https://github.com/liris/websocket-client
 """
 import time
-import IPython
 import websocket
-import numpy as np
 
 import azrael.util
 import azrael.controller
-import azrael.config as config
-import azrael.protocol_json as json
 
+from azrael.util import RetVal
 from azrael.typecheck import typecheck
-
-ipshell = IPython.embed
-RetVal = azrael.util.RetVal
 
 
 class WSControllerBase(azrael.controller.ControllerBase):
