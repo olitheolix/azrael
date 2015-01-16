@@ -605,7 +605,8 @@ class LeonardWorkPackages(LeonardBase):
                 time.sleep(0.001)
 
         # Synchronise the objects with the DB.
-        self.syncObjects()
+        with util.Timeit('syncObjects') as timeit:
+            self.syncObjects()
 
     def processWorkPackage(self):
         """
@@ -961,7 +962,7 @@ class LeonardWorker(multiprocessing.Process):
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
 
         # Iterate over all objects and update them.
-        with util.Timeit('Worker.2_applyforce') as timeit:
+        with util.Timeit('Worker.2.0_applyforce') as timeit:
             for obj in worklist:
                 # Update the object in Bullet.
                 self.bullet.setObjectData(obj.id, obj.sv)
@@ -971,7 +972,7 @@ class LeonardWorker(multiprocessing.Process):
                 torque = np.array(obj.torque, np.float64)
 
                 # Add the force defined on the 'force' grid.
-                with util.Timeit('Worker.2.2_grid') as timeit:
+                with util.Timeit('Worker.2.1_grid') as timeit:
                     force = self.applyGridForce(force, obj.sv.position)
 
                 # Apply all forces and torques.
@@ -983,7 +984,7 @@ class LeonardWorker(multiprocessing.Process):
             IDs = [_.id for _ in worklist]
             self.bullet.compute(IDs, meta.dt, meta.maxsteps)
 
-        with util.Timeit('Worker.4_fetchFromBullet') as timeit:
+        with util.Timeit('Worker.4_fetchFromBulletJson') as timeit:
             # Retrieve the objects from Bullet again and update them in the DB.
             out = []
             for obj in worklist:

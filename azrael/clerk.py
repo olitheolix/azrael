@@ -714,10 +714,11 @@ class Clerk(multiprocessing.Process):
         :return: {objID_1: SV_k, ...}
         :rtype: dict
         """
-        # Get the State Variables.
-        ret = physAPI.getStateVariables(objIDs)
-        if not ret.ok:
-            return RetVal(False, 'One or more IDs do not exist', None)
+        with util.Timeit('physAPI.getSV') as timeit:
+            # Get the State Variables.
+            ret = physAPI.getStateVariables(objIDs)
+            if not ret.ok:
+                return RetVal(False, 'One or more IDs do not exist', None)
 
         # Query the lastChanged values for all objects.
         docs = self.db['ObjInstances'].find(

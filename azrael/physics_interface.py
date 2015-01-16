@@ -314,8 +314,12 @@ def getStateVariables(objIDs: (list, tuple)):
 
     # Retrieve the state variables.
     out = {_: None for _ in objIDs}
-    for doc in database.dbHandles['SV'].find({'objID': {'$in': objIDs}}):
-        out[doc['objID']] = bullet_data.fromJsonDict(doc['sv'])
+    with util.Timeit('physAPI.1_getSV') as timeit:
+        tmp = list(database.dbHandles['SV'].find({'objID': {'$in': objIDs}}))
+
+    with util.Timeit('physAPI.2_getSV') as timeit:
+        for doc in tmp:
+            out[doc['objID']] = bullet_data.fromJsonDict(doc['sv'])
     return RetVal(True, None, out)
 
 
