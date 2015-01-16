@@ -596,7 +596,7 @@ class LeonardWorkPackages(LeonardBase):
         # threaded physics.
         with util.Timeit('Leonard.ProcessWPs_1') as timeit:
             for wpid in all_wpids:
-                LeonardWorker(1, 1).processWorkPackage()
+                self.processWorkPackage()
 
         with util.Timeit('Leonard.ProcessWPs_2') as timeit:
             # Wait until all Work Packages have been processed.
@@ -606,6 +606,18 @@ class LeonardWorkPackages(LeonardBase):
 
         # Synchronise the objects with the DB.
         self.syncObjects()
+
+    def processWorkPackage(self):
+        """
+        Send the Work Package with ``wpid`` to the next available worker.
+
+        This is just a dummy function which spawns engine, processed a WP, and
+        then returns to the caller again. The sole purpose is to test Work
+        Package management in a single thread.
+
+        :param int wpid: work package ID to process.
+        """
+        LeonardWorker(1, 1).processWorkPackage()
 
     @typecheck
     def createWorkPackage(self, objIDs: (tuple, list),
@@ -746,12 +758,13 @@ class LeonardDistributed(LeonardWorkPackages):
 
     def processWorkPackage(self):
         """
-        Send the Work Package with ``wpid`` to the next available worker.
+        Tell the next available Worker that a new WP is available.
 
-        :param int wpid: work package ID to process.
+        This function merely sends an empty reply to the Worker. It is up to
+        the Worker to fetch a WP of its choice.
         """
         self.sock.recv()
-        self.sock.send()
+        self.sock.send(b'')
 
 
 class WorkerManager(multiprocessing.Process):
