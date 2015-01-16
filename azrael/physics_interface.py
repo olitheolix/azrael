@@ -498,7 +498,7 @@ def addTemplate(templateID: bytes, data: dict):
 
     if ret is None:
         # No template with name ``templateID`` exists yet --> success.
-        return RetVal(True, None, templateID)
+        return RetVal(True, None, None)
     else:
         # A template with name ``templateID`` already existed --> failure.
         msg = 'Template ID <{}> already exists'.format(templateID)

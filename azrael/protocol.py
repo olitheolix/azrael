@@ -198,13 +198,13 @@ def ToClerk_AddTemplate_Decode(data: dict):
 
 
 @typecheck
-def FromClerk_AddTemplate_Encode(templateID: bytes):
-    return True, {'templateID': templateID}
+def FromClerk_AddTemplate_Encode(dummyarg=None):
+    return True, {}
 
 
 @typecheck
 def FromClerk_AddTemplate_Decode(data: dict):
-    return RetVal(True, None, bytes(data['templateID']))
+    return RetVal(True, None, None)
 
 
 # ---------------------------------------------------------------------------

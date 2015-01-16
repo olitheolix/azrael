@@ -303,7 +303,7 @@ def test_create_fetch_template(client_type):
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
     templateID = 't1'.encode('utf8')
-    ok, _, templateID = client.addTemplate(templateID, cs, vert, uv, rgb, [], [])
+    assert client.addTemplate(templateID, cs, vert, uv, rgb, [], []).ok
 
     # Fetch the just added template again.
     ok, _, ret = client.getTemplate(templateID)
@@ -330,8 +330,7 @@ def test_create_fetch_template(client_type):
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
-    ok, _, templateID = client.addTemplate(
-        templateID, cs, vert, uv, rgb, [b0, b1], [f0])
+    assert client.addTemplate(templateID, cs, vert, uv, rgb, [b0, b1], [f0]).ok
 
     # ... and spawn an instance thereof.
     ok, _, objID = client.spawn(templateID)
@@ -521,8 +520,7 @@ def test_updateGeometry(client_type):
     clerk, client, clacks = startAzrael(client_type)
 
     # Add a new template and spawn it.
-    ok, _, templateID = client.addTemplate(templateID, cs, vert, uv, rgb, [], [])
-    assert ok
+    assert client.addTemplate(templateID, cs, vert, uv, rgb, [], []).ok
     ok, _, objID = client.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
     assert ok
 
