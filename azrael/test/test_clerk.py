@@ -39,7 +39,7 @@ from azrael.test.test_leonard import getLeonard, killAzrael
 ipshell = IPython.embed
 
 
-class ControllerTest(azrael.client.Client):
+class ClientTest(azrael.client.Client):
     def testSend(self, data):
         """
         Pass data verbatim to Clerk.
@@ -65,7 +65,7 @@ def test_invalid():
     # Start Clerk and instantiate a Client.
     clerk = azrael.clerk.Clerk()
     clerk.start()
-    client = ControllerTest()
+    client = ClientTest()
     client.setupZMQ()
 
     # Send a corrupt JSON to Clerk.
