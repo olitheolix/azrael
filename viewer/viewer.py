@@ -347,8 +347,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if objID not in self.oldSVs:
             return False
 
-        cs_old = self.newSVs[objID].checksumGeometry
-        cs_new = self.oldSVs[objID].checksumGeometry
+        cs_old = self.newSVs[objID].lastChanged
+        cs_new = self.oldSVs[objID].lastChanged
         return (cs_old != cs_new)
 
     def loadGeometry(self):

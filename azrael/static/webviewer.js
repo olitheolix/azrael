@@ -345,8 +345,8 @@ function* mycoroutine(connection) {
             // code further down below will then think the object has
             // never existed and download it from scratch.
             if (old_SVs[objID] != undefined) {
-                if (allSVs[objID].checksumGeometry !=
-                    old_SVs[objID].checksumGeometry) {
+                if (allSVs[objID].lastChanged !=
+                    old_SVs[objID].lastChanged) {
                     scene.remove(obj_cache[objID]);
                     delete obj_cache[objID];
                 }

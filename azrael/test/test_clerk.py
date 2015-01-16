@@ -1053,8 +1053,8 @@ def test_getGeometry():
 
 def test_instanceDB_checksum():
     """
-    Spawn and object and verify that the checksum changes whenever the geometry
-    is modified.
+    Spawn and object and verify that the geometry tag changes whenever the
+    geometry is modified.
     """
     killAzrael()
 
@@ -1081,7 +1081,7 @@ def test_instanceDB_checksum():
     (ok, msg, objID1) = clerk.spawn(templateID, sv)
     assert ok
 
-    # Query the checksum of the objects.
+    # Query the 'lastChanged' value for the objects.
     leo.step(0, 10)
     ret = clerk.getStateVariables([objID0, objID1])
     assert ret.ok
@@ -1091,14 +1091,13 @@ def test_instanceDB_checksum():
     # Modify the geometry of the first object.
     assert clerk.updateGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb).ok
 
-    # Verify that the checksum of the first object has changed and that of the
-    # second object has not.
+    # Verify that the 'lastChanged' of only the first object has changed.
     ret = clerk.getStateVariables([objID0])
     assert ret.ok
-    assert ret_1[objID0].checksumGeometry != ret.data[objID0].checksumGeometry
+    assert ret_1[objID0].lastChanged != ret.data[objID0].lastChanged
     ret = clerk.getStateVariables([objID1])
     assert ret.ok
-    assert ret_1[objID1].checksumGeometry == ret.data[objID1].checksumGeometry
+    assert ret_1[objID1].lastChanged == ret.data[objID1].lastChanged
 
     # Kill all spawned Client processes.
     killAzrael()

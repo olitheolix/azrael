@@ -42,7 +42,7 @@ ipshell = IPython.embed
 _BulletData = namedtuple('BulletData',
                          'scale imass restitution orientation '
                          'position velocityLin velocityRot cshape '
-                         'axesLockLin axesLockRot checksumGeometry')
+                         'axesLockLin axesLockRot lastChanged')
 
 
 class BulletData(_BulletData):
@@ -64,7 +64,7 @@ class BulletData(_BulletData):
                 cshape: (list, np.ndarray)=[0, 1, 1, 1],
                 axesLockLin: (list, np.ndarray)=[1, 1, 1],
                 axesLockRot: (list, np.ndarray)=[1, 1, 1],
-                checksumGeometry: int=0,
+                lastChanged: int=0,
                 ):
 
         # Convert arguments to NumPy types where necessary.
@@ -81,7 +81,7 @@ class BulletData(_BulletData):
             assert len(axesLockLin) == len(axesLockRot) == 3
             assert len(orientation) == len(cshape) == 4
             assert len(position) == len(velocityLin) == len(velocityRot) == 3
-            assert checksumGeometry >= 0
+            assert lastChanged >= 0
         except (AssertionError, TypeError) as err:
             return None
 
@@ -98,7 +98,7 @@ class BulletData(_BulletData):
             cshape=cshape,
             axesLockLin=axesLockLin,
             axesLockRot=axesLockRot,
-            checksumGeometry=checksumGeometry)
+            lastChanged=lastChanged)
 
     def __eq__(self, ref):
         """

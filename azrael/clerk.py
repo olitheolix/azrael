@@ -664,10 +664,10 @@ class Clerk(multiprocessing.Process):
             self.logit.info('Added template <{}>'.format(templateID))
             t_raw = t_raw.data
 
-        # ... then add objID and geometry checksum to the document, remove the
-        # _id field, and insert it into the instance DB.
+        # ... then add objID, update lastChanged, remove '_id' field, and
+        # insert the final document into the instance DB.
         t_raw['objID'] = objID
-        t_raw['csGeo'] = 0
+        t_raw['lastChanged'] = 0
         t_raw['templateID'] = templateID
         del t_raw['_id']
         self.db['ObjInstances'].insert(t_raw)
@@ -719,21 +719,22 @@ class Clerk(multiprocessing.Process):
         if not ret.ok:
             return RetVal(False, 'One or more IDs do not exist', None)
 
-        # Query the geometry checksums for all objects.
+        # Query the lastChanged values for all objects.
         docs = self.db['ObjInstances'].find(
             {'objID': {'$in': objIDs}},
-            {'csGeo': 1, 'objID': 1})
+            {'lastChanged': 1, 'objID': 1})
 
         # Convert the list of [{objID1: cs1}, {objID2: cs2}, ...] into
         # a simple {objID1: cs1, objID2: cs2, ...} dictionary.
-        docs = {_['objID']: _['csGeo'] for _ in docs}
+        docs = {_['objID']: _['lastChanged'] for _ in docs}
 
-        # Manually update the geometry checksum field.
+        # Overwrite the 'lastChanged' field in the State Variable with the
+        # curent value so that the user automatically gets the latest value.
         sv = ret.data
         out = {}
         for objID in objIDs:
             if (objID in docs) and (sv[objID] is not None):
-                out[objID] = sv[objID]._replace(checksumGeometry=docs[objID])
+                out[objID] = sv[objID]._replace(lastChanged=docs[objID])
             else:
                 out[objID] = None
 
@@ -786,7 +787,7 @@ class Clerk(multiprocessing.Process):
             {'$set': {'vertices': (vert.astype(np.float64)).tostring(),
                       'UV': (uv.astype(np.float64)).tostring(),
                       'RGB': (rgb.astype(np.uint8)).tostring()},
-             '$inc': {'csGeo': 1}})
+             '$inc': {'lastChanged': 1}})
 
         if ret['n'] == 1:
             return RetVal(True, None, None)

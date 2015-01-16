@@ -524,11 +524,11 @@ def test_updateGeometry(client_type):
     ok, _, objID = client.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
     assert ok
 
-    # Query the SV to obtain the geometry checksum value.
+    # Query the SV to obtain the 'lastChanged' value.
     leo.step(0, 1)
     ok, _, sv = client.getStateVariables(objID)
     assert ok
-    checksumGeometry = sv[objID].checksumGeometry
+    lastChanged = sv[objID].lastChanged
 
     # Fetch-, modify-, update- and verify the geometry.
     ok, _, (ret_vert, ret_uv, ret_rgb) = client.getGeometry(objID)
@@ -542,10 +542,10 @@ def test_updateGeometry(client_type):
     assert ok
     assert np.allclose(2 * vert, ret_vert) and np.allclose(2 * uv, ret_uv)
 
-    # Ensure the geometry checksum is different as well.
+    # Ensure 'lastChanged' is different as well.
     ok, _, sv = client.getStateVariables(objID)
     assert ok
-    assert sv[objID].checksumGeometry != checksumGeometry
+    assert sv[objID].lastChanged != lastChanged
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
