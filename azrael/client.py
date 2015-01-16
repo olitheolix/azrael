@@ -154,8 +154,8 @@ class Client():
 
         :param str cmd: command word
         :param dict data: payload (must be JSON encodeable)
-        :return: (ok, data)
-        :rtype: (bool, dict)
+        :return: Payload data in whatever form it arrives.
+        :rtype: any
         """
         try:
             payload = json.dumps({'cmd': cmd, 'payload': data})
@@ -187,22 +187,17 @@ class Client():
         """
         Serialise ``args``, send it to Clerk, and return de-serialised reply.
 
-        This method is a convenience wrapper around the
-        encode-send-receive-decode cycle that constitutes every request to
-        Clerk.
+        This is a convenience wrapper around the encode-send-receive-decode
+        cycle that constitutes every request to Clerk.
 
         The value of ``cmd`` determines the encoding of ``args``. Note that
         this method accepts a variable number of parameters in ``args`` yet
-        does not actually inspect them. Instead it passes them on verbatim to
+        does not actually inspect them. Instead it passes them verbatim to
         the respective encoding function in the ``protocol`` module.
 
-        The method returns an (ok, data) tuple. If the `ok` flag is **True**
-        then `data` will contain the de-serialised content in terms of
-        Python/NumPy types. Otherwise it contains an error message.
-
         :param str cmd: name of command.
-        :return: (ok, data, msg)
-        :rtype: (bool, bytes) or (bool, str)
+        :return: deserialised reply.
+        :rtype: any
         """
         # Sanity checks.
         assert cmd in self.codec
@@ -226,8 +221,8 @@ class Client():
         This method will block if there is no Clerk process.
 
         :param str cmd: name of command.
-        :return: (ok, data)
-        :rtype: (bool, bytes) or (bool, str)
+        :return: reply from Clerk.
+        :rtype: string
         """
         return self.serialiseAndSend('ping_clerk', None)
 
@@ -238,9 +233,9 @@ class Client():
 
         All returned values are NumPy arrays.
 
-        :param int objID: ID for which to return the geometry.
-        :return: (ok, (vert, UV, RGB))
-        :rtype: (bool, np.ndarray) or (bool, str)
+        :param int objID: return geometry for this object.
+        :return: tupleof NumPy arrays: (vert, UV, RGB)
+        :rtype: tuple(arrays)
         """
         return self.serialiseAndSend('get_geometry', objID)
 
@@ -254,8 +249,7 @@ class Client():
         :param bytes vert: object geometry
         :param bytes UV: UV map for textures
         :param bytes RGB: texture
-        :return: (ok, ())
-        :rtype: (bool, tuple) or (bool, str)
+        :return: Success
         """
         return self.serialiseAndSend('update_geometry', objID, vert, uv, rgb)
 
@@ -268,19 +262,18 @@ class Client():
               axesLockLin: (list, np.ndarray)=[1, 1, 1],
               axesLockRot: (list, np.ndarray)=[1, 1, 1]):
         """
-        Spawn a new object based on the template ``templateID``.
+        Spawn new object from ``templateID`` and return its ID.
 
-        The new object will spawn at ``pos`` with velocity ``vel``,
-        orientation ``orient``.
+        The various function arguments modify the initial State Vector.
 
         :param bytes templateID: template from which to spawn the object.
         :param 3-vec pos: object position
         :param 3-vec vel: initial velocity
         :param 4-vec orient: initial orientation
         :param float scale: scale entire object by this factor.
-        :param float imass: inverse of object mass.
-        :return: (ok, data)
-        :rtype: (bool, np.ndarray) or (bool, str)
+        :param float imass: (inverse) object mass.
+        :return: object ID
+        :rtype: int
         """
         cshape = [0, 1, 1, 1]
         sv = BulletData(
@@ -295,9 +288,10 @@ class Client():
         """
         Remove ``objID`` from the physics simulation.
 
-        :param int objID: ID of object to remove.
-        :return: (ok, (msg,))
-        :rtype: tuple
+        ..note:: this method will succeed even if there is no ``objID``.
+
+        :param int objID: request to remove this object.
+        :return: Success
         """
         return self.serialiseAndSend('remove', objID)
 
@@ -306,20 +300,19 @@ class Client():
         """
         Issue control commands to object parts.
 
-        Boosters can be activated with a scalar force that will apply according
-        to their orientation. The commands themselves must be
-        ``parts.CmdBooster`` instances.
+        Boosters expect a scalar force which will apply according to their
+        orientation. The commands themselves must be ``parts.CmdBooster``
+        instances.
 
         Factories can spawn objects. Their command syntax is defined in the
-        ``parts`` module. The commands themselves must be
-        ``parts.CmdFactory`` instances.
+        ``parts`` module. The commands themselves must be ``parts.CmdFactory``
+        instances.
 
         :param int objID: object ID.
         :param list cmd_booster: booster commands.
         :param list cmd_factory: factory commands.
-        :return: (True, (b'',)) or (False, error-message)
-        :rtype: (bool, (int, )) or (bool, str)
-        :raises: None
+        :return: list of IDs of objects spawned by factories (if any).
+        :rtype: list
         """
         return self.serialiseAndSend(
             'control_parts', objID, cmd_boosters, cmd_factories)
@@ -327,26 +320,25 @@ class Client():
     @typecheck
     def getTemplateID(self, objID: int):
         """
-        Return the template ID from which ``objID`` was spawned.
+        Return the template ID for ``objID``.
 
-        If ``objID`` does not exist in the simulation then return an error.
+        Return an error if ``objID`` does not exist in the simulation.
 
         :param int objID: ID of spawned object.
-        :return: (ok, objID)
-        :rtype: (bool, np.ndarray) or (bool, str)
+        :return: template ID
+        :rtype: bytes
         """
         return self.serialiseAndSend('get_template_id', objID)
 
     @typecheck
     def getTemplate(self, templateID: bytes):
         """
-        Return the entire template data for ``templateID``.
+        Return the entire ``templateID`` data.
 
-        If you are only interested in the geometry then use ``getGeometry``
-        instead.
+        Use ``getGeometry`` to just query the geometry.
 
         :param bytes templateID: return the description of this template.
-        :return: (ok, (cs, geo, boosters, factories))
+        :return: (cs, geo, boosters, factories)
         """
         return self.serialiseAndSend('get_template', templateID)
 
@@ -358,7 +350,7 @@ class Client():
         """
         Add a new ``templateID`` to the system.
 
-        Henceforth Clerk can spawn ``templateID`` objects.
+        From then one Clerk will be able to spawn objects from them.
 
         Return an error if ``templateID`` already exists.
 
@@ -369,9 +361,7 @@ class Client():
         :param bytes RGB: texture
         :param parts.Booster boosters: list of Booster instances.
         :param parts.Factory boosters: list of Factory instances.
-        :return: (ok, template ID)
-        :rtype: (bool, bytes)
-        :raises: None
+        :return: Success
         """
         cs = np.array(cs, np.float64)
         return self.serialiseAndSend(
@@ -380,19 +370,18 @@ class Client():
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple, int)):
         """
-        Return the State Variables for all ``objIDs`` as a dictionary.
+        Return the State Variables for all ``objIDs`` in a dictionary.
 
-        :param list objIDs: object ID (or list thereof)
-        :return: (ok, dict)
-        :rtype: (bool, bytes)
-        :raises: None
+        :param list/int objIDs: query the SV for these objects
+        :return: dictionary of State Variables.
+        :rtype: dict
         """
+        # If the user requested only a single State Variable wrap it into a
+        # list avoid special case treatment.
         if isinstance(objIDs, int):
-            # Wrap a single objID into a list for uniformity.
             objIDs = [objIDs]
 
-        # Sanity check: every objID in the list must have the correct type and
-        # length.
+        # Sanity check: all objIDs must be valid.
         for objID in objIDs:
             assert isinstance(objID, int)
             assert objID >= 0
@@ -403,17 +392,15 @@ class Client():
     @typecheck
     def setStateVariables(self, objID: int, new_SV: BulletDataOverride):
         """
-        Overwrite the the State Variables of ``objID`` with ``data``.
+        Overwrite the the State Variables of ``objID`` with ``new_SV``.
 
         This method tells Leonard to manually set attributes like position and
         speed, irrespective of what the physics engine computes. The attributes
-        will be applied exactly once.
+        will only be applied once.
 
         :param int objID: the object to move.
         :param BulletDataOverride new_SV: the object attributes to set.
-        :return: (ok, b'')
-        :rtype: (bool, bytes)
-        :raises: None
+        :return: Success
         """
         return self.serialiseAndSend('set_statevar', objID, new_SV)
 
@@ -422,13 +409,11 @@ class Client():
         """
         Apply ``force`` to ``objID``.
 
-        The force is always applied at the centre of mass.
+        The ``force`` applies always at the centre of mass.
 
-        :param int objID: the object for which to apply a force.
-        :param ndarray force: force vector.
-        :return: (ok, b'')
-        :rtype: (bool, bytes)
-        :raises: None
+        :param int objID: apply ``force`` to this object
+        :param ndarray force: the actual force vector (3 elements).
+        :return: Success
         """
         assert len(force) == 3
         pos = np.zeros(3, np.float64)
@@ -436,10 +421,10 @@ class Client():
 
     def getAllObjectIDs(self):
         """
-        Return all ``objIDs`` in the simulation.
+        Return all object IDs currently in the simulation.
 
         :param bytes dummy: irrelevant
-        :return: (ok, list-of-objIDs)
-        :rtype: (bool, list)
+        :return: list of object IDs (integers)
+        :rtype: list of int
         """
         return self.serialiseAndSend('get_all_objids')
