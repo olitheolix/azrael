@@ -30,6 +30,7 @@ import subprocess
 import numpy as np
 
 import azrael.clerk
+import azrael.client
 import azrael.database
 import azrael.parts as parts
 import azrael.config as config
@@ -37,7 +38,6 @@ import azrael.clacks as clacks
 import azrael.leonard as leonard
 import azrael.protocol as protocol
 import azrael.protocol_json as json
-import azrael.client as controller
 import azrael.wscontroller as wscontroller
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
@@ -48,7 +48,7 @@ from azrael.test.test_leonard import getLeonard
 ipshell = IPython.embed
 
 
-class ControllerTest(controller.Client):
+class ControllerTest(azrael.client.Client):
     def testSend(self, data):
         """
         Pass data verbatim to Clerk.
