@@ -26,7 +26,7 @@ def test_increment_WPCounter(fun):
     ret = fun()
     assert ret.ok
     assert ret.data == 1
-    
+
     print('Test passed')
 
 

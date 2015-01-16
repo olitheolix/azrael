@@ -71,7 +71,7 @@ def test_setStateVariables_basic(clsLeonard):
 
     # Spawn a new object. It must have ID=1.
     assert physAPI.addCmdSpawn(id_1, sv, aabb=1.0).ok
-    
+
     # Update the object's State Vector.
     assert physAPI.addCmdModifyStateVariable(id_1, data).ok
 
@@ -179,7 +179,7 @@ def test_move_two_objects_no_collision(clsLeonard):
     Same as previous test but with two objects.
     """
     killAzrael()
-    
+
     # Reset the SV database and instantiate a Leonard.
     leonard = getLeonard(clsLeonard)
 
@@ -397,7 +397,7 @@ def test_computeCollisionSetsAABB(dim):
 
     def ccsWrapper(test_objIDs, expected_objIDs):
         """
-        Assert that the ``IDs_hr`` were split into the ``expected_objIDs`` lists.
+        Assert that all ``test_objIDs`` resulted in the ``expected_objIDs``.
 
         This is merely a convenience wrapper to facilitate readable tests.
 
@@ -616,7 +616,7 @@ def test_create_work_package_with_objects():
     data_3 = bullet_data.BulletData(imass=3)
     wpid = 1
     id_1, id_2 = 1, 2
-    
+
     # Spawn new objects.
     assert physAPI.addCmdSpawn(id_1, data_1, aabb=1)
     assert physAPI.addCmdSpawn(id_2, data_2, aabb=1)
@@ -628,7 +628,7 @@ def test_create_work_package_with_objects():
 
     # Retrieve the work package again.
     ret = worker.getNextWorkPackage()
-    
+
     # Check the WP content.
     assert (ret.ok, len(ret.data['wpdata'])) == (True, 2)
     data = ret.data['wpdata']

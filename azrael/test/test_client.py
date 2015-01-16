@@ -49,6 +49,7 @@ ipshell = IPython.embed
 WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client
 
+
 def test_ping():
     """
     Send a ping to the Clerk and check the response is correct.
@@ -440,12 +441,12 @@ def test_controlParts(client_type):
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
-    ret = client.addTemplate(templateID_2, cs, vert, uv, rgb, [b0, b1], [f0, f1])
-    assert ret.ok
+    assert client.addTemplate(templateID_2, cs, vert, uv,
+                              rgb, [b0, b1], [f0, f1]).ok
 
     # ... and spawn an instance thereof.
     ok, _, objID = client.spawn(templateID_2, pos=pos_parent,
-                           vel=vel_parent, orient=orient_parent)
+                                vel=vel_parent, orient=orient_parent)
     assert (ok, objID) == (True, objID_1)
     del ok, objID
     leo.step(0, 1)
@@ -466,8 +467,9 @@ def test_controlParts(client_type):
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDs must be '2' and '3'.
-    ok, _, spawnIDs = client.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
-    assert (ok, len(spawnIDs)) == (True, 2)
+    ret = client.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
+    spawnIDs = ret.data
+    assert (ret.ok, len(spawnIDs)) == (True, 2)
     assert spawnIDs == [2, 3]
     leo.step(0, 1)
 
@@ -536,7 +538,8 @@ def test_updateGeometry(client_type):
     assert np.allclose(uv, ret_uv)
     assert np.allclose(vert, ret_vert)
 
-    assert client.updateGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb).ok
+    ret = client.updateGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb)
+    assert ret.ok
 
     ok, _, (ret_vert, ret_uv, ret_rgb) = client.getGeometry(objID)
     assert ok

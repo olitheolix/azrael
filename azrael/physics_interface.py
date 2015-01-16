@@ -66,6 +66,7 @@ def getCmdSpawn():
     """
     return RetVal(True, None, list(database.dbHandles['CmdSpawn'].find()))
 
+
 @typecheck
 def getCmdModifyStateVariables():
     """
@@ -79,6 +80,7 @@ def getCmdModifyStateVariables():
     """
     return RetVal(True, None, list(database.dbHandles['CmdModify'].find()))
 
+
 @typecheck
 def getCmdRemove():
     """
@@ -91,6 +93,7 @@ def getCmdRemove():
     :rtype: list of dicts.
     """
     return RetVal(True, None, list(database.dbHandles['CmdRemove'].find()))
+
 
 @typecheck
 def dequeueCmdSpawn(spawn: list):
@@ -175,9 +178,10 @@ def addCmdSpawn(objID: int, sv: bullet_data.BulletData, aabb: (int, float)):
     # will return whatever the latest value from the DB, which is either the
     # one we just inserted (success) or a previously inserted one (fail). The
     # only way to distinguish them is to verify that the SVs are identical.
-    doc = database.dbHandles['CmdSpawn'].find_and_modify({'objID': objID},
-                                       {'$setOnInsert': data},
-                                       upsert=True, new=True)
+    db = database.dbHandles['CmdSpawn']
+    doc = db.find_and_modify({'objID': objID},
+                             {'$setOnInsert': data},
+                             upsert=True, new=True)
     success = doc['sv'] == data['sv']
 
     # Return success status to caller.

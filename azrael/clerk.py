@@ -411,7 +411,7 @@ class Clerk(multiprocessing.Process):
 
         # Tally up the central force and torque exerted by all boosters.
         tot_torque = np.zeros(3, np.float64)
-        tot_central_force = np.zeros(3, np.float64)
+        tot_force = np.zeros(3, np.float64)
         for cmd in cmd_boosters:
             # Template for this very factory.
             this = booster_t[cmd.partID]
@@ -428,12 +428,12 @@ class Clerk(multiprocessing.Process):
 
             # Accumulate torque and central force.
             tot_torque += np.cross(force_pos, force)
-            tot_central_force += force
+            tot_force += force
 
         # Apply the net- force and torque. Skip this step if booster commands
         # were supplied.
         if len(cmd_boosters) > 0:
-            physAPI.addCmdSetForceAndTorque(objID, tot_central_force, tot_torque)
+            physAPI.addCmdSetForceAndTorque(objID, tot_force, tot_torque)
 
         # Let the factories spawn the objects.
         objIDs = []
@@ -772,7 +772,7 @@ class Clerk(multiprocessing.Process):
 
     @typecheck
     def updateGeometry(self, objID: int, vert: np.ndarray,
-                    uv: np.ndarray, rgb: np.ndarray):
+                       uv: np.ndarray, rgb: np.ndarray):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 

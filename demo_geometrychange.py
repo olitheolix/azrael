@@ -275,7 +275,8 @@ class UpdateGeometry(multiprocessing.Process):
             # Swap out the geometry.
             for objID in objIDs:
                 if (cnt % 2) == 0:
-                    client.updateGeometry(objID, sphere_vert, sphere_uv, sphere_rgb)
+                    client.updateGeometry(objID, sphere_vert,
+                                          sphere_uv, sphere_rgb)
                 else:
                     client.updateGeometry(objID, *geometries[objID])
 

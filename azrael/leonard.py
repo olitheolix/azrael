@@ -284,7 +284,7 @@ class LeonardBase(multiprocessing.Process):
         tmp = [_['objID'] for _ in docsSpawn.data]
         physAPI.dequeueCmdSpawn(tmp)
         tmp = [_['objID'] for _ in docsModify.data]
-        physAPI.dequeueCmdModify( tmp)
+        physAPI.dequeueCmdModify(tmp)
         tmp = [_['objID'] for _ in docsRemove.data]
         physAPI.dequeueCmdRemove(tmp)
         del tmp
@@ -344,13 +344,13 @@ class LeonardBase(multiprocessing.Process):
 
     def processCommandsAndSync(self):
         self.processCommandQueue()
-        self.syncObjects()                    
-        
+        self.syncObjects()
+
     @typecheck
     def countWorkPackages(self):
         """
         Return the number of (un)processed work packages.
-    
+
         This method is for testing only. Do not use in production because its
         result may be inaccurate when WPs get frequently added and updated.
 
@@ -360,7 +360,7 @@ class LeonardBase(multiprocessing.Process):
         cntOpen = db.find({'wpid': {'$exists': 1}}).count()
         cntDone = db.find({'wpid': {'$exists': 0}}).count()
         return RetVal(True, None, (cntOpen, cntDone))
-    
+
     def run(self):
         """
         Drive the periodic physics updates.
@@ -568,7 +568,7 @@ class LeonardWorkPackages(LeonardBase):
                              ``dt`` update.
         """
         # Read queued commands and update the local object cache accordingly.
-        self.processCommandQueue()        
+        self.processCommandQueue()
 
         # Compute the collision sets.
         with util.Timeit('Leonard.CCS') as timeit:
@@ -597,11 +597,11 @@ class LeonardWorkPackages(LeonardBase):
         with util.Timeit('Leonard.ProcessWPs_1') as timeit:
             for wpid in all_wpids:
                 LeonardWorker(1, 1).processWorkPackage()
-                
+
         with util.Timeit('Leonard.ProcessWPs_2') as timeit:
             # Wait until all Work Packages have been processed.
             pcwp = self.pullCompletedWorkPackages
-            while pcwp().data[1]> 0:
+            while pcwp().data[1] > 0:
                 time.sleep(0.001)
 
         # Synchronise the objects with the DB.
@@ -612,7 +612,7 @@ class LeonardWorkPackages(LeonardBase):
                           dt: (int, float), maxsteps: int):
         """
         Create a new Work Package (WP) and return its ID.
-    
+
         The Work Package will not be returned but uploaded to the DB directly.
 
         A Work Package carries the necessary information for another rigid body
@@ -622,11 +622,12 @@ class LeonardWorkPackages(LeonardBase):
 
         The ``dt`` and ``maxsteps`` arguments are for the underlying physics
         engine.
-    
+
         .. note::
            A work package contains only the objIDs but not their SV. The
-           ``getNextWorkPackage`` function takes care of compiling this information.
-    
+           ``getNextWorkPackage`` function takes care of compiling this
+           information.
+
         :param iterable objIDs: list of object IDs in the new work package.
         :param float dt: time step for this work package.
         :param int maxsteps: number of sub-steps for the time step.
@@ -636,7 +637,7 @@ class LeonardWorkPackages(LeonardBase):
         # Sanity check.
         if len(objIDs) == 0:
             return RetVal(False, 'Work package is empty', None)
-    
+
         # Compile the State Vectors and forces for all objects into a list of
         # ``WPData`` named tuples.
         try:
@@ -654,17 +655,17 @@ class LeonardWorkPackages(LeonardBase):
             self.logit.error(msg)
             return wpid
         wpid = wpid.data
-    
+
         # Form the content of the Work Package as it will appear in the DB.
         data = {'wpid': wpid,
                 'wpmeta': WPMeta(wpid, dt, maxsteps),
                 'wpdata': wpdata,
                 'ts': None}
-        
+
         # Insert the Work Package into the DB.
         ret = self._DB_WP.insert(data)
         return RetVal(True, None, wpid)
-    
+
     def pullCompletedWorkPackages(self):
         """
         Fetch all completed Work Packages and update the local object cache.
@@ -686,7 +687,7 @@ class LeonardWorkPackages(LeonardBase):
                 remove=True)
             if doc is None:
                 break
-        
+
             # Reset force and torque for all objects in the WP, and overwrite
             # the old State Vector with the new one from the processed WP.
             for (objID, sv, force, torque) in doc['wpdata']:
@@ -886,13 +887,13 @@ class LeonardWorker(multiprocessing.Process):
     def getNextWorkPackage(self):
         """
         Return the next available Work Package.
-    
-        This function returns a dictionary with two keys. The first key ('wpdata')
-        contains a list of ``WPData`` with the State Vectors of all objects and
-        the forces that apply to them, and the second key ('wpmeta') is a
-        ``WPMeta`` instance.
-    
-        :return: {'wpdata': list of WPData instances, 'wpmeta': meta information}
+
+        This function returns a dictionary with two keys. The first key
+        ('wpdata') contains a list of ``WPData`` with the State Vectors of all
+        objects and the forces that apply to them, and the second key
+        ('wpmeta') is a ``WPMeta`` instance.
+
+        :return: {'wpdata': WPData instances, 'wpmeta': meta information}
         :rtype: dict
         """
         # Fetch the next Work Package with the oldest timestamp, and also
@@ -903,27 +904,26 @@ class LeonardWorker(multiprocessing.Process):
                   sort=[('ts', pymongo.ASCENDING)])
         if doc is None:
             return RetVal(False, 'No Work Package available', None)
-    
+
         # Put the objects from the Work Package into the WPData structure.
         wpdata = []
         for (objID, sv, force, torque) in doc['wpdata']:
             wpdata.append(WPData(id=objID,
-                            sv=bullet_data.fromJsonDict(sv),
-                            central_force=force,
-                            torque=torque))
+                          sv=bullet_data.fromJsonDict(sv),
+                          central_force=force,
+                          torque=torque))
 
         # Put the meta data of the work package into another named tuple.
         wpmeta = WPMeta(*doc['wpmeta'])
         return RetVal(True, None, {'wpdata': wpdata, 'wpmeta': wpmeta})
-    
-    
+
     @typecheck
     def updateWorkPackage(self, wpid: int, wpdata: (tuple, list)):
         """
         Update the objects in ``wpid`` with the values in ``svdict``.
-    
+
         This function only changes the WP with ``wpid``.
-    
+
         :param int wpid: work package ID.
         :param list wpdata: List of ``WPData`` (named tuple) instances.
         :return bool: Success.
@@ -933,7 +933,7 @@ class LeonardWorker(multiprocessing.Process):
             {'$set': {'wpdata': wpdata},
              '$unset': {'wpid': 1}})
         return RetVal(doc is not None, None, None)
-    
+
     def processWorkPackage(self):
         with util.Timeit('Worker.1_fetchWP') as timeit:
             ret = self.getNextWorkPackage()
@@ -980,7 +980,9 @@ class LeonardWorker(multiprocessing.Process):
                     # Something went wrong. Reuse the old SV.
                     sv = obj.sv
                     self.logit.error('Unable to get all objects from Bullet')
-                out.append(WPData(obj.id, sv.toJsonDict(), [0, 0, 0], [0, 0, 0]))
+                out.append(WPData(obj.id, sv.toJsonDict(),
+                                  [0, 0, 0],
+                                  [0, 0, 0]))
 
         # Update the data and delete the WP.
         with util.Timeit('Worker.5_updateWP') as timeit:
