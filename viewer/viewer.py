@@ -40,9 +40,9 @@ import numpy as np
 import model_import
 import OpenGL.GL as gl
 
+import azrael.client
 import azrael.util as util
 import azrael.config as config
-import azrael.client as controller
 import azrael.physics_interface as physAPI
 
 from PySide import QtCore, QtGui, QtOpenGL
@@ -353,7 +353,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
     def loadGeometry(self):
         # Retrieve all object IDs.
-        ret = self.ctrl.getAllObjectIDs()
+        ret = self.client.getAllObjectIDs()
         if not ret.ok:
             print('Could not query the object IDs -- Abort')
             self.close()
@@ -361,7 +361,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Retrieve the state variables of all objects.
         self.oldSVs = self.newSVs
         with util.Timeit('getSV') as timeit:
-            ret = self.ctrl.getStateVariables(ret.data)
+            ret = self.client.getStateVariables(ret.data)
         if not ret.ok:
             print('Could not retrieve the state variables -- Abort')
             self.close()
@@ -393,7 +393,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Download the latest geometry for this object.
-            ret = self.ctrl.getGeometry(objID)
+            ret = self.client.getGeometry(objID)
             if not ret.ok:
                 continue
             buf_vert, buf_uv, buf_rgb = ret.data
@@ -525,7 +525,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Create the template with name 'cube'.
         t_projectile = 'cube'.encode('utf8')
         args = t_projectile, cs, buf_vert, uv, rgb, [], []
-        ret = self.ctrl.addTemplate(*args)
+        ret = self.client.addTemplate(*args)
 
         # The template was probably already defined (eg by a nother instance of
         # this script).
@@ -540,8 +540,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Create the graphic buffers and compile the shaders.
         """
         # Connect to Azrael.
-        self.ctrl = controller.Client(addr_clerk=self.addr_server)
-        self.ctrl.setupZMQ()
+        self.client = azrael.client.Client(addr_clerk=self.addr_server)
+        self.client.setupZMQ()
 
         print('Client connected')
 
@@ -555,7 +555,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.camera = Camera(initPos, 90 * np.pi / 180, 0)
 
         # Spawn the player object (it has the same shape as a projectile).
-        ret = self.ctrl.spawn(self.t_projectile, initPos, np.zeros(3))
+        ret = self.client.spawn(self.t_projectile, initPos, np.zeros(3))
         if not ret.ok:
             print('Cannot spawn player object (<{}>)'.format(ret.data))
             self.close()
@@ -765,7 +765,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         pos = self.camera.position
         attr = physAPI.BulletDataOverride(position=pos)
-        assert self.ctrl.setStateVariables(self.player_id, attr).ok
+        assert self.client.setStateVariables(self.player_id, attr).ok
 
         # Do not update the camera rotation if the mouse is not grabbed.
         if not self.mouseGrab:
@@ -870,7 +870,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 2 * self.camera.view
 
             # Spawn the object.
-            ret = self.ctrl.spawn(
+            ret = self.client.spawn(
                 self.t_projectile, pos, vel=vel, scale=0.25, imass=20)
             if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
@@ -880,7 +880,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 2 * self.camera.view
 
             # Spawn the object.
-            ret = self.ctrl.spawn(
+            ret = self.client.spawn(
                 self.t_projectile, pos, vel=vel, scale=0.25, imass=2)
             if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
