@@ -10,10 +10,10 @@ import numpy as np
 import azrael.clerk
 import azrael.clacks
 import azrael.vectorgrid
+import azrael.wsclient
 import azrael.config as config
-import azrael.wscontroller as wscontroller
 
-WSClient = wscontroller.WSClient
+WSClient = azrael.wsclient.WSClient
 
 ipshell = IPython.embed
 
@@ -57,7 +57,7 @@ def startAzrael(client_type):
         clacks.start()
 
         # Instantiate the Websocket version of the Client.
-        client = azrael.wscontroller.WSClient(
+        client = azrael.wsclient.WSClient(
             'ws://127.0.0.1:8080/websocket', 1)
         assert client.ping()
     else:

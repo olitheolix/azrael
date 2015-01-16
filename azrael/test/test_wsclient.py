@@ -28,14 +28,14 @@ import pytest
 import IPython
 
 import azrael.client
-import azrael.wscontroller
+import azrael.wsclient
 
 from azrael.test.test_clerk import killAzrael
 
 ipshell = IPython.embed
 
 Client = azrael.client.Client
-WSClient = azrael.wscontroller.WSClient
+WSClient = azrael.wsclient.WSClient
 
 
 def test_custom_objid():
@@ -59,16 +59,16 @@ def test_custom_objid():
 
     address = 'ws://127.0.0.1:8080/websocket'
 
-    # Instantiate a WSController without specifiying an object ID.
-    client_0 = azrael.wscontroller.WSClient(address)
+    # Instantiate a WSClient without specifiying an object ID.
+    client_0 = azrael.wsclient.WSClient(address)
 
     # Ping Clerk to verify the connection is live.
     ret = client_0.ping()
     assert (ret.ok, ret.data) == (True, 'pong clerk')
 
-    # Instantiate another WSController. This time specify an ID. Note: the ID
+    # Instantiate another WSClient. This time specify an ID. Note: the ID
     # need not exist albeit object specific commands will subsequently fail.
-    client_1 = azrael.wscontroller.WSClient(address)
+    client_1 = azrael.wsclient.WSClient(address)
 
     # Ping Clerk again to verify the connection is live.
     ret = client_1.ping()

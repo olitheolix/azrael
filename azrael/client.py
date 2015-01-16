@@ -20,7 +20,7 @@ Use ``Client`` to connect to ``Clerk``. There can be arbitrarily many ``Clerk``
 and ``Client`` client instances connected to each other.
 
 This moduel implement ZeroMQ version of the client. For a Websocket version
-(eg. JavaScript developers) use ``WSClient`` from `wscontroller.py` (their
+(eg. JavaScript developers) use ``WSClient`` from `wsclient.py` (their
 feature set is identical).
 """
 

@@ -33,7 +33,7 @@ import numpy as np
 import azrael.clerk
 import azrael.clacks
 import azrael.client
-import azrael.wscontroller
+import azrael.wsclient
 import azrael.parts as parts
 import azrael.config as config
 import azrael.leonard as leonard
@@ -46,7 +46,7 @@ from azrael.test.test_clerk import getLeonard, killAzrael
 from azrael.test.test_clerk import startAzrael, stopAzrael
 
 ipshell = IPython.embed
-WSClient = azrael.wscontroller.WSClient
+WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client
 
 def test_ping():
