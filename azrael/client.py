@@ -109,15 +109,8 @@ class Client():
             }
 
     def __del__(self):
-        self.close()
-
-    def close(self):
-        """
-        Close all ZeroMQ sockets.
-        """
         if self.sock_cmd is not None:
-            self.sock_cmd.close()
-        self.sock_cmd = None
+            self.sock_cmd.close(linger=0)
 
     @typecheck
     def send(self, data: str):

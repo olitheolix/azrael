@@ -147,19 +147,15 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         """
-        Shutdown Client.
-
-        Cleanly shutdown the Client, most notably the REQ ZeroMQ sockets
-        which may cause problems when disconnected without the knowledge of the
-        server. This is still a  potential bug that needs a test to reproduce
-        it reliably. For now however it is a safe assumption that the handler
-        is not forcefully terminated by the OS.
+        Disconnect Client from Azrael.
 
         This method is a Tornado callback and triggers whenever the Websocket
         is closed.
         """
         if self.client is not None:
-            self.client.close()
+            # Not strictly necessary but forcefully triggering the desctructor
+            # to close the ZeroMQ connection cannot be a bad idea.
+            del self.client
         self.logit.debug('Connection closed')
 
 
