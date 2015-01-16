@@ -16,9 +16,9 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Test the controller base class.
+Test the client base class.
 
-The controller class is merely a convenience class to wrap the Clerk
+The client class is merely a convenience class to wrap the Clerk
 commands. As such the tests here merely test these wrappers. See `test_clerk`
 if you want to see thorough tests for the Clerk functionality.
 """
@@ -68,7 +68,7 @@ def test_ping():
 
 
 @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-def test_spawn_and_delete_one_controller(client_type):
+def test_spawn_and_delete_one_client(client_type):
     """
     Ask Clerk to spawn one object.
     """
@@ -560,7 +560,7 @@ if __name__ == '__main__':
 
     test_setStateVariables(_transport_type)
     test_updateGeometry(_transport_type)
-    test_spawn_and_delete_one_controller(_transport_type)
+    test_spawn_and_delete_one_client(_transport_type)
     test_spawn_and_get_state_variables(_transport_type)
     test_ping()
     test_get_template(_transport_type)

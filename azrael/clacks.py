@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Bridge between Websocket Controller and Clerk.
+Bridge between Websocket Client and Clerk.
 
 It does little more than wrapping a ``Client`` instance. As such it has
 the same capabilities.
@@ -33,10 +33,10 @@ import zmq.eventloop.zmqstream
 
 import numpy as np
 
+import azrael.client
 import azrael.util as util
 import azrael.config as config
 import azrael.protocol_json as json
-import azrael.client as controller
 
 from azrael.typecheck import typecheck
 
@@ -45,16 +45,15 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
     """
     Clacks server.
 
-    Clacks is nothing more than a Websocket wrapper around a Controller. Its
-    main purpose is to facilitate browser access to Azrael since most browsers
-    support it natively, unlike ZeroMQ.
+    Clacks is nothing more than Websocket relay to Clerk. Its main purpose is
+    to facilitate browser access to Azrael/Clerk since most browsers support
+    Websockets but not necessarily ZeroMQ.
 
-    Every Websocket connection has its own Controller instance. It is created
-    once when the Websocket is opened and processes (almost) every request sent
-    through the Websocket.
+    Internally, every Websocket instance creates a standard ``Client``
+    instance, and uses to relay the request to a Clerk.
 
-    Among the few exceptions that are not passed to the Controller are Pings
-    directed specifically to this Clacks server.
+    Among the few exceptions that are not passed to the Client instance are
+    Pings directed specifically to this Clacks server.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,13 +64,13 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         """
-        Create a controller instance as an instance variable.
+        Create a Client instance.
 
         This method is a Tornado callback and triggers when a client initiates
         a new Websocket connection.
         """
-        self.controller = controller.Client()
-        self.controller.setupZMQ()
+        self.client = azrael.client.Client()
+        self.client.setupZMQ()
 
     @typecheck
     def returnOk(self, data: dict, msg: str):
@@ -116,7 +115,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         command byte (always exactly one byte) plus an optional payload.
 
         Based on the command Byte this handler will either respond directly to
-        that command or pass it on to the Controller instances associated with
+        that command or pass it on to the Client instances associated with
         this Websocket/client.
 
         :param bytes msg: message from client.
@@ -138,9 +137,9 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             # Handle ourselves: return the pong.
             self.returnOk({'response': 'pong clacks'}, '')
         else:
-            # Pass all other commands directly to the Controller which will
-            # (probably) send it to Clerk for processing.
-            ret = self.controller.sendToClerk(cmd, payload)
+            # Pass all other commands directly to the Client instnace which
+            # will (probably) send it to Clerk for processing.
+            ret = self.client.sendToClerk(cmd, payload)
 
             if ret.ok:
                 self.returnOk(ret.data, ret.msg)
@@ -149,19 +148,19 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         """
-        Shutdown Controller.
+        Shutdown Client.
 
-        This method is a Tornado callback and triggers whenever the Websocket
-        is closed.
-
-        Cleanly shutdown the Controller, most notably the REQ ZeroMQ sockets
+        Cleanly shutdown the Client, most notably the REQ ZeroMQ sockets
         which may cause problems when disconnected without the knowledge of the
         server. This is still a  potential bug that needs a test to reproduce
         it reliably. For now however it is a safe assumption that the handler
         is not forcefully terminated by the OS.
+
+        This method is a Tornado callback and triggers whenever the Websocket
+        is closed.
         """
-        if self.controller is not None:
-            self.controller.close()
+        if self.client is not None:
+            self.client.close()
         self.logit.debug('Connection closed')
 
 

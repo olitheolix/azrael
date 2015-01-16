@@ -16,8 +16,8 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Test the Clerk only. Use a modified Controller to this end which allows to send
-raw bytestrings to bypass all convenience wrappers that the Controller class
+Test the Clerk only. Use a modified Client to this end which allows to send
+raw bytestrings to bypass all convenience wrappers that the Client class
 offers and test purely the Clerk.
 """
 
@@ -71,7 +71,7 @@ def test_invalid():
     """
     killAzrael()
 
-    # Start Clerk and instantiate a Controller.
+    # Start Clerk and instantiate a Client.
     clerk = azrael.clerk.Clerk()
     clerk.start()
     client = ControllerTest()
@@ -104,7 +104,7 @@ def test_ping():
     """
     Send a ping to the Clerk and check the response is correct.
     """
-    # Start the necessary services and instantiate a Controller.
+    # Start the necessary services and instantiate a Client.
     clerk, client, clacks = startAzrael('ZeroMQ')
 
     # Send the Ping command.
@@ -720,7 +720,7 @@ def test_controlParts_Factories_notmoving():
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDs must be '2' and '3', since ID 1 was already
-    # given to the controller object.
+    # given to the client object.
     ok, _, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
     assert ok
     assert len(spawnedIDs) == 2
@@ -812,7 +812,7 @@ def test_controlParts_Factories_moving():
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
-    # given to the controller object.
+    # given to the client object.
     ret = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
     assert ret.ok and (len(ret.data) == 2)
     spawnedIDs = ret.data
@@ -933,7 +933,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDS must be '3' and '4', since ID 1 was already
-    # given to the controller object.
+    # given to the client object.
     ret = clerk.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
     assert ret.ok
     spawnIDs = ret.data
@@ -1009,7 +1009,7 @@ def test_get_all_objectids():
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
-    # Kill all spawned Controller processes.
+    # Kill all spawned Client processes.
     killAzrael()
     print('Test passed')
 
@@ -1056,7 +1056,7 @@ def test_getGeometry():
     # Attempt to query the geometry of the now deleted object.
     assert not clerk.getGeometry(objID).ok
 
-    # Kill all spawned Controller processes.
+    # Kill all spawned Client processes.
     killAzrael()
     print('Test passed')
 
@@ -1110,7 +1110,7 @@ def test_instanceDB_checksum():
     assert ret.ok
     assert ret_1[objID1].checksumGeometry == ret.data[objID1].checksumGeometry
 
-    # Kill all spawned Controller processes.
+    # Kill all spawned Client processes.
     killAzrael()
     print('Test passed')
 

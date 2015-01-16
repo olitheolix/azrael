@@ -18,7 +18,7 @@
 """
 Websocket version of ``Client``.
 
-This version of the `Controller` exists as a proof-of-concept to demonstrate
+This version of the `Client` exists as a proof-of-concept to demonstrate
 that web browser (ie JavaScript) can interact with Azrael.
 
 The class itself behaves like the original ``Client`` which is why the

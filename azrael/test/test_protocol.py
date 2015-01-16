@@ -55,7 +55,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
         templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
 
     # ----------------------------------------------------------------------
-    # Controller --> Clerk.
+    # Client --> Clerk.
     # ----------------------------------------------------------------------
     # Encode source data.
     ok, enc = protocol.ToClerk_GetTemplate_Encode(np.int64(1).tostring())
@@ -68,7 +68,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     assert dec[0] == np.int64(1).tostring()
 
     # ----------------------------------------------------------------------
-    # Clerk --> Controller.
+    # Clerk --> Client.
     # ----------------------------------------------------------------------
     # Encode source data.
     data = {'cshape': cs, 'vert': vert, 'uv': uv, 'rgb': rgb,
@@ -107,7 +107,7 @@ def test_send_command():
     objID = 1
 
     # ----------------------------------------------------------------------
-    # Controller --> Clerk.
+    # Client --> Clerk.
     # ----------------------------------------------------------------------
 
     # Convenience.
@@ -135,7 +135,7 @@ def test_send_command():
     assert dec_factory[2] == cmd_4
 
     # ----------------------------------------------------------------------
-    # Clerk --> Controller
+    # Clerk --> Client
     # ----------------------------------------------------------------------
 
     # Convenience.
@@ -165,7 +165,7 @@ def test_GetStateVariable():
     objIDs = [1, 2]
 
     # ----------------------------------------------------------------------
-    # Controller --> Clerk.
+    # Client --> Clerk.
     # ----------------------------------------------------------------------
     # Encode source data.
     ok, enc = protocol.ToClerk_GetStateVariable_Encode(objIDs)
@@ -181,7 +181,7 @@ def test_GetStateVariable():
     assert dec_ids == objIDs
 
     # ----------------------------------------------------------------------
-    # Clerk --> Controller.
+    # Clerk --> Client.
     # ----------------------------------------------------------------------
     # Encode source data.
     data = dict(zip(objIDs, objs))

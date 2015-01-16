@@ -16,18 +16,12 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Python interface for Clerk/Azrael.
+Use ``Client`` to connect to ``Clerk``. There can be arbitrarily many ``Clerk``
+and ``Client`` client instances connected to each other.
 
-You should inherit this class and overload the ``run`` method with your own
-version to intelligently control the object based on its position, speed, and
-other objects in the vicinity.
-
-There can be arbitrarily many Controller instances connected to the same Clerk
-yet they need not run on the same machine.
-
-The controller implemented in this file uses ZeroMQ. If you want/need a
-Websocket version (eg. JavaScript developers) then use the version provided in
-`wscontroller.py`. Their feature set is identical.
+This moduel implement ZeroMQ version of the client. For a Websocket version
+(eg. JavaScript developers) use ``WSClient`` from `wscontroller.py` (their
+feature set is identical).
 """
 
 import zmq
@@ -50,9 +44,9 @@ class Client():
 
     This class is little more than a collection of wrappers around the commands
     provided by Clerk. These wrappers may do some sanity checks on the input
-    data, but mostly they merely encode the data to binary format, send the
-    result to Clerk, wait for a replay, decode the reply back to Python types,
-    and pass that back to the caller.
+    data but mostly they merely encode and send it Clerk, wait for a replay,
+    decode the reply back to Python types, and pass the result back to the
+    caller.
 
     :param str addr: Address of Clerk.
     :raises: None
@@ -194,7 +188,7 @@ class Client():
         try:
             ret = json.loads(payload)
         except (ValueError, TypeError) as err:
-            return RetVal(False, 'JSON decoding error in Controller', None)
+            return RetVal(False, 'JSON decoding error in Client', None)
 
         # Returned JSON must always contain an 'ok' and 'payload' field.
         if not (('ok' in ret) and ('payload' in ret)):

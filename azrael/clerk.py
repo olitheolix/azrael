@@ -18,17 +18,13 @@
 """
 Azrael's API.
 
-Clients can send commands to Clerk via ZeroMQ to influence the simulation, for
-instance spawn new objects, query existing objects, their state variables
-and more.
+Use ``Client`` to connect to ``Clerk``. There can be arbitrarily many ``Clerk``
+and ``Client`` client instances connected to each other.
 
-The ZeroMQ interface ensures a language agnostic interface. However, every
-client must adhere to the binary protocol specified in the ``protocols``
-module.
+This moduel implement ZeroMQ version of the ``Clerk``. For a Websocket version
+(eg. JavaScript developers) use ``Clacks`` from `clacks.py` (their feature set
+is identical).
 
-The ``Client`` class is a specimen client that can talk to
-Clerk. Unlike ``Clerk`` there can be many ``Controller`` instances running at
-the same time and and on multiple machines.
 """
 import os
 import sys
@@ -365,7 +361,7 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, 'pong clerk')
 
     # ----------------------------------------------------------------------
-    # These methods service Controller requests.
+    # These methods service Client requests.
     # ----------------------------------------------------------------------
     @typecheck
     def controlParts(self, objID: int, cmd_boosters: (list, tuple),

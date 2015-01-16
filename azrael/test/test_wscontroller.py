@@ -16,11 +16,11 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Test the Websocket version of the Controller.
+Test the Websocket version of the Client.
 
 The tests for ``Client`` automatically test the Websocket
 version. However, some tests, especially for the initial connection are
-specific to this controller type. Only these are covered here.
+specific to this client type. Only these are covered here.
 """
 
 import sys
@@ -40,12 +40,12 @@ WSClient = azrael.wscontroller.WSClient
 
 def test_custom_objid():
     """
-    Create two controllers. The first automatically gets an ID assigned,
+    Create two clients. The first automatically gets an ID assigned,
     whereas the second one specifies one explicitly.
 
     This behaviour matches that of `Client`` but is not automatically
-    inherited because the ``WSClient`` is not a controller itself but a
-    wrapper to communicate with the controller instance in Clacks.
+    inherited because the ``WSClient`` is not a client itself but a
+    wrapper to communicate with the client instance in Clacks.
     """
     killAzrael()
 

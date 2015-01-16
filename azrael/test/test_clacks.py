@@ -11,7 +11,6 @@ import azrael.clerk
 import azrael.clacks
 import azrael.vectorgrid
 import azrael.config as config
-import azrael.client as controller
 import azrael.wscontroller as wscontroller
 
 WSClient = wscontroller.WSClient
@@ -36,17 +35,17 @@ def startAzrael(client_type):
     this makes is that the 'Websocket' version will also start a Clacks server,
     whereas for 'ZeroMQ' the respective handle will be **None**.
 
-    :param str client_type: the controller type ('ZeroMQ' or 'Websocket').
+    :param str client_type: the client type ('ZeroMQ' or 'Websocket').
     :return: handles to (clerk, client, clacks)
     """
     killAzrael()
 
-    # Start Clerk and instantiate Controller.
+    # Start Clerk and instantiate a Client.
     clerk = azrael.clerk.Clerk()
     clerk.start()
 
     if client_type == 'ZeroMQ':
-        # Instantiate the ZeroMQ version of the Controller.
+        # Instantiate the ZeroMQ version of the Client.
         client = azrael.client.Client()
         client.setupZMQ()
 
@@ -57,12 +56,12 @@ def startAzrael(client_type):
         clacks = azrael.clacks.ClacksServer()
         clacks.start()
 
-        # Instantiate the Websocket version of the Controller.
+        # Instantiate the Websocket version of the Client.
         client = azrael.wscontroller.WSClient(
             'ws://127.0.0.1:8080/websocket', 1)
         assert client.ping()
     else:
-        print('Unknown controller type <{}>'.format(client_type))
+        print('Unknown protocol type <{}>'.format(client_type))
         assert False
     return clerk, client, clacks
 
