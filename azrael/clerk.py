@@ -54,48 +54,6 @@ ipshell = IPython.embed
 RetVal = util.RetVal
 
 
-class PythonInstance(multiprocessing.Process):
-    """
-    Replace existing process with pristine Python interpreter.
-
-    This is a convenience wrapper to start an independently running
-    Python script. It is usually used to spawn a Controller.
-
-    This function workds as follows: Azrael forks itself when it
-    triggers the 'start' method of this class instance. This duplicates
-    Azrael including sockets etc which I would rather avoid. Therefore,
-    I replace this copy with an entirely new Python process that runs
-    the requested script.
-
-    The called script receives the object ID as an argument.
-
-    :param str name: name of Python script to start.
-    :param int objID: object ID.
-    :raises: None
-    """
-    @typecheck
-    def __init__(self, name: str, objID: int):
-        super().__init__()
-
-        # Keep the variables around for after the fork.
-        self.script_name = name
-        self.objID = objID
-
-    def run(self):
-        # Convert the objectID to a string so that it can be passed as a
-        # command line argument.
-        objID = '{}'.format(self.objID)
-
-        # Replace the current process with a new Python process. The first
-        # argument is the script name, followed by the command line
-        # arguments. The first of those is 'python3' once more  because the
-        # program name (ie. 'python3' in this case) is also the first argument
-        # Bash would pass to any new program. We pass it because we want to
-        # emulate the Bash convention here to ensure everything looks sound to
-        # the called Python script.
-        os.execlp('python3', 'python3', self.script_name, objID)
-
-
 class Clerk(multiprocessing.Process):
     """
     Administrate the simulation.
