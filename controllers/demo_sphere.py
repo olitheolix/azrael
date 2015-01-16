@@ -30,13 +30,13 @@ p = os.path.join(p, '..')
 sys.path.insert(0, p)
 del p
 
-import azrael.controller
+import azrael.client
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerSphere(azrael.controller.Client):
+class ControllerSphere(azrael.client.Client):
     def run(self):
         # Boiler plate: setup
         self.setupZMQ()

@@ -183,14 +183,11 @@ class ResetSim(multiprocessing.Process):
         self.period = period
 
     def run(self):
-        """
-        Create a Controller.
-        """
         # Return immediately if no resets are required.
         if self.period == -1:
             return
 
-        client = controller.Client(addr_clerk=config.addr_clerk)
+        client = azrael.client.Client(addr_clerk=config.addr_clerk)
         client.setupZMQ()
 
         # Query all objects in the scene. These are the only objects that will
@@ -351,7 +348,6 @@ if __name__ == '__main__':
     import azrael.config as config
     import azrael.leonard as leonard
     import azrael.database as database
-    import azrael.controller as controller
     import azrael.vectorgrid as vectorgrid
     import azrael.physics_interface as physAPI
     del p

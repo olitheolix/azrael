@@ -37,13 +37,13 @@ import time
 import setproctitle
 import numpy as np
 
-import azrael.controller
+import azrael.client
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerCube(azrael.controller.Client):
+class ControllerCube(azrael.client.Client):
     """
     Alternately apply an up/down force to itself.
 

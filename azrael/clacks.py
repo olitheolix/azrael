@@ -36,7 +36,7 @@ import numpy as np
 import azrael.util as util
 import azrael.config as config
 import azrael.protocol_json as json
-import azrael.controller as controller
+import azrael.client as controller
 
 from azrael.typecheck import typecheck
 

@@ -37,7 +37,7 @@ import azrael.clacks as clacks
 import azrael.leonard as leonard
 import azrael.protocol as protocol
 import azrael.protocol_json as json
-import azrael.controller as controller
+import azrael.client as controller
 import azrael.wscontroller as wscontroller
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data

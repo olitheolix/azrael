@@ -43,12 +43,12 @@ sys.path.insert(0, os.path.join(p, 'viewer'))
 import model_import
 import azrael.clerk
 import azrael.clacks
+import azrael.client
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 import azrael.leonard as leonard
 import azrael.database as database
-import azrael.controller as controller
 import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 del p
@@ -122,8 +122,8 @@ def loadGroundModel(scale, model_name):
 
     This will become the first object to populate the simulation.
     """
-    # Create a controller and connect to Azrael.
-    client = controller.Client(addr_clerk=config.addr_clerk)
+    # Create a Client and connect to Azrael.
+    client = azrael.client.Client(addr_clerk=config.addr_clerk)
     client.setupZMQ()
 
     # Load the model.
@@ -193,7 +193,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     spawn more (purely passive) cubes.
     """
     # Establish connection to Azrael.
-    client = controller.Client(addr_clerk=config.addr_clerk)
+    client = azrael.client.Client(addr_clerk=config.addr_clerk)
     client.setupZMQ()
 
     # Cube vertices.
@@ -431,20 +431,17 @@ class ResetSim(multiprocessing.Process):
         self.period = period
 
     def run(self):
-        """
-        Create a Controller.
-        """
         # Return immediately if no resets are required.
         if self.period == -1:
             return
 
-        client = controller.Client(addr_clerk=config.addr_clerk)
+        client = azrael.client.Client(addr_clerk=config.addr_clerk)
         client.setupZMQ()
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.
         ret = client.getAllObjectIDs()
-        assert ret.data
+        assert ret.ok
         allowed_objIDs = ret.data
 
         # Periodically reset the SV values. Set them several times because it

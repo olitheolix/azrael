@@ -33,12 +33,12 @@ p = os.path.join(p, '..')
 sys.path.insert(0, p)
 del p
 
-import azrael.controller
+import azrael.client
 import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerCubeLeft(azrael.controller.Client):
+class ControllerCubeLeft(azrael.client.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.left = 0

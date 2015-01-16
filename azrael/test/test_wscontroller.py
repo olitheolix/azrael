@@ -27,14 +27,14 @@ import sys
 import pytest
 import IPython
 
-import azrael.controller
+import azrael.client
 import azrael.wscontroller
 
 from azrael.test.test_clerk import killAzrael
 
 ipshell = IPython.embed
 
-Client = azrael.controller.Client
+Client = azrael.client.Client
 WSClient = azrael.wscontroller.WSClient
 
 

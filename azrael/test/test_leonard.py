@@ -7,7 +7,7 @@ import azrael.clerk
 import azrael.clacks
 import azrael.leonard
 import azrael.database
-import azrael.controller
+import azrael.client
 import azrael.vectorgrid
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data

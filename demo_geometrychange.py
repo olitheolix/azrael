@@ -205,14 +205,11 @@ class ResetSim(multiprocessing.Process):
         self.period = period
 
     def run(self):
-        """
-        Create a Controller.
-        """
         # Return immediately if no resets are required.
         if self.period == -1:
             return
 
-        client = controller.Client(addr_clerk=config.addr_clerk)
+        client = azrael.client.Client(addr_clerk=config.addr_clerk)
         client.setupZMQ()
 
         # Periodically reset the SV values. Set them several times because it
@@ -257,8 +254,8 @@ class UpdateGeometry(multiprocessing.Process):
         if self.period == -1:
             return
 
-        # Get a Controller instance and connect it to Azrael.
-        client = controller.Client(addr_clerk=config.addr_clerk)
+        # Get a Client instance.
+        client = azrael.client.Client(addr_clerk=config.addr_clerk)
         client.setupZMQ()
 
         # Query all object IDs. This happens only once which means the geometry
@@ -350,12 +347,12 @@ if __name__ == '__main__':
     import model_import
     import azrael.clerk
     import azrael.clacks
+    import azrael.client
     import azrael.util as util
     import azrael.parts as parts
     import azrael.config as config
     import azrael.leonard as leonard
     import azrael.database as database
-    import azrael.controller as controller
     import azrael.vectorgrid as vectorgrid
     import azrael.physics_interface as physAPI
     import azrael.bullet.bullet_data as bullet_data

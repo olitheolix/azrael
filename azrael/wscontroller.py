@@ -36,13 +36,13 @@ import time
 import websocket
 
 import azrael.util
-import azrael.controller
+import azrael.client
 
 from azrael.util import RetVal
 from azrael.typecheck import typecheck
 
 
-class WSClient(azrael.controller.Client):
+class WSClient(azrael.client.Client):
     """
     Websocket version of ``Client``.
 

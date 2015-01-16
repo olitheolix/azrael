@@ -42,7 +42,7 @@ import OpenGL.GL as gl
 
 import azrael.util as util
 import azrael.config as config
-import azrael.controller as controller
+import azrael.client as controller
 import azrael.physics_interface as physAPI
 
 from PySide import QtCore, QtGui, QtOpenGL

@@ -32,11 +32,11 @@ del p
 
 import time
 import setproctitle
-import azrael.controller
+import azrael.client
 import azrael.util as util
 
 
-class ControllerCube(azrael.controller.Client):
+class ControllerCube(azrael.client.Client):
     pass
 
 

@@ -37,13 +37,13 @@ p = os.path.join(p, '..')
 sys.path.insert(0, p)
 del p
 
-import azrael.controller
+import azrael.client
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerSphere(azrael.controller.Client):
+class ControllerSphere(azrael.client.Client):
     def PDController(self, ref_pos_z):
         """
         A PD controller to maintain the object's z-position at ``ref_pos``.

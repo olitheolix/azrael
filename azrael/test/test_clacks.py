@@ -11,7 +11,7 @@ import azrael.clerk
 import azrael.clacks
 import azrael.vectorgrid
 import azrael.config as config
-import azrael.controller as controller
+import azrael.client as controller
 import azrael.wscontroller as wscontroller
 
 WSClient = wscontroller.WSClient
@@ -47,7 +47,7 @@ def startAzrael(client_type):
 
     if client_type == 'ZeroMQ':
         # Instantiate the ZeroMQ version of the Controller.
-        client = azrael.controller.Client()
+        client = azrael.client.Client()
         client.setupZMQ()
 
         # Do not start a Clacks process.
