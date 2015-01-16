@@ -60,18 +60,18 @@ def test_custom_objid():
     address = 'ws://127.0.0.1:8080/websocket'
 
     # Instantiate a WSController without specifiying an object ID.
-    ctrl_0 = azrael.wscontroller.WSClient(address)
+    client_0 = azrael.wscontroller.WSClient(address)
 
     # Ping Clerk to verify the connection is live.
-    ret = ctrl_0.ping()
+    ret = client_0.ping()
     assert (ret.ok, ret.data) == (True, 'pong clerk')
 
     # Instantiate another WSController. This time specify an ID. Note: the ID
     # need not exist albeit object specific commands will subsequently fail.
-    ctrl_1 = azrael.wscontroller.WSClient(address)
+    client_1 = azrael.wscontroller.WSClient(address)
 
     # Ping Clerk again to verify the connection is live.
-    ret = ctrl_1.ping()
+    ret = client_1.ping()
     assert (ret.ok, ret.data) == (True, 'pong clerk')
 
     # Shutdown the system.

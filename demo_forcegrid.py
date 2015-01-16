@@ -190,12 +190,12 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
-        ctrl = controller.Client(addr_clerk=config.addr_clerk)
-        ctrl.setupZMQ()
+        client = controller.Client(addr_clerk=config.addr_clerk)
+        client.setupZMQ()
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.
-        ret = ctrl.getAllObjectIDs()
+        ret = client.getAllObjectIDs()
         allowed_objIDs = ret.data
 
         # Periodically reset the SV values. Set them several times because it
@@ -208,17 +208,17 @@ class ResetSim(multiprocessing.Process):
             time.sleep(self.period)
 
             # Remove all newly added objects.
-            ret = ctrl.getAllObjectIDs()
+            ret = client.getAllObjectIDs()
             for objID in ret.data:
                 if objID not in allowed_objIDs:
-                    ctrl.removeObject(objID)
+                    client.removeObject(objID)
 
             # Forcefully reset the position and velocity of every object. Do
             # this several times since network latency may result in some
             # objects being reset sooner than others.
             for ii in range(5):
                 for objID, pos in self.default_attributes:
-                    ctrl.setStateVariables(objID, pos)
+                    client.setStateVariables(objID, pos)
                 time.sleep(0.1)
 
 

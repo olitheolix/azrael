@@ -123,8 +123,8 @@ def loadGroundModel(scale, model_name):
     This will become the first object to populate the simulation.
     """
     # Create a controller and connect to Azrael.
-    ctrl = controller.Client(addr_clerk=config.addr_clerk)
-    ctrl.setupZMQ()
+    client = controller.Client(addr_clerk=config.addr_clerk)
+    client.setupZMQ()
 
     # Load the model.
     print('  Importing <{}>... '.format(model_name), end='', flush=True)
@@ -164,12 +164,12 @@ def loadGroundModel(scale, model_name):
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'.encode('utf8')
     cs = np.array([3, 1, 1, 1], np.float64)
-    assert ctrl.addTemplate(tID, cs, vert, uv, rgb, [b0, b1, b2, b3], []).ok
+    assert client.addTemplate(tID, cs, vert, uv, rgb, [b0, b1, b2, b3], []).ok
 
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
     pos, ori = [0, 0, -10], [0, 1, 0, 0]
-    ret = ctrl.spawn(
+    ret = client.spawn(
         tID, pos, orient=ori, imass=0.1, scale=scale,
         axesLockLin=[1, 1, 1], axesLockRot=[0, 0, 1])
     objID = ret.data
@@ -193,8 +193,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     spawn more (purely passive) cubes.
     """
     # Establish connection to Azrael.
-    ctrl = controller.Client(addr_clerk=config.addr_clerk)
-    ctrl.setupZMQ()
+    client = controller.Client(addr_clerk=config.addr_clerk)
+    client.setupZMQ()
 
     # Cube vertices.
     vert = 0.5 * np.array([
@@ -241,8 +241,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     tID_1 = 'Product1'.encode('utf8')
     tID_2 = 'Product2'.encode('utf8')
-    assert ctrl.addTemplate(tID_1, cs, 0.75 * vert, uv, rgb, [], []).ok
-    assert ctrl.addTemplate(tID_2, cs, 0.24 * vert, uv, rgb, [], []).ok
+    assert client.addTemplate(tID_1, cs, 0.75 * vert, uv, rgb, [], []).ok
+    assert client.addTemplate(tID_2, cs, 0.24 * vert, uv, rgb, [], []).ok
 
     # ----------------------------------------------------------------------
     # Define a cube with boosters and factories.
@@ -264,7 +264,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Add the template.
     tID_3 = 'BoosterCube'.encode('utf8')
-    assert ctrl.addTemplate(tID_3, cs, vert, uv, rgb, [b0, b1], [f0, f1]).ok
+    assert client.addTemplate(tID_3, cs, vert, uv, rgb, [b0, b1], [f0, f1]).ok
 
     # ----------------------------------------------------------------------
     # Define more booster cubes, each with a different texture.
@@ -286,7 +286,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii)).encode('utf8')
-        assert ctrl.addTemplate(tID, cs, vert, curUV, rgb, [b0, b1], []).ok
+        assert client.addTemplate(tID, cs, vert, curUV, rgb, [b0, b1], []).ok
 
         # Add the templateID to a dictionary because we will need it in the
         # next step to spawn the templates.
@@ -318,7 +318,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
                 # Spawn the cube and update the index counter. The intitial
                 # velocity, acceleration, and orientation is neutral.
-                ret = ctrl.spawn(tID_cube[cube_idx], pos)
+                ret = client.spawn(tID_cube[cube_idx], pos)
                 assert ret.ok
                 cube_idx += 1
 
@@ -438,12 +438,12 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
-        ctrl = controller.Client(addr_clerk=config.addr_clerk)
-        ctrl.setupZMQ()
+        client = controller.Client(addr_clerk=config.addr_clerk)
+        client.setupZMQ()
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.
-        ret = ctrl.getAllObjectIDs()
+        ret = client.getAllObjectIDs()
         assert ret.data
         allowed_objIDs = ret.data
 
@@ -457,17 +457,17 @@ class ResetSim(multiprocessing.Process):
             time.sleep(self.period)
 
             # Remove all newly added objects.
-            ret = ctrl.getAllObjectIDs()
+            ret = client.getAllObjectIDs()
             for objID in ret.data:
                 if objID not in allowed_objIDs:
-                    ctrl.removeObject(objID)
+                    client.removeObject(objID)
 
             # Forcefully reset the position and velocity of every object. Do
             # this several times since network latency may result in some
             # objects being reset sooner than others.
             for ii in range(5):
                 for objID, pos in self.default_attributes:
-                    ctrl.setStateVariables(objID, pos)
+                    client.setStateVariables(objID, pos)
                 time.sleep(0.1)
 
 

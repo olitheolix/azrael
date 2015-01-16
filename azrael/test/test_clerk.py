@@ -74,22 +74,22 @@ def test_invalid():
     # Start Clerk and instantiate a Controller.
     clerk = azrael.clerk.Clerk()
     clerk.start()
-    ctrl = ControllerTest()
-    ctrl.setupZMQ()
+    client = ControllerTest()
+    client.setupZMQ()
 
     # Send a corrupt JSON to Clerk.
     msg = 'invalid_cmd'
-    ret = ctrl.testSend(msg.encode('utf8'))
+    ret = client.testSend(msg.encode('utf8'))
     assert ret == (False, 'JSON decoding error in Clerk')
 
     # Send a malformatted JSON (it misses the 'payload' field).
     msg = json.dumps({'cmd': 'blah'})
-    ok, ret = ctrl.testSend(msg.encode('utf8'))
+    ok, ret = client.testSend(msg.encode('utf8'))
     assert (ok, ret) == (False, 'Invalid command format')
 
     # Send an invalid command.
     msg = json.dumps({'cmd': 'blah', 'payload': ''})
-    ok, ret = ctrl.testSend(msg.encode('utf8'))
+    ok, ret = client.testSend(msg.encode('utf8'))
     assert (ok, ret) == (False, 'Invalid command <blah>')
 
     # Terminate the Clerk.
@@ -105,10 +105,10 @@ def test_ping():
     Send a ping to the Clerk and check the response is correct.
     """
     # Start the necessary services and instantiate a Controller.
-    clerk, ctrl, clacks = startAzrael('ZeroMQ')
+    clerk, client, clacks = startAzrael('ZeroMQ')
 
     # Send the Ping command.
-    ret = ctrl.ping()
+    ret = client.ping()
     assert (ret.ok, ret.data) == (True, 'pong clerk')
 
     # Shutdown the services.

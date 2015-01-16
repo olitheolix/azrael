@@ -56,9 +56,9 @@ def test_ping():
     killAzrael()
 
     # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael('ZeroMQ')
+    clerk, client, clacks = startAzrael('ZeroMQ')
 
-    ret = ctrl.ping()
+    ret = client.ping()
     print(ret)
     assert ret == (True, None, 'pong clerk')
 
@@ -67,8 +67,8 @@ def test_ping():
     print('Test passed')
 
 
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_spawn_and_delete_one_controller(ctrl_type):
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_spawn_and_delete_one_controller(client_type):
     """
     Ask Clerk to spawn one object.
     """
@@ -83,33 +83,33 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     templateID = '_templateNone'.encode('utf8')
 
     # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
+    clerk, client, clacks = startAzrael(client_type)
 
     # Instruct Clerk to spawn a new template. The new object must have
     # objID=1.
-    ok, _, objID = ctrl.spawn(templateID, np.zeros(3))
+    ok, _, objID = client.spawn(templateID, np.zeros(3))
     assert (ok, objID) == (True, id_1)
     leo.step(0, 1)
 
     # Attempt to spawn a non-existing template.
     templateID += 'blah'.encode('utf8')
-    assert not ctrl.spawn(templateID, np.zeros(3)).ok
+    assert not client.spawn(templateID, np.zeros(3)).ok
 
     # Exactly one object must exist at this point.
-    ok, _, ret = ctrl.getAllObjectIDs()
+    ok, _, ret = client.getAllObjectIDs()
     assert (ok, ret) == (True, [id_1])
 
     # Attempt to delete a non-existing object. This must silently fail.
-    ok, _, ret = ctrl.removeObject(100)
+    ok, _, ret = client.removeObject(100)
     assert ok
     leo.step(0, 1)
-    ok, _, ret = ctrl.getAllObjectIDs()
+    ok, _, ret = client.getAllObjectIDs()
     assert (ok, ret) == (True, [id_1])
 
     # Delete an existing object.
-    assert ctrl.removeObject(id_1).ok
+    assert client.removeObject(id_1).ok
     leo.step(0, 1)
-    ok, _, ret = ctrl.getAllObjectIDs()
+    ok, _, ret = client.getAllObjectIDs()
     assert (ok, ret) == (True, [])
 
     # Shutdown the services.
@@ -117,8 +117,8 @@ def test_spawn_and_delete_one_controller(ctrl_type):
     print('Test passed')
 
 
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_spawn_and_get_state_variables(ctrl_type):
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_spawn_and_get_state_variables(client_type):
     """
     Spawn a new object and query its state variables.
     """
@@ -128,19 +128,19 @@ def test_spawn_and_get_state_variables(ctrl_type):
     templateID = '_templateNone'.encode('utf8')
 
     # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
+    clerk, client, clacks = startAzrael(client_type)
 
     # Query state variables for non existing object.
     id_tmp = 100
-    ok, _, sv = ctrl.getStateVariables(id_tmp)
+    ok, _, sv = client.getStateVariables(id_tmp)
     assert (ok, sv) == (True, {id_tmp: None})
     del id_tmp
 
     # Instruct Clerk to spawn a new object. Its objID must be '1'.
-    ok, _, id0 = ctrl.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
+    ok, _, id0 = client.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
     assert (ok, id0) == (True, 1)
 
-    ok, _, sv = ctrl.getStateVariables(id0)
+    ok, _, sv = client.getStateVariables(id0)
     assert (ok, len(sv)) == (True, 1)
     assert id0 in sv
 
@@ -149,8 +149,8 @@ def test_spawn_and_get_state_variables(ctrl_type):
     print('Test passed')
 
 
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_setStateVariables(ctrl_type):
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_setStateVariables(client_type):
     """
     Spawn an object and specify its state variables directly.
     """
@@ -163,20 +163,20 @@ def test_setStateVariables(ctrl_type):
     templateID = '_templateNone'.encode('utf8')
 
     # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
+    clerk, client, clacks = startAzrael(client_type)
 
     # Spawn one of the default templates.
-    ok, _, objID = ctrl.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
+    ok, _, objID = client.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
     assert ok
 
     # Create and apply a new State Vector.
     new_sv = bullet_data.BulletDataOverride(
         position=[1, -1, 1], imass=2, scale=3, cshape=[4, 1, 1, 1])
-    assert ctrl.setStateVariables(objID, new_sv).ok
+    assert client.setStateVariables(objID, new_sv).ok
 
     # Verify that the new attributes came into effect.
     leo.step(0, 1)
-    ok, _, ret_sv = ctrl.getStateVariables(objID)
+    ok, _, ret_sv = client.getStateVariables(objID)
     ret_sv = ret_sv[objID]
     assert isinstance(ret_sv, bullet_data.BulletData)
     assert ret_sv.imass == new_sv.imass
@@ -189,8 +189,8 @@ def test_setStateVariables(ctrl_type):
     print('Test passed')
 
 
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_getAllObjectIDs(ctrl_type):
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_getAllObjectIDs(client_type):
     """
     Ensure the getAllObjectIDs command reaches Clerk.
     """
@@ -200,7 +200,7 @@ def test_getAllObjectIDs(ctrl_type):
     leo = getLeonard()
 
     # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
+    clerk, client, clacks = startAzrael(client_type)
 
     # Constants and parameters for this test.
     templateID = '_templateNone'.encode('utf8')
@@ -209,16 +209,16 @@ def test_getAllObjectIDs(ctrl_type):
     objID_1 = 1
 
     # So far no objects have been spawned.
-    ret = ctrl.getAllObjectIDs()
+    ret = client.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [])
 
     # Spawn a new object.
-    ret = ctrl.spawn(templateID, np.zeros(3))
+    ret = client.spawn(templateID, np.zeros(3))
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # The object list must now contain the ID of the just spawned object.
     leo.step(0, 1)
-    ret = ctrl.getAllObjectIDs()
+    ret = client.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [objID_1])
 
     # Shutdown the services.
@@ -226,15 +226,15 @@ def test_getAllObjectIDs(ctrl_type):
     print('Test passed')
 
 
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_get_template(ctrl_type):
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_get_template(client_type):
     """
     Spawn some objects from the default templates and query their template IDs.
     """
     killAzrael()
 
     # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
+    clerk, client, clacks = startAzrael(client_type)
 
     # Parameters and constants for this test.
     id_1, id_2 = 1, 2
@@ -242,23 +242,23 @@ def test_get_template(ctrl_type):
     templateID_1 = '_templateCube'.encode('utf8')
 
     # Spawn a new object. Its ID must be 1.
-    ok, _, objID = ctrl.spawn(templateID_0, np.zeros(3))
+    ok, _, objID = client.spawn(templateID_0, np.zeros(3))
     assert (ok, objID) == (True, id_1)
 
     # Spawn another object from a different template.
-    ok, _, objID = ctrl.spawn(templateID_1, np.zeros(3))
+    ok, _, objID = client.spawn(templateID_1, np.zeros(3))
     assert (ok, objID) == (True, id_2)
 
     # Retrieve template of first object.
-    ok, _, ret = ctrl.getTemplateID(id_1)
+    ok, _, ret = client.getTemplateID(id_1)
     assert (ok, ret) == (True, templateID_0)
 
     # Retrieve template of second object.
-    ok, _, ret = ctrl.getTemplateID(id_2)
+    ok, _, ret = client.getTemplateID(id_2)
     assert (ok, ret) == (True, templateID_1)
 
     # Attempt to retrieve a non-existing object.
-    ok, _, ret = ctrl.getTemplateID(100)
+    ok, _, ret = client.getTemplateID(100)
     assert not ok
 
     # Shutdown the services.
@@ -266,33 +266,33 @@ def test_get_template(ctrl_type):
     print('Test passed')
 
 
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_create_fetch_template(ctrl_type):
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_create_fetch_template(client_type):
     """
     Add a new object to the templateID DB and query it again.
     """
     killAzrael()
 
     # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
+    clerk, client, clacks = startAzrael(client_type)
 
     # Request an invalid ID.
-    assert not ctrl.getTemplate('blah'.encode('utf8')).ok
+    assert not client.getTemplate('blah'.encode('utf8')).ok
 
     # Clerk has a few default objects. This one has no collision shape...
-    ok, _, ret = ctrl.getTemplate('_templateNone'.encode('utf8'))
+    ok, _, ret = client.getTemplate('_templateNone'.encode('utf8'))
     assert ok
     assert np.array_equal(ret.cs, [0, 1, 1, 1])
     assert len(ret.vert) == len(ret.boosters) == len(ret.factories) == 0
 
     # ... this one is a sphere...
-    ok, _, ret = ctrl.getTemplate('_templateSphere'.encode('utf8'))
+    ok, _, ret = client.getTemplate('_templateSphere'.encode('utf8'))
     assert ok
     assert np.array_equal(ret.cs, [3, 1, 1, 1])
     assert len(ret.vert) == len(ret.boosters) == len(ret.factories) == 0
 
     # ... and this one is a cube.
-    ok, _, ret = ctrl.getTemplate('_templateCube'.encode('utf8'))
+    ok, _, ret = client.getTemplate('_templateCube'.encode('utf8'))
     assert ok
     assert np.array_equal(ret.cs, [4, 1, 1, 1])
     assert len(ret.vert) == len(ret.boosters) == len(ret.factories) == 0
@@ -303,10 +303,10 @@ def test_create_fetch_template(ctrl_type):
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
     templateID = 't1'.encode('utf8')
-    ok, _, templateID = ctrl.addTemplate(templateID, cs, vert, uv, rgb, [], [])
+    ok, _, templateID = client.addTemplate(templateID, cs, vert, uv, rgb, [], [])
 
     # Fetch the just added template again.
-    ok, _, ret = ctrl.getTemplate(templateID)
+    ok, _, ret = client.getTemplate(templateID)
     assert np.array_equal(ret.cs, cs)
     assert np.array_equal(ret.vert, vert)
     assert np.array_equal(ret.uv, uv)
@@ -326,26 +326,26 @@ def test_create_fetch_template(ctrl_type):
         templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
 
     # Attempt to query the geometry of a non-existing object.
-    assert not ctrl.getGeometry(1).ok
+    assert not client.getGeometry(1).ok
 
     # Add the new template.
     templateID = 't2'.encode('utf8')
-    ok, _, templateID = ctrl.addTemplate(
+    ok, _, templateID = client.addTemplate(
         templateID, cs, vert, uv, rgb, [b0, b1], [f0])
 
     # ... and spawn an instance thereof.
-    ok, _, objID = ctrl.spawn(templateID)
+    ok, _, objID = client.spawn(templateID)
     assert ok
 
     # Retrieve the geometry of the new object and verify it is correct.
-    ok, _, (out_vert, out_uv, out_rgb) = ctrl.getGeometry(objID)
+    ok, _, (out_vert, out_uv, out_rgb) = client.getGeometry(objID)
     assert np.array_equal(vert, out_vert)
     assert np.array_equal(uv, out_uv)
     assert np.array_equal(rgb, out_rgb)
     assert out_rgb.dtype == np.uint8
 
     # Retrieve the entire template and verify the CS and geometry.
-    ok, _, ret = ctrl.getTemplate(templateID)
+    ok, _, ret = client.getTemplate(templateID)
     assert np.array_equal(ret.cs, cs)
     assert np.array_equal(ret.vert, vert)
     assert np.array_equal(ret.uv, uv)
@@ -369,8 +369,8 @@ def test_create_fetch_template(ctrl_type):
     print('Test passed')
 
 
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_controlParts(ctrl_type):
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_controlParts(client_type):
     """
     Create a template with boosters and factories. Then send control commands
     to them and ensure the applied forces, torques, and spawned objects are
@@ -385,7 +385,7 @@ def test_controlParts(ctrl_type):
     leo = getLeonard()
 
     # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
+    clerk, client, clacks = startAzrael(client_type)
 
     # Parameters and constants for this test.
     objID_1 = 1
@@ -441,11 +441,11 @@ def test_controlParts(ctrl_type):
 
     # Add the template to Azrael...
     templateID_2 = 't1'.encode('utf8')
-    ret = ctrl.addTemplate(templateID_2, cs, vert, uv, rgb, [b0, b1], [f0, f1])
+    ret = client.addTemplate(templateID_2, cs, vert, uv, rgb, [b0, b1], [f0, f1])
     assert ret.ok
 
     # ... and spawn an instance thereof.
-    ok, _, objID = ctrl.spawn(templateID_2, pos=pos_parent,
+    ok, _, objID = client.spawn(templateID_2, pos=pos_parent,
                            vel=vel_parent, orient=orient_parent)
     assert (ok, objID) == (True, objID_1)
     del ok, objID
@@ -467,13 +467,13 @@ def test_controlParts(ctrl_type):
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDs must be '2' and '3'.
-    ok, _, spawnIDs = ctrl.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
+    ok, _, spawnIDs = client.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
     assert (ok, len(spawnIDs)) == (True, 2)
     assert spawnIDs == [2, 3]
     leo.step(0, 1)
 
     # Query the state variables of the objects spawned by the factories.
-    ok, _, ret_SVs = ctrl.getStateVariables(spawnIDs)
+    ok, _, ret_SVs = client.getStateVariables(spawnIDs)
     assert (ok, len(ret_SVs)) == (True, 2)
 
     # Verify the position and velocity of the spawned objects is correct.
@@ -500,8 +500,8 @@ def test_controlParts(ctrl_type):
     print('Test passed')
 
 
-@pytest.mark.parametrize('ctrl_type', ['Websocket', 'ZeroMQ'])
-def test_updateGeometry(ctrl_type):
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_updateGeometry(client_type):
     """
     Spawn a new object and modify its geometry at runtime.
     """
@@ -518,34 +518,34 @@ def test_updateGeometry(ctrl_type):
     templateID = 't1'.encode('utf8')
 
     # Start the necessary services.
-    clerk, ctrl, clacks = startAzrael(ctrl_type)
+    clerk, client, clacks = startAzrael(client_type)
 
     # Add a new template and spawn it.
-    ok, _, templateID = ctrl.addTemplate(templateID, cs, vert, uv, rgb, [], [])
+    ok, _, templateID = client.addTemplate(templateID, cs, vert, uv, rgb, [], [])
     assert ok
-    ok, _, objID = ctrl.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
+    ok, _, objID = client.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
     assert ok
 
     # Query the SV to obtain the geometry checksum value.
     leo.step(0, 1)
-    ok, _, sv = ctrl.getStateVariables(objID)
+    ok, _, sv = client.getStateVariables(objID)
     assert ok
     checksumGeometry = sv[objID].checksumGeometry
 
     # Fetch-, modify-, update- and verify the geometry.
-    ok, _, (ret_vert, ret_uv, ret_rgb) = ctrl.getGeometry(objID)
+    ok, _, (ret_vert, ret_uv, ret_rgb) = client.getGeometry(objID)
     assert ok
     assert np.allclose(uv, ret_uv)
     assert np.allclose(vert, ret_vert)
 
-    assert ctrl.updateGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb).ok
+    assert client.updateGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb).ok
 
-    ok, _, (ret_vert, ret_uv, ret_rgb) = ctrl.getGeometry(objID)
+    ok, _, (ret_vert, ret_uv, ret_rgb) = client.getGeometry(objID)
     assert ok
     assert np.allclose(2 * vert, ret_vert) and np.allclose(2 * uv, ret_uv)
 
     # Ensure the geometry checksum is different as well.
-    ok, _, sv = ctrl.getStateVariables(objID)
+    ok, _, sv = client.getStateVariables(objID)
     assert ok
     assert sv[objID].checksumGeometry != checksumGeometry
 

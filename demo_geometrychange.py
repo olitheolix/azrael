@@ -212,8 +212,8 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
-        ctrl = controller.Client(addr_clerk=config.addr_clerk)
-        ctrl.setupZMQ()
+        client = controller.Client(addr_clerk=config.addr_clerk)
+        client.setupZMQ()
 
         # Periodically reset the SV values. Set them several times because it
         # is well possible that not all State Variables reach Leonard in the
@@ -225,17 +225,17 @@ class ResetSim(multiprocessing.Process):
             time.sleep(self.period)
 
             # Remove all newly added objects.
-            ret = ctrl.getAllObjectIDs()
+            ret = client.getAllObjectIDs()
             for objID in ret.data:
                 if objID not in allowed_objIDs:
-                    ctrl.removeObject(objID)
+                    client.removeObject(objID)
 
             # Forcefully reset the position and velocity of every object. Do
             # this several times since network latency may result in some
             # objects being reset sooner than others.
             for ii in range(5):
                 for objID, pos in self.default_attributes:
-                    ctrl.setStateVariables(objID, pos)
+                    client.setStateVariables(objID, pos)
                 time.sleep(0.1)
 
 
@@ -258,18 +258,18 @@ class UpdateGeometry(multiprocessing.Process):
             return
 
         # Get a Controller instance and connect it to Azrael.
-        ctrl = controller.Client(addr_clerk=config.addr_clerk)
-        ctrl.setupZMQ()
+        client = controller.Client(addr_clerk=config.addr_clerk)
+        client.setupZMQ()
 
         # Query all object IDs. This happens only once which means the geometry
         # swap does not affect newly generated objects.
         time.sleep(1)
-        ret = ctrl.getAllObjectIDs()
+        ret = client.getAllObjectIDs()
         objIDs = ret.data
         print('\n-- {} objects --\n'.format(len(objIDs)))
 
         # Query the geometries of all these objects.
-        geometries = {_: ctrl.getGeometry(_).data for _ in objIDs}
+        geometries = {_: client.getGeometry(_).data for _ in objIDs}
 
         sphere_vert, sphere_uv, sphere_rgb = loadSphere()
         cnt = 0
@@ -279,15 +279,15 @@ class UpdateGeometry(multiprocessing.Process):
             # Swap out the geometry.
             for objID in objIDs:
                 if (cnt % 2) == 0:
-                    ctrl.updateGeometry(objID, sphere_vert, sphere_uv, sphere_rgb)
+                    client.updateGeometry(objID, sphere_vert, sphere_uv, sphere_rgb)
                 else:
-                    ctrl.updateGeometry(objID, *geometries[objID])
+                    client.updateGeometry(objID, *geometries[objID])
 
             # Modify the scale.
             scale = (cnt + 1) / 10
             for objID in objIDs:
                 new_sv = bullet_data.BulletDataOverride(scale=scale)
-                ctrl.setStateVariables(objID, new_sv)
+                client.setStateVariables(objID, new_sv)
 
             # Update counter and print status for user.
             cnt = (cnt + 1) % 20
