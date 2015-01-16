@@ -63,7 +63,7 @@ function compileMesh (objID, vert, uv, scale) {
              'wireframeLinewidth': 3})
     } else {
         // Create a textured material.
-        var fname = 'img/texture_' + objID[0] + '.jpg'
+        var fname = 'img/texture_' + objID + '.jpg'
         var texture = THREE.ImageUtils.loadTexture(fname);
         var mat = new THREE.MeshBasicMaterial({
             'map': texture,
@@ -302,11 +302,11 @@ function* mycoroutine(connection) {
     controls.update(1)
 
     // A Hashmap with all the SVs from previous objects.
-    old_SVs = {}
+    var old_SVs = {}
+    var obj_cache = {}
 
     // Query the state variables of all visible objects and update
     // their position on the screen.
-    var obj_cache = {}
     while (true) {
         // Retrieve all object IDs.
         var msg = yield getAllObjectIDs();
@@ -318,23 +318,13 @@ function* mycoroutine(connection) {
         if (msg.ok == false) {console.log('Error getStateVariables'); return;}
         var allSVs = msg.sv
 
-        // Convert the 8-Byte arrays in objID to a single
-        // integer. This integer will internally be used for the keys
-        // in the "obj_cache map" because otherwise... strange things
-        // happen.
-        var objIDs_num = []
-        for (var ii in objIDs) {
-            var res = 0;
-            for (var jj in objIDs[ii]) {
-                res += Math.pow(256, jj) * objIDs[ii][jj];
-            }
-            objIDs_num[ii] = res;
-        }
-
         // Update the position and orientation of all objects. If an
         // object does not yet exist then create one.
         $(".progress-bar").css('width', '0%')
         for (var ii in objIDs) {
+            // Extract the actual objID.
+            var objID = objIDs[ii]
+
             // Update text in progress bar.
             var tmp = 100 * (parseInt(ii) + 1) / objIDs.length
                 txt = (parseInt(ii) + 1) + ' of ' + objIDs.length
@@ -342,64 +332,64 @@ function* mycoroutine(connection) {
 
             // Skip/remove all objects with undefined SVs. Remove the
             // object from the local cache as well.
-            if (allSVs[ii].sv == null) {
-                if (objIDs[ii] in obj_cache) {
-                    scene.remove(obj_cache[objIDs_num[ii]]);
-                    delete obj_cache[objIDs_num[ii]];
+            if (allSVs[objID] == null) {
+                if (objID in obj_cache) {
+                    scene.remove(obj_cache[objID]);
+                    delete obj_cache[objID];
                 }
-                delete old_SVs[ii];
+                delete old_SVs[objID];
                 continue;
             }
 
             // Remove the objects if its geometry has changed. The
             // code further down below will then think the object has
-            // never existed and will download it from scratch.
-            if (old_SVs[ii] != undefined) {
-                if (allSVs[ii].sv.checksumGeometry !=
-                    old_SVs[ii].sv.checksumGeometry) {
-                    scene.remove(obj_cache[objIDs_num[ii]]);
-                    delete obj_cache[objIDs_num[ii]];
+            // never existed and download it from scratch.
+            if (old_SVs[objID] != undefined) {
+                if (allSVs[objID].checksumGeometry !=
+                    old_SVs[objID].checksumGeometry) {
+                    scene.remove(obj_cache[objID]);
+                    delete obj_cache[objID];
                 }
             }
 
             // Backup the SV of the current object so that we can
             // verify the checksum again in the next frame.
-            old_SVs[ii] = allSVs[ii];
+            old_SVs[objID] = allSVs[objID];
 
             // Do not render ourselves.
-            if (arrayEqual(playerID, objIDs[ii])) continue;
+            if (arrayEqual(playerID, objID)) continue;
 
             // Download the entire object data if we do not have it
             // in the local cache.
-            if (obj_cache[objIDs_num[ii]] == undefined) {
+            if (obj_cache[objID] == undefined) {
                 // Get SV for current object.
-                var scale = allSVs[ii].sv.scale
+                var scale = allSVs[objID].scale
 
                 // Object not yet in local cache --> fetch its geometry.
-                msg = yield getGeometry(objIDs[ii]);
+                msg = yield getGeometry(objID);
                 if (msg.ok == false) {console.log('Error getGeometry'); return;}
-                var new_geo = compileMesh(objIDs[ii], msg.vert, msg.UV, scale)
+                var new_geo = compileMesh(objID, msg.vert, msg.UV, scale)
 
                 // Add the object to the cache and scene.
-                obj_cache[objIDs_num[ii]] = new_geo
+                obj_cache[objID] = new_geo
                 scene.add(new_geo);
             }
 
             // Update object position.
-            var sv = allSVs[ii].sv
-            obj_cache[objIDs_num[ii]].position.x = sv.position[0]
-            obj_cache[objIDs_num[ii]].position.y = sv.position[1]
-            obj_cache[objIDs_num[ii]].position.z = sv.position[2]
+            var sv = allSVs[objID]
+            obj_cache[objID].position.x = sv.position[0]
+            obj_cache[objID].position.y = sv.position[1]
+            obj_cache[objID].position.z = sv.position[2]
 
             // Update object orientation.
             var q = sv.orientation
-            obj_cache[objIDs_num[ii]].quaternion.x = q[0]
-            obj_cache[objIDs_num[ii]].quaternion.y = q[1]
-            obj_cache[objIDs_num[ii]].quaternion.z = q[2]
-            obj_cache[objIDs_num[ii]].quaternion.w = q[3]
+            obj_cache[objID].quaternion.x = q[0]
+            obj_cache[objID].quaternion.y = q[1]
+            obj_cache[objID].quaternion.z = q[2]
+            obj_cache[objID].quaternion.w = q[3]
 
             // Apply the scale parameter.
-            obj_cache[objIDs_num[ii]].scale.set(sv.scale, sv.scale, sv.scale)
+            obj_cache[objID].scale.set(sv.scale, sv.scale, sv.scale)
         }
 
         // Remove models that do not exist anymore.
@@ -410,7 +400,7 @@ function* mycoroutine(connection) {
 
             // If the objID is in our cache but not in the simulation
             // then it is time to remove it.
-            if (objIDs_num.indexOf(objID) == -1) {
+            if (objIDs.indexOf(objID) == -1) {
                 scene.remove(obj_cache[objID]);
                 delete obj_cache[objID];
             }
