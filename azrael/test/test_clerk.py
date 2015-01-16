@@ -48,7 +48,7 @@ from azrael.test.test_leonard import getLeonard
 ipshell = IPython.embed
 
 
-class ControllerTest(controller.ControllerBase):
+class ControllerTest(controller.Client):
     def testSend(self, data):
         """
         Pass data verbatim to Clerk.

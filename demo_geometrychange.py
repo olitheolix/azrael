@@ -212,7 +212,7 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
-        ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
+        ctrl = controller.Client(addr_clerk=config.addr_clerk)
         ctrl.setupZMQ()
 
         # Periodically reset the SV values. Set them several times because it
@@ -258,7 +258,7 @@ class UpdateGeometry(multiprocessing.Process):
             return
 
         # Get a Controller instance and connect it to Azrael.
-        ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
+        ctrl = controller.Client(addr_clerk=config.addr_clerk)
         ctrl.setupZMQ()
 
         # Query all object IDs. This happens only once which means the geometry

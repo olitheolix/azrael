@@ -16,12 +16,12 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Websocket version of ``ControllerBase``.
+Websocket version of ``Client``.
 
 This version of the `Controller` exists as a proof-of-concept to demonstrate
 that web browser (ie JavaScript) can interact with Azrael.
 
-The class itself behaves like the original ``ControllerBase`` which is why the
+The class itself behaves like the original ``Client`` which is why the
 same unit tests run on both versions. However, it also requires a running
 ``Clacks`` server to handle the Websocket connection.
 
@@ -42,9 +42,9 @@ from azrael.util import RetVal
 from azrael.typecheck import typecheck
 
 
-class WSControllerBase(azrael.controller.ControllerBase):
+class WSClient(azrael.controller.Client):
     """
-    Websocket version of ``ControllerBase``.
+    Websocket version of ``Client``.
 
     To use this class a ``Clacks`` instance must be running.
 

@@ -43,7 +43,7 @@ import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerSphere(azrael.controller.ControllerBase):
+class ControllerSphere(azrael.controller.Client):
     def PDController(self, ref_pos_z):
         """
         A PD controller to maintain the object's z-position at ``ref_pos``.

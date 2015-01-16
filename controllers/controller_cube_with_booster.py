@@ -43,7 +43,7 @@ import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerCube(azrael.controller.ControllerBase):
+class ControllerCube(azrael.controller.Client):
     """
     Alternately apply an up/down force to itself.
 

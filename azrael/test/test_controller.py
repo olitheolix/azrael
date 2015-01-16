@@ -46,8 +46,8 @@ from azrael.test.test_clerk import getLeonard, killAzrael
 from azrael.test.test_clerk import startAzrael, stopAzrael
 
 ipshell = IPython.embed
-WSControllerBase = azrael.wscontroller.WSControllerBase
-ControllerBase = azrael.controller.ControllerBase
+WSClient = azrael.wscontroller.WSClient
+Client = azrael.controller.Client
 
 def test_ping():
     """

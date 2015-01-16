@@ -14,7 +14,7 @@ import azrael.config as config
 import azrael.controller as controller
 import azrael.wscontroller as wscontroller
 
-WSControllerBase = wscontroller.WSControllerBase
+WSClient = wscontroller.WSClient
 
 ipshell = IPython.embed
 
@@ -47,7 +47,7 @@ def startAzrael(ctrl_type):
 
     if ctrl_type == 'ZeroMQ':
         # Instantiate the ZeroMQ version of the Controller.
-        ctrl = azrael.controller.ControllerBase()
+        ctrl = azrael.controller.Client()
         ctrl.setupZMQ()
 
         # Do not start a Clacks process.
@@ -58,7 +58,7 @@ def startAzrael(ctrl_type):
         clacks.start()
 
         # Instantiate the Websocket version of the Controller.
-        ctrl = azrael.wscontroller.WSControllerBase(
+        ctrl = azrael.wscontroller.WSClient(
             'ws://127.0.0.1:8080/websocket', 1)
         assert ctrl.ping()
     else:
@@ -103,7 +103,7 @@ def test_ping_clacks():
 
     # Connection must now be impossible.
     with pytest.raises(ConnectionRefusedError):
-        WSControllerBase('ws://127.0.0.1:8080/websocket', 1)
+        WSClient('ws://127.0.0.1:8080/websocket', 1)
 
     print('Test passed')
 

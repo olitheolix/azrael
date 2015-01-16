@@ -190,7 +190,7 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
-        ctrl = controller.ControllerBase(addr_clerk=config.addr_clerk)
+        ctrl = controller.Client(addr_clerk=config.addr_clerk)
         ctrl.setupZMQ()
 
         # Query all objects in the scene. These are the only objects that will

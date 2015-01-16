@@ -18,7 +18,7 @@
 """
 Bridge between Websocket Controller and Clerk.
 
-It does little more than wrapping a ``ControllerBase`` instance. As such it has
+It does little more than wrapping a ``Client`` instance. As such it has
 the same capabilities.
 """
 
@@ -70,7 +70,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         This method is a Tornado callback and triggers when a client initiates
         a new Websocket connection.
         """
-        self.controller = controller.ControllerBase()
+        self.controller = controller.Client()
         self.controller.setupZMQ()
 
     @typecheck

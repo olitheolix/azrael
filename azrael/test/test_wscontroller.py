@@ -18,7 +18,7 @@
 """
 Test the Websocket version of the Controller.
 
-The tests for ``ControllerBase`` automatically test the Websocket
+The tests for ``Client`` automatically test the Websocket
 version. However, some tests, especially for the initial connection are
 specific to this controller type. Only these are covered here.
 """
@@ -34,8 +34,8 @@ from azrael.test.test_clerk import killAzrael
 
 ipshell = IPython.embed
 
-ControllerBase = azrael.controller.ControllerBase
-WSControllerBase = azrael.wscontroller.WSControllerBase
+Client = azrael.controller.Client
+WSClient = azrael.wscontroller.WSClient
 
 
 def test_custom_objid():
@@ -43,8 +43,8 @@ def test_custom_objid():
     Create two controllers. The first automatically gets an ID assigned,
     whereas the second one specifies one explicitly.
 
-    This behaviour matches that of `ControllerBase`` but is not automatically
-    inherited because the ``WSControllerBase`` is not a controller itself but a
+    This behaviour matches that of `Client`` but is not automatically
+    inherited because the ``WSClient`` is not a controller itself but a
     wrapper to communicate with the controller instance in Clacks.
     """
     killAzrael()
@@ -60,7 +60,7 @@ def test_custom_objid():
     address = 'ws://127.0.0.1:8080/websocket'
 
     # Instantiate a WSController without specifiying an object ID.
-    ctrl_0 = azrael.wscontroller.WSControllerBase(address)
+    ctrl_0 = azrael.wscontroller.WSClient(address)
 
     # Ping Clerk to verify the connection is live.
     ret = ctrl_0.ping()
@@ -68,7 +68,7 @@ def test_custom_objid():
 
     # Instantiate another WSController. This time specify an ID. Note: the ID
     # need not exist albeit object specific commands will subsequently fail.
-    ctrl_1 = azrael.wscontroller.WSControllerBase(address)
+    ctrl_1 = azrael.wscontroller.WSClient(address)
 
     # Ping Clerk again to verify the connection is live.
     ret = ctrl_1.ping()

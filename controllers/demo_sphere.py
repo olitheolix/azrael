@@ -36,7 +36,7 @@ import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerSphere(azrael.controller.ControllerBase):
+class ControllerSphere(azrael.controller.Client):
     def run(self):
         # Boiler plate: setup
         self.setupZMQ()

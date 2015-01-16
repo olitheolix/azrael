@@ -540,7 +540,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Create the graphic buffers and compile the shaders.
         """
         # Connect to Azrael.
-        self.ctrl = controller.ControllerBase(addr_clerk=self.addr_server)
+        self.ctrl = controller.Client(addr_clerk=self.addr_server)
         self.ctrl.setupZMQ()
 
         print('Client connected')

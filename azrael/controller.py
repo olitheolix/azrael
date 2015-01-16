@@ -44,7 +44,7 @@ from azrael.typecheck import typecheck
 from azrael.bullet.bullet_data import BulletData, BulletDataOverride
 
 
-class ControllerBase():
+class Client():
     """
     A Client for Clerk/Azrael.
 
@@ -143,7 +143,7 @@ class ControllerBase():
 
         This method primarily exists to abstract away the underlying socket
         type. In this case, it is a ZeroMQ socket, in the case of
-        ``WSControllerBase`` it is a Websocket.
+        ``WSClient`` it is a Websocket.
 
         :param str data: data in string format (usually a JSON string).
         :return: None
@@ -156,7 +156,7 @@ class ControllerBase():
 
         This method primarily exists to abstract away the underlying socket
         type. In this case, it is a ZeroMQ socket, in the case of
-        ``WSControllerBase`` it is a Websocket.
+        ``WSClient`` it is a Websocket.
 
         :return: received data as a string (usuallay a JSON string).
         :rtype: ste

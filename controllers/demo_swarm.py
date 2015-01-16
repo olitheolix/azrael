@@ -38,7 +38,7 @@ import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerCubeLeft(azrael.controller.ControllerBase):
+class ControllerCubeLeft(azrael.controller.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.left = 0

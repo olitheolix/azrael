@@ -26,7 +26,7 @@ The ZeroMQ interface ensures a language agnostic interface. However, every
 client must adhere to the binary protocol specified in the ``protocols``
 module.
 
-The ``ControllerBase`` class is a specimen client that can talk to
+The ``Client`` class is a specimen client that can talk to
 Clerk. Unlike ``Clerk`` there can be many ``Controller`` instances running at
 the same time and and on multiple machines.
 """

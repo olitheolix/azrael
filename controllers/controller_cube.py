@@ -36,7 +36,7 @@ import azrael.controller
 import azrael.util as util
 
 
-class ControllerCube(azrael.controller.ControllerBase):
+class ControllerCube(azrael.controller.Client):
     pass
 
 
