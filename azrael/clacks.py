@@ -70,7 +70,6 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         a new Websocket connection.
         """
         self.client = azrael.client.Client()
-        self.client.setupZMQ()
 
     @typecheck
     def returnOk(self, data: dict, msg: str):

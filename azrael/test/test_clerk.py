@@ -66,7 +66,6 @@ def test_invalid():
     clerk = azrael.clerk.Clerk()
     clerk.start()
     client = ClientTest()
-    client.setupZMQ()
 
     # Send a corrupt JSON to Clerk.
     msg = 'invalid_cmd'

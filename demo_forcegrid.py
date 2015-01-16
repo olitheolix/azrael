@@ -187,8 +187,8 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
+        # Instantiate Client.
         client = azrael.client.Client(addr_clerk=config.addr_clerk)
-        client.setupZMQ()
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.

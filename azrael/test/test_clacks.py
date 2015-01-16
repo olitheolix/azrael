@@ -47,7 +47,6 @@ def startAzrael(client_type):
     if client_type == 'ZeroMQ':
         # Instantiate the ZeroMQ version of the Client.
         client = azrael.client.Client()
-        client.setupZMQ()
 
         # Do not start a Clacks process.
         clacks = None

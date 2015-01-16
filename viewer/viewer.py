@@ -541,7 +541,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         # Connect to Azrael.
         self.client = azrael.client.Client(addr_clerk=self.addr_server)
-        self.client.setupZMQ()
 
         print('Client connected')
 

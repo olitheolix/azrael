@@ -122,9 +122,8 @@ def loadGroundModel(scale, model_name):
 
     This will become the first object to populate the simulation.
     """
-    # Create a Client and connect to Azrael.
+    # Get a Client instance.
     client = azrael.client.Client(addr_clerk=config.addr_clerk)
-    client.setupZMQ()
 
     # Load the model.
     print('  Importing <{}>... '.format(model_name), end='', flush=True)
@@ -192,9 +191,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     Every cube has two boosters and two factories. The factories can themselves
     spawn more (purely passive) cubes.
     """
-    # Establish connection to Azrael.
+    # Get a Client instance.
     client = azrael.client.Client(addr_clerk=config.addr_clerk)
-    client.setupZMQ()
 
     # Cube vertices.
     vert = 0.5 * np.array([
@@ -435,8 +433,8 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
+        # Establish connection to Azrael.
         client = azrael.client.Client(addr_clerk=config.addr_clerk)
-        client.setupZMQ()
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.

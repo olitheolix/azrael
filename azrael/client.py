@@ -55,17 +55,15 @@ class Client():
     def __init__(self, addr_clerk: str=config.addr_clerk):
         super().__init__()
 
-        # Declare the socket variable. This is necessary because the destructor
-        # will use and depending on whether the Controller runs as a process
-        # or in the main thread this variable may otherwise be unavailable.
-        self.sock_cmd = None
-
-        # Address of Clerk (ZeroMQ sockets will connect to that address).
-        self.addr_clerk = addr_clerk
-
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
+
+        # Create ZeroMQ sockets and connect them to Clerk.
+        self.ctx = zmq.Context()
+        self.sock_cmd = self.ctx.socket(zmq.REQ)
+        self.sock_cmd.linger = 0
+        self.sock_cmd.connect(addr_clerk)
 
         # Associate the encoding and decoding functions for every command.
         self.codec = {
@@ -112,15 +110,6 @@ class Client():
 
     def __del__(self):
         self.close()
-
-    def setupZMQ(self):
-        """
-        Create ZeroMQ sockets and connect them to Clerk.
-        """
-        self.ctx = zmq.Context()
-        self.sock_cmd = self.ctx.socket(zmq.REQ)
-        self.sock_cmd.linger = 0
-        self.sock_cmd.connect(self.addr_clerk)
 
     def close(self):
         """

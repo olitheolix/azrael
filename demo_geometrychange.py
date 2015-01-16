@@ -209,8 +209,8 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
+        # Instantiate Client.
         client = azrael.client.Client(addr_clerk=config.addr_clerk)
-        client.setupZMQ()
 
         # Periodically reset the SV values. Set them several times because it
         # is well possible that not all State Variables reach Leonard in the
@@ -254,9 +254,8 @@ class UpdateGeometry(multiprocessing.Process):
         if self.period == -1:
             return
 
-        # Get a Client instance.
+        # Instantiate Client.
         client = azrael.client.Client(addr_clerk=config.addr_clerk)
-        client.setupZMQ()
 
         # Query all object IDs. This happens only once which means the geometry
         # swap does not affect newly generated objects.
