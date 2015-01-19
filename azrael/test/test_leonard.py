@@ -13,7 +13,7 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.test.test_clacks import killAzrael
-
+from azrael.bullet.test_boost_bullet import isEqualBD
 
 import numpy as np
 
@@ -636,7 +636,8 @@ def test_create_work_package_with_objects():
     assert (meta.dt, meta.maxsteps) == (3, 4)
     assert (ret.ok, len(data)) == (True, 2)
     assert (data[0].id, data[1].id) == (id_1, id_2)
-    assert (data[0].sv, data[1].sv) == (data_1, data_2)
+    assert isEqualBD(data[0].sv, data_1)
+    assert isEqualBD(data[1].sv, data_2)
     assert np.array_equal(data[0].central_force, [0, 0, 0])
     assert np.array_equal(data[1].central_force, [0, 0, 0])
 
@@ -648,7 +649,7 @@ def test_create_work_package_with_objects():
     del z
 
     # Check the State Vector before we update the WP.
-    assert leo.allObjects[id_1] == data_1
+    assert isEqualBD(leo.allObjects[id_1], data_1)
 
     # Pull completed Work Packages. The call must succeed but the number of
     # processed and pending WPs must still be 1 and 0, respectively.
@@ -673,7 +674,7 @@ def test_create_work_package_with_objects():
     assert ret.data == (1, 0)
 
     # Verify that the State Vector was indeed updated correctly.
-    assert leo.allObjects[id_1] == data_4
+    assert isEqualBD(leo.allObjects[id_1], data_4)
 
     print('Test passed')
 

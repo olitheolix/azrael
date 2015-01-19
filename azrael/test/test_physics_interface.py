@@ -27,6 +27,7 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.test.test_clacks import killAzrael
 from azrael.test.test_leonard import getLeonard
+from azrael.bullet.test_boost_bullet import isEqualBD
 
 ipshell = IPython.embed
 
@@ -58,17 +59,24 @@ def test_add_get_remove_single():
     leo.processCommandsAndSync()
 
     # Query the object. This must return the SV data directly.
-    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data})
+    ret = physAPI.getStateVariables([id_0])
+    assert ret.ok
+    assert isEqualBD(ret.data[id_0], data)
 
     # Query the same object but supply it as a list. This must return a list
     # with one element which is the exact same object as before.
-    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data})
+    ret = physAPI.getStateVariables([id_0])
+    assert ret.ok
+    assert isEqualBD(ret.data[id_0], data)
 
     # Attempt to remove non-existing ID --> must fail.
     assert physAPI.addCmdRemoveObject(id_1).ok
     leo.processCommandsAndSync()
 
-    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data})
+    ret = physAPI.getStateVariables([id_0])
+    assert ret.ok
+    assert isEqualBD(ret.data[id_0], data)
+
     ret = physAPI.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 1)
 
@@ -114,27 +122,29 @@ def test_add_get_multiple():
 
     # Query the objects individually.
     ret = physAPI.getStateVariables([id_0])
-    assert (ret.ok, ret.data) == (True, {id_0: data_0})
+    assert ret.ok
+    assert isEqualBD(ret.data[id_0], data_0)
     ret = physAPI.getStateVariables([id_1])
-    assert (ret.ok, ret.data) == (True, {id_1: data_1})
+    assert ret.ok
+    assert isEqualBD(ret.data[id_1], data_1)
 
     # Manually query multiple objects.
     ret = physAPI.getStateVariables([id_0, id_1])
     assert (ret.ok, len(ret.data)) == (True, 2)
-    assert ret.data[id_0] == data_0
-    assert ret.data[id_1] == data_1
+    assert isEqualBD(ret.data[id_0], data_0)
+    assert isEqualBD(ret.data[id_1], data_1)
 
     # Repeat, but change the order of the objects.
     ret = physAPI.getStateVariables([id_1, id_0])
     assert (ret.ok, len(ret.data)) == (True, 2)
-    assert ret.data[id_0] == data_0
-    assert ret.data[id_1] == data_1
+    assert isEqualBD(ret.data[id_0], data_0)
+    assert isEqualBD(ret.data[id_1], data_1)
 
     # Query all objects at once.
     ret = physAPI.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 2)
-    assert ret.data[id_0] == data_0
-    assert ret.data[id_1] == data_1
+    assert isEqualBD(ret.data[id_0], data_0)
+    assert isEqualBD(ret.data[id_1], data_1)
 
     print('Test passed')
 
@@ -189,14 +199,18 @@ def test_add_same():
     # request to spawn a new object with the same id_0 but a different State
     # Vectors, let Leonard evaluate the queue, and finally verify that Leonard
     # did not add/modify id_0.
-    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data_0})
+    ret = physAPI.getStateVariables([id_0])
+    assert ret.ok
+    assert isEqualBD(ret.data[id_0], data_0)
     assert physAPI.addCmdSpawn(id_0, data_2, aabb=0).ok
     ret = physAPI.getCmdSpawn()
     assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objID'] == id_0)
     leo.step(0, 1)
 
     # Must still be original 'data_0' state vector, not 'data_2'.
-    assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: data_0})
+    ret = physAPI.getStateVariables([id_0])
+    assert ret.ok
+    assert isEqualBD(ret.data[id_0], data_0)
 
     print('Test passed')
 
@@ -478,16 +492,15 @@ def test_StateVariable_tuple():
     # Compare two identical objects.
     sv1 = bullet_data.BulletData()
     sv2 = bullet_data.BulletData()
-    assert sv1 == sv2
+    assert isEqualBD(sv1, sv2)
 
     # Compare two different objects.
     sv1 = bullet_data.BulletData()
     sv2 = bullet_data.BulletData(position=[1, 2, 3])
-    assert not (sv1 == sv2)
-    assert sv1 != sv2
+    assert not isEqualBD(sv1, sv2)
 
     # Ensure (de)serialisation works.
-    assert sv1 == bullet_data.fromJsonDict(sv1.toJsonDict())
+    assert isEqualBD(sv1, bullet_data.fromJsonDict(sv1.toJsonDict()))
 
     print('Test passed')
 

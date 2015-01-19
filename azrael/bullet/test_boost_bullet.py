@@ -26,7 +26,20 @@ import azrael.bullet.bullet_data as bullet_data
 import numpy as np
 
 
+BulletData = bullet_data.BulletData
 ipshell = IPython.embed
+
+
+def isEqualBD(bd1: BulletData, bd2: BulletData):
+    """
+    Return *True* if the content of ``bd1`` is (roughly) equal to ``bd2``.
+
+    This is a convenience function only.
+    """
+    for f in BulletData._fields:
+        if not np.allclose(getattr(bd1, f), getattr(bd2, f), atol=1E-9):
+            return False
+    return True
 
 
 def test_getset_object():
@@ -58,7 +71,7 @@ def test_getset_object():
 
     # De-serialise the data and verify it is identical (small rounding errors
     # are admissible because Bullet uses float32 types).
-    assert obj_a == ret.data
+    assert isEqualBD(obj_a, ret.data)
     print('Test passed')
 
 
@@ -84,7 +97,7 @@ def test_update_object():
     bullet.setObjectData(0, obj_a)
     ret = bullet.getObjectData([0])
     assert ret.ok
-    assert obj_a == ret.data
+    assert isEqualBD(ret.data, obj_a)
 
     # Update the object.
     obj_a = bullet_data.BulletData(
@@ -99,7 +112,7 @@ def test_update_object():
     bullet.setObjectData(0, obj_a)
     ret = bullet.getObjectData([0])
     assert ret.ok
-    assert obj_a == ret.data
+    assert isEqualBD(ret.data, obj_a)
 
     print('Test passed')
 
@@ -127,7 +140,7 @@ def test_apply_force(force_fun_id):
     bullet.compute([objID], dt, maxsteps)
     ret = bullet.getObjectData([objID])
     assert ret.ok
-    assert obj_a == ret.data
+    assert isEqualBD(ret.data, obj_a)
 
     # Now apply a central force of one Newton in z-direction.
     if force_fun_id == 'applyForce':
@@ -141,7 +154,7 @@ def test_apply_force(force_fun_id):
     # Nothing must have happened because the simulation has not progressed.
     ret = bullet.getObjectData([objID])
     assert ret.ok
-    assert obj_a == ret.data
+    assert isEqualBD(ret.data, obj_a)
 
     # Progress the simulation by another 'dt' seconds.
     bullet.compute([objID], dt, maxsteps)
@@ -185,7 +198,7 @@ def test_apply_force_and_torque():
     bullet.compute([objID], dt, maxsteps)
     ret = bullet.getObjectData([objID])
     assert ret.ok
-    assert obj_a == ret.data
+    assert isEqualBD(ret.data, obj_a)
 
     # Now apply a central force of one Newton in z-direction and a torque of
     # two NewtonMeters.
@@ -194,7 +207,7 @@ def test_apply_force_and_torque():
     # Nothing must have happened because the simulation has not progressed.
     ret = bullet.getObjectData([objID])
     assert ret.ok
-    assert obj_a == ret.data
+    assert isEqualBD(ret.data, obj_a)
 
     # Progress the simulation for another second.
     bullet.compute([objID], dt, maxsteps)
@@ -244,7 +257,7 @@ def test_remove_object():
     bullet.setObjectData(0, obj_a)
     ret = bullet.getObjectData([0])
     assert ret.ok
-    assert obj_a == ret.data
+    assert isEqualBD(ret.data, obj_a)
 
     # Delete the object. The attempt to request it afterwards must fail.
     assert bullet.removeObject([0]).ok
@@ -333,9 +346,11 @@ def test_modify_size():
     bullet.compute([objID_a, objID_b], 1.0, 60)
 
     ret = bullet.getObjectData([objID_a])
-    assert (ret.ok, ret.data) == (True, obj_a)
+    assert ret.ok
+    assert isEqualBD(ret.data, obj_a)
     ret = bullet.getObjectData([objID_b])
-    assert (ret.ok, ret.data) == (True, obj_b)
+    assert ret.ok
+    assert isEqualBD(ret.data, obj_b)
 
     # Enlarge the second object so that the spheres no overlap.
     obj_b = obj_b._replace(scale=2.5)
@@ -386,9 +401,11 @@ def test_modify_cshape():
     bullet.setObjectData(objID_b, obj_b)
     bullet.compute([objID_a, objID_b], 1.0, 60)
     ret = bullet.getObjectData([objID_a])
-    assert (ret.ok, ret.data) == (True, obj_a)
+    assert ret.ok
+    assert isEqualBD(ret.data, obj_a)
     ret = bullet.getObjectData([objID_b])
-    assert (ret.ok, ret.data) == (True, obj_b)
+    assert ret.ok
+    assert isEqualBD(ret.data, obj_b)
 
     # Change the collision shape of both objects to a unit cube.
     obj_a = bullet_data.BulletData(position=pos_a, cshape=cs_cube)

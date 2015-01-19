@@ -28,6 +28,7 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.test.test_clerk import killAzrael
+from azrael.bullet.test_boost_bullet import isEqualBD
 
 ipshell = IPython.embed
 
@@ -196,8 +197,8 @@ def test_GetStateVariable():
 
     # Verify.
     dec_sv = dec_sv.data
-    assert dec_sv[1] == objs[0]
-    assert dec_sv[2] == objs[1]
+    assert isEqualBD(dec_sv[1], objs[0])
+    assert isEqualBD(dec_sv[2], objs[1])
 
     print('Test passed')
 

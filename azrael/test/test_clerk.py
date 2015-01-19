@@ -35,6 +35,8 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.test.test_clacks import startAzrael, stopAzrael
 from azrael.test.test_leonard import getLeonard, killAzrael
+from azrael.bullet.test_boost_bullet import isEqualBD
+
 
 ipshell = IPython.embed
 
@@ -223,7 +225,7 @@ def test_get_statevar():
     # Retrieve the SV for the existing ID=1.
     ret = clerk.getStateVariables([objID_1])
     assert (ret.ok, len(ret.data)) == (True, 1)
-    assert ret.data == {objID_1: sv_1}
+    assert isEqualBD(ret.data[objID_1], sv_1)
 
     # Spawn a second object.
     ret = clerk.spawn(templateID, sv_2)
@@ -234,12 +236,13 @@ def test_get_statevar():
     for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
         ret = clerk.getStateVariables([objID])
         assert (ret.ok, len(ret.data)) == (True, 1)
-        assert ret.data == {objID: ref_sv}
+        assert isEqualBD(ret.data[objID], ref_sv)
 
     # Retrieve the state variables for both objects at once.
     ret = clerk.getStateVariables([objID_1, objID_2])
     assert (ret.ok, len(ret.data)) == (True, 2)
-    assert ret.data == {objID_1: sv_1, objID_2: sv_2}
+    assert isEqualBD(ret.data[objID_1], sv_1)
+    assert isEqualBD(ret.data[objID_2], sv_2)
 
     print('Test passed')
 

@@ -100,29 +100,6 @@ class BulletData(_BulletData):
             axesLockRot=axesLockRot,
             lastChanged=lastChanged)
 
-    def __eq__(self, ref):
-        """
-        Two ``BulletData`` instances are considered equal if their content
-        matches well.
-
-        Small rounding errors are possible, especially when Bullet is involved
-        since it uses 32Bit data types internally.
-        """
-        # Sanity check.
-        if not isinstance(ref, type(self)):
-            return False
-
-        # Test all fields except cshape.
-        for f in self._fields:
-            if f == 'cshape':
-                continue
-            if not np.allclose(getattr(self, f), getattr(ref, f), atol=1E-9):
-                return False
-        return True
-
-    def __ne__(self, ref):
-        return not self.__eq__(ref)
-
     def toJsonDict(self):
         """
         Convert content of ``BulletData`` instance to JSON dictionary.
