@@ -360,7 +360,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Retrieve the state variables of all objects.
         self.oldSVs = self.newSVs
-        with util.Timeit('getSV') as timeit:
+        with util.Timeit('viewer.getSV') as timeit:
             ret = self.client.getStateVariables(ret.data)
         if not ret.ok:
             print('Could not retrieve the state variables -- Abort')
@@ -585,7 +585,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
     def paintGL(self):
         try:
-            with util.Timeit('paintGL') as timeit:
+            with util.Timeit('viewer.paintGL') as timeit:
                 self._paintGL()
         except Exception as err:
             print('Error in paintGL:')
@@ -618,7 +618,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Clear the scene.
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
-        with util.Timeit('loop') as timeit:
+        with util.Timeit('viewer.loop') as timeit:
             for objID, sv in self.newSVs.items():
                 # Do not add anything if it is the player object itself.
                 if objID == self.player_id:

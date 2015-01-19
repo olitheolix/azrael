@@ -610,7 +610,7 @@ class LeonardWorkPackages(LeonardBase):
                 time.sleep(0.001)
 
         # Synchronise the objects with the DB.
-        with util.Timeit('syncObjects') as timeit:
+        with util.Timeit('Leonard.syncObjects') as timeit:
             self.syncObjects()
 
     def processWorkPackage(self):
@@ -989,7 +989,7 @@ class LeonardWorker(multiprocessing.Process):
             IDs = [_.id for _ in worklist]
             self.bullet.compute(IDs, meta.dt, meta.maxsteps)
 
-        with util.Timeit('Worker.4_fetchFromBulletJson') as timeit:
+        with util.Timeit('Worker.4_fetchFromBullet') as timeit:
             # Retrieve the objects from Bullet again and update them in the DB.
             out = []
             for obj in worklist:
