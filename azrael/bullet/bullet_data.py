@@ -102,8 +102,8 @@ class BulletData(_BulletData):
 
     def __eq__(self, ref):
         """
-        Two ``BulletData`` instances are considered equal their content matches
-        well.
+        Two ``BulletData`` instances are considered equal if their content
+        matches well.
 
         Small rounding errors are possible, especially when Bullet is involved
         since it uses 32Bit data types internally.
@@ -130,12 +130,13 @@ class BulletData(_BulletData):
         # NamedTuple --> Dictionary.
         d = {field: getattr(self, field) for field in self._fields}
 
-        # The dictionary 'd' is alreay what we want. However, it still contains
-        # some NumPy arrays which JSON cannot serialise. To avoid manually
-        # converting all of them to lists we simply use our own JSON encoder
-        # which does that automatically, and then decode it again. The result
-        # is the same.
-        return loads(dumps(d))
+        # Convert all NumPy arrays to lists.
+        for k, v in d.items():
+            try:
+                d[k] = v.tolist()
+            except AttributeError:
+                pass
+        return d
 
 
 class BulletDataOverride(_BulletData):
