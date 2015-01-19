@@ -433,8 +433,7 @@ class LeonardBullet(LeonardBase):
             self.bullet.setObjectData(objID, sv)
 
             # Convenience.
-            force = np.array(self.allForces[objID], np.float64)
-            torque = np.array(self.allTorques[objID], np.float64)
+            force, torque = self.allForces[objID], self.allTorques[objID]
 
             # Add the force defined on the 'force' grid.
             force = self.applyGridForce(force, sv.position)
@@ -510,8 +509,7 @@ class LeonardSweeping(LeonardBullet):
                 self.bullet.setObjectData(objID, sv)
 
                 # Convenience.
-                force = np.array(self.allForces[objID], np.float64)
-                torque = np.array(self.allTorques[objID], np.float64)
+                force, torque = self.allForces[objID], self.allTorques[objID]
 
                 # Add the force defined on the 'force' grid.
                 force = self.applyGridForce(force, sv.position)
@@ -969,19 +967,18 @@ class LeonardWorker(multiprocessing.Process):
         # Iterate over all objects and update them.
         with util.Timeit('Worker.2.0_applyforce') as timeit:
             for obj in worklist:
-                # Update the object in Bullet.
-                self.bullet.setObjectData(obj.id, obj.sv)
+                # Convenience.
+                objID, force, torque = obj.id, obj.central_force, obj.torque
 
-                # Retrieve the force vector and tell Bullet to apply it.
-                force = np.array(obj.central_force, np.float64)
-                torque = np.array(obj.torque, np.float64)
+                # Update the object in Bullet.
+                self.bullet.setObjectData(objID, obj.sv)
 
                 # Add the force defined on the 'force' grid.
                 with util.Timeit('Worker.2.1_grid') as timeit:
                     force = self.applyGridForce(force, obj.sv.position)
 
                 # Apply all forces and torques.
-                self.bullet.applyForceAndTorque(obj.id, force, torque)
+                self.bullet.applyForceAndTorque(objID, force, torque)
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
