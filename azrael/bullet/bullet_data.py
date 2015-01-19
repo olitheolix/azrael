@@ -191,9 +191,12 @@ class BulletDataOverride(_BulletData):
 
 
 @typecheck
-def fromJsonDict(data):
+def fromJsonDict(data: dict):
     """
-    Unpack the JSON encoded ``BulletData`` in ``data``.
+    Convert ``data`` dictionary to ``BulletData`` instance.
+
+    :param dict data: data dictionary (usually the output of JSON decoder).
+    :return BulletData: a ``BuletData`` instance based on ``data``.
     """
     args = [data[_] for _ in BulletData._fields]
     return BulletData(*args)
