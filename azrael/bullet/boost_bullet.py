@@ -227,31 +227,31 @@ class PyBulletPhys():
 
             # Determine rotation and position.
             _ = obj.get_center_of_mass_transform().get_rotation()
-            rot = np.array([_.x, _.y, _.z, _.w], np.float64)
+            rot = [_.x, _.y, _.z, _.w]
             _ = obj.get_center_of_mass_transform().get_origin()
-            pos = np.array([_.x, _.y, _.z], np.float64)
+            pos = [_.x, _.y, _.z]
 
             # Determine linear and angular velocity.
             _ = obj.linear_velocity
-            vLin = np.array([_.x, _.y, _.z], np.float64)
+            vLin = [_.x, _.y, _.z]
             _ = obj.angular_velocity
-            vRot = np.array([_.x, _.y, _.z], np.float64)
+            vRot = [_.x, _.y, _.z]
 
             # Dummy value for the collision shape.
             cshape = obj.azrael[1].cshape
 
             # Linear/angular factors.
             _ = obj.linear_factor
-            axesLockLin = np.array([_.x, _.y, _.z], np.float64)
+            axesLockLin = [_.x, _.y, _.z]
             _ = obj.angular_factor
-            axesLockRot = np.array([_.x, _.y, _.z], np.float64)
+            axesLockRot = [_.x, _.y, _.z]
 
             # Construct a new _BulletData structure and add it to the list that
             # will eventually be returned to the caller.
             out.append(
-                BulletData(obj.azrael[1].scale, obj.inv_mass, obj.restitution,
+                _BulletData(obj.azrael[1].scale, obj.inv_mass, obj.restitution,
                            rot, pos, vLin, vRot, cshape, axesLockLin,
-                           axesLockRot))
+                           axesLockRot, 0))
         return RetVal(True, None, out[0])
 
     @typecheck
