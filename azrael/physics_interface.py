@@ -159,7 +159,7 @@ def addCmdSpawn(objID: int, sv: bullet_data.BulletData, aabb: (int, float)):
     :return: success.
     """
     # Serialise SV.
-    sv = sv.toJsonDict()
+    sv = bullet_data.toJsonDict(sv)
 
     # Sanity checks.
     if objID < 0:

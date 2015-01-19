@@ -100,21 +100,6 @@ class BulletData(_BulletData):
             axesLockRot=axesLockRot,
             lastChanged=lastChanged)
 
-    def toJsonDict(self):
-        """
-        Convert content of ``BulletData`` instance to JSON dictionary.
-        """
-        # NamedTuple --> Dictionary.
-        d = {field: getattr(self, field) for field in self._fields}
-
-        # Convert all NumPy arrays to lists.
-        for k, v in d.items():
-            try:
-                d[k] = v.tolist()
-            except AttributeError:
-                pass
-        return d
-
 
 class BulletDataOverride(_BulletData):
     """
@@ -178,3 +163,20 @@ def fromJsonDict(data: dict):
     """
     args = [data[_] for _ in BulletData._fields]
     return BulletData(*args)
+
+
+@typecheck
+def toJsonDict(data: BulletData):
+    """
+    Convert content of ``BulletData`` instance to JSON dictionary.
+    """
+    # NamedTuple --> Dictionary.
+    d = {field: getattr(data, field) for field in data._fields}
+
+    # Convert all NumPy arrays to lists.
+    for k, v in d.items():
+        try:
+            d[k] = v.tolist()
+        except AttributeError:
+            pass
+    return d

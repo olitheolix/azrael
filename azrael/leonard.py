@@ -338,7 +338,7 @@ class LeonardBase(multiprocessing.Process):
         for objID, sv in self.allObjects.items():
             doc = self._DB_SV.update(
                 {'objID': objID},
-                {'$set': {'objID': objID, 'sv': sv.toJsonDict(),
+                {'$set': {'objID': objID, 'sv': bullet_data.toJsonDict(sv),
                           'AABB': self.allAABBs[objID]}},
                 upsert=True)
 
@@ -655,7 +655,7 @@ class LeonardWorkPackages(LeonardBase):
         # ``WPData`` named tuples.
         try:
             wpdata = [WPData(objID,
-                             self.allObjects[objID].toJsonDict(),
+                             bullet_data.toJsonDict(self.allObjects[objID]),
                              self.allForces[objID],
                              self.allTorques[objID])
                       for objID in objIDs]
@@ -994,7 +994,7 @@ class LeonardWorker(multiprocessing.Process):
                     # Something went wrong. Reuse the old SV.
                     sv = obj.sv
                     self.logit.error('Unable to get all objects from Bullet')
-                out.append(WPData(obj.id, sv.toJsonDict(),
+                out.append(WPData(obj.id, bullet_data.toJsonDict(sv),
                                   [0, 0, 0],
                                   [0, 0, 0]))
 

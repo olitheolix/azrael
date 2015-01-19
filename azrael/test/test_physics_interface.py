@@ -500,7 +500,8 @@ def test_StateVariable_tuple():
     assert not isEqualBD(sv1, sv2)
 
     # Ensure (de)serialisation works.
-    assert isEqualBD(sv1, bullet_data.fromJsonDict(sv1.toJsonDict()))
+    fromJsonDict, toJsonDict = bullet_data.fromJsonDict, bullet_data.toJsonDict
+    assert isEqualBD(sv1, fromJsonDict(toJsonDict(sv1)))
 
     print('Test passed')
 

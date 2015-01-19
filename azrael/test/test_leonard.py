@@ -568,7 +568,7 @@ def test_create_work_package_without_objects():
     # Create a new Work Package.
     z = [0, 0, 0]
     WPData = azrael.leonard.WPData
-    newWP = [WPData(id_1, data_0.toJsonDict(), z, z)]
+    newWP = [WPData(id_1, bullet_data.toJsonDict(data_0), z, z)]
     del z
 
     # Update a non-existing work package ("newWP" is irrelevant for this test).
@@ -645,7 +645,7 @@ def test_create_work_package_with_objects():
     data_4 = bullet_data.BulletData(imass=4)
     z = [0, 0, 0]
     WPData = azrael.leonard.WPData
-    newWP = [WPData(id_1, data_4.toJsonDict(), z, z)]
+    newWP = [WPData(id_1, bullet_data.toJsonDict(data_4), z, z)]
     del z
 
     # Check the State Vector before we update the WP.
