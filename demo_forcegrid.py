@@ -273,14 +273,14 @@ class UpdateGrid(multiprocessing.Process):
 
         while True:
             # Activate the circular grid.
-            time.sleep(0.5 * self.period)
+            time.sleep(1.0 * self.period)
             ret = vg.setRegion('force', ofs, 0.1 * force_rot)
             print('Circular force')
             if not ret.ok:
                 print('Could not set force grid values')
 
             # Activate the linear grid.
-            time.sleep(2 * self.period)
+            time.sleep(2.0 * self.period)
             ret = vg.setRegion('force', ofs, 0.1 * force_lin)
             print('Linear force')
             if not ret.ok:
