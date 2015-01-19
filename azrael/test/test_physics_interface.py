@@ -109,11 +109,8 @@ def test_add_get_multiple():
     assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create an object and serialise it.
-    data_0 = bullet_data.BulletData()
-    data_0.position[:] = 0
-
-    data_1 = bullet_data.BulletData()
-    data_1.position[:] = 10 * np.ones(3)
+    data_0 = bullet_data.BulletData(position=[0, 0, 0])
+    data_1 = bullet_data.BulletData(position=[10, 10, 10])
 
     # Add the objects to the DB.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=0)
@@ -295,11 +292,9 @@ def test_get_set_force():
     id_1 = 1
 
     # Create two objects and serialise them.
-    data_0 = bullet_data.BulletData()
-    data_0.position[:] = 0
+    data_0 = bullet_data.BulletData(position=[0, 0, 0])
 
-    data_1 = bullet_data.BulletData()
-    data_1.position[:] = 10 * np.ones(3)
+    data_1 = bullet_data.BulletData(position=[10, 10, 10])
 
     # Add the two objects to the DB.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=0)
@@ -415,11 +410,11 @@ def test_BulletDataOverride():
     # remain unaffected but the lists must become NumPy arrays.
     ret = BulletData(imass=3, position=[1, 2, 3])
     assert isinstance(ret.imass, int)
-    assert isinstance(ret.position, np.ndarray)
+    assert isinstance(ret.position, list)
 
     ret = BulletDataOverride(imass=3, position=[1, 2, 3])
     assert isinstance(ret.imass, int)
-    assert isinstance(ret.position, np.ndarray)
+    assert isinstance(ret.position, list)
 
     # Invalid calls.
     assert BulletData(position=[1, 2]) is None
@@ -447,11 +442,9 @@ def test_get_set_forceandtorque():
     id_1 = 1
 
     # Create two objects and serialise them.
-    data_0 = bullet_data.BulletData()
-    data_0.position[:] = 0
+    data_0 = bullet_data.BulletData(position=[0, 0, 0])
 
-    data_1 = bullet_data.BulletData()
-    data_1.position[:] = 10 * np.ones(3)
+    data_1 = bullet_data.BulletData(position=[10, 10, 10])
 
     # Add the two objects to the simulation.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
