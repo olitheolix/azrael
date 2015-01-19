@@ -39,66 +39,62 @@ from azrael.protocol_json import loads, dumps
 ipshell = IPython.embed
 
 # All relevant physics data.
-_BulletData = namedtuple('BulletData',
+_BulletData = namedtuple('_BulletData',
                          'scale imass restitution orientation '
                          'position velocityLin velocityRot cshape '
                          'axesLockLin axesLockRot lastChanged')
 
 
-class BulletData(_BulletData):
+@typecheck
+def BulletData(scale: (int, float)=1,
+               imass: (int, float)=1,
+               restitution: (int, float)=0.9,
+               orientation: (list, np.ndarray)=[0, 0, 0, 1],
+               position: (list, np.ndarray)=[0, 0, 0],
+               velocityLin: (list, np.ndarray)=[0, 0, 0],
+               velocityRot: (list, np.ndarray)=[0, 0, 0],
+               cshape: (list, np.ndarray)=[0, 1, 1, 1],
+               axesLockLin: (list, np.ndarray)=[1, 1, 1],
+               axesLockRot: (list, np.ndarray)=[1, 1, 1],
+               lastChanged: int=0):
     """
-    Return a ``BulletData`` object.
+    Return a ``_BulletData`` object.
 
     Without any arguments this function will return a valid ``BulletData``
     specimen with sensible defaults.
     """
-    @typecheck
-    def __new__(cls,
-                scale: (int, float)=1,
-                imass: (int, float)=1,
-                restitution: (int, float)=0.9,
-                orientation: (list, np.ndarray)=[0, 0, 0, 1],
-                position: (list, np.ndarray)=[0, 0, 0],
-                velocityLin: (list, np.ndarray)=[0, 0, 0],
-                velocityRot: (list, np.ndarray)=[0, 0, 0],
-                cshape: (list, np.ndarray)=[0, 1, 1, 1],
-                axesLockLin: (list, np.ndarray)=[1, 1, 1],
-                axesLockRot: (list, np.ndarray)=[1, 1, 1],
-                lastChanged: int=0,
-                ):
 
-        # Convert arguments to NumPy types where necessary.
-        position = np.array(position, np.float64).tolist()
-        orientation = np.array(orientation, np.float64).tolist()
-        velocityLin = np.array(velocityLin, np.float64).tolist()
-        velocityRot = np.array(velocityRot, np.float64).tolist()
-        cshape = np.array(cshape, np.float64).tolist()
-        axesLockLin = np.array(axesLockLin, np.float64).tolist()
-        axesLockRot = np.array(axesLockRot, np.float64).tolist()
+    # Convert arguments to NumPy types where necessary.
+    position = np.array(position, np.float64).tolist()
+    orientation = np.array(orientation, np.float64).tolist()
+    velocityLin = np.array(velocityLin, np.float64).tolist()
+    velocityRot = np.array(velocityRot, np.float64).tolist()
+    cshape = np.array(cshape, np.float64).tolist()
+    axesLockLin = np.array(axesLockLin, np.float64).tolist()
+    axesLockRot = np.array(axesLockRot, np.float64).tolist()
 
-        # Sanity checks.
-        try:
-            assert len(axesLockLin) == len(axesLockRot) == 3
-            assert len(orientation) == len(cshape) == 4
-            assert len(position) == len(velocityLin) == len(velocityRot) == 3
-            assert lastChanged >= 0
-        except (AssertionError, TypeError) as err:
-            return None
+    # Sanity checks.
+    try:
+        assert len(axesLockLin) == len(axesLockRot) == 3
+        assert len(orientation) == len(cshape) == 4
+        assert len(position) == len(velocityLin) == len(velocityRot) == 3
+        assert lastChanged >= 0
+    except (AssertionError, TypeError) as err:
+        return None
 
-        # Build the actual named tuple.
-        return super().__new__(
-            cls,
-            scale=scale,
-            imass=imass,
-            restitution=restitution,
-            orientation=orientation,
-            position=position,
-            velocityLin=velocityLin,
-            velocityRot=velocityRot,
-            cshape=cshape,
-            axesLockLin=axesLockLin,
-            axesLockRot=axesLockRot,
-            lastChanged=lastChanged)
+    # Build the actual named tuple.
+    return _BulletData(
+        scale=scale,
+        imass=imass,
+        restitution=restitution,
+        orientation=orientation,
+        position=position,
+        velocityLin=velocityLin,
+        velocityRot=velocityRot,
+        cshape=cshape,
+        axesLockLin=axesLockLin,
+        axesLockRot=axesLockRot,
+        lastChanged=lastChanged)
 
 
 class BulletDataOverride(_BulletData):
@@ -139,7 +135,7 @@ class BulletDataOverride(_BulletData):
 
         # Create keyword arguments for all fields and populate them all
         # with *None*.
-        kwargs_all = {f: None for f in BulletData._fields}
+        kwargs_all = {f: None for f in _BulletData._fields}
 
         # Overwrite those keys for which we actually have a value. Note that we
         # will not use the valued supplied to this function directly but use
@@ -161,7 +157,7 @@ def fromJsonDict(data: dict):
     :param dict data: data dictionary (usually the output of JSON decoder).
     :return BulletData: a ``BuletData`` instance based on ``data``.
     """
-    args = [data[_] for _ in BulletData._fields]
+    args = [data[_] for _ in _BulletData._fields]
     return BulletData(*args)
 
 
@@ -171,7 +167,7 @@ def toJsonDict(data: BulletData):
     Convert content of ``BulletData`` instance to JSON dictionary.
     """
     # NamedTuple --> Dictionary.
-    d = {field: getattr(data, field) for field in data._fields}
+    d = {field: getattr(data, field) for field in _BulletData._fields}
 
     # Convert all NumPy arrays to lists.
     for k, v in d.items():

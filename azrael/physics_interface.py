@@ -35,6 +35,7 @@ from azrael.typecheck import typecheck
 ipshell = IPython.embed
 
 # Convenience.
+_BulletData = bullet_data._BulletData
 BulletDataOverride = bullet_data.BulletDataOverride
 
 # Return value signature.
@@ -140,7 +141,7 @@ def dequeueCmdRemove(remove: list):
 
 
 @typecheck
-def addCmdSpawn(objID: int, sv: bullet_data.BulletData, aabb: (int, float)):
+def addCmdSpawn(objID: int, sv: _BulletData, aabb: (int, float)):
     """
     Enqueue a new object with ``objID`` for Leonard to spawn.
 
@@ -158,9 +159,6 @@ def addCmdSpawn(objID: int, sv: bullet_data.BulletData, aabb: (int, float)):
     :param float aabb: size of AABB.
     :return: success.
     """
-    # Serialise SV.
-    sv = bullet_data.toJsonDict(sv)
-
     # Sanity checks.
     if objID < 0:
         msg = 'Object ID is negative'
@@ -182,7 +180,7 @@ def addCmdSpawn(objID: int, sv: bullet_data.BulletData, aabb: (int, float)):
     doc = db.find_and_modify({'objID': objID},
                              {'$setOnInsert': data},
                              upsert=True, new=True)
-    success = doc['sv'] == data['sv']
+    success = (_BulletData(*doc['sv']) == data['sv'])
 
     # Return success status to caller.
     if success:
@@ -319,7 +317,7 @@ def getStateVariables(objIDs: (list, tuple)):
 
     with util.Timeit('physAPI.2_getSV') as timeit:
         for doc in tmp:
-            out[doc['objID']] = bullet_data.fromJsonDict(doc['sv'])
+            out[doc['objID']] = _BulletData(*doc['sv'])
     return RetVal(True, None, out)
 
 
@@ -358,7 +356,7 @@ def getAABB(objIDs: (list, tuple)):
 
 
 @typecheck
-def _updateBulletDataTuple(orig: bullet_data.BulletData,
+def _updateBulletDataTuple(orig: _BulletData,
                            new: bullet_data.BulletDataOverride):
     """
     Overwrite fields in ``orig`` with content of ``new``.
@@ -370,10 +368,10 @@ def _updateBulletDataTuple(orig: bullet_data.BulletData,
     otherwise unavoidable because not all Leonard implementations inherit the
     same base class.
 
-    :param BulletData orig: the original tuple.
+    :param _BulletData orig: the original tuple.
     :param BulletDataOverride new: the new values (*None* entries are ignored).
     :return: updated version of ``orig``.
-    :rtype: BulletData
+    :rtype: _BulletData
     """
     if new is None:
         return orig
@@ -387,8 +385,8 @@ def _updateBulletDataTuple(orig: bullet_data.BulletData,
         if v is not None:
             dict_orig[k] = v
 
-    # Build a new BulletData instance and return it.
-    return bullet_data.BulletData(**dict_orig)
+    # Build a new _BulletData instance and return it.
+    return _BulletData(**dict_orig)
 
 
 def getAllStateVariables():
@@ -404,7 +402,7 @@ def getAllStateVariables():
     # Compile all object IDs and state variables into a dictionary.
     out = {}
     for doc in database.dbHandles['SV'].find():
-        key, value = doc['objID'], bullet_data.fromJsonDict(doc['sv'])
+        key, value = doc['objID'], _BulletData(*doc['sv'])
         out[key] = value
     return RetVal(True, None, out)
 

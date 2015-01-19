@@ -375,23 +375,19 @@ def ToClerk_GetStateVariable_Decode(data: dict):
 
 
 @typecheck
-def FromClerk_GetStateVariable_Encode(data):
-    assert isinstance(data, dict)
-
-    for _ in data.values():
-        assert isinstance(_, bullet_data.BulletData) or (_ is None)
-
-    # Serialise the SV values in ``data``.
-    data = {objID: None if sv is None else bullet_data.toJsonDict(sv)
-            for (objID, sv) in data.items()}
+def FromClerk_GetStateVariable_Encode(data: dict):
     return True, {'data': data}
 
 
 @typecheck
 def FromClerk_GetStateVariable_Decode(data: dict):
     out = {}
-    for objID, sv in data['data'].items():
-        out[int(objID)] = None if sv is None else bullet_data.fromJsonDict(sv)
+    for objID, v in data['data'].items():
+        objID = int(objID)
+        if v is not None:
+            out[objID] = bullet_data._BulletData(*v)
+        else:
+            out[objID] = None
     return RetVal(True, None, out)
 
 
@@ -402,14 +398,14 @@ def FromClerk_GetStateVariable_Decode(data: dict):
 
 @typecheck
 def ToClerk_Spawn_Encode(
-        templateID: bytes, sv: bullet_data.BulletData):
-    return True, {'templateID': templateID, 'sv': bullet_data.toJsonDict(sv)}
+        templateID: bytes, sv: bullet_data._BulletData):
+    return True, {'templateID': templateID, 'sv': sv}
 
 
 @typecheck
 def ToClerk_Spawn_Decode(data: dict):
     templateID = bytes(data['templateID'])
-    sv = bullet_data.fromJsonDict(data['sv'])
+    sv = bullet_data._BulletData(*data['sv'])
 
     if sv is None:
         return False, 'Invalid State Variable data'

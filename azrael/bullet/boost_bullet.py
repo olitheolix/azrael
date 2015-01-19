@@ -35,6 +35,7 @@ ipshell = IPython.embed
 btVector3 = pybullet.btVector3
 btQuaternion = pybullet.btQuaternion
 BulletData = bullet_data.BulletData
+_BulletData = bullet_data._BulletData
 RetVal = azrael.util.RetVal
 
 
@@ -208,7 +209,7 @@ class PyBulletPhys():
         not exists.
 
         :param list objIDs: the IDs of all objects to retrieve.
-        :return: list of ``BulletData`` instances.
+        :return: list of ``_BulletData`` instances.
         :rtype: list
         """
         out = []
@@ -245,7 +246,7 @@ class PyBulletPhys():
             _ = obj.angular_factor
             axesLockRot = np.array([_.x, _.y, _.z], np.float64)
 
-            # Construct a new BulletData structure and add it to the list that
+            # Construct a new _BulletData structure and add it to the list that
             # will eventually be returned to the caller.
             out.append(
                 BulletData(obj.azrael[1].scale, obj.inv_mass, obj.restitution,
@@ -254,14 +255,14 @@ class PyBulletPhys():
         return RetVal(True, None, out[0])
 
     @typecheck
-    def setObjectData(self, objID: int, obj: BulletData):
+    def setObjectData(self, objID: int, obj: _BulletData):
         """
         Update State Variables of ``objID`` to ``obj``.
 
         Create a new object with ``objID`` if it does not yet exist.
 
         :param int objID: the IDs of all objects to retrieve.
-        :param ``BulletData`` obj: object description.
+        :param ``_BulletData`` obj: object description.
         :return: Success
         """
         # Create the Rigid Body if it does not yet exist.
@@ -315,14 +316,14 @@ class PyBulletPhys():
         return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, objID: int, obj: BulletData):
+    def compileCollisionShape(self, objID: int, obj: _BulletData):
         """
         Return the correct Bullet collision shape based on ``obj``.
 
         This is a convenience method only.
 
         :param int objID: object ID.
-        :param BulletData obj: Azrael's meta data that describes the body.
+        :param _BulletData obj: Azrael's meta data that describes the body.
         :return: Bullet collision shape.
         """
         # Instantiate a new collision shape.
@@ -348,12 +349,12 @@ class PyBulletPhys():
         return RetVal(True, None, cshape)
 
     @typecheck
-    def createRigidBody(self, objID: int, obj: BulletData):
+    def createRigidBody(self, objID: int, obj: _BulletData):
         """
         Create a new rigid body ``obj`` with ``objID``.
 
         :param int objID: ID of new rigid body.
-        :param BulletData obj: State Variables of rigid body.
+        :param _BulletData obj: State Variables of rigid body.
         :return: Success
         """
         # Convert orientation and position to btVector3.

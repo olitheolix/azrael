@@ -27,16 +27,17 @@ import numpy as np
 
 
 BulletData = bullet_data.BulletData
+_BulletData = bullet_data._BulletData
 ipshell = IPython.embed
 
 
-def isEqualBD(bd1: BulletData, bd2: BulletData):
+def isEqualBD(bd1: _BulletData, bd2: _BulletData):
     """
     Return *True* if the content of ``bd1`` is (roughly) equal to ``bd2``.
 
     This is a convenience function only.
     """
-    for f in BulletData._fields:
+    for f in _BulletData._fields:
         if not np.allclose(getattr(bd1, f), getattr(bd2, f), atol=1E-9):
             return False
     return True

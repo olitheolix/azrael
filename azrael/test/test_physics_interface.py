@@ -30,6 +30,8 @@ from azrael.test.test_leonard import getLeonard
 from azrael.bullet.test_boost_bullet import isEqualBD
 
 ipshell = IPython.embed
+BulletData = bullet_data.BulletData
+BulletDataOverride = bullet_data.BulletDataOverride
 
 
 def test_add_get_remove_single():
@@ -52,7 +54,7 @@ def test_add_get_remove_single():
     assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create an object and serialise it.
-    data = bullet_data.BulletData()
+    data = BulletData()
 
     # Add the object to the DB with ID=0.
     assert physAPI.addCmdSpawn(id_0, data, aabb=0)
@@ -109,8 +111,8 @@ def test_add_get_multiple():
     assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create an object and serialise it.
-    data_0 = bullet_data.BulletData(position=[0, 0, 0])
-    data_1 = bullet_data.BulletData(position=[10, 10, 10])
+    data_0 = BulletData(position=[0, 0, 0])
+    data_1 = BulletData(position=[10, 10, 10])
 
     # Add the objects to the DB.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=0)
@@ -163,9 +165,9 @@ def test_add_same():
     assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create two State Vectors.
-    data_0 = bullet_data.BulletData(imass=1)
-    data_1 = bullet_data.BulletData(imass=2)
-    data_2 = bullet_data.BulletData(imass=3)
+    data_0 = BulletData(imass=1)
+    data_1 = BulletData(imass=2)
+    data_2 = BulletData(imass=3)
 
     # The command queue for spawning objects must be empty.
     ret = physAPI.getCmdSpawn()
@@ -225,8 +227,8 @@ def test_dequeueCommands():
     dcSpawn = physAPI.dequeueCmdSpawn
     dcModify = physAPI.dequeueCmdModify
     dcRemove = physAPI.dequeueCmdRemove
-    data_0 = bullet_data.BulletData()
-    data_1 = bullet_data.BulletDataOverride(imass=2, scale=3)
+    data_0 = BulletData()
+    data_1 = BulletDataOverride(imass=2, scale=3)
 
     id_0, id_1 = 0, 1
 
@@ -292,9 +294,9 @@ def test_get_set_force():
     id_1 = 1
 
     # Create two objects and serialise them.
-    data_0 = bullet_data.BulletData(position=[0, 0, 0])
+    data_0 = BulletData(position=[0, 0, 0])
 
-    data_1 = bullet_data.BulletData(position=[10, 10, 10])
+    data_1 = BulletData(position=[10, 10, 10])
 
     # Add the two objects to the DB.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=0)
@@ -334,9 +336,6 @@ def test_overrideAttributes():
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
-    # Convenience.
-    BulletDataOverride = bullet_data.BulletDataOverride
-
     # Test constants.
     p = np.array([1, 2, 5])
     vl = np.array([8, 9, 10.5])
@@ -350,7 +349,7 @@ def test_overrideAttributes():
     id_0 = 0
 
     # Create an object and serialise it.
-    btdata = bullet_data.BulletData()
+    btdata = BulletData()
 
     # Add the object to the DB with ID=0.
     assert physAPI.addCmdSpawn(id_0, btdata, aabb=0).ok
@@ -376,7 +375,7 @@ def test_overrideAttributes():
 def test_BulletDataOverride():
     """
     ``BulletDataOverride`` must only accept valid input where the
-    ``BulletData`` class defines what constitutes "valid".
+    ``BulletData`` function defines what constitutes as "valid".
     """
     killAzrael()
 
@@ -442,9 +441,8 @@ def test_get_set_forceandtorque():
     id_1 = 1
 
     # Create two objects and serialise them.
-    data_0 = bullet_data.BulletData(position=[0, 0, 0])
-
-    data_1 = bullet_data.BulletData(position=[10, 10, 10])
+    data_0 = BulletData(position=[0, 0, 0])
+    data_1 = BulletData(position=[10, 10, 10])
 
     # Add the two objects to the simulation.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
@@ -483,18 +481,14 @@ def test_StateVariable_tuple():
     killAzrael()
 
     # Compare two identical objects.
-    sv1 = bullet_data.BulletData()
-    sv2 = bullet_data.BulletData()
+    sv1 = BulletData()
+    sv2 = BulletData()
     assert isEqualBD(sv1, sv2)
 
     # Compare two different objects.
-    sv1 = bullet_data.BulletData()
-    sv2 = bullet_data.BulletData(position=[1, 2, 3])
+    sv1 = BulletData()
+    sv2 = BulletData(position=[1, 2, 3])
     assert not isEqualBD(sv1, sv2)
-
-    # Ensure (de)serialisation works.
-    fromJsonDict, toJsonDict = bullet_data.fromJsonDict, bullet_data.toJsonDict
-    assert isEqualBD(sv1, fromJsonDict(toJsonDict(sv1)))
 
     print('Test passed')
 
@@ -511,7 +505,7 @@ def test_set_get_AABB():
     # Create two object IDs and a BulletData instances for this test.
     id_0, id_1 = 0, 1
     id_2, id_3 = 2, 3
-    data = bullet_data.BulletData()
+    data = BulletData()
 
     # Attempt to add an object with a negative AABB value. This must fail.
     assert not physAPI.addCmdSpawn(id_0, data, aabb=-1.5).ok

@@ -47,6 +47,11 @@ RetVal = azrael.util.RetVal
 WPData = namedtuple('WPRecord', 'id sv central_force torque')
 WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
 
+# Convenience.
+BulletData = bullet_data.BulletData
+_BulletData = bullet_data._BulletData
+BulletDataOverride = bullet_data.BulletDataOverride
+
 
 @typecheck
 def sweeping(data: list, labels: np.ndarray, dim: str):
@@ -296,8 +301,6 @@ class LeonardBase(multiprocessing.Process):
         docsModify = docsModify.data
         docsRemove = docsRemove.data
 
-        BulletData = bullet_data.BulletData
-        BulletDataOverride = bullet_data.BulletDataOverride
         fields = BulletDataOverride._fields
 
         # Remove objects.
@@ -315,7 +318,7 @@ class LeonardBase(multiprocessing.Process):
                 self.logit.warning(msg.format(objID))
             else:
                 sv_old = doc['sv']
-                self.allObjects[objID] = BulletData(**sv_old)
+                self.allObjects[objID] = _BulletData(*sv_old)
                 self.allAABBs[objID] = float(doc['AABB'])
                 self.allForces[objID] = [0, 0, 0]
                 self.allTorques[objID] = [0, 0, 0]
@@ -340,7 +343,7 @@ class LeonardBase(multiprocessing.Process):
         for objID, sv in self.allObjects.items():
             doc = self._DB_SV.update(
                 {'objID': objID},
-                {'$set': {'objID': objID, 'sv': bullet_data.toJsonDict(sv),
+                {'$set': {'objID': objID, 'sv': sv,
                           'AABB': self.allAABBs[objID]}},
                 upsert=True)
 
@@ -657,7 +660,7 @@ class LeonardWorkPackages(LeonardBase):
         # ``WPData`` named tuples.
         try:
             wpdata = [WPData(objID,
-                             bullet_data.toJsonDict(self.allObjects[objID]),
+                             self.allObjects[objID],
                              self.allForces[objID],
                              self.allTorques[objID])
                       for objID in objIDs]
@@ -708,7 +711,7 @@ class LeonardWorkPackages(LeonardBase):
             for (objID, sv, force, torque) in doc['wpdata']:
                 self.allForces[objID] = [0, 0, 0]
                 self.allTorques[objID] = [0, 0, 0]
-                self.allObjects[objID] = bullet_data.fromJsonDict(sv)
+                self.allObjects[objID] = _BulletData(*sv)
 
             # Count how many WPs we retrieve in total.
             cnt_fetch += 1
@@ -925,7 +928,7 @@ class LeonardWorker(multiprocessing.Process):
         wpdata = []
         for (objID, sv, force, torque) in doc['wpdata']:
             wpdata.append(WPData(id=objID,
-                          sv=bullet_data.fromJsonDict(sv),
+                          sv=_BulletData(*sv),
                           central_force=force,
                           torque=torque))
 
@@ -996,9 +999,7 @@ class LeonardWorker(multiprocessing.Process):
                     # Something went wrong. Reuse the old SV.
                     sv = obj.sv
                     self.logit.error('Unable to get all objects from Bullet')
-                out.append(WPData(obj.id, bullet_data.toJsonDict(sv),
-                                  [0, 0, 0],
-                                  [0, 0, 0]))
+                out.append(WPData(obj.id, sv, [0, 0, 0], [0, 0, 0]))
 
         # Update the data and delete the WP.
         with util.Timeit('Worker.5_updateWP') as timeit:

@@ -179,7 +179,7 @@ def test_setStateVariables(client_type):
     leo.step(0, 1)
     ok, _, ret_sv = client.getStateVariables(objID)
     ret_sv = ret_sv[objID]
-    assert isinstance(ret_sv, bullet_data.BulletData)
+    assert isinstance(ret_sv, bullet_data._BulletData)
     assert ret_sv.imass == new_sv.imass
     assert ret_sv.scale == new_sv.scale
     assert np.array_equal(ret_sv.position, new_sv.position)

@@ -628,7 +628,7 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, ret)
 
     @typecheck
-    def spawn(self, templateID: bytes, sv: bullet_data.BulletData):
+    def spawn(self, templateID: bytes, sv: bullet_data._BulletData):
         """
         Spawn a new object based on ``templateID``.
 
@@ -637,7 +637,7 @@ class Clerk(multiprocessing.Process):
         template.
 
         :param bytes templateID: template from which to spawn new object.
-        :param bytes sv: State Variables of new object.
+        :param _BulletData sv: State Variables of new object.
         :return: ID of new object
         :rtype: int
         """
