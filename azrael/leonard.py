@@ -340,9 +340,9 @@ class LeonardBase(multiprocessing.Process):
         """
         Copy all local SVs to DB.
         """
+        fun = self._DB_SV.update
         for objID, sv in self.allObjects.items():
-            doc = self._DB_SV.update(
-                {'objID': objID},
+            fun({'objID': objID},
                 {'$set': {'objID': objID, 'sv': sv,
                           'AABB': self.allAABBs[objID]}},
                 upsert=True)
@@ -571,10 +571,11 @@ class LeonardWorkPackages(LeonardBase):
                              ``dt`` update.
         """
         # Read queued commands and update the local object cache accordingly.
-        self.processCommandQueue()
+        with util.Timeit('Leonard.0_processCmdQueue') as timeit:
+            self.processCommandQueue()
 
         # Compute the collision sets.
-        with util.Timeit('Leonard.CCS') as timeit:
+        with util.Timeit('Leonard.1_CCS') as timeit:
             collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
         if not collSets.ok:
             self.logit.error('ComputeCollisionSetsAABB returned an error')
@@ -585,7 +586,7 @@ class LeonardWorkPackages(LeonardBase):
         util.logMetricQty('#CollSets', len(collSets))
 
         # Put each collision set into its own Work Package.
-        with util.Timeit('Leonard.CreateWPs') as timeit:
+        with util.Timeit('Leonard.2_CreateWPs') as timeit:
             all_wpids = []
             for subset in collSets:
                 ret = self.createWorkPackage(list(subset), dt, maxsteps)
@@ -597,15 +598,15 @@ class LeonardWorkPackages(LeonardBase):
         # testing. Furthermore, this single threaded version is pointless in
         # production because Azrael is about distributed physics, not single
         # threaded physics.
-        with util.Timeit('Leonard.ProcessWPs_1') as timeit:
+        with util.Timeit('Leonard.3_ProcessWPs') as timeit:
             for wpid in all_wpids:
                 self.processWorkPackage()
 
-        with util.Timeit('Leonard.ProcessWPs_2') as timeit:
+        with util.Timeit('Leonard.4_PullWPs') as timeit:
             # Wait until all Work Packages have been processed.
             pcwp = self.pullCompletedWorkPackages
             while pcwp().data[1] > 0:
-                time.sleep(0.001)
+                time.sleep(0.01)
 
         # Synchronise the objects with the DB.
         with util.Timeit('Leonard.syncObjects') as timeit:
@@ -696,26 +697,29 @@ class LeonardWorkPackages(LeonardBase):
         :return tuple: (#fetched-WPs, #unprocessed-WPs).
         """
         cnt_fetch = 0
-        while True:
-            # Retrieve the work package.
-            doc = self._DB_WP.find_and_modify(
-                {'wpid': {'$exists': 0}},
-                remove=True)
-            if doc is None:
-                break
+        query = {'wpid': {'$exists': 0}}
+        while self._DB_WP.find(query).count() > 0:
+            with util.Timeit('Leonard.pull_0') as timeit:
+                # Retrieve the work package.
+                doc = self._DB_WP.find_and_modify(
+                    query,
+                    remove=True)
+                if doc is None:
+                    break
 
-            # Reset force and torque for all objects in the WP, and overwrite
-            # the old State Vector with the new one from the processed WP.
-            for (objID, sv, force, torque) in doc['wpdata']:
-                self.allForces[objID] = [0, 0, 0]
-                self.allTorques[objID] = [0, 0, 0]
-                self.allObjects[objID] = _BulletData(*sv)
+                # Reset force and torque for all objects in the WP, and overwrite
+                # the old State Vector with the new one from the processed WP.
+                for (objID, sv, force, torque) in doc['wpdata']:
+                    self.allForces[objID] = [0, 0, 0]
+                    self.allTorques[objID] = [0, 0, 0]
+                    self.allObjects[objID] = _BulletData(*sv)
 
-            # Count how many WPs we retrieve in total.
-            cnt_fetch += 1
+                # Count how many WPs we retrieve in total.
+                cnt_fetch += 1
 
         # Determine how many WPs are still pending.
-        cnt_waiting = self._DB_WP.count()
+        with util.Timeit('Leonard.pull_1') as timeit:
+            cnt_waiting = self._DB_WP.count()
 
         # Return the statistics of how many completed WPs we got and how many
         # are still pending.
