@@ -185,7 +185,7 @@ def deleteGrid(name: str):
 
 
 @typecheck
-def getValue(name: str, pos: np.ndarray):
+def getValue(name: str, pos: (np.ndarray, list)):
     """
     Return the value at ``pos``.
 
@@ -194,6 +194,7 @@ def getValue(name: str, pos: np.ndarray):
     :return: data vector at ``pos``.
     """
     # Leverage 'getRegion' to do the actual work.
+    pos = np.array(pos, np.float64)
     ret = getRegion(name, pos, (1, 1, 1))
     if ret.ok:
         return RetVal(True, None, ret.data[0, 0, 0])

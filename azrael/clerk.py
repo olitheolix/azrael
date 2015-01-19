@@ -677,7 +677,7 @@ class Clerk(multiprocessing.Process):
         # template data as otherwise the effect could be surprising (a
         # space-ship collision shape in the template database and a simple
         # sphere when it is spawned).
-        sv.cshape[:] = np.fromstring(template['cshape'])
+        sv.cshape[:] = np.fromstring(template['cshape']).tolist()
 
         # Add the object to the physics simulation.
         physAPI.addCmdSpawn(objID, sv, template['aabb'])

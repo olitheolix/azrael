@@ -68,13 +68,13 @@ class BulletData(_BulletData):
                 ):
 
         # Convert arguments to NumPy types where necessary.
-        position = np.array(position, np.float64)
-        orientation = np.array(orientation, np.float64)
-        velocityLin = np.array(velocityLin, np.float64)
-        velocityRot = np.array(velocityRot, np.float64)
-        cshape = np.array(cshape, np.float64)
-        axesLockLin = np.array(axesLockLin, np.float64)
-        axesLockRot = np.array(axesLockRot, np.float64)
+        position = np.array(position, np.float64).tolist()
+        orientation = np.array(orientation, np.float64).tolist()
+        velocityLin = np.array(velocityLin, np.float64).tolist()
+        velocityRot = np.array(velocityRot, np.float64).tolist()
+        cshape = np.array(cshape, np.float64).tolist()
+        axesLockLin = np.array(axesLockLin, np.float64).tolist()
+        axesLockRot = np.array(axesLockRot, np.float64).tolist()
 
         # Sanity checks.
         try:

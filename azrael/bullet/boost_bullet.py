@@ -331,7 +331,7 @@ class PyBulletPhys():
             cshape = pybullet.btSphereShape(obj.scale)
         elif obj.cshape[0] == 4:
             # Prism.
-            w, h, l = obj.scale * obj.cshape[1:] / 2
+            w, h, l = obj.scale * np.array(obj.cshape[1:]) / 2
             cshape = pybullet.btBoxShape(btVector3(w, h, l))
         else:
             # Empty- or unrecognised collision shape.

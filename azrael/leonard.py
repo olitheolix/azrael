@@ -246,8 +246,10 @@ class LeonardBase(multiprocessing.Process):
             force = self.applyGridForce(force, sv.position)
 
             # Update velocity and position.
-            sv.velocityLin[:] += 0.5 * force
-            sv.position[:] += dt * sv.velocityLin
+            vel = np.array(sv.velocityLin, np.float64) + 0.5 * force
+            pos = np.array(sv.position, np.float64)
+            sv.velocityLin[:] = vel.tolist()
+            sv.position[:] = (pos + dt * vel).tolist()
 
             self.allForces[objID] = [0, 0, 0]
             self.allTorques[objID] = [0, 0, 0]
