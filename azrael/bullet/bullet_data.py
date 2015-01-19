@@ -147,32 +147,3 @@ class BulletDataOverride(_BulletData):
 
         # Create the ``_BulletData`` named tuple.
         return super().__new__(cls, **kwargs_all)
-
-
-@typecheck
-def fromJsonDict(data: dict):
-    """
-    Convert ``data`` dictionary to ``BulletData`` instance.
-
-    :param dict data: data dictionary (usually the output of JSON decoder).
-    :return BulletData: a ``BuletData`` instance based on ``data``.
-    """
-    args = [data[_] for _ in _BulletData._fields]
-    return BulletData(*args)
-
-
-@typecheck
-def toJsonDict(data: BulletData):
-    """
-    Convert content of ``BulletData`` instance to JSON dictionary.
-    """
-    # NamedTuple --> Dictionary.
-    d = {field: getattr(data, field) for field in _BulletData._fields}
-
-    # Convert all NumPy arrays to lists.
-    for k, v in d.items():
-        try:
-            d[k] = v.tolist()
-        except AttributeError:
-            pass
-    return d
