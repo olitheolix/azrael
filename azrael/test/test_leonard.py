@@ -26,7 +26,8 @@ allEngines = [
     azrael.leonard.LeonardBullet,
     azrael.leonard.LeonardSweeping,
     azrael.leonard.LeonardWorkPackagesMongo,
-    azrael.leonard.LeonardDistributedMongo]
+    azrael.leonard.LeonardDistributedMongo,
+    azrael.leonard.LeonardDistributedZeroMQ]
 
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):

@@ -22,6 +22,7 @@ import os
 import sys
 import zmq
 import time
+import pickle
 import pymongo
 import IPython
 import logging
@@ -740,6 +741,190 @@ class LeonardWorkPackagesMongo(LeonardBase):
             self.allObjects[objID] = _BulletData(*sv)
 
 
+class LeonardDistributedZeroMQ(LeonardBase):
+    """
+    Compute physics with separate engines.
+
+    This class uses the concept of Work Packages to distribute work. Every Work
+    Package is self contained and holds all the information Bullet requires to
+    step the simulation.
+
+    This class is single threaded. All Bullet engines run sequentially in the
+    main thread. The work packages are distributed at random to the engines.
+
+    This class uses the sweeping algorithm to determine collision sets, just
+    like ``LeonardSweeping`` does.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.workers = []
+        self.numWorkers = 3
+        self.wpid_counter = 0
+
+        # Worker terminate automatically after a certain number of processed
+        # Work Packages. The precise number is a constructor argument and the
+        # following two variables simply specify the range. The final number
+        # will be chosen randomly from this interval (different for every Worke
+        # instance to avoid the situation where all die simultaneously).
+        self.minSteps, self.maxSteps = (500, 700)
+
+    def __del__(self):
+        """
+        Kill all worker processes.
+        """
+        for worker in self.workers:
+            if worker.is_alive():
+                worker.terminate()
+                worker.join()
+
+    def setup(self):
+        self.ctx = zmq.Context()
+        self.sock = self.ctx.socket(zmq.REP)
+        self.sock.bind(config.addr_leonard_pushpull)
+
+        # Spawn the Workers.
+        workermanager = WorkerManager(
+            self.numWorkers, self.minSteps,
+            self.maxSteps, LeonardWorkerZeroMQ)
+        workermanager.start()
+        self.logit.info('Setup complete')
+
+    @typecheck
+    def step(self, dt, maxsteps):
+        """
+        Advance the simulation by ``dt`` using at most ``maxsteps``.
+
+        This method moves all SV objects from the database to the Bullet
+        engine. Then it defers to Bullet for the physics update. Finally, it
+        replaces the SV fields with the user specified values (only applies if
+        the user called 'setStateVariables') and writes the results back to the
+        database.
+
+        :param float dt: time step in seconds.
+        :param int maxsteps: maximum number of sub-steps to simulate for one
+                             ``dt`` update.
+        """
+        # Read queued commands and update the local object cache accordingly.
+        with util.Timeit('Leonard.0_processCmdQueue') as timeit:
+            self.processCommandQueue()
+
+        # Compute the collision sets.
+        with util.Timeit('Leonard.1_CCS') as timeit:
+            collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
+        if not collSets.ok:
+            self.logit.error('ComputeCollisionSetsAABB returned an error')
+            sys.exit(1)
+        collSets = collSets.data
+
+        # Log the number of created collision sets.
+        util.logMetricQty('#CollSets', len(collSets))
+
+        # Put each collision set into its own Work Package.
+        with util.Timeit('Leonard.2_CreateWPs') as timeit:
+            all_WPs = {}
+            for subset in collSets:
+                # Compile the Work Package.
+                ret = self.createWorkPackage(list(subset), dt, maxsteps)
+                if not ret.ok:
+                    self.logit.error(ret.msg)
+                    return
+                all_WPs[ret.data['wpid']] = ret.data
+
+        with util.Timeit('Leonard.3_WPSendRecv') as timeit:
+            tmpcnt = 0
+            while True:
+                # Read the Worker socket. If this is the first time we read
+                # from that Worker it will not pass along any results because
+                # it has not received any Work Package yet.
+                msg = pickle.loads(self.sock.recv())
+                if msg['wpid'] is not None:
+                    if msg['wpid'] in all_WPs:
+                        self.updateLocalCacheFromWP(msg['wpdata'])
+                        del all_WPs[msg['wpid']]
+
+                if len(all_WPs) == 0:
+                    self.sock.send(b'')
+                    break
+                keys =list(all_WPs.keys())
+                tmp = all_WPs[keys[tmpcnt % len(keys)]]
+                tmpcnt += 1
+                # Send the Work Package to the Worker.
+                self.sock.send(pickle.dumps(tmp))
+
+        # Synchronise the objects with the DB.
+        with util.Timeit('Leonard.4_syncObjects') as timeit:
+            self.syncObjects()
+
+    @typecheck
+    def createWorkPackage(self, objIDs: (tuple, list),
+                          dt: (int, float), maxsteps: int):
+        """
+        Create a new Work Package (WP) and return its ID.
+
+        The Work Package will not be returned but uploaded to the DB directly.
+
+        A Work Package carries the necessary information for another rigid body
+        physics steps. The Worker can thus start its work immediately, at least
+        in terms of the rigid bodies (it may still want to incorporate other
+        data like grid forces, but that is up to the Worker implementation).
+
+        The ``dt`` and ``maxsteps`` arguments are for the underlying physics
+        engine.
+
+        .. note::
+           A work package contains only the objIDs but not their SV. The
+           ``getNextWorkPackage`` function takes care of compiling this
+           information.
+
+        :param iterable objIDs: list of object IDs in the new work package.
+        :param float dt: time step for this work package.
+        :param int maxsteps: number of sub-steps for the time step.
+        :return: Work package ID
+        :rtype: int
+        """
+        # Sanity check.
+        if len(objIDs) == 0:
+            return RetVal(False, 'Work package is empty', None)
+
+        # Compile the State Vectors and forces for all objects into a list of
+        # ``WPData`` named tuples.
+        try:
+            wpdata = [(objID,
+                             self.allObjects[objID],
+                             self.allForces[objID],
+                             self.allTorques[objID])
+                      for objID in objIDs]
+        except KeyError as err:
+            return RetVal(False, 'Cannot form WP', None)
+
+        # Form the content of the Work Package as it will appear in the DB.
+        wpid = self.wpid_counter
+        data = {'wpid': wpid,
+                'wpmeta': (wpid, dt, maxsteps),
+                'wpdata': wpdata,
+                'ts': None}
+        self.wpid_counter += 1
+        return RetVal(True, None, data)
+
+    def updateLocalCacheFromWP(self, wpdata):
+        """
+        Copy every object from ``wpdata`` to the local cache.
+
+        The ``wpdata`` variables must come straight from the received Work
+        Package. It contains the new State Vectors and this method will copy
+        them into the local object cache in this class. It will also reset the
+        forces.
+
+        :param tuple wpdata: Content of Work Packge as returned by Workers.
+        """
+        # Reset force and torque for all objects in the WP, and overwrite
+        # the old State Vector with the new one from the processed WP.
+        for (objID, sv, force, torque) in wpdata:
+            self.allForces[objID] = [0, 0, 0]
+            self.allTorques[objID] = [0, 0, 0]
+            self.allObjects[objID] = _BulletData(*sv)
+
+
 class LeonardDistributedMongo(LeonardWorkPackagesMongo):
     """
     Almost identical to ``LeonardWorkPackagesMongo`` except that it launches
@@ -1051,6 +1236,145 @@ class LeonardWorker(multiprocessing.Process):
                 wpid = np.fromstring(wpid, np.int64)
                 with util.Timeit('Worker.0_All') as timeit:
                     self.processWorkPackage()
+                numSteps += 1
+
+            # Log a last status message and terminate.
+            self.logit.info('Worker {} terminated itself after {} steps'
+                            .format(self.workerID, numSteps))
+            sock.close(linger=0)
+            ctx.destroy()
+        except KeyboardInterrupt:
+            print('Aborted Worker {}'.format(self.workerID))
+
+
+class LeonardWorkerZeroMQ(multiprocessing.Process):
+    """
+    Dedicated Worker to process Work Packages.
+
+    :param int workerID: the ID of this worker.
+    :param int stepsUntilQuit: Worker will restart after this many steps.
+    """
+    def __init__(self, workerID, stepsUntilQuit: int):
+        super().__init__()
+        self.workerID = workerID
+
+        # After ``stepsUntilQuit`` this Worker will spawn a new Worker with the
+        # same ID and quit.
+        assert stepsUntilQuit > 0
+        self.stepsUntilQuit = stepsUntilQuit
+
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
+
+        # Record the PID of the parent.
+        self.parentPID = os.getpid()
+
+        # Instantiate a Bullet engine.
+        engine = azrael.bullet.boost_bullet.PyBulletPhys
+        self.bullet = engine(self.workerID)
+
+    def applyGridForce(self, force, pos):
+        """
+        Return updated ``force`` that takes the force grid value at ``pos``
+        into account.
+
+        Covenience function to minimise code duplication.
+
+        :param 3d-vec force: original force value.
+        :param 3d-vec pos: position in world coordinates.
+        :return: updated ``force`` value.
+        :rtype: 3d-vec.
+        """
+        # Convenience.
+        vg = azrael.vectorgrid
+
+        # Add the force from the grid.
+        tmp = vg.getValue('force', pos)
+        if tmp.ok and len(tmp.data) == 3:
+            return force + tmp.data
+        else:
+            return force
+
+    def processWorkPackage(self, wp):
+        worklist, meta = wp['wpdata'], WPMeta(*wp['wpmeta'])
+
+        # Log the number of collision-sets in the current Work Package.
+        util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
+
+        worklist = [WPData(*_) for _ in worklist]
+        # Iterate over all objects and update them.
+        with util.Timeit('Worker.2.0_applyforce') as timeit:
+            for obj in worklist:
+                # Convenience.
+                objID, force, torque = obj.id, obj.central_force, obj.torque
+
+                # Update the object in Bullet.
+                self.bullet.setObjectData(objID, obj.sv)
+
+                # Add the force defined on the 'force' grid.
+                with util.Timeit('Worker.2.1_grid') as timeit:
+                    force = self.applyGridForce(force, obj.sv.position)
+
+                # Apply all forces and torques.
+                self.bullet.applyForceAndTorque(objID, force, torque)
+
+        # Tell Bullet to advance the simulation for all objects in the
+        # current work list.
+        with util.Timeit('Worker.3_compute') as timeit:
+            IDs = [_.id for _ in worklist]
+            self.bullet.compute(IDs, meta.dt, meta.maxsteps)
+
+        with util.Timeit('Worker.4_fetchFromBullet') as timeit:
+            # Retrieve the objects from Bullet again and update them in the DB.
+            out = []
+            for obj in worklist:
+                ret = self.bullet.getObjectData([obj.id])
+                sv = ret.data
+                if not ret.ok:
+                    # Something went wrong. Reuse the old SV.
+                    sv = obj.sv
+                    self.logit.error('Unable to get all objects from Bullet')
+                out.append((obj.id, sv, [0, 0, 0], [0, 0, 0]))
+
+        # Update the data and delete the WP.
+        wp['wpdata'] = out
+        return wp
+
+    @typecheck
+    def run(self):
+        """
+        Update the physics for all objects in ``wpid``.
+
+        :param int wpid: work package ID.
+        """
+        try:
+            # Rename process to make it easy to find and kill them in the
+            # process table.
+            if os.getpid() != self.parentPID:
+                setproctitle.setproctitle('killme LeonardWorker')
+
+            # Setup ZeroMQ.
+            ctx = zmq.Context()
+            sock = ctx.socket(zmq.REQ)
+            sock.connect(config.addr_leonard_pushpull)
+            self.logit.info('Worker {} connected'.format(self.workerID))
+
+            # Process work packages as they arrive.
+            numSteps = 0
+            suq = self.stepsUntilQuit
+            sock.send(pickle.dumps({'wpid': None}))
+            while numSteps < suq:
+                msg = sock.recv()
+                if msg == b'':
+                    sock.send(pickle.dumps({'wpid': None}))
+                    continue
+                with util.Timeit('Worker.Unpickle') as timeit:
+                    wpdata = pickle.loads(msg)
+                with util.Timeit('Worker.0_All') as timeit:
+                    wpdata = self.processWorkPackage(wpdata)
+                with util.Timeit('Worker.Pickle') as timeit:
+                    sock.send(pickle.dumps(wpdata))
                 numSteps += 1
 
             # Log a last status message and terminate.
