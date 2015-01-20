@@ -376,6 +376,10 @@ def ToClerk_GetStateVariable_Decode(data: dict):
 
 @typecheck
 def FromClerk_GetStateVariable_Encode(data: dict):
+    fields = bullet_data._BulletData._fields
+    for k, v in data.items():
+        if v is not None:
+            data[k] = dict(zip(fields, v))
     return True, {'data': data}
 
 
@@ -385,7 +389,7 @@ def FromClerk_GetStateVariable_Decode(data: dict):
     for objID, v in data['data'].items():
         objID = int(objID)
         if v is not None:
-            out[objID] = bullet_data._BulletData(*v)
+            out[objID] = bullet_data._BulletData(**v)
         else:
             out[objID] = None
     return RetVal(True, None, out)
