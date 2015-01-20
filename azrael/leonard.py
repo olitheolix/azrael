@@ -531,7 +531,7 @@ class LeonardSweeping(LeonardBullet):
         self.syncObjects()
 
 
-class LeonardWorkPackages(LeonardBase):
+class LeonardWorkPackagesMongo(LeonardBase):
     """
     Compute physics with separate engines.
 
@@ -740,10 +740,10 @@ class LeonardWorkPackages(LeonardBase):
             self.allObjects[objID] = _BulletData(*sv)
 
 
-class LeonardDistributed(LeonardWorkPackages):
+class LeonardDistributedMongo(LeonardWorkPackagesMongo):
     """
-    Almost identical to ``LeonardWorkPackages`` except that it launches the
-    Worker processes into independent processes.
+    Almost identical to ``LeonardWorkPackagesMongo`` except that it launches
+    the Worker processes into independent processes.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

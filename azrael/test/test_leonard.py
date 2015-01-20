@@ -25,8 +25,8 @@ allEngines = [
     azrael.leonard.LeonardBase,
     azrael.leonard.LeonardBullet,
     azrael.leonard.LeonardSweeping,
-    azrael.leonard.LeonardWorkPackages,
-    azrael.leonard.LeonardDistributed]
+    azrael.leonard.LeonardWorkPackagesMongo,
+    azrael.leonard.LeonardDistributedMongo]
 
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
@@ -221,7 +221,7 @@ def test_worker_respawn():
     killAzrael()
 
     # Instantiate Leonard.
-    leonard = azrael.leonard.LeonardDistributed()
+    leonard = azrael.leonard.LeonardDistributedMongo()
     leonard.workerStepsUntilQuit = (1, 10)
     leonard.setup()
 
@@ -238,7 +238,7 @@ def test_worker_respawn():
     assert physAPI.addCmdSpawn(id_1, sv_1, aabb=1).ok
 
     # Advance the simulation by 1s, but use many small time steps. This ensures
-    # that the Workers will restart themselves many times.
+    # that the Workers will restart themselves frequently.
     for ii in range(60):
         leonard.step(1.0 / 60, 1)
 
@@ -511,7 +511,7 @@ def test_create_work_package_without_objects():
     killAzrael()
 
     # Reset the SV database and instantiate a Leonard and Worker.
-    leo = getLeonard(azrael.leonard.LeonardWorkPackages)
+    leo = getLeonard(azrael.leonard.LeonardWorkPackagesMongo)
     worker = azrael.leonard.LeonardWorker(1, 100000)
 
     # There must not be any processed/pending Work Packages yet.
@@ -607,7 +607,7 @@ def test_create_work_package_with_objects():
     killAzrael()
 
     # Reset the SV database and instantiate a Leonard and Worker.
-    leo = getLeonard(azrael.leonard.LeonardWorkPackages)
+    leo = getLeonard(azrael.leonard.LeonardWorkPackagesMongo)
     worker = azrael.leonard.LeonardWorker(1, 100000)
 
     # Convenience.
@@ -686,7 +686,7 @@ def test_work_package_timestamps():
     killAzrael()
 
     # Reset the SV database and instantiate both a Leonard and a Worker.
-    leo = getLeonard(azrael.leonard.LeonardWorkPackages)
+    leo = getLeonard(azrael.leonard.LeonardWorkPackagesMongo)
     worker = azrael.leonard.LeonardWorker(1, 100000)
 
     # Convenience.
