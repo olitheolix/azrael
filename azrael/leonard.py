@@ -707,12 +707,8 @@ class LeonardWorkPackages(LeonardBase):
                 if doc is None:
                     break
 
-                # Reset force and torque for all objects in the WP, and overwrite
-                # the old State Vector with the new one from the processed WP.
-                for (objID, sv, force, torque) in doc['wpdata']:
-                    self.allForces[objID] = [0, 0, 0]
-                    self.allTorques[objID] = [0, 0, 0]
-                    self.allObjects[objID] = _BulletData(*sv)
+                # Update the local cache with the content in the WP.
+                self.updateLocalCacheFromWP(doc['wpdata'])
 
                 # Count how many WPs we retrieve in total.
                 cnt_fetch += 1
@@ -724,6 +720,24 @@ class LeonardWorkPackages(LeonardBase):
         # Return the statistics of how many completed WPs we got and how many
         # are still pending.
         return RetVal(True, None, (cnt_fetch, cnt_waiting))
+
+    def updateLocalCacheFromWP(self, wpdata):
+        """
+        Copy every object from ``wpdata`` to the local cache.
+
+        The ``wpdata`` variables must come straight from the received Work
+        Package. It contains the new State Vectors and this method will copy
+        them into the local object cache in this class. It will also reset the
+        forces.
+
+        :param tuple wpdata: Content of Work Packge as returned by Workers.
+        """
+        # Reset force and torque for all objects in the WP, and overwrite
+        # the old State Vector with the new one from the processed WP.
+        for (objID, sv, force, torque) in wpdata:
+            self.allForces[objID] = [0, 0, 0]
+            self.allTorques[objID] = [0, 0, 0]
+            self.allObjects[objID] = _BulletData(*sv)
 
 
 class LeonardDistributed(LeonardWorkPackages):
