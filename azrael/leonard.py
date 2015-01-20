@@ -833,7 +833,7 @@ class WorkerManager(multiprocessing.Process):
             suq = self.minSteps + int(np.random.rand() * delta)
 
             # Instantiate the process and add it to the list.
-            workers.append(LeonardWorker(ii + 1, suq))
+            workers.append(self.workerCls(ii + 1, suq))
             workers[-1].start()
 
         # Periodically monitor the processes and restart any that have died.
@@ -851,7 +851,7 @@ class WorkerManager(multiprocessing.Process):
                 # Create a new Worker with the same ID but a (possibly)
                 # different number of steps after which it must terminate.
                 suq = self.minSteps + int(np.random.rand() * delta)
-                proc = LeonardWorker(workerID, suq)
+                proc = self.workerCls(workerID, suq)
                 proc.start()
                 workers[workerID] = proc
                 print('Restarted Worker {}'.format(workerID))
