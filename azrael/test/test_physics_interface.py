@@ -185,7 +185,7 @@ def test_add_same():
     assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objID'] == id_0)
 
     # Let Leonard pick up the commands. This must flush the command queue.
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ret = physAPI.getCmdSpawn()
     assert ret.ok and (ret.data == [])
 
@@ -204,7 +204,7 @@ def test_add_same():
     assert physAPI.addCmdSpawn(id_0, data_2, aabb=0).ok
     ret = physAPI.getCmdSpawn()
     assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objID'] == id_0)
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # Must still be original 'data_0' state vector, not 'data_2'.
     ret = physAPI.getStateVariables([id_0])

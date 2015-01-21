@@ -166,7 +166,7 @@ def test_delete():
     assert (ret.ok, ret.data) == (True, objID_2)
 
     # Two objects must now exist.
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ret = clerk.getAllObjectIDs()
     assert ret.ok and (set(ret.data) == set([objID_1, objID_2]))
 
@@ -174,7 +174,7 @@ def test_delete():
     assert clerk.removeObject(objID_1).ok
 
     # Only the second object must still exist.
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [objID_2])
 
@@ -183,7 +183,7 @@ def test_delete():
 
     # Delete the second object.
     assert clerk.removeObject(objID_2).ok
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [])
 
@@ -218,7 +218,7 @@ def test_get_statevar():
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # Retrieve the SV for a non-existing ID --> must fail.
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ret = clerk.getStateVariables([10])
     assert (ret.ok, ret.data) == (True, {10: None})
 
@@ -232,7 +232,7 @@ def test_get_statevar():
     assert (ret.ok, ret.data) == (True, objID_2)
 
     # Retrieve the state variables for both objects individually.
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
         ret = clerk.getStateVariables([objID])
         assert (ret.ok, len(ret.data)) == (True, 1)
@@ -497,7 +497,7 @@ def test_controlParts_invalid_commands():
 
     # Call 'controlParts'. This must fail because the chosen template has no
     # boosters or factory units.
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     assert not clerk.controlParts(objID_1, [cmd_b], []).ok
 
     # Must fail: objects has no factory.
@@ -538,7 +538,7 @@ def test_controlParts_invalid_commands():
     sv = bullet_data.BulletData()
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_2)
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # Create the commands to let each factory spawn an object.
     cmd_b = parts.CmdBooster(partID=0, force=0.5)
@@ -695,7 +695,7 @@ def test_controlParts_Factories_notmoving():
     # ... and spawn an instance thereof.
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
     # Send commands to the factories. Tell them to spawn their object with
@@ -714,7 +714,7 @@ def test_controlParts_Factories_notmoving():
     assert ok
     assert len(spawnedIDs) == 2
     assert spawnedIDs == [2, 3]
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # Query the state variables of the objects spawned by the factories.
     ret = clerk.getStateVariables(spawnedIDs)
@@ -787,7 +787,7 @@ def test_controlParts_Factories_moving():
     # ... and spawn an instance thereof.
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
     # Send commands to the factories. Tell them to spawn their object with
@@ -806,7 +806,7 @@ def test_controlParts_Factories_moving():
     assert ret.ok and (len(ret.data) == 2)
     spawnedIDs = ret.data
     assert spawnedIDs == [objID_2, objID_3]
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # Query the state variables of the objects spawned by the factories.
     ret = clerk.getStateVariables(spawnedIDs)
@@ -904,7 +904,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # ... and spawn an instance thereof.
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
     # Activate booster and factories. Then verify that boosters apply the

@@ -86,11 +86,10 @@ def test_spawn_and_delete_one_client(client_type):
     # Start the necessary services.
     clerk, client, clacks = startAzrael(client_type)
 
-    # Instruct Clerk to spawn a new template. The new object must have
-    # objID=1.
+    # Spawn a new object from templateID. The new object must have objID=1.
     ok, _, objID = client.spawn(templateID, np.zeros(3))
     assert (ok, objID) == (True, id_1)
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # Attempt to spawn a non-existing template.
     templateID += 'blah'.encode('utf8')
@@ -103,13 +102,13 @@ def test_spawn_and_delete_one_client(client_type):
     # Attempt to delete a non-existing object. This must silently fail.
     ok, _, ret = client.removeObject(100)
     assert ok
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ok, _, ret = client.getAllObjectIDs()
     assert (ok, ret) == (True, [id_1])
 
     # Delete an existing object.
     assert client.removeObject(id_1).ok
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ok, _, ret = client.getAllObjectIDs()
     assert (ok, ret) == (True, [])
 
@@ -176,7 +175,7 @@ def test_setStateVariables(client_type):
     assert client.setStateVariables(objID, new_sv).ok
 
     # Verify that the new attributes came into effect.
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ok, _, ret_sv = client.getStateVariables(objID)
     ret_sv = ret_sv[objID]
     assert isinstance(ret_sv, bullet_data._BulletData)
@@ -218,7 +217,7 @@ def test_getAllObjectIDs(client_type):
     assert (ret.ok, ret.data) == (True, objID_1)
 
     # The object list must now contain the ID of the just spawned object.
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ret = client.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [objID_1])
 
@@ -449,7 +448,7 @@ def test_controlParts(client_type):
                                 vel=vel_parent, orient=orient_parent)
     assert (ok, objID) == (True, objID_1)
     del ok, objID
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
     # Activate booster and factories and verify that the applied force and
@@ -525,7 +524,7 @@ def test_updateGeometry(client_type):
     assert ok
 
     # Query the SV to obtain the 'lastChanged' value.
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
     ok, _, sv = client.getStateVariables(objID)
     assert ok
     lastChanged = sv[objID].lastChanged
