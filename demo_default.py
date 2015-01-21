@@ -392,8 +392,6 @@ def startAzrael(param):
     #leo = leonard.LeonardBase()
     #leo = leonard.LeonardBullet()
     #leo = leonard.LeonardSweeping()
-    #leo = leonard.LeonardWorkPackagesMongo()
-    #leo = leonard.LeonardDistributedMongo()
     leo = leonard.LeonardDistributedZeroMQ()
     leo.start()
 
