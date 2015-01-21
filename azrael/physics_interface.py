@@ -62,7 +62,7 @@ def getCmdSpawn():
     The commands remain in the DB and successive calls to this function will
     thus return the previous results.
 
-    :return: objects as inserted by ``spawn``.
+    :return: objects as inserted by ``addCmdSpawn``.
     :rtype: list of dicts.
     """
     return RetVal(True, None, list(database.dbHandles['CmdSpawn'].find()))
@@ -76,7 +76,7 @@ def getCmdModifyStateVariables():
     The commands remain in the DB and successive calls to this function will
     thus return the previous results.
 
-    :return: objects as inserted by ``setStateVariable``.
+    :return: objects as inserted by ``addCmdModifyStateVariable``.
     :rtype: list of dicts.
     """
     return RetVal(True, None, list(database.dbHandles['CmdModify'].find()))
@@ -104,7 +104,7 @@ def getCmdRemove():
     The commands remain in the DB and successive calls to this function will
     thus return the previous results.
 
-    :return: objects as inserted by ``removeObject``.
+    :return: objects as inserted by ``addCmdRemoveObject``.
     :rtype: list of dicts.
     """
     return RetVal(True, None, list(database.dbHandles['CmdRemove'].find()))
@@ -287,18 +287,11 @@ def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
 @typecheck
 def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
     """
-    Set the central ``force`` and ``torque`` acting on ``objID``.
-
-    This function always suceeds.
-
-    .. note::
-       The force always applies to the centre of the mass only, unlike the
-       ``addCmdSetForce`` function which allows for position relative to the
-       centre of mass.
+    Apply ``torque`` and central ``force`` to ``objID``.
 
     :param int objID: the object
-    :param ndarray force: apply this central ``force`` to ``objID``.
-    :param ndarray torque: apply this ``torque`` to ``objID``.
+    :param list force: apply this central ``force`` to ``objID``.
+    :param list torque: apply this ``torque`` to ``objID``.
     :return bool: Success
     """
     # Sanity check.
