@@ -25,8 +25,6 @@ allEngines = [
     azrael.leonard.LeonardBase,
     azrael.leonard.LeonardBullet,
     azrael.leonard.LeonardSweeping,
-    azrael.leonard.LeonardWorkPackagesMongo,
-    azrael.leonard.LeonardDistributedMongo,
     azrael.leonard.LeonardDistributedZeroMQ]
 
 
@@ -222,7 +220,7 @@ def test_worker_respawn():
     killAzrael()
 
     # Instantiate Leonard.
-    leonard = azrael.leonard.LeonardDistributedMongo()
+    leonard = azrael.leonard.LeonardDistributedZeroMQ()
     leonard.workerStepsUntilQuit = (1, 10)
     leonard.setup()
 
@@ -512,27 +510,20 @@ def test_create_work_package_without_objects():
     killAzrael()
 
     # Reset the SV database and instantiate a Leonard and Worker.
-    leo = getLeonard(azrael.leonard.LeonardWorkPackagesMongo)
-    worker = azrael.leonard.LeonardWorker(1, 100000)
+    leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
-    # There must not be any processed/pending Work Packages yet.
-    ret = leo.countWorkPackages()
-    assert (ret.ok, ret.data) == (True, (0, 0))
+    # Constants.
+    id_1, id_2 = 1, 2
+    dt, maxsteps = 2, 3
 
-    # This call is invalid because the IDs must be a non-empty list.
-    assert not leo.createWorkPackage([], 1, 2).ok
+    # Invalid call: list of IDs must not be empty.
+    assert not leo.createWorkPackage([], dt, maxsteps).ok
 
-    # This call is invalid because the Leo has not object with this ID
-    assert not leo.createWorkPackage([10], 1, 2).ok
-
-    # There must still not be any processed/pending Work Packages.
-    ret = leo.countWorkPackages()
-    assert (ret.ok, ret.data) == (True, (0, 0))
+    # Invalid call: Leonard has not object with ID 10.
+    assert not leo.createWorkPackage([10], dt, maxsteps).ok
 
     # Test data.
     data_0 = bullet_data.BulletData(imass=1)
-    id_1, id_2 = 1, 2
-    dt, maxsteps = 2, 3
 
     # Add two new objects to Leonard.
     assert physAPI.addCmdSpawn(id_1, data_0, aabb=1).ok
@@ -541,60 +532,16 @@ def test_create_work_package_without_objects():
 
     # Create a work package for two object IDs. The WPID must be 1.
     ret = leo.createWorkPackage([id_1], dt, maxsteps)
-    assert (ret.ok, ret.data) == (True, 1)
+    ret_wpid, ret_wpdata = ret.data['wpid'], ret.data['wpdata']
+    assert (ret.ok, ret_wpid, len(ret_wpdata)) == (True, 0, 1)
 
-    # There must now be exactly one pending Work Package.
-    ret = leo.countWorkPackages()
-    assert (ret.ok, ret.data) == (True, (1, 0))
+    # Create a second WP. This one must have WPID=2 and contain two objects.
+    ret = leo.createWorkPackage([id_1, id_2], dt, maxsteps)
+    ret_wpid, ret_wpdata = ret.data['wpid'], ret.data['wpdata']
+    assert (ret.ok, ret_wpid, len(ret_wpdata)) == (True, 1, 2)
 
-    # Create a second WP. This one must have WPID=2.
-    ret = leo.createWorkPackage([id_2], dt, maxsteps)
-    assert (ret.ok, ret.data) == (True, 2)
-
-    # There must now be exactly two work packages.
-    ret = leo.countWorkPackages()
-    assert (ret.ok, ret.data) == (True, (2, 0))
-
-    # Retrieve the next available WP. The 'wpdata' field must contain the
-    # "id_1" object we specified for "createWorkPackage".
-    ret = worker.getNextWorkPackage()
-    assert (ret.ok, len(ret.data['wpdata'])) == (True, 1)
-    meta = ret.data['wpmeta']
-    assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
-
-    # There must still be two work packages because none has been updated yet.
-    ret = leo.countWorkPackages()
-    assert (ret.ok, ret.data) == (True, (2, 0))
-
-    # Create a new Work Package.
-    z = [0, 0, 0]
-    WPData = azrael.leonard.WPData
-    newWP = [WPData(id_1, data_0, z, z)]
-    del z
-
-    # Update a non-existing work package ("newWP" is irrelevant for this test).
-    assert not worker.updateWorkPackage(10, newWP).ok
-    ret = leo.countWorkPackages()
-    assert (ret.ok, ret.data) == (True, (2, 0))
-
-    # Update the first WP ("newWP" is once again irrelevant). There must
-    # now be one processed and one pending WP.
-    assert worker.updateWorkPackage(1, newWP).ok
-    ret = leo.countWorkPackages()
-    assert (ret.ok, ret.data) == (True, (1, 1))
-
-    # Try to update the same WP once more. This must fail since the WPID was
-    # already updated.
-    assert not worker.updateWorkPackage(1, newWP).ok
-    ret = leo.countWorkPackages()
-    assert (ret.ok, ret.data) == (True, (1, 1))
-
-    # Update the other work package. Now there must be two processed WPs and no
-    # pending WP.
-    assert worker.updateWorkPackage(2, newWP).ok
-    ret = leo.countWorkPackages()
-    assert (ret.ok, ret.data) == (True, (0, 2))
-
+    # Cleanup.
+    killAzrael()
     print('Test passed')
 
 
@@ -607,9 +554,8 @@ def test_create_work_package_with_objects():
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard and Worker.
-    leo = getLeonard(azrael.leonard.LeonardWorkPackagesMongo)
-    worker = azrael.leonard.LeonardWorker(1, 100000)
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
     # Convenience.
     data_1 = bullet_data.BulletData(imass=1)
@@ -617,6 +563,8 @@ def test_create_work_package_with_objects():
     data_3 = bullet_data.BulletData(imass=3)
     wpid = 1
     id_1, id_2 = 1, 2
+    WPData = azrael.leonard.WPData
+    WPMeta = azrael.leonard.WPMeta
 
     # Spawn new objects.
     assert physAPI.addCmdSpawn(id_1, data_1, aabb=1)
@@ -625,15 +573,10 @@ def test_create_work_package_with_objects():
 
     # Add ID1 and ID2 to the WP. The WPID must be 1.
     ret = leo.createWorkPackage([id_1, id_2], dt=3, maxsteps=4)
-    assert (ret.ok, ret.data) == (True, wpid)
-
-    # Retrieve the work package again.
-    ret = worker.getNextWorkPackage()
 
     # Check the WP content.
-    assert (ret.ok, len(ret.data['wpdata'])) == (True, 2)
-    data = ret.data['wpdata']
-    meta = ret.data['wpmeta']
+    data = [WPData(*_) for _ in ret.data['wpdata']]
+    meta = WPMeta(*ret.data['wpmeta'])
     assert (meta.dt, meta.maxsteps) == (3, 4)
     assert (ret.ok, len(data)) == (True, 2)
     assert (data[0].id, data[1].id) == (id_1, id_2)
@@ -645,85 +588,22 @@ def test_create_work_package_with_objects():
     # Create a new State Vector to replace the old one.
     data_4 = bullet_data.BulletData(imass=4)
     z = [0, 0, 0]
-    WPData = azrael.leonard.WPData
     newWP = [WPData(id_1, data_4, z, z)]
     del z
 
-    # Check the State Vector before we update the WP.
+    # Check the State Vector value in the current Leonard cache.
     assert isEqualBD(leo.allObjects[id_1], data_1)
 
-    # Pull completed Work Packages. The call must succeed but the number of
-    # processed and pending WPs must still be 1 and 0, respectively.
-    ret = leo.pullCompletedWorkPackages()
-    assert ret.ok
-    assert ret.data == (0, 1)
-
-    # Nothing must have changed in terms of processed and pending Work
-    # Packages.
-    ret = leo.pullCompletedWorkPackages()
-    assert ret.ok
-    assert ret.data == (0, 1)
-
-    # Update the Work Package. This must succeed and update the value in
-    # Leonard's instance variable.
-    assert worker.updateWorkPackage(wpid, newWP).ok
-
-    # Now one processed Work Packages must have been fetched. No pending
-    # Work Packages must remain.
-    ret = leo.pullCompletedWorkPackages()
-    assert ret.ok
-    assert ret.data == (1, 0)
-
-    # Verify that the State Vector was indeed updated correctly.
+    # Update the State Vector in the Leonard cache and verify the new values.
+    leo.updateLocalCacheFromWP(newWP)
     assert isEqualBD(leo.allObjects[id_1], data_4)
 
-    print('Test passed')
-
-
-def test_work_package_timestamps():
-    """
-    Verify the getPackage
-    """
+    # Cleanup.
     killAzrael()
-
-    # Reset the SV database and instantiate both a Leonard and a Worker.
-    leo = getLeonard(azrael.leonard.LeonardWorkPackagesMongo)
-    worker = azrael.leonard.LeonardWorker(1, 100000)
-
-    # Convenience.
-    data_1 = bullet_data.BulletData(imass=1)
-    id_1 = 1
-    numWPs = 10
-
-    # Spawn new objects.
-    assert physAPI.addCmdSpawn(id_1, data_1, aabb=1)
-    leo.processCommandsAndSync()
-
-    # Insert several Work Packages.
-    for ii in range(numWPs):
-        ret = leo.createWorkPackage([id_1], dt=3, maxsteps=4)
-        assert (ret.ok, ret.data) == (True, ii + 1)
-
-    # The Work Packages must be returned in cyclic order.
-    for ii in range(10 * numWPs):
-        ret = worker.getNextWorkPackage()
-        assert ret.ok
-        assert ret.data['wpmeta'].wpid == (ii % numWPs) + 1
-
-        # This artificial delay is necessary for this test only. It guarantees
-        # that the time stamps that 'getNextWorkPackage' updates at each call
-        # differ by at least one milli second (which is the minimum resolution
-        # in Mongo). Without this delay it may be possible that some Work
-        # Packages are tagged with the same time stamp which, in turn, may
-        # corrupt the order. In practice this is mostly irrelevant, especially
-        # when the request do not come from the same machine.
-        time.sleep(0.001)
-
     print('Test passed')
 
 
 if __name__ == '__main__':
-    test_work_package_timestamps()
     test_create_work_package_with_objects()
     test_create_work_package_without_objects()
 

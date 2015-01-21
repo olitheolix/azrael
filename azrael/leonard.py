@@ -352,21 +352,6 @@ class LeonardBase(multiprocessing.Process):
         self.processCommandQueue()
         self.syncObjects()
 
-    @typecheck
-    def countWorkPackages(self):
-        """
-        Return the number of (un)processed work packages.
-
-        This method is for testing only. Do not use in production because its
-        result may be inaccurate when WPs get frequently added and updated.
-
-        :return tuple: (#unprocessed, #processed)
-        """
-        db = self._DB_WP
-        cntOpen = db.find({'wpid': {'$exists': 1}}).count()
-        cntDone = db.find({'wpid': {'$exists': 0}}).count()
-        return RetVal(True, None, (cntOpen, cntDone))
-
     def run(self):
         """
         Drive the periodic physics updates.
@@ -532,215 +517,6 @@ class LeonardSweeping(LeonardBullet):
         self.syncObjects()
 
 
-class LeonardWorkPackagesMongo(LeonardBase):
-    """
-    Compute physics with separate engines.
-
-    This class uses the concept of Work Packages to distribute work. Every Work
-    Package is self contained and holds all the information Bullet requires to
-    step the simulation.
-
-    This class is single threaded. All Bullet engines run sequentially in the
-    main thread. The work packages are distributed at random to the engines.
-
-    This class uses the sweeping algorithm to determine collision sets, just
-    like ``LeonardSweeping`` does.
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # Database handles.
-        self._DB_WP = azrael.database.dbHandles['WP']
-        self._DB_WP.drop()
-
-    def setup(self):
-        pass
-
-    @typecheck
-    def step(self, dt, maxsteps):
-        """
-        Advance the simulation by ``dt`` using at most ``maxsteps``.
-
-        This method moves all SV objects from the database to the Bullet
-        engine. Then it defers to Bullet for the physics update. Finally, it
-        replaces the SV fields with the user specified values (only applies if
-        the user called 'setStateVariables') and writes the results back to the
-        database.
-
-        :param float dt: time step in seconds.
-        :param int maxsteps: maximum number of sub-steps to simulate for one
-                             ``dt`` update.
-        """
-        # Read queued commands and update the local object cache accordingly.
-        with util.Timeit('Leonard.0_processCmdQueue') as timeit:
-            self.processCommandQueue()
-
-        # Compute the collision sets.
-        with util.Timeit('Leonard.1_CCS') as timeit:
-            collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
-        if not collSets.ok:
-            self.logit.error('ComputeCollisionSetsAABB returned an error')
-            sys.exit(1)
-        collSets = collSets.data
-
-        # Log the number of created collision sets.
-        util.logMetricQty('#CollSets', len(collSets))
-
-        # Put each collision set into its own Work Package.
-        with util.Timeit('Leonard.2_CreateWPs') as timeit:
-            all_wpids = []
-            for subset in collSets:
-                ret = self.createWorkPackage(list(subset), dt, maxsteps)
-                if ret.ok:
-                    all_wpids.append(ret.data)
-
-        # Process each Work Package with a dedicated engine. Albeit wasteful
-        # and slow it is nevertheless simple and allows easy
-        # testing. Furthermore, this single threaded version is pointless in
-        # production because Azrael is about distributed physics, not single
-        # threaded physics.
-        with util.Timeit('Leonard.3_ProcessWPs') as timeit:
-            for wpid in all_wpids:
-                self.processWorkPackage()
-
-        with util.Timeit('Leonard.4_PullWPs') as timeit:
-            # Wait until all Work Packages have been processed.
-            pcwp = self.pullCompletedWorkPackages
-            while pcwp().data[1] > 0:
-                time.sleep(0.01)
-
-        # Synchronise the objects with the DB.
-        with util.Timeit('Leonard.syncObjects') as timeit:
-            self.syncObjects()
-
-    def processWorkPackage(self):
-        """
-        Send the Work Package with ``wpid`` to the next available worker.
-
-        This is just a dummy function which spawns engine, processed a WP, and
-        then returns to the caller again. The sole purpose is to test Work
-        Package management in a single thread.
-
-        :param int wpid: work package ID to process.
-        """
-        LeonardWorker(1, 1).processWorkPackage()
-
-    @typecheck
-    def createWorkPackage(self, objIDs: (tuple, list),
-                          dt: (int, float), maxsteps: int):
-        """
-        Create a new Work Package (WP) and return its ID.
-
-        The Work Package will not be returned but uploaded to the DB directly.
-
-        A Work Package carries the necessary information for another rigid body
-        physics steps. The Worker can thus start its work immediately, at least
-        in terms of the rigid bodies (it may still want to incorporate other
-        data like grid forces, but that is up to the Worker implementation).
-
-        The ``dt`` and ``maxsteps`` arguments are for the underlying physics
-        engine.
-
-        .. note::
-           A work package contains only the objIDs but not their SV. The
-           ``getNextWorkPackage`` function takes care of compiling this
-           information.
-
-        :param iterable objIDs: list of object IDs in the new work package.
-        :param float dt: time step for this work package.
-        :param int maxsteps: number of sub-steps for the time step.
-        :return: Work package ID
-        :rtype: int
-        """
-        # Sanity check.
-        if len(objIDs) == 0:
-            return RetVal(False, 'Work package is empty', None)
-
-        # Compile the State Vectors and forces for all objects into a list of
-        # ``WPData`` named tuples.
-        try:
-            wpdata = [WPData(objID,
-                             self.allObjects[objID],
-                             self.allForces[objID],
-                             self.allTorques[objID])
-                      for objID in objIDs]
-        except KeyError as err:
-            return RetVal(False, 'Cannot form WP', None)
-
-        # Request a unique ID for this Work Package.
-        wpid = azrael.database.getNewWPID()
-        if not wpid.ok:
-            self.logit.error(msg)
-            return wpid
-        wpid = wpid.data
-
-        # Form the content of the Work Package as it will appear in the DB.
-        data = {'wpid': wpid,
-                'wpmeta': WPMeta(wpid, dt, maxsteps),
-                'wpdata': wpdata,
-                'ts': None}
-
-        # Insert the Work Package into the DB.
-        ret = self._DB_WP.insert(data)
-        return RetVal(True, None, wpid)
-
-    def pullCompletedWorkPackages(self):
-        """
-        Fetch all completed Work Packages and update the local object cache.
-
-        All fetched work packages will be immediately removed from the DB and
-        all objects updated in the local cache. This method will also clear the
-        force and torque values.
-
-        This method will return the number of fetched (ie completed) WPs, as
-        well as the number of WPs still waiting to be processed.
-
-        :return tuple: (#fetched-WPs, #unprocessed-WPs).
-        """
-        cnt_fetch = 0
-        query = {'wpid': {'$exists': 0}}
-        while self._DB_WP.find(query).count() > 0:
-            with util.Timeit('Leonard.pull_0') as timeit:
-                # Retrieve the work package.
-                doc = self._DB_WP.find_and_modify(
-                    query,
-                    remove=True)
-                if doc is None:
-                    break
-
-                # Update the local cache with the content in the WP.
-                self.updateLocalCacheFromWP(doc['wpdata'])
-
-                # Count how many WPs we retrieve in total.
-                cnt_fetch += 1
-
-        # Determine how many WPs are still pending.
-        with util.Timeit('Leonard.pull_1') as timeit:
-            cnt_waiting = self._DB_WP.count()
-
-        # Return the statistics of how many completed WPs we got and how many
-        # are still pending.
-        return RetVal(True, None, (cnt_fetch, cnt_waiting))
-
-    def updateLocalCacheFromWP(self, wpdata):
-        """
-        Copy every object from ``wpdata`` to the local cache.
-
-        The ``wpdata`` variables must come straight from the received Work
-        Package. It contains the new State Vectors and this method will copy
-        them into the local object cache in this class. It will also reset the
-        forces.
-
-        :param tuple wpdata: Content of Work Packge as returned by Workers.
-        """
-        # Reset force and torque for all objects in the WP, and overwrite
-        # the old State Vector with the new one from the processed WP.
-        for (objID, sv, force, torque) in wpdata:
-            self.allForces[objID] = [0, 0, 0]
-            self.allTorques[objID] = [0, 0, 0]
-            self.allObjects[objID] = _BulletData(*sv)
-
-
 class LeonardDistributedZeroMQ(LeonardBase):
     """
     Compute physics with separate engines.
@@ -889,18 +665,15 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Compile the State Vectors and forces for all objects into a list of
         # ``WPData`` named tuples.
         try:
-            wpdata = [(objID,
-                             self.allObjects[objID],
-                             self.allForces[objID],
-                             self.allTorques[objID])
+            wpdata = [(objID, self.allObjects[objID],
+                       self.allForces[objID], self.allTorques[objID])
                       for objID in objIDs]
         except KeyError as err:
             return RetVal(False, 'Cannot form WP', None)
 
         # Form the content of the Work Package as it will appear in the DB.
-        wpid = self.wpid_counter
-        data = {'wpid': wpid,
-                'wpmeta': (wpid, dt, maxsteps),
+        data = {'wpid': self.wpid_counter,
+                'wpmeta': (self.wpid_counter, dt, maxsteps),
                 'wpdata': wpdata,
                 'ts': None}
         self.wpid_counter += 1
@@ -923,55 +696,6 @@ class LeonardDistributedZeroMQ(LeonardBase):
             self.allForces[objID] = [0, 0, 0]
             self.allTorques[objID] = [0, 0, 0]
             self.allObjects[objID] = _BulletData(*sv)
-
-
-class LeonardDistributedMongo(LeonardWorkPackagesMongo):
-    """
-    Almost identical to ``LeonardWorkPackagesMongo`` except that it launches
-    the Worker processes into independent processes.
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.workers = []
-        self.numWorkers = 3
-
-        # Worker terminate automatically after a certain number of processed
-        # Work Packages. The precise number is a constructor argument and the
-        # following two variables simply specify the range. The final number
-        # will be chosen randomly from this interval (different for every Worke
-        # instance to avoid the situation where all die simultaneously).
-        self.minSteps, self.maxSteps = (500, 700)
-
-    def __del__(self):
-        """
-        Kill all worker processes.
-        """
-        for worker in self.workers:
-            if worker.is_alive():
-                worker.terminate()
-                worker.join()
-
-    def setup(self):
-        self.ctx = zmq.Context()
-        self.sock = self.ctx.socket(zmq.REP)
-        self.sock.bind(config.addr_leonard_pushpull)
-
-        # Spawn the workers.
-        workermanager = WorkerManager(
-            self.numWorkers, self.minSteps,
-            self.maxSteps, LeonardWorker)
-        workermanager.start()
-        self.logit.info('Setup complete')
-
-    def processWorkPackage(self):
-        """
-        Tell the next available Worker that a new WP is available.
-
-        This function merely sends an empty reply to the Worker. It is up to
-        the Worker to fetch a WP of its choice.
-        """
-        self.sock.recv()
-        self.sock.send(b'')
 
 
 class WorkerManager(multiprocessing.Process):
