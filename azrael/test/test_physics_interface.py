@@ -280,7 +280,7 @@ def test_dequeueCommands():
     print('Test passed')
 
 
-def test_overrideAttributes():
+def test_setStateVariables():
     """
     Set and retrieve object attributes like position, velocity, acceleration,
     and orientation.
@@ -309,7 +309,7 @@ def test_overrideAttributes():
     assert physAPI.addCmdSpawn(id_0, btdata, aabb=0).ok
     leo.processCommandsAndSync()
 
-    # Set the overwrite attributes for the just created object.
+    # Modify the State Vector for id_0.
     assert physAPI.addCmdModifyStateVariable(id_0, data).ok
     leo.processCommandsAndSync()
 
@@ -482,7 +482,7 @@ if __name__ == '__main__':
     test_set_get_AABB()
     test_StateVariable_tuple()
     test_get_set_forceandtorque()
-    test_overrideAttributes()
+    test_setStateVariables()
     test_add_same()
     test_add_get_multiple()
     test_add_get_remove_single()

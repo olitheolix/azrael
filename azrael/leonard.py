@@ -287,7 +287,7 @@ class LeonardBase(multiprocessing.Process):
             msg = 'Cannot fetch "Spawn" commands'
             self.logit.error(msg)
             return RetVal(False, msg, None)
-        docsForce = physAPI.getCmdBlah()
+        docsForce = physAPI.getCmdForceAndTorque()
         if not docsForce.ok:
             msg = 'Cannot fetch "Spawn" commands'
             self.logit.error(msg)
@@ -301,7 +301,7 @@ class LeonardBase(multiprocessing.Process):
         tmp = [_['objID'] for _ in docsRemove.data]
         physAPI.dequeueCmdRemove(tmp)
         tmp = [_['objID'] for _ in docsForce.data]
-        physAPI.dequeueCmdBlah(tmp)
+        physAPI.dequeueCmdForceAndTorque(tmp)
         del tmp
 
         # Convenience.

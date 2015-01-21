@@ -83,7 +83,7 @@ def getCmdModifyStateVariables():
 
 
 @typecheck
-def getCmdBlah():
+def getCmdForceAndTorque():
     """
     Return all queued "SetForceAndTorque" commands.
 
@@ -155,7 +155,7 @@ def dequeueCmdRemove(remove: list):
 
 
 @typecheck
-def dequeueCmdBlah(remove: list):
+def dequeueCmdForceAndTorque(remove: list):
     """
     De-queue ``setForceAndTorque`` commands from "Force" queue.
 
