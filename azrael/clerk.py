@@ -812,11 +812,9 @@ class Clerk(multiprocessing.Process):
         :param int templateID: template ID
         :return: Sucess
         """
-        ret = physAPI.addCmdSetForce(objID, force, rpos)
-        if ret.ok:
-            return RetVal(True, None, None)
-        else:
-            return RetVal(False, ret.msg, None)
+        torque = np.cross(np.array(rpos, np.float64),
+                          np.array(force, np.float64)).tolist()
+        return physAPI.addCmdSetForceAndTorque(objID, force, torque)
 
     @typecheck
     def setStateVariables(self, objID: int,

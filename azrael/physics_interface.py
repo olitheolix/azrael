@@ -256,38 +256,6 @@ def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
 
 
 @typecheck
-def addCmdSetForce(objID: int, force: list, relpos: list):
-    """
-    Update the ``force`` acting on ``objID``.
-
-    This function is a wrapper around ``addCmdSetForceAndTorque``.
-
-    :param int objID: recipient of ``force``
-    :param np.ndarray force: the ``force`` (in Newton).
-    :param np.ndarray relpos: position of ``force`` relative to COM.
-    :return bool: success.
-    """
-    # Sanity check.
-    if objID < 0:
-        msg = 'Object ID is negative'
-        logit.warning(msg)
-        return RetVal(False, msg, None)
-    if not (len(force) == len(relpos) == 3):
-        return RetVal(False, 'force or relpos have invalid length', None)
-
-    # Compute the torque and then call addCmdSetForceAndTorque.
-    force, relpos = np.array(force, np.float64), np.array(relpos, np.float64)
-    torque = np.cross(relpos, force)
-    force = force.tolist()
-    torque = torque.tolist()
-    ret = addCmdSetForceAndTorque(objID, force, torque)
-    if ret.ok:
-        return RetVal(True, None, None)
-    else:
-        return RetVal(False, ret.msg, None)
-
-
-@typecheck
 def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
     """
     Set the central ``force`` and ``torque`` acting on ``objID``.
