@@ -256,6 +256,35 @@ def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
 
 
 @typecheck
+def addCmdSetForce(objID: int, force: np.ndarray, relpos: np.ndarray):
+    """
+    Update the ``force`` acting on ``objID``.
+
+    This function is a wrapper around ``addCmdSetForceAndTorque``.
+
+    :param int objID: recipient of ``force``
+    :param np.ndarray force: the ``force`` (in Newton).
+    :param np.ndarray relpos: position of ``force`` relative to COM.
+    :return bool: success.
+    """
+    # Sanity check.
+    if objID < 0:
+        msg = 'Object ID is negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
+    if not (len(force) == len(relpos) == 3):
+        return RetVal(False, 'force or relpos have invalid length', None)
+
+    # Compute the torque and then call addCmdSetForceAndTorque.
+    torque = np.cross(relpos, force)
+    ret = addCmdSetForceAndTorque(objID, force, torque)
+    if ret.ok:
+        return RetVal(True, None, None)
+    else:
+        return RetVal(False, ret.msg, None)
+
+
+@typecheck
 def addCmdSetForceAndTorque(objID: int, force: np.ndarray, torque: np.ndarray):
     """
     Set the central ``force`` and ``torque`` acting on ``objID``.
@@ -291,6 +320,42 @@ def addCmdSetForceAndTorque(objID: int, force: np.ndarray, torque: np.ndarray):
         upsert=True)
 
     return RetVal(True, None, None)
+
+
+@typecheck
+def getCmdForceAndTorque(objID: int):
+    """
+    Return the force and torque for ``objID``.
+
+    :param bytes objID: object for which to return the force and torque.
+    :returns: force and torque as {'force': force, 'torque': torque}.
+    :rtype: dict
+    """
+    # Sanity check.
+    if objID < 0:
+        msg = 'Object ID is negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
+
+    # Query the object.
+    doc = database.dbHandles['CmdForce'].find_one({'objID': objID})
+    if doc is None:
+        return RetVal(False, 'Could not find <{}>'.format(objID), None)
+
+    # Unpack the force.
+    try:
+        force = np.fromstring(doc['central_force'])
+    except KeyError:
+        force = np.zeros(3)
+
+    # Unpack the torque.
+    try:
+        torque = np.fromstring(doc['torque'])
+    except KeyError:
+        torque = np.zeros(3)
+
+    # Return the result.
+    return RetVal(True, None, {'force': force, 'torque': torque})
 
 
 @typecheck
@@ -417,71 +482,6 @@ def getAllObjectIDs():
     # Compile and return the list of all object IDs.
     out = [_['objID'] for _ in database.dbHandles['SV'].find()]
     return RetVal(True, None, out)
-
-
-@typecheck
-def addCmdSetForce(objID: int, force: np.ndarray, relpos: np.ndarray):
-    """
-    Update the ``force`` acting on ``objID``.
-
-    This function is a wrapper around ``addCmdSetForceAndTorque``.
-
-    :param int objID: recipient of ``force``
-    :param np.ndarray force: the ``force`` (in Newton).
-    :param np.ndarray relpos: position of ``force`` relative to COM.
-    :return bool: success.
-    """
-    # Sanity check.
-    if objID < 0:
-        msg = 'Object ID is negative'
-        logit.warning(msg)
-        return RetVal(False, msg, None)
-    if not (len(force) == len(relpos) == 3):
-        return RetVal(False, 'force or relpos have invalid length', None)
-
-    # Compute the torque and then call addCmdSetForceAndTorque.
-    torque = np.cross(relpos, force)
-    ret = addCmdSetForceAndTorque(objID, force, torque)
-    if ret.ok:
-        return RetVal(True, None, None)
-    else:
-        return RetVal(False, ret.msg, None)
-
-
-@typecheck
-def getCmdForceAndTorque(objID: int):
-    """
-    Return the force and torque for ``objID``.
-
-    :param bytes objID: object for which to return the force and torque.
-    :returns: force and torque as {'force': force, 'torque': torque}.
-    :rtype: dict
-    """
-    # Sanity check.
-    if objID < 0:
-        msg = 'Object ID is negative'
-        logit.warning(msg)
-        return RetVal(False, msg, None)
-
-    # Query the object.
-    doc = database.dbHandles['CmdForce'].find_one({'objID': objID})
-    if doc is None:
-        return RetVal(False, 'Could not find <{}>'.format(objID), None)
-
-    # Unpack the force.
-    try:
-        force = np.fromstring(doc['central_force'])
-    except KeyError:
-        force = np.zeros(3)
-
-    # Unpack the torque.
-    try:
-        torque = np.fromstring(doc['torque'])
-    except KeyError:
-        torque = np.zeros(3)
-
-    # Return the result.
-    return RetVal(True, None, {'force': force, 'torque': torque})
 
 
 @typecheck
