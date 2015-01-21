@@ -264,8 +264,8 @@ def addCmdSetForceAndTorque(objID: int, force: np.ndarray, torque: np.ndarray):
 
     .. note::
        The force always applies to the centre of the mass only, unlike the
-       ``setForce`` function which allows for position relative to the centre
-       of mass.
+       ``addCmdSetForce`` function which allows for position relative to the
+       centre of mass.
 
     :param int objID: the object
     :param ndarray force: apply this central ``force`` to ``objID``.
@@ -420,7 +420,7 @@ def getAllObjectIDs():
 
 
 @typecheck
-def setForce(objID: int, force: np.ndarray, relpos: np.ndarray):
+def addCmdSetForce(objID: int, force: np.ndarray, relpos: np.ndarray):
     """
     Update the ``force`` acting on ``objID``.
 

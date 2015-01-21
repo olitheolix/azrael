@@ -313,7 +313,7 @@ def test_get_set_force():
     # Update the force vector of only the second object.
     f1 = np.ones(3, np.float64)
     p1 = 2 * np.ones(3, np.float64)
-    assert physAPI.setForce(id_1, f1, p1).ok
+    assert physAPI.addCmdSetForce(id_1, f1, p1).ok
     leo.processCommandsAndSync()
 
     # Check again. The force of only the second object must have changed.

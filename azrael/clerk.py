@@ -807,7 +807,7 @@ class Clerk(multiprocessing.Process):
         :param int templateID: template ID
         :return: Sucess
         """
-        ret = physAPI.setForce(objID, force, rpos)
+        ret = physAPI.addCmdSetForce(objID, force, rpos)
         if ret.ok:
             return RetVal(True, None, None)
         else:
