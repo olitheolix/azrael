@@ -592,7 +592,65 @@ def test_updateLocalCacheFromWP():
     print('Test passed')
 
 
+def test_processCommandQueue():
+    """
+    Create commands to spawn-, delete, and modify objects, and verify that
+    ``processCommandQueue`` updates the object cache in Leonard accordingly.
+    """
+    killAzrael()
+
+    # Get a Leonard instance.
+    leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
+
+    # Convenience.
+    sv_1 = bullet_data.BulletData(imass=1)
+    sv_2 = bullet_data.BulletData(imass=2)
+    id_1, id_2 = 1, 2
+
+    # Cache must be empty.
+    assert len(leo.allObjects) == len(leo.allForces) == 0
+    assert len(leo.allTorques) == 0
+
+    # Spawn two objects.
+    assert physAPI.addCmdSpawn(id_1, sv_1, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_2, sv_2, aabb=1).ok
+    leo.processCommandsAndSync()
+
+    # Verify the local cache (forces and torques must default to zero).
+    assert isEqualBD(leo.allObjects[id_1], sv_1)
+    assert isEqualBD(leo.allObjects[id_2], sv_2)
+    assert leo.allForces[id_1] == leo.allTorques[id_1] == [0, 0, 0]
+    assert leo.allForces[id_2] == leo.allTorques[id_2] == [0, 0, 0]
+
+    # Remove first object.
+    assert physAPI.addCmdRemoveObject(id_1).ok
+    leo.processCommandsAndSync()
+    assert id_1 not in leo.allForces
+    assert id_1 not in leo.allTorques
+    assert id_1 not in leo.allObjects
+
+    # Change the State Vector of id_2.
+    pos = [10, 11.5, 12]
+    sv_3 = bullet_data.BulletDataOverride(position=pos)
+    assert leo.allObjects[id_2].position == [0, 0, 0]
+    assert physAPI.addCmdModifyStateVariable(id_2, sv_3).ok
+    leo.processCommandsAndSync()
+    assert leo.allObjects[id_2].position == pos
+
+    # Apply a force and torque to id_2.
+    force, torque = [1, 2, 3], [4, 5, 6]
+    assert physAPI.addCmdSetForceAndTorque(id_2, force, torque).ok
+    leo.processCommandsAndSync()
+    assert leo.allForces[id_2] == force
+    assert leo.allTorques[id_2] == torque
+
+    # Cleanup.
+    killAzrael()
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_processCommandQueue()
     test_createWorkPackages()
     test_updateLocalCacheFromWP()
 

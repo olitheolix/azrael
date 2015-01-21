@@ -287,6 +287,11 @@ class LeonardBase(multiprocessing.Process):
             msg = 'Cannot fetch "Spawn" commands'
             self.logit.error(msg)
             return RetVal(False, msg, None)
+        docsForce = physAPI.getCmdBlah()
+        if not docsForce.ok:
+            msg = 'Cannot fetch "Spawn" commands'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
 
         # Remove the fetched commands from queue.
         tmp = [_['objID'] for _ in docsSpawn.data]
@@ -295,12 +300,15 @@ class LeonardBase(multiprocessing.Process):
         physAPI.dequeueCmdModify(tmp)
         tmp = [_['objID'] for _ in docsRemove.data]
         physAPI.dequeueCmdRemove(tmp)
+        tmp = [_['objID'] for _ in docsForce.data]
+        physAPI.dequeueCmdBlah(tmp)
         del tmp
 
         # Convenience.
         docsSpawn = docsSpawn.data
         docsModify = docsModify.data
         docsRemove = docsRemove.data
+        docsForce = docsForce.data
 
         fields = BulletDataOverride._fields
 
@@ -310,6 +318,8 @@ class LeonardBase(multiprocessing.Process):
             if objID in self.allObjects:
                 self._DB_SV.remove({'objID': objID})
                 del self.allObjects[objID]
+                del self.allForces[objID]
+                del self.allTorques[objID]
 
         # Spawn objects.
         for doc in docsSpawn:
@@ -334,6 +344,13 @@ class LeonardBase(multiprocessing.Process):
                 sv_old = [getattr(sv_old, _) for _ in fields]
                 sv_old = BulletData(*sv_old)
                 self.allObjects[objID] = fun(sv_old, sv_new)
+
+        # Update force- and torque values.
+        for doc in docsForce:
+            objID, force, torque = doc['objID'], doc['force'], doc['torque']
+            if (objID in self.allForces) and (objID in self.allTorques):
+                self.allForces[objID] = force
+                self.allTorques[objID] = torque
 
         return RetVal(True, None, None)
 

@@ -83,6 +83,20 @@ def getCmdModifyStateVariables():
 
 
 @typecheck
+def getCmdBlah():
+    """
+    Return all queued "SetForceAndTorque" commands.
+
+    The commands remain in the DB and successive calls to this function will
+    thus return the previous results.
+
+    :return: objects as inserted by ``addCmdSetForceAndTorque``.
+    :rtype: list of dicts.
+    """
+    return RetVal(True, None, list(database.dbHandles['CmdForce'].find()))
+
+
+@typecheck
 def getCmdRemove():
     """
     Return all queued "Remove" commands.
@@ -137,6 +151,21 @@ def dequeueCmdRemove(remove: list):
     :rtype: tuple
     """
     ret = database.dbHandles['CmdRemove'].remove({'objID': {'$in': remove}})
+    return RetVal(True, None, ret['n'])
+
+
+@typecheck
+def dequeueCmdBlah(remove: list):
+    """
+    De-queue ``setForceAndTorque`` commands from "Force" queue.
+
+    Non-existing documents do not count and will be silently ignored.
+
+    :param list spawn: list of Mongo documents to de-queue.
+    :return: number of de-queued commands
+    :rtype: tuple
+    """
+    ret = database.dbHandles['CmdForce'].remove({'objID': {'$in': remove}})
     return RetVal(True, None, ret['n'])
 
 
@@ -283,7 +312,7 @@ def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
     # Update the DB.
     ret = database.dbHandles['CmdForce'].update(
         {'objID': objID},
-        {'$set': {'central_force': force, 'torque': torque}},
+        {'$set': {'force': force, 'torque': torque}},
         upsert=True)
 
     return RetVal(True, None, None)
