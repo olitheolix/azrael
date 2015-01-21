@@ -30,10 +30,9 @@ allEngines = [
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     """
-    Reset all databases and return a ``LeonardCls`` instance.
+    Return a ``LeonardCls`` instance.
 
-    This is a convenience function to reduce code duplication in test
-    functions.
+    This is a convenience function to reduce code duplication in tests.
 
     :param cls LeonardCls: Leonard class to instantiate.
     """
@@ -51,7 +50,7 @@ def test_setStateVariables_basic(clsLeonard):
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard.
+    # Get a Leonard instance.
     leo = getLeonard(clsLeonard)
 
     # Parameters and constants for this test.
@@ -97,7 +96,7 @@ def test_setStateVariables_advanced(clsLeonard):
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard.
+    # Get a Leonard instance.
     leo = getLeonard(clsLeonard)
 
     # Parameters and constants for this test.
@@ -141,7 +140,7 @@ def test_move_single_object(clsLeonard):
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard.
+    # Get a Leonard instance.
     leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
@@ -179,7 +178,7 @@ def test_move_two_objects_no_collision(clsLeonard):
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard.
+    # Get a Leonard instance.
     leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
@@ -369,7 +368,7 @@ def test_computeCollisionSetsAABB(dim):
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard.
+    # Get a Leonard instance.
     leo = getLeonard(azrael.leonard.LeonardBase)
 
     # Create several objects for this test.
@@ -451,7 +450,7 @@ def test_force_grid(clsLeonard):
     # Convenience.
     vg = azrael.vectorgrid
 
-    # Reset the SV database and instantiate a Leonard.
+    # Get a Leonard instance.
     leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
@@ -509,7 +508,7 @@ def test_create_work_package_without_objects():
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard and Worker.
+    # Get a Leonard instance.
     leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
     # Constants.
@@ -554,7 +553,7 @@ def test_create_work_package_with_objects():
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard.
+    # Get a Leonard instance.
     leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
     # Convenience.
