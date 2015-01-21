@@ -499,12 +499,9 @@ def test_force_grid(clsLeonard):
     print('Test passed')
 
 
-def test_create_work_package_without_objects():
+def test_createWorkPackages():
     """
-    Create, fetch, update, and count Bullet work packages.
-
-    This test does not insert any objects into the simulation. It only tests
-    the general functionality to add, retrieve, and update work packages.
+    Create a Work Package and verify its content.
     """
     killAzrael()
 
@@ -523,13 +520,14 @@ def test_create_work_package_without_objects():
 
     # Test data.
     data_0 = bullet_data.BulletData(imass=1)
+    data_1 = bullet_data.BulletData(imass=2)
 
     # Add two new objects to Leonard.
     assert physAPI.addCmdSpawn(id_1, data_0, aabb=1).ok
-    assert physAPI.addCmdSpawn(id_2, data_0, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_2, data_1, aabb=1).ok
     leo.processCommandsAndSync()
 
-    # Create a work package for two object IDs. The WPID must be 1.
+    # Create a Work Package with two objects. The WPID must be 1.
     ret = leo.createWorkPackage([id_1], dt, maxsteps)
     ret_wpid, ret_wpdata = ret.data['wpid'], ret.data['wpdata']
     assert (ret.ok, ret_wpid, len(ret_wpdata)) == (True, 0, 1)
@@ -539,17 +537,27 @@ def test_create_work_package_without_objects():
     ret_wpid, ret_wpdata = ret.data['wpid'], ret.data['wpdata']
     assert (ret.ok, ret_wpid, len(ret_wpdata)) == (True, 1, 2)
 
+    # Check the WP content.
+    WPData = azrael.leonard.WPData
+    WPMeta = azrael.leonard.WPMeta
+    data = [WPData(*_) for _ in ret.data['wpdata']]
+    meta = WPMeta(*ret.data['wpmeta'])
+    assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
+    assert (ret.ok, len(data)) == (True, 2)
+    assert (data[0].id, data[1].id) == (id_1, id_2)
+    assert isEqualBD(data[0].sv, data_0)
+    assert isEqualBD(data[1].sv, data_1)
+    assert np.array_equal(data[0].central_force, [0, 0, 0])
+    assert np.array_equal(data[1].central_force, [0, 0, 0])
+
     # Cleanup.
     killAzrael()
     print('Test passed')
 
 
-def test_create_work_package_with_objects():
+def test_updateLocalCacheFromWP():
     """
-    Create, fetch, and update Bullet work packages.
-
-    Similar to test_create_work_package_without_objects but now the there are
-    actual objects in the simulation.
+    Update the local object cache in Leonard based on a Work Package.
     """
     killAzrael()
 
@@ -557,45 +565,27 @@ def test_create_work_package_with_objects():
     leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
     # Convenience.
+    WPData = azrael.leonard.WPData
     data_1 = bullet_data.BulletData(imass=1)
     data_2 = bullet_data.BulletData(imass=2)
-    data_3 = bullet_data.BulletData(imass=3)
-    wpid = 1
     id_1, id_2 = 1, 2
-    WPData = azrael.leonard.WPData
-    WPMeta = azrael.leonard.WPMeta
 
     # Spawn new objects.
     assert physAPI.addCmdSpawn(id_1, data_1, aabb=1)
     assert physAPI.addCmdSpawn(id_2, data_2, aabb=1)
     leo.processCommandsAndSync()
 
-    # Add ID1 and ID2 to the WP. The WPID must be 1.
+    # Create a Work Package and verify its content.
     ret = leo.createWorkPackage([id_1, id_2], dt=3, maxsteps=4)
 
-    # Check the WP content.
-    data = [WPData(*_) for _ in ret.data['wpdata']]
-    meta = WPMeta(*ret.data['wpmeta'])
-    assert (meta.dt, meta.maxsteps) == (3, 4)
-    assert (ret.ok, len(data)) == (True, 2)
-    assert (data[0].id, data[1].id) == (id_1, id_2)
-    assert isEqualBD(data[0].sv, data_1)
-    assert isEqualBD(data[1].sv, data_2)
-    assert np.array_equal(data[0].central_force, [0, 0, 0])
-    assert np.array_equal(data[1].central_force, [0, 0, 0])
-
     # Create a new State Vector to replace the old one.
-    data_4 = bullet_data.BulletData(imass=4)
-    z = [0, 0, 0]
-    newWP = [WPData(id_1, data_4, z, z)]
-    del z
+    data_3 = bullet_data.BulletData(imass=4, position=[1, 2, 3])
+    newWP = [WPData(id_1, data_3, [0, 0, 0], [0, 0, 0])]
 
-    # Check the State Vector value in the current Leonard cache.
+    # Check the State Vector for objID=id_1 before and after the update.
     assert isEqualBD(leo.allObjects[id_1], data_1)
-
-    # Update the State Vector in the Leonard cache and verify the new values.
     leo.updateLocalCacheFromWP(newWP)
-    assert isEqualBD(leo.allObjects[id_1], data_4)
+    assert isEqualBD(leo.allObjects[id_1], data_3)
 
     # Cleanup.
     killAzrael()
@@ -603,8 +593,8 @@ def test_create_work_package_with_objects():
 
 
 if __name__ == '__main__':
-    test_create_work_package_with_objects()
-    test_create_work_package_without_objects()
+    test_createWorkPackages()
+    test_updateLocalCacheFromWP()
 
     test_worker_respawn()
     test_sweeping_2objects()
