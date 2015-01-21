@@ -471,7 +471,7 @@ def test_controlParts(client_type):
     spawnIDs = ret.data
     assert (ret.ok, len(spawnIDs)) == (True, 2)
     assert spawnIDs == [2, 3]
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # Query the state variables of the objects spawned by the factories.
     ok, _, ret_SVs = client.getStateVariables(spawnIDs)
@@ -491,10 +491,8 @@ def test_controlParts(client_type):
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    ret = physAPI.getCmdForceAndTorque(objID_1)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], tot_force)
-    assert np.array_equal(ret.data['torque'], tot_torque)
+    assert np.array_equal(leo.allForces[objID_1], tot_force)
+    assert np.array_equal(leo.allTorques[objID_1], tot_torque)
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

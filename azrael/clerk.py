@@ -325,7 +325,7 @@ class Clerk(multiprocessing.Process):
     def controlParts(self, objID: int, cmd_boosters: (list, tuple),
                      cmd_factories: (list, tuple)):
         """
-        Issue commands to individual partos of the ``objID``.
+        Issue commands to individual parts of the ``objID``.
 
         Boosters can be activated with a scalar force that will apply according
         to their orientation. The commands themselves must be

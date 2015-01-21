@@ -273,11 +273,9 @@ def test_set_force():
     # Apply the force.
     assert clerk.setForce(id_1, force, relpos).ok
 
-    leo.step(0, 1)
-    ret = physAPI.getCmdForceAndTorque(id_1)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], force)
-    assert np.array_equal(ret.data['torque'], np.cross(relpos, force))
+    leo.processCommandsAndSync()
+    assert np.array_equal(leo.allForces[id_1], force)
+    assert np.array_equal(leo.allTorques[id_1], np.cross(relpos, force))
 
     print('Test passed')
 
@@ -606,7 +604,7 @@ def test_controlParts_Boosters_notmoving():
     # Spawn the object.
     ret = clerk.spawn(templateID_2, sv)
     assert (ret.ok, ret.data) == (True, objID_1)
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
     # Engage the boosters and verify the total force exerted on the object.
@@ -619,6 +617,7 @@ def test_controlParts_Boosters_notmoving():
 
     # Send booster commands to Clerk.
     assert clerk.controlParts(objID_1, [cmd_0, cmd_1], []).ok
+    leo.processCommandsAndSync()
 
     # Manually compute the total force and torque exerted by the boosters.
     forcevec_0, forcevec_1 = forcemag_0 * dir_0, forcemag_1 * dir_1
@@ -626,10 +625,8 @@ def test_controlParts_Boosters_notmoving():
     tot_torque = np.cross(pos_0, forcevec_0) + np.cross(pos_1, forcevec_1)
 
     # Query the torque and force from Azrael and verify they are correct.
-    ret = physAPI.getCmdForceAndTorque(objID_1)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], tot_force)
-    assert np.array_equal(ret.data['torque'], tot_torque)
+    assert np.array_equal(leo.allForces[objID_1], tot_force)
+    assert np.array_equal(leo.allTorques[objID_1], tot_torque)
 
     # ------------------------------------------------------------------------
     # Send an empty command. The total force and torque must not change, ie
@@ -638,12 +635,11 @@ def test_controlParts_Boosters_notmoving():
 
     # Send booster commands to Clerk.
     assert clerk.controlParts(objID_1, [], []).ok
+    leo.processCommandsAndSync()
 
     # Query the torque and force from Azrael and verify they are correct.
-    ret = physAPI.getCmdForceAndTorque(objID_1)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], tot_force)
-    assert np.array_equal(ret.data['torque'], tot_torque)
+    assert np.array_equal(leo.allForces[objID_1], tot_force)
+    assert np.array_equal(leo.allTorques[objID_1], tot_torque)
 
     # Clean up.
     killAzrael()
@@ -911,9 +907,9 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     leo.step(0, 1)
 
     # ------------------------------------------------------------------------
-    # Activate booster and factories and verify that the applied force and
-    # torque is correct, as well as that the spawned objects have the correct
-    # state variables attached to them.
+    # Activate booster and factories. Then verify that boosters apply the
+    # correct force and the newly spawned objcts have the correct State
+    # Vector.
     # ------------------------------------------------------------------------
 
     # Create the commands to let each factory spawn an object.
@@ -931,13 +927,13 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     assert ret.ok
     spawnIDs = ret.data
     assert spawnIDs == [objID_2, objID_3]
-    leo.step(0, 1)
+    leo.processCommandsAndSync()
 
     # Query the state variables of the objects spawned by the factories.
     ret = clerk.getStateVariables(spawnIDs)
     assert (ret.ok, len(ret.data)) == (True, 2)
 
-    # Verify the position and velocity of the spawned objects is correct.
+    # Verify the positions and velocities of the spawned objects are correct.
     sv_2, sv_3 = ret.data[objID_2], ret.data[objID_3]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
     assert np.allclose(sv_2.position, pos_0_out + pos_parent)
@@ -953,10 +949,8 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    ret = physAPI.getCmdForceAndTorque(objID_1)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], tot_force)
-    assert np.array_equal(ret.data['torque'], tot_torque)
+    assert np.array_equal(leo.allForces[objID_1], tot_force)
+    assert np.array_equal(leo.allTorques[objID_1], tot_torque)
 
     # Clean up.
     killAzrael()

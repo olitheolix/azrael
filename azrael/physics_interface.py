@@ -290,42 +290,6 @@ def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
 
 
 @typecheck
-def getCmdForceAndTorque(objID: int):
-    """
-    Return the force and torque for ``objID``.
-
-    :param bytes objID: object for which to return the force and torque.
-    :returns: force and torque as {'force': force, 'torque': torque}.
-    :rtype: dict
-    """
-    # Sanity check.
-    if objID < 0:
-        msg = 'Object ID is negative'
-        logit.warning(msg)
-        return RetVal(False, msg, None)
-
-    # Query the object.
-    doc = database.dbHandles['CmdForce'].find_one({'objID': objID})
-    if doc is None:
-        return RetVal(False, 'Could not find <{}>'.format(objID), None)
-
-    # Unpack the force.
-    try:
-        force = doc['central_force']
-    except KeyError:
-        force = np.zeros(3)
-
-    # Unpack the torque.
-    try:
-        torque = doc['torque']
-    except KeyError:
-        torque = np.zeros(3)
-
-    # Return the result.
-    return RetVal(True, None, {'force': force, 'torque': torque})
-
-
-@typecheck
 def getStateVariables(objIDs: (list, tuple)):
     """
     Retrieve the state variables for all ``objIDs``.

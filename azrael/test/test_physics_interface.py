@@ -403,22 +403,16 @@ def test_get_set_forceandtorque():
     assert physAPI.addCmdSpawn(id_1, data_1, aabb=0).ok
     leo.processCommandsAndSync()
 
-    # Retrieve the force and torque and verify they are correct.
-    assert not physAPI.getCmdForceAndTorque(id_0).ok
-    assert not physAPI.getCmdForceAndTorque(id_1).ok
-
     # Update the force and torque of the second object only.
     force, torque = [1, 2, 3], [4, 5, 6]
     assert physAPI.addCmdSetForceAndTorque(id_1, force, torque)
     leo.processCommandsAndSync()
 
     # Only the force an torque of the second object must have changed.
-    assert not physAPI.getCmdForceAndTorque(id_0).ok
-
-    ret = physAPI.getCmdForceAndTorque(id_1)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], force)
-    assert np.array_equal(ret.data['torque'], torque)
+    assert np.array_equal(leo.allForces[id_0], [0, 0, 0])
+    assert np.array_equal(leo.allTorques[id_0], [0, 0, 0])
+    assert np.array_equal(leo.allForces[id_1], force)
+    assert np.array_equal(leo.allTorques[id_1], torque)
 
     print('Test passed')
 
@@ -489,7 +483,6 @@ if __name__ == '__main__':
     test_StateVariable_tuple()
     test_get_set_forceandtorque()
     test_overrideAttributes()
-    test_get_set_force()
     test_add_same()
     test_add_get_multiple()
     test_add_get_remove_single()
