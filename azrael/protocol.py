@@ -279,8 +279,8 @@ def ToClerk_SetForce_Encode(objID: int, force: np.ndarray, rpos: np.ndarray):
 def ToClerk_SetForce_Decode(data: dict):
     # Convert to native Python types and return to caller.
     objID = data['objID']
-    force = np.array(data['force'], np.float64)
-    rel_pos = np.array(data['rel_pos'], np.float64)
+    force = data['force']
+    rel_pos = data['rel_pos']
     return True, (objID, force, rel_pos)
 
 

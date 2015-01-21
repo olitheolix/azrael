@@ -280,52 +280,6 @@ def test_dequeueCommands():
     print('Test passed')
 
 
-def test_get_set_force():
-    """
-    Query and update the force vector for an object.
-    """
-    killAzrael()
-
-    # Reset the SV database and instantiate a Leonard.
-    leo = getLeonard()
-
-    # Create two object IDs for this test.
-    id_0 = 0
-    id_1 = 1
-
-    # Create two objects and serialise them.
-    data_0 = BulletData(position=[0, 0, 0])
-
-    data_1 = BulletData(position=[10, 10, 10])
-
-    # Add the two objects to the DB.
-    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0)
-    assert physAPI.addCmdSpawn(id_1, data_1, aabb=0)
-
-    # Convenience: forces and their positions.
-    f1 = np.zeros(3, np.float64)
-    p1 = np.zeros(3, np.float64)
-
-    # No force commands must exist yet.
-    assert not physAPI.getCmdForceAndTorque(id_0).ok
-    assert not physAPI.getCmdForceAndTorque(id_1).ok
-
-    # Update the force vector of only the second object.
-    f1 = np.ones(3, np.float64)
-    p1 = 2 * np.ones(3, np.float64)
-    assert physAPI.addCmdSetForce(id_1, f1, p1).ok
-    leo.processCommandsAndSync()
-
-    # Check again. The force of only the second object must have changed.
-    assert not physAPI.getCmdForceAndTorque(id_0).ok
-    ret = physAPI.getCmdForceAndTorque(id_1)
-    assert ret.ok
-    assert np.array_equal(ret.data['force'], f1)
-    assert np.array_equal(ret.data['torque'], np.cross(p1, f1))
-
-    print('Test passed')
-
-
 def test_overrideAttributes():
     """
     Set and retrieve object attributes like position, velocity, acceleration,
@@ -453,14 +407,9 @@ def test_get_set_forceandtorque():
     assert not physAPI.getCmdForceAndTorque(id_0).ok
     assert not physAPI.getCmdForceAndTorque(id_1).ok
 
-    # Convenience: specify the forces and torques.
-    f1 = np.zeros(3, np.float64)
-    t1 = np.zeros(3, np.float64)
-
     # Update the force and torque of the second object only.
-    f1 = np.ones(3, np.float64)
-    t1 = 2 * np.ones(3, np.float64)
-    assert physAPI.addCmdSetForceAndTorque(id_1, f1, t1)
+    force, torque = [1, 2, 3], [4, 5, 6]
+    assert physAPI.addCmdSetForceAndTorque(id_1, force, torque)
     leo.processCommandsAndSync()
 
     # Only the force an torque of the second object must have changed.
@@ -468,8 +417,8 @@ def test_get_set_forceandtorque():
 
     ret = physAPI.getCmdForceAndTorque(id_1)
     assert ret.ok
-    assert np.array_equal(ret.data['force'], f1)
-    assert np.array_equal(ret.data['torque'], t1)
+    assert np.array_equal(ret.data['force'], force)
+    assert np.array_equal(ret.data['torque'], torque)
 
     print('Test passed')
 

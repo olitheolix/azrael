@@ -256,7 +256,7 @@ def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
 
 
 @typecheck
-def addCmdSetForce(objID: int, force: np.ndarray, relpos: np.ndarray):
+def addCmdSetForce(objID: int, force: list, relpos: list):
     """
     Update the ``force`` acting on ``objID``.
 
@@ -276,7 +276,10 @@ def addCmdSetForce(objID: int, force: np.ndarray, relpos: np.ndarray):
         return RetVal(False, 'force or relpos have invalid length', None)
 
     # Compute the torque and then call addCmdSetForceAndTorque.
+    force, relpos = np.array(force, np.float64), np.array(relpos, np.float64)
     torque = np.cross(relpos, force)
+    force = force.tolist()
+    torque = torque.tolist()
     ret = addCmdSetForceAndTorque(objID, force, torque)
     if ret.ok:
         return RetVal(True, None, None)
@@ -285,7 +288,7 @@ def addCmdSetForce(objID: int, force: np.ndarray, relpos: np.ndarray):
 
 
 @typecheck
-def addCmdSetForceAndTorque(objID: int, force: np.ndarray, torque: np.ndarray):
+def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
     """
     Set the central ``force`` and ``torque`` acting on ``objID``.
 
@@ -308,10 +311,6 @@ def addCmdSetForceAndTorque(objID: int, force: np.ndarray, torque: np.ndarray):
         return RetVal(False, msg, None)
     if not (len(force) == len(torque) == 3):
         return RetVal(False, 'force or torque has invalid length', None)
-
-    # Serialise the force and torque.
-    force = force.astype(np.float64).tostring()
-    torque = torque.astype(np.float64).tostring()
 
     # Update the DB.
     ret = database.dbHandles['CmdForce'].update(
@@ -344,13 +343,13 @@ def getCmdForceAndTorque(objID: int):
 
     # Unpack the force.
     try:
-        force = np.fromstring(doc['central_force'])
+        force = doc['central_force']
     except KeyError:
         force = np.zeros(3)
 
     # Unpack the torque.
     try:
-        torque = np.fromstring(doc['torque'])
+        torque = doc['torque']
     except KeyError:
         torque = np.zeros(3)
 

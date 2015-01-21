@@ -430,10 +430,15 @@ class Clerk(multiprocessing.Process):
             tot_torque += np.cross(force_pos, force)
             tot_force += force
 
+        # The physAPI expects Python types, not NumPy arrays.
+        tot_force = tot_force.tolist()
+        tot_torque = tot_torque.tolist()
+        
         # Apply the net- force and torque. Skip this step if booster commands
         # were supplied.
         if len(cmd_boosters) > 0:
             physAPI.addCmdSetForceAndTorque(objID, tot_force, tot_torque)
+        del tot_force, tot_torque
 
         # Let the factories spawn the objects.
         objIDs = []
@@ -796,7 +801,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
     @typecheck
-    def setForce(self, objID: int, force: np.ndarray, rpos: np.ndarray):
+    def setForce(self, objID: int, force: list, rpos: list):
         """
         Apply ``force`` to ``objID``.
 

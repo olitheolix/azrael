@@ -259,8 +259,8 @@ def test_set_force():
     # Parameters and constants for this test.
     id_1 = 1
     sv = bullet_data.BulletData()
-    force = np.array([1, 2, 3], np.float64)
-    relpos = np.array([4, 5, 6], np.float64)
+    force = np.array([1, 2, 3], np.float64).tolist()
+    relpos = np.array([4, 5, 6], np.float64).tolist()
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
