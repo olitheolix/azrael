@@ -571,8 +571,8 @@ def test_updateLocalCacheFromWP():
     id_1, id_2 = 1, 2
 
     # Spawn new objects.
-    assert physAPI.addCmdSpawn(id_1, data_1, aabb=1)
-    assert physAPI.addCmdSpawn(id_2, data_2, aabb=1)
+    assert physAPI.addCmdSpawn(id_1, data_1, aabb=1).ok
+    assert physAPI.addCmdSpawn(id_2, data_2, aabb=1).ok
     leo.processCommandsAndSync()
 
     # Create a Work Package and verify its content.
