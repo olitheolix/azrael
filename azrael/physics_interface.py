@@ -449,7 +449,7 @@ def setForce(objID: int, force: np.ndarray, relpos: np.ndarray):
 
 
 @typecheck
-def getForceAndTorque(objID: int):
+def getCmdForceAndTorque(objID: int):
     """
     Return the force and torque for ``objID``.
 

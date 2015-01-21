@@ -491,7 +491,7 @@ def test_controlParts(client_type):
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    ret = physAPI.getForceAndTorque(objID_1)
+    ret = physAPI.getCmdForceAndTorque(objID_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], tot_force)
     assert np.array_equal(ret.data['torque'], tot_torque)

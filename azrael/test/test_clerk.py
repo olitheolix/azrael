@@ -274,7 +274,7 @@ def test_set_force():
     assert clerk.setForce(id_1, force, relpos).ok
 
     leo.step(0, 1)
-    ret = physAPI.getForceAndTorque(id_1)
+    ret = physAPI.getCmdForceAndTorque(id_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], force)
     assert np.array_equal(ret.data['torque'], np.cross(relpos, force))
@@ -626,7 +626,7 @@ def test_controlParts_Boosters_notmoving():
     tot_torque = np.cross(pos_0, forcevec_0) + np.cross(pos_1, forcevec_1)
 
     # Query the torque and force from Azrael and verify they are correct.
-    ret = physAPI.getForceAndTorque(objID_1)
+    ret = physAPI.getCmdForceAndTorque(objID_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], tot_force)
     assert np.array_equal(ret.data['torque'], tot_torque)
@@ -640,7 +640,7 @@ def test_controlParts_Boosters_notmoving():
     assert clerk.controlParts(objID_1, [], []).ok
 
     # Query the torque and force from Azrael and verify they are correct.
-    ret = physAPI.getForceAndTorque(objID_1)
+    ret = physAPI.getCmdForceAndTorque(objID_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], tot_force)
     assert np.array_equal(ret.data['torque'], tot_torque)
@@ -953,7 +953,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    ret = physAPI.getForceAndTorque(objID_1)
+    ret = physAPI.getCmdForceAndTorque(objID_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], tot_force)
     assert np.array_equal(ret.data['torque'], tot_torque)

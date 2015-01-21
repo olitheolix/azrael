@@ -307,8 +307,8 @@ def test_get_set_force():
     p1 = np.zeros(3, np.float64)
 
     # No force commands must exist yet.
-    assert not physAPI.getForceAndTorque(id_0).ok
-    assert not physAPI.getForceAndTorque(id_1).ok
+    assert not physAPI.getCmdForceAndTorque(id_0).ok
+    assert not physAPI.getCmdForceAndTorque(id_1).ok
 
     # Update the force vector of only the second object.
     f1 = np.ones(3, np.float64)
@@ -317,8 +317,8 @@ def test_get_set_force():
     leo.processCommandsAndSync()
 
     # Check again. The force of only the second object must have changed.
-    assert not physAPI.getForceAndTorque(id_0).ok
-    ret = physAPI.getForceAndTorque(id_1)
+    assert not physAPI.getCmdForceAndTorque(id_0).ok
+    ret = physAPI.getCmdForceAndTorque(id_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], f1)
     assert np.array_equal(ret.data['torque'], np.cross(p1, f1))
@@ -450,8 +450,8 @@ def test_get_set_forceandtorque():
     leo.processCommandsAndSync()
 
     # Retrieve the force and torque and verify they are correct.
-    assert not physAPI.getForceAndTorque(id_0).ok
-    assert not physAPI.getForceAndTorque(id_1).ok
+    assert not physAPI.getCmdForceAndTorque(id_0).ok
+    assert not physAPI.getCmdForceAndTorque(id_1).ok
 
     # Convenience: specify the forces and torques.
     f1 = np.zeros(3, np.float64)
@@ -464,9 +464,9 @@ def test_get_set_forceandtorque():
     leo.processCommandsAndSync()
 
     # Only the force an torque of the second object must have changed.
-    assert not physAPI.getForceAndTorque(id_0).ok
+    assert not physAPI.getCmdForceAndTorque(id_0).ok
 
-    ret = physAPI.getForceAndTorque(id_1)
+    ret = physAPI.getCmdForceAndTorque(id_1)
     assert ret.ok
     assert np.array_equal(ret.data['force'], f1)
     assert np.array_equal(ret.data['torque'], t1)
