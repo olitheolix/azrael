@@ -389,7 +389,7 @@ class LeonardBase(multiprocessing.Process):
             t0 = time.time()
 
             # Trigger the physics update step.
-            with util.Timeit('Leonard.step') as timeit:
+            with util.Timeit('Leonard:1.0 Step') as timeit:
                 self.step(0.1, 10)
 
 
@@ -600,11 +600,11 @@ class LeonardDistributedZeroMQ(LeonardBase):
                              ``dt`` update.
         """
         # Read queued commands and update the local object cache accordingly.
-        with util.Timeit('Leonard.0_processCmdQueue') as timeit:
+        with util.Timeit('Leonard:1.1  processCmdQueue') as timeit:
             self.processCommandQueue()
 
         # Compute the collision sets.
-        with util.Timeit('Leonard.1_CCS') as timeit:
+        with util.Timeit('Leonard:1.2  CCS') as timeit:
             collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
         if not collSets.ok:
             self.logit.error('ComputeCollisionSetsAABB returned an error')
@@ -615,7 +615,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         util.logMetricQty('#CollSets', len(collSets))
 
         # Put each collision set into its own Work Package.
-        with util.Timeit('Leonard.2_CreateWPs') as timeit:
+        with util.Timeit('Leonard:1.3  CreateWPs') as timeit:
             all_WPs = {}
             for subset in collSets:
                 # Compile the Work Package.
@@ -625,7 +625,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
                     return
                 all_WPs[ret.data['wpid']] = ret.data
 
-        with util.Timeit('Leonard.3_WPSendRecv') as timeit:
+        with util.Timeit('Leonard:1.4  WPSendRecv') as timeit:
             wpIdx = 0
             worklist = list(all_WPs.keys())
             while True:
@@ -674,7 +674,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 self.sock.send(pickle.dumps(wp))
 
         # Synchronise the local cache back to the database.
-        with util.Timeit('Leonard.4_syncObjects') as timeit:
+        with util.Timeit('Leonard:1.5  syncObjects') as timeit:
             self.syncObjects(writeconcern=False)
 
     @typecheck
@@ -808,9 +808,11 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         # Log the number of collision-sets in the current Work Package.
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
 
+        # Convenience: the WPData elements makes the code more readable.
         worklist = [WPData(*_) for _ in worklist]
-        # Iterate over all objects and update them.
-        with util.Timeit('Worker.2.0_applyforce') as timeit:
+
+        # Add every object to the Bullet engine and set the force/torque.
+        with util.Timeit('Worker:1.1.0  applyforce') as timeit:
             for obj in worklist:
                 # Convenience.
                 objID, force, torque = obj.id, obj.central_force, obj.torque
@@ -819,7 +821,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
                 self.bullet.setObjectData(objID, obj.sv)
 
                 # Add the force defined on the 'force' grid.
-                with util.Timeit('Worker.2.1_grid') as timeit:
+                with util.Timeit('Worker:1.1.1   grid') as timeit:
                     force = self.applyGridForce(force, obj.sv.position)
 
                 # Apply all forces and torques.
@@ -827,11 +829,11 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
-        with util.Timeit('Worker.3_compute') as timeit:
+        with util.Timeit('Worker:1.2.0  compute') as timeit:
             IDs = [_.id for _ in worklist]
             self.bullet.compute(IDs, meta.dt, meta.maxsteps)
 
-        with util.Timeit('Worker.4_fetchFromBullet') as timeit:
+        with util.Timeit('Worker:1.3.0  fetchFromBullet') as timeit:
             # Retrieve the objects from Bullet again and update them in the DB.
             out = []
             for obj in worklist:
@@ -883,16 +885,14 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
                     continue
 
                 # Unpickle the Work Package.
-                with util.Timeit('Worker.Unpickle') as timeit:
-                    wpdata = pickle.loads(msg)
+                wpdata = pickle.loads(msg)
 
                 # Process the Work Package.
-                with util.Timeit('Worker.0_All') as timeit:
+                with util.Timeit('Worker:1.0.0 WPTotal') as timeit:
                     wpdata = self.computePhysicsForWorkPackage(wpdata)
 
                 # Pack up the Work Package and send it back to Leonard.
-                with util.Timeit('Worker.Pickle') as timeit:
-                    sock.send(pickle.dumps(wpdata))
+                sock.send(pickle.dumps(wpdata))
 
                 # Count the number of Work Packages we have processed.
                 numSteps += 1
