@@ -685,83 +685,6 @@ class LeonardDistributedZeroMQ(LeonardBase):
             self.allObjects[objID] = _BulletData(*sv)
 
 
-class WorkerManager(multiprocessing.Process):
-    """
-    Launch Worker processes and restart them as necessary.
-
-    This class merely launches the inital set of workers and periodically
-    checks if any have died. If so, it joins these processes and replaces it
-    with a new Worker that has the same ID.
-
-    :param int numWorker: number of Workers processes to spawn.
-    :param int minSteps: see Worker
-    :param int maxSteps: see Worker
-    :param class workerCls: the class to instantiate.
-    """
-    def __init__(self, numWorkers: int, minSteps: int, maxSteps: int,
-                 workerCls):
-        super().__init__()
-
-        # Sanity checks.
-        assert numWorkers > 0
-        assert isinstance(minSteps, int)
-        assert isinstance(maxSteps, int)
-        assert 0 < minSteps <= maxSteps
-
-        # Backup the arguments.
-        self.numWorkers = numWorkers
-        self.workerCls = workerCls
-        self.minSteps, self.maxSteps = minSteps, maxSteps
-
-    def _run(self):
-        """
-        Start the initial collection of Workers and ensure they remain alive.
-        """
-        # Rename the process.
-        setproctitle.setproctitle('killme ' + self.__class__.__name__)
-
-        # Spawn the initial collection of Workers.
-        workers = []
-        delta = self.maxSteps - self.minSteps
-        for ii in range(self.numWorkers):
-            # Random number in [minSteps, maxSteps]. The process will
-            # automatically terminate after `suq` steps.
-            suq = self.minSteps + int(np.random.rand() * delta)
-
-            # Instantiate the process and add it to the list.
-            workers.append(self.workerCls(ii + 1, suq))
-            workers[-1].start()
-
-        # Periodically monitor the processes and restart any that have died.
-        while True:
-            # Only check once a second.
-            time.sleep(1)
-            for workerID, proc in enumerate(workers):
-                # Skip current process if it is still running.
-                if proc.is_alive():
-                    continue
-
-                # Process has died --> join it to clear up the process table.
-                proc.join()
-
-                # Create a new Worker with the same ID but a (possibly)
-                # different number of steps after which it must terminate.
-                suq = self.minSteps + int(np.random.rand() * delta)
-                proc = self.workerCls(workerID, suq)
-                proc.start()
-                workers[workerID] = proc
-                print('Restarted Worker {}'.format(workerID))
-
-    def run(self):
-        """
-        Wrapper around ``_run`` to intercept SIGTERM.
-        """
-        try:
-            self._run()
-        except KeyboardInterrupt:
-            pass
-
-
 class LeonardWorkerZeroMQ(multiprocessing.Process):
     """
     Dedicated Worker to process Work Packages.
@@ -899,3 +822,80 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
             ctx.destroy()
         except KeyboardInterrupt:
             print('Aborted Worker {}'.format(self.workerID))
+
+
+class WorkerManager(multiprocessing.Process):
+    """
+    Launch Worker processes and restart them as necessary.
+
+    This class merely launches the inital set of workers and periodically
+    checks if any have died. If so, it joins these processes and replaces it
+    with a new Worker that has the same ID.
+
+    :param int numWorker: number of Workers processes to spawn.
+    :param int minSteps: see Worker
+    :param int maxSteps: see Worker
+    :param class workerCls: the class to instantiate.
+    """
+    def __init__(self, numWorkers: int, minSteps: int, maxSteps: int,
+                 workerCls):
+        super().__init__()
+
+        # Sanity checks.
+        assert numWorkers > 0
+        assert isinstance(minSteps, int)
+        assert isinstance(maxSteps, int)
+        assert 0 < minSteps <= maxSteps
+
+        # Backup the arguments.
+        self.numWorkers = numWorkers
+        self.workerCls = workerCls
+        self.minSteps, self.maxSteps = minSteps, maxSteps
+
+    def _run(self):
+        """
+        Start the initial collection of Workers and ensure they remain alive.
+        """
+        # Rename the process.
+        setproctitle.setproctitle('killme ' + self.__class__.__name__)
+
+        # Spawn the initial collection of Workers.
+        workers = []
+        delta = self.maxSteps - self.minSteps
+        for ii in range(self.numWorkers):
+            # Random number in [minSteps, maxSteps]. The process will
+            # automatically terminate after `suq` steps.
+            suq = self.minSteps + int(np.random.rand() * delta)
+
+            # Instantiate the process and add it to the list.
+            workers.append(self.workerCls(ii + 1, suq))
+            workers[-1].start()
+
+        # Periodically monitor the processes and restart any that have died.
+        while True:
+            # Only check once a second.
+            time.sleep(1)
+            for workerID, proc in enumerate(workers):
+                # Skip current process if it is still running.
+                if proc.is_alive():
+                    continue
+
+                # Process has died --> join it to clear up the process table.
+                proc.join()
+
+                # Create a new Worker with the same ID but a (possibly)
+                # different number of steps after which it must terminate.
+                suq = self.minSteps + int(np.random.rand() * delta)
+                proc = self.workerCls(workerID, suq)
+                proc.start()
+                workers[workerID] = proc
+                print('Restarted Worker {}'.format(workerID))
+
+    def run(self):
+        """
+        Wrapper around ``_run`` to intercept SIGTERM.
+        """
+        try:
+            self._run()
+        except KeyboardInterrupt:
+            pass
