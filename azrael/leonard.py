@@ -762,6 +762,16 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
             return force
 
     def processWorkPackage(self, wp):
+        """
+        Compute a physics steps for all objects in ``wp``.
+
+        This method is matched to the
+        ``LeonardDistributedZeroMq.updateLocalCache`` method.
+
+        :param dict wp: Work Package content from ``createWorkPackage``.
+        :return dict: the same ``wp`` but with updated content under the
+                     'wpdata' key.
+        """
         worklist, meta = wp['wpdata'], WPMeta(*wp['wpmeta'])
 
         # Log the number of collision-sets in the current Work Package.
