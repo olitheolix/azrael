@@ -57,26 +57,23 @@ def getNumObjects():
 def dequeueCommands():
     """
     Return and de-queue all commands currently in the command queue.
+
     :return QueuedCommands: a tuple with lists for each command.
     """
     # Convenience.
-    dbSpawn = database.dbHandles['CmdSpawn']
-    dbRemove = database.dbHandles['CmdRemove']
-    dbModify = database.dbHandles['CmdModify']
-    dbForce = database.dbHandles['CmdForce']
+    db = database.dbHandles['Commands']
 
-    # Query all entries.
-    spawn = list(dbSpawn.find())
-    remove = list(dbRemove.find())
-    modify = list(dbModify.find())
-    force = list(dbForce.find())
+    # Query all pending commands and delete them from the queue.
+    docs = list(db.find())
+    ret = db.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
 
-    # Remove the just queried entries.
-    ret = dbSpawn.remove({'_id': {'$in': [_['_id'] for _ in spawn]}})
-    ret = dbRemove.remove({'_id': {'$in': [_['_id'] for _ in remove]}})
-    ret = dbModify.remove({'_id': {'$in': [_['_id'] for _ in modify]}})
-    ret = dbForce.remove({'_id': {'$in': [_['_id'] for _ in force]}})
+    # Split the commands into categories.
+    spawn = [_ for _ in docs if _['cmd'] == 'spawn']
+    remove = [_ for _ in docs if _['cmd'] == 'remove']
+    modify = [_ for _ in docs if _['cmd'] == 'modify']
+    force = [_ for _ in docs if _['cmd'] == 'force']
 
+    # Compile the output dictionary.
     out = {'spawn': spawn, 'remove': remove, 'modify': modify, 'force': force}
     return RetVal(True, None, out)
 
@@ -111,16 +108,17 @@ def addCmdSpawn(objID: int, sv: _BulletData, aabb: (int, float)):
         return RetVal(False, msg, None)
 
     # Meta data for spawn command.
-    data = {'objID': objID, 'sv': sv, 'AABB': float(aabb)}
+    query = {'cmd': 'spawn', 'objID': objID}
+    data = {'sv': sv, 'AABB': float(aabb)}
 
     # This implements the fictitious "insert_if_not_yet_exists" command. It
     # will return whatever the latest value from the DB, which is either the
     # one we just inserted (success) or a previously inserted one (fail). The
     # only way to distinguish them is to verify that the SVs are identical.
-    db = database.dbHandles['CmdSpawn']
-    doc = db.find_and_modify({'objID': objID},
-                             {'$setOnInsert': data},
-                             upsert=True, new=True)
+    db = database.dbHandles['Commands']
+    doc = db.find_and_modify(
+        query, {'$setOnInsert': data},  upsert=True, new=True)
+
     success = (_BulletData(*doc['sv']) == data['sv'])
 
     # Return success status to caller.
@@ -143,9 +141,11 @@ def addCmdRemoveObject(objID: int):
     :param int objID: ID of object to delete.
     :return: Success.
     """
-    data = {'del': objID}
-    doc = database.dbHandles['CmdRemove'].find_and_modify(
-        {'objID': objID}, {'$setOnInsert': data}, upsert=True, new=True)
+    # The 'data' is dummy because Mongo's 'update' requires one.
+    db = database.dbHandles['Commands']
+    query = {'cmd': 'remove', 'objID': objID}
+    data = query
+    db.find_and_modify(query, {'$setOnInsert': data},  upsert=True, new=True)
     return RetVal(True, None, None)
 
 
@@ -188,9 +188,10 @@ def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
             data[idx] = val.tolist()
 
     # Save the new SVs to the DB (overwrite existing ones).
-    doc = database.dbHandles['CmdModify'].find_and_modify(
-        {'objID': objID}, {'$setOnInsert': {'sv': data}},
-        upsert=True, new=True)
+    db = database.dbHandles['Commands']
+    query = {'cmd': 'modify', 'objID': objID}
+    data = {'sv': data}
+    db.find_and_modify(query, {'$setOnInsert': data},  upsert=True, new=True)
 
     # This function was successful if exactly one document was updated.
     return RetVal(True, None, None)
@@ -215,10 +216,10 @@ def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
         return RetVal(False, 'force or torque has invalid length', None)
 
     # Update the DB.
-    ret = database.dbHandles['CmdForce'].update(
-        {'objID': objID},
-        {'$set': {'force': force, 'torque': torque}},
-        upsert=True)
+    db = database.dbHandles['Commands']
+    query = {'cmd': 'force', 'objID': objID}
+    data = {'force': force, 'torque': torque}
+    db.find_and_modify(query, {'$setOnInsert': data}, upsert=True, new=True)
 
     return RetVal(True, None, None)
 
