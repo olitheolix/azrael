@@ -326,7 +326,7 @@ class LeonardBase(multiprocessing.Process):
 
         return RetVal(True, None, None)
 
-    def syncObjects(self, writeconcern: True):
+    def syncObjects(self, writeconcern: bool):
         """
         Copy all local SVs to DB.
 
@@ -457,7 +457,7 @@ class LeonardBullet(LeonardBase):
             self.allTorques[objID] = [0, 0, 0]
 
         # Synchronise the local object cache back to the database.
-        self.syncObjects(writeconcern=True)
+        self.syncObjects(writeconcern=False)
 
 
 class LeonardSweeping(LeonardBullet):
@@ -533,7 +533,7 @@ class LeonardSweeping(LeonardBullet):
                 self.allTorques[objID] = [0, 0, 0]
 
         # Synchronise the local object cache back to the database.
-        self.syncObjects(writeconcern=True)
+        self.syncObjects(writeconcern=False)
 
 
 class LeonardDistributedZeroMQ(LeonardBase):
@@ -675,7 +675,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Synchronise the local cache back to the database.
         with util.Timeit('Leonard.4_syncObjects') as timeit:
-            self.syncObjects(writeconcern=True)
+            self.syncObjects(writeconcern=False)
 
     @typecheck
     def createWorkPackage(self, objIDs: (tuple, list),
