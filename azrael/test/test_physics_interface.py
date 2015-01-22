@@ -71,21 +71,15 @@ def test_add_get_remove_single():
     assert ret.ok
     assert isEqualBD(ret.data[id_0], data)
 
-    # Attempt to remove non-existing ID --> must fail.
-    assert physAPI.addCmdRemoveObject(id_1).ok
-    leo.processCommandsAndSync()
-
-    ret = physAPI.getStateVariables([id_0])
-    assert ret.ok
-    assert isEqualBD(ret.data[id_0], data)
-
+    # Verify that the system contains exactly one object.
     ret = physAPI.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 1)
 
-    # Remove existing ID --> must succeed.
+    # Remove object id_0.
     assert physAPI.addCmdRemoveObject(id_0).ok
     leo.processCommandsAndSync()
 
+    # Object must not exist anymore in the simulation.
     assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
     ret = physAPI.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 0)
