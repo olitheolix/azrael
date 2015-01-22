@@ -875,8 +875,10 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
                 msg = sock.recv()
 
                 # If Leonard did not send a Work Package (probably because it
-                # does not have one right now) then reply with an empty message.
+                # does not have one right now) then wait for a short time
+                # before asking again to avoid spamming the network.
                 if msg == b'':
+                    time.sleep(0.003)
                     sock.send(b'')
                     continue
 
