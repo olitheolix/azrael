@@ -555,7 +555,7 @@ def test_createWorkPackages():
     print('Test passed')
 
 
-def test_updateLocalCacheFromWP():
+def test_updateLocalCache():
     """
     Update the local object cache in Leonard based on a Work Package.
     """
@@ -580,11 +580,11 @@ def test_updateLocalCacheFromWP():
 
     # Create a new State Vector to replace the old one.
     data_3 = bullet_data.BulletData(imass=4, position=[1, 2, 3])
-    newWP = [WPData(id_1, data_3, [0, 0, 0], [0, 0, 0])]
+    newWP = [(id_1, data_3)]
 
     # Check the State Vector for objID=id_1 before and after the update.
     assert isEqualBD(leo.allObjects[id_1], data_1)
-    leo.updateLocalCacheFromWP(newWP)
+    leo.updateLocalCache(newWP)
     assert isEqualBD(leo.allObjects[id_1], data_3)
 
     # Cleanup.
@@ -652,7 +652,7 @@ def test_processCommandQueue():
 if __name__ == '__main__':
     test_processCommandQueue()
     test_createWorkPackages()
-    test_updateLocalCacheFromWP()
+    test_updateLocalCache()
 
     test_worker_respawn()
     test_sweeping_2objects()

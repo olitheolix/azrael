@@ -611,7 +611,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
                     # the same Work Package and the other Worker has already
                     # returned it).
                     if msg['wpid'] in all_WPs:
-                        self.updateLocalCacheFromWP(msg['wpdata'])
+                        self.updateLocalCache(msg['wpdata'])
 
                         # Decrement the Work Package Index if the wpIdx counter
                         # is already past that work package. This simply
@@ -693,20 +693,20 @@ class LeonardDistributedZeroMQ(LeonardBase):
         self.wpid_counter += 1
         return RetVal(True, None, data)
 
-    def updateLocalCacheFromWP(self, wpdata):
+    def updateLocalCache(self, wpdata):
         """
         Copy every object from ``wpdata`` to the local cache.
 
-        The ``wpdata`` variables must come straight from the received Work
-        Package. It contains the new State Vectors and this method will copy
-        them into the local object cache in this class. It will also reset the
-        forces.
+        The ``wpdata`` argument is a list of (objID, sv) tuples.
+        
+        The implicit assumption of this method is that ``wpdata`` is the
+        processed WP returned by the Worker.
 
-        :param tuple wpdata: Content of Work Packge as returned by Workers.
+        :param list wpdata: Content of Work Packge as returned by Workers.
         """
         # Reset force and torque for all objects in the WP, and overwrite
         # the old State Vector with the new one from the processed WP.
-        for (objID, sv, force, torque) in wpdata:
+        for (objID, sv) in wpdata:
             self.allForces[objID] = [0, 0, 0]
             self.allTorques[objID] = [0, 0, 0]
             self.allObjects[objID] = _BulletData(*sv)
@@ -800,7 +800,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
                     # Something went wrong. Reuse the old SV.
                     sv = obj.sv
                     self.logit.error('Unable to get all objects from Bullet')
-                out.append((obj.id, sv, [0, 0, 0], [0, 0, 0]))
+                out.append((obj.id, sv))
 
         # Update the data and delete the WP.
         wp['wpdata'] = out
