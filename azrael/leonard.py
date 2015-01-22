@@ -291,6 +291,7 @@ class LeonardBase(multiprocessing.Process):
                 del self.allObjects[objID]
                 del self.allForces[objID]
                 del self.allTorques[objID]
+                del self.allAABBs[objID]
 
         # Spawn objects.
         for doc in cmds['spawn']:
@@ -301,9 +302,9 @@ class LeonardBase(multiprocessing.Process):
             else:
                 sv_old = doc['sv']
                 self.allObjects[objID] = _BulletData(*sv_old)
-                self.allAABBs[objID] = float(doc['AABB'])
                 self.allForces[objID] = [0, 0, 0]
                 self.allTorques[objID] = [0, 0, 0]
+                self.allAABBs[objID] = float(doc['AABB'])
 
         # Update State Vectors.
         fun = physAPI._updateBulletDataTuple
