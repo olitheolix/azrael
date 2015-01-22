@@ -659,15 +659,13 @@ class Clerk(multiprocessing.Process):
             return objID
         objID = objID.data
 
-        # Make a copy the raw template in the instance DB. To do so  we need to
-        # get the template first...
+        # Copy the raw template to the instance DB. To do that we need the
+        # template first...
         t_raw = physAPI.getRawTemplate(templateID)
         if not t_raw.ok:
             self.logit.info(t_raw.msg)
             return t_raw
-        else:
-            self.logit.info('Added template <{}>'.format(templateID))
-            t_raw = t_raw.data
+        t_raw = t_raw.data
 
         # ... then add objID, update lastChanged, remove '_id' field, and
         # insert the final document into the instance DB.
@@ -679,15 +677,14 @@ class Clerk(multiprocessing.Process):
 
         # Overwrite the user supplied collision shape with the one specified in
         # the template. This is to enforce geometric consistency with the
-        # template data as otherwise the effect could be surprising (a
-        # space-ship collision shape in the template database and a simple
-        # sphere when it is spawned).
+        # template data as otherwise strange things may happen (eg a space-ship
+        # collision shape in the template database with a simple sphere
+        # collision shape when it is spawned).
         sv.cshape[:] = np.fromstring(template['cshape']).tolist()
 
         # Add the object to the physics simulation.
         physAPI.addCmdSpawn(objID, sv, template['aabb'])
-        msg = 'Spawned template <{}> as objID=<{}>'
-        msg = msg.format(templateID, objID)
+        msg = 'Spawned template <{}> as objID=<{}>'.format(templateID, objID)
         self.logit.debug(msg)
         return RetVal(True, None, objID)
 
