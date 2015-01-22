@@ -261,7 +261,8 @@ class LeonardBase(multiprocessing.Process):
             self.allTorques[objID] = [0, 0, 0]
             self.allObjects[objID] = sv
 
-        self.syncObjects()
+        # Synchronise the local object cache back to the database.
+        self.syncObjects(writeconcern=False)
 
     def processCommandQueue(self):
         """
@@ -324,9 +325,15 @@ class LeonardBase(multiprocessing.Process):
 
         return RetVal(True, None, None)
 
-    def syncObjects(self):
+    def syncObjects(self, writeconcern: True):
         """
         Copy all local SVs to DB.
+
+        The ``writeconcern`` flag is mostly for performance tuning. If set to
+        *False* then the sync will not wait for an acknowledgement from the
+        database after the write opration.
+
+        :param bool writeconcern: disable write concern when set to *False*.
         """
         # Return immediately if we have no objects to begin with.
         if len(self.allObjects) == 0:
@@ -339,12 +346,25 @@ class LeonardBase(multiprocessing.Process):
             query = {'objID': objID}
             data = {'objID': objID, 'sv': sv, 'AABB': self.allAABBs[objID]}
             bulk.find(query).upsert().update({'$set': data})
-        bulk.execute()
+
+        if writeconcern:
+            bulk.execute()
+        else:
+            bulk.execute({'w': 0, 'j': False})
 
 
     def processCommandsAndSync(self):
+        """
+        Process all pending commands and syncronise the cache to the DB.
+
+        This method is useful for unit tests but probably not much else. It
+        also ensures that the synchronisation of the objects from the local
+        cache to the database is acknowledged by the database (this is turned
+        off in production because it slows down Leonard an the information is
+        not critical).
+        """
         self.processCommandQueue()
-        self.syncObjects()
+        self.syncObjects(writeconcern=True)
 
     def run(self):
         """
@@ -405,6 +425,7 @@ class LeonardBullet(LeonardBase):
         # Convenience.
         vg = azrael.vectorgrid
 
+        # Process pending commands.
         self.processCommandQueue()
 
         # Iterate over all objects and update them.
@@ -434,7 +455,8 @@ class LeonardBullet(LeonardBase):
             self.allForces[objID] = [0, 0, 0]
             self.allTorques[objID] = [0, 0, 0]
 
-        self.syncObjects()
+        # Synchronise the local object cache back to the database.
+        self.syncObjects(writeconcern=True)
 
 
 class LeonardSweeping(LeonardBullet):
@@ -508,7 +530,9 @@ class LeonardSweeping(LeonardBullet):
                     self.allObjects[objID] = ret.data
                 self.allForces[objID] = [0, 0, 0]
                 self.allTorques[objID] = [0, 0, 0]
-        self.syncObjects()
+
+        # Synchronise the local object cache back to the database.
+        self.syncObjects(writeconcern=True)
 
 
 class LeonardDistributedZeroMQ(LeonardBase):
@@ -648,9 +672,9 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 # Send the Work Package to the Worker.
                 self.sock.send(pickle.dumps(wp))
 
-        # Synchronise the objects with the DB.
+        # Synchronise the local cache back to the database.
         with util.Timeit('Leonard.4_syncObjects') as timeit:
-            self.syncObjects()
+            self.syncObjects(writeconcern=True)
 
     @typecheck
     def createWorkPackage(self, objIDs: (tuple, list),
