@@ -636,24 +636,24 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 if msg != b'':
                     # Unpickle the message.
                     msg = pickle.loads(msg)
+                    wpid = msg['wpid']
 
                     # Ignore the message if its Work Package is not pending
                     # anymore (most likely because multiple Workers processed
                     # the same Work Package and the other Worker has already
                     # returned it).
-                    if msg['wpid'] in all_WPs:
+                    if wpid in all_WPs:
                         self.updateLocalCache(msg['wpdata'])
 
                         # Decrement the Work Package Index if the wpIdx counter
                         # is already past that work package. This simply
                         # ensures that no WP is skipped simply because the
                         # queue has shrunk.
-                        wpid = msg['wpid']
                         if worklist.index(wpid) < wpIdx:
                             wpIdx -= 1
 
                         # Remove the WP from the work list and the WP cache.
-                        worklist.remove(msg['wpid'])
+                        worklist.remove(wpid)
                         del all_WPs[wpid]
 
                 # Send an empty message to the Worker if now Work Packages are
@@ -731,7 +731,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         The ``wpdata`` argument is a list of (objID, sv) tuples.
         
         The implicit assumption of this method is that ``wpdata`` is the
-        processed WP returned by the Worker.
+        output of ``computePhysicsForWorkPackage`` from a Worker.
 
         :param list wpdata: Content of Work Packge as returned by Workers.
         """
@@ -792,16 +792,15 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         else:
             return force
 
-    def processWorkPackage(self, wp):
+    def computePhysicsForWorkPackage(self, wp):
         """
         Compute a physics steps for all objects in ``wp``.
 
-        This method is matched to the
-        ``LeonardDistributedZeroMq.updateLocalCache`` method.
+        The output of this method is matched to the ``updateLocalCache`` in
+        Leonard itself.
 
         :param dict wp: Work Package content from ``createWorkPackage``.
-        :return dict: the same ``wp`` but with updated content under the
-                     'wpdata' key.
+        :return dict: {'wpdata': list_of_SVs, 'wpid': wpid}
         """
         worklist, meta = wp['wpdata'], WPMeta(*wp['wpmeta'])
 
@@ -844,8 +843,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
                 out.append((obj.id, sv))
 
         # Update the data and delete the WP.
-        wp['wpdata'] = out
-        return wp
+        return {'wpid': meta.wpid, 'wpdata': out}
 
     @typecheck
     def run(self):
@@ -887,7 +885,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
 
                 # Process the Work Package.
                 with util.Timeit('Worker.0_All') as timeit:
-                    wpdata = self.processWorkPackage(wpdata)
+                    wpdata = self.computePhysicsForWorkPackage(wpdata)
 
                 # Pack up the Work Package and send it back to Leonard.
                 with util.Timeit('Worker.Pickle') as timeit:
