@@ -595,6 +595,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         with util.Timeit('Leonard.3_WPSendRecv') as timeit:
             wpIdx = 0
+            worklist = list(all_WPs.keys())
             while True:
                 # Wait for a message from a Worker. This message usually
                 # contains a processed Work Package. However, it may also be
@@ -611,7 +612,18 @@ class LeonardDistributedZeroMQ(LeonardBase):
                     # returned it).
                     if msg['wpid'] in all_WPs:
                         self.updateLocalCacheFromWP(msg['wpdata'])
-                        del all_WPs[msg['wpid']]
+
+                        # Decrement the Work Package Index if the wpIdx counter
+                        # is already past that work package. This simply
+                        # ensures that no WP is skipped simply because the
+                        # queue has shrunk.
+                        wpid = msg['wpid']
+                        if worklist.index(wpid) < wpIdx:
+                            wpIdx -= 1
+
+                        # Remove the WP from the work list and the WP cache.
+                        worklist.remove(msg['wpid'])
+                        del all_WPs[wpid]
 
                 # Send an empty message to the Worker if now Work Packages are
                 # pending anymore. This empty message is important to avoid
@@ -620,9 +632,10 @@ class LeonardDistributedZeroMQ(LeonardBase):
                     self.sock.send(b'')
                     break
 
-                # Pick the next unprocessed Work Package.
-                keys =list(all_WPs.keys())
-                wp = all_WPs[keys[wpIdx % len(keys)]]
+                # Pick the next pending Work Package and increment the index.
+                if wpIdx >= len(worklist):
+                    wpIdx = 0
+                wp = all_WPs[worklist[wpIdx]]
                 wpIdx += 1
 
                 # Send the Work Package to the Worker.
