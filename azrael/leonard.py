@@ -328,12 +328,19 @@ class LeonardBase(multiprocessing.Process):
         """
         Copy all local SVs to DB.
         """
-        fun = self._DB_SV.update
+        # Return immediately if we have no objects to begin with.
+        if len(self.allObjects) == 0:
+            return
+
+        # Update (or insert if not exist) all objects. Use a Bulk operator to
+        # speed up the query.
+        bulk = self._DB_SV.initialize_unordered_bulk_op()
         for objID, sv in self.allObjects.items():
-            fun({'objID': objID},
-                {'$set': {'objID': objID, 'sv': sv,
-                          'AABB': self.allAABBs[objID]}},
-                upsert=True)
+            query = {'objID': objID}
+            data = {'objID': objID, 'sv': sv, 'AABB': self.allAABBs[objID]}
+            bulk.find(query).upsert().update({'$set': data})
+        bulk.execute()
+
 
     def processCommandsAndSync(self):
         self.processCommandQueue()
