@@ -594,25 +594,39 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 all_WPs[ret.data['wpid']] = ret.data
 
         with util.Timeit('Leonard.3_WPSendRecv') as timeit:
-            tmpcnt = 0
+            wpIdx = 0
             while True:
-                # Read the Worker socket. If this is the first time we read
-                # from that Worker it will not pass along any results because
-                # it has not received any Work Package yet.
-                msg = pickle.loads(self.sock.recv())
-                if msg['wpid'] is not None:
+                # Wait for a message from a Worker. This message usually
+                # contains a processed Work Package. However, it may also be
+                # empty, most likely because the Worker has not received a Work
+                # Package from us yet.
+                msg = self.sock.recv()
+                if msg != b'':
+                    # Unpickle the message.
+                    msg = pickle.loads(msg)
+
+                    # Ignore the message if its Work Package is not pending
+                    # anymore (most likely because multiple Workers processed
+                    # the same Work Package and the other Worker has already
+                    # returned it).
                     if msg['wpid'] in all_WPs:
                         self.updateLocalCacheFromWP(msg['wpdata'])
                         del all_WPs[msg['wpid']]
 
+                # Send an empty message to the Worker if now Work Packages are
+                # pending anymore. This empty message is important to avoid
+                # breaking the REQ/REP pattern enforced by ZeroMQ.
                 if len(all_WPs) == 0:
                     self.sock.send(b'')
                     break
+
+                # Pick the next unprocessed Work Package.
                 keys =list(all_WPs.keys())
-                tmp = all_WPs[keys[tmpcnt % len(keys)]]
-                tmpcnt += 1
+                wp = all_WPs[keys[wpIdx % len(keys)]]
+                wpIdx += 1
+
                 # Send the Work Package to the Worker.
-                self.sock.send(pickle.dumps(tmp))
+                self.sock.send(pickle.dumps(wp))
 
         # Synchronise the objects with the DB.
         with util.Timeit('Leonard.4_syncObjects') as timeit:
@@ -782,9 +796,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
     @typecheck
     def run(self):
         """
-        Update the physics for all objects in ``wpid``.
-
-        :param int wpid: work package ID.
+        Wait for Work Packages, process them, and return the results.
         """
         try:
             # Rename process to make it easy to find and kill them in the
@@ -798,30 +810,47 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
             sock.connect(config.addr_leonard_pushpull)
             self.logit.info('Worker {} connected'.format(self.workerID))
 
-            # Process work packages as they arrive.
+            # Contact Leonard with an empty payload.
+            sock.send(b'')
+
+            # Wait for messages from Leonard. If they contain a WP then process
+            # it and return the result, otherwise reply with an empty message.
             numSteps = 0
             suq = self.stepsUntilQuit
-            sock.send(pickle.dumps({'wpid': None}))
             while numSteps < suq:
+                # Wait for the next message.
                 msg = sock.recv()
+
+                # If Leonard did not send a Work Package (probably because it
+                # does not have one right now) then reply with an empty message.
                 if msg == b'':
-                    sock.send(pickle.dumps({'wpid': None}))
+                    sock.send(b'')
                     continue
+
+                # Unpickle the Work Package.
                 with util.Timeit('Worker.Unpickle') as timeit:
                     wpdata = pickle.loads(msg)
+
+                # Process the Work Package.
                 with util.Timeit('Worker.0_All') as timeit:
                     wpdata = self.processWorkPackage(wpdata)
+
+                # Pack up the Work Package and send it back to Leonard.
                 with util.Timeit('Worker.Pickle') as timeit:
                     sock.send(pickle.dumps(wpdata))
+
+                # Count the number of Work Packages we have processed.
                 numSteps += 1
 
-            # Log a last status message and terminate.
+            # Log a last status message before terminating.
             self.logit.info('Worker {} terminated itself after {} steps'
                             .format(self.workerID, numSteps))
-            sock.close(linger=0)
-            ctx.destroy()
         except KeyboardInterrupt:
             print('Aborted Worker {}'.format(self.workerID))
+
+        # Terminate.
+        sock.close(linger=0)
+        ctx.destroy()
 
 
 class WorkerManager(multiprocessing.Process):
