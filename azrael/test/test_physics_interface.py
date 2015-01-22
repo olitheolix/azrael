@@ -170,51 +170,44 @@ def test_add_same():
     data_2 = BulletData(imass=3)
 
     # The command queue for spawning objects must be empty.
-    ret = physAPI.getCmdSpawn()
-    assert ret.ok and (ret.data == [])
+    ret = physAPI.dequeueCommands()
+    assert ret.ok and (ret.data['spawn'] == [])
 
-    # Request to spawn the first object.
+    # Spawn the first object, then attempt to spawn another with the same objID
+    # *before* Leonard gets around to add even the first one --> this must fail
+    # and not add anything.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
-    ret = physAPI.getCmdSpawn()
-    assert ret.ok and (ret.data[0]['objID'] == id_0)
-
-    # Attempt to add another object with the same objID *before* Leonard gets
-    # around to add the first one --> this must fail and not add anything.
     assert not physAPI.addCmdSpawn(id_0, data_1, aabb=0).ok
-    ret = physAPI.getCmdSpawn()
-    assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objID'] == id_0)
+    ret = physAPI.dequeueCommands()
+    spawn = ret.data['spawn']
+    assert ret.ok and (len(spawn) == 1) and (spawn[0]['objID'] == id_0)
 
-    # Let Leonard pick up the commands. This must flush the command queue.
+    # Similar test as before, but this time Leonard has already pulled id_0
+    # into the simulation *before* are we want to spawn yet another object with
+    # the same ID. the 'addSpawnCmd' must succeed because it cannot reliably
+    # verify if Leonard has an object id_0 (it can only verify if another such
+    # request is in the queue already -- see above). However, Leonard itself
+    # must ignore that request. To verify this claim we will now spawn a new
+    # object with the same id_0 but a different State Vectors, let  Leonard
+    # process the queue, and then verify that it did not add/modify the object
+    # with id_0.
+    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
     leo.processCommandsAndSync()
-    ret = physAPI.getCmdSpawn()
-    assert ret.ok and (ret.data == [])
-
-    # Similar test to before, but this time Leonard has already pulled id_0
-    # into the simulation, and only *afterwards* are we requesting to spawn yet
-    # another object with the same ID. the 'addSpawnCmd' must succeed because
-    # it cannot reliably verify if Leonard has an object id_0 (it can only
-    # verify if another such request is in the queue already -- see
-    # above). However, Leonard itself must ignore that request. To verify this,
-    # request to spawn a new object with the same id_0 but a different State
-    # Vectors, let Leonard evaluate the queue, and finally verify that Leonard
-    # did not add/modify id_0.
     ret = physAPI.getStateVariables([id_0])
-    assert ret.ok
-    assert isEqualBD(ret.data[id_0], data_0)
+    assert ret.ok and isEqualBD(ret.data[id_0], data_0)
+
+    # Spawn a new object with same id_0 but different State Vector data_2.
     assert physAPI.addCmdSpawn(id_0, data_2, aabb=0).ok
-    ret = physAPI.getCmdSpawn()
-    assert ret.ok and (len(ret.data) == 1) and (ret.data[0]['objID'] == id_0)
     leo.processCommandsAndSync()
 
-    # Must still be original 'data_0' state vector, not 'data_2'.
+    # The State Vector for id_0 must still be data_0.
     ret = physAPI.getStateVariables([id_0])
-    assert ret.ok
-    assert isEqualBD(ret.data[id_0], data_0)
+    assert ret.ok and isEqualBD(ret.data[id_0], data_0)
 
     print('Test passed')
 
 
-def test_dequeueCommands():
+def test_commandQueue():
     """
     Add-, query, and remove commands from the command queue.
     """
@@ -224,58 +217,83 @@ def test_dequeueCommands():
     leo = getLeonard()
 
     # Convenience.
-    dcSpawn = physAPI.dequeueCmdSpawn
-    dcModify = physAPI.dequeueCmdModify
-    dcRemove = physAPI.dequeueCmdRemove
     data_0 = BulletData()
     data_1 = BulletDataOverride(imass=2, scale=3)
-
     id_0, id_1 = 0, 1
 
     # The command queue must be empty for every category.
-    ret = physAPI.getCmdSpawn()
-    assert ret.ok and (ret.data == [])
-    ret = physAPI.getCmdRemove()
-    assert ret.ok and (ret.data == [])
+    ret = physAPI.dequeueCommands()
+    assert ret.ok
+    assert ret.data['spawn'] == []
+    assert ret.data['remove'] == []
+    assert ret.data['modify'] == []
+    assert ret.data['force'] == []
 
-    # Queue one request for id_0.
+    # Spawn two objects with id_0 and id_1.
     assert physAPI.addCmdSpawn(id_0, data_0, aabb=1).ok
-    ret = physAPI.getCmdSpawn()
-    assert ret.ok and (ret.data[0]['objID'] == id_0)
+    assert physAPI.addCmdSpawn(id_1, data_1, aabb=1).ok
 
-    assert physAPI.addCmdModifyStateVariable(id_0, data_1).ok
-    ret = physAPI.getCmdModifyStateVariables()
-    assert ret.ok and (ret.data[0]['objID'] == id_0)
+    # Verify that the spawn commands were added.
+    ret = physAPI.dequeueCommands()
+    assert ret.ok
+    assert ret.data['spawn'][0]['objID'] == id_0
+    assert ret.data['spawn'][1]['objID'] == id_1
+    assert ret.data['remove'] == []
+    assert ret.data['modify'] == []
+    assert ret.data['force'] == []
 
+    # De-queuing the commands once more must not return any results because
+    # they have already been removed.
+    ret = physAPI.dequeueCommands()
+    assert ret.ok
+    assert ret.data['spawn'] == []
+    assert ret.data['remove'] == []
+    assert ret.data['modify'] == []
+    assert ret.data['force'] == []
+
+    # Modify State Variable for id_0.
+    newSV = BulletDataOverride(imass=10, position=[3, 4, 5])
+    assert physAPI.addCmdModifyStateVariable(id_0, newSV).ok
+    ret = physAPI.dequeueCommands()
+    modify = ret.data['modify']
+    assert ret.ok and len(modify) == 1
+    assert modify[0]['objID'] == id_0
+    assert tuple(modify[0]['sv']) == tuple(newSV)
+    del newSV
+
+    # Set the force and torque for id_1.
+    force, torque = [1, 2, 3], [4, 5, 6]
+    assert physAPI.addCmdSetForceAndTorque(id_1, force, torque).ok
+    ret = physAPI.dequeueCommands()
+    fat = ret.data['force']
+    assert ret.ok
+    assert len(fat) == 1
+    assert fat[0]['objID'] == id_1
+    assert fat[0]['force'] == force
+    assert fat[0]['torque'] == torque
+
+    # Remove an object.
     assert physAPI.addCmdRemoveObject(id_0).ok
-    ret = physAPI.getCmdRemove()
-    assert ret.ok and (ret.data[0]['objID'] == id_0)
+    ret = physAPI.dequeueCommands()
+    assert ret.ok and ret.data['remove'][0]['objID'] == id_0
 
-    # De-queue one object --> one objects must have been de-queued.
-    assert dcSpawn([id_0]) == (True, None, 1)
-    assert dcModify([id_0]) == (True, None, 1)
-    assert dcRemove([id_0]) == (True, None, 1)
-
-    # Repeat --> none must have been de-queued.
-    assert dcSpawn([id_0]) == (True, None, 0)
-    assert dcModify([id_0]) == (True, None, 0)
-    assert dcRemove([id_0]) == (True, None, 0)
-
-    # Add two commands.
+    # Add commands for two objects (it is perfectly ok to add commands for
+    # non-existing object IDs since this is just a command queue - Leonard will
+    # skip commands for non-existing IDs automatically).
+    force, torque = [7, 8, 9], [10, 11.5, 12.5]
     for objID in (id_0, id_1):
         assert physAPI.addCmdSpawn(objID, data_0, aabb=1).ok
         assert physAPI.addCmdModifyStateVariable(objID, data_1).ok
         assert physAPI.addCmdRemoveObject(objID).ok
+        assert physAPI.addCmdSetForceAndTorque(objID, force, torque).ok
 
-    # De-queue two objects --> two must have been de-queued.
-    assert dcSpawn([id_1, id_0]) == (True, None, 2)
-    assert dcModify([id_1, id_0]) == (True, None, 2)
-    assert dcRemove([id_1, id_0]) == (True, None, 2)
-
-    # Repeat --> none must have been de-queued.
-    assert dcSpawn([id_1, id_0]) == (True, None, 0)
-    assert dcModify([id_1, id_0]) == (True, None, 0)
-    assert dcRemove([id_1, id_0]) == (True, None, 0)
+    # De-queue all commands.
+    ret = physAPI.dequeueCommands()
+    assert ret.ok
+    assert len(ret.data['spawn']) == 2
+    assert len(ret.data['remove']) == 2
+    assert len(ret.data['modify']) == 2
+    assert len(ret.data['force']) == 2
 
     print('Test passed')
 
@@ -477,7 +495,7 @@ def test_set_get_AABB():
 
 
 if __name__ == '__main__':
-    test_dequeueCommands()
+    test_commandQueue()
     test_BulletDataOverride()
     test_set_get_AABB()
     test_StateVariable_tuple()

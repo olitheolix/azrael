@@ -271,49 +271,19 @@ class LeonardBase(multiprocessing.Process):
 
         :return bool: Success.
         """
-        # Fetch all commands currently in queue.
-        docsModify = physAPI.getCmdModifyStateVariables()
-        if not docsModify.ok:
-            msg = 'Cannot fetch "Modify" commands'
+        # Fetch (and de-queue) all pending commands.
+        ret = physAPI.dequeueCommands()
+        if not ret.ok:
+            msg = 'Cannot fetch commands'
             self.logit.error(msg)
             return RetVal(False, msg, None)
-        docsRemove = physAPI.getCmdRemove()
-        if not docsRemove.ok:
-            msg = 'Cannot fetch "Remove" commands'
-            self.logit.error(msg)
-            return RetVal(False, msg, None)
-        docsSpawn = physAPI.getCmdSpawn()
-        if not docsSpawn.ok:
-            msg = 'Cannot fetch "Spawn" commands'
-            self.logit.error(msg)
-            return RetVal(False, msg, None)
-        docsForce = physAPI.getCmdForceAndTorque()
-        if not docsForce.ok:
-            msg = 'Cannot fetch "Spawn" commands'
-            self.logit.error(msg)
-            return RetVal(False, msg, None)
-
-        # Remove the fetched commands from queue.
-        tmp = [_['objID'] for _ in docsSpawn.data]
-        physAPI.dequeueCmdSpawn(tmp)
-        tmp = [_['objID'] for _ in docsModify.data]
-        physAPI.dequeueCmdModify(tmp)
-        tmp = [_['objID'] for _ in docsRemove.data]
-        physAPI.dequeueCmdRemove(tmp)
-        tmp = [_['objID'] for _ in docsForce.data]
-        physAPI.dequeueCmdForceAndTorque(tmp)
-        del tmp
 
         # Convenience.
-        docsSpawn = docsSpawn.data
-        docsModify = docsModify.data
-        docsRemove = docsRemove.data
-        docsForce = docsForce.data
-
+        cmds = ret.data
         fields = BulletDataOverride._fields
 
         # Remove objects.
-        for doc in docsRemove:
+        for doc in cmds['remove']:
             objID = doc['objID']
             if objID in self.allObjects:
                 self._DB_SV.remove({'objID': objID})
@@ -322,7 +292,7 @@ class LeonardBase(multiprocessing.Process):
                 del self.allTorques[objID]
 
         # Spawn objects.
-        for doc in docsSpawn:
+        for doc in cmds['spawn']:
             objID = doc['objID']
             if objID in self.allObjects:
                 msg = 'Cannot spawn object since objID={} already exists'
@@ -336,7 +306,7 @@ class LeonardBase(multiprocessing.Process):
 
         # Update State Vectors.
         fun = physAPI._updateBulletDataTuple
-        for doc in docsModify:
+        for doc in cmds['modify']:
             objID, sv_new = doc['objID'], doc['sv']
             if objID in self.allObjects:
                 sv_new = BulletDataOverride(**dict(zip(fields, sv_new)))
@@ -346,7 +316,7 @@ class LeonardBase(multiprocessing.Process):
                 self.allObjects[objID] = fun(sv_old, sv_new)
 
         # Update force- and torque values.
-        for doc in docsForce:
+        for doc in cmds['force']:
             objID, force, torque = doc['objID'], doc['force'], doc['torque']
             if (objID in self.allForces) and (objID in self.allTorques):
                 self.allForces[objID] = force

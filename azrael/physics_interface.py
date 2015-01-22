@@ -29,7 +29,6 @@ import azrael.config as config
 import azrael.database as database
 import azrael.bullet.bullet_data as bullet_data
 
-from collections import namedtuple
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
@@ -55,118 +54,31 @@ def getNumObjects():
 
 
 @typecheck
-def getCmdSpawn():
+def dequeueCommands():
     """
-    Return all queued "Spawn" commands.
-
-    The commands remain in the DB and successive calls to this function will
-    thus return the previous results.
-
-    :return: objects as inserted by ``addCmdSpawn``.
-    :rtype: list of dicts.
+    Return and de-queue all commands currently in the command queue.
+    :return QueuedCommands: a tuple with lists for each command.
     """
-    return RetVal(True, None, list(database.dbHandles['CmdSpawn'].find()))
+    # Convenience.
+    dbSpawn = database.dbHandles['CmdSpawn']
+    dbRemove = database.dbHandles['CmdRemove']
+    dbModify = database.dbHandles['CmdModify']
+    dbForce = database.dbHandles['CmdForce']
 
+    # Query all entries.
+    spawn = list(dbSpawn.find())
+    remove = list(dbRemove.find())
+    modify = list(dbModify.find())
+    force = list(dbForce.find())
 
-@typecheck
-def getCmdModifyStateVariables():
-    """
-    Return all queued "Modify" commands.
+    # Remove the just queried entries.
+    ret = dbSpawn.remove({'_id': {'$in': [_['_id'] for _ in spawn]}})
+    ret = dbRemove.remove({'_id': {'$in': [_['_id'] for _ in remove]}})
+    ret = dbModify.remove({'_id': {'$in': [_['_id'] for _ in modify]}})
+    ret = dbForce.remove({'_id': {'$in': [_['_id'] for _ in force]}})
 
-    The commands remain in the DB and successive calls to this function will
-    thus return the previous results.
-
-    :return: objects as inserted by ``addCmdModifyStateVariable``.
-    :rtype: list of dicts.
-    """
-    return RetVal(True, None, list(database.dbHandles['CmdModify'].find()))
-
-
-@typecheck
-def getCmdForceAndTorque():
-    """
-    Return all queued "SetForceAndTorque" commands.
-
-    The commands remain in the DB and successive calls to this function will
-    thus return the previous results.
-
-    :return: objects as inserted by ``addCmdSetForceAndTorque``.
-    :rtype: list of dicts.
-    """
-    return RetVal(True, None, list(database.dbHandles['CmdForce'].find()))
-
-
-@typecheck
-def getCmdRemove():
-    """
-    Return all queued "Remove" commands.
-
-    The commands remain in the DB and successive calls to this function will
-    thus return the previous results.
-
-    :return: objects as inserted by ``addCmdRemoveObject``.
-    :rtype: list of dicts.
-    """
-    return RetVal(True, None, list(database.dbHandles['CmdRemove'].find()))
-
-
-@typecheck
-def dequeueCmdSpawn(spawn: list):
-    """
-    De-queue ``spawn`` commands from "Spawn" queue.
-
-    Non-existing documents do not count and will be silently ignored.
-
-    :param list spawn: Mongo documents to remove from "Spawn"
-    :return int: number of de-queued commands
-    """
-    ret = database.dbHandles['CmdSpawn'].remove({'objID': {'$in': spawn}})
-    return RetVal(True, None, ret['n'])
-
-
-@typecheck
-def dequeueCmdModify(modify: list):
-    """
-    De-queue ``modify`` commands from "Modify" queue.
-
-    Non-existing documents do not count and will be silently ignored.
-
-    :param list modify: list of Mongo documents to de-queue.
-    :return: number of de-queued commands
-    :rtype: tuple
-    """
-    ret = database.dbHandles['CmdModify'].remove({'objID': {'$in': modify}})
-    return RetVal(True, None, ret['n'])
-
-
-@typecheck
-def dequeueCmdRemove(remove: list):
-    """
-    De-queue ``remove`` commands from "Remove" queue.
-
-    Non-existing documents do not count and will be silently ignored.
-
-    :param list spawn: list of Mongo documents to de-queue.
-    :return: number of de-queued commands
-    :rtype: tuple
-    """
-    ret = database.dbHandles['CmdRemove'].remove({'objID': {'$in': remove}})
-    return RetVal(True, None, ret['n'])
-
-
-@typecheck
-def dequeueCmdForceAndTorque(remove: list):
-    """
-    De-queue ``setForceAndTorque`` commands from "Force" queue.
-
-    Non-existing documents do not count and will be silently ignored.
-
-    :param list spawn: list of Mongo documents to de-queue.
-    :return: number of de-queued commands
-    :rtype: tuple
-    """
-    ret = database.dbHandles['CmdForce'].remove({'objID': {'$in': remove}})
-    return RetVal(True, None, ret['n'])
+    out = {'spawn': spawn, 'remove': remove, 'modify': modify, 'force': force}
+    return RetVal(True, None, out)
 
 
 @typecheck
