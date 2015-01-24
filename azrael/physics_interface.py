@@ -111,20 +111,17 @@ def addCmdSpawn(objID: int, sv: _BulletData, aabb: (int, float)):
     query = {'cmd': 'spawn', 'objID': objID}
     data = {'sv': sv, 'AABB': float(aabb)}
 
-    # This implements the fictitious "insert_if_not_yet_exists" command. It
-    # will return whatever the latest value from the DB, which is either the
-    # one we just inserted (success) or a previously inserted one (fail). The
-    # only way to distinguish them is to verify that the SVs are identical.
+    # Insert this document unless a document with matching query already
+    # exists.
     db = database.dbHandles['Commands']
-    doc = db.find_and_modify(
-        query, {'$setOnInsert': data},  upsert=True, new=True)
-
-    success = (_BulletData(*doc['sv']) == data['sv'])
+    ret = db.update(query, {'$setOnInsert': data},  upsert=True)
 
     # Return success status to caller.
-    if success:
+    if not ret['updatedExisting']:
+        # A new document was created --> Success.
         return RetVal(True, None, None)
     else:
+        # A document that matched the query already existed --> Failure.
         return RetVal(False, None, None)
 
 
@@ -143,9 +140,8 @@ def addCmdRemoveObject(objID: int):
     """
     # The 'data' is dummy because Mongo's 'update' requires one.
     db = database.dbHandles['Commands']
-    query = {'cmd': 'remove', 'objID': objID}
-    data = query
-    db.find_and_modify(query, {'$setOnInsert': data},  upsert=True, new=True)
+    data = query = {'cmd': 'remove', 'objID': objID}
+    db.update(query, {'$setOnInsert': data}, upsert=True)
     return RetVal(True, None, None)
 
 
@@ -191,7 +187,7 @@ def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
     db = database.dbHandles['Commands']
     query = {'cmd': 'modify', 'objID': objID}
     data = {'sv': data}
-    db.find_and_modify(query, {'$setOnInsert': data},  upsert=True, new=True)
+    db.update(query, {'$setOnInsert': data},  upsert=True)
 
     # This function was successful if exactly one document was updated.
     return RetVal(True, None, None)
@@ -219,7 +215,7 @@ def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
     db = database.dbHandles['Commands']
     query = {'cmd': 'force', 'objID': objID}
     data = {'force': force, 'torque': torque}
-    db.find_and_modify(query, {'$setOnInsert': data}, upsert=True, new=True)
+    db.update(query, {'$setOnInsert': data}, upsert=True)
 
     return RetVal(True, None, None)
 

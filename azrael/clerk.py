@@ -528,15 +528,15 @@ class Clerk(multiprocessing.Process):
 
         # Add the template to the database. Return with an error if a template
         # with name ``templateID`` already exists.
-        ret = database.dbHandles['Templates'].find_and_modify(
+        ret = database.dbHandles['Templates'].update(
             {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
-        if ret is None:
-            # No template with name ``templateID`` exists yet --> success.
-            return RetVal(True, None, None)
-        else:
+        if ret['updatedExisting']:
             # A template with name ``templateID`` already existed --> failure.
             msg = 'Template ID <{}> already exists'.format(templateID)
             return RetVal(False, msg, None)
+        else:
+            # No template with name ``templateID`` exists yet --> success.
+            return RetVal(True, None, None)
 
     @typecheck
     def getTemplate(self, templateID: bytes):
