@@ -30,6 +30,7 @@ import IPython
 import subprocess
 import numpy as np
 
+import azrael.util
 import azrael.clerk
 import azrael.clacks
 import azrael.client
@@ -48,6 +49,7 @@ from azrael.test.test_clerk import startAzrael, stopAzrael
 ipshell = IPython.embed
 WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client
+Template = azrael.util.Template
 
 
 def test_ping():
@@ -302,11 +304,11 @@ def test_create_fetch_template(client_type):
     vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
-    templateID = 't1'.encode('utf8')
-    assert client.addTemplate(templateID, cs, vert, uv, rgb, [], []).ok
+    t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
+    assert client.addTemplates([t1]).ok
 
     # Fetch the just added template again.
-    ok, _, ret = client.getTemplate(templateID)
+    ok, _, ret = client.getTemplate(t1.name)
     assert np.array_equal(ret.cs, cs)
     assert np.array_equal(ret.vert, vert)
     assert np.array_equal(ret.uv, uv)
@@ -329,11 +331,11 @@ def test_create_fetch_template(client_type):
     assert not client.getGeometry(1).ok
 
     # Add the new template.
-    templateID = 't2'.encode('utf8')
-    assert client.addTemplate(templateID, cs, vert, uv, rgb, [b0, b1], [f0]).ok
+    t1 = Template('t2'.encode('utf8'), cs, vert, uv, rgb, [b0, b1], [f0])
+    assert client.addTemplates([t1]).ok
 
     # ... and spawn an instance thereof.
-    ok, _, objID = client.spawn(templateID)
+    ok, _, objID = client.spawn(t1.name)
     assert ok
 
     # Retrieve the geometry of the new object and verify it is correct.
@@ -344,7 +346,7 @@ def test_create_fetch_template(client_type):
     assert out_rgb.dtype == np.uint8
 
     # Retrieve the entire template and verify the CS and geometry.
-    ok, _, ret = client.getTemplate(templateID)
+    ok, _, ret = client.getTemplate(t1.name)
     assert np.array_equal(ret.cs, cs)
     assert np.array_equal(ret.vert, vert)
     assert np.array_equal(ret.uv, uv)
@@ -439,12 +441,11 @@ def test_controlParts(client_type):
         templateID='_templateSphere'.encode('utf8'), exit_speed=[1, 5])
 
     # Add the template to Azrael...
-    templateID_2 = 't1'.encode('utf8')
-    assert client.addTemplate(templateID_2, cs, vert, uv,
-                              rgb, [b0, b1], [f0, f1]).ok
+    t2 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [b0, b1], [f0, f1])
+    assert client.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
-    ok, _, objID = client.spawn(templateID_2, pos=pos_parent,
+    ok, _, objID = client.spawn(t2.name, pos=pos_parent,
                                 vel=vel_parent, orient=orient_parent)
     assert (ok, objID) == (True, objID_1)
     del ok, objID
@@ -513,14 +514,14 @@ def test_setGeometry(client_type):
     vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
-    templateID = 't1'.encode('utf8')
 
     # Start the necessary services.
     clerk, client, clacks = startAzrael(client_type)
 
     # Add a new template and spawn it.
-    assert client.addTemplate(templateID, cs, vert, uv, rgb, [], []).ok
-    ok, _, objID = client.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
+    t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
+    assert client.addTemplates([t1]).ok
+    ok, _, objID = client.spawn(t1.name, pos=np.ones(3), vel=-np.ones(3))
     assert ok
 
     # Query the SV to obtain the 'lastChanged' value.

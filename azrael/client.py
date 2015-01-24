@@ -345,28 +345,24 @@ class Client():
         return self.serialiseAndSend('get_template', templateID)
 
     @typecheck
-    def addTemplate(self, templateID: bytes, cs: (tuple, list, np.ndarray),
-                    vert: np.ndarray, UV: np.ndarray, RGB: np.ndarray,
-                    boosters: (list, tuple),
-                    factories: (list, tuple)):
+    def addTemplates(self, templates: list):
         """
-        Add a new ``templateID`` to the system.
+        Add all ``templates`` to Azrael.
 
-        From then one Clerk will be able to spawn objects from them.
+        Return an error if one or more template names already exist.
 
-        Return an error if ``templateID`` already exists.
+        Every element in ``templates`` must comprise:
 
-        :param bytes templateID: the name of the new template.
-        :param bytes cs: collision shape
-        :param bytes vert: object geometry
-        :param bytes UV: UV map for textures
-        :param bytes RGB: texture
-        :param parts.Booster boosters: list of Booster instances.
-        :param parts.Factory boosters: list of Factory instances.
+        * ``bytes`` templateID: the name of the new template.
+        * ``bytes`` cs: collision shape
+        * ``bytes`` vert: object geometry
+        * ``bytes`` UV: UV map for textures
+        * ``bytes`` RGB: texture
+        * ``parts.Booster`` boosters: list of Booster instances.
+        * ``parts.Factory`` boosters: list of Factory instances.
+
         :return: Success
         """
-        cs = np.array(cs, np.float64)
-        templates = [(templateID, cs, vert, UV, RGB, boosters, factories)]
         return self.serialiseAndSend('add_template', templates)
 
     @typecheck
