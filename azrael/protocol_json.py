@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-NumPy away JSON parser.
+NumPy aware JSON parser.
 """
 
 import json
