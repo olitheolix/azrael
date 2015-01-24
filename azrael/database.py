@@ -56,10 +56,10 @@ def getNewObjectID():
     """
     Return a new and unique object ID.
     """
-    db = dbHandles['Counters'].find_and_modify
-    wpid = db({'name': 'objcnt'},
-              {'$inc': {'cnt': 1}},
-              new=True, upsert=True)
+    fam = dbHandles['Counters'].find_and_modify
+    wpid = fam({'name': 'objcnt'},
+               {'$inc': {'cnt': 1}},
+               new=True, upsert=True)
 
     if wpid is None:
         return RetVal(False, 'Cannot fetch new object ID', None)
