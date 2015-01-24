@@ -53,6 +53,7 @@ from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
 RetVal = azrael.util.RetVal
+Template = azrael.util.Template
 
 
 # ---------------------------------------------------------------------------
@@ -185,7 +186,7 @@ def ToClerk_AddTemplate_Decode(data: dict):
     factories = [parts.fromstring(_) for _ in data['factories']]
 
     # Convert template ID to a byte string.
-    templateID = bytes(data['name'])
+    name = bytes(data['name'])
 
     # Convert collision shape and geometry to NumPy array (via byte string).
     cs = np.array(data['cs'], np.float64)
@@ -194,7 +195,8 @@ def ToClerk_AddTemplate_Decode(data: dict):
     RGB = np.array(data['RGB'], np.uint8)
 
     # Return decoded quantities.
-    return True, (templateID, cs, vert, UV, RGB, boosters, factories)
+    template = [Template(name, cs, vert, UV, RGB, boosters, factories)]
+    return True, (template, )
 
 
 @typecheck

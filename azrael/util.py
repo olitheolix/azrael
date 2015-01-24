@@ -33,6 +33,9 @@ dbTiming = pymongo.MongoClient()['timing']['timing']
 # Uniform return value signature.
 RetVal = namedtuple('RetVal', 'ok msg data')
 
+# Template dataset.
+Template = namedtuple('Template', 'name cs vert uv rgb boosters factories')
+
 
 def resetTiming():
     """

@@ -47,11 +47,13 @@ import azrael.protocol_json as json
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
+from collections import namedtuple
 from azrael.typecheck import typecheck
 
 # Convenience.
 ipshell = IPython.embed
 RetVal = util.RetVal
+Template = azrael.util.Template
 
 
 class Clerk(multiprocessing.Process):
@@ -124,7 +126,7 @@ class Clerk(multiprocessing.Process):
                 protocol.FromClerk_GetTemplateID_Encode),
             'add_template': (
                 protocol.ToClerk_AddTemplate_Decode,
-                self.addTemplate,
+                self.addTemplates,
                 protocol.FromClerk_AddTemplate_Encode),
             'get_all_objids': (
                 protocol.ToClerk_GetAllObjectIDs_Decode,
@@ -138,18 +140,19 @@ class Clerk(multiprocessing.Process):
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        self.addTemplate('_templateNone'.encode('utf8'),
-                         np.array([0, 1, 1, 1], np.float64),
-                         np.array([]), np.array([]), np.array([]),
-                         [], [])
-        self.addTemplate('_templateSphere'.encode('utf8'),
-                         np.array([3, 1, 1, 1], np.float64),
-                         np.array([]), np.array([]), np.array([]),
-                         [], [])
-        self.addTemplate('_templateCube'.encode('utf8'),
-                         np.array([4, 1, 1, 1], np.float64),
-                         np.array([]), np.array([]), np.array([]),
-                         [], [])
+        t1 = Template('_templateNone'.encode('utf8'),
+                      np.array([0, 1, 1, 1], np.float64),
+                      np.array([]), np.array([]), np.array([]),
+                      [], [])
+        t2 = Template('_templateSphere'.encode('utf8'),
+                      np.array([3, 1, 1, 1], np.float64),
+                      np.array([]), np.array([]), np.array([]),
+                      [], [])
+        t3 = Template('_templateCube'.encode('utf8'),
+                      np.array([4, 1, 1, 1], np.float64),
+                      np.array([]), np.array([]), np.array([]),
+                      [], [])
+        self.addTemplates([t1, t2, t3])
 
     def runCommand(self, fun_decode, fun_process, fun_encode):
         """
@@ -468,16 +471,17 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, objIDs)
 
     @typecheck
-    def addTemplate(self, templateID: bytes, cshape: np.ndarray,
-                    vertices: np.ndarray, UV: np.ndarray,
-                    RGB: np.ndarray, boosters: (list, tuple),
-                    factories: (list, tuple)):
+    def addTemplates(self, templates: list):
         """
-        Add a new ``templateID`` to the system.
+        Add all the templates specified in ``templates`` to the system.
 
-        Henceforth it is possible to ``spawn`` ``templateID`` objects.
+        Henceforth it will be possible to ``spawn`` any of them.
 
-        Return an error if a template with name ``templateID`` already exists.
+        Return an error if one or more template with the same name exists. All
+        non-existing templates will be added but none of the existing ones will
+        be modified.
+
+        The elements in ``templates`` are ``Template`` instances.
 
         :param bytes templateID: the name of the new template.
         :param bytes cshape: collision shape
@@ -490,71 +494,97 @@ class Clerk(multiprocessing.Process):
         :rtype: bytes
         :raises: None
         """
-        # The number of vertices must be an integer multiple of 9 to constitute
-        # a valid triangle mesh (every triangle has three edges and every edge
-        # requires an (x, y, z) triplet to describe its position).
-        if len(vertices) % 9 != 0:
-            msg = 'Number of vertices must be a multiple of Nine'
-            return RetVal(False, msg, None)
+        # Return immediately if ``templates`` is empty.
+        if len(templates) == 0:
+            return RetVal(True, None, None)
 
-        # Determine the largest possible side length of the AABB. To find it,
-        # just determine the largest spatial extent in any axis direction. That
-        # is the side length of the AABB cube. Then multiply it with sqrt(3) to
-        # ensure that any rotation angle of the object is covered. The slightly
-        # larger value of sqrt(3.1) adds some slack.
-        if len(vertices) == 0:
-            # Empty geometries have a zero sized AABB.
-            aabb = 0
-        else:
-            len_x = max(vertices[0::3]) - min(vertices[0::3])
-            len_y = max(vertices[1::3]) - min(vertices[1::3])
-            len_z = max(vertices[2::3]) - min(vertices[2::3])
-            aabb = np.sqrt(3.1) * max(len_x, len_y, len_z)
+        # Sanity checks.
+        tmp = [_ for _ in templates if not isinstance(_, Template)]
+        if len(tmp) > 0:
+            return RetVal(False, 'Invalid arguments', None)
 
-        # Compile the Mongo document for the new template. This document
-        # contains the collision shape and geometry...
-        data = {'templateID': templateID,
-                'cshape': cshape.tostring(),
-                'vertices': vertices.tostring(),
-                'UV': UV.tostring(),
-                'RGB': RGB.tostring(),
-                'AABB': float(aabb)}
+        bulk = database.dbHandles['Templates'].initialize_unordered_bulk_op()
+        for tt in templates:
+            vertices = tt.vert
 
-        # ... as well as booster- and factory parts.
-        for b in boosters:
-            data['boosters.{0:03d}'.format(b.partID)] = b.tostring()
-        for f in factories:
-            data['factories.{0:03d}'.format(f.partID)] = f.tostring()
+            # The number of vertices must be an integer multiple of 9 to
+            # constitute a valid triangle mesh (every triangle has three edges
+            # and every edge requires an (x, y, z) triplet to describe its
+            # position).
+            if len(vertices) % 9 != 0:
+                msg = 'Number of vertices must be a multiple of Nine'
+                return RetVal(False, msg, None)
 
-        # Add the template to the database. Return with an error if a template
-        # with name ``templateID`` already exists.
-        ret = database.dbHandles['Templates'].update(
-            {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
-        if ret['updatedExisting']:
+            # Determine the largest possible side length of the AABB. To find
+            # it, just determine the largest spatial extent in any axis
+            # direction. That is the side length of the AABB cube. Then
+            # multiply it with sqrt(3) to ensure that any rotation angle of the
+            # object is covered. The slightly larger value of sqrt(3.1) adds
+            # some slack.
+            if len(vertices) == 0:
+                # Empty geometries have a zero sized AABB.
+                aabb = 0
+            else:
+                len_x = max(vertices[0::3]) - min(vertices[0::3])
+                len_y = max(vertices[1::3]) - min(vertices[1::3])
+                len_z = max(vertices[2::3]) - min(vertices[2::3])
+                aabb = np.sqrt(3.1) * max(len_x, len_y, len_z)
+
+            # Compile the Mongo document for the new template. This document
+            # contains the collision shape and geometry...
+            data = {'templateID': tt.name,
+                    'cshape': tt.cs.tostring(),
+                    'vertices': vertices.tostring(),
+                    'UV': tt.uv.tostring(),
+                    'RGB': tt.rgb.tostring(),
+                    'AABB': float(aabb)}
+
+            # ... as well as booster- and factory parts.
+            for b in tt.boosters:
+                data['boosters.{0:03d}'.format(b.partID)] = b.tostring()
+            for f in tt.factories:
+                data['factories.{0:03d}'.format(f.partID)] = f.tostring()
+
+            # Add the template to the database. Return with an error if a
+            # template with name ``templateID`` already exists.
+            query = {'templateID': tt.name}
+            bulk.find(query).upsert().update({'$setOnInsert': data})
+
+        ret = bulk.execute()
+        if ret['nMatched'] > 0:
             # A template with name ``templateID`` already existed --> failure.
-            msg = 'Template ID <{}> already exists'.format(templateID)
+            msg = 'At least one template already existed'
             return RetVal(False, msg, None)
         else:
-            # No template with name ``templateID`` exists yet --> success.
+            # No template name existed before the insertion --> success.
             return RetVal(True, None, None)
 
     @typecheck
-    def getRawTemplate(self, templateID: bytes):
+    def getRawTemplate(self, templateIDs: list):
         """
-        Return the raw data in the database for ``templateID``.
+        Return the raw data for all ``templateIDs``.
 
-        :param bytes templateID:
-        :return dict: template data.
+        This method will return either all templates or none.
+
+        :param list(bytes) templateIDs: template IDs
+        :return dict: raw template data (the templateID is the key).
         """
-        # Retrieve the template. Return immediately if it does not exist.
+        # Sanity check
+        tmp = [_ for _ in templateIDs if not isinstance(_, bytes)]
+        if len(tmp) > 0:
+            return RetVal(False, 'All template IDs must be Bytes', None)
+
+        # Retrieve the template. Return immediately if one does not exist.
         db = database.dbHandles['Templates']
-        doc = db.find_one({'templateID': templateID})
-        if doc is None:
-            msg = 'Invalid template ID <{}>'.format(templateID)
+        docs = list(db.find({'templateID': {'$in': templateIDs}}))
+        if len(docs) < len(templateIDs):
+            msg = 'Not all template IDs were valid'
             self.logit.info(msg)
             return RetVal(False, msg, None)
-        else:
-            return RetVal(True, None, doc)
+
+        # Compile a dictionary of all the templates.
+        docs = {_['templateID']: _ for _ in docs}
+        return RetVal(True, None, docs)
 
     @typecheck
     def getTemplate(self, templateID: bytes):
@@ -575,12 +605,12 @@ class Clerk(multiprocessing.Process):
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
-        ret = self.getRawTemplate(templateID)
+        ret = self.getRawTemplate([templateID])
         if not ret.ok:
             self.logit.info(ret.msg)
             return ret
 
-        return self._unpackTemplateData(ret.data)
+        return self._unpackTemplateData(ret.data[templateID])
 
     @typecheck
     def getObjectInstance(self, objID: int):
@@ -601,7 +631,8 @@ class Clerk(multiprocessing.Process):
         :rtype: dict
         :raises: None
         """
-        # Retrieve the template. Return immediately if it does not exist.
+        # Retrieve the instance template. Return immediately if no such
+        # template exists.
         doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
         if doc is None:
             msg = 'Could not find instance data for objID <{}>'.format(objID)
@@ -686,11 +717,11 @@ class Clerk(multiprocessing.Process):
 
         # Copy the raw template to the instance DB. To do that we need the
         # template first...
-        t_raw = self.getRawTemplate(templateID)
+        t_raw = self.getRawTemplate([templateID])
         if not t_raw.ok:
             self.logit.info(t_raw.msg)
             return t_raw
-        t_raw = t_raw.data
+        t_raw = t_raw.data[templateID]
 
         # ... then add objID, update lastChanged, remove '_id' field, and
         # insert the final document into the instance DB.
