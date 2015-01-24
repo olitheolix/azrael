@@ -526,7 +526,17 @@ class Clerk(multiprocessing.Process):
         for f in factories:
             data['factories.{0:03d}'.format(f.partID)] = f.tostring()
 
-        return physAPI.addTemplate(templateID, data)
+        # Add the template to the database. Return with an error if a template
+        # with name ``templateID`` already exists.
+        ret = database.dbHandles['Templates'].find_and_modify(
+            {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
+        if ret is None:
+            # No template with name ``templateID`` exists yet --> success.
+            return RetVal(True, None, None)
+        else:
+            # A template with name ``templateID`` already existed --> failure.
+            msg = 'Template ID <{}> already exists'.format(templateID)
+            return RetVal(False, msg, None)
 
     @typecheck
     def getTemplate(self, templateID: bytes):

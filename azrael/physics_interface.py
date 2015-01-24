@@ -351,33 +351,6 @@ def getAllObjectIDs():
 
 
 @typecheck
-def addTemplate(templateID: bytes, data: dict):
-    """
-    Store the template ``data`` under the name ``templateID``.
-
-    This function does not care what ``data`` contains, as long as it can be
-    serialised.
-
-    :param bytes templateID: template name
-    :param dict data: arbitrary template data.
-    :return: Success
-    """
-    # Insert the document only if it does not exist already. The return
-    # value contains the old document, ie. **None** if the document
-    # did not yet exist.
-    ret = database.dbHandles['Templates'].find_and_modify(
-        {'templateID': templateID}, {'$setOnInsert': data}, upsert=True)
-
-    if ret is None:
-        # No template with name ``templateID`` exists yet --> success.
-        return RetVal(True, None, None)
-    else:
-        # A template with name ``templateID`` already existed --> failure.
-        msg = 'Template ID <{}> already exists'.format(templateID)
-        return RetVal(False, msg, None)
-
-
-@typecheck
 def getRawTemplate(templateID: bytes):
     """
     Return the raw data in the database for ``templateID``.
