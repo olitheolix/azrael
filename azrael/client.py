@@ -207,6 +207,8 @@ class Client():
 
         # Encode the arguments and send them to Clerk.
         ok, data = ToClerk_Encode(*args)
+        if not ok:
+            return RetVal(False, 'Protocol error', None)
         ret = self.sendToClerk(cmd, data)
         if not ret.ok:
             return ret
@@ -364,8 +366,8 @@ class Client():
         :return: Success
         """
         cs = np.array(cs, np.float64)
-        return self.serialiseAndSend(
-            'add_template', templateID, cs, vert, UV, RGB, boosters, factories)
+        templates = [(templateID, cs, vert, UV, RGB, boosters, factories)]
+        return self.serialiseAndSend('add_template', templates)
 
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple, int)):

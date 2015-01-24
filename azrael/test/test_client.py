@@ -553,15 +553,13 @@ def test_setGeometry(client_type):
 
 
 if __name__ == '__main__':
-    _transport_type = 'Websocket'
-#    _transport_type = 'ZeroMQ'
-
-    test_setStateVariables(_transport_type)
-    test_setGeometry(_transport_type)
-    test_spawn_and_delete_one_client(_transport_type)
-    test_spawn_and_get_state_variables(_transport_type)
-    test_ping()
-    test_get_template(_transport_type)
-    test_controlParts(_transport_type)
-    test_getAllObjectIDs(_transport_type)
-    test_create_fetch_template(_transport_type)
+    for _transport_type in ('ZeroMQ', 'Websocket'):
+        test_setStateVariables(_transport_type)
+        test_setGeometry(_transport_type)
+        test_spawn_and_delete_one_client(_transport_type)
+        test_spawn_and_get_state_variables(_transport_type)
+        test_ping()
+        test_get_template(_transport_type)
+        test_controlParts(_transport_type)
+        test_getAllObjectIDs(_transport_type)
+        test_create_fetch_template(_transport_type)

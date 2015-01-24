@@ -163,40 +163,62 @@ def FromClerk_GetTemplate_Decode(data: dict):
 
 
 @typecheck
-def ToClerk_AddTemplate_Encode(templateID: bytes, cs: np.ndarray,
-                               vert: np.ndarray, UV: np.ndarray,
-                               RGB: np.ndarray, boosters, factories):
-    for b in boosters:
-        assert isinstance(b, parts.Booster)
-    for f in factories:
-        assert isinstance(f, parts.Factory)
+def ToClerk_AddTemplate_Encode(templates: list):
+    out = []
+    try:
+        for tt in templates:
+            assert len(tt) == 7
+            name, cs, vert, UV, RGB, boosters, factories = tt
 
-    d = {'name': templateID, 'cs': cs.tolist(), 'vert': vert.tolist(),
-         'UV': UV.tolist(), 'RGB': RGB.tolist(),
-         'boosters': [_.tostring() for _ in boosters],
-         'factories': [_.tostring() for _ in factories]}
+            assert isinstance(name, bytes)
+            assert isinstance(cs, np.ndarray)
+            assert isinstance(vert, np.ndarray)
+            assert isinstance(UV, np.ndarray)
+            assert isinstance(RGB, np.ndarray)
+            assert isinstance(boosters, list)
+            assert isinstance(factories, list)
 
-    return True, d
+            for b in boosters:
+                assert isinstance(b, parts.Booster)
+            for f in factories:
+                assert isinstance(f, parts.Factory)
+
+            d = {'name': name, 'cs': cs.tolist(), 'vert': vert.tolist(),
+                 'UV': UV.tolist(), 'RGB': RGB.tolist(),
+                 'boosters': [_.tostring() for _ in boosters],
+                 'factories': [_.tostring() for _ in factories]}
+            out.append(d)
+    except AssertionError as err:
+        return False, None
+
+    return True, {'data': out}
 
 
 @typecheck
-def ToClerk_AddTemplate_Decode(data: dict):
-    # Wrap the Booster- and Factory data into their dedicated named tuples.
-    boosters = [parts.fromstring(_) for _ in data['boosters']]
-    factories = [parts.fromstring(_) for _ in data['factories']]
+def ToClerk_AddTemplate_Decode(payload: dict):
+    templates = []
+    for data in payload['data']:
+        # Wrap the Booster- and Factory data into their dedicated named tuples.
+        boosters = [parts.fromstring(_) for _ in data['boosters']]
+        factories = [parts.fromstring(_) for _ in data['factories']]
 
-    # Convert template ID to a byte string.
-    name = bytes(data['name'])
+        # Convert template ID to a byte string.
+        name = bytes(data['name'])
 
-    # Convert collision shape and geometry to NumPy array (via byte string).
-    cs = np.array(data['cs'], np.float64)
-    vert = np.array(data['vert'], np.float64)
-    UV = np.array(data['UV'], np.float64)
-    RGB = np.array(data['RGB'], np.uint8)
+        # Convert collision shape and geometry to NumPy array (via byte string).
+        cs = np.array(data['cs'], np.float64)
+        vert = np.array(data['vert'], np.float64)
+        UV = np.array(data['UV'], np.float64)
+        RGB = np.array(data['RGB'], np.uint8)
+
+        args = name, cs, vert, UV, RGB, boosters, factories
+        try:
+            templates.append(Template(*args))
+        except TypeError:
+            return False, 'Template payload is corrupt'
 
     # Return decoded quantities.
-    template = [Template(name, cs, vert, UV, RGB, boosters, factories)]
-    return True, (template, )
+    return True, (templates, )
 
 
 @typecheck
@@ -471,7 +493,7 @@ def ToClerk_ControlParts_Encode(objID: int, cmds_b: list, cmds_f: list):
     assert len(cmds_b) < 256
     assert len(cmds_f) < 256
 
-    # Compile dictionary with data and encode it as JSON.
+    # Compile a dictionary with the payload data.
     d = {'objID': objID,
          'cmd_boosters': [_.tostring() for _ in cmds_b],
          'cmd_factories': [_.tostring() for _ in cmds_f]}
