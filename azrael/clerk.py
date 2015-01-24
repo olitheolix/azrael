@@ -539,6 +539,24 @@ class Clerk(multiprocessing.Process):
             return RetVal(True, None, None)
 
     @typecheck
+    def getRawTemplate(self, templateID: bytes):
+        """
+        Return the raw data in the database for ``templateID``.
+
+        :param bytes templateID:
+        :return dict: template data.
+        """
+        # Retrieve the template. Return immediately if it does not exist.
+        db = database.dbHandles['Templates']
+        doc = db.find_one({'templateID': templateID})
+        if doc is None:
+            msg = 'Invalid template ID <{}>'.format(templateID)
+            self.logit.info(msg)
+            return RetVal(False, msg, None)
+        else:
+            return RetVal(True, None, doc)
+
+    @typecheck
     def getTemplate(self, templateID: bytes):
         """
         Return the template for ``templateID``.
@@ -557,7 +575,7 @@ class Clerk(multiprocessing.Process):
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
-        ret = physAPI.getRawTemplate(templateID)
+        ret = self.getRawTemplate(templateID)
         if not ret.ok:
             self.logit.info(ret.msg)
             return ret
@@ -668,7 +686,7 @@ class Clerk(multiprocessing.Process):
 
         # Copy the raw template to the instance DB. To do that we need the
         # template first...
-        t_raw = physAPI.getRawTemplate(templateID)
+        t_raw = self.getRawTemplate(templateID)
         if not t_raw.ok:
             self.logit.info(t_raw.msg)
             return t_raw

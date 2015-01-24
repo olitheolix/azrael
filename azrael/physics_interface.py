@@ -344,21 +344,3 @@ def getAllObjectIDs():
     # Compile and return the list of all object IDs.
     out = [_['objID'] for _ in database.dbHandles['SV'].find()]
     return RetVal(True, None, out)
-
-
-@typecheck
-def getRawTemplate(templateID: bytes):
-    """
-    Return the raw data in the database for ``templateID``.
-
-    :param bytes templateID:
-    :return dict: template data.
-    """
-    # Retrieve the template. Return immediately if it does not exist.
-    doc = database.dbHandles['Templates'].find_one({'templateID': templateID})
-    if doc is None:
-        msg = 'Invalid template ID <{}>'.format(templateID)
-        logit.info(msg)
-        return RetVal(False, msg, None)
-    else:
-        return RetVal(True, None, doc)
