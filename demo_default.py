@@ -163,7 +163,9 @@ def loadGroundModel(scale, model_name):
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'.encode('utf8')
     cs = np.array([3, 1, 1, 1], np.float64)
-    assert client.addTemplate(tID, cs, vert, uv, rgb, [b0, b1, b2, b3], []).ok
+    t1 = (tID, cs, vert, uv, rgb, [b0, b1, b2, b3], [])
+    assert client.addTemplates([t1]).ok
+    print('done')
 
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
@@ -239,8 +241,9 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     tID_1 = 'Product1'.encode('utf8')
     tID_2 = 'Product2'.encode('utf8')
-    assert client.addTemplate(tID_1, cs, 0.75 * vert, uv, rgb, [], []).ok
-    assert client.addTemplate(tID_2, cs, 0.24 * vert, uv, rgb, [], []).ok
+    t1 = (tID_1, cs, 0.75 * vert, uv, rgb, [], [])
+    t2 = (tID_2, cs, 0.24 * vert, uv, rgb, [], [])
+    assert client.addTemplates([t1, t2]).ok
 
     # ----------------------------------------------------------------------
     # Define a cube with boosters and factories.
@@ -262,12 +265,14 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Add the template.
     tID_3 = 'BoosterCube'.encode('utf8')
-    assert client.addTemplate(tID_3, cs, vert, uv, rgb, [b0, b1], [f0, f1]).ok
+    t3 = (tID_3, cs, vert, uv, rgb, [b0, b1], [f0, f1])
+    assert client.addTemplates([t3]).ok
 
     # ----------------------------------------------------------------------
     # Define more booster cubes, each with a different texture.
     # ----------------------------------------------------------------------
     tID_cube = {}
+    templates = []
     for ii in range(numRows * numCols * numLayers):
         # File name of texture.
         fname = 'azrael/static/img/texture_{}.jpg'.format(ii + 1)
@@ -284,11 +289,17 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii)).encode('utf8')
-        assert client.addTemplate(tID, cs, vert, curUV, rgb, [b0, b1], []).ok
+        templates.append((tID, cs, vert, curUV, rgb, [b0, b1], []))
 
         # Add the templateID to a dictionary because we will need it in the
         # next step to spawn the templates.
         tID_cube[ii] = tID
+
+    # Define all templates.
+    t0 = time.time()
+    assert client.addTemplates(templates).ok
+    etime = int(1000 * (time.time() - t0))
+    print('Defined all templates in {:,}ms'.format(etime))
 
     # ----------------------------------------------------------------------
     # Spawn the differently textured cubes in a regular grid.

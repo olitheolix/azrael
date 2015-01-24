@@ -514,23 +514,23 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         Add template for all projectiles and return its name.
 
-        Projectiles are cubes.
+        Every projectile has the shape of the cube.
         """
         # Geometry.
         buf_vert = getGeometryCube()
-        cs = [4, 1, 1, 1]
+        cs = np.array([4, 1, 1, 1])
         uv = np.array([], np.float64)
         rgb = np.array([], np.uint8)
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'.encode('utf8')
-        args = t_projectile, cs, buf_vert, uv, rgb, [], []
-        ret = self.client.addTemplate(*args)
+        args = (t_projectile, cs, buf_vert, uv, rgb, [], [])
+        ret = self.client.addTemplates([args])
 
         # The template was probably already defined (eg by a nother instance of
         # this script).
         if not ret.ok:
-            print('Could not add new template')
+            print('Viewer could not add new template: {}'.format(ret.msg))
 
         print('Created template <{}>'.format(t_projectile))
         return t_projectile
