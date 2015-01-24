@@ -73,9 +73,9 @@ class Client():
             'get_geometry': (
                 protocol.ToClerk_GetGeometry_Encode,
                 protocol.FromClerk_GetGeometry_Decode),
-            'update_geometry': (
-                protocol.ToClerk_UpdateGeometry_Encode,
-                protocol.FromClerk_UpdateGeometry_Decode),
+            'set_geometry': (
+                protocol.ToClerk_SetGeometry_Encode,
+                protocol.FromClerk_SetGeometry_Decode),
             'spawn': (
                 protocol.ToClerk_Spawn_Encode,
                 protocol.FromClerk_Spawn_Decode),
@@ -240,8 +240,8 @@ class Client():
         return self.serialiseAndSend('get_geometry', objID)
 
     @typecheck
-    def updateGeometry(self, objID: int, vert: np.ndarray, uv: np.ndarray,
-                       rgb: np.ndarray):
+    def setGeometry(self, objID: int, vert: np.ndarray, uv: np.ndarray,
+                    rgb: np.ndarray):
         """
         Change the geometry parameters of ``objID``.
 
@@ -251,7 +251,7 @@ class Client():
         :param bytes RGB: texture
         :return: Success
         """
-        return self.serialiseAndSend('update_geometry', objID, vert, uv, rgb)
+        return self.serialiseAndSend('set_geometry', objID, vert, uv, rgb)
 
     @typecheck
     def spawn(self, templateID: bytes,

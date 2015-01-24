@@ -328,19 +328,19 @@ def FromClerk_GetGeometry_Decode(data: dict):
 
 
 # ---------------------------------------------------------------------------
-# UpdateGeometry
+# SetGeometry
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_UpdateGeometry_Encode(
+def ToClerk_SetGeometry_Encode(
         objID: int, vert: np.ndarray, uv: np.ndarray, rgb: np.ndarray):
     return True, {'objID': objID, 'vert': vert.tolist(), 'UV': uv.tolist(),
                   'RGB': rgb.tolist()}
 
 
 @typecheck
-def ToClerk_UpdateGeometry_Decode(data: dict):
+def ToClerk_SetGeometry_Decode(data: dict):
     return True, (data['objID'],
                   np.array(data['vert'], np.float64),
                   np.array(data['UV'], np.float64),
@@ -348,12 +348,12 @@ def ToClerk_UpdateGeometry_Decode(data: dict):
 
 
 @typecheck
-def FromClerk_UpdateGeometry_Encode(dummyarg):
+def FromClerk_SetGeometry_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_UpdateGeometry_Decode(payload):
+def FromClerk_SetGeometry_Decode(payload):
     return RetVal(True, None, payload)
 
 

@@ -499,7 +499,7 @@ def test_controlParts(client_type):
 
 
 @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-def test_updateGeometry(client_type):
+def test_setGeometry(client_type):
     """
     Spawn a new object and modify its geometry at runtime.
     """
@@ -535,7 +535,7 @@ def test_updateGeometry(client_type):
     assert np.allclose(uv, ret_uv)
     assert np.allclose(vert, ret_vert)
 
-    ret = client.updateGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb)
+    ret = client.setGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb)
     assert ret.ok
 
     ok, _, (ret_vert, ret_uv, ret_rgb) = client.getGeometry(objID)
@@ -557,7 +557,7 @@ if __name__ == '__main__':
 #    _transport_type = 'ZeroMQ'
 
     test_setStateVariables(_transport_type)
-    test_updateGeometry(_transport_type)
+    test_setGeometry(_transport_type)
     test_spawn_and_delete_one_client(_transport_type)
     test_spawn_and_get_state_variables(_transport_type)
     test_ping()

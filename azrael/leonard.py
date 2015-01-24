@@ -353,7 +353,6 @@ class LeonardBase(multiprocessing.Process):
         else:
             bulk.execute({'w': 0, 'j': False})
 
-
     def processCommandsAndSync(self):
         """
         Process all pending commands and syncronise the cache to the DB.
@@ -730,7 +729,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         Copy every object from ``wpdata`` to the local cache.
 
         The ``wpdata`` argument is a list of (objID, sv) tuples.
-        
+
         The implicit assumption of this method is that ``wpdata`` is the
         output of ``computePhysicsForWorkPackage`` from a Worker.
 

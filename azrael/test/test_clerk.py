@@ -1086,7 +1086,7 @@ def test_instanceDB_checksum():
     assert set((objID0, objID1)) == set(ret_1.keys())
 
     # Modify the geometry of the first object.
-    assert clerk.updateGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb).ok
+    assert clerk.setGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb).ok
 
     # Verify that the 'lastChanged' of only the first object has changed.
     ret = clerk.getStateVariables([objID0])

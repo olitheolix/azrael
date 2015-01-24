@@ -250,8 +250,8 @@ class PyBulletPhys():
             # will eventually be returned to the caller.
             out.append(
                 _BulletData(obj.azrael[1].scale, obj.inv_mass, obj.restitution,
-                           rot, pos, vLin, vRot, cshape, axesLockLin,
-                           axesLockRot, 0))
+                            rot, pos, vLin, vRot, cshape, axesLockLin,
+                            axesLockRot, 0))
         return RetVal(True, None, out[0])
 
     @typecheck

@@ -235,7 +235,7 @@ class ResetSim(multiprocessing.Process):
                 time.sleep(0.1)
 
 
-class UpdateGeometry(multiprocessing.Process):
+class SetGeometry(multiprocessing.Process):
     """
     Periodically update the geometry.
     """
@@ -274,10 +274,10 @@ class UpdateGeometry(multiprocessing.Process):
             # Swap out the geometry.
             for objID in objIDs:
                 if (cnt % 2) == 0:
-                    client.updateGeometry(objID, sphere_vert,
-                                          sphere_uv, sphere_rgb)
+                    client.setGeometry(objID, sphere_vert,
+                                       sphere_uv, sphere_rgb)
                 else:
-                    client.updateGeometry(objID, *geometries[objID])
+                    client.setGeometry(objID, *geometries[objID])
 
             # Modify the scale.
             scale = (cnt + 1) / 10
@@ -308,7 +308,7 @@ def main():
     rs = ResetSim(default_attributes, period=param.resetinterval)
     rs.start()
 
-    ug = UpdateGeometry(2)
+    ug = SetGeometry(2)
     ug.start()
 
     # Launch the viewer process.
