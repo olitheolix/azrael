@@ -52,21 +52,6 @@ def init(reset=False):
     dbHandles['Counters'] = client[dbName]['Counters']
 
 
-def getNewWPID():
-    """
-    Return a new and unque WP ID.
-    """
-    db = dbHandles['Counters'].find_and_modify
-    wpid = db({'name': 'wpcnt'},
-              {'$inc': {'cnt': 1}},
-              new=True, upsert=True)
-
-    if wpid is None:
-        return RetVal(False, 'Cannot fetch new WPID', None)
-    else:
-        return RetVal(True, None, wpid['cnt'])
-
-
 def getNewObjectID():
     """
     Return a new and unique object ID.
