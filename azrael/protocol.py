@@ -165,31 +165,32 @@ def FromClerk_GetTemplate_Decode(data: dict):
 @typecheck
 def ToClerk_AddTemplate_Encode(templates: list):
     out = []
-    try:
-        for tt in templates:
-            assert len(tt) == 7
-            name, cs, vert, UV, RGB, boosters, factories = tt
+    with azrael.util.Timeit('clerk.encode') as timeit:
+        try:
+            for tt in templates:
+                assert len(tt) == 7
+                name, cs, vert, UV, RGB, boosters, factories = tt
 
-            assert isinstance(name, bytes)
-            assert isinstance(cs, np.ndarray)
-            assert isinstance(vert, np.ndarray)
-            assert isinstance(UV, np.ndarray)
-            assert isinstance(RGB, np.ndarray)
-            assert isinstance(boosters, list)
-            assert isinstance(factories, list)
+                assert isinstance(name, bytes)
+                assert isinstance(cs, np.ndarray)
+                assert isinstance(vert, np.ndarray)
+                assert isinstance(UV, np.ndarray)
+                assert isinstance(RGB, np.ndarray)
+                assert isinstance(boosters, list)
+                assert isinstance(factories, list)
 
-            for b in boosters:
-                assert isinstance(b, parts.Booster)
-            for f in factories:
-                assert isinstance(f, parts.Factory)
+                for b in boosters:
+                    assert isinstance(b, parts.Booster)
+                for f in factories:
+                    assert isinstance(f, parts.Factory)
 
-            d = {'name': name, 'cs': cs.tolist(), 'vert': vert.tolist(),
-                 'UV': UV.tolist(), 'RGB': RGB.tolist(),
-                 'boosters': [_.tostring() for _ in boosters],
-                 'factories': [_.tostring() for _ in factories]}
-            out.append(d)
-    except AssertionError as err:
-        return False, None
+                d = {'name': name, 'cs': cs.tolist(), 'vert': vert.tolist(),
+                     'UV': UV.tolist(), 'RGB': RGB.tolist(),
+                     'boosters': [_.tostring() for _ in boosters],
+                     'factories': [_.tostring() for _ in factories]}
+                out.append(d)
+        except AssertionError as err:
+            return False, None
 
     return True, {'data': out}
 
@@ -197,25 +198,28 @@ def ToClerk_AddTemplate_Encode(templates: list):
 @typecheck
 def ToClerk_AddTemplate_Decode(payload: dict):
     templates = []
-    for data in payload['data']:
-        # Wrap the Booster- and Factory data into their dedicated named tuples.
-        boosters = [parts.fromstring(_) for _ in data['boosters']]
-        factories = [parts.fromstring(_) for _ in data['factories']]
+    with azrael.util.Timeit('clerk.decode') as timeit:
+        for data in payload['data']:
+            # Wrap the Booster- and Factory data into their dedicated named
+            # tuples.
+            boosters = [parts.fromstring(_) for _ in data['boosters']]
+            factories = [parts.fromstring(_) for _ in data['factories']]
 
-        # Convert template ID to a byte string.
-        name = bytes(data['name'])
+            # Convert template ID to a byte string.
+            name = bytes(data['name'])
 
-        # Convert collision shape and geometry to NumPy array (via byte string).
-        cs = np.array(data['cs'], np.float64)
-        vert = np.array(data['vert'], np.float64)
-        UV = np.array(data['UV'], np.float64)
-        RGB = np.array(data['RGB'], np.uint8)
+            # Convert collision shape and geometry to NumPy array (via byte
+            # string).
+            cs = np.array(data['cs'], np.float64)
+            vert = np.array(data['vert'], np.float64)
+            UV = np.array(data['UV'], np.float64)
+            RGB = np.array(data['RGB'], np.uint8)
 
-        args = name, cs, vert, UV, RGB, boosters, factories
-        try:
-            templates.append(Template(*args))
-        except TypeError:
-            return False, 'Template payload is corrupt'
+            args = name, cs, vert, UV, RGB, boosters, factories
+            try:
+                templates.append(Template(*args))
+            except TypeError:
+                return False, 'Template payload is corrupt'
 
     # Return decoded quantities.
     return True, (templates, )

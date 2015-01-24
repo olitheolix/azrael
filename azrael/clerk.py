@@ -484,10 +484,10 @@ class Clerk(multiprocessing.Process):
         The elements in ``templates`` are ``Template`` instances.
 
         :param bytes templateID: the name of the new template.
-        :param bytes cshape: collision shape
-        :param bytes vert: object vertices
-        :param bytes UV: UV map for textures
-        :param bytes RGB: texture
+        :param fixme cshape: collision shape
+        :param fixme vert: object vertices
+        :param fixme UV: UV map for textures
+        :param fixme RGB: texture
         :param parts.Booster boosters: list of Booster instances.
         :param parts.Factory boosters: list of Factory instances.
         :return: the ID of the newly added template
@@ -498,59 +498,63 @@ class Clerk(multiprocessing.Process):
         if len(templates) == 0:
             return RetVal(True, None, None)
 
-        # Sanity checks.
-        tmp = [_ for _ in templates if not isinstance(_, Template)]
-        if len(tmp) > 0:
-            return RetVal(False, 'Invalid arguments', None)
+        with util.Timeit('clerk.addTemplate') as timeit:
+            # Sanity checks.
+            tmp = [_ for _ in templates if not isinstance(_, Template)]
+            if len(tmp) > 0:
+                return RetVal(False, 'Invalid arguments', None)
 
-        bulk = database.dbHandles['Templates'].initialize_unordered_bulk_op()
-        for tt in templates:
-            vertices = tt.vert
+            db = database.dbHandles['Templates']
+            bulk = db.initialize_unordered_bulk_op()
+            for tt in templates:
+                vertices = tt.vert
 
-            # The number of vertices must be an integer multiple of 9 to
-            # constitute a valid triangle mesh (every triangle has three edges
-            # and every edge requires an (x, y, z) triplet to describe its
-            # position).
-            if len(vertices) % 9 != 0:
-                msg = 'Number of vertices must be a multiple of Nine'
-                return RetVal(False, msg, None)
+                # The number of vertices must be an integer multiple of 9 to
+                # constitute a valid triangle mesh (every triangle has three
+                # edges and every edge requires an (x, y, z) triplet to
+                # describe its position).
+                if len(vertices) % 9 != 0:
+                    msg = 'Number of vertices must be a multiple of Nine'
+                    return RetVal(False, msg, None)
 
-            # Determine the largest possible side length of the AABB. To find
-            # it, just determine the largest spatial extent in any axis
-            # direction. That is the side length of the AABB cube. Then
-            # multiply it with sqrt(3) to ensure that any rotation angle of the
-            # object is covered. The slightly larger value of sqrt(3.1) adds
-            # some slack.
-            if len(vertices) == 0:
-                # Empty geometries have a zero sized AABB.
-                aabb = 0
-            else:
-                len_x = max(vertices[0::3]) - min(vertices[0::3])
-                len_y = max(vertices[1::3]) - min(vertices[1::3])
-                len_z = max(vertices[2::3]) - min(vertices[2::3])
-                aabb = np.sqrt(3.1) * max(len_x, len_y, len_z)
+                # Determine the largest possible side length of the AABB. To
+                # find it, just determine the largest spatial extent in any
+                # axis direction. That is the side length of the AABB
+                # cube. Then multiply it with sqrt(3) to ensure that any
+                # rotation angle of the object is covered. The slightly larger
+                # value of sqrt(3.1) adds some slack.
+                if len(vertices) == 0:
+                    # Empty geometries have a zero sized AABB.
+                    aabb = 0
+                else:
+                    len_x = max(vertices[0::3]) - min(vertices[0::3])
+                    len_y = max(vertices[1::3]) - min(vertices[1::3])
+                    len_z = max(vertices[2::3]) - min(vertices[2::3])
+                    aabb = np.sqrt(3.1) * max(len_x, len_y, len_z)
 
-            # Compile the Mongo document for the new template. This document
-            # contains the collision shape and geometry...
-            data = {'templateID': tt.name,
-                    'cshape': tt.cs.tostring(),
-                    'vertices': vertices.tostring(),
-                    'UV': tt.uv.tostring(),
-                    'RGB': tt.rgb.tostring(),
-                    'AABB': float(aabb)}
+                # Compile the Mongo document for the new template. This
+                # document contains the collision shape and geometry...
+                data = {'templateID': tt.name,
+                        'cshape': tt.cs.tostring(),
+                        'vertices': vertices.tostring(),
+                        'UV': tt.uv.tostring(),
+                        'RGB': tt.rgb.tostring(),
+                        'AABB': float(aabb)}
 
-            # ... as well as booster- and factory parts.
-            for b in tt.boosters:
-                data['boosters.{0:03d}'.format(b.partID)] = b.tostring()
-            for f in tt.factories:
-                data['factories.{0:03d}'.format(f.partID)] = f.tostring()
+                # ... as well as booster- and factory parts.
+                for b in tt.boosters:
+                    data['boosters.{0:03d}'.format(b.partID)] = b.tostring()
+                for f in tt.factories:
+                    data['factories.{0:03d}'.format(f.partID)] = f.tostring()
 
-            # Add the template to the database. Return with an error if a
-            # template with name ``templateID`` already exists.
-            query = {'templateID': tt.name}
-            bulk.find(query).upsert().update({'$setOnInsert': data})
+                # Add the template to the database. Return with an error if a
+                # template with name ``templateID`` already exists.
+                query = {'templateID': tt.name}
+                bulk.find(query).upsert().update({'$setOnInsert': data})
 
-        ret = bulk.execute()
+        with util.Timeit('clerk.addTemplate_db') as timeit:
+            ret = bulk.execute()
+
         if ret['nMatched'] > 0:
             # A template with name ``templateID`` already existed --> failure.
             msg = 'At least one template already existed'
