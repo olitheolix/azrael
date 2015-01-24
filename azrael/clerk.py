@@ -73,9 +73,6 @@ class Clerk(multiprocessing.Process):
     def __init__(self):
         super().__init__()
 
-        # Convenience.
-        self.db = database.dbHandles
-
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
@@ -433,7 +430,7 @@ class Clerk(multiprocessing.Process):
         # The physAPI expects Python types, not NumPy arrays.
         tot_force = tot_force.tolist()
         tot_torque = tot_torque.tolist()
-        
+
         # Apply the net- force and torque. Skip this step if booster commands
         # were supplied.
         if len(cmd_boosters) > 0:
@@ -577,7 +574,7 @@ class Clerk(multiprocessing.Process):
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
-        doc = self.db['ObjInstances'].find_one({'objID': objID})
+        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
         if doc is None:
             msg = 'Could not find instance data for objID <{}>'.format(objID)
             self.logit.info(msg)
@@ -673,7 +670,7 @@ class Clerk(multiprocessing.Process):
         t_raw['lastChanged'] = 0
         t_raw['templateID'] = templateID
         del t_raw['_id']
-        self.db['ObjInstances'].insert(t_raw)
+        database.dbHandles['ObjInstances'].insert(t_raw)
 
         # Overwrite the user supplied collision shape with the one specified in
         # the template. This is to enforce geometric consistency with the
@@ -697,7 +694,7 @@ class Clerk(multiprocessing.Process):
         :return: Success
         """
         ret = physAPI.addCmdRemoveObject(objID)
-        self.db['ObjInstances'].remove({'objID': objID}, mult=True)
+        database.dbHandles['ObjInstances'].remove({'objID': objID}, mult=True)
         if ret.ok:
             return RetVal(True, None, None)
         else:
@@ -723,7 +720,7 @@ class Clerk(multiprocessing.Process):
                 return RetVal(False, 'One or more IDs do not exist', None)
 
         # Query the lastChanged values for all objects.
-        docs = self.db['ObjInstances'].find(
+        docs = database.dbHandles['ObjInstances'].find(
             {'objID': {'$in': objIDs}},
             {'lastChanged': 1, 'objID': 1})
 
@@ -762,7 +759,7 @@ class Clerk(multiprocessing.Process):
         """
         # Retrieve the geometry. Return an error if the ID does not
         # exist. Note: an empty geometry field is valid.
-        doc = self.db['ObjInstances'].find_one({'objID': objID})
+        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
@@ -775,7 +772,7 @@ class Clerk(multiprocessing.Process):
 
     @typecheck
     def setGeometry(self, objID: int, vert: np.ndarray,
-                       uv: np.ndarray, rgb: np.ndarray):
+                    uv: np.ndarray, rgb: np.ndarray):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
@@ -785,7 +782,7 @@ class Clerk(multiprocessing.Process):
         :return: Success
         """
         # Update the geometry entries.
-        ret = self.db['ObjInstances'].update(
+        ret = database.dbHandles['ObjInstances'].update(
             {'objID': objID},
             {'$set': {'vertices': (vert.astype(np.float64)).tostring(),
                       'UV': (uv.astype(np.float64)).tostring(),
@@ -840,7 +837,7 @@ class Clerk(multiprocessing.Process):
         :param int objID: object ID.
         :return: templateID from which ``objID`` was created.
         """
-        doc = self.db['ObjInstances'].find_one({'objID': objID})
+        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
         if doc is None:
             msg = 'Could not find template for objID {}'.format(objID)
             return RetVal(False, msg, None)
