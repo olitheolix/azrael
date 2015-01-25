@@ -539,9 +539,9 @@ class Clerk(multiprocessing.Process):
                         'AABB': float(aabb),
                         'boosters': {},
                         'factories': {}}
-                geo = {'vertices': vertices.tostring(),
-                       'UV': tt.uv.tostring(),
-                       'RGB': tt.rgb.tostring()}
+                geo = {'vertices': vertices,
+                       'UV': tt.uv,
+                       'RGB': tt.rgb}
 
                 # ... as well as booster- and factory parts.
                 for b in tt.boosters:
@@ -551,7 +551,7 @@ class Clerk(multiprocessing.Process):
 
                 # Add the template to the database.
                 query = {'templateID': tt.name}
-                data['geo'] = geo
+                data['geo'] = pickle.dumps(geo)
                 bulk.find(query).upsert().update({'$setOnInsert': data})
 
         with util.Timeit('clerk.addTemplate_db') as timeit:
@@ -666,13 +666,13 @@ class Clerk(multiprocessing.Process):
         :returns: decompiled objects
         :rtype: dict
         """
-        geo = doc['geo']
+        geo = pickle.loads(doc['geo'])
 
         # Extract the collision shape, geometry, UV- and texture map.
         cs = np.fromstring(doc['cshape'], np.float64)
-        vert = np.fromstring(geo['vertices'], np.float64)
-        uv = np.fromstring(geo['UV'], np.float64)
-        rgb = np.fromstring(geo['RGB'], np.uint8)
+        vert = geo['vertices']
+        uv = geo['UV']
+        rgb = geo['RGB']
         aabb = float(doc['AABB'])
 
         # Extract the booster parts.
@@ -832,10 +832,10 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
-            geo = doc['geo']
-            vert = np.fromstring(geo['vertices'], np.float64)
-            uv = np.fromstring(geo['UV'], np.float64)
-            rgb = np.fromstring(geo['RGB'], np.uint8)
+            geo = pickle.loads(doc['geo'])
+            vert = geo['vertices']
+            uv = geo['UV']
+            rgb = geo['RGB']
             return RetVal(True, None, {'vert': vert, 'uv': uv, 'rgb': rgb})
 
     @typecheck
@@ -849,13 +849,13 @@ class Clerk(multiprocessing.Process):
         :param int objID: the object for which to update the geometry.
         :return: Success
         """
-        geo = {'vertices': (vert.astype(np.float64)).tostring(),
-               'UV': (uv.astype(np.float64)).tostring(),
-               'RGB': (rgb.astype(np.uint8)).tostring()}
+        geo = {'vertices': vert.astype(np.float64),
+               'UV': uv.astype(np.float64),
+               'RGB': rgb.astype(np.uint8)}
 
         ret = database.dbHandles['ObjInstances'].update(
             {'objID': objID},
-            {'$set': {'geo': geo},
+            {'$set': {'geo': pickle.dumps(geo)},
              '$inc': {'lastChanged': 1}})
 
         if ret['n'] == 1:
