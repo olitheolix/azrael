@@ -29,6 +29,7 @@ is identical).
 import os
 import sys
 import zmq
+import pickle
 import IPython
 import cytoolz
 import logging
@@ -534,22 +535,23 @@ class Clerk(multiprocessing.Process):
 
                 # Compile the Mongo document for the new template. This
                 # document contains the collision shape and geometry...
-                data = {'templateID': tt.name,
-                        'cshape': tt.cs.tostring(),
-                        'vertices': vertices.tostring(),
-                        'UV': tt.uv.tostring(),
-                        'RGB': tt.rgb.tostring(),
-                        'AABB': float(aabb)}
+                data = {'cshape': tt.cs.tostring(),
+                        'AABB': float(aabb),
+                        'boosters': {},
+                        'factories': {}}
+                geo = {'vertices': vertices.tostring(),
+                       'UV': tt.uv.tostring(),
+                       'RGB': tt.rgb.tostring()}
 
                 # ... as well as booster- and factory parts.
                 for b in tt.boosters:
-                    data['boosters.{0:03d}'.format(b.partID)] = b.tostring()
+                    data['boosters']['{0:03d}'.format(b.partID)] = b.tostring()
                 for f in tt.factories:
-                    data['factories.{0:03d}'.format(f.partID)] = f.tostring()
+                    data['factories']['{0:03d}'.format(f.partID)] = f.tostring()
 
-                # Add the template to the database. Return with an error if a
-                # template with name ``templateID`` already exists.
+                # Add the template to the database.
                 query = {'templateID': tt.name}
+                data['geo'] = geo
                 bulk.find(query).upsert().update({'$setOnInsert': data})
 
         with util.Timeit('clerk.addTemplate_db') as timeit:
@@ -664,11 +666,13 @@ class Clerk(multiprocessing.Process):
         :returns: decompiled objects
         :rtype: dict
         """
+        geo = doc['geo']
+
         # Extract the collision shape, geometry, UV- and texture map.
         cs = np.fromstring(doc['cshape'], np.float64)
-        vert = np.fromstring(doc['vertices'], np.float64)
-        uv = np.fromstring(doc['UV'], np.float64)
-        rgb = np.fromstring(doc['RGB'], np.uint8)
+        vert = np.fromstring(geo['vertices'], np.float64)
+        uv = np.fromstring(geo['UV'], np.float64)
+        rgb = np.fromstring(geo['RGB'], np.uint8)
         aabb = float(doc['AABB'])
 
         # Extract the booster parts.
@@ -734,6 +738,7 @@ class Clerk(multiprocessing.Process):
         t_raw['templateID'] = templateID
         del t_raw['_id']
         database.dbHandles['ObjInstances'].insert(t_raw)
+        del t_raw
 
         # Overwrite the user supplied collision shape with the one specified in
         # the template. This is to enforce geometric consistency with the
@@ -821,16 +826,16 @@ class Clerk(multiprocessing.Process):
         :rtype: {'vert': arr_float64, 'uv': arr_float64, 'rgb': arr_uint8}
         """
         # Retrieve the geometry. Return an error if the ID does not
-        # exist. Note: an empty geometry field is valid.
+        # exist. Note: an empty geometry field is valid because Azrael supports
+        # dummy objects.
         doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
-            vert = np.fromstring(doc['vertices'], np.float64)
-            uv = np.fromstring(doc['UV'], np.float64)
-            rgb = np.fromstring(doc['RGB'], np.uint8)
-#            width = int(doc['width'])
-#            height = int(doc['height'])
+            geo = doc['geo']
+            vert = np.fromstring(geo['vertices'], np.float64)
+            uv = np.fromstring(geo['UV'], np.float64)
+            rgb = np.fromstring(geo['RGB'], np.uint8)
             return RetVal(True, None, {'vert': vert, 'uv': uv, 'rgb': rgb})
 
     @typecheck
@@ -844,12 +849,13 @@ class Clerk(multiprocessing.Process):
         :param int objID: the object for which to update the geometry.
         :return: Success
         """
-        # Update the geometry entries.
+        geo = {'vertices': (vert.astype(np.float64)).tostring(),
+               'UV': (uv.astype(np.float64)).tostring(),
+               'RGB': (rgb.astype(np.uint8)).tostring()}
+
         ret = database.dbHandles['ObjInstances'].update(
             {'objID': objID},
-            {'$set': {'vertices': (vert.astype(np.float64)).tostring(),
-                      'UV': (uv.astype(np.float64)).tostring(),
-                      'RGB': (rgb.astype(np.uint8)).tostring()},
+            {'$set': {'geo': geo},
              '$inc': {'lastChanged': 1}})
 
         if ret['n'] == 1:

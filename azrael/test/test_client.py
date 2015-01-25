@@ -62,7 +62,6 @@ def test_ping():
     clerk, client, clacks = startAzrael('ZeroMQ')
 
     ret = client.ping()
-    print(ret)
     assert ret == (True, None, 'pong clerk')
 
     # Shutdown the services.

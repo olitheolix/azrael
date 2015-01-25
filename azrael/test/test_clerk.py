@@ -1137,16 +1137,22 @@ def test_instanceDB_checksum():
     ret_1 = ret.data
     assert set((objID0, objID1)) == set(ret_1.keys())
 
-    # Modify the geometry of the first object.
+    # Modify the geometry of the first object and verify that its 'lastChanged'
+    # attribute has changed.
     assert clerk.setGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb).ok
-
-    # Verify that the 'lastChanged' of only the first object has changed.
     ret = clerk.getStateVariables([objID0])
     assert ret.ok
     assert ret_1[objID0].lastChanged != ret.data[objID0].lastChanged
     ret = clerk.getStateVariables([objID1])
     assert ret.ok
     assert ret_1[objID1].lastChanged == ret.data[objID1].lastChanged
+
+    # Query the geometry and verify it has the new values.
+    ret = clerk.getGeometry(objID0)
+    assert ret.ok
+    assert np.array_equal(ret.data['vert'], 2 * vert)
+    assert np.array_equal(ret.data['uv'], 2 * uv)
+    assert np.array_equal(ret.data['rgb'], 2 * rgb)
 
     # Kill all spawned Client processes.
     killAzrael()
