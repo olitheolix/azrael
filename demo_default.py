@@ -273,6 +273,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     tID_cube = {}
     templates = []
+    texture_errors = 0
     for ii in range(numRows * numCols * numLayers):
         # File name of texture.
         fname = 'azrael/static/img/texture_{}.jpg'.format(ii + 1)
@@ -284,7 +285,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
             rgb = np.rollaxis(np.flipud(img), 1).flatten()
             curUV = uv
         except FileNotFoundError:
-            print('Could not load texture <{}>'.format(fname))
+            texture_errors += 1
             rgb = curUV = np.array([])
 
         # Create the template.
@@ -295,18 +296,27 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         # next step to spawn the templates.
         tID_cube[ii] = tID
 
+    if texture_errors > 0:
+        print('Could not load texture for {} of the {} objects'
+              .format(texture_errors, ii + 1))
+
     # Define all templates.
+    print('Adding {} templates: '.format(ii + 1), end='', flush=True)
     t0 = time.time()
     assert client.addTemplates(templates).ok
-    etime = int(1000 * (time.time() - t0))
-    print('Defined all templates in {:,}ms'.format(etime))
+    print('{:.1f}s'.format(time.time() - t0))
 
     # ----------------------------------------------------------------------
     # Spawn the differently textured cubes in a regular grid.
     # ----------------------------------------------------------------------
+    args = []
     cube_idx = 0
     cube_spacing = 0.1
-    default_attributes = []
+
+    # Determine the template and position for every cube. The cubes are *not*
+    # spawned in this loop, but afterwards.
+    print('Compiling scene: ', end='', flush=True)
+    t0 = time.time()
     for row in range(numRows):
         for col in range(numCols):
             for lay in range(numLayers):
@@ -325,15 +335,27 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
                 # Move the grid to position ``center``.
                 pos += np.array(center)
 
-                # Spawn the cube and update the index counter. The intitial
-                # velocity, acceleration, and orientation is neutral.
-                ret = client.spawn(tID_cube[cube_idx], pos)
-                assert ret.ok
+                # Store the position and template for this cube.
+                args.append((tID_cube[cube_idx], pos))
                 cube_idx += 1
+                del pos
+    print('{:,} objects ({:.1f}s)'.format(len(args), time.time() - t0))
+    del cube_idx, cube_spacing, row, col, lay
 
-                # Record the original position of the object (this will be
-                # needed when the simulation is reset).
-                default_attributes.append((ret.data, pos))
+    # Spawn the cubes from the templates at the just determined positions.
+    print('Spawning {} objects: '.format(len(args)), end='', flush=True)
+    t0 = time.time()
+    default_attributes = []
+    for template_name, pos in args:
+        # Spawn the cube from the specified template at the specified
+        # position. Its velocity, acceleration, and orientation are neutral.
+        ret = client.spawn(template_name, pos)
+        assert ret.ok
+
+        # Keep the original position of the object (this will be needed to
+        # periodically reset the simulation).
+        default_attributes.append((ret.data, pos))
+    print(' {:.1f}s'.format(time.time() - t0))
 
     # Convert the positions to proper PosVecAccOrient tuples. In these tuples
     # only the position differs. The inital velocities, accelerations, and
