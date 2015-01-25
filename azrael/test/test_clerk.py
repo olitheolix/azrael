@@ -292,22 +292,33 @@ def test_add_get_template_single():
     clerk = azrael.clerk.Clerk()
 
     # Request an invalid ID.
-    assert not clerk.getTemplate('blah'.encode('utf8')).ok
+    assert not clerk.getTemplates(['blah'.encode('utf8')]).ok
 
     # Clerk has a few default objects. This one has no collision shape...
-    ret = clerk.getTemplate('_templateNone'.encode('utf8'))
-    assert ret.ok
-    assert np.array_equal(ret.data['cshape'], np.array([0, 1, 1, 1]))
+    name_1 = '_templateNone'.encode('utf8')
+    ret = clerk.getTemplates([name_1])
+    assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
+    assert np.array_equal(ret.data[name_1]['cshape'], np.array([0, 1, 1, 1]))
 
     # ... this one is a sphere...
-    ret = clerk.getTemplate('_templateSphere'.encode('utf8'))
-    assert ret.ok
-    assert np.array_equal(ret.data['cshape'], np.array([3, 1, 1, 1]))
+    name_2 = '_templateSphere'.encode('utf8')
+    ret = clerk.getTemplates([name_2])
+    assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
+    assert np.array_equal(ret.data[name_2]['cshape'], np.array([3, 1, 1, 1]))
 
     # ... and this one is a cube.
-    ret = clerk.getTemplate('_templateCube'.encode('utf8'))
+    name_3 = '_templateCube'.encode('utf8')
+    ret = clerk.getTemplates([name_3])
+    assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
+    assert np.array_equal(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
+
+    # Retrieve all three again but with a single call.
+    ret = clerk.getTemplates([name_1, name_2, name_3])
     assert ret.ok
-    assert np.array_equal(ret.data['cshape'], np.array([4, 1, 1, 1]))
+    assert set(ret.data.keys()) == set((name_1, name_2, name_3))
+    assert np.array_equal(ret.data[name_1]['cshape'], np.array([0, 1, 1, 1]))
+    assert np.array_equal(ret.data[name_2]['cshape'], np.array([3, 1, 1, 1]))
+    assert np.array_equal(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -336,12 +347,12 @@ def test_add_get_template_single():
     assert not clerk.addTemplates([t2]).ok
 
     # Fetch the just added template and verify its parameters have not changed.
-    ret = clerk.getTemplate(t2.name)
+    ret = clerk.getTemplates([t2.name])
     assert ret.ok
-    assert np.array_equal(ret.data['cshape'], cs)
-    assert np.array_equal(ret.data['vert'], vert)
-    assert np.array_equal(ret.data['uv'], uv)
-    assert np.array_equal(ret.data['rgb'], rgb)
+    assert np.array_equal(ret.data[t2.name]['cshape'], cs)
+    assert np.array_equal(ret.data[t2.name]['vert'], vert)
+    assert np.array_equal(ret.data[t2.name]['uv'], uv)
+    assert np.array_equal(ret.data[t2.name]['rgb'], rgb)
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
@@ -362,22 +373,22 @@ def test_add_get_template_single():
     assert clerk.addTemplates([t3]).ok
 
     # Retrieve the just created object and verify the CS and geometry.
-    ret = clerk.getTemplate(t3.name)
+    ret = clerk.getTemplates([t3.name])
     assert ret.ok
-    assert np.array_equal(ret.data['cshape'], cs)
-    assert np.array_equal(ret.data['vert'], vert)
-    assert np.array_equal(ret.data['uv'], uv)
-    assert np.array_equal(ret.data['rgb'], rgb)
+    assert np.array_equal(ret.data[t3.name]['cshape'], cs)
+    assert np.array_equal(ret.data[t3.name]['vert'], vert)
+    assert np.array_equal(ret.data[t3.name]['uv'], uv)
+    assert np.array_equal(ret.data[t3.name]['rgb'], rgb)
 
     # The template must also feature two boosters and one factory.
-    assert len(ret.data['boosters']) == 2
-    assert len(ret.data['factories']) == 1
+    assert len(ret.data[t3.name]['boosters']) == 2
+    assert len(ret.data[t3.name]['factories']) == 1
 
     # Explicitly verify the booster- and factory units. The easisest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
-    out_boosters = [_.tostring() for _ in ret.data['boosters']]
-    out_factories = [_.tostring() for _ in ret.data['factories']]
+    out_boosters = [_.tostring() for _ in ret.data[t3.name]['boosters']]
+    out_factories = [_.tostring() for _ in ret.data[t3.name]['factories']]
     assert b0.tostring() in out_boosters
     assert b1.tostring() in out_boosters
     assert f0.tostring() in out_factories
@@ -412,19 +423,19 @@ def test_add_get_template_multi():
     assert not clerk.addTemplates([t1, t2]).ok
 
     # Fetch the just added template again and verify CS, vertices, UV, and RGB.
-    ret = clerk.getTemplate(name1)
-    assert ret.ok
-    assert np.array_equal(ret.data['cshape'], t1.cs)
-    assert np.array_equal(ret.data['vert'], t1.vert)
-    assert np.array_equal(ret.data['uv'], t1.uv)
-    assert np.array_equal(ret.data['rgb'], t1.rgb)
+    ret = clerk.getTemplates([name1])
+    assert ret.ok and (len(ret.data) == 1)
+    assert np.array_equal(ret.data[name1]['cshape'], t1.cs)
+    assert np.array_equal(ret.data[name1]['vert'], t1.vert)
+    assert np.array_equal(ret.data[name1]['uv'], t1.uv)
+    assert np.array_equal(ret.data[name1]['rgb'], t1.rgb)
 
-    ret = clerk.getTemplate(name2)
-    assert ret.ok
-    assert np.array_equal(ret.data['cshape'], t2.cs)
-    assert np.array_equal(ret.data['vert'], t2.vert)
-    assert np.array_equal(ret.data['uv'], t2.uv)
-    assert np.array_equal(ret.data['rgb'], t2.rgb)
+    ret = clerk.getTemplates([name2])
+    assert ret.ok and (len(ret.data) == 1)
+    assert np.array_equal(ret.data[name2]['cshape'], t2.cs)
+    assert np.array_equal(ret.data[name2]['vert'], t2.vert)
+    assert np.array_equal(ret.data[name2]['uv'], t2.uv)
+    assert np.array_equal(ret.data[name2]['rgb'], t2.rgb)
 
     print('Test passed')
 
@@ -451,11 +462,11 @@ def test_add_get_template_AABB():
     # Add template and retrieve it again.
     t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
     assert clerk.addTemplates([t1]).ok
-    ret = clerk.getTemplate(t1.name)
+    ret = clerk.getTemplates([t1.name])
     assert ret.ok
 
     # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-    assert (ret.data['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
+    assert (ret.data[t1.name]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
 
     # Repeat the experiment with a larger mesh.
     vert = [0, 0, 0,
@@ -469,11 +480,11 @@ def test_add_get_template_AABB():
     # Add template and retrieve it again.
     t2 = Template('t2'.encode('utf8'), cs, vert, uv, rgb, [], [])
     assert clerk.addTemplates([t2]).ok
-    ret = clerk.getTemplate(t2.name)
+    ret = clerk.getTemplates([t2.name])
     assert ret.ok
 
     # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-    assert (ret.data['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
+    assert (ret.data[t2.name]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
 
     print('Test passed')
 
@@ -1072,7 +1083,7 @@ def test_getGeometry():
     # Add a valid template and verify it now exists in Azrael.
     t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
     assert clerk.addTemplates([t1]).ok
-    assert clerk.getTemplate(t1.name).ok
+    assert clerk.getTemplates([t1.name]).ok
 
     # Attempt to query the geometry of a non-existing object.
     assert not clerk.getGeometry(1).ok

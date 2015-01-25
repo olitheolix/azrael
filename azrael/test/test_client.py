@@ -278,25 +278,33 @@ def test_create_fetch_template(client_type):
     clerk, client, clacks = startAzrael(client_type)
 
     # Request an invalid ID.
-    assert not client.getTemplate('blah'.encode('utf8')).ok
+    assert not client.getTemplates(['blah'.encode('utf8')]).ok
 
     # Clerk has a few default objects. This one has no collision shape...
-    ok, _, ret = client.getTemplate('_templateNone'.encode('utf8'))
-    assert ok
-    assert np.array_equal(ret.cs, [0, 1, 1, 1])
-    assert len(ret.vert) == len(ret.boosters) == len(ret.factories) == 0
+    name_1 = '_templateNone'.encode('utf8')
+    ret = client.getTemplates([name_1])
+    assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
+    assert np.array_equal(ret.data[name_1].cs, np.array([0, 1, 1, 1]))
 
     # ... this one is a sphere...
-    ok, _, ret = client.getTemplate('_templateSphere'.encode('utf8'))
-    assert ok
-    assert np.array_equal(ret.cs, [3, 1, 1, 1])
-    assert len(ret.vert) == len(ret.boosters) == len(ret.factories) == 0
+    name_2 = '_templateSphere'.encode('utf8')
+    ret = client.getTemplates([name_2])
+    assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
+    assert np.array_equal(ret.data[name_2].cs, np.array([3, 1, 1, 1]))
 
     # ... and this one is a cube.
-    ok, _, ret = client.getTemplate('_templateCube'.encode('utf8'))
-    assert ok
-    assert np.array_equal(ret.cs, [4, 1, 1, 1])
-    assert len(ret.vert) == len(ret.boosters) == len(ret.factories) == 0
+    name_3 = '_templateCube'.encode('utf8')
+    ret = client.getTemplates([name_3])
+    assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
+    assert np.array_equal(ret.data[name_3].cs, np.array([4, 1, 1, 1]))
+
+    # Retrieve all three again but with a single call.
+    ret = client.getTemplates([name_1, name_2, name_3])
+    assert ret.ok
+    assert set(ret.data.keys()) == set((name_1, name_2, name_3))
+    assert np.array_equal(ret.data[name_1].cs, np.array([0, 1, 1, 1]))
+    assert np.array_equal(ret.data[name_2].cs, np.array([3, 1, 1, 1]))
+    assert np.array_equal(ret.data[name_3].cs, np.array([4, 1, 1, 1]))
 
     # Add a new object template.
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -307,7 +315,9 @@ def test_create_fetch_template(client_type):
     assert client.addTemplates([t1]).ok
 
     # Fetch the just added template again.
-    ok, _, ret = client.getTemplate(t1.name)
+    ret = client.getTemplates([t1.name])
+    assert ret.ok and (len(ret.data) == 1)
+    ret = ret.data[t1.name]
     assert np.array_equal(ret.cs, cs)
     assert np.array_equal(ret.vert, vert)
     assert np.array_equal(ret.uv, uv)
@@ -345,7 +355,9 @@ def test_create_fetch_template(client_type):
     assert out_rgb.dtype == np.uint8
 
     # Retrieve the entire template and verify the CS and geometry.
-    ok, _, ret = client.getTemplate(t1.name)
+    ret = client.getTemplates([t1.name])
+    assert ret.ok and (len(ret.data) == 1)
+    ret = ret.data[t1.name]
     assert np.array_equal(ret.cs, cs)
     assert np.array_equal(ret.vert, vert)
     assert np.array_equal(ret.uv, uv)

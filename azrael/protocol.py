@@ -106,62 +106,72 @@ def FromClerk_GetTemplateID_Decode(data: dict):
 
 
 # ---------------------------------------------------------------------------
-# GetTemplate
+# GetTemplates
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_GetTemplate_Encode(templateID: bytes):
-    return True, {'templateID': list(templateID)}
+def ToClerk_GetTemplate_Encode(templateIDs: list):
+    return True, {'templateIDs': templateIDs}
 
 
 @typecheck
-def ToClerk_GetTemplate_Decode(data: dict):
-    if 'templateID' in data:
-        return True, (bytes(data['templateID']), )
-    else:
+def ToClerk_GetTemplate_Decode(payload: dict):
+    if 'templateIDs' not in payload:
         return False, 'Corrupt payload'
 
-
-@typecheck
-def FromClerk_GetTemplate_Encode(data):
-    # Sanity checks.
-    for key in ['vert', 'uv', 'rgb']:
-        assert isinstance(data[key], list)
-    assert isinstance(data['cshape'], np.ndarray)
-    assert isinstance(data['aabb'], float)
-    assert isinstance(data['boosters'], (list, tuple))
-    assert isinstance(data['factories'], (list, tuple))
-    for b in data['boosters']:
-        assert isinstance(b, parts.Booster)
-    for f in data['factories']:
-        assert isinstance(f, parts.Factory)
-
-    # Convert all booster- and factory descriptions to strings.
-    data['boosters'] = [_.tostring() for _ in data['boosters']]
-    data['factories'] = [_.tostring() for _ in data['factories']]
-    return True, data
+    templateIDs = [bytes(_) for _ in payload['templateIDs']]
+    return True, (templateIDs, )
 
 
 @typecheck
-def FromClerk_GetTemplate_Decode(data: dict):
-    # Wrap the Booster- and Factory data into their dedicated named tuples.
-    boosters = [parts.fromstring(_) for _ in data['boosters']]
-    factories = [parts.fromstring(_) for _ in data['factories']]
+def FromClerk_GetTemplate_Encode(templates):
+    out = {}
+    for name, data in templates.items():
+        assert isinstance(name, bytes)
+        name = name.decode('utf8')
+        # Sanity checks
+        # fixme: no sanity checks when coming from Clerk
+        for key in ['vert', 'uv', 'rgb']:
+            assert isinstance(data[key], list)
+        assert isinstance(data['cshape'], np.ndarray)
+        assert isinstance(data['aabb'], float)
+        assert isinstance(data['boosters'], (list, tuple))
+        assert isinstance(data['factories'], (list, tuple))
+        for b in data['boosters']:
+            assert isinstance(b, parts.Booster)
+        for f in data['factories']:
+            assert isinstance(f, parts.Factory)
 
-    # Return the complete information in a named tuple.
-    nt = namedtuple('Template', 'cs vert uv rgb boosters factories aabb')
-    ret = nt(np.array(data['cshape'], np.float64),
-             np.array(data['vert'], np.float64),
-             np.array(data['uv'], np.float64),
-             np.array(data['rgb'], np.uint8),
+        # Convert all booster- and factory descriptions to strings.
+        data['cshape'] = data['cshape'].tolist()
+        data['boosters'] = [_.tostring() for _ in data['boosters']]
+        data['factories'] = [_.tostring() for _ in data['factories']]
+        out[name] = data
+    return True, out
+
+
+@typecheck
+def FromClerk_GetTemplate_Decode(templates: dict):
+    out = {}
+    for name, data in templates.items():
+        # Wrap the Booster- and Factory data into their dedicated named tuples.
+        boosters = [parts.fromstring(_) for _ in data['boosters']]
+        factories = [parts.fromstring(_) for _ in data['factories']]
+
+        # Return the complete information in a named tuple.
+        nt = namedtuple('Template', 'cs vert uv rgb boosters factories aabb')
+        ret = nt(np.array(data['cshape'], np.float64),
+                 np.array(data['vert'], np.float64),
+                 np.array(data['uv'], np.float64),
+                 np.array(data['rgb'], np.uint8),
              boosters, factories, data['aabb'])
-    return RetVal(True, None, ret)
+        out[name.encode('utf8')] = ret
+    return RetVal(True, None, out)
 
 
 # ---------------------------------------------------------------------------
 # AddTemplate
 # ---------------------------------------------------------------------------
-
 
 @typecheck
 def ToClerk_AddTemplate_Encode(templates: list):

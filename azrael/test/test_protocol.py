@@ -46,6 +46,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     uv = [9, 10]
     rgb = [1, 2, 250]
     aabb = float(1)
+    template_name = np.int64(1).tostring()
 
     b0 = parts.Booster(
         partID=0, pos=np.zeros(3), direction=[0, 0, 1], max_force=0.5)
@@ -59,14 +60,14 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Client --> Clerk.
     # ----------------------------------------------------------------------
     # Encode source data.
-    ok, enc = protocol.ToClerk_GetTemplate_Encode(np.int64(1).tostring())
+    ok, enc = protocol.ToClerk_GetTemplate_Encode([template_name])
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))
 
     # Decode the data.
     ok, dec = protocol.ToClerk_GetTemplate_Decode(enc)
-    assert dec[0] == np.int64(1).tostring()
+    assert dec[0] == [template_name]
 
     # ----------------------------------------------------------------------
     # Clerk --> Client.
@@ -74,7 +75,8 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Encode source data.
     data = {'cshape': cs, 'vert': vert, 'uv': uv, 'rgb': rgb,
             'boosters': [b0, b1], 'factories': [f0], 'aabb': aabb}
-    ok, enc = protocol.FromClerk_GetTemplate_Encode(data)
+    templates = {template_name: data}
+    ok, enc = protocol.FromClerk_GetTemplate_Encode(templates)
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))
@@ -84,7 +86,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
 
     # Verify.
     assert dec.ok
-    dec = dec.data
+    dec = dec.data[template_name]
     assert np.array_equal(dec.cs, cs)
     assert np.array_equal(dec.vert, vert)
     assert np.array_equal(dec.uv, uv)

@@ -333,16 +333,16 @@ class Client():
         return self.serialiseAndSend('get_template_id', objID)
 
     @typecheck
-    def getTemplate(self, templateID: bytes):
+    def getTemplates(self, templateIDs: list):
         """
-        Return the entire ``templateID`` data.
+        Return the template data for all  ``templateIDs`` in a dictionary.
 
         Use ``getGeometry`` to just query the geometry.
 
         :param bytes templateID: return the description of this template.
         :return: (cs, geo, boosters, factories)
         """
-        return self.serialiseAndSend('get_template', templateID)
+        return self.serialiseAndSend('get_template', templateIDs)
 
     @typecheck
     def addTemplates(self, templates: list):

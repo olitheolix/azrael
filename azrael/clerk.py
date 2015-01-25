@@ -119,7 +119,7 @@ class Clerk(multiprocessing.Process):
                 protocol.FromClerk_SetForce_Encode),
             'get_template': (
                 protocol.ToClerk_GetTemplate_Decode,
-                self.getTemplate,
+                self.getTemplates,
                 protocol.FromClerk_GetTemplate_Encode),
             'get_template_id': (
                 protocol.ToClerk_GetTemplateID_Decode,
@@ -577,7 +577,7 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def getRawTemplate(self, templateIDs: list):
         """
-        Return the raw data for all ``templateIDs``.
+        Return the raw data for all ``templateIDs`` as a dictionary.
 
         This method will return either all templates or none.
 
@@ -602,9 +602,9 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, docs)
 
     @typecheck
-    def getTemplate(self, templateID: bytes):
+    def getTemplates(self, names: list):
         """
-        Return the template for ``templateID``.
+        Return the templates specified in ``names`` as a dictionary.
 
         Templates describe the geometry, collision shape, and capabilities
         (eg. boosters and factories) of an object.
@@ -613,19 +613,27 @@ class Clerk(multiprocessing.Process):
         data. The output of that method will then be returned verbatim by this
         method (see ``_unpackTemplateData`` for details on that output).
 
-        :param bytes templateID: templateID
-        :return: Dictionary with keys 'cshape', 'vert', 'uv', 'rgb',
-                 'boosters', 'factories', and 'aabb'.
+        :param list names: list of template names.
+        :return: {names[0]: {'cshape': *, 'vert': *, 'uv': *, 'rgb':*,
+                             'boosters': *, 'factories': *, 'aabb': *},
+                  names[1]: {*},
+                  ...}.
         :rtype: dict
         :raises: None
         """
         # Retrieve the template. Return immediately if it does not exist.
-        ret = self.getRawTemplate([templateID])
+        ret = self.getRawTemplate(names)
         if not ret.ok:
             self.logit.info(ret.msg)
             return ret
 
-        return self._unpackTemplateData(ret.data[templateID])
+        # Convenience.
+        fun = self._unpackTemplateData
+
+        # Unpack the raw templates and insert them into a dictionary where the
+        # template names correspond to its keys.
+        out = {k: fun(v).data for (k, v) in ret.data.items()}
+        return RetVal(True, None, out)
 
     @typecheck
     def getObjectInstance(self, objID: int):
@@ -720,10 +728,10 @@ class Clerk(multiprocessing.Process):
         :rtype: int
         """
         # Fetch the template for the new object.
-        template = self.getTemplate(templateID)
+        template = self.getTemplates([templateID])
         if not template.ok:
             return template
-        template = template.data
+        template = template.data[templateID]
 
         # Request unique object ID.
         objID = azrael.database.getNewObjectID()
