@@ -143,15 +143,15 @@ class Clerk(multiprocessing.Process):
         # their collision shapes are: none, sphere, cube.
         t1 = Template('_templateNone'.encode('utf8'),
                       np.array([0, 1, 1, 1], np.float64),
-                      np.array([]), np.array([]), np.array([]),
+                      [], [], [],
                       [], [])
         t2 = Template('_templateSphere'.encode('utf8'),
                       np.array([3, 1, 1, 1], np.float64),
-                      np.array([]), np.array([]), np.array([]),
+                      [], [], [],
                       [], [])
         t3 = Template('_templateCube'.encode('utf8'),
                       np.array([4, 1, 1, 1], np.float64),
-                      np.array([]), np.array([]), np.array([]),
+                      [], [], [],
                       [], [])
         self.addTemplates([t1, t2, t3])
 
@@ -485,10 +485,10 @@ class Clerk(multiprocessing.Process):
         The elements in ``templates`` are ``Template`` instances.
 
         :param bytes templateID: the name of the new template.
-        :param fixme cshape: collision shape
-        :param fixme vert: object vertices
-        :param fixme UV: UV map for textures
-        :param fixme RGB: texture
+        :param np.ndarray cshape: collision shape
+        :param list vert: object vertices
+        :param list UV: UV map for textures
+        :param list RGB: texture
         :param parts.Booster boosters: list of Booster instances.
         :param parts.Factory boosters: list of Factory instances.
         :return: the ID of the newly added template
@@ -509,6 +509,15 @@ class Clerk(multiprocessing.Process):
             bulk = db.initialize_unordered_bulk_op()
             for tt in templates:
                 vertices = tt.vert
+
+                # Sanity checks.
+                try:
+                    assert isinstance(vertices, list)
+                    assert isinstance(tt.uv, list)
+                    assert isinstance(tt.rgb, list)
+                except AssertionError:
+                    msg = 'addTemplates Parameters must be lists'
+                    return RetVal(False, msg, None)
 
                 # The number of vertices must be an integer multiple of 9 to
                 # constitute a valid triangle mesh (every triangle has three
@@ -839,19 +848,17 @@ class Clerk(multiprocessing.Process):
             return RetVal(True, None, {'vert': vert, 'uv': uv, 'rgb': rgb})
 
     @typecheck
-    def setGeometry(self, objID: int, vert: np.ndarray,
-                    uv: np.ndarray, rgb: np.ndarray):
+    def setGeometry(self, objID: int, vert, uv, rgb):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
+        fixme: argument types
         If ``objID`` does not exist return an error.
 
         :param int objID: the object for which to update the geometry.
         :return: Success
         """
-        geo = {'vertices': vert.astype(np.float64),
-               'UV': uv.astype(np.float64),
-               'RGB': rgb.astype(np.uint8)}
+        geo = {'vertices': vert, 'UV': uv, 'RGB': rgb}
 
         ret = database.dbHandles['ObjInstances'].update(
             {'objID': objID},

@@ -42,9 +42,9 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
 
     # Test parameters and constants.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.array([5, 6, 7, 8], np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = [5, 6, 7, 8]
+    uv = [9, 10]
+    rgb = [1, 2, 250]
     aabb = float(1)
 
     b0 = parts.Booster(

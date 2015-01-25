@@ -311,9 +311,9 @@ def test_add_get_template_single():
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.arange(9).astype(np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = list(range(9))
+    uv = [9, 10]
+    rgb = [1, 2, 250]
 
     # Wrong argument .
     t1 = Template('t1'.encode('utf8'), cs, vert[:-1], uv, rgb, [], [])
@@ -396,9 +396,9 @@ def test_add_get_template_multi():
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.arange(9).astype(np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = list(range(9))
+    uv = [9, 10]
+    rgb = [1, 2, 250]
     name1 = 't1'.encode('utf8')
     name2 = 't2'.encode('utf8')
 
@@ -440,12 +440,12 @@ def test_add_get_template_AABB():
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
-    uv = rgb = np.zeros([])
+    uv = rgb = []
 
     # Manually specify the vertices.
-    vert = np.array([-4, 0, 0,
-                     1, 2, 3,
-                     4, 5, 6], np.float64)
+    vert = [-4, 0, 0,
+            1, 2, 3,
+            4, 5, 6]
     max_sidelen = max(8, 5, 6)
 
     # Add template and retrieve it again.
@@ -458,12 +458,12 @@ def test_add_get_template_AABB():
     assert (ret.data['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
 
     # Repeat the experiment with a larger mesh.
-    vert = np.array([0, 0, 0,
-                     1, 2, 3,
-                     4, 5, 6,
-                     8, 2, 7,
-                    -5, -9, 8,
-                     3, 2, 3], np.float64)
+    vert = [0, 0, 0,
+            1, 2, 3,
+            4, 5, 6,
+            8, 2, 7,
+           -5, -9, 8,
+            3, 2, 3]
     max_sidelen = max(8, 14, 8)
 
     # Add template and retrieve it again.
@@ -581,9 +581,9 @@ def test_controlParts_invalid_commands():
 
     # Add the template to Azrael...
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.arange(9).astype(np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = list(range(9))
+    uv = [9, 10]
+    rgb = [1, 2, 250]
     t2 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [b0], [f0])
     assert clerk.addTemplates([t2]).ok
 
@@ -637,9 +637,9 @@ def test_controlParts_Boosters_notmoving():
 
     # Constants for the new template object.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.arange(9).astype(np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = list(range(9))
+    uv = [9, 10]
+    rgb = [1, 2, 250]
 
     dir_0 = np.array([1, 0, 0], np.float64)
     dir_1 = np.array([0, 1, 0], np.float64)
@@ -723,9 +723,9 @@ def test_controlParts_Factories_notmoving():
 
     # Constants for the new template object.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.arange(9).astype(np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = list(range(9))
+    uv = [9, 10]
+    rgb = [1, 2, 250]
     dir_0 = np.array([1, 0, 0], np.float64)
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
@@ -804,9 +804,9 @@ def test_controlParts_Factories_moving():
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.arange(9).astype(np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = list(range(9))
+    uv = [9, 10]
+    rgb = [1, 2, 250]
     dir_0 = np.array([1, 0, 0], np.float64)
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
@@ -899,9 +899,9 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.arange(9).astype(np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = list(range(9))
+    uv = [9, 10]
+    rgb = [1, 2, 250]
 
     # Part positions relative to parent.
     dir_0 = np.array([0, 0, +2], np.float64)
@@ -1064,9 +1064,9 @@ def test_getGeometry():
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.arange(9).astype(np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = list(range(9))
+    uv = [9, 10]
+    rgb = [1, 2, 250]
     sv = bullet_data.BulletData()
 
     # Add a valid template and verify it now exists in Azrael.
@@ -1115,9 +1115,9 @@ def test_instanceDB_checksum():
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
-    vert = np.arange(9).astype(np.float64)
-    uv = np.array([9, 10], np.float64)
-    rgb = np.array([1, 2, 250], np.uint8)
+    vert = list(range(9))
+    uv = [9, 10]
+    rgb = [1, 2, 250]
     sv = bullet_data.BulletData()
 
     # Add a valid template and verify it now exists in Azrael.

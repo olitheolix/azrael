@@ -125,8 +125,9 @@ def ToClerk_GetTemplate_Decode(data: dict):
 @typecheck
 def FromClerk_GetTemplate_Encode(data):
     # Sanity checks.
-    for key in ['cshape', 'vert', 'uv', 'rgb']:
-        assert isinstance(data[key], np.ndarray)
+    for key in ['vert', 'uv', 'rgb']:
+        assert isinstance(data[key], list)
+    assert isinstance(data['cshape'], np.ndarray)
     assert isinstance(data['aabb'], float)
     assert isinstance(data['boosters'], (list, tuple))
     assert isinstance(data['factories'], (list, tuple))
@@ -211,9 +212,9 @@ def ToClerk_AddTemplate_Decode(payload: dict):
             # Convert collision shape and geometry to NumPy array (via byte
             # string).
             cs = np.array(data['cs'], np.float64)
-            vert = np.array(data['vert'], np.float64)
-            UV = np.array(data['UV'], np.float64)
-            RGB = np.array(data['RGB'], np.uint8)
+            vert = data['vert']
+            UV = data['UV']
+            RGB = data['RGB']
 
             args = name, cs, vert, UV, RGB, boosters, factories
             try:
@@ -339,12 +340,13 @@ def ToClerk_GetGeometry_Decode(data: dict):
 
 @typecheck
 def FromClerk_GetGeometry_Encode(data):
-    assert isinstance(data['vert'], np.ndarray)
-    assert isinstance(data['uv'], np.ndarray)
-    assert isinstance(data['rgb'], np.ndarray)
-    return True, {'vert': data['vert'].tolist(),
-                  'UV': data['uv'].tolist(),
-                  'RGB': data['rgb'].tolist()}
+    assert isinstance(data['vert'], list)
+    assert isinstance(data['uv'], list)
+    assert isinstance(data['rgb'], list)
+    # fixme: the dict should match directly
+    return True, {'vert': data['vert'],
+                  'UV': data['uv'],
+                  'RGB': data['rgb']}
 
 
 @typecheck
@@ -369,10 +371,7 @@ def ToClerk_SetGeometry_Encode(
 
 @typecheck
 def ToClerk_SetGeometry_Decode(data: dict):
-    return True, (data['objID'],
-                  np.array(data['vert'], np.float64),
-                  np.array(data['UV'], np.float64),
-                  np.array(data['RGB'], np.float64))
+    return True, (data['objID'], data['vert'], data['UV'], data['RGB'])
 
 
 @typecheck
