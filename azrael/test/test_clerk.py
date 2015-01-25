@@ -120,19 +120,37 @@ def test_spawn():
     clerk = azrael.clerk.Clerk()
 
     # Default object.
-    sv = bullet_data.BulletData()
+    sv_1 = bullet_data.BulletData(imass=1)
+    sv_2 = bullet_data.BulletData(imass=2)
+    sv_3 = bullet_data.BulletData(imass=3)
 
     # Invalid templateID.
     templateID = np.int64(100).tostring()
-    ret = clerk.spawn(templateID, sv)
+    ret = clerk.spawn([(templateID, sv_1)])
     assert not ret.ok
     assert ret.msg.startswith('Not all template IDs were valid')
 
     # All parameters are now valid. This must spawn an object with ID=1
     # because this is the first ID in an otherwise pristine system.
     templateID = '_templateNone'.encode('utf8')
-    ret = clerk.spawn(templateID, sv)
-    assert (ret.ok, ret.data) == (True, 1)
+    ret = clerk.spawn([(templateID, sv_1)])
+    assert (ret.ok, ret.data) == (True, (1, ))
+
+    # Spawn two more objects with a single call.
+    name_2 = '_templateSphere'.encode('utf8')
+    name_3 = '_templateCube'.encode('utf8')
+    ret = clerk.spawn([(name_2, sv_2), (name_3, sv_3)])
+    assert (ret.ok, ret.data) == (True, (2, 3))
+
+    # List of objects must not be empty.
+    assert not clerk.spawn([]).ok
+
+    # List elements do not contain the correct data types.
+    assert not clerk.spawn([name_2]).ok
+
+    # Command must fail if one or more object descriptions are invalid, eg
+    # request an unknown template.
+    assert not clerk.spawn([(name_2, sv_2), (b'blah', sv_3)]).ok
 
     print('Test passed')
 

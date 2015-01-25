@@ -714,7 +714,7 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, ret)
 
     @typecheck
-    def spawn(self, templateID: bytes, sv: bullet_data._BulletData):
+    def spawn(self, newObjects: (tuple, list)):
         """
         Spawn a new object based on ``templateID``.
 
@@ -727,48 +727,66 @@ class Clerk(multiprocessing.Process):
         :return: ID of new object
         :rtype: int
         """
-        # Fetch the template for the new object.
-        template = self.getTemplates([templateID])
-        if not template.ok:
-            return template
-        template = template.data[templateID]
+        # Sanity checks.
+        try:
+            assert len(newObjects) > 0
+            for ii in newObjects:
+                assert len(ii) == 2
+                templateID, sv = ii
+                assert isinstance(templateID, bytes)
+                assert isinstance(sv, bullet_data._BulletData)
+        except AssertionError:
+            return RetVal(False, 'Invalid arguments', None)
 
-        # Request unique object ID.
-        objID = azrael.database.getUniqueObjectIDs(1)
-        if not objID.ok:
-            self.logit.error(msg)
-            return objID
-        objID = objID.data[0]
+        # Convenience.
+        names = [_[0] for _ in newObjects]
+        SVs = [_[1] for _ in newObjects]
 
-        # Copy the raw template to the instance DB. To do that we need the
-        # template first...
-        t_raw = self.getRawTemplate([templateID])
-        if not t_raw.ok:
-            self.logit.info(t_raw.msg)
-            return t_raw
-        t_raw = t_raw.data[templateID]
+        # Fetch the templates (we only need the collision shape but that
+        # unfortunately means we have to get and decode the entire template).
+        # fixme: this is unnecessary --> remove it.
+        ret = self.getTemplates(names)
+        if not ret.ok:
+            return ret
+        templates = ret.data
+
+        # Fetch the raw templates.
+        ret = self.getRawTemplate(names)
+        if not ret.ok:
+            self.logit.info(ret.msg)
+            return ret
+        raw_templates = ret.data
+
+        # Request unique IDs for the objects we will spawn.
+        ret = azrael.database.getUniqueObjectIDs(len(names))
+        if not ret.ok:
+            self.logit.error(ret.msg)
+            return ret
+        objIDs = ret.data
 
         # ... then add objID, update lastChanged, remove '_id' field, and
         # insert the final document into the instance DB.
-        t_raw['objID'] = objID
-        t_raw['lastChanged'] = 0
-        t_raw['templateID'] = templateID
-        del t_raw['_id']
-        database.dbHandles['ObjInstances'].insert(t_raw)
-        del t_raw
+        for idx, name in enumerate(names):
+            raw_templates[name]['objID'] = objIDs[idx]
+            raw_templates[name]['lastChanged'] = 0
+            raw_templates[name]['templateID'] = templateID
+            del raw_templates[name]['_id']
+        database.dbHandles['ObjInstances'].insert(raw_templates.values())
+        del raw_templates
 
         # Overwrite the user supplied collision shape with the one specified in
         # the template. This is to enforce geometric consistency with the
         # template data as otherwise strange things may happen (eg a space-ship
         # collision shape in the template database with a simple sphere
         # collision shape when it is spawned).
-        sv.cshape[:] = np.fromstring(template['cshape']).tolist()
+        for objID, name, sv in zip(objIDs, names, SVs):
+            sv.cshape[:] = np.fromstring(templates[name]['cshape']).tolist()
 
-        # Add the object to the physics simulation.
-        physAPI.addCmdSpawn(objID, sv, template['aabb'])
-        msg = 'Spawned template <{}> as objID=<{}>'.format(templateID, objID)
-        self.logit.debug(msg)
-        return RetVal(True, None, objID)
+            # Add the object to the physics simulation.
+            physAPI.addCmdSpawn(objID, sv, templates[name]['aabb'])
+            msg = 'Spawned template <{}> as objID=<{}>'.format(name, objID)
+            self.logit.debug(msg)
+        return RetVal(True, None, objIDs)
 
     @typecheck
     def removeObject(self, objID: int):
