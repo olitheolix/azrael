@@ -52,16 +52,42 @@ def init(reset=False):
     dbHandles['Counters'] = client[dbName]['Counters']
 
 
-def getNewObjectID():
+@typecheck
+def getUniqueObjectIDs(numIDs: int):
     """
-    Return a new and unique object ID.
-    """
-    fam = dbHandles['Counters'].find_and_modify
-    wpid = fam({'name': 'objcnt'},
-               {'$inc': {'cnt': 1}},
-               new=True, upsert=True)
+    Return ``numIDs`` unique object IDs as a tuple.
 
-    if wpid is None:
-        return RetVal(False, 'Cannot fetch new object ID', None)
+    If ``numIDs`` is Zero then return a scalar with the current value.
+
+    The ``numIDs`` is positive then return a tuple with ``numIDs`` entries,
+    each of which constitutes a unique ID.
+
+    This function returns an error unless ``numIDs`` is non-negative.
+
+    :param int numIDs: non-negative integer.
+    :return tuple or scalar: object IDs (numIDs > 0) or last issued object ID
+                            (numIDs = 0)
+    """
+    # Sanity check.
+    if numIDs < 0:
+        return RetVal(False, 'numIDs must be non-negative', None)
+    
+    # Increment the counter by ``numIDs``.
+    fam = dbHandles['Counters'].find_and_modify
+    doc = fam({'name': 'objcnt'},
+              {'$inc': {'cnt': numIDs}},
+              new=True, upsert=True)
+
+    # Error check.
+    if doc is None:
+        return RetVal(False, 'Cannot determine new object IDs', None)
+
+    # Extract the new counter value (after it was incremented).
+    cnt = doc['cnt']
+
+    # Return the either the current value or the range of new IDs.
+    if numIDs == 0:
+        return RetVal(True, None, cnt)
     else:
-        return RetVal(True, None, wpid['cnt'])
+        newIDs = tuple(range(cnt - numIDs + 1, cnt + 1))
+        return RetVal(True, None, newIDs)

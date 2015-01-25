@@ -734,11 +734,11 @@ class Clerk(multiprocessing.Process):
         template = template.data[templateID]
 
         # Request unique object ID.
-        objID = azrael.database.getNewObjectID()
+        objID = azrael.database.getUniqueObjectIDs(1)
         if not objID.ok:
             self.logit.error(msg)
             return objID
-        objID = objID.data
+        objID = objID.data[0]
 
         # Copy the raw template to the instance DB. To do that we need the
         # template first...
