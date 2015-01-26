@@ -907,14 +907,16 @@ class Clerk(multiprocessing.Process):
             return RetVal(True, None, {'vert': vert, 'uv': uv, 'rgb': rgb})
 
     @typecheck
-    def setGeometry(self, objID: int, vert, uv, rgb):
+    def setGeometry(self, objID: int, vert: list, uv: list, rgb: list):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
-        fixme: argument types
-        If ``objID`` does not exist return an error.
+        Return with an error if ``objID`` does not exist.
 
         :param int objID: the object for which to update the geometry.
+        :param list vert: list of vertices.
+        :param list uv: list of UV coordinate pairs.
+        :param list RGB: list of RGB values for every UV pair.
         :return: Success
         """
         geo = {'vertices': vert, 'UV': uv, 'RGB': rgb}
