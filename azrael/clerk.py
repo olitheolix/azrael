@@ -464,9 +464,11 @@ class Clerk(multiprocessing.Process):
 
             # Spawn the actual object that this factory can create. Retain
             # the objID as it will be returned to the caller.
-            ret = self.spawn(this.templateID, sv)
+            ret = self.spawn([(this.templateID, sv)])
             if ret.ok:
-                objIDs.append(ret.data)
+                objIDs.append(ret.data[0])
+            else:
+                self.logit.info('Factory could not spawn objects')
 
         # Success. Return the IDs of all spawned objects.
         return RetVal(True, None, objIDs)
@@ -579,7 +581,12 @@ class Clerk(multiprocessing.Process):
         """
         Return the raw data for all ``templateIDs`` as a dictionary.
 
-        This method will return either all templates or none.
+        This method will return either all templates or none. However, if the
+        same template is specified multiple times in ``templateIDs`` then it
+        will only return unique names.
+
+        For instance, ``getRawTemplate([name_1, name_2, name_1])`` is
+        tantamount to calling ``getRawTemplate([name_1, name_2])``.
 
         :param list(bytes) templateIDs: template IDs
         :return dict: raw template data (the templateID is the key).
@@ -588,6 +595,9 @@ class Clerk(multiprocessing.Process):
         tmp = [_ for _ in templateIDs if not isinstance(_, bytes)]
         if len(tmp) > 0:
             return RetVal(False, 'All template IDs must be Bytes', None)
+
+        # Remove all duplicates from templateIDs.
+        templateIDs = list(set(list(templateIDs)))
 
         # Retrieve the template. Return immediately if one does not exist.
         db = database.dbHandles['Templates']
@@ -599,6 +609,10 @@ class Clerk(multiprocessing.Process):
 
         # Compile a dictionary of all the templates.
         docs = {_['templateID']: _ for _ in docs}
+
+        # Delete the '_id' field.
+        for name in docs:
+            del docs[name]['_id']
         return RetVal(True, None, docs)
 
     @typecheck
@@ -735,6 +749,7 @@ class Clerk(multiprocessing.Process):
                 templateID, sv = ii
                 assert isinstance(templateID, bytes)
                 assert isinstance(sv, bullet_data._BulletData)
+                del templateID, sv
         except AssertionError:
             return RetVal(False, 'Invalid arguments', None)
 
@@ -764,14 +779,16 @@ class Clerk(multiprocessing.Process):
             return ret
         objIDs = ret.data
 
-        # ... then add objID, update lastChanged, remove '_id' field, and
-        # insert the final document into the instance DB.
+        # ... then add objID, update lastChanged and insert the final document
+        # into the instance DB.
+        dbDocs = []
         for idx, name in enumerate(names):
-            raw_templates[name]['objID'] = objIDs[idx]
-            raw_templates[name]['lastChanged'] = 0
-            raw_templates[name]['templateID'] = templateID
-            del raw_templates[name]['_id']
-        database.dbHandles['ObjInstances'].insert(raw_templates.values())
+            tmp = dict(raw_templates[name])
+            tmp['objID'] = objIDs[idx]
+            tmp['lastChanged'] = 0
+            tmp['templateID'] = name
+            dbDocs.append(tmp)
+        database.dbHandles['ObjInstances'].insert(dbDocs)
         del raw_templates
 
         # Overwrite the user supplied collision shape with the one specified in

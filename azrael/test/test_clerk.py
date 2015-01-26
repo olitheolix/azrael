@@ -136,20 +136,34 @@ def test_spawn():
     ret = clerk.spawn([(templateID, sv_1)])
     assert (ret.ok, ret.data) == (True, (1, ))
 
+    # Geometry for this object must now exist.
+    assert clerk.getGeometry(1).ok
+
     # Spawn two more objects with a single call.
     name_2 = '_templateSphere'.encode('utf8')
     name_3 = '_templateCube'.encode('utf8')
     ret = clerk.spawn([(name_2, sv_2), (name_3, sv_3)])
     assert (ret.ok, ret.data) == (True, (2, 3))
 
-    # List of objects must not be empty.
+    # Geometry for last two object must now exist as well.
+    assert clerk.getGeometry(2).ok
+    assert clerk.getGeometry(3).ok
+
+    # Spawn two identical objects with a single call.
+    ret = clerk.spawn([(name_2, sv_2), (name_2, sv_2)])
+    assert (ret.ok, ret.data) == (True, (4, 5))
+
+    # Geometry for last two object must now exist as well.
+    assert clerk.getGeometry(4).ok
+    assert clerk.getGeometry(5).ok
+
+    # Invalid: list of objects must not be empty.
     assert not clerk.spawn([]).ok
 
-    # List elements do not contain the correct data types.
+    # Invalid: List elements do not contain the correct data types.
     assert not clerk.spawn([name_2]).ok
 
-    # Command must fail if one or more object descriptions are invalid, eg
-    # request an unknown template.
+    # Invalid: one template does not exist.
     assert not clerk.spawn([(name_2, sv_2), (b'blah', sv_3)]).ok
 
     print('Test passed')
@@ -180,10 +194,8 @@ def test_delete():
     # Spawn two default objects.
     sv = bullet_data.BulletData()
     templateID = '_templateNone'.encode('utf8')
-    ret = clerk.spawn(templateID, sv)
-    assert (ret.ok, ret.data) == (True, objID_1)
-    ret = clerk.spawn(templateID, sv)
-    assert (ret.ok, ret.data) == (True, objID_2)
+    ret = clerk.spawn([(templateID, sv), (templateID, sv)])
+    assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
 
     # Two objects must now exist.
     leo.processCommandsAndSync()
@@ -234,8 +246,8 @@ def test_get_statevar():
     assert (ret.ok, ret.data) == (True, {10: None})
 
     # Spawn a new object. It must have ID=1.
-    ret = clerk.spawn(templateID, sv_1)
-    assert (ret.ok, ret.data) == (True, objID_1)
+    ret = clerk.spawn([(templateID, sv_1)])
+    assert (ret.ok, ret.data) == (True, (objID_1, ))
 
     # Retrieve the SV for a non-existing ID --> must fail.
     leo.processCommandsAndSync()
@@ -248,8 +260,8 @@ def test_get_statevar():
     assert isEqualBD(ret.data[objID_1], sv_1)
 
     # Spawn a second object.
-    ret = clerk.spawn(templateID, sv_2)
-    assert (ret.ok, ret.data) == (True, objID_2)
+    ret = clerk.spawn([(templateID, sv_2)])
+    assert (ret.ok, ret.data) == (True, (objID_2, ))
 
     # Retrieve the state variables for both objects individually.
     leo.processCommandsAndSync()
@@ -287,8 +299,8 @@ def test_set_force():
 
     # Spawn a new object. It must have ID=1.
     templateID = '_templateNone'.encode('utf8')
-    ret = clerk.spawn(templateID, sv)
-    assert (ret.ok, ret.data) == (True, id_1)
+    ret = clerk.spawn([(templateID, sv)])
+    assert (ret.ok, ret.data) == (True, (id_1, ))
 
     # Apply the force.
     assert clerk.setForce(id_1, force, relpos).ok
@@ -411,6 +423,12 @@ def test_add_get_template_single():
     assert b1.tostring() in out_boosters
     assert f0.tostring() in out_factories
 
+    # Request the same templates multiple times in a single call. This must
+    # not return an error, but it must return a dictionary with only as many
+    # keys as their are unique template IDs.
+    ret = clerk.getTemplates([t3.name, t3.name, t3.name])
+    assert ret.ok and (len(ret.data) == 1) and (t3.name in ret.data)
+
     print('Test passed')
 
 
@@ -526,16 +544,12 @@ def test_get_object_template_id():
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
 
-    # Spawn a new object. It must have ID=1.
-    ret = clerk.spawn(templateID_0, sv)
-    assert (ret.ok, ret.data) == (True, id_0)
-
-    # Spawn another object from a different template.
-    ret = clerk.spawn(templateID_1, sv)
-    assert (ret.ok, ret.data) == (True, id_1)
+    # Spawn two object. They must have id_0 and id_1, respectively.
+    ret = clerk.spawn([(templateID_0, sv), (templateID_1, sv)])
+    assert (ret.ok, ret.data) == (True, (id_0, id_1))
 
     # Retrieve template of first object.
-    leo.step(0, 10)
+    leo.processCommandsAndSync()
     ret = clerk.getTemplateID(id_0)
     assert (ret.ok, ret.data) == (True, templateID_0)
 
@@ -570,8 +584,8 @@ def test_controlParts_invalid_commands():
 
     # Create a fake object. We will not need the actual object but other
     # commands tested here depend on the existence of an object.
-    ret = clerk.spawn(templateID_1, sv)
-    assert (ret.ok, ret.data) == (True, objID_1)
+    ret = clerk.spawn([(templateID_1, sv)])
+    assert (ret.ok, ret.data) == (True, (objID_1, ))
 
     # Create commands for a Booster and a Factory.
     cmd_b = parts.CmdBooster(partID=0, force=0.2)
@@ -618,8 +632,8 @@ def test_controlParts_invalid_commands():
 
     # ... and spawn an instance thereof.
     sv = bullet_data.BulletData()
-    ret = clerk.spawn(t2.name, sv)
-    assert (ret.ok, ret.data) == (True, objID_2)
+    ret = clerk.spawn([(t2.name, sv)])
+    assert (ret.ok, ret.data) == (True, (objID_2, ))
     leo.processCommandsAndSync()
 
     # Create the commands to let each factory spawn an object.
@@ -684,8 +698,8 @@ def test_controlParts_Boosters_notmoving():
     assert clerk.addTemplates([t2]).ok
 
     # Spawn the object.
-    ret = clerk.spawn(t2.name, sv)
-    assert (ret.ok, ret.data) == (True, objID_1)
+    ret = clerk.spawn([(t2.name, sv)])
+    assert (ret.ok, ret.data) == (True, (objID_1, ))
     leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
@@ -775,8 +789,8 @@ def test_controlParts_Factories_notmoving():
     assert clerk.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
-    ret = clerk.spawn(t2.name, sv)
-    assert (ret.ok, ret.data) == (True, objID_1)
+    ret = clerk.spawn([(t2.name, sv)])
+    assert (ret.ok, ret.data) == (True, (objID_1, ))
     leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
@@ -794,7 +808,6 @@ def test_controlParts_Factories_notmoving():
     # given to the client object.
     ok, _, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
     assert ok
-    assert len(spawnedIDs) == 2
     assert spawnedIDs == [2, 3]
     leo.processCommandsAndSync()
 
@@ -867,8 +880,8 @@ def test_controlParts_Factories_moving():
     assert clerk.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
-    ret = clerk.spawn(t2.name, sv)
-    assert (ret.ok, ret.data) == (True, objID_1)
+    ret = clerk.spawn([(t2.name, sv)])
+    assert (ret.ok, ret.data) == (True, (objID_1, ))
     leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
@@ -983,8 +996,8 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     assert clerk.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
-    ret = clerk.spawn(t2.name, sv)
-    assert (ret.ok, ret.data) == (True, objID_1)
+    ret = clerk.spawn([(t2.name, sv)])
+    assert (ret.ok, ret.data) == (True, (objID_1, ))
     leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
@@ -1060,20 +1073,20 @@ def test_get_all_objectids():
     assert (ret.ok, ret.data) == (True, [])
 
     # Spawn a new object.
-    ret = clerk.spawn(templateID, sv)
-    assert (ret.ok, ret.data) == (True, objID_1)
+    ret = clerk.spawn([(templateID, sv)])
+    assert (ret.ok, ret.data) == (True, (objID_1, ))
 
     # The object list must now contain the ID of the just spawned object.
-    leo.step(0, 10)
+    leo.processCommandsAndSync()
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [objID_1])
 
     # Spawn another object.
-    ret = clerk.spawn(templateID, sv)
-    assert (ret.ok, ret.data) == (True, objID_2)
+    ret = clerk.spawn([(templateID, sv)])
+    assert (ret.ok, ret.data) == (True, (objID_2, ))
 
     # The object list must now contain the ID of both spawned objects.
-    leo.step(0, 10)
+    leo.processCommandsAndSync()
     ret = clerk.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
@@ -1107,9 +1120,9 @@ def test_getGeometry():
     assert not clerk.getGeometry(1).ok
 
     # Spawn an object from the previously added template.
-    ret = clerk.spawn(t1.name, sv)
-    assert ret.ok
-    objID = ret.data
+    ret = clerk.spawn([(t1.name, sv)])
+    assert ret.ok and (len(ret.data) == 1)
+    objID = ret.data[0]
 
     # Query the geometry of the object.
     ret = clerk.getGeometry(objID)
@@ -1154,27 +1167,26 @@ def test_instanceDB_checksum():
     assert clerk.addTemplates([t1]).ok
 
     # Spawn two objects from the previously defined template.
-    (ok, msg, objID0) = clerk.spawn(t1.name, sv)
-    assert ok
-    (ok, msg, objID1) = clerk.spawn(t1.name, sv)
-    assert ok
+    ret = clerk.spawn([(t1.name, sv), (t1.name, sv)])
+    assert ret.ok and (len(ret.data) == 2)
+    objID0, objID1 = ret.data
 
-    # Query the 'lastChanged' value for the objects.
-    leo.step(0, 10)
-    ret = clerk.getStateVariables([objID0, objID1])
-    assert ret.ok
-    ret_1 = ret.data
-    assert set((objID0, objID1)) == set(ret_1.keys())
+    # Query the State Vectors for both objects.
+    leo.processCommandsAndSync()
+    ret_1 = clerk.getStateVariables([objID0, objID1])
+    assert ret_1.ok and (set((objID0, objID1)) == set(ret_1.data.keys()))
 
     # Modify the geometry of the first object and verify that its 'lastChanged'
     # attribute has changed.
     assert clerk.setGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb).ok
+
     ret = clerk.getStateVariables([objID0])
     assert ret.ok
-    assert ret_1[objID0].lastChanged != ret.data[objID0].lastChanged
+    assert ret_1.data[objID0].lastChanged != ret.data[objID0].lastChanged
+
     ret = clerk.getStateVariables([objID1])
     assert ret.ok
-    assert ret_1[objID1].lastChanged == ret.data[objID1].lastChanged
+    assert ret_1.data[objID1].lastChanged == ret.data[objID1].lastChanged
 
     # Query the geometry and verify it has the new values.
     ret = clerk.getGeometry(objID0)
@@ -1191,7 +1203,6 @@ def test_instanceDB_checksum():
 if __name__ == '__main__':
     test_add_get_template_single()
     test_add_get_template_multi()
-
     test_getGeometry()
     test_instanceDB_checksum()
     test_add_get_template_AABB()
