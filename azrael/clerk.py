@@ -804,7 +804,7 @@ class Clerk(multiprocessing.Process):
                 sv.cshape[:] = np.fromstring(templates[name]['cshape']).tolist()
 
                 # Add the object to the physics simulation.
-                physAPI.addCmdSpawn(objID, sv, templates[name]['aabb'])
+                physAPI.addCmdSpawn([(objID, sv, templates[name]['aabb'])])
                 msg = 'Spawned template <{}> as objID=<{}>'.format(name, objID)
                 self.logit.debug(msg)
         return RetVal(True, None, objIDs)

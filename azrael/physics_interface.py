@@ -79,7 +79,7 @@ def dequeueCommands():
 
 
 @typecheck
-def addCmdSpawn(objID: int, sv: _BulletData, aabb: (int, float)):
+def addCmdSpawn(objData: (tuple, list)):
     """
     Enqueue a new object with ``objID`` for Leonard to spawn.
 
@@ -92,38 +92,54 @@ def addCmdSpawn(objID: int, sv: _BulletData, aabb: (int, float)):
     Leonard will apply this request once per physics cycle but it is impossible
     to determine when exactly.
 
+    fixme: argument docu
+
     :param int objID: object ID to insert.
     :param bytes sv: encoded state variable data.
     :param float aabb: size of AABB.
     :return: success.
     """
-    # Sanity checks.
-    if objID < 0:
-        msg = 'Object ID is negative'
-        logit.warning(msg)
-        return RetVal(False, msg, None)
-    if aabb < 0:
-        msg = 'AABB must be non-negative'
-        logit.warning(msg)
-        return RetVal(False, msg, None)
+    for objID, sv, aabb in objData:
+        try:
+            assert isinstance(objID, int)
+            assert isinstance(sv, _BulletData)
+            assert isinstance(aabb, (int, float))
+        except AssertionError:
+            msg = '<addCmdQueue> received invalid argument type'
+            return RetVal(False, msg, None)
+
+        # Sanity checks.
+        if objID < 0:
+            msg = 'Object ID is negative'
+            logit.warning(msg)
+            return RetVal(False, msg, None)
+        if aabb < 0:
+            msg = 'AABB must be non-negative'
+            logit.warning(msg)
+            return RetVal(False, msg, None)
 
     # Meta data for spawn command.
-    query = {'cmd': 'spawn', 'objID': objID}
-    data = {'sv': sv, 'AABB': float(aabb)}
-
-    # Insert this document unless a document with matching query already
-    # exists.
     db = database.dbHandles['Commands']
-    ret = db.update(query, {'$setOnInsert': data},  upsert=True)
+    bulk = db.initialize_unordered_bulk_op()
+    for objID, sv, aabb in objData:
+        query = {'cmd': 'spawn', 'objID': objID}
+        data = {'sv': sv, 'AABB': float(aabb)}
 
-    # Return success status to caller.
-    if not ret['updatedExisting']:
-        # A new document was created --> Success.
-        return RetVal(True, None, None)
+        # Insert this document unless a document with matching query already
+        # exists.
+        bulk.find(query).upsert().update({'$setOnInsert': data})
+
+    ret = bulk.execute()
+    if ret['nMatched'] > 0:
+        # A template with name ``templateID`` already existed --> failure.
+        # It should be impossible for this to happen if the object IDs come
+        # from ``database.getUniqueObjectIDs``.
+        msg = 'At least one objID already existed --> serious bug'
+        logit.error(msg)
+        return RetVal(False, msg, None)
     else:
-        # A document that matched the query already existed --> Failure.
-        return RetVal(False, None, None)
-
+        # All objIDs were unique --> success.
+        return RetVal(True, None, None)
 
 @typecheck
 def addCmdRemoveObject(objID: int):

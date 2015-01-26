@@ -54,8 +54,7 @@ def test_setStateVariables_basic(clsLeonard):
     leo = getLeonard(clsLeonard)
 
     # Parameters and constants for this test.
-    id_0 = 0
-    id_1 = 1
+    id_0, id_1, aabb = 0, 1, 1.0
     sv = bullet_data.BulletData()
     templateID = '_templateSphere'.encode('utf8')
 
@@ -68,7 +67,7 @@ def test_setStateVariables_basic(clsLeonard):
     del p, vl, vr
 
     # Spawn a new object. It must have ID=1.
-    assert physAPI.addCmdSpawn(id_1, sv, aabb=1.0).ok
+    assert physAPI.addCmdSpawn([(id_1, sv, aabb)]).ok
 
     # Update the object's State Vector.
     assert physAPI.addCmdModifyStateVariable(id_1, data).ok
@@ -106,8 +105,8 @@ def test_setStateVariables_advanced(clsLeonard):
     templateID = '_templateSphere'.encode('utf8')
 
     # Spawn an object.
-    objID = 1
-    assert physAPI.addCmdSpawn(objID, sv, aabb=1.0).ok
+    objID, aabb = 1, 1
+    assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
 
     # Verify the SV data.
     leo.processCommandsAndSync()
@@ -144,11 +143,11 @@ def test_move_single_object(clsLeonard):
     leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
-    id_0 = 0
+    id_0, aabb = 0, 1
     sv = bullet_data.BulletData()
 
     # Spawn an object.
-    assert physAPI.addCmdSpawn(id_0, sv, aabb=1.0).ok
+    assert physAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
 
     # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
@@ -182,13 +181,13 @@ def test_move_two_objects_no_collision(clsLeonard):
     leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
-    id_0, id_1 = 0, 1
+    id_0, id_1, aabb = 0, 1, 1
     sv_0 = bullet_data.BulletData(position=[0, 0, 0], velocityLin=[1, 0, 0])
     sv_1 = bullet_data.BulletData(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
     # Create two objects.
-    assert physAPI.addCmdSpawn(id_0, sv_0, aabb=1).ok
-    assert physAPI.addCmdSpawn(id_1, sv_1, aabb=1).ok
+    tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
+    assert physAPI.addCmdSpawn(tmp).ok
 
     # Advance the simulation by 1s and query the states of both objects.
     leonard.step(1.0, 60)
@@ -226,14 +225,17 @@ def test_worker_respawn():
     # Constants and parameters for this test.
     id_0, id_1 = 0, 1
     cshape = [3, 1, 1, 1]
+    aabb = 1
+
+    # Two State Vectors for this test.
     sv_0 = bullet_data.BulletData(
         position=[0, 0, 0], velocityLin=[1, 0, 0], cshape=cshape)
     sv_1 = bullet_data.BulletData(
         position=[0, 10, 0], velocityLin=[0, -1, 0], cshape=cshape)
 
     # Create two objects.
-    assert physAPI.addCmdSpawn(id_0, sv_0, aabb=1).ok
-    assert physAPI.addCmdSpawn(id_1, sv_1, aabb=1).ok
+    tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
+    assert physAPI.addCmdSpawn(tmp).ok
 
     # Advance the simulation by 1s, but use many small time steps. This ensures
     # that the Workers will restart themselves frequently.
@@ -385,8 +387,9 @@ def test_computeCollisionSetsAABB(dim):
         assert False
 
     # Add all objects to the SV DB.
+    aabb = 1
     for objID, sv in zip(all_id, SVs):
-        assert physAPI.addCmdSpawn(objID, sv, aabb=1.0).ok
+        assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
     del SVs
 
     # Retrieve all SVs as Leonard does.
@@ -454,11 +457,11 @@ def test_force_grid(clsLeonard):
     leonard = getLeonard(clsLeonard)
 
     # Constants and parameters for this test.
-    id_0 = 0
+    id_0, aabb = 0, 1
     sv = bullet_data.BulletData()
 
     # Spawn one object.
-    assert physAPI.addCmdSpawn(id_0, sv, aabb=1).ok
+    assert physAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
 
     # Advance the simulation by 1s and verify that nothing has moved.
     leonard.step(1.0, 60)
@@ -510,7 +513,7 @@ def test_createWorkPackages():
 
     # Constants.
     id_1, id_2 = 1, 2
-    dt, maxsteps = 2, 3
+    aabb, dt, maxsteps = 1, 2, 3
 
     # Invalid call: list of IDs must not be empty.
     assert not leo.createWorkPackage([], dt, maxsteps).ok
@@ -519,12 +522,12 @@ def test_createWorkPackages():
     assert not leo.createWorkPackage([10], dt, maxsteps).ok
 
     # Test data.
-    data_0 = bullet_data.BulletData(imass=1)
-    data_1 = bullet_data.BulletData(imass=2)
+    sv_1 = bullet_data.BulletData(imass=1)
+    sv_2 = bullet_data.BulletData(imass=2)
 
     # Add two new objects to Leonard.
-    assert physAPI.addCmdSpawn(id_1, data_0, aabb=1).ok
-    assert physAPI.addCmdSpawn(id_2, data_1, aabb=1).ok
+    tmp = [(id_1, sv_1, aabb), (id_2, sv_2, aabb)]
+    assert physAPI.addCmdSpawn(tmp).ok
     leo.processCommandsAndSync()
 
     # Create a Work Package with two objects. The WPID must be 1.
@@ -545,8 +548,8 @@ def test_createWorkPackages():
     assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
     assert (ret.ok, len(data)) == (True, 2)
     assert (data[0].id, data[1].id) == (id_1, id_2)
-    assert isEqualBD(data[0].sv, data_0)
-    assert isEqualBD(data[1].sv, data_1)
+    assert isEqualBD(data[0].sv, sv_1)
+    assert isEqualBD(data[1].sv, sv_2)
     assert np.array_equal(data[0].central_force, [0, 0, 0])
     assert np.array_equal(data[1].central_force, [0, 0, 0])
 
@@ -568,11 +571,11 @@ def test_updateLocalCache():
     WPData = azrael.leonard.WPData
     data_1 = bullet_data.BulletData(imass=1)
     data_2 = bullet_data.BulletData(imass=2)
-    id_1, id_2 = 1, 2
+    id_1, id_2, aabb = 1, 2, 1
 
     # Spawn new objects.
-    assert physAPI.addCmdSpawn(id_1, data_1, aabb=1).ok
-    assert physAPI.addCmdSpawn(id_2, data_2, aabb=1).ok
+    tmp = [(id_1, data_1, aabb), (id_2, data_2, aabb)]
+    assert physAPI.addCmdSpawn(tmp).ok
     leo.processCommandsAndSync()
 
     # Create a Work Package and verify its content.
@@ -605,15 +608,15 @@ def test_processCommandQueue():
     # Convenience.
     sv_1 = bullet_data.BulletData(imass=1)
     sv_2 = bullet_data.BulletData(imass=2)
-    id_1, id_2 = 1, 2
+    id_1, id_2, aabb = 1, 2, 1
 
     # Cache must be empty.
     assert len(leo.allObjects) == len(leo.allForces) == 0
     assert len(leo.allTorques) == 0
 
     # Spawn two objects.
-    assert physAPI.addCmdSpawn(id_1, sv_1, aabb=1).ok
-    assert physAPI.addCmdSpawn(id_2, sv_2, aabb=1).ok
+    tmp = [(id_1, sv_1, aabb), (id_2, sv_2, aabb)]
+    assert physAPI.addCmdSpawn(tmp).ok
     leo.processCommandsAndSync()
 
     # Verify the local cache (forces and torques must default to zero).

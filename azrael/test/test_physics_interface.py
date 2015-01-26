@@ -44,8 +44,7 @@ def test_add_get_remove_single():
     leo = getLeonard()
 
     # Create an object ID for the test.
-    id_0 = 0
-    id_1 = 1
+    id_0, id_1, aabb = 0, 1, 0
 
     # The number of SV entries must now be zero.
     assert physAPI.getNumObjects() == 0
@@ -57,7 +56,7 @@ def test_add_get_remove_single():
     data = BulletData()
 
     # Add the object to the DB with ID=0.
-    assert physAPI.addCmdSpawn(id_0, data, aabb=0)
+    assert physAPI.addCmdSpawn([(id_0, data, aabb)])
     leo.processCommandsAndSync()
 
     # Query the object. This must return the SV data directly.
@@ -97,8 +96,7 @@ def test_add_get_multiple():
     leo = getLeonard()
 
     # Create two object IDs for this test.
-    id_0 = 0
-    id_1 = 1
+    id_0, id_1, aabb = 0, 1, 0
 
     # The number of SV entries must now be zero.
     assert physAPI.getNumObjects() == 0
@@ -109,8 +107,8 @@ def test_add_get_multiple():
     data_1 = BulletData(position=[10, 10, 10])
 
     # Add the objects to the DB.
-    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0)
-    assert physAPI.addCmdSpawn(id_1, data_1, aabb=0)
+    tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
+    assert physAPI.addCmdSpawn(tmp)
     leo.processCommandsAndSync()
 
     # Query the objects individually.
@@ -152,7 +150,7 @@ def test_add_same():
     leo = getLeonard()
 
     # Convenience.
-    id_0 = 0
+    id_0, aabb = 0, 0
 
     # The number of SV entries must now be zero.
     assert physAPI.getNumObjects() == 0
@@ -170,8 +168,8 @@ def test_add_same():
     # Spawn the first object, then attempt to spawn another with the same objID
     # *before* Leonard gets around to add even the first one --> this must fail
     # and not add anything.
-    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
-    assert not physAPI.addCmdSpawn(id_0, data_1, aabb=0).ok
+    assert physAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
+    assert not physAPI.addCmdSpawn([(id_0, data_1, aabb)]).ok
     ret = physAPI.dequeueCommands()
     spawn = ret.data['spawn']
     assert ret.ok and (len(spawn) == 1) and (spawn[0]['objID'] == id_0)
@@ -185,13 +183,13 @@ def test_add_same():
     # object with the same id_0 but a different State Vectors, let  Leonard
     # process the queue, and then verify that it did not add/modify the object
     # with id_0.
-    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
+    assert physAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
     leo.processCommandsAndSync()
     ret = physAPI.getStateVariables([id_0])
     assert ret.ok and isEqualBD(ret.data[id_0], data_0)
 
     # Spawn a new object with same id_0 but different State Vector data_2.
-    assert physAPI.addCmdSpawn(id_0, data_2, aabb=0).ok
+    assert physAPI.addCmdSpawn([(id_0, data_2, aabb)]).ok
     leo.processCommandsAndSync()
 
     # The State Vector for id_0 must still be data_0.
@@ -214,6 +212,7 @@ def test_commandQueue():
     data_0 = BulletData()
     data_1 = BulletDataOverride(imass=2, scale=3)
     id_0, id_1 = 0, 1
+    aabb = 1
 
     # The command queue must be empty for every category.
     ret = physAPI.dequeueCommands()
@@ -224,8 +223,8 @@ def test_commandQueue():
     assert ret.data['force'] == []
 
     # Spawn two objects with id_0 and id_1.
-    assert physAPI.addCmdSpawn(id_0, data_0, aabb=1).ok
-    assert physAPI.addCmdSpawn(id_1, data_1, aabb=1).ok
+    tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
+    assert physAPI.addCmdSpawn(tmp).ok
 
     # Verify that the spawn commands were added.
     ret = physAPI.dequeueCommands()
@@ -276,7 +275,7 @@ def test_commandQueue():
     # skip commands for non-existing IDs automatically).
     force, torque = [7, 8, 9], [10, 11.5, 12.5]
     for objID in (id_0, id_1):
-        assert physAPI.addCmdSpawn(objID, data_0, aabb=1).ok
+        assert physAPI.addCmdSpawn([(objID, data_0, aabb)]).ok
         assert physAPI.addCmdModifyStateVariable(objID, data_1).ok
         assert physAPI.addCmdRemoveObject(objID).ok
         assert physAPI.addCmdSetForceAndTorque(objID, force, torque).ok
@@ -312,13 +311,13 @@ def test_setStateVariables():
     del p, vl, vr, o
 
     # Create an object ID for the test.
-    id_0 = 0
+    id_0, aabb = 0, 0
 
     # Create an object and serialise it.
     btdata = BulletData()
 
     # Add the object to the DB with ID=0.
-    assert physAPI.addCmdSpawn(id_0, btdata, aabb=0).ok
+    assert physAPI.addCmdSpawn([(id_0, btdata, aabb)]).ok
     leo.processCommandsAndSync()
 
     # Modify the State Vector for id_0.
@@ -403,16 +402,15 @@ def test_get_set_forceandtorque():
     leo = getLeonard()
 
     # Create two object IDs for this test.
-    id_0 = 0
-    id_1 = 1
+    id_0, id_1, aabb = 0, 1, 0
 
     # Create two objects and serialise them.
     data_0 = BulletData(position=[0, 0, 0])
     data_1 = BulletData(position=[10, 10, 10])
 
     # Add the two objects to the simulation.
-    assert physAPI.addCmdSpawn(id_0, data_0, aabb=0).ok
-    assert physAPI.addCmdSpawn(id_1, data_1, aabb=0).ok
+    tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
+    assert physAPI.addCmdSpawn(tmp).ok
     leo.processCommandsAndSync()
 
     # Update the force and torque of the second object only.
@@ -460,14 +458,15 @@ def test_set_get_AABB():
     # Create two object IDs and a BulletData instances for this test.
     id_0, id_1 = 0, 1
     id_2, id_3 = 2, 3
+    aabb_1, aabb_2 = 1.5, 2.5
     data = BulletData()
 
     # Attempt to add an object with a negative AABB value. This must fail.
-    assert not physAPI.addCmdSpawn(id_0, data, aabb=-1.5).ok
+    assert not physAPI.addCmdSpawn([(id_0, data, -1.5)]).ok
 
     # Add two new objects to the DB.
-    assert physAPI.addCmdSpawn(id_0, data, aabb=1.5).ok
-    assert physAPI.addCmdSpawn(id_1, data, aabb=2.5).ok
+    tmp = [(id_0, data, aabb_1), (id_1, data, aabb_2)]
+    assert physAPI.addCmdSpawn(tmp).ok
     leo.processCommandsAndSync()
 
     # Query the AABB of the first.
