@@ -222,14 +222,17 @@ class LeonardBase(multiprocessing.Process):
         # Convenience.
         vg = azrael.vectorgrid
 
-        z = np.float64(0)
-        gridForces = {_: z for _ in idPos}
-        for objID, pos in idPos.items():
-            ret = vg.getValue('force', pos)
-            if not ret.ok:
-                self.logit.warning(ret.msg)
-                return RetVal(False, ret.msg, gridForces)
-            gridForces[objID] = ret.data
+        # Extract the keys and values in the same order.
+        objIDs = list(idPos.keys())
+        positions = [idPos[_] for _ in objIDs]
+
+        # Query the grid values at all positions.
+        ret = vg.getValues('force', positions)
+        if not ret.ok:
+            return RetVal(False, ret.msg, None)
+
+        # Overwrite the default values with whatever ...
+        gridForces = {objID: val for objID, val in zip(objIDs, ret.data)}
         return RetVal(True, None, gridForces)
 
     @typecheck
@@ -250,8 +253,11 @@ class LeonardBase(multiprocessing.Process):
         idPos = {k: v.position for (k, v) in self.allObjects.items()}
         ret = self.getGridForces(idPos)
         if not ret.ok:
-            self.logit.warning(ret.msg)
-        gridForces = ret.data
+            self.logit.info(ret.msg)
+            z = np.float64(0)
+            gridForces = {_: z for _ in idPos}
+        else:
+            gridForces = ret.data
         del ret, idPos
 
         # Iterate over all objects and update their SV information in Bullet.
@@ -443,8 +449,11 @@ class LeonardBullet(LeonardBase):
         idPos = {k: v.position for (k, v) in self.allObjects.items()}
         ret = self.getGridForces(idPos)
         if not ret.ok:
-            self.logit.warning(ret.msg)
-        gridForces = ret.data
+            self.logit.info(ret.msg)
+            z = np.float64(0)
+            gridForces = {_: z for _ in idPos}
+        else:
+            gridForces = ret.data
         del ret, idPos
 
         # Iterate over all objects and update them.
@@ -528,8 +537,11 @@ class LeonardSweeping(LeonardBullet):
             idPos = {k: v.position for (k, v) in coll_SV.items()}
             ret = self.getGridForces(idPos)
             if not ret.ok:
-                self.logit.warning(ret.msg)
-            gridForces = ret.data
+                self.logit.info(ret.msg)
+                z = np.float64(0)
+                gridForces = {_: z for _ in idPos}
+            else:
+                gridForces = ret.data
             del ret, idPos
 
             # Iterate over all objects and update them.
@@ -812,14 +824,17 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         # Convenience.
         vg = azrael.vectorgrid
 
-        z = np.float64(0)
-        gridForces = {_: z for _ in idPos}
-        for objID, pos in idPos.items():
-            ret = vg.getValue('force', pos)
-            if not ret.ok:
-                self.logit.warning(ret.msg)
-                return RetVal(False, ret.msg, gridForces)
-            gridForces[objID] = ret.data
+        # Extract the keys and values in the same order.
+        objIDs = list(idPos.keys())
+        positions = [idPos[_] for _ in objIDs]
+
+        # Query the grid values at all positions.
+        ret = vg.getValues('force', positions)
+        if not ret.ok:
+            return RetVal(False, ret.msg, None)
+
+        # Overwrite the default values with whatever ...
+        gridForces = {objID: val for objID, val in zip(objIDs, ret.data)}
         return RetVal(True, None, gridForces)
 
     def computePhysicsForWorkPackage(self, wp):
@@ -846,8 +861,11 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
             idPos = {_.id: _.sv.position for _ in worklist}
             ret = self.getGridForces(idPos)
             if not ret.ok:
-                self.logit.warning(ret.msg)
-            gridForces = ret.data
+                self.logit.info(ret.msg)
+                z = np.float64(0)
+                gridForces = {_: z for _ in idPos}
+            else:
+                gridForces = ret.data
             del ret, idPos
 
             for obj in worklist:
