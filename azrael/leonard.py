@@ -229,6 +229,31 @@ class LeonardBase(multiprocessing.Process):
         else:
             return force
 
+    def getGridForces(self, idPos: dict):
+        """
+        Return dictionary of force values for every object in ``idPos``.
+
+        The ``idPos`` argument is a {objID_1: sv_1, objID_2, sv_2, ...}
+        dictionary.
+
+        The returned dictionary has the same keys as ``idPos``.
+
+        :param dict idPos: dictionary with objIDs and corresponding SVs.
+        :return dict: {objID_k: force_k}
+        """
+        # Convenience.
+        vg = azrael.vectorgrid
+
+        z = np.float64(0)
+        gridForces = {_: z for _ in idPos}
+        for objID, pos in idPos.items():
+            ret = vg.getValue('force', pos)
+            if not ret.ok:
+                self.logit.warning(ret.msg)
+                return RetVal(False, ret.msg, gridForces)
+            gridForces[objID] = ret.data
+        return RetVal(True, None, gridForces)
+
     @typecheck
     def step(self, dt: (int, float), maxsteps: int):
         """
@@ -243,13 +268,21 @@ class LeonardBase(multiprocessing.Process):
         """
         self.processCommandQueue()
 
+        # Fetch the forces for all object positions.
+        idPos = {k: v.position for (k, v) in self.allObjects.items()}
+        ret = self.getGridForces(idPos)
+        if not ret.ok:
+            self.logit.warning(ret.msg)
+        gridForces = ret.data
+        del ret, idPos
+
         # Iterate over all objects and update their SV information in Bullet.
         for objID, sv in self.allObjects.items():
             # Fetch the force vector for the current object from the DB.
             force = np.array(self.allForces[objID], np.float64)
 
             # Add the force defined on the 'force' grid.
-            force = self.applyGridForce(force, sv.position)
+            force += gridForces[objID]
 
             # Update velocity and position.
             vel = np.array(sv.velocityLin, np.float64) + 0.5 * force
@@ -807,7 +840,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         # Log the number of collision-sets in the current Work Package.
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
 
-        # Convenience: the WPData elements makes the code more readable.
+        # Convenience: the WPData elements make the code more readable.
         worklist = [WPData(*_) for _ in worklist]
 
         # Add every object to the Bullet engine and set the force/torque.
