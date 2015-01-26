@@ -855,32 +855,34 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         # Convenience: the WPData elements make the code more readable.
         worklist = [WPData(*_) for _ in worklist]
 
+        # Convenience.
+        applyForceAndTorque = self.bullet.applyForceAndTorque
+        setObjectData = self.bullet.setObjectData
+
         # Add every object to the Bullet engine and set the force/torque.
         with util.Timeit('Worker:1.1.0  applyforce') as timeit:
-            # Fetch the forces for all object positions.
-            idPos = {_.id: _.sv.position for _ in worklist}
-            ret = self.getGridForces(idPos)
-            if not ret.ok:
-                self.logit.info(ret.msg)
-                z = np.float64(0)
-                gridForces = {_: z for _ in idPos}
-            else:
-                gridForces = ret.data
-            del ret, idPos
+            with util.Timeit('Worker:1.1.1   grid') as timeit:
+                # Fetch the forces for all object positions.
+                idPos = {_.id: _.sv.position for _ in worklist}
+                ret = self.getGridForces(idPos)
+                if not ret.ok:
+                    self.logit.info(ret.msg)
+                    z = np.float64(0)
+                    gridForces = {_: z for _ in idPos}
+                else:
+                    gridForces = ret.data
+                del ret, idPos
 
-            for obj in worklist:
-                # Convenience.
-                objID, force, torque = obj.id, obj.central_force, obj.torque
+            with util.Timeit('Worker:1.1.1   updateGeo') as timeit:
+                for obj in worklist:
+                    # Update the object in Bullet and apply the force/torque.
+                    setObjectData(obj.id, obj.sv)
 
-                # Update the object in Bullet.
-                self.bullet.setObjectData(objID, obj.sv)
-
-                # Add the force defined on the 'force' grid.
-                with util.Timeit('Worker:1.1.1   grid') as timeit:
-                    force += gridForces[objID]
-
-                # Apply all forces and torques.
-                self.bullet.applyForceAndTorque(objID, force, torque)
+            with util.Timeit('Worker:1.1.1   updateForce') as timeit:
+                for obj in worklist:
+                    # Add the force defined on the 'force' grid.
+                    force = obj.central_force + gridForces[obj.id]
+                    applyForceAndTorque(obj.id, force, obj.torque)
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
