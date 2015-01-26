@@ -797,27 +797,30 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         engine = azrael.bullet.boost_bullet.PyBulletPhys
         self.bullet = engine(self.workerID)
 
-    def applyGridForce(self, force, pos):
+    def getGridForces(self, idPos: dict):
         """
-        Return updated ``force`` that takes the force grid value at ``pos``
-        into account.
+        Return dictionary of force values for every object in ``idPos``.
 
-        Covenience function to minimise code duplication.
+        The ``idPos`` argument is a {objID_1: sv_1, objID_2, sv_2, ...}
+        dictionary.
 
-        :param 3d-vec force: original force value.
-        :param 3d-vec pos: position in world coordinates.
-        :return: updated ``force`` value.
-        :rtype: 3d-vec.
+        The returned dictionary has the same keys as ``idPos``.
+
+        :param dict idPos: dictionary with objIDs and corresponding SVs.
+        :return dict: {objID_k: force_k}
         """
         # Convenience.
         vg = azrael.vectorgrid
 
-        # Add the force from the grid.
-        tmp = vg.getValue('force', pos)
-        if tmp.ok and len(tmp.data) == 3:
-            return force + tmp.data
-        else:
-            return force
+        z = np.float64(0)
+        gridForces = {_: z for _ in idPos}
+        for objID, pos in idPos.items():
+            ret = vg.getValue('force', pos)
+            if not ret.ok:
+                self.logit.warning(ret.msg)
+                return RetVal(False, ret.msg, gridForces)
+            gridForces[objID] = ret.data
+        return RetVal(True, None, gridForces)
 
     def computePhysicsForWorkPackage(self, wp):
         """
@@ -839,6 +842,14 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
 
         # Add every object to the Bullet engine and set the force/torque.
         with util.Timeit('Worker:1.1.0  applyforce') as timeit:
+            # Fetch the forces for all object positions.
+            idPos = {_.id: _.sv.position for _ in worklist}
+            ret = self.getGridForces(idPos)
+            if not ret.ok:
+                self.logit.warning(ret.msg)
+            gridForces = ret.data
+            del ret, idPos
+
             for obj in worklist:
                 # Convenience.
                 objID, force, torque = obj.id, obj.central_force, obj.torque
@@ -848,7 +859,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
 
                 # Add the force defined on the 'force' grid.
                 with util.Timeit('Worker:1.1.1   grid') as timeit:
-                    force = self.applyGridForce(force, obj.sv.position)
+                    force += gridForces[objID]
 
                 # Apply all forces and torques.
                 self.bullet.applyForceAndTorque(objID, force, torque)

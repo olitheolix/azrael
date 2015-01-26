@@ -222,6 +222,11 @@ def test_worker_respawn():
     leonard.workerStepsUntilQuit = (1, 10)
     leonard.setup()
 
+    # Define a force grid (not used in this test but prevent a plethora
+    # of meaningleass warning messages).
+    vg = azrael.vectorgrid
+    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
+
     # Constants and parameters for this test.
     id_0, id_1 = 0, 1
     cshape = [3, 1, 1, 1]
@@ -271,6 +276,11 @@ def test_sweeping_2objects():
     contains the set of overlapping AABBs.
     """
     killAzrael()
+
+    # Define a force grid (not used in this test but prevent a plethora
+    # of meaningleass warning messages).
+    vg = azrael.vectorgrid
+    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
 
     # Convenience variables.
     sweeping = azrael.leonard.sweeping
@@ -326,6 +336,11 @@ def test_sweeping_3objects():
     Same as test_sweeping_2objects but with three objects.
     """
     killAzrael()
+
+    # Define a force grid (not used in this test but prevent a plethora
+    # of meaningleass warning messages).
+    vg = azrael.vectorgrid
+    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
 
     # Convenience variable.
     sweeping = azrael.leonard.sweeping
