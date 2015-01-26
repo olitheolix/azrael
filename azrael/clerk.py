@@ -764,24 +764,15 @@ class Clerk(multiprocessing.Process):
         names = [_[0] for _ in newObjects]
         SVs = [_[1] for _ in newObjects]
 
-        with util.Timeit('spawn:0 getTemplate') as timeit:
-            # Fetch the templates (we only need the collision shape but that
-            # unfortunately means we have to get and decode the entire template).
-            # fixme: this is unnecessary --> remove it.
-            ret = self.getTemplates(names)
-            if not ret.ok:
-                return ret
-            templates = ret.data
-
         with util.Timeit('spawn:1 getRawTemplate') as timeit:
-            # Fetch the raw templates.
+            # Fetch the raw templates for all ``names``.
             ret = self.getRawTemplate(names)
             if not ret.ok:
                 self.logit.info(ret.msg)
                 return ret
-            raw_templates = ret.data
+            templates = ret.data
 
-        # Request unique IDs for the objects we will spawn.
+        # Request unique IDs for the objects to spawn.
         ret = azrael.database.getUniqueObjectIDs(len(names))
         if not ret.ok:
             self.logit.error(ret.msg)
@@ -789,35 +780,45 @@ class Clerk(multiprocessing.Process):
         objIDs = ret.data
 
         with util.Timeit('spawn:2 createSVs') as timeit:
-            # ... then add objID, update lastChanged and insert the final
-            # document into the instance DB.
+            # Make a copy of every template and endow it with the meta
+            # information for an instantiated object. Then add it to the list
+            # of objects to spawn.
             dbDocs = []
             for idx, name in enumerate(names):
-                tmp = dict(raw_templates[name])
+                tmp = dict(templates[name])
                 tmp['objID'] = objIDs[idx]
                 tmp['lastChanged'] = 0
                 tmp['templateID'] = name
                 dbDocs.append(tmp)
-            database.dbHandles['ObjInstances'].insert(dbDocs)
-            del raw_templates
 
-        # Overwrite the user supplied collision shape with the one specified in
-        # the template. This is to enforce geometric consistency with the
-        # template data as otherwise strange things may happen (eg a space-ship
-        # collision shape in the template database with a simple sphere
-        # collision shape when it is spawned).
+            # Insert all objects into the State Variable DB. Note: this does
+            # not make Leonard aware of their existend (see next step).
+            database.dbHandles['ObjInstances'].insert(dbDocs)
+
         with util.Timeit('spawn:3 addCmds') as timeit:
+            # Compile the list of spawn commands that will be sent to Leonard.
             objs = []
             for objID, name, sv in zip(objIDs, names, SVs):
-                sv.cshape[:] = np.fromstring(templates[name]['cshape']).tolist()
-                objs.append((objID, sv, templates[name]['aabb']))
+                # Convenience.
+                t = templates[name]
 
-            # Queue the spawn commands.
+                # Overwrite the user supplied collision shape with the one
+                # specified in the template. This is to enforce geometric
+                # consistency with the template data as otherwise strange
+                # things may happen (eg a space-ship collision shape in the
+                # template database with a simple sphere collision shape when
+                # it is spawned).
+                sv.cshape[:] = np.fromstring(t['cshape']).tolist()
+
+                # Add the object description to the list.
+                objs.append((objID, sv, t['AABB']))
+
+            # Queue the spawn commands so that Leonard can pick them up.
             ret = physAPI.addCmdSpawn(objs)
             if not ret.ok:
                 return ret
-            msg = 'Spawned {} new objects'.format(len(objs))
-            self.logit.debug(msg)
+            self.logit.debug('Spawned {} new objects'.format(len(objs)))
+
         return RetVal(True, None, objIDs)
 
     @typecheck
