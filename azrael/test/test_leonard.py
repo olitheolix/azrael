@@ -75,7 +75,7 @@ def test_setStateVariables_basic(clsLeonard):
 
     # Step the simulation by 0 seconds. This will not change the simulation
     # state but pick up all the queued commands.
-    leo.step(0, 10)
+    leo.processCommandsAndSync()
 
     # Verify that the attributes were correctly updated.
     ret = physAPI.getStateVariables([id_1])
@@ -110,7 +110,7 @@ def test_setStateVariables_advanced(clsLeonard):
     assert physAPI.addCmdSpawn(objID, sv, aabb=1.0).ok
 
     # Verify the SV data.
-    leo.step(0, 10)
+    leo.processCommandsAndSync()
     ret = physAPI.getStateVariables([objID])
     assert ret.ok
     assert ret.data[objID].imass == 2
@@ -122,7 +122,7 @@ def test_setStateVariables_advanced(clsLeonard):
     assert physAPI.addCmdModifyStateVariable(objID, sv_new).ok
 
     # Verify the SV data.
-    leo.step(0, 10)
+    leo.processCommandsAndSync()
     ret = physAPI.getStateVariables([objID])
     assert (ret.ok, len(ret.data)) == (True, 1)
     sv = ret.data[objID]
@@ -390,7 +390,7 @@ def test_computeCollisionSetsAABB(dim):
     del SVs
 
     # Retrieve all SVs as Leonard does.
-    leo.step(0, 60)
+    leo.processCommandsAndSync()
     assert len(all_id) == len(leo.allObjects)
 
     def ccsWrapper(test_objIDs, expected_objIDs):
