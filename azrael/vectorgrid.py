@@ -224,14 +224,118 @@ def setValue(name: str, pos: np.ndarray, value: np.ndarray):
 
 
 @typecheck
+def getValues(name: str, positions: (tuple, list)):
+    """
+    Return the value at ``positions`` in a tuple of NumPy arrays.
+
+    :param str name: grid name
+    :param list positions: grid positions to query.
+    :return: list of grid values at ``positions``.
+    """
+    # DB handle must have been initialised.
+    if _DB_Grid is None:
+        return RetVal(False, 'Not initialised', None)
+
+    # Return with an error if the grid ``name`` does not exist.
+    if name not in _DB_Grid.collection_names():
+        msg = 'Unknown grid <{}> (get)'.format(name)
+        logit.info(msg)
+        return RetVal(False, msg, None)
+    else:
+        db = _DB_Grid[name]
+
+    # Retrieve the admin field for later use.
+    admin = db.find_one({'admin': 'admin'})
+    if admin is None:
+        return RetVal(False, 'Bug: could not find admin element', None)
+    gran, vecDim = admin['gran'], admin['elDim']
+    del admin
+
+    # Ensure the region dimensions are positive integers.
+    indexes = []
+    try:
+        for pos in positions:
+            assert isinstance(pos, (tuple, list, np.ndarray))
+            assert len(pos) == 3
+            indexes.append('-'.join([str(int(_ // gran)) for _ in pos]))
+    except AssertionError:
+        return RetVal(False, '<getValues> received invalid positions', None)
+
+    # Allocate the output array.
+    out = np.zeros((len(indexes), vecDim), np.float64)
+
+    # Find all values and compile the output list.
+    values = [_['val'] for _ in db.find({'strPos': {'$in': indexes}})]
+    for idx, val in enumerate(values):
+        out[idx, :] = np.array(val, np.float64)
+
+    return RetVal(True, None, out)
+
+
+@typecheck
+def setValues(name: str, posVals: (tuple, list)):
+    """
+    Update the grid values as specified in ``posVals``.
+
+    :param list posVals: list of (pos, val) tuples.
+    :return: Success
+    """
+    # DB handle must have been initialised.
+    if _DB_Grid is None:
+        return RetVal(False, 'Not initialised', None)
+
+    # Return with an error if the grid ``name`` does not exist.
+    if name not in _DB_Grid.collection_names():
+        msg = 'Unknown grid <{}>'.format(name)
+        logit.info(msg)
+        return RetVal(False, msg, None)
+    else:
+        db = _DB_Grid[name]
+
+    # Retrieve the admin field for later use.
+    admin = db.find_one({'admin': 'admin'})
+    if admin is None:
+        return RetVal(False, 'Bug: could not find admin element', None)
+    gran, vecDim = admin['gran'], admin['elDim']
+    del admin
+
+    # Ensure the region dimensions are positive integers.
+    indexes = []
+    bulk = db.initialize_unordered_bulk_op()
+    try:
+        for pv in posVals:
+            assert isinstance(pv, (tuple, list, np.ndarray))
+            assert len(pv) == 2
+            assert isinstance(pv[0], (tuple, np.ndarray))
+            assert isinstance(pv[1], (tuple, np.ndarray))
+            pos, val = pv
+            assert len(pos) == 3
+            assert len(val) == vecDim
+            strPos = '-'.join([str(int(_ // gran)) for _ in pos])
+
+            # Convenience.
+            px, py, pz = [int(_ / gran) for _ in pos]
+
+            data = {'x': px, 'y': py, 'z': pz,
+                    'val': val.tolist(), 'strPos': strPos}
+            bulk.find({'strPos': strPos}).upsert().update({'$set': data})
+    except AssertionError:
+        return RetVal(False, '<setValues> received invalid arguments', None)
+
+    bulk.execute()
+    return RetVal(True, None, None)
+
+
+@typecheck
 def getRegion(name: str, ofs: np.ndarray,
               regionDim: (np.ndarray, list, tuple)):
     """
     Return the grid values starting at ``ofs``.
 
-    The dimension of the returned depends on ``regionDim`` and the elDim
-    parameter used to define the grid. For instance, if regionDim=(1, 2, 3) and
-    the elDim=4, then the shape of the returned NumPy array is (1, 2, 3, 4).
+    The dimension of the returned region depends on ``regionDim`` and the
+    ``elDim`` parameter used to define the grid. For instance, if regionDim=(1,
+    2, 3) and the elDim=4, then the shape of the returned NumPy array is (1, 2,
+    3, 4).
 
     :param str name: grid name.
     :param 3D-vector ofs: start position in grid from where to read values.
@@ -327,12 +431,13 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
     admin = db.find_one({'admin': 'admin'})
     if admin is None:
         return RetVal(False, 'Bug: could not find admin element', None)
+    gran, vecDim = admin['gran'], admin['elDim']
 
     # Ensure ``value`` has the correct number of dimensions. To elaborate,
     # every ``value`` needs at least 3 spatial dimensions, plus an additional
     # dimension that holds the actual data vector, which must have length
-    # ``elDim``.
-    if (len(value.shape) != 4) or (value.shape[3] != admin['elDim']):
+    # ``vecDim``.
+    if (len(value.shape) != 4) or (value.shape[3] != vecDim):
         return RetVal(False, 'Invalid data dimension', None)
 
     # Populate the output array.
@@ -341,11 +446,14 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
             for z in range(value.shape[2]):
                 # Compute the grid position of the current data value.
                 pos = ofs + np.array([x, y, z])
-                pos = (pos / admin['gran']).astype(np.int64)
+                pos = (pos / gran).astype(np.int64)
 
                 # Convenience.
                 px, py, pz = pos.tolist()
                 val = value[x, y, z, :]
+
+                # The position in string format (useful for some queries).
+                strPos = '-'.join([str(int(_ // gran)) for _ in pos])
 
                 # Either update the value in the DB (|value| != 0) or delete
                 # all documents (there should only be one....) for this
@@ -355,7 +463,8 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
                 else:
                     ret = db.update({'x': px, 'y': py, 'z': pz},
                                     {'x': px, 'y': py, 'z': pz,
-                                     'val': val.tolist()},
+                                     'val': val.tolist(),
+                                     'strPos': strPos},
                                     upsert=True)
 
     return RetVal(True, None, None)

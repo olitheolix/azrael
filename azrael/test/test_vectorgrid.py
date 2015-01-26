@@ -82,6 +82,88 @@ def test_set_get_single():
     print('Test passed')
 
 
+def test_set_get_bulk():
+    """
+    Define a new grid type and set/get some values in bulk.
+    """
+    # Test parameters.
+    vg = vectorgrid
+    pos_0 = np.array([1, 2, 3], np.float64)
+    pos_1 = np.array([4, 5, 6], np.float64)
+    val_0 = np.array([-1, 0, 1], np.float64)
+    val_1 = np.array([-2, 1, 2], np.float64)
+    name = 'force'
+
+    # Delete all grids used in this test.
+    assert vg.deleteAllGrids().ok
+
+    # Attempt to set/get values of an undefined grid.
+    assert not vg.getValues(name, [pos_0]).ok
+    assert not vg.setValues(name, [(pos_0, val_0)]).ok
+
+    # Define a new grid. Its name is "force", it consists of 3-element vectors,
+    # and has a spatial granularity of 1m in each dimension.
+    assert vg.defineGrid(name=name, elDim=3, granularity=1).ok
+
+    # Query a value. This must return a zero vector (3 elements) because this
+    # is the default value of the grid.
+    ret = vg.getValues(name, [pos_0, pos_1])
+    assert ret.ok and len(ret.data) == 2
+    assert np.array_equal(ret.data[0], np.zeros(3, np.float64))
+    assert np.array_equal(ret.data[1], np.zeros(3, np.float64))
+
+    # Repeat at a different position.
+    ret = vg.getValues(name, [pos_0 + np.pi, pos_1 + np.pi])
+    assert ret.ok and len(ret.data) == 2
+    assert np.array_equal(ret.data[0], np.zeros(3, np.float64))
+    assert np.array_equal(ret.data[1], np.zeros(3, np.float64))
+
+    # Update the value and query it once more.
+    assert vg.setValues(name, [(pos_0, val_0), (pos_1, val_1)]).ok
+    ret = vg.getValues(name, [pos_0, pos_1])
+    assert ret.ok and len(ret.data) == 2
+    assert np.array_equal(ret.data[0], val_0)
+    assert np.array_equal(ret.data[1], val_1)
+
+    print('Test passed')
+
+
+def test_set_get_mixed():
+    """
+    Define a new grid type and set/get some values with bulk- and non-bulk
+    versions. This test is necessary because the grid engine uses two formats
+    internally to speed up the operations for either bulk or individual,
+    depending on the used function. This test mixes the calls to ensure they
+    both read/write consistent entries.
+    """
+    # Test parameters.
+    vg = vectorgrid
+    pos_0 = np.array([1, 2, 3], np.float64)
+    pos_1 = np.array([4, 5, 6], np.float64)
+    val_0 = np.array([-1, 0, 1], np.float64)
+    val_1 = np.array([-2, 1, 2], np.float64)
+    name = 'force'
+
+    # Delete all grids used in this test.
+    assert vg.deleteAllGrids().ok
+
+    # Define a new grid. Its name is "force", it consists of 3-element vectors,
+    # and has a spatial granularity of 1m in each dimension.
+    assert vg.defineGrid(name=name, elDim=3, granularity=1).ok
+
+    # Set with a scalar and retrieve in bulk.
+    assert vg.setValue(name, pos_0, val_0).ok
+    ret = vg.getValues(name, [pos_0])
+    assert ret.ok and np.array_equal(ret.data[0], val_0)
+
+    # Now set in bulk and retrieve with a scalar.
+    assert vg.setValues(name, [(pos_1, val_1)]).ok
+    ret = vg.getValue(name, pos_1)
+    assert ret.ok and np.array_equal(ret.data, val_1)
+
+    print('Test passed')
+
+
 def test_define_reset_delete_grid():
     """
     Define a new grid, add/set a value, delete the grid, and ensure it cannot
@@ -350,8 +432,10 @@ def test_auto_delete():
 
 
 if __name__ == '__main__':
-    test_auto_delete()
+    test_set_get_mixed()
+    test_set_get_bulk()
 
+    test_auto_delete()
     test_deleteAll()
     test_define_reset_delete_grid()
     test_define_reset_delete_grid_invalid()
