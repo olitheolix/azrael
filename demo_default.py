@@ -169,17 +169,23 @@ def loadGroundModel(scale, model_name):
 
     # Spawn the template near the center and call it 'ground'.
     print('  Spawning object... ', end='', flush=True)
-    pos, ori = [0, 0, -10], [0, 1, 0, 0]
-    ret = client.spawn(
-        tID, pos, orient=ori, imass=0.1, scale=scale,
-        axesLockLin=[1, 1, 1], axesLockRot=[0, 0, 1])
-    objID = ret.data
+    pos, orient = [0, 0, -10], [0, 1, 0, 0]
+    d = {'scale': scale,
+         'imass': 0.1,
+         'position': pos,
+         'orientation': orient,
+         'axesLockLin': [1, 1, 1],
+         'axesLockRot': [0, 0, 1],
+         'template': tID}
+
+    ret = client.spawn([d])
+    objID = ret.data[0]
     print('done (ID=<{}>)'.format(objID))
 
     # Construct an attribute object (will be needed to reset the simulation).
     z = np.zeros(3, np.float64)
     attr = BulletDataOverride(
-        position=pos, velocityLin=z, velocityRot=z, orientation=ori)
+        position=pos, velocityLin=z, velocityRot=z, orientation=orient)
     return objID, attr
 
 
@@ -309,7 +315,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     # Spawn the differently textured cubes in a regular grid.
     # ----------------------------------------------------------------------
-    args = []
+    allObjs = []
     cube_idx = 0
     cube_spacing = 0.1
 
@@ -336,26 +342,25 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
                 pos += np.array(center)
 
                 # Store the position and template for this cube.
-                args.append((tID_cube[cube_idx], pos))
+                allObjs.append({'template': tID_cube[cube_idx],
+                                'position': pos})
                 cube_idx += 1
                 del pos
-    print('{:,} objects ({:.1f}s)'.format(len(args), time.time() - t0))
+    print('{:,} objects ({:.1f}s)'.format(len(allObjs), time.time() - t0))
     del cube_idx, cube_spacing, row, col, lay
 
     # Spawn the cubes from the templates at the just determined positions.
-    print('Spawning {} objects: '.format(len(args)), end='', flush=True)
+    print('Spawning {} objects: '.format(len(allObjs)), end='', flush=True)
     t0 = time.time()
-    default_attributes = []
-    for template_name, pos in args:
-        # Spawn the cube from the specified template at the specified
-        # position. Its velocity, acceleration, and orientation are neutral.
-        ret = client.spawn(template_name, pos)
-        assert ret.ok
-
-        # Keep the original position of the object (this will be needed to
-        # periodically reset the simulation).
-        default_attributes.append((ret.data, pos))
+    ret = client.spawn(allObjs)
+    assert ret.ok
     print(' {:.1f}s'.format(time.time() - t0))
+
+    # Keep the original position of the object (this will be needed to
+    # periodically reset the simulation).
+    default_attributes = []
+    for objID, obj in zip(ret.data, allObjs):
+        default_attributes.append((ret.data[0], obj['position']))
 
     # Convert the positions to proper PosVecAccOrient tuples. In these tuples
     # only the position differs. The inital velocities, accelerations, and
