@@ -730,16 +730,23 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def spawn(self, newObjects: (tuple, list)):
         """
-        Spawn a new object based on ``templateID``.
+        Spawn all ``newObjects`` and return their object IDs in a tuple.
 
-        The new object will get ``sv`` as the initial state vector albeit the
-        collision shape will be overwritten with that specified in the
-        template.
+        The ``newObjects`` must have the following format:
+          newObjects = [(template_name_1, sv_1), (template_name_2, sv_2), ...]
+        where ``template_name_k`` is a string and ``sv_k`` is a ``BulletData``
+        instance.
 
-        :param bytes templateID: template from which to spawn new object.
-        :param _BulletData sv: State Variables of new object.
-        :return: ID of new object
-        :rtype: int
+        The new object will get ``sv_k`` as the initial state vector. However,
+        the provided collision shape will be ignored and *always* replaced with
+        the collision shape specified in the template ``template_name_k``.
+
+        This method will return with an error (without spawning a single
+        object) if one or more argument are invalid.
+
+        :param list/tuple newObjects: list of template names and SVs.
+        :return: IDs of spawned objects
+        :rtype: tuple of int
         """
         # Sanity checks.
         try:
@@ -800,13 +807,17 @@ class Clerk(multiprocessing.Process):
         # collision shape in the template database with a simple sphere
         # collision shape when it is spawned).
         with util.Timeit('spawn:3 addCmds') as timeit:
+            objs = []
             for objID, name, sv in zip(objIDs, names, SVs):
                 sv.cshape[:] = np.fromstring(templates[name]['cshape']).tolist()
+                objs.append((objID, sv, templates[name]['aabb']))
 
-                # Add the object to the physics simulation.
-                physAPI.addCmdSpawn([(objID, sv, templates[name]['aabb'])])
-                msg = 'Spawned template <{}> as objID=<{}>'.format(name, objID)
-                self.logit.debug(msg)
+            # Queue the spawn commands.
+            ret = physAPI.addCmdSpawn(objs)
+            if not ret.ok:
+                return ret
+            msg = 'Spawned {} new objects'.format(len(objs))
+            self.logit.debug(msg)
         return RetVal(True, None, objIDs)
 
     @typecheck
