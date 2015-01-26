@@ -232,6 +232,10 @@ def getValues(name: str, positions: (tuple, list)):
     :param list positions: grid positions to query.
     :return: list of grid values at ``positions``.
     """
+    # Return immediately if we did not get any values.
+    if len(positions) == 0:
+        return RetVal(False, '<setValues> received no arguments', None)
+
     # DB handle must have been initialised.
     if _DB_Grid is None:
         return RetVal(False, 'Not initialised', None)
@@ -280,6 +284,10 @@ def setValues(name: str, posVals: (tuple, list)):
     :param list posVals: list of (pos, val) tuples.
     :return: Success
     """
+    # Return immediately if we did not get any values.
+    if len(posVals) == 0:
+        return RetVal(False, '<setValues> received no arguments', None)
+    
     # DB handle must have been initialised.
     if _DB_Grid is None:
         return RetVal(False, 'Not initialised', None)

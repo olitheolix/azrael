@@ -105,6 +105,10 @@ def test_set_get_bulk():
     # and has a spatial granularity of 1m in each dimension.
     assert vg.defineGrid(name=name, elDim=3, granularity=1).ok
 
+    # Attempt to pass empty lists to set/get.
+    assert not vg.getValues(name, []).ok
+    assert not vg.setValues(name, []).ok
+
     # Query a value. This must return a zero vector (3 elements) because this
     # is the default value of the grid.
     ret = vg.getValues(name, [pos_0, pos_1])
