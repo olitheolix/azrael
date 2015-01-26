@@ -441,6 +441,7 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
         return RetVal(False, 'Invalid data dimension', None)
 
     # Populate the output array.
+    bulk = db.initialize_unordered_bulk_op()
     for x in range(value.shape[0]):
         for y in range(value.shape[1]):
             for z in range(value.shape[2]):
@@ -458,13 +459,13 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
                 # Either update the value in the DB (|value| != 0) or delete
                 # all documents (there should only be one....) for this
                 # position (|value| = 0).
+                query = {'x': px, 'y': py, 'z': pz}
                 if np.sum(np.abs(val)) < 1E-9:
-                    db.remove({'x': px, 'y': py, 'z': pz}, multi=True)
+                    bulk.find(query).remove()
                 else:
-                    ret = db.update({'x': px, 'y': py, 'z': pz},
-                                    {'x': px, 'y': py, 'z': pz,
-                                     'val': val.tolist(),
-                                     'strPos': strPos},
-                                    upsert=True)
+                    data =  {'x': px, 'y': py, 'z': pz,
+                             'val': val.tolist(), 'strPos': strPos}
+                    bulk.find(query).upsert().update({'$set': data})
 
+    bulk.execute()
     return RetVal(True, None, None)
