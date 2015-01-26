@@ -546,6 +546,14 @@ class LeonardSweeping(LeonardBullet):
             # Compile the subset dictionary for the current collision set.
             coll_SV = {_: self.allObjects[_] for _ in subset}
 
+            # Fetch the forces for all object positions.
+            idPos = {k: v.position for (k, v) in coll_SV.items()}
+            ret = self.getGridForces(idPos)
+            if not ret.ok:
+                self.logit.warning(ret.msg)
+            gridForces = ret.data
+            del ret, idPos
+
             # Iterate over all objects and update them.
             for objID, sv in coll_SV.items():
                 # Pass the SV data from the DB to Bullet.
@@ -555,7 +563,7 @@ class LeonardSweeping(LeonardBullet):
                 force, torque = self.allForces[objID], self.allTorques[objID]
 
                 # Add the force defined on the 'force' grid.
-                force = self.applyGridForce(force, sv.position)
+                force += gridForces[objID]
 
                 # Apply the final force to the object.
                 self.bullet.applyForceAndTorque(objID, force, torque)
