@@ -554,12 +554,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.camera = Camera(initPos, 90 * np.pi / 180, 0)
 
         # Spawn the player object (it has the same shape as a projectile).
-        ret = self.client.spawn(self.t_projectile, initPos, np.zeros(3))
+        d = {'template': self.t_projectile, 'position': initPos}
+        ret = self.client.spawn([d])
         if not ret.ok:
             print('Cannot spawn player object (<{}>)'.format(ret.data))
             self.close()
 
-        self.player_id = ret.data
+        self.player_id = ret.data[0]
         print('Spawned player object <{}>'.format(self.player_id))
 
         # Initialise instance variables.
@@ -869,8 +870,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 2 * self.camera.view
 
             # Spawn the object.
-            ret = self.client.spawn(
-                self.t_projectile, pos, vel=vel, scale=0.25, imass=20)
+            d = {'template': self.t_projectile,
+                 'position': pos,
+                 'velocityLin': vel,
+                 'scale': 0.25,
+                 'imass': 20}
+            ret = self.client.spawn([d])
             if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
         elif button == 2:
@@ -879,8 +884,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 2 * self.camera.view
 
             # Spawn the object.
-            ret = self.client.spawn(
-                self.t_projectile, pos, vel=vel, scale=0.25, imass=2)
+            d = {'template': self.t_projectile,
+                 'position': pos,
+                 'velocityLin': vel,
+                 'scale': 0.25,
+                 'imass': 2}
+            ret = self.client.spawn([d])
             if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
         else:
