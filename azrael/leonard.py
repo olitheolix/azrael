@@ -207,28 +207,6 @@ class LeonardBase(multiprocessing.Process):
         """
         pass
 
-    def applyGridForce(self, force, pos):
-        """
-        Return updated ``force`` that takes the force grid value at ``pos``
-        into account.
-
-        Covenience function to minimise code duplication.
-
-        :param 3d-vec force: original force value.
-        :param 3d-vec pos: position in world coordinates.
-        :return: updated ``force`` value.
-        :rtype: 3d-vec.
-        """
-        # Convenience.
-        vg = azrael.vectorgrid
-
-        # Add the force from the grid.
-        tmp = vg.getValue('force', pos)
-        if tmp.ok and len(tmp.data) == 3:
-            return force + tmp.data
-        else:
-            return force
-
     def getGridForces(self, idPos: dict):
         """
         Return dictionary of force values for every object in ``idPos``.
