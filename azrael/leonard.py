@@ -461,6 +461,14 @@ class LeonardBullet(LeonardBase):
         # Process pending commands.
         self.processCommandQueue()
 
+        # Fetch the forces for all object positions.
+        idPos = {k: v.position for (k, v) in self.allObjects.items()}
+        ret = self.getGridForces(idPos)
+        if not ret.ok:
+            self.logit.warning(ret.msg)
+        gridForces = ret.data
+        del ret, idPos
+
         # Iterate over all objects and update them.
         for objID, sv in self.allObjects.items():
             # Pass the SV data from the DB to Bullet.
@@ -470,7 +478,7 @@ class LeonardBullet(LeonardBase):
             force, torque = self.allForces[objID], self.allTorques[objID]
 
             # Add the force defined on the 'force' grid.
-            force = self.applyGridForce(force, sv.position)
+            force += gridForces[objID]
 
             # Apply the force to the object.
             self.bullet.applyForceAndTorque(objID, force, torque)
