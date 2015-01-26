@@ -428,13 +428,18 @@ def test_auto_delete():
     assert vg.setValue(name, pos, 0 * value).ok
     assert vg._DB_Grid[name].count() == 1
 
+    # Repeat this experiment but with the bulk version 'setValues'.
+    assert vg.setValues(name, [(pos, value)]).ok
+    assert vg._DB_Grid[name].count() == 2
+    assert vg.setValues(name, [(pos, 0 * value)]).ok
+    assert vg._DB_Grid[name].count() == 1
+
     print('Test passed')
 
 
 if __name__ == '__main__':
     test_set_get_mixed()
     test_set_get_bulk()
-
     test_auto_delete()
     test_deleteAll()
     test_define_reset_delete_grid()

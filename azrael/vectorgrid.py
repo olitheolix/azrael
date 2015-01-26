@@ -318,7 +318,12 @@ def setValues(name: str, posVals: (tuple, list)):
 
             data = {'x': px, 'y': py, 'z': pz,
                     'val': val.tolist(), 'strPos': strPos}
-            bulk.find({'strPos': strPos}).upsert().update({'$set': data})
+
+            query = {'strPos': strPos}
+            if np.sum(np.abs(val)) < 1E-9:
+                bulk.find(query).remove()
+            else:
+                bulk.find(query).upsert().update({'$set': data})
     except AssertionError:
         return RetVal(False, '<setValues> received invalid arguments', None)
 
