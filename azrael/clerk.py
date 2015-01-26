@@ -757,20 +757,22 @@ class Clerk(multiprocessing.Process):
         names = [_[0] for _ in newObjects]
         SVs = [_[1] for _ in newObjects]
 
-        # Fetch the templates (we only need the collision shape but that
-        # unfortunately means we have to get and decode the entire template).
-        # fixme: this is unnecessary --> remove it.
-        ret = self.getTemplates(names)
-        if not ret.ok:
-            return ret
-        templates = ret.data
+        with util.Timeit('spawn:0 getTemplate') as timeit:
+            # Fetch the templates (we only need the collision shape but that
+            # unfortunately means we have to get and decode the entire template).
+            # fixme: this is unnecessary --> remove it.
+            ret = self.getTemplates(names)
+            if not ret.ok:
+                return ret
+            templates = ret.data
 
-        # Fetch the raw templates.
-        ret = self.getRawTemplate(names)
-        if not ret.ok:
-            self.logit.info(ret.msg)
-            return ret
-        raw_templates = ret.data
+        with util.Timeit('spawn:1 getRawTemplate') as timeit:
+            # Fetch the raw templates.
+            ret = self.getRawTemplate(names)
+            if not ret.ok:
+                self.logit.info(ret.msg)
+                return ret
+            raw_templates = ret.data
 
         # Request unique IDs for the objects we will spawn.
         ret = azrael.database.getUniqueObjectIDs(len(names))
@@ -779,30 +781,32 @@ class Clerk(multiprocessing.Process):
             return ret
         objIDs = ret.data
 
-        # ... then add objID, update lastChanged and insert the final document
-        # into the instance DB.
-        dbDocs = []
-        for idx, name in enumerate(names):
-            tmp = dict(raw_templates[name])
-            tmp['objID'] = objIDs[idx]
-            tmp['lastChanged'] = 0
-            tmp['templateID'] = name
-            dbDocs.append(tmp)
-        database.dbHandles['ObjInstances'].insert(dbDocs)
-        del raw_templates
+        with util.Timeit('spawn:2 createSVs') as timeit:
+            # ... then add objID, update lastChanged and insert the final
+            # document into the instance DB.
+            dbDocs = []
+            for idx, name in enumerate(names):
+                tmp = dict(raw_templates[name])
+                tmp['objID'] = objIDs[idx]
+                tmp['lastChanged'] = 0
+                tmp['templateID'] = name
+                dbDocs.append(tmp)
+            database.dbHandles['ObjInstances'].insert(dbDocs)
+            del raw_templates
 
         # Overwrite the user supplied collision shape with the one specified in
         # the template. This is to enforce geometric consistency with the
         # template data as otherwise strange things may happen (eg a space-ship
         # collision shape in the template database with a simple sphere
         # collision shape when it is spawned).
-        for objID, name, sv in zip(objIDs, names, SVs):
-            sv.cshape[:] = np.fromstring(templates[name]['cshape']).tolist()
+        with util.Timeit('spawn:3 addCmds') as timeit:
+            for objID, name, sv in zip(objIDs, names, SVs):
+                sv.cshape[:] = np.fromstring(templates[name]['cshape']).tolist()
 
-            # Add the object to the physics simulation.
-            physAPI.addCmdSpawn(objID, sv, templates[name]['aabb'])
-            msg = 'Spawned template <{}> as objID=<{}>'.format(name, objID)
-            self.logit.debug(msg)
+                # Add the object to the physics simulation.
+                physAPI.addCmdSpawn(objID, sv, templates[name]['aabb'])
+                msg = 'Spawned template <{}> as objID=<{}>'.format(name, objID)
+                self.logit.debug(msg)
         return RetVal(True, None, objIDs)
 
     @typecheck
