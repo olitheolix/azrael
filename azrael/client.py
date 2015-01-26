@@ -256,17 +256,13 @@ class Client():
         return self.serialiseAndSend('set_geometry', objID, vert, uv, rgb)
 
     @typecheck
-    def spawn(self, templateID: bytes,
-              pos: (np.ndarray, list)=np.zeros(3),
-              vel: (np.ndarray, list)=np.zeros(3),
-              orient: (np.ndarray, list)=[0, 0, 0, 1],
-              scale=1, imass=1,
-              axesLockLin: (list, np.ndarray)=[1, 1, 1],
-              axesLockRot: (list, np.ndarray)=[1, 1, 1]):
+    def spawn(self, new_objects: (tuple, list)):
         """
         Spawn new object from ``templateID`` and return its ID.
 
         The various function arguments modify the initial State Vector.
+        fixme: paramter docu
+        fixme: all other docu
 
         :param bytes templateID: template from which to spawn the object.
         :param 3-vec pos: object position
@@ -277,13 +273,36 @@ class Client():
         :return: object ID
         :rtype: int
         """
-        cshape = [0, 1, 1, 1]
-        sv = BulletData(
-            position=pos, velocityLin=vel, cshape=cshape,
-            scale=scale, imass=imass,
-            orientation=orient, axesLockLin=axesLockLin,
-            axesLockRot=axesLockRot)
-        return self.serialiseAndSend('spawn', templateID, sv)
+        reference = {
+            'scale': 1,
+            'imass': 1,
+            'position': None,
+            'orientation': np.array([0, 0, 0, 1]),
+            'velocityLin': np.zeros(3),
+            'axesLockLin': np.ones(3),
+            'axesLockRot': np.ones(3),
+            'template': None}
+
+        payload = []
+        for inp in new_objects:
+            assert 'position' in inp
+            assert 'template' in inp
+
+            obj = dict(reference)
+            for key in obj:
+                obj[key] = inp[key] if key in inp else obj[key]
+
+            assert isinstance(obj['scale'], (int, float))
+            assert isinstance(obj['imass'], (int, float))
+            assert isinstance(obj['position'], (list, np.ndarray))
+            assert isinstance(obj['orientation'], (list, np.ndarray))
+            assert isinstance(obj['velocityLin'], (list, np.ndarray))
+            assert isinstance(obj['axesLockLin'], (list, np.ndarray))
+            assert isinstance(obj['axesLockRot'], (list, np.ndarray))
+
+            payload.append(obj)
+
+        return self.serialiseAndSend('spawn', payload)
 
     @typecheck
     def removeObject(self, objID: int):

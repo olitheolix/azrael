@@ -88,30 +88,32 @@ def test_spawn_and_delete_one_client(client_type):
     clerk, client, clacks = startAzrael(client_type)
 
     # Spawn a new object from templateID. The new object must have objID=1.
-    ok, _, objID = client.spawn(templateID, np.zeros(3))
-    assert (ok, objID) == (True, id_1)
+    new_obj = {'template': templateID,
+               'position': np.zeros(3)}
+    ret = client.spawn([new_obj])
+    assert ret.ok and ret.data == (id_1, )
     leo.processCommandsAndSync()
 
     # Attempt to spawn a non-existing template.
-    templateID += 'blah'.encode('utf8')
-    assert not client.spawn(templateID, np.zeros(3)).ok
+    new_obj = {'template': 'blah'.encode('utf8'),
+               'position': np.zeros(3)}
+    assert not client.spawn([new_obj]).ok
 
     # Exactly one object must exist at this point.
-    ok, _, ret = client.getAllObjectIDs()
-    assert (ok, ret) == (True, [id_1])
+    ret = client.getAllObjectIDs()
+    assert (ret.ok, ret.data) == (True, [id_1])
 
     # Attempt to delete a non-existing object. This must silently fail.
-    ok, _, ret = client.removeObject(100)
-    assert ok
+    assert client.removeObject(100).ok
     leo.processCommandsAndSync()
-    ok, _, ret = client.getAllObjectIDs()
-    assert (ok, ret) == (True, [id_1])
+    ret = client.getAllObjectIDs()
+    assert (ret.ok, ret.data) == (True, [id_1])
 
     # Delete an existing object.
     assert client.removeObject(id_1).ok
     leo.processCommandsAndSync()
-    ok, _, ret = client.getAllObjectIDs()
-    assert (ok, ret) == (True, [])
+    ret = client.getAllObjectIDs()
+    assert (ret.ok, ret.data) == (True, [])
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -127,6 +129,7 @@ def test_spawn_and_get_state_variables(client_type):
 
     # Constants and parameters for this test.
     templateID = '_templateNone'.encode('utf8')
+    id_1 = 1
 
     # Start the necessary services.
     clerk, client, clacks = startAzrael(client_type)
@@ -138,12 +141,14 @@ def test_spawn_and_get_state_variables(client_type):
     del id_tmp
 
     # Instruct Clerk to spawn a new object. Its objID must be '1'.
-    ok, _, id0 = client.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
-    assert (ok, id0) == (True, 1)
+    new_obj = {'template': templateID,
+               'position': np.zeros(3),
+               'velocityLin': -np.ones(3)}
+    ret = client.spawn([new_obj])
+    assert ret.ok and ret.data == (id_1, )
 
-    ok, _, sv = client.getStateVariables(id0)
-    assert (ok, len(sv)) == (True, 1)
-    assert id0 in sv
+    ret = client.getStateVariables(id_1)
+    assert ret.ok and (len(ret.data) == 1) and (id_1 in ret.data)
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -162,13 +167,25 @@ def test_setStateVariables(client_type):
 
     # Constants and parameters for this test.
     templateID = '_templateNone'.encode('utf8')
+    objID = 1
 
     # Start the necessary services.
     clerk, client, clacks = startAzrael(client_type)
 
     # Spawn one of the default templates.
-    ok, _, objID = client.spawn(templateID, pos=np.ones(3), vel=-np.ones(3))
-    assert ok
+    new_obj = {'template': templateID,
+               'position': np.ones(3),
+               'velocityLin': -np.ones(3)}
+    ret = client.spawn([new_obj])
+    assert ret.ok and (ret.data == (objID, ))
+
+    # Verify that the State Vector is correct.
+    leo.processCommandsAndSync()
+    ok, _, ret_sv = client.getStateVariables(objID)
+    ret_sv = ret_sv[objID]
+    assert isinstance(ret_sv, bullet_data._BulletData)
+    assert np.array_equal(ret_sv.position, new_obj['position'])
+    assert np.array_equal(ret_sv.velocityLin, new_obj['velocityLin'])
 
     # Create and apply a new State Vector.
     new_sv = bullet_data.BulletDataOverride(
@@ -207,20 +224,22 @@ def test_getAllObjectIDs(client_type):
     templateID = '_templateNone'.encode('utf8')
 
     # Parameters and constants for this test.
-    objID_1 = 1
+    id_1 = 1
 
     # So far no objects have been spawned.
     ret = client.getAllObjectIDs()
     assert (ret.ok, ret.data) == (True, [])
 
     # Spawn a new object.
-    ret = client.spawn(templateID, np.zeros(3))
-    assert (ret.ok, ret.data) == (True, objID_1)
+    new_obj = {'template': templateID,
+               'position': np.zeros(3)}
+    ret = client.spawn([new_obj])
+    assert ret.ok and ret.data == (id_1, )
 
     # The object list must now contain the ID of the just spawned object.
     leo.processCommandsAndSync()
     ret = client.getAllObjectIDs()
-    assert (ret.ok, ret.data) == (True, [objID_1])
+    assert (ret.ok, ret.data) == (True, [id_1])
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -243,24 +262,21 @@ def test_get_template(client_type):
     templateID_1 = '_templateCube'.encode('utf8')
 
     # Spawn a new object. Its ID must be 1.
-    ok, _, objID = client.spawn(templateID_0, np.zeros(3))
-    assert (ok, objID) == (True, id_1)
-
-    # Spawn another object from a different template.
-    ok, _, objID = client.spawn(templateID_1, np.zeros(3))
-    assert (ok, objID) == (True, id_2)
+    new_objs = [{'template': templateID_0, 'position': np.zeros(3)},
+               {'template': templateID_1, 'position': np.zeros(3)}]
+    ret = client.spawn(new_objs)
+    assert ret.ok and ret.data == (id_1, id_2)
 
     # Retrieve template of first object.
-    ok, _, ret = client.getTemplateID(id_1)
-    assert (ok, ret) == (True, templateID_0)
+    ret = client.getTemplateID(id_1)
+    assert ret.ok and (ret.data == templateID_0)
 
     # Retrieve template of second object.
-    ok, _, ret = client.getTemplateID(id_2)
-    assert (ok, ret) == (True, templateID_1)
+    ret = client.getTemplateID(id_2)
+    assert ret.ok and (ret.data == templateID_1)
 
     # Attempt to retrieve a non-existing object.
-    ok, _, ret = client.getTemplateID(100)
-    assert not ok
+    assert not client.getTemplateID(100).ok
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -344,8 +360,11 @@ def test_create_fetch_template(client_type):
     assert client.addTemplates([t1]).ok
 
     # ... and spawn an instance thereof.
-    ok, _, objID = client.spawn(t1.name)
-    assert ok
+    new_obj = {'template': t1.name,
+               'position': np.zeros(3)}
+    ret = client.spawn([new_obj])
+    assert ret.ok and len(ret.data) == 1
+    objID = ret.data[0]
 
     # Retrieve the geometry of the new object and verify it is correct.
     ok, _, (out_vert, out_uv, out_rgb) = client.getGeometry(objID)
@@ -400,7 +419,7 @@ def test_controlParts(client_type):
     clerk, client, clacks = startAzrael(client_type)
 
     # Parameters and constants for this test.
-    objID_1 = 1
+    id_1 = 1
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -456,10 +475,12 @@ def test_controlParts(client_type):
     assert client.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
-    ok, _, objID = client.spawn(t2.name, pos=pos_parent,
-                                vel=vel_parent, orient=orient_parent)
-    assert (ok, objID) == (True, objID_1)
-    del ok, objID
+    new_obj = {'template': t2.name,
+               'position': pos_parent,
+               'velocityLin': vel_parent,
+               'orientation': orient_parent}
+    ret = client.spawn([new_obj])
+    assert ret.ok and (ret.data == (id_1, ))
     leo.processCommandsAndSync()
 
     # ------------------------------------------------------------------------
@@ -478,7 +499,7 @@ def test_controlParts(client_type):
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDs must be '2' and '3'.
-    ret = client.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
+    ret = client.controlParts(id_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
     spawnIDs = ret.data
     assert (ret.ok, len(spawnIDs)) == (True, 2)
     assert spawnIDs == [2, 3]
@@ -502,8 +523,8 @@ def test_controlParts(client_type):
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    assert np.array_equal(leo.allForces[objID_1], tot_force)
-    assert np.array_equal(leo.allTorques[objID_1], tot_torque)
+    assert np.array_equal(leo.allForces[id_1], tot_force)
+    assert np.array_equal(leo.allTorques[id_1], tot_torque)
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
@@ -525,6 +546,7 @@ def test_setGeometry(client_type):
     vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
+    objID = 1
 
     # Start the necessary services.
     clerk, client, clacks = startAzrael(client_type)
@@ -532,14 +554,18 @@ def test_setGeometry(client_type):
     # Add a new template and spawn it.
     t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
     assert client.addTemplates([t1]).ok
-    ok, _, objID = client.spawn(t1.name, pos=np.ones(3), vel=-np.ones(3))
-    assert ok
+
+    new_obj = {'template': t1.name,
+               'position': np.ones(3),
+               'velocityLin': -np.ones(3)}
+    ret = client.spawn([new_obj])
+    assert ret.ok and ret.data == (objID, )
 
     # Query the SV to obtain the 'lastChanged' value.
     leo.processCommandsAndSync()
-    ok, _, sv = client.getStateVariables(objID)
-    assert ok
-    lastChanged = sv[objID].lastChanged
+    ret = client.getStateVariables(objID)
+    assert ret.ok
+    lastChanged = ret.data[objID].lastChanged
 
     # Fetch-, modify-, update- and verify the geometry.
     ok, _, (ret_vert, ret_uv, ret_rgb) = client.getGeometry(objID)
@@ -555,9 +581,8 @@ def test_setGeometry(client_type):
     assert np.allclose(2 * vert, ret_vert) and np.allclose(2 * uv, ret_uv)
 
     # Ensure 'lastChanged' is different as well.
-    ok, _, sv = client.getStateVariables(objID)
-    assert ok
-    assert sv[objID].lastChanged != lastChanged
+    ret = client.getStateVariables(objID)
+    assert ret.ok and (ret.data[objID].lastChanged != lastChanged)
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

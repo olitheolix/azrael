@@ -751,7 +751,7 @@ class Clerk(multiprocessing.Process):
                 assert isinstance(sv, bullet_data._BulletData)
                 del templateID, sv
         except AssertionError:
-            return RetVal(False, 'Invalid arguments', None)
+            return RetVal(False, '<spawn> received invalid arguments', None)
 
         # Convenience.
         names = [_[0] for _ in newObjects]

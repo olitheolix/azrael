@@ -47,6 +47,7 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
+import azrael.physics_interface as physics_interface
 
 from collections import namedtuple
 from azrael.typecheck import typecheck
@@ -438,30 +439,39 @@ def FromClerk_GetStateVariable_Decode(data: dict):
 
 
 @typecheck
-def ToClerk_Spawn_Encode(
-        templateID: bytes, sv: bullet_data._BulletData):
-    return True, {'templateID': templateID, 'sv': sv}
+def ToClerk_Spawn_Encode(objectInfos: (tuple, list)):
+    return True, {'objInfos': objectInfos}
 
 
 @typecheck
-def ToClerk_Spawn_Decode(data: dict):
-    templateID = bytes(data['templateID'])
-    sv = bullet_data._BulletData(*data['sv'])
+def ToClerk_Spawn_Decode(payload: dict):
+    # Convenience.
+    BulletData = bullet_data.BulletData
+    BulletDataOverride = bullet_data.BulletDataOverride
+    _updateBulletDataTuple = physics_interface._updateBulletDataTuple
 
-    if sv is None:
-        return False, 'Invalid State Variable data'
-    else:
-        return True, (templateID, sv)
+    out = []
+    for data in payload['objInfos']:
+        templateID = bytes(data['template'])
+        del data['template']
+
+        sv = BulletDataOverride(**data)
+        if sv is None:
+            return False, 'Invalid State Variable data'
+        sv = _updateBulletDataTuple(BulletData(), sv)
+
+        out.append((templateID, sv))
+    return True, (out, )
 
 
 @typecheck
-def FromClerk_Spawn_Encode(objID: int):
-    return True, {'objID': objID}
+def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
+    return True, {'objIDs': objIDs}
 
 
 @typecheck
 def FromClerk_Spawn_Decode(data: dict):
-    return RetVal(True, None, data['objID'])
+    return RetVal(True, None, tuple(data['objIDs']))
 
 
 # ---------------------------------------------------------------------------
