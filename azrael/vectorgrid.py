@@ -121,7 +121,10 @@ def defineGrid(name: str, elDim: int, granularity: (int, float)):
     db = _DB_Grid[name]
     db.drop()
     db.insert({'admin': 'admin', 'elDim': elDim, 'gran': granularity})
+
+    # Create indexes for fast lookups.
     db.ensure_index([('x', 1), ('y', 1), ('z', 1)])
+    db.ensure_index([('strPos', 1)])
 
     # All good.
     return RetVal(True, None, None)
