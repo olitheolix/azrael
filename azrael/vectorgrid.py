@@ -234,6 +234,19 @@ def setValue(name: str, pos: np.ndarray, value: np.ndarray):
     return setRegion(name, pos, tmp)
 
 
+def _encodePosition(pos: np.ndarray, gran: np.ndarray):
+    px, py, pz = [int(_ // gran) for _ in pos]
+    strPos = '{}:{}:{}'.format(px, py, pz)
+    return px, py, pz, strPos
+
+
+def _encodeData(px: int, py: int, pz: int, strPos, val: list):
+    query = {'strPos': strPos}
+    data = {'x': px, 'y': py, 'z': pz,
+            'val': val, 'strPos': strPos}
+    return query, data
+
+
 @typecheck
 def getValues(name: str, positions: (tuple, list)):
     """
@@ -261,7 +274,8 @@ def getValues(name: str, positions: (tuple, list)):
         for pos in positions:
             assert isinstance(pos, (tuple, list, np.ndarray))
             assert len(pos) == 3
-            indexes.append(':'.join([str(int(_ // gran)) for _ in pos]))
+            px, py, pz, strPos = _encodePosition(pos, gran)
+            indexes.append(strPos)
     except AssertionError:
         return RetVal(False, '<getValues> received invalid positions', None)
 
@@ -308,15 +322,15 @@ def setValues(name: str, posVals: (tuple, list)):
             pos, val = pv
             assert len(pos) == 3
             assert len(val) == vecDim
-            strPos = ':'.join([str(int(_ // gran)) for _ in pos])
 
-            # Convenience.
-            px, py, pz = [int(_ / gran) for _ in pos]
+            # Convert the position to grid indexes.
+            px, py, pz, strPos = _encodePosition(pos, gran)
 
-            data = {'x': px, 'y': py, 'z': pz,
-                    'val': val.tolist(), 'strPos': strPos}
+            # Get database- query and entry.
+            query, data = _encodeData(px, py, pz, strPos, val.tolist())
 
-            query = {'strPos': strPos}
+            # Update the value in the DB, unless it is essentially zero, in
+            # which case remove it to free up space.
             if np.sum(np.abs(val)) < 1E-9:
                 bulk.find(query).remove()
             else:
@@ -373,12 +387,8 @@ def getRegion(name: str, ofs: np.ndarray,
     # Allocate the output array.
     out = np.zeros(np.hstack((regionDim, admin['elDim'])), np.float64)
 
-    # Compute the grid index of ``ofs``. That index is
-    # determined uniquly by the position (``ofs``) and the grid granularity.
-    gran = admin['gran']
-    x0 = int(ofs[0] / gran)
-    y0 = int(ofs[1] / gran)
-    z0 = int(ofs[2] / gran)
+    # Compute the grid index of ``ofs``.
+    x0, y0, z0, strPos = _encodePosition(ofs, admin['gran'])
 
     # Convenience: the ``regionDim`` parameter uniquely specifies the number of
     # grid positions to query in each dimension.
@@ -447,26 +457,20 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
     for x in range(value.shape[0]):
         for y in range(value.shape[1]):
             for z in range(value.shape[2]):
-                # Compute the grid position of the current data value.
-                pos = ofs + np.array([x, y, z])
-                pos = (pos / gran).astype(np.int64)
-
                 # Convenience.
-                px, py, pz = pos.tolist()
                 val = value[x, y, z, :]
 
-                # The position in string format (useful for some queries).
-                strPos = ':'.join([str(int(_ // gran)) for _ in pos])
+                # Compute the grid position of the current data value and
+                # convert it to integer indexes.
+                pos = ofs + np.array([x, y, z])
+                px, py, pz, strPos = _encodePosition(pos, gran)
 
-                # Either update the value in the DB (|value| != 0) or delete
-                # all documents (there should only be one....) for this
-                # position (|value| = 0).
-                query = {'x': px, 'y': py, 'z': pz}
+                # Get database- query and entry.
+                query, data = _encodeData(px, py, pz, strPos, val.tolist())
+
                 if np.sum(np.abs(val)) < 1E-9:
                     bulk.find(query).remove()
                 else:
-                    data =  {'x': px, 'y': py, 'z': pz,
-                             'val': val.tolist(), 'strPos': strPos}
                     bulk.find(query).upsert().update({'$set': data})
 
     bulk.execute()
