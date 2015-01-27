@@ -234,9 +234,25 @@ def setValue(name: str, pos: np.ndarray, value: np.ndarray):
     return setRegion(name, pos, tmp)
 
 
-def _encodePosition(pos: np.ndarray, gran: np.ndarray):
-    px, py, pz = [int(_ // gran) for _ in pos]
+def _encodePosition(pos: np.ndarray, granularity: float):
+    """
+    Return the grid index based on ``pos`` and ``granularity``.
+
+    :param array pos: 3-element vector.
+    :param float granularity: positive scalar to specify the grid granularity.
+    :return: (px, py, pz, strPos)
+    """
+    # Enforce NumPy types to ensure consistent rounding/truncatio behaviour.
+    pos = np.array(pos, np.float64)
+    granularity = float(granularity)
+
+    # Compute the array index in each dimension.
+    px, py, pz = [int(_ // granularity) for _ in pos]
+
+    # Compute a string representation of the array index.
     strPos = '{}:{}:{}'.format(px, py, pz)
+
+    # Return the indexes.
     return px, py, pz, strPos
 
 
@@ -346,49 +362,39 @@ def setValues(name: str, posVals: (tuple, list)):
 def getRegion(name: str, ofs: np.ndarray,
               regionDim: (np.ndarray, list, tuple)):
     """
-    Return the grid values starting at ``ofs``.
+    Return the grid values starting at 3D position ``ofs``.
 
+    The returned array comprises foure dimensions. The first three correspond
+    to x/y/z position and the fourth contains the data. That data is itself a
+    vector. The size of that vector was specified when the grid was created.
     The dimension of the returned region depends on ``regionDim`` and the
-    ``elDim`` parameter used to define the grid. For instance, if regionDim=(1,
-    2, 3) and the elDim=4, then the shape of the returned NumPy array is (1, 2,
-    3, 4).
+    ``vecDim`` of the grid. For instance, if regionDim=(1, 2, 3) and the
+    elDim=4, then the shape of the returned NumPy array is (1, 2, 3, 4).
 
     :param str name: grid name.
     :param 3D-vector ofs: start position in grid from where to read values.
     :param 3D-vector regionDim: number of values to read in each dimension.
     :return: 4D matrix.
     """
-    # DB handle must have been initialised.
-    if _DB_Grid is None:
-        return RetVal(False, 'Not initialised', None)
+    # Fetch the database handle.
+    ret = getGridDB(name)
+    if not ret.ok:
+        return ret
+    db, admin = ret.data
+    gran, vecDim = admin['gran'], admin['elDim']
+    del admin, ret
 
-    # Return with an error if the grid ``name`` does not exist.
-    if name not in _DB_Grid.collection_names():
-        msg = 'Unknown grid <{}>'.format(name)
-        logit.info(msg)
-        return RetVal(False, msg, None)
-    else:
-        db = _DB_Grid[name]
-
-    # Ensure ``ofs`` and ``regionDim`` have the correct size.
+    # Sanity check: ``ofs`` and ``regionDim`` must have 3 entries each.
     if (len(ofs) != 3) or (len(regionDim) != 3):
         return RetVal(False, 'Invalid parameter values', None)
 
-    # Ensure the region dimensions are positive integers.
+    # Sanity check: ``regionDim`` must only contain positive integers.
     regionDim = np.array(regionDim, np.int64)
     if np.amin(regionDim) < 1:
         return RetVal(False, 'Dimensions must be positive', None)
 
-    # Retrieve the admin field for later use.
-    admin = db.find_one({'admin': 'admin'})
-    if admin is None:
-        return RetVal(False, 'Bug: could not find admin element', None)
-
-    # Allocate the output array.
-    out = np.zeros(np.hstack((regionDim, admin['elDim'])), np.float64)
-
     # Compute the grid index of ``ofs``.
-    x0, y0, z0, strPos = _encodePosition(ofs, admin['gran'])
+    x0, y0, z0, strPos = _encodePosition(ofs, gran)
 
     # Convenience: the ``regionDim`` parameter uniquely specifies the number of
     # grid positions to query in each dimension.
@@ -402,6 +408,7 @@ def getRegion(name: str, ofs: np.ndarray,
                    'z': {'$gte': z0, '$lt': z1}})
 
     # Populate the output data structure.
+    out = np.zeros(np.hstack((regionDim, vecDim)), np.float64)
     for doc in res:
         # Convert the grid index to an array index, ie simply compute all grid
         # indices relative to the ``ofs`` position.
@@ -414,51 +421,39 @@ def getRegion(name: str, ofs: np.ndarray,
 
 
 @typecheck
-def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
+def setRegion(name: str, ofs: np.ndarray, gridValues: np.ndarray):
     """
-    Update the grid values starting at ``ofs`` with ``value``.
+    Update the grid values starting at ``ofs`` with ``gridValues``.
 
     :param str name: grid name.
-    :param 3D-vector ofs: start position in grid from where to read values.
-    :param 4D-vector value: the data values.
+    :param 3D-vector ofs: the values are inserted relative to this ``ofs``.
+    :param 4D-vector gridValues: the data values to set.
     :return: Success
     """
-    # DB handle must have been initialised.
-    if _DB_Grid is None:
-        return RetVal(False, 'Not initialised', None)
+    # Fetch the database handle.
+    ret = getGridDB(name)
+    if not ret.ok:
+        return ret
+    db, admin = ret.data
+    gran, vecDim = admin['gran'], admin['elDim']
+    del admin, ret
 
-    # Return with an error if the grid ``name`` does not exist.
-    if name not in _DB_Grid.collection_names():
-        msg = 'Unknown grid <{}>'.format(name)
-        logit.info(msg)
-        return RetVal(False, msg, None)
-    else:
-        db = _DB_Grid[name]
-
-    # Ensure ``ofs`` has the correct size.
+    # Sanity check: ``ofs`` must denote a position in 3D space.
     if len(ofs) != 3:
         return RetVal(False, 'Invalid parameter values', None)
 
-    # Retrieve the admin field for later use.
-    admin = db.find_one({'admin': 'admin'})
-    if admin is None:
-        return RetVal(False, 'Bug: could not find admin element', None)
-    gran, vecDim = admin['gran'], admin['elDim']
-
-    # Ensure ``value`` has the correct number of dimensions. To elaborate,
-    # every ``value`` needs at least 3 spatial dimensions, plus an additional
-    # dimension that holds the actual data vector, which must have length
-    # ``vecDim``.
-    if (len(value.shape) != 4) or (value.shape[3] != vecDim):
-        return RetVal(False, 'Invalid data dimension', None)
+    # Sanity check: every ``gridValues`` must be a 3D matrix where every entry
+    # is a vector with ``vecDim`` elements.
+    if (len(gridValues.shape) != 4) or (gridValues.shape[3] != vecDim):
+        return RetVal(False, 'Invalid gridValues dimension', None)
 
     # Populate the output array.
     bulk = db.initialize_unordered_bulk_op()
-    for x in range(value.shape[0]):
-        for y in range(value.shape[1]):
-            for z in range(value.shape[2]):
+    for x in range(gridValues.shape[0]):
+        for y in range(gridValues.shape[1]):
+            for z in range(gridValues.shape[2]):
                 # Convenience.
-                val = value[x, y, z, :]
+                val = gridValues[x, y, z, :]
 
                 # Compute the grid position of the current data value and
                 # convert it to integer indexes.
@@ -473,5 +468,6 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
                 else:
                     bulk.find(query).upsert().update({'$set': data})
 
+    # Execute the Mongo query. Don't bother with the return value.
     bulk.execute()
     return RetVal(True, None, None)
