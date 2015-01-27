@@ -261,7 +261,7 @@ def getValues(name: str, positions: (tuple, list)):
         for pos in positions:
             assert isinstance(pos, (tuple, list, np.ndarray))
             assert len(pos) == 3
-            indexes.append('-'.join([str(int(_ // gran)) for _ in pos]))
+            indexes.append(':'.join([str(int(_ // gran)) for _ in pos]))
     except AssertionError:
         return RetVal(False, '<getValues> received invalid positions', None)
 
@@ -319,7 +319,7 @@ def setValues(name: str, posVals: (tuple, list)):
             pos, val = pv
             assert len(pos) == 3
             assert len(val) == vecDim
-            strPos = '-'.join([str(int(_ // gran)) for _ in pos])
+            strPos = ':'.join([str(int(_ // gran)) for _ in pos])
 
             # Convenience.
             px, py, pz = [int(_ / gran) for _ in pos]
@@ -467,7 +467,7 @@ def setRegion(name: str, ofs: np.ndarray, value: np.ndarray):
                 val = value[x, y, z, :]
 
                 # The position in string format (useful for some queries).
-                strPos = '-'.join([str(int(_ // gran)) for _ in pos])
+                strPos = ':'.join([str(int(_ // gran)) for _ in pos])
 
                 # Either update the value in the DB (|value| != 0) or delete
                 # all documents (there should only be one....) for this

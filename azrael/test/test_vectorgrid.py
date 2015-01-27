@@ -88,8 +88,8 @@ def test_set_get_bulk():
     """
     # Test parameters.
     vg = vectorgrid
-    pos_0 = np.array([1, 2, 3], np.float64)
-    pos_1 = np.array([4, 5, 6], np.float64)
+    pos_0 = np.array([-1, 2, -3], np.float64)
+    pos_1 = np.array([4, -5, 6], np.float64)
     val_0 = np.array([-1, 0, 1], np.float64)
     val_1 = np.array([-2, 1, 2], np.float64)
     name = 'force'
@@ -142,11 +142,11 @@ def test_set_get_mixed():
     """
     # Test parameters.
     vg = vectorgrid
-    pos_0 = np.array([1, 2, 3], np.float64)
-    pos_1 = np.array([4, 5, 6], np.float64)
+    name = 'force'
+    pos_0 = np.array([-1, 2, -3], np.float64)
+    pos_1 = np.array([-4, 5, -6], np.float64)
     val_0 = np.array([-1, 0, 1], np.float64)
     val_1 = np.array([-2, 1, 2], np.float64)
-    name = 'force'
 
     # Delete all grids used in this test.
     assert vg.deleteAllGrids().ok
@@ -282,8 +282,8 @@ def test_set_get_region():
     for x in range(regionDim[0]):
         for y in range(regionDim[1]):
             for z in range(regionDim[2]):
-                data[x, y, z, :] = val
-                val += 1
+                data[x, y, z, :] = [val, val + 1, val + 2]
+                val += 3
     del val, x, y, z
 
     # Apply the data set.
