@@ -130,13 +130,12 @@ def defineGrid(name: str, elDim: int, granularity: (int, float)):
     return RetVal(True, None, None)
 
 
-@typecheck
-def resetGrid(name: str):
+def getGridDB(name: str):
     """
-    Reset all values of the grid ``name``.
+    Return the database handle and admin field of the ``name`` grid.
 
-    :param str name: grid name to reset.
-    :return: Success
+    :param str name: name of grid.
+    :return: (db, admin)
     """
     # DB handle must have been initialised.
     if _DB_Grid is None:
@@ -153,6 +152,22 @@ def resetGrid(name: str):
     admin = db.find_one({'admin': 'admin'})
     if admin is None:
         return RetVal(False, 'Bug: could not find admin element', None)
+    return RetVal(True, None, (db, admin))
+
+
+@typecheck
+def resetGrid(name: str):
+    """
+    Reset all values of the grid ``name``.
+
+    :param str name: grid name to reset.
+    :return: Success
+    """
+    # Fetch the database handle.
+    ret = getGridDB(name)
+    if not ret.ok:
+        return ret
+    db, admin = ret.data
 
     # Resetting a grid equates to deleting all values in the collection so that
     # all values assume their default again. We therefore simply drop the
@@ -170,15 +185,11 @@ def deleteGrid(name: str):
     :param str name: grid name.
     :return: Success
     """
-    # DB handle must have been initialised.
-    if _DB_Grid is None:
-        return RetVal(False, 'Not initialised', None)
-
-    # Return with an error if the grid ``name`` does not exist.
-    if name not in _DB_Grid.collection_names():
-        msg = 'Unknown grid <{}>'.format(name)
-        logit.info(msg)
-        return RetVal(False, msg, None)
+    # Fetch the database handle (we will not use it but this function call does
+    # all the error checking for us already).
+    ret = getGridDB(name)
+    if not ret.ok:
+        return ret
 
     # Flush the collection and insert the admin element again.
     _DB_Grid.drop_collection(name)
@@ -236,24 +247,13 @@ def getValues(name: str, positions: (tuple, list)):
     if len(positions) == 0:
         return RetVal(False, '<setValues> received no arguments', None)
 
-    # DB handle must have been initialised.
-    if _DB_Grid is None:
-        return RetVal(False, 'Not initialised', None)
-
-    # Return with an error if the grid ``name`` does not exist.
-    if name not in _DB_Grid.collection_names():
-        msg = 'Unknown grid <{}> (get)'.format(name)
-        logit.info(msg)
-        return RetVal(False, msg, None)
-    else:
-        db = _DB_Grid[name]
-
-    # Retrieve the admin field for later use.
-    admin = db.find_one({'admin': 'admin'})
-    if admin is None:
-        return RetVal(False, 'Bug: could not find admin element', None)
+    # Fetch the database handle.
+    ret = getGridDB(name)
+    if not ret.ok:
+        return ret
+    db, admin = ret.data
     gran, vecDim = admin['gran'], admin['elDim']
-    del admin
+    del admin, ret
 
     # Ensure the region dimensions are positive integers.
     indexes = []
@@ -288,24 +288,13 @@ def setValues(name: str, posVals: (tuple, list)):
     if len(posVals) == 0:
         return RetVal(False, '<setValues> received no arguments', None)
     
-    # DB handle must have been initialised.
-    if _DB_Grid is None:
-        return RetVal(False, 'Not initialised', None)
-
-    # Return with an error if the grid ``name`` does not exist.
-    if name not in _DB_Grid.collection_names():
-        msg = 'Unknown grid <{}>'.format(name)
-        logit.info(msg)
-        return RetVal(False, msg, None)
-    else:
-        db = _DB_Grid[name]
-
-    # Retrieve the admin field for later use.
-    admin = db.find_one({'admin': 'admin'})
-    if admin is None:
-        return RetVal(False, 'Bug: could not find admin element', None)
+    # Fetch the database handle.
+    ret = getGridDB(name)
+    if not ret.ok:
+        return ret
+    db, admin = ret.data
     gran, vecDim = admin['gran'], admin['elDim']
-    del admin
+    del admin, ret
 
     # Ensure the region dimensions are positive integers.
     indexes = []
