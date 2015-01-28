@@ -269,7 +269,7 @@ def getValues(name: str, positions: (tuple, list)):
     Return the value at ``positions`` in a tuple of NumPy arrays.
 
     :param str name: grid name
-    :param list positions: grid positions to query.
+    :param list positions: grid positions (in string format)
     :return: list of grid values at ``positions``.
     """
     # Return immediately if we did not get any values.
@@ -285,23 +285,27 @@ def getValues(name: str, positions: (tuple, list)):
     del admin, ret
 
     # Ensure the positions are valid.
-    indexes = []
+    strPositions = []
     try:
         for pos in positions:
             assert isinstance(pos, (tuple, list, np.ndarray))
             assert len(pos) == 3
             px, py, pz, strPos = _encodePosition(pos, gran)
-            indexes.append(strPos)
+            strPositions.append(strPos)
     except AssertionError:
         return RetVal(False, '<getValues> received invalid positions', None)
 
-    # Allocate the output array.
-    out = np.zeros((len(indexes), vecDim), np.float64)
-
     # Find all values and compile the output list.
-    values = [_['val'] for _ in db.find({'strPos': {'$in': indexes}})]
-    for idx, val in enumerate(values):
-        out[idx, :] = np.array(val, np.float64)
+    values = {_['strPos']: _['val']
+              for _ in db.find({'strPos': {'$in': strPositions}})}
+
+    # Put the grid values into the output list. The ``positions`` argument (or
+    # ``strPositions``) uniquely specifies their order. User zeros whenever a
+    # grid value was unavailable.
+    out = np.zeros((len(strPositions), vecDim), np.float64)
+    for idx, pos in enumerate(strPositions):
+        if pos in values:
+            out[idx, :] = np.array(values[pos], np.float64)
 
     return RetVal(True, None, out)
 

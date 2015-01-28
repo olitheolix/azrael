@@ -4,10 +4,10 @@ import pytest
 import IPython
 import subprocess
 import azrael.clerk
+import azrael.client
 import azrael.clacks
 import azrael.leonard
 import azrael.database
-import azrael.client
 import azrael.vectorgrid
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
@@ -40,6 +40,82 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     leo = LeonardCls()
     leo.setup()
     return leo
+
+
+@pytest.mark.parametrize('clsLeonard', allEngines)
+def test_getGridForces(clsLeonard):
+    """
+    Spawn an object, specify its State Variables explicitly, and verify the
+    change propagated through Azrael.
+
+    fixme: test with all leonards
+    """
+    killAzrael()
+
+    # Convenience.
+    vg = azrael.vectorgrid
+
+    # Create pristince force grid.
+    assert vg.deleteAllGrids().ok
+    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
+
+    # Get a Leonard instance.
+    leo = getLeonard(clsLeonard)
+
+    # Grid parameters.
+    Nx, Ny, Nz = 2, 3, 4
+    ofs = np.array([-1.1, -2.7, 3.5], np.float64)
+    force = np.zeros((Nx, Ny, Nz, 3))
+
+    # Compute grid values.
+    idPos, idVal = {}, {}
+    val, objID = 0, 0
+    for x in range(Nx):
+        for y in range(Ny):
+            for z in range(Nz):
+                # Assign integer values (allows for equality comparisions later
+                # on without having to worry about rounding effects).
+                force[x, y, z] = [val, val + 1, val + 2]
+
+                # Build the input dictionary for ``getGridForces``.
+                idPos[objID] = np.array([x + ofs[0], y + ofs[1], z + ofs[2]])
+
+                # Keep track of the value assigned to this position.
+                idVal[objID] = force[x, y, z]
+
+                # Update the counters.
+                val += 3
+                objID += 1
+
+    # Set the grid values with a region operator.
+    ret = vg.setRegion('force', ofs, force)
+
+    # Query the grid values at the positions specified in the idPos dictionary.
+    ret = leo.getGridForces(idPos)
+    assert ret.ok
+    gridForces = ret.data
+
+    # Verify the value at every position we used in this test.
+    for objID in idPos:
+        # Convenience.
+        val_direct = idVal[objID]
+        val_gridforce = gridForces[objID]
+
+        # Fetch the grid value with a traditional 'getValue' call.
+        ret = vg.getValue('force', idPos[objID])
+        assert ret.ok
+        val_getValue = ret.data
+
+        # Compare: direct <--> getValue
+        assert np.array_equal(val_direct, val_getValue)
+
+        # Compare: direct <--> getGridForces.
+        assert np.array_equal(val_direct, val_gridforce)
+
+        # Compare: getGridForces <--> getValue
+        assert np.array_equal(val_gridforce, ret.data)
+
+    print('Test passed')
 
 
 @pytest.mark.parametrize('clsLeonard', allEngines)
@@ -679,6 +755,7 @@ if __name__ == '__main__':
 
     for _engine in allEngines:
         print('\nEngine: {}'.format(_engine))
+        test_getGridForces(_engine)
         test_force_grid(_engine)
         test_setStateVariables_advanced(_engine)
         test_setStateVariables_basic(_engine)

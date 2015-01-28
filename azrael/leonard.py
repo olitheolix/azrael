@@ -231,7 +231,7 @@ class LeonardBase(multiprocessing.Process):
         if not ret.ok:
             return RetVal(False, ret.msg, None)
 
-        # Overwrite the default values with whatever ...
+        # Overwrite the default values.
         gridForces = {objID: val for objID, val in zip(objIDs, ret.data)}
         return RetVal(True, None, gridForces)
 
