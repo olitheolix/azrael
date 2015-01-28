@@ -284,7 +284,7 @@ def getValues(name: str, positions: (tuple, list)):
     gran, vecDim = admin['gran'], admin['elDim']
     del admin, ret
 
-    # Ensure the region dimensions are positive integers.
+    # Ensure the positions are valid.
     indexes = []
     try:
         for pos in positions:

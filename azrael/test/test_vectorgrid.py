@@ -132,7 +132,7 @@ def test_set_get_bulk():
     print('Test passed')
 
 
-def test_set_get_mixed():
+def test_set_get_mixed_values():
     """
     Define a new grid type and set/get some values with bulk- and non-bulk
     versions. This test is necessary because the grid engine uses two formats
@@ -257,26 +257,34 @@ def test_set_get_region():
     """
     # Test parameters.
     vg = vectorgrid
-    ofs = np.zeros(3, np.float64)
-    elDim = 3
-    regionDim = np.array([2, 4, 6], np.int64)
-    dataDim = np.hstack((regionDim, elDim))
+    vecDim = 3
     name = 'force'
 
     # Delete all grids used in this test.
     assert vg.deleteAllGrids().ok
 
     # Define a new grid.
-    assert vg.defineGrid(name=name, elDim=elDim, granularity=1).ok
+    assert vg.defineGrid(name=name, elDim=vecDim, granularity=1).ok
+
+    # Region offset in 3D space (these can be floating point numbers because
+    # they denote actual positions, not grid indexes).
+    ofs = np.array([1, 2.2, -3.3], np.float64)
+
+    # Size of the region.
+    regionDim = np.array([2, 4, 6], np.int64)
+
+    # Data dimensionality (3 spatial dimensions plus the actual data
+    # vector/value).
+    dataDim = np.hstack((regionDim, vecDim))
 
     # Query an entire region.
     ret = vg.getRegion(name, ofs, regionDim)
     assert ret.ok
     assert np.array_equal(ret.data, np.zeros(dataDim, np.float64))
 
-    # Create the data set for an `elDim` vector field. For instance, an EM
-    # field is 3D vector field (ie elDim=3), that is at position (x,y,z) has an
-    # associated (E_x, E_y, E_z) vector.
+    # Create the data set for an `vecDim` vector field. For instance, an EM
+    # field is a 3D vector field (ie vecDim=3), ie every position (x,y,z) has
+    # an associated (E_x, E_y, E_z) vector.
     data = np.zeros(dataDim, np.float64)
     val = 0
     for x in range(regionDim[0]):
@@ -298,16 +306,22 @@ def test_set_get_region():
     for x in range(regionDim[0]):
         for y in range(regionDim[1]):
             for z in range(regionDim[2]):
-                # Use single query.
                 pos = ofs + np.array([x, y, z], np.float64)
+
+                # Query one value with 'getValue'.
                 ret = vg.getValue(name, pos)
                 assert ret.ok
                 assert np.array_equal(ret.data, data[x, y, z])
 
-                # Use region query.
+                # Query one value with 'getValues'.
+                ret = vg.getValues(name, [pos])
+                assert ret.ok
+                assert np.array_equal(ret.data[0], data[x, y, z])
+
+                # Query one value with 'getRegion'.
                 ret = vg.getRegion(name, np.array(pos), (1, 1, 1))
                 assert ret.ok
-                assert ret.data.shape == (1, 1, 1, elDim)
+                assert ret.data.shape == (1, 1, 1, vecDim)
                 assert np.array_equal(ret.data[0, 0, 0], data[x, y, z])
 
     # Query other subsets.
@@ -442,7 +456,7 @@ def test_auto_delete():
 
 
 if __name__ == '__main__':
-    test_set_get_mixed()
+    test_set_get_mixed_values()
     test_set_get_bulk()
     test_auto_delete()
     test_deleteAll()
