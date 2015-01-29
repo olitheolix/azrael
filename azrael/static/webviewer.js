@@ -149,7 +149,7 @@ function getGeometry(objID) {
 }
 
 function addTemplate(templateID, cs, vertices) {
-    var cmd = {'cmd': 'add_template', 'payload':
+    var cmd = {'cmd': 'add_template', 'data':
                {'name': templateID, 'cs': cs, 'vert': vertices,
                 'UV': [], 'RGB': [], 'boosters': [], 'factories': []}}
     cmd = JSON.stringify(cmd)
