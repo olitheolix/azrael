@@ -22,19 +22,19 @@ def test_set_get_single_invalid():
     assert vg.deleteAllGrids().ok
 
     # Attempt to get the value from a non-existing grid.
-    ret = vg.getValue('force', pos)
+    ret = vg.getValues('force', [pos])
     assert not ret.ok
     assert 'unknown grid' in ret.msg.lower()
     assert ret.data is None
-    assert ret == vg.setValue('force', pos, value)
+    assert ret == vg.setValues('force', [(pos, value)])
 
     # Invalid arguments to 'getValue'.
-    assert not vg.getValue('force', np.array([1, 2])).ok
+    assert not vg.getValues('force', [np.array([1, 2])]).ok
 
     # Invalid arguments to 'setValue'.
-    assert not vg.setValue('force', np.array([1, 2]), value).ok
-    assert not vg.setValue('force', pos, np.array([1, 2])).ok
-    assert not vg.setValue('force', pos, np.array([1, 2, 3, 4])).ok
+    assert not vg.setValues('force', [(np.array([1, 2]), value)]).ok
+    assert not vg.setValues('force', [(pos, np.array([1, 2]))]).ok
+    assert not vg.setValues('force', [(pos, np.array([1, 2, 3, 4]))]).ok
 
     print('Test passed')
 
@@ -53,10 +53,10 @@ def test_set_get_single():
     assert vg.deleteAllGrids().ok
 
     # Attempt to set/get values of an undefined grid.
-    assert not vg.getValue(name, pos).ok
+    assert not vg.getValues(name, [pos]).ok
 
     # Attempt to set the value of a non-existing grid.
-    assert not vg.setValue(name, pos, value).ok
+    assert not vg.setValues(name, [(pos, value)]).ok
 
     # Define a new grid. Its name is "force", it consists of 3-element vectors,
     # and has a spatial granularity of 1m in each dimension.
@@ -64,20 +64,20 @@ def test_set_get_single():
 
     # Query a value. This must return a zero vector (3 elements) because this
     # is the default value of the grid.
-    ret = vg.getValue(name, pos)
+    ret = vg.getValues(name, [pos])
     assert ret.ok
-    assert np.array_equal(ret.data, np.zeros(3, np.float64))
+    assert np.array_equal(ret.data, [np.zeros(3, np.float64)])
 
     # Repeat at a different position.
-    ret = vg.getValue(name, pos + np.pi)
+    ret = vg.getValues(name, [pos + np.pi])
     assert ret.ok
-    assert np.array_equal(ret.data, np.zeros(3, np.float64))
+    assert np.array_equal(ret.data, [np.zeros(3, np.float64)])
 
     # Update the value and query it once more.
-    assert vg.setValue(name, pos, value).ok
-    ret = vg.getValue(name, pos)
+    assert vg.setValues(name, [(pos, value)]).ok
+    ret = vg.getValues(name, [pos])
     assert ret.ok
-    assert np.array_equal(ret.data, value)
+    assert np.array_equal(ret.data, [value])
 
     print('Test passed')
 
@@ -132,42 +132,6 @@ def test_set_get_bulk():
     print('Test passed')
 
 
-def test_set_get_mixed_values():
-    """
-    Define a new grid type and set/get some values with bulk- and non-bulk
-    versions. This test is necessary because the grid engine uses two formats
-    internally to speed up the operations for either bulk or individual,
-    depending on the used function. This test mixes the calls to ensure they
-    both read/write consistent entries.
-    """
-    # Test parameters.
-    vg = vectorgrid
-    name = 'force'
-    pos_0 = np.array([-1.1, 2.2, -3.7], np.float64)
-    pos_1 = np.array([-4.4, 5.5, -6.6], np.float64)
-    val_0 = np.array([-1, 0, 1], np.float64)
-    val_1 = np.array([-2, 1, 2], np.float64)
-
-    # Delete all grids used in this test.
-    assert vg.deleteAllGrids().ok
-
-    # Define a new grid. Its name is "force", it consists of 3-element vectors,
-    # and has a spatial granularity of 1m in each dimension.
-    assert vg.defineGrid(name=name, elDim=3, granularity=1).ok
-
-    # Set with a scalar and retrieve in bulk.
-    assert vg.setValue(name, pos_0, val_0).ok
-    ret = vg.getValues(name, [pos_0])
-    assert ret.ok and np.array_equal(ret.data[0], val_0)
-
-    # Now set in bulk and retrieve with a scalar.
-    assert vg.setValues(name, [(pos_1, val_1)]).ok
-    ret = vg.getValue(name, pos_1)
-    assert ret.ok and np.array_equal(ret.data, val_1)
-
-    print('Test passed')
-
-
 def test_define_reset_delete_grid():
     """
     Define a new grid, add/set a value, delete the grid, and ensure it cannot
@@ -183,30 +147,30 @@ def test_define_reset_delete_grid():
     assert vg.deleteAllGrids().ok
 
     # Attempt to access the undefined grid.
-    assert not vg.getValue(name, pos).ok
-    assert not vg.setValue(name, pos, value).ok
+    assert not vg.getValues(name, [pos]).ok
+    assert not vg.setValues(name, [(pos, value)]).ok
 
     # Define a new grid.
     assert vg.defineGrid(name=name, elDim=3, granularity=1).ok
 
     # Query default value.
-    ret = vg.getValue(name, pos)
-    assert ret.ok and np.array_equal(ret.data, np.zeros(3))
+    ret = vg.getValues(name, [pos])
+    assert ret.ok and np.array_equal(ret.data, [np.zeros(3)])
 
     # Update the value at 'pos'.
-    assert vg.setValue(name, pos, value).ok
-    assert np.array_equal(vg.getValue(name, pos).data, value)
+    assert vg.setValues(name, [(pos, value)]).ok
+    assert np.array_equal(vg.getValues(name, [pos]).data, [value])
 
     # Reset the grid and query 'pos' again.
     assert vg.resetGrid(name).ok
-    assert np.array_equal(vg.getValue(name, pos).data, np.zeros(3))
+    assert np.array_equal(vg.getValues(name, [pos]).data, [np.zeros(3)])
 
     # Delete the grid and ensure it has become inaccessible.
-    assert vg.getValue(name, pos).ok
-    assert vg.setValue(name, pos, value).ok
+    assert vg.getValues(name, [pos]).ok
+    assert vg.setValues(name, [(pos, value)]).ok
     assert vg.deleteGrid(name).ok
-    assert not vg.getValue(name, pos).ok
-    assert not vg.setValue(name, pos, value).ok
+    assert not vg.getValues(name, [pos]).ok
+    assert not vg.setValues(name, [(pos, value)]).ok
 
     print('Test passed')
 
@@ -309,14 +273,9 @@ def test_set_get_region():
                 pos = ofs + np.array([x, y, z], np.float64)
 
                 # Query one value with 'getValue'.
-                ret = vg.getValue(name, pos)
-                assert ret.ok
-                assert np.array_equal(ret.data, data[x, y, z])
-
-                # Query one value with 'getValues'.
                 ret = vg.getValues(name, [pos])
                 assert ret.ok
-                assert np.array_equal(ret.data[0], data[x, y, z])
+                assert np.array_equal(ret.data, [data[x, y, z]])
 
                 # Query one value with 'getRegion'.
                 ret = vg.getRegion(name, np.array(pos), (1, 1, 1))
@@ -392,28 +351,28 @@ def test_granularity():
     assert vg.defineGrid(name=name, elDim=elDim, granularity=gran).ok
 
     # Query default value at 'pos'.
-    ret = vg.getValue(name, pos)
-    assert ret.ok and np.array_equal(ret.data, np.zeros(elDim))
+    ret = vg.getValues(name, [pos])
+    assert ret.ok and np.array_equal(ret.data, [np.zeros(elDim)])
 
     # Update the value at 'pos'.
-    assert vg.setValue(name, pos, value).ok
-    assert np.array_equal(vg.getValue(name, pos).data, value)
+    assert vg.setValues(name, [(pos, value)]).ok
+    assert np.array_equal(vg.getValues(name, [pos]).data, [value])
 
     # Query it again at 'pos'.
-    ret = vg.getValue(name, pos)
-    assert ret.ok and np.array_equal(ret.data, value)
+    ret = vg.getValues(name, [pos])
+    assert ret.ok and np.array_equal(ret.data, [value])
 
     # Now query the values near pos. Internally, the vectorgrid engine will use
     # integer truncation (not rounding) to determine which vector element to
     # actually retrieve.
-    ret = vg.getValue(name, pos + gran / 2)
-    assert ret.ok and np.array_equal(ret.data, value)
+    ret = vg.getValues(name, [pos + gran / 2])
+    assert ret.ok and np.array_equal(ret.data, [value])
 
-    ret = vg.getValue(name, pos + gran)
-    assert ret.ok and np.array_equal(ret.data, np.zeros(elDim))
+    ret = vg.getValues(name, [pos + gran])
+    assert ret.ok and np.array_equal(ret.data, [np.zeros(elDim)])
 
-    ret = vg.getValue(name, pos - 0.1)
-    assert ret.ok and np.array_equal(ret.data, np.zeros(elDim))
+    ret = vg.getValues(name, [pos - 0.1])
+    assert ret.ok and np.array_equal(ret.data, [np.zeros(elDim)])
 
     print('Test passed')
 
@@ -439,11 +398,11 @@ def test_auto_delete():
     assert vg._DB_Grid[name].count() == 1
 
     # Add an element and ensure the document count increased to 2.
-    assert vg.setValue(name, pos, value).ok
+    assert vg.setValues(name, [(pos, value)]).ok
     assert vg._DB_Grid[name].count() == 2
 
     # Update the value to zero. This must decrease the count to 1 again.
-    assert vg.setValue(name, pos, 0 * value).ok
+    assert vg.setValues(name, [(pos, 0 * value)]).ok
     assert vg._DB_Grid[name].count() == 1
 
     # Repeat this experiment but with the bulk version 'setValues'.
@@ -456,7 +415,6 @@ def test_auto_delete():
 
 
 if __name__ == '__main__':
-    test_set_get_mixed_values()
     test_set_get_bulk()
     test_auto_delete()
     test_deleteAll()

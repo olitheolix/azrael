@@ -198,42 +198,6 @@ def deleteGrid(name: str):
     return RetVal(True, None, None)
 
 
-@typecheck
-def getValue(name: str, pos: (np.ndarray, list)):
-    """
-    Return the value at ``pos``.
-
-    :param str name: grid name
-    :param 3D-vec pos: position in grid
-    :return: data vector at ``pos``.
-    """
-    # Leverage 'getRegion' to do the actual work.
-    pos = np.array(pos, np.float64)
-    ret = getRegion(name, pos, (1, 1, 1))
-    if ret.ok:
-        return RetVal(True, None, ret.data[0, 0, 0])
-    else:
-        return ret
-
-
-@typecheck
-def setValue(name: str, pos: np.ndarray, value: np.ndarray):
-    """
-    Update the value at ``pos`` to ``value``.
-
-    :param str name: grid name
-    :param 3D-vec pos: position in grid
-    :param vector value: the value to insert at ``pos``.
-    :return: Success
-    """
-    # Leverage 'setRegion' to do the actual work. Wrap the ``value`` into a
-    # 4-D data structure (the first three denote the position, the fourth holds
-    # the actual value).
-    tmp = np.zeros((1, 1, 1, len(value)), np.float64)
-    tmp[0, 0, 0] = value
-    return setRegion(name, pos, tmp)
-
-
 def _encodePosition(pos: np.ndarray, granularity: float):
     """
     Return the grid index based on ``pos`` and ``granularity``.

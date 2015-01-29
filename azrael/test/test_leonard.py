@@ -101,19 +101,8 @@ def test_getGridForces(clsLeonard):
         val_direct = idVal[objID]
         val_gridforce = gridForces[objID]
 
-        # Fetch the grid value with a traditional 'getValue' call.
-        ret = vg.getValue('force', idPos[objID])
-        assert ret.ok
-        val_getValue = ret.data
-
-        # Compare: direct <--> getValue
-        assert np.array_equal(val_direct, val_getValue)
-
         # Compare: direct <--> getGridForces.
         assert np.array_equal(val_direct, val_gridforce)
-
-        # Compare: getGridForces <--> getValue
-        assert np.array_equal(val_gridforce, ret.data)
 
     print('Test passed')
 
@@ -567,7 +556,7 @@ def test_force_grid(clsLeonard):
     # object must still not move.
     pos = np.array([1, 2, 3], np.float64)
     value = np.ones(3, np.float64)
-    assert vg.setValue('force', pos, value).ok
+    assert vg.setValues('force', [(pos, value)]).ok
 
     # Step the simulation and verify the object remained where it was.
     leonard.step(1.0, 60)
@@ -578,7 +567,7 @@ def test_force_grid(clsLeonard):
     # Specify a grid value of 1 Newton in x-direction.
     pos = np.array([0, 0, 0], np.float64)
     value = np.array([1, 0, 0], np.float64)
-    assert vg.setValue('force', pos, value).ok
+    assert vg.setValues('force', [(pos, value)]).ok
 
     # Step the simulation and verify the object moved accordingly.
     leonard.step(1.0, 60)
