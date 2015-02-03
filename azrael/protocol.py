@@ -65,8 +65,8 @@ def ToClerk_Ping_Encode(dummyarg=None):
 
 
 @typecheck
-def ToClerk_Ping_Decode(payload: dict):
-    return True, payload
+def ToClerk_Ping_Decode(dummyarg):
+    return True, dummyarg
 
 
 @typecheck
@@ -225,12 +225,12 @@ def ToClerk_AddTemplate_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_AddTemplate_Encode(dummyarg=None):
+def FromClerk_AddTemplate_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_AddTemplate_Decode(payload: dict):
+def FromClerk_AddTemplate_Decode(dummyarg):
     return RetVal(True, None, None)
 
 
@@ -245,8 +245,8 @@ def ToClerk_GetAllObjectIDs_Encode(dummyarg=None):
 
 
 @typecheck
-def ToClerk_GetAllObjectIDs_Decode(payload: dict):
-    return True, payload
+def ToClerk_GetAllObjectIDs_Decode(dummyarg):
+    return True, (None,)
 
 
 @typecheck
@@ -289,8 +289,8 @@ def FromClerk_AttributeOverride_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_AttributeOverride_Decode(payload):
-    return RetVal(True, None, payload)
+def FromClerk_AttributeOverride_Decode(dummyarg):
+    return RetVal(True, None, None)
 
 
 # ---------------------------------------------------------------------------
@@ -319,8 +319,8 @@ def FromClerk_SetForce_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_SetForce_Decode(payload: dict):
-    return RetVal(True, None, payload)
+def FromClerk_SetForce_Decode(dummyarg):
+    return RetVal(True, None, None)
 
 
 # ---------------------------------------------------------------------------
@@ -377,8 +377,8 @@ def FromClerk_SetGeometry_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_SetGeometry_Decode(payload):
-    return RetVal(True, None, payload)
+def FromClerk_SetGeometry_Decode(dummyarg):
+    return RetVal(True, None, None)
 
 
 # ---------------------------------------------------------------------------
@@ -477,8 +477,8 @@ def FromClerk_Remove_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_Remove_Decode(payload):
-    return RetVal(True, None, payload)
+def FromClerk_Remove_Decode(dummyarg):
+    return RetVal(True, None, None)
 
 
 # ---------------------------------------------------------------------------
