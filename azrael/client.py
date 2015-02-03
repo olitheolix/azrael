@@ -419,6 +419,7 @@ class Client():
         :param BulletDataOverride new_SV: the object attributes to set.
         :return: Success
         """
+        new_SV = tuple(new_SV)
         return self.serialiseAndSend('set_statevar', objID, new_SV)
 
     @typecheck

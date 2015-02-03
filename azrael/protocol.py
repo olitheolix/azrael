@@ -265,20 +265,22 @@ def FromClerk_GetAllObjectIDs_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_AttributeOverride_Encode(
-        objID: int, data: bullet_data.BulletDataOverride):
-    return True, {'objID': objID, 'data': data}
+def ToClerk_AttributeOverride_Encode(objID: int, sv: tuple):
+    return True, {'objID': objID, 'sv': sv}
 
 
 @typecheck
 def ToClerk_AttributeOverride_Decode(payload: dict):
-    # Convert to native Python types and return to caller.
+    # Convenience.
     objID = payload['objID']
-    data = payload['data']
-    data = [np.array(_) if isinstance(_, list) else _ for _ in data]
-    tmp = dict(zip(bullet_data.BulletDataOverride._fields, data))
-    data = bullet_data.BulletDataOverride(**tmp)
-    return True, (objID, data)
+
+    # Convert the state variable into a BulletDataOverride instance.
+    sv = payload['sv']
+    sv = [np.array(_) if isinstance(_, list) else _ for _ in sv]
+    tmp = dict(zip(bullet_data.BulletDataOverride._fields, sv))
+    sv = bullet_data.BulletDataOverride(**tmp)
+
+    return True, (objID, sv)
 
 
 @typecheck
