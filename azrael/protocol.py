@@ -44,8 +44,6 @@ import IPython
 import numpy as np
 import azrael.util
 import azrael.parts as parts
-import azrael.config as config
-import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 import azrael.physics_interface as physics_interface
 
@@ -67,18 +65,18 @@ def ToClerk_Ping_Encode(dummyarg=None):
 
 
 @typecheck
-def ToClerk_Ping_Decode(data: dict):
-    return True, data
+def ToClerk_Ping_Decode(payload: dict):
+    return True, payload
 
 
 @typecheck
-def FromClerk_Ping_Encode(response: str):
-    return True, {'response': response}
+def FromClerk_Ping_Encode(payload: str):
+    return True, {'response': payload}
 
 
 @typecheck
-def FromClerk_Ping_Decode(data: dict):
-    return RetVal(True, None, data['response'])
+def FromClerk_Ping_Decode(payload: dict):
+    return RetVal(True, None, payload['response'])
 
 
 # ---------------------------------------------------------------------------
@@ -92,8 +90,8 @@ def ToClerk_GetTemplateID_Encode(objID: int):
 
 
 @typecheck
-def ToClerk_GetTemplateID_Decode(data: dict):
-    return True, (data['objID'], )
+def ToClerk_GetTemplateID_Decode(payload: dict):
+    return True, (payload['objID'], )
 
 
 @typecheck
@@ -102,8 +100,8 @@ def FromClerk_GetTemplateID_Encode(templateID: bytes):
 
 
 @typecheck
-def FromClerk_GetTemplateID_Decode(data: dict):
-    return RetVal(True, None, bytes(data['templateID']))
+def FromClerk_GetTemplateID_Decode(payload: dict):
+    return RetVal(True, None, bytes(payload['templateID']))
 
 
 # ---------------------------------------------------------------------------
@@ -130,18 +128,6 @@ def FromClerk_GetTemplate_Encode(templates):
     for name, data in templates.items():
         assert isinstance(name, bytes)
         name = name.decode('utf8')
-        # Sanity checks
-        # fixme: no sanity checks when coming from Clerk
-        for key in ['vert', 'uv', 'rgb']:
-            assert isinstance(data[key], list)
-        assert isinstance(data['cshape'], np.ndarray)
-        assert isinstance(data['aabb'], float)
-        assert isinstance(data['boosters'], (list, tuple))
-        assert isinstance(data['factories'], (list, tuple))
-        for b in data['boosters']:
-            assert isinstance(b, parts.Booster)
-        for f in data['factories']:
-            assert isinstance(f, parts.Factory)
 
         # Convert all booster- and factory descriptions to strings.
         data['cshape'] = data['cshape'].tolist()
@@ -152,9 +138,10 @@ def FromClerk_GetTemplate_Encode(templates):
 
 
 @typecheck
-def FromClerk_GetTemplate_Decode(templates: dict):
+def FromClerk_GetTemplate_Decode(payload: dict):
     out = {}
-    for name, data in templates.items():
+    for name, data in payload.items():
+        # fixme: remove the fromstring functions
         # Wrap the Booster- and Factory data into their dedicated named tuples.
         boosters = [parts.fromstring(_) for _ in data['boosters']]
         factories = [parts.fromstring(_) for _ in data['factories']]
@@ -243,7 +230,7 @@ def FromClerk_AddTemplate_Encode(dummyarg=None):
 
 
 @typecheck
-def FromClerk_AddTemplate_Decode(data: dict):
+def FromClerk_AddTemplate_Decode(payload: dict):
     return RetVal(True, None, None)
 
 
@@ -258,8 +245,8 @@ def ToClerk_GetAllObjectIDs_Encode(dummyarg=None):
 
 
 @typecheck
-def ToClerk_GetAllObjectIDs_Decode(data: dict):
-    return True, data
+def ToClerk_GetAllObjectIDs_Decode(payload: dict):
+    return True, payload
 
 
 @typecheck
@@ -268,8 +255,8 @@ def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
 
 
 @typecheck
-def FromClerk_GetAllObjectIDs_Decode(data: dict):
-    return RetVal(True, None, data['objIDs'])
+def FromClerk_GetAllObjectIDs_Decode(payload: dict):
+    return RetVal(True, None, payload['objIDs'])
 
 
 # ---------------------------------------------------------------------------
@@ -316,11 +303,11 @@ def ToClerk_SetForce_Encode(objID: int, force: np.ndarray, rpos: np.ndarray):
 
 
 @typecheck
-def ToClerk_SetForce_Decode(data: dict):
+def ToClerk_SetForce_Decode(payload: dict):
     # Convert to native Python types and return to caller.
-    objID = data['objID']
-    force = data['force']
-    rel_pos = data['rel_pos']
+    objID = payload['objID']
+    force = payload['force']
+    rel_pos = payload['rel_pos']
     return True, (objID, force, rel_pos)
 
 
@@ -330,7 +317,7 @@ def FromClerk_SetForce_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_SetForce_Decode(data: dict):
+def FromClerk_SetForce_Decode(payload: dict):
     return RetVal(True, None, payload)
 
 
@@ -345,26 +332,23 @@ def ToClerk_GetGeometry_Encode(objID: int):
 
 
 @typecheck
-def ToClerk_GetGeometry_Decode(data: dict):
-    return True, (data['objID'], )
+def ToClerk_GetGeometry_Decode(payload: dict):
+    return True, (payload['objID'], )
 
 
 @typecheck
-def FromClerk_GetGeometry_Encode(data):
-    assert isinstance(data['vert'], list)
-    assert isinstance(data['uv'], list)
-    assert isinstance(data['rgb'], list)
+def FromClerk_GetGeometry_Encode(geo):
     # fixme: the dict should match directly
-    return True, {'vert': data['vert'],
-                  'UV': data['uv'],
-                  'RGB': data['rgb']}
+    return True, {'vert': geo['vert'],
+                  'UV': geo['uv'],
+                  'RGB': geo['rgb']}
 
 
 @typecheck
-def FromClerk_GetGeometry_Decode(data: dict):
-    vert = np.array(data['vert'], np.float64)
-    uv = np.array(data['UV'], np.uint8)
-    rgb = np.array(data['RGB'], np.uint8)
+def FromClerk_GetGeometry_Decode(payload: dict):
+    vert = np.array(payload['vert'], np.float64)
+    uv = np.array(payload['UV'], np.uint8)
+    rgb = np.array(payload['RGB'], np.uint8)
     return RetVal(True, None, (vert, uv, rgb))
 
 
@@ -381,8 +365,8 @@ def ToClerk_SetGeometry_Encode(
 
 
 @typecheck
-def ToClerk_SetGeometry_Decode(data: dict):
-    return True, (data['objID'], data['vert'], data['UV'], data['RGB'])
+def ToClerk_SetGeometry_Decode(payload: dict):
+    return True, (payload['objID'], payload['vert'], payload['UV'], payload['RGB'])
 
 
 @typecheck
@@ -408,23 +392,25 @@ def ToClerk_GetStateVariable_Encode(objIDs: (list, tuple)):
 
 
 @typecheck
-def ToClerk_GetStateVariable_Decode(data: dict):
-    return True, (data['objIDs'], )
+def ToClerk_GetStateVariable_Decode(payload: dict):
+    return True, (payload['objIDs'], )
 
 
 @typecheck
 def FromClerk_GetStateVariable_Encode(data: dict):
     fields = bullet_data._BulletData._fields
     for k, v in data.items():
-        if v is not None:
+        if v is None:
+            data[k] = None
+        else:
             data[k] = dict(zip(fields, v))
     return True, {'data': data}
 
 
 @typecheck
-def FromClerk_GetStateVariable_Decode(data: dict):
+def FromClerk_GetStateVariable_Decode(payload: dict):
     out = {}
-    for objID, v in data['data'].items():
+    for objID, v in payload['data'].items():
         objID = int(objID)
         if v is not None:
             out[objID] = bullet_data._BulletData(**v)
@@ -446,6 +432,7 @@ def ToClerk_Spawn_Encode(objectInfos: (tuple, list)):
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
     # Convenience.
+    # fixme: move all conversion to BulletData into the Client code.
     BulletData = bullet_data.BulletData
     BulletDataOverride = bullet_data.BulletDataOverride
     _updateBulletDataTuple = physics_interface._updateBulletDataTuple
@@ -470,8 +457,8 @@ def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
 
 
 @typecheck
-def FromClerk_Spawn_Decode(data: dict):
-    return RetVal(True, None, tuple(data['objIDs']))
+def FromClerk_Spawn_Decode(payload: dict):
+    return RetVal(True, None, tuple(payload['objIDs']))
 
 
 # ---------------------------------------------------------------------------
@@ -485,8 +472,8 @@ def ToClerk_Remove_Encode(objID: int):
 
 
 @typecheck
-def ToClerk_Remove_Decode(data: dict):
-    return True, (data['objID'], )
+def ToClerk_Remove_Decode(payload: dict):
+    return True, (payload['objID'], )
 
 
 @typecheck
@@ -525,10 +512,10 @@ def ToClerk_ControlParts_Encode(objID: int, cmds_b: list, cmds_f: list):
 
 
 @typecheck
-def ToClerk_ControlParts_Decode(data: dict):
-    objID = data['objID']
-    cmds_b = [parts.fromstring(_) for _ in data['cmd_boosters']]
-    cmds_f = [parts.fromstring(_) for _ in data['cmd_factories']]
+def ToClerk_ControlParts_Decode(payload: dict):
+    objID = payload['objID']
+    cmds_b = [parts.fromstring(_) for _ in payload['cmd_boosters']]
+    cmds_f = [parts.fromstring(_) for _ in payload['cmd_factories']]
 
     return True, (objID, cmds_b, cmds_f)
 
@@ -539,5 +526,5 @@ def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
 
 
 @typecheck
-def FromClerk_ControlParts_Decode(data: dict):
-    return RetVal(True, None, data['objIDs'])
+def FromClerk_ControlParts_Decode(payload: dict):
+    return RetVal(True, None, payload['objIDs'])
