@@ -411,14 +411,7 @@ def FromClerk_GetStateVariable_Encode(data: dict):
 
 @typecheck
 def FromClerk_GetStateVariable_Decode(payload: dict):
-    out = {}
-    for objID, v in payload['data'].items():
-        objID = int(objID)
-        if v is not None:
-            out[objID] = bullet_data._BulletData(**v)
-        else:
-            out[objID] = None
-    return RetVal(True, None, out)
+    return RetVal(True, None, payload['data'])
 
 
 # ---------------------------------------------------------------------------

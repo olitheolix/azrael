@@ -35,7 +35,8 @@ import azrael.protocol_json as json
 
 from azrael.util import RetVal
 from azrael.typecheck import typecheck
-from azrael.bullet.bullet_data import BulletData, BulletDataOverride
+from azrael.bullet.bullet_data import BulletDataOverride
+from azrael.bullet.bullet_data import BulletData, _BulletData
 
 
 class Client():
@@ -394,7 +395,7 @@ class Client():
         :rtype: dict
         """
         # If the user requested only a single State Variable wrap it into a
-        # list avoid special case treatment.
+        # list to avoid special case treatment.
         if isinstance(objIDs, int):
             objIDs = [objIDs]
 
@@ -404,7 +405,21 @@ class Client():
             assert objID >= 0
 
         # Pass on the request to Clerk.
-        return self.serialiseAndSend('get_statevar', objIDs)
+        ret = self.serialiseAndSend('get_statevar', objIDs)
+        if not ret.ok:
+            return ret
+
+        # Convert the returned data back into a named tuple (_BulletData).
+        out = {}
+        for objID, v in ret.data.items():
+            objID = int(objID)
+            if v is not None:
+                out[objID] = _BulletData(**v)
+            else:
+                out[objID] = None
+
+        return RetVal(True, None, out)
+
 
     @typecheck
     def setStateVariables(self, objID: int, new_SV: BulletDataOverride):
