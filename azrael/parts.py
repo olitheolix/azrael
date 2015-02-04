@@ -102,10 +102,6 @@ class Booster(_Booster):
     @typecheck
     def __new__(cls, partID: int, pos: (list, np.ndarray),
                 direction: (list, np.ndarray), max_force: (int, float)):
-        # Convert the booster ID and force threshold to NumPy types.
-        partID = np.int64(partID)
-        max_force = np.float64(max_force)
-
         # Position must be a 3-element vector.
         pos = np.array(pos, np.float64)
         assert len(pos) == 3
@@ -153,9 +149,6 @@ class CmdBooster(_CmdBooster):
     """
     @typecheck
     def __new__(cls, partID: int, force: (int, float, np.float64)):
-        partID = np.int64(partID)
-        force = np.float64(force)
-
         self = super().__new__(cls, partID, force)
         return self
 
@@ -216,9 +209,6 @@ class Factory(_Factory):
         :param ndarray exit_speed: min/max exit speed of spawned object.
         :return Factory: compiled factory description.
         """
-        # Factory ID.
-        partID = np.int64(partID)
-
         # The templateID is always a byte string. However, a list with integers
         # is also acceptable in order to simplify the serialisation of this
         # object. If ``templateID`` is such a list then convert it to a byte
@@ -280,9 +270,6 @@ class CmdFactory(_CmdFactory):
     """
     @typecheck
     def __new__(cls, partID: int, exit_speed: (int, float, np.float64)):
-        partID = np.int64(partID)
-        exit_speed = np.float64(exit_speed)
-
         self = super().__new__(cls, partID, exit_speed)
         return self
 
