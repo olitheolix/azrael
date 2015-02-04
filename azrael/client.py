@@ -258,22 +258,23 @@ class Client():
     @typecheck
     def spawn(self, new_objects: (tuple, list)):
         """
-        Spawn new object from ``templateID`` and return its ID.
+        Spawn the objects described in ``new_objects`` and return their IDs.
 
-        The various function arguments modify the initial State Vector.
-        fixme: paramter docu
-        fixme: all other docu
+        The elements of the ``new_objects`` list must comprise the following
+        parameters:
+            bytes templateID: template from which to spawn the object.
+            3-vec pos: object position
+            3-vec vel: initial velocity
+            4-vec orient: initial orientation
+            float scale: scale entire object by this factor.
+            float imass: (inverse) object mass.
 
-        :param bytes templateID: template from which to spawn the object.
-        :param 3-vec pos: object position
-        :param 3-vec vel: initial velocity
-        :param 4-vec orient: initial orientation
-        :param float scale: scale entire object by this factor.
-        :param float imass: (inverse) object mass.
-        :return: object ID
-        :rtype: int
+        :param list new_objects: description of all objects to spawn.
+        :return: object IDs
+        :rtype: tuple(int)
         """
-        reference = {
+        # Reference dictionary with default values.
+        template = {
             'scale': 1,
             'imass': 1,
             'position': None,
@@ -283,15 +284,20 @@ class Client():
             'axesLockRot': np.ones(3),
             'template': None}
 
+        # Create valid object descriptions by copying the 'template' and
+        # overwriting its defaults with the values provided in
+        # ``new_objects``.
         payload = []
         for inp in new_objects:
             assert 'position' in inp
             assert 'template' in inp
 
-            obj = dict(reference)
+            # Copy the template and overwrite with the available values.
+            obj = dict(template)
             for key in obj:
                 obj[key] = inp[key] if key in inp else obj[key]
 
+            # Sanity checks.
             assert isinstance(obj['scale'], (int, float))
             assert isinstance(obj['imass'], (int, float))
             assert isinstance(obj['position'], (list, np.ndarray))
@@ -300,8 +306,10 @@ class Client():
             assert isinstance(obj['axesLockLin'], (list, np.ndarray))
             assert isinstance(obj['axesLockRot'], (list, np.ndarray))
 
+            # Add the description to the list of objects to spawn.
             payload.append(obj)
 
+        # Send to Clerk.
         return self.serialiseAndSend('spawn', payload)
 
     @typecheck
