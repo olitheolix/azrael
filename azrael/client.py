@@ -29,6 +29,7 @@ import logging
 import numpy as np
 
 import azrael.util as util
+import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.protocol_json as json
@@ -336,6 +337,16 @@ class Client():
         :return: list of IDs of objects spawned by factories (if any).
         :rtype: list
         """
+        # Sanity checks.
+        for cmd in cmd_boosters:
+            assert isinstance(cmd, parts.CmdBooster)
+        for cmd in cmd_factories:
+            assert isinstance(cmd, parts.CmdFactory)
+
+        # Every object can have at most 256 parts.
+        assert len(cmd_boosters) < 256
+        assert len(cmd_factories) < 256
+
         return self.serialiseAndSend(
             'control_parts', objID, cmd_boosters, cmd_factories)
 
@@ -371,8 +382,8 @@ class Client():
 
         Return an error if one or more template names already exist.
 
-        Every element in ``templates`` must comprise:
-
+        The ``templates`` variables is a list of tuples/lists. Each entry in
+        this list must contain:
         * ``bytes`` templateID: the name of the new template.
         * ``bytes`` cs: collision shape
         * ``bytes`` vert: object geometry
@@ -383,6 +394,25 @@ class Client():
 
         :return: Success
         """
+        try:
+            for tt in templates:
+                assert len(tt) == 7
+                name, cs, vert, UV, RGB, boosters, factories = tt
+
+                assert isinstance(name, bytes)
+                assert isinstance(cs, np.ndarray)
+                assert isinstance(vert, np.ndarray)
+                assert isinstance(UV, np.ndarray)
+                assert isinstance(RGB, np.ndarray)
+                assert isinstance(boosters, list)
+                assert isinstance(factories, list)
+
+                for b in boosters:
+                    assert isinstance(b, parts.Booster)
+                for f in factories:
+                    assert isinstance(f, parts.Factory)
+        except AssertionError as err:
+            return RetVal(False, 'Data type error', None)
         return self.serialiseAndSend('add_templates', templates)
 
     @typecheck

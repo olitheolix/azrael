@@ -165,32 +165,13 @@ def FromClerk_GetTemplates_Decode(payload: dict):
 def ToClerk_AddTemplates_Encode(templates: list):
     out = []
     with azrael.util.Timeit('clerk.encode') as timeit:
-        try:
-            for tt in templates:
-                assert len(tt) == 7
-                name, cs, vert, UV, RGB, boosters, factories = tt
-
-                assert isinstance(name, bytes)
-                assert isinstance(cs, np.ndarray)
-                assert isinstance(vert, np.ndarray)
-                assert isinstance(UV, np.ndarray)
-                assert isinstance(RGB, np.ndarray)
-                assert isinstance(boosters, list)
-                assert isinstance(factories, list)
-
-                for b in boosters:
-                    assert isinstance(b, parts.Booster)
-                for f in factories:
-                    assert isinstance(f, parts.Factory)
-
-                d = {'name': name, 'cs': cs.tolist(), 'vert': vert.tolist(),
-                     'UV': UV.tolist(), 'RGB': RGB.tolist(),
-                     'boosters': [_.tostring() for _ in boosters],
-                     'factories': [_.tostring() for _ in factories]}
-                out.append(d)
-        except AssertionError as err:
-            return False, None
-
+        for tt in templates:
+            name, cs, vert, UV, RGB, boosters, factories = tt
+            d = {'name': name, 'cs': cs.tolist(), 'vert': vert.tolist(),
+                 'UV': UV.tolist(), 'RGB': RGB.tolist(),
+                 'boosters': [_.tostring() for _ in boosters],
+                 'factories': [_.tostring() for _ in factories]}
+            out.append(d)
     return True, {'data': out}
 
 
@@ -488,16 +469,6 @@ def FromClerk_Remove_Decode(dummyarg):
 
 @typecheck
 def ToClerk_ControlParts_Encode(objID: int, cmds_b: list, cmds_f: list):
-    # Sanity checks.
-    for cmd in cmds_b:
-        assert isinstance(cmd, parts.CmdBooster)
-    for cmd in cmds_f:
-        assert isinstance(cmd, parts.CmdFactory)
-
-    # Every object can have at most 256 parts.
-    assert len(cmds_b) < 256
-    assert len(cmds_f) < 256
-
     # Compile a dictionary with the payload data.
     d = {'objID': objID,
          'cmd_boosters': [_.tostring() for _ in cmds_b],
