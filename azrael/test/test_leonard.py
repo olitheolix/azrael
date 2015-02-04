@@ -630,8 +630,8 @@ def test_createWorkPackages():
     assert (data[0].id, data[1].id) == (id_1, id_2)
     assert isEqualBD(data[0].sv, sv_1)
     assert isEqualBD(data[1].sv, sv_2)
-    assert np.array_equal(data[0].central_force, [0, 0, 0])
-    assert np.array_equal(data[1].central_force, [0, 0, 0])
+    assert np.array_equal(data[0].force, [0, 0, 0])
+    assert np.array_equal(data[1].force, [0, 0, 0])
 
     # Cleanup.
     killAzrael()

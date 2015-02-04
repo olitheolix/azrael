@@ -45,7 +45,7 @@ ipshell = IPython.embed
 RetVal = azrael.util.RetVal
 
 # Work package related.
-WPData = namedtuple('WPRecord', 'id sv central_force torque')
+WPData = namedtuple('WPRecord', 'id sv force torque')
 WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
 
 # Convenience.
@@ -881,7 +881,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
             with util.Timeit('Worker:1.1.1   updateForce') as timeit:
                 for obj in worklist:
                     # Add the force defined on the 'force' grid.
-                    force = obj.central_force + gridForces[obj.id]
+                    force = obj.force + gridForces[obj.id]
                     applyForceAndTorque(obj.id, force, obj.torque)
 
         # Tell Bullet to advance the simulation for all objects in the
