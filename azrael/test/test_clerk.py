@@ -125,14 +125,14 @@ def test_spawn():
     sv_3 = bullet_data.BulletData(imass=3)
 
     # Invalid templateID.
-    templateID = np.int64(100).tostring()
+    templateID = 'blah'
     ret = clerk.spawn([(templateID, sv_1)])
     assert not ret.ok
     assert ret.msg.startswith('Not all template IDs were valid')
 
     # All parameters are now valid. This must spawn an object with ID=1
     # because this is the first ID in an otherwise pristine system.
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateNone'
     ret = clerk.spawn([(templateID, sv_1)])
     assert (ret.ok, ret.data) == (True, (1, ))
 
@@ -140,8 +140,8 @@ def test_spawn():
     assert clerk.getGeometry(1).ok
 
     # Spawn two more objects with a single call.
-    name_2 = '_templateSphere'.encode('utf8')
-    name_3 = '_templateCube'.encode('utf8')
+    name_2 = '_templateSphere'
+    name_3 = '_templateCube'
     ret = clerk.spawn([(name_2, sv_2), (name_3, sv_3)])
     assert (ret.ok, ret.data) == (True, (2, 3))
 
@@ -193,7 +193,7 @@ def test_delete():
 
     # Spawn two default objects.
     sv = bullet_data.BulletData()
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateNone'
     ret = clerk.spawn([(templateID, sv), (templateID, sv)])
     assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
 
@@ -236,7 +236,7 @@ def test_get_statevar():
     objID_2 = 2
     sv_1 = bullet_data.BulletData(position=np.arange(3), velocityLin=[2, 4, 6])
     sv_2 = bullet_data.BulletData(position=[2, 4, 6], velocityLin=[6, 8, 10])
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateNone'
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
@@ -298,7 +298,7 @@ def test_set_force():
     clerk = azrael.clerk.Clerk()
 
     # Spawn a new object. It must have ID=1.
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateNone'
     ret = clerk.spawn([(templateID, sv)])
     assert (ret.ok, ret.data) == (True, (id_1, ))
 
@@ -322,22 +322,22 @@ def test_add_get_template_single():
     clerk = azrael.clerk.Clerk()
 
     # Request an invalid ID.
-    assert not clerk.getTemplates(['blah'.encode('utf8')]).ok
+    assert not clerk.getTemplates(['blah']).ok
 
     # Clerk has a few default objects. This one has no collision shape...
-    name_1 = '_templateNone'.encode('utf8')
+    name_1 = '_templateNone'
     ret = clerk.getTemplates([name_1])
     assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
     assert np.array_equal(ret.data[name_1]['cshape'], np.array([0, 1, 1, 1]))
 
     # ... this one is a sphere...
-    name_2 = '_templateSphere'.encode('utf8')
+    name_2 = '_templateSphere'
     ret = clerk.getTemplates([name_2])
     assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
     assert np.array_equal(ret.data[name_2]['cshape'], np.array([3, 1, 1, 1]))
 
     # ... and this one is a cube.
-    name_3 = '_templateCube'.encode('utf8')
+    name_3 = '_templateCube'
     ret = clerk.getTemplates([name_3])
     assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
     assert np.array_equal(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
@@ -357,7 +357,7 @@ def test_add_get_template_single():
     rgb = [1, 2, 250]
 
     # Wrong argument .
-    t1 = Template('t1'.encode('utf8'), cs, vert[:-1], uv, rgb, [], [])
+    t1 = Template('t1', cs, vert[:-1], uv, rgb, [], [])
     ret = clerk.addTemplates([1])
     assert not ret.ok
     assert ret.msg == 'Invalid arguments'
@@ -369,11 +369,11 @@ def test_add_get_template_single():
     assert ret.msg == 'Number of vertices must be a multiple of Nine'
 
     # Add a valid template. This must succeed.
-    t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
+    t1 = Template('t1', cs, vert, uv, rgb, [], [])
     assert clerk.addTemplates([t1]).ok
 
     # Attempt to add another template with the same name. This must fail.
-    t2 = Template('t1'.encode('utf8'), 2 * cs, 2 * vert, uv, rgb, [], [])
+    t2 = Template('t1', 2 * cs, 2 * vert, uv, rgb, [], [])
     assert not clerk.addTemplates([t2]).ok
 
     # Fetch the just added template and verify its parameters have not changed.
@@ -395,11 +395,11 @@ def test_add_get_template_single():
         partID=1, pos=z, direction=[0, 0, 1], max_force=0.5)
     f0 = parts.Factory(
         partID=0, pos=z, direction=[0, 0, 1],
-        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
+        templateID='_templateCube', exit_speed=[0.1, 0.5])
     del z
 
     # Add the new template.
-    t3 = Template('t3'.encode('utf8'), cs, vert, uv, rgb, [b0, b1], [f0])
+    t3 = Template('t3', cs, vert, uv, rgb, [b0, b1], [f0])
     assert clerk.addTemplates([t3]).ok
 
     # Retrieve the just created object and verify the CS and geometry.
@@ -446,8 +446,8 @@ def test_add_get_template_multi():
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
-    name1 = 't1'.encode('utf8')
-    name2 = 't2'.encode('utf8')
+    name1 = 't1'
+    name2 = 't2'
 
     # Add valid template. This must succeed.
     t1 = Template(name1, cs, vert, uv, rgb, [], [])
@@ -496,7 +496,7 @@ def test_add_get_template_AABB():
     max_sidelen = max(8, 5, 6)
 
     # Add template and retrieve it again.
-    t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
+    t1 = Template('t1', cs, vert, uv, rgb, [], [])
     assert clerk.addTemplates([t1]).ok
     ret = clerk.getTemplates([t1.name])
     assert ret.ok
@@ -514,7 +514,7 @@ def test_add_get_template_AABB():
     max_sidelen = max(8, 14, 8)
 
     # Add template and retrieve it again.
-    t2 = Template('t2'.encode('utf8'), cs, vert, uv, rgb, [], [])
+    t2 = Template('t2', cs, vert, uv, rgb, [], [])
     assert clerk.addTemplates([t2]).ok
     ret = clerk.getTemplates([t2.name])
     assert ret.ok
@@ -537,8 +537,8 @@ def test_get_object_template_id():
 
     # Parameters and constants for this test.
     id_0, id_1 = 1, 2
-    templateID_0 = '_templateNone'.encode('utf8')
-    templateID_1 = '_templateCube'.encode('utf8')
+    templateID_0 = '_templateNone'
+    templateID_1 = '_templateCube'
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
@@ -576,7 +576,7 @@ def test_controlParts_invalid_commands():
 
     # Parameters and constants for this test.
     objID_1, objID_2 = 1, 2
-    templateID_1 = '_templateNone'.encode('utf8')
+    templateID_1 = '_templateNone'
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
@@ -620,14 +620,14 @@ def test_controlParts_invalid_commands():
         partID=0, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5)
     f0 = parts.Factory(
         partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
-        templateID='_templateCube'.encode('utf8'), exit_speed=[0, 1])
+        templateID='_templateCube', exit_speed=[0, 1])
 
     # Add the template to Azrael...
     cs = np.array([1, 2, 3, 4], np.float64)
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
-    t2 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [b0], [f0])
+    t2 = Template('t1', cs, vert, uv, rgb, [b0], [f0])
     assert clerk.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
@@ -668,7 +668,7 @@ def test_controlParts_Boosters_notmoving():
 
     # Parameters and constants for this test.
     objID_1 = 1
-    tNone = '_templateNone'.encode('utf8')
+    tNone = '_templateNone'
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
@@ -694,7 +694,7 @@ def test_controlParts_Boosters_notmoving():
     b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1, max_force=0.5)
 
     # Create a new template in Azrael of an object with two boosters.
-    t2 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [b0, b1], [])
+    t2 = Template('t1', cs, vert, uv, rgb, [b0, b1], [])
     assert clerk.addTemplates([t2]).ok
 
     # Spawn the object.
@@ -779,13 +779,13 @@ def test_controlParts_Factories_notmoving():
     # manually.
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
-        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
+        templateID='_templateCube', exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
         partID=1, pos=pos_1, direction=dir_1,
-        templateID='_templateSphere'.encode('utf8'), exit_speed=[1, 5])
+        templateID='_templateSphere', exit_speed=[1, 5])
 
     # Add the template to Azrael...
-    t2 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [f0, f1])
+    t2 = Template('t1', cs, vert, uv, rgb, [], [f0, f1])
     assert clerk.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
@@ -870,13 +870,13 @@ def test_controlParts_Factories_moving():
     # manually.
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
-        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
+        templateID='_templateCube', exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
         partID=1, pos=pos_1, direction=dir_1,
-        templateID='_templateSphere'.encode('utf8'), exit_speed=[1, 5])
+        templateID='_templateSphere', exit_speed=[1, 5])
 
     # Add the template to Azrael...
-    t2 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [f0, f1])
+    t2 = Template('t1', cs, vert, uv, rgb, [], [f0, f1])
     assert clerk.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
@@ -986,13 +986,13 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
         partID=1, pos=pos_1, direction=dir_1, max_force=1.0)
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
-        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
+        templateID='_templateCube', exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
         partID=1, pos=pos_1, direction=dir_1,
-        templateID='_templateSphere'.encode('utf8'), exit_speed=[1, 5])
+        templateID='_templateSphere', exit_speed=[1, 5])
 
     # Add the template to Azrael...
-    t2 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [b0, b1], [f0, f1])
+    t2 = Template('t1', cs, vert, uv, rgb, [b0, b1], [f0, f1])
     assert clerk.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
@@ -1062,7 +1062,7 @@ def test_get_all_objectids():
 
     # Parameters and constants for this test.
     objID_1, objID_2 = 1, 2
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateNone'
     sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
@@ -1112,7 +1112,7 @@ def test_getGeometry():
     sv = bullet_data.BulletData()
 
     # Add a valid template and verify it now exists in Azrael.
-    t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
+    t1 = Template('t1', cs, vert, uv, rgb, [], [])
     assert clerk.addTemplates([t1]).ok
     assert clerk.getTemplates([t1.name]).ok
 
@@ -1163,7 +1163,7 @@ def test_instanceDB_checksum():
     sv = bullet_data.BulletData()
 
     # Add a valid template and verify it now exists in Azrael.
-    t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
+    t1 = Template('t1', cs, vert, uv, rgb, [], [])
     assert clerk.addTemplates([t1]).ok
 
     # Spawn two objects from the previously defined template.

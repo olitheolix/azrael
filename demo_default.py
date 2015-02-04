@@ -161,7 +161,7 @@ def loadGroundModel(scale, model_name):
 
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
-    tID = 'ground'.encode('utf8')
+    tID = 'ground'
     cs = np.array([3, 1, 1, 1], np.float64)
     t1 = (tID, cs, vert, uv, rgb, [b0, b1, b2, b3], [])
     assert client.addTemplates([t1]).ok
@@ -245,8 +245,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     # Create templates for the factory output.
     # ----------------------------------------------------------------------
-    tID_1 = 'Product1'.encode('utf8')
-    tID_2 = 'Product2'.encode('utf8')
+    tID_1 = 'Product1'
+    tID_2 = 'Product2'
     t1 = (tID_1, cs, 0.75 * vert, uv, rgb, [], [])
     t2 = (tID_2, cs, 0.24 * vert, uv, rgb, [], [])
     assert client.addTemplates([t1, t2]).ok
@@ -270,7 +270,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         templateID=tID_2, exit_speed=[0.1, 1])
 
     # Add the template.
-    tID_3 = 'BoosterCube'.encode('utf8')
+    tID_3 = 'BoosterCube'
     t3 = (tID_3, cs, vert, uv, rgb, [b0, b1], [f0, f1])
     assert client.addTemplates([t3]).ok
 
@@ -295,7 +295,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
             rgb = curUV = np.array([])
 
         # Create the template.
-        tID = ('BoosterCube_{}'.format(ii)).encode('utf8')
+        tID = ('BoosterCube_{}'.format(ii))
         templates.append((tID, cs, vert, curUV, rgb, [b0, b1], []))
 
         # Add the templateID to a dictionary because we will need it in the

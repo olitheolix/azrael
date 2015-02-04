@@ -95,13 +95,13 @@ def ToClerk_GetTemplateID_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_GetTemplateID_Encode(templateID: bytes):
+def FromClerk_GetTemplateID_Encode(templateID: str):
     return True, {'templateID': templateID}
 
 
 @typecheck
 def FromClerk_GetTemplateID_Decode(payload: dict):
-    return RetVal(True, None, bytes(payload['templateID']))
+    return RetVal(True, None, payload['templateID'])
 
 
 # ---------------------------------------------------------------------------
@@ -117,17 +117,13 @@ def ToClerk_GetTemplates_Encode(templateIDs: list):
 def ToClerk_GetTemplates_Decode(payload: dict):
     if 'templateIDs' not in payload:
         return False, 'Corrupt payload'
-
-    templateIDs = [bytes(_) for _ in payload['templateIDs']]
-    return True, (templateIDs, )
+    return True, (payload['templateIDs'], )
 
 
 @typecheck
 def FromClerk_GetTemplates_Encode(templates):
     out = {}
     for name, data in templates.items():
-        assert isinstance(name, bytes)
-        name = name.decode('utf8')
 
         # Convert all booster- and factory descriptions to strings.
         data['cshape'] = data['cshape'].tolist()
@@ -153,7 +149,7 @@ def FromClerk_GetTemplates_Decode(payload: dict):
                  np.array(data['uv'], np.float64),
                  np.array(data['rgb'], np.uint8),
              boosters, factories, data['aabb'])
-        out[name.encode('utf8')] = ret
+        out[name] = ret
     return RetVal(True, None, out)
 
 
@@ -186,7 +182,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
             factories = [parts.fromstring(_) for _ in data['factories']]
 
             # Convert template ID to a byte string.
-            name = bytes(data['name'])
+            name = data['name']
 
             # Convert collision shape and geometry to NumPy array (via byte
             # string).
@@ -415,7 +411,7 @@ def ToClerk_Spawn_Decode(payload: dict):
 
     out = []
     for data in payload['objInfos']:
-        templateID = bytes(data['template'])
+        templateID = data['template']
         del data['template']
 
         sv = BulletDataOverride(**data)

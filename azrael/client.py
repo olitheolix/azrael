@@ -399,7 +399,7 @@ class Client():
                 assert len(tt) == 7
                 name, cs, vert, UV, RGB, boosters, factories = tt
 
-                assert isinstance(name, bytes)
+                assert isinstance(name, str)
                 assert isinstance(cs, np.ndarray)
                 assert isinstance(vert, np.ndarray)
                 assert isinstance(UV, np.ndarray)

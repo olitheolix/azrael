@@ -82,7 +82,7 @@ def test_spawn_and_delete_one_client(client_type):
     id_1 = 1
 
     # Constants and parameters for this test.
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateNone'
 
     # Start the necessary services.
     clerk, client, clacks = startAzrael(client_type)
@@ -95,7 +95,7 @@ def test_spawn_and_delete_one_client(client_type):
     leo.processCommandsAndSync()
 
     # Attempt to spawn a non-existing template.
-    new_obj = {'template': 'blah'.encode('utf8'),
+    new_obj = {'template': 'blah',
                'position': np.zeros(3)}
     assert not client.spawn([new_obj]).ok
 
@@ -128,7 +128,7 @@ def test_spawn_and_get_state_variables(client_type):
     killAzrael()
 
     # Constants and parameters for this test.
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateNone'
     id_1 = 1
 
     # Start the necessary services.
@@ -166,7 +166,7 @@ def test_setStateVariable(client_type):
     leo = getLeonard()
 
     # Constants and parameters for this test.
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateNone'
     objID = 1
 
     # Start the necessary services.
@@ -221,7 +221,7 @@ def test_getAllObjectIDs(client_type):
     clerk, client, clacks = startAzrael(client_type)
 
     # Constants and parameters for this test.
-    templateID = '_templateNone'.encode('utf8')
+    templateID = '_templateNone'
 
     # Parameters and constants for this test.
     id_1 = 1
@@ -258,8 +258,8 @@ def test_get_template(client_type):
 
     # Parameters and constants for this test.
     id_1, id_2 = 1, 2
-    templateID_0 = '_templateNone'.encode('utf8')
-    templateID_1 = '_templateCube'.encode('utf8')
+    templateID_0 = '_templateNone'
+    templateID_1 = '_templateCube'
 
     # Spawn a new object. Its ID must be 1.
     new_objs = [{'template': templateID_0, 'position': np.zeros(3)},
@@ -294,22 +294,22 @@ def test_create_fetch_template(client_type):
     clerk, client, clacks = startAzrael(client_type)
 
     # Request an invalid ID.
-    assert not client.getTemplates(['blah'.encode('utf8')]).ok
+    assert not client.getTemplates(['blah']).ok
 
     # Clerk has a few default objects. This one has no collision shape...
-    name_1 = '_templateNone'.encode('utf8')
+    name_1 = '_templateNone'
     ret = client.getTemplates([name_1])
     assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
     assert np.array_equal(ret.data[name_1].cs, np.array([0, 1, 1, 1]))
 
     # ... this one is a sphere...
-    name_2 = '_templateSphere'.encode('utf8')
+    name_2 = '_templateSphere'
     ret = client.getTemplates([name_2])
     assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
     assert np.array_equal(ret.data[name_2].cs, np.array([3, 1, 1, 1]))
 
     # ... and this one is a cube.
-    name_3 = '_templateCube'.encode('utf8')
+    name_3 = '_templateCube'
     ret = client.getTemplates([name_3])
     assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
     assert np.array_equal(ret.data[name_3].cs, np.array([4, 1, 1, 1]))
@@ -327,7 +327,7 @@ def test_create_fetch_template(client_type):
     vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
-    t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
+    t1 = Template('t1', cs, vert, uv, rgb, [], [])
     assert client.addTemplates([t1]).ok
 
     # Fetch the just added template again.
@@ -350,13 +350,13 @@ def test_create_fetch_template(client_type):
         partID=1, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5)
     f0 = parts.Factory(
         partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
-        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
+        templateID='_templateCube', exit_speed=[0.1, 0.5])
 
     # Attempt to query the geometry of a non-existing object.
     assert not client.getGeometry(1).ok
 
     # Add the new template.
-    t1 = Template('t2'.encode('utf8'), cs, vert, uv, rgb, [b0, b1], [f0])
+    t1 = Template('t2', cs, vert, uv, rgb, [b0, b1], [f0])
     assert client.addTemplates([t1]).ok
 
     # ... and spawn an instance thereof.
@@ -465,13 +465,13 @@ def test_controlParts(client_type):
         partID=1, pos=pos_1, direction=dir_1, max_force=1.0)
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
-        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
+        templateID='_templateCube', exit_speed=[0.1, 0.5])
     f1 = parts.Factory(
         partID=1, pos=pos_1, direction=dir_1,
-        templateID='_templateSphere'.encode('utf8'), exit_speed=[1, 5])
+        templateID='_templateSphere', exit_speed=[1, 5])
 
     # Add the template to Azrael...
-    t2 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [b0, b1], [f0, f1])
+    t2 = Template('t1', cs, vert, uv, rgb, [b0, b1], [f0, f1])
     assert client.addTemplates([t2]).ok
 
     # ... and spawn an instance thereof.
@@ -552,7 +552,7 @@ def test_setGeometry(client_type):
     clerk, client, clacks = startAzrael(client_type)
 
     # Add a new template and spawn it.
-    t1 = Template('t1'.encode('utf8'), cs, vert, uv, rgb, [], [])
+    t1 = Template('t1', cs, vert, uv, rgb, [], [])
     assert client.addTemplates([t1]).ok
 
     new_obj = {'template': t1.name,

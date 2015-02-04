@@ -46,7 +46,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     uv = [9, 10]
     rgb = [1, 2, 250]
     aabb = float(1)
-    template_name = np.int64(1).tostring()
+    template_name = 'mytemplate'
 
     b0 = parts.Booster(
         partID=0, pos=np.zeros(3), direction=[0, 0, 1], max_force=0.5)
@@ -54,7 +54,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
         partID=0, pos=np.zeros(3), direction=[1, 1, 0], max_force=0.6)
     f0 = parts.Factory(
         partID=0, pos=np.zeros(3), direction=[0, 0, 1],
-        templateID='_templateCube'.encode('utf8'), exit_speed=[0.1, 0.5])
+        templateID='_templateCube', exit_speed=[0.1, 0.5])
 
     # ----------------------------------------------------------------------
     # Client --> Clerk.

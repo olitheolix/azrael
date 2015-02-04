@@ -523,7 +523,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         rgb = np.array([], np.uint8)
 
         # Create the template with name 'cube'.
-        t_projectile = 'cube'.encode('utf8')
+        t_projectile = 'cube'
         args = (t_projectile, cs, buf_vert, uv, rgb, [], [])
         ret = self.client.addTemplates([args])
 

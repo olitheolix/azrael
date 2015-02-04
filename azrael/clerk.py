@@ -141,15 +141,15 @@ class Clerk(multiprocessing.Process):
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        t1 = Template('_templateNone'.encode('utf8'),
+        t1 = Template('_templateNone',
                       np.array([0, 1, 1, 1], np.float64),
                       [], [], [],
                       [], [])
-        t2 = Template('_templateSphere'.encode('utf8'),
+        t2 = Template('_templateSphere',
                       np.array([3, 1, 1, 1], np.float64),
                       [], [], [],
                       [], [])
-        t3 = Template('_templateCube'.encode('utf8'),
+        t3 = Template('_templateCube',
                       np.array([4, 1, 1, 1], np.float64),
                       [], [], [],
                       [], [])
@@ -486,7 +486,7 @@ class Clerk(multiprocessing.Process):
 
         The elements in ``templates`` are ``Template`` instances.
 
-        :param bytes templateID: the name of the new template.
+        :param str templateID: the name of the new template.
         :param np.ndarray cshape: collision shape
         :param list vert: object vertices
         :param list UV: UV map for textures
@@ -510,6 +510,7 @@ class Clerk(multiprocessing.Process):
             db = database.dbHandles['Templates']
             bulk = db.initialize_unordered_bulk_op()
             for tt in templates:
+                assert isinstance(tt.name, str)
                 vertices = tt.vert
 
                 # Sanity checks.
@@ -588,13 +589,13 @@ class Clerk(multiprocessing.Process):
         For instance, ``getRawTemplate([name_1, name_2, name_1])`` is
         tantamount to calling ``getRawTemplate([name_1, name_2])``.
 
-        :param list(bytes) templateIDs: template IDs
+        :param list(str) templateIDs: template IDs
         :return dict: raw template data (the templateID is the key).
         """
         # Sanity check
-        tmp = [_ for _ in templateIDs if not isinstance(_, bytes)]
+        tmp = [_ for _ in templateIDs if not isinstance(_, str)]
         if len(tmp) > 0:
-            return RetVal(False, 'All template IDs must be Bytes', None)
+            return RetVal(False, 'All template IDs must be strings', None)
 
         # Remove all duplicates from templateIDs.
         templateIDs = list(set(list(templateIDs)))
@@ -754,7 +755,7 @@ class Clerk(multiprocessing.Process):
             for ii in newObjects:
                 assert len(ii) == 2
                 templateID, sv = ii
-                assert isinstance(templateID, bytes)
+                assert isinstance(templateID, str)
                 assert isinstance(sv, bullet_data._BulletData)
                 del templateID, sv
         except AssertionError:
@@ -940,7 +941,7 @@ class Clerk(multiprocessing.Process):
 
         If ``objID`` does not exist return an error.
 
-        :param int templateID: template ID
+        :param int objID: object ID
         :return: Sucess
         """
         torque = np.cross(np.array(rpos, np.float64),

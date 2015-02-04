@@ -28,7 +28,7 @@ def test_booster_factory_serialisation():
     assert p == parts.fromstring(p.tostring())
 
     p = parts.Factory(
-        partID=1, pos=[1, 2, 3], direction=[4, 5, 6], templateID=b'x',
+        partID=1, pos=[1, 2, 3], direction=[4, 5, 6], templateID='x',
         exit_speed=[0, 1])
     assert p == parts.fromstring(p.tostring())
 

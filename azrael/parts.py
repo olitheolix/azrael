@@ -189,7 +189,7 @@ _CmdFactory = NT('CmdFactory', 'partID exit_speed')
 
 class Factory(_Factory):
     @typecheck
-    def __new__(cls, partID, pos, direction, templateID: (bytes, list),
+    def __new__(cls, partID, pos, direction, templateID: str,
                 exit_speed):
         """
         Return a ``Factory`` instance.
@@ -209,13 +209,6 @@ class Factory(_Factory):
         :param ndarray exit_speed: min/max exit speed of spawned object.
         :return Factory: compiled factory description.
         """
-        # The templateID is always a byte string. However, a list with integers
-        # is also acceptable in order to simplify the serialisation of this
-        # object. If ``templateID`` is such a list then convert it to a byte
-        # string here.
-        if isinstance(templateID, (tuple, list)):
-            templateID = bytes(templateID)
-
         # Position must be a 3-element vector.
         pos = np.array(pos, np.float64)
         assert len(pos) == 3
