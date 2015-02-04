@@ -36,59 +36,53 @@ import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerSphere(azrael.client.Client):
-    def run(self):
-        # Boiler plate: setup
-        self.setupZMQ()
+def run(objID):
+    client = azrael.client.Client(config.addr_clerk)
 
-        # ---------------------------------------------------------------------
-        # Central booster (partID=1)
-        # ---------------------------------------------------------------------
-        time.sleep(2)
-        # Engage. This will accelerate the sphere forwards.
-        print('Fire central booster...', end='', flush=True)
-        central = parts.CmdBooster(partID=1, force=20)
-        self.controlParts(self.objID, [central], [])
+    # ---------------------------------------------------------------------
+    # Central booster (partID=1)
+    # ---------------------------------------------------------------------
+    #time.sleep(2)
+    # Engage. This will accelerate the sphere forwards.
+    print('Fire central booster...', end='', flush=True)
+    central = parts.CmdBooster(partID=1, force=20)
+    client.controlParts(objID, [central], [])
 
-        # Turn off after 4s.
-        time.sleep(2)
-        central = parts.CmdBooster(partID=1, force=0)
-        self.controlParts(self.objID, [central], [])
-        print('done')
+    return
+    # Turn off after 4s.
+    time.sleep(2)
+    central = parts.CmdBooster(partID=1, force=0)
+#    client.controlParts(objID, [central], [])
+    print('done')
 
-        # ---------------------------------------------------------------------
-        # Peripheral booster to the left and right (partID=0 and partID=2)
-        # ---------------------------------------------------------------------
-        # Engage. This will induce spinning due to the booster positions.
-        print('Fire peripheral boosters...', end='', flush=True)
-        left = parts.CmdBooster(partID=0, force=0.01)
-        right = parts.CmdBooster(partID=2, force=0.01)
-        self.controlParts(self.objID, [left, right], [])
+    # ---------------------------------------------------------------------
+    # Peripheral booster to the left and right (partID=0 and partID=2)
+    # ---------------------------------------------------------------------
+    # Engage. This will induce spinning due to the booster positions.
+    print('Fire peripheral boosters...', end='', flush=True)
+    left = parts.CmdBooster(partID=0, force=10)
+    right = parts.CmdBooster(partID=2, force=10)
+    client.controlParts(objID, [left, right], [])
 
-        # Turn off after 2s.
-        time.sleep(2)
-        left = parts.CmdBooster(partID=0, force=0)
-        right = parts.CmdBooster(partID=2, force=0)
-        self.controlParts(self.objID, [left, right], [])
-        print('done')
+    # Turn off after 2s.
+    time.sleep(2)
+    left = parts.CmdBooster(partID=0, force=0)
+    right = parts.CmdBooster(partID=2, force=0)
+    client.controlParts(objID, [left, right], [])
+    print('done')
 
 
 def main():
     if len(sys.argv) < 2:
-        objID = 2
+        objID = 1
     else:
         objID = sys.argv[1]
 
     # Read the object from the command line.
     objID = int(objID)
 
-    # Rename this process to ensure it is easy to find and kill.
-    name = 'killme Controller {}'.format(objID)
-    setproctitle.setproctitle(name)
-
     # Instantiate the controller and start it in this thread.
-    ctrl = ControllerSphere(objID, config.addr_clerk)
-    ctrl.run()
+    run(objID)
     print('done')
 
 

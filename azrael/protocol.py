@@ -109,12 +109,12 @@ def FromClerk_GetTemplateID_Decode(payload: dict):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_GetTemplate_Encode(templateIDs: list):
+def ToClerk_GetTemplates_Encode(templateIDs: list):
     return True, {'templateIDs': templateIDs}
 
 
 @typecheck
-def ToClerk_GetTemplate_Decode(payload: dict):
+def ToClerk_GetTemplates_Decode(payload: dict):
     if 'templateIDs' not in payload:
         return False, 'Corrupt payload'
 
@@ -123,7 +123,7 @@ def ToClerk_GetTemplate_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_GetTemplate_Encode(templates):
+def FromClerk_GetTemplates_Encode(templates):
     out = {}
     for name, data in templates.items():
         assert isinstance(name, bytes)
@@ -138,7 +138,7 @@ def FromClerk_GetTemplate_Encode(templates):
 
 
 @typecheck
-def FromClerk_GetTemplate_Decode(payload: dict):
+def FromClerk_GetTemplates_Decode(payload: dict):
     out = {}
     for name, data in payload.items():
         # fixme: remove the fromstring functions
@@ -158,11 +158,11 @@ def FromClerk_GetTemplate_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# AddTemplate
+# AddTemplates
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_AddTemplate_Encode(templates: list):
+def ToClerk_AddTemplates_Encode(templates: list):
     out = []
     with azrael.util.Timeit('clerk.encode') as timeit:
         try:
@@ -195,7 +195,7 @@ def ToClerk_AddTemplate_Encode(templates: list):
 
 
 @typecheck
-def ToClerk_AddTemplate_Decode(payload: dict):
+def ToClerk_AddTemplates_Decode(payload: dict):
     templates = []
     with azrael.util.Timeit('clerk.decode') as timeit:
         for data in payload['data']:
@@ -225,12 +225,12 @@ def ToClerk_AddTemplate_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_AddTemplate_Encode(dummyarg):
+def FromClerk_AddTemplates_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_AddTemplate_Decode(dummyarg):
+def FromClerk_AddTemplates_Decode(dummyarg):
     return RetVal(True, None, None)
 
 

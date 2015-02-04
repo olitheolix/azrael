@@ -614,7 +614,7 @@ def test_controlParts_invalid_commands():
     # ------------------------------------------------------------------------
 
     # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplate. The user must assign the partIDs
+    # named tuples passed to addTemplates. The user must assign the partIDs
     # manually.
     b0 = parts.Booster(
         partID=0, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5)
@@ -775,7 +775,7 @@ def test_controlParts_Factories_notmoving():
     pos_1 = np.array([-1, -1, 0], np.float64)
 
     # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplate. The user must assign the partIDs
+    # named tuples passed to addTemplates. The user must assign the partIDs
     # manually.
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
@@ -866,7 +866,7 @@ def test_controlParts_Factories_moving():
     # ------------------------------------------------------------------------
 
     # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplate. The user must assign the partIDs
+    # named tuples passed to addTemplates. The user must assign the partIDs
     # manually.
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
@@ -978,7 +978,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # ------------------------------------------------------------------------
 
     # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplate. The user must assign the partIDs
+    # named tuples passed to addTemplates. The user must assign the partIDs
     # manually.
     b0 = parts.Booster(
         partID=0, pos=pos_0, direction=dir_0, max_force=0.5)

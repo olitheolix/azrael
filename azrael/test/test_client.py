@@ -457,7 +457,7 @@ def test_controlParts(client_type):
     # ------------------------------------------------------------------------
 
     # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplate. The user must assign the partIDs
+    # named tuples passed to addTemplates. The user must assign the partIDs
     # manually.
     b0 = parts.Booster(
         partID=0, pos=pos_0, direction=dir_0, max_force=0.5)

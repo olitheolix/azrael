@@ -86,12 +86,12 @@ class Client():
             'get_template_id': (
                 protocol.ToClerk_GetTemplateID_Encode,
                 protocol.FromClerk_GetTemplateID_Decode),
-            'get_template': (
-                protocol.ToClerk_GetTemplate_Encode,
-                protocol.FromClerk_GetTemplate_Decode),
-            'add_template': (
-                protocol.ToClerk_AddTemplate_Encode,
-                protocol.FromClerk_AddTemplate_Decode),
+            'get_templates': (
+                protocol.ToClerk_GetTemplates_Encode,
+                protocol.FromClerk_GetTemplates_Decode),
+            'add_templates': (
+                protocol.ToClerk_AddTemplates_Encode,
+                protocol.FromClerk_AddTemplates_Decode),
             'get_statevar': (
                 protocol.ToClerk_GetStateVariable_Encode,
                 protocol.FromClerk_GetStateVariable_Decode),
@@ -362,7 +362,7 @@ class Client():
         :param bytes templateID: return the description of this template.
         :return: (cs, geo, boosters, factories)
         """
-        return self.serialiseAndSend('get_template', templateIDs)
+        return self.serialiseAndSend('get_templates', templateIDs)
 
     @typecheck
     def addTemplates(self, templates: list):
@@ -383,7 +383,7 @@ class Client():
 
         :return: Success
         """
-        return self.serialiseAndSend('add_template', templates)
+        return self.serialiseAndSend('add_templates', templates)
 
     @typecheck
     def getStateVariables(self, objIDs: (list, tuple, int)):

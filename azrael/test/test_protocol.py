@@ -60,13 +60,13 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Client --> Clerk.
     # ----------------------------------------------------------------------
     # Encode source data.
-    ok, enc = protocol.ToClerk_GetTemplate_Encode([template_name])
+    ok, enc = protocol.ToClerk_GetTemplates_Encode([template_name])
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))
 
     # Decode the data.
-    ok, dec = protocol.ToClerk_GetTemplate_Decode(enc)
+    ok, dec = protocol.ToClerk_GetTemplates_Decode(enc)
     assert dec[0] == [template_name]
 
     # ----------------------------------------------------------------------
@@ -76,13 +76,13 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     data = {'cshape': cs, 'vert': vert, 'uv': uv, 'rgb': rgb,
             'boosters': [b0, b1], 'factories': [f0], 'aabb': aabb}
     templates = {template_name: data}
-    ok, enc = protocol.FromClerk_GetTemplate_Encode(templates)
+    ok, enc = protocol.FromClerk_GetTemplates_Encode(templates)
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))
 
     # Decode the data.
-    dec = protocol.FromClerk_GetTemplate_Decode(enc)
+    dec = protocol.FromClerk_GetTemplates_Decode(enc)
 
     # Verify.
     assert dec.ok

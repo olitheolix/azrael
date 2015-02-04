@@ -117,18 +117,18 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_SetForce_Decode,
                 self.setForce,
                 protocol.FromClerk_SetForce_Encode),
-            'get_template': (
-                protocol.ToClerk_GetTemplate_Decode,
+            'get_templates': (
+                protocol.ToClerk_GetTemplates_Decode,
                 self.getTemplates,
-                protocol.FromClerk_GetTemplate_Encode),
+                protocol.FromClerk_GetTemplates_Encode),
             'get_template_id': (
                 protocol.ToClerk_GetTemplateID_Decode,
                 self.getTemplateID,
                 protocol.FromClerk_GetTemplateID_Encode),
-            'add_template': (
-                protocol.ToClerk_AddTemplate_Decode,
+            'add_templates': (
+                protocol.ToClerk_AddTemplates_Decode,
                 self.addTemplates,
-                protocol.FromClerk_AddTemplate_Encode),
+                protocol.FromClerk_AddTemplates_Encode),
             'get_all_objids': (
                 protocol.ToClerk_GetAllObjectIDs_Decode,
                 self.getAllObjectIDs,
@@ -501,7 +501,7 @@ class Clerk(multiprocessing.Process):
         if len(templates) == 0:
             return RetVal(True, None, None)
 
-        with util.Timeit('clerk.addTemplate') as timeit:
+        with util.Timeit('clerk.addTemplates') as timeit:
             # Sanity checks.
             tmp = [_ for _ in templates if not isinstance(_, Template)]
             if len(tmp) > 0:
@@ -565,7 +565,7 @@ class Clerk(multiprocessing.Process):
                 data['geo'] = pickle.dumps(geo)
                 bulk.find(query).upsert().update({'$setOnInsert': data})
 
-        with util.Timeit('clerk.addTemplate_db') as timeit:
+        with util.Timeit('clerk.addTemplates_db') as timeit:
             ret = bulk.execute()
 
         if ret['nMatched'] > 0:
@@ -654,7 +654,7 @@ class Clerk(multiprocessing.Process):
         """
         Return the instance data for ``objID``.
 
-        This function is almost identical to ``getTemplate`` except that it
+        This function is almost identical to ``getTemplates`` except that it
         queries the `Instance` database, not the `Template` database (the data
         structure are identical in both databases).
 
