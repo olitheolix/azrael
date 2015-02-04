@@ -47,8 +47,6 @@ def test_getGridForces(clsLeonard):
     """
     Spawn an object, specify its State Variables explicitly, and verify the
     change propagated through Azrael.
-
-    fixme: test with all leonards
     """
     killAzrael()
 

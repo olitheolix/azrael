@@ -81,18 +81,15 @@ def dequeueCommands():
 @typecheck
 def addCmdSpawn(objData: (tuple, list)):
     """
-    Enqueue a new object with ``objID`` for Leonard to spawn.
+    Enqueue a new object described by ``objData`` for Leonard to spawn.
 
-    Contrary to what the name ``aabb`` suggests, this actually denotes a
-    bounding sphere and thus requires only a scalar argument instead of 3 side
-    lengths. This will change eventually to become a proper AABB.
+    The ``objData`` tuple comprises (objID, sv, aabb).
 
-    Returns **False** if ``objID`` already exists or is already queued.
+    Returns **False** if ``objID`` already exists, is scheduled to spawn, or if
+    any of the parameters are invalid.
 
-    Leonard will apply this request once per physics cycle but it is impossible
-    to determine when exactly.
-
-    fixme: argument docu
+    Leonard will process the queue (and thus this command) once per physics
+    cycle. However, it is impossible to determine when exactly.
 
     :param int objID: object ID to insert.
     :param bytes sv: encoded state variable data.
@@ -146,8 +143,8 @@ def addCmdRemoveObject(objID: int):
     """
     Remove ``objID`` from the physics simulation.
 
-    Leonard will apply this request once per physics cycle but it is impossible
-    to determine when exactly.
+    Leonard will process the queue (and thus this command) once per physics
+    cycle. However, it is impossible to determine when exactly.
 
     .. note:: This function always succeeds.
 
@@ -166,8 +163,8 @@ def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
     """
     Queue request to Override State Variables of ``objID`` with ``data``.
 
-    Leonard will apply this request once per physics cycle but it is impossible
-    to determine when exactly.
+    Leonard will process the queue (and thus this command) once per physics
+    cycle. However, it is impossible to determine when exactly.
 
     :param int objID: object to update.
     :param BulletDataOverride pos: new object attributes.
@@ -213,6 +210,9 @@ def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
 def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
     """
     Apply ``torque`` and central ``force`` to ``objID``.
+
+    Leonard will process the queue (and thus this command) once per physics
+    cycle. However, it is impossible to determine when exactly.
 
     :param int objID: the object
     :param list force: apply this central ``force`` to ``objID``.
