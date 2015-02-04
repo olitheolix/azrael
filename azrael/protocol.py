@@ -317,17 +317,14 @@ def ToClerk_GetGeometry_Decode(payload: dict):
 
 @typecheck
 def FromClerk_GetGeometry_Encode(geo):
-    # fixme: the dict should match directly
-    return True, {'vert': geo['vert'],
-                  'UV': geo['uv'],
-                  'RGB': geo['rgb']}
+    return True, geo
 
 
 @typecheck
 def FromClerk_GetGeometry_Decode(payload: dict):
     vert = np.array(payload['vert'], np.float64)
-    uv = np.array(payload['UV'], np.uint8)
-    rgb = np.array(payload['RGB'], np.uint8)
+    uv = np.array(payload['uv'], np.uint8)
+    rgb = np.array(payload['rgb'], np.uint8)
     return RetVal(True, None, (vert, uv, rgb))
 
 
@@ -404,7 +401,6 @@ def ToClerk_Spawn_Encode(objectInfos: (tuple, list)):
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
     # Convenience.
-    # fixme: move all conversion to BulletData into the Client code.
     BulletData = bullet_data.BulletData
     BulletDataOverride = bullet_data.BulletDataOverride
     _updateBulletDataTuple = physics_interface._updateBulletDataTuple
