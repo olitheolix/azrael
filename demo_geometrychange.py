@@ -126,7 +126,7 @@ def startAzrael(param):
 
     # Delete all grids and define a pristine force grid.
     assert vectorgrid.deleteAllGrids().ok
-    assert vectorgrid.defineGrid(name='force', elDim=3, granularity=1).ok
+    assert vectorgrid.defineGrid(name='force', vecDim=3, granularity=1).ok
 
     # Spawn Azrael's APIs.
     clerk = azrael.clerk.Clerk()

@@ -57,7 +57,7 @@ def test_getGridForces(clsLeonard):
 
     # Create pristince force grid.
     assert vg.deleteAllGrids().ok
-    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
+    assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
     # Get a Leonard instance.
     leo = getLeonard(clsLeonard)
@@ -290,7 +290,7 @@ def test_worker_respawn():
     # Define a force grid (not used in this test but prevent a plethora
     # of meaningleass warning messages).
     vg = azrael.vectorgrid
-    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
+    assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
     # Constants and parameters for this test.
     id_0, id_1 = 0, 1
@@ -345,7 +345,7 @@ def test_sweeping_2objects():
     # Define a force grid (not used in this test but prevent a plethora
     # of meaningleass warning messages).
     vg = azrael.vectorgrid
-    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
+    assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
     # Convenience variables.
     sweeping = azrael.leonard.sweeping
@@ -405,7 +405,7 @@ def test_sweeping_3objects():
     # Define a force grid (not used in this test but prevent a plethora
     # of meaningleass warning messages).
     vg = azrael.vectorgrid
-    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
+    assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
     # Convenience variable.
     sweeping = azrael.leonard.sweeping
@@ -550,7 +550,7 @@ def test_force_grid(clsLeonard):
     assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
     # Define a force grid.
-    assert vg.defineGrid(name='force', elDim=3, granularity=1).ok
+    assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
     # Specify a non-zero value somewhere away from the object. This means the
     # object must still not move.

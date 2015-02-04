@@ -60,7 +60,7 @@ def test_set_get_single():
 
     # Define a new grid. Its name is "force", it consists of 3-element vectors,
     # and has a spatial granularity of 1m in each dimension.
-    assert vg.defineGrid(name=name, elDim=3, granularity=1).ok
+    assert vg.defineGrid(name=name, vecDim=3, granularity=1).ok
 
     # Query a value. This must return a zero vector (3 elements) because this
     # is the default value of the grid.
@@ -103,7 +103,7 @@ def test_set_get_bulk():
 
     # Define a new grid. Its name is "force", it consists of 3-element vectors,
     # and has a spatial granularity of 1m in each dimension.
-    assert vg.defineGrid(name=name, elDim=3, granularity=1).ok
+    assert vg.defineGrid(name=name, vecDim=3, granularity=1).ok
 
     # Attempt to pass empty lists to set/get.
     assert not vg.getValues(name, []).ok
@@ -151,7 +151,7 @@ def test_define_reset_delete_grid():
     assert not vg.setValues(name, [(pos, value)]).ok
 
     # Define a new grid.
-    assert vg.defineGrid(name=name, elDim=3, granularity=1).ok
+    assert vg.defineGrid(name=name, vecDim=3, granularity=1).ok
 
     # Query default value.
     ret = vg.getValues(name, [pos])
@@ -199,16 +199,16 @@ def test_define_reset_delete_grid_invalid():
     assert 'unknown grid' in ret.msg.lower()
 
     # Attempt to define a grid with non-positive granularity.
-    assert not vg.defineGrid(name=name, elDim=3, granularity=-1).ok
-    assert not vg.defineGrid(name=name, elDim=3, granularity=0).ok
+    assert not vg.defineGrid(name=name, vecDim=3, granularity=-1).ok
+    assert not vg.defineGrid(name=name, vecDim=3, granularity=0).ok
 
-    # Attempt to define a grid with invalid elDim value.
-    assert not vg.defineGrid(name=name, elDim=-1, granularity=1).ok
-    assert not vg.defineGrid(name=name, elDim=0, granularity=1).ok
+    # Attempt to define a grid with invalid vecDim value.
+    assert not vg.defineGrid(name=name, vecDim=-1, granularity=1).ok
+    assert not vg.defineGrid(name=name, vecDim=0, granularity=1).ok
 
     # Attempt to define the same grid twice.
-    assert vg.defineGrid(name=name, elDim=3, granularity=1).ok
-    ret = vg.defineGrid(name=name, elDim=3, granularity=1)
+    assert vg.defineGrid(name=name, vecDim=3, granularity=1).ok
+    ret = vg.defineGrid(name=name, vecDim=3, granularity=1)
     assert not ret.ok
     assert 'already exists' in ret.msg.lower()
 
@@ -228,7 +228,7 @@ def test_set_get_region():
     assert vg.deleteAllGrids().ok
 
     # Define a new grid.
-    assert vg.defineGrid(name=name, elDim=vecDim, granularity=1).ok
+    assert vg.defineGrid(name=name, vecDim=vecDim, granularity=1).ok
 
     # Region offset in 3D space (these can be floating point numbers because
     # they denote actual positions, not grid indexes).
@@ -341,18 +341,18 @@ def test_granularity():
     pos = np.array([1, 2, 3], np.float64)
     value = np.array([-1, 0, 1], np.float64)
     gran = 0.5
-    elDim = 3
+    vecDim = 3
     name = 'force'
 
     # Delete all grids used in this test.
     assert vg.deleteAllGrids().ok
 
     # Define a new grid.
-    assert vg.defineGrid(name=name, elDim=elDim, granularity=gran).ok
+    assert vg.defineGrid(name=name, vecDim=vecDim, granularity=gran).ok
 
     # Query default value at 'pos'.
     ret = vg.getValues(name, [pos])
-    assert ret.ok and np.array_equal(ret.data, [np.zeros(elDim)])
+    assert ret.ok and np.array_equal(ret.data, [np.zeros(vecDim)])
 
     # Update the value at 'pos'.
     assert vg.setValues(name, [(pos, value)]).ok
@@ -369,10 +369,10 @@ def test_granularity():
     assert ret.ok and np.array_equal(ret.data, [value])
 
     ret = vg.getValues(name, [pos + gran])
-    assert ret.ok and np.array_equal(ret.data, [np.zeros(elDim)])
+    assert ret.ok and np.array_equal(ret.data, [np.zeros(vecDim)])
 
     ret = vg.getValues(name, [pos - 0.1])
-    assert ret.ok and np.array_equal(ret.data, [np.zeros(elDim)])
+    assert ret.ok and np.array_equal(ret.data, [np.zeros(vecDim)])
 
     print('Test passed')
 
@@ -385,14 +385,14 @@ def test_auto_delete():
     vg = vectorgrid
     pos = np.array([1, 2, 3], np.float64)
     value = np.array([-1, 0, 1], np.float64)
-    elDim = 3
+    vecDim = 3
     name = 'force'
 
     # Delete all grids used in this test.
     assert vg.deleteAllGrids().ok
 
     # Define a new grid.
-    assert vg.defineGrid(name=name, elDim=elDim, granularity=1).ok
+    assert vg.defineGrid(name=name, vecDim=vecDim, granularity=1).ok
 
     # Initially only the admin element must be present.
     assert vg._DB_Grid[name].count() == 1

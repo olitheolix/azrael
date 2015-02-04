@@ -404,7 +404,7 @@ def startAzrael(param):
     # Delete all grids but define a force grid (will not be used but
     # Leonard throws a lot of harmless warnings otherwise).
     assert vectorgrid.deleteAllGrids().ok
-    assert vectorgrid.defineGrid(name='force', elDim=3, granularity=1).ok
+    assert vectorgrid.defineGrid(name='force', vecDim=3, granularity=1).ok
 
     # Spawn Azrael's APIs.
     clerk = azrael.clerk.Clerk()

@@ -87,15 +87,15 @@ def getAllGridNames():
 
 
 @typecheck
-def defineGrid(name: str, elDim: int, granularity: (int, float)):
+def defineGrid(name: str, vecDim: int, granularity: (int, float)):
     """
     Define a new grid with ``name``.
 
-    Every element of the grid is a vector with ``elDim`` elements. The grid has
+    Every element of the grid is a vector with ``vecDim`` elements. The grid has
     the spatial ``granularity`` (in meters). The minimum granularity is 1E-9m.
 
     :param str name: grid name
-    :param int elDim: number of data dimensions.
+    :param int vecDim: number of data dimensions.
     :param float granularity: spatial granularity in Meters.
     :return: Success
     """
@@ -108,7 +108,7 @@ def defineGrid(name: str, elDim: int, granularity: (int, float)):
         return RetVal(False, 'Granularity must be >1E-9', None)
 
     # Sanity check.
-    if elDim <= 0:
+    if vecDim <= 0:
         return RetVal(False, 'Vector dimension must be positive integer', None)
 
     # Return with an error if the grid ``name`` is already defined.
@@ -120,7 +120,7 @@ def defineGrid(name: str, elDim: int, granularity: (int, float)):
     # Flush the DB (just a pre-caution) and add the admin element.
     db = _DB_Grid[name]
     db.drop()
-    db.insert({'admin': 'admin', 'elDim': elDim, 'gran': granularity})
+    db.insert({'admin': 'admin', 'vecDim': vecDim, 'gran': granularity})
 
     # Create indexes for fast lookups.
     db.ensure_index([('x', 1), ('y', 1), ('z', 1)])
@@ -245,7 +245,7 @@ def getValues(name: str, positions: (tuple, list)):
     if not ret.ok:
         return ret
     db, admin = ret.data
-    gran, vecDim = admin['gran'], admin['elDim']
+    gran, vecDim = admin['gran'], admin['vecDim']
     del admin, ret
 
     # Ensure the positions are valid.
@@ -291,7 +291,7 @@ def setValues(name: str, posVals: (tuple, list)):
     if not ret.ok:
         return ret
     db, admin = ret.data
-    gran, vecDim = admin['gran'], admin['elDim']
+    gran, vecDim = admin['gran'], admin['vecDim']
     del admin, ret
 
     # Ensure the region dimensions are positive integers.
@@ -337,7 +337,7 @@ def getRegion(name: str, ofs: np.ndarray,
     vector. The size of that vector was specified when the grid was created.
     The dimension of the returned region depends on ``regionDim`` and the
     ``vecDim`` of the grid. For instance, if regionDim=(1, 2, 3) and the
-    elDim=4, then the shape of the returned NumPy array is (1, 2, 3, 4).
+    vecDim=4, then the shape of the returned NumPy array is (1, 2, 3, 4).
 
     :param str name: grid name.
     :param 3D-vector ofs: start position in grid from where to read values.
@@ -349,7 +349,7 @@ def getRegion(name: str, ofs: np.ndarray,
     if not ret.ok:
         return ret
     db, admin = ret.data
-    gran, vecDim = admin['gran'], admin['elDim']
+    gran, vecDim = admin['gran'], admin['vecDim']
     del admin, ret
 
     # Sanity check: ``ofs`` and ``regionDim`` must have 3 entries each.
@@ -403,7 +403,7 @@ def setRegion(name: str, ofs: np.ndarray, gridValues: np.ndarray):
     if not ret.ok:
         return ret
     db, admin = ret.data
-    gran, vecDim = admin['gran'], admin['elDim']
+    gran, vecDim = admin['gran'], admin['vecDim']
     del admin, ret
 
     # Sanity check: ``ofs`` must denote a position in 3D space.
