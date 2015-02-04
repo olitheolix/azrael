@@ -263,7 +263,7 @@ def test_get_template(client_type):
 
     # Spawn a new object. Its ID must be 1.
     new_objs = [{'template': templateID_0, 'position': np.zeros(3)},
-               {'template': templateID_1, 'position': np.zeros(3)}]
+                {'template': templateID_1, 'position': np.zeros(3)}]
     ret = client.spawn(new_objs)
     assert ret.ok and ret.data == (id_1, id_2)
 

@@ -576,9 +576,11 @@ class Clerk(multiprocessing.Process):
 
                 # ... as well as booster- and factory parts.
                 for b in tt.boosters:
-                    data['boosters']['{0:03d}'.format(b.partID)] = b.tostring()
+                    tmp = b.tostring()
+                    data['boosters']['{0:03d}'.format(b.partID)] = tmp
                 for f in tt.factories:
-                    data['factories']['{0:03d}'.format(f.partID)] = f.tostring()
+                    tmp = f.tostring()
+                    data['factories']['{0:03d}'.format(f.partID)] = tmp
 
                 # Add the template to the database.
                 query = {'templateID': tt.name}
@@ -973,7 +975,7 @@ class Clerk(multiprocessing.Process):
 
     @typecheck
     def setStateVariable(self, objID: int,
-                          data: bullet_data.BulletDataOverride):
+                         data: bullet_data.BulletDataOverride):
         """
         Set the State Variables of ``objID`` to ``data``.
 

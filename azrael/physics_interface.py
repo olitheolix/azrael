@@ -138,6 +138,7 @@ def addCmdSpawn(objData: (tuple, list)):
         # All objIDs were unique --> success.
         return RetVal(True, None, None)
 
+
 @typecheck
 def addCmdRemoveObject(objID: int):
     """

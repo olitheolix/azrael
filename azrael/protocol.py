@@ -148,7 +148,7 @@ def FromClerk_GetTemplates_Decode(payload: dict):
                  np.array(data['vert'], np.float64),
                  np.array(data['uv'], np.float64),
                  np.array(data['rgb'], np.uint8),
-             boosters, factories, data['aabb'])
+                 boosters, factories, data['aabb'])
         out[name] = ret
     return RetVal(True, None, out)
 
@@ -342,7 +342,8 @@ def ToClerk_SetGeometry_Encode(
 
 @typecheck
 def ToClerk_SetGeometry_Decode(payload: dict):
-    return True, (payload['objID'], payload['vert'], payload['UV'], payload['RGB'])
+    return True, (payload['objID'], payload['vert'],
+                  payload['UV'], payload['RGB'])
 
 
 @typecheck

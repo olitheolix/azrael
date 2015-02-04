@@ -509,7 +509,7 @@ def test_add_get_template_AABB():
             1, 2, 3,
             4, 5, 6,
             8, 2, 7,
-           -5, -9, 8,
+            -5, -9, 8,
             3, 2, 3]
     max_sidelen = max(8, 14, 8)
 

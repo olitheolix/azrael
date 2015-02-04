@@ -91,8 +91,8 @@ def defineGrid(name: str, vecDim: int, granularity: (int, float)):
     """
     Define a new grid with ``name``.
 
-    Every element of the grid is a vector with ``vecDim`` elements. The grid has
-    the spatial ``granularity`` (in meters). The minimum granularity is 1E-9m.
+    Every grid element is a vector with ``vecDim`` elements. The grid has the
+    spatial ``granularity`` (in meters). The minimum granularity is 1E-9m.
 
     :param str name: grid name
     :param int vecDim: number of data dimensions.
@@ -285,7 +285,7 @@ def setValues(name: str, posVals: (tuple, list)):
     # Return immediately if we did not get any values.
     if len(posVals) == 0:
         return RetVal(False, '<setValues> received no arguments', None)
-    
+
     # Fetch the database handle.
     ret = getGridDB(name)
     if not ret.ok:

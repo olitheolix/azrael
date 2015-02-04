@@ -71,7 +71,7 @@ def getUniqueObjectIDs(numIDs: int):
     # Sanity check.
     if numIDs < 0:
         return RetVal(False, 'numIDs must be non-negative', None)
-    
+
     # Increment the counter by ``numIDs``.
     fam = dbHandles['Counters'].find_and_modify
     doc = fam({'name': 'objcnt'},
