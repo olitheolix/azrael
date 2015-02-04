@@ -103,7 +103,7 @@ class Clerk(multiprocessing.Process):
                 protocol.FromClerk_GetStateVariable_Encode),
             'set_statevar': (
                 protocol.ToClerk_SetStateVector_Decode,
-                self.setStateVariables,
+                self.setStateVariable,
                 protocol.FromClerk_SetStateVector_Encode),
             'get_geometry': (
                 protocol.ToClerk_GetGeometry_Decode,
@@ -948,7 +948,7 @@ class Clerk(multiprocessing.Process):
         return physAPI.addCmdSetForceAndTorque(objID, force, torque)
 
     @typecheck
-    def setStateVariables(self, objID: int,
+    def setStateVariable(self, objID: int,
                           data: bullet_data.BulletDataOverride):
         """
         Set the State Variables of ``objID`` to ``data``.

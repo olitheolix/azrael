@@ -765,7 +765,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         pos = self.camera.position
         attr = physAPI.BulletDataOverride(position=pos)
-        assert self.client.setStateVariables(self.player_id, attr).ok
+        assert self.client.setStateVariable(self.player_id, attr).ok
 
         # Do not update the camera rotation if the mouse is not grabbed.
         if not self.mouseGrab:

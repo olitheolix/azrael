@@ -156,7 +156,7 @@ def test_spawn_and_get_state_variables(client_type):
 
 
 @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-def test_setStateVariables(client_type):
+def test_setStateVariable(client_type):
     """
     Spawn an object and specify its state variables directly.
     """
@@ -190,7 +190,7 @@ def test_setStateVariables(client_type):
     # Create and apply a new State Vector.
     new_sv = bullet_data.BulletDataOverride(
         position=[1, -1, 1], imass=2, scale=3, cshape=[4, 1, 1, 1])
-    assert client.setStateVariables(objID, new_sv).ok
+    assert client.setStateVariable(objID, new_sv).ok
 
     # Verify that the new attributes came into effect.
     leo.processCommandsAndSync()
@@ -591,7 +591,7 @@ def test_setGeometry(client_type):
 
 if __name__ == '__main__':
     for _transport_type in ('ZeroMQ', 'Websocket'):
-        test_setStateVariables(_transport_type)
+        test_setStateVariable(_transport_type)
         test_setGeometry(_transport_type)
         test_spawn_and_delete_one_client(_transport_type)
         test_spawn_and_get_state_variables(_transport_type)

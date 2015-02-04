@@ -108,7 +108,7 @@ def test_getGridForces(clsLeonard):
 
 
 @pytest.mark.parametrize('clsLeonard', allEngines)
-def test_setStateVariables_basic(clsLeonard):
+def test_setStateVariable_basic(clsLeonard):
     """
     Spawn an object, specify its State Variables explicitly, and verify the
     change propagated through Azrael.
@@ -153,9 +153,9 @@ def test_setStateVariables_basic(clsLeonard):
 
 
 @pytest.mark.parametrize('clsLeonard', allEngines)
-def test_setStateVariables_advanced(clsLeonard):
+def test_setStateVariable_advanced(clsLeonard):
     """
-    Similar to test_setStateVariables_basic but modify the collision shape
+    Similar to test_setStateVariable_basic but modify the collision shape
     information as well, namely mass and the collision shape itself.
     """
     killAzrael()
@@ -746,7 +746,7 @@ if __name__ == '__main__':
         print('\nEngine: {}'.format(_engine))
         test_getGridForces(_engine)
         test_force_grid(_engine)
-        test_setStateVariables_advanced(_engine)
-        test_setStateVariables_basic(_engine)
+        test_setStateVariable_advanced(_engine)
+        test_setStateVariable_basic(_engine)
         test_move_single_object(_engine)
         test_move_two_objects_no_collision(_engine)

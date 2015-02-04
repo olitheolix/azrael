@@ -422,7 +422,7 @@ class Client():
 
 
     @typecheck
-    def setStateVariables(self, objID: int, new_SV: BulletDataOverride):
+    def setStateVariable(self, objID: int, new_SV: BulletDataOverride):
         """
         Overwrite the the State Variables of ``objID`` with ``new_SV``.
 

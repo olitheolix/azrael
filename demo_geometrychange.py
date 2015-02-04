@@ -231,7 +231,7 @@ class ResetSim(multiprocessing.Process):
             # objects being reset sooner than others.
             for ii in range(5):
                 for objID, pos in self.default_attributes:
-                    client.setStateVariables(objID, pos)
+                    client.setStateVariable(objID, pos)
                 time.sleep(0.1)
 
 
@@ -283,7 +283,7 @@ class SetGeometry(multiprocessing.Process):
             scale = (cnt + 1) / 10
             for objID in objIDs:
                 new_sv = bullet_data.BulletDataOverride(scale=scale)
-                client.setStateVariables(objID, new_sv)
+                client.setStateVariable(objID, new_sv)
 
             # Update counter and print status for user.
             cnt = (cnt + 1) % 20

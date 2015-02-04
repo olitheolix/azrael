@@ -214,7 +214,7 @@ class ResetSim(multiprocessing.Process):
             # objects being reset sooner than others.
             for ii in range(5):
                 for objID, pos in self.default_attributes:
-                    client.setStateVariables(objID, pos)
+                    client.setStateVariable(objID, pos)
                 time.sleep(0.1)
 
 

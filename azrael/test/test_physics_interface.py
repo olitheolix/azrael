@@ -291,7 +291,7 @@ def test_commandQueue():
     print('Test passed')
 
 
-def test_setStateVariables():
+def test_setStateVariable():
     """
     Set and retrieve object attributes like position, velocity, acceleration,
     and orientation.
@@ -493,7 +493,7 @@ if __name__ == '__main__':
     test_set_get_AABB()
     test_StateVariable_tuple()
     test_get_set_forceandtorque()
-    test_setStateVariables()
+    test_setStateVariable()
     test_add_same()
     test_add_get_multiple()
     test_add_get_remove_single()
