@@ -35,8 +35,7 @@ import azrael.protocol_json as json
 
 from azrael.util import RetVal
 from azrael.typecheck import typecheck
-from azrael.bullet.bullet_data import BulletDataOverride
-from azrael.bullet.bullet_data import BulletData, _BulletData
+from azrael.bullet.bullet_data import BulletDataOverride, _BulletData
 
 
 class Client():
