@@ -34,19 +34,15 @@ class AzraelEncoder(json.JSONEncoder):
             return obj.tolist()
         if isinstance(obj, bytes):
             return list(obj)
-        if isinstance(obj, np.int64):
-            return int(obj)
-        if isinstance(obj, np.float64):
-            return float(obj)
         return json.JSONEncoder.default(self, obj)
 
 
 def dumps(data):
-    # Convenience function for encoding ``data`` with custom JSON encoder.
+    # Convenience function to encode ``data`` with custom JSON encoder.
     return json.dumps(data, cls=AzraelEncoder)
 
 
 @typecheck
 def loads(data: str):
-    # Convenience function for decoding ``data``.
+    # Convenience function to decode ``data``.
     return json.loads(data)
