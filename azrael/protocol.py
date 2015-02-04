@@ -260,17 +260,17 @@ def FromClerk_GetAllObjectIDs_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# AttributeOverride
+# SetStateVector
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_AttributeOverride_Encode(objID: int, sv: tuple):
+def ToClerk_SetStateVector_Encode(objID: int, sv: tuple):
     return True, {'objID': objID, 'sv': sv}
 
 
 @typecheck
-def ToClerk_AttributeOverride_Decode(payload: dict):
+def ToClerk_SetStateVector_Decode(payload: dict):
     # Convenience.
     objID = payload['objID']
 
@@ -284,12 +284,12 @@ def ToClerk_AttributeOverride_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_AttributeOverride_Encode(dummyarg):
+def FromClerk_SetStateVector_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_AttributeOverride_Decode(dummyarg):
+def FromClerk_SetStateVector_Decode(dummyarg):
     return RetVal(True, None, None)
 
 

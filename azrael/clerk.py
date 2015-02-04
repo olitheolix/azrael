@@ -102,9 +102,9 @@ class Clerk(multiprocessing.Process):
                 self.getStateVariables,
                 protocol.FromClerk_GetStateVariable_Encode),
             'set_statevar': (
-                protocol.ToClerk_AttributeOverride_Decode,
+                protocol.ToClerk_SetStateVector_Decode,
                 self.setStateVariables,
-                protocol.FromClerk_AttributeOverride_Encode),
+                protocol.FromClerk_SetStateVector_Encode),
             'get_geometry': (
                 protocol.ToClerk_GetGeometry_Decode,
                 self.getGeometry,

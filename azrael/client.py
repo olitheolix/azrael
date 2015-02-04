@@ -96,8 +96,8 @@ class Client():
                 protocol.ToClerk_GetStateVariable_Encode,
                 protocol.FromClerk_GetStateVariable_Decode),
             'set_statevar': (
-                protocol.ToClerk_AttributeOverride_Encode,
-                protocol.FromClerk_AttributeOverride_Decode),
+                protocol.ToClerk_SetStateVector_Encode,
+                protocol.FromClerk_SetStateVector_Decode),
             'set_force': (
                 protocol.ToClerk_SetForce_Encode,
                 protocol.FromClerk_SetForce_Decode),
