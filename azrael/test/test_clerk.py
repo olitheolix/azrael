@@ -366,7 +366,7 @@ def test_add_get_template_single():
     # of 9. This must fail.
     ret = clerk.addTemplates([t1])
     assert not ret.ok
-    assert ret.msg == 'Number of vertices must be a multiple of Nine'
+    assert ret.msg.startswith('Invalid geometry for template')
 
     # Add a valid template. This must succeed.
     t1 = Template('t1', cs, vert, uv, rgb, [], [])

@@ -19,8 +19,8 @@
 Use ``Client`` to connect to ``Clerk``. There can be arbitrarily many ``Clerk``
 and ``Client`` client instances connected to each other.
 
-This moduel implement ZeroMQ version of the client. For a Websocket version
-(eg. JavaScript developers) use ``WSClient`` from `wsclient.py` (their
+This module implements the ZeroMQ version of the client. For a Websocket
+version (eg. JavaScript developers) use ``WSClient`` from `wsclient.py` (their
 feature set is identical).
 """
 
@@ -28,7 +28,6 @@ import zmq
 import logging
 import numpy as np
 
-import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
@@ -449,7 +448,6 @@ class Client():
                 out[objID] = None
 
         return RetVal(True, None, out)
-
 
     @typecheck
     def setStateVariable(self, objID: int, new_SV: BulletDataOverride):

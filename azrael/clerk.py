@@ -474,6 +474,29 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, objIDs)
 
     @typecheck
+    def _isGeometrySane(self, vert: list, uv: list, rgb: list):
+        """
+        Return *True* if the geometry is consistent.
+
+        :param np.ndarray vert: vertices
+        :param np.ndarray uv: UV values
+        :param np.ndarray rgb: RGB values
+        :return: Sucess
+        :rtype: bool
+        """
+        # The number of vertices must be an integer multiple of 9 to
+        # constitute a valid triangle mesh (every triangle has three
+        # edges and every edge requires an (x, y, z) triplet to
+        # describe its position).
+        try:
+            assert len(vert) % 9 == 0
+            assert len(uv) % 2 == 0
+            assert len(rgb) % 3 == 0
+        except AssertionError:
+            return False
+        return True
+
+    @typecheck
     def addTemplates(self, templates: list):
         """
         Add all the templates specified in ``templates`` to the system.
@@ -522,12 +545,8 @@ class Clerk(multiprocessing.Process):
                     msg = 'addTemplates Parameters must be lists'
                     return RetVal(False, msg, None)
 
-                # The number of vertices must be an integer multiple of 9 to
-                # constitute a valid triangle mesh (every triangle has three
-                # edges and every edge requires an (x, y, z) triplet to
-                # describe its position).
-                if len(vertices) % 9 != 0:
-                    msg = 'Number of vertices must be a multiple of Nine'
+                if not self._isGeometrySane(vertices, tt.uv, tt.rgb):
+                    msg = 'Invalid geometry for template <{}>'.format(tt.name)
                     return RetVal(False, msg, None)
 
                 # Determine the largest possible side length of the AABB. To
@@ -920,6 +939,10 @@ class Clerk(multiprocessing.Process):
         :param list RGB: list of RGB values for every UV pair.
         :return: Success
         """
+        if not self._isGeometrySane(vert, uv, rgb):
+            msg = 'Invalid geometry for objID <{}>'.format(objID)
+            return RetVal(False, msg, None)
+
         geo = {'vertices': vert, 'UV': uv, 'RGB': rgb}
 
         ret = database.dbHandles['ObjInstances'].update(
