@@ -98,26 +98,6 @@ def setupLogging(loglevel):
         sys.exit(1)
 
 
-def waitForMongo():
-    """
-    Block until MongoDB can be contacted.
-
-    The main purpose of this function is to avoid problems when running from a
-    Docker container because MongoDB takes a while (up to 1min) to actually
-    start up and accept connections.
-    """
-    print('Waiting for MongoDB to come online', end='', flush=True)
-    t0 = time.time()
-    while True:
-        try:
-            client = pymongo.MongoClient()
-            break
-        except pymongo.errors.ConnectionFailure:
-            print('.', end='', flush=True)
-            time.sleep(1)
-    print('. Done ({}s)'.format(int(time.time() - t0)))
-
-
 def startAzrael(param):
     """
     Start all Azrael processes and return their process handles.
@@ -331,15 +311,6 @@ def main():
 
 
 if __name__ == '__main__':
-    # Parse the command line but ignore the result since the command line will
-    # be parsed again in main(). The only reason why this happens twice is to
-    # intercept the '-h' flag and print the help message, regardless of whether
-    # MongoDB is available or not (see ``waitForMongo`` command below).
-    parseCommandLine()
-
-    # Wait until MongoDB is live.
-    waitForMongo()
-
     # Import the necessary Azrael modules.
     p = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, os.path.join(p, 'viewer'))

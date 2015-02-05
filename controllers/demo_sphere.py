@@ -36,7 +36,8 @@ import azrael.parts as parts
 import azrael.config as config
 
 
-def run(objID):
+def startController(objID):
+    # Connect to Clerk.
     client = azrael.client.Client(config.addr_clerk)
 
     # ---------------------------------------------------------------------
@@ -73,16 +74,14 @@ def run(objID):
 
 
 def main():
+    # Read object ID from command line or use a default value.
     if len(sys.argv) < 2:
         objID = 1
     else:
         objID = sys.argv[1]
 
-    # Read the object from the command line.
-    objID = int(objID)
-
     # Instantiate the controller and start it in this thread.
-    run(objID)
+    startController(int(objID))
     print('done')
 
 

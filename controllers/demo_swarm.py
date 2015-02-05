@@ -26,6 +26,7 @@ import os
 import sys
 import time
 import setproctitle
+import multiprocessing
 
 # Augment the Python path so that we can include the main project.
 p = os.path.dirname(os.path.abspath(__file__))
@@ -38,15 +39,17 @@ import azrael.parts as parts
 import azrael.config as config
 
 
-class ControllerCubeLeft(azrael.client.Client):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class ControllerCubeLeft(multiprocessing.Process):
+    def __init__(self, objID, addr=config.addr_clerk):
+        super().__init__()
         self.left = 0
         self.right = 1
 
+        self.addr = addr
+        self.objID = objID
+
     def run(self):
-        # Boiler plate: setup
-        self.setupZMQ()
+        client = azrael.client.Client(self.addr)
 
         # ---------------------------------------------------------------------
         # Edit here to change the force of boosters.
@@ -54,21 +57,21 @@ class ControllerCubeLeft(azrael.client.Client):
         # Turn both boosters on after 2s.
         left = parts.CmdBooster(self.left, force=0.1)
         right = parts.CmdBooster(self.right, force=0.1)
-        self.controlParts(self.objID, [right, left], [])
+        client.controlParts(self.objID, [right, left], [])
         print('{0:02d}: Manoeuvre 1'.format(self.objID))
         time.sleep(2)
 
-        # Fire the booster assymetrically to make the cube turn.
+        # Fire the booster asymmetrically to make the cube turn.
         left = parts.CmdBooster(self.left, force=0)
         right = parts.CmdBooster(self.right, force=1)
-        self.controlParts(self.objID, [right, left], [])
+        client.controlParts(self.objID, [right, left], [])
         print('{0:02d}: Manoeuvre 2'.format(self.objID))
         time.sleep(2)
 
         # Reverse the force settings to stop the spinning.
         left = parts.CmdBooster(self.left, force=1)
         right = parts.CmdBooster(self.right, force=0)
-        self.controlParts(self.objID, [right, left], [])
+        client.controlParts(self.objID, [right, left], [])
         print('{0:02d}: Manoeuvre 3'.format(self.objID))
         time.sleep(2)
 
@@ -76,17 +79,18 @@ class ControllerCubeLeft(azrael.client.Client):
         # inducing any more spinning.
         left = parts.CmdBooster(self.left, force=0.1)
         right = parts.CmdBooster(self.right, force=0.1)
-        self.controlParts(self.objID, [right, left], [])
+        client.controlParts(self.objID, [right, left], [])
         time.sleep(4)
 
         # Done.
         print('{0:02d}: Manoeuvre 4'.format(self.objID))
-        self.close()
 
 
 class ControllerCubeRight(ControllerCubeLeft):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Swap the index for left/right compared to the base class.
         self.left = 1
         self.right = 0
 
