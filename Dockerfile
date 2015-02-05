@@ -54,7 +54,7 @@ EXPOSE 8080
 # where MongoDB stores its files and where Azrael puts its logs).
 VOLUME /demo
 
+ENTRYPOINT ["/usr/bin/python3", "entrypoint.py"]
+
 # Default command: start MongoDB and Azrael.
-CMD /usr/bin/mongod --smallfiles --dbpath /demo/mongodb & \
-    ./waitForMongo.py && \
-    ./demo_default.py --noviewer --numcubes 4,4,1
+CMD ["-h"]
