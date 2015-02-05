@@ -24,14 +24,15 @@ def parseCommandLine():
     # Shorthand.
     padd = parser.add_argument
 
+    demo_default = 'python3 demo_default.py --noviewer --numcubes 4,4,1'
+
     # Add the command line options.
-    padd('--numcubes', metavar='X,Y,Z', type=str, default='1,1,1',
-         help='Number of cubes in each dimension')
-    padd('--resetinterval', type=int, metavar='T', default=-1,
-         help='Simulation will reset every T seconds')
+    padd('program', nargs=1,
+         help='Specify the demo script (plus arguments) to run')
 
     # Run the parser.
     param = parser.parse_args()
+
     return param
 
 
@@ -43,13 +44,12 @@ def isMongoLive():
         client = pymongo.MongoClient()
     except pymongo.errors.ConnectionFailure:
         return False
-        
     return True
 
 
 def startMongo():
     cmd_mongo = '/usr/bin/mongod --smallfiles --dbpath /demo/mongodb'
-    subprocess.call(cmd_mongo, shell=True)
+    subprocess.call(cmd_mongo, shell=True, stdout=subprocess.DEVNULL)
 
 
 def main():
@@ -66,26 +66,28 @@ def main():
         for ii in range(120):
             if isMongoLive():
                 break
-            print('.', end='', flush=True)
-            if ii >= 119:
-                print('Could not connect to MongoDB -- Abort')
+            if ii >= 60:
+                print(' error. Could not connect to MongoDB -- Abort')
                 sys.exit(1)
+            print('.', end='', flush=True)
+            time.sleep(2)
         print(' success')
 
-    # Compile the full command that starts Azrael.
-    cmd_azrael = 'python3 demo_default.py --noviewer '
-    cmd_azrael += '--numcubes {}'.format(param.numcubes)
+    print('MongoDB now live. Starting Azrael')
 
     # Actually start Azrael.
     try:
-        subprocess.call(cmd_azrael, shell=True)
+        subprocess.call(param.program, shell=True)
     except KeyboardInterrupt:
         pass
 
-    # Shutdown the Mongo process and quit.
+    # Shutdown the Mongo process (if we were the ones how started it).
     if mongo_proc is not None:
+        print('Shutting down MongoDB')
         mongo_proc.terminate()
         mongo_proc.join()
+
+    print('Container finished')
 
 
 if __name__ == '__main__':
