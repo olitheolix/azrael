@@ -124,7 +124,6 @@ def ToClerk_GetTemplates_Decode(payload: dict):
 def FromClerk_GetTemplates_Encode(templates):
     out = {}
     for name, data in templates.items():
-
         # Convert all booster- and factory descriptions to strings.
         data['cshape'] = data['cshape'].tolist()
         data['boosters'] = [_.tostring() for _ in data['boosters']]

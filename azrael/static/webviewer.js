@@ -141,8 +141,8 @@ function getGeometry(objID) {
         var parsed = JSON.parse(msg.data)
         return {'ok': parsed.ok,
                 'vert': parsed.payload.vert,
-                'UV': parsed.payload.UV,
-                'RGB': parsed.payload.RGB}
+                'UV': parsed.payload.uv,
+                'RGB': parsed.payload.rgb}
     };
 
     return [cmd, dec]
