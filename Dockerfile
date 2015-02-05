@@ -30,13 +30,12 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* && \
     python3-pandas \
     python3-pil \
     python3-pip \
-    python3-pymongo \
     python3-pytest \
     python3-tornado \
     python3-zmq
 
 # Install PIP packages for Azrael.
-RUN pip3 install cytoolz setproctitle websocket-client==0.15
+RUN pip3 install cytoolz setproctitle websocket-client==0.15 pymongo
 
 # Clone and compile the Boost-Python-Bullet wrapper.
 WORKDIR /tmp
@@ -52,9 +51,10 @@ WORKDIR /demo/azrael
 EXPOSE 8080
 
 # Tell Docker not to track any changes in "/demo" directory (this is
-# where the MongoDB is stored and where Azrael writes its log files).
+# where MongoDB stores its files and where Azrael puts its logs).
 VOLUME /demo
 
 # Default command: start MongoDB and Azrael.
-CMD /usr/bin/mongod --smallfiles --dbpath /demo/mongodb \
-    & ./demo_default.py --noviewer --numcubes 4,4,1
+CMD /usr/bin/mongod --smallfiles --dbpath /demo/mongodb & \
+    ./waitForMongo.py && \
+    ./demo_default.py --noviewer --numcubes 4,4,1
