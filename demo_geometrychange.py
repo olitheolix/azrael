@@ -36,9 +36,25 @@ import multiprocessing
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Import the necessary Azrael modules.
+p = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(p, 'viewer'))
+import model_import
+import azrael.clerk
+import azrael.clacks
+import azrael.client
+import azrael.util as util
+import azrael.parts as parts
+import azrael.config as config
+import azrael.leonard as leonard
+import azrael.database as database
+import azrael.vectorgrid as vectorgrid
+import azrael.physics_interface as physAPI
+del p
 
 # Convenience.
 ipshell = IPython.embed
+BulletDataOverride = physAPI.BulletDataOverride
 
 
 def parseCommandLine():
@@ -188,8 +204,18 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
-        # Instantiate Client.
+        # Establish connection to Azrael.
         client = azrael.client.Client(addr_clerk=config.addr_clerk)
+
+        # Query all objects in the scene. These are the only objects that will
+        # survive the reset.
+        ret = client.getAllObjectIDs()
+        assert ret.ok
+        ret = client.getStateVariables(ret.data)
+        assert ret.ok
+        allowed_objIDs = {k: v for k, v in ret.data.items() if v is not None}
+        print('Took simulation snapshot for reset: ({} objects)'
+              .format(len(allowed_objIDs)))
 
         # Periodically reset the SV values. Set them several times because it
         # is well possible that not all State Variables reach Leonard in the
@@ -210,8 +236,13 @@ class ResetSim(multiprocessing.Process):
             # this several times since network latency may result in some
             # objects being reset sooner than others.
             for ii in range(5):
-                for objID, pos in self.default_attributes:
-                    client.setStateVariable(objID, pos)
+                for objID, SV in allowed_objIDs.items():
+                    tmp = BulletDataOverride(
+                        position=SV.position,
+                        velocityLin=SV.velocityLin,
+                        velocityRot=SV.velocityRot,
+                        orientation=SV.orientation)
+                    client.setStateVariable(objID, tmp)
                 time.sleep(0.1)
 
 
@@ -285,6 +316,7 @@ def main():
     print('Azrael now live')
 
     # Launch process to periodically reset the simulation.
+    time.sleep(2)
     rs = ResetSim(default_attributes, period=param.resetinterval)
     rs.start()
 
@@ -311,22 +343,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # Import the necessary Azrael modules.
-    p = os.path.dirname(os.path.abspath(__file__))
-    sys.path.insert(0, os.path.join(p, 'viewer'))
-    import model_import
-    import azrael.clerk
-    import azrael.clacks
-    import azrael.client
-    import azrael.util as util
-    import azrael.parts as parts
-    import azrael.config as config
-    import azrael.leonard as leonard
-    import azrael.database as database
-    import azrael.vectorgrid as vectorgrid
-    import azrael.physics_interface as physAPI
-    import azrael.bullet.bullet_data as bullet_data
-    del p
-
     # Start Azrael.
     main()

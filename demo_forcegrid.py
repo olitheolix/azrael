@@ -59,6 +59,7 @@ del p
 
 # Convenience.
 ipshell = IPython.embed
+BulletDataOverride = physAPI.BulletDataOverride
 
 
 def parseCommandLine():
@@ -181,13 +182,18 @@ class ResetSim(multiprocessing.Process):
         if self.period == -1:
             return
 
-        # Instantiate Client.
+        # Establish connection to Azrael.
         client = azrael.client.Client(addr_clerk=config.addr_clerk)
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.
         ret = client.getAllObjectIDs()
-        allowed_objIDs = ret.data
+        assert ret.ok
+        ret = client.getStateVariables(ret.data)
+        assert ret.ok
+        allowed_objIDs = {k: v for k, v in ret.data.items() if v is not None}
+        print('Took simulation snapshot for reset: ({} objects)'
+              .format(len(allowed_objIDs)))
 
         # Periodically reset the SV values. Set them several times because it
         # is well possible that not all State Variables reach Leonard in the
@@ -208,8 +214,13 @@ class ResetSim(multiprocessing.Process):
             # this several times since network latency may result in some
             # objects being reset sooner than others.
             for ii in range(5):
-                for objID, pos in self.default_attributes:
-                    client.setStateVariable(objID, pos)
+                for objID, SV in allowed_objIDs.items():
+                    tmp = BulletDataOverride(
+                        position=SV.position,
+                        velocityLin=SV.velocityLin,
+                        velocityRot=SV.velocityRot,
+                        orientation=SV.orientation)
+                    client.setStateVariable(objID, tmp)
                 time.sleep(0.1)
 
 
@@ -296,6 +307,7 @@ def main():
     print('Azrael now live')
 
     # Launch process to periodically reset the simulation.
+    time.sleep(2)
     rs = ResetSim(default_attributes, period=param.resetinterval)
     rs.start()
 
