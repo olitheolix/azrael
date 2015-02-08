@@ -365,7 +365,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if not ret.ok:
             print('Could not retrieve the state variables -- Abort')
             self.close()
-        self.newSVs = ret.data
+
+        # Prune the list to remove all those objects for which the State
+        # Vector is None.
+        self.newSVs = {k: v for k, v in ret.data.items() if v is not None}
 
         # Delete those local objects that have been removed in Azrael.
         for objID in self.oldSVs:
