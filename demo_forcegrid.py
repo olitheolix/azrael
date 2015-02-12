@@ -87,6 +87,10 @@ def parseCommandLine():
          help='Specify error log level (0: Debug, 1:Info)')
     padd('--resetinterval', type=int, metavar='T', default=-1,
          help='Simulation will reset every T seconds')
+    padd('--forcegridlinear', type=int, metavar='T', default=2,
+         help='Duration of linear grid (in seconds)')
+    padd('--forcegridcircular', type=int, metavar='T', default=5,
+         help='Duration of circular grid (in seconds)')
 
     # Run the parser.
     param = parser.parse_args()
@@ -228,12 +232,13 @@ class UpdateGrid(multiprocessing.Process):
     """
     Update the force grid throughout the simulation.
     """
-    def __init__(self, period=1):
+    def __init__(self, period_circ=1, period_lin=1):
         """
         Update the force grid values every ``period`` seconds.
         """
         super().__init__()
-        self.period = period
+        self.period_lin = period_lin
+        self.period_circ = period_circ
 
     def run(self):
         """
@@ -247,7 +252,7 @@ class UpdateGrid(multiprocessing.Process):
 
         # Specify the spatial extend of the grid. Note that eg Nx=3 means the
         # grid extends from [-3, 3] in x-direction.
-        Nx, Ny, Nz = 10, 10, 3
+        Nx, Ny, Nz = 20, 20, 3
 
         # Lower left corner of the grid in space.
         ofs = np.array([-Nx, -Ny, 10 - Nz], np.float64)
@@ -273,23 +278,23 @@ class UpdateGrid(multiprocessing.Process):
                 force_rot[x + Nx, y + Ny, :] = v
 
                 # Points towards the center.
-                v = -0.4 * np.array([x, y, 0], np.float64)
-                force_lin[x + Nx, y + Ny, :] = v
+                v = -np.array([x, y, 0], np.float64)
+                force_lin[x + Nx, y + Ny, :] = 0.1 * v
 
         while True:
             # Activate the circular grid.
-            time.sleep(1.0 * self.period)
             ret = vg.setRegion('force', ofs, 0.1 * force_rot)
             print('Circular force')
             if not ret.ok:
                 print('Could not set force grid values')
+            time.sleep(self.period_circ)
 
             # Activate the linear grid.
-            time.sleep(2.0 * self.period)
             ret = vg.setRegion('force', ofs, 0.1 * force_lin)
             print('Linear force')
             if not ret.ok:
                 print('Could not set force grid values')
+            time.sleep(self.period_lin)
 
 
 def main():
@@ -311,7 +316,8 @@ def main():
     rs = ResetSim(default_attributes, period=param.resetinterval)
     rs.start()
 
-    ug = UpdateGrid(5)
+    ug = UpdateGrid(period_circ=param.forcegridcircular,
+                    period_lin=param.forcegridlinear)
     ug.start()
 
     # Launch the viewer process.
