@@ -22,7 +22,6 @@ import numpy as np
 
 from collections import namedtuple as NT
 from azrael.typecheck import typecheck
-from azrael.protocol_json import loads, dumps
 
 
 @typecheck
@@ -37,35 +36,29 @@ def fromstring(data):
     :rtype: (bool, part)
     :raises: None
     """
-    # Decode JSON.
-    try:
-        d = loads(data)
-    except ValueError:
-        return False, 'JSON decoding error'
-
     # Sanity check.
-    if not isinstance(d, dict):
+    if not isinstance(data, dict):
         return False, 'Corrupt part description.'
 
     # The 'part' field must be present.
-    if 'part' not in d:
+    if 'part' not in data:
         return False, 'Corrupt part data'
 
     # Identify what we want to decode.
-    if d['part'] == 'Booster':
-        args = [d[_] for _ in Booster._fields]
+    if data['part'] == 'Booster':
+        args = [data[_] for _ in Booster._fields]
         return Booster(*args)
-    elif d['part'] == 'Factory':
-        args = [d[_] for _ in Factory._fields]
+    elif data['part'] == 'Factory':
+        args = [data[_] for _ in Factory._fields]
         return Factory(*args)
-    elif d['part'] == 'CmdBooster':
-        args = [d[_] for _ in CmdBooster._fields]
+    elif data['part'] == 'CmdBooster':
+        args = [data[_] for _ in CmdBooster._fields]
         return CmdBooster(*args)
-    elif d['part'] == 'CmdFactory':
-        args = [d[_] for _ in CmdFactory._fields]
+    elif data['part'] == 'CmdFactory':
+        args = [data[_] for _ in CmdFactory._fields]
         return CmdFactory(*args)
     else:
-        return False, 'Unknown part <{}>'.format(d['part'])
+        return False, 'Unknown part <{}>'.format(data['part'])
 
 
 # -----------------------------------------------------------------------------
@@ -113,7 +106,12 @@ class Booster(_Booster):
         # Normalise the direction vector or raise an error if invalid.
         assert np.dot(direction, direction) > 1E-5
         direction = direction / np.sqrt(np.dot(direction, direction))
+
+        # Only store native Python types to make them compatible with MongoDB.
+        pos = pos.tolist()
+        direction = direction.tolist()
         self = super().__new__(cls, partID, pos, direction, max_force)
+
         return self
 
     def __eq__(self, ref):
@@ -134,7 +132,7 @@ class Booster(_Booster):
         d = {'part': 'Booster'}
         for f in self._fields:
             d[f] = getattr(self, f)
-        return dumps(d)
+        return d
 
 
 class CmdBooster(_CmdBooster):
@@ -170,7 +168,7 @@ class CmdBooster(_CmdBooster):
         d = {'part': 'CmdBooster'}
         for f in self._fields:
             d[f] = getattr(self, f)
-        return dumps(d)
+        return d
 
 
 # -----------------------------------------------------------------------------
@@ -225,6 +223,11 @@ class Factory(_Factory):
         exit_speed = np.array(exit_speed, np.float64)
         assert len(exit_speed) == 2
 
+        # Only store native Python types to make them compatible with MongoDB.
+        pos = pos.tolist()
+        direction = direction.tolist()
+        exit_speed = exit_speed.tolist()
+
         # Return a valid Factory instance based on the arguments.
         self = super().__new__(
             cls, partID, pos, direction, templateID, exit_speed)
@@ -236,7 +239,7 @@ class Factory(_Factory):
 
         for f in self._fields:
             a, b = getattr(self, f), getattr(ref, f)
-            if isinstance(a, np.ndarray):
+            if isinstance(a, (tuple, list, np.ndarray)):
                 if not np.allclose(a, b, 1E-9):
                     return False
             else:
@@ -248,7 +251,7 @@ class Factory(_Factory):
         d = {'part': 'Factory'}
         for f in self._fields:
             d[f] = getattr(self, f)
-        return dumps(d)
+        return d
 
 
 class CmdFactory(_CmdFactory):
@@ -284,4 +287,4 @@ class CmdFactory(_CmdFactory):
         d = {'part': 'CmdFactory'}
         for f in self._fields:
             d[f] = getattr(self, f)
-        return dumps(d)
+        return d
