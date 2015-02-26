@@ -149,14 +149,14 @@ def loadGroundModel(scale, model_name):
     pos_left = np.array([-1.5, 0, 0])
     pos_center = np.zeros(3)
 
-    b0 = parts.Booster(
-        partID=0, pos=pos_left, direction=-dir_up, max_force=10.0)
-    b1 = parts.Booster(
-        partID=1, pos=pos_center, direction=dir_forward, max_force=1000.0)
-    b2 = parts.Booster(
-        partID=2, pos=-pos_left, direction=dir_up, max_force=10.0)
-    b3 = parts.Booster(
-        partID=3, pos=pos_center, direction=-dir_forward, max_force=1000.0)
+    b0 = parts.Booster(partID=0, pos=pos_left, direction=-dir_up,
+                       minval=0, maxval=10.0, force=0)
+    b1 = parts.Booster(partID=1, pos=pos_center, direction=dir_forward,
+                       minval=0, maxval=1000.0, force=0)
+    b2 = parts.Booster(partID=2, pos=-pos_left, direction=dir_up,
+                       minval=0, maxval=10.0, force=0)
+    b3 = parts.Booster(partID=3, pos=pos_center, direction=-dir_forward,
+                       minval=0, maxval=1000.0, force=0)
     del dir_up, dir_forward, pos_left, pos_center
 
     # Add the template to Azrael.
@@ -255,10 +255,10 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # Define a cube with boosters and factories.
     # ----------------------------------------------------------------------
     # Two boosters, one left, one right. Both point in the same direction.
-    b0 = parts.Booster(
-        partID=0, pos=[+0.05, 0, 0], direction=[0, 0, 1], max_force=10.0)
-    b1 = parts.Booster(
-        partID=1, pos=[-0.05, 0, 0], direction=[0, 0, 1], max_force=10.0)
+    b0 = parts.Booster(partID=0, pos=[+0.05, 0, 0], direction=[0, 0, 1],
+                       minval=0, maxval=10.0, force=0)
+    b1 = parts.Booster(partID=1, pos=[-0.05, 0, 0], direction=[0, 0, 1],
+                       minval=0, maxval=10.0, force=0)
 
     # Two factories, one left one right. They will eject the new objects
     # forwards and backwards, respectively.

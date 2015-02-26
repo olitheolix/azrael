@@ -437,9 +437,9 @@ def test_add_get_template_single():
     # automatically assign any IDs).
     z = np.zeros(3)
     b0 = parts.Booster(partID=0, pos=z, direction=[0, 0, 1],
-                       min_force=0, max_force=0.5, force=0)
+                       minval=0, maxval=0.5, force=0)
     b1 = parts.Booster(partID=1, pos=z, direction=[0, 0, 1],
-                       min_force=0, max_force=0.5, force=0)
+                       minval=0, maxval=0.5, force=0)
     f0 = parts.Factory(
         partID=0, pos=z, direction=[0, 0, 1],
         templateID='_templateCube', exit_speed=[0.1, 0.5])
@@ -664,7 +664,7 @@ def test_controlParts_invalid_commands():
     # named tuples passed to addTemplates. The user must assign the partIDs
     # manually.
     b0 = parts.Booster(partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
-                       min_force=0, max_force=0.5, force=0)
+                       minval=0, maxval=0.5, force=0)
     f0 = parts.Factory(
         partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
         templateID='_templateCube', exit_speed=[0, 1])
@@ -738,9 +738,9 @@ def test_controlParts_Boosters_notmoving():
 
     # Define two boosters.
     b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0,
-                       min_force=0, max_force=0.5, force=0)
+                       minval=0, maxval=0.5, force=0)
     b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
-                       min_force=0, max_force=0.5, force=0)
+                       minval=0, maxval=0.5, force=0)
 
     # Create a new template in Azrael of an object with two boosters.
     t2 = Template('t1', cs, vert, uv, rgb, [b0, b1], [])
@@ -1030,9 +1030,9 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # named tuples passed to addTemplates. The user must assign the partIDs
     # manually.
     b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0,
-                       min_force=0, max_force=0.5, force=0)
+                       minval=0, maxval=0.5, force=0)
     b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
-                       min_force=0, max_force=1.0, force=0)
+                       minval=0, maxval=1.0, force=0)
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
         templateID='_templateCube', exit_speed=[0.1, 0.5])

@@ -52,15 +52,15 @@ class Booster(_Booster):
     :param int partID: Booster ID (arbitrary)
     :param ndarray pos: position vector (3-elements)
     :param ndarray direction: force direction (3-elements)
-    :param float min_force: minimum force this Booster can generate.
-    :param float max_force: maximum force this Booster can generate.
+    :param float minval: minimum force this Booster can generate.
+    :param float maxval: maximum force this Booster can generate.
     :param float force: force value this booster currently exerts on object.
     :return Booster: compiled booster description.
     """
     @typecheck
     def __new__(cls, partID: int, pos: (list, np.ndarray),
-                direction: (list, np.ndarray), min_force: (int, float),
-                max_force: (int, float), force: (int, float)):
+                direction: (list, np.ndarray), minval: (int, float),
+                maxval: (int, float), force: (int, float)):
         # Position must be a 3-element vector.
         pos = np.array(pos, np.float64)
         assert len(pos) == 3
@@ -77,7 +77,7 @@ class Booster(_Booster):
         pos = pos.tolist()
         direction = direction.tolist()
         self = super().__new__(cls, partID, pos, direction,
-                               min_force, max_force, force)
+                               minval, maxval, force)
 
         return self
 

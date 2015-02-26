@@ -49,9 +49,9 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     template_name = 'mytemplate'
 
     b0 = parts.Booster(partID=0, pos=np.zeros(3), direction=[0, 0, 1],
-                       min_force=0, max_force=0.5, force=0)
+                       minval=0, maxval=0.5, force=0)
     b1 = parts.Booster(partID=0, pos=np.zeros(3), direction=[1, 1, 0],
-                       min_force=0, max_force=0.6, force=0)
+                       minval=0, maxval=0.6, force=0)
     f0 = parts.Factory(
         partID=0, pos=np.zeros(3), direction=[0, 0, 1],
         templateID='_templateCube', exit_speed=[0.1, 0.5])
