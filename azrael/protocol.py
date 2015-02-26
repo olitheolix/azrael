@@ -389,6 +389,26 @@ def FromClerk_GetStateVariable_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
+# GetAllStateVariables
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_GetAllStateVariables_Encode():
+    return True, None
+
+
+@typecheck
+def ToClerk_GetAllStateVariables_Decode(payload: dict):
+    return True, (None, )
+
+# Reuse the protocol for 'getStateVariables' for the data that comes
+# back from Clerk.
+FromClerk_GetAllStateVariables_Encode = FromClerk_GetStateVariable_Encode
+FromClerk_GetAllStateVariables_Decode = FromClerk_GetStateVariable_Decode
+
+
+# ---------------------------------------------------------------------------
 # Spawn
 # ---------------------------------------------------------------------------
 

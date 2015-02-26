@@ -101,6 +101,10 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_GetStateVariable_Decode,
                 self.getStateVariables,
                 protocol.FromClerk_GetStateVariable_Encode),
+            'get_all_statevars': (
+                protocol.ToClerk_GetAllStateVariables_Decode,
+                self.getAllStateVariables,
+                protocol.FromClerk_GetAllStateVariables_Encode),
             'set_statevar': (
                 protocol.ToClerk_SetStateVector_Decode,
                 self.setStateVariable,
@@ -1027,12 +1031,16 @@ class Clerk(multiprocessing.Process):
             return RetVal(True, None, ret.data)
 
     @typecheck
-    def getAllStateVariables(self):
+    def getAllStateVariables(self, dummy=None):
         """
         Return all State Variables in a dictionary.
 
         The dictionary will have the objIDs and State Variables as keys and
         values, respectively.
+
+        .. note::
+           The ``dummy`` argument is a placeholder because the ``runCommand``
+           function assumes that every method takes at least one argument.
 
         :return: {objID_1: SV_k, ...}
         :rtype: dict

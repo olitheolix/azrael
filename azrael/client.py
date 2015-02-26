@@ -94,6 +94,9 @@ class Client():
             'get_statevar': (
                 protocol.ToClerk_GetStateVariable_Encode,
                 protocol.FromClerk_GetStateVariable_Decode),
+            'get_all_statevars': (
+                protocol.ToClerk_GetAllStateVariables_Encode,
+                protocol.FromClerk_GetAllStateVariables_Decode),
             'set_statevar': (
                 protocol.ToClerk_SetStateVector_Encode,
                 protocol.FromClerk_SetStateVector_Decode),
@@ -442,6 +445,30 @@ class Client():
 
         # Pass on the request to Clerk.
         ret = self.serialiseAndSend('get_statevar', objIDs)
+        if not ret.ok:
+            return ret
+
+        # Convert the returned data back into a named tuple (_BulletData).
+        out = {}
+        for objID, v in ret.data.items():
+            objID = int(objID)
+            if v is not None:
+                out[objID] = _BulletData(**v)
+            else:
+                out[objID] = None
+
+        return RetVal(True, None, out)
+
+    @typecheck
+    def getAllStateVariables(self):
+        """
+        Return the State Variables for all objects in the simulation.
+
+        :return: dictionary of State Variables.
+        :rtype: dict
+        """
+        # Pass on the request to Clerk.
+        ret = self.serialiseAndSend('get_all_statevars')
         if not ret.ok:
             return ret
 

@@ -134,8 +134,14 @@ def test_spawn_and_get_state_variables(client_type):
     # Start the necessary services.
     clerk, client, clacks = startAzrael(client_type)
 
-    # Query state variables for non existing object.
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
+    # Query the state variable for a non existing object.
     id_tmp = 100
+    ok, _, sv = client.getAllStateVariables()
+    assert (ok, sv) == (True, {})
+
     ok, _, sv = client.getStateVariables(id_tmp)
     assert (ok, sv) == (True, {id_tmp: None})
     del id_tmp
@@ -147,8 +153,25 @@ def test_spawn_and_get_state_variables(client_type):
     ret = client.spawn([new_obj])
     assert ret.ok and ret.data == (id_1, )
 
+    # The new object has not yet been picked up by Leonard --> its state
+    # vector must thus be None.
+    ret = client.getStateVariables(id_1)
+    assert ret.ok and (len(ret.data) == 1) and (ret.data == {id_1: None})
+
+    # getAllStateVarialbes must return an empty dictionary.
+    ret = client.getAllStateVariables()
+    assert ret.ok and (ret.data == {})
+
+    # Run one Leonard step. This will pick up the newly spawned object and SV
+    # queries must now return valid data.
+    leo.processCommandsAndSync()
     ret = client.getStateVariables(id_1)
     assert ret.ok and (len(ret.data) == 1) and (id_1 in ret.data)
+    assert ret.data[id_1] is not None
+
+    ret = client.getAllStateVariables()
+    assert ret.ok and (len(ret.data) == 1) and (id_1 in ret.data)
+    assert ret.data[id_1] is not None
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
