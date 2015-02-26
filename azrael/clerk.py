@@ -29,6 +29,7 @@ is identical).
 import os
 import sys
 import zmq
+import json
 import pickle
 import IPython
 import cytoolz
@@ -44,7 +45,6 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.database as database
 import azrael.protocol as protocol
-import azrael.protocol_json as json
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 

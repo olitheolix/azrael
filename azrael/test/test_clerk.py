@@ -22,6 +22,7 @@ offers and test purely the Clerk.
 """
 
 import sys
+import json
 import pytest
 import IPython
 import numpy as np
@@ -30,7 +31,6 @@ import azrael.util
 import azrael.clerk
 import azrael.client
 import azrael.parts as parts
-import azrael.protocol_json as json
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 

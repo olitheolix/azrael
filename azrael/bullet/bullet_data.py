@@ -34,7 +34,6 @@ import azrael.config as config
 
 from collections import namedtuple
 from azrael.typecheck import typecheck
-from azrael.protocol_json import loads, dumps
 
 ipshell = IPython.embed
 

@@ -25,6 +25,7 @@ the same capabilities.
 import os
 import sys
 import time
+import json
 import logging
 import multiprocessing
 import tornado.websocket
@@ -36,7 +37,6 @@ import numpy as np
 import azrael.client
 import azrael.util as util
 import azrael.config as config
-import azrael.protocol_json as json
 
 from azrael.typecheck import typecheck
 

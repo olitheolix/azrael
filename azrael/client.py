@@ -25,13 +25,13 @@ feature set is identical).
 """
 
 import zmq
+import json
 import logging
 import numpy as np
 
 import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
-import azrael.protocol_json as json
 
 from azrael.util import RetVal
 from azrael.typecheck import typecheck

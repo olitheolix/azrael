@@ -16,6 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import json
 import pytest
 import IPython
 import numpy as np
@@ -23,7 +24,6 @@ import numpy as np
 import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
-import azrael.protocol_json as json
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
