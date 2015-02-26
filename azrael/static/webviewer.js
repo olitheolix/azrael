@@ -205,6 +205,17 @@ function getStateVariable(objID) {
 }
 
 
+function getAllStateVariables() {
+    var cmd = {'cmd': 'get_all_statevars', 'payload': {}}
+    cmd = JSON.stringify(cmd)
+    var dec = function (msg) {
+        var parsed = JSON.parse(msg.data)
+        return {'ok': parsed.ok, 'sv': parsed.payload.data}
+    };
+    return [cmd, dec]
+}
+
+
 function arrayEqual(arr1, arr2) {
     if ((arr1 == undefined) || (arr2 == undefined)) return false;
     if (arr1.length != arr2.length) return false;
@@ -308,26 +319,24 @@ function* mycoroutine(connection) {
     // Query the state variables of all visible objects and update
     // their position on the screen.
     while (true) {
-        // Retrieve all object IDs.
-        var msg = yield getAllObjectIDs();
-        if (msg.data == false) {console.log('Error getAllObjects'); return;}
-        var objIDs = msg.objIDs
-
         // Get the SV for all objects.
-        msg = yield getStateVariable(objIDs)
+        msg = yield getAllStateVariables()
         if (msg.ok == false) {console.log('Error getStateVariables'); return;}
         var allSVs = msg.sv
 
         // Update the position and orientation of all objects. If an
         // object does not yet exist then create one.
         $(".progress-bar").css('width', '0%')
-        for (var ii in objIDs) {
-            // Extract the actual objID.
-            var objID = objIDs[ii]
+        var numObjects = Object.keys(allSVs).length
+        var objCnt = 0
+        for (var objID in allSVs) {
+            // Convert the objID to an integer and increment the counter.
+            objID = parseInt(objID);
+            objCnt += 1;
 
             // Update text in progress bar.
-            var tmp = 100 * (parseInt(ii) + 1) / objIDs.length
-                txt = (parseInt(ii) + 1) + ' of ' + objIDs.length
+            var tmp = 100 * objCnt / numObjects
+                txt = objCnt + ' of ' + numObjects
             $("#PBLoading").css('width', tmp + '%').text('Loading ' + txt)
 
             // Skip/remove all objects with undefined SVs. Remove the
@@ -400,7 +409,7 @@ function* mycoroutine(connection) {
 
             // If the objID is in our cache but not in the simulation
             // then it is time to remove it.
-            if (objIDs.indexOf(objID) == -1) {
+            if (!(objID in allSVs)) {
                 scene.remove(obj_cache[objID]);
                 delete obj_cache[objID];
             }
