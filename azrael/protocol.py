@@ -311,7 +311,10 @@ def ToClerk_GetGeometry_Encode(objID: int):
 
 @typecheck
 def ToClerk_GetGeometry_Decode(payload: dict):
-    return True, (payload['objID'], )
+    tmp = payload['objID']
+    if not isinstance(tmp, int):
+        return False, 'Expected <int> but got <{}>'.format(type(tmp))
+    return True, (tmp, )
 
 
 @typecheck
