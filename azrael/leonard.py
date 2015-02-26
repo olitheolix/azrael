@@ -480,8 +480,6 @@ class LeonardBullet(LeonardBase):
             ret = self.bullet.getObjectData([objID])
             if ret.ok:
                 self.allObjects[objID] = ret.data
-            self.allForces[objID] = [0, 0, 0]
-            self.allTorques[objID] = [0, 0, 0]
 
         # Synchronise the local object cache back to the database.
         self.syncObjects(writeconcern=False)
@@ -567,8 +565,6 @@ class LeonardSweeping(LeonardBullet):
                 ret = self.bullet.getObjectData([objID])
                 if ret.ok:
                     self.allObjects[objID] = ret.data
-                self.allForces[objID] = [0, 0, 0]
-                self.allTorques[objID] = [0, 0, 0]
 
         # Synchronise the local object cache back to the database.
         self.syncObjects(writeconcern=False)
@@ -777,8 +773,6 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Reset force and torque for all objects in the WP, and overwrite
         # the old State Vector with the new one from the processed WP.
         for (objID, sv) in wpdata:
-            self.allForces[objID] = [0, 0, 0]
-            self.allTorques[objID] = [0, 0, 0]
             self.allObjects[objID] = _BulletData(*sv)
 
 

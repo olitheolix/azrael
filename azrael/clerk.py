@@ -400,8 +400,7 @@ class Clerk(multiprocessing.Process):
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
 
-        # Ensure all booster- and factory parts receive at most one command
-        # each.
+        # Ensure all boosters/factories receive at most one command each.
         partIDs = [_.partID for _ in cmd_boosters]
         if len(set(partIDs)) != len(partIDs):
             msg = 'Same booster received multiple commands'
