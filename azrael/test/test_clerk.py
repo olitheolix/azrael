@@ -436,10 +436,10 @@ def test_add_get_template_single():
     # tuples. Their first argument is the unit ID (Azrael does not assign
     # automatically assign any IDs).
     z = np.zeros(3)
-    b0 = parts.Booster(
-        partID=0, pos=z, direction=[0, 0, 1], max_force=0.5)
-    b1 = parts.Booster(
-        partID=1, pos=z, direction=[0, 0, 1], max_force=0.5)
+    b0 = parts.Booster(partID=0, pos=z, direction=[0, 0, 1],
+                       min_force=0, max_force=0.5, force=0)
+    b1 = parts.Booster(partID=1, pos=z, direction=[0, 0, 1],
+                       min_force=0, max_force=0.5, force=0)
     f0 = parts.Factory(
         partID=0, pos=z, direction=[0, 0, 1],
         templateID='_templateCube', exit_speed=[0.1, 0.5])
@@ -663,8 +663,8 @@ def test_controlParts_invalid_commands():
     # Define a new object with two factory parts. The Factory parts are
     # named tuples passed to addTemplates. The user must assign the partIDs
     # manually.
-    b0 = parts.Booster(
-        partID=0, pos=[0, 0, 0], direction=[0, 0, 1], max_force=0.5)
+    b0 = parts.Booster(partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
+                       min_force=0, max_force=0.5, force=0)
     f0 = parts.Factory(
         partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
         templateID='_templateCube', exit_speed=[0, 1])
@@ -737,8 +737,10 @@ def test_controlParts_Boosters_notmoving():
     pos_1 = np.array([-1, -1, 0], np.float64)
 
     # Define two boosters.
-    b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0, max_force=0.5)
-    b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1, max_force=0.5)
+    b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0,
+                       min_force=0, max_force=0.5, force=0)
+    b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
+                       min_force=0, max_force=0.5, force=0)
 
     # Create a new template in Azrael of an object with two boosters.
     t2 = Template('t1', cs, vert, uv, rgb, [b0, b1], [])
@@ -1027,10 +1029,10 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # Define a new object with two factory parts. The Factory parts are
     # named tuples passed to addTemplates. The user must assign the partIDs
     # manually.
-    b0 = parts.Booster(
-        partID=0, pos=pos_0, direction=dir_0, max_force=0.5)
-    b1 = parts.Booster(
-        partID=1, pos=pos_1, direction=dir_1, max_force=1.0)
+    b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0,
+                       min_force=0, max_force=0.5, force=0)
+    b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
+                       min_force=0, max_force=1.0, force=0)
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
         templateID='_templateCube', exit_speed=[0.1, 0.5])
