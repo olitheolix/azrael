@@ -24,43 +24,6 @@ from collections import namedtuple as NT
 from azrael.typecheck import typecheck
 
 
-@typecheck
-def fromstring(data):
-    """
-    Decode the part of command in ``data``.
-
-    If the content in ``data`` is invalid then ``ValueError`` will be raised.
-
-    :param bytes data: input data to de-serialise.
-    :return: (ok, decoded-data)
-    :rtype: (bool, part)
-    :raises: None
-    """
-    # Sanity check.
-    if not isinstance(data, dict):
-        return False, 'Corrupt part description.'
-
-    # The 'part' field must be present.
-    if 'part' not in data:
-        return False, 'Corrupt part data'
-
-    # Identify what we want to decode.
-    if data['part'] == 'Booster':
-        args = [data[_] for _ in Booster._fields]
-        return Booster(*args)
-    elif data['part'] == 'Factory':
-        args = [data[_] for _ in Factory._fields]
-        return Factory(*args)
-    elif data['part'] == 'CmdBooster':
-        args = [data[_] for _ in CmdBooster._fields]
-        return CmdBooster(*args)
-    elif data['part'] == 'CmdFactory':
-        args = [data[_] for _ in CmdFactory._fields]
-        return CmdFactory(*args)
-    else:
-        return False, 'Unknown part <{}>'.format(data['part'])
-
-
 # -----------------------------------------------------------------------------
 # Booster
 #
@@ -128,12 +91,6 @@ class Booster(_Booster):
     def __ne__(self, ref):
         return not self.__eq__(ref)
 
-    def tostring(self):
-        d = {'part': 'Booster'}
-        for f in self._fields:
-            d[f] = getattr(self, f)
-        return d
-
 
 class CmdBooster(_CmdBooster):
     """
@@ -164,12 +121,6 @@ class CmdBooster(_CmdBooster):
 
     def __ne__(self, ref):
         return not self.__eq__(ref)
-
-    def tostring(self):
-        d = {'part': 'CmdBooster'}
-        for f in self._fields:
-            d[f] = getattr(self, f)
-        return d
 
 
 # -----------------------------------------------------------------------------
@@ -248,12 +199,6 @@ class Factory(_Factory):
                     return False
         return True
 
-    def tostring(self):
-        d = {'part': 'Factory'}
-        for f in self._fields:
-            d[f] = getattr(self, f)
-        return d
-
 
 class CmdFactory(_CmdFactory):
     """
@@ -284,9 +229,3 @@ class CmdFactory(_CmdFactory):
 
     def __ne__(self, ref):
         return not self.__eq__(ref)
-
-    def tostring(self):
-        d = {'part': 'CmdFactory'}
-        for f in self._fields:
-            d[f] = getattr(self, f)
-        return d
