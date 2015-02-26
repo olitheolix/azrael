@@ -282,10 +282,10 @@ class Client():
             'scale': 1,
             'imass': 1,
             'position': None,
-            'orientation': np.array([0, 0, 0, 1]),
-            'velocityLin': np.zeros(3),
-            'axesLockLin': np.ones(3),
-            'axesLockRot': np.ones(3),
+            'orientation': np.array([0, 0, 0, 1]).tolist(),
+            'velocityLin': np.zeros(3).tolist(),
+            'axesLockLin': np.ones(3).tolist(),
+            'axesLockRot': np.ones(3).tolist(),
             'template': None}
 
         # Create valid object descriptions by copying the 'template' and
@@ -296,19 +296,25 @@ class Client():
             assert 'position' in inp
             assert 'template' in inp
 
-            # Copy the template and overwrite with the available values.
+            # Copy the template and replace the provided keys with the provided
+            # values.
             obj = dict(template)
             for key in obj:
                 obj[key] = inp[key] if key in inp else obj[key]
 
+                # Replace all NumPy arrays with Python lists to ensure JSON
+                # compatibility.
+                if isinstance(obj[key], np.ndarray):
+                    obj[key] = obj[key].tolist()
+
             # Sanity checks.
             assert isinstance(obj['scale'], (int, float))
             assert isinstance(obj['imass'], (int, float))
-            assert isinstance(obj['position'], (list, np.ndarray))
-            assert isinstance(obj['orientation'], (list, np.ndarray))
-            assert isinstance(obj['velocityLin'], (list, np.ndarray))
-            assert isinstance(obj['axesLockLin'], (list, np.ndarray))
-            assert isinstance(obj['axesLockRot'], (list, np.ndarray))
+            assert isinstance(obj['position'], list)
+            assert isinstance(obj['orientation'], list)
+            assert isinstance(obj['velocityLin'], list)
+            assert isinstance(obj['axesLockLin'], list)
+            assert isinstance(obj['axesLockRot'], list)
 
             # Add the description to the list of objects to spawn.
             payload.append(obj)
