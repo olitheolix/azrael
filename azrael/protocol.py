@@ -124,10 +124,8 @@ def ToClerk_GetTemplates_Decode(payload: dict):
 def FromClerk_GetTemplates_Encode(templates):
     out = {}
     for name, data in templates.items():
-        # Convert all booster- and factory descriptions to strings.
+        # The cshape is still a NumPy array --> convert it to a list.
         data['cshape'] = data['cshape'].tolist()
-        data['boosters'] = [_.tostring() for _ in data['boosters']]
-        data['factories'] = [_.tostring() for _ in data['factories']]
         out[name] = data
     return True, out
 
@@ -136,18 +134,13 @@ def FromClerk_GetTemplates_Encode(templates):
 def FromClerk_GetTemplates_Decode(payload: dict):
     out = {}
     for name, data in payload.items():
-        # fixme: remove the fromstring functions
-        # Wrap the Booster- and Factory data into their dedicated named tuples.
-        boosters = [parts.fromstring(_) for _ in data['boosters']]
-        factories = [parts.fromstring(_) for _ in data['factories']]
-
         # Return the complete information in a named tuple.
         nt = namedtuple('Template', 'cs vert uv rgb boosters factories aabb')
         ret = nt(np.array(data['cshape'], np.float64),
                  np.array(data['vert'], np.float64),
                  np.array(data['uv'], np.float64),
                  np.array(data['rgb'], np.uint8),
-                 boosters, factories, data['aabb'])
+                 data['boosters'], data['factories'], data['aabb'])
         out[name] = ret
     return RetVal(True, None, out)
 
@@ -164,8 +157,8 @@ def ToClerk_AddTemplates_Encode(templates: list):
             name, cs, vert, UV, RGB, boosters, factories = tt
             d = {'name': name, 'cs': cs.tolist(), 'vert': vert.tolist(),
                  'UV': UV.tolist(), 'RGB': RGB.tolist(),
-                 'boosters': [_.tostring() for _ in boosters],
-                 'factories': [_.tostring() for _ in factories]}
+                 'boosters': boosters,
+                 'factories': factories}
             out.append(d)
     return True, {'data': out}
 
@@ -177,8 +170,8 @@ def ToClerk_AddTemplates_Decode(payload: dict):
         for data in payload['data']:
             # Wrap the Booster- and Factory data into their dedicated named
             # tuples.
-            boosters = [parts.fromstring(_) for _ in data['boosters']]
-            factories = [parts.fromstring(_) for _ in data['factories']]
+            boosters = [parts.Booster(*_) for _ in data['boosters']]
+            factories = [parts.Factory(*_) for _ in data['factories']]
 
             # Convert template ID to a byte string.
             name = data['name']
@@ -486,8 +479,8 @@ def FromClerk_Remove_Decode(dummyarg):
 def ToClerk_ControlParts_Encode(objID: int, cmds_b: list, cmds_f: list):
     # Compile a dictionary with the payload data.
     d = {'objID': objID,
-         'cmd_boosters': [_.tostring() for _ in cmds_b],
-         'cmd_factories': [_.tostring() for _ in cmds_f]}
+         'cmd_boosters': cmds_b,
+         'cmd_factories': cmds_f}
 
     return True, d
 
@@ -495,8 +488,8 @@ def ToClerk_ControlParts_Encode(objID: int, cmds_b: list, cmds_f: list):
 @typecheck
 def ToClerk_ControlParts_Decode(payload: dict):
     objID = payload['objID']
-    cmds_b = [parts.fromstring(_) for _ in payload['cmd_boosters']]
-    cmds_f = [parts.fromstring(_) for _ in payload['cmd_factories']]
+    cmds_b = [parts.CmdBooster(*_) for _ in payload['cmd_boosters']]
+    cmds_f = [parts.CmdFactory(*_) for _ in payload['cmd_factories']]
 
     return True, (objID, cmds_b, cmds_f)
 

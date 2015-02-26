@@ -352,10 +352,13 @@ class Clerk(multiprocessing.Process):
         if not ret.ok:
             self.logit.warning(ret.msg)
             return RetVal(False, ret.msg, None)
-        else:
-            boosters = ret.data['boosters']
-            factories = ret.data['factories']
-            del ret
+
+        # Extract the Boosters and Factories of the object.
+        funb = parts.Booster
+        funf = parts.Factory
+        boosters = [funb(*_) for _ in ret.data['boosters']]
+        factories = [funf(*_) for _ in ret.data['factories']]
+        del ret, funb, funf
 
         # Fetch the SV for objID (we need this to determine the orientation of
         # the base object to which the parts are attached).
@@ -579,11 +582,9 @@ class Clerk(multiprocessing.Process):
 
                 # ... as well as booster- and factory parts.
                 for b in tt.boosters:
-                    tmp = b.tostring()
-                    data['boosters']['{0:03d}'.format(b.partID)] = tmp
+                    data['boosters']['{0:03d}'.format(b.partID)] = b
                 for f in tt.factories:
-                    tmp = f.tostring()
-                    data['factories']['{0:03d}'.format(f.partID)] = tmp
+                    data['factories']['{0:03d}'.format(f.partID)] = f
 
                 # Add the template to the database.
                 query = {'templateID': tt.name}
@@ -736,16 +737,14 @@ class Clerk(multiprocessing.Process):
 
         # Extract the booster parts.
         if 'boosters' in doc:
-            # Convert byte string to Booster objects.
-            boosters = [parts.fromstring(_) for _ in doc['boosters'].values()]
+            boosters = list(doc['boosters'].values())
         else:
             # Object has no boosters.
             boosters = []
 
         # Extract the factory parts.
         if 'factories' in doc:
-            # Convert byte string to Factory objects.
-            fac = [parts.fromstring(_) for _ in doc['factories'].values()]
+            fac = list(doc['factories'].values())
         else:
             # Object has no factories.
             fac = []

@@ -147,6 +147,7 @@ class CmdBooster(_CmdBooster):
     """
     @typecheck
     def __new__(cls, partID: int, force: (int, float, np.float64)):
+        force = float(force)
         self = super().__new__(cls, partID, force)
         return self
 
@@ -266,6 +267,7 @@ class CmdFactory(_CmdFactory):
     """
     @typecheck
     def __new__(cls, partID: int, exit_speed: (int, float, np.float64)):
+        exit_speed = float(exit_speed)
         self = super().__new__(cls, partID, exit_speed)
         return self
 

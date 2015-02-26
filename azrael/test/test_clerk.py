@@ -464,11 +464,11 @@ def test_add_get_template_single():
     # Explicitly verify the booster- and factory units. The easisest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
-    out_boosters = [_.tostring() for _ in ret.data[t3.name]['boosters']]
-    out_factories = [_.tostring() for _ in ret.data[t3.name]['factories']]
-    assert b0.tostring() in out_boosters
-    assert b1.tostring() in out_boosters
-    assert f0.tostring() in out_factories
+    out_boosters = [parts.Booster(*_) for _ in ret.data[t3.name]['boosters']]
+    out_factories = [parts.Factory(*_) for _ in ret.data[t3.name]['factories']]
+    assert b0 in out_boosters
+    assert b1 in out_boosters
+    assert f0 in out_factories
 
     # Request the same templates multiple times in a single call. This must
     # not return an error, but it must return a dictionary with only as many
