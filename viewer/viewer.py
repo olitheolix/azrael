@@ -352,16 +352,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         return (cs_old != cs_new)
 
     def loadGeometry(self):
-        # Retrieve all object IDs.
-        ret = self.client.getAllObjectIDs()
-        if not ret.ok:
-            print('Could not query the object IDs -- Abort')
-            self.close()
-
         # Retrieve the state variables of all objects.
         self.oldSVs = self.newSVs
         with util.Timeit('viewer.getSV') as timeit:
-            ret = self.client.getStateVariables(ret.data)
+            ret = self.client.getAllStateVariables()
         if not ret.ok:
             print('Could not retrieve the state variables -- Abort')
             self.close()
