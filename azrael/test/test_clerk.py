@@ -279,6 +279,53 @@ def test_get_statevar():
     print('Test passed')
 
 
+def test_getAllStateVariables():
+    """
+    Test the 'getAllStateVariables' command in the Clerk.
+    """
+    killAzrael()
+
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
+    # Test parameters and constants.
+    objID_1 = 1
+    objID_2 = 2
+    sv_1 = bullet_data.BulletData(position=np.arange(3), velocityLin=[2, 4, 6])
+    sv_2 = bullet_data.BulletData(position=[2, 4, 6], velocityLin=[6, 8, 10])
+    templateID = '_templateNone'
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk()
+
+    # Retrieve all SV --> there must be none.
+    ret = clerk.getAllStateVariables()
+    assert (ret.ok, ret.data) == (True, {})
+
+    # Spawn a new object. It must have ID=1.
+    ret = clerk.spawn([(templateID, sv_1)])
+    assert (ret.ok, ret.data) == (True, (objID_1, ))
+
+    # Retrieve all SV --> there must be one.
+    leo.processCommandsAndSync()
+    ret = clerk.getAllStateVariables()
+    assert (ret.ok, len(ret.data)) == (True, 1)
+    assert isEqualBD(ret.data[objID_1], sv_1)
+
+    # Spawn a second object.
+    ret = clerk.spawn([(templateID, sv_2)])
+    assert (ret.ok, ret.data) == (True, (objID_2, ))
+
+    # Retrieve all SV --> there must now be two.
+    leo.processCommandsAndSync()
+    ret = clerk.getAllStateVariables()
+    assert (ret.ok, len(ret.data)) == (True, 2)
+    assert isEqualBD(ret.data[objID_1], sv_1)
+    assert isEqualBD(ret.data[objID_2], sv_2)
+
+    print('Test passed')
+
+
 def test_set_force():
     """
     Set and retrieve force and torque values.
@@ -1201,6 +1248,7 @@ def test_instanceDB_checksum():
 
 
 if __name__ == '__main__':
+    test_getAllStateVariables()
     test_add_get_template_single()
     test_add_get_template_multi()
     test_getGeometry()

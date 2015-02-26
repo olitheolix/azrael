@@ -887,7 +887,7 @@ class Clerk(multiprocessing.Process):
         docs = {_['objID']: _['lastChanged'] for _ in docs}
 
         # Overwrite the 'lastChanged' field in the State Variable with the
-        # curent value so that the user automatically gets the latest value.
+        # current value so that the user automatically gets the latest value.
         sv = ret.data
         out = {}
         for objID in objIDs:
@@ -1025,3 +1025,39 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, ret.data, None)
         else:
             return RetVal(True, None, ret.data)
+
+    @typecheck
+    def getAllStateVariables(self):
+        """
+        Return all State Variables in a dictionary.
+
+        The dictionary will have the objIDs and State Variables as keys and
+        values, respectively.
+
+        :return: {objID_1: SV_k, ...}
+        :rtype: dict
+        """
+        with util.Timeit('physAPI.getSV') as timeit:
+            # Get the State Variables.
+            ret = physAPI.getAllStateVariables()
+            if not ret.ok:
+                return ret
+        sv = ret.data
+
+        # Query the lastChanged values for all objects.
+        docs = database.dbHandles['ObjInstances'].find(
+            {'objID': {'$in': list(ret.data.keys())}},
+            {'lastChanged': 1, 'objID': 1})
+
+        # Convert the list of [{objID1: cs1}, {objID2: cs2}, ...] into
+        # a simple {objID1: cs1, objID2: cs2, ...} dictionary.
+        docs = {_['objID']: _['lastChanged'] for _ in docs}
+
+        # Overwrite the 'lastChanged' field in the State Variable. This ensures
+        # the user gets the most up-to-date value on when the object geometry
+        # last changed.
+        out = {}
+        for objID in sv:
+            if objID in docs:
+                out[objID] = sv[objID]._replace(lastChanged=docs[objID])
+        return RetVal(True, None, out)
