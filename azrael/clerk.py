@@ -652,11 +652,14 @@ class Clerk(multiprocessing.Process):
         data. The output of that method will then be returned verbatim by this
         method (see ``_unpackTemplateData`` for details on that output).
 
+        The return value has the following structure::
+
+          ret = {names[0]: {'cshape': X, 'vert': X, 'uv': X, 'rgb': X,
+                          'boosters': X, 'factories': X, 'aabb': X},
+                 names[1]: {}, }.
+
         :param list names: list of template names.
-        :return: {names[0]: {'cshape': *, 'vert': *, 'uv': *, 'rgb':*,
-                             'boosters': *, 'factories': *, 'aabb': *},
-                  names[1]: {*},
-                  ...}.
+        :return: template data
         :rtype: dict
         :raises: None
         """
@@ -758,7 +761,8 @@ class Clerk(multiprocessing.Process):
         Spawn all ``newObjects`` and return their object IDs in a tuple.
 
         The ``newObjects`` must have the following format:
-          newObjects = [(template_name_1, sv_1), (template_name_2, sv_2), ...]
+        newObjects = [(template_name_1, sv_1), (template_name_2, sv_2), ...]
+
         where ``template_name_k`` is a string and ``sv_k`` is a ``BulletData``
         instance.
 

@@ -265,12 +265,13 @@ class Client():
 
         The elements of the ``new_objects`` list must comprise the following
         parameters:
-            bytes templateID: template from which to spawn the object.
-            3-vec pos: object position
-            3-vec vel: initial velocity
-            4-vec orient: initial orientation
-            float scale: scale entire object by this factor.
-            float imass: (inverse) object mass.
+
+        * bytes templateID: template from which to spawn the object.
+        * 3-vec pos: object position
+        * 3-vec vel: initial velocity
+        * 4-vec orient: initial orientation
+        * float scale: scale entire object by this factor.
+        * float imass: (inverse) object mass.
 
         :param list new_objects: description of all objects to spawn.
         :return: object IDs
