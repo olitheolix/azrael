@@ -1,9 +1,19 @@
-# Clean Build: docker build --rm=true --no-cache=true -t="<user>/<name>:<tag>" .
-# Incremental Build: docker build -t="<user>/<name>:<tag>" .
-# Run interactive: docker run -p 8080:8080 -ti "<user>/<name>:<tag>"
-# Run standalone: docker run -d -v /var -v /demo -p 8080:8080 <user>/<name>:<tag> "./demo_forcegrid.py --noviewer --numcubes 4,4,1"
+# An all-in-one container for Azrael.
+# To start the demo:
+#
+#   >> docker run -d -p 8080:8080 \
+#             olitheolix/azrael:latest \
+#             "./demo_forcegrid.py --noviewer --numcubes 4,4,1"
+#
+# Since the container contains a full MongoDB installation, you may
+# want to export the Mongo data directory to a temporary directory or
+# otherwise your image will grow rapidly over time:
+#
+#   >> docker run -d -p 8080:8080 -v /tmp/azrael:/demo/mongodb \
+#             olitheolix/azrael:latest \
+#             "./demo_forcegrid.py --noviewer --numcubes 4,4,1"
 
-# Base image is Ubuntu 14.04
+# Ubuntu 14.04 base image.
 FROM ubuntu:14.04
 MAINTAINER Oliver Nagy <olitheolix@gmail.com>
 
@@ -32,7 +42,8 @@ RUN apt-get update && apt-get install -y \
     python3-tornado \
     python3-zmq
 
-# Install PIP packages for Azrael.
+# Install PIP packages, download and compile the Bullet-Python
+# bindings, and clean up to reduce the size of the container image.
 WORKDIR /tmp
 RUN apt-get install -y python3-pip && \
     pip3 install cytoolz setproctitle websocket-client==0.15 pymongo \
@@ -45,18 +56,14 @@ RUN apt-get install -y python3-pip && \
 # Clone Azrael from GitHub.
 RUN git clone https://github.com/olitheolix/azrael /demo/azrael
 
-# Expose the webserver and ZeroMQ port.
+# Expose the necessary Tornado and ZeroMQ ports.
 EXPOSE 8080 5555
 
-# Export the /demo folder (this is where MongoDB stores its files and
-# where Azrael puts its logs) to prevent Docker from tracking it via
-# its Union FS.
-VOLUME /demo
-
+# Home directory.
 WORKDIR /demo/azrael
 
-#ENTRYPOINT ["/usr/bin/python3", "entrypoint.py"]
-ENTRYPOINT ["/bin/bash"]
+ENTRYPOINT ["/usr/bin/python3", "entrypoint.py"]
+#ENTRYPOINT ["/bin/bash"]
 
 # Default command: start MongoDB and Azrael.
-CMD ["-h"]
+CMD ["./demo_forcegrid.py --noviewer --numcubes 4,4,1"]
