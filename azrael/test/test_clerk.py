@@ -1064,8 +1064,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     cmd_3 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
 
     # Send the commands and ascertain that the returned object IDs now exist in
-    # the simulation. These IDS must be '3' and '4', since ID 1 was already
-    # given to the client object.
+    # the simulation. These IDs must be '2' and '3'.
     ret = clerk.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
     assert ret.ok
     spawnIDs = ret.data
@@ -1249,7 +1248,98 @@ def test_instanceDB_checksum():
     print('Test passed')
 
 
+def test_updateBoosterValues():
+    """
+    Query and update the booster values in the instance data base.
+    The query includes computing the correct force in object coordinates.
+    """
+    killAzrael()
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk()
+
+    # ------------------------------------------------------------------------
+    # Create a template with two boosters and spawn it. The Boosters are
+    # to the left/right of the object and point both in the positive
+    # z-direction.
+    # ------------------------------------------------------------------------
+    # Convenience.
+    sv = bullet_data.BulletData()
+    cs = np.array([1, 2, 3, 4], np.float64)
+    uv = rgb = []
+    vert = [-4, 0, 0,
+            1, 2, 3,
+            4, 5, 6]
+
+    b0 = parts.Booster(partID=0, pos=[-1, 0, 0], direction=[0, 0, 1],
+                       minval=-1, maxval=1, force=0)
+    b1 = parts.Booster(partID=1, pos=[+1, 0, 0], direction=[0, 0, 1],
+                       minval=-1, maxval=1, force=0)
+
+    # Add the template to Azrael...
+    t1 = Template('t1', cs, vert, uv, rgb, [b0, b1], [])
+    assert clerk.addTemplates([t1]).ok
+    # ... and spawn two instances of it.
+    ret = clerk.spawn([(t1.name, sv)])
+    assert ret.ok
+    objID_1 = ret.data[0]
+    ret = clerk.spawn([(t1.name, sv)])
+    assert ret.ok
+    objID_2 = ret.data[0]
+
+    # ------------------------------------------------------------------------
+    # Update the Booster forces on the first object: both accelerate the object
+    # in z-direction, which means a force purely in z-direction and no torque.
+    # ------------------------------------------------------------------------
+    cmd_0 = parts.CmdBooster(partID=0, force=1)
+    cmd_1 = parts.CmdBooster(partID=1, force=1)
+    ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
+    assert ret.ok
+    assert ret.data == ([0, 0, 2], [0, 0, 0])
+
+    # ------------------------------------------------------------------------
+    # Update the Booster forces on the first object: accelerate the left one
+    # upwards and the right one downwards. This must result in a zero net force
+    # but non-zero torque.
+    # ------------------------------------------------------------------------
+    cmd_0 = parts.CmdBooster(partID=0, force=1)
+    cmd_1 = parts.CmdBooster(partID=1, force=-1)
+    ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
+    assert ret.ok
+    assert ret.data == ([0, 0, 0], [0, 2, 0])
+
+    # ------------------------------------------------------------------------
+    # Update the Booster forces on the second object to ensure the function
+    # correctly distinguishes between objects.
+    # ------------------------------------------------------------------------
+    # Turn off left Booster of first object (right booster is still active).
+    cmd_0 = parts.CmdBooster(partID=0, force=0)
+    ret = clerk.updateBoosterForces(objID_1, [cmd_0])
+    assert ret.ok
+    assert ret.data == ([0, 0, -1], [0, 1, 0])
+
+    # Turn on left Booster of the second object.
+    cmd_0 = parts.CmdBooster(partID=0, force=1)
+    ret = clerk.updateBoosterForces(objID_2, [cmd_0])
+    assert ret.ok
+    assert ret.data == ([0, 0, +1], [0, 1, 0])
+
+    # ------------------------------------------------------------------------
+    # Attempt to update a non-existing Booster or a non-existing object.
+    # ------------------------------------------------------------------------
+    cmd_0 = parts.CmdBooster(partID=10, force=1)
+    assert not clerk.updateBoosterForces(objID_2, [cmd_0]).ok
+
+    cmd_0 = parts.CmdBooster(partID=0, force=1)
+    assert not clerk.updateBoosterForces(1000, [cmd_0]).ok
+
+    # Kill all spawned Client processes.
+    killAzrael()
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_updateBoosterValues()
     test_getAllStateVariables()
     test_add_get_template_single()
     test_add_get_template_multi()

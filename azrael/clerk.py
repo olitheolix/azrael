@@ -480,6 +480,71 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, objIDs)
 
     @typecheck
+    def updateBoosterForces(self, objID: int, cmds: list):
+        """
+        Return forces and update the Booster values in the instance DB.
+
+        A typical return value looks like this::
+
+          {1: ([1, 0, 0], [0, 2, 0]), 2: ([1, 2, 3], [4, 5, 6]), ...}
+
+        :param int objID: object ID
+        :param list cmds: list of Booster commands.
+        :return: dictionary with objID as key and force/torque as values.
+        :rtype: dict
+        """
+        # Convenience.
+        db = database.dbHandles['ObjInstances']
+
+        # Put the new force values into a dictionary for convenience later on.
+        cmds = {_.partID: _.force_mag for _ in cmds}
+
+        # Query the instnace template for ``objID``. Return with an error if it
+        # does not exist.
+        query = {'objID': objID}
+        doc = db.find_one(query, {'boosters': 1})
+        if doc is None:
+            msg = 'Object <{}> does not exist'.format(objID)
+            return RetVal(False, msg, None)
+
+        # Put the Booster entries from the database into Booster tuples.
+        fun = parts.Booster
+        boosters = {k: fun(*v) for (k, v) in doc['boosters'].items()}
+        del fun
+
+        # Tally up the forces exerted by all Boosters on the object.
+        force, torque = np.zeros(3), np.zeros(3)
+        for partID in boosters:
+            # Update the Booster value if the user specified a new one.
+            # fixme: the integer conversion is necessary because the Mongo
+            # document structure for templates is currently a mess.
+            tmpID = int(partID)
+            if tmpID in cmds:
+                boosters[partID] = boosters[partID]._replace(force=cmds[tmpID])
+                del cmds[tmpID]
+
+            # Convenience.
+            booster = boosters[partID]
+            b_pos = np.array(booster.pos)
+            b_dir = np.array(booster.direction)
+
+            # Update the central force and torque.
+            force += booster.force * b_dir
+            torque += booster.force * np.cross(b_pos, b_dir)
+
+        # If we have not consumed all commands then at least one partID did not
+        # exist --> return with an error in that case.
+        if len(cmds) > 0:
+            return RetVal(False, 'Some Booster partIDs were invalid', None)
+
+        # Update the new Booster values in the instance DB.
+        db.update(query, {'$set': {'boosters': boosters}})
+
+        # Return the final force and torque as a tuple of tuples.
+        out = (force.tolist(), torque.tolist())
+        return RetVal(True, None, out)
+
+    @typecheck
     def _isGeometrySane(self, vert: list, uv: list, rgb: list):
         """
         Return *True* if the geometry is consistent.
