@@ -334,8 +334,17 @@ class LeonardBase(multiprocessing.Process):
                 sv_old = BulletData(*sv_old)
                 self.allObjects[objID] = fun(sv_old, sv_new)
 
-        # Update force- and torque values.
-        for doc in cmds['force']:
+        # Update direct force- and torque values.
+        for doc in cmds['direct_force']:
+            objID, force, torque = doc['objID'], doc['force'], doc['torque']
+            if (objID in self.allForces) and (objID in self.allTorques):
+                orient = self.allObjects[objID].orientation
+                quat = util.Quaternion(orient[3], orient[:3])
+                self.allForces[objID] = (quat * force).tolist()
+                self.allTorques[objID] = (quat * torque).tolist()
+
+        # Update booster force- and torque values.
+        for doc in cmds['booster_force']:
             objID, force, torque = doc['objID'], doc['force'], doc['torque']
             if (objID in self.allForces) and (objID in self.allTorques):
                 orient = self.allObjects[objID].orientation

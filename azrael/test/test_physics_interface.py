@@ -220,7 +220,8 @@ def test_commandQueue():
     assert ret.data['spawn'] == []
     assert ret.data['remove'] == []
     assert ret.data['modify'] == []
-    assert ret.data['force'] == []
+    assert ret.data['direct_force'] == []
+    assert ret.data['booster_force'] == []
 
     # Spawn two objects with id_0 and id_1.
     tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
@@ -233,7 +234,8 @@ def test_commandQueue():
     assert ret.data['spawn'][1]['objID'] == id_1
     assert ret.data['remove'] == []
     assert ret.data['modify'] == []
-    assert ret.data['force'] == []
+    assert ret.data['direct_force'] == []
+    assert ret.data['booster_force'] == []
 
     # De-queuing the commands once more must not return any results because
     # they have already been removed.
@@ -242,7 +244,8 @@ def test_commandQueue():
     assert ret.data['spawn'] == []
     assert ret.data['remove'] == []
     assert ret.data['modify'] == []
-    assert ret.data['force'] == []
+    assert ret.data['direct_force'] == []
+    assert ret.data['booster_force'] == []
 
     # Modify State Variable for id_0.
     newSV = BulletDataOverride(imass=10, position=[3, 4, 5])
@@ -254,14 +257,25 @@ def test_commandQueue():
     assert tuple(modify[0]['sv']) == tuple(newSV)
     del newSV
 
-    # Set the force and torque for id_1.
+    # Set the direct force and torque for id_1.
     force, torque = [1, 2, 3], [4, 5, 6]
-    assert physAPI.addCmdSetForceAndTorque(id_1, force, torque).ok
+    assert physAPI.addCmdDirectForce(id_1, force, torque).ok
     ret = physAPI.dequeueCommands()
-    fat = ret.data['force']
+    fat = ret.data['direct_force']
     assert ret.ok
     assert len(fat) == 1
     assert fat[0]['objID'] == id_1
+    assert fat[0]['force'] == force
+    assert fat[0]['torque'] == torque
+
+    # Set the booster force and torque for id_0.
+    force, torque = [1, 2, 3], [4, 5, 6]
+    assert physAPI.addCmdBoosterForce(id_0, force, torque).ok
+    ret = physAPI.dequeueCommands()
+    fat = ret.data['booster_force']
+    assert ret.ok
+    assert len(fat) == 1
+    assert fat[0]['objID'] == id_0
     assert fat[0]['force'] == force
     assert fat[0]['torque'] == torque
 
@@ -278,7 +292,8 @@ def test_commandQueue():
         assert physAPI.addCmdSpawn([(objID, data_0, aabb)]).ok
         assert physAPI.addCmdModifyStateVariable(objID, data_1).ok
         assert physAPI.addCmdRemoveObject(objID).ok
-        assert physAPI.addCmdSetForceAndTorque(objID, force, torque).ok
+        assert physAPI.addCmdDirectForce(objID, force, torque).ok
+        assert physAPI.addCmdBoosterForce(objID, force, torque).ok
 
     # De-queue all commands.
     ret = physAPI.dequeueCommands()
@@ -286,7 +301,8 @@ def test_commandQueue():
     assert len(ret.data['spawn']) == 2
     assert len(ret.data['remove']) == 2
     assert len(ret.data['modify']) == 2
-    assert len(ret.data['force']) == 2
+    assert len(ret.data['direct_force']) == 2
+    assert len(ret.data['booster_force']) == 2
 
     print('Test passed')
 
@@ -413,9 +429,20 @@ def test_get_set_forceandtorque():
     assert physAPI.addCmdSpawn(tmp).ok
     leo.processCommandsAndSync()
 
-    # Update the force and torque of the second object only.
+    # Update the direct force and torque of the second object only.
     force, torque = [1, 2, 3], [4, 5, 6]
-    assert physAPI.addCmdSetForceAndTorque(id_1, force, torque)
+    assert physAPI.addCmdDirectForce(id_1, force, torque)
+    leo.processCommandsAndSync()
+
+    # Only the force an torque of the second object must have changed.
+    assert np.array_equal(leo.allForces[id_0], [0, 0, 0])
+    assert np.array_equal(leo.allTorques[id_0], [0, 0, 0])
+    assert np.array_equal(leo.allForces[id_1], force)
+    assert np.array_equal(leo.allTorques[id_1], torque)
+
+    # Update the booster force and torque of the first object only.
+    force, torque = [1, 2, 3], [4, 5, 6]
+    assert physAPI.addCmdBoosterForce(id_1, force, torque)
     leo.processCommandsAndSync()
 
     # Only the force an torque of the second object must have changed.

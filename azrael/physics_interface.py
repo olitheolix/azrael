@@ -71,10 +71,12 @@ def dequeueCommands():
     spawn = [_ for _ in docs if _['cmd'] == 'spawn']
     remove = [_ for _ in docs if _['cmd'] == 'remove']
     modify = [_ for _ in docs if _['cmd'] == 'modify']
-    force = [_ for _ in docs if _['cmd'] == 'force']
+    direct_force = [_ for _ in docs if _['cmd'] == 'direct_force']
+    booster_force = [_ for _ in docs if _['cmd'] == 'booster_force']
 
     # Compile the output dictionary.
-    out = {'spawn': spawn, 'remove': remove, 'modify': modify, 'force': force}
+    out = {'spawn': spawn, 'remove': remove, 'modify': modify,
+           'direct_force': direct_force, 'booster_force': booster_force}
     return RetVal(True, None, out)
 
 
@@ -208,7 +210,7 @@ def addCmdModifyStateVariable(objID: int, data: BulletDataOverride):
 
 
 @typecheck
-def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
+def addCmdDirectForce(objID: int, force: list, torque: list):
     """
     Apply ``torque`` and central ``force`` to ``objID``.
 
@@ -230,7 +232,43 @@ def addCmdSetForceAndTorque(objID: int, force: list, torque: list):
 
     # Update the DB.
     db = database.dbHandles['Commands']
-    query = {'cmd': 'force', 'objID': objID}
+    query = {'cmd': 'direct_force', 'objID': objID}
+    data = {'force': force, 'torque': torque}
+    db.update(query, {'$setOnInsert': data}, upsert=True)
+
+    return RetVal(True, None, None)
+
+
+@typecheck
+def addCmdBoosterForce(objID: int, force: list, torque: list):
+    """
+    Orient ``torque`` and ``force`` according to the ``objID`` and then apply
+    them to the object.
+
+    The only difference between this command and ``addCmdDirectForce`` is that
+    the ``force`` and ``torque`` vector are specified in the object coordinate
+    system and Leonard will rotate them to world coordinates before actually
+    applying the force.
+
+    Leonard will process the queue (and thus this command) once per physics
+    cycle. However, it is impossible to determine when exactly.
+
+    :param int objID: the object
+    :param list force: apply this central ``force`` to ``objID``.
+    :param list torque: apply this ``torque`` to ``objID``.
+    :return bool: Success
+    """
+    # Sanity check.
+    if objID < 0:
+        msg = 'Object ID is negative'
+        logit.warning(msg)
+        return RetVal(False, msg, None)
+    if not (len(force) == len(torque) == 3):
+        return RetVal(False, 'force or torque has invalid length', None)
+
+    # Update the DB.
+    db = database.dbHandles['Commands']
+    query = {'cmd': 'booster_force', 'objID': objID}
     data = {'force': force, 'torque': torque}
     db.update(query, {'$setOnInsert': data}, upsert=True)
 
