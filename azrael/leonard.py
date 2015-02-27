@@ -338,8 +338,10 @@ class LeonardBase(multiprocessing.Process):
         for doc in cmds['force']:
             objID, force, torque = doc['objID'], doc['force'], doc['torque']
             if (objID in self.allForces) and (objID in self.allTorques):
-                self.allForces[objID] = force
-                self.allTorques[objID] = torque
+                orient = self.allObjects[objID].orientation
+                quat = util.Quaternion(orient[3], orient[:3])
+                self.allForces[objID] = (quat * force).tolist()
+                self.allTorques[objID] = (quat * torque).tolist()
 
         return RetVal(True, None, None)
 

@@ -416,30 +416,11 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
         del partIDs
 
-        # Tally up the central force and torque exerted by all boosters.
-        tot_torque = np.zeros(3, np.float64)
-        tot_force = np.zeros(3, np.float64)
-        for cmd in cmd_boosters:
-            # Template for this very factory.
-            this = booster_t[cmd.partID]
-
-            # Booster position after taking the parent's orientation into
-            # account. The position is relative to the parent, *not* an
-            # absolute position in world coordinates.
-            force_pos = quat * this.pos
-            force_dir = quat * this.direction
-
-            # Rotate the unit force vector into the orientation given by the
-            # Quaternion.
-            force = cmd.force_mag * force_dir
-
-            # Accumulate torque and central force.
-            tot_torque += np.cross(force_pos, force)
-            tot_force += force
-
-        # The physAPI expects Python types, not NumPy arrays.
-        tot_force = tot_force.tolist()
-        tot_torque = tot_torque.tolist()
+        ret = self.updateBoosterForces(objID, cmd_boosters)
+        if not ret.ok:
+            return ret
+        tot_force = ret.data[0]
+        tot_torque = ret.data[1]
 
         # Apply the net- force and torque. Skip this step if booster commands
         # were supplied.
