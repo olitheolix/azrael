@@ -47,6 +47,8 @@ RetVal = azrael.util.RetVal
 # Work package related.
 WPData = namedtuple('WPRecord', 'id sv force torque')
 WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
+Forces = namedtuple('Forces',
+                    'forceDirect forceBoost torqueDirect torqueBoost')
 
 # Convenience.
 BulletData = bullet_data.BulletData
@@ -195,10 +197,7 @@ class LeonardBase(multiprocessing.Process):
 
         self.allObjects = {}
         self.allAABBs = {}
-        self.directForces = {}
-        self.directTorques = {}
-        self.boosterForces = {}
-        self.boosterTorques = {}
+        self.allForces = {}
 
     def setup(self):
         """
@@ -255,20 +254,21 @@ class LeonardBase(multiprocessing.Process):
         """
         # Convenience.
         sv = self.allObjects[objID]
+        f = self.allForces[objID]
 
         # Construct the Quaternion of the object based on its orientation.
         quat = util.Quaternion(sv.orientation[3], sv.orientation[:3])
 
         # Fetch the force vector for the current object from the DB.
-        force = np.array(self.directForces[objID], np.float64)
-        torque = np.array(self.directTorques[objID], np.float64)
+        force = np.array(f.forceDirect, np.float64)
+        torque = np.array(f.torqueDirect, np.float64)
 
         # Add the booster's contribution to force and torque.
         # Note: We cannot do this directly since the booster force/torque were
         # specified in object coordinates. We thus rotate them to world
         # coordinates before adding them to the total force.
-        force += quat * self.boosterForces[objID]
-        torque += quat * self.boosterTorques[objID]
+        force += quat * f.forceBoost
+        torque += quat * f.torqueBoost
 
         # Convert to Python lists.
         return force.tolist(), torque.tolist()
@@ -342,10 +342,7 @@ class LeonardBase(multiprocessing.Process):
             if objID in self.allObjects:
                 self._DB_SV.remove({'objID': objID})
                 del self.allObjects[objID]
-                del self.directForces[objID]
-                del self.directTorques[objID]
-                del self.boosterForces[objID]
-                del self.boosterTorques[objID]
+                del self.allForces[objID]
                 del self.allAABBs[objID]
 
         # Spawn objects.
@@ -357,10 +354,7 @@ class LeonardBase(multiprocessing.Process):
             else:
                 sv_old = doc['sv']
                 self.allObjects[objID] = _BulletData(*sv_old)
-                self.directForces[objID] = [0, 0, 0]
-                self.directTorques[objID] = [0, 0, 0]
-                self.boosterForces[objID] = [0, 0, 0]
-                self.boosterTorques[objID] = [0, 0, 0]
+                self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
                 self.allAABBs[objID] = float(doc['AABB'])
 
         # Update State Vectors.
@@ -378,8 +372,8 @@ class LeonardBase(multiprocessing.Process):
         for doc in cmds['direct_force']:
             objID, force, torque = doc['objID'], doc['force'], doc['torque']
             try:
-                self.directForces[objID] = force
-                self.directTorques[objID] = torque
+                self.allForces[objID] = self.allForces[objID]._replace(
+                    forceDirect=force, torqueDirect=torque)
             except KeyError:
                 pass
 
@@ -387,8 +381,8 @@ class LeonardBase(multiprocessing.Process):
         for doc in cmds['booster_force']:
             objID, force, torque = doc['objID'], doc['force'], doc['torque']
             try:
-                self.boosterForces[objID] = force
-                self.boosterTorques[objID] = torque
+                self.allForces[objID] = self.allForces[objID]._replace(
+                    forceBoost=force, torqueBoost=torque)
             except KeyError:
                 pass
 
