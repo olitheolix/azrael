@@ -656,7 +656,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(True, None, None)
 
     @typecheck
-    def getRawTemplate(self, templateIDs: list):
+    def getTemplates(self, templateIDs: list):
         """
         Return the raw data for all ``templateIDs`` as a dictionary.
 
@@ -664,8 +664,14 @@ class Clerk(multiprocessing.Process):
         same template is specified multiple times in ``templateIDs`` then it
         will only return unique names.
 
-        For instance, ``getRawTemplate([name_1, name_2, name_1])`` is
-        tantamount to calling ``getRawTemplate([name_1, name_2])``.
+        For instance, ``getTemplates([name_1, name_2, name_1])`` is
+        tantamount to calling ``getTemplates([name_1, name_2])``.
+
+        The return value has the following structure::
+
+          ret = {names[0]: {'cshape': X, 'vert': X, 'uv': X, 'rgb': X,
+                          'boosters': X, 'factories': X, 'aabb': X},
+                 names[1]: {}, }.
 
         :param list(str) templateIDs: template IDs
         :return dict: raw template data (the templateID is the key).
@@ -693,47 +699,6 @@ class Clerk(multiprocessing.Process):
         for name in docs:
             del docs[name]['_id']
         return RetVal(True, None, docs)
-
-    @typecheck
-    def getTemplates(self, names: list):
-        """
-        Return the templates specified in ``names`` as a dictionary.
-
-        Templates describe the geometry, collision shape, and capabilities
-        (eg. boosters and factories) of an object.
-
-        Internally, this method calls ``_unpackTemplateData`` to unpack the
-        data. The output of that method will then be returned verbatim by this
-        method (see ``_unpackTemplateData`` for details on that output).
-
-        The return value has the following structure::
-
-          ret = {names[0]: {'cshape': X, 'vert': X, 'uv': X, 'rgb': X,
-                          'boosters': X, 'factories': X, 'aabb': X},
-                 names[1]: {}, }.
-
-        :param list names: list of template names.
-        :return: template data
-        :rtype: dict
-        :raises: None
-        """
-        # Retrieve the template. Return immediately if it does not exist.
-        ret = self.getRawTemplate(names)
-        if not ret.ok:
-            self.logit.info(ret.msg)
-            return ret
-
-        def unpack(doc):
-            """
-            Convenience function to add the geometry data to the template data.
-            """
-            doc['cshape'] = doc['cshape']
-            return doc
-
-        # Unpack the raw templates and insert them into a dictionary where the
-        # template names correspond to its keys.
-        out = {k: unpack(v) for (k, v) in ret.data.items()}
-        return RetVal(True, None, out)
 
     @typecheck
     def getObjectInstance(self, objID: int):
@@ -804,9 +769,9 @@ class Clerk(multiprocessing.Process):
         names = [_[0] for _ in newObjects]
         SVs = [_[1] for _ in newObjects]
 
-        with util.Timeit('spawn:1 getRawTemplate') as timeit:
+        with util.Timeit('spawn:1 getTemplates') as timeit:
             # Fetch the raw templates for all ``names``.
-            ret = self.getRawTemplate(names)
+            ret = self.getTemplates(names)
             if not ret.ok:
                 self.logit.info(ret.msg)
                 return ret
