@@ -48,15 +48,16 @@ class WSClient(azrael.client.Client):
 
     To use this class a ``Clacks`` instance must be running.
 
-    :param str url: address of ``Clacks`` (eg 'ws://127.0.0.1:8080/websocket')
+    :param str ip: IP of ``Clacks`` (eg '127.0.0.1')
+    :param int port: port of ``Clacks`` (eg '8080')
     :param float timeout: Websocket timeout.
     """
     @typecheck
-    def __init__(self, url: str, timeout: (int, float)=20):
+    def __init__(self, ip: str, port: int, timeout: (int, float)=20):
         super().__init__()
 
         # URL of Clacks server.
-        self.url = url
+        self.url = 'ws://{ip}:{port}/websocket'.format(ip=ip, port=port)
 
         # Websocket handle (will be initialised below).
         self.ws = None
@@ -64,7 +65,7 @@ class WSClient(azrael.client.Client):
         # Make several attempts to establish the connection before giving up.
         for ii in range(5):
             try:
-                self.ws = websocket.create_connection(url, timeout)
+                self.ws = websocket.create_connection(self.url, timeout)
                 break
             except ConnectionRefusedError as err:
                 if ii >= 3:

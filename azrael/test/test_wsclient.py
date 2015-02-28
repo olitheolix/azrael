@@ -57,10 +57,10 @@ def test_custom_objid():
     clacks = azrael.clacks.ClacksServer()
     clacks.start()
 
-    address = 'ws://127.0.0.1:8080/websocket'
+    ip, port = '127.0.0.1', 8080
 
     # Instantiate a WSClient without specifiying an object ID.
-    client_0 = azrael.wsclient.WSClient(address)
+    client_0 = azrael.wsclient.WSClient(ip, port)
 
     # Ping Clerk to verify the connection is live.
     ret = client_0.ping()
@@ -68,7 +68,7 @@ def test_custom_objid():
 
     # Instantiate another WSClient. This time specify an ID. Note: the ID
     # need not exist albeit object specific commands will subsequently fail.
-    client_1 = azrael.wsclient.WSClient(address)
+    client_1 = azrael.wsclient.WSClient(ip, port)
 
     # Ping Clerk again to verify the connection is live.
     ret = client_1.ping()
