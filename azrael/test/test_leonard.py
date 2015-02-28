@@ -743,7 +743,71 @@ def test_processCommandQueue():
     print('Test passed')
 
 
+def test_maintain_forces():
+    """
+    Leonard must not reset any forces from one iteration to the next (used to
+    be the case at some point and thus requires a dedicated test now).
+    """
+    killAzrael()
+
+    # Get a Leonard instance.
+    leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
+
+    # Convenience.
+    sv = bullet_data.BulletData(imass=1)
+    objID, aabb = 1, 1
+
+    # Spawn two objects.
+    assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+    leo.processCommandsAndSync()
+
+    # Initial force and torque must be zero.
+    assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
+
+    # Change the direct force and verify that Leonard does not reset it.
+    assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
+    for ii in range(10):
+        leo.processCommandsAndSync()
+        assert leo.directForces[objID] == [1, 2, 3]
+        assert leo.directTorques[objID] == [4, 5, 6]
+        assert leo.boosterForces[objID] == [0, 0, 0]
+        assert leo.boosterTorques[objID] == [0, 0, 0]
+
+    # Change the booster force and verify that Leonard does not change
+    # it (or the direct force specified earlier)
+    assert physAPI.addCmdBoosterForce(objID, [-1, -2, -3], [-4, -5, -6]).ok
+    for ii in range(10):
+        leo.processCommandsAndSync()
+        assert leo.directForces[objID] == [1, 2, 3]
+        assert leo.directTorques[objID] == [4, 5, 6]
+        assert leo.boosterForces[objID] == [-1, -2, -3]
+        assert leo.boosterTorques[objID] == [-4, -5, -6]
+
+    # Change the direct forces again.
+    assert physAPI.addCmdDirectForce(objID, [3, 2, 1], [6, 5, 4]).ok
+    for ii in range(10):
+        leo.processCommandsAndSync()
+        assert leo.directForces[objID] == [3, 2, 1]
+        assert leo.directTorques[objID] == [6, 5, 4]
+        assert leo.boosterForces[objID] == [-1, -2, -3]
+        assert leo.boosterTorques[objID] == [-4, -5, -6]
+
+    # Change the booster forces again.
+    assert physAPI.addCmdBoosterForce(objID, [-3, -2, -1], [-6, -5, -4]).ok
+    for ii in range(10):
+        leo.processCommandsAndSync()
+        assert leo.directForces[objID] == [3, 2, 1]
+        assert leo.directTorques[objID] == [6, 5, 4]
+        assert leo.boosterForces[objID] == [-3, -2, -1]
+        assert leo.boosterTorques[objID] == [-6, -5, -4]
+
+    # Cleanup.
+    killAzrael()
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_maintain_forces()
     test_processCommandQueue()
     test_createWorkPackages()
     test_updateLocalCache()
