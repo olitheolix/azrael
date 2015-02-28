@@ -237,7 +237,9 @@ class LeonardBase(multiprocessing.Process):
         gridForces = {objID: val for objID, val in zip(objIDs, ret.data)}
         return RetVal(True, None, gridForces)
 
-    def totalForceAndTorque(self, objID, sv):
+    def totalForceAndTorque(self, objID):
+        sv = self.allObjects[objID]
+        
         # Fetch the force vector for the current object from the DB.
         force = np.array(self.directForces[objID], np.float64)
         torque = np.array(self.directTorques[objID], np.float64)
@@ -277,7 +279,7 @@ class LeonardBase(multiprocessing.Process):
         # Iterate over all objects and update their SV information in Bullet.
         for objID, sv in self.allObjects.items():
             # Compute direct- and booster forces on object.
-            force, torque = self.totalForceAndTorque(objID, sv)
+            force, torque = self.totalForceAndTorque(objID)
 
             # Add the force defined on the 'force' grid.
             force += gridForces[objID]
@@ -485,7 +487,7 @@ class LeonardBullet(LeonardBase):
             self.bullet.setObjectData(objID, sv)
 
             # Compute direct- and booster forces on object.
-            force, torque = self.totalForceAndTorque(objID, sv)
+            force, torque = self.totalForceAndTorque(objID)
 
             # Add the force defined on the 'force' grid.
             force += gridForces[objID]
@@ -571,7 +573,7 @@ class LeonardSweeping(LeonardBullet):
                 self.bullet.setObjectData(objID, sv)
 
                 # Compute direct- and booster forces on object.
-                force, torque = self.totalForceAndTorque(objID, sv)
+                force, torque = self.totalForceAndTorque(objID)
 
                 # Add the force defined on the 'force' grid.
                 force += gridForces[objID]
@@ -771,7 +773,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
             wpdata = []
             for objID in objIDs:
                 sv = self.allObjects[objID]
-                force, torque = self.totalForceAndTorque(objID, sv)
+                force, torque = self.totalForceAndTorque(objID)
                 wpdata.append((objID, sv, force, torque))
         except KeyError as err:
             return RetVal(False, 'Cannot form WP', None)

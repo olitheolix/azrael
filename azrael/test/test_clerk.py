@@ -353,7 +353,7 @@ def test_set_force():
     assert clerk.setForce(id_1, force, relpos).ok
 
     leo.processCommandsAndSync()
-    tmp = leo.totalForceAndTorque(id_1, leo.allObjects[id_1])
+    tmp = leo.totalForceAndTorque(id_1)
     assert np.array_equal(tmp[0], force)
     assert np.array_equal(tmp[1], np.cross(relpos, force))
 
@@ -771,7 +771,7 @@ def test_controlParts_Boosters_notmoving():
     tot_torque = np.cross(pos_0, forcevec_0) + np.cross(pos_1, forcevec_1)
 
     # Query the torque and force from Azrael and verify they are correct.
-    tmp = leo.totalForceAndTorque(objID_1, leo.allObjects[objID_1])
+    tmp = leo.totalForceAndTorque(objID_1)
     assert np.array_equal(tmp[0], tot_force)
     assert np.array_equal(tmp[1], tot_torque)
 
@@ -785,7 +785,7 @@ def test_controlParts_Boosters_notmoving():
     leo.processCommandsAndSync()
 
     # Query the torque and force from Azrael and verify they are correct.
-    tmp = leo.totalForceAndTorque(objID_1, leo.allObjects[objID_1])
+    tmp = leo.totalForceAndTorque(objID_1)
     assert np.array_equal(tmp[0], tot_force)
     assert np.array_equal(tmp[1], tot_torque)
 
@@ -1094,7 +1094,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    tmp = leo.totalForceAndTorque(objID_1, leo.allObjects[objID_1])
+    tmp = leo.totalForceAndTorque(objID_1)
     assert np.array_equal(tmp[0], tot_force)
     assert np.array_equal(tmp[1], tot_torque)
 
