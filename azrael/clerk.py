@@ -622,8 +622,9 @@ class Clerk(multiprocessing.Process):
                 # Compile the geometry data dictionary the and the file name
                 # where it will be stored.
                 geo = {'vertices': vertices, 'uv': tt.uv, 'rgb': tt.rgb}
-                fname = os.path.join(config.dir_template, tt.name + '_geo')
-                data['file_geo'] = fname
+                base_name = tt.name + '_geo'
+                data['file_geo'] = os.path.join(config.dir_template, base_name)
+                data['url_geo'] = '/templates/' + base_name
 
                 # Abort if the template already exists.
                 # Note: the following condition can fall prey to the race

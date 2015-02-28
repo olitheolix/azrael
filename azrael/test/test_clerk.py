@@ -23,8 +23,11 @@ offers and test purely the Clerk.
 
 import sys
 import json
+import pickle
 import pytest
 import IPython
+import urllib.request
+
 import numpy as np
 
 import azrael.util
@@ -428,9 +431,6 @@ def test_add_get_template_single():
     ret = clerk.getTemplates([t2.name])
     assert ret.ok
     assert np.array_equal(ret.data[t2.name]['cshape'], cs)
-    assert np.array_equal(ret.data[t2.name]['vert'], vert)
-    assert np.array_equal(ret.data[t2.name]['uv'], uv)
-    assert np.array_equal(ret.data[t2.name]['rgb'], rgb)
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
@@ -454,9 +454,6 @@ def test_add_get_template_single():
     ret = clerk.getTemplates([t3.name])
     assert ret.ok
     assert np.array_equal(ret.data[t3.name]['cshape'], cs)
-    assert np.array_equal(ret.data[t3.name]['vert'], vert)
-    assert np.array_equal(ret.data[t3.name]['uv'], uv)
-    assert np.array_equal(ret.data[t3.name]['rgb'], rgb)
 
     # The template must also feature two boosters and one factory.
     assert len(ret.data[t3.name]['boosters']) == 2
@@ -472,22 +469,22 @@ def test_add_get_template_single():
     assert f0 in out_factories
 
     # Request the same templates multiple times in a single call. This must
-    # not return an error, but it must return a dictionary with only as many
-    # keys as their are unique template IDs.
+    # return a dictionary with as many keys as there are unique template IDs.
     ret = clerk.getTemplates([t3.name, t3.name, t3.name])
     assert ret.ok and (len(ret.data) == 1) and (t3.name in ret.data)
 
     print('Test passed')
 
 
-def test_add_get_template_multi():
+def test_add_get_template_multi_url():
     """
-    Add templates in bulk.
+    Add templates in bulk. Also verify that the geometries are availabe
+    via an URL.
     """
     killAzrael()
 
-    # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk()
+    # Start the necessary services and instantiate a Client.
+    clerk, client, clacks = startAzrael('Websocket')
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -506,20 +503,40 @@ def test_add_get_template_multi():
     # Attempt to add another template with the same name. This must fail.
     assert not clerk.addTemplates([t1, t2]).ok
 
-    # Fetch the just added template again and verify CS, vertices, UV, and RGB.
+    # Fetch the just added template again and verify the CS.
     ret = clerk.getTemplates([name1])
     assert ret.ok and (len(ret.data) == 1)
     assert np.array_equal(ret.data[name1]['cshape'], t1.cs)
-    assert np.array_equal(ret.data[name1]['vert'], t1.vert)
-    assert np.array_equal(ret.data[name1]['uv'], t1.uv)
-    assert np.array_equal(ret.data[name1]['rgb'], t1.rgb)
 
+    # Fetch the geometry from the Web server and verify it is correct.
+    base_url = 'http://localhost:8080'
+    url = base_url + ret.data[name1]['url_geo']
+    tmp = pickle.loads(urllib.request.urlopen(url).readall())
+    assert np.array_equal(tmp['vertices'], t1.vert)
+    assert np.array_equal(tmp['uv'], t1.uv)
+    assert np.array_equal(tmp['rgb'], t1.rgb)
+
+    # Fetch the second template.
     ret = clerk.getTemplates([name2])
     assert ret.ok and (len(ret.data) == 1)
     assert np.array_equal(ret.data[name2]['cshape'], t2.cs)
-    assert np.array_equal(ret.data[name2]['vert'], t2.vert)
-    assert np.array_equal(ret.data[name2]['uv'], t2.uv)
-    assert np.array_equal(ret.data[name2]['rgb'], t2.rgb)
+
+    # Fetch the geometry from the Web server and verify it is correct.
+    base_url = 'http://localhost:8080'
+    url = base_url + ret.data[name2]['url_geo']
+    tmp = pickle.loads(urllib.request.urlopen(url).readall())
+    assert np.array_equal(tmp['vertices'], t2.vert)
+    assert np.array_equal(tmp['uv'], t2.uv)
+    assert np.array_equal(tmp['rgb'], t2.rgb)
+
+    # Fetch both templates at once.
+    ret = clerk.getTemplates([name1, name2])
+    assert ret.ok and (len(ret.data) == 2)
+    assert np.array_equal(ret.data[name1]['cshape'], t1.cs)
+    assert np.array_equal(ret.data[name2]['cshape'], t2.cs)
+
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
 
     print('Test passed')
 
@@ -1346,7 +1363,7 @@ if __name__ == '__main__':
     test_updateBoosterValues()
     test_getAllStateVariables()
     test_add_get_template_single()
-    test_add_get_template_multi()
+    test_add_get_template_multi_url()
     test_getGeometry()
     test_instanceDB_checksum()
     test_add_get_template_AABB()
