@@ -167,6 +167,19 @@ class ServeViewer(tornado.web.RequestHandler):
         self.redirect("/static/webviewer.html", permanent=True)
 
 
+class MyStaticFileHandler(tornado.web.StaticFileHandler):
+    """
+    A static file handler that tells the client to never cache anything.
+
+    For more information see
+    http://stackoverflow.com/questions/12031007/\
+    disable-static-file-caching-in-tornado
+    """
+    def set_extra_headers(self, path):
+        self.set_header('Cache-Control',
+                        'no-store, no-cache, must-revalidate, max-age=0')
+
+
 class ClacksServer(multiprocessing.Process):
     """
     Tornado server that constitutes Clacks.
@@ -197,18 +210,18 @@ class ClacksServer(multiprocessing.Process):
         handlers.append(('/', ServeViewer))
 
         # Static HTML files.
-        FileHandler = tornado.web.StaticFileHandler
+        FH = MyStaticFileHandler
         base = os.path.dirname(__file__)
         dirname = os.path.join(base, 'static')
-        handlers.append(('/static/(.*)', FileHandler, {'path': dirname}))
+        handlers.append(('/static/(.*)', FH, {'path': dirname}))
 
         # Template geometries.
         handlers.append(
-            ('/templates/(.*)', FileHandler, {'path': config.dir_template}))
+            ('/templates/(.*)', FH, {'path': config.dir_template}))
 
         # Instance geometries.
         handlers.append(
-            ('/instances/(.*)', FileHandler, {'path': config.dir_instance}))
+            ('/instances/(.*)', FH, {'path': config.dir_instance}))
 
         # Websocket to Clacks.
         handlers.append(('/websocket', WebsocketHandler))
