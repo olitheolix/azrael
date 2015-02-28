@@ -546,8 +546,9 @@ def test_controlParts(client_type):
                   np.cross(pos_1_out, forcevec_1))
 
     # Query the torque and force from Azrael and verify they are correct.
-    assert np.array_equal(leo.allForces[id_1], tot_force)
-    assert np.array_equal(leo.allTorques[id_1], tot_torque)
+    leo_force, leo_torque = leo.totalForceAndTorque(id_1)
+    assert np.array_equal(leo_force, tot_force)
+    assert np.array_equal(leo_torque, tot_torque)
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
