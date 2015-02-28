@@ -353,12 +353,11 @@ class Clerk(multiprocessing.Process):
             self.logit.warning(ret.msg)
             return RetVal(False, ret.msg, None)
 
-        # Extract the Boosters and Factories of the object.
-        funb = parts.Booster
-        funf = parts.Factory
-        boosters = [funb(*_) for _ in ret.data['boosters']]
-        factories = [funf(*_) for _ in ret.data['factories']]
-        del ret, funb, funf
+        # Compile a list of all parts defined in the template.
+        booster_t = [parts.Booster(*_) for _ in ret.data['boosters']]
+        booster_t = {_.partID: _ for _ in booster_t}
+        factory_t = [parts.Factory(*_) for _ in ret.data['factories']]
+        factory_t = {_.partID: _ for _ in factory_t}
 
         # Fetch the SV for objID (we need this to determine the orientation of
         # the base object to which the parts are attached).
@@ -373,10 +372,6 @@ class Clerk(multiprocessing.Process):
         parent_orient = sv_parent.orientation
         quat = util.Quaternion(parent_orient[3], parent_orient[:3])
 
-        # Compile a list of all parts defined in the template.
-        booster_t = dict(zip([int(_.partID) for _ in boosters], boosters))
-        factory_t = dict(zip([int(_.partID) for _ in factories], factories))
-
         # Verify that all Booster commands have the correct type and specify
         # a valid Booster ID.
         for cmd in cmd_boosters:
@@ -389,6 +384,7 @@ class Clerk(multiprocessing.Process):
                 msg = msg.format(objID, cmd.partID)
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
+        del booster_t
 
         # Verify that all Factory commands have the correct type and specify
         # a valid Factory ID.
@@ -486,23 +482,19 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # Put the Booster entries from the database into Booster tuples.
-        fun = parts.Booster
-        boosters = {k: fun(*v) for (k, v) in doc['boosters'].items()}
-        del fun
+        boosters = [parts.Booster(*_) for _ in doc['boosters']]
+        boosters = {_.partID: _ for _ in boosters}
 
         # Tally up the forces exerted by all Boosters on the object.
         force, torque = np.zeros(3), np.zeros(3)
-        for partID in boosters:
+        for partID, booster in boosters.items():
             # Update the Booster value if the user specified a new one.
-            # fixme: the integer conversion is necessary because the Mongo
-            # document structure for templates is currently a mess.
-            tmpID = int(partID)
-            if tmpID in cmds:
-                boosters[partID] = boosters[partID]._replace(force=cmds[tmpID])
-                del cmds[tmpID]
+            if partID in cmds:
+                boosters[partID] = booster._replace(force=cmds[partID])
+                booster = boosters[partID]
+                del cmds[partID]
 
             # Convenience.
-            booster = boosters[partID]
             b_pos = np.array(booster.pos)
             b_dir = np.array(booster.direction)
 
@@ -515,7 +507,10 @@ class Clerk(multiprocessing.Process):
         if len(cmds) > 0:
             return RetVal(False, 'Some Booster partIDs were invalid', None)
 
-        # Update the new Booster values in the instance DB.
+        # Update the new Booster values in the instance DB. To this end convert
+        # the dictionary back to a list because Mongo does not like it if
+        # dictionary keys are integers.
+        boosters = list(boosters.values())
         db.update(query, {'$set': {'boosters': boosters}})
 
         # Return the final force and torque as a tuple of tuples.
@@ -579,8 +574,11 @@ class Clerk(multiprocessing.Process):
             if len(tmp) > 0:
                 return RetVal(False, 'Invalid arguments', None)
 
+            # The templates will be inserted in bulk for efficiency reasons.
             db = database.dbHandles['Templates']
             bulk = db.initialize_unordered_bulk_op()
+
+            # Add each template to the bulk operation.
             for tt in templates:
                 assert isinstance(tt.name, str)
                 vertices = tt.vert
@@ -613,25 +611,18 @@ class Clerk(multiprocessing.Process):
                     len_z = max(vertices[2::3]) - min(vertices[2::3])
                     aabb = np.sqrt(3.1) * max(len_x, len_y, len_z)
 
-                # Compile the Mongo document for the new template. This
-                # document contains the collision shape and geometry...
+                # Compile the Mongo document for the new template.
                 data = {'cshape': tt.cs.tostring(),
                         'AABB': float(aabb),
-                        'boosters': {},
-                        'factories': {}}
+                        'boosters': tt.boosters,
+                        'factories': tt.factories}
                 geo = {'vertices': vertices,
                        'UV': tt.uv,
                        'RGB': tt.rgb}
-
-                # ... as well as booster- and factory parts.
-                for b in tt.boosters:
-                    data['boosters']['{0:03d}'.format(b.partID)] = b
-                for f in tt.factories:
-                    data['factories']['{0:03d}'.format(f.partID)] = f
+                data['geo'] = pickle.dumps(geo)
 
                 # Add the template to the database.
                 query = {'templateID': tt.name}
-                data['geo'] = pickle.dumps(geo)
                 bulk.find(query).upsert().update({'$setOnInsert': data})
 
         with util.Timeit('clerk.addTemplates_db') as timeit:
@@ -778,23 +769,9 @@ class Clerk(multiprocessing.Process):
         rgb = geo['RGB']
         aabb = float(doc['AABB'])
 
-        # Extract the booster parts.
-        if 'boosters' in doc:
-            boosters = list(doc['boosters'].values())
-        else:
-            # Object has no boosters.
-            boosters = []
-
-        # Extract the factory parts.
-        if 'factories' in doc:
-            fac = list(doc['factories'].values())
-        else:
-            # Object has no factories.
-            fac = []
-
         ret = {'cshape': cs, 'vert': vert, 'uv': uv,
-               'rgb': rgb, 'boosters': boosters, 'factories': fac,
-               'aabb': aabb}
+               'rgb': rgb, 'boosters': doc['boosters'],
+               'factories': doc['factories'], 'aabb': aabb}
         return RetVal(True, None, ret)
 
     @typecheck
