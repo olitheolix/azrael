@@ -596,7 +596,7 @@ def test_createWorkPackages():
     # Invalid call: list of IDs must not be empty.
     assert not leo.createWorkPackage([], dt, maxsteps).ok
 
-    # Invalid call: Leonard has not object with ID 10.
+    # Invalid call: Leonard has no object with ID 10.
     assert not leo.createWorkPackage([10], dt, maxsteps).ok
 
     # Test data.
@@ -675,8 +675,9 @@ def test_updateLocalCache():
 
 def test_processCommandQueue():
     """
-    Create commands to spawn-, delete, and modify objects, and verify that
-    ``processCommandQueue`` updates the object cache in Leonard accordingly.
+    Create commands to spawn-, delete, and modify objects or their booster
+    values. Then verify that ``processCommandQueue`` corrently updates
+    Leonard's object cache.
     """
     killAzrael()
 
@@ -689,8 +690,9 @@ def test_processCommandQueue():
     id_1, id_2, aabb = 1, 2, 1
 
     # Cache must be empty.
-    assert len(leo.allObjects) == len(leo.allForces) == 0
-    assert len(leo.allTorques) == 0
+    assert len(leo.allObjects) == 0
+    assert len(leo.directTorques) == len(leo.directForces) == 0
+    assert len(leo.boosterTorques) == len(leo.boosterForces) == 0
 
     # Spawn two objects.
     tmp = [(id_1, sv_1, aabb), (id_2, sv_2, aabb)]
@@ -700,15 +702,19 @@ def test_processCommandQueue():
     # Verify the local cache (forces and torques must default to zero).
     assert isEqualBD(leo.allObjects[id_1], sv_1)
     assert isEqualBD(leo.allObjects[id_2], sv_2)
-    assert leo.allForces[id_1] == leo.allTorques[id_1] == [0, 0, 0]
-    assert leo.allForces[id_2] == leo.allTorques[id_2] == [0, 0, 0]
+    assert leo.directForces[id_1] == leo.directTorques[id_1] == [0, 0, 0]
+    assert leo.directForces[id_2] == leo.directTorques[id_2] == [0, 0, 0]
+    assert leo.boosterForces[id_1] == leo.boosterTorques[id_1] == [0, 0, 0]
+    assert leo.boosterForces[id_2] == leo.boosterTorques[id_2] == [0, 0, 0]
 
     # Remove first object.
     assert physAPI.addCmdRemoveObject(id_1).ok
     leo.processCommandsAndSync()
-    assert id_1 not in leo.allForces
-    assert id_1 not in leo.allTorques
     assert id_1 not in leo.allObjects
+    assert id_1 not in leo.directForces
+    assert id_1 not in leo.directTorques
+    assert id_1 not in leo.boosterForces
+    assert id_1 not in leo.boosterTorques
 
     # Change the State Vector of id_2.
     pos = [10, 11.5, 12]
@@ -718,12 +724,19 @@ def test_processCommandQueue():
     leo.processCommandsAndSync()
     assert leo.allObjects[id_2].position == pos
 
-    # Apply a force and torque to id_2.
+    # Apply a direct force and torque to id_2.
     force, torque = [1, 2, 3], [4, 5, 6]
-    assert physAPI.addCmdSetForceAndTorque(id_2, force, torque).ok
+    assert physAPI.addCmdDirectForce(id_2, force, torque).ok
     leo.processCommandsAndSync()
-    assert leo.allForces[id_2] == force
-    assert leo.allTorques[id_2] == torque
+    assert leo.directForces[id_2] == force
+    assert leo.directTorques[id_2] == torque
+
+    # Specify a new force- and torque value due to booster activity.
+    force, torque = [1, 2, 3], [4, 5, 6]
+    assert physAPI.addCmdBoosterForce(id_2, force, torque).ok
+    leo.processCommandsAndSync()
+    assert leo.boosterForces[id_2] == force
+    assert leo.boosterTorques[id_2] == torque
 
     # Cleanup.
     killAzrael()

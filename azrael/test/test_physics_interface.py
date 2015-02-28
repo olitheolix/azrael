@@ -435,21 +435,22 @@ def test_get_set_forceandtorque():
     leo.processCommandsAndSync()
 
     # Only the force an torque of the second object must have changed.
-    assert np.array_equal(leo.allForces[id_0], [0, 0, 0])
-    assert np.array_equal(leo.allTorques[id_0], [0, 0, 0])
-    assert np.array_equal(leo.allForces[id_1], force)
-    assert np.array_equal(leo.allTorques[id_1], torque)
+    assert np.array_equal(leo.directForces[id_0], [0, 0, 0])
+    assert np.array_equal(leo.directTorques[id_0], [0, 0, 0])
+    assert np.array_equal(leo.directForces[id_1], force)
+    assert np.array_equal(leo.directTorques[id_1], torque)
 
     # Update the booster force and torque of the first object only.
     force, torque = [1, 2, 3], [4, 5, 6]
     assert physAPI.addCmdBoosterForce(id_1, force, torque)
     leo.processCommandsAndSync()
 
-    # Only the force an torque of the second object must have changed.
-    assert np.array_equal(leo.allForces[id_0], [0, 0, 0])
-    assert np.array_equal(leo.allTorques[id_0], [0, 0, 0])
-    assert np.array_equal(leo.allForces[id_1], force)
-    assert np.array_equal(leo.allTorques[id_1], torque)
+    # Only the booster- force an torque of the second object must have
+    # changed.
+    assert np.array_equal(leo.boosterForces[id_0], [0, 0, 0])
+    assert np.array_equal(leo.boosterTorques[id_0], [0, 0, 0])
+    assert np.array_equal(leo.boosterForces[id_1], force)
+    assert np.array_equal(leo.boosterTorques[id_1], torque)
 
     print('Test passed')
 

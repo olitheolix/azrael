@@ -195,8 +195,10 @@ class LeonardBase(multiprocessing.Process):
 
         self.allObjects = {}
         self.allAABBs = {}
-        self.allForces = {}
-        self.allTorques = {}
+        self.directForces = {}
+        self.directTorques = {}
+        self.boosterForces = {}
+        self.boosterTorques = {}
 
     def setup(self):
         """
@@ -235,6 +237,18 @@ class LeonardBase(multiprocessing.Process):
         gridForces = {objID: val for objID, val in zip(objIDs, ret.data)}
         return RetVal(True, None, gridForces)
 
+    def totalForceAndTorque(self, objID, sv):
+        # Fetch the force vector for the current object from the DB.
+        force = np.array(self.directForces[objID], np.float64)
+        torque = np.array(self.directTorques[objID], np.float64)
+
+        # Add the forces and torques added by the bootster.
+        quat = util.Quaternion(sv.orientation[3], sv.orientation[:3])
+        force += quat * self.boosterForces[objID]
+        torque += quat * self.boosterTorques[objID]
+
+        return force.tolist(), torque.tolist()
+
     @typecheck
     def step(self, dt: (int, float), maxsteps: int):
         """
@@ -262,8 +276,8 @@ class LeonardBase(multiprocessing.Process):
 
         # Iterate over all objects and update their SV information in Bullet.
         for objID, sv in self.allObjects.items():
-            # Fetch the force vector for the current object from the DB.
-            force = np.array(self.allForces[objID], np.float64)
+            # Compute direct- and booster forces on object.
+            force, torque = self.totalForceAndTorque(objID, sv)
 
             # Add the force defined on the 'force' grid.
             force += gridForces[objID]
@@ -274,8 +288,6 @@ class LeonardBase(multiprocessing.Process):
             sv.velocityLin[:] = vel.tolist()
             sv.position[:] = (pos + dt * vel).tolist()
 
-            self.allForces[objID] = [0, 0, 0]
-            self.allTorques[objID] = [0, 0, 0]
             self.allObjects[objID] = sv
 
         # Synchronise the local object cache back to the database.
@@ -306,8 +318,10 @@ class LeonardBase(multiprocessing.Process):
             if objID in self.allObjects:
                 self._DB_SV.remove({'objID': objID})
                 del self.allObjects[objID]
-                del self.allForces[objID]
-                del self.allTorques[objID]
+                del self.directForces[objID]
+                del self.directTorques[objID]
+                del self.boosterForces[objID]
+                del self.boosterTorques[objID]
                 del self.allAABBs[objID]
 
         # Spawn objects.
@@ -319,8 +333,10 @@ class LeonardBase(multiprocessing.Process):
             else:
                 sv_old = doc['sv']
                 self.allObjects[objID] = _BulletData(*sv_old)
-                self.allForces[objID] = [0, 0, 0]
-                self.allTorques[objID] = [0, 0, 0]
+                self.directForces[objID] = [0, 0, 0]
+                self.directTorques[objID] = [0, 0, 0]
+                self.boosterForces[objID] = [0, 0, 0]
+                self.boosterTorques[objID] = [0, 0, 0]
                 self.allAABBs[objID] = float(doc['AABB'])
 
         # Update State Vectors.
@@ -337,20 +353,16 @@ class LeonardBase(multiprocessing.Process):
         # Update direct force- and torque values.
         for doc in cmds['direct_force']:
             objID, force, torque = doc['objID'], doc['force'], doc['torque']
-            if (objID in self.allForces) and (objID in self.allTorques):
-                orient = self.allObjects[objID].orientation
-                quat = util.Quaternion(orient[3], orient[:3])
-                self.allForces[objID] = (quat * force).tolist()
-                self.allTorques[objID] = (quat * torque).tolist()
+            if (objID in self.directForces) and (objID in self.directTorques):
+                self.directForces[objID] = force
+                self.directTorques[objID] = torque
 
         # Update booster force- and torque values.
         for doc in cmds['booster_force']:
             objID, force, torque = doc['objID'], doc['force'], doc['torque']
-            if (objID in self.allForces) and (objID in self.allTorques):
-                orient = self.allObjects[objID].orientation
-                quat = util.Quaternion(orient[3], orient[:3])
-                self.allForces[objID] = (quat * force).tolist()
-                self.allTorques[objID] = (quat * torque).tolist()
+            if (objID in self.boosterForces) and (objID in self.boosterTorques):
+                self.boosterForces[objID] = force
+                self.boosterTorques[objID] = torque
 
         return RetVal(True, None, None)
 
@@ -472,8 +484,8 @@ class LeonardBullet(LeonardBase):
             # Pass the SV data from the DB to Bullet.
             self.bullet.setObjectData(objID, sv)
 
-            # Convenience.
-            force, torque = self.allForces[objID], self.allTorques[objID]
+            # Compute direct- and booster forces on object.
+            force, torque = self.totalForceAndTorque(objID, sv)
 
             # Add the force defined on the 'force' grid.
             force += gridForces[objID]
@@ -558,8 +570,8 @@ class LeonardSweeping(LeonardBullet):
                 # Pass the SV data from the DB to Bullet.
                 self.bullet.setObjectData(objID, sv)
 
-                # Convenience.
-                force, torque = self.allForces[objID], self.allTorques[objID]
+                # Compute direct- and booster forces on object.
+                force, torque = self.totalForceAndTorque(objID, sv)
 
                 # Add the force defined on the 'force' grid.
                 force += gridForces[objID]
@@ -651,10 +663,10 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Compute the collision sets.
         with util.Timeit('Leonard:1.2  CCS') as timeit:
             collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
-        if not collSets.ok:
-            self.logit.error('ComputeCollisionSetsAABB returned an error')
-            sys.exit(1)
-        collSets = collSets.data
+            if not collSets.ok:
+                self.logit.error('ComputeCollisionSetsAABB returned an error')
+                sys.exit(1)
+            collSets = collSets.data
 
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
@@ -674,10 +686,10 @@ class LeonardDistributedZeroMQ(LeonardBase):
             wpIdx = 0
             worklist = list(all_WPs.keys())
             while True:
-                # Wait for a message from a Worker. This message usually
-                # contains a processed Work Package. However, it may also be
-                # empty, most likely because the Worker has not received a Work
-                # Package from us yet.
+                # Wait until Worker contacts us. The message usually contains a
+                # processed Work Package. However, it may also be empty, most
+                # likely because the Worker has not received a Work Package
+                # from us yet.
                 msg = self.sock.recv()
                 if msg != b'':
                     # Unpickle the message.
@@ -756,9 +768,11 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Compile the State Vectors and forces for all objects into a list of
         # ``WPData`` named tuples.
         try:
-            wpdata = [(objID, self.allObjects[objID],
-                       self.allForces[objID], self.allTorques[objID])
-                      for objID in objIDs]
+            wpdata = []
+            for objID in objIDs:
+                sv = self.allObjects[objID]
+                force, torque = self.totalForceAndTorque(objID, sv)
+                wpdata.append((objID, sv, force, torque))
         except KeyError as err:
             return RetVal(False, 'Cannot form WP', None)
 
