@@ -146,15 +146,15 @@ class Clerk(multiprocessing.Process):
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
         t1 = Template('_templateNone',
-                      np.array([0, 1, 1, 1], np.float64),
+                      [0, 1, 1, 1],
                       [], [], [],
                       [], [])
         t2 = Template('_templateSphere',
-                      np.array([3, 1, 1, 1], np.float64),
+                      [3, 1, 1, 1],
                       [], [], [],
                       [], [])
         t3 = Template('_templateCube',
-                      np.array([4, 1, 1, 1], np.float64),
+                      [4, 1, 1, 1],
                       [], [], [],
                       [], [])
         self.addTemplates([t1, t2, t3])
@@ -614,7 +614,7 @@ class Clerk(multiprocessing.Process):
                 # Compile the Mongo document for the new template.
                 data = {
                     'name': tt.name,
-                    'cshape': tt.cs.tostring(),
+                    'cshape': tt.cs,
                     'aabb': float(aabb),
                     'boosters': tt.boosters,
                     'factories': tt.factories}
@@ -727,7 +727,7 @@ class Clerk(multiprocessing.Process):
             """
             Convenience function to add the geometry data to the template data.
             """
-            doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
+            doc['cshape'] = doc['cshape']
             return doc
 
         # Unpack the raw templates and insert them into a dictionary where the
@@ -763,7 +763,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # Load geometry data and add it to template.
-        doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
+        doc['cshape'] = doc['cshape']
         return RetVal(True, None, doc)
 
     @typecheck
@@ -857,7 +857,7 @@ class Clerk(multiprocessing.Process):
                 # things may happen (eg a space-ship collision shape in the
                 # template database with a simple sphere collision shape when
                 # it is spawned).
-                sv.cshape[:] = np.fromstring(t['cshape']).tolist()
+                sv.cshape[:] = t['cshape']
 
                 # Add the object description to the list.
                 objs.append((objID, sv, t['aabb']))

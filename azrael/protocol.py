@@ -125,7 +125,7 @@ def FromClerk_GetTemplates_Encode(templates):
     out = {}
     for name, data in templates.items():
         # The cshape is still a NumPy array --> convert it to a list.
-        data['cshape'] = data['cshape'].tolist()
+        data['cshape'] = data['cshape']
         out[name] = data
     return True, out
 
@@ -153,7 +153,7 @@ def ToClerk_AddTemplates_Encode(templates: list):
     with azrael.util.Timeit('clerk.encode') as timeit:
         for tt in templates:
             name, cs, vert, UV, RGB, boosters, factories = tt
-            d = {'name': name, 'cs': cs.tolist(), 'vert': vert.tolist(),
+            d = {'name': name, 'cs': cs, 'vert': vert.tolist(),
                  'UV': UV.tolist(), 'RGB': RGB.tolist(),
                  'boosters': boosters,
                  'factories': factories}
@@ -176,7 +176,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
 
             # Convert collision shape and geometry to NumPy array (via byte
             # string).
-            cs = np.array(data['cs'], np.float64)
+            cs = data['cs']
             vert = data['vert']
             UV = data['UV']
             RGB = data['RGB']

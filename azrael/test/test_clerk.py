@@ -402,7 +402,7 @@ def test_add_get_template_single():
     assert np.array_equal(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
 
     # Convenience.
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
@@ -487,7 +487,7 @@ def test_add_get_template_multi_url():
     clerk, client, clacks = startAzrael('Websocket')
 
     # Convenience.
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
@@ -551,7 +551,7 @@ def test_add_get_template_AABB():
     clerk = azrael.clerk.Clerk()
 
     # Convenience.
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     uv = rgb = []
 
     # Manually specify the vertices.
@@ -688,7 +688,7 @@ def test_controlParts_invalid_commands():
         templateID='_templateCube', exit_speed=[0, 1])
 
     # Add the template to Azrael...
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
@@ -744,7 +744,7 @@ def test_controlParts_Boosters_notmoving():
     # ------------------------------------------------------------------------
 
     # Constants for the new template object.
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
@@ -834,7 +834,7 @@ def test_controlParts_Factories_notmoving():
     # ------------------------------------------------------------------------
 
     # Constants for the new template object.
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
@@ -914,7 +914,7 @@ def test_controlParts_Factories_moving():
     objID_1 = 1
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
@@ -1009,7 +1009,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     objID_1, objID_2, objID_3 = 1, 2, 3
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
@@ -1174,7 +1174,7 @@ def test_getGeometry():
     clerk = azrael.clerk.Clerk()
 
     # Convenience.
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
@@ -1225,7 +1225,7 @@ def test_instanceDB_checksum():
     leo = getLeonard()
 
     # Convenience.
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = list(range(9))
     uv = [9, 10]
     rgb = [1, 2, 250]
@@ -1286,7 +1286,7 @@ def test_updateBoosterValues():
     # ------------------------------------------------------------------------
     # Convenience.
     sv = bullet_data.BulletData()
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     uv = rgb = []
     vert = [-4, 0, 0,
             1, 2, 3,

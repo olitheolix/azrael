@@ -422,23 +422,23 @@ class Client():
 
         The ``templates`` variables is a list of tuples/lists. Each entry in
         this list must contain:
-        * ``bytes`` templateID: the name of the new template.
-        * ``bytes`` cs: collision shape
-        * ``bytes`` vert: object geometry
-        * ``bytes`` UV: UV map for textures
-        * ``bytes`` RGB: texture
+        * ``str`` name: the name of the new template.
+        * ``list`` cs: collision shape
+        * ``ndarray`` vert: object geometry
+        * ``ndarray`` UV: UV map for textures
+        * ``ndarray`` RGB: texture
         * ``parts.Booster`` boosters: list of Booster instances.
         * ``parts.Factory`` boosters: list of Factory instances.
 
         :return: Success
         """
         try:
-            for tt in templates:
+            for idx, tt in enumerate(templates):
                 assert len(tt) == 7
                 name, cs, vert, UV, RGB, boosters, factories = tt
 
                 assert isinstance(name, str)
-                assert isinstance(cs, np.ndarray)
+                assert isinstance(cs, (list, np.ndarray))
                 assert isinstance(vert, np.ndarray)
                 assert isinstance(UV, np.ndarray)
                 assert isinstance(RGB, np.ndarray)
@@ -449,6 +449,14 @@ class Client():
                     assert isinstance(b, parts.Booster)
                 for f in factories:
                     assert isinstance(f, parts.Factory)
+
+                # Ensure the collision shape is a list.
+                cs = np.array(cs, np.float64).tolist()
+
+                # Replace the original entry with a new one where CS is
+                # definitively a list.
+                tmp = name, cs, vert, UV, RGB, boosters, factories
+                templates[idx] = tmp
         except AssertionError as err:
             return RetVal(False, 'Data type error', None)
         return self.serialiseAndSend('add_templates', templates)

@@ -41,7 +41,7 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     killAzrael()
 
     # Test parameters and constants.
-    cs = np.array([1, 2, 3, 4], np.float64)
+    cs = [1, 2, 3, 4]
     vert = [5, 6, 7, 8]
     uv = [9, 10]
     rgb = [1, 2, 250]
