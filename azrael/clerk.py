@@ -728,7 +728,6 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # Load geometry data and add it to template.
-        doc['cshape'] = doc['cshape']
         return RetVal(True, None, doc)
 
     @typecheck
