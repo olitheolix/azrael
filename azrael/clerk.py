@@ -618,23 +618,26 @@ class Clerk(multiprocessing.Process):
                     'aabb': float(aabb),
                     'boosters': tt.boosters,
                     'factories': tt.factories}
-                geo = {'vertices': vertices,
-                       'uv': tt.uv,
-                       'rgb': tt.rgb}
-                data['geo'] = os.path.join(config.dir_template, tt.name + '_geo')
+
+                # Compile the geometry data dictionary the and the file name
+                # where it will be stored.
+                geo = {'vertices': vertices, 'uv': tt.uv, 'rgb': tt.rgb}
+                fname = os.path.join(config.dir_template, tt.name + '_geo')
+                data['file_geo'] = fname
 
                 # Abort if the template already exists.
                 # Note: the following condition can fall prey to the race
                 # condition where a file is created after checking but before
                 # the pickling starts. For templates this is relatively
                 # harmless and therefore ignored here.
-                if os.path.exists(data['geo']):
+                if os.path.exists(data['file_geo']):
                     # A template with name ``templateID`` already existed -->
                     # failure.
                     msg = 'Template <{}> already exists'.format(data['name'])
                     return RetVal(False, msg, None)
-                else:
-                    pickle.dump(geo, open(data['geo'], 'wb'))
+
+                # Save the geometry data.
+                pickle.dump(geo, open(data['file_geo'], 'wb'))
 
                 # Add the template to the database.
                 query = {'templateID': tt.name}
@@ -719,24 +722,20 @@ class Clerk(multiprocessing.Process):
             self.logit.info(ret.msg)
             return ret
 
-        # Convenience: fixme
-        def fun(doc):
-            # fixme
-            geo = pickle.load(open(doc['geo'], 'rb'))
-
-            # Extract the collision shape, geometry, UV- and texture map.
-            cs = np.fromstring(doc['cshape'], np.float64)
-
-            del doc['cshape'], doc['geo']
+        def unpack(doc):
+            """
+            Convenience function to add the geometry data to the template data.
+            """
+            geo = pickle.load(open(doc['file_geo'], 'rb'))
             doc['vert'] = geo['vertices']
             doc['uv'] = geo['uv']
             doc['rgb'] = geo['rgb']
-            doc['cshape'] = cs
+            doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
             return doc
 
         # Unpack the raw templates and insert them into a dictionary where the
         # template names correspond to its keys.
-        out = {k: fun(v) for (k, v) in ret.data.items()}
+        out = {k: unpack(v) for (k, v) in ret.data.items()}
         return RetVal(True, None, out)
 
     @typecheck
@@ -766,16 +765,12 @@ class Clerk(multiprocessing.Process):
             self.logit.info(msg)
             return RetVal(False, msg, None)
 
-        # fixme
-        geo = pickle.load(open(doc['geo'], 'rb'))
-        # Extract the collision shape, geometry, UV- and texture map.
-        cs = np.fromstring(doc['cshape'], np.float64)
-
-        del doc['cshape'], doc['geo']
+        # Load geometry data and add it to template.
+        geo = pickle.load(open(doc['file_geo'], 'rb'))
         doc['vert'] = geo['vertices']
         doc['uv'] = geo['uv']
         doc['rgb'] = geo['rgb']
-        doc['cshape'] = cs
+        doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
         return RetVal(True, None, doc)
 
     @typecheck
@@ -841,11 +836,15 @@ class Clerk(multiprocessing.Process):
                 tmp['objID'] = objIDs[idx]
                 tmp['lastChanged'] = 0
                 tmp['templateID'] = name
-                # fixme
-                geodata = open(tmp['geo'], 'rb').read()
-                tmp['geo'] = os.path.join(config.dir_instance,
+
+                # Copy the geometry from the template- to the instance
+                # directory and update the 'file_geo' field to point to it.
+                geodata = open(tmp['file_geo'], 'rb').read()
+                tmp['file_geo'] = os.path.join(config.dir_instance,
                                           str(tmp['objID']) + '_geo')
-                open(tmp['geo'], 'wb').write(geodata)
+                open(tmp['file_geo'], 'wb').write(geodata)
+
+                # Add the new template document.
                 dbDocs.append(tmp)
 
             # Insert all objects into the State Variable DB. Note: this does
@@ -957,12 +956,9 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
-            # fixme
-            geo = pickle.load(open(doc['geo'], 'rb'))
-            vert = geo['vertices']
-            uv = geo['uv']
-            rgb = geo['rgb']
-            return RetVal(True, None, {'vert': vert, 'uv': uv, 'rgb': rgb})
+            geo = pickle.load(open(doc['file_geo'], 'rb'))
+            ret = {'vert': geo['vertices'], 'uv': geo['uv'], 'rgb': geo['rgb']}
+            return RetVal(True, None, ret)
 
     @typecheck
     def setGeometry(self, objID: int, vert: list, uv: list, rgb: list):
@@ -977,21 +973,27 @@ class Clerk(multiprocessing.Process):
         :param list RGB: list of RGB values for every UV pair.
         :return: Success
         """
-        # fixme
+        # Fetch the instance data for ``objID`` to find out where the current
+        # geometry is stored.
         db = database.dbHandles['ObjInstances']
         doc = db.find_one({'objID': objID})
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
+        # Sanity check for geometry.
         if not self._isGeometrySane(vert, uv, rgb):
             msg = 'Invalid geometry for objID <{}>'.format(objID)
             return RetVal(False, msg, None)
 
+        # Overwrite the geometry file with the new one.
         geo = {'vertices': vert, 'uv': uv, 'rgb': rgb}
+        pickle.dump(geo, open(doc['file_geo'], 'wb'))
 
-        pickle.dump(geo, open(doc['geo'], 'wb'))
+        # Update the 'lastChanged' flag. Any clients will automatically receive
+        # this flag whenever they query the state variables.
         ret = db.update({'objID': objID}, {'$inc': {'lastChanged': 1}})
 
+        # Verify the update worked.
         if ret['n'] == 1:
             return RetVal(True, None, None)
         else:
