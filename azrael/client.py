@@ -55,8 +55,7 @@ class Client():
     :raises: None
     """
     @typecheck
-    def __init__(self, addr_clerk: str=config.addr_clerk,
-                       port_clerk: int=config.port_clerk):
+    def __init__(self, ip: str=config.addr_clerk, port: int=config.port_clerk):
         super().__init__()
 
         # Create a Class-specific logger.
@@ -67,7 +66,7 @@ class Client():
         self.ctx = zmq.Context()
         self.sock_cmd = self.ctx.socket(zmq.REQ)
         self.sock_cmd.linger = 0
-        self.sock_cmd.connect('tcp://{}:{}'.format(addr_clerk, port_clerk))
+        self.sock_cmd.connect('tcp://{}:{}'.format(ip, port))
 
         # Associate the encoding and decoding functions for every command.
         self.codec = {
