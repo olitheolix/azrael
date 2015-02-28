@@ -615,7 +615,7 @@ class Clerk(multiprocessing.Process):
                 data = {
                     'name': tt.name,
                     'cshape': tt.cs.tostring(),
-                    'AABB': float(aabb),
+                    'aabb': float(aabb),
                     'boosters': tt.boosters,
                     'factories': tt.factories}
                 geo = {'vertices': vertices,
@@ -709,19 +709,18 @@ class Clerk(multiprocessing.Process):
 
         # Convenience: fixme
         def fun(doc):
+            # fixme
             fname = os.path.join(config.dir_template, doc['name'])
             geo = pickle.loads(doc['geo'])
-
             # Extract the collision shape, geometry, UV- and texture map.
             cs = np.fromstring(doc['cshape'], np.float64)
-            vert = geo['vertices']
-            uv = geo['uv']
-            rgb = geo['rgb']
-            aabb = float(doc['AABB'])
 
-            return {'cshape': cs, 'vert': vert, 'uv': uv,
-                   'rgb': rgb, 'boosters': doc['boosters'],
-                   'factories': doc['factories'], 'aabb': aabb}
+            del doc['cshape'], doc['geo']
+            doc['vert'] = geo['vertices']
+            doc['uv'] = geo['uv']
+            doc['rgb'] = geo['rgb']
+            doc['cshape'] = cs
+            return doc
 
         # Unpack the raw templates and insert them into a dictionary where the
         # template names correspond to its keys.
@@ -758,18 +757,15 @@ class Clerk(multiprocessing.Process):
         # fixme
         fname = os.path.join(config.dir_template, doc['name'])
         geo = pickle.loads(doc['geo'])
-
         # Extract the collision shape, geometry, UV- and texture map.
         cs = np.fromstring(doc['cshape'], np.float64)
-        vert = geo['vertices']
-        uv = geo['uv']
-        rgb = geo['rgb']
-        aabb = float(doc['AABB'])
 
-        ret = {'cshape': cs, 'vert': vert, 'uv': uv,
-               'rgb': rgb, 'boosters': doc['boosters'],
-               'factories': doc['factories'], 'aabb': aabb}
-        return RetVal(True, None, ret)
+        del doc['cshape'], doc['geo']
+        doc['vert'] = geo['vertices']
+        doc['uv'] = geo['uv']
+        doc['rgb'] = geo['rgb']
+        doc['cshape'] = cs
+        return RetVal(True, None, doc)
 
     @typecheck
     def spawn(self, newObjects: (tuple, list)):
@@ -856,7 +852,7 @@ class Clerk(multiprocessing.Process):
                 sv.cshape[:] = np.fromstring(t['cshape']).tolist()
 
                 # Add the object description to the list.
-                objs.append((objID, sv, t['AABB']))
+                objs.append((objID, sv, t['aabb']))
 
             # Queue the spawn commands so that Leonard can pick them up.
             ret = physAPI.addCmdSpawn(objs)
