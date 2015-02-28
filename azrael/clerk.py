@@ -727,9 +727,6 @@ class Clerk(multiprocessing.Process):
             """
             Convenience function to add the geometry data to the template data.
             """
-            tmp = pickle.load(open(doc['file_geo'], 'rb'))
-            for attr in ('vert', 'uv', 'rgb'):
-                doc[attr] = tmp[attr]
             doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
             return doc
 
@@ -766,9 +763,6 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # Load geometry data and add it to template.
-        tmp = pickle.load(open(doc['file_geo'], 'rb'))
-        for attr in ('vert', 'uv', 'rgb'):
-            doc[attr] = tmp[attr]
         doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
         return RetVal(True, None, doc)
 

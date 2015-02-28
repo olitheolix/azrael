@@ -73,9 +73,8 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Clerk --> Client.
     # ----------------------------------------------------------------------
     # Encode source data.
-    data = {'cshape': cs, 'vert': vert, 'uv': uv, 'rgb': rgb,
-            'boosters': [b0, b1], 'factories': [f0], 'aabb': aabb,
-            'url_geo': 'http://somewhere'}
+    data = {'cshape': cs, 'boosters': [b0, b1], 'factories': [f0],
+            'aabb': aabb, 'url_geo': 'http://somewhere'}
     templates = {template_name: data}
     ok, enc = protocol.FromClerk_GetTemplates_Encode(templates)
 
@@ -89,9 +88,6 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     assert dec.ok
     dec = dec.data[template_name]
     assert np.array_equal(dec.cs, cs)
-    assert np.array_equal(dec.vert, vert)
-    assert np.array_equal(dec.uv, uv)
-    assert np.array_equal(dec.rgb, rgb)
     assert len(dec.boosters) == 2
     assert len(dec.factories) == 1
 

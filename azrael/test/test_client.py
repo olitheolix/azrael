@@ -361,9 +361,6 @@ def test_create_fetch_template(client_type):
     assert ret.ok and (len(ret.data) == 1)
     data = ret.data[t1.name]
     assert np.array_equal(data.cs, cs)
-    assert np.array_equal(data.vert, vert)
-    assert np.array_equal(data.uv, uv)
-    assert np.array_equal(data.rgb, rgb)
     assert len(data.boosters) == len(data.factories) == 0
 
     # Fetch the geometry from the Web server and verify it is correct.
@@ -409,21 +406,26 @@ def test_create_fetch_template(client_type):
     # Retrieve the entire template and verify the CS and geometry.
     ret = client.getTemplates([t1.name])
     assert ret.ok and (len(ret.data) == 1)
-    ret = ret.data[t1.name]
-    assert np.array_equal(ret.cs, cs)
-    assert np.array_equal(ret.vert, vert)
-    assert np.array_equal(ret.uv, uv)
-    assert np.array_equal(ret.rgb, rgb)
+    data = ret.data[t1.name]
+    assert np.array_equal(data.cs, cs)
+
+    # Fetch the geometry from the Web server and verify it is correct.
+    ret = client.getTemplateGeometry(ret.data[t1.name].url_geo)
+    assert ret.ok
+    assert np.array_equal(ret.data['vert'], vert)
+    assert np.array_equal(ret.data['uv'], uv)
+    assert np.array_equal(ret.data['rgb'], rgb)
+
 
     # The template must also feature two boosters and one factory.
-    assert len(ret.boosters) == 2
-    assert len(ret.factories) == 1
+    assert len(data.boosters) == 2
+    assert len(data.factories) == 1
 
     # Explicitly verify the booster- and factory units. The easiest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
-    out_boosters = [parts.Booster(*_) for _ in ret.boosters]
-    out_factories = [parts.Factory(*_) for _ in ret.factories]
+    out_boosters = [parts.Booster(*_) for _ in data.boosters]
+    out_factories = [parts.Factory(*_) for _ in data.factories]
     assert b0 in out_boosters
     assert b1 in out_boosters
     assert f0 in out_factories
