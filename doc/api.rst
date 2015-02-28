@@ -83,14 +83,6 @@ azrael.protocol module
     :undoc-members:
     :show-inheritance:
 
-azrael.protocol_json module
----------------------------
-
-.. automodule:: azrael.protocol_json
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 azrael.util module
 ------------------
 
