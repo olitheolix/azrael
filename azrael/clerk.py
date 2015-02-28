@@ -589,7 +589,7 @@ class Clerk(multiprocessing.Process):
                     assert isinstance(tt.uv, list)
                     assert isinstance(tt.rgb, list)
                 except AssertionError:
-                    msg = 'addTemplates Parameters must be lists'
+                    msg = 'Parameters for addTemplates must be lists'
                     return RetVal(False, msg, None)
 
                 if not self._isGeometrySane(vertices, tt.uv, tt.rgb):
@@ -621,8 +621,20 @@ class Clerk(multiprocessing.Process):
                 geo = {'vertices': vertices,
                        'uv': tt.uv,
                        'rgb': tt.rgb}
-                fname = os.path.join(config.dir_template, tt.name)
-                data['geo'] = pickle.dumps(geo)
+                data['geo'] = os.path.join(config.dir_template, tt.name + '_geo')
+
+                # Abort if the template already exists.
+                # Note: the following condition can fall prey to the race
+                # condition where a file is created after checking but before
+                # the pickling starts. For templates this is relatively
+                # harmless and therefore ignored here.
+                if os.path.exists(data['geo']):
+                    # A template with name ``templateID`` already existed -->
+                    # failure.
+                    msg = 'Template <{}> already exists'.format(data['name'])
+                    return RetVal(False, msg, None)
+                else:
+                    pickle.dump(geo, open(data['geo'], 'wb'))
 
                 # Add the template to the database.
                 query = {'templateID': tt.name}
@@ -710,8 +722,8 @@ class Clerk(multiprocessing.Process):
         # Convenience: fixme
         def fun(doc):
             # fixme
-            fname = os.path.join(config.dir_template, doc['name'])
-            geo = pickle.loads(doc['geo'])
+            geo = pickle.load(open(doc['geo'], 'rb'))
+
             # Extract the collision shape, geometry, UV- and texture map.
             cs = np.fromstring(doc['cshape'], np.float64)
 
@@ -755,8 +767,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # fixme
-        fname = os.path.join(config.dir_template, doc['name'])
-        geo = pickle.loads(doc['geo'])
+        geo = pickle.load(open(doc['geo'], 'rb'))
         # Extract the collision shape, geometry, UV- and texture map.
         cs = np.fromstring(doc['cshape'], np.float64)
 
@@ -830,10 +841,15 @@ class Clerk(multiprocessing.Process):
                 tmp['objID'] = objIDs[idx]
                 tmp['lastChanged'] = 0
                 tmp['templateID'] = name
+                # fixme
+                geodata = open(tmp['geo'], 'rb').read()
+                tmp['geo'] = os.path.join(config.dir_instance,
+                                          str(tmp['objID']) + '_geo')
+                open(tmp['geo'], 'wb').write(geodata)
                 dbDocs.append(tmp)
 
             # Insert all objects into the State Variable DB. Note: this does
-            # not make Leonard aware of their existend (see next step).
+            # not make Leonard aware of their existence (see next step).
             database.dbHandles['ObjInstances'].insert(dbDocs)
 
         with util.Timeit('spawn:3 addCmds') as timeit:
@@ -941,8 +957,8 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
-            fname = os.path.join(config.dir_instance, doc['name'])
-            geo = pickle.loads(doc['geo'])
+            # fixme
+            geo = pickle.load(open(doc['geo'], 'rb'))
             vert = geo['vertices']
             uv = geo['uv']
             rgb = geo['rgb']
@@ -961,17 +977,20 @@ class Clerk(multiprocessing.Process):
         :param list RGB: list of RGB values for every UV pair.
         :return: Success
         """
+        # fixme
+        db = database.dbHandles['ObjInstances']
+        doc = db.find_one({'objID': objID})
+        if doc is None:
+            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
+
         if not self._isGeometrySane(vert, uv, rgb):
             msg = 'Invalid geometry for objID <{}>'.format(objID)
             return RetVal(False, msg, None)
 
         geo = {'vertices': vert, 'uv': uv, 'rgb': rgb}
 
-        #fname = os.path.join(config.dir_instance, doc['name'])
-        ret = database.dbHandles['ObjInstances'].update(
-            {'objID': objID},
-            {'$set': {'geo': pickle.dumps(geo)},
-             '$inc': {'lastChanged': 1}})
+        pickle.dump(geo, open(doc['geo'], 'wb'))
+        ret = db.update({'objID': objID}, {'$inc': {'lastChanged': 1}})
 
         if ret['n'] == 1:
             return RetVal(True, None, None)
