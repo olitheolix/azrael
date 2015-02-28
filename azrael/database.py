@@ -18,11 +18,14 @@
 """
 Database abstractions.
 """
+import os
+import shutil
 import pymongo
 import IPython
 import logging
 
 import azrael.util
+import azrael.config as config
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
@@ -30,7 +33,7 @@ RetVal = azrael.util.RetVal
 
 # Global database handles.
 dbHandles = {}
-
+logit = logging.getLogger('azrael.' + __name__)
 
 @typecheck
 def init(reset=False):
@@ -44,6 +47,13 @@ def init(reset=False):
     dbName = 'azrael'
     if reset:
         client.drop_database(dbName)
+        logit.info('Deleting data directory <{}>'.format(config.dir_data))
+        try:
+            shutil.rmtree(config.dir_data)
+        except FileNotFoundError:
+            pass
+        os.makedirs(config.dir_template, exist_ok=True)
+        os.makedirs(config.dir_instance, exist_ok=True)
 
     dbHandles['SV'] = client[dbName]['sv']
     dbHandles['Commands'] = client[dbName]['Cmd']
