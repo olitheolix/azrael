@@ -377,16 +377,20 @@ class LeonardBase(multiprocessing.Process):
         # Update direct force- and torque values.
         for doc in cmds['direct_force']:
             objID, force, torque = doc['objID'], doc['force'], doc['torque']
-            if (objID in self.directForces) and (objID in self.directTorques):
+            try:
                 self.directForces[objID] = force
                 self.directTorques[objID] = torque
+            except KeyError:
+                pass
 
         # Update booster force- and torque values.
         for doc in cmds['booster_force']:
             objID, force, torque = doc['objID'], doc['force'], doc['torque']
-            if (objID in self.boosterForces) and (objID in self.boosterTorques):
+            try:
                 self.boosterForces[objID] = force
                 self.boosterTorques[objID] = torque
+            except KeyError:
+                pass
 
         return RetVal(True, None, None)
 
