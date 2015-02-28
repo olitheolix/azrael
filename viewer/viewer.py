@@ -271,7 +271,7 @@ class Camera:
 
 
 class ViewerWidget(QtOpenGL.QGLWidget):
-    def __init__(self, addr, port, parent=None):
+    def __init__(self, ip: str, port: int, parent=None):
         super().__init__(parent)
 
         # Camera instance.
@@ -281,8 +281,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.oldSVs, self.newSVs = {}, {}
 
         # Address of Clerk.
-        self.addr_server = addr
-        self.port_server = port
+        self.ip = ip
+        self.port = port
 
         # Place the window in the top left corner.
         self.setGeometry(0, 0, 640, 480)
@@ -537,8 +537,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Create the graphic buffers and compile the shaders.
         """
         # Connect to Azrael.
-        self.client = azrael.client.Client(
-            addr_clerk=self.addr_server, port_clerk=self.port_server)
+        self.client = azrael.client.Client(ip=self.ip, port=self.port)
 
         print('Client connected')
 
