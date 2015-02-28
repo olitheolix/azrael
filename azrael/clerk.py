@@ -707,12 +707,25 @@ class Clerk(multiprocessing.Process):
             self.logit.info(ret.msg)
             return ret
 
-        # Convenience.
-        fun = self._unpackTemplateData
+        # Convenience: fixme
+        def fun(doc):
+            fname = os.path.join(config.dir_template, doc['name'])
+            geo = pickle.loads(doc['geo'])
+
+            # Extract the collision shape, geometry, UV- and texture map.
+            cs = np.fromstring(doc['cshape'], np.float64)
+            vert = geo['vertices']
+            uv = geo['UV']
+            rgb = geo['RGB']
+            aabb = float(doc['AABB'])
+
+            return {'cshape': cs, 'vert': vert, 'uv': uv,
+                   'rgb': rgb, 'boosters': doc['boosters'],
+                   'factories': doc['factories'], 'aabb': aabb}
 
         # Unpack the raw templates and insert them into a dictionary where the
         # template names correspond to its keys.
-        out = {k: fun(v).data for (k, v) in ret.data.items()}
+        out = {k: fun(v) for (k, v) in ret.data.items()}
         return RetVal(True, None, out)
 
     @typecheck
@@ -742,27 +755,7 @@ class Clerk(multiprocessing.Process):
             self.logit.info(msg)
             return RetVal(False, msg, None)
 
-        return self._unpackTemplateData(doc)
-
-    def _unpackTemplateData(self, doc: dict):
-        """
-        Return unpacked template data.
-
-        This method assumes that ``doc`` describes a template (or object
-        instance) and decompiles it into its constituents (boosters, factories,
-        geometry, etc).
-
-        .. note:: This method also unpacks instance objects as they their
-                  format is identical.
-
-        The return value is a dictionary like this:
-          {'cshape': cs, 'vert': vert, 'uv': uv, 'rgb': rgb,
-           'boosters': boosters, 'factories': fac, 'aabb': aabb}
-
-        :param dict doc: raw data from the DB.
-        :returns: decompiled objects
-        :rtype: dict
-        """
+        # fixme
         fname = os.path.join(config.dir_template, doc['name'])
         geo = pickle.loads(doc['geo'])
 
