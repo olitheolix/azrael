@@ -612,13 +612,16 @@ class Clerk(multiprocessing.Process):
                     aabb = np.sqrt(3.1) * max(len_x, len_y, len_z)
 
                 # Compile the Mongo document for the new template.
-                data = {'cshape': tt.cs.tostring(),
-                        'AABB': float(aabb),
-                        'boosters': tt.boosters,
-                        'factories': tt.factories}
+                data = {
+                    'name': tt.name,
+                    'cshape': tt.cs.tostring(),
+                    'AABB': float(aabb),
+                    'boosters': tt.boosters,
+                    'factories': tt.factories}
                 geo = {'vertices': vertices,
                        'UV': tt.uv,
                        'RGB': tt.rgb}
+                fname = os.path.join(config.dir_template, tt.name)
                 data['geo'] = pickle.dumps(geo)
 
                 # Add the template to the database.
@@ -760,6 +763,7 @@ class Clerk(multiprocessing.Process):
         :returns: decompiled objects
         :rtype: dict
         """
+        fname = os.path.join(config.dir_template, doc['name'])
         geo = pickle.loads(doc['geo'])
 
         # Extract the collision shape, geometry, UV- and texture map.
@@ -948,6 +952,7 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
+            fname = os.path.join(config.dir_instance, doc['name'])
             geo = pickle.loads(doc['geo'])
             vert = geo['vertices']
             uv = geo['UV']
@@ -973,6 +978,7 @@ class Clerk(multiprocessing.Process):
 
         geo = {'vertices': vert, 'UV': uv, 'RGB': rgb}
 
+        #fname = os.path.join(config.dir_instance, doc['name'])
         ret = database.dbHandles['ObjInstances'].update(
             {'objID': objID},
             {'$set': {'geo': pickle.dumps(geo)},

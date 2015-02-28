@@ -18,6 +18,7 @@
 """
 Global configuration parameters.
 """
+import os
 import sys
 import logging
 import netifaces
@@ -78,3 +79,11 @@ except (ValueError, KeyError):
 # Address of the various Azrael services.
 addr_clerk = 'tcp://' + host_ip + ':5555'
 addr_leonard_pushpull = 'tcp://' + host_ip + ':5556'
+
+# Data directory where the template- geometries, textures, and UV map will be
+# stored.
+dir_data = os.path.dirname(os.path.abspath(__file__))
+dir_data = os.path.join(dir_data, 'data')
+dir_template = os.path.join(dir_data, 'templates')
+dir_instance = os.path.join(dir_data, 'instance')
+os.makedirs(dir_data, exist_ok=True)
