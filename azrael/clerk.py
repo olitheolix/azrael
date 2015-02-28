@@ -619,8 +619,8 @@ class Clerk(multiprocessing.Process):
                     'boosters': tt.boosters,
                     'factories': tt.factories}
                 geo = {'vertices': vertices,
-                       'UV': tt.uv,
-                       'RGB': tt.rgb}
+                       'uv': tt.uv,
+                       'rgb': tt.rgb}
                 fname = os.path.join(config.dir_template, tt.name)
                 data['geo'] = pickle.dumps(geo)
 
@@ -715,8 +715,8 @@ class Clerk(multiprocessing.Process):
             # Extract the collision shape, geometry, UV- and texture map.
             cs = np.fromstring(doc['cshape'], np.float64)
             vert = geo['vertices']
-            uv = geo['UV']
-            rgb = geo['RGB']
+            uv = geo['uv']
+            rgb = geo['rgb']
             aabb = float(doc['AABB'])
 
             return {'cshape': cs, 'vert': vert, 'uv': uv,
@@ -762,8 +762,8 @@ class Clerk(multiprocessing.Process):
         # Extract the collision shape, geometry, UV- and texture map.
         cs = np.fromstring(doc['cshape'], np.float64)
         vert = geo['vertices']
-        uv = geo['UV']
-        rgb = geo['RGB']
+        uv = geo['uv']
+        rgb = geo['rgb']
         aabb = float(doc['AABB'])
 
         ret = {'cshape': cs, 'vert': vert, 'uv': uv,
@@ -948,8 +948,8 @@ class Clerk(multiprocessing.Process):
             fname = os.path.join(config.dir_instance, doc['name'])
             geo = pickle.loads(doc['geo'])
             vert = geo['vertices']
-            uv = geo['UV']
-            rgb = geo['RGB']
+            uv = geo['uv']
+            rgb = geo['rgb']
             return RetVal(True, None, {'vert': vert, 'uv': uv, 'rgb': rgb})
 
     @typecheck
@@ -969,7 +969,7 @@ class Clerk(multiprocessing.Process):
             msg = 'Invalid geometry for objID <{}>'.format(objID)
             return RetVal(False, msg, None)
 
-        geo = {'vertices': vert, 'UV': uv, 'RGB': rgb}
+        geo = {'vertices': vert, 'uv': uv, 'rgb': rgb}
 
         #fname = os.path.join(config.dir_instance, doc['name'])
         ret = database.dbHandles['ObjInstances'].update(
