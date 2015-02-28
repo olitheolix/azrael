@@ -38,7 +38,7 @@ import azrael.config as config
 
 def startController(objID):
     # Connect to Clerk.
-    client = azrael.client.Client(config.addr_clerk)
+    client = azrael.client.Client()
 
     # ---------------------------------------------------------------------
     # Central booster (partID=1)

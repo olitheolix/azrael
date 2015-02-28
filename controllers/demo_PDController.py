@@ -123,7 +123,7 @@ def PDController(client, objID, ref_pos_z):
 def startController(objID):
     # Boiler plate: setup
     print('Connecting to Azrael...', flush=True, end='')
-    client = azrael.client.Client(config.addr_clerk)
+    client = azrael.client.Client()
     print('done')
 
     # Wait a bit before starting the controller.

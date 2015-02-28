@@ -40,7 +40,7 @@ import azrael.config as config
 
 
 class ControllerCubeLeft(multiprocessing.Process):
-    def __init__(self, objID, addr=config.addr_clerk):
+    def __init__(self, objID, addr=config.addr_clerk, port=config.port_clerk):
         super().__init__()
         self.left = 0
         self.right = 1
@@ -49,7 +49,7 @@ class ControllerCubeLeft(multiprocessing.Process):
         self.objID = objID
 
     def run(self):
-        client = azrael.client.Client(self.addr)
+        client = azrael.client.Client(addr_clerk=self.addr, port_clerk=self.port)
 
         # ---------------------------------------------------------------------
         # Edit here to change the force of boosters.

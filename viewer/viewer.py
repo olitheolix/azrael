@@ -60,13 +60,12 @@ def parseCommandLine():
     padd = parser.add_argument
 
     # Add the command line options.
-    padd('--addr', metavar='addr', type=str, default=None,
-         help='ZeroMQ address of Clacks (eg. tcp://127.0.0.1:5555')
+    padd('--addr', metavar='addr', type=str, default=config.addr_clerk,
+         help='IP of Clerk (eg. "127.0.0.1"')
+    padd('--port', metavar='addr', type=int, default=config.port_clerk,
+         help='Port of Clerk (eg. 5555')
 
     param = parser.parse_args()
-
-    if param.addr is None:
-        param.addr = config.addr_clerk
 
     # run the parser.
     return param
@@ -272,7 +271,7 @@ class Camera:
 
 
 class ViewerWidget(QtOpenGL.QGLWidget):
-    def __init__(self, addr, parent=None):
+    def __init__(self, addr, port, parent=None):
         super().__init__(parent)
 
         # Camera instance.
@@ -283,6 +282,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Address of Clerk.
         self.addr_server = addr
+        self.port_server = port
 
         # Place the window in the top left corner.
         self.setGeometry(0, 0, 640, 480)
@@ -537,7 +537,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Create the graphic buffers and compile the shaders.
         """
         # Connect to Azrael.
-        self.client = azrael.client.Client(addr_clerk=self.addr_server)
+        self.client = azrael.client.Client(
+            addr_clerk=self.addr_server, port_clerk=self.port_server)
 
         print('Client connected')
 
@@ -914,7 +915,7 @@ def main():
 
     # Boiler plate for Qt application.
     app = QtGui.QApplication(['Viewer 3D'])
-    widget = ViewerWidget(param.addr)
+    widget = ViewerWidget(param.addr, param.port)
     widget.show()
     app.exec_()
 

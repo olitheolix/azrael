@@ -43,7 +43,7 @@ def startController(objID):
     object in the simulation.
     """
     # Connect to Clerk.
-    client = azrael.client.Client(config.addr_clerk)
+    client = azrael.client.Client()
 
     # Specify the toggle interval in seconds.
     toggle_interval = 4.0
