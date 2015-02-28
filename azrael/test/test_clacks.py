@@ -44,20 +44,18 @@ def startAzrael(client_type):
     clerk = azrael.clerk.Clerk()
     clerk.start()
 
+    # Start a Clacks process.
+    clacks = azrael.clacks.ClacksServer()
+    clacks.start()
+
     if client_type == 'ZeroMQ':
         # Instantiate the ZeroMQ version of the Client.
         client = azrael.client.Client()
 
-        # Do not start a Clacks process.
-        clacks = None
     elif client_type == 'Websocket':
-        # Start a Clacks process.
-        clacks = azrael.clacks.ClacksServer()
-        clacks.start()
-
         # Instantiate the Websocket version of the Client.
         client = azrael.wsclient.WSClient(
-            'ws://127.0.0.1:8080/websocket', 1)
+            url='ws://127.0.0.1:8080/websocket', timeout=1)
         assert client.ping()
     else:
         print('Unknown protocol type <{}>'.format(client_type))
