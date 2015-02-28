@@ -419,14 +419,11 @@ class Clerk(multiprocessing.Process):
         ret = self.updateBoosterForces(objID, cmd_boosters)
         if not ret.ok:
             return ret
-        tot_force = ret.data[0]
-        tot_torque = ret.data[1]
 
-        # Apply the net- force and torque. Skip this step if booster commands
-        # were supplied.
-        if len(cmd_boosters) > 0:
-            physAPI.addCmdSetForceAndTorque(objID, tot_force, tot_torque)
-        del tot_force, tot_torque
+        # Apply the net- force and torque exerted by the boostes.
+        force, torque = ret.data
+        physAPI.addCmdBoosterForce(objID, force, torque)
+        del ret, force, torque
 
         # Let the factories spawn the objects.
         objIDs = []
@@ -1023,7 +1020,7 @@ class Clerk(multiprocessing.Process):
         """
         torque = np.cross(np.array(rpos, np.float64),
                           np.array(force, np.float64)).tolist()
-        return physAPI.addCmdSetForceAndTorque(objID, force, torque)
+        return physAPI.addCmdDirectForce(objID, force, torque)
 
     @typecheck
     def setStateVariable(self, objID: int,
