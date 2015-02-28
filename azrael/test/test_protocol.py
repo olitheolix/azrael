@@ -74,7 +74,8 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # ----------------------------------------------------------------------
     # Encode source data.
     data = {'cshape': cs, 'vert': vert, 'uv': uv, 'rgb': rgb,
-            'boosters': [b0, b1], 'factories': [f0], 'aabb': aabb}
+            'boosters': [b0, b1], 'factories': [f0], 'aabb': aabb,
+            'url_geo': 'http://somewhere'}
     templates = {template_name: data}
     ok, enc = protocol.FromClerk_GetTemplates_Encode(templates)
 

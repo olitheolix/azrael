@@ -25,9 +25,12 @@ if you want to see thorough tests for the Clerk functionality.
 
 import sys
 import time
+import pickle
 import pytest
 import IPython
 import subprocess
+import urllib.request
+
 import numpy as np
 
 import azrael.util
@@ -356,12 +359,19 @@ def test_create_fetch_template(client_type):
     # Fetch the just added template again.
     ret = client.getTemplates([t1.name])
     assert ret.ok and (len(ret.data) == 1)
-    ret = ret.data[t1.name]
-    assert np.array_equal(ret.cs, cs)
-    assert np.array_equal(ret.vert, vert)
-    assert np.array_equal(ret.uv, uv)
-    assert np.array_equal(ret.rgb, rgb)
-    assert len(ret.boosters) == len(ret.factories) == 0
+    data = ret.data[t1.name]
+    assert np.array_equal(data.cs, cs)
+    assert np.array_equal(data.vert, vert)
+    assert np.array_equal(data.uv, uv)
+    assert np.array_equal(data.rgb, rgb)
+    assert len(data.boosters) == len(data.factories) == 0
+
+    # Fetch the geometry from the Web server and verify it is correct.
+    ret = client.getTemplateGeometry(ret.data[t1.name].url_geo)
+    assert ret.ok
+    assert np.array_equal(ret.data['vertices'], vert)
+    assert np.array_equal(ret.data['uv'], uv)
+    assert np.array_equal(ret.data['rgb'], rgb)
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named

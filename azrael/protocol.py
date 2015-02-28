@@ -135,12 +135,14 @@ def FromClerk_GetTemplates_Decode(payload: dict):
     out = {}
     for name, data in payload.items():
         # Return the complete information in a named tuple.
-        nt = namedtuple('Template', 'cs vert uv rgb boosters factories aabb')
+        nt = namedtuple('Template',
+                        'cs vert uv rgb boosters factories aabb url_geo')
         ret = nt(np.array(data['cshape'], np.float64),
                  np.array(data['vert'], np.float64),
                  np.array(data['uv'], np.float64),
                  np.array(data['rgb'], np.uint8),
-                 data['boosters'], data['factories'], data['aabb'])
+                 data['boosters'], data['factories'], data['aabb'],
+                 data['url_geo'])
         out[name] = ret
     return RetVal(True, None, out)
 

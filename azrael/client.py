@@ -26,7 +26,10 @@ feature set is identical).
 
 import zmq
 import json
+import pickle
 import logging
+import urllib.request
+
 import numpy as np
 
 import azrael.parts as parts
@@ -390,6 +393,22 @@ class Client():
         :return: (cs, geo, boosters, factories)
         """
         return self.serialiseAndSend('get_templates', templateIDs)
+
+    @typecheck
+    def getTemplateGeometry(self, url: str):
+        """
+        Fetch the geometry from ``url`` and return it.
+
+        :param str url: url where template can be found
+        :return: fixme
+        """
+        # Fetch the geometry from the Web server.
+        # fixme: must not be hard coded
+        base_url = 'http://localhost:8080'
+        url = base_url + url
+        data = urllib.request.urlopen(url).readall()
+        tmp = pickle.loads(data)
+        return RetVal(True, None, tmp)
 
     @typecheck
     def addTemplates(self, templates: list):
