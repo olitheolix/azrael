@@ -727,10 +727,9 @@ class Clerk(multiprocessing.Process):
             """
             Convenience function to add the geometry data to the template data.
             """
-            geo = pickle.load(open(doc['file_geo'], 'rb'))
-            doc['vert'] = geo['vert']
-            doc['uv'] = geo['uv']
-            doc['rgb'] = geo['rgb']
+            tmp = pickle.load(open(doc['file_geo'], 'rb'))
+            for attr in ('vert', 'uv', 'rgb'):
+                doc[attr] = tmp[attr]
             doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
             return doc
 
@@ -767,10 +766,9 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # Load geometry data and add it to template.
-        geo = pickle.load(open(doc['file_geo'], 'rb'))
-        doc['vert'] = geo['vert']
-        doc['uv'] = geo['uv']
-        doc['rgb'] = geo['rgb']
+        tmp = pickle.load(open(doc['file_geo'], 'rb'))
+        for attr in ('vert', 'uv', 'rgb'):
+            doc[attr] = tmp[attr]
         doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
         return RetVal(True, None, doc)
 
@@ -958,8 +956,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
             geo = pickle.load(open(doc['file_geo'], 'rb'))
-            ret = {'vert': geo['vert'], 'uv': geo['uv'], 'rgb': geo['rgb']}
-            return RetVal(True, None, ret)
+            return RetVal(True, None, geo)
 
     @typecheck
     def setGeometry(self, objID: int, vert: list, uv: list, rgb: list):
