@@ -197,10 +197,18 @@ class ClacksServer(multiprocessing.Process):
         handlers.append(('/', ServeViewer))
 
         # Static HTML files.
-        staticDir = os.path.dirname(__file__)
-        staticDir = os.path.join(staticDir, 'static')
-        handlers.append(('/static/(.*)', tornado.web.StaticFileHandler,
-                         {'path': staticDir}))
+        FileHandler = tornado.web.StaticFileHandler
+        base = os.path.dirname(__file__)
+        dirname = os.path.join(base, 'static')
+        handlers.append(('/static/(.*)', FileHandler, {'path': dirname}))
+
+        # Template geometries.
+        handlers.append(
+            ('/templates/(.*)', FileHandler, {'path': config.dir_template}))
+
+        # Instance geometries.
+        handlers.append(
+            ('/instances/(.*)', FileHandler, {'path': config.dir_instance}))
 
         # Websocket to Clacks.
         handlers.append(('/websocket', WebsocketHandler))
