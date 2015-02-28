@@ -621,7 +621,7 @@ class Clerk(multiprocessing.Process):
 
                 # Compile the geometry data dictionary the and the file name
                 # where it will be stored.
-                geo = {'vertices': vertices, 'uv': tt.uv, 'rgb': tt.rgb}
+                geo = {'vert': vertices, 'uv': tt.uv, 'rgb': tt.rgb}
                 base_name = tt.name + '_geo'
                 data['file_geo'] = os.path.join(config.dir_template, base_name)
                 data['url_geo'] = '/templates/' + base_name
@@ -728,7 +728,7 @@ class Clerk(multiprocessing.Process):
             Convenience function to add the geometry data to the template data.
             """
             geo = pickle.load(open(doc['file_geo'], 'rb'))
-            doc['vert'] = geo['vertices']
+            doc['vert'] = geo['vert']
             doc['uv'] = geo['uv']
             doc['rgb'] = geo['rgb']
             doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
@@ -768,7 +768,7 @@ class Clerk(multiprocessing.Process):
 
         # Load geometry data and add it to template.
         geo = pickle.load(open(doc['file_geo'], 'rb'))
-        doc['vert'] = geo['vertices']
+        doc['vert'] = geo['vert']
         doc['uv'] = geo['uv']
         doc['rgb'] = geo['rgb']
         doc['cshape'] = np.fromstring(doc['cshape'], np.float64)
@@ -958,7 +958,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
             geo = pickle.load(open(doc['file_geo'], 'rb'))
-            ret = {'vert': geo['vertices'], 'uv': geo['uv'], 'rgb': geo['rgb']}
+            ret = {'vert': geo['vert'], 'uv': geo['uv'], 'rgb': geo['rgb']}
             return RetVal(True, None, ret)
 
     @typecheck
@@ -987,7 +987,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # Overwrite the geometry file with the new one.
-        geo = {'vertices': vert, 'uv': uv, 'rgb': rgb}
+        geo = {'vert': vert, 'uv': uv, 'rgb': rgb}
         pickle.dump(geo, open(doc['file_geo'], 'wb'))
 
         # Update the 'lastChanged' flag. Any clients will automatically receive

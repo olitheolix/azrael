@@ -512,7 +512,7 @@ def test_add_get_template_multi_url():
     base_url = 'http://localhost:8080'
     url = base_url + ret.data[name1]['url_geo']
     tmp = pickle.loads(urllib.request.urlopen(url).readall())
-    assert np.array_equal(tmp['vertices'], t1.vert)
+    assert np.array_equal(tmp['vert'], t1.vert)
     assert np.array_equal(tmp['uv'], t1.uv)
     assert np.array_equal(tmp['rgb'], t1.rgb)
 
@@ -525,7 +525,7 @@ def test_add_get_template_multi_url():
     base_url = 'http://localhost:8080'
     url = base_url + ret.data[name2]['url_geo']
     tmp = pickle.loads(urllib.request.urlopen(url).readall())
-    assert np.array_equal(tmp['vertices'], t2.vert)
+    assert np.array_equal(tmp['vert'], t2.vert)
     assert np.array_equal(tmp['uv'], t2.uv)
     assert np.array_equal(tmp['rgb'], t2.rgb)
 

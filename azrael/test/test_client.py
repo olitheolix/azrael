@@ -369,7 +369,7 @@ def test_create_fetch_template(client_type):
     # Fetch the geometry from the Web server and verify it is correct.
     ret = client.getTemplateGeometry(ret.data[t1.name].url_geo)
     assert ret.ok
-    assert np.array_equal(ret.data['vertices'], vert)
+    assert np.array_equal(ret.data['vert'], vert)
     assert np.array_equal(ret.data['uv'], uv)
     assert np.array_equal(ret.data['rgb'], rgb)
 
