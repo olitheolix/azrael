@@ -77,7 +77,8 @@ except (ValueError, KeyError):
         sys.exit(1)
 
 # Address of the various Azrael services.
-addr_clerk = 'tcp://' + host_ip + ':5555'
+addr_clerk = host_ip
+port_clerk = 5555
 addr_leonard_pushpull = 'tcp://' + host_ip + ':5556'
 
 # Data directory where the template- geometries, textures, and UV map will be
