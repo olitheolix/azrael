@@ -255,7 +255,7 @@ class LeonardBase(multiprocessing.Process):
         """
         # Convenience.
         sv = self.allObjects[objID]
-        
+
         # Construct the Quaternion of the object based on its orientation.
         quat = util.Quaternion(sv.orientation[3], sv.orientation[:3])
 

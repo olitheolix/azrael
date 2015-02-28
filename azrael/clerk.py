@@ -841,7 +841,7 @@ class Clerk(multiprocessing.Process):
                 # directory and update the 'file_geo' field to point to it.
                 geodata = open(tmp['file_geo'], 'rb').read()
                 tmp['file_geo'] = os.path.join(config.dir_instance,
-                                          str(tmp['objID']) + '_geo')
+                                               str(tmp['objID']) + '_geo')
                 open(tmp['file_geo'], 'wb').write(geodata)
 
                 # Add the new template document.

@@ -35,6 +35,7 @@ RetVal = azrael.util.RetVal
 dbHandles = {}
 logit = logging.getLogger('azrael.' + __name__)
 
+
 @typecheck
 def init(reset=False):
     """
