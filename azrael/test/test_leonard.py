@@ -762,7 +762,10 @@ def test_maintain_forces():
     leo.processCommandsAndSync()
 
     # Initial force and torque must be zero.
-    assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
+    assert leo.directForces[objID] == [0, 0, 0]
+    assert leo.directTorques[objID] == [0, 0, 0]
+    assert leo.boosterForces[objID] == [0, 0, 0]
+    assert leo.boosterTorques[objID] == [0, 0, 0]
 
     # Change the direct force and verify that Leonard does not reset it.
     assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
@@ -806,7 +809,100 @@ def test_maintain_forces():
     print('Test passed')
 
 
+def test_totalForceAndTorque_no_rotation():
+    """
+    Verify that 'totalForceAndTorque' correctly adds up the direct- and booster
+    forces for an object that is in neutral position (ie without rotation).
+    """
+    killAzrael()
+
+    # Get a Leonard instance.
+    leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
+
+    # Spawn one object.
+    orient = np.array([0, 0, 0, 1])
+    sv = bullet_data.BulletData(imass=1, orientation=orient)
+    objID, aabb = 1, 1
+    assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+    leo.processCommandsAndSync()
+    del sv, aabb
+
+    # Initial force and torque must be zero.
+    assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
+
+    # Change the direct force.
+    assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
+    leo.processCommandsAndSync()
+    assert leo.totalForceAndTorque(objID) == ([1, 2, 3], [4, 5, 6])
+
+    # Change the direct force.
+    assert physAPI.addCmdDirectForce(objID, [1, 2, 30], [4, 5, 60]).ok
+    leo.processCommandsAndSync()
+    assert leo.totalForceAndTorque(objID) == ([1, 2, 30], [4, 5, 60])
+
+    # Reset the direct force and change the booster force.
+    assert physAPI.addCmdDirectForce(objID, [0, 0, 0], [0, 0, 0]).ok
+    assert physAPI.addCmdBoosterForce(objID, [-1, -2, -3], [-4, -5, -6]).ok
+    leo.processCommandsAndSync()
+    assert leo.totalForceAndTorque(objID) == ([-1, -2, -3], [-4, -5, -6])
+
+    # Direct- and booste forces must perfectly balance each other.
+    assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
+    assert physAPI.addCmdBoosterForce(objID, [-1, -2, -3], [-4, -5, -6]).ok
+    leo.processCommandsAndSync()
+    assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
+
+    # Cleanup.
+    killAzrael()
+    print('Test passed')
+
+
+def test_totalForceAndTorque_with_rotation():
+    """
+    Similar to the previou 'test_totalForceAndTorque_no_rotation' but this time
+    the object does not have a neutral rotation in world coordinates. This must
+    have no effect on the direct force values, but the booster forces must be
+    re-oriented accordingly.
+    """
+    killAzrael()
+
+    # Get a Leonard instance.
+    leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
+
+    # Spawn one object rotated 180 degress around x-axis.
+    orient = np.array([1, 0, 0, 0])
+    sv = bullet_data.BulletData(imass=1, orientation=orient)
+    objID, aabb = 1, 1
+    assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+    leo.processCommandsAndSync()
+    del sv, aabb
+
+    # Initial force and torque must be zero.
+    assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
+
+    # Add booster force in z-direction.
+    assert physAPI.addCmdBoosterForce(objID, [1, 2, 3], [-1, -2, -3]).ok
+    leo.processCommandsAndSync()
+
+    # The net forces in must have their signs flipped in the y/z directions,
+    # and remain unchanged for x since the object itself is rotated 180 degrees
+    # around the x-axis.
+    assert leo.totalForceAndTorque(objID) == ([1, -2, -3], [-1, 2, 3])
+
+    # The object's rotation must have not effect the direct force and torque.
+    assert physAPI.addCmdBoosterForce(objID, [0, 0, 0], [0, 0, 0]).ok
+    assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
+    leo.processCommandsAndSync()
+    assert leo.totalForceAndTorque(objID) == ([1, 2, 3], [4, 5, 6])
+
+    # Cleanup.
+    killAzrael()
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_totalForceAndTorque_no_rotation()
+    test_totalForceAndTorque_with_rotation()
     test_maintain_forces()
     test_processCommandQueue()
     test_createWorkPackages()

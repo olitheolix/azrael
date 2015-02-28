@@ -237,18 +237,40 @@ class LeonardBase(multiprocessing.Process):
         gridForces = {objID: val for objID, val in zip(objIDs, ret.data)}
         return RetVal(True, None, gridForces)
 
-    def totalForceAndTorque(self, objID):
+    @typecheck
+    def totalForceAndTorque(self, objID: int):
+        """
+        Return the total force- and torque on the object.
+
+        The returned values are the sum of all booster forces (correctly
+        oriented relative to the object) and the force a user may have specifed
+        directly.
+
+        Note that this function does not account for the forces from the 'force
+        grid'.
+
+        :param int objID: return the force and torque for this object.
+        :return: the force and torque as two Python lists (not NumPy arrays)
+        :rtype: (list, list)
+        """
+        # Convenience.
         sv = self.allObjects[objID]
         
+        # Construct the Quaternion of the object based on its orientation.
+        quat = util.Quaternion(sv.orientation[3], sv.orientation[:3])
+
         # Fetch the force vector for the current object from the DB.
         force = np.array(self.directForces[objID], np.float64)
         torque = np.array(self.directTorques[objID], np.float64)
 
-        # Add the forces and torques added by the bootster.
-        quat = util.Quaternion(sv.orientation[3], sv.orientation[:3])
+        # Add the booster's contribution to force and torque.
+        # Note: We cannot do this directly since the booster force/torque were
+        # specified in object coordinates. We thus rotate them to world
+        # coordinates before adding them to the total force.
         force += quat * self.boosterForces[objID]
         torque += quat * self.boosterTorques[objID]
 
+        # Convert to Python lists.
         return force.tolist(), torque.tolist()
 
     @typecheck
