@@ -68,6 +68,9 @@ class Client():
         self.sock_cmd.linger = 0
         self.sock_cmd.connect('tcp://{}:{}'.format(ip, port))
 
+        # Some methods need to know the address of the server.
+        self.ip, self.port = ip, port
+
         # Associate the encoding and decoding functions for every command.
         self.codec = {
             'ping_clerk': (
@@ -403,8 +406,8 @@ class Client():
         :return: fixme
         """
         # Fetch the geometry from the Web server.
-        # fixme: must not be hard coded
-        base_url = 'http://localhost:8080'
+        base_url = 'http://{ip}:{port}'.format(
+            ip=self.ip, port=config.webserver_port)
         url = base_url + url
         data = urllib.request.urlopen(url).readall()
         tmp = pickle.loads(data)
