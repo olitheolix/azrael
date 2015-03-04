@@ -473,9 +473,9 @@ function* mycoroutine(connection) {
         // Render the scene.
         renderer.render(scene, camera);
 
-        //  Update the camera position only if the mouse button is
-        //  pressed. This avoids accidental camera movements when you
-        //  use your mouse to eg switch to a different application.
+        // Update the camera position only if the mouse button is
+        // pressed. This avoids accidental camera movements when you
+        // use your mouse to eg switch to a different application.
         controls.update(0.01);
 
         // Put the player object at the camera's position.
