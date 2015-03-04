@@ -33,8 +33,7 @@ import numpy as np
 
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, 'viewer'))
-import model_import
+sys.path.insert(0, os.path.join(p, '../'))
 import azrael.clerk
 import azrael.clacks
 import azrael.client
