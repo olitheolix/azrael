@@ -25,7 +25,6 @@ if you want to see thorough tests for the Clerk functionality.
 
 import sys
 import time
-import pickle
 import pytest
 import IPython
 import subprocess

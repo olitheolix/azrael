@@ -26,7 +26,6 @@ feature set is identical).
 
 import zmq
 import json
-import pickle
 import logging
 import urllib.request
 
@@ -410,7 +409,7 @@ class Client():
             ip=self.ip, port=config.webserver_port)
         url = base_url + url
         data = urllib.request.urlopen(url).readall()
-        tmp = pickle.loads(data)
+        tmp = json.loads(data.decode('utf8'))
         return RetVal(True, None, tmp)
 
     @typecheck

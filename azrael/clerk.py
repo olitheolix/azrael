@@ -30,7 +30,6 @@ import os
 import sys
 import zmq
 import json
-import pickle
 import IPython
 import cytoolz
 import logging
@@ -619,9 +618,11 @@ class Clerk(multiprocessing.Process):
                     'boosters': tt.boosters,
                     'factories': tt.factories}
 
-                # Compile the geometry data dictionary the and the file name
-                # where it will be stored.
+                # Compile the geometry data.
                 geo = {'vert': vertices, 'uv': tt.uv, 'rgb': tt.rgb}
+
+                # Compile file name for geometry data and add that name to the
+                # template dictionary.
                 base_name = tt.name + '_geo'
                 data['file_geo'] = os.path.join(config.dir_template, base_name)
                 data['url_geo'] = '/templates/' + base_name
@@ -629,7 +630,7 @@ class Clerk(multiprocessing.Process):
                 # Abort if the template already exists.
                 # Note: the following condition can fall prey to the race
                 # condition where a file is created after checking but before
-                # the pickling starts. For templates this is relatively
+                # the file is written. For templates this is relatively
                 # harmless and therefore ignored here.
                 if os.path.exists(data['file_geo']):
                     # A template with name ``templateID`` already existed -->
@@ -638,7 +639,9 @@ class Clerk(multiprocessing.Process):
                     return RetVal(False, msg, None)
 
                 # Save the geometry data.
-                pickle.dump(geo, open(data['file_geo'], 'wb'))
+                geo = json.dumps(geo)
+                open(data['file_geo'], 'wb').write(geo.encode('utf8'))
+                del geo
 
                 # Add the template to the database.
                 query = {'templateID': tt.name}
@@ -913,7 +916,8 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
         else:
-            geo = pickle.load(open(doc['file_geo'], 'rb'))
+            geo = open(doc['file_geo'], 'rb').read()
+            geo = json.loads(geo.decode('utf8'))
             return RetVal(True, None, geo)
 
     @typecheck
@@ -943,7 +947,9 @@ class Clerk(multiprocessing.Process):
 
         # Overwrite the geometry file with the new one.
         geo = {'vert': vert, 'uv': uv, 'rgb': rgb}
-        pickle.dump(geo, open(doc['file_geo'], 'wb'))
+        geo = json.dumps(geo)
+        open(doc['file_geo'], 'wb').write(geo.encode('utf8'))
+        del geo
 
         # Update the 'lastChanged' flag. Any clients will automatically receive
         # this flag whenever they query the state variables.

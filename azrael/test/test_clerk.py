@@ -23,7 +23,6 @@ offers and test purely the Clerk.
 
 import sys
 import json
-import pickle
 import pytest
 import IPython
 import urllib.request
@@ -511,7 +510,7 @@ def test_add_get_template_multi_url():
     # Fetch the geometry from the Web server and verify it is correct.
     base_url = 'http://localhost:8080'
     url = base_url + ret.data[name1]['url_geo']
-    tmp = pickle.loads(urllib.request.urlopen(url).readall())
+    tmp = json.loads(urllib.request.urlopen(url).readall().decode('utf8'))
     assert np.array_equal(tmp['vert'], t1.vert)
     assert np.array_equal(tmp['uv'], t1.uv)
     assert np.array_equal(tmp['rgb'], t1.rgb)
@@ -524,7 +523,7 @@ def test_add_get_template_multi_url():
     # Fetch the geometry from the Web server and verify it is correct.
     base_url = 'http://localhost:8080'
     url = base_url + ret.data[name2]['url_geo']
-    tmp = pickle.loads(urllib.request.urlopen(url).readall())
+    tmp = json.loads(urllib.request.urlopen(url).readall().decode('utf8'))
     assert np.array_equal(tmp['vert'], t2.vert)
     assert np.array_equal(tmp['uv'], t2.uv)
     assert np.array_equal(tmp['rgb'], t2.rgb)
