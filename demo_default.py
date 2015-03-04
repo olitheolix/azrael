@@ -167,7 +167,7 @@ def loadGroundModel(scale, model_name):
     assert client.addTemplates([t1]).ok
     print('done')
 
-    # Spawn the template near the center and call it 'ground'.
+    # Spawn the template near the center.
     print('  Spawning object... ', end='', flush=True)
     pos, orient = [0, 0, -10], [0, 1, 0, 0]
     d = {'scale': scale,

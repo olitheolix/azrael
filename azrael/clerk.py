@@ -911,7 +911,7 @@ class Clerk(multiprocessing.Process):
         """
         # Retrieve the geometry. Return an error if the ID does not
         # exist. Note: an empty geometry field is valid because Azrael supports
-        # dummy objects.
+        # dummy objects without geometries.
         doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
