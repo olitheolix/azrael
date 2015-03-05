@@ -393,7 +393,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             ret = self.client.getGeometry(objID)
             if not ret.ok:
                 continue
-            buf_vert, buf_uv, buf_rgb = ret.data
+            buf_vert, buf_uv, buf_rgb = ret.data['1']
 
             # This is to mask a bug in Clacks: newly spawned objects can become
             # active before their geometry data hits the DB.
