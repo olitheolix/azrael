@@ -1158,7 +1158,13 @@ class Clerk(multiprocessing.Process):
             # Issue the update command to Mongo.
             ret = update(query, {'$set': newvals})
 
-            # Exactly one document was updated if everything went well.
-            if ret['nModified'] != 1:
+            # Exactly one document was updated if everything went well. Note
+            # that we must check 'n', not 'nModified'. The difference is that
+            # 'n' tells us how many documents Mongo has modified,
+            # whereas 'nModified' refers to the number of documents that are
+            # now different. This distinction is important if the new fragment
+            # values are the same as the old ones, because 'n'=1 whereas
+            # 'nModified'=0.
+            if ret['n'] != 1:
                 ok = False
         return RetVal(ok, None, None)

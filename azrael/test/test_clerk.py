@@ -1457,6 +1457,15 @@ def test_updateFragmentState():
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                    5.0, [5, 5, 5], [5, 5, 5, 5])
 
+    # Update the fragments twice with the exact same data. This will trigger a
+    # bug I once had because I checked the wrong Mongo return code.
+    newStates = {
+        objID_2: {'1': [9, [9, 9, 9], [9, 9, 9, 9]]}}
+    ret = clerk.updateFragmentStates(newStates)
+    assert ret.ok
+    ret = clerk.updateFragmentStates(newStates)
+    assert ret.ok
+
     # Kill all spawned Client processes.
     killAzrael()
     print('Test passed')
