@@ -228,7 +228,7 @@ function getAllStateVariables() {
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'sv': parsed.payload.data}
+        return {'ok': parsed.ok, 'data': parsed.payload.data}
     };
     return [cmd, dec]
 }
@@ -339,8 +339,8 @@ function* mycoroutine(connection) {
     while (true) {
         // Get the SV for all objects.
         msg = yield getAllStateVariables()
-        if (msg.ok == false) {console.log('Error getStateVariables'); return;}
-        var allSVs = msg.sv
+        if (msg.ok == false) {console.log('Error getAllStateVariables'); return;}
+        var allSVs = msg.data
 
         // Update the position and orientation of all objects. If an
         // object does not yet exist then create one.
@@ -359,7 +359,7 @@ function* mycoroutine(connection) {
 
             // Skip/remove all objects with undefined SVs. Remove the
             // object from the local cache as well.
-            if (allSVs[objID] == null) {
+            if (allSVs[objID]['sv'] == null) {
                 if (objID in obj_cache) {
                     scene.remove(obj_cache[objID]);
                     delete obj_cache[objID];
@@ -372,8 +372,8 @@ function* mycoroutine(connection) {
             // code further down below will then think the object has
             // never existed and download it from scratch.
             if (old_SVs[objID] != undefined) {
-                if (allSVs[objID].lastChanged !=
-                    old_SVs[objID].lastChanged) {
+                if (allSVs[objID]['sv'].lastChanged !=
+                    old_SVs[objID]['sv'].lastChanged) {
                     scene.remove(obj_cache[objID]);
                     delete obj_cache[objID];
                 }
@@ -390,7 +390,7 @@ function* mycoroutine(connection) {
             // in the local cache.
             if (obj_cache[objID] == undefined) {
                 // Get SV for current object.
-                var scale = allSVs[objID].scale
+                var scale = allSVs[objID]['sv'].scale
 
                 // Object not yet in local cache --> fetch its geometry.
                 msg = yield getGeometry(objID);
@@ -405,7 +405,7 @@ function* mycoroutine(connection) {
             }
 
             // Update object position.
-            var sv = allSVs[objID]
+            var sv = allSVs[objID]['sv']
             obj_cache[objID].position.x = sv.position[0]
             obj_cache[objID].position.y = sv.position[1]
             obj_cache[objID].position.z = sv.position[2]
