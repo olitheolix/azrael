@@ -365,9 +365,9 @@ def test_create_fetch_template(client_type):
     # Fetch the geometry from the Web server and verify it is correct.
     ret = client.getTemplateGeometry(ret.data[t1.name].url_geo)
     assert ret.ok
-    assert np.array_equal(ret.data['vert'], vert)
-    assert np.array_equal(ret.data['uv'], uv)
-    assert np.array_equal(ret.data['rgb'], rgb)
+    assert np.array_equal(ret.data['1']['vert'], vert)
+    assert np.array_equal(ret.data['1']['uv'], uv)
+    assert np.array_equal(ret.data['1']['rgb'], rgb)
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
@@ -396,7 +396,8 @@ def test_create_fetch_template(client_type):
     objID = ret.data[0]
 
     # Retrieve the geometry of the new object and verify it is correct.
-    ok, _, (out_vert, out_uv, out_rgb) = client.getGeometry(objID)
+    ok, _, out = client.getGeometry(objID)
+    out_vert, out_uv, out_rgb = out['1']
     assert np.array_equal(vert, out_vert)
     assert np.array_equal(uv, out_uv)
     assert np.array_equal(rgb, out_rgb)
@@ -411,9 +412,9 @@ def test_create_fetch_template(client_type):
     # Fetch the geometry from the Web server and verify it is correct.
     ret = client.getTemplateGeometry(ret.data[t1.name].url_geo)
     assert ret.ok
-    assert np.array_equal(ret.data['vert'], vert)
-    assert np.array_equal(ret.data['uv'], uv)
-    assert np.array_equal(ret.data['rgb'], rgb)
+    assert np.array_equal(ret.data['1']['vert'], vert)
+    assert np.array_equal(ret.data['1']['uv'], uv)
+    assert np.array_equal(ret.data['1']['rgb'], rgb)
 
 
     # The template must also feature two boosters and one factory.
@@ -603,16 +604,18 @@ def test_setGeometry(client_type):
     lastChanged = ret.data[objID].lastChanged
 
     # Fetch-, modify-, update- and verify the geometry.
-    ok, _, (ret_vert, ret_uv, ret_rgb) = client.getGeometry(objID)
+    ok, _, out = client.getGeometry(objID)
     assert ok
+    ret_vert, ret_uv, ret_rgb = out['1']
     assert np.allclose(uv, ret_uv)
     assert np.allclose(vert, ret_vert)
 
     ret = client.setGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb)
     assert ret.ok
 
-    ok, _, (ret_vert, ret_uv, ret_rgb) = client.getGeometry(objID)
+    ok, _, out = client.getGeometry(objID)
     assert ok
+    ret_vert, ret_uv, ret_rgb = out['1']
     assert np.allclose(2 * vert, ret_vert) and np.allclose(2 * uv, ret_uv)
 
     # Ensure 'lastChanged' is different as well.

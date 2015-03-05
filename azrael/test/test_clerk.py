@@ -511,9 +511,9 @@ def test_add_get_template_multi_url():
     base_url = 'http://localhost:8080'
     url = base_url + ret.data[name1]['url_geo']
     tmp = json.loads(urllib.request.urlopen(url).readall().decode('utf8'))
-    assert np.array_equal(tmp['vert'], t1.vert)
-    assert np.array_equal(tmp['uv'], t1.uv)
-    assert np.array_equal(tmp['rgb'], t1.rgb)
+    assert np.array_equal(tmp['1']['vert'], t1.vert)
+    assert np.array_equal(tmp['1']['uv'], t1.uv)
+    assert np.array_equal(tmp['1']['rgb'], t1.rgb)
 
     # Fetch the second template.
     ret = clerk.getTemplates([name2])
@@ -524,9 +524,9 @@ def test_add_get_template_multi_url():
     base_url = 'http://localhost:8080'
     url = base_url + ret.data[name2]['url_geo']
     tmp = json.loads(urllib.request.urlopen(url).readall().decode('utf8'))
-    assert np.array_equal(tmp['vert'], t2.vert)
-    assert np.array_equal(tmp['uv'], t2.uv)
-    assert np.array_equal(tmp['rgb'], t2.rgb)
+    assert np.array_equal(tmp['1']['vert'], t2.vert)
+    assert np.array_equal(tmp['1']['uv'], t2.uv)
+    assert np.array_equal(tmp['1']['rgb'], t2.rgb)
 
     # Fetch both templates at once.
     ret = clerk.getTemplates([name1, name2])
@@ -1195,9 +1195,9 @@ def test_getGeometry():
     # Query the geometry of the object.
     ret = clerk.getGeometry(objID)
     assert ret.ok
-    assert np.array_equal(vert, ret.data['vert'])
-    assert np.array_equal(uv, ret.data['uv'])
-    assert np.array_equal(rgb, ret.data['rgb'])
+    assert np.array_equal(vert, ret.data['1']['vert'])
+    assert np.array_equal(uv, ret.data['1']['uv'])
+    assert np.array_equal(rgb, ret.data['1']['rgb'])
 
     # Delete the object.
     assert clerk.removeObject(objID).ok
@@ -1259,9 +1259,9 @@ def test_instanceDB_checksum():
     # Query the geometry and verify it has the new values.
     ret = clerk.getGeometry(objID0)
     assert ret.ok
-    assert np.array_equal(ret.data['vert'], 2 * vert)
-    assert np.array_equal(ret.data['uv'], 2 * uv)
-    assert np.array_equal(ret.data['rgb'], 2 * rgb)
+    assert np.array_equal(ret.data['1']['vert'], 2 * vert)
+    assert np.array_equal(ret.data['1']['uv'], 2 * uv)
+    assert np.array_equal(ret.data['1']['rgb'], 2 * rgb)
 
     # Kill all spawned Client processes.
     killAzrael()

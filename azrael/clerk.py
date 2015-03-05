@@ -619,7 +619,7 @@ class Clerk(multiprocessing.Process):
                     'factories': tt.factories}
 
                 # Compile the geometry data.
-                geo = {'vert': vertices, 'uv': tt.uv, 'rgb': tt.rgb}
+                geo = {'1': {'vert': vertices, 'uv': tt.uv, 'rgb': tt.rgb}}
 
                 # Compile file name for geometry data and add that name to the
                 # template dictionary.
@@ -672,9 +672,14 @@ class Clerk(multiprocessing.Process):
 
         The return value has the following structure::
 
-          ret = {names[0]: {'cshape': X, 'vert': X, 'uv': X, 'rgb': X,
-                          'boosters': X, 'factories': X, 'aabb': X},
-                 names[1]: {}, }.
+          ret = {template_names[0]: {
+                   fragment_name[0]: {
+                      'cshape': X, 'vert': X, 'uv': X, 'rgb': X,
+                      'boosters': X, 'factories': X, 'aabb': X},
+                   fragment_name[1]: {
+                      'cshape': X, 'vert': X, 'uv': X, 'rgb': X,
+                      'boosters': X, 'factories': X, 'aabb': X}},
+                 template_names[1]: {}, }.
 
         :param list(str) templateIDs: template IDs
         :return dict: raw template data (the templateID is the key).
@@ -946,7 +951,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # Overwrite the geometry file with the new one.
-        geo = {'vert': vert, 'uv': uv, 'rgb': rgb}
+        geo = {'1': {'vert': vert, 'uv': uv, 'rgb': rgb}}
         geo = json.dumps(geo)
         open(doc['file_geo'], 'wb').write(geo.encode('utf8'))
         del geo

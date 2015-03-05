@@ -315,10 +315,13 @@ def FromClerk_GetGeometry_Encode(geo):
 
 @typecheck
 def FromClerk_GetGeometry_Decode(payload: dict):
-    vert = np.array(payload['vert'], np.float64)
-    uv = np.array(payload['uv'], np.uint8)
-    rgb = np.array(payload['rgb'], np.uint8)
-    return RetVal(True, None, (vert, uv, rgb))
+    out = {}
+    for frag, data in payload.items():
+        vert = np.array(data['vert'], np.float64)
+        uv = np.array(data['uv'], np.uint8)
+        rgb = np.array(data['rgb'], np.uint8)
+        out[frag] = (vert, uv, rgb)
+    return RetVal(True, None, out)
 
 
 # ---------------------------------------------------------------------------
