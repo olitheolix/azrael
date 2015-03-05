@@ -92,10 +92,7 @@ var getGeometryFromURL = function (url) {
     xmlhttp.open("GET", url, false);
     xmlhttp.send();
     var tmp = JSON.parse(xmlhttp.responseText);
-    var tmpVert = tmp["vert"];
-    var tmpUV = tmp["UV"];
-    if (tmpUV == undefined) tmpUV = [];
-    return {"vert": tmpVert, "UV": tmpUV}
+    return {'ok': true, 'data': tmp}
 }
 
 
@@ -163,10 +160,7 @@ function getGeometry(objID) {
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok,
-                'vert': parsed.payload.vert,
-                'UV': parsed.payload.uv,
-                'RGB': parsed.payload.rgb}
+        return {'ok': parsed.ok, 'data': parsed.payload}
     };
 
     return [cmd, dec]
@@ -401,7 +395,9 @@ function* mycoroutine(connection) {
                 // Object not yet in local cache --> fetch its geometry.
                 msg = yield getGeometry(objID);
                 if (msg.ok == false) {console.log('Error getGeometry'); return;}
-                var new_geo = compileMesh(objID, msg.vert, msg.UV, scale);
+                var tmp_vert = msg.data["1"].vert
+                var tmp_uv = msg.data["1"].uv
+                var new_geo = compileMesh(objID, tmp_vert, tmp_uv, scale);
 
                 // Add the object to the cache and scene.
                 obj_cache[objID] = new_geo
