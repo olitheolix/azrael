@@ -354,7 +354,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
     def loadGeometry(self):
         # Retrieve the state variables of all objects.
         self.oldSVs = self.newSVs
-        with util.Timeit('viewer.getSV') as timeit:
+        with util.Timeit('viewer.getV') as timeit:
             ret = self.client.getAllStateVariables()
         if not ret.ok:
             print('Could not retrieve the state variables -- Abort')
@@ -362,7 +362,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Prune the list to remove all those objects for which the State
         # Vector is None.
-        self.newSVs = {k: v for k, v in ret.data.items() if v is not None}
+        tmp = {k: v for k, v in ret.data.items() if v is not None}
+        self.newSVs = {k: v['sv'] for k, v in tmp.items()}
+        del tmp
 
         # Delete those local objects that have been removed in Azrael.
         for objID in self.oldSVs:
