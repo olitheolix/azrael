@@ -367,7 +367,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, msg, None)
 
         # Extract the parent's orientation from svdata.
-        sv_parent = sv_parent.data[objID]
+        sv_parent = sv_parent.data[objID]['sv']
         parent_orient = sv_parent.orientation
         quat = util.Quaternion(parent_orient[3], parent_orient[:3])
 
@@ -891,7 +891,8 @@ class Clerk(multiprocessing.Process):
         out = {}
         for objID in objIDs:
             if (objID in docs) and (sv[objID] is not None):
-                out[objID] = sv[objID]._replace(lastChanged=docs[objID])
+                tmp = sv[objID]._replace(lastChanged=docs[objID])
+                out[objID] = {'sv': tmp, 'frag': {}}
             else:
                 out[objID] = None
 
@@ -1072,5 +1073,6 @@ class Clerk(multiprocessing.Process):
         out = {}
         for objID in sv:
             if objID in docs:
-                out[objID] = sv[objID]._replace(lastChanged=docs[objID])
+                tmp = sv[objID]._replace(lastChanged=docs[objID])
+                out[objID] = {'sv': tmp, 'frag': {}}
         return RetVal(True, None, out)

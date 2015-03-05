@@ -207,7 +207,7 @@ def test_setStateVariable(client_type):
     # Verify that the State Vector is correct.
     leo.processCommandsAndSync()
     ok, _, ret_sv = client.getStateVariables(objID)
-    ret_sv = ret_sv[objID]
+    ret_sv = ret_sv[objID]['sv']
     assert isinstance(ret_sv, bullet_data._BulletData)
     assert np.array_equal(ret_sv.position, new_obj['position'])
     assert np.array_equal(ret_sv.velocityLin, new_obj['velocityLin'])
@@ -220,7 +220,7 @@ def test_setStateVariable(client_type):
     # Verify that the new attributes came into effect.
     leo.processCommandsAndSync()
     ok, _, ret_sv = client.getStateVariables(objID)
-    ret_sv = ret_sv[objID]
+    ret_sv = ret_sv[objID]['sv']
     assert isinstance(ret_sv, bullet_data._BulletData)
     assert ret_sv.imass == new_sv.imass
     assert ret_sv.scale == new_sv.scale
@@ -545,7 +545,7 @@ def test_controlParts(client_type):
     assert (ok, len(ret_SVs)) == (True, 2)
 
     # Verify the position and velocity of the spawned objects is correct.
-    sv_2, sv_3 = [ret_SVs[_] for _ in spawnIDs]
+    sv_2, sv_3 = [ret_SVs[_]['sv'] for _ in spawnIDs]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
     assert np.allclose(sv_2.position, pos_0_out + pos_parent)
     assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
@@ -601,7 +601,7 @@ def test_setGeometry(client_type):
     leo.processCommandsAndSync()
     ret = client.getStateVariables(objID)
     assert ret.ok
-    lastChanged = ret.data[objID].lastChanged
+    lastChanged = ret.data[objID]['sv'].lastChanged
 
     # Fetch-, modify-, update- and verify the geometry.
     ok, _, out = client.getGeometry(objID)
@@ -620,7 +620,7 @@ def test_setGeometry(client_type):
 
     # Ensure 'lastChanged' is different as well.
     ret = client.getStateVariables(objID)
-    assert ret.ok and (ret.data[objID].lastChanged != lastChanged)
+    assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

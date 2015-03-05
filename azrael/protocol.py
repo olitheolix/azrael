@@ -375,8 +375,10 @@ def FromClerk_GetStateVariable_Encode(data: dict):
     for k, v in data.items():
         if v is None:
             data[k] = None
-        else:
-            data[k] = dict(zip(fields, v))
+            continue
+
+        frag, sv = v['frag'], v['sv']
+        data[k] = {'frag': frag, 'sv': dict(zip(fields, sv))}
     return True, {'data': data}
 
 

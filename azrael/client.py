@@ -489,7 +489,7 @@ class Client():
         for objID, v in ret.data.items():
             objID = int(objID)
             if v is not None:
-                out[objID] = _BulletData(**v)
+                out[objID] = {'frag': v['frag'], 'sv': _BulletData(**v['sv'])}
             else:
                 out[objID] = None
 
@@ -513,7 +513,7 @@ class Client():
         for objID, v in ret.data.items():
             objID = int(objID)
             if v is not None:
-                out[objID] = _BulletData(**v)
+                out[objID] = {'frag': v['frag'], 'sv': _BulletData(**v['sv'])}
             else:
                 out[objID] = None
 

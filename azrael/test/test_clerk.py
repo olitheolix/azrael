@@ -259,7 +259,7 @@ def test_get_statevar():
     # Retrieve the SV for the existing ID=1.
     ret = clerk.getStateVariables([objID_1])
     assert (ret.ok, len(ret.data)) == (True, 1)
-    assert isEqualBD(ret.data[objID_1], sv_1)
+    assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
 
     # Spawn a second object.
     ret = clerk.spawn([(templateID, sv_2)])
@@ -270,13 +270,13 @@ def test_get_statevar():
     for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
         ret = clerk.getStateVariables([objID])
         assert (ret.ok, len(ret.data)) == (True, 1)
-        assert isEqualBD(ret.data[objID], ref_sv)
+        assert isEqualBD(ret.data[objID]['sv'], ref_sv)
 
     # Retrieve the state variables for both objects at once.
     ret = clerk.getStateVariables([objID_1, objID_2])
     assert (ret.ok, len(ret.data)) == (True, 2)
-    assert isEqualBD(ret.data[objID_1], sv_1)
-    assert isEqualBD(ret.data[objID_2], sv_2)
+    assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
+    assert isEqualBD(ret.data[objID_2]['sv'], sv_2)
 
     print('Test passed')
 
@@ -312,7 +312,7 @@ def test_getAllStateVariables():
     leo.processCommandsAndSync()
     ret = clerk.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 1)
-    assert isEqualBD(ret.data[objID_1], sv_1)
+    assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
 
     # Spawn a second object.
     ret = clerk.spawn([(templateID, sv_2)])
@@ -322,8 +322,8 @@ def test_getAllStateVariables():
     leo.processCommandsAndSync()
     ret = clerk.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 2)
-    assert isEqualBD(ret.data[objID_1], sv_1)
-    assert isEqualBD(ret.data[objID_2], sv_2)
+    assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
+    assert isEqualBD(ret.data[objID_2]['sv'], sv_2)
 
     print('Test passed')
 
@@ -885,7 +885,7 @@ def test_controlParts_Factories_notmoving():
 
     # Ensure the position, velocity, and orientation of the spawned objects are
     # correct.
-    sv_2, sv_3 = [ret.data[_] for _ in spawnedIDs]
+    sv_2, sv_3 = [ret.data[_]['sv'] for _ in spawnedIDs]
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0)
     assert np.allclose(sv_2.position, pos_0)
     assert np.allclose(sv_2.orientation, [0, 0, 0, 1])
@@ -977,7 +977,7 @@ def test_controlParts_Factories_moving():
 
     # Ensure the position, velocity, and orientation of the spawned objects are
     # correct.
-    sv_2, sv_3 = ret.data[objID_2], ret.data[objID_3]
+    sv_2, sv_3 = ret.data[objID_2]['sv'], ret.data[objID_3]['sv']
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0 + vel_parent)
     assert np.allclose(sv_2.position, pos_0 + pos_parent)
     assert np.allclose(sv_2.orientation, [0, 0, 0, 1])
@@ -1095,7 +1095,7 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     assert (ret.ok, len(ret.data)) == (True, 2)
 
     # Verify the positions and velocities of the spawned objects are correct.
-    sv_2, sv_3 = ret.data[objID_2], ret.data[objID_3]
+    sv_2, sv_3 = ret.data[objID_2]['sv'], ret.data[objID_3]['sv']
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
     assert np.allclose(sv_2.position, pos_0_out + pos_parent)
     assert np.allclose(sv_2.orientation, orient_parent)
@@ -1250,11 +1250,11 @@ def test_instanceDB_checksum():
 
     ret = clerk.getStateVariables([objID0])
     assert ret.ok
-    assert ret_1.data[objID0].lastChanged != ret.data[objID0].lastChanged
+    assert ret_1.data[objID0]['sv'].lastChanged != ret.data[objID0]['sv'].lastChanged
 
     ret = clerk.getStateVariables([objID1])
     assert ret.ok
-    assert ret_1.data[objID1].lastChanged == ret.data[objID1].lastChanged
+    assert ret_1.data[objID1]['sv'].lastChanged == ret.data[objID1]['sv'].lastChanged
 
     # Query the geometry and verify it has the new values.
     ret = clerk.getGeometry(objID0)
