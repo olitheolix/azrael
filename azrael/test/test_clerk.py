@@ -1358,6 +1358,76 @@ def test_updateBoosterValues():
     print('Test passed')
 
 
+def test_updateFragmentState():
+    """
+    Create a new template with one fragment and instantiate it.
+
+    Then query the SV for the object and verify the states of the fragments are
+    correct. Modify the fragment states and verify again.
+    """
+    killAzrael()
+
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk()
+
+    # ------------------------------------------------------------------------
+    # Create a template with two boosters and spawn it. The Boosters are
+    # to the left/right of the object and point both in the positive
+    # z-direction.
+    # ------------------------------------------------------------------------
+    # Convenience.
+    sv = bullet_data.BulletData()
+    cs = [1, 2, 3, 4]
+    uv = rgb = []
+    vert = [-4, 0, 0,
+            1, 2, 3,
+            4, 5, 6]
+
+    # Add the template to Azrael...
+    t1 = Template('t1', cs, vert, uv, rgb, [], [])
+    assert clerk.addTemplates([t1]).ok
+    # ... and spawn two instances thereof.
+    ret = clerk.spawn([(t1.name, sv)])
+    assert ret.ok
+    objID_1 = ret.data[0]
+    ret = clerk.spawn([(t1.name, sv)])
+    assert ret.ok
+    objID_2 = ret.data[0]
+    leo.processCommandsAndSync()
+
+    # Query the SV and ensure the fragment positions are correct.
+    ret = clerk.getStateVariables([objID_1, objID_2])
+    assert ret.ok
+    assert len(ret.data) == 2
+    frag1 = ret.data[objID_1]['frag']
+    frag2 = ret.data[objID_2]['frag']
+
+    for frag in (frag1, frag2):
+        assert frag['1'] == [1, [0, 0, 0], [0, 0, 0, 1]]
+
+    # Update the fragment states of only the second object.
+    newStates = {objID_2: {'1': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
+    ret = clerk.updateFragmentStates(newStates)
+    assert ret.ok
+
+    # Query the SV again.
+    ret = clerk.getStateVariables([objID_1, objID_2])
+    assert ret.ok
+    assert len(ret.data) == 2
+    frag1 = ret.data[objID_1]['frag']
+    frag2 = ret.data[objID_2]['frag']
+    assert len(frag1) == len(frag2) == 1
+    assert frag1['1'] == [1, [0, 0, 0], [0, 0, 0, 1]]
+    assert frag2['1'] == [2.2, [1, 2, 3], [1, 0, 0, 0]]
+
+    # Kill all spawned Client processes.
+    killAzrael()
+    print('Test passed')
+
+
 if __name__ == '__main__':
     test_updateBoosterValues()
     test_getAllStateVariables()

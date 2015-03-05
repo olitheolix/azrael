@@ -800,6 +800,8 @@ class Clerk(multiprocessing.Process):
                 tmp = dict(templates[name])
                 tmp['objID'] = objIDs[idx]
                 tmp['lastChanged'] = 0
+                tmp['fragState'] = {
+                    '1': (1, [0, 0, 0], [0, 0, 0, 1])}
                 tmp['templateID'] = name
 
                 # Copy the geometry from the template- to the instance
@@ -866,7 +868,7 @@ class Clerk(multiprocessing.Process):
         values are either the State Variables (instance of ``BulletData``) or
         *None* (if the objID does not exist).
 
-        :param list(int) objIDs: list of objects for which to returns the SV.
+        :param list(int) objIDs: list of objects for which to return the SV.
         :return: {objID_1: SV_k, ...}
         :rtype: dict
         """
@@ -879,11 +881,11 @@ class Clerk(multiprocessing.Process):
         # Query the lastChanged values for all objects.
         docs = database.dbHandles['ObjInstances'].find(
             {'objID': {'$in': objIDs}},
-            {'lastChanged': 1, 'objID': 1})
+            {'lastChanged': 1, 'objID': 1, 'fragState': 1})
 
         # Convert the list of [{objID1: cs1}, {objID2: cs2}, ...] into
         # a simple {objID1: cs1, objID2: cs2, ...} dictionary.
-        docs = {_['objID']: _['lastChanged'] for _ in docs}
+        docs = {_['objID']: (_['lastChanged'], _['fragState']) for _ in docs}
 
         # Overwrite the 'lastChanged' field in the State Variable with the
         # current value so that the user automatically gets the latest value.
@@ -891,8 +893,8 @@ class Clerk(multiprocessing.Process):
         out = {}
         for objID in objIDs:
             if (objID in docs) and (sv[objID] is not None):
-                tmp = sv[objID]._replace(lastChanged=docs[objID])
-                out[objID] = {'sv': tmp, 'frag': {}}
+                tmp = sv[objID]._replace(lastChanged=docs[objID][0])
+                out[objID] = {'sv': tmp, 'frag': docs[objID][1]}
             else:
                 out[objID] = None
 
@@ -1065,7 +1067,7 @@ class Clerk(multiprocessing.Process):
 
         # Convert the list of [{objID1: cs1}, {objID2: cs2}, ...] into
         # a simple {objID1: cs1, objID2: cs2, ...} dictionary.
-        docs = {_['objID']: _['lastChanged'] for _ in docs}
+        docs = {_['objID']: (_['lastChanged'], _['fragState']) for _ in docs}
 
         # Overwrite the 'lastChanged' field in the State Variable. This ensures
         # the user gets the most up-to-date value on when the object geometry
@@ -1073,6 +1075,17 @@ class Clerk(multiprocessing.Process):
         out = {}
         for objID in sv:
             if objID in docs:
-                tmp = sv[objID]._replace(lastChanged=docs[objID])
-                out[objID] = {'sv': tmp, 'frag': {}}
+                tmp = sv[objID]._replace(lastChanged=docs[objID][0])
+                out[objID] = {'sv': tmp, 'frag': docs[objID][1]}
         return RetVal(True, None, out)
+
+    @typecheck
+    def updateFragmentStates(self, fragData: dict):
+        """
+        """
+        update = database.dbHandles['ObjInstances'].update
+
+        for objID in fragData:
+            ret = update({'objID': objID},
+                         {'$set': {'fragState': fragData[objID]}})
+        return RetVal(True, None, None)
