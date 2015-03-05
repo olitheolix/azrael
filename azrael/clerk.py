@@ -1086,8 +1086,26 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def updateFragmentStates(self, fragData: dict):
         """
-        fixme: docu
-        fixme: error checks with corresponding unit tests
+        Update one or more fragments in one or more objects.
+
+        The ``fragData`` dictionary has the following structure:
+
+          fragData = {
+            objID_1: {
+              '1': [5, [5, 5, 5], [5, 5, 5, 5]],
+              '3': [5, [5, 5, 5], [5, 5, 5, 5]]
+            },
+            objID_2: {
+              '1': [2, [3, 3, 3], [4, 4, 4, 4]]
+            }
+        }
+
+        where an entry like {'1': [2, [3, 3, 3], [4, 4, 4, 4]]} means
+        to update fragment '1'. Specifically, set its scale to 2, its position
+        to [2, 2, 2], and its orientation (Quaternion) to [4, 4, 4, 4].
+
+        :param dict fragData: new fragment data for each object.
+        :return: success.
         """
         # Convenience.
         update = database.dbHandles['ObjInstances'].update
