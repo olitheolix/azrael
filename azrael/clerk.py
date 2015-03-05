@@ -1092,6 +1092,35 @@ class Clerk(multiprocessing.Process):
         # Convenience.
         update = database.dbHandles['ObjInstances'].update
 
+        # Sanity checks.
+        try:
+            # All objIDs must be integers and all values must be dictionaries.
+            for k1, v1 in fragData.items():
+                assert isinstance(k1, int)
+                assert isinstance(v1, dict)
+
+                # Each fragmentID must be a stringified integer, and all
+                # fragment data must be a list with three entries.
+                for k2, v2 in v1.items():
+                    assert isinstance(k2, str)
+                    assert isinstance(v2, list)
+                    int(k2)
+
+                    # Every fragment must receive three pieces of information:
+                    # scale (scalar), position (3-element vector), and
+                    # orientation (4-element vector).
+                    assert len(v2) == 3
+                    assert isinstance(v2[0], (int, float))
+                    assert len(v2[1]) == 3
+                    assert len(v2[2]) == 4
+                    for _ in v2[1]:
+                        assert isinstance(_, (int, float))
+                    for _ in v2[2]:
+                        assert isinstance(_, (int, float))
+        except (TypeError, AssertionError):
+            return RetVal(False, 'Invalid data format', None)
+
+        # Update the fragments one objects at a time.
         ok = True
         for objID, frag in fragData.items():
             # Mongo query: ensure every part ID actually exists. The result of

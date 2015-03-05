@@ -1372,7 +1372,7 @@ def test_updateFragmentState():
     clerk = azrael.clerk.Clerk()
 
     # Attempt to update the fragment state of non-existing objects.
-    newStates = {'2': {'1': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
+    newStates = {2: {'1': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
     ret = clerk.updateFragmentStates(newStates)
     assert not ret.ok
 
@@ -1426,7 +1426,7 @@ def test_updateFragmentState():
     # Attempt to update the fragment state of two objects of which only one
     # actually exists.
     newStates = {
-        '10000': {'1': [5, [5, 5, 5], [5, 5, 5, 5]]},
+        1000000: {'1': [5, [5, 5, 5], [5, 5, 5, 5]]},
         objID_2: {'1': [5, [5, 5, 5], [5, 5, 5, 5]]}}
     ret = clerk.updateFragmentStates(newStates)
     assert not ret.ok
