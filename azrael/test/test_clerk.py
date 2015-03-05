@@ -1371,6 +1371,11 @@ def test_updateFragmentState():
     leo = getLeonard()
     clerk = azrael.clerk.Clerk()
 
+    # Attempt to update the fragment state of non-existing objects.
+    newStates = {'2': {'1': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
+    ret = clerk.updateFragmentStates(newStates)
+    assert not ret.ok
+
     # Convenience.
     sv = bullet_data.BulletData()
     cs = [1, 2, 3, 4]
@@ -1417,6 +1422,40 @@ def test_updateFragmentState():
     assert ret.ok
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                    4.4, [1, 2, 5], [0, 3, 0, 0])
+
+    # Attempt to update the fragment state of two objects of which only one
+    # actually exists.
+    newStates = {
+        '10000': {'1': [5, [5, 5, 5], [5, 5, 5, 5]]},
+        objID_2: {'1': [5, [5, 5, 5], [5, 5, 5, 5]]}}
+    ret = clerk.updateFragmentStates(newStates)
+    assert not ret.ok
+
+    # The command must have updated only the existing fragment.
+    checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
+                   5.0, [5, 5, 5], [5, 5, 5, 5])
+
+    # Attempt to update a non-existing fragment.
+    newStates = {
+        objID_2: {'2': [6, [6, 6, 6], [6, 6, 6, 6]]}}
+    ret = clerk.updateFragmentStates(newStates)
+    assert not ret.ok
+
+    checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
+                   5.0, [5, 5, 5], [5, 5, 5, 5])
+
+    # Attempt to update several fragments in one object. However, not all
+    # fragment IDs are valid. The expected behaviour is that none of the
+    # fragments was updated.
+    newStates = {
+        objID_2: {
+            '1': [7, [7, 7, 7], [7, 7, 7, 7]],
+            '2': [8, [8, 8, 8], [8, 8, 8, 8]]}}
+    ret = clerk.updateFragmentStates(newStates)
+    assert not ret.ok
+
+    checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
+                   5.0, [5, 5, 5], [5, 5, 5, 5])
 
     # Kill all spawned Client processes.
     killAzrael()

@@ -1089,9 +1089,29 @@ class Clerk(multiprocessing.Process):
         fixme: docu
         fixme: error checks with corresponding unit tests
         """
+        # Convenience.
         update = database.dbHandles['ObjInstances'].update
 
-        for objID in fragData:
-            ret = update({'objID': objID},
-                         {'$set': {'fragState': fragData[objID]}})
-        return RetVal(True, None, None)
+        ok = True
+        for objID, frag in fragData.items():
+            # Mongo query: ensure every part ID actually exists. The result of
+            # the code below will be dictionary like this:
+            #   {'fragState.1': {'$exists': 1},
+            #    'fragState.2': {'$exists': 1},
+            #    'objID': 2}
+            query = {'fragState.{}'.format(k): {'$exists': 1} for k in frag}
+            query['objID'] = objID
+
+            # Overwrite the specified partIDs. This will produce a dictionary
+            # like this:
+            #   {'fragState.1': [7, [7, 7, 7], [7, 7, 7, 7]],
+            #    'fragState.2': [8, [8, 8, 8], [8, 8, 8, 8]]}
+            newvals = {'fragState.{}'.format(k): frag[k] for k in frag}
+
+            # Issue the update command to Mongo.
+            ret = update(query, {'$set': newvals})
+
+            # Exactly one document was updated if everything went well.
+            if ret['nModified'] != 1:
+                ok = False
+        return RetVal(ok, None, None)
