@@ -505,3 +505,29 @@ def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
 @typecheck
 def FromClerk_ControlParts_Decode(payload: dict):
     return RetVal(True, None, payload['objIDs'])
+
+
+# ---------------------------------------------------------------------------
+# updateFragmentStates
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_UpdateFragmentStates_Encode(fragmentData: dict):
+    return True, fragmentData
+
+
+@typecheck
+def ToClerk_UpdateFragmentStates_Decode(payload: dict):
+    out = {int(k): v for (k, v) in payload.items()}
+    return True, (out, )
+
+
+@typecheck
+def FromClerk_UpdateFragmentStates_Encode(dummyarg):
+    return True, {}
+
+
+@typecheck
+def FromClerk_UpdateFragmentStates_Decode(dummyarg):
+    return RetVal(True, None, None)

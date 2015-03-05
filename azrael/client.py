@@ -114,6 +114,9 @@ class Client():
             'control_parts': (
                 protocol.ToClerk_ControlParts_Encode,
                 protocol.FromClerk_ControlParts_Decode),
+            'update_fragment_states': (
+                protocol.ToClerk_UpdateFragmentStates_Encode,
+                protocol.FromClerk_UpdateFragmentStates_Decode),
             }
 
     def __del__(self):
@@ -559,3 +562,13 @@ class Client():
         :rtype: list of int
         """
         return self.serialiseAndSend('get_all_objids')
+
+    def updateFragmentStates(self, fragStates: dict):
+        """
+        fixme: docu
+
+        :param dict fragStates: new fragment states.
+        :return: Success
+        :rtype:
+        """
+        return self.serialiseAndSend('update_fragment_states', fragStates)

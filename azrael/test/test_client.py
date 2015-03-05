@@ -627,8 +627,58 @@ def test_setGeometry(client_type):
     print('Test passed')
 
 
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_updateFragmentStates(client_type):
+    """
+    Spawn a new object. Then query and modify its fragment states.
+    """
+    killAzrael()
+
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
+    # Convenience.
+    cs = np.array([1, 2, 3, 4], np.float64)
+    vert = np.arange(9).astype(np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
+    objID = 1
+
+    # Start the necessary services.
+    clerk, client, clacks = startAzrael(client_type)
+
+    # Add a new template and spawn it.
+    t1 = Template('t1', cs, vert, uv, rgb, [], [])
+    assert client.addTemplates([t1]).ok
+
+    new_obj = {'template': t1.name,
+               'position': np.ones(3),
+               'velocityLin': -np.ones(3)}
+    ret = client.spawn([new_obj])
+    assert ret.ok and ret.data == (objID, )
+
+    # Query the SV to obtain the 'lastChanged' value.
+    leo.processCommandsAndSync()
+    ret = client.getStateVariables(objID)
+    assert ret.ok
+    assert ret.data[objID]['frag']['1'] == [1, [0, 0, 0], [0, 0, 0, 1]]
+
+    newStates = {objID: {'1': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
+    ret = client.updateFragmentStates(newStates)
+    assert ret.ok
+
+    ret = client.getStateVariables(objID)
+    assert ret.ok
+    assert ret.data[objID]['frag']['1'] == [2.2, [1, 2, 3], [1, 0, 0, 0]]
+
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
+    print('Test passed')
+
+
 if __name__ == '__main__':
     for _transport_type in ('ZeroMQ', 'Websocket'):
+        test_updateFragmentStates(_transport_type)
         test_setStateVariable(_transport_type)
         test_setGeometry(_transport_type)
         test_spawn_and_delete_one_client(_transport_type)

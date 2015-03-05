@@ -140,6 +140,10 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_ControlParts_Decode,
                 self.controlParts,
                 protocol.FromClerk_ControlParts_Encode),
+            'update_fragment_states': (
+                protocol.ToClerk_UpdateFragmentStates_Decode,
+                self.updateFragmentStates,
+                protocol.FromClerk_UpdateFragmentStates_Encode),
             }
 
         # Insert default objects. None of them has an actual geometry but
@@ -1063,7 +1067,7 @@ class Clerk(multiprocessing.Process):
         # Query the lastChanged values for all objects.
         docs = database.dbHandles['ObjInstances'].find(
             {'objID': {'$in': list(ret.data.keys())}},
-            {'lastChanged': 1, 'objID': 1})
+            {'lastChanged': 1, 'objID': 1, 'fragState': 1})
 
         # Convert the list of [{objID1: cs1}, {objID2: cs2}, ...] into
         # a simple {objID1: cs1, objID2: cs2, ...} dictionary.
@@ -1082,6 +1086,8 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def updateFragmentStates(self, fragData: dict):
         """
+        fixme: docu
+        fixme: error checks with corresponding unit tests
         """
         update = database.dbHandles['ObjInstances'].update
 

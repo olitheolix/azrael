@@ -1423,6 +1423,23 @@ def test_updateFragmentState():
     assert frag1['1'] == [1, [0, 0, 0], [0, 0, 0, 1]]
     assert frag2['1'] == [2.2, [1, 2, 3], [1, 0, 0, 0]]
 
+    # Modify two instances at once.
+    newStates = {
+        objID_1: {'1': [3.3, [1, 2, 4], [2, 0, 0, 0]]},
+        objID_2: {'1': [4.4, [1, 2, 5], [0, 3, 0, 0]]}}
+    ret = clerk.updateFragmentStates(newStates)
+    assert ret.ok
+
+    # Query the SV again.
+    ret = clerk.getStateVariables([objID_1, objID_2])
+    assert ret.ok
+    assert len(ret.data) == 2
+    frag1 = ret.data[objID_1]['frag']
+    frag2 = ret.data[objID_2]['frag']
+    assert len(frag1) == len(frag2) == 1
+    assert frag1['1'] == [3.3, [1, 2, 4], [2, 0, 0, 0]]
+    assert frag2['1'] == [4.4, [1, 2, 5], [0, 3, 0, 0]]
+
     # Kill all spawned Client processes.
     killAzrael()
     print('Test passed')
