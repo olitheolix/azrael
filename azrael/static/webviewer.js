@@ -75,6 +75,30 @@ function compileMesh (objID, vert, uv, scale) {
     return new THREE.Mesh(geo, mat)
 }
 
+/*
+Proof-of-concept function only to test downloading the geometry
+directly via an URL instead of via Clacks.
+
+The returned value is the same structure than that of "getGeometry".
+Example: download geometry and build the ThreeJS mesh.
+
+  >> msg = getGeometryFromURL("http://localhost:8080/templates/ground_geo");
+  >> ...
+  >> var new_geo = compileMesh(objID, msg.vert, msg.UV, scale);
+
+*/
+var getGeometryFromURL = function (url) {
+    xmlhttp = new XMLHttpRequest();
+    xmlhttp.open("GET", url, false);
+    xmlhttp.send();
+    var tmp = JSON.parse(xmlhttp.responseText);
+    var tmpVert = tmp["vert"];
+    var tmpUV = tmp["UV"];
+    if (tmpUV == undefined) tmpUV = [];
+    return {"vert": tmpVert, "UV": tmpUV}
+}
+
+
 var getGeometryCube = function () {
     buf_vert = [
         -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
@@ -377,7 +401,7 @@ function* mycoroutine(connection) {
                 // Object not yet in local cache --> fetch its geometry.
                 msg = yield getGeometry(objID);
                 if (msg.ok == false) {console.log('Error getGeometry'); return;}
-                var new_geo = compileMesh(objID, msg.vert, msg.UV, scale)
+                var new_geo = compileMesh(objID, msg.vert, msg.UV, scale);
 
                 // Add the object to the cache and scene.
                 obj_cache[objID] = new_geo
