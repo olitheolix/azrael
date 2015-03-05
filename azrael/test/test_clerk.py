@@ -1367,78 +1367,56 @@ def test_updateFragmentState():
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard.
+    # Reset the SV database and instantiate a Leonard and Clerk.
     leo = getLeonard()
-
-    # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
 
-    # ------------------------------------------------------------------------
-    # Create a template with two boosters and spawn it. The Boosters are
-    # to the left/right of the object and point both in the positive
-    # z-direction.
-    # ------------------------------------------------------------------------
     # Convenience.
     sv = bullet_data.BulletData()
     cs = [1, 2, 3, 4]
-    uv = rgb = []
-    vert = [-4, 0, 0,
-            1, 2, 3,
-            4, 5, 6]
+    vert = [-4, 0, 0, 1, 2, 3, 4, 5, 6]
 
-    # Add the template to Azrael...
-    t1 = Template('t1', cs, vert, uv, rgb, [], [])
+    # Add the template to Azrael and spawn two instances.
+    t1 = Template('t1', cs, vert, uv=[], rgb=[], boosters=[], factories=[])
     assert clerk.addTemplates([t1]).ok
-    # ... and spawn two instances thereof.
-    ret = clerk.spawn([(t1.name, sv)])
+    ret = clerk.spawn([(t1.name, sv), (t1.name, sv)])
     assert ret.ok
-    objID_1 = ret.data[0]
-    ret = clerk.spawn([(t1.name, sv)])
-    assert ret.ok
-    objID_2 = ret.data[0]
+    objID_1, objID_2 = ret.data
     leo.processCommandsAndSync()
 
-    # Query the SV and ensure the fragment positions are correct.
-    ret = clerk.getStateVariables([objID_1, objID_2])
-    assert ret.ok
-    assert len(ret.data) == 2
-    frag1 = ret.data[objID_1]['frag']
-    frag2 = ret.data[objID_2]['frag']
+    def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
+        """
+        Convenience function to verify the fragment states.
+        """
+        # Query the SV and ensure the fragment positions are correct.
+        ret = clerk.getStateVariables([objID_1, objID_2])
+        assert ret.ok
+        assert len(ret.data) == 2
+        frag1 = ret.data[objID_1]['frag']
+        frag2 = ret.data[objID_2]['frag']
 
-    for frag in (frag1, frag2):
-        assert frag['1'] == [1, [0, 0, 0], [0, 0, 0, 1]]
+        assert frag1['1'] == [scale_1, pos_1, rot_1]
+        assert frag2['1'] == [scale_2, pos_2, rot_2]
 
-    # Update the fragment states of only the second object.
+    # All fragments must initially be at the center.
+    checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
+                   1, [0, 0, 0], [0, 0, 0, 1])
+
+    # Update the fragment states of the second object and verify.
     newStates = {objID_2: {'1': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
     ret = clerk.updateFragmentStates(newStates)
     assert ret.ok
+    checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
+                   2.2, [1, 2, 3], [1, 0, 0, 0])
 
-    # Query the SV again.
-    ret = clerk.getStateVariables([objID_1, objID_2])
-    assert ret.ok
-    assert len(ret.data) == 2
-    frag1 = ret.data[objID_1]['frag']
-    frag2 = ret.data[objID_2]['frag']
-    assert len(frag1) == len(frag2) == 1
-    assert frag1['1'] == [1, [0, 0, 0], [0, 0, 0, 1]]
-    assert frag2['1'] == [2.2, [1, 2, 3], [1, 0, 0, 0]]
-
-    # Modify two instances at once.
+    # Modify two instances at once and verify again.
     newStates = {
         objID_1: {'1': [3.3, [1, 2, 4], [2, 0, 0, 0]]},
         objID_2: {'1': [4.4, [1, 2, 5], [0, 3, 0, 0]]}}
     ret = clerk.updateFragmentStates(newStates)
     assert ret.ok
-
-    # Query the SV again.
-    ret = clerk.getStateVariables([objID_1, objID_2])
-    assert ret.ok
-    assert len(ret.data) == 2
-    frag1 = ret.data[objID_1]['frag']
-    frag2 = ret.data[objID_2]['frag']
-    assert len(frag1) == len(frag2) == 1
-    assert frag1['1'] == [3.3, [1, 2, 4], [2, 0, 0, 0]]
-    assert frag2['1'] == [4.4, [1, 2, 5], [0, 3, 0, 0]]
+    checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
+                   4.4, [1, 2, 5], [0, 3, 0, 0])
 
     # Kill all spawned Client processes.
     killAzrael()
@@ -1446,6 +1424,7 @@ def test_updateFragmentState():
 
 
 if __name__ == '__main__':
+    test_updateFragmentState()
     test_updateBoosterValues()
     test_getAllStateVariables()
     test_add_get_template_single()
