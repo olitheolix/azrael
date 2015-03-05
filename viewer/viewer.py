@@ -347,8 +347,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if objID not in self.oldSVs:
             return False
 
-        cs_old = self.newSVs[objID].lastChanged
-        cs_new = self.oldSVs[objID].lastChanged
+        cs_old = self.newSVs[objID]['sv'].lastChanged
+        cs_new = self.oldSVs[objID]['sv'].lastChanged
         return (cs_old != cs_new)
 
     def loadGeometry(self):
@@ -362,9 +362,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Prune the list to remove all those objects for which the State
         # Vector is None.
-        tmp = {k: v for k, v in ret.data.items() if v is not None}
-        self.newSVs = {k: v['sv'] for k, v in tmp.items()}
-        del tmp
+        self.newSVs = {k: v for k, v in ret.data.items() if v is not None}
 
         # Delete those local objects that have been removed in Azrael.
         for objID in self.oldSVs:
@@ -386,7 +384,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             if objID == self.player_id:
                 continue
 
-            # Skip the object if we already have downloaded its geometry and it
+            # Skip the object if we have already downloaded its geometry and it
             # has not changed.
             if (objID in self.oldSVs) and not self.hasGeometryChanged(objID):
                 continue
@@ -619,7 +617,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
         with util.Timeit('viewer.loop') as timeit:
-            for objID, sv in self.newSVs.items():
+            for objID in self.newSVs:
+                sv = self.newSVs[objID]['sv']
+
                 # Do not add anything if it is the player object itself.
                 if objID == self.player_id:
                     continue
