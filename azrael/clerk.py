@@ -514,13 +514,11 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, out)
 
     @typecheck
-    def _isGeometrySane(self, vert: list, uv: list, rgb: list):
+    def _isGeometrySane(self, frag: Fragment):
         """
         Return *True* if the geometry is consistent.
 
-        :param np.ndarray vert: vertices
-        :param np.ndarray uv: UV values
-        :param np.ndarray rgb: RGB values
+        :param Fragment frag: a geometry Fragment
         :return: Sucess
         :rtype: bool
         """
@@ -529,9 +527,9 @@ class Clerk(multiprocessing.Process):
         # edges and every edge requires an (x, y, z) triplet to
         # describe its position).
         try:
-            assert len(vert) % 9 == 0
-            assert len(uv) % 2 == 0
-            assert len(rgb) % 3 == 0
+            assert len(frag.vert) % 9 == 0
+            assert len(frag.uv) % 2 == 0
+            assert len(frag.rgb) % 3 == 0
         except AssertionError:
             return False
         return True
@@ -585,7 +583,7 @@ class Clerk(multiprocessing.Process):
                         msg = 'Parameters for addTemplates must be lists'
                         return RetVal(False, msg, None)
 
-                    if not self._isGeometrySane(frag.vert, frag.uv, frag.rgb):
+                    if not self._isGeometrySane(frag):
                         msg = 'Invalid geometry for template <{}>'
                         return RetVal(False, msg.format(tt.name), None)
 
@@ -951,9 +949,8 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
         # Sanity check for geometry.
-        # fixme: isGeometrySane must exped a 'Fragment' instance.
         for frag in fragments:
-            if not self._isGeometrySane(frag.vert, frag.uv, frag.rgb):
+            if not self._isGeometrySane(frag):
                 msg = 'Invalid geometry for objID <{}>'.format(objID)
                 return RetVal(False, msg, None)
 
