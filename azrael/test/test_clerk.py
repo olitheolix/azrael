@@ -1176,36 +1176,32 @@ def test_getGeometry():
     clerk = azrael.clerk.Clerk()
 
     # Convenience.
-    cs = [1, 2, 3, 4]
-    vert = list(range(9))
-    uv = [9, 10]
-    rgb = [1, 2, 250]
+    cs, vert = [1, 2, 3, 4], list(range(9))
+    uv, rgb = [9, 10], [1, 2, 250]
     sv = bullet_data.BulletData()
 
     # Add a valid template and verify it now exists in Azrael.
-    t1 = Template('t1', cs, vert, uv, rgb, [], [])
-    assert clerk.addTemplates([t1]).ok
-    assert clerk.getTemplates([t1.name]).ok
+    temp = Template('foo', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    assert clerk.addTemplates([temp]).ok
+    assert clerk.getTemplates([temp.name]).ok
 
     # Attempt to query the geometry of a non-existing object.
     assert not clerk.getGeometry(1).ok
 
     # Spawn an object from the previously added template.
-    ret = clerk.spawn([(t1.name, sv)])
+    ret = clerk.spawn([(temp.name, sv)])
     assert ret.ok and (len(ret.data) == 1)
     objID = ret.data[0]
 
     # Query the geometry of the object.
     ret = clerk.getGeometry(objID)
     assert ret.ok
-    assert np.array_equal(vert, ret.data['1']['vert'])
-    assert np.array_equal(uv, ret.data['1']['uv'])
-    assert np.array_equal(rgb, ret.data['1']['rgb'])
+    assert np.array_equal(vert, ret.data['bar'].vert)
+    assert np.array_equal(uv, ret.data['bar'].uv)
+    assert np.array_equal(rgb, ret.data['bar'].rgb)
 
-    # Delete the object.
+    # Delete the object and attempt to query its geometry afterwards.
     assert clerk.removeObject(objID).ok
-
-    # Attempt to query the geometry of the now deleted object.
     assert not clerk.getGeometry(objID).ok
 
     # Kill all spawned Client processes.
