@@ -886,36 +886,29 @@ def test_controlParts_Factories_moving():
     """
     killAzrael()
 
-    # Reset the SV database and instantiate a Leonard.
+    # Reset the SV database and instantiate a Leonard and Clerk.
     leo = getLeonard()
+    clerk = azrael.clerk.Clerk()
 
     # Parameters and constants for this test.
-    objID_1 = 1
+    objID_1, objID_2, objID_3 = 1, 2, 3
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
-    cs = [1, 2, 3, 4]
-    vert = list(range(9))
-    uv = [9, 10]
-    rgb = [1, 2, 250]
+    cs, vert = [1, 2, 3, 4], list(range(9))
+    uv, rgb = [9, 10], [1, 2, 250]
     dir_0 = np.array([1, 0, 0], np.float64)
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
     pos_1 = np.array([-1, -1, 0], np.float64)
-    objID_2, objID_3 = 2, 3
 
     # State variables for parent object.
     sv = bullet_data.BulletData(position=pos_parent, velocityLin=vel_parent)
-
-    # Instantiate a Clerk.
-    clerk = azrael.clerk.Clerk()
 
     # ------------------------------------------------------------------------
     # Create a template with two factories and spawn it.
     # ------------------------------------------------------------------------
 
-    # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplates. The user must assign the partIDs
-    # manually.
+    # Define factory parts.
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
         templateID='_templateCube', exit_speed=[0.1, 0.5])
@@ -923,18 +916,16 @@ def test_controlParts_Factories_moving():
         partID=1, pos=pos_1, direction=dir_1,
         templateID='_templateSphere', exit_speed=[1, 5])
 
-    # Add the template to Azrael...
-    t2 = Template('t1', cs, vert, uv, rgb, [], [f0, f1])
-    assert clerk.addTemplates([t2]).ok
-
-    # ... and spawn an instance thereof.
-    ret = clerk.spawn([(t2.name, sv)])
+    # Define a template with two factories, add it to Azrael, and spawn it.
+    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [f0, f1])
+    assert clerk.addTemplates([temp]).ok
+    ret = clerk.spawn([(temp.name, sv)])
     assert (ret.ok, ret.data) == (True, (objID_1, ))
     leo.processCommandsAndSync()
+    del temp, ret, f0, f1, sv
 
     # ------------------------------------------------------------------------
-    # Send commands to the factories. Tell them to spawn their object with
-    # the specified velocity.
+    # Instruct factories to create an object with a specific exit velocity.
     # ------------------------------------------------------------------------
 
     # Create the commands to let each factory spawn an object.
@@ -943,8 +934,7 @@ def test_controlParts_Factories_moving():
     cmd_1 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
 
     # Send the commands and ascertain that the returned object IDs now exist in
-    # the simulation. These IDS must be '3' and '4', since ID 1 was already
-    # given to the client object.
+    # the simulation.
     ret = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
     assert ret.ok and (len(ret.data) == 2)
     spawnedIDs = ret.data
@@ -955,8 +945,7 @@ def test_controlParts_Factories_moving():
     ret = clerk.getStateVariables(spawnedIDs)
     assert (ret.ok, len(ret.data)) == (True, 2)
 
-    # Ensure the position, velocity, and orientation of the spawned objects are
-    # correct.
+    # Ensure the position/velocity/orientation of the new objects are correct.
     sv_2, sv_3 = ret.data[objID_2]['sv'], ret.data[objID_3]['sv']
     assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0 + vel_parent)
     assert np.allclose(sv_2.position, pos_0 + pos_parent)
