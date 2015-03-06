@@ -46,6 +46,7 @@ import azrael.config as config
 import azrael.physics_interface as physAPI
 
 from PySide import QtCore, QtGui, QtOpenGL
+from azrael.util import Template, Fragment
 
 
 def parseCommandLine():
@@ -393,7 +394,11 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             ret = self.client.getGeometry(objID)
             if not ret.ok:
                 continue
-            buf_vert, buf_uv, buf_rgb = ret.data['1']
+
+            # Compile the first fragment.
+            for fragName in ret.data:
+                buf_vert, buf_uv, buf_rgb = ret.data[fragName][1:]
+                break
 
             # This is to mask a bug in Clacks: newly spawned objects can become
             # active before their geometry data hits the DB.
@@ -521,8 +526,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'
-        args = (t_projectile, cs, buf_vert, uv, rgb, [], [])
-        ret = self.client.addTemplates([args])
+        frags = [Fragment('frag_1', buf_vert, uv, rgb)]
+        temp = Template(t_projectile, cs, frags, [], [])
+        ret = self.client.addTemplates([temp])
+        del frags, temp
 
         # The template was probably already defined (eg by a nother instance of
         # this script).
