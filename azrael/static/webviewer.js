@@ -395,8 +395,8 @@ function* mycoroutine(connection) {
                 // Object not yet in local cache --> fetch its geometry.
                 msg = yield getGeometry(objID);
                 if (msg.ok == false) {console.log('Error getGeometry'); return;}
-                var tmp_vert = msg.data["1"].vert
-                var tmp_uv = msg.data["1"].uv
+                var tmp_vert = msg.data['frag_1'][1]
+                var tmp_uv = msg.data['frag_1'][2]
                 var new_geo = compileMesh(objID, tmp_vert, tmp_uv, scale);
 
                 // Add the object to the cache and scene.
