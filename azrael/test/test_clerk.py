@@ -401,76 +401,75 @@ def test_add_get_template_single():
     assert np.array_equal(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
 
     # Convenience.
-    cs = [1, 2, 3, 4]
-    vert = list(range(9))
-    uv = [9, 10]
-    rgb = [1, 2, 250]
+    cs, vert = [1, 2, 3, 4], list(range(9))
+    uv, rgb = [9, 10], [1, 2, 250]
 
     # Wrong argument .
-    t1 = Template('t1', cs, vert[:-1], uv, rgb, [], [])
     ret = clerk.addTemplates([1])
-    assert not ret.ok
-    assert ret.msg == 'Invalid arguments'
+    assert (ret.ok, ret.msg) == (False, 'Invalid arguments')
 
     # Attempt to add a template where the number of vertices is not a multiple
     # of 9. This must fail.
-    ret = clerk.addTemplates([t1])
+    frags = [Fragment(name='foo', vert=vert[:-1], uv=uv, rgb=rgb)]
+    ret = clerk.addTemplates([Template('t1', cs, frags, [], [])])
     assert not ret.ok
     assert ret.msg.startswith('Invalid geometry for template')
 
     # Add a valid template. This must succeed.
-    t1 = Template('t1', cs, vert, uv, rgb, [], [])
-    assert clerk.addTemplates([t1]).ok
+    frags = [Fragment(name='foo', vert=vert, uv=uv, rgb=rgb)]
+    assert clerk.addTemplates([Template('bar', cs, frags, [], [])]).ok
 
     # Attempt to add another template with the same name. This must fail.
-    t2 = Template('t1', 2 * cs, 2 * vert, uv, rgb, [], [])
-    assert not clerk.addTemplates([t2]).ok
+    frags = [Fragment(name='foo', vert=2 * vert, uv=uv, rgb=rgb)]
+    temp = Template('bar', 2 * cs, frags, [], [])
+    assert not clerk.addTemplates([temp]).ok
 
-    # Fetch the just added template and verify its parameters have not changed.
-    ret = clerk.getTemplates([t2.name])
+    # Fetch the template and verify it was really not updated.
+    ret = clerk.getTemplates([temp.name])
     assert ret.ok
-    assert np.array_equal(ret.data[t2.name]['cshape'], cs)
+    assert np.array_equal(ret.data[temp.name]['cshape'], cs)
+    del temp
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
     # tuples. Their first argument is the unit ID (Azrael does not assign
     # automatically assign any IDs).
-    z = np.zeros(3)
-    b0 = parts.Booster(partID=0, pos=z, direction=[0, 0, 1],
+    b0 = parts.Booster(partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
                        minval=0, maxval=0.5, force=0)
-    b1 = parts.Booster(partID=1, pos=z, direction=[0, 0, 1],
+    b1 = parts.Booster(partID=1, pos=[0, 0, 0], direction=[0, 0, 1],
                        minval=0, maxval=0.5, force=0)
     f0 = parts.Factory(
-        partID=0, pos=z, direction=[0, 0, 1],
+        partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
         templateID='_templateCube', exit_speed=[0.1, 0.5])
-    del z
 
     # Add the new template.
-    t3 = Template('t3', cs, vert, uv, rgb, [b0, b1], [f0])
-    assert clerk.addTemplates([t3]).ok
+    frags = [Fragment(name='foo', vert=vert, uv=uv, rgb=rgb)]
+    temp = Template('t3', cs, frags, [b0, b1], [f0])
+    assert clerk.addTemplates([temp]).ok
 
     # Retrieve the just created object and verify the CS and geometry.
-    ret = clerk.getTemplates([t3.name])
+    ret = clerk.getTemplates([temp.name])
     assert ret.ok
-    assert np.array_equal(ret.data[t3.name]['cshape'], cs)
+    assert np.array_equal(ret.data[temp.name]['cshape'], cs)
 
     # The template must also feature two boosters and one factory.
-    assert len(ret.data[t3.name]['boosters']) == 2
-    assert len(ret.data[t3.name]['factories']) == 1
+    assert len(ret.data[temp.name]['boosters']) == 2
+    assert len(ret.data[temp.name]['factories']) == 1
 
     # Explicitly verify the booster- and factory units. The easisest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
-    out_boosters = [parts.Booster(*_) for _ in ret.data[t3.name]['boosters']]
-    out_factories = [parts.Factory(*_) for _ in ret.data[t3.name]['factories']]
+    Booster, Factory = parts.Booster, parts.Factory
+    out_boosters = [Booster(*_) for _ in ret.data[temp.name]['boosters']]
+    out_factories = [Factory(*_) for _ in ret.data[temp.name]['factories']]
     assert b0 in out_boosters
     assert b1 in out_boosters
     assert f0 in out_factories
 
     # Request the same templates multiple times in a single call. This must
     # return a dictionary with as many keys as there are unique template IDs.
-    ret = clerk.getTemplates([t3.name, t3.name, t3.name])
-    assert ret.ok and (len(ret.data) == 1) and (t3.name in ret.data)
+    ret = clerk.getTemplates([temp.name, temp.name, temp.name])
+    assert ret.ok and (len(ret.data) == 1) and (temp.name in ret.data)
 
     print('Test passed')
 
