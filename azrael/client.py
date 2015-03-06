@@ -402,8 +402,14 @@ class Client():
         """
         Fetch the geometry from ``url`` and return it.
 
+        The return value is a dictionary. The keys are the fragment names and
+        the values are ``Fragment`` instances:
+
+            {'frag_1': Fragment(...), 'frag_2': Fragment(...), ...}
+
         :param str url: template URL
-        :return: fixme
+        :return: fragments.
+        :rtype: dict
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
@@ -450,7 +456,7 @@ class Client():
                     assert isinstance(_.uv, np.ndarray)
                     assert isinstance(_.rgb, np.ndarray)
                     frags[ii] = Fragment(_.name, _.vert.tolist(),
-                                          _.uv.tolist(), _.rgb.tolist())
+                                         _.uv.tolist(), _.rgb.tolist())
                 assert isinstance(boosters, list)
                 assert isinstance(factories, list)
 

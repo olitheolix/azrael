@@ -955,7 +955,7 @@ class Clerk(multiprocessing.Process):
                 return RetVal(False, msg, None)
 
         # Overwrite the geometry file with the new one.
-        # fixme: add same sanity check as in addTemplate
+        # fixme: add same sanity checks as in addTemplate
         geo = json.loads(open(doc['file_geo'], 'rb').read().decode('utf8'))
         for frag in fragments:
             if frag.name not in geo:
@@ -1109,8 +1109,11 @@ class Clerk(multiprocessing.Process):
         to update fragment '1'. Specifically, set its scale to 2, its position
         to [2, 2, 2], and its orientation (Quaternion) to [4, 4, 4, 4].
 
-        fixme docu: only updates existing objects; for any given object either
-        all fragments are updated, or none.
+        Non-existing objects will be ignored, but existing ones will be
+        modified regardless.
+
+        If one or more fragments exists then no fragment for that object will
+        be updated.
 
         :param dict fragData: new fragment data for each object.
         :return: success.
