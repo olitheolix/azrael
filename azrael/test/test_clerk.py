@@ -651,7 +651,7 @@ def test_controlParts_invalid_commands():
     clerk = azrael.clerk.Clerk()
 
     # Create a fake object. We will not need the actual object but other
-    # commands tested here depend on the existence of an object.
+    # commands used here depend on one to exist.
     ret = clerk.spawn([(templateID_1, sv)])
     assert (ret.ok, ret.data) == (True, (objID_1, ))
 
@@ -677,44 +677,38 @@ def test_controlParts_invalid_commands():
     assert not clerk.controlParts(objID_1, [], [cmd_f, cmd_b]).ok
 
     # ------------------------------------------------------------------------
-    # Create a template with a booster and a factory. Then send invalid
+    # Create a template with one booster and one factory. Then send 
     # commands to them.
     # ------------------------------------------------------------------------
 
-    # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplates. The user must assign the partIDs
-    # manually.
+    # Define the Booster and Factory parts.
     b0 = parts.Booster(partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
                        minval=0, maxval=0.5, force=0)
     f0 = parts.Factory(
         partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
         templateID='_templateCube', exit_speed=[0, 1])
 
-    # Add the template to Azrael...
-    cs = [1, 2, 3, 4]
-    vert = list(range(9))
-    uv = [9, 10]
-    rgb = [1, 2, 250]
-    t2 = Template('t1', cs, vert, uv, rgb, [b0], [f0])
-    assert clerk.addTemplates([t2]).ok
-
-    # ... and spawn an instance thereof.
+    # Define a new template, add it to Azrael, and spawn an instance.
+    cs, vert = [1, 2, 3, 4], list(range(9))
+    uv, rgb = [9, 10], [1, 2, 250]
+    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [b0], [f0])
+    assert clerk.addTemplates([temp]).ok
     sv = bullet_data.BulletData()
-    ret = clerk.spawn([(t2.name, sv)])
+    ret = clerk.spawn([(temp.name, sv)])
     assert (ret.ok, ret.data) == (True, (objID_2, ))
     leo.processCommandsAndSync()
 
-    # Create the commands to let each factory spawn an object.
+    # Tell each factory to spawn an object.
     cmd_b = parts.CmdBooster(partID=0, force=0.5)
     cmd_f = parts.CmdFactory(partID=0, exit_speed=0.5)
 
-    # Valid commands: simply verify the new template works correctly.
+    # Valid: Clerk must accept these commands.
     assert clerk.controlParts(objID_2, [cmd_b], [cmd_f]).ok
 
-    # Must fail: Booster where Factory is expected and vice versa.
+    # Invalid: Booster where Factory is expected and vice versa.
     assert not clerk.controlParts(objID_2, [cmd_f], [cmd_b]).ok
 
-    # Must fail: every part can only receive one command per call.
+    # Invalid: every part can only receive one command per call.
     assert not clerk.controlParts(objID_2, [cmd_b, cmd_b], []).ok
     assert not clerk.controlParts(objID_2, [], [cmd_f, cmd_f]).ok
 
