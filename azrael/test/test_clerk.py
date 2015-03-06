@@ -1,4 +1,4 @@
-# Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
+# Copyright 2015, Oliver Nagy <olitheolix@gmail.com>
 #
 # This file is part of Azrael (https://github.com/olitheolix/azrael)
 #
@@ -16,14 +16,11 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Test the Clerk only. Use a modified Client to this end which allows to send
-raw bytestrings to bypass all convenience wrappers that the Client class
-offers and test purely the Clerk.
+Test the Clerk module.
 """
 
 import sys
 import json
-import pytest
 import IPython
 import urllib.request
 
@@ -33,7 +30,6 @@ import azrael.util
 import azrael.clerk
 import azrael.client
 import azrael.parts as parts
-import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.test.test_clacks import startAzrael, stopAzrael
@@ -46,27 +42,25 @@ Template = azrael.util.Template
 Fragment = azrael.util.Fragment
 
 
-class ClientTest(azrael.client.Client):
-    def testSend(self, data):
-        """
-        Pass data verbatim to Clerk.
-
-        For testing only.
-
-        This method allows to test Clerk's ability to handle corrupt and
-        invalid commands. Otherwise the codecs would probably pick up many
-        errors and never pass on the request to Clerk.
-        """
-        self.sock_cmd.send(data)
-        data = self.sock_cmd.recv()
-        data = json.loads(data.decode('utf8'))
-        return data['ok'], data['payload']
-
-
 def test_invalid():
     """
     Send an invalid command to Clerk.
     """
+    class ClientTest(azrael.client.Client):
+        def testSend(self, data):
+            """
+            Pass data verbatim to Clerk.
+
+            This method is to test Clerk's ability to handle corrupt and
+            invalid commands. If we used a normal Client then the protocol
+            module would probably pick up most errors without them ever
+            reaching Clerk.
+            """
+            self.sock_cmd.send(data)
+            data = self.sock_cmd.recv()
+            data = json.loads(data.decode('utf8'))
+            return data['ok'], data['payload']
+
     killAzrael()
 
     # Start Clerk and instantiate a Client.
@@ -677,7 +671,7 @@ def test_controlParts_invalid_commands():
     assert not clerk.controlParts(objID_1, [], [cmd_f, cmd_b]).ok
 
     # ------------------------------------------------------------------------
-    # Create a template with one booster and one factory. Then send 
+    # Create a template with one booster and one factory. Then send
     # commands to them.
     # ------------------------------------------------------------------------
 
@@ -977,10 +971,8 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     objID_1, objID_2, objID_3 = 1, 2, 3
     pos_parent = np.array([1, 2, 3], np.float64)
     vel_parent = np.array([4, 5, 6], np.float64)
-    cs = [1, 2, 3, 4]
-    vert = list(range(9))
-    uv = [9, 10]
-    rgb = [1, 2, 250]
+    cs, vert = [1, 2, 3, 4], list(range(9))
+    uv, rgb = [9, 10], [1, 2, 250]
 
     # Part positions relative to parent.
     dir_0 = np.array([0, 0, +2], np.float64)
@@ -1004,19 +996,17 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
     # is rotate 180 degrees around the x-axis. This means the x-values of all
     # forces (boosters) and exit speeds (factory spawned objects) must be
     # inverted.
-    sv = bullet_data.BulletData(
-        position=pos_parent, velocityLin=vel_parent, orientation=orient_parent)
-
+    sv = bullet_data.BulletData(position=pos_parent,
+                                velocityLin=vel_parent,
+                                orientation=orient_parent)
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
 
     # ------------------------------------------------------------------------
-    # Create a template with two factories and spawn it.
+    # Define and spawn a template with two boosters and two factories.
     # ------------------------------------------------------------------------
 
-    # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplates. The user must assign the partIDs
-    # manually.
+    # Define the Booster and Factory parts.
     b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0,
                        minval=0, maxval=0.5, force=0)
     b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
@@ -1028,19 +1018,18 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
         partID=1, pos=pos_1, direction=dir_1,
         templateID='_templateSphere', exit_speed=[1, 5])
 
-    # Add the template to Azrael...
-    t2 = Template('t1', cs, vert, uv, rgb, [b0, b1], [f0, f1])
-    assert clerk.addTemplates([t2]).ok
-
-    # ... and spawn an instance thereof.
-    ret = clerk.spawn([(t2.name, sv)])
+    # Define the template, add it to Azrael, and spawn one instance.
+    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)],
+                    [b0, b1], [f0, f1])
+    assert clerk.addTemplates([temp]).ok
+    ret = clerk.spawn([(temp.name, sv)])
     assert (ret.ok, ret.data) == (True, (objID_1, ))
     leo.processCommandsAndSync()
+    del b0, b1, f0, f1, temp
 
     # ------------------------------------------------------------------------
     # Activate booster and factories. Then verify that boosters apply the
-    # correct force and the newly spawned objcts have the correct State
-    # Vector.
+    # correct force and the spawned objects have the correct State Vector.
     # ------------------------------------------------------------------------
 
     # Create the commands to let each factory spawn an object.
@@ -1053,10 +1042,9 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
 
     # Send the commands and ascertain that the returned object IDs now exist in
     # the simulation. These IDs must be '2' and '3'.
-    ret = clerk.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
-    assert ret.ok
-    spawnIDs = ret.data
-    assert spawnIDs == [objID_2, objID_3]
+    ok, _, spawnIDs = clerk.controlParts(
+        objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
+    assert (ok, spawnIDs) == (True, [objID_2, objID_3])
     leo.processCommandsAndSync()
 
     # Query the state variables of the objects spawned by the factories.
@@ -1427,10 +1415,8 @@ def test_updateFragmentState():
 
 def test_fragments_end2end():
     """
-    Create a new template with multiple fragments and instantiate it. Then
-    query the fragment geometries.
-
-    fixme: go over this function, add documentation, and clean up.
+    Test the interplay of all Clerk functions that have to deal with fragments
+    in single test case.
     """
     killAzrael()
 
@@ -1449,7 +1435,7 @@ def test_fragments_end2end():
     def checkFragState(name_1, scale_1, pos_1, rot_1,
                        name_2, scale_2, pos_2, rot_2):
         """
-        Convenience function to verify the fragment states of on object.
+        Convenience function to verify the fragment states of an object.
         This function assumes there is exactly one object with two fragments.
         """
         # Query the SV and ensure the fragment positions are correct.
@@ -1473,39 +1459,43 @@ def test_fragments_end2end():
     objID_1 = ret.data[0]
     leo.processCommandsAndSync()
 
+    # Query the SV for the object and verify it has as many fragment state
+    # vectors as there are fragments.
     ret = clerk.getStateVariables([objID_1])
     assert ret.ok
     ret_frags = ret.data[objID_1]['frag']
     assert len(ret_frags) == len(frags)
 
+    # Same as before, but this time use 'getAllStateVariables' instead of
+    # 'getStateVariables'.
     ret = clerk.getAllStateVariables()
     assert ret.ok
     ret_frags = ret.data[objID_1]['frag']
     assert len(ret_frags) == len(frags)
 
+    # Verify the fragment _states_ themselves.
     checkFragState('1', 1, [0, 0, 0], [0, 0, 0, 1],
                    'test', 1, [0, 0, 0], [0, 0, 0, 1])
 
+    # Modify the _state_ of both fragments and verify it worked.
     newStates = {
         objID_1: {
             '1': [7, [7, 7, 7], [7, 7, 7, 7]],
             'test': [8, [8, 8, 8], [8, 8, 8, 8]]}}
-    ret = clerk.updateFragmentStates(newStates)
-    assert ret.ok
-
+    assert clerk.updateFragmentStates(newStates).ok
     checkFragState('1', 7, [7, 7, 7], [7, 7, 7, 7],
                    'test', 8, [8, 8, 8], [8, 8, 8, 8])
 
-
+    # Query the fragment _geometries_.
     ret = clerk.getGeometry(objID_1)
     assert ret.ok
     assert np.array_equal(ret.data['1'].vert, vert_1)
     assert np.array_equal(ret.data['test'].vert, vert_2)
 
+    # Change the fragment geometries.
     frags = [Fragment(name='1', vert=vert_3, uv=[], rgb=[]),
              Fragment(name='test', vert=vert_4, uv=[], rgb=[])]
-    ret = clerk.setGeometry(objID_1, frags)
-
+    assert clerk.setGeometry(objID_1, frags).ok
     ret = clerk.getGeometry(objID_1)
     assert ret.ok
     assert np.array_equal(ret.data['1'].vert, vert_3)
