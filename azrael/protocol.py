@@ -53,6 +53,7 @@ from azrael.typecheck import typecheck
 ipshell = IPython.embed
 RetVal = azrael.util.RetVal
 Template = azrael.util.Template
+Fragment = azrael.util.Fragment
 
 
 # ---------------------------------------------------------------------------
@@ -152,11 +153,9 @@ def ToClerk_AddTemplates_Encode(templates: list):
     out = []
     with azrael.util.Timeit('clerk.encode') as timeit:
         for tt in templates:
-            name, cs, vert, UV, RGB, boosters, factories = tt
-            d = {'name': name, 'cs': cs, 'vert': vert.tolist(),
-                 'UV': UV.tolist(), 'RGB': RGB.tolist(),
-                 'boosters': boosters,
-                 'factories': factories}
+            name, cs, frags, boosters, factories = tt
+            d = {'name': name, 'cs': cs, 'frags': frags,
+                 'boosters': boosters, 'factories': factories}
             out.append(d)
     return True, {'data': out}
 
@@ -166,24 +165,18 @@ def ToClerk_AddTemplates_Decode(payload: dict):
     templates = []
     with azrael.util.Timeit('clerk.decode') as timeit:
         for data in payload['data']:
-            # Wrap the Booster- and Factory data into their dedicated named
-            # tuples.
+            # Wrap the Booster/Factory data into their dedicated tuples type.
             boosters = [parts.Booster(*_) for _ in data['boosters']]
             factories = [parts.Factory(*_) for _ in data['factories']]
 
-            # Convert template ID to a byte string.
-            name = data['name']
+            # Wrap fragments into their dedicated tuple type.
+            frags = [Fragment(*_) for _ in data['frags']]
 
-            # Convert collision shape and geometry to NumPy array (via byte
-            # string).
-            cs = data['cs']
-            vert = data['vert']
-            UV = data['UV']
-            RGB = data['RGB']
-
-            args = name, cs, vert, UV, RGB, boosters, factories
             try:
-                templates.append(Template(*args))
+                tmp = Template(name=data['name'], cs=data['cs'],
+                               fragments=frags, boosters=boosters,
+                               factories=factories)
+                templates.append(tmp)
             except TypeError:
                 return False, 'Template payload is corrupt'
 

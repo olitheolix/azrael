@@ -52,6 +52,7 @@ ipshell = IPython.embed
 WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client
 Template = azrael.util.Template
+Fragment = azrael.util.Fragment
 
 
 def test_ping():
@@ -630,12 +631,9 @@ def test_setGeometry(client_type):
 @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
 def test_updateFragmentStates(client_type):
     """
-    Spawn a new object. Then query and modify its fragment states.
+    Query and modify fragment states.
     """
     killAzrael()
-
-    # Reset the SV database and instantiate a Leonard.
-    leo = getLeonard()
 
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
@@ -644,32 +642,35 @@ def test_updateFragmentStates(client_type):
     rgb = np.array([1, 2, 250], np.uint8)
     objID = 1
 
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
     # Start the necessary services.
     clerk, client, clacks = startAzrael(client_type)
 
     # Add a new template and spawn it.
-    t1 = Template('t1', cs, vert, uv, rgb, [], [])
-    assert client.addTemplates([t1]).ok
+    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    assert client.addTemplates([temp]).ok
 
-    new_obj = {'template': t1.name,
+    new_obj = {'template': temp.name,
                'position': np.ones(3),
                'velocityLin': -np.ones(3)}
     ret = client.spawn([new_obj])
     assert ret.ok and ret.data == (objID, )
+    del temp, new_obj, ret, rgb, uv, vert, cs
 
     # Query the SV to obtain the 'lastChanged' value.
     leo.processCommandsAndSync()
     ret = client.getStateVariables(objID)
     assert ret.ok
-    assert ret.data[objID]['frag']['1'] == [1, [0, 0, 0], [0, 0, 0, 1]]
+    assert ret.data[objID]['frag']['bar'] == [1, [0, 0, 0], [0, 0, 0, 1]]
 
-    newStates = {objID: {'1': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
-    ret = client.updateFragmentStates(newStates)
-    assert ret.ok
-
+    # Modify the fragment states, then verify them.
+    newStates = {objID: {'bar': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
+    assert client.updateFragmentStates(newStates).ok
     ret = client.getStateVariables(objID)
     assert ret.ok
-    assert ret.data[objID]['frag']['1'] == [2.2, [1, 2, 3], [1, 0, 0, 0]]
+    assert ret.data[objID]['frag']['bar'] == [2.2, [1, 2, 3], [1, 0, 0, 0]]
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

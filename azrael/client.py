@@ -35,7 +35,7 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 
-from azrael.util import RetVal
+from azrael.util import RetVal, Template, Fragment
 from azrael.typecheck import typecheck
 from azrael.bullet.bullet_data import BulletDataOverride, _BulletData
 
@@ -421,14 +421,13 @@ class Client():
         Add all ``templates`` to Azrael.
 
         Return an error if one or more template names already exist.
+        fixup: new template structure with Fragment
 
         The ``templates`` variables is a list of tuples/lists. Each entry in
         this list must contain:
         * ``str`` name: the name of the new template.
         * ``list`` cs: collision shape
-        * ``ndarray`` vert: object geometry
-        * ``ndarray`` UV: UV map for textures
-        * ``ndarray`` RGB: texture
+        * ``list`` frags: list of ``Fragment`` objects.
         * ``parts.Booster`` boosters: list of Booster instances.
         * ``parts.Factory`` boosters: list of Factory instances.
 
@@ -436,28 +435,37 @@ class Client():
         """
         try:
             for idx, tt in enumerate(templates):
-                assert len(tt) == 7
-                name, cs, vert, UV, RGB, boosters, factories = tt
+                assert isinstance(tt, Template)
+                assert len(tt) == 5
+                name, cs, frags, boosters, factories = tt
 
                 assert isinstance(name, str)
                 assert isinstance(cs, (list, np.ndarray))
-                assert isinstance(vert, np.ndarray)
-                assert isinstance(UV, np.ndarray)
-                assert isinstance(RGB, np.ndarray)
+                assert isinstance(frags, list)
+                new_frags = []
+                for _ in frags:
+                    assert isinstance(_, Fragment)
+                    assert isinstance(_.vert, np.ndarray)
+                    assert isinstance(_.uv, np.ndarray)
+                    assert isinstance(_.rgb, np.ndarray)
+                    new_frags.append(Fragment(_.name, _.vert.tolist(),
+                                              _.uv.tolist(), _.rgb.tolist()))
                 assert isinstance(boosters, list)
                 assert isinstance(factories, list)
+                frags = new_frags
 
                 for b in boosters:
                     assert isinstance(b, parts.Booster)
                 for f in factories:
                     assert isinstance(f, parts.Factory)
 
-                # Ensure the collision shape is a list.
+                # Ensure the collision shape and Fragment geometry are lists,
+                # not NumPy arrays.
                 cs = np.array(cs, np.float64).tolist()
 
                 # Replace the original entry with a new one where CS is
                 # definitively a list.
-                tmp = name, cs, vert, UV, RGB, boosters, factories
+                tmp = name, cs, frags, boosters, factories
                 templates[idx] = tmp
         except AssertionError as err:
             return RetVal(False, 'Data type error', None)
