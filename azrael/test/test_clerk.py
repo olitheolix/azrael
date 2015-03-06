@@ -556,14 +556,15 @@ def test_add_get_template_AABB():
     cs = [1, 2, 3, 4]
     uv = rgb = []
 
-    # Manually specify the vertices.
+    # Manually specify the vertices and its spatial extent in the 'max_sidelen'
+    # variable beneath.
     vert = [-4, 0, 0,
             1, 2, 3,
             4, 5, 6]
     max_sidelen = max(8, 5, 6)
 
-    # Add template and retrieve it again.
-    t1 = Template('t1', cs, vert, uv, rgb, [], [])
+    # Add- and fetch the template.
+    t1 = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [])
     assert clerk.addTemplates([t1]).ok
     ret = clerk.getTemplates([t1.name])
     assert ret.ok
@@ -581,7 +582,7 @@ def test_add_get_template_AABB():
     max_sidelen = max(8, 14, 8)
 
     # Add template and retrieve it again.
-    t2 = Template('t2', cs, vert, uv, rgb, [], [])
+    t2 = Template('t2', cs, [Fragment('bar', vert, uv, rgb)], [], [])
     assert clerk.addTemplates([t2]).ok
     ret = clerk.getTemplates([t2.name])
     assert ret.ok
