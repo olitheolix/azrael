@@ -1211,8 +1211,8 @@ def test_getGeometry():
 
 def test_instanceDB_checksum():
     """
-    Spawn and object and verify that the geometry tag changes whenever the
-    geometry is modified.
+    Spawn two objects, modify their geometries, and verify that the
+    'lastChanged' flag changes accordingly.
     """
     killAzrael()
 
@@ -1223,44 +1223,47 @@ def test_instanceDB_checksum():
     leo = getLeonard()
 
     # Convenience.
-    cs = [1, 2, 3, 4]
-    vert = list(range(9))
-    uv = [9, 10]
-    rgb = [1, 2, 250]
+    cs, vert = [1, 2, 3, 4], list(range(9))
+    uv, rgb = [9, 10], [1, 2, 250]
     sv = bullet_data.BulletData()
 
     # Add a valid template and verify it now exists in Azrael.
-    t1 = Template('t1', cs, vert, uv, rgb, [], [])
-    assert clerk.addTemplates([t1]).ok
+    temp = Template('foo', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    assert clerk.addTemplates([temp]).ok
 
     # Spawn two objects from the previously defined template.
-    ret = clerk.spawn([(t1.name, sv), (t1.name, sv)])
+    ret = clerk.spawn([(temp.name, sv), (temp.name, sv)])
     assert ret.ok and (len(ret.data) == 2)
     objID0, objID1 = ret.data
 
-    # Query the State Vectors for both objects.
+    # Let Leonard pick up the new objects so that we can query them.
     leo.processCommandsAndSync()
-    ret_1 = clerk.getStateVariables([objID0, objID1])
-    assert ret_1.ok and (set((objID0, objID1)) == set(ret_1.data.keys()))
 
-    # Modify the geometry of the first object and verify that its 'lastChanged'
-    # attribute has changed.
-    assert clerk.setGeometry(objID0, 2 * vert, 2 * uv, 2 * rgb).ok
+    # Query the State Vectors for both objects.
+    ret = clerk.getStateVariables([objID0, objID1])
+    assert ret.ok and (set((objID0, objID1)) == set(ret.data.keys()))
+    ref_lastChanged = ret.data[objID0]['sv'].lastChanged
 
+    # Modify the 'bar' fragment of objID0 and verify its 'lastChanged'
+    # attribute is now different.
+    frags = [Fragment('bar', 2 * vert, 2 * uv, 2 * rgb)]
+    assert clerk.setGeometry(objID0, frags).ok
     ret = clerk.getStateVariables([objID0])
     assert ret.ok
-    assert ret_1.data[objID0]['sv'].lastChanged != ret.data[objID0]['sv'].lastChanged
+    assert ref_lastChanged != ret.data[objID0]['sv'].lastChanged
 
+    # Verify further that the lastChanged attribute of objID1 has not changed
+    # since we did not touch its geometry.
     ret = clerk.getStateVariables([objID1])
     assert ret.ok
-    assert ret_1.data[objID1]['sv'].lastChanged == ret.data[objID1]['sv'].lastChanged
+    assert ref_lastChanged == ret.data[objID1]['sv'].lastChanged
 
     # Query the geometry and verify it has the new values.
     ret = clerk.getGeometry(objID0)
     assert ret.ok
-    assert np.array_equal(ret.data['1']['vert'], 2 * vert)
-    assert np.array_equal(ret.data['1']['uv'], 2 * uv)
-    assert np.array_equal(ret.data['1']['rgb'], 2 * rgb)
+    assert np.array_equal(ret.data['bar'].vert, 2 * vert)
+    assert np.array_equal(ret.data['bar'].uv, 2 * uv)
+    assert np.array_equal(ret.data['bar'].rgb, 2 * rgb)
 
     # Kill all spawned Client processes.
     killAzrael()
