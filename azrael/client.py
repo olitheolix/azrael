@@ -171,6 +171,7 @@ class Client():
         try:
             payload = json.dumps({'cmd': cmd, 'payload': data})
         except (ValueError, TypeError) as err:
+            self.logit.warning(err)
             return RetVal(False, 'JSON encoding error', None)
 
         # Send data and wait for response.
@@ -443,12 +444,12 @@ class Client():
                 assert isinstance(name, str)
                 assert isinstance(cs, (list, np.ndarray))
                 assert isinstance(frags, list)
-                for idx, _ in enumerate(frags):
+                for ii, _ in enumerate(frags):
                     assert isinstance(_, Fragment)
                     assert isinstance(_.vert, np.ndarray)
                     assert isinstance(_.uv, np.ndarray)
                     assert isinstance(_.rgb, np.ndarray)
-                    frags[idx] = Fragment(_.name, _.vert.tolist(),
+                    frags[ii] = Fragment(_.name, _.vert.tolist(),
                                           _.uv.tolist(), _.rgb.tolist())
                 assert isinstance(boosters, list)
                 assert isinstance(factories, list)
@@ -464,8 +465,7 @@ class Client():
 
                 # Replace the original entry with a new one where CS is
                 # definitively a list.
-                tmp = name, cs, frags, boosters, factories
-                templates[idx] = tmp
+                templates[idx] = Template(name, cs, frags, boosters, factories)
         except AssertionError as err:
             return RetVal(False, 'Data type error', None)
         return self.serialiseAndSend('add_templates', templates)

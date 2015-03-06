@@ -148,9 +148,9 @@ def ToClerk_AddTemplates_Encode(templates: list):
     out = []
     with azrael.util.Timeit('clerk.encode') as timeit:
         for tt in templates:
-            name, cs, frags, boosters, factories = tt
-            d = {'name': name, 'cs': cs, 'frags': frags,
-                 'boosters': boosters, 'factories': factories}
+            d = {'name': tt.name, 'cs': tt.cs, 'frags': tt.fragments,
+                 'boosters': tt.boosters, 'factories': tt.factories}
+            assert isinstance(d['cs'], list)
             out.append(d)
     return True, {'data': out}
 
