@@ -307,9 +307,9 @@ def FromClerk_GetGeometry_Decode(payload: dict):
     for frag, data in payload.items():
         tmp = Fragment(*data)
         tmp = Fragment(tmp.name,
-            vert=np.array(tmp.vert, np.float64),
-            uv=np.array(tmp.uv, np.uint8),
-            rgb=np.array(tmp.rgb, np.uint8))
+                       vert=np.array(tmp.vert, np.float64),
+                       uv=np.array(tmp.uv, np.uint8),
+                       rgb=np.array(tmp.rgb, np.uint8))
         out[frag] = tmp
     return RetVal(True, None, out)
 

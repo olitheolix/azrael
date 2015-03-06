@@ -151,7 +151,7 @@ class Clerk(multiprocessing.Process):
         # their collision shapes are: none, sphere, cube.
         frags = [Fragment(name='NoName', vert=[], uv=[], rgb=[])]
         t1 = Template('_templateNone', [0, 1, 1, 1], frags, [], [])
-        t2 = Template('_templateSphere', [3, 1, 1, 1],frags, [], [])
+        t2 = Template('_templateSphere', [3, 1, 1, 1], frags, [], [])
         t3 = Template('_templateCube', [4, 1, 1, 1], frags, [], [])
         self.addTemplates([t1, t2, t3])
 
@@ -597,15 +597,15 @@ class Clerk(multiprocessing.Process):
                         return RetVal(False, msg, None)
 
                     if not self._isGeometrySane(frag.vert, frag.uv, frag.rgb):
-                        msg = 'Invalid geometry for template <{}>'.format(tt.name)
-                        return RetVal(False, msg, None)
+                        msg = 'Invalid geometry for template <{}>'
+                        return RetVal(False, msg.format(tt.name), None)
 
-                    # Determine the largest possible side length of the AABB. To
-                    # find it, just determine the largest spatial extent in any
-                    # axis direction. That is the side length of the AABB
-                    # cube. Then multiply it with sqrt(3) to ensure that any
-                    # rotation angle of the object is covered. The slightly larger
-                    # value of sqrt(3.1) adds some slack.
+                    # Determine the largest possible side length of the
+                    # AABB. To find it, just determine the largest spatial
+                    # extent in any axis direction. That is the side length of
+                    # the AABB cube. Then multiply it with sqrt(3) to ensure
+                    # that any rotation angle of the object is covered. The
+                    # slightly larger value of sqrt(3.1) adds some slack.
                     if len(frag.vert) > 0:
                         len_x = max(frag.vert[0::3]) - min(frag.vert[0::3])
                         len_y = max(frag.vert[1::3]) - min(frag.vert[1::3])

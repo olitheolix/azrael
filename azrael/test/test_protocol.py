@@ -197,7 +197,8 @@ def test_GetStateVariable():
 
     # Verify.
     dec_sv = dec_sv.data
-    dec_sv = {int(_): bullet_data._BulletData(**dec_sv[_]['sv']) for _ in dec_sv}
+    dec_sv = {int(_): bullet_data._BulletData(**dec_sv[_]['sv'])
+              for _ in dec_sv}
     assert isEqualBD(dec_sv[1], objs[0]['sv'])
     assert isEqualBD(dec_sv[2], objs[1]['sv'])
 
