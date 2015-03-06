@@ -43,6 +43,7 @@ from azrael.bullet.test_boost_bullet import isEqualBD
 
 ipshell = IPython.embed
 Template = azrael.util.Template
+Fragment = azrael.util.Fragment
 
 
 class ClientTest(azrael.client.Client):
@@ -1391,8 +1392,11 @@ def test_updateFragmentState():
 
     def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
         """
-        Convenience function to verify the fragment states.
+        Convenience function to verify the fragment states of two objects.
+        This function assumes there are two objects and each has exactly one
+        fragment.
         """
+        # fixme: pass objID into this function as well
         # Query the SV and ensure the fragment positions are correct.
         ret = clerk.getStateVariables([objID_1, objID_2])
         assert ret.ok
@@ -1471,7 +1475,82 @@ def test_updateFragmentState():
     print('Test passed')
 
 
+def test_addTemplate_multiple_fragments():
+    """
+    Create a new template with multiple fragments and instantiate it. Then
+    query the fragment geometries.
+    """
+    killAzrael()
+
+    # Reset the SV database and instantiate a Leonard and Clerk.
+    leo = getLeonard()
+    clerk = azrael.clerk.Clerk()
+
+    # Convenience.
+    sv = bullet_data.BulletData()
+    cs = [1, 2, 3, 4]
+    vert = [-4, 0, 0, 1, 2, 3, 4, 5, 6]
+
+    def checkFragState(name_1, scale_1, pos_1, rot_1,
+                       name_2, scale_2, pos_2, rot_2):
+        """
+        Convenience function to verify the fragment states of on object.
+        This function assumes there is exactly one object with two fragments.
+        """
+        # Query the SV and ensure the fragment positions are correct.
+        ret = clerk.getAllStateVariables()
+        assert ret.ok
+        assert len(ret.data) == 1
+        frags = list(ret.data.values())[0]['frag']
+        assert len(frags) == 2
+        assert (name_1 in frags) and (name_2 in frags)
+
+        assert frags[name_1] == [scale_1, pos_1, rot_1]
+        assert frags[name_2] == [scale_2, pos_2, rot_2]
+
+    # Add the template to Azrael and spawn two instances.
+    frags = [Fragment(name='1', vert=vert, uv=[], rgb=[]),
+             Fragment(name='test', vert=vert, uv=[], rgb=[])]
+    t1 = Template('t1', cs, frags, boosters=[], factories=[])
+    assert clerk.addTemplates([t1]).ok
+    ret = clerk.spawn([(t1.name, sv)])
+    assert ret.ok
+    objID_1 = ret.data[0]
+    leo.processCommandsAndSync()
+
+    ret = clerk.getStateVariables([objID_1])
+    assert ret.ok
+    ret_frags = ret.data[objID_1]['frag']
+    assert len(ret_frags) == len(frags)
+
+    ret = clerk.getAllStateVariables()
+    assert ret.ok
+    ret_frags = ret.data[objID_1]['frag']
+    assert len(ret_frags) == len(frags)
+
+    checkFragState('1', 1, [0, 0, 0], [0, 0, 0, 1],
+                   'test', 1, [0, 0, 0], [0, 0, 0, 1])
+
+    newStates = {
+        objID_1: {
+            '1': [7, [7, 7, 7], [7, 7, 7, 7]],
+            'test': [8, [8, 8, 8], [8, 8, 8, 8]]}}
+    ret = clerk.updateFragmentStates(newStates)
+    assert ret.ok
+
+    checkFragState('1', 7, [7, 7, 7], [7, 7, 7, 7],
+                   'test', 8, [8, 8, 8], [8, 8, 8, 8])
+
+
+    # Kill all spawned Client processes.
+    killAzrael()
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_addTemplate_multiple_fragments()
+    print('all good')
+    assert False
     test_updateFragmentState()
     test_updateBoosterValues()
     test_getAllStateVariables()

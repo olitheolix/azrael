@@ -54,6 +54,7 @@ from azrael.typecheck import typecheck
 ipshell = IPython.embed
 RetVal = util.RetVal
 Template = azrael.util.Template
+Fragment = azrael.util.Fragment
 
 
 class Clerk(multiprocessing.Process):
@@ -146,6 +147,8 @@ class Clerk(multiprocessing.Process):
                 protocol.FromClerk_UpdateFragmentStates_Encode),
             }
 
+        print('debug disable')
+        return
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
         t1 = Template('_templateNone',
@@ -583,36 +586,41 @@ class Clerk(multiprocessing.Process):
 
             # Add each template to the bulk operation.
             for tt in templates:
+                # Initial AABB size. We will expand it when we parse the
+                # geometries to fit the largest one.
+                aabb = 0
                 assert isinstance(tt.name, str)
-                vertices = tt.vert
+                assert isinstance(tt.fragments, list)
 
-                # Sanity checks.
-                try:
-                    assert isinstance(vertices, list)
-                    assert isinstance(tt.uv, list)
-                    assert isinstance(tt.rgb, list)
-                except AssertionError:
-                    msg = 'Parameters for addTemplates must be lists'
-                    return RetVal(False, msg, None)
+                # Sanity check all fragment geometries.
+                for frag in tt.fragments:
+                    # Sanity checks.
+                    try:
+                        assert isinstance(frag, Fragment)
+                        assert isinstance(frag.vert, list)
+                        assert isinstance(frag.uv, list)
+                        assert isinstance(frag.rgb, list)
+                    except AssertionError:
+                        msg = 'Parameters for addTemplates must be lists'
+                        return RetVal(False, msg, None)
 
-                if not self._isGeometrySane(vertices, tt.uv, tt.rgb):
-                    msg = 'Invalid geometry for template <{}>'.format(tt.name)
-                    return RetVal(False, msg, None)
+                    if not self._isGeometrySane(frag.vert, frag.uv, frag.rgb):
+                        msg = 'Invalid geometry for template <{}>'.format(tt.name)
+                        return RetVal(False, msg, None)
 
-                # Determine the largest possible side length of the AABB. To
-                # find it, just determine the largest spatial extent in any
-                # axis direction. That is the side length of the AABB
-                # cube. Then multiply it with sqrt(3) to ensure that any
-                # rotation angle of the object is covered. The slightly larger
-                # value of sqrt(3.1) adds some slack.
-                if len(vertices) == 0:
-                    # Empty geometries have a zero sized AABB.
-                    aabb = 0
-                else:
-                    len_x = max(vertices[0::3]) - min(vertices[0::3])
-                    len_y = max(vertices[1::3]) - min(vertices[1::3])
-                    len_z = max(vertices[2::3]) - min(vertices[2::3])
-                    aabb = np.sqrt(3.1) * max(len_x, len_y, len_z)
+                    # Determine the largest possible side length of the AABB. To
+                    # find it, just determine the largest spatial extent in any
+                    # axis direction. That is the side length of the AABB
+                    # cube. Then multiply it with sqrt(3) to ensure that any
+                    # rotation angle of the object is covered. The slightly larger
+                    # value of sqrt(3.1) adds some slack.
+                    if len(frag.vert) > 0:
+                        len_x = max(frag.vert[0::3]) - min(frag.vert[0::3])
+                        len_y = max(frag.vert[1::3]) - min(frag.vert[1::3])
+                        len_z = max(frag.vert[2::3]) - min(frag.vert[2::3])
+                        tmp = np.sqrt(3.1) * max(len_x, len_y, len_z)
+                        aabb = np.amax((aabb, tmp))
+                    del frag
 
                 # Compile the Mongo document for the new template.
                 data = {
@@ -623,7 +631,7 @@ class Clerk(multiprocessing.Process):
                     'factories': tt.factories}
 
                 # Compile the geometry data.
-                geo = {'1': {'vert': vertices, 'uv': tt.uv, 'rgb': tt.rgb}}
+                geo = {_.name: _ for _ in tt.fragments}
 
                 # Compile file name for geometry data and add that name to the
                 # template dictionary.
@@ -804,8 +812,6 @@ class Clerk(multiprocessing.Process):
                 tmp = dict(templates[name])
                 tmp['objID'] = objIDs[idx]
                 tmp['lastChanged'] = 0
-                tmp['fragState'] = {
-                    '1': (1, [0, 0, 0], [0, 0, 0, 1])}
                 tmp['templateID'] = name
 
                 # Copy the geometry from the template- to the instance
@@ -814,6 +820,15 @@ class Clerk(multiprocessing.Process):
                 tmp['file_geo'] = os.path.join(config.dir_instance,
                                                str(tmp['objID']) + '_geo')
                 open(tmp['file_geo'], 'wb').write(geodata)
+
+                # Parse the geometry data to determine the names of all
+                # fragments. Then create an initial fragment state for each
+                # name.
+                # fixme: use named tuple for frag_init_state
+                geodata = json.loads(geodata.decode('utf8'))
+                frag_init_state = (1, [0, 0, 0], [0, 0, 0, 1])
+                tmp['fragState'] = {_: frag_init_state for _ in geodata}
+                del frag_init_state, geodata
 
                 # Add the new template document.
                 dbDocs.append(tmp)
@@ -889,6 +904,7 @@ class Clerk(multiprocessing.Process):
 
         # Convert the list of [{objID1: cs1}, {objID2: cs2}, ...] into
         # a simple {objID1: cs1, objID2: cs2, ...} dictionary.
+        # fixme: split into two dictionaries for readability.
         docs = {_['objID']: (_['lastChanged'], _['fragState']) for _ in docs}
 
         # Overwrite the 'lastChanged' field in the State Variable with the
@@ -1122,7 +1138,6 @@ class Clerk(multiprocessing.Process):
                 for k2, v2 in v1.items():
                     assert isinstance(k2, str)
                     assert isinstance(v2, list)
-                    int(k2)
 
                     # Every fragment must receive three pieces of information:
                     # scale (scalar), position (3-element vector), and
@@ -1142,7 +1157,7 @@ class Clerk(multiprocessing.Process):
         ok = True
         for objID, frag in fragData.items():
             # Mongo query: ensure every part ID actually exists. The result of
-            # the code below will be dictionary like this:
+            # the code below will be a dictionary like this:
             #   {'fragState.1': {'$exists': 1},
             #    'fragState.2': {'$exists': 1},
             #    'objID': 2}

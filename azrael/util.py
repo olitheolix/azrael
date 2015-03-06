@@ -34,7 +34,8 @@ dbTiming = pymongo.MongoClient()['timing']['timing']
 RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Template dataset.
-Template = namedtuple('Template', 'name cs vert uv rgb boosters factories')
+Template = namedtuple('Template', 'name cs fragments boosters factories')
+Fragment = namedtuple('Fragment', 'name vert uv rgb')
 
 
 def resetTiming():
