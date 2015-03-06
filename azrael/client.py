@@ -409,8 +409,9 @@ class Client():
             ip=self.ip, port=config.webserver_port)
         url = base_url + url
         data = urllib.request.urlopen(url).readall()
-        tmp = json.loads(data.decode('utf8'))
-        return RetVal(True, None, tmp)
+        out = json.loads(data.decode('utf8'))
+        out = {k: Fragment(*v) for (k, v) in out.items()}
+        return RetVal(True, None, out)
 
     @typecheck
     def addTemplates(self, templates: list):

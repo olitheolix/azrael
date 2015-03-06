@@ -353,22 +353,23 @@ def test_create_fetch_template(client_type):
     vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
-    t1 = Template('t1', cs, vert, uv, rgb, [], [])
-    assert client.addTemplates([t1]).ok
+    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    assert client.addTemplates([temp]).ok
 
     # Fetch the just added template again.
-    ret = client.getTemplates([t1.name])
+    ret = client.getTemplates([temp.name])
     assert ret.ok and (len(ret.data) == 1)
-    data = ret.data[t1.name]
-    assert np.array_equal(data.cs, cs)
-    assert len(data.boosters) == len(data.factories) == 0
+    assert np.array_equal(ret.data[temp.name].cs, cs)
+    assert len(ret.data[temp.name].boosters) == 0
+    assert len(ret.data[temp.name].factories) == 0
 
     # Fetch the geometry from the Web server and verify it is correct.
-    ret = client.getTemplateGeometry(ret.data[t1.name].url_geo)
+    ret = client.getTemplateGeometry(ret.data[temp.name].url_geo)
     assert ret.ok
-    assert np.array_equal(ret.data['1']['vert'], vert)
-    assert np.array_equal(ret.data['1']['uv'], uv)
-    assert np.array_equal(ret.data['1']['rgb'], rgb)
+    assert np.array_equal(ret.data['bar'].vert, vert)
+    assert np.array_equal(ret.data['bar'].uv, uv)
+    assert np.array_equal(ret.data['bar'].rgb, rgb)
+    del temp, ret
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
@@ -385,48 +386,43 @@ def test_create_fetch_template(client_type):
     # Attempt to query the geometry of a non-existing object.
     assert not client.getGeometry(1).ok
 
-    # Add the new template.
-    t1 = Template('t2', cs, vert, uv, rgb, [b0, b1], [f0])
-    assert client.addTemplates([t1]).ok
-
-    # ... and spawn an instance thereof.
-    new_obj = {'template': t1.name,
-               'position': np.zeros(3)}
-    ret = client.spawn([new_obj])
+    # Define a new template, add it to Azrael, and spawn it.
+    temp = Template('t2', cs, [Fragment('bar', vert, uv, rgb)], [b0, b1], [f0])
+    assert client.addTemplates([temp]).ok
+    ret = client.spawn([{'template': temp.name, 'position': np.zeros(3)}])
     assert ret.ok and len(ret.data) == 1
     objID = ret.data[0]
 
     # Retrieve the geometry of the new object and verify it is correct.
     ok, _, out = client.getGeometry(objID)
-    out_vert, out_uv, out_rgb = out['1']
-    assert np.array_equal(vert, out_vert)
-    assert np.array_equal(uv, out_uv)
-    assert np.array_equal(rgb, out_rgb)
-    assert out_rgb.dtype == np.uint8
+    out = out['bar']
+    assert np.array_equal(vert, out.vert)
+    assert np.array_equal(uv, out.uv)
+    assert np.array_equal(rgb, out.rgb)
+    assert out.rgb.dtype == np.uint8
+    del ok, out
 
-    # Retrieve the entire template and verify the CS and geometry.
-    ret = client.getTemplates([t1.name])
+    # Retrieve the entire template and verify the CS and geometry, and number
+    # of boosters/factories.
+    ret = client.getTemplates([temp.name])
     assert ret.ok and (len(ret.data) == 1)
-    data = ret.data[t1.name]
-    assert np.array_equal(data.cs, cs)
+    t_data = ret.data[temp.name]
+    assert np.array_equal(t_data.cs, cs)
+    assert len(t_data.boosters) == 2
+    assert len(t_data.factories) == 1
 
     # Fetch the geometry from the Web server and verify it is correct.
-    ret = client.getTemplateGeometry(ret.data[t1.name].url_geo)
+    ret = client.getTemplateGeometry(t_data.url_geo)
     assert ret.ok
-    assert np.array_equal(ret.data['1']['vert'], vert)
-    assert np.array_equal(ret.data['1']['uv'], uv)
-    assert np.array_equal(ret.data['1']['rgb'], rgb)
-
-
-    # The template must also feature two boosters and one factory.
-    assert len(data.boosters) == 2
-    assert len(data.factories) == 1
+    assert np.array_equal(ret.data['bar'].vert, vert)
+    assert np.array_equal(ret.data['bar'].uv, uv)
+    assert np.array_equal(ret.data['bar'].rgb, rgb)
 
     # Explicitly verify the booster- and factory units. The easiest (albeit
     # not most readable) way to do the comparison is to convert the unit
     # descriptions (which are named tuples) to byte strings and compare those.
-    out_boosters = [parts.Booster(*_) for _ in data.boosters]
-    out_factories = [parts.Factory(*_) for _ in data.factories]
+    out_boosters = [parts.Booster(*_) for _ in t_data.boosters]
+    out_factories = [parts.Factory(*_) for _ in t_data.factories]
     assert b0 in out_boosters
     assert b1 in out_boosters
     assert f0 in out_factories
