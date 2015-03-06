@@ -1475,7 +1475,7 @@ def test_updateFragmentState():
     print('Test passed')
 
 
-def test_addTemplate_multiple_fragments():
+def test_fragments_end2end():
     """
     Create a new template with multiple fragments and instantiate it. Then
     query the fragment geometries.
@@ -1566,7 +1566,7 @@ def test_addTemplate_multiple_fragments():
 
 
 if __name__ == '__main__':
-    test_addTemplate_multiple_fragments()
+    test_fragments_end2end()
     print('all good')
     assert False
     test_updateFragmentState()
