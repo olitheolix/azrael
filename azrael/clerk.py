@@ -1124,6 +1124,9 @@ class Clerk(multiprocessing.Process):
         to update fragment '1'. Specifically, set its scale to 2, its position
         to [2, 2, 2], and its orientation (Quaternion) to [4, 4, 4, 4].
 
+        fixme docu: only updates existing objects; for any given object either
+        all fragments are updated, or none.
+
         :param dict fragData: new fragment data for each object.
         :return: success.
         """

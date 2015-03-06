@@ -1361,10 +1361,8 @@ def test_updateBoosterValues():
 
 def test_updateFragmentState():
     """
-    Create a new template with one fragment and instantiate it.
-
-    Then query the SV for the object and verify the states of the fragments are
-    correct. Modify the fragment states and verify again.
+    Create a new template with one fragment and create two instances. Then
+    query and update the fragment states.
     """
     killAzrael()
 
@@ -1379,72 +1377,65 @@ def test_updateFragmentState():
 
     # Convenience.
     sv = bullet_data.BulletData()
-    cs = [1, 2, 3, 4]
-    vert = [-4, 0, 0, 1, 2, 3, 4, 5, 6]
+    cs, vert = [1, 2, 3, 4], list(range(9))
 
-    # Add the template to Azrael and spawn two instances.
-    t1 = Template('t1', cs, vert, uv=[], rgb=[], boosters=[], factories=[])
+    # Define a new template with one fragment.
+    frags = [Fragment('foo', vert=vert, uv=[], rgb=[])]
+    t1 = Template('t1', cs, fragments=frags, boosters=[], factories=[])
+
+    # Add the template to Azrael, spawn two instances, and make sure Leonard
+    # picks it up so that the object becomes available.
     assert clerk.addTemplates([t1]).ok
-    ret = clerk.spawn([(t1.name, sv), (t1.name, sv)])
-    assert ret.ok
-    objID_1, objID_2 = ret.data
+    _, _, (objID_1, objID_2) = clerk.spawn([(t1.name, sv), (t1.name, sv)])
     leo.processCommandsAndSync()
 
     def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
         """
-        Convenience function to verify the fragment states of two objects.
-        This function assumes there are two objects and each has exactly one
-        fragment.
+        Convenience function to verify the fragment states of objID_1 and
+        objID_2 (defined in outer scope).
         """
-        # fixme: pass objID into this function as well
         # Query the SV and ensure the fragment positions are correct.
         ret = clerk.getStateVariables([objID_1, objID_2])
-        assert ret.ok
-        assert len(ret.data) == 2
-        frag1 = ret.data[objID_1]['frag']
-        frag2 = ret.data[objID_2]['frag']
-
-        assert frag1['1'] == [scale_1, pos_1, rot_1]
-        assert frag2['1'] == [scale_2, pos_2, rot_2]
+        assert ret.ok and (len(ret.data) == 2)
+        assert ret.data[objID_1]['frag']['foo'] == [scale_1, pos_1, rot_1]
+        assert ret.data[objID_2]['frag']['foo'] == [scale_2, pos_2, rot_2]
 
     # All fragments must initially be at the center.
     checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
                    1, [0, 0, 0], [0, 0, 0, 1])
 
-    # Update the fragment states of the second object and verify.
-    newStates = {objID_2: {'1': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
-    ret = clerk.updateFragmentStates(newStates)
-    assert ret.ok
+    # Update and verify the fragment states of the second object.
+    newStates = {objID_2: {'foo': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
+    assert clerk.updateFragmentStates(newStates).ok
     checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
                    2.2, [1, 2, 3], [1, 0, 0, 0])
 
-    # Modify two instances at once and verify again.
+    # Modify the fragment states of two instances at once.
     newStates = {
-        objID_1: {'1': [3.3, [1, 2, 4], [2, 0, 0, 0]]},
-        objID_2: {'1': [4.4, [1, 2, 5], [0, 3, 0, 0]]}}
-    ret = clerk.updateFragmentStates(newStates)
-    assert ret.ok
+        objID_1: {'foo': [3.3, [1, 2, 4], [2, 0, 0, 0]]},
+        objID_2: {'foo': [4.4, [1, 2, 5], [0, 3, 0, 0]]}
+    }
+    assert clerk.updateFragmentStates(newStates).ok
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                    4.4, [1, 2, 5], [0, 3, 0, 0])
 
-    # Attempt to update the fragment state of two objects of which only one
-    # actually exists.
+    # Attempt to update the fragment state of two objects. However, this time
+    # only of object actually exists. The expected behaviour is that the
+    # command returns an error yet correctly updates the fragment state of the
+    # existing object.
     newStates = {
-        1000000: {'1': [5, [5, 5, 5], [5, 5, 5, 5]]},
-        objID_2: {'1': [5, [5, 5, 5], [5, 5, 5, 5]]}}
-    ret = clerk.updateFragmentStates(newStates)
-    assert not ret.ok
-
-    # The command must have updated only the existing fragment.
+        1000000: {'foo': [5, [5, 5, 5], [5, 5, 5, 5]]},
+        objID_2: {'foo': [5, [5, 5, 5], [5, 5, 5, 5]]}
+    }
+    assert not clerk.updateFragmentStates(newStates).ok
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                    5.0, [5, 5, 5], [5, 5, 5, 5])
 
     # Attempt to update a non-existing fragment.
     newStates = {
-        objID_2: {'2': [6, [6, 6, 6], [6, 6, 6, 6]]}}
-    ret = clerk.updateFragmentStates(newStates)
-    assert not ret.ok
-
+        objID_2: {'blah': [6, [6, 6, 6], [6, 6, 6, 6]]}
+    }
+    assert not clerk.updateFragmentStates(newStates).ok
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                    5.0, [5, 5, 5], [5, 5, 5, 5])
 
@@ -1453,22 +1444,19 @@ def test_updateFragmentState():
     # fragments was updated.
     newStates = {
         objID_2: {
-            '1': [7, [7, 7, 7], [7, 7, 7, 7]],
-            '2': [8, [8, 8, 8], [8, 8, 8, 8]]}}
-    ret = clerk.updateFragmentStates(newStates)
-    assert not ret.ok
-
+            'foo': [7, [7, 7, 7], [7, 7, 7, 7]],
+            'blah': [8, [8, 8, 8], [8, 8, 8, 8]]
+        }
+    }
+    assert not clerk.updateFragmentStates(newStates).ok
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                    5.0, [5, 5, 5], [5, 5, 5, 5])
 
-    # Update the fragments twice with the exact same data. This will trigger a
-    # bug I once had because I checked the wrong Mongo return code.
-    newStates = {
-        objID_2: {'1': [9, [9, 9, 9], [9, 9, 9, 9]]}}
-    ret = clerk.updateFragmentStates(newStates)
-    assert ret.ok
-    ret = clerk.updateFragmentStates(newStates)
-    assert ret.ok
+    # Update the fragments twice with the exact same data. This trigger a
+    # bug at one point but is fixed now.
+    newStates = {objID_2: {'foo': [9, [9, 9, 9], [9, 9, 9, 9]]}}
+    assert clerk.updateFragmentStates(newStates).ok
+    assert clerk.updateFragmentStates(newStates).ok
 
     # Kill all spawned Client processes.
     killAzrael()
@@ -1479,6 +1467,8 @@ def test_fragments_end2end():
     """
     Create a new template with multiple fragments and instantiate it. Then
     query the fragment geometries.
+
+    fixme: go over this function, add documentation, and clean up.
     """
     killAzrael()
 
@@ -1547,7 +1537,6 @@ def test_fragments_end2end():
 
     ret = clerk.getGeometry(objID_1)
     assert ret.ok
-    print(ret.data['1'])
     assert np.array_equal(ret.data['1'].vert, vert_1)
     assert np.array_equal(ret.data['test'].vert, vert_2)
 
@@ -1567,8 +1556,6 @@ def test_fragments_end2end():
 
 if __name__ == '__main__':
     test_fragments_end2end()
-    print('all good')
-    assert False
     test_updateFragmentState()
     test_updateBoosterValues()
     test_getAllStateVariables()
