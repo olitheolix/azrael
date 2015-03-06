@@ -401,15 +401,18 @@ class Client():
         """
         Fetch the geometry from ``url`` and return it.
 
-        :param str url: url where template can be found
+        :param str url: template URL
         :return: fixme
         """
-        # Fetch the geometry from the Web server.
-        base_url = 'http://{ip}:{port}'.format(
-            ip=self.ip, port=config.webserver_port)
-        url = base_url + url
-        data = urllib.request.urlopen(url).readall()
+        # Compile the URL.
+        base_url = 'http://{ip}:{port}{url}'.format(
+            ip=self.ip, port=config.webserver_port, url=url)
+
+        # Fetch the geometry from the Web server and decode it.
+        data = urllib.request.urlopen(base_url).readall()
         out = json.loads(data.decode('utf8'))
+
+        # Wrap the fragments into their dedicated tuple type.
         out = {k: Fragment(*v) for (k, v) in out.items()}
         return RetVal(True, None, out)
 

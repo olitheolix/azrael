@@ -123,12 +123,7 @@ def ToClerk_GetTemplates_Decode(payload: dict):
 
 @typecheck
 def FromClerk_GetTemplates_Encode(templates):
-    out = {}
-    for name, data in templates.items():
-        # The cshape is still a NumPy array --> convert it to a list.
-        data['cshape'] = data['cshape']
-        out[name] = data
-    return True, out
+    return True, templates
 
 
 @typecheck
