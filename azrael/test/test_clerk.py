@@ -801,7 +801,7 @@ def test_controlParts_Boosters_notmoving():
 
 def test_controlParts_Factories_notmoving():
     """
-    Create a template with factories and send control commands to them.
+    Create a template with factories and let them spawn objects.
 
     The parent object does not move in the world coordinate system.
     """
@@ -809,10 +809,6 @@ def test_controlParts_Factories_notmoving():
 
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
-
-    # Parameters and constants for this test.
-    objID_1 = 1
-    sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
@@ -822,18 +818,17 @@ def test_controlParts_Factories_notmoving():
     # ------------------------------------------------------------------------
 
     # Constants for the new template object.
-    cs = [1, 2, 3, 4]
-    vert = list(range(9))
-    uv = [9, 10]
-    rgb = [1, 2, 250]
+    objID_1 = 1
+    sv = bullet_data.BulletData()
+    cs, vert = [1, 2, 3, 4], list(range(9))
+    uv, rgb = [9, 10], [1, 2, 250]
     dir_0 = np.array([1, 0, 0], np.float64)
     dir_1 = np.array([0, 1, 0], np.float64)
     pos_0 = np.array([1, 1, -1], np.float64)
     pos_1 = np.array([-1, -1, 0], np.float64)
 
-    # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplates. The user must assign the partIDs
-    # manually.
+    # Define a new object with two factory parts. The Factory parts are named
+    # tuples passed to addTemplates. The user must assign the partIDs manually.
     f0 = parts.Factory(
         partID=0, pos=pos_0, direction=dir_0,
         templateID='_templateCube', exit_speed=[0.1, 0.5])
@@ -841,18 +836,16 @@ def test_controlParts_Factories_notmoving():
         partID=1, pos=pos_1, direction=dir_1,
         templateID='_templateSphere', exit_speed=[1, 5])
 
-    # Add the template to Azrael...
-    t2 = Template('t1', cs, vert, uv, rgb, [], [f0, f1])
-    assert clerk.addTemplates([t2]).ok
-
-    # ... and spawn an instance thereof.
-    ret = clerk.spawn([(t2.name, sv)])
+    # Add the template to Azrael and spawn one instance.
+    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [f0, f1])
+    assert clerk.addTemplates([temp]).ok
+    ret = clerk.spawn([(temp.name, sv)])
     assert (ret.ok, ret.data) == (True, (objID_1, ))
     leo.processCommandsAndSync()
+    del ret, temp, f0, f1, sv, cs, uv, rgb
 
     # ------------------------------------------------------------------------
-    # Send commands to the factories. Tell them to spawn their object with
-    # the specified velocity.
+    # Instruct factories to create an object with a specific exit velocity.
     # ------------------------------------------------------------------------
 
     # Create the commands to let each factory spawn an object.
@@ -861,11 +854,9 @@ def test_controlParts_Factories_notmoving():
     cmd_1 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
 
     # Send the commands and ascertain that the returned object IDs now exist in
-    # the simulation. These IDs must be '2' and '3', since ID 1 was already
-    # given to the client object.
+    # the simulation. These IDs must be '2' and '3'.
     ok, _, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
-    assert ok
-    assert spawnedIDs == [2, 3]
+    assert (ok, spawnedIDs) == (True, [2, 3])
     leo.processCommandsAndSync()
 
     # Query the state variables of the objects spawned by the factories.
