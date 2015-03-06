@@ -147,22 +147,12 @@ class Clerk(multiprocessing.Process):
                 protocol.FromClerk_UpdateFragmentStates_Encode),
             }
 
-        print('debug disable')
-        return
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        t1 = Template('_templateNone',
-                      [0, 1, 1, 1],
-                      [], [], [],
-                      [], [])
-        t2 = Template('_templateSphere',
-                      [3, 1, 1, 1],
-                      [], [], [],
-                      [], [])
-        t3 = Template('_templateCube',
-                      [4, 1, 1, 1],
-                      [], [], [],
-                      [], [])
+        frags = [Fragment(name='NoName', vert=[], uv=[], rgb=[])]
+        t1 = Template('_templateNone', [0, 1, 1, 1], frags, [], [])
+        t2 = Template('_templateSphere', [3, 1, 1, 1],frags, [], [])
+        t3 = Template('_templateCube', [4, 1, 1, 1], frags, [], [])
         self.addTemplates([t1, t2, t3])
 
     def runCommand(self, fun_decode, fun_process, fun_encode):
@@ -556,6 +546,8 @@ class Clerk(multiprocessing.Process):
         Return an error if one or more template with the same name exists. All
         non-existing templates will be added but none of the existing ones will
         be modified.
+
+        fixme: explain the structure of ``templates``.
 
         The elements in ``templates`` are ``Template`` instances.
 
@@ -1079,6 +1071,8 @@ class Clerk(multiprocessing.Process):
         .. note::
            The ``dummy`` argument is a placeholder because the ``runCommand``
            function assumes that every method takes at least one argument.
+
+        fixme: remove/reduce code duplication with getStateVariables
 
         :return: {objID_1: SV_k, ...}
         :rtype: dict
