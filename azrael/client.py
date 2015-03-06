@@ -253,18 +253,15 @@ class Client():
         return self.serialiseAndSend('get_geometry', objID)
 
     @typecheck
-    def setGeometry(self, objID: int, vert: np.ndarray, uv: np.ndarray,
-                    rgb: np.ndarray):
+    def setGeometry(self, objID: int, frags: list):
         """
         Change the geometry parameters of ``objID``.
 
         :param int objID: ID for which to return the geometry.
-        :param bytes vert: object geometry
-        :param bytes UV: UV map for textures
-        :param bytes RGB: texture
+        :param list frags: list of ``Fragment`` instances.
         :return: Success
         """
-        return self.serialiseAndSend('set_geometry', objID, vert, uv, rgb)
+        return self.serialiseAndSend('set_geometry', objID, frags)
 
     @typecheck
     def spawn(self, new_objects: (tuple, list)):

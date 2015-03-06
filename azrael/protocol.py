@@ -310,10 +310,12 @@ def FromClerk_GetGeometry_Encode(geo):
 def FromClerk_GetGeometry_Decode(payload: dict):
     out = {}
     for frag, data in payload.items():
-        vert = np.array(data['vert'], np.float64)
-        uv = np.array(data['uv'], np.uint8)
-        rgb = np.array(data['rgb'], np.uint8)
-        out[frag] = (vert, uv, rgb)
+        tmp = Fragment(*data)
+        tmp = Fragment(tmp.name,
+            vert=np.array(tmp.vert, np.float64),
+            uv=np.array(tmp.uv, np.uint8),
+            rgb=np.array(tmp.rgb, np.uint8))
+        out[frag] = tmp
     return RetVal(True, None, out)
 
 
@@ -323,16 +325,29 @@ def FromClerk_GetGeometry_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_SetGeometry_Encode(
-        objID: int, vert: np.ndarray, uv: np.ndarray, rgb: np.ndarray):
-    return True, {'objID': objID, 'vert': vert.tolist(), 'UV': uv.tolist(),
-                  'RGB': rgb.tolist()}
+def ToClerk_SetGeometry_Encode(objID: int, frags: list):
+    try:
+        for idx, frag in enumerate(frags):
+            assert isinstance(frag, Fragment)
+            assert isinstance(frag.name, str)
+            assert isinstance(frag.vert, np.ndarray)
+            assert isinstance(frag.uv, np.ndarray)
+            assert isinstance(frag.rgb, np.ndarray)
+            tmp = Fragment(name=frag.name,
+                           vert=frag.vert.tolist(),
+                           uv=frag.uv.tolist(),
+                           rgb=frag.rgb.tolist())
+            frags[idx] = tmp
+    except AssertionError:
+        return False, 'Invalid fragment data types'
+    return True, {'objID': objID, 'frags': frags}
 
 
 @typecheck
 def ToClerk_SetGeometry_Decode(payload: dict):
-    return True, (payload['objID'], payload['vert'],
-                  payload['UV'], payload['RGB'])
+    # Wrap the fragments into their dedicated tuple.
+    frags = [Fragment(*_) for _ in payload['frags']]
+    return True, (payload['objID'], frags)
 
 
 @typecheck

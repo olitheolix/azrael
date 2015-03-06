@@ -578,6 +578,9 @@ def test_setGeometry(client_type):
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
+    # Start the necessary services.
+    clerk, client, clacks = startAzrael(client_type)
+
     # Convenience.
     cs = np.array([1, 2, 3, 4], np.float64)
     vert = np.arange(9).astype(np.float64)
@@ -585,18 +588,16 @@ def test_setGeometry(client_type):
     rgb = np.array([1, 2, 250], np.uint8)
     objID = 1
 
-    # Start the necessary services.
-    clerk, client, clacks = startAzrael(client_type)
-
     # Add a new template and spawn it.
-    t1 = Template('t1', cs, vert, uv, rgb, [], [])
-    assert client.addTemplates([t1]).ok
+    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    assert client.addTemplates([temp]).ok
 
-    new_obj = {'template': t1.name,
+    new_obj = {'template': temp.name,
                'position': np.ones(3),
                'velocityLin': -np.ones(3)}
     ret = client.spawn([new_obj])
     assert ret.ok and ret.data == (objID, )
+    del temp, new_obj, ret, cs
 
     # Query the SV to obtain the 'lastChanged' value.
     leo.processCommandsAndSync()
@@ -607,17 +608,18 @@ def test_setGeometry(client_type):
     # Fetch-, modify-, update- and verify the geometry.
     ok, _, out = client.getGeometry(objID)
     assert ok
-    ret_vert, ret_uv, ret_rgb = out['1']
-    assert np.allclose(uv, ret_uv)
-    assert np.allclose(vert, ret_vert)
+    out = out['bar']
+    assert np.allclose(uv, out.uv)
+    assert np.allclose(vert, out.vert)
 
-    ret = client.setGeometry(objID, 2 * ret_vert, 2 * ret_uv, 2 * ret_rgb)
-    assert ret.ok
+    # Change the fragment geometries.
+    frags = [Fragment('bar', 2 * out.vert, 2 * out.uv, 2 * out.rgb)]
+    assert client.setGeometry(objID, frags).ok
 
     ok, _, out = client.getGeometry(objID)
     assert ok
-    ret_vert, ret_uv, ret_rgb = out['1']
-    assert np.allclose(2 * vert, ret_vert) and np.allclose(2 * uv, ret_uv)
+    out = out['bar']
+    assert np.allclose(2 * vert, out.vert) and np.allclose(2 * uv, out.uv)
 
     # Ensure 'lastChanged' is different as well.
     ret = client.getStateVariables(objID)
