@@ -883,22 +883,21 @@ class Clerk(multiprocessing.Process):
             {'objID': {'$in': objIDs}},
             {'lastChanged': 1, 'objID': 1, 'fragState': 1})
 
-        # Convert the list of [{objID1: cs1}, {objID2: cs2}, ...] into
-        # a simple {objID1: cs1, objID2: cs2, ...} dictionary.
-        # fixme: split into two dictionaries for readability.
-        docs = {_['objID']: (_['lastChanged'], _['fragState']) for _ in docs}
+        # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into
+        # two dictionaries like {objID1: foo, objID2: bar, ...}, purely for
+        # readability and convenience a few lines below.
+        docs = list(docs)
+        last = {_['objID']: _['lastChanged'] for _ in docs}
+        fs = {_['objID']: _['fragState'] for _ in docs}
 
         # Overwrite the 'lastChanged' field in the State Variable with the
         # current value so that the user automatically gets the latest value.
         sv = ret.data
-        out = {}
-        for objID in objIDs:
-            if (objID in docs) and (sv[objID] is not None):
-                tmp = sv[objID]._replace(lastChanged=docs[objID][0])
-                out[objID] = {'sv': tmp, 'frag': docs[objID][1]}
-            else:
-                out[objID] = None
-
+        out = {_: None for _ in objIDs}
+        for objID in last:
+            if sv[objID] is not None:
+                tmp = sv[objID]._replace(lastChanged=last[objID])
+                out[objID] = {'sv': tmp, 'frag': fs[objID]}
         return RetVal(True, None, out)
 
     @typecheck
