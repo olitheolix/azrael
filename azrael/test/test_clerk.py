@@ -1489,7 +1489,10 @@ def test_addTemplate_multiple_fragments():
     # Convenience.
     sv = bullet_data.BulletData()
     cs = [1, 2, 3, 4]
-    vert = [-4, 0, 0, 1, 2, 3, 4, 5, 6]
+    vert_1 = list(range(0, 9))
+    vert_2 = list(range(9, 18))
+    vert_3 = list(range(18, 27))
+    vert_4 = list(range(27, 36))
 
     def checkFragState(name_1, scale_1, pos_1, rot_1,
                        name_2, scale_2, pos_2, rot_2):
@@ -1509,8 +1512,8 @@ def test_addTemplate_multiple_fragments():
         assert frags[name_2] == [scale_2, pos_2, rot_2]
 
     # Add the template to Azrael and spawn two instances.
-    frags = [Fragment(name='1', vert=vert, uv=[], rgb=[]),
-             Fragment(name='test', vert=vert, uv=[], rgb=[])]
+    frags = [Fragment(name='1', vert=vert_1, uv=[], rgb=[]),
+             Fragment(name='test', vert=vert_2, uv=[], rgb=[])]
     t1 = Template('t1', cs, frags, boosters=[], factories=[])
     assert clerk.addTemplates([t1]).ok
     ret = clerk.spawn([(t1.name, sv)])
@@ -1541,6 +1544,21 @@ def test_addTemplate_multiple_fragments():
     checkFragState('1', 7, [7, 7, 7], [7, 7, 7, 7],
                    'test', 8, [8, 8, 8], [8, 8, 8, 8])
 
+
+    ret = clerk.getGeometry(objID_1)
+    assert ret.ok
+    print(ret.data['1'])
+    assert np.array_equal(ret.data['1'].vert, vert_1)
+    assert np.array_equal(ret.data['test'].vert, vert_2)
+
+    frags = [Fragment(name='1', vert=vert_3, uv=[], rgb=[]),
+             Fragment(name='test', vert=vert_4, uv=[], rgb=[])]
+    ret = clerk.setGeometry(objID_1, frags)
+
+    ret = clerk.getGeometry(objID_1)
+    assert ret.ok
+    assert np.array_equal(ret.data['1'].vert, vert_3)
+    assert np.array_equal(ret.data['test'].vert, vert_4)
 
     # Kill all spawned Client processes.
     killAzrael()

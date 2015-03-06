@@ -631,7 +631,7 @@ class Clerk(multiprocessing.Process):
                     'factories': tt.factories}
 
                 # Compile the geometry data.
-                geo = {_.name: _ for _ in tt.fragments}
+                geo = {_.name: Fragment(*_) for _ in tt.fragments}
 
                 # Compile file name for geometry data and add that name to the
                 # template dictionary.
@@ -946,14 +946,16 @@ class Clerk(multiprocessing.Process):
         else:
             geo = open(doc['file_geo'], 'rb').read()
             geo = json.loads(geo.decode('utf8'))
+            geo = {_: Fragment(*geo[_]) for _ in geo}
             return RetVal(True, None, geo)
 
     @typecheck
-    def setGeometry(self, objID: int, vert: list, uv: list, rgb: list):
+    def setGeometry(self, objID: int, fragments: list):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
         Return with an error if ``objID`` does not exist.
+        fixup: docu update due to new signature
 
         :param int objID: the object for which to update the geometry.
         :param list vert: list of vertices.
@@ -969,18 +971,26 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
         # Sanity check for geometry.
-        if not self._isGeometrySane(vert, uv, rgb):
-            msg = 'Invalid geometry for objID <{}>'.format(objID)
-            return RetVal(False, msg, None)
+        # fixme: isGeometrySane must exped a 'Fragment' instance.
+        for frag in fragments:
+            if not self._isGeometrySane(frag.vert, frag.uv, frag.rgb):
+                msg = 'Invalid geometry for objID <{}>'.format(objID)
+                return RetVal(False, msg, None)
 
         # Overwrite the geometry file with the new one.
-        geo = {'1': {'vert': vert, 'uv': uv, 'rgb': rgb}}
+        # fixme: add same sanity check as in addTemplate
+        geo = json.loads(open(doc['file_geo'], 'rb').read().decode('utf8'))
+        for frag in fragments:
+            if frag.name not in geo:
+                msg = 'Unknown fragment <{}>'.format(frag.name),
+                return RetVal(False, msg, None)
+            geo[frag.name] = frag
         geo = json.dumps(geo)
         open(doc['file_geo'], 'wb').write(geo.encode('utf8'))
         del geo
 
         # Update the 'lastChanged' flag. Any clients will automatically receive
-        # this flag whenever they query the state variables.
+        # this flag whenever they query state variables.
         ret = db.update({'objID': objID}, {'$inc': {'lastChanged': 1}})
 
         # Verify the update worked.
