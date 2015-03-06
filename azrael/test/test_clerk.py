@@ -485,53 +485,57 @@ def test_add_get_template_multi_url():
     clerk, client, clacks = startAzrael('Websocket')
 
     # Convenience.
-    cs = [1, 2, 3, 4]
-    vert = list(range(9))
-    uv = [9, 10]
-    rgb = [1, 2, 250]
-    name1 = 't1'
-    name2 = 't2'
+    base_url = 'http://localhost:8080'
+    cs, vert = [1, 2, 3, 4], list(range(9))
+    uv, rgb = [9, 10], [1, 2, 250]
+    name_1, name_2 = 't1', 't2'
 
-    # Add valid template. This must succeed.
-    t1 = Template(name1, cs, vert, uv, rgb, [], [])
-    t2 = Template(name2, 2 * cs, 2 * vert, uv, rgb, [], [])
+    # Define templates.
+    frags_1 = [Fragment('foo', vert, uv, rgb)]
+    frags_2 = [Fragment('foo', 2 * vert, uv, rgb)]
+    t1 = Template(name_1, cs, frags_1, [], [])
+    t2 = Template(name_2, 2 * cs, frags_2, [], [])
 
+    # Add two valid templates. This must succeed.
     assert clerk.addTemplates([t1, t2]).ok
 
-    # Attempt to add another template with the same name. This must fail.
+    # Attempt to add the same templates again. This must fail.
     assert not clerk.addTemplates([t1, t2]).ok
 
-    # Fetch the just added template again and verify the CS.
-    ret = clerk.getTemplates([name1])
-    assert ret.ok and (len(ret.data) == 1)
-    assert np.array_equal(ret.data[name1]['cshape'], t1.cs)
+    # Fetch the just added template in order to get the URL where its
+    # geometries are stored.
+    ret = clerk.getTemplates([name_1])
+    url_geo = ret.data[name_1]['url_geo']
 
     # Fetch the geometry from the Web server and verify it is correct.
-    base_url = 'http://localhost:8080'
-    url = base_url + ret.data[name1]['url_geo']
-    tmp = json.loads(urllib.request.urlopen(url).readall().decode('utf8'))
-    assert np.array_equal(tmp['1']['vert'], t1.vert)
-    assert np.array_equal(tmp['1']['uv'], t1.uv)
-    assert np.array_equal(tmp['1']['rgb'], t1.rgb)
+    tmp = urllib.request.urlopen(base_url + url_geo).readall()
+    tmp = json.loads(tmp.decode('utf8'))
+    ret_frag = Fragment(*tmp['foo'])
+    ref_frag = frags_1[0]
+    assert np.array_equal(ret_frag.vert, ref_frag.vert)
+    assert np.array_equal(ret_frag.uv, ref_frag.uv)
+    assert np.array_equal(ret_frag.rgb, ref_frag.rgb)
+    del tmp, ret_frag, ref_frag, url_geo
 
     # Fetch the second template.
-    ret = clerk.getTemplates([name2])
-    assert ret.ok and (len(ret.data) == 1)
-    assert np.array_equal(ret.data[name2]['cshape'], t2.cs)
+    ret = clerk.getTemplates([name_2])
+    url_geo = ret.data[name_2]['url_geo']
 
     # Fetch the geometry from the Web server and verify it is correct.
-    base_url = 'http://localhost:8080'
-    url = base_url + ret.data[name2]['url_geo']
-    tmp = json.loads(urllib.request.urlopen(url).readall().decode('utf8'))
-    assert np.array_equal(tmp['1']['vert'], t2.vert)
-    assert np.array_equal(tmp['1']['uv'], t2.uv)
-    assert np.array_equal(tmp['1']['rgb'], t2.rgb)
+    tmp = urllib.request.urlopen(base_url + url_geo).readall()
+    tmp = json.loads(tmp.decode('utf8'))
+    ret_frag = Fragment(*tmp['foo'])
+    ref_frag = frags_2[0]
+    assert np.array_equal(ret_frag.vert, ref_frag.vert)
+    assert np.array_equal(ret_frag.uv, ref_frag.uv)
+    assert np.array_equal(ret_frag.rgb, ref_frag.rgb)
+    del base_url, tmp, ret_frag, ref_frag
 
     # Fetch both templates at once.
-    ret = clerk.getTemplates([name1, name2])
+    ret = clerk.getTemplates([name_1, name_2])
     assert ret.ok and (len(ret.data) == 2)
-    assert np.array_equal(ret.data[name1]['cshape'], t1.cs)
-    assert np.array_equal(ret.data[name2]['cshape'], t2.cs)
+    assert np.array_equal(ret.data[name_1]['cshape'], t1.cs)
+    assert np.array_equal(ret.data[name_2]['cshape'], t2.cs)
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)
