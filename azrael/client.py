@@ -439,17 +439,15 @@ class Client():
                 assert isinstance(name, str)
                 assert isinstance(cs, (list, np.ndarray))
                 assert isinstance(frags, list)
-                new_frags = []
-                for _ in frags:
+                for idx, _ in enumerate(frags):
                     assert isinstance(_, Fragment)
                     assert isinstance(_.vert, np.ndarray)
                     assert isinstance(_.uv, np.ndarray)
                     assert isinstance(_.rgb, np.ndarray)
-                    new_frags.append(Fragment(_.name, _.vert.tolist(),
-                                              _.uv.tolist(), _.rgb.tolist()))
+                    frags[idx] = Fragment(_.name, _.vert.tolist(),
+                                          _.uv.tolist(), _.rgb.tolist())
                 assert isinstance(boosters, list)
                 assert isinstance(factories, list)
-                frags = new_frags
 
                 for b in boosters:
                     assert isinstance(b, parts.Booster)

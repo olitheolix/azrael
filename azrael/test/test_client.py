@@ -481,10 +481,9 @@ def test_controlParts(client_type):
     pos_0_out = np.array(-pos_0)
     pos_1_out = np.array(-pos_1)
 
-    # State variables for parent object. This one has a position and speed, and
-    # is rotate 180 degrees around the x-axis. This means the x-values of all
-    # forces (boosters) and exit speeds (factory spawned objects) must be
-    # inverted.
+    # State variable for parent. It has a position, speed, and is rotated 180
+    # degrees around the x-axis. This means the x-values of all forces
+    # (boosters) and exit speeds of factory spawned objects must be inverted.
     sv = bullet_data.BulletData(
         position=pos_parent, velocityLin=vel_parent, orientation=orient_parent)
 
@@ -492,9 +491,7 @@ def test_controlParts(client_type):
     # Create a template with two factories and spawn it.
     # ------------------------------------------------------------------------
 
-    # Define a new object with two factory parts. The Factory parts are
-    # named tuples passed to addTemplates. The user must assign the partIDs
-    # manually.
+    # Define the parts.
     b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0,
                        minval=0, maxval=0.5, force=0)
     b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
@@ -506,18 +503,18 @@ def test_controlParts(client_type):
         partID=1, pos=pos_1, direction=dir_1,
         templateID='_templateSphere', exit_speed=[1, 5])
 
-    # Add the template to Azrael...
-    t2 = Template('t1', cs, vert, uv, rgb, [b0, b1], [f0, f1])
-    assert client.addTemplates([t2]).ok
-
-    # ... and spawn an instance thereof.
-    new_obj = {'template': t2.name,
+    # Define the template, add it to Azrael, and spawn an instance.
+    frags = [Fragment('bar', vert, uv, rgb)]
+    temp = Template('t1', cs, frags, [b0, b1], [f0, f1])
+    assert client.addTemplates([temp]).ok
+    new_obj = {'template': temp.name,
                'position': pos_parent,
                'velocityLin': vel_parent,
                'orientation': orient_parent}
     ret = client.spawn([new_obj])
     assert ret.ok and (ret.data == (id_1, ))
     leo.processCommandsAndSync()
+    del b0, b1, f0, f1, temp, new_obj, frags
 
     # ------------------------------------------------------------------------
     # Activate booster and factories and verify that the applied force and
