@@ -53,6 +53,7 @@ import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 del p
 
+from azrael.util import Template, Fragment
 
 # Convenience.
 ipshell = IPython.embed
@@ -163,8 +164,10 @@ def loadGroundModel(scale, model_name):
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'
     cs = np.array([3, 1, 1, 1], np.float64)
-    t1 = (tID, cs, vert, uv, rgb, [b0, b1, b2, b3], [])
-    assert client.addTemplates([t1]).ok
+    frags = [Fragment('frag_1', vert, uv, rgb)]
+    temp = Template(tID, cs, frags, [b0, b1, b2, b3], [])
+    assert client.addTemplates([temp]).ok
+    del cs, frags, temp
     print('done')
 
     # Spawn the template near the center.
@@ -247,9 +250,12 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     tID_1 = 'Product1'
     tID_2 = 'Product2'
-    t1 = (tID_1, cs, 0.75 * vert, uv, rgb, [], [])
-    t2 = (tID_2, cs, 0.24 * vert, uv, rgb, [], [])
+    frags_1 = [Fragment('frag_1', 0.75 * vert, uv, rgb)]
+    frags_2 = [Fragment('frag_1', 0.24 * vert, uv, rgb)]
+    t1 = Template(tID_1, cs, frags_1, [], [])
+    t2 = Template(tID_2, cs, frags_2, [], [])
     assert client.addTemplates([t1, t2]).ok
+    del frags_1, frags_2, t1, t2
 
     # ----------------------------------------------------------------------
     # Define a cube with boosters and factories.
@@ -271,8 +277,10 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Add the template.
     tID_3 = 'BoosterCube'
-    t3 = (tID_3, cs, vert, uv, rgb, [b0, b1], [f0, f1])
+    frags = [Fragment('frag_1', vert, uv, rgb)]
+    t3 = Template(tID_3, cs, frags, [b0, b1], [f0, f1])
     assert client.addTemplates([t3]).ok
+    del frags, t3
 
     # ----------------------------------------------------------------------
     # Define more booster cubes, each with a different texture.
@@ -296,11 +304,14 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        templates.append((tID, cs, vert, curUV, rgb, [b0, b1], []))
+        frags = [Fragment('frag_1', vert, curUV, rgb)]
+        tmp = Template(tID, cs, frags, [b0, b1], [])
+        templates.append(tmp)
 
         # Add the templateID to a dictionary because we will need it in the
         # next step to spawn the templates.
         tID_cube[ii] = tID
+        del frags, tmp, tID, fname
 
     if texture_errors > 0:
         print('Could not load texture for {} of the {} objects'
