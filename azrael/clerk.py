@@ -539,27 +539,16 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def addTemplates(self, templates: list):
         """
-        Add all the templates specified in ``templates`` to the system.
+        Add all ``templates`` to the system so that they can be spawned.
 
-        Henceforth it will be possible to ``spawn`` any of them.
+        Return an error if one or more templates with the same name
+        exists. However, all new and unique templates will be added
+        regardless, whereas those with a name clash will be ignored.
 
-        Return an error if one or more template with the same name exists. All
-        non-existing templates will be added but none of the existing ones will
-        be modified.
+        ``templates`` is a list of :ref:``azrael.util.Template`` instances.
 
-        fixme: explain the structure of ``templates``.
-
-        The elements in ``templates`` are ``Template`` instances.
-
-        :param str templateID: the name of the new template.
-        :param np.ndarray cshape: collision shape
-        :param list vert: object vertices
-        :param list UV: UV map for textures
-        :param list RGB: texture
-        :param parts.Booster boosters: list of Booster instances.
-        :param parts.Factory boosters: list of Factory instances.
-        :return: the ID of the newly added template
-        :rtype: bytes
+        :param list templates: list of Template definitions.
+        :return: success
         :raises: None
         """
         # Return immediately if ``templates`` is empty.
