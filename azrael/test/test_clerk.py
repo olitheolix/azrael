@@ -1286,27 +1286,22 @@ def test_updateBoosterValues():
     # ------------------------------------------------------------------------
     # Convenience.
     sv = bullet_data.BulletData()
-    cs = [1, 2, 3, 4]
-    uv = rgb = []
-    vert = [-4, 0, 0,
-            1, 2, 3,
-            4, 5, 6]
+    cs, vert = [1, 2, 3, 4], list(range(9))
 
     b0 = parts.Booster(partID=0, pos=[-1, 0, 0], direction=[0, 0, 1],
                        minval=-1, maxval=1, force=0)
     b1 = parts.Booster(partID=1, pos=[+1, 0, 0], direction=[0, 0, 1],
                        minval=-1, maxval=1, force=0)
 
-    # Add the template to Azrael...
-    t1 = Template('t1', cs, vert, uv, rgb, [b0, b1], [])
+    # Define a template with one fragment.
+    frags = [Fragment(name='foo', vert=vert, uv=[], rgb=[])]
+    t1 = Template('t1', cs, frags, [b0, b1], [])
+
+    # Add the template and spawn two instances.
     assert clerk.addTemplates([t1]).ok
-    # ... and spawn two instances of it.
-    ret = clerk.spawn([(t1.name, sv)])
+    ret = clerk.spawn([(t1.name, sv), (t1.name, sv)])
     assert ret.ok
-    objID_1 = ret.data[0]
-    ret = clerk.spawn([(t1.name, sv)])
-    assert ret.ok
-    objID_2 = ret.data[0]
+    objID_1, objID_2 = ret.data
 
     # ------------------------------------------------------------------------
     # Update the Booster forces on the first object: both accelerate the object
