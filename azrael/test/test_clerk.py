@@ -730,8 +730,6 @@ def test_controlParts_Boosters_notmoving():
 
     # Parameters and constants for this test.
     objID_1 = 1
-    tNone = '_templateNone'
-    sv = bullet_data.BulletData()
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
@@ -741,10 +739,9 @@ def test_controlParts_Boosters_notmoving():
     # ------------------------------------------------------------------------
 
     # Constants for the new template object.
-    cs = [1, 2, 3, 4]
-    vert = list(range(9))
-    uv = [9, 10]
-    rgb = [1, 2, 250]
+    sv = bullet_data.BulletData()
+    cs, vert = [1, 2, 3, 4], list(range(9))
+    uv, rgb = [9, 10], [1, 2, 250]
 
     dir_0 = np.array([1, 0, 0], np.float64)
     dir_1 = np.array([0, 1, 0], np.float64)
@@ -757,14 +754,15 @@ def test_controlParts_Boosters_notmoving():
     b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
                        minval=0, maxval=0.5, force=0)
 
-    # Create a new template in Azrael of an object with two boosters.
-    t2 = Template('t1', cs, vert, uv, rgb, [b0, b1], [])
-    assert clerk.addTemplates([t2]).ok
+    # Define a new template with two boosters and add it to Azrael.
+    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [b0, b1], [])
+    assert clerk.addTemplates([temp]).ok
 
-    # Spawn the object.
-    ret = clerk.spawn([(t2.name, sv)])
+    # Spawn an instance of the template.
+    ret = clerk.spawn([(temp.name, sv)])
     assert (ret.ok, ret.data) == (True, (objID_1, ))
     leo.processCommandsAndSync()
+    del ret, temp
 
     # ------------------------------------------------------------------------
     # Engage the boosters and verify the total force exerted on the object.
@@ -789,16 +787,9 @@ def test_controlParts_Boosters_notmoving():
     assert np.array_equal(tmp[0], tot_force)
     assert np.array_equal(tmp[1], tot_torque)
 
-    # ------------------------------------------------------------------------
-    # Send an empty command. The total force and torque must not change, ie
-    # nothing must happen at all.
-    # ------------------------------------------------------------------------
-
-    # Send booster commands to Clerk.
+    # Send an empty command. The total force and torque must not change.
     assert clerk.controlParts(objID_1, [], []).ok
     leo.processCommandsAndSync()
-
-    # Query the torque and force from Azrael and verify they are correct.
     tmp = leo.totalForceAndTorque(objID_1)
     assert np.array_equal(tmp[0], tot_force)
     assert np.array_equal(tmp[1], tot_torque)
