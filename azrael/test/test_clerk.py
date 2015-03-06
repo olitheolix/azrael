@@ -292,8 +292,7 @@ def test_getAllStateVariables():
     leo = getLeonard()
 
     # Test parameters and constants.
-    objID_1 = 1
-    objID_2 = 2
+    objID_1, objID_2 = 1, 2
     sv_1 = bullet_data.BulletData(position=np.arange(3), velocityLin=[2, 4, 6])
     sv_2 = bullet_data.BulletData(position=[2, 4, 6], velocityLin=[6, 8, 10])
     templateID = '_templateNone'
@@ -301,25 +300,25 @@ def test_getAllStateVariables():
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
 
-    # Retrieve all SV --> there must be none.
+    # Retrieve all SVs --> there must be none.
     ret = clerk.getAllStateVariables()
     assert (ret.ok, ret.data) == (True, {})
 
-    # Spawn a new object. It must have ID=1.
+    # Spawn a new object and verify its ID.
     ret = clerk.spawn([(templateID, sv_1)])
     assert (ret.ok, ret.data) == (True, (objID_1, ))
 
-    # Retrieve all SV --> there must be one.
+    # Retrieve all SVs --> there must now be exactly one.
     leo.processCommandsAndSync()
     ret = clerk.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 1)
     assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
 
-    # Spawn a second object.
+    # Spawn a second object and verify its ID.
     ret = clerk.spawn([(templateID, sv_2)])
     assert (ret.ok, ret.data) == (True, (objID_2, ))
 
-    # Retrieve all SV --> there must now be two.
+    # Retrieve all SVs --> there must now be exactly two.
     leo.processCommandsAndSync()
     ret = clerk.getAllStateVariables()
     assert (ret.ok, len(ret.data)) == (True, 2)
