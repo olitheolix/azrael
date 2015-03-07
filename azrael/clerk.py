@@ -859,51 +859,6 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, ret.msg, None)
 
     @typecheck
-    def getStateVariables(self, objIDs: (list, tuple)):
-        """
-        Return the State Variables for all ``objIDs`` in a dictionary.
-
-        The dictionary keys will be the elements of ``objIDs``, whereas the
-        values are either the State Variables (instance of ``BulletData``) or
-        *None* (if the objID does not exist).
-
-        :param list(int) objIDs: list of objects for which to return the SV.
-        :return: {objID_1: SV_k, ...}
-        :rtype: dict
-        """
-        with util.Timeit('physAPI.getSV') as timeit:
-            # Get the State Variables.
-            ret = physAPI.getStateVariables(objIDs)
-            if not ret.ok:
-                return RetVal(False, 'One or more IDs do not exist', None)
-
-        # Query the lastChanged values for all objects.
-        docs = database.dbHandles['ObjInstances'].find(
-            {'objID': {'$in': objIDs}},
-            {'lastChanged': 1, 'objID': 1, 'fragState': 1})
-
-        # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into
-        # two dictionaries like {objID1: foo, objID2: bar, ...}, purely for
-        # readability and convenience a few lines below.
-        docs = list(docs)
-        last = {_['objID']: _['lastChanged'] for _ in docs}
-        fragState = {}
-        for doc in docs:
-            fs = [FragState(*_) for _ in doc['fragState'].values()]
-            objID = doc['objID']
-            fragState[objID] = fs
-
-        # Overwrite the 'lastChanged' field in the State Variable with the
-        # current value so that the user automatically gets the latest value.
-        sv = ret.data
-        out = {_: None for _ in objIDs}
-        for objID in last:
-            if sv[objID] is not None:
-                tmp = sv[objID]._replace(lastChanged=last[objID])
-                out[objID] = {'sv': tmp, 'frag': fragState[objID]}
-        return RetVal(True, None, out)
-
-    @typecheck
     def getGeometry(self, objID: int):
         """
         Return the vertices, UV map, and RGB map for ``objID``.
@@ -1050,6 +1005,78 @@ class Clerk(multiprocessing.Process):
         else:
             return RetVal(True, None, ret.data)
 
+    def _packSVData(self, SVs: dict):
+        """
+        Compile the data structure returned by ``get{All}StateVariables``.
+
+        This is a convenience function to remove code duplication.
+
+        The returned dictionary has the following form:
+
+          {objID_1: {'frag': [FragState(), ...], 'sv': _BulletData()},
+           objID_2: {'frag': [FragState(), ...], 'sv': _BulletData()},
+           ...}
+
+        :param dict SVs: SV dictionary. Each key is an object ID and the
+            corresponding value a ``BulletData`` instance.
+        """
+        # Convenience: extract all objIDs from ``SVs``.
+        objIDs = list(SVs.keys())
+
+        # Query the lastChanged values for all objects.
+        docs = database.dbHandles['ObjInstances'].find(
+            {'objID': {'$in': objIDs}},
+            {'lastChanged': 1, 'objID': 1, 'fragState': 1})
+        docs = list(docs)
+
+        # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into two
+        # dictionaries like {objID1: foo, objID2: bar, ...}. This is purely for
+        # readability and convenience a few lines below.
+        lastChanged = {_['objID']: _['lastChanged'] for _ in docs}
+        fragState = {_['objID']: _['fragState'].values() for _ in docs}
+
+        # Wrap the fragment states into their dedicated tuple type.
+        fragState = {k: [FragState(*_) for _ in v]
+                     for (k, v) in fragState.items()}
+
+        # The output dictionary contains None values for all SVs that could not
+        # be retrieved (probably because the object did not exist).
+        out = {_: None for _ in objIDs if SVs[_] is None}
+
+        # Add SV and fragment data for all objects for which we have SV
+        # data. In that process also update the 'lastChanged' flag. This
+        # indicates to the client if the geometry has changed.
+        for objID in objIDs:
+            if objID in out:
+                continue
+            # Overwrite the 'lastChanged' field in the State Variable with the
+            # current value so that the user automatically gets the latest value.
+            out[objID] = {
+                'frag': fragState[objID],
+                'sv': SVs[objID]._replace(lastChanged=lastChanged[objID])
+            }
+        return RetVal(True, None, out)
+
+    @typecheck
+    def getStateVariables(self, objIDs: (list, tuple)):
+        """
+        Return the State Variables for all ``objIDs`` in a dictionary.
+
+        The dictionary keys will be the elements of ``objIDs``, whereas the
+        values are ``BulletData`` instances, or *None* if the corresponding
+        objID did not exist.
+
+        :param list(int) objIDs: list of objects for which to return the SV.
+        :return: see :ref:``_packSVData``.
+        :rtype: dict
+        """
+        with util.Timeit('physAPI.getSV') as timeit:
+            # Get the State Variables.
+            ret = physAPI.getStateVariables(objIDs)
+            if not ret.ok:
+                return RetVal(False, 'One or more IDs do not exist', None)
+        return self._packSVData(ret.data)
+
     @typecheck
     def getAllStateVariables(self, dummy=None):
         """
@@ -1062,9 +1089,7 @@ class Clerk(multiprocessing.Process):
            The ``dummy`` argument is a placeholder because the ``runCommand``
            function assumes that every method takes at least one argument.
 
-        fixme: remove/reduce code duplication with getStateVariables
-
-        :return: {objID_1: SV_k, ...}
+        :return: see :ref:``_packSVData``.
         :rtype: dict
         """
         with util.Timeit('physAPI.getSV') as timeit:
@@ -1072,52 +1097,7 @@ class Clerk(multiprocessing.Process):
             ret = physAPI.getAllStateVariables()
             if not ret.ok:
                 return ret
-        objIDs = list(ret.data.keys())
-
-        # Query the lastChanged values for all objects.
-        docs = database.dbHandles['ObjInstances'].find(
-            {'objID': {'$in': objIDs}},
-            {'lastChanged': 1, 'objID': 1, 'fragState': 1})
-
-        # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into
-        # two dictionaries like {objID1: foo, objID2: bar, ...}, purely for
-        # readability and convenience a few lines below.
-        docs = list(docs)
-        last = {_['objID']: _['lastChanged'] for _ in docs}
-        fragState = {}
-        for doc in docs:
-            fs = [FragState(*_) for _ in doc['fragState'].values()]
-            objID = doc['objID']
-            fragState[objID] = fs
-
-        # Overwrite the 'lastChanged' field in the State Variable with the
-        # current value so that the user automatically gets the latest value.
-        sv = ret.data
-        out = {_: None for _ in objIDs}
-        for objID in last:
-            if sv[objID] is not None:
-                tmp = sv[objID]._replace(lastChanged=last[objID])
-                out[objID] = {'sv': tmp, 'frag': fragState[objID]}
-        return RetVal(True, None, out)
-
-        # Query the lastChanged values for all objects.
-        docs = database.dbHandles['ObjInstances'].find(
-            {'objID': {'$in': list(ret.data.keys())}},
-            {'lastChanged': 1, 'objID': 1, 'fragState': 1})
-
-        # Convert the list of [{objID1: cs1}, {objID2: cs2}, ...] into
-        # a simple {objID1: cs1, objID2: cs2, ...} dictionary.
-        docs = {_['objID']: (_['lastChanged'], _['fragState']) for _ in docs}
-
-        # Overwrite the 'lastChanged' field in the State Variable. This ensures
-        # the user gets the most up-to-date value on when the object geometry
-        # last changed.
-        out = {}
-        for objID in sv:
-            if objID in docs:
-                tmp = sv[objID]._replace(lastChanged=docs[objID][0])
-                out[objID] = {'sv': tmp, 'frag': FragState(*docs[objID][1])}
-        return RetVal(True, None, out)
+        return self._packSVData(ret.data)
 
     @typecheck
     def updateFragmentStates(self, fragData: dict):
