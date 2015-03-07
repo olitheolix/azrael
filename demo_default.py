@@ -53,7 +53,7 @@ import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 del p
 
-from azrael.util import Template, Fragment
+from azrael.util import Template, Fragment, FragState
 
 # Convenience.
 ipshell = IPython.embed
@@ -304,7 +304,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        frags = [Fragment('frag_1', vert, curUV, rgb)]
+        frags = [Fragment('frag_1', vert, curUV, rgb),
+                 Fragment('frag_2', vert, curUV, rgb)]
         tmp = Template(tID, cs, frags, [b0, b1], [])
         templates.append(tmp)
 
@@ -366,6 +367,11 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     ret = client.spawn(allObjs)
     assert ret.ok
     print(' {:.1f}s'.format(time.time() - t0))
+
+    # Make 'frag_2' invisible by setting its scale to zero.
+    for objID in ret.data:
+        client.updateFragmentStates({objID: [
+            FragState('frag_2', 0, [0, 0, 0], [0, 0, 0, 1])]})
 
     # Keep the original position of the object (this will be needed to
     # periodically reset the simulation).
