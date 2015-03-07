@@ -477,6 +477,42 @@ class Client():
         return self.serialiseAndSend('add_templates', templates)
 
     @typecheck
+    def _unpackSVData(self, raw: dict):
+        """
+        Return unpacked SV data.
+
+        This is a convenience function only to avoid code duplication in
+        ``get{All}StateVariables``.
+
+        The returned dictionary has the format:
+          {objID_1: {'frag': [FragState(), ...], 'sv': BulletData()},
+           objID_2: {'frag': [FragState(), ...], 'sv': BulletData()},
+           ...
+        }
+
+        :param dict raw: output from protocol module.
+        :return: unpacked SV data.
+        """
+        # Iterate over all objects.
+        out = {}
+        for objID, v in raw.items():
+            # Convert the object ID to an integer because JSON will convert all
+            # dictionary keys to strings.
+            objID = int(objID)
+
+            # Add a None value if there is no data (typically happens if one
+            # or more of the objects for which SV data was requested did not
+            # exist).
+            if v is None:
+                out[objID] = None
+                continue
+
+            # Fill in the SV and fragment state data.
+            out[objID] = {'frag': [FragState(*_) for _ in v['frag']],
+                          'sv': _BulletData(**v['sv'])}
+        return RetVal(True, None, out)
+
+    @typecheck
     def getStateVariables(self, objIDs: (list, tuple, int)):
         """
         Return the State Variables for all ``objIDs`` in a dictionary.
@@ -499,18 +535,7 @@ class Client():
         ret = self.serialiseAndSend('get_statevar', objIDs)
         if not ret.ok:
             return ret
-
-        # Convert the returned data back into a named tuple (_BulletData).
-        out = {}
-        for objID, v in ret.data.items():
-            objID = int(objID)
-            if v is None:
-                out[objID] = None
-            else:
-                out[objID] = {'frag': [FragState(*_) for _ in v['frag']],
-                              'sv': _BulletData(**v['sv'])}
-
-        return RetVal(True, None, out)
+        return self._unpackSVData(ret.data)
 
     @typecheck
     def getAllStateVariables(self):
@@ -524,17 +549,7 @@ class Client():
         ret = self.serialiseAndSend('get_all_statevars')
         if not ret.ok:
             return ret
-
-        # Convert the returned data back into a named tuple (_BulletData).
-        out = {}
-        for objID, v in ret.data.items():
-            objID = int(objID)
-            if v is not None:
-                out[objID] = {'frag': v['frag'], 'sv': _BulletData(**v['sv'])}
-            else:
-                out[objID] = None
-
-        return RetVal(True, None, out)
+        return self._unpackSVData(ret.data)
 
     @typecheck
     def setStateVariable(self, objID: int, new_SV: BulletDataOverride):
