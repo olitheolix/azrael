@@ -655,7 +655,7 @@ def test_updateFragmentStates(client_type):
     assert ret.ok and ret.data == (objID, )
     del temp, new_obj, ret, rgb, uv, vert, cs
 
-    # Query the SV to obtain the 'lastChanged' value.
+    # Query the SV and verify the fragment state for 'bar'.
     leo.processCommandsAndSync()
     ret = client.getStateVariables(objID)
     ref = [FragState('bar', 1, [0, 0, 0], [0, 0, 0, 1])]
