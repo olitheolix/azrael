@@ -36,6 +36,7 @@ RetVal = namedtuple('RetVal', 'ok msg data')
 # Template dataset.
 Template = namedtuple('Template', 'name cs fragments boosters factories')
 Fragment = namedtuple('Fragment', 'name vert uv rgb')
+FragState = namedtuple('FragState', 'name scale position orientation')
 
 
 def resetTiming():

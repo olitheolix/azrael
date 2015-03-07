@@ -55,6 +55,7 @@ ipshell = IPython.embed
 RetVal = util.RetVal
 Template = azrael.util.Template
 Fragment = azrael.util.Fragment
+FragState = azrael.util.FragState
 
 
 class Clerk(multiprocessing.Process):
@@ -801,16 +802,16 @@ class Clerk(multiprocessing.Process):
                 open(tmp['file_geo'], 'wb').write(geodata)
 
                 # Parse the geometry data to determine the names of all
-                # fragments. Then create an initial fragment state for each
-                # name.
-                # fixme: use named tuple for frag_init_state
+                # fragments. Then compile a neutral initial state for each.
                 geodata = json.loads(geodata.decode('utf8'))
-                frag_init_state = (1, [0, 0, 0], [0, 0, 0, 1])
-                tmp['fragState'] = {_: frag_init_state for _ in geodata}
-                del frag_init_state, geodata
+                init = FragState(name='', scale=1, position=[0, 0, 0],
+                                 orientation=[0, 0, 0, 1])
+                tmp['fragState'] = {frag_name: init._replace(name=frag_name)
+                                    for frag_name in geodata}
 
                 # Add the new template document.
                 dbDocs.append(tmp)
+                del init, geodata, tmp
 
             # Insert all objects into the State Variable DB. Note: this does
             # not make Leonard aware of their existence (see next step).
@@ -886,7 +887,11 @@ class Clerk(multiprocessing.Process):
         # readability and convenience a few lines below.
         docs = list(docs)
         last = {_['objID']: _['lastChanged'] for _ in docs}
-        fs = {_['objID']: _['fragState'] for _ in docs}
+        fragState = {}
+        for doc in docs:
+            fs = [FragState(*_) for _ in doc['fragState'].values()]
+            objID = doc['objID']
+            fragState[objID] = fs
 
         # Overwrite the 'lastChanged' field in the State Variable with the
         # current value so that the user automatically gets the latest value.
@@ -895,7 +900,7 @@ class Clerk(multiprocessing.Process):
         for objID in last:
             if sv[objID] is not None:
                 tmp = sv[objID]._replace(lastChanged=last[objID])
-                out[objID] = {'sv': tmp, 'frag': fs[objID]}
+                out[objID] = {'sv': tmp, 'frag': fragState[objID]}
         return RetVal(True, None, out)
 
     @typecheck
@@ -1067,7 +1072,33 @@ class Clerk(multiprocessing.Process):
             ret = physAPI.getAllStateVariables()
             if not ret.ok:
                 return ret
+        objIDs = list(ret.data.keys())
+
+        # Query the lastChanged values for all objects.
+        docs = database.dbHandles['ObjInstances'].find(
+            {'objID': {'$in': objIDs}},
+            {'lastChanged': 1, 'objID': 1, 'fragState': 1})
+
+        # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into
+        # two dictionaries like {objID1: foo, objID2: bar, ...}, purely for
+        # readability and convenience a few lines below.
+        docs = list(docs)
+        last = {_['objID']: _['lastChanged'] for _ in docs}
+        fragState = {}
+        for doc in docs:
+            fs = [FragState(*_) for _ in doc['fragState'].values()]
+            objID = doc['objID']
+            fragState[objID] = fs
+
+        # Overwrite the 'lastChanged' field in the State Variable with the
+        # current value so that the user automatically gets the latest value.
         sv = ret.data
+        out = {_: None for _ in objIDs}
+        for objID in last:
+            if sv[objID] is not None:
+                tmp = sv[objID]._replace(lastChanged=last[objID])
+                out[objID] = {'sv': tmp, 'frag': fragState[objID]}
+        return RetVal(True, None, out)
 
         # Query the lastChanged values for all objects.
         docs = database.dbHandles['ObjInstances'].find(
@@ -1085,7 +1116,7 @@ class Clerk(multiprocessing.Process):
         for objID in sv:
             if objID in docs:
                 tmp = sv[objID]._replace(lastChanged=docs[objID][0])
-                out[objID] = {'sv': tmp, 'frag': docs[objID][1]}
+                out[objID] = {'sv': tmp, 'frag': FragState(*docs[objID][1])}
         return RetVal(True, None, out)
 
     @typecheck
@@ -1096,24 +1127,19 @@ class Clerk(multiprocessing.Process):
         The ``fragData`` dictionary has the following structure:
 
           fragData = {
-            objID_1: {
-              '1': [5, [5, 5, 5], [5, 5, 5, 5]],
-              '3': [5, [5, 5, 5], [5, 5, 5, 5]]
-            },
-            objID_2: {
-              '1': [2, [3, 3, 3], [4, 4, 4, 4]]
-            }
-        }
+            objID_1: [state_1, state_2, ...],
+            objID_2: [state_3, state_4, ...]
+          }
 
-        where an entry like {'1': [2, [3, 3, 3], [4, 4, 4, 4]]} means
-        to update fragment '1'. Specifically, set its scale to 2, its position
-        to [2, 2, 2], and its orientation (Quaternion) to [4, 4, 4, 4].
+        where each ``state_k`` entry is a :ref:``util.FragState`` tuple. Those
+        tuplse contain the actual state information like scale, position, and
+        orientation.
 
-        Non-existing objects will be ignored, but existing ones will be
-        modified regardless.
-
-        If one or more fragments exists then no fragment for that object will
-        be updated.
+        This methos will updat all existing objects and silently skip
+        non-existing ones. However, the fragments for any particular object
+        will be updated all at once, or not at all. This means that if one or
+        more fragment IDs are invalid then none of the fragments in that object
+        will be updated, not even those with a valid ID.
 
         :param dict fragData: new fragment data for each object.
         :return: success.
@@ -1124,46 +1150,48 @@ class Clerk(multiprocessing.Process):
         # Sanity checks.
         try:
             # All objIDs must be integers and all values must be dictionaries.
-            for k1, v1 in fragData.items():
-                assert isinstance(k1, int)
-                assert isinstance(v1, dict)
+            for objID, fragStates in fragData.items():
+                assert isinstance(objID, int)
+                assert isinstance(fragStates, (list, tuple))
 
                 # Each fragmentID must be a stringified integer, and all
                 # fragment data must be a list with three entries.
-                for k2, v2 in v1.items():
-                    assert isinstance(k2, str)
-                    assert isinstance(v2, list)
+                for fragState in fragStates:
+                    assert isinstance(fragState, FragState)
+                    assert isinstance(fragState.name, str)
 
-                    # Every fragment must receive three pieces of information:
-                    # scale (scalar), position (3-element vector), and
+                    # Verify the content of the ``FragState`` data:
+                    # scale (float), position (3-element vector), and
                     # orientation (4-element vector).
-                    assert len(v2) == 3
-                    assert isinstance(v2[0], (int, float))
-                    assert len(v2[1]) == 3
-                    assert len(v2[2]) == 4
-                    for _ in v2[1]:
+                    assert isinstance(fragState.scale, (int, float))
+                    assert len(fragState.position) == 3
+                    assert len(fragState.orientation) == 4
+                    for _ in fragState.position:
                         assert isinstance(_, (int, float))
-                    for _ in v2[2]:
+                    for _ in fragState.orientation:
                         assert isinstance(_, (int, float))
         except (TypeError, AssertionError):
             return RetVal(False, 'Invalid data format', None)
 
-        # Update the fragments one objects at a time.
+        # Update the fragments. Process one object at a time.
         ok = True
         for objID, frag in fragData.items():
-            # Mongo query: ensure every part ID actually exists. The result of
-            # the code below will be a dictionary like this:
-            #   {'fragState.1': {'$exists': 1},
+            # Compile the mongo query to find the correct object and ensure
+            # that every fragment indeed exists. The final query will have the
+            # following structure:
+            #   {'objID': 2,
+            #    'fragState.1': {'$exists': 1},
             #    'fragState.2': {'$exists': 1},
-            #    'objID': 2}
-            query = {'fragState.{}'.format(k): {'$exists': 1} for k in frag}
+            #    ...}
+            frag_name = 'fragState.{}'
+            query = {frag_name.format(_.name): {'$exists': 1} for _ in frag}
             query['objID'] = objID
 
             # Overwrite the specified partIDs. This will produce a dictionary
             # like this:
-            #   {'fragState.1': [7, [7, 7, 7], [7, 7, 7, 7]],
-            #    'fragState.2': [8, [8, 8, 8], [8, 8, 8, 8]]}
-            newvals = {'fragState.{}'.format(k): frag[k] for k in frag}
+            #   {'fragState.1': (FragState-tuple),
+            #    'fragState.2': (FragState-tuple)}
+            newvals = {frag_name.format(_.name): _ for _ in frag}
 
             # Issue the update command to Mongo.
             ret = update(query, {'$set': newvals})
@@ -1177,4 +1205,8 @@ class Clerk(multiprocessing.Process):
             # 'nModified'=0.
             if ret['n'] != 1:
                 ok = False
-        return RetVal(ok, None, None)
+
+        if ok:
+            return RetVal(True, None, None)
+        else:
+            return RetVal(False, 'Could not udpate all fragments', None)

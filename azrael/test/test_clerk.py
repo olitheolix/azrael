@@ -40,6 +40,7 @@ from azrael.bullet.test_boost_bullet import isEqualBD
 ipshell = IPython.embed
 Template = azrael.util.Template
 Fragment = azrael.util.Fragment
+FragState = azrael.util.FragState
 
 
 def test_invalid():
@@ -1321,7 +1322,7 @@ def test_updateFragmentState():
     clerk = azrael.clerk.Clerk()
 
     # Attempt to update the fragment state of non-existing objects.
-    newStates = {2: {'1': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
+    newStates = {2: [FragState('1', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
     ret = clerk.updateFragmentStates(newStates)
     assert not ret.ok
 
@@ -1342,40 +1343,47 @@ def test_updateFragmentState():
     def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
         """
         Convenience function to verify the fragment states of objID_1 and
-        objID_2 (defined in outer scope).
+        objID_2 (defined in outer scope). This function assumes there are two
+        objects and each has one fragment with name 'foo'.
         """
-        # Query the SV and ensure the fragment positions are correct.
+        # Query the SV for both objects.
         ret = clerk.getStateVariables([objID_1, objID_2])
         assert ret.ok and (len(ret.data) == 2)
-        assert ret.data[objID_1]['frag']['foo'] == [scale_1, pos_1, rot_1]
-        assert ret.data[objID_2]['frag']['foo'] == [scale_2, pos_2, rot_2]
+
+        # Exract the one and only fragment of each object.
+        _frag_1 = ret.data[objID_1]['frag'][0]
+        _frag_2 = ret.data[objID_2]['frag'][0]
+
+        # Verify the fragments have the expected values.
+        assert _frag_1 == FragState('foo', scale_1, pos_1, rot_1)
+        assert _frag_2 == FragState('foo', scale_2, pos_2, rot_2)
 
     # All fragments must initially be at the center.
     checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
                    1, [0, 0, 0], [0, 0, 0, 1])
 
     # Update and verify the fragment states of the second object.
-    newStates = {objID_2: {'foo': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
+    newStates = {objID_2: [FragState('foo', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
     assert clerk.updateFragmentStates(newStates).ok
     checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
                    2.2, [1, 2, 3], [1, 0, 0, 0])
 
     # Modify the fragment states of two instances at once.
     newStates = {
-        objID_1: {'foo': [3.3, [1, 2, 4], [2, 0, 0, 0]]},
-        objID_2: {'foo': [4.4, [1, 2, 5], [0, 3, 0, 0]]}
+        objID_1: [FragState('foo', 3.3, [1, 2, 4], [2, 0, 0, 0])],
+        objID_2: [FragState('foo', 4.4, [1, 2, 5], [0, 3, 0, 0])]
     }
     assert clerk.updateFragmentStates(newStates).ok
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                    4.4, [1, 2, 5], [0, 3, 0, 0])
 
     # Attempt to update the fragment state of two objects. However, this time
-    # only of object actually exists. The expected behaviour is that the
-    # command returns an error yet correctly updates the fragment state of the
-    # existing object.
+    # only one of the objects actually exists. The expected behaviour is that
+    # the command returns an error yet correctly updates the fragment state of
+    # the existing object.
     newStates = {
-        1000000: {'foo': [5, [5, 5, 5], [5, 5, 5, 5]]},
-        objID_2: {'foo': [5, [5, 5, 5], [5, 5, 5, 5]]}
+        1000000: [FragState('foo', 5, [5, 5, 5], [5, 5, 5, 5])],
+        objID_2: [FragState('foo', 5, [5, 5, 5], [5, 5, 5, 5])]
     }
     assert not clerk.updateFragmentStates(newStates).ok
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
@@ -1383,7 +1391,7 @@ def test_updateFragmentState():
 
     # Attempt to update a non-existing fragment.
     newStates = {
-        objID_2: {'blah': [6, [6, 6, 6], [6, 6, 6, 6]]}
+        objID_2: [FragState('blah', 6, [6, 6, 6], [6, 6, 6, 6])]
     }
     assert not clerk.updateFragmentStates(newStates).ok
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
@@ -1393,10 +1401,8 @@ def test_updateFragmentState():
     # fragment IDs are valid. The expected behaviour is that none of the
     # fragments was updated.
     newStates = {
-        objID_2: {
-            'foo': [7, [7, 7, 7], [7, 7, 7, 7]],
-            'blah': [8, [8, 8, 8], [8, 8, 8, 8]]
-        }
+        objID_2: [FragState('foo', 7, [7, 7, 7], [7, 7, 7, 7]),
+                  FragState('blah', 8, [8, 8, 8], [8, 8, 8, 8])]
     }
     assert not clerk.updateFragmentStates(newStates).ok
     checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
@@ -1404,7 +1410,7 @@ def test_updateFragmentState():
 
     # Update the fragments twice with the exact same data. This trigger a
     # bug at one point but is fixed now.
-    newStates = {objID_2: {'foo': [9, [9, 9, 9], [9, 9, 9, 9]]}}
+    newStates = {objID_2: [FragState('foo', 9, [9, 9, 9], [9, 9, 9, 9])]}
     assert clerk.updateFragmentStates(newStates).ok
     assert clerk.updateFragmentStates(newStates).ok
 
@@ -1432,22 +1438,30 @@ def test_fragments_end2end():
     vert_3 = list(range(18, 27))
     vert_4 = list(range(27, 36))
 
-    def checkFragState(name_1, scale_1, pos_1, rot_1,
+    def checkFragState(objID, name_1, scale_1, pos_1, rot_1,
                        name_2, scale_2, pos_2, rot_2):
         """
-        Convenience function to verify the fragment states of an object.
-        This function assumes there is exactly one object with two fragments.
+        Convenience function to verify the fragment states of ``objID``. This
+        function assumes the object has exactly two fragments.
         """
-        # Query the SV and ensure the fragment positions are correct.
-        ret = clerk.getAllStateVariables()
-        assert ret.ok
-        assert len(ret.data) == 1
-        frags = list(ret.data.values())[0]['frag']
-        assert len(frags) == 2
-        assert (name_1 in frags) and (name_2 in frags)
+        # Query the SV for both objects.
+        ret = clerk.getStateVariables([objID])
+        assert ret.ok and (len(ret.data) == 1)
 
-        assert frags[name_1] == [scale_1, pos_1, rot_1]
-        assert frags[name_2] == [scale_2, pos_2, rot_2]
+        # Extract the fragments and verify there are the two.
+        _frags = ret.data[objID]['frag']
+        assert len(_frags) == 2
+
+        # Convert the [FragState(), FragState()] list into a
+        # {name_1: FragState, name_2: FragState, ...} dictionary. This is
+        # purely for convenience below.
+        _frags = {_.name: _ for _ in _frags}
+        assert (name_1 in _frags) and (name_2 in _frags)
+
+        # Verify the fragments have the expected values.
+        assert _frags[name_1] == FragState(name_1, scale_1, pos_1, rot_1)
+        assert _frags[name_2] == FragState(name_2, scale_2, pos_2, rot_2)
+        del ret, _frags
 
     # Add the template to Azrael and spawn two instances.
     frags = [Fragment(name='1', vert=vert_1, uv=[], rgb=[]),
@@ -1456,38 +1470,41 @@ def test_fragments_end2end():
     assert clerk.addTemplates([t1]).ok
     ret = clerk.spawn([(t1.name, sv)])
     assert ret.ok
-    objID_1 = ret.data[0]
+    objID = ret.data[0]
     leo.processCommandsAndSync()
 
     # Query the SV for the object and verify it has as many fragment state
     # vectors as there are fragments.
-    ret = clerk.getStateVariables([objID_1])
+    ret = clerk.getStateVariables([objID])
     assert ret.ok
-    ret_frags = ret.data[objID_1]['frag']
+    ret_frags = ret.data[objID]['frag']
     assert len(ret_frags) == len(frags)
 
     # Same as before, but this time use 'getAllStateVariables' instead of
     # 'getStateVariables'.
     ret = clerk.getAllStateVariables()
     assert ret.ok
-    ret_frags = ret.data[objID_1]['frag']
+    ret_frags = ret.data[objID]['frag']
     assert len(ret_frags) == len(frags)
 
     # Verify the fragment _states_ themselves.
-    checkFragState('1', 1, [0, 0, 0], [0, 0, 0, 1],
+    checkFragState(objID,
+                   '1', 1, [0, 0, 0], [0, 0, 0, 1],
                    'test', 1, [0, 0, 0], [0, 0, 0, 1])
 
     # Modify the _state_ of both fragments and verify it worked.
     newStates = {
-        objID_1: {
-            '1': [7, [7, 7, 7], [7, 7, 7, 7]],
-            'test': [8, [8, 8, 8], [8, 8, 8, 8]]}}
+        objID: [
+            FragState('1', 7, [7, 7, 7], [7, 7, 7, 7]),
+            FragState('test', 8, [8, 8, 8], [8, 8, 8, 8])]
+    }
     assert clerk.updateFragmentStates(newStates).ok
-    checkFragState('1', 7, [7, 7, 7], [7, 7, 7, 7],
+    checkFragState(objID,
+                   '1', 7, [7, 7, 7], [7, 7, 7, 7],
                    'test', 8, [8, 8, 8], [8, 8, 8, 8])
 
     # Query the fragment _geometries_.
-    ret = clerk.getGeometry(objID_1)
+    ret = clerk.getGeometry(objID)
     assert ret.ok
     assert np.array_equal(ret.data['1'].vert, vert_1)
     assert np.array_equal(ret.data['test'].vert, vert_2)
@@ -1495,8 +1512,8 @@ def test_fragments_end2end():
     # Change the fragment geometries.
     frags = [Fragment(name='1', vert=vert_3, uv=[], rgb=[]),
              Fragment(name='test', vert=vert_4, uv=[], rgb=[])]
-    assert clerk.setGeometry(objID_1, frags).ok
-    ret = clerk.getGeometry(objID_1)
+    assert clerk.setGeometry(objID, frags).ok
+    ret = clerk.getGeometry(objID)
     assert ret.ok
     assert np.array_equal(ret.data['1'].vert, vert_3)
     assert np.array_equal(ret.data['test'].vert, vert_4)
