@@ -1049,8 +1049,8 @@ class Clerk(multiprocessing.Process):
         for objID in objIDs:
             if objID in out:
                 continue
-            # Overwrite the 'lastChanged' field in the State Variable with the
-            # current value so that the user automatically gets the latest value.
+            # Updae the 'lastChanged' field in the State Variable to the
+            # latest value.
             out[objID] = {
                 'frag': fragState[objID],
                 'sv': SVs[objID]._replace(lastChanged=lastChanged[objID])
