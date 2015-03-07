@@ -381,10 +381,11 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             assert len(buf_vert) // 3 == len(buf_uv) // 2
 
         # Initialise the geometry arrays.
-        self.numVertices[objID] = {}
-        self.numVertices[objID] = {}
-        self.vertex_array_object[objID] = {}
-        self.textureBuffer[objID] = {}
+        if objID not in self.numVertices:
+            self.numVertices[objID] = {}
+            self.numVertices[objID] = {}
+            self.vertex_array_object[objID] = {}
+            self.textureBuffer[objID] = {}
 
         # Store the number of vertices.
         numVertices = len(buf_vert) // 3
@@ -735,11 +736,15 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             else:
                 shader = self.shaderDict['uv']
 
-    #        matModelFrag = self.buildModelMatrix(self.newSVs[objID]['frag'])
+            # Compute the model matrix for the fragment.
+            matModelFrag = self.buildModelMatrix(frag)
+
+            # Combine the model matrix of the fragment and the overall object.
+            matModelAll = np.dot(matModelObj, matModelFrag)
 
             # Convert it to the flat 32Bit format the GPU expects.
-            matModelObj = matModelObj.astype(np.float32)
-            matModelObj = matModelObj.flatten(order='F')
+            matModelAll = matModelAll.astype(np.float32)
+            matModelAll = matModelAll.flatten(order='F')
 
             # Activate the shader and obtain handles to Uniform variables.
             gl.glUseProgram(shader)
@@ -758,7 +763,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 gl.glActiveTexture(gl.GL_TEXTURE0)
 
             # Upload the model- and projection matrices to the GPU.
-            gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, matModelObj)
+            gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, matModelAll)
             gl.glUniformMatrix4fv(h_prjMat, 1, gl.GL_FALSE, matPerspCam)
 
             # Draw all triangles.

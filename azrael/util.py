@@ -153,7 +153,7 @@ class Quaternion:
         Construct Quaternion with scalar ``w`` and vector ``v``.
         """
         # Sanity checks. 'w' must be a scalar, and 'v' a 3D vector.
-        assert isinstance(w, float)
+        assert isinstance(w, (int, float))
         assert isinstance(v, (list, np.ndarray))
         assert len(v) == 3
 
