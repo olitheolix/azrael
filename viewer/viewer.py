@@ -352,67 +352,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         cs_new = self.oldSVs[objID]['sv'].lastChanged
         return (cs_old != cs_new)
 
-    def loadGeometry(self):
-        # Backup the latest state variables because we will download new ones
-        # from Azrael shortly.
-        self.oldSVs = self.newSVs
-
-        # Get latest SV values.
-        with util.Timeit('viewer.getV') as timeit:
-            ret = self.client.getAllStateVariables()
-            if not ret.ok:
-                print('Could not retrieve the state variables -- Abort')
-                self.close()
-
-        # Remove all *None* entries (means Azrael does not know about them;
-        # should be impossible but just to be sure).
-        self.newSVs = {k: v for k, v in ret.data.items() if v is not None}
-
-        # Remove all objects from the local scene for which Azrael did not
-        # provid SV data.
-        for objID in self.oldSVs:
-            # Ignore the player object.
-            if (objID in self.newSVs) or (objID == self.player_id):
-                continue
-
-            # Delete all fragment textures.
-            for frag in self.textureBuffer[objID].values():
-                gl.glDeleteTextures(frag)
-
-            # Delete the corresponding entries in our meta variables.
-#            gl.glDeleteBuffers(2, [1, 2])
-            del self.numVertices[objID]
-            del self.vertex_array_object[objID]
-            del self.textureBuffer[objID]
-
-        # The previous loop removed objects that do not exist anymore in
-        # Azrael. This loop adds objects that now exist in Azrael but not yet
-        # in our scene.
-        for objID in self.newSVs:
-            # Do not add anything if it is the player object itself.
-            if objID == self.player_id:
-                continue
-
-            # Skip the object if we have already downloaded its geometry and it
-            # has not changed.
-            if (objID in self.oldSVs) and not self.hasGeometryChanged(objID):
-                continue
-
-            # Download the latest geometry for this object.
-            ret = self.client.getGeometry(objID)
-            if not ret.ok:
-                continue
-
-            # Upload the fragment geometry to the GPU.
-            for frag in ret.data.values():
-                self.upload2GPU(objID, frag)
-
-            # Only draw visible triangles for this fragment.
-            gl.glEnable(gl.GL_DEPTH_TEST)
-            gl.glDepthFunc(gl.GL_LESS)
-            print('Added {} geometry fragments for objID=<{}>'
-                  .format(len(ret.data), objID))
-
     def upload2GPU(self, objID, frag):
         """
         Upload the ``frag`` geometry to the GPU.
@@ -523,20 +462,66 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.textureBuffer[objID][frag.name] = textureBuffer
         self.vertex_array_object[objID][frag.name] = VAO
 
-    def initializeGL(self):
-        """
-        Create the graphics buffers and compile the shaders.
-        """
-        try:
-            self._initializeGL()
-        except Exception as err:
-            print('OpenGL initialisation failed with the following error:')
-            print('\n' + '-' * 79)
-            print(err)
-            import traceback
-            traceback.print_exc(file=sys.stdout)
-            print('-' * 79 + '\n')
-            sys.exit(1)
+    def loadGeometry(self):
+        # Backup the latest state variables because we will download new ones
+        # from Azrael shortly.
+        self.oldSVs = self.newSVs
+
+        # Get latest SV values.
+        with util.Timeit('viewer.getV') as timeit:
+            ret = self.client.getAllStateVariables()
+            if not ret.ok:
+                print('Could not retrieve the state variables -- Abort')
+                self.close()
+
+        # Remove all *None* entries (means Azrael does not know about them;
+        # should be impossible but just to be sure).
+        self.newSVs = {k: v for k, v in ret.data.items() if v is not None}
+
+        # Remove all objects from the local scene for which Azrael did not
+        # provid SV data.
+        for objID in self.oldSVs:
+            # Ignore the player object.
+            if (objID in self.newSVs) or (objID == self.player_id):
+                continue
+
+            # Delete all fragment textures.
+            for frag in self.textureBuffer[objID].values():
+                gl.glDeleteTextures(frag)
+
+            # Delete the corresponding entries in our meta variables.
+#            gl.glDeleteBuffers(2, [1, 2])
+            del self.numVertices[objID]
+            del self.vertex_array_object[objID]
+            del self.textureBuffer[objID]
+
+        # The previous loop removed objects that do not exist anymore in
+        # Azrael. This loop adds objects that now exist in Azrael but not yet
+        # in our scene.
+        for objID in self.newSVs:
+            # Do not add anything if it is the player object itself.
+            if objID == self.player_id:
+                continue
+
+            # Skip the object if we have already downloaded its geometry and it
+            # has not changed.
+            if (objID in self.oldSVs) and not self.hasGeometryChanged(objID):
+                continue
+
+            # Download the latest geometry for this object.
+            ret = self.client.getGeometry(objID)
+            if not ret.ok:
+                continue
+
+            # Upload the fragment geometry to the GPU.
+            for frag in ret.data.values():
+                self.upload2GPU(objID, frag)
+
+            # Only draw visible triangles for this fragment.
+            gl.glEnable(gl.GL_DEPTH_TEST)
+            gl.glDepthFunc(gl.GL_LESS)
+            print('Added {} geometry fragments for objID=<{}>'
+                  .format(len(ret.data), objID))
 
     def defineProjectileTemplate(self):
         """
@@ -564,6 +549,21 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         print('Created template <{}>'.format(t_projectile))
         return t_projectile
+
+    def initializeGL(self):
+        """
+        Create the graphics buffers and compile the shaders.
+        """
+        try:
+            self._initializeGL()
+        except Exception as err:
+            print('OpenGL initialisation failed with the following error:')
+            print('\n' + '-' * 79)
+            print(err)
+            import traceback
+            traceback.print_exc(file=sys.stdout)
+            print('-' * 79 + '\n')
+            sys.exit(1)
 
     def _initializeGL(self):
         """
@@ -678,12 +678,14 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 # Build the model matrix for the overall object.
                 matModelObj = np.eye(4)
                 matModelObj[:3, 3] = sv.position
-                matModelObj = np.dot(matModelObj, np.dot(matRotObj, matScaleObj))
+                matModelObj = np.dot(matModelObj,
+                                     np.dot(matRotObj, matScaleObj))
 
                 # Update each fragment in the scene based on the position,
                 # orientation, and scale of the overall object.
                 for fragName in self.vertex_array_object[objID]:
-                    self._drawFragments(objID, fragName, matModelObj, matPerspCam)
+                    self._drawFragments(objID, fragName,
+                                        matModelObj, matPerspCam)
 
         # --------------------------------------------------------------------
         # Display HUD for this frame.
