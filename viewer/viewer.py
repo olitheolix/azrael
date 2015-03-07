@@ -396,112 +396,117 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Compile the first fragment.
-            for fragName in ret.data:
-                buf_vert, buf_uv, buf_rgb = ret.data[fragName][1:]
-
-                # This is to mask a bug in Clacks: newly spawned objects can
-                # become active before their geometry data hits the DB.  fixme:
-                # now unnecessary?
-                if len(buf_vert) == 0:
-                    continue
-
-                # fixme: getGeometry must provide this (what about getGeometry?).
-                width = height = int(np.sqrt(len(buf_rgb) // 3))
-
-                # GPU needs float32 values for vertices and UV, and uint8 for RGB.
-                buf_vert = buf_vert.astype(np.float32)
-                buf_uv = buf_uv.astype(np.float32)
-                buf_rgb = buf_rgb.astype(np.uint8)
-
-                # Sanity checks.
-                assert (len(buf_vert) % 9) == 0
-                assert (len(buf_uv) % 2) == 0
-                assert (len(buf_rgb) % 3) == 0
-                if len(buf_uv) > 0:
-                    assert len(buf_vert) // 3 == len(buf_uv) // 2
-
-                # Initialise the geometry arrays.
-                self.numVertices[objID] = {}
-                self.numVertices[objID] = {}
-                self.vertex_array_object[objID] = {}
-                self.textureBuffer[objID] = {}
-                    
-                # Store the number of vertices.
-                self.numVertices[objID][fragName] = len(buf_vert) // 3
-
-                # Create a new VAO (Vertex Array Object) and bind it. All GPU
-                # buffers created below can then be activated at once by binding
-                # this VAO (see paintGL).
-                self.vertex_array_object[objID][fragName] = gl.glGenVertexArrays(1)
-                gl.glBindVertexArray(self.vertex_array_object[objID][fragName])
-
-                # Create two GPU buffers (no need to specify a size here).
-                vertexBuffer, uvBuffer = gl.glGenBuffers(2)
-
-                # Copy the vertex data to the first GPU buffer.
-                gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vertexBuffer)
-                gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_vert, gl.GL_STATIC_DRAW)
-
-                # Associate the vertex buffer with the Layout 0 variable in the
-                # shader (see 'uv.vs') and specify its layout. Then enable
-                # the buffer to ensure the GPU will draw it.
-                gl.glVertexAttribPointer(0, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-                gl.glEnableVertexAttribArray(0)
-
-                if len(buf_uv) == 0:
-                    buf_col = np.random.rand(4 * self.numVertices[objID][fragName])
-                    buf_col = buf_col.astype(np.float32)
-
-                    # Repeat with UV data. Each vertex has one associated (U,V)
-                    # pair to specify the position in the texture.
-                    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
-                    gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_col, gl.GL_STATIC_DRAW)
-
-                    # Color data is associated with Layout 1 (first parameter), has
-                    # four elements per vertex (second parameter), and each element
-                    # is a float32 (third parameter). The other three parameters
-                    # are of no interest here.
-                    gl.glVertexAttribPointer(
-                        1, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-                    gl.glEnableVertexAttribArray(1)
-                    self.textureBuffer[objID][fragName] = None
-                else:
-                    # Repeat with UV data. Each vertex has one associated (U,V)
-                    # pair to specify the position in the texture.
-                    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
-                    gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_uv, gl.GL_STATIC_DRAW)
-
-                    # UV data is associated with Layout 1 (first parameter), has
-                    # two elements per vertex (second parameter), and each element
-                    # is a float32 (third parameter). The other three parameters
-                    # are of no interest here.
-                    gl.glVertexAttribPointer(
-                        1, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-                    gl.glEnableVertexAttribArray(1)
-
-                    # Create a new texture buffer on the GPU and bind it.
-                    self.textureBuffer[objID][fragName] = gl.glGenTextures(1)
-                    gl.glBindTexture(gl.GL_TEXTURE_2D,
-                                     self.textureBuffer[objID][fragName])
-
-                    # Upload texture to GPU (transpose the image first).
-                    buf_rgb = np.reshape(buf_rgb, (width, height, 3))
-                    buf_rgb[:, :, 0] = buf_rgb[:, :, 0].T
-                    buf_rgb[:, :, 1] = buf_rgb[:, :, 1].T
-                    buf_rgb[:, :, 2] = buf_rgb[:, :, 2].T
-                    buf_rgb = buf_rgb.flatten()
-                    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height,
-                                    0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE, buf_rgb)
-
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER,
-                                       gl.GL_NEAREST)
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER,
-                                       gl.GL_NEAREST)
+            for frag in ret.data.values():
+                self.upload2GPU(objID, frag)
 
             # Only draw visible triangles.
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glDepthFunc(gl.GL_LESS)
             print('Added geometry for <{}>'.format(objID))
+
+    def upload2GPU(self, objID, _frag):
+        buf_vert, buf_uv, buf_rgb = _frag.vert, _frag.uv, _frag.rgb
+        fragName = _frag.name
+
+        # This is to mask a bug in Clacks: newly spawned objects can
+        # become active before their geometry data hits the DB.  fixme:
+        # now unnecessary?
+        if len(buf_vert) == 0:
+            return
+
+        # fixme: getGeometry must provide this (what about getGeometry?).
+        width = height = int(np.sqrt(len(buf_rgb) // 3))
+
+        # GPU needs float32 values for vertices and UV, and uint8 for RGB.
+        buf_vert = buf_vert.astype(np.float32)
+        buf_uv = buf_uv.astype(np.float32)
+        buf_rgb = buf_rgb.astype(np.uint8)
+
+        # Sanity checks.
+        assert (len(buf_vert) % 9) == 0
+        assert (len(buf_uv) % 2) == 0
+        assert (len(buf_rgb) % 3) == 0
+        if len(buf_uv) > 0:
+            assert len(buf_vert) // 3 == len(buf_uv) // 2
+
+        # Initialise the geometry arrays.
+        self.numVertices[objID] = {}
+        self.numVertices[objID] = {}
+        self.vertex_array_object[objID] = {}
+        self.textureBuffer[objID] = {}
+
+        # Store the number of vertices.
+        self.numVertices[objID][fragName] = len(buf_vert) // 3
+
+        # Create a new VAO (Vertex Array Object) and bind it. All GPU
+        # buffers created below can then be activated at once by binding
+        # this VAO (see paintGL).
+        self.vertex_array_object[objID][fragName] = gl.glGenVertexArrays(1)
+        gl.glBindVertexArray(self.vertex_array_object[objID][fragName])
+
+        # Create two GPU buffers (no need to specify a size here).
+        vertexBuffer, uvBuffer = gl.glGenBuffers(2)
+
+        # Copy the vertex data to the first GPU buffer.
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vertexBuffer)
+        gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_vert, gl.GL_STATIC_DRAW)
+
+        # Associate the vertex buffer with the Layout 0 variable in the
+        # shader (see 'uv.vs') and specify its layout. Then enable
+        # the buffer to ensure the GPU will draw it.
+        gl.glVertexAttribPointer(0, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+        gl.glEnableVertexAttribArray(0)
+
+        if len(buf_uv) == 0:
+            buf_col = np.random.rand(4 * self.numVertices[objID][fragName])
+            buf_col = buf_col.astype(np.float32)
+
+            # Repeat with UV data. Each vertex has one associated (U,V)
+            # pair to specify the position in the texture.
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
+            gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_col, gl.GL_STATIC_DRAW)
+
+            # Color data is associated with Layout 1 (first parameter), has
+            # four elements per vertex (second parameter), and each element
+            # is a float32 (third parameter). The other three parameters
+            # are of no interest here.
+            gl.glVertexAttribPointer(
+                1, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+            gl.glEnableVertexAttribArray(1)
+            self.textureBuffer[objID][fragName] = None
+        else:
+            # Repeat with UV data. Each vertex has one associated (U,V)
+            # pair to specify the position in the texture.
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uvBuffer)
+            gl.glBufferData(gl.GL_ARRAY_BUFFER, buf_uv, gl.GL_STATIC_DRAW)
+
+            # UV data is associated with Layout 1 (first parameter), has
+            # two elements per vertex (second parameter), and each element
+            # is a float32 (third parameter). The other three parameters
+            # are of no interest here.
+            gl.glVertexAttribPointer(
+                1, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+            gl.glEnableVertexAttribArray(1)
+
+            # Create a new texture buffer on the GPU and bind it.
+            self.textureBuffer[objID][fragName] = gl.glGenTextures(1)
+            gl.glBindTexture(gl.GL_TEXTURE_2D,
+                             self.textureBuffer[objID][fragName])
+
+            # Upload texture to GPU (transpose the image first).
+            buf_rgb = np.reshape(buf_rgb, (width, height, 3))
+            buf_rgb[:, :, 0] = buf_rgb[:, :, 0].T
+            buf_rgb[:, :, 1] = buf_rgb[:, :, 1].T
+            buf_rgb[:, :, 2] = buf_rgb[:, :, 2].T
+            buf_rgb = buf_rgb.flatten()
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height,
+                            0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE, buf_rgb)
+
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER,
+                               gl.GL_NEAREST)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER,
+                               gl.GL_NEAREST)
+
 
     def initializeGL(self):
         """
