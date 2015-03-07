@@ -614,6 +614,22 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Load and compile all objects.
         self.loadGeometry()
 
+    def buildModelMatrix(self, sv):
+        # Build the scaling matrix for the overall object. The
+        # lower-right entry must be 1.
+        matScaleObj = sv.scale * np.eye(4)
+        matScaleObj[3, 3] = 1
+
+        # Convert the object Quaternion into a rotation matrix.
+        q = sv.orientation
+        matRotObj = util.Quaternion(q[3], q[:3]).toMatrix()
+
+        # Build the model matrix for the overall object.
+        matModelObj = np.eye(4)
+        matModelObj[:3, 3] = sv.position
+        matModelObj = np.dot(matModelObj, np.dot(matRotObj, matScaleObj))
+        return matModelObj
+
     def paintGL(self):
         try:
             with util.Timeit('viewer.paintGL') as timeit:
@@ -659,27 +675,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         with util.Timeit('viewer.loop') as timeit:
             for objID in self.newSVs:
-                # Convenience.
-                sv = self.newSVs[objID]['sv']
-
                 # Do not add anything if it is the player object itself.
                 if objID == self.player_id:
                     continue
 
-                # Build the scaling matrix for the overall object. The
-                # lower-right entry must be 1.
-                matScaleObj = sv.scale * np.eye(4)
-                matScaleObj[3, 3] = 1
-
-                # Convert the object Quaternion into a rotation matrix.
-                q = sv.orientation
-                matRotObj = util.Quaternion(q[3], q[:3]).toMatrix()
-
-                # Build the model matrix for the overall object.
-                matModelObj = np.eye(4)
-                matModelObj[:3, 3] = sv.position
-                matModelObj = np.dot(matModelObj,
-                                     np.dot(matRotObj, matScaleObj))
+                # Compute the model matrix for the overall object.
+                matModelObj = self.buildModelMatrix(self.newSVs[objID]['sv'])
 
                 # Update each fragment in the scene based on the position,
                 # orientation, and scale of the overall object.
