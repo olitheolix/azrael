@@ -375,14 +375,27 @@ def ToClerk_GetStateVariable_Decode(payload: dict):
 
 @typecheck
 def FromClerk_GetStateVariable_Encode(data: dict):
-    fields = bullet_data._BulletData._fields
+    # Convenience: field names of named tuples.
+    fields_bd = bullet_data._BulletData._fields
+    fields_fs = FragState._fields
+
+    # For each objID compile a dictionary with the SV and fragment data in a JS
+    # friendly hashmap format.
     for k, v in data.items():
         if v is None:
             data[k] = None
             continue
 
-        frag, sv = v['frag'], v['sv']
-        data[k] = {'frag': frag, 'sv': dict(zip(fields, sv))}
+        # Convert the list of ``FragState`` tuples to a list of dictionary with
+        # the tuple fields as keys. This will make it easier in JS to extract
+        # specific values instead of using magic array index numbers.
+        frags = [dict(zip(fields_fs, _)) for _ in v['frag']]
+
+        # Same with the SV structure (``BulletData`` tuple).
+        sv = dict(zip(fields_bd, v['sv']))
+
+        # Add the converted tuples to the output dictionary.
+        data[k] = {'frag': frags, 'sv': sv}
     return True, {'data': data}
 
 

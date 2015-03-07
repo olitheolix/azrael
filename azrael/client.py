@@ -508,7 +508,7 @@ class Client():
                 continue
 
             # Fill in the SV and fragment state data.
-            out[objID] = {'frag': [FragState(*_) for _ in v['frag']],
+            out[objID] = {'frag': [FragState(**_) for _ in v['frag']],
                           'sv': _BulletData(**v['sv'])}
         return RetVal(True, None, out)
 
