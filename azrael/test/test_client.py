@@ -53,6 +53,7 @@ WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client
 Template = azrael.util.Template
 Fragment = azrael.util.Fragment
+FragState = azrael.util.FragState
 
 
 def test_ping():
@@ -657,15 +658,16 @@ def test_updateFragmentStates(client_type):
     # Query the SV to obtain the 'lastChanged' value.
     leo.processCommandsAndSync()
     ret = client.getStateVariables(objID)
+    ref = [FragState('bar', 1, [0, 0, 0], [0, 0, 0, 1])]
     assert ret.ok
-    assert ret.data[objID]['frag']['bar'] == [1, [0, 0, 0], [0, 0, 0, 1]]
+    assert ret.data[objID]['frag'] == ref
 
     # Modify the fragment states, then verify them.
-    newStates = {objID: {'bar': [2.2, [1, 2, 3], [1, 0, 0, 0]]}}
+    newStates = {objID: [FragState('bar', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
     assert client.updateFragmentStates(newStates).ok
     ret = client.getStateVariables(objID)
     assert ret.ok
-    assert ret.data[objID]['frag']['bar'] == [2.2, [1, 2, 3], [1, 0, 0, 0]]
+    assert ret.data[objID]['frag'] == newStates[objID]
 
     # Shutdown the services.
     stopAzrael(clerk, clacks)

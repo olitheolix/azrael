@@ -35,7 +35,7 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 
-from azrael.util import RetVal, Template, Fragment
+from azrael.util import RetVal, Template, Fragment, FragState
 from azrael.typecheck import typecheck
 from azrael.bullet.bullet_data import BulletDataOverride, _BulletData
 
@@ -504,10 +504,11 @@ class Client():
         out = {}
         for objID, v in ret.data.items():
             objID = int(objID)
-            if v is not None:
-                out[objID] = {'frag': v['frag'], 'sv': _BulletData(**v['sv'])}
-            else:
+            if v is None:
                 out[objID] = None
+            else:
+                out[objID] = {'frag': [FragState(*_) for _ in v['frag']],
+                              'sv': _BulletData(**v['sv'])}
 
         return RetVal(True, None, out)
 

@@ -54,6 +54,7 @@ ipshell = IPython.embed
 RetVal = azrael.util.RetVal
 Template = azrael.util.Template
 Fragment = azrael.util.Fragment
+FragState = azrael.util.FragState
 
 
 # ---------------------------------------------------------------------------
@@ -516,13 +517,17 @@ def FromClerk_ControlParts_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_UpdateFragmentStates_Encode(fragmentData: dict):
-    return True, fragmentData
+def ToClerk_UpdateFragmentStates_Encode(fragData: dict):
+    # fragData = {objID_1: [FragState, FragState, ...],
+    #             objID_2: [FragState, FragState, ...],}
+    return True, fragData
 
 
 @typecheck
 def ToClerk_UpdateFragmentStates_Decode(payload: dict):
-    out = {int(k): v for (k, v) in payload.items()}
+    out = {}
+    for objID, frag_states in payload.items():
+        out[int(objID)] = [FragState(*_) for _ in frag_states]
     return True, (out, )
 
 
