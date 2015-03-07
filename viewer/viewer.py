@@ -649,81 +649,45 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Clear the scene.
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
+        # Compute the combined camera- and projection matrix.
+        cameraMat = self.camera.cameraMatrix()
+        matPerspCam = np.array(np.dot(self.matPerspective, cameraMat))
+
+        # Convert it to the flat 32Bit format the GPU expects.
+        matPerspCam = matPerspCam.astype(np.float32)
+        matPerspCam = matPerspCam.flatten(order='F')
+
         with util.Timeit('viewer.loop') as timeit:
             for objID in self.newSVs:
+                # Convenience.
                 sv = self.newSVs[objID]['sv']
 
                 # Do not add anything if it is the player object itself.
                 if objID == self.player_id:
                     continue
 
-                # Build the scaling matrix.
-                scale_mat = sv.scale * np.eye(4)
-                scale_mat[3, 3] = 1
+                # Build the scaling matrix for the overall object. The
+                # lower-right entry must be 1.
+                matScaleObj = sv.scale * np.eye(4)
+                matScaleObj[3, 3] = 1
 
-                # Convert the Quaternion into a rotation matrix.
+                # Convert the object Quaternion into a rotation matrix.
                 q = sv.orientation
-                rot_mat = util.Quaternion(q[3], q[:3]).toMatrix()
-                del q
+                matRotObj = util.Quaternion(q[3], q[:3]).toMatrix()
 
-                # Build the model matrix.
-                model_mat = np.eye(4)
-                model_mat[:3, 3] = sv.position
-                model_mat = np.dot(model_mat, np.dot(rot_mat, scale_mat))
+                # Build the model matrix for the overall object.
+                matModelObj = np.eye(4)
+                matModelObj[:3, 3] = sv.position
+                matModelObj = np.dot(matModelObj, np.dot(matRotObj, matScaleObj))
 
-                # Compute the combined camera- and projection matrix.
-                cameraMat = self.camera.cameraMatrix()
-                matVP = np.array(np.dot(self.matPerspective, cameraMat))
-
-                # The GPU needs 32bit floats.
-                model_mat = model_mat.astype(np.float32)
-                model_mat = model_mat.flatten(order='F')
-                matVP = matVP.astype(np.float32)
-                matVP = matVP.flatten(order='F')
-
+                # Update each fragment in the scene based on the position,
+                # orientation, and scale of the overall object.
                 for fragName in self.vertex_array_object[objID]:
-                    textureHandle = self.textureBuffer[objID][fragName]
-                    VAO = self.vertex_array_object[objID][fragName]
-                    numVertices = self.numVertices[objID][fragName]
+                    self._drawFragments(objID, fragName, matModelObj, matPerspCam)
 
-                    # Activate the shader to obtain handles to the global
-                    # variables defined in the vertex shader.
-                    if textureHandle is None:
-                        shader = self.shaderDict['passthrough']
-                    else:
-                        shader = self.shaderDict['uv']
-
-                    gl.glUseProgram(shader)
-                    tmp1 = 'projection_matrix'.encode('utf8')
-                    tmp2 = 'model_matrix'.encode('utf8')
-                    h_prjMat = gl.glGetUniformLocation(shader, tmp1)
-                    h_modMat = gl.glGetUniformLocation(shader, tmp2)
-                    del tmp1, tmp2
-
-                    # Activate the VAO and shader program.
-                    gl.glBindVertexArray(VAO)
-
-                    if textureHandle is not None:
-                        gl.glBindTexture(gl.GL_TEXTURE_2D, textureHandle)
-                        gl.glActiveTexture(gl.GL_TEXTURE0)
-
-                    # Upload the model- and projection matrices to the GPU.
-                    gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, model_mat)
-                    gl.glUniformMatrix4fv(h_prjMat, 1, gl.GL_FALSE, matVP)
-
-                    # Draw all triangles and unbind the VAO again.
-                    gl.glEnableVertexAttribArray(0)
-                    gl.glEnableVertexAttribArray(1)
-                    gl.glDrawArrays(gl.GL_TRIANGLES, 0, numVertices)
-                    if textureHandle is not None:
-                        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
-                    gl.glDisableVertexAttribArray(1)
-                    gl.glDisableVertexAttribArray(0)
-                    gl.glBindVertexArray(0)
-
-                    del textureHandle, VAO, numVertices
-
+        # --------------------------------------------------------------------
         # Display HUD for this frame.
+        # --------------------------------------------------------------------
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
         gl.glUseProgram(0)
         gl.glColor3f(0.5, 0.5, 0.5)
@@ -732,7 +696,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             hud += ', Recording On'
         self.renderText(0, 15, hud)
 
-        # Save the frame buffer content to disk.
+        # --------------------------------------------------------------------
+        # Optional: save the frame buffer content to disk to record a video.
+        # --------------------------------------------------------------------
         if self.recording:
             # Time how long it takes to grab the framebuffer.
             t0 = time.time()
@@ -744,6 +710,63 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             self.imgWriter.sigUpdate.emit(elapsed, img)
             del t0, img, elapsed
         self.frameCnt += 1
+
+    def _drawFragments(self, objID, fragName, matModelObj, matPerspCam):
+        """
+        Instruct the GPU to draw each fragment of ``objID``.
+
+        The ``matModelObj`` and ``matPerspCam`` matrices will compute the world
+        coordinates for the object. However, fragments are defined purely in
+        object coordinate. This function will therefore scale, move, and rotate
+        each fragment before it applies the world coordinate transformation.
+        """
+        # Convenience.
+        textureHandle = self.textureBuffer[objID][fragName]
+        VAO = self.vertex_array_object[objID][fragName]
+        numVertices = self.numVertices[objID][fragName]
+
+        # Activate the shader depending on whether or not we have a texture for
+        # the current object.
+        if textureHandle is None:
+            shader = self.shaderDict['passthrough']
+        else:
+            shader = self.shaderDict['uv']
+
+        # Convert it to the flat 32Bit format the GPU expects.
+        matModelObj = matModelObj.astype(np.float32)
+        matModelObj = matModelObj.flatten(order='F')
+
+        # Activate the shader and obtain handles to Uniform variables.
+        gl.glUseProgram(shader)
+        tmp1 = 'projection_matrix'.encode('utf8')
+        tmp2 = 'model_matrix'.encode('utf8')
+        h_prjMat = gl.glGetUniformLocation(shader, tmp1)
+        h_modMat = gl.glGetUniformLocation(shader, tmp2)
+        del tmp1, tmp2
+
+        # Activate the VAO and shader program.
+        gl.glBindVertexArray(VAO)
+
+        # Activate the texture (if we have one).
+        if textureHandle is not None:
+            gl.glBindTexture(gl.GL_TEXTURE_2D, textureHandle)
+            gl.glActiveTexture(gl.GL_TEXTURE0)
+
+        # Upload the model- and projection matrices to the GPU.
+        gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, matModelObj)
+        gl.glUniformMatrix4fv(h_prjMat, 1, gl.GL_FALSE, matPerspCam)
+
+        # Draw all triangles.
+        gl.glEnableVertexAttribArray(0)
+        gl.glEnableVertexAttribArray(1)
+        gl.glDrawArrays(gl.GL_TRIANGLES, 0, numVertices)
+        if textureHandle is not None:
+            gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+
+        # Unbind the entire VAO.
+        gl.glDisableVertexAttribArray(1)
+        gl.glDisableVertexAttribArray(0)
+        gl.glBindVertexArray(0)
 
     def resizeGL(self, width, height):
         """
