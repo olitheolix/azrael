@@ -46,7 +46,7 @@ import azrael.config as config
 import azrael.physics_interface as physAPI
 
 from PySide import QtCore, QtGui, QtOpenGL
-from azrael.util import Template, Fragment
+from azrael.util import Template, Fragment, FragState
 
 
 def parseCommandLine():
@@ -684,9 +684,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
                 # Update each fragment in the scene based on the position,
                 # orientation, and scale of the overall object.
-                for fragName in self.vertex_array_object[objID]:
-                    self._drawFragments(objID, fragName,
-                                        matModelObj, matPerspCam)
+                self._drawFragments(objID, matModelObj, matPerspCam)
 
         # --------------------------------------------------------------------
         # Display HUD for this frame.
@@ -714,7 +712,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             del t0, img, elapsed
         self.frameCnt += 1
 
-    def _drawFragments(self, objID, fragName, matModelObj, matPerspCam):
+    def _drawFragments(self, objID, matModelObj, matPerspCam):
         """
         Instruct the GPU to draw each fragment of ``objID``.
 
@@ -723,53 +721,57 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         object coordinate. This function will therefore scale, move, and rotate
         each fragment before it applies the world coordinate transformation.
         """
-        # Convenience.
-        textureHandle = self.textureBuffer[objID][fragName]
-        VAO = self.vertex_array_object[objID][fragName]
-        numVertices = self.numVertices[objID][fragName]
+        frags = [FragState(*_) for _ in self.newSVs[objID]['frag']]
+        for frag in frags:
+            # Convenience.
+            textureHandle = self.textureBuffer[objID][frag.name]
+            VAO = self.vertex_array_object[objID][frag.name]
+            numVertices = self.numVertices[objID][frag.name]
 
-        # Activate the shader depending on whether or not we have a texture for
-        # the current object.
-        if textureHandle is None:
-            shader = self.shaderDict['passthrough']
-        else:
-            shader = self.shaderDict['uv']
+            # Activate the shader depending on whether or not we have a texture for
+            # the current object.
+            if textureHandle is None:
+                shader = self.shaderDict['passthrough']
+            else:
+                shader = self.shaderDict['uv']
 
-        # Convert it to the flat 32Bit format the GPU expects.
-        matModelObj = matModelObj.astype(np.float32)
-        matModelObj = matModelObj.flatten(order='F')
+    #        matModelFrag = self.buildModelMatrix(self.newSVs[objID]['frag'])
 
-        # Activate the shader and obtain handles to Uniform variables.
-        gl.glUseProgram(shader)
-        tmp1 = 'projection_matrix'.encode('utf8')
-        tmp2 = 'model_matrix'.encode('utf8')
-        h_prjMat = gl.glGetUniformLocation(shader, tmp1)
-        h_modMat = gl.glGetUniformLocation(shader, tmp2)
-        del tmp1, tmp2
+            # Convert it to the flat 32Bit format the GPU expects.
+            matModelObj = matModelObj.astype(np.float32)
+            matModelObj = matModelObj.flatten(order='F')
 
-        # Activate the VAO and shader program.
-        gl.glBindVertexArray(VAO)
+            # Activate the shader and obtain handles to Uniform variables.
+            gl.glUseProgram(shader)
+            tmp1 = 'projection_matrix'.encode('utf8')
+            tmp2 = 'model_matrix'.encode('utf8')
+            h_prjMat = gl.glGetUniformLocation(shader, tmp1)
+            h_modMat = gl.glGetUniformLocation(shader, tmp2)
+            del tmp1, tmp2
 
-        # Activate the texture (if we have one).
-        if textureHandle is not None:
-            gl.glBindTexture(gl.GL_TEXTURE_2D, textureHandle)
-            gl.glActiveTexture(gl.GL_TEXTURE0)
+            # Activate the VAO and shader program.
+            gl.glBindVertexArray(VAO)
 
-        # Upload the model- and projection matrices to the GPU.
-        gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, matModelObj)
-        gl.glUniformMatrix4fv(h_prjMat, 1, gl.GL_FALSE, matPerspCam)
+            # Activate the texture (if we have one).
+            if textureHandle is not None:
+                gl.glBindTexture(gl.GL_TEXTURE_2D, textureHandle)
+                gl.glActiveTexture(gl.GL_TEXTURE0)
 
-        # Draw all triangles.
-        gl.glEnableVertexAttribArray(0)
-        gl.glEnableVertexAttribArray(1)
-        gl.glDrawArrays(gl.GL_TRIANGLES, 0, numVertices)
-        if textureHandle is not None:
-            gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+            # Upload the model- and projection matrices to the GPU.
+            gl.glUniformMatrix4fv(h_modMat, 1, gl.GL_FALSE, matModelObj)
+            gl.glUniformMatrix4fv(h_prjMat, 1, gl.GL_FALSE, matPerspCam)
 
-        # Unbind the entire VAO.
-        gl.glDisableVertexAttribArray(1)
-        gl.glDisableVertexAttribArray(0)
-        gl.glBindVertexArray(0)
+            # Draw all triangles.
+            gl.glEnableVertexAttribArray(0)
+            gl.glEnableVertexAttribArray(1)
+            gl.glDrawArrays(gl.GL_TRIANGLES, 0, numVertices)
+            if textureHandle is not None:
+                gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+
+            # Unbind the entire VAO.
+            gl.glDisableVertexAttribArray(1)
+            gl.glDisableVertexAttribArray(0)
+            gl.glBindVertexArray(0)
 
     def resizeGL(self, width, height):
         """
