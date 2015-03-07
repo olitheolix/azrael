@@ -353,33 +353,41 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         return (cs_old != cs_new)
 
     def loadGeometry(self):
-        # Retrieve the state variables of all objects.
+        # Backup the latest state variables because we will download new ones
+        # from Azrael shortly.
         self.oldSVs = self.newSVs
+
+        # Get latest SV values.
         with util.Timeit('viewer.getV') as timeit:
             ret = self.client.getAllStateVariables()
-        if not ret.ok:
-            print('Could not retrieve the state variables -- Abort')
-            self.close()
+            if not ret.ok:
+                print('Could not retrieve the state variables -- Abort')
+                self.close()
 
-        # Prune the list: remove objects with *None* as the State Vector.
+        # Remove all *None* entries (means Azrael does not know about them;
+        # should be impossible but just to be sure).
         self.newSVs = {k: v for k, v in ret.data.items() if v is not None}
 
-        # Loop over all our old SVs and check if we need to remove any.
+        # Remove all objects from the local scene for which Azrael did not
+        # provid SV data.
         for objID in self.oldSVs:
             # Ignore the player object.
-            if objID == self.player_id:
+            if (objID in self.newSVs) or (objID == self.player_id):
                 continue
 
-            if objID in self.newSVs:
-                continue
-
+            # Delete all fragment textures.
             for frag in self.textureBuffer[objID].values():
                 gl.glDeleteTextures(frag)
+
+            # Delete the corresponding entries in our meta variables.
 #            gl.glDeleteBuffers(2, [1, 2])
             del self.numVertices[objID]
             del self.vertex_array_object[objID]
             del self.textureBuffer[objID]
 
+        # The previous loop removed objects that do not exist anymore in
+        # Azrael. This loop adds objects that now exist in Azrael but not yet
+        # in our scene.
         for objID in self.newSVs:
             # Do not add anything if it is the player object itself.
             if objID == self.player_id:
@@ -395,32 +403,36 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             if not ret.ok:
                 continue
 
-            # Compile the first fragment.
+            # Upload the fragment geometry to the GPU.
             for frag in ret.data.values():
                 self.upload2GPU(objID, frag)
 
-            # Only draw visible triangles.
+            # Only draw visible triangles for this fragment.
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glDepthFunc(gl.GL_LESS)
-            print('Added geometry for <{}>'.format(objID))
+            print('Added {} geometry fragments for objID=<{}>'
+                  .format(len(ret.data), objID))
 
-    def upload2GPU(self, objID, _frag):
-        buf_vert, buf_uv, buf_rgb = _frag.vert, _frag.uv, _frag.rgb
-        fragName = _frag.name
+    def upload2GPU(self, objID, frag):
+        """
+        Upload the ``frag`` geometry to the GPU.
 
+        This method does not return anything but updates the GPU related
+        instances variables instead.
+        """
         # This is to mask a bug in Clacks: newly spawned objects can
         # become active before their geometry data hits the DB.  fixme:
         # now unnecessary?
-        if len(buf_vert) == 0:
+        if len(frag.vert) == 0:
             return
 
         # fixme: getGeometry must provide this (what about getGeometry?).
-        width = height = int(np.sqrt(len(buf_rgb) // 3))
+        width = height = int(np.sqrt(len(frag.rgb) // 3))
 
         # GPU needs float32 values for vertices and UV, and uint8 for RGB.
-        buf_vert = buf_vert.astype(np.float32)
-        buf_uv = buf_uv.astype(np.float32)
-        buf_rgb = buf_rgb.astype(np.uint8)
+        buf_vert = (frag.vert).astype(np.float32)
+        buf_uv = (frag.uv).astype(np.float32)
+        buf_rgb = (frag.rgb).astype(np.uint8)
 
         # Sanity checks.
         assert (len(buf_vert) % 9) == 0
@@ -436,13 +448,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.textureBuffer[objID] = {}
 
         # Store the number of vertices.
-        self.numVertices[objID][fragName] = len(buf_vert) // 3
+        numVertices = len(buf_vert) // 3
 
         # Create a new VAO (Vertex Array Object) and bind it. All GPU
         # buffers created below can then be activated at once by binding
         # this VAO (see paintGL).
-        self.vertex_array_object[objID][fragName] = gl.glGenVertexArrays(1)
-        gl.glBindVertexArray(self.vertex_array_object[objID][fragName])
+        VAO = gl.glGenVertexArrays(1)
+        gl.glBindVertexArray(VAO)
 
         # Create two GPU buffers (no need to specify a size here).
         vertexBuffer, uvBuffer = gl.glGenBuffers(2)
@@ -458,7 +470,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         gl.glEnableVertexAttribArray(0)
 
         if len(buf_uv) == 0:
-            buf_col = np.random.rand(4 * self.numVertices[objID][fragName])
+            buf_col = np.random.rand(4 * numVertices)
             buf_col = buf_col.astype(np.float32)
 
             # Repeat with UV data. Each vertex has one associated (U,V)
@@ -473,7 +485,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             gl.glVertexAttribPointer(
                 1, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
             gl.glEnableVertexAttribArray(1)
-            self.textureBuffer[objID][fragName] = None
+            textureBuffer = None
         else:
             # Repeat with UV data. Each vertex has one associated (U,V)
             # pair to specify the position in the texture.
@@ -489,9 +501,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             gl.glEnableVertexAttribArray(1)
 
             # Create a new texture buffer on the GPU and bind it.
-            self.textureBuffer[objID][fragName] = gl.glGenTextures(1)
-            gl.glBindTexture(gl.GL_TEXTURE_2D,
-                             self.textureBuffer[objID][fragName])
+            textureBuffer = gl.glGenTextures(1)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, textureBuffer)
 
             # Upload texture to GPU (transpose the image first).
             buf_rgb = np.reshape(buf_rgb, (width, height, 3))
@@ -507,10 +518,14 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER,
                                gl.GL_NEAREST)
 
+        # Assign the texture buffer.
+        self.numVertices[objID][frag.name] = numVertices
+        self.textureBuffer[objID][frag.name] = textureBuffer
+        self.vertex_array_object[objID][frag.name] = VAO
 
     def initializeGL(self):
         """
-        Create the graphic buffers and compile the shaders.
+        Create the graphics buffers and compile the shaders.
         """
         try:
             self._initializeGL()
