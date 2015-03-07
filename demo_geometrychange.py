@@ -52,9 +52,12 @@ import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 del p
 
+from azrael.util import Fragment, FragState
+
 # Convenience.
 ipshell = IPython.embed
 BulletDataOverride = physAPI.BulletDataOverride
+
 
 
 def parseCommandLine():
@@ -285,16 +288,30 @@ class SetGeometry(multiprocessing.Process):
             # Swap out the geometry.
             for objID in objIDs:
                 if (cnt % 2) == 0:
-                    client.setGeometry(objID, sphere_vert,
-                                       sphere_uv, sphere_rgb)
+                    tmp = []
+                    for frag in geometries[objID].values():
+                        tmp.append(Fragment(frag.name,
+                                            sphere_vert,
+                                            sphere_uv,
+                                            sphere_rgb))
+                    client.setGeometry(objID, tmp)
                 else:
-                    client.setGeometry(objID, *geometries[objID])
+                    tmp = list(geometries[objID].values())
+                    client.setGeometry(objID, tmp)
 
-            # Modify the scale.
+            # Modify the global scale and a fragment position.
             scale = (cnt + 1) / 10
             for objID in objIDs:
-                new_sv = bullet_data.BulletDataOverride(scale=scale)
+                # Change the scale of the overall object.
+                new_sv = BulletDataOverride(scale=scale)
                 client.setStateVariable(objID, new_sv)
+
+                # Move the second fragment.
+                x = -10 + cnt
+                newStates = {
+                    objID: [FragState('frag_2', 1, [x, 0, 0], [0, 0, 0, 1])]
+                }
+                client.updateFragmentStates(newStates)
 
             # Update counter and print status for user.
             cnt = (cnt + 1) % 20
