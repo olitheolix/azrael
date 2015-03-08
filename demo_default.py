@@ -160,14 +160,32 @@ def loadGroundModel(scale, model_name):
                        minval=0, maxval=1000.0, force=0)
     del dir_up, dir_forward, pos_left, pos_center
 
+    # Construct a Tetrahedron (triangular Pyramid). This is going to be the
+    # (super simple) "flame" that comes out of the (still invisible) boosters.
+    y = 0.5 * np.arctan(np.pi / 6)
+    a = (-0.5, -y, 1)
+    b = (0.5, -y, 1)
+    c = (0, 3 / 4 - y, 1)
+    d = (0, 0, 0)
+    vert_b = [(a + b + c) +
+              (a + b + d) +
+              (a + c + d) +
+              (b + c + d)]
+    vert_b = np.array(vert_b[0], np.float64)
+    del a, b, c, d, y
+
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'
     cs = np.array([3, 1, 1, 1], np.float64)
-    frags = [Fragment('frag_1', vert, uv, rgb)]
+    z = np.array([])
+    frags = [Fragment('frag_1', vert, uv, rgb),
+             Fragment('b_left', vert_b, z, z),
+             Fragment('b_right', vert_b, z, z),
+             ]
     temp = Template(tID, cs, frags, [b0, b1, b2, b3], [])
     assert client.addTemplates([temp]).ok
-    del cs, frags, temp
+    del cs, frags, temp, z
     print('done')
 
     # Spawn the template near the center.
@@ -180,10 +198,16 @@ def loadGroundModel(scale, model_name):
          'axesLockLin': [1, 1, 1],
          'axesLockRot': [0, 0, 1],
          'template': tID}
-
     ret = client.spawn([d])
     objID = ret.data[0]
     print('done (ID=<{}>)'.format(objID))
+
+    # Disable the booster fragments by settings its scale to Zero.
+    newStates = {objID: [
+        FragState('b_left', 0, [0, 0, 0], [0, 0, 0, 1]),
+        FragState('b_right', 0, [0, 0, 0], [0, 0, 0, 1]),
+        ]}
+    assert client.updateFragmentStates(newStates).ok
 
     # Construct an attribute object (will be needed to reset the simulation).
     z = np.zeros(3, np.float64)

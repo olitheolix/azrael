@@ -46,6 +46,8 @@ import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 del p
 
+from azrael.util import FragState
+
 
 def PDController(client, objID, ref_pos_z):
     """
@@ -67,7 +69,7 @@ def PDController(client, objID, ref_pos_z):
 
     # Query the sphere's initial position.
     pos = client.getStateVariables([objID])
-    pos = pos.data[objID].position[2]
+    pos = pos.data[objID]['sv'].position[2]
 
     # Keep a history of past errors because the differential component will
     # need it to compute the rate of change. This array has several
@@ -90,29 +92,44 @@ def PDController(client, objID, ref_pos_z):
         del err_value, err_slope
 
         # The sign of the desired force determines which booster (front or
-        # back) to activate. This is necessary because boosters can only
-        # apply positive forces along their axis of orientation. Maybe one
-        # day I will add boosters that allow both directions, but this code
+        # back) to activate. This distinction is necessary because boosters can
+        # only  apply positive forces along their axis of orientation. Maybe
+        # one day I will add boosters that allow both directions, but this code
         # utilises two boosters facing each other (one at the front of the
         # sphere, the other at the back).
+        # Furthermore, specify the Quaternion for the "flame" coming out of the
+        # booster, either neutral or inverted around the x-axis.
         if force > 0:
             force_1 = abs(force)
             force_3 = 0
+            fs_q = [0, 0, 0, 1]
         else:
             force_1 = 0
             force_3 = abs(force)
+            fs_q = [1, 0, 0, 0]
 
         # Send new force values to boosters.
         b0 = parts.CmdBooster(partID=1, force=force_1)
         b1 = parts.CmdBooster(partID=3, force=force_3)
         client.controlParts(objID, [b0, b1], [])
 
+        # Update the booster fragments to provide some visual feedback for the
+        # booster output. Currently, all we do is scale the "flame" coming out
+        # of the booster and point it forwards or backwards.
+        fs_scale = 2 * abs(force)
+        newStates = {objID: [
+            FragState('b_left', fs_scale, [-1.25 - 0.5, 0, 0], fs_q),
+            FragState('b_right', fs_scale, [1.25 + 0.5, 0, 0], fs_q),
+            ]}
+        assert client.updateFragmentStates(newStates).ok
+        del fs_scale, fs_q
+
         # Wait one time step.
         time.sleep(dt)
 
         # Query the sphere's position.
         pos = client.getStateVariables([objID])
-        pos = pos.data[objID].position[2]
+        pos = pos.data[objID]['sv'].position[2]
 
         # Dump some info.
         print('Pos={0:+.3f}  Err={1:+.3f}  Force={2:+.3f}'
