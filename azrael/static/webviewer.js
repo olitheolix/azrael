@@ -420,22 +420,51 @@ function* mycoroutine(connection) {
                 fragData[fragname] = allSVs[objID]['frag'][ii];
             }
 
+            // Pre-allocate the necessary ThreeJS Vector/Quaternion objects.
             var objPos = new THREE.Vector3();
             var objRot = new THREE.Quaternion();
             var fragPos = new THREE.Vector3();
             var fragRot = new THREE.Quaternion();
 
+            // Assign the object- position and quaternion to JS variables.
             objPos = objPos.fromArray(sv.position);
             objRot = objRot.fromArray(sv.orientation);
 
+            // Update the position and orientation of each
+            // fragment. Both are a function of the object's position
+            // and orientation in world coordinates as well as the
+            // position and orientation of the fragment in object
+            // coordinates.
+            // The exact formula for the position is:
+            // 
+            //   P = objPos + objScl * objRot * fragPos;
+            //   R = objRot * fragRot;
+            //   S = objScl * fragScl;
+            // 
+            // You can easily derive them by chaining the
+            // transformations for a position vector V:
+            // 
+            //   fragV = fragPos + fragRot * fragScl * V       (1)
+            //   finV = objPos + objRot * objScal * fragV      (2)
+            // 
+            // Plug (1) into (2) and multiply the terms to obtain:
+            // 
+            //   finV = objPos * objScal * objRot * fragPos + ...
+            //          ... + objRot * fragRot * objScl * fragScl * V
+            // 
+            // or in terms of the previously defined P, R, and S:
+            //   finV = P + R * S * V
             for (var fragname in obj_cache[objID]) {
+                // Convert the array data to ThreeJS vector/quaternion.
                 fragPos = fragPos.fromArray(fragData[fragname]['position']);
                 fragRot = fragRot.fromArray(fragData[fragname]['orientation']);
 
+                // Compute P as explained above.
                 var allPos = fragPos.applyQuaternion(objRot);
                 allPos = allPos.multiplyScalar(sv.scale);
                 allPos = allPos.add(objPos);
                 
+                // Compute R as explained above.
                 var allRot = fragRot.multiplyQuaternions(objRot, fragRot);
                 
                 obj_cache[objID][fragname].position.copy(allPos);
@@ -443,6 +472,7 @@ function* mycoroutine(connection) {
                 // Update object orientation.
                 obj_cache[objID][fragname].quaternion.copy(allRot);
 
+                // Compute S as explained above.
                 var s = sv.scale * fragData[fragname]['scale'];
                 if (s < 0.2) {
                     obj_cache[objID][fragname].visible = false;
