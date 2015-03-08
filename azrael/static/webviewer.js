@@ -361,7 +361,9 @@ function* mycoroutine(connection) {
             // object from the local cache as well.
             if (allSVs[objID]['sv'] == null) {
                 if (objID in obj_cache) {
-                    scene.remove(obj_cache[objID]);
+                    for (var fragname in obj_cache[objID]) {
+                        scene.remove(obj_cache[objID][fragname]);
+                    }
                     delete obj_cache[objID];
                 }
                 delete old_SVs[objID];
@@ -374,7 +376,9 @@ function* mycoroutine(connection) {
             if (old_SVs[objID] != undefined) {
                 if (allSVs[objID]['sv'].lastChanged !=
                     old_SVs[objID]['sv'].lastChanged) {
-                    scene.remove(obj_cache[objID]);
+                    for (var fragname in obj_cache[objID]) {
+                        scene.remove(obj_cache[objID][fragname]);
+                    }
                     delete obj_cache[objID];
                 }
             }
@@ -395,30 +399,70 @@ function* mycoroutine(connection) {
                 // Object not yet in local cache --> fetch its geometry.
                 msg = yield getGeometry(objID);
                 if (msg.ok == false) {console.log('Error getGeometry'); return;}
-                var tmp_vert = msg.data['frag_1'][1]
-                var tmp_uv = msg.data['frag_1'][2]
-                var new_geo = compileMesh(objID, tmp_vert, tmp_uv, scale);
 
-                // Add the object to the cache and scene.
-                obj_cache[objID] = new_geo
-                scene.add(new_geo);
+                obj_cache[objID] = {}
+                for (var fragname in msg.data) {
+                    var tmp_vert = msg.data[fragname][1]
+                    var tmp_uv = msg.data[fragname][2]
+                    var new_geo = compileMesh(objID, tmp_vert, tmp_uv, scale);
+
+                    // Add the object to the cache and scene.
+                    obj_cache[objID][fragname] = new_geo;
+                    scene.add(new_geo);
+                }
             }
 
             // Update object position.
             var sv = allSVs[objID]['sv']
-            obj_cache[objID].position.x = sv.position[0]
-            obj_cache[objID].position.y = sv.position[1]
-            obj_cache[objID].position.z = sv.position[2]
+            var fragData = {};
+            for (var ii in allSVs[objID]['frag']) {
+                var fragname = allSVs[objID]['frag'][ii]['name'];
+                fragData[fragname] = allSVs[objID]['frag'][ii];
+            }
 
-            // Update object orientation.
-            var q = sv.orientation
-            obj_cache[objID].quaternion.x = q[0]
-            obj_cache[objID].quaternion.y = q[1]
-            obj_cache[objID].quaternion.z = q[2]
-            obj_cache[objID].quaternion.w = q[3]
+            var objPos = new THREE.Vector3(
+                sv.position[0],
+                sv.position[1],
+                sv.position[2])
 
-            // Apply the scale parameter.
-            obj_cache[objID].scale.set(sv.scale, sv.scale, sv.scale)
+            var objRot = new THREE.Quaternion(
+                sv.orientation[0],
+                sv.orientation[1],
+                sv.orientation[2],
+                sv.orientation[3]);
+
+            for (var fragname in obj_cache[objID]) {
+                var fragPos = new THREE.Vector3(
+                    fragData[fragname]['position'][0],
+                    fragData[fragname]['position'][1],
+                    fragData[fragname]['position'][2])
+    
+                var fragRot = new THREE.Quaternion(
+                    fragData[fragname]['orientation'][0],
+                    fragData[fragname]['orientation'][1],
+                    fragData[fragname]['orientation'][2],
+                    fragData[fragname]['orientation'][3]);
+
+                var allPos = fragPos.applyQuaternion(objRot);
+                allPos = allPos.multiplyScalar(sv.scale);
+                allPos = allPos.add(objPos);
+                
+                var allRot = fragRot.multiplyQuaternions(objRot, fragRot);
+                
+                obj_cache[objID][fragname].position.copy(allPos);
+
+                // Update object orientation.
+                obj_cache[objID][fragname].quaternion.copy(allRot);
+
+                var s = sv.scale * fragData[fragname]['scale'];
+                if (s < 0.2) {
+                    obj_cache[objID][fragname].visible = false;
+                } else {
+                    obj_cache[objID][fragname].visible = true;
+                }                    
+                obj_cache[objID][fragname].scale.set(s, s, s);
+                delete allPos, s;
+            }
         }
 
         // Remove models that do not exist anymore.
@@ -430,7 +474,9 @@ function* mycoroutine(connection) {
             // If the objID is in our cache but not in the simulation
             // then it is time to remove it.
             if (!(objID in allSVs)) {
-                scene.remove(obj_cache[objID]);
+                for (var fragname in obj_cache[objID]) {
+                    scene.remove(obj_cache[objID][fragname]);
+                }
                 delete obj_cache[objID];
             }
         }
