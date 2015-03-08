@@ -247,6 +247,93 @@ function arrayEqual(arr1, arr2) {
     return isequal;
 }
 
+// Update the position and orientation of each fragment. Both are a
+// function of the object's position and orientation in world
+// coordinates as well as the position and orientation of the fragment
+// in object coordinates.  The exact formula for the position is:
+// 
+//   P = objPos + objScl * objRot * fragPos;
+//   R = objRot * fragRot;
+//   S = objScl * fragScl;
+// 
+// You can easily derive them by chaining the transformations for a
+// position vector V:
+// 
+//   fragV = fragPos + fragRot * fragScl * V       (1)
+//   finV = objPos + objRot * objScal * fragV      (2)
+// 
+// Plug (1) into (2) and multiply the terms to obtain:
+// 
+//   finV = objPos * objScal * objRot * fragPos + ...
+//          ... + objRot * fragRot * objScl * fragScl * V
+// 
+// or in terms of the previously defined P, R, and S:
+//   finV = P + R * S * V
+function updateObjectGeometries(objID, allSVs, obj_cache) {
+    // Convenience.
+    var sv = allSVs[objID]['sv']
+
+    // Compile a hash map for all fragments with the
+    // fragment-name as the key. We will need this below to
+    // look up Fragments directly instead of searching through
+    // the array every time.
+    var fragData = {};
+    for (var ii in allSVs[objID]['frag']) {
+        var fragname = allSVs[objID]['frag'][ii]['name'];
+        fragData[fragname] = allSVs[objID]['frag'][ii];
+    }
+
+    // Pre-allocate the necessary ThreeJS Vector/Quaternion objects.
+    var objPos = new THREE.Vector3(),
+        objRot = new THREE.Quaternion(),
+        fragPos = new THREE.Vector3(),
+        fragRot = new THREE.Quaternion(),
+        objScl = new THREE.Vector3(sv.scale, sv.scale, sv.scale),
+        fragScl = new THREE.Vector3(1, 1, 1),
+        P = 0,
+        R = 0,
+        S = 0;
+
+    // Assign the object- position and quaternion to JS variables.
+    for (var fragname in obj_cache[objID]) {
+        // Convert the Azrael data to ThreeJS types.
+        fragPos = fragPos.fromArray(fragData[fragname]['position']);
+        fragRot = fragRot.fromArray(fragData[fragname]['orientation']);
+        fragScl.x = fragData[fragname]['scale'];
+        fragScl.y = fragData[fragname]['scale'];
+        fragScl.z = fragData[fragname]['scale'];
+        objPos = objPos.fromArray(sv.position);
+        objRot = objRot.fromArray(sv.orientation);
+        objScl = objScl.set(sv.scale, sv.scale, sv.scale);
+
+        // Position: objPos + objScl * objRot * fragPos
+        P = fragPos.applyQuaternion(objRot);
+        P = P.multiply(objScl);
+        P = P.add(objPos);
+
+        // Quaternion: objRot * fragRot
+        R = fragRot.multiplyQuaternions(objRot, fragRot);
+
+        // Scale: objScl * fragScl
+        S = objScl.multiply(fragScl);
+
+        // Update position, orientation, and scale of the object.
+        obj_cache[objID][fragname].position.copy(P);
+        obj_cache[objID][fragname].quaternion.copy(R);
+        obj_cache[objID][fragname].scale.copy(S);
+
+        // Hide the object altogether if its overall scale is
+        // too small. This is merely a hack to avoid problems
+        // with a ThreeJS internal matrix inversions somewhere.
+        if (S.lengthSq() < Math.pow(0.01, 2)) {
+            obj_cache[objID][fragname].visible = false;
+        } else {
+            obj_cache[objID][fragname].visible = true;
+        }
+        obj_cache[objID][fragname].verticesNeedUpdate = true;
+    }
+}
+
 /* ------------------------------------------------------------
    Command flow for one frame.
  ------------------------------------------------------------ */
@@ -357,8 +444,10 @@ function* mycoroutine(connection) {
                 txt = objCnt + ' of ' + numObjects
             $("#PBLoading").css('width', tmp + '%').text('Loading ' + txt)
 
-            // Skip/remove all objects with undefined SVs. Remove the
-            // object from the local cache as well.
+            // Skip/remove all objects with 'null' SVs. Those appear
+            // whenever we asked Azrael for info about objects that do
+            // not exist (anymore). Consequently, remove them from the
+            // local cache as well.
             if (allSVs[objID]['sv'] == null) {
                 if (objID in obj_cache) {
                     for (var fragname in obj_cache[objID]) {
@@ -390,98 +479,33 @@ function* mycoroutine(connection) {
             // Do not render ourselves.
             if (arrayEqual(playerID, objID)) continue;
 
-            // Download the entire object data if we do not have it
-            // in the local cache.
+            // Download the entire object geometry if we do not have it
+            // in the local cache yet.
             if (obj_cache[objID] == undefined) {
-                // Get SV for current object.
-                var scale = allSVs[objID]['sv'].scale
-
-                // Object not yet in local cache --> fetch its geometry.
+                // Download.
                 msg = yield getGeometry(objID);
-                if (msg.ok == false) {console.log('Error getGeometry'); return;}
+                if (msg.ok == false) {
+                    console.log('Error getGeometry');
+                    return;
+                }
 
+                // Unpack the geometry of each fragment and add them to ThreeJS.
                 obj_cache[objID] = {}
                 for (var fragname in msg.data) {
-                    var tmp_vert = msg.data[fragname][1]
-                    var tmp_uv = msg.data[fragname][2]
-                    var new_geo = compileMesh(objID, tmp_vert, tmp_uv, scale);
+                    var geo = compileMesh(
+                        objID,
+                        msg.data[fragname][1], // UV array
+                        msg.data[fragname][2], // RGB array
+                        allSVs[objID]['sv'].scale);
 
                     // Add the object to the cache and scene.
-                    obj_cache[objID][fragname] = new_geo;
-                    scene.add(new_geo);
+                    obj_cache[objID][fragname] = geo;
+                    scene.add(geo);
                 }
             }
 
-            // Update object position.
-            var sv = allSVs[objID]['sv']
-            var fragData = {};
-            for (var ii in allSVs[objID]['frag']) {
-                var fragname = allSVs[objID]['frag'][ii]['name'];
-                fragData[fragname] = allSVs[objID]['frag'][ii];
-            }
-
-            // Pre-allocate the necessary ThreeJS Vector/Quaternion objects.
-            var objPos = new THREE.Vector3();
-            var objRot = new THREE.Quaternion();
-            var fragPos = new THREE.Vector3();
-            var fragRot = new THREE.Quaternion();
-
-            // Assign the object- position and quaternion to JS variables.
-            objPos = objPos.fromArray(sv.position);
-            objRot = objRot.fromArray(sv.orientation);
-
-            // Update the position and orientation of each
-            // fragment. Both are a function of the object's position
-            // and orientation in world coordinates as well as the
-            // position and orientation of the fragment in object
-            // coordinates.
-            // The exact formula for the position is:
-            // 
-            //   P = objPos + objScl * objRot * fragPos;
-            //   R = objRot * fragRot;
-            //   S = objScl * fragScl;
-            // 
-            // You can easily derive them by chaining the
-            // transformations for a position vector V:
-            // 
-            //   fragV = fragPos + fragRot * fragScl * V       (1)
-            //   finV = objPos + objRot * objScal * fragV      (2)
-            // 
-            // Plug (1) into (2) and multiply the terms to obtain:
-            // 
-            //   finV = objPos * objScal * objRot * fragPos + ...
-            //          ... + objRot * fragRot * objScl * fragScl * V
-            // 
-            // or in terms of the previously defined P, R, and S:
-            //   finV = P + R * S * V
-            for (var fragname in obj_cache[objID]) {
-                // Convert the array data to ThreeJS vector/quaternion.
-                fragPos = fragPos.fromArray(fragData[fragname]['position']);
-                fragRot = fragRot.fromArray(fragData[fragname]['orientation']);
-
-                // Compute P as explained above.
-                var allPos = fragPos.applyQuaternion(objRot);
-                allPos = allPos.multiplyScalar(sv.scale);
-                allPos = allPos.add(objPos);
-                
-                // Compute R as explained above.
-                var allRot = fragRot.multiplyQuaternions(objRot, fragRot);
-                
-                obj_cache[objID][fragname].position.copy(allPos);
-
-                // Update object orientation.
-                obj_cache[objID][fragname].quaternion.copy(allRot);
-
-                // Compute S as explained above.
-                var s = sv.scale * fragData[fragname]['scale'];
-                if (s < 0.2) {
-                    obj_cache[objID][fragname].visible = false;
-                } else {
-                    obj_cache[objID][fragname].visible = true;
-                }                    
-                obj_cache[objID][fragname].scale.set(s, s, s);
-                delete allPos, s;
-            }
+            // Update the visual appearance of all fragments in objID.
+            updateObjectGeometries(objID, allSVs, obj_cache);
         }
 
         // Remove models that do not exist anymore.
