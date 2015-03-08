@@ -59,11 +59,13 @@ RUN git clone https://github.com/olitheolix/azrael /demo/azrael
 # Expose the necessary Tornado and ZeroMQ ports.
 EXPOSE 8080 5555
 
+# Special environment variable to let Azrael know it runs in Docker.
+ENV INSIDEDOCKER 1
+
 # Home directory.
 WORKDIR /demo/azrael
 
-ENTRYPOINT ["/usr/bin/python3", "entrypoint.py"]
-#ENTRYPOINT ["/bin/bash"]
-
-# Default command: start MongoDB and Azrael.
-CMD ["./demo_forcegrid.py --noviewer --numcubes 4,4,1"]
+# Default command: force grid demo.
+CMD ["/usr/bin/python3", "demo_forcegrid.py", \
+     "--noviewer", \
+     "--numcubes", "4,4,1"]
