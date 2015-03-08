@@ -420,28 +420,17 @@ function* mycoroutine(connection) {
                 fragData[fragname] = allSVs[objID]['frag'][ii];
             }
 
-            var objPos = new THREE.Vector3(
-                sv.position[0],
-                sv.position[1],
-                sv.position[2])
+            var objPos = new THREE.Vector3();
+            var objRot = new THREE.Quaternion();
+            var fragPos = new THREE.Vector3();
+            var fragRot = new THREE.Quaternion();
 
-            var objRot = new THREE.Quaternion(
-                sv.orientation[0],
-                sv.orientation[1],
-                sv.orientation[2],
-                sv.orientation[3]);
+            objPos = objPos.fromArray(sv.position);
+            objRot = objRot.fromArray(sv.orientation);
 
             for (var fragname in obj_cache[objID]) {
-                var fragPos = new THREE.Vector3(
-                    fragData[fragname]['position'][0],
-                    fragData[fragname]['position'][1],
-                    fragData[fragname]['position'][2])
-    
-                var fragRot = new THREE.Quaternion(
-                    fragData[fragname]['orientation'][0],
-                    fragData[fragname]['orientation'][1],
-                    fragData[fragname]['orientation'][2],
-                    fragData[fragname]['orientation'][3]);
+                fragPos = fragPos.fromArray(fragData[fragname]['position']);
+                fragRot = fragRot.fromArray(fragData[fragname]['orientation']);
 
                 var allPos = fragPos.applyQuaternion(objRot);
                 allPos = allPos.multiplyScalar(sv.scale);
