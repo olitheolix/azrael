@@ -1039,22 +1039,21 @@ class Clerk(multiprocessing.Process):
         fragState = {k: [FragState(*_) for _ in v]
                      for (k, v) in fragState.items()}
 
-        # The output dictionary contains None values for all SVs that could not
-        # be retrieved (probably because the object did not exist).
-        out = {_: None for _ in objIDs if SVs[_] is None}
-
         # Add SV and fragment data for all objects for which we have SV
-        # data. In that process also update the 'lastChanged' flag. This
-        # indicates to the client if the geometry has changed.
+        # data (and set it to None for those of which we don't). In that
+        # process also update the 'lastChanged' flag. This indicates to the
+        # client if the geometry has changed.
+        out = {}
         for objID in objIDs:
-            if objID in out:
-                continue
-            # Updae the 'lastChanged' field in the State Variable to the
-            # latest value.
-            out[objID] = {
-                'frag': fragState[objID],
-                'sv': SVs[objID]._replace(lastChanged=lastChanged[objID])
-            }
+            if (objID in SVs) and (objID in fragState):
+                # Updae the 'lastChanged' field in the State Variable to
+                # the latest value.
+                out[objID] = {
+                    'frag': fragState[objID],
+                    'sv': SVs[objID]._replace(lastChanged=lastChanged[objID])
+                }
+            else:
+                out[objID] = None
         return RetVal(True, None, out)
 
     @typecheck
