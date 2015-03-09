@@ -37,6 +37,7 @@ import argparse
 import subprocess
 import demo_default
 import multiprocessing
+import demo_default as demolib
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -81,151 +82,30 @@ def parseCommandLine():
          help='Do not load any models')
     padd('--port', metavar='port', type=int, default=8080,
          help='Port number')
-    padd('--numcubes', metavar='X,Y,Z', type=str, default='1,1,1',
+    padd('--cubes', metavar='X,Y,Z', type=str, default='1,1,1',
          help='Number of cubes in each dimension')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
-    padd('--resetinterval', type=int, metavar='T', default=-1,
+    padd('--reset', type=int, metavar='T', default=-1,
          help='Simulation will reset every T seconds')
-    padd('--forcegridlinear', type=int, metavar='T', default=2,
+    padd('--linear', type=int, metavar='T', default=2,
          help='Duration of linear grid (in seconds)')
-    padd('--forcegridcircular', type=int, metavar='T', default=5,
+    padd('--circular', type=int, metavar='T', default=5,
          help='Duration of circular grid (in seconds)')
 
     # Run the parser.
     param = parser.parse_args()
     try:
-        numcubes = [int(_) for _ in param.numcubes.split(',')]
-        assert len(numcubes) == 3
-        assert min(numcubes) >= 0
-        assert sum(numcubes) >= 0
-        param.numcubes = numcubes
+        cubes = [int(_) for _ in param.cubes.split(',')]
+        assert len(cubes) == 3
+        assert min(cubes) >= 0
+        assert sum(cubes) >= 0
+        param.cubes = cubes
     except (TypeError, ValueError, AssertionError):
-        print('The <numcubes> argument is invalid')
+        print('The <cubes> argument is invalid')
         sys.exit(1)
 
     return param
-
-
-def setupLogging(loglevel):
-    """
-    Change the log level of the 'Azrael' loggers (defined in azrael.config).
-    """
-    logger = logging.getLogger('azrael')
-    if loglevel == 0:
-        logger.setLevel(logging.DEBUG)
-    elif loglevel == 1:
-        logger.setLevel(logging.INFO)
-    elif loglevel == 2:
-        logger.setLevel(logging.WARNING)
-    else:
-        print('Unknown log level {}'.format(loglevel))
-        sys.exit(1)
-
-
-def startAzrael(param):
-    """
-    Start all Azrael processes and return their process handles.
-    """
-    database.init(reset=True)
-
-    # Delete all grids and define a pristine force grid.
-    assert vectorgrid.deleteAllGrids().ok
-    assert vectorgrid.defineGrid(name='force', vecDim=3, granularity=1).ok
-
-    # Spawn Azrael's APIs.
-    clerk = azrael.clerk.Clerk()
-    clerk.start()
-    clacks = azrael.clacks.ClacksServer()
-    clacks.start()
-
-    # Define additional templates.
-    attr = demo_default.spawnCubes(*param.numcubes, center=(0, 0, 10))
-
-    # Start the physics engine.
-    #leo = leonard.LeonardBase()
-    #leo = leonard.LeonardBullet()
-    #leo = leonard.LeonardSweeping()
-    leo = leonard.LeonardDistributedZeroMQ()
-    leo.start()
-
-    return (clerk, clacks, leo), attr
-
-
-def stopAzrael(clerk, clacks, leo):
-    """
-    Stop ``clerk``, ``clacks``, and ``leo``.
-    """
-    clerk.terminate()
-    clacks.terminate()
-    leo.terminate()
-    clerk.join()
-    clacks.join()
-    leo.join()
-
-
-class ResetSim(multiprocessing.Process):
-    """
-    Periodically reset the simulation.
-    """
-    def __init__(self, default_attributes, period=-1):
-        """
-        The ``default_attributes`` argument is a list of (objID, attr) tuples.
-
-        This process resets the attributes of all objects in that list with
-        the corresponding value. This happens every ``period`` seconds.
-
-        To prevent simulation resets altoghether set ``period`` to -1.
-        """
-        super().__init__()
-        self.default_attributes = default_attributes
-        self.period = period
-
-    def run(self):
-        # Return immediately if no resets are required.
-        if self.period == -1:
-            return
-
-        # Establish connection to Azrael.
-        client = azrael.client.Client()
-
-        # Query all objects in the scene. These are the only objects that will
-        # survive the reset.
-        ret = client.getAllObjectIDs()
-        assert ret.ok
-        ret = client.getStateVariables(ret.data)
-        assert ret.ok
-        allowed_objIDs = {k: v for k, v in ret.data.items() if v is not None}
-        print('Took simulation snapshot for reset: ({} objects)'
-              .format(len(allowed_objIDs)))
-
-        # Periodically reset the SV values. Set them several times because it
-        # is well possible that not all State Variables reach Leonard in the
-        # same frame, which means some objects will be reset while other are
-        # not. This in turn may cause strange artefacts in the next physics
-        # update step, especially when the objects now partially overlap.
-        while True:
-            # Wait until the timeout expires.
-            time.sleep(self.period)
-
-            # Remove all newly added objects.
-            ret = client.getAllObjectIDs()
-            for objID in ret.data:
-                if objID not in allowed_objIDs:
-                    client.removeObject(objID)
-
-            # Forcefully reset the position and velocity of every object. Do
-            # this several times since network latency may result in some
-            # objects being reset sooner than others.
-            for ii in range(5):
-                for objID, SV in allowed_objIDs.items():
-                    tmp = BulletDataOverride(
-                        position=SV.position,
-                        velocityLin=SV.velocityLin,
-                        velocityRot=SV.velocityRot,
-                        orientation=SV.orientation)
-                    client.setStateVariable(objID, tmp)
-                time.sleep(0.1)
 
 
 class UpdateGrid(multiprocessing.Process):
@@ -301,44 +181,26 @@ def main():
     # Parse the command line.
     param = parseCommandLine()
 
-    # Setup.
-    setupLogging(param.loglevel)
-    util.resetTiming()
-
     # Start the Azrael processes.
     with util.Timeit('Startup Time', True):
         subprocess.call(['pkill', 'killme'])
-        procs, default_attributes = startAzrael(param)
+        procs = demolib.startAzrael(param)
     print('Azrael now live')
 
-    # Launch process to periodically reset the simulation.
-    time.sleep(2)
-    rs = ResetSim(default_attributes, period=param.resetinterval)
-    rs.start()
-
-    ug = UpdateGrid(period_circ=param.forcegridcircular,
-                    period_lin=param.forcegridlinear)
+    # Start the process that periodically changes the force field. Add the
+    # process handle to the list of processes.
+    ug = UpdateGrid(period_circ=param.circular, period_lin=param.linear)
     ug.start()
+    procs.insert(0, ug)
 
-    # Launch the viewer process.
-    try:
-        if param.noviewer:
-            time.sleep(3600000000)
-        else:
-            subprocess.call(['python3', 'viewer/viewer.py'])
-    except KeyboardInterrupt:
-        pass
+    # Start the Qt Viewer.
+    demolib.launchQtViewer(param)
 
     # Shutdown Azrael.
-    rs.terminate()
-    ug.terminate()
-    rs.join()
-    ug.join()
-    stopAzrael(*procs)
+    demolib.stopAzrael(procs)
 
     print('Clean shutdown')
 
 
 if __name__ == '__main__':
-    # Start Azrael.
     main()

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
+# Copyright 2015, Oliver Nagy <olitheolix@gmail.com>
 #
 # This file is part of Azrael (https://github.com/olitheolix/azrael)
 #
@@ -16,11 +16,12 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
-
 """
-Start a new viewer.
+Create a sphere, one or more cubes (see --cubes parameter), and launch the
+Qt Viewer.
 
-A new Azrael instance will be created if none is live yet.
+.. note:: This script will kill all running Azrael instances and create a new
+   one.
 """
 
 # Add the viewer directory to the Python path.
@@ -79,23 +80,23 @@ def parseCommandLine():
          help='Do not load any models')
     padd('--port', metavar='port', type=int, default=8080,
          help='Port number')
-    padd('--numcubes', metavar='X,Y,Z', type=str, default='1,1,1',
+    padd('--cubes', metavar='X,Y,Z', type=str, default='1,1,1',
          help='Number of cubes in each dimension')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
-    padd('--resetinterval', type=int, metavar='T', default=-1,
+    padd('--reset', type=int, metavar='T', default=-1,
          help='Simulation will reset every T seconds')
 
     # Run the parser.
     param = parser.parse_args()
     try:
-        numcubes = [int(_) for _ in param.numcubes.split(',')]
-        assert len(numcubes) == 3
-        assert min(numcubes) >= 0
-        assert sum(numcubes) >= 0
-        param.numcubes = numcubes
+        cubes = [int(_) for _ in param.cubes.split(',')]
+        assert len(cubes) == 3
+        assert min(cubes) >= 0
+        assert sum(cubes) >= 0
+        param.cubes = cubes
     except (TypeError, ValueError, AssertionError):
-        print('The <numcubes> argument is invalid')
+        print('The <cubes> argument is invalid')
         sys.exit(1)
 
     return param
@@ -397,30 +398,18 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         client.updateFragmentStates({objID: [
             FragState('frag_2', 0, [0, 0, 0], [0, 0, 0, 1])]})
 
-    # Keep the original position of the object (this will be needed to
-    # periodically reset the simulation).
-    default_attributes = []
-    for objID, obj in zip(ret.data, allObjs):
-        default_attributes.append((ret.data[0], obj['position']))
-
-    # Convert the positions to proper PosVecAccOrient tuples. In these tuples
-    # only the position differs. The inital velocities, accelerations, and
-    # orientations are all identical).
-    z = np.zeros(3, np.float64)
-    o = np.array([0, 0, 0, 1], np.float64)
-    default_attributes = []
-    for attr in default_attributes:
-        tmp = BulletDataOverride(
-            position=_[1], velocityLin=z, velocityRot=z, orientation=o)
-        default_attributes.append((_[0], tmp))
-    return default_attributes
-
 
 def startAzrael(param):
     """
     Start all Azrael processes and return their process handles.
     """
+    subprocess.call(['pkill', 'killme'])
+    time.sleep(0.2)
     database.init(reset=True)
+
+    # Reset the profiling database and enable logging.
+    azrael.util.resetTiming()
+    setupLogging(param.loglevel)
 
     # Delete all grids but define a force grid (will not be used but
     # Leonard throws a lot of harmless warnings otherwise).
@@ -444,8 +433,7 @@ def startAzrael(param):
         tmp = loadGroundModel(*model_name)
 
         # Define additional templates.
-        default_attributes = spawnCubes(*param.numcubes, center=(0, 0, 10))
-        default_attributes.append(tmp)
+        spawnCubes(*param.cubes, center=(0, 0, 10))
 
     # Start the physics engine.
     #leo = leonard.LeonardBase()
@@ -454,36 +442,49 @@ def startAzrael(param):
     leo = leonard.LeonardDistributedZeroMQ()
     leo.start()
 
-    return (clerk, clacks, leo), default_attributes
+    # Launch a dedicated process to periodically reset the simulation.
+    time.sleep(2)
+    rs = ResetSim(period=param.reset)
+    rs.start()
+
+    return [clerk, clacks, leo, rs]
 
 
-def stopAzrael(clerk, clacks, leo):
+def stopAzrael(procs):
     """
-    Stop ``clerk``, ``clacks``, and ``leo``.
+    Stop and join all ``procs``.
     """
-    clerk.terminate()
-    clacks.terminate()
-    leo.terminate()
-    clerk.join()
-    clacks.join()
-    leo.join()
+    for proc in procs:
+        proc.terminate()
 
+    for proc in procs:
+        proc.join()
+
+
+def launchQtViewer(param):
+    """
+    Launch the Qt Viewer in a separate process.
+
+    This function does not return until the viewer process finishes.
+    """
+    try:
+        if param.noviewer:
+            time.sleep(3600000000)
+        else:
+            subprocess.call(['python3', 'viewer/viewer.py'])
+    except KeyboardInterrupt:
+        pass
+    
 
 class ResetSim(multiprocessing.Process):
     """
     Periodically reset the simulation.
     """
-    def __init__(self, default_attributes, period=-1):
+    def __init__(self, period=-1):
         """
-        The ``default_attributes`` argument is a list of (objID, attr) tuples.
-
-        This process resets the attributes of all objects in that list with
-        the corresponding value. This happens every ``period`` seconds.
-
-        To prevent simulation resets altoghether set ``period`` to -1.
+        Set ``period`` to -1 to disable simulation resets altogether.
         """
         super().__init__()
-        self.default_attributes = default_attributes
         self.period = period
 
     def run(self):
@@ -500,7 +501,7 @@ class ResetSim(multiprocessing.Process):
         assert ret.ok
         ret = client.getStateVariables(ret.data)
         assert ret.ok
-        allowed_objIDs = {k: v for k, v in ret.data.items() if v is not None}
+        allowed_objIDs = {k: v['sv'] for k, v in ret.data.items() if v is not None}
         print('Took simulation snapshot for reset: ({} objects)'
               .format(len(allowed_objIDs)))
 
@@ -522,6 +523,7 @@ class ResetSim(multiprocessing.Process):
             # Forcefully reset the position and velocity of every object. Do
             # this several times since network latency may result in some
             # objects being reset sooner than others.
+            BulletDataOverride = azrael.physics_interface.BulletDataOverride
             for ii in range(5):
                 for objID, SV in allowed_objIDs.items():
                     tmp = BulletDataOverride(
@@ -537,38 +539,19 @@ def main():
     # Parse the command line.
     param = parseCommandLine()
 
-    # Setup.
-    setupLogging(param.loglevel)
-    util.resetTiming()
-
-    # Start the Azrael processes.
-    with util.Timeit('Startup Time', True):
-        subprocess.call(['pkill', 'killme'])
-        procs, default_attributes = startAzrael(param)
+    # Start Azrael services.
+    with azrael.util.Timeit('Startup Time', True):
+        procs = startAzrael(param)
     print('Azrael now live')
 
-    # Launch process to periodically reset the simulation.
-    time.sleep(2)
-    rs = ResetSim(default_attributes, period=param.resetinterval)
-    rs.start()
-
-    # Launch the viewer process.
-    try:
-        if param.noviewer:
-            time.sleep(3600000000)
-        else:
-            subprocess.call(['python3', 'viewer/viewer.py'])
-    except KeyboardInterrupt:
-        pass
+    # Start the Qt Viewer.
+    launchQtViewer(param)
 
     # Shutdown Azrael.
-    rs.terminate()
-    rs.join()
-    stopAzrael(*procs)
+    stopAzrael(procs)
 
     print('Clean shutdown')
 
 
 if __name__ == '__main__':
-    # Start Azrael.
     main()
