@@ -70,5 +70,4 @@ WORKDIR /demo/azrael
 
 # Default command: force grid demo.
 CMD ["/usr/bin/python3", "demos/demo_forcegrid.py", \
-     "--noviewer", \
-     "--cubes", "4,4,1"]
+     "--noviewer", "--cubes", "4,4,1", "--linear=1", "--circular=1"]
