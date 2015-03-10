@@ -39,7 +39,12 @@ def ensureMongoIsLive():
     Start MongoDB if it is not already live.
     """
     def startMongo():
-        cmd_mongo = '/usr/bin/mongod --smallfiles --dbpath /demo/mongodb'
+        mdir = '/demo/azrael/volume/mongodb'
+        try:
+            os.mkdir(mdir)
+        except FileExistsError:
+            pass
+        cmd_mongo = ('/usr/bin/mongod --smallfiles --dbpath {}'.format(mdir))
         subprocess.call(cmd_mongo, shell=True, stdout=subprocess.DEVNULL)
 
     # Start MongoDB and wait until it is live.

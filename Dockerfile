@@ -9,7 +9,7 @@
 # want to export the Mongo data directory to a temporary directory or
 # otherwise your image will grow rapidly over time:
 #
-#   >> docker run -d -p 8080:8080 -v /tmp/azrael:/demo/mongodb \
+#   >> docker run -d -p 8080:8080 -v /tmp/azrael:/demo/azrael/volume \
 #             olitheolix/azrael:latest \
 #             "demo/demo_forcegrid.py --noviewer --cubes 4,4,1"
 

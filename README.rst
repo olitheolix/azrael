@@ -97,7 +97,7 @@ Docker
 
 .. code-block:: bash
 
-   docker run -d -v /tmp/azrael:/demo/mongodb -p 8080:8080 olitheolix/azrael:latest
+   docker run -d -v /tmp/azrael:/demo/azrael/volume -p 8080:8080 olitheolix/azrael:latest
 
 View the Scene
 --------------
