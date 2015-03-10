@@ -69,5 +69,5 @@ ENV INSIDEDOCKER 1
 WORKDIR /demo/azrael
 
 # Default command: force grid demo.
-CMD ["/usr/bin/python3", "demos/demo_forcegrid.py", \
-     "--noviewer", "--cubes", "4,4,1", "--linear=1", "--circular=1"]
+CMD ["/usr/bin/python3", "demos/demo_forcegrid.py", "--noviewer", \
+     "--reset=30", "--cubes=3,3,1", "--linear=1", "--circular=1"]
