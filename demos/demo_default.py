@@ -40,7 +40,8 @@ import matplotlib.pyplot as plt
 
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, 'viewer'))
+sys.path.insert(0, os.path.join(p, '..'))
+sys.path.insert(0, os.path.join(p, '../viewer'))
 import model_import
 import azrael.clerk
 import azrael.clacks
@@ -267,7 +268,14 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     uv = np.array(uv, np.float64)
 
-    img = plt.imread('azrael/static/img/texture_5.jpg')
+    # Compile the path to the texture file.
+    path_base = os.path.dirname(os.path.abspath(__file__))
+    path_base = os.path.join(path_base, '..', 'azrael', 'static', 'img')
+    fname = os.path.join(path_base, 'texture_5.jpg')
+
+    # Load the texture and convert it to flat vector because this is how OpenGL
+    # will want it.
+    img = plt.imread(fname)
     rgb = np.rollaxis(np.flipud(img), 1).flatten()
 
     # ----------------------------------------------------------------------
@@ -315,7 +323,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     texture_errors = 0
     for ii in range(numRows * numCols * numLayers):
         # File name of texture.
-        fname = 'azrael/static/img/texture_{}.jpg'.format(ii + 1)
+        fname = os.path.join(path_base, 'texture_{}.jpg'.format(ii + 1))
 
         # Load the texture image. If the image is unavailable do not endow the
         # cube with a texture.
@@ -427,13 +435,17 @@ def startAzrael(param):
         # in the repo whereas the Vatican model is available here:
         # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
         # uid=3290&count=count
-        model_name = (1.25, 'viewer/models/sphere/sphere.obj')
+        p = os.path.dirname(os.path.abspath(__file__))
+        p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
+        fname = os.path.join(p, 'sphere.obj')
+        model_name = (1.25, fname)
         #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
         #model_name = (1.25, 'viewer/models/house/house.3ds')
-        tmp = loadGroundModel(*model_name)
+        loadGroundModel(*model_name)
 
         # Define additional templates.
         spawnCubes(*param.cubes, center=(0, 0, 10))
+        del p, fname, model_name
 
     # Start the physics engine.
     #leo = leonard.LeonardBase()
@@ -467,11 +479,14 @@ def launchQtViewer(param):
 
     This function does not return until the viewer process finishes.
     """
+    path_base = os.path.dirname(os.path.abspath(__file__))
+    fname = os.path.join(path_base, '..', 'viewer', 'viewer.py')
+
     try:
         if param.noviewer:
             time.sleep(3600000000)
         else:
-            subprocess.call(['python3', 'viewer/viewer.py'])
+            subprocess.call(['python3', fname])
     except KeyboardInterrupt:
         pass
     
