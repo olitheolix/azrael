@@ -1039,21 +1039,21 @@ class Clerk(multiprocessing.Process):
         fragState = {k: [FragState(*_) for _ in v]
                      for (k, v) in fragState.items()}
 
-        # Add SV and fragment data for all objects for which we have SV
-        # data (and set it to None for those of which we don't). In that
-        # process also update the 'lastChanged' flag. This indicates to the
-        # client if the geometry has changed.
+        # Add SV and fragment data for all objects. If we the objects do not
+        # exist then set the data to *None*.  During that proces also update
+        # the 'lastChanged' (this flag indicates geometry changes to the
+        # client).
         out = {}
         for objID in objIDs:
-            if (objID in SVs) and (objID in fragState):
-                # Updae the 'lastChanged' field in the State Variable to
-                # the latest value.
-                out[objID] = {
-                    'frag': fragState[objID],
-                    'sv': SVs[objID]._replace(lastChanged=lastChanged[objID])
-                }
-            else:
+            if (SVs[objID] is None) or (objID not in fragState):
                 out[objID] = None
+                continue
+
+            # Update the 'lastChanged' field to the latest value.
+            out[objID] = {
+                'frag': fragState[objID],
+                'sv': SVs[objID]._replace(lastChanged=lastChanged[objID])
+            }
         return RetVal(True, None, out)
 
     @typecheck
