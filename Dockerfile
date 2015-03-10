@@ -3,7 +3,7 @@
 #
 #   >> docker run -d -p 8080:8080 \
 #             olitheolix/azrael:latest \
-#             "./demo_forcegrid.py --noviewer --numcubes 4,4,1"
+#             "demo/demo_forcegrid.py --noviewer --cubes 4,4,1"
 #
 # Since the container contains a full MongoDB installation, you may
 # want to export the Mongo data directory to a temporary directory or
@@ -11,7 +11,7 @@
 #
 #   >> docker run -d -p 8080:8080 -v /tmp/azrael:/demo/mongodb \
 #             olitheolix/azrael:latest \
-#             "./demo_forcegrid.py --noviewer --numcubes 4,4,1"
+#             "demo/demo_forcegrid.py --noviewer --cubes 4,4,1"
 
 # Ubuntu 14.04 base image.
 FROM ubuntu:14.04
@@ -69,6 +69,6 @@ ENV INSIDEDOCKER 1
 WORKDIR /demo/azrael
 
 # Default command: force grid demo.
-CMD ["/usr/bin/python3", "demo_forcegrid.py", \
+CMD ["/usr/bin/python3", "demos/demo_forcegrid.py", \
      "--noviewer", \
      "--cubes", "4,4,1"]

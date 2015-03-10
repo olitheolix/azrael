@@ -89,7 +89,7 @@ commands:
    git clone https://github.com/olitheolix/azrael
    cd azrael
    sudo bash install.sh
-   python3 demo_default.py --noviewer --numcubes 4,4,1
+   python3 demos/demo_default.py --noviewer --cubes 4,4,1
 
 
 Docker
