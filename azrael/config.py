@@ -28,7 +28,8 @@ import netifaces
 # ---------------------------------------------------------------------------
 
 # Specify the log level for Azrael.
-log_file = 'azrael.log'
+log_file = os.path.dirname(os.path.abspath(__file__))
+log_file = os.path.join(log_file, '..', 'volume', 'azrael.log')
 logger = logging.getLogger('azrael')
 
 # Prevent it from logging to console no matter what.
