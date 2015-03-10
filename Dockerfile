@@ -22,9 +22,8 @@ MAINTAINER Oliver Nagy <olitheolix@gmail.com>
 RUN mkdir -p /demo/mongodb
 
 # Add APT credentials for MongoDB.
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
-RUN echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart' \
-         ' dist 10gen' | tee /etc/apt/sources.list.d/10gen.list
+RUN sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+RUN echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.0.list
 
 # Install Ubuntu packages for Azrael.
 RUN apt-get update && apt-get install -y \
@@ -33,7 +32,7 @@ RUN apt-get update && apt-get install -y \
     libassimp-dev \
     libassimp3 \
     libboost-python-dev \
-    mongodb-10gen \
+    mongodb-org \
     python3-matplotlib \
     python3-netifaces \
     python3-numpy \
@@ -46,8 +45,12 @@ RUN apt-get update && apt-get install -y \
 # bindings, and clean up to reduce the size of the container image.
 WORKDIR /tmp
 RUN apt-get install -y python3-pip && \
-    pip3 install cytoolz setproctitle websocket-client==0.15 pymongo \
-                 pytest-cov && \
+    pip3 install \
+      cytoolz \
+      pymongo==2.7 \
+      pytest-cov \
+      setproctitle \
+      websocket-client==0.15 &&\
     pip3 install --install-option -j \
     git+https://github.com/Klumhru/boost-python-bullet.git@d9ffae09157#egg=boost-python-bullet  && \
     apt-get remove -y python3-pip && \
@@ -56,8 +59,8 @@ RUN apt-get install -y python3-pip && \
 # Clone Azrael from GitHub.
 RUN git clone https://github.com/olitheolix/azrael /demo/azrael
 
-# Expose the necessary Tornado and ZeroMQ ports.
-EXPOSE 8080 5555
+# Expose the necessary ZeroMQ and Tornado ports.
+EXPOSE 5555 8080
 
 # Special environment variable to let Azrael know it runs in Docker.
 ENV INSIDEDOCKER 1
@@ -68,4 +71,4 @@ WORKDIR /demo/azrael
 # Default command: force grid demo.
 CMD ["/usr/bin/python3", "demo_forcegrid.py", \
      "--noviewer", \
-     "--numcubes", "4,4,1"]
+     "--cubes", "4,4,1"]
