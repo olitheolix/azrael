@@ -16,12 +16,12 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-A Proportional-Differential (PD) controller to maintain the sphere's position.
+Control the sphere's position with the help of a Proportional-Differential (PD)
+controller.
 
-The parameters for the PD controller were empirically chosen because Azrael's
-current implementation neither guarantees constant update intervals provides
-the internal simulation time. For now, these shortcomings severely limit the
-use of control theory methods.
+Use the ``demo_lockedsphere`` to start Azrael because this controller assumes
+there exists a sphere with objID=1 in the scene, and that it has certain
+boosters and geometry fragment.
 """
 
 import os
@@ -38,130 +38,162 @@ from azrael.util import FragState
 del p
 
 
-def PDController(client, objID, ref_pos):
+class PDController():
     """
-    A PD controller to maintain the object's z-position at ``ref_pos``.
+    A (P)roportional (D)ifferential Controller.
 
-    This controller makes several assumption with respect to the booster
-    orientations, most notably that booster with partID=1 and partID=2
-    point forwards and backwards, respectively. Furthermore, it assumes the
-    sphere cannot rotate. To guarantee this the sphere's rotation axes
-    should all be locked.
+    The constructor defines the proportional- and differential gain factors.
 
-    :param float ref_pos_z: keep the object at this z-position.
+    Once instantiated call the ``update`` method to retrieve the corrective
+    forces for the next time step.
     """
+    def __init__(self, K_p: float, K_d: float, dt: float):
+        """
+        Create a PD controller with the specified parameters.
+
+        :param float K_p: gain for tracking error
+        :param float K_d: gain for tracking error slope
+        :param float dt: controller time step.
+        """
+        # Save the control parameters.
+        self.K_p = K_p
+        self.K_d = K_d
+        self.dt = dt
+
+        # Keep a history of past tracking errors because the differential
+        # component will need it to compute the rate of change. This array has
+        # several elements to allow for some smoothing.
+        filter_len = 3
+        self.err_past = np.zeros((filter_len, 3))
+
+    def update(self, pos, ref_pos):
+        """
+        Return the corrective forces to move from ``pos`` towards ``ref_pos``.
+
+        The force computation itself uses the PD control law, ie
+
+          f = K_p * err + K_d * \frac{d}{dt} err
+
+        :param 3-vec pos: current position
+        :param 3-vec ref_pos: desired position
+        :return: (force, error)
+        :rtype: (3-vec, 3-vec)
+        """
+        # Convenience.
+        err_past = self.err_past
+
+        # Determine the value and slope of the tracking error.
+        err_value = ref_pos - pos
+        err_slope = (err_value - err_past[0, :]) / (len(err_past) * self.dt)
+
+        # Compute the corrective force via the PD control law.
+        force = self.K_p * err_value + self.K_d * err_slope
+
+        # Throw away the oldest tracking error and add the most recent one.
+        err_past[:-1] = err_past[1:]
+        err_past[-1, :] = err_value
+
+        # Limit the force values.
+        force = force.clip(-10, 10)
+
+        # Return the new force and latest tracking error.
+        return force, err_past[-1]
+
+
+def compileCommands(force):
+    """
+    Return the booster commands that correspond to the corrective ``force``.
+
+    :param vec-3 force: force in all three dimensions.
+    :return: list of Booster commands and fragment states.
+    :rtype: tuple
+    """
+    # Convenience: neutral Quaternion.
+    q = [0, 0, 0, 1]
+
+    # Compile the commands for Azrael.
+    cmds, frags = [], []
+    for dim, frag_name in enumerate(('b_x', 'b_y', 'b_z')):
+        # Force value for booster with ID `dim` (these were defined in
+        # ``demo_lockedsphere``.
+        cmds.append(parts.CmdBooster(partID=dim, force=force[dim]))
+
+        # Scale the flame according to the booster force.
+        scale = 3 * abs(force[dim])
+
+        # Only one "flame" is visible in each direction. Which one depends one
+        # whether we "push" the object along the positive or negative "dim"
+        # direction.
+        pos = [0, 0, 0]
+        if force[dim] < 0:
+            # Pushing in negative direction.
+            pos[dim] = 1.5
+            frags.append(FragState(frag_name, scale, pos, q))
+        else:
+            # Pushing in positive direction.
+            pos[dim] = -1.5
+            frags.append(FragState(frag_name, scale, pos, q))
+
+    return cmds, frags
+
+
+def main(objID, ref_pos):
+    """
+    :param int objID: ID of sphere.
+    :param float ref_pos: desired position in space.
+    """
+    # Connect to Azrael.
+    client = azrael.client.Client()
+
     # Time step for polling/updating the booster values.
     dt = 0.3
 
-    # Parameters of PD controller (work in tandem with time step dt).
-    K_p, K_d = 0.1, 0.1
+    # Instantiate a PD controller.
+    PD = PDController(K_p=0.1, K_d=0.1, dt=dt)
 
-    ref_pos = np.array(ref_pos)
-    
-    # Query the sphere's initial position.
-    ret = client.getStateVariables([objID])
-    pos = ret.data[objID]['sv'].position
-
-    # Keep a history of past errors because the differential component will
-    # need it to compute the rate of change. This array has several
-    # elements to allow for some smoothing.
-    filter_len = 3
-    err_log = np.zeros((filter_len, 3))
-    err_log[:] = ref_pos - pos
-
-    # Run the controller.
+    # Periodically query the sphere's position, pass it to the controller to
+    # obtain the force values to moved it towards the desired position, and
+    # send those forces to sphere's boosters.
     while True:
-        # Determine the value and slope of the tracking error.
-        err_value = ref_pos - pos
-        err_slope = (err_value - err_log[0, :]) / (filter_len * dt)
+        # Query the sphere's position.
+        ret = client.getStateVariables([objID])
+        assert ret.ok
+        pos = ret.data[objID]['sv'].position
 
-        # Compute the PD control law.
-        force = K_p * err_value + K_d * err_slope
+        # Call the controller with the current- and desired position.
+        force, err = PD.update(pos, ref_pos)
 
-        # Record the error value for the next iteration.
-        err_log[:-1] = err_log[1:]
-        err_log[-1, :] = err_value
-        del err_value, err_slope
+        # Create the commands to apply the forces and visually update the
+        # "flames" coming out of the boosters.
+        forceCmds, fragStates = compileCommands(force)
 
-        # The sign of the desired force determines which booster (front or
-        # back) to activate. This distinction is necessary because boosters can
-        # only  apply positive forces along their axis of orientation. Maybe
-        # one day I will add boosters that allow both directions, but this code
-        # utilises two boosters facing each other (one at the front of the
-        # sphere, the other at the back).
-        # Furthermore, specify the Quaternion for the "flame" coming out of the
-        # booster, either neutral or inverted around the x-axis.
-        cmds, frags = [], []
-        dimData = [(0, 'b_xp', 'b_xn', 0, 1),
-                   (1, 'b_yp', 'b_yn', 2, 3),
-                   (2, 'b_zp', 'b_zn', 4, 5)]
-        for dim, b1, b2, p1, p2 in dimData:
-            force_1 = abs(force[dim])
-            force_2 = 0
-            if force[dim] < 0:
-                force_1, force_2 = force_2, force_1
+        # Send the force commands to Azrael.
+        assert client.controlParts(objID, forceCmds, []).ok
 
-            # Send new force values to boosters.
-            cmds.append(parts.CmdBooster(partID=p1, force=force_1))
-            cmds.append(parts.CmdBooster(partID=p2, force=force_2))
+        # Send the updated fragment- sizes and position to Azrael.
+        assert client.updateFragmentStates({objID: fragStates}).ok
 
-            # Update the booster fragments to provide some visual feedback for
-            # the booster output. Currently, all we do is scale the "flame"
-            # coming out of the booster and point it forwards or backwards.
-            pos = np.zeros(3)
-            pos[dim] = 1.25 + 0.5
-            frags.extend([
-                FragState(b1, force_1, (-pos).tolist(), [0, 0, 0, 1]),
-                FragState(b2, force_2, pos.tolist(), [0, 0, 0, 1]),
-            ])
-
-        ret = client.controlParts(objID, cmds, [])
-        assert client.controlParts(objID, cmds, []).ok
-        assert client.updateFragmentStates({objID: frags}).ok
+        # Dump some info.
+        print('Pos={0:+.2f}, {1:+.2f}, {2:+.2f}  '
+              'Err={3:+.2f}, {4:+.2f}, {5:+.2f}  '
+              'Force={6:+.2f}, {7:+.2f}, {8:+.2f}'
+              .format(pos[0], pos[1], pos[2],
+                      err[0], err[1], err[2],
+                      force[0], force[1], force[2]))
 
         # Wait one time step.
         time.sleep(dt)
 
-        # Query the sphere's position.
-        ret = client.getStateVariables([objID])
-        pos = ret.data[objID]['sv'].position
-
-        # Dump some info.
-        print('Pos={0:+.2f}, {1:+.2f}, {2:+.2f}   '
-              'Err={3:+.2f}, {4:+.2f}, {5:+.2f}   '
-              'Force={6:+.2f}, {7:+.2f}, {8:+.2f}'
-              .format(pos[0], pos[1], pos[2],
-                      err_log[-1][0], err_log[-1][1], err_log[-1][2],
-                      force[0], force[1], force[2]))
-
-
-def startController(objID):
-    # Boiler plate: setup
-    print('Connecting to Azrael...', flush=True, end='')
-    client = azrael.client.Client()
-    print('done')
-
-    # Wait a bit before starting the controller.
-    print('Starting controller...', flush=True, end='')
-    time.sleep(2)
-    print('done')
-
-    # Keep the sphere at z=-5.0
-    ref_pos = -7 * np.ones(3)
-    PDController(client, objID, ref_pos=ref_pos)
-
-
-def main():
-    # Read object ID from command line or use a default value.
-    if len(sys.argv) < 2:
-        objID = 1
-    else:
-        objID = sys.argv[1]
-
-    # Instantiate the controller and start it in this thread.
-    startController(int(objID))
-    print('done')
-
 
 if __name__ == '__main__':
-    main()
+    # Desired position of sphere.
+    _ref_pos = -7 * np.ones(3)
+
+    # Read object ID from command line or use a default value.
+    if len(sys.argv) < 2:
+        _objID = 1
+    else:
+        _objID = int(sys.argv[1])
+
+    # Instantiate the controller and start it in this thread.
+    main(_objID, _ref_pos)

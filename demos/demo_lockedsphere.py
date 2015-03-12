@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 """
+fixme: update docu
+
 Create a sphere, one or more cubes (see --cubes parameter), and launch the
 Qt Viewer.
 
@@ -34,6 +36,7 @@ import logging
 import argparse
 import subprocess
 import multiprocessing
+import demo_default as demolib
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -153,15 +156,9 @@ def loadGroundModel(scale, model_name):
 
     b0 = parts.Booster(partID=0, pos=pos_center, direction=dir_x,
                        minval=0, maxval=10.0, force=0)
-    b1 = parts.Booster(partID=1, pos=pos_center, direction=-dir_x,
+    b1 = parts.Booster(partID=1, pos=pos_center, direction=dir_y,
                        minval=0, maxval=10.0, force=0)
-    b2 = parts.Booster(partID=2, pos=pos_center, direction=dir_y,
-                       minval=0, maxval=10.0, force=0)
-    b3 = parts.Booster(partID=3, pos=pos_center, direction=-dir_y,
-                       minval=0, maxval=10.0, force=0)
-    b4 = parts.Booster(partID=4, pos=pos_center, direction=dir_z,
-                       minval=0, maxval=10.0, force=0)
-    b5 = parts.Booster(partID=5, pos=pos_center, direction=-dir_z,
+    b2 = parts.Booster(partID=2, pos=pos_center, direction=dir_z,
                        minval=0, maxval=10.0, force=0)
     del dir_x, dir_y, dir_z, pos_center
 
@@ -185,14 +182,11 @@ def loadGroundModel(scale, model_name):
     cs = np.array([3, 1, 1, 1], np.float64)
     z = np.array([])
     frags = [Fragment('frag_1', vert, uv, rgb),
-             Fragment('b_xp', vert_b, z, z),
-             Fragment('b_xn', vert_b, z, z),
-             Fragment('b_yp', vert_b, z, z),
-             Fragment('b_yn', vert_b, z, z),
-             Fragment('b_zp', vert_b, z, z),
-             Fragment('b_zn', vert_b, z, z),
+             Fragment('b_x', vert_b, z, z),
+             Fragment('b_y', vert_b, z, z),
+             Fragment('b_z', vert_b, z, z),
              ]
-    temp = Template(tID, cs, frags, [b0, b1, b2, b3, b4, b5], [])
+    temp = Template(tID, cs, frags, [b0, b1, b2], [])
     assert client.addTemplates([temp]).ok
     del cs, frags, temp, z
     print('done')
@@ -212,204 +206,12 @@ def loadGroundModel(scale, model_name):
 
     # Disable the booster fragments by settings its scale to Zero.
     newStates = {objID: [
-        FragState('b_xp', 0, [0, 0, 0], [0, 0, 0, 1]),
-        FragState('b_xn', 0, [0, 0, 0], [0, 0, 0, 1]),
-        FragState('b_yp', 0, [0, 0, 0], [0, 0, 0, 1]),
-        FragState('b_yn', 0, [0, 0, 0], [0, 0, 0, 1]),
-        FragState('b_zp', 0, [0, 0, 0], [0, 0, 0, 1]),
-        FragState('b_zn', 0, [0, 0, 0], [0, 0, 0, 1]),
+        FragState('b_x', 0, [0, 0, 0], [0, 0, 0, 1]),
+        FragState('b_y', 0, [0, 0, 0], [0, 0, 0, 1]),
+        FragState('b_z', 0, [0, 0, 0], [0, 0, 0, 1]),
         ]}
     assert client.updateFragmentStates(newStates).ok
     return objID
-
-
-def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
-    """
-    Spawn multiple cubes in a regular grid.
-
-    The number of cubes equals ``numCols`` * ``numRows`` * ``numLayers``. The
-    center of this "prism" is at ``center``.
-
-    Every cube has two boosters and two factories. The factories can themselves
-    spawn more (purely passive) cubes.
-    """
-    # Get a Client instance.
-    client = azrael.client.Client()
-
-    # Cube vertices.
-    vert = 0.5 * np.array([
-        -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
-        -1.0, -1.0, -1.0,   -1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,
-        +1.0, -1.0, -1.0,   +1.0, +1.0, +1.0,   +1.0, -1.0, +1.0,
-        +1.0, -1.0, -1.0,   +1.0, +1.0, -1.0,   +1.0, +1.0, +1.0,
-        +1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,   +1.0, -1.0, -1.0,
-        +1.0, -1.0, +1.0,   -1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,
-        +1.0, +1.0, +1.0,   +1.0, +1.0, -1.0,   -1.0, +1.0, -1.0,
-        +1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,   -1.0, +1.0, +1.0,
-        +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
-        +1.0, +1.0, -1.0,   +1.0, -1.0, -1.0,   -1.0, -1.0, -1.0,
-        -1.0, +1.0, +1.0,   -1.0, -1.0, +1.0,   +1.0, -1.0, +1.0,
-        +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0
-        ])
-
-    # Convenience.
-    cs = np.array([4, 1, 1, 1], np.float64)
-    uv = np.array([], np.float64)
-    rgb = np.array([], np.uint8)
-
-    uv = np.zeros(12 * 6, np.float64)
-    uv[0:6] = [0, 0, 1, 0, 1, 1]
-    uv[6:12] = [0, 0, 1, 1, 0, 1]
-    uv[12:18] = [1, 0, 0, 1, 0, 0]
-    uv[18:24] = [1, 0, 1, 1, 0, 1]
-    uv[24:30] = [0, 0, 1, 1, 0, 1]
-    uv[30:36] = [0, 0, 1, 0, 1, 1]
-    uv[36:42] = [1, 1, 1, 0, 0, 0]
-    uv[42:48] = [1, 1, 0, 0, 0, 1]
-    uv[48:54] = [0, 1, 1, 0, 1, 1]
-    uv[54:60] = [0, 1, 0, 0, 1, 0]
-    uv[60:66] = [0, 1, 0, 0, 1, 0]
-    uv[66:72] = [1, 1, 0, 1, 1, 0]
-
-    uv = np.array(uv, np.float64)
-
-    # Compile the path to the texture file.
-    path_base = os.path.dirname(os.path.abspath(__file__))
-    path_base = os.path.join(path_base, '..', 'azrael', 'static', 'img')
-    fname = os.path.join(path_base, 'texture_5.jpg')
-
-    # Load the texture and convert it to flat vector because this is how OpenGL
-    # will want it.
-    img = plt.imread(fname)
-    rgb = np.rollaxis(np.flipud(img), 1).flatten()
-
-    # ----------------------------------------------------------------------
-    # Create templates for the factory output.
-    # ----------------------------------------------------------------------
-    tID_1 = 'Product1'
-    tID_2 = 'Product2'
-    frags_1 = [Fragment('frag_1', 0.75 * vert, uv, rgb)]
-    frags_2 = [Fragment('frag_1', 0.24 * vert, uv, rgb)]
-    t1 = Template(tID_1, cs, frags_1, [], [])
-    t2 = Template(tID_2, cs, frags_2, [], [])
-    assert client.addTemplates([t1, t2]).ok
-    del frags_1, frags_2, t1, t2
-
-    # ----------------------------------------------------------------------
-    # Define a cube with boosters and factories.
-    # ----------------------------------------------------------------------
-    # Two boosters, one left, one right. Both point in the same direction.
-    b0 = parts.Booster(partID=0, pos=[+0.05, 0, 0], direction=[0, 0, 1],
-                       minval=0, maxval=10.0, force=0)
-    b1 = parts.Booster(partID=1, pos=[-0.05, 0, 0], direction=[0, 0, 1],
-                       minval=0, maxval=10.0, force=0)
-
-    # Two factories, one left one right. They will eject the new objects
-    # forwards and backwards, respectively.
-    f0 = parts.Factory(
-        partID=0, pos=[+1.5, 0, 0], direction=[+1, 0, 0],
-        templateID=tID_1, exit_speed=[0.1, 1])
-    f1 = parts.Factory(
-        partID=1, pos=[-1.5, 0, 0], direction=[-1, 0, 0],
-        templateID=tID_2, exit_speed=[0.1, 1])
-
-    # Add the template.
-    tID_3 = 'BoosterCube'
-    frags = [Fragment('frag_1', vert, uv, rgb)]
-    t3 = Template(tID_3, cs, frags, [b0, b1], [f0, f1])
-    assert client.addTemplates([t3]).ok
-    del frags, t3
-
-    # ----------------------------------------------------------------------
-    # Define more booster cubes, each with a different texture.
-    # ----------------------------------------------------------------------
-    tID_cube = {}
-    templates = []
-    texture_errors = 0
-    for ii in range(numRows * numCols * numLayers):
-        # File name of texture.
-        fname = os.path.join(path_base, 'texture_{}.jpg'.format(ii + 1))
-
-        # Load the texture image. If the image is unavailable do not endow the
-        # cube with a texture.
-        try:
-            img = plt.imread(fname)
-            rgb = np.rollaxis(np.flipud(img), 1).flatten()
-            curUV = uv
-        except FileNotFoundError:
-            texture_errors += 1
-            rgb = curUV = np.array([])
-
-        # Create the template.
-        tID = ('BoosterCube_{}'.format(ii))
-        frags = [Fragment('frag_1', vert, curUV, rgb),
-                 Fragment('frag_2', vert, curUV, rgb)]
-        tmp = Template(tID, cs, frags, [b0, b1], [])
-        templates.append(tmp)
-
-        # Add the templateID to a dictionary because we will need it in the
-        # next step to spawn the templates.
-        tID_cube[ii] = tID
-        del frags, tmp, tID, fname
-
-    if texture_errors > 0:
-        print('Could not load texture for {} of the {} objects'
-              .format(texture_errors, ii + 1))
-
-    # Define all templates.
-    print('Adding {} templates: '.format(ii + 1), end='', flush=True)
-    t0 = time.time()
-    assert client.addTemplates(templates).ok
-    print('{:.1f}s'.format(time.time() - t0))
-
-    # ----------------------------------------------------------------------
-    # Spawn the differently textured cubes in a regular grid.
-    # ----------------------------------------------------------------------
-    allObjs = []
-    cube_idx = 0
-    cube_spacing = 0.1
-
-    # Determine the template and position for every cube. The cubes are *not*
-    # spawned in this loop, but afterwards.
-    print('Compiling scene: ', end='', flush=True)
-    t0 = time.time()
-    for row in range(numRows):
-        for col in range(numCols):
-            for lay in range(numLayers):
-                # Base position of cube.
-                pos = np.array([col, row, lay], np.float64)
-
-                # Add space in between cubes.
-                pos *= -(1 + cube_spacing)
-
-                # Correct the cube's position to ensure the center of the
-                # grid coincides with the origin.
-                pos[0] += (numCols // 2) * (1 + cube_spacing)
-                pos[1] += (numRows // 2) * (1 + cube_spacing)
-                pos[2] += (numLayers // 2) * (1 + cube_spacing)
-
-                # Move the grid to position ``center``.
-                pos += np.array(center)
-
-                # Store the position and template for this cube.
-                allObjs.append({'template': tID_cube[cube_idx],
-                                'position': pos})
-                cube_idx += 1
-                del pos
-    print('{:,} objects ({:.1f}s)'.format(len(allObjs), time.time() - t0))
-    del cube_idx, cube_spacing, row, col, lay
-
-    # Spawn the cubes from the templates at the just determined positions.
-    print('Spawning {} objects: '.format(len(allObjs)), end='', flush=True)
-    t0 = time.time()
-    ret = client.spawn(allObjs)
-    assert ret.ok
-    print(' {:.1f}s'.format(time.time() - t0))
-
-    # Make 'frag_2' invisible by setting its scale to zero.
-    for objID in ret.data:
-        client.updateFragmentStates({objID: [
-            FragState('frag_2', 0, [0, 0, 0], [0, 0, 0, 1])]})
 
 
 def startAzrael(param):
@@ -449,7 +251,7 @@ def startAzrael(param):
         loadGroundModel(*model_name)
 
         # Define additional templates.
-        spawnCubes(*param.cubes, center=(0, 0, 10))
+        demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
         del p, fname, model_name
 
     # Start the physics engine.
@@ -494,7 +296,7 @@ def launchQtViewer(param):
             subprocess.call(['python3', fname])
     except KeyboardInterrupt:
         pass
-    
+
 
 class ResetSim(multiprocessing.Process):
     """
@@ -521,7 +323,8 @@ class ResetSim(multiprocessing.Process):
         assert ret.ok
         ret = client.getStateVariables(ret.data)
         assert ret.ok
-        allowed_objIDs = {k: v['sv'] for k, v in ret.data.items() if v is not None}
+        allowed_objIDs = {k: v['sv'] for k, v in ret.data.items()
+                          if v is not None}
         print('Took simulation snapshot for reset: ({} objects)'
               .format(len(allowed_objIDs)))
 
