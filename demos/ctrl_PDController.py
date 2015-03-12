@@ -27,29 +27,18 @@ use of control theory methods.
 import os
 import sys
 import time
-import setproctitle
-
 import numpy as np
 
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
-import azrael.clerk
-import azrael.clacks
 import azrael.client
-import azrael.util as util
 import azrael.parts as parts
-import azrael.config as config
-import azrael.leonard as leonard
-import azrael.database as database
-import azrael.vectorgrid as vectorgrid
-import azrael.physics_interface as physAPI
+from azrael.util import FragState
 del p
 
-from azrael.util import FragState
 
-
-def PDController(client, objID, ref_pos_z):
+def PDController(client, objID, ref_pos):
     """
     A PD controller to maintain the object's z-position at ``ref_pos``.
 
@@ -67,28 +56,31 @@ def PDController(client, objID, ref_pos_z):
     # Parameters of PD controller (work in tandem with time step dt).
     K_p, K_d = 0.1, 0.1
 
+    ref_pos = np.array(ref_pos)
+    
     # Query the sphere's initial position.
-    pos = client.getStateVariables([objID])
-    pos = pos.data[objID]['sv'].position[2]
+    ret = client.getStateVariables([objID])
+    pos = ret.data[objID]['sv'].position
 
     # Keep a history of past errors because the differential component will
     # need it to compute the rate of change. This array has several
     # elements to allow for some smoothing.
     filter_len = 3
-    err_log = [ref_pos_z - pos] * filter_len
+    err_log = np.zeros((filter_len, 3))
+    err_log[:] = ref_pos - pos
 
     # Run the controller.
     while True:
         # Determine the value and slope of the tracking error.
-        err_value = ref_pos_z - pos
-        err_slope = (err_value - err_log[0]) / (filter_len * dt)
+        err_value = ref_pos - pos
+        err_slope = (err_value - err_log[0, :]) / (filter_len * dt)
 
         # Compute the PD control law.
         force = K_p * err_value + K_d * err_slope
 
         # Record the error value for the next iteration.
-        err_log.pop(0)
-        err_log.append(err_value)
+        err_log[:-1] = err_log[1:]
+        err_log[-1, :] = err_value
         del err_value, err_slope
 
         # The sign of the desired force determines which booster (front or
@@ -99,13 +91,13 @@ def PDController(client, objID, ref_pos_z):
         # sphere, the other at the back).
         # Furthermore, specify the Quaternion for the "flame" coming out of the
         # booster, either neutral or inverted around the x-axis.
-        if force > 0:
-            force_1 = abs(force)
+        if force[2] > 0:
+            force_1 = abs(force[2])
             force_3 = 0
             fs_q = [0, 0, 0, 1]
         else:
             force_1 = 0
-            force_3 = abs(force)
+            force_3 = abs(force[2])
             fs_q = [1, 0, 0, 0]
 
         # Send new force values to boosters.
@@ -116,7 +108,7 @@ def PDController(client, objID, ref_pos_z):
         # Update the booster fragments to provide some visual feedback for the
         # booster output. Currently, all we do is scale the "flame" coming out
         # of the booster and point it forwards or backwards.
-        fs_scale = 2 * abs(force)
+        fs_scale = 2 * abs(force[2])
         newStates = {objID: [
             FragState('b_left', fs_scale, [-1.25 - 0.5, 0, 0], fs_q),
             FragState('b_right', fs_scale, [1.25 + 0.5, 0, 0], fs_q),
@@ -128,12 +120,12 @@ def PDController(client, objID, ref_pos_z):
         time.sleep(dt)
 
         # Query the sphere's position.
-        pos = client.getStateVariables([objID])
-        pos = pos.data[objID]['sv'].position[2]
+        ret = client.getStateVariables([objID])
+        pos = ret.data[objID]['sv'].position
 
         # Dump some info.
         print('Pos={0:+.3f}  Err={1:+.3f}  Force={2:+.3f}'
-              .format(pos, err_log[-1], force))
+              .format(pos[2], err_log[-1][2], force[2]))
 
 
 def startController(objID):
@@ -148,7 +140,8 @@ def startController(objID):
     print('done')
 
     # Keep the sphere at z=-5.0
-    PDController(client, objID, ref_pos_z=-5.0)
+    ref_pos = -5 * np.ones(3)
+    PDController(client, objID, ref_pos=ref_pos)
 
 
 def main():
