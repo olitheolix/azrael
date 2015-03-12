@@ -106,22 +106,6 @@ def parseCommandLine():
     return param
 
 
-def setupLogging(loglevel):
-    """
-    Change the log level of the 'Azrael' loggers (defined in azrael.config).
-    """
-    logger = logging.getLogger('azrael')
-    if loglevel == 0:
-        logger.setLevel(logging.DEBUG)
-    elif loglevel == 1:
-        logger.setLevel(logging.INFO)
-    elif loglevel == 2:
-        logger.setLevel(logging.WARNING)
-    else:
-        print('Unknown log level {}'.format(loglevel))
-        sys.exit(1)
-
-
 def loadGroundModel(scale, model_name):
     """
     Import a new template and spawn it.
@@ -214,165 +198,42 @@ def loadGroundModel(scale, model_name):
     return objID
 
 
-def startAzrael(param):
-    """
-    Start all Azrael processes and return their process handles.
-    """
-    subprocess.call(['pkill', 'killme'])
-    time.sleep(0.2)
-    database.init(reset=True)
-
-    # Reset the profiling database and enable logging.
-    azrael.util.resetTiming()
-    setupLogging(param.loglevel)
-
-    # Delete all grids but define a force grid (will not be used but
-    # Leonard throws a lot of harmless warnings otherwise).
-    assert vectorgrid.deleteAllGrids().ok
-    assert vectorgrid.defineGrid(name='force', vecDim=3, granularity=1).ok
-
-    # Spawn Azrael's APIs.
-    clerk = azrael.clerk.Clerk()
-    clerk.start()
-    clacks = azrael.clacks.ClacksServer()
-    clacks.start()
-
-    if not param.noinit:
-        # Add a model to the otherwise empty simulation. The sphere is
-        # in the repo whereas the Vatican model is available here:
-        # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
-        # uid=3290&count=count
-        p = os.path.dirname(os.path.abspath(__file__))
-        p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
-        fname = os.path.join(p, 'sphere.obj')
-        model_name = (1.25, fname)
-        #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
-        #model_name = (1.25, 'viewer/models/house/house.3ds')
-        loadGroundModel(*model_name)
-
-        # Define additional templates.
-        demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
-        del p, fname, model_name
-
-    # Start the physics engine.
-    #leo = leonard.LeonardBase()
-    #leo = leonard.LeonardBullet()
-    #leo = leonard.LeonardSweeping()
-    leo = leonard.LeonardDistributedZeroMQ()
-    leo.start()
-
-    # Launch a dedicated process to periodically reset the simulation.
-    time.sleep(2)
-    rs = ResetSim(period=param.reset)
-    rs.start()
-
-    return [clerk, clacks, leo, rs]
-
-
-def stopAzrael(procs):
-    """
-    Stop and join all ``procs``.
-    """
-    for proc in procs:
-        proc.terminate()
-
-    for proc in procs:
-        proc.join()
-
-
-def launchQtViewer(param):
-    """
-    Launch the Qt Viewer in a separate process.
-
-    This function does not return until the viewer process finishes.
-    """
-    path_base = os.path.dirname(os.path.abspath(__file__))
-    fname = os.path.join(path_base, '..', 'viewer', 'viewer.py')
-
-    try:
-        if param.noviewer:
-            time.sleep(3600000000)
-        else:
-            subprocess.call(['python3', fname])
-    except KeyboardInterrupt:
-        pass
-
-
-class ResetSim(multiprocessing.Process):
-    """
-    Periodically reset the simulation.
-    """
-    def __init__(self, period=-1):
-        """
-        Set ``period`` to -1 to disable simulation resets altogether.
-        """
-        super().__init__()
-        self.period = period
-
-    def run(self):
-        # Return immediately if no resets are required.
-        if self.period == -1:
-            return
-
-        # Establish connection to Azrael.
-        client = azrael.client.Client()
-
-        # Query all objects in the scene. These are the only objects that will
-        # survive the reset.
-        ret = client.getAllObjectIDs()
-        assert ret.ok
-        ret = client.getStateVariables(ret.data)
-        assert ret.ok
-        allowed_objIDs = {k: v['sv'] for k, v in ret.data.items()
-                          if v is not None}
-        print('Took simulation snapshot for reset: ({} objects)'
-              .format(len(allowed_objIDs)))
-
-        # Periodically reset the SV values. Set them several times because it
-        # is well possible that not all State Variables reach Leonard in the
-        # same frame, which means some objects will be reset while other are
-        # not. This in turn may cause strange artefacts in the next physics
-        # update step, especially when the objects now partially overlap.
-        while True:
-            # Wait until the timeout expires.
-            time.sleep(self.period)
-
-            # Remove all newly added objects.
-            ret = client.getAllObjectIDs()
-            for objID in ret.data:
-                if objID not in allowed_objIDs:
-                    client.removeObject(objID)
-
-            # Forcefully reset the position and velocity of every object. Do
-            # this several times since network latency may result in some
-            # objects being reset sooner than others.
-            BulletDataOverride = azrael.physics_interface.BulletDataOverride
-            for ii in range(5):
-                for objID, SV in allowed_objIDs.items():
-                    tmp = BulletDataOverride(
-                        position=SV.position,
-                        velocityLin=SV.velocityLin,
-                        velocityRot=SV.velocityRot,
-                        orientation=SV.orientation)
-                    client.setStateVariable(objID, tmp)
-                time.sleep(0.1)
-
-
 def main():
     # Parse the command line.
     param = parseCommandLine()
 
     # Start Azrael services.
     with azrael.util.Timeit('Startup Time', True):
-        procs = startAzrael(param)
+        az = demolib.RunAzrael(param)
+        if not param.noinit:
+            # Add a model to the otherwise empty simulation. The sphere is
+            # in the repo whereas the Vatican model is available here:
+            # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
+            # uid=3290&count=count
+            p = os.path.dirname(os.path.abspath(__file__))
+            p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
+            fname = os.path.join(p, 'sphere.obj')
+            model_name = (1.25, fname)
+            #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
+            #model_name = (1.25, 'viewer/models/house/house.3ds')
+            loadGroundModel(*model_name)
+
+            # Define additional templates.
+            demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
+            del p, fname, model_name
+
+        # Launch a dedicated process to periodically reset the simulation.
+        time.sleep(2)
+        rs = demolib.ResetSim(period=param.reset)
+        rs.start()
+
     print('Azrael now live')
 
-    # Start the Qt Viewer.
-    launchQtViewer(param)
+    # Start the Qt Viewer. This call will block until the viewer exits.
+    demolib.launchQtViewer(param)
 
-    # Shutdown Azrael.
-    stopAzrael(procs)
-
+    # Stop Azrael stack.
+    del az
     print('Clean shutdown')
 
 
