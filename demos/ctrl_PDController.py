@@ -91,30 +91,33 @@ def PDController(client, objID, ref_pos):
         # sphere, the other at the back).
         # Furthermore, specify the Quaternion for the "flame" coming out of the
         # booster, either neutral or inverted around the x-axis.
-        if force[2] > 0:
-            force_1 = abs(force[2])
-            force_3 = 0
-            fs_q = [0, 0, 0, 1]
-        else:
-            force_1 = 0
-            force_3 = abs(force[2])
-            fs_q = [1, 0, 0, 0]
+        cmds, frags = [], []
+        dimData = [(0, 'b_xp', 'b_xn', 0, 1),
+                   (1, 'b_yp', 'b_yn', 2, 3),
+                   (2, 'b_zp', 'b_zn', 4, 5)]
+        for dim, b1, b2, p1, p2 in dimData:
+            force_1 = abs(force[dim])
+            force_2 = 0
+            if force[dim] < 0:
+                force_1, force_2 = force_2, force_1
 
-        # Send new force values to boosters.
-        b0 = parts.CmdBooster(partID=1, force=force_1)
-        b1 = parts.CmdBooster(partID=3, force=force_3)
-        client.controlParts(objID, [b0, b1], [])
+            # Send new force values to boosters.
+            cmds.append(parts.CmdBooster(partID=p1, force=force_1))
+            cmds.append(parts.CmdBooster(partID=p2, force=force_2))
 
-        # Update the booster fragments to provide some visual feedback for the
-        # booster output. Currently, all we do is scale the "flame" coming out
-        # of the booster and point it forwards or backwards.
-        fs_scale = 2 * abs(force[2])
-        newStates = {objID: [
-            FragState('b_left', fs_scale, [-1.25 - 0.5, 0, 0], fs_q),
-            FragState('b_right', fs_scale, [1.25 + 0.5, 0, 0], fs_q),
-            ]}
-        assert client.updateFragmentStates(newStates).ok
-        del fs_scale, fs_q
+            # Update the booster fragments to provide some visual feedback for
+            # the booster output. Currently, all we do is scale the "flame"
+            # coming out of the booster and point it forwards or backwards.
+            pos = np.zeros(3)
+            pos[dim] = 1.25 + 0.5
+            frags.extend([
+                FragState(b1, force_1, (-pos).tolist(), [0, 0, 0, 1]),
+                FragState(b2, force_2, pos.tolist(), [0, 0, 0, 1]),
+            ])
+
+        ret = client.controlParts(objID, cmds, [])
+        assert client.controlParts(objID, cmds, []).ok
+        assert client.updateFragmentStates({objID: frags}).ok
 
         # Wait one time step.
         time.sleep(dt)
@@ -124,8 +127,12 @@ def PDController(client, objID, ref_pos):
         pos = ret.data[objID]['sv'].position
 
         # Dump some info.
-        print('Pos={0:+.3f}  Err={1:+.3f}  Force={2:+.3f}'
-              .format(pos[2], err_log[-1][2], force[2]))
+        print('Pos={0:+.2f}, {1:+.2f}, {2:+.2f}   '
+              'Err={3:+.2f}, {4:+.2f}, {5:+.2f}   '
+              'Force={6:+.2f}, {7:+.2f}, {8:+.2f}'
+              .format(pos[0], pos[1], pos[2],
+                      err_log[-1][0], err_log[-1][1], err_log[-1][2],
+                      force[0], force[1], force[2]))
 
 
 def startController(objID):
@@ -140,7 +147,7 @@ def startController(objID):
     print('done')
 
     # Keep the sphere at z=-5.0
-    ref_pos = -5 * np.ones(3)
+    ref_pos = -7 * np.ones(3)
     PDController(client, objID, ref_pos=ref_pos)
 
 
