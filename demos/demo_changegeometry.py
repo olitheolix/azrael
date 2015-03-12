@@ -20,46 +20,29 @@
 """
 Periodically change the geometry of the objects.
 """
-
-# Add the viewer directory to the Python path.
 import os
 import sys
 import time
-import pymongo
 import IPython
-import logging
 import argparse
-import subprocess
 import demo_default
 import multiprocessing
-import demo_default as demolib
 
 import numpy as np
-import matplotlib.pyplot as plt
-
+import demo_default as demolib
 
 # Import the necessary Azrael modules.
-p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, 'viewer'))
 import model_import
-import azrael.clerk
-import azrael.clacks
 import azrael.client
 import azrael.util as util
-import azrael.parts as parts
-import azrael.config as config
-import azrael.leonard as leonard
-import azrael.database as database
 import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
-del p
 
 from azrael.util import Fragment, FragState
 
 # Convenience.
 ipshell = IPython.embed
 BulletDataOverride = physAPI.BulletDataOverride
-
 
 
 def parseCommandLine():
@@ -105,15 +88,20 @@ def parseCommandLine():
 
 def loadSphere():
     """
-    Import a new template and spawn it.
+    Return the geometry of a sphere.
 
-    This will become the first object to populate the simulation.
+    The sphere data is loaded from 'sphere.obj' which is part of the repo.
+
+    :return: (vert, uv, rgb)
     """
-    model_name = 'viewer/models/sphere/sphere.obj'
+    # Assemble path to the model.
+    p = os.path.dirname(os.path.abspath(__file__))
+    p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
+    fname = os.path.join(p, 'sphere.obj')
 
-    # Load the model.
-    print('  Importing <{}>... '.format(model_name), end='', flush=True)
-    mesh = model_import.loadModelAll(model_name)
+    # Import the model geometry.
+    print('  Importing <{}>... '.format(fname), end='', flush=True)
+    mesh = model_import.loadModelAll(fname)
 
     # The model may contain several sub-models. Each one has a set of vertices,
     # UV- and texture maps. The following code simply flattens the three lists
@@ -127,6 +115,7 @@ def loadSphere():
     uv = np.array(uv, np.float32)
     rgb = np.array(rgb, np.uint8)
 
+    # Return the geometry.
     return vert, uv, rgb
 
 
@@ -203,27 +192,37 @@ def main():
     # Parse the command line.
     param = parseCommandLine()
 
-    # Start the Azrael processes.
-    with util.Timeit('Startup Time', True):
-        subprocess.call(['pkill', 'killme'])
-        procs = demolib.startAzrael(param)
+    # Start Azrael services.
+    with azrael.util.Timeit('Startup Time', True):
+        az = demolib.RunAzrael(param)
+        if not param.noinit:
+            # Define a sphere with boosters and spawn an instance thereof.
+            p = os.path.dirname(os.path.abspath(__file__))
+            p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
+            fname = os.path.join(p, 'sphere.obj')
+            demolib.addModel(scale=1.25, fname=fname)
+
+            # Define additional templates.
+            demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
+            del p, fname
+
+        # Launch a dedicated process to periodically reset the simulation.
+        time.sleep(2)
+        az.startProcess(demolib.ResetSim(period=param.reset))
+
     print('Azrael now live')
 
     # Start the process that periodically changes the geometries. Add the
     # process to the list of processes.
-    ug = SetGeometry(2)
-    ug.start()
-    procs.insert(0, ug)
+    az.startProcess(SetGeometry(2))
 
-    # Start the Qt Viewer.
+    # Start the Qt Viewer. This call will block until the viewer exits.
     demolib.launchQtViewer(param)
 
-    # Shutdown Azrael.
-    demolib.stopAzrael(procs)
-
+    # Stop Azrael stack.
+    del az
     print('Clean shutdown')
 
 
 if __name__ == '__main__':
-    # Start Azrael.
     main()

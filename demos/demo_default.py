@@ -103,23 +103,7 @@ def parseCommandLine():
     return param
 
 
-def setupLogging(loglevel):
-    """
-    Change the log level of the 'Azrael' loggers (defined in azrael.config).
-    """
-    logger = logging.getLogger('azrael')
-    if loglevel == 0:
-        logger.setLevel(logging.DEBUG)
-    elif loglevel == 1:
-        logger.setLevel(logging.INFO)
-    elif loglevel == 2:
-        logger.setLevel(logging.WARNING)
-    else:
-        print('Unknown log level {}'.format(loglevel))
-        sys.exit(1)
-
-
-def loadGroundModel(scale, model_name):
+def addModel(scale, fname):
     """
     Import a new template and spawn it.
 
@@ -129,8 +113,8 @@ def loadGroundModel(scale, model_name):
     client = azrael.client.Client()
 
     # Load the model.
-    print('  Importing <{}>... '.format(model_name), end='', flush=True)
-    mesh = model_import.loadModelAll(model_name)
+    print('  Importing <{}>... '.format(fname), end='', flush=True)
+    mesh = model_import.loadModelAll(fname)
 
     # The model may contain several sub-models. Each one has a set of vertices,
     # UV- and texture maps. The following code simply flattens the three lists
@@ -198,7 +182,7 @@ def loadGroundModel(scale, model_name):
          'position': pos,
          'orientation': orient,
          'axesLockLin': [1, 1, 1],
-         'axesLockRot': [0, 0, 1],
+         'axesLockRot': [1, 1, 1],
          'template': tID}
     ret = client.spawn([d])
     objID = ret.data[0]
@@ -407,42 +391,6 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
             FragState('frag_2', 0, [0, 0, 0], [0, 0, 0, 1])]})
 
 
-class RunAzrael:
-    def __init__(self, param):
-        subprocess.call(['pkill', 'killme'])
-        time.sleep(0.2)
-        database.init(reset=True)
-
-        # Reset the profiling database and enable logging.
-        azrael.util.resetTiming()
-        setupLogging(param.loglevel)
-
-        # Delete all grids but define a force grid (will not be used but
-        # Leonard throws a lot of harmless warnings otherwise).
-        assert vectorgrid.deleteAllGrids().ok
-        assert vectorgrid.defineGrid(name='force', vecDim=3, granularity=1).ok
-
-        # Spawn Azrael's APIs.
-        self.clerk = azrael.clerk.Clerk()
-        self.clerk.start()
-        self.clacks = azrael.clacks.ClacksServer()
-        self.clacks.start()
-
-        # Start the physics engine.
-        #leo = leonard.LeonardBase()
-        #leo = leonard.LeonardBullet()
-        #leo = leonard.LeonardSweeping()
-        self.leo = leonard.LeonardDistributedZeroMQ()
-        self.leo.start()
-
-    def __del__(self):
-        procs = (self.leo, self.clacks, self.clerk)
-        for p in procs:
-            p.terminate()
-        for p in procs:
-            p.join()
-    
-
 def launchQtViewer(param):
     """
     Launch the Qt Viewer in a separate process.
@@ -459,7 +407,65 @@ def launchQtViewer(param):
             subprocess.call(['python3', fname])
     except KeyboardInterrupt:
         pass
-    
+
+
+class RunAzrael:
+    def __init__(self, param):
+        self.procs = []
+
+        subprocess.call(['pkill', 'killme'])
+        time.sleep(0.2)
+        database.init(reset=True)
+
+        # Reset the profiling database and enable logging.
+        azrael.util.resetTiming()
+        self.setupLogging(param.loglevel)
+
+        # Delete all grids but define a force grid (will not be used but
+        # Leonard throws a lot of harmless warnings otherwise).
+        assert vectorgrid.deleteAllGrids().ok
+        assert vectorgrid.defineGrid(name='force', vecDim=3, granularity=1).ok
+
+        # Spawn Azrael's APIs.
+        clerk = azrael.clerk.Clerk()
+        clacks = azrael.clacks.ClacksServer()
+
+        # Start the physics engine.
+        #leo = leonard.LeonardBase()
+        #leo = leonard.LeonardBullet()
+        #leo = leonard.LeonardSweeping()
+        leo = leonard.LeonardDistributedZeroMQ()
+
+        self.startProcess(clerk)
+        self.startProcess(clacks)
+        self.startProcess(leo)
+
+    def startProcess(self, proc):
+        proc.start()
+        self.procs.append(proc)
+
+    def setupLogging(self, loglevel):
+        """
+        Change the log level of the 'Azrael' loggers (defined in
+        azrael.config).
+        """
+        logger = logging.getLogger('azrael')
+        if loglevel == 0:
+            logger.setLevel(logging.DEBUG)
+        elif loglevel == 1:
+            logger.setLevel(logging.INFO)
+        elif loglevel == 2:
+            logger.setLevel(logging.WARNING)
+        else:
+            print('Unknown log level {}'.format(loglevel))
+            sys.exit(1)
+
+    def __del__(self):
+        for p in self.procs:
+            p.terminate()
+        for p in self.procs:
+            p.join()
+
 
 class ResetSim(multiprocessing.Process):
     """
@@ -486,7 +492,8 @@ class ResetSim(multiprocessing.Process):
         assert ret.ok
         ret = client.getStateVariables(ret.data)
         assert ret.ok
-        allowed_objIDs = {k: v['sv'] for k, v in ret.data.items() if v is not None}
+        allowed_objIDs = {k: v['sv'] for k, v in ret.data.items()
+                          if v is not None}
         print('Took simulation snapshot for reset: ({} objects)'
               .format(len(allowed_objIDs)))
 
@@ -538,7 +545,7 @@ def main():
             model_name = (1.25, fname)
             #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
             #model_name = (1.25, 'viewer/models/house/house.3ds')
-            loadGroundModel(*model_name)
+            addModel(*model_name)
 
             # Define additional templates.
             spawnCubes(*param.cubes, center=(0, 0, 10))
@@ -546,8 +553,7 @@ def main():
 
         # Launch a dedicated process to periodically reset the simulation.
         time.sleep(2)
-        rs = ResetSim(period=param.reset)
-        rs.start()
+        az.startProcess(ResetSim(period=param.reset))
 
     print('Azrael now live')
 

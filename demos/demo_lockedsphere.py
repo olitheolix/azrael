@@ -17,52 +17,32 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 """
-fixme: update docu
+Create a sphere with three boosters and four geometry fragments.
 
-Create a sphere, one or more cubes (see --cubes parameter), and launch the
-Qt Viewer.
+The four geometry fragments comprise the hull of the sphere, and three
+individual "flames" to visualise the output of the three boosters.
 
-.. note:: This script will kill all running Azrael instances and create a new
-   one.
+Use this script in conjunction with ``ctrl_PDController.py``.
 """
-
-# Add the viewer directory to the Python path.
 import os
 import sys
 import time
-import pymongo
 import IPython
-import logging
 import argparse
-import subprocess
-import multiprocessing
-import demo_default as demolib
 
 import numpy as np
-import matplotlib.pyplot as plt
+import demo_default as demolib
 
 # Import the necessary Azrael modules.
-p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, '..'))
-sys.path.insert(0, os.path.join(p, '../viewer'))
 import model_import
-import azrael.clerk
-import azrael.clacks
 import azrael.client
 import azrael.util as util
 import azrael.parts as parts
-import azrael.config as config
-import azrael.leonard as leonard
-import azrael.database as database
-import azrael.vectorgrid as vectorgrid
-import azrael.physics_interface as physAPI
-del p
 
 from azrael.util import Template, Fragment, FragState
 
 # Convenience.
 ipshell = IPython.embed
-BulletDataOverride = physAPI.BulletDataOverride
 
 
 def parseCommandLine():
@@ -106,18 +86,20 @@ def parseCommandLine():
     return param
 
 
-def loadGroundModel(scale, model_name):
+def spawnBoosterSphere(scale, fname):
     """
-    Import a new template and spawn it.
+    Define a sphere with three boosters and four fragments.
 
-    This will become the first object to populate the simulation.
+    The first fragment comprises the hull (ie. the sphere itself), whereas
+    remaining three fragments reprsent the "flames" that come out of the
+    boosters.
     """
     # Get a Client instance.
     client = azrael.client.Client()
 
     # Load the model.
-    print('  Importing <{}>... '.format(model_name), end='', flush=True)
-    mesh = model_import.loadModelAll(model_name)
+    print('  Importing <{}>... '.format(fname), end='', flush=True)
+    mesh = model_import.loadModelAll(fname)
 
     # The model may contain several sub-models. Each one has a set of vertices,
     # UV- and texture maps. The following code simply flattens the three lists
@@ -206,26 +188,19 @@ def main():
     with azrael.util.Timeit('Startup Time', True):
         az = demolib.RunAzrael(param)
         if not param.noinit:
-            # Add a model to the otherwise empty simulation. The sphere is
-            # in the repo whereas the Vatican model is available here:
-            # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
-            # uid=3290&count=count
+            # Define a sphere with boosters and spawn an instance thereof.
             p = os.path.dirname(os.path.abspath(__file__))
             p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
             fname = os.path.join(p, 'sphere.obj')
-            model_name = (1.25, fname)
-            #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
-            #model_name = (1.25, 'viewer/models/house/house.3ds')
-            loadGroundModel(*model_name)
+            spawnBoosterSphere(scale=1.25, fname=fname)
 
-            # Define additional templates.
+            # Add the specified number of cubes in a grid layout.
             demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
-            del p, fname, model_name
+            del p, fname
 
         # Launch a dedicated process to periodically reset the simulation.
         time.sleep(2)
-        rs = demolib.ResetSim(period=param.reset)
-        rs.start()
+        az.startProcess(demolib.ResetSim(period=param.reset))
 
     print('Azrael now live')
 

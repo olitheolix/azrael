@@ -25,42 +25,23 @@ periodically modify the force field in a wave-like fashion. The force
 is the sole source of forces acting on the cubes and Leonard will thus, in
 effect, simulate cubes "riding" the wave.
 """
-
-# Add the viewer directory to the Python path.
 import os
 import sys
 import time
-import pymongo
 import IPython
-import logging
 import argparse
-import subprocess
-import demo_default
 import multiprocessing
-import demo_default as demolib
 
 import numpy as np
-import matplotlib.pyplot as plt
+import demo_default as demolib
 
 # Import the necessary Azrael modules.
-p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, 'viewer'))
-import model_import
-import azrael.clerk
-import azrael.clacks
 import azrael.client
 import azrael.util as util
-import azrael.parts as parts
-import azrael.config as config
-import azrael.leonard as leonard
-import azrael.database as database
 import azrael.vectorgrid as vectorgrid
-import azrael.physics_interface as physAPI
-del p
 
 # Convenience.
 ipshell = IPython.embed
-BulletDataOverride = physAPI.BulletDataOverride
 
 
 def parseCommandLine():
@@ -181,24 +162,29 @@ def main():
     # Parse the command line.
     param = parseCommandLine()
 
-    # Start the Azrael processes.
-    with util.Timeit('Startup Time', True):
-        subprocess.call(['pkill', 'killme'])
-        procs = demolib.startAzrael(param)
+    # Start Azrael services.
+    with azrael.util.Timeit('Startup Time', True):
+        az = demolib.RunAzrael(param)
+        if not param.noinit:
+            # Add the specified number of cubes in a grid layout.
+            demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
+
+        # Launch a dedicated process to periodically reset the simulation.
+        time.sleep(2)
+        az.startProcess(demolib.ResetSim(period=param.reset))
+
     print('Azrael now live')
 
     # Start the process that periodically changes the force field. Add the
     # process handle to the list of processes.
-    ug = UpdateGrid(period_circ=param.circular, period_lin=param.linear)
-    ug.start()
-    procs.insert(0, ug)
+    az.startProcess(
+        UpdateGrid(period_circ=param.circular, period_lin=param.linear))
 
-    # Start the Qt Viewer.
+    # Start the Qt Viewer. This call will block until the viewer exits.
     demolib.launchQtViewer(param)
 
-    # Shutdown Azrael.
-    demolib.stopAzrael(procs)
-
+    # Stop Azrael stack.
+    del az
     print('Clean shutdown')
 
 
