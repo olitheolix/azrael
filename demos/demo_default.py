@@ -407,71 +407,41 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
             FragState('frag_2', 0, [0, 0, 0], [0, 0, 0, 1])]})
 
 
-def startAzrael(param):
-    """
-    Start all Azrael processes and return their process handles.
-    """
-    subprocess.call(['pkill', 'killme'])
-    time.sleep(0.2)
-    database.init(reset=True)
+class RunAzrael:
+    def __init__(self, param):
+        subprocess.call(['pkill', 'killme'])
+        time.sleep(0.2)
+        database.init(reset=True)
 
-    # Reset the profiling database and enable logging.
-    azrael.util.resetTiming()
-    setupLogging(param.loglevel)
+        # Reset the profiling database and enable logging.
+        azrael.util.resetTiming()
+        setupLogging(param.loglevel)
 
-    # Delete all grids but define a force grid (will not be used but
-    # Leonard throws a lot of harmless warnings otherwise).
-    assert vectorgrid.deleteAllGrids().ok
-    assert vectorgrid.defineGrid(name='force', vecDim=3, granularity=1).ok
+        # Delete all grids but define a force grid (will not be used but
+        # Leonard throws a lot of harmless warnings otherwise).
+        assert vectorgrid.deleteAllGrids().ok
+        assert vectorgrid.defineGrid(name='force', vecDim=3, granularity=1).ok
 
-    # Spawn Azrael's APIs.
-    clerk = azrael.clerk.Clerk()
-    clerk.start()
-    clacks = azrael.clacks.ClacksServer()
-    clacks.start()
+        # Spawn Azrael's APIs.
+        self.clerk = azrael.clerk.Clerk()
+        self.clerk.start()
+        self.clacks = azrael.clacks.ClacksServer()
+        self.clacks.start()
 
-    if not param.noinit:
-        # Add a model to the otherwise empty simulation. The sphere is
-        # in the repo whereas the Vatican model is available here:
-        # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
-        # uid=3290&count=count
-        p = os.path.dirname(os.path.abspath(__file__))
-        p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
-        fname = os.path.join(p, 'sphere.obj')
-        model_name = (1.25, fname)
-        #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
-        #model_name = (1.25, 'viewer/models/house/house.3ds')
-        loadGroundModel(*model_name)
+        # Start the physics engine.
+        #leo = leonard.LeonardBase()
+        #leo = leonard.LeonardBullet()
+        #leo = leonard.LeonardSweeping()
+        self.leo = leonard.LeonardDistributedZeroMQ()
+        self.leo.start()
 
-        # Define additional templates.
-        spawnCubes(*param.cubes, center=(0, 0, 10))
-        del p, fname, model_name
-
-    # Start the physics engine.
-    #leo = leonard.LeonardBase()
-    #leo = leonard.LeonardBullet()
-    #leo = leonard.LeonardSweeping()
-    leo = leonard.LeonardDistributedZeroMQ()
-    leo.start()
-
-    # Launch a dedicated process to periodically reset the simulation.
-    time.sleep(2)
-    rs = ResetSim(period=param.reset)
-    rs.start()
-
-    return [clerk, clacks, leo, rs]
-
-
-def stopAzrael(procs):
-    """
-    Stop and join all ``procs``.
-    """
-    for proc in procs:
-        proc.terminate()
-
-    for proc in procs:
-        proc.join()
-
+    def __del__(self):
+        procs = (self.leo, self.clacks, self.clerk)
+        for p in procs:
+            p.terminate()
+        for p in procs:
+            p.join()
+    
 
 def launchQtViewer(param):
     """
@@ -556,15 +526,36 @@ def main():
 
     # Start Azrael services.
     with azrael.util.Timeit('Startup Time', True):
-        procs = startAzrael(param)
+        az = RunAzrael(param)
+        if not param.noinit:
+            # Add a model to the otherwise empty simulation. The sphere is
+            # in the repo whereas the Vatican model is available here:
+            # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
+            # uid=3290&count=count
+            p = os.path.dirname(os.path.abspath(__file__))
+            p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
+            fname = os.path.join(p, 'sphere.obj')
+            model_name = (1.25, fname)
+            #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
+            #model_name = (1.25, 'viewer/models/house/house.3ds')
+            loadGroundModel(*model_name)
+
+            # Define additional templates.
+            spawnCubes(*param.cubes, center=(0, 0, 10))
+            del p, fname, model_name
+
+        # Launch a dedicated process to periodically reset the simulation.
+        time.sleep(2)
+        rs = ResetSim(period=param.reset)
+        rs.start()
+
     print('Azrael now live')
 
-    # Start the Qt Viewer.
+    # Start the Qt Viewer. This call will block until the viewer exits.
     launchQtViewer(param)
 
-    # Shutdown Azrael.
-    stopAzrael(procs)
-
+    # Stop Azrael stack.
+    del az
     print('Clean shutdown')
 
 
