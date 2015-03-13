@@ -14,6 +14,7 @@ Contents:
    :maxdepth: 4
 
    overview
+   tutorials
    api
 
 
