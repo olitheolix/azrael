@@ -1103,7 +1103,7 @@ class Clerk(multiprocessing.Process):
         """
         Update one or more fragments in one or more objects.
 
-        The ``fragData`` dictionary has the following structure:
+        The ``fragData`` dictionary has the following structure::
 
           fragData = {
             objID_1: [state_1, state_2, ...],

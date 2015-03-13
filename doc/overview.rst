@@ -27,19 +27,20 @@ For a high level overview including demo videos, please visit the
 `project page <https://olitheolix.com/azrael/>`_.
 
 
-How and Why
-===========
+Azrael's Philosophy
+===================
 
 The cornerstone of Azrael is the clean separation of physics, object control
-(or AI), and rendering. The physics engine moves object according to the 
-forces acting upon them, the object controllers can send commands to force
-generators (eg booster) via the network, and the rendering engine can query the
+(or AI), and rendering. The physics engine moves object accordings to the 
+forces acting upon them, the object controllers send commands via the network
+to the force generators (eg booster), and the rendering engine queries the
 simulation to visualise it.
 
 Ideally, every object in the simulation will be remote controlled from a
-different computer, virtual machine, or at least a separate process on a single
-computer. The programming language should not matter to allow system designers
-to use whatever they are comfortable with to develop the algorithms.
+different computer, virtual machine, or at simply a separate process on the
+same machine. The programming language does not matter because the interface
+uses plain JSON. You may therefore develop your algorithms in whatever
+programming language you deem appropriate.
 
 The goal is to eventually make the physics engine itself scalable across
 multiple computers to simulate worlds of unprecedented size, detail, and
@@ -47,7 +48,7 @@ accuracy. All hail cloud computing :)
 
 Why do I bother? Because in a reasonably realistic virtual world I can have my
 own space shuttle, design my own sub-marine, invent my own Mars rover with
-awesome navigation abilities, launch my own Rosetta mission, or build an
+awesome navigation abilities, launch my own Rosetta mission, or build my own
 automated fleet of space ships. And so can you. No job at NASA required.
 
 
@@ -55,47 +56,23 @@ Project Status
 ==============
 
 So far it is mostly useful for developers. It wraps Bullet for the physics,
-provides basic APIs to control objects, and ships with a simple 3D viewer.
-
-The first major milestone towards a minimum viable prototype (MVP) are:
-
-* decent physics,
-* ability to combine primitive objects to form more complex ones
-* API to connect and control these objects
-* ability to query the world (mostly for visualisation).
-
-This proved surprisingly difficult (read "fun") due to the many loosely coupled
-components. However, once the basics are in place it will hopefully become
-easier to hone the individual components... with Oculus Rift support,
-contemporary 3D rendering (maybe cloud based?), a scalable physics engine to
-create the largest Newtonian simulation on the planet...
+provides the basic API to define and control objects, and comes with
+OpenGL/WebGl viewers to render the scene.
 
 
 Installation
 ============
 
-To install Azrael on Ubuntu 14.04 you need to install the dependencies listed in
-`install.sh`. To start Azrael type
+On Ubuntu 14.04 (and probably most other recent Linux distributions) you can
+either clone the entire repository from GitHub or download a pre-built Docker 
+container. For details on either see https://github.com/olitheolix/azrael
 
-.. code-block:: bash
-
-   ./start.py --noviewer
-
-and then open http://localhost:8080/static/webviewer.html in your (WebGL
-supporting) browser.
-
-If you also want the standalone OpenGL viewer, and have an OpenGL 3.x
-compatible GPU, then install these packages
+For the standalone OpenGL viewer (requries an OpenGL 3.x compatible GPU) you
+will also need these:
 
 .. code-block:: bash
 
    sudo apt-get install python3-opengl libglu1-mesa-dev python3-pyside.qtopengl
-
-and start Azrael with:
-
-.. code-block:: bash
-
-   ./start.py
 
 
 License
