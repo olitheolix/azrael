@@ -452,11 +452,20 @@ class Client():
                 assert isinstance(frags, list)
                 for ii, _ in enumerate(frags):
                     assert isinstance(_, Fragment)
-                    assert isinstance(_.vert, np.ndarray)
-                    assert isinstance(_.uv, np.ndarray)
-                    assert isinstance(_.rgb, np.ndarray)
-                    frags[ii] = Fragment(_.name, _.vert.tolist(),
-                                         _.uv.tolist(), _.rgb.tolist())
+
+                    # Ensure that vertices, UV, and RGB are lists or NumPy
+                    # arrays. Then replace them them with pure Python list to
+                    # make them JSON compliant.
+                    assert isinstance(_.vert, (list, np.ndarray))
+                    assert isinstance(_.uv, (list, np.ndarray))
+                    assert isinstance(_.rgb, (list, np.ndarray))
+                    v = np.array(_.vert, np.float64).tolist()
+                    u = np.array(_.uv, np.float64).tolist()
+                    r = np.array(_.rgb, np.uint8).tolist()
+
+                    # Replace the original fragment with one where vert, UV,
+                    # and RGB are definitively Python lists.
+                    frags[ii] = Fragment(_.name, v, u, r)
                 assert isinstance(boosters, list)
                 assert isinstance(factories, list)
 
