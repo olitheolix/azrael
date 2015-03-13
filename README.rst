@@ -19,8 +19,10 @@ The API is language agnostic. Albeit written in Python, the data exchange is
 pure JSON and the transport layer is either a Websocket (JavaScript/browsers)
 or ZeroMQ (pretty much everything but JavaScript).
 
-For a high level overview including demo videos, please visit the
-`project page <https://olitheolix.com/azrael/>`_.
+The `project page <https://olitheolix.com/azrael/>`_ contains a high level
+overview. Interested programmers may find the
+`Tutorial Section <https://olitheolix.com/azrael-doc/tutorials.html>`_ more
+useful.
 
 
 How and Why
