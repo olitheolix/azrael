@@ -21,6 +21,7 @@ Utility functions.
 
 import time
 import pymongo
+
 import numpy as np
 import azrael.config as config
 

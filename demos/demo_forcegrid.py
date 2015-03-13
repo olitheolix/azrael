@@ -162,9 +162,12 @@ def main():
     # Parse the command line.
     param = parseCommandLine()
 
+    # Helper class to start/stop Azrael stack and other processes.
+    az = azrael.startup.AzraelStack(param.loglevel)
+        
     # Start Azrael services.
     with azrael.util.Timeit('Startup Time', True):
-        az = demolib.RunAzrael(param)
+        az.start()
         if not param.noinit:
             # Add the specified number of cubes in a grid layout.
             demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
@@ -184,7 +187,7 @@ def main():
     demolib.launchQtViewer(param)
 
     # Stop Azrael stack.
-    del az
+    az.stop()
     print('Clean shutdown')
 
 

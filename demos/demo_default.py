@@ -28,9 +28,7 @@ Qt Viewer.
 import os
 import sys
 import time
-import pymongo
 import IPython
-import logging
 import argparse
 import subprocess
 import multiprocessing
@@ -43,15 +41,11 @@ p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '..'))
 sys.path.insert(0, os.path.join(p, '../viewer'))
 import model_import
-import azrael.clerk
-import azrael.clacks
 import azrael.client
+import azrael.startup
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
-import azrael.leonard as leonard
-import azrael.database as database
-import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 del p
 
@@ -409,64 +403,6 @@ def launchQtViewer(param):
         pass
 
 
-class RunAzrael:
-    def __init__(self, param):
-        self.procs = []
-
-        subprocess.call(['pkill', 'killme'])
-        time.sleep(0.2)
-        database.init(reset=True)
-
-        # Reset the profiling database and enable logging.
-        azrael.util.resetTiming()
-        self.setupLogging(param.loglevel)
-
-        # Delete all grids but define a force grid (will not be used but
-        # Leonard throws a lot of harmless warnings otherwise).
-        assert vectorgrid.deleteAllGrids().ok
-        assert vectorgrid.defineGrid(name='force', vecDim=3, granularity=1).ok
-
-        # Spawn Azrael's APIs.
-        clerk = azrael.clerk.Clerk()
-        clacks = azrael.clacks.ClacksServer()
-
-        # Start the physics engine.
-        #leo = leonard.LeonardBase()
-        #leo = leonard.LeonardBullet()
-        #leo = leonard.LeonardSweeping()
-        leo = leonard.LeonardDistributedZeroMQ()
-
-        self.startProcess(clerk)
-        self.startProcess(clacks)
-        self.startProcess(leo)
-
-    def startProcess(self, proc):
-        proc.start()
-        self.procs.append(proc)
-
-    def setupLogging(self, loglevel):
-        """
-        Change the log level of the 'Azrael' loggers (defined in
-        azrael.config).
-        """
-        logger = logging.getLogger('azrael')
-        if loglevel == 0:
-            logger.setLevel(logging.DEBUG)
-        elif loglevel == 1:
-            logger.setLevel(logging.INFO)
-        elif loglevel == 2:
-            logger.setLevel(logging.WARNING)
-        else:
-            print('Unknown log level {}'.format(loglevel))
-            sys.exit(1)
-
-    def __del__(self):
-        for p in self.procs:
-            p.terminate()
-        for p in self.procs:
-            p.join()
-
-
 class ResetSim(multiprocessing.Process):
     """
     Periodically reset the simulation.
@@ -531,9 +467,12 @@ def main():
     # Parse the command line.
     param = parseCommandLine()
 
+    # Helper class to start/stop Azrael stack and other processes.
+    az = azrael.startup.AzraelStack(param.loglevel)
+        
     # Start Azrael services.
     with azrael.util.Timeit('Startup Time', True):
-        az = RunAzrael(param)
+        az.start()
         if not param.noinit:
             # Add a model to the otherwise empty simulation. The sphere is
             # in the repo whereas the Vatican model is available here:
@@ -561,7 +500,7 @@ def main():
     launchQtViewer(param)
 
     # Stop Azrael stack.
-    del az
+    az.stop()
     print('Clean shutdown')
 
 
