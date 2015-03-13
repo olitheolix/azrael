@@ -364,9 +364,11 @@ class Clerk(multiprocessing.Process):
             self.logit.warning(msg)
             return RetVal(False, msg, None)
 
-        # fixme: it is possible that objID did not exist and
-        # sv_parent.data[objID] is therefore None. This will trigger an
-        # exception.
+        # Return with an error if the requested objID does not exist.
+        if sv_parent.data[objID] is None:
+            msg = 'objID={} does not exits'.format(objID)
+            self.logit.warning(msg)
+            return RetVal(False, msg, None)
 
         # Extract the parent's orientation from svdata.
         sv_parent = sv_parent.data[objID]['sv']

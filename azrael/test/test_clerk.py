@@ -628,6 +628,45 @@ def test_get_object_template_id():
     print('Test passed')
 
 
+def test_controlParts_Boosters_bug_102():
+    """
+    ControlParts breaks when the objID does not exist. This typically happens
+    when an object receives control commands _after_ it was spawned but
+    _before_ Leonard has picked it up.
+    """
+    killAzrael()
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk()
+
+    # Define a boosters.
+    v = np.array([1, 0, 0], np.float64)
+    booster = parts.Booster(
+        partID=0, pos=v, direction=v, minval=0, maxval=1, force=0)
+
+    # Define a new template with two boosters and add it to Azrael.
+    template = Template('t1',
+                    cs=[1, 2, 3, 4],
+                    fragments=[Fragment('bar', list(range(9)), [], [])],
+                    boosters=[booster],
+                    factories=[])
+    assert clerk.addTemplates([template]).ok
+
+    # Spawn an instance of the template and get the object ID.
+    ret = clerk.spawn([(template.name, bullet_data.BulletData())])
+    assert ret.ok
+    objID = ret.data[0]
+
+    # Create a Booster command.
+    cmd = parts.CmdBooster(partID=0, force=2)
+
+    # Send the command to Clerk. With the bug present this triggered a stack
+    # trace, whereas now it must simply return with cleared ok flag.
+    assert not clerk.controlParts(objID, [cmd], []).ok
+
+    print('Test passed')
+
+
 def test_controlParts_invalid_commands():
     """
     Send invalid control commands to object.
@@ -1524,6 +1563,7 @@ def test_fragments_end2end():
 
 
 if __name__ == '__main__':
+    test_controlParts_Boosters_bug_102()
     test_fragments_end2end()
     test_updateFragmentState()
     test_updateBoosterValues()
