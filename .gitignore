@@ -13,3 +13,5 @@
 /viewer/video/
 /azrael/data/
 /volume/
+**/*.cache
+*.png
