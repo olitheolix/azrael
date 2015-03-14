@@ -264,7 +264,7 @@ class PyBulletPhys():
         :param ``_BulletData`` obj: object description.
         :return: Success
         """
-        # Create the Rigid Body if it does not yet exist.
+        # Create the Rigid Body if it does not exist yet.
         if objID not in self.all_objs:
             self.createRigidBody(objID, obj)
 

@@ -3,7 +3,7 @@
 #
 #   >> docker run -d -p 8080:8080 \
 #             olitheolix/azrael:latest \
-#             demo/demo_forcegrid.py --noviewer --cubes=4,4,1
+#             demos/demo_forcegrid.py --noviewer --cubes=4,4,1
 #
 # Since the container contains a full MongoDB installation, you may
 # want to export the MongoDB data directory to a temporary directory
@@ -11,7 +11,7 @@
 #
 #   >> docker run -d -p 8080:8080 -v /tmp/azrael:/demo/azrael/volume \
 #             olitheolix/azrael:latest \
-#             demo/demo_forcegrid.py --noviewer --cubes=4,4,1
+#             demos/demo_forcegrid.py --noviewer --cubes=4,4,1
 
 # Ubuntu 14.04 base image.
 FROM ubuntu:14.04
