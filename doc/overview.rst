@@ -27,37 +27,70 @@ For a high level overview including demo videos, please visit the
 `project page <https://olitheolix.com/azrael/>`_.
 
 
-Azrael's Philosophy
-===================
+Philosophy
+==========
 
 The cornerstone of Azrael is the clean separation of physics, object control
 (or AI), and rendering. The physics engine moves object accordings to the 
-forces acting upon them, the object controllers send commands via the network
-to the force generators (eg booster), and the rendering engine queries the
-simulation to visualise it.
-
-Ideally, every object in the simulation will be remote controlled from a
-different computer, virtual machine, or at simply a separate process on the
-same machine. The programming language does not matter because the interface
-uses plain JSON. You may therefore develop your algorithms in whatever
-programming language you deem appropriate.
-
-The goal is to eventually make the physics engine itself scalable across
-multiple computers to simulate worlds of unprecedented size, detail, and
-accuracy. All hail cloud computing :)
+forces acting upon them, the clients control the forces via the network,
+and the rendering engine queries the simulation to visualise it.
 
 Why do I bother? Because in a reasonably realistic virtual world I can have my
-own space shuttle, design my own sub-marine, invent my own Mars rover with
-awesome navigation abilities, launch my own Rosetta mission, or build my own
-automated fleet of space ships. And so can you. No job at NASA required.
+own space shuttle, design my own sub-marine, invent my own autonomous Mars
+rover, launch my own Rosetta mission, design my own reusable rocket, or build
+my own automated fleet of space ships. And so can you. No job at NASA required.
 
 
-Project Status
-==============
+Architecture
+============
 
-So far it is mostly useful for developers. It wraps Bullet for the physics,
-provides the basic API to define and control objects, and comes with
-OpenGL/WebGl viewers to render the scene.
+Azrael is still in a proof-of-concept stage but the following architecture is
+already in place.
+
+.. figure:: images/Architecture.png
+   :width: 50em
+   :align: center
+
+In this figure *every* block is an independent micro service, and *every* array
+is a network connection. In other words, every block can run a different
+machine.
+
+Azrael provides two interfaces types: ZeroMQ and HTTP (Websockets). Both have
+the exact same feature set as the HTTP server.
+
+ZeroMQ clients connect to a `Clerk` instance, whereas web clients connect to
+`Clacks` (a Tornado server) which relays all commands to `Clerk`.
+
+`Clerk` is the centerpiece in managing all the information in and out of
+Azrael. In particular it has access to the template database, the instance
+database (i.e. spawned templates), and their physics state (eg position and
+velocity). It is also the one and only interface to the physics engine
+`Leonard` and responsible for sanitising all input data for it.
+
+`Leonards` is responsible for the rigid body physics and runs decoupled from
+the rest of Azrael. It traverses several steps. First it checks if `Clerk` has
+enqueued any new commands and process them. Then it partitions the world into
+collision sets (broadphase step for those familiar with physics engines) and
+sends them to `Physics Workers` for processing.
+
+The `Workers` are independent, self contained processes possibly running on one
+or more computers in a network. They can only be reached via the network and
+wrap a `Bullet <http://bulletphysics.org/>`_ instance to progress the
+physics. Once they have a result they write that back into the `State
+Variables` database and request the next job.
+
+Once all jobs are completed `Leonard` will refresh its internal cache from the
+`State Variables` database and start over again, eg. check the command queue,
+partition the world, distributed the partitions to the Workers, and wait for
+the results.
+
+This approach to computing physics is certainly fraught with plenty of network
+communication overhead. However, if it works (and it looks like it does) then
+the physics engine will *scale*. Sure, if you have one big object cluster that
+cannot be partitioned at all then this architectures will also not help because
+a single `Worker` has to do it all, but you have many smaller clusters then
+there is no realy limit to how complex the overall simulation can be... and I
+bet there is also a scalable solution for large clusters...
 
 
 Installation
