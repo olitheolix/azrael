@@ -14,4 +14,4 @@
 /azrael/data/
 /volume/
 **/*.cache
-*.png
+/doc/images/orig

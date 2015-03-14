@@ -2,14 +2,15 @@
 Tutorials
 =========
 
-A learning-by-doing introduction to using Azrael.
+A learning-by-doing introduction to using Azrael. Here is the basic workflow to
+create-, interact-, and generall "get stuff moving" in Azrael.
 
-The basic workflow to "get stuff moving" is this:
+.. figure::  images/Workflow.png
+   :width: 50em
+   :align: center
 
-Spawn Azrael Stack -> Define Templates -> Spawn Templates -> Send Commands ->
-Visualise
-
-What follows are a few simple tutorials to illustrate these steps.
+The following tutorials illustrate the individual steps in sufficient detail to
+get started.
 
 
 Start- and Stop Azrael
@@ -75,7 +76,7 @@ If you run this code and point your (recent version of Firefox/Chrome) browser
 to http://localhost:8080 then you will see the scene. It should look like this:
 
 .. figure::  images/tut_2_1.jpg
-   :width: 640px
+   :width: 100%
    :align: center
    
 
@@ -83,9 +84,28 @@ Create a Template and Spawn Two Objects From It
 ===============================================
 
 To fill the empty scene we are now going to add an object. Adding objects is a
-two step process. First, we need a template for that object and upload it to
-Azrael. Second, we need to spawn an instance of that template (we can spawn as
-many instances of the same template as we like).
+two step process:
+
+* add a template for that object
+* spawn (or more) instance of that template
+
+Templates describe the object geometry, boosters, and other
+properties:
+
+.. figure::  images/Template.png
+   :width: 50em
+   :align: center
+
+The boosters are of no concern in this tutorial, but the geometry fragments
+are. Each object consists of one or more such fragments. Each has its own
+triangle mesh, texture map, and UV coordinates (for mapping that texture to the
+triangle vertices). There is no technical reason why any object needs more than
+one fragment but it is often more convenient to break up a model into more
+managable sub-model.
+
+In this tutorial we will create a cube without any textures. Consequently, we
+need to construct the triangle mesh that comprises the cube, and can pass empty
+arrays for the UV- and RGB (texture) map.
 
 Here is the complete code if you want to try it out immediately. It introduces
 quite a few new functions, some of which I will explain below.
@@ -99,7 +119,7 @@ This time if you browse to http://localhost:8080 you will see two cubes
 floating in space.
 
 .. figure::  images/tut_3_1.jpg
-   :width: 640px
+   :width: 100%
    :align: center
    
 By the way, you can also fly through the scene with your mouse. Use the left
@@ -109,18 +129,19 @@ mouse button to navigate, and the other two to move forwards and backwards.
 Object With Boosters
 ====================
 
-This is similar to the previous example, but this time the template will gain a
-`Booster` to move and control it.
+This is similar to the previous example except that we will no add a
+booster. The sole purpose of having a booster is to exert force onto the object
+which, in turn, allows us to control that object.
 
-A booster in Azrael is merely a fixed point on the object at which you can
-apply a force. The direction of the force matches the orientation of the
-booster. That orientation must be specified when the booster is defined in the
-template. However, the boosters move and rotate with the object.
+A booster in Azrael is an abstract concept. It does not have any geometry
+attached to it but specifies the position on (or in) the object at which you
+want to apply a force during the scene. Furthermore, it has a direction that
+specifies the force direction.
 
-For this example we add a single bootster to the template, create one instance
-of that template, and apply random force values. The net effect is a cube that
-will move somewhat erratically, but only along the *x*-axis since this is how
-the booster is oriented.
+In the next example we add one bootster to the template, spawn one object, and
+apply a random force value every second. The net effect is a somewhat
+erratically moving cube. Note that it will only move along the *x*-axis since
+this is the booster direction.
 
 .. literalinclude:: tutorials/tut_4_2.py
    :language: python
