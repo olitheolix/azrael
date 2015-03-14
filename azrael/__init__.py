@@ -40,10 +40,7 @@ def ensureMongoIsLive():
     """
     def startMongo():
         mdir = '/demo/azrael/volume/mongodb'
-        try:
-            os.mkdir(mdir)
-        except FileExistsError:
-            pass
+        os.makedirs(mdir, exist_ok=True)
         cmd_mongo = ('/usr/bin/mongod --smallfiles --dbpath {}'.format(mdir))
         subprocess.call(cmd_mongo, shell=True, stdout=subprocess.DEVNULL)
 
