@@ -35,9 +35,7 @@ del p
 
 import time
 import argparse
-import subprocess
 import numpy as np
-import model_import
 import OpenGL.GL as gl
 
 import azrael.client
