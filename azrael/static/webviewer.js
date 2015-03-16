@@ -379,6 +379,10 @@ function* mycoroutine(connection) {
     camera.lookAt(new THREE.Vector3(0, 0, 0))
     camera.updateProjectionMatrix();
     
+    // Add an ambient light because otherwise textures from imported Collada
+    // models may not render.
+    scene.add(new THREE.AmbientLight(0xcccccc));
+
     // Initialise the renderer and add it to the page.
     var renderer = new THREE.WebGLRenderer();
     $("#ThreeJSDiv").append(renderer.domElement)
