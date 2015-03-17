@@ -479,8 +479,11 @@ def main():
             # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
             # uid=3290&count=count
             p = os.path.dirname(os.path.abspath(__file__))
-            p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
-            fname = os.path.join(p, 'sphere.obj')
+            p = os.path.join(p, '..', 'viewer', 'models')
+            fname = os.path.join(p, 'sphere', 'sphere.obj')
+#            fname = os.path.join(p, 'house', 'house.obj')
+#            fname = '/home/oliver/delme/export/monster.dae'
+#            fname = os.path.join(p, 'test.obj')
             model_name = (1.25, fname)
             #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
             #model_name = (1.25, 'viewer/models/house/house.3ds')
