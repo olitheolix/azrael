@@ -87,4 +87,7 @@ addr_leonard_pushpull = 'tcp://' + host_ip + ':5556'
 dir_data = os.path.dirname(os.path.abspath(__file__))
 dir_data = os.path.join(dir_data, 'data')
 dir_template = os.path.join(dir_data, 'templates')
-dir_instance = os.path.join(dir_data, 'instance')
+dir_instance = os.path.join(dir_data, 'instances')
+
+url_template = '/templates'
+url_instance = '/instances'

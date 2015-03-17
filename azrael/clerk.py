@@ -623,7 +623,7 @@ class Clerk(multiprocessing.Process):
                 # template dictionary.
                 base_name = tt.name + '_geo'
                 data['file_geo'] = os.path.join(config.dir_template, base_name)
-                data['url_geo'] = '/templates/' + base_name
+                data['url_geo'] = os.path.join(config.url_template, base_name)
 
                 # Abort if the template already exists.
                 # Note: the following condition can fall prey to the race
