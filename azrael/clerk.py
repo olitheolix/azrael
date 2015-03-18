@@ -626,7 +626,7 @@ class Clerk(multiprocessing.Process):
                 data['url_geo'] = os.path.join(config.url_template, base_name)
 
                 # Abort if the template already exists.
-                # Note: the following condition can fall prey to the race
+                # Note: the following condition can fall prey to a race
                 # condition where a file is created after checking but before
                 # the file is written. For templates this is relatively
                 # harmless and therefore ignored here.
