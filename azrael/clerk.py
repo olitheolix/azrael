@@ -563,7 +563,8 @@ class Clerk(multiprocessing.Process):
         # {'house.jpg': b';lj;lkj', 'tree.png': b'fdfu', ...}
         for name, rgb in frag.data.rgb.items():
             open(os.path.join(frag_dir, name), 'wb').write(rgb)
-        return 1.0
+
+        return RetVal(True, None, 1.0)
 
     def _saveRawFragment(self, frag_dir, frag):
         """
@@ -602,7 +603,8 @@ class Clerk(multiprocessing.Process):
             len_z = max(frag.data.vert[2::3]) - min(frag.data.vert[2::3])
             tmp = np.sqrt(3.1) * max(len_x, len_y, len_z)
             aabb = np.amax((aabb, tmp))
-        return aabb
+
+        return RetVal(True, None, aabb)
 
     @typecheck
     def addTemplates(self, templates: list):
@@ -663,14 +665,18 @@ class Clerk(multiprocessing.Process):
                     # fixme: remove aabb
                     # Save the Fragment in model_dir + tt.name
                     if frag.type == 'raw':
-                        _aabb = self._saveRawFragment(frag_dir, frag)
+                        ret = self._saveRawFragment(frag_dir, frag)
                     elif frag.type == 'dae':
-                        _aabb = self._saveDaeFragment(frag_dir, frag)
+                        ret = self._saveDaeFragment(frag_dir, frag)
                     else:
                         # fixme: return a proper error
                         print('Unknown type <{}>'.format(frag.type))
                         assert False
-                    aabb = np.amax((_aabb, aabb))
+
+                    if not ret.ok:
+                        return ret
+
+                    aabb = np.amax((ret.data, aabb))
 
                 # Compile the Mongo document for the new template.
                 data = {
@@ -974,13 +980,16 @@ class Clerk(multiprocessing.Process):
 
             # Save the Fragment in model_dir + tt.name
             if frag.type == 'raw':
-                self._saveRawFragment(frag_dir, frag)
+                ret = self._saveRawFragment(frag_dir, frag)
             elif frag.type == 'dae':
-                self._saveDaeFragment(frag_dir, frag)
+                ret = self._saveDaeFragment(frag_dir, frag)
             else:
                 # fixme: return a proper error
                 print('Unknown type <{}>'.format(frag.type))
                 assert False
+
+            if not ret.ok:
+                return ret
 
         # Update the 'lastChanged' flag. Any clients will automatically receive
         # this flag whenever they query state variables.

@@ -1481,8 +1481,9 @@ def test_updateFragmentState():
 
 def test_fragments_end2end():
     """
-    Test the interplay of all Clerk functions that have to deal with fragments
-    in single test case.
+    Integration test: create a live system, add a template with two fragments,
+    spawn it, query and very its geometry, the alter its geometry and verify
+    again.
     """
     killAzrael()
 
@@ -1495,8 +1496,6 @@ def test_fragments_end2end():
     cs = [1, 2, 3, 4]
     vert_1 = list(range(0, 9))
     vert_2 = list(range(9, 18))
-    vert_3 = list(range(18, 27))
-    vert_4 = list(range(27, 36))
 
     def checkFragState(objID, name_1, scale_1, pos_1, rot_1,
                        name_2, scale_2, pos_2, rot_2):
