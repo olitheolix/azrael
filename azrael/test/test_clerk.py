@@ -18,7 +18,7 @@
 """
 Test the Clerk module.
 """
-
+import os
 import sys
 import json
 import IPython
@@ -36,11 +36,10 @@ from azrael.test.test_clacks import startAzrael, stopAzrael
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 
+from azrael.util import Template, Fragment
+from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 
 ipshell = IPython.embed
-Template = azrael.util.Template
-Fragment = azrael.util.Fragment
-FragState = azrael.util.FragState
 
 
 def test_invalid():
@@ -471,8 +470,8 @@ def test_add_get_template_single():
 
 def test_add_get_template_multi_url():
     """
-    Add templates in bulk. Also verify that the geometries are availabe
-    via an URL.
+    Add templates in bulk and verify that the models are availabe via the
+    correct URL.
     """
     killAzrael()
 
@@ -1169,13 +1168,29 @@ def test_getGeometry():
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
 
-    # Convenience.
+    # Raw object: specify vertices, UV, and texture (rgb) values directly.
     cs, vert = [1, 2, 3, 4], list(range(9))
     uv, rgb = [9, 10], [1, 2, 250]
     sv = bullet_data.BulletData()
+    f_raw = FragRaw(vert=vert, uv=uv, rgb=rgb)
 
-    # Add a valid template and verify it now exists in Azrael.
-    temp = Template('foo', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    # Collada format: a .dae file plus a list of textures in jpg or png format.
+    b = os.path.dirname(__file__)
+    dae_file = open(b + '/cube.dae').read()
+    dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
+    dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
+    f_dae = FragDae(dae=dae_file,
+                    rgb={'rgb1.png': dae_rgb1,
+                         'rgb2.jpg': dae_rgb2})
+    del b
+
+    # Put both framgents into a valid list of MetaFragments.
+    frags = [MetaFragment('f_raw', 'raw', f_raw),
+             MetaFragment('f_dae', 'dae', f_dae)]
+
+    # Add a valid template with the just specified fragments and verify the
+    # upload worked.
+    temp = Template('foo', cs, frags, [], [])
     assert clerk.addTemplates([temp]).ok
     assert clerk.getTemplates([temp.name]).ok
 
@@ -1187,12 +1202,18 @@ def test_getGeometry():
     assert ret.ok and (len(ret.data) == 1)
     objID = ret.data[0]
 
-    # Query the geometry of the object.
+    # Query the geometry of the just spawned object.
     ret = clerk.getGeometry(objID)
     assert ret.ok
-    assert np.array_equal(vert, ret.data['bar'].vert)
-    assert np.array_equal(uv, ret.data['bar'].uv)
-    assert np.array_equal(rgb, ret.data['bar'].rgb)
+    ret = ret.data
+
+    # The object must have two fragments, an 'f_raw' with type 'raw' and
+    # an 'f_dae' with type 'dae'.
+    assert ret['f_raw']['type'] == 'raw'
+    print(ret['f_raw']['url'])
+    assert ret['f_raw']['url'] == '/instances/' + str(objID) + '/f_raw'
+    assert ret['f_dae']['type'] == 'dae'
+    assert ret['f_dae']['url'] == '/instances/' + str(objID) + '/f_dae'
 
     # Delete the object and attempt to query its geometry afterwards.
     assert clerk.removeObject(objID).ok

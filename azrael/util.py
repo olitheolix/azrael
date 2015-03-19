@@ -39,6 +39,10 @@ Template = namedtuple('Template', 'name cs fragments boosters factories')
 Fragment = namedtuple('Fragment', 'name vert uv rgb')
 FragState = namedtuple('FragState', 'name scale position orientation')
 
+FragRaw = namedtuple('FragRaw', 'vert uv rgb')
+FragDae = namedtuple('FragDae', 'dae rgb')
+MetaFragment = namedtuple('MetaFragment', 'name type data')
+
 
 def resetTiming():
     """

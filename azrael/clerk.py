@@ -33,6 +33,7 @@ import json
 import IPython
 import cytoolz
 import logging
+import subprocess
 import setproctitle
 import multiprocessing
 
@@ -50,12 +51,11 @@ import azrael.bullet.bullet_data as bullet_data
 from collections import namedtuple
 from azrael.typecheck import typecheck
 
+from azrael.util import Template, Fragment, RetVal
+from azrael.util import FragState, FragDae, FragRaw, MetaFragment
+
 # Convenience.
 ipshell = IPython.embed
-RetVal = util.RetVal
-Template = azrael.util.Template
-Fragment = azrael.util.Fragment
-FragState = azrael.util.FragState
 
 
 class Clerk(multiprocessing.Process):
@@ -521,7 +521,7 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, out)
 
     @typecheck
-    def _isGeometrySane(self, frag: Fragment):
+    def _isGeometrySane(self, frag: FragRaw):
         """
         Return *True* if the geometry is consistent.
 
@@ -540,6 +540,66 @@ class Clerk(multiprocessing.Process):
         except AssertionError:
             return False
         return True
+
+    def _saveDaeFragment(self, frag_dir, frag):
+        """
+        fixme: docu
+        """
+        # Sanity checks.
+        try:
+            assert isinstance(frag.data, FragDae)
+        except AssertionError:
+            msg = 'Invalid fragment data types'
+            return RetVal(False, msg, None)
+
+        # Save the dae file to "templates/mymodel/name.dae".
+        open(os.path.join(frag_dir, frag.name), 'w').write(frag.data.dae)
+
+        # Save the textures. These are stored as dictionaries with the texture
+        # file name as key and the data as a binary stream, eg,
+        # {'house.jpg': b';lj;lkj', 'tree.png': b'fdfu', ...}
+        for name, rgb in frag.data.rgb.items():
+            open(os.path.join(frag_dir, name), 'wb').write(rgb)
+        return 1.0
+
+    def _saveRawFragment(self, frag_dir, frag):
+        """
+        fixme: docu
+        """
+        # Sanity checks.
+        try:
+            assert isinstance(frag.data, FragRaw)
+            assert isinstance(frag.data.vert, list)
+            assert isinstance(frag.data.uv, list)
+            assert isinstance(frag.data.rgb, list)
+        except AssertionError:
+            msg = 'Invalid fragment data types'
+            return RetVal(False, msg, None)
+
+        if not self._isGeometrySane(frag.data):
+            msg = 'Invalid geometry for template <{}>'
+            return RetVal(False, msg.format(tt.name), None)
+
+        # Write the fragment data as a JSON to eg "templates/mymodel/model".
+        data = dict(zip(frag.data._fields, frag.data))
+        data = json.dumps(data)
+        open(os.path.join(frag_dir, 'model.json'), 'w').write(data)
+        del data
+
+        # Determine the largest possible side length of the
+        # AABB. To find it, just determine the largest spatial
+        # extent in any axis direction. That is the side length of
+        # the AABB cube. Then multiply it with sqrt(3) to ensure
+        # that any rotation angle of the object is covered. The
+        # slightly larger value of sqrt(3.1) adds some slack.
+        aabb = 0
+        if len(frag.data.vert) > 0:
+            len_x = max(frag.data.vert[0::3]) - min(frag.data.vert[0::3])
+            len_y = max(frag.data.vert[1::3]) - min(frag.data.vert[1::3])
+            len_z = max(frag.data.vert[2::3]) - min(frag.data.vert[2::3])
+            tmp = np.sqrt(3.1) * max(len_x, len_y, len_z)
+            aabb = np.amax((aabb, tmp))
+        return aabb
 
     @typecheck
     def addTemplates(self, templates: list):
@@ -571,42 +631,43 @@ class Clerk(multiprocessing.Process):
             bulk = db.initialize_unordered_bulk_op()
 
             # Add each template to the bulk operation.
+            aabb = 0
             for tt in templates:
                 # Initial AABB size. We will expand it when we parse the
                 # geometries to fit the largest one.
-                aabb = 0
                 assert isinstance(tt.name, str)
                 assert isinstance(tt.fragments, list)
 
-                # Sanity check all fragment geometries.
+                # fixme: ensure tt.name is sane
+                # fixme: double check the directory does not yet exist.
+                # Build directory name for this template.
+                model_dir = os.path.join(config.dir_template, tt.name)
+
+                geo = {}
+                aabb = 0
+
+                # Store all fragment models for this template.
                 for frag in tt.fragments:
-                    # Sanity checks.
-                    try:
-                        assert isinstance(frag, Fragment)
-                        assert isinstance(frag.vert, list)
-                        assert isinstance(frag.uv, list)
-                        assert isinstance(frag.rgb, list)
-                    except AssertionError:
-                        msg = 'Parameters for addTemplates must be lists'
-                        return RetVal(False, msg, None)
+                    # Ensure 'frag' is a MetaFragment instance.
+                    assert isinstance(frag, MetaFragment)
 
-                    if not self._isGeometrySane(frag):
-                        msg = 'Invalid geometry for template <{}>'
-                        return RetVal(False, msg.format(tt.name), None)
+                    frag_dir = os.path.join(model_dir, frag.name)
 
-                    # Determine the largest possible side length of the
-                    # AABB. To find it, just determine the largest spatial
-                    # extent in any axis direction. That is the side length of
-                    # the AABB cube. Then multiply it with sqrt(3) to ensure
-                    # that any rotation angle of the object is covered. The
-                    # slightly larger value of sqrt(3.1) adds some slack.
-                    if len(frag.vert) > 0:
-                        len_x = max(frag.vert[0::3]) - min(frag.vert[0::3])
-                        len_y = max(frag.vert[1::3]) - min(frag.vert[1::3])
-                        len_z = max(frag.vert[2::3]) - min(frag.vert[2::3])
-                        tmp = np.sqrt(3.1) * max(len_x, len_y, len_z)
-                        aabb = np.amax((aabb, tmp))
-                    del frag
+                    # Create the directory for this fragment:
+                    # eg. "templates/mymodel/" fixme: exist_ok must be false
+                    os.makedirs(frag_dir, exist_ok=True)
+
+                    # fixme: remove aabb
+                    # Save the Fragment in model_dir + tt.name
+                    if frag.type == 'raw':
+                        _aabb = self._saveRawFragment(frag_dir, frag)
+                    elif frag.type == 'dae':
+                        _aabb = self._saveDaeFragment(frag_dir, frag)
+                    else:
+                        # fixme: return a proper error
+                        print('Unknown type <{}>'.format(frag.type))
+                        assert False
+                    aabb = np.amax((_aabb, aabb))
 
                 # Compile the Mongo document for the new template.
                 data = {
@@ -614,32 +675,9 @@ class Clerk(multiprocessing.Process):
                     'cshape': tt.cs,
                     'aabb': float(aabb),
                     'boosters': tt.boosters,
-                    'factories': tt.factories}
-
-                # Compile the geometry data.
-                geo = {_.name: Fragment(*_) for _ in tt.fragments}
-
-                # Compile file name for geometry data and add that name to the
-                # template dictionary.
-                base_name = tt.name + '_geo'
-                data['file_geo'] = os.path.join(config.dir_template, base_name)
-                data['url_geo'] = os.path.join(config.url_template, base_name)
-
-                # Abort if the template already exists.
-                # Note: the following condition can fall prey to a race
-                # condition where a file is created after checking but before
-                # the file is written. For templates this is relatively
-                # harmless and therefore ignored here.
-                if os.path.exists(data['file_geo']):
-                    # A template with name ``templateID`` already existed -->
-                    # failure.
-                    msg = 'Template <{}> already exists'.format(data['name'])
-                    return RetVal(False, msg, None)
-
-                # Save the geometry data.
-                geo = json.dumps(geo)
-                open(data['file_geo'], 'wb').write(geo.encode('utf8'))
-                del geo
+                    'factories': tt.factories,
+                    'fragments': [MetaFragment(_.name, _.type, None)
+                                  for _ in tt.fragments]}
 
                 # Add the template to the database.
                 query = {'templateID': tt.name}
@@ -770,20 +808,20 @@ class Clerk(multiprocessing.Process):
         except AssertionError:
             return RetVal(False, '<spawn> received invalid arguments', None)
 
-        # Convenience.
-        names = [_[0] for _ in newObjects]
+        # Convenience (fixme: better docu)
+        t_names = [_[0] for _ in newObjects]
         SVs = [_[1] for _ in newObjects]
 
         with util.Timeit('spawn:1 getTemplates') as timeit:
-            # Fetch the raw templates for all ``names``.
-            ret = self.getTemplates(names)
+            # Fetch the raw templates for all ``t_names``.
+            ret = self.getTemplates(t_names)
             if not ret.ok:
                 self.logit.info(ret.msg)
                 return ret
             templates = ret.data
 
         # Request unique IDs for the objects to spawn.
-        ret = azrael.database.getUniqueObjectIDs(len(names))
+        ret = azrael.database.getUniqueObjectIDs(len(t_names))
         if not ret.ok:
             self.logit.error(ret.msg)
             return ret
@@ -794,30 +832,39 @@ class Clerk(multiprocessing.Process):
             # information for an instantiated object. Then add it to the list
             # of objects to spawn.
             dbDocs = []
-            for idx, name in enumerate(names):
-                tmp = dict(templates[name])
-                tmp['objID'] = objIDs[idx]
-                tmp['lastChanged'] = 0
-                tmp['templateID'] = name
+            for idx, name in enumerate(t_names):
+                # Convenience.
+                objID = objIDs[idx]
 
-                # Copy the geometry from the template- to the instance
-                # directory and update the 'file_geo' field to point to it.
-                geodata = open(tmp['file_geo'], 'rb').read()
-                tmp['file_geo'] = os.path.join(config.dir_instance,
-                                               str(tmp['objID']) + '_geo')
-                open(tmp['file_geo'], 'wb').write(geodata)
+                doc = dict(templates[name])
+                doc['objID'] = objID
+                doc['lastChanged'] = 0
+                doc['templateID'] = name
 
-                # Parse the geometry data to determine the names of all
-                # fragments. Then compile a neutral initial state for each.
-                geodata = json.loads(geodata.decode('utf8'))
-                init = FragState(name='', scale=1, position=[0, 0, 0],
-                                 orientation=[0, 0, 0, 1])
-                tmp['fragState'] = {frag_name: init._replace(name=frag_name)
-                                    for frag_name in geodata}
+                # Copy the model from the template- to the instance directory.
+                src = os.path.join(config.dir_template, doc['name'], '*')
+                dst = os.path.join(config.dir_instance, str(objID)) + '/'
+                os.makedirs(dst)
+                cmd = 'cp -r {} {}'.format(src, dst)
+                print(cmd)
+                subprocess.call(cmd, shell=True)
+                doc['url'] = config.url_instance + '/{}/'.format(objID)
+
+                # Parse the geometry data to determine all fragment names.
+                # Then compile a neutral initial state for each.  fixme:
+                # simplify
+                doc['fragState'] = {}
+                for f in doc['fragments']:
+                    f = MetaFragment(*f)
+                    doc['fragState'][f.name] = FragState(
+                        name=f.name,
+                        scale=1,
+                        position=[0, 0, 0],
+                        orientation=[0, 0, 0, 1])
 
                 # Add the new template document.
-                dbDocs.append(tmp)
-                del init, geodata, tmp
+                dbDocs.append(doc)
+                del idx, name, objID, doc
 
             # Insert all objects into the State Variable DB. Note: this does
             # not make Leonard aware of their existence (see next step).
@@ -826,7 +873,7 @@ class Clerk(multiprocessing.Process):
         with util.Timeit('spawn:3 addCmds') as timeit:
             # Compile the list of spawn commands that will be sent to Leonard.
             objs = []
-            for objID, name, sv in zip(objIDs, names, SVs):
+            for objID, name, sv in zip(objIDs, t_names, SVs):
                 # Convenience.
                 t = templates[name]
 
@@ -867,6 +914,7 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def getGeometry(self, objID: int):
         """
+        fixme: docu update
         Return the vertices, UV map, and RGB map for ``objID``.
 
         All returned values are NumPy arrays.
@@ -881,17 +929,19 @@ class Clerk(multiprocessing.Process):
         :return: Vertices, UV, and RGB data for ``objID``.
         :rtype: {'vert': arr_float64, 'uv': arr_float64, 'rgb': arr_uint8}
         """
-        # Retrieve the geometry. Return an error if the ID does not
-        # exist. Note: an empty geometry field is valid because Azrael supports
-        # dummy objects without geometries.
+        # Retrieve the geometry. Return an error if the ID does not exist.
+        # Note: an empty geometry field is valid because Azrael supports dummy
+        # objects without geometries.
         doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
-        else:
-            geo = open(doc['file_geo'], 'rb').read()
-            geo = json.loads(geo.decode('utf8'))
-            geo = {_: Fragment(*geo[_]) for _ in geo}
-            return RetVal(True, None, geo)
+
+        out = {}
+        for f in doc['fragments']:
+            f = MetaFragment(*f)
+            out[f.name] = {'type': f.type,
+                           'url': os.path.join(doc['url'], f.name)}
+        return RetVal(True, None, out)
 
     @typecheck
     def setGeometry(self, objID: int, fragments: list):
