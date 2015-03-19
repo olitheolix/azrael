@@ -1310,7 +1310,7 @@ def test_updateBoosterValues():
                        minval=-1, maxval=1, force=0)
 
     # Define a template with one fragment.
-    frags = [Fragment(name='foo', vert=vert, uv=[], rgb=[])]
+    frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=[], rgb=[]))]
     t1 = Template('t1', cs, frags, [b0, b1], [])
 
     # Add the template and spawn two instances.
@@ -1391,7 +1391,7 @@ def test_updateFragmentState():
     cs, vert = [1, 2, 3, 4], list(range(9))
 
     # Define a new template with one fragment.
-    frags = [Fragment('foo', vert=vert, uv=[], rgb=[])]
+    frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=[], rgb=[]))]
     t1 = Template('t1', cs, fragments=frags, boosters=[], factories=[])
 
     # Add the template to Azrael, spawn two instances, and make sure Leonard

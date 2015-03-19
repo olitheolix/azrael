@@ -150,7 +150,7 @@ class Clerk(multiprocessing.Process):
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        frags = [Fragment(name='NoName', vert=[], uv=[], rgb=[])]
+        frags = [MetaFragment('NoName', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
         t1 = Template('_templateNone', [0, 1, 1, 1], frags, [], [])
         t2 = Template('_templateSphere', [3, 1, 1, 1], frags, [], [])
         t3 = Template('_templateCube', [4, 1, 1, 1], frags, [], [])
@@ -582,7 +582,7 @@ class Clerk(multiprocessing.Process):
 
         if not self._isGeometrySane(frag.data):
             msg = 'Invalid geometry for template <{}>'
-            return RetVal(False, msg.format(tt.name), None)
+            return RetVal(False, msg.format(frag.name), None)
 
         # Write the fragment data as a JSON to eg "templates/mymodel/model".
         data = dict(zip(frag.data._fields, frag.data))
@@ -654,13 +654,21 @@ class Clerk(multiprocessing.Process):
                 # Store all fragment models for this template.
                 for frag in tt.fragments:
                     # Ensure 'frag' is a MetaFragment instance.
+                    # fixme: proper error handling.
                     assert isinstance(frag, MetaFragment)
 
                     frag_dir = os.path.join(model_dir, frag.name)
 
                     # Create the directory for this fragment:
-                    # eg. "templates/mymodel/" fixme: exist_ok must be false
-                    os.makedirs(frag_dir, exist_ok=True)
+                    # eg. "templates/mymodel/"
+                    try:
+                        os.makedirs(frag_dir, exist_ok=False)
+                    except:
+                        # fixme: This error should only be possible if two or
+                        # more fragment have the same name. add a sanity check
+                        # for this somewhere.
+                        msg = 'Frag dir <{}> already exists'.format(frag_dir)
+                        return RetVal(False, msg, None)
 
                     # fixme: remove aabb
                     # Save the Fragment in model_dir + tt.name
