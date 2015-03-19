@@ -404,17 +404,17 @@ def test_add_get_template_single():
 
     # Attempt to add a template where the number of vertices is not a multiple
     # of 9. This must fail.
-    frags = [Fragment(name='foo', vert=vert[:-1], uv=uv, rgb=rgb)]
+    frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert[:-1], uv=uv, rgb=rgb))]
     ret = clerk.addTemplates([Template('t1', cs, frags, [], [])])
     assert not ret.ok
     assert ret.msg.startswith('Invalid geometry for template')
 
     # Add a valid template. This must succeed.
-    frags = [Fragment(name='foo', vert=vert, uv=uv, rgb=rgb)]
+    frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=uv, rgb=rgb))]
     assert clerk.addTemplates([Template('bar', cs, frags, [], [])]).ok
 
     # Attempt to add another template with the same name. This must fail.
-    frags = [Fragment(name='foo', vert=2 * vert, uv=uv, rgb=rgb)]
+    frags = [MetaFragment('foo', 'raw', FragRaw(vert=2 * vert, uv=uv, rgb=rgb))]
     temp = Template('bar', 2 * cs, frags, [], [])
     assert not clerk.addTemplates([temp]).ok
 
@@ -437,7 +437,7 @@ def test_add_get_template_single():
         templateID='_templateCube', exit_speed=[0.1, 0.5])
 
     # Add the new template.
-    frags = [Fragment(name='foo', vert=vert, uv=uv, rgb=rgb)]
+    frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=uv, rgb=rgb))]
     temp = Template('t3', cs, frags, [b0, b1], [f0])
     assert clerk.addTemplates([temp]).ok
 
@@ -643,10 +643,12 @@ def test_controlParts_Boosters_bug_102():
     booster = parts.Booster(
         partID=0, pos=v, direction=v, minval=0, maxval=1, force=0)
 
+    frags = [MetaFragment('bar', 'raw', FragRaw(list(range(9)), [], []))]
+
     # Define a new template with two boosters and add it to Azrael.
     template = Template('t1',
                     cs=[1, 2, 3, 4],
-                    fragments=[Fragment('bar', list(range(9)), [], [])],
+                    fragments=frags,
                     boosters=[booster],
                     factories=[])
     assert clerk.addTemplates([template]).ok
