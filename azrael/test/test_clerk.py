@@ -1523,9 +1523,22 @@ def test_fragments_end2end():
         assert _frags[name_2] == FragState(name_2, scale_2, pos_2, rot_2)
         del ret, _frags
 
-    # Add the template to Azrael and spawn two instances.
-    frags = [Fragment(name='1', vert=vert_1, uv=[], rgb=[]),
-             Fragment(name='test', vert=vert_2, uv=[], rgb=[])]
+    # fixme: docu
+    f_raw = FragRaw(vert=vert_1, uv=[], rgb=[])
+
+    # Collada format: a .dae file plus a list of textures in jpg or png format.
+    b = os.path.dirname(__file__)
+    dae_file = open(b + '/cube.dae').read()
+    dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
+    dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
+    f_dae = FragDae(dae=dae_file,
+                    rgb={'rgb1.png': dae_rgb1,
+                         'rgb2.jpg': dae_rgb2})
+    del b
+
+    frags = [MetaFragment('10', 'raw', f_raw),
+             MetaFragment('test', 'dae', f_dae)]
+
     t1 = Template('t1', cs, frags, boosters=[], factories=[])
     assert clerk.addTemplates([t1]).ok
     ret = clerk.spawn([(t1.name, sv)])
@@ -1533,8 +1546,8 @@ def test_fragments_end2end():
     objID = ret.data[0]
     leo.processCommandsAndSync()
 
-    # Query the SV for the object and verify it has as many fragment state
-    # vectors as there are fragments.
+    # Query the SV for the object and verify it has as many FragmentState
+    # vectors as it has fragments.
     ret = clerk.getStateVariables([objID])
     assert ret.ok
     ret_frags = ret.data[objID]['frag']
@@ -1549,36 +1562,54 @@ def test_fragments_end2end():
 
     # Verify the fragment _states_ themselves.
     checkFragState(objID,
-                   '1', 1, [0, 0, 0], [0, 0, 0, 1],
+                   '10', 1, [0, 0, 0], [0, 0, 0, 1],
                    'test', 1, [0, 0, 0], [0, 0, 0, 1])
 
     # Modify the _state_ of both fragments and verify it worked.
     newStates = {
         objID: [
-            FragState('1', 7, [7, 7, 7], [7, 7, 7, 7]),
+            FragState('10', 7, [7, 7, 7], [7, 7, 7, 7]),
             FragState('test', 8, [8, 8, 8], [8, 8, 8, 8])]
     }
     assert clerk.updateFragmentStates(newStates).ok
     checkFragState(objID,
-                   '1', 7, [7, 7, 7], [7, 7, 7, 7],
+                   '10', 7, [7, 7, 7], [7, 7, 7, 7],
                    'test', 8, [8, 8, 8], [8, 8, 8, 8])
 
     # Query the fragment _geometries_.
     ret = clerk.getGeometry(objID)
     assert ret.ok
-    assert np.array_equal(ret.data['1'].vert, vert_1)
-    assert np.array_equal(ret.data['test'].vert, vert_2)
+
+    base_url = 'http://localhost:8080'
+    url = base_url + ret.data['10']['url'] + '/model.json'
+    tmp = urllib.request.urlopen(url).readall()
+    tmp = json.loads(tmp.decode('utf8'))
+
+    assert np.array_equal(tmp['vert'], vert_1)
+
+    url = base_url + ret.data['test']['url'] + '/rgb1.png'
+    tmp = urllib.request.urlopen(url).readall()
+    assert tmp == dae_rgb1
+
+    url = base_url + ret.data['test']['url'] + '/rgb2.jpg'
+    tmp = urllib.request.urlopen(url).readall()
+    assert tmp == dae_rgb2
+
+    url = base_url + ret.data['test']['url'] + '/test'
+    tmp = urllib.request.urlopen(url).readall()
+    assert tmp.decode('utf8') == dae_file
 
     # Change the fragment geometries.
-    frags = [Fragment(name='1', vert=vert_3, uv=[], rgb=[]),
+    frags = [Fragment(name='10', vert=vert_3, uv=[], rgb=[]),
              Fragment(name='test', vert=vert_4, uv=[], rgb=[])]
     assert clerk.setGeometry(objID, frags).ok
     ret = clerk.getGeometry(objID)
     assert ret.ok
-    assert np.array_equal(ret.data['1'].vert, vert_3)
+    assert np.array_equal(ret.data['10'].vert, vert_3)
     assert np.array_equal(ret.data['test'].vert, vert_4)
 
     # Kill all spawned Client processes.
+    stopAzrael(clerk, clacks)
     killAzrael()
     print('Test passed')
 
