@@ -1176,7 +1176,7 @@ def test_getGeometry():
 
     # Collada format: a .dae file plus a list of textures in jpg or png format.
     b = os.path.dirname(__file__)
-    dae_file = open(b + '/cube.dae').read()
+    dae_file = open(b + '/cube.dae', 'rb').read()
     dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
     dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
     f_dae = FragDae(dae=dae_file,
@@ -1488,7 +1488,7 @@ def test_fragments_end2end():
 
     # Reset the SV database and instantiate a Leonard and Clerk.
     leo = getLeonard()
-    clerk = azrael.clerk.Clerk()
+    clerk, client, clacks = startAzrael('Websocket')
 
     # Convenience.
     sv = bullet_data.BulletData()
@@ -1528,7 +1528,7 @@ def test_fragments_end2end():
 
     # Collada format: a .dae file plus a list of textures in jpg or png format.
     b = os.path.dirname(__file__)
-    dae_file = open(b + '/cube.dae').read()
+    dae_file = open(b + '/cube.dae', 'rb').read()
     dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
     dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
     f_dae = FragDae(dae=dae_file,
@@ -1580,33 +1580,66 @@ def test_fragments_end2end():
     ret = clerk.getGeometry(objID)
     assert ret.ok
 
+    # Download the 'raw' file and verify its content is correct.
     base_url = 'http://localhost:8080'
     url = base_url + ret.data['10']['url'] + '/model.json'
     tmp = urllib.request.urlopen(url).readall()
     tmp = json.loads(tmp.decode('utf8'))
-
     assert np.array_equal(tmp['vert'], vert_1)
+    assert tmp['uv'] == tmp['rgb'] == []
 
+    # Download and verify the dae file. Note that the file name itself matches
+    # the name of the fragment (ie. 'test'), *not* the name of the original
+    # Collada file ('cube.dae').
+    url = base_url + ret.data['test']['url'] + '/test'
+    tmp = urllib.request.urlopen(url).readall()
+    assert tmp == dae_file
+
+    # Download and verify the first texture.
     url = base_url + ret.data['test']['url'] + '/rgb1.png'
     tmp = urllib.request.urlopen(url).readall()
     assert tmp == dae_rgb1
 
+    # Download and verify the second texture.
     url = base_url + ret.data['test']['url'] + '/rgb2.jpg'
     tmp = urllib.request.urlopen(url).readall()
     assert tmp == dae_rgb2
 
-    url = base_url + ret.data['test']['url'] + '/test'
-    tmp = urllib.request.urlopen(url).readall()
-    assert tmp.decode('utf8') == dae_file
-
     # Change the fragment geometries.
-    frags = [Fragment(name='10', vert=vert_3, uv=[], rgb=[]),
-             Fragment(name='test', vert=vert_4, uv=[], rgb=[])]
+    f_raw = FragRaw(vert=vert_2, uv=[], rgb=[])
+    f_dae = FragDae(dae=dae_file,
+                    rgb={'rgb1.png': dae_rgb2,
+                         'rgb2.jpg': dae_rgb1})
+    frags = [MetaFragment('10', 'raw', f_raw),
+             MetaFragment('test', 'dae', f_dae)]
     assert clerk.setGeometry(objID, frags).ok
     ret = clerk.getGeometry(objID)
     assert ret.ok
-    assert np.array_equal(ret.data['10'].vert, vert_3)
-    assert np.array_equal(ret.data['test'].vert, vert_4)
+
+    # Download the 'raw' file and verify its content is correct.
+    base_url = 'http://localhost:8080'
+    url = base_url + ret.data['10']['url'] + '/model.json'
+    tmp = urllib.request.urlopen(url).readall()
+    tmp = json.loads(tmp.decode('utf8'))
+    assert np.array_equal(tmp['vert'], vert_2)
+    assert tmp['uv'] == tmp['rgb'] == []
+
+    # Download and verify the dae file. Note that the file name itself matches
+    # the name of the fragment (ie. 'test'), *not* the name of the original
+    # Collada file ('cube.dae').
+    url = base_url + ret.data['test']['url'] + '/test'
+    tmp = urllib.request.urlopen(url).readall()
+    assert tmp == dae_file
+
+    # Download and verify the first texture.
+    url = base_url + ret.data['test']['url'] + '/rgb1.png'
+    tmp = urllib.request.urlopen(url).readall()
+    assert tmp == dae_rgb2
+
+    # Download and verify the second texture.
+    url = base_url + ret.data['test']['url'] + '/rgb2.jpg'
+    tmp = urllib.request.urlopen(url).readall()
+    assert tmp == dae_rgb1
 
     # Kill all spawned Client processes.
     stopAzrael(clerk, clacks)

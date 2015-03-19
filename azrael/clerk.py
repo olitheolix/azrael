@@ -548,12 +548,15 @@ class Clerk(multiprocessing.Process):
         # Sanity checks.
         try:
             assert isinstance(frag.data, FragDae)
-        except AssertionError:
+            assert isinstance(frag.data.dae, bytes)
+            for v in frag.data.rgb.values():
+                assert isinstance(v, bytes)
+        except AssertionError as err:
             msg = 'Invalid fragment data types'
             return RetVal(False, msg, None)
 
         # Save the dae file to "templates/mymodel/name.dae".
-        open(os.path.join(frag_dir, frag.name), 'w').write(frag.data.dae)
+        open(os.path.join(frag_dir, frag.name), 'wb').write(frag.data.dae)
 
         # Save the textures. These are stored as dictionaries with the texture
         # file name as key and the data as a binary stream, eg,
@@ -964,23 +967,20 @@ class Clerk(multiprocessing.Process):
         if doc is None:
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
-        # Sanity check for geometry.
         for frag in fragments:
-            if not self._isGeometrySane(frag):
-                msg = 'Invalid geometry for objID <{}>'.format(objID)
-                return RetVal(False, msg, None)
+            # fixme: code duplication with spawn
+            frag_dir = os.path.join(config.dir_instance, str(objID)) + '/'
+            frag_dir = os.path.join(frag_dir, frag.name)
 
-        # Overwrite the geometry file with the new one.
-        # fixme: add same sanity checks as in addTemplate
-        geo = json.loads(open(doc['file_geo'], 'rb').read().decode('utf8'))
-        for frag in fragments:
-            if frag.name not in geo:
-                msg = 'Unknown fragment <{}>'.format(frag.name),
-                return RetVal(False, msg, None)
-            geo[frag.name] = frag
-        geo = json.dumps(geo)
-        open(doc['file_geo'], 'wb').write(geo.encode('utf8'))
-        del geo
+            # Save the Fragment in model_dir + tt.name
+            if frag.type == 'raw':
+                self._saveRawFragment(frag_dir, frag)
+            elif frag.type == 'dae':
+                self._saveDaeFragment(frag_dir, frag)
+            else:
+                # fixme: return a proper error
+                print('Unknown type <{}>'.format(frag.type))
+                assert False
 
         # Update the 'lastChanged' flag. Any clients will automatically receive
         # this flag whenever they query state variables.
