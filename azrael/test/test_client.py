@@ -25,6 +25,7 @@ if you want to see thorough tests for the Clerk functionality.
 
 import sys
 import time
+import json
 import pytest
 import IPython
 import subprocess
@@ -47,13 +48,12 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.test.test_clerk import getLeonard, killAzrael
 from azrael.test.test_clerk import startAzrael, stopAzrael
+from azrael.util import Template, Fragment
+from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 
 ipshell = IPython.embed
 WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client
-Template = azrael.util.Template
-Fragment = azrael.util.Fragment
-FragState = azrael.util.FragState
 
 
 def test_ping():
@@ -354,7 +354,8 @@ def test_create_fetch_template(client_type):
     vert = np.arange(9).astype(np.float64)
     uv = np.array([9, 10], np.float64)
     rgb = np.array([1, 2, 250], np.uint8)
-    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    temp = Template('t1', cs, frags, [], [])
     assert client.addTemplates([temp]).ok
 
     # Fetch the just added template again.
@@ -365,7 +366,7 @@ def test_create_fetch_template(client_type):
     assert len(ret.data[temp.name].factories) == 0
 
     # Fetch the geometry from the Web server and verify it is correct.
-    ret = client.getTemplateGeometry(ret.data[temp.name].url_geo)
+    ret = client.getTemplateGeometry(ret.data[temp.name])
     assert ret.ok
     assert np.array_equal(ret.data['bar'].vert, vert)
     assert np.array_equal(ret.data['bar'].uv, uv)
@@ -385,23 +386,20 @@ def test_create_fetch_template(client_type):
         templateID='_templateCube', exit_speed=[0.1, 0.5])
 
     # Attempt to query the geometry of a non-existing object.
-    assert not client.getGeometry(1).ok
+    assert client.getGeometry([1]) == (True, None, {1: None})
 
     # Define a new template, add it to Azrael, and spawn it.
-    temp = Template('t2', cs, [Fragment('bar', vert, uv, rgb)], [b0, b1], [f0])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    temp = Template('t2', cs, frags, [b0, b1], [f0])
     assert client.addTemplates([temp]).ok
     ret = client.spawn([{'template': temp.name, 'position': np.zeros(3)}])
     assert ret.ok and len(ret.data) == 1
     objID = ret.data[0]
 
     # Retrieve the geometry of the new object and verify it is correct.
-    ok, _, out = client.getGeometry(objID)
-    out = out['bar']
-    assert np.array_equal(vert, out.vert)
-    assert np.array_equal(uv, out.uv)
-    assert np.array_equal(rgb, out.rgb)
-    assert out.rgb.dtype == np.uint8
-    del ok, out
+    ret = client.getGeometry([objID])
+    assert ret.ok
+    assert ret.data[objID]['bar']['type'] == 'raw'
 
     # Retrieve the entire template and verify the CS and geometry, and number
     # of boosters/factories.
@@ -413,7 +411,7 @@ def test_create_fetch_template(client_type):
     assert len(t_data.factories) == 1
 
     # Fetch the geometry from the Web server and verify it is correct.
-    ret = client.getTemplateGeometry(t_data.url_geo)
+    ret = client.getTemplateGeometry(ret.data[temp.name])
     assert ret.ok
     assert np.array_equal(ret.data['bar'].vert, vert)
     assert np.array_equal(ret.data['bar'].uv, uv)
@@ -501,7 +499,7 @@ def test_controlParts(client_type):
         templateID='_templateSphere', exit_speed=[1, 5])
 
     # Define the template, add it to Azrael, and spawn an instance.
-    frags = [Fragment('bar', vert, uv, rgb)]
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
     temp = Template('t1', cs, frags, [b0, b1], [f0, f1])
     assert client.addTemplates([temp]).ok
     new_obj = {'template': temp.name,
@@ -583,7 +581,8 @@ def test_setGeometry(client_type):
     objID = 1
 
     # Add a new template and spawn it.
-    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    temp = Template('t1', cs, frags, [], [])
     assert client.addTemplates([temp]).ok
 
     new_obj = {'template': temp.name,
@@ -600,20 +599,17 @@ def test_setGeometry(client_type):
     lastChanged = ret.data[objID]['sv'].lastChanged
 
     # Fetch-, modify-, update- and verify the geometry.
-    ok, _, out = client.getGeometry(objID)
-    assert ok
-    out = out['bar']
-    assert np.allclose(uv, out.uv)
-    assert np.allclose(vert, out.vert)
+    ret = client.getGeometry([objID])
+    assert ret.ok
+    assert ret.data[objID]['bar']['type'] == 'raw'
 
     # Change the fragment geometries.
-    frags = [Fragment('bar', 2 * out.vert, 2 * out.uv, 2 * out.rgb)]
+    frags = [MetaFragment('bar', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
     assert client.setGeometry(objID, frags).ok
 
-    ok, _, out = client.getGeometry(objID)
-    assert ok
-    out = out['bar']
-    assert np.allclose(2 * vert, out.vert) and np.allclose(2 * uv, out.uv)
+    ret = client.getGeometry([objID])
+    assert ret.ok
+    assert ret.data[objID]['bar']['type'] == 'raw'
 
     # Ensure 'lastChanged' is different as well.
     ret = client.getStateVariables(objID)
@@ -645,7 +641,8 @@ def test_updateFragmentStates(client_type):
     clerk, client, clacks = startAzrael(client_type)
 
     # Add a new template and spawn it.
-    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    temp = Template('t1', cs, frags, [], [])
     assert client.addTemplates([temp]).ok
 
     new_obj = {'template': temp.name,

@@ -35,8 +35,9 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 
-from azrael.util import RetVal, Template, Fragment, FragState
 from azrael.typecheck import typecheck
+from azrael.util import RetVal, Template, Fragment
+from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 from azrael.bullet.bullet_data import BulletDataOverride, _BulletData
 
 
@@ -241,8 +242,9 @@ class Client():
         return self.serialiseAndSend('ping_clerk', None)
 
     @typecheck
-    def getGeometry(self, objID: int):
+    def getGeometry(self, objIDs: list):
         """
+        fixme: fix docu since this function only returns URLs these days
         Return the vertices, UV map, and RGB map for ``objID``.
 
         All returned values are NumPy arrays.
@@ -251,7 +253,7 @@ class Client():
         :return: tupleof NumPy arrays: (vert, UV, RGB)
         :rtype: tuple(arrays)
         """
-        return self.serialiseAndSend('get_geometry', objID)
+        return self.serialiseAndSend('get_geometry', objIDs)
 
     @typecheck
     def setGeometry(self, objID: int, frags: list):
@@ -398,8 +400,9 @@ class Client():
         return self.serialiseAndSend('get_templates', templateIDs)
 
     @typecheck
-    def getTemplateGeometry(self, url: str):
+    def getTemplateGeometry(self, template):
         """
+        fixme: changed signature; add type chck to template
         Fetch the geometry from ``url`` and return it.
 
         The return value is a dictionary. The keys are the fragment names and
@@ -413,14 +416,18 @@ class Client():
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
-            ip=self.ip, port=config.webserver_port, url=url)
+            ip=self.ip, port=config.webserver_port, url=template.url)
 
-        # Fetch the geometry from the Web server and decode it.
-        data = urllib.request.urlopen(base_url).readall()
-        out = json.loads(data.decode('utf8'))
+        # Fetch the geometry from the web server and decode it.
+        out = {}
+        for frag in template.fragments:
+            frag = MetaFragment(*frag)
+            url = base_url + '/' + frag.name + '/model.json'
+            data = urllib.request.urlopen(url).readall()
+            out = json.loads(data.decode('utf8'))
 
-        # Wrap the fragments into their dedicated tuple type.
-        out = {k: Fragment(*v) for (k, v) in out.items()}
+            # Wrap the fragments into their dedicated tuple type.
+            out[frag.name] = FragRaw(**out)
         return RetVal(True, None, out)
 
     @typecheck
@@ -435,7 +442,7 @@ class Client():
         this list must contain:
         * ``str`` name: the name of the new template.
         * ``list`` cs: collision shape
-        * ``list`` frags: list of ``Fragment`` objects.
+        * ``list`` frags: list of ``MetaFragment`` objects.
         * ``parts.Booster`` boosters: list of Booster instances.
         * ``parts.Factory`` boosters: list of Factory instances.
 
@@ -451,7 +458,9 @@ class Client():
                 assert isinstance(cs, (list, np.ndarray))
                 assert isinstance(frags, list)
                 for ii, _ in enumerate(frags):
-                    assert isinstance(_, Fragment)
+                    assert isinstance(_, MetaFragment)
+                    frag_name = _.name
+                    _ = FragRaw(*_.data)
 
                     # Ensure that vertices, UV, and RGB are lists or NumPy
                     # arrays. Then replace them them with pure Python list to
@@ -465,7 +474,7 @@ class Client():
 
                     # Replace the original fragment with one where vert, UV,
                     # and RGB are definitively Python lists.
-                    frags[ii] = Fragment(_.name, v, u, r)
+                    frags[ii] = MetaFragment(frag_name, 'raw', FragRaw(v, u, r))
                 assert isinstance(boosters, list)
                 assert isinstance(factories, list)
 

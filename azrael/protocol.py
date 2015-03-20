@@ -49,12 +49,10 @@ import azrael.physics_interface as physics_interface
 
 from collections import namedtuple
 from azrael.typecheck import typecheck
+from azrael.util import RetVal, Template, Fragment
+from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 
 ipshell = IPython.embed
-RetVal = azrael.util.RetVal
-Template = azrael.util.Template
-Fragment = azrael.util.Fragment
-FragState = azrael.util.FragState
 
 
 # ---------------------------------------------------------------------------
@@ -132,10 +130,11 @@ def FromClerk_GetTemplates_Decode(payload: dict):
     out = {}
     for name, data in payload.items():
         # Return the complete information in a named tuple.
-        nt = namedtuple('Template', 'cs boosters factories aabb url_geo')
+        nt = namedtuple('Template',
+                        'cs boosters factories aabb url fragments')
         ret = nt(np.array(data['cshape'], np.float64),
                  data['boosters'], data['factories'], data['aabb'],
-                 data['url_geo'])
+                 data['url'], data['fragments'])
         out[name] = ret
     return RetVal(True, None, out)
 
@@ -166,7 +165,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
             factories = [parts.Factory(*_) for _ in data['factories']]
 
             # Wrap fragments into their dedicated tuple type.
-            frags = [Fragment(*_) for _ in data['frags']]
+            frags = [MetaFragment(*_) for _ in data['frags']]
 
             try:
                 tmp = Template(name=data['name'], cs=data['cs'],
@@ -285,16 +284,21 @@ def FromClerk_SetForce_Decode(dummyarg):
 
 
 @typecheck
-def ToClerk_GetGeometry_Encode(objID: int):
-    return True, {'objID': objID}
+def ToClerk_GetGeometry_Encode(objIDs: list):
+    return True, {'objIDs': objIDs}
 
 
 @typecheck
 def ToClerk_GetGeometry_Decode(payload: dict):
-    tmp = payload['objID']
-    if not isinstance(tmp, int):
-        return False, 'Expected <int> but got <{}>'.format(type(tmp))
-    return True, (tmp, )
+    objIDs = payload['objIDs']
+    if not isinstance(objIDs, list):
+        return False, 'Expected <list> but got <{}>'.format(type(objIDs))
+
+    try:
+        objIDs = [int(_) for _ in objIDs]
+    except TypeError:
+        return False, 'Expected integers in ToClerk_GetGeometry_Decode'
+    return True, (objIDs, )
 
 
 @typecheck
@@ -304,15 +308,8 @@ def FromClerk_GetGeometry_Encode(geo):
 
 @typecheck
 def FromClerk_GetGeometry_Decode(payload: dict):
-    out = {}
-    for frag, data in payload.items():
-        tmp = Fragment(*data)
-        tmp = Fragment(tmp.name,
-                       vert=np.array(tmp.vert, np.float64),
-                       uv=np.array(tmp.uv, np.uint8),
-                       rgb=np.array(tmp.rgb, np.uint8))
-        out[frag] = tmp
-    return RetVal(True, None, out)
+    payload = {int(k): v for (k, v) in payload.items()}
+    return RetVal(True, None, payload)
 
 
 # ---------------------------------------------------------------------------
@@ -324,16 +321,17 @@ def FromClerk_GetGeometry_Decode(payload: dict):
 def ToClerk_SetGeometry_Encode(objID: int, frags: list):
     try:
         for idx, frag in enumerate(frags):
-            assert isinstance(frag, Fragment)
+            assert isinstance(frag, MetaFragment)
             assert isinstance(frag.name, str)
-            assert isinstance(frag.vert, np.ndarray)
-            assert isinstance(frag.uv, np.ndarray)
-            assert isinstance(frag.rgb, np.ndarray)
-            tmp = Fragment(name=frag.name,
-                           vert=frag.vert.tolist(),
-                           uv=frag.uv.tolist(),
-                           rgb=frag.rgb.tolist())
-            frags[idx] = tmp
+            assert isinstance(frag.data, FragRaw)
+            assert isinstance(frag.data.vert, np.ndarray)
+            assert isinstance(frag.data.uv, np.ndarray)
+            assert isinstance(frag.data.rgb, np.ndarray)
+            raw = FragRaw(
+                vert=frag.data.vert.tolist(),
+                uv=frag.data.uv.tolist(),
+                rgb=frag.data.rgb.tolist())
+            frags[idx] = MetaFragment(frag.name, 'raw', raw)
     except AssertionError:
         return False, 'Invalid fragment data types'
     return True, {'objID': objID, 'frags': frags}
@@ -342,7 +340,7 @@ def ToClerk_SetGeometry_Encode(objID: int, frags: list):
 @typecheck
 def ToClerk_SetGeometry_Decode(payload: dict):
     # Wrap the fragments into their dedicated tuple.
-    frags = [Fragment(*_) for _ in payload['frags']]
+    frags = [MetaFragment(*_) for _ in payload['frags']]
     return True, (payload['objID'], frags)
 
 
