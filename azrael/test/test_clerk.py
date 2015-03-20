@@ -46,6 +46,8 @@ ipshell = IPython.embed
 def test_invalid():
     """
     Send an invalid command to Clerk.
+
+    fixme: needs a Mock
     """
     class ClientTest(azrael.client.Client):
         def testSend(self, data):
@@ -60,7 +62,7 @@ def test_invalid():
             self.sock_cmd.send(data)
             data = self.sock_cmd.recv()
             data = json.loads(data.decode('utf8'))
-            return data['ok'], data['payload']
+            return data['ok'], data['msg']
 
     killAzrael()
 
@@ -423,9 +425,10 @@ def test_add_get_template_single():
 
     # Fetch the template and verify it was really not updated.
     ret = clerk.getTemplates([temp.name])
-    assert ret.ok
-    assert np.array_equal(ret.data[temp.name]['cshape'], cs)
-    del temp
+    ret = ret.data[temp.name]
+    assert ret['fragments'] == [list(MetaFragment('foo', 'raw', None))]
+    assert np.array_equal(ret['cshape'], cs)
+    del temp, ret
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named

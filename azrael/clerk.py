@@ -256,9 +256,17 @@ class Clerk(multiprocessing.Process):
             # The command word determines the action...
             if cmd in self.codec:
                 # Look up the decode-process-encode functions for the current
-                # command. Then execute them.
+                # command.
                 enc, proc, dec = self.codec[cmd]
-                self.runCommand(enc, proc, dec)
+
+                # Run the Clerk function. The try/except is to intercept any
+                # errors and prevent Clerk from dying.
+                try:
+                    self.runCommand(enc, proc, dec)
+                except Exception as err:
+                    msg = 'Client data raised error in Clerk'
+                    self.logit.error(msg)
+                    self.returnErr(self.last_addr, {}, msg)
             else:
                 # Unknown command.
                 self.returnErr(self.last_addr, {},
@@ -296,9 +304,10 @@ class Clerk(multiprocessing.Process):
         :param str msg: message to pass along.
         :return: None
         """
+        # fixme: is this try/except still necessary?
         try:
             # Convert the message to a byte string (if it is not already).
-            ret = json.dumps({'ok': False, 'payload': msg, 'msg': msg})
+            ret = json.dumps({'ok': False, 'payload': {}, 'msg': msg})
         except (ValueError, TypeError) as err:
             ret = json.dumps({'ok': False, 'payload': {},
                               'msg': 'JSON encoding error in Clerk'})
