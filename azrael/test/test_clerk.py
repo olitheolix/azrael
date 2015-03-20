@@ -718,7 +718,8 @@ def test_controlParts_invalid_commands():
     # Define a new template, add it to Azrael, and spawn an instance.
     cs, vert = [1, 2, 3, 4], list(range(9))
     uv, rgb = [9, 10], [1, 2, 250]
-    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [b0], [f0])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    temp = Template('t1', cs, frags, [b0], [f0])
     assert clerk.addTemplates([temp]).ok
     sv = bullet_data.BulletData()
     ret = clerk.spawn([(temp.name, sv)])
@@ -782,7 +783,8 @@ def test_controlParts_Boosters_notmoving():
                        minval=0, maxval=0.5, force=0)
 
     # Define a new template with two boosters and add it to Azrael.
-    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [b0, b1], [])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    temp = Template('t1', cs, frags, [b0, b1], [])
     assert clerk.addTemplates([temp]).ok
 
     # Spawn an instance of the template.
@@ -864,7 +866,8 @@ def test_controlParts_Factories_notmoving():
         templateID='_templateSphere', exit_speed=[1, 5])
 
     # Add the template to Azrael and spawn one instance.
-    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [f0, f1])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    temp = Template('t1', cs, frags, [], [f0, f1])
     assert clerk.addTemplates([temp]).ok
     ret = clerk.spawn([(temp.name, sv)])
     assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -944,7 +947,8 @@ def test_controlParts_Factories_moving():
         templateID='_templateSphere', exit_speed=[1, 5])
 
     # Define a template with two factories, add it to Azrael, and spawn it.
-    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [f0, f1])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    temp = Template('t1', cs, frags, [], [f0, f1])
     assert clerk.addTemplates([temp]).ok
     ret = clerk.spawn([(temp.name, sv)])
     assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -1052,8 +1056,8 @@ def test_controlParts_Boosters_and_Factories_move_and_rotated():
         templateID='_templateSphere', exit_speed=[1, 5])
 
     # Define the template, add it to Azrael, and spawn one instance.
-    temp = Template('t1', cs, [Fragment('bar', vert, uv, rgb)],
-                    [b0, b1], [f0, f1])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    temp = Template('t1', cs, frags, [b0, b1], [f0, f1])
     assert clerk.addTemplates([temp]).ok
     ret = clerk.spawn([(temp.name, sv)])
     assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -1204,7 +1208,6 @@ def test_getGeometry():
     # The object must have two fragments, an 'f_raw' with type 'raw' and
     # an 'f_dae' with type 'dae'.
     assert ret['f_raw']['type'] == 'raw'
-    print(ret['f_raw']['url'])
     assert ret['f_raw']['url'] == '/instances/' + str(objID) + '/f_raw'
     assert ret['f_dae']['type'] == 'dae'
     assert ret['f_dae']['url'] == '/instances/' + str(objID) + '/f_dae'
@@ -1641,6 +1644,16 @@ def test_fragments_end2end():
     stopAzrael(clerk, clacks)
     killAzrael()
     print('Test passed')
+
+
+def test_saveModelRaw():
+    # fixme: implement
+    pass
+
+
+def test_saveModelDae():
+    # fixme: implement
+    pass
 
 
 if __name__ == '__main__':

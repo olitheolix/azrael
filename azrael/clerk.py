@@ -544,6 +544,7 @@ class Clerk(multiprocessing.Process):
     def _saveDaeFragment(self, frag_dir, frag):
         """
         fixme: docu
+        fixme: rename to _saveModelDae
         """
         # Sanity checks.
         try:
@@ -569,6 +570,7 @@ class Clerk(multiprocessing.Process):
     def _saveRawFragment(self, frag_dir, frag):
         """
         fixme: docu
+        fixme: rename to _saveModelRaw
         """
         # Sanity checks.
         try:
@@ -864,7 +866,6 @@ class Clerk(multiprocessing.Process):
                 dst = os.path.join(config.dir_instance, str(objID)) + '/'
                 os.makedirs(dst)
                 cmd = 'cp -r {} {}'.format(src, dst)
-                print(cmd)
                 subprocess.call(cmd, shell=True)
                 doc['url'] = config.url_instance + '/{}/'.format(objID)
 
