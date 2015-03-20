@@ -828,7 +828,8 @@ class Clerk(multiprocessing.Process):
         except AssertionError:
             return RetVal(False, '<spawn> received invalid arguments', None)
 
-        # Convenience (fixme: better docu)
+        # Convenience: convert the list of tuples into to plain list, ie
+        # [(t1, sv1), (t2, sv2), ...]  -->  [t1, t2, ...] and [sv1, sv2, ...].
         t_names = [_[0] for _ in newObjects]
         SVs = [_[1] for _ in newObjects]
 
@@ -870,8 +871,7 @@ class Clerk(multiprocessing.Process):
                 doc['url'] = config.url_instance + '/{}/'.format(objID)
 
                 # Parse the geometry data to determine all fragment names.
-                # Then compile a neutral initial state for each.  fixme:
-                # simplify
+                # Then compile a neutral initial state for each.
                 doc['fragState'] = {}
                 for f in doc['fragments']:
                     f = MetaFragment(*f)
