@@ -583,23 +583,23 @@ class Clerk(multiprocessing.Process):
         """
         # Sanity checks.
         try:
-            assert isinstance(frag.data, FragRaw)
-            assert isinstance(frag.data.vert, list)
-            assert isinstance(frag.data.uv, list)
-            assert isinstance(frag.data.rgb, list)
-        except AssertionError:
+            data = FragRaw(*frag.data)
+            assert isinstance(data.vert, list)
+            assert isinstance(data.uv, list)
+            assert isinstance(data.rgb, list)
+        except (AssertionError, TypeError):
             msg = 'Invalid fragment data types'
             return RetVal(False, msg, None)
 
-        if not self._isGeometrySane(frag.data):
+        if not self._isGeometrySane(data):
             msg = 'Invalid geometry for template <{}>'
             return RetVal(False, msg.format(frag.name), None)
 
         # Write the fragment data as a JSON to eg "templates/mymodel/model".
-        data = dict(zip(frag.data._fields, frag.data))
-        data = json.dumps(data)
-        open(os.path.join(frag_dir, 'model.json'), 'w').write(data)
-        del data
+        file_data = dict(zip(data._fields, data))
+        file_data = json.dumps(file_data)
+        open(os.path.join(frag_dir, 'model.json'), 'w').write(file_data)
+        del file_data
 
         # Determine the largest possible side length of the
         # AABB. To find it, just determine the largest spatial
@@ -608,10 +608,10 @@ class Clerk(multiprocessing.Process):
         # that any rotation angle of the object is covered. The
         # slightly larger value of sqrt(3.1) adds some slack.
         aabb = 0
-        if len(frag.data.vert) > 0:
-            len_x = max(frag.data.vert[0::3]) - min(frag.data.vert[0::3])
-            len_y = max(frag.data.vert[1::3]) - min(frag.data.vert[1::3])
-            len_z = max(frag.data.vert[2::3]) - min(frag.data.vert[2::3])
+        if len(data.vert) > 0:
+            len_x = max(data.vert[0::3]) - min(data.vert[0::3])
+            len_y = max(data.vert[1::3]) - min(data.vert[1::3])
+            len_z = max(data.vert[2::3]) - min(data.vert[2::3])
             tmp = np.sqrt(3.1) * max(len_x, len_y, len_z)
             aabb = np.amax((aabb, tmp))
 
