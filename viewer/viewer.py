@@ -34,17 +34,19 @@ sys.path.insert(0, p)
 del p
 
 import time
+import json
 import argparse
+import azrael.client
+import urllib.request
+
 import numpy as np
 import OpenGL.GL as gl
-
-import azrael.client
 import azrael.util as util
 import azrael.config as config
 import azrael.physics_interface as physAPI
 
 from PySide import QtCore, QtGui, QtOpenGL
-from azrael.util import Template, Fragment, FragState
+from azrael.util import Template, MetaFragment, FragRaw, FragState
 
 
 def parseCommandLine():
@@ -360,16 +362,16 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # This is to mask a bug in Clacks: newly spawned objects can
         # become active before their geometry data hits the DB.  fixme:
         # now unnecessary?
-        if len(frag.vert) == 0:
+        if len(frag.data.vert) == 0:
             return
 
         # fixme: getGeometry must provide this (what about getGeometry?).
-        width = height = int(np.sqrt(len(frag.rgb) // 3))
+        width = height = int(np.sqrt(len(frag.data.rgb) // 3))
 
         # GPU needs float32 values for vertices and UV, and uint8 for RGB.
-        buf_vert = (frag.vert).astype(np.float32)
-        buf_uv = (frag.uv).astype(np.float32)
-        buf_rgb = (frag.rgb).astype(np.uint8)
+        buf_vert = np.array(frag.data.vert).astype(np.float32)
+        buf_uv = np.array(frag.data.uv).astype(np.float32)
+        buf_rgb = np.array(frag.data.rgb).astype(np.uint8)
 
         # Sanity checks.
         assert (len(buf_vert) % 9) == 0
@@ -508,12 +510,20 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Download the latest geometry for this object.
-            ret = self.client.getGeometry(objID)
+            ret = self.client.getGeometry([objID])
             if not ret.ok:
                 continue
 
             # Upload the fragment geometry to the GPU.
-            for frag in ret.data.values():
+            base_url = 'http://' + self.ip + ':8080'
+            for frag_name, frag_data in ret.data[objID].items():
+                if frag_data['type'] != 'raw':
+                    continue
+                url = base_url + frag_data['url'] + '/model.json'
+                frag = urllib.request.urlopen(url).readall()
+                frag = json.loads(frag.decode('utf8'))
+                frag = FragRaw(**frag)
+                frag = MetaFragment(frag_name, 'raw', frag)
                 self.upload2GPU(objID, frag)
 
             # Only draw visible triangles for this fragment.
@@ -536,7 +546,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'
-        frags = [Fragment('frag_1', buf_vert, uv, rgb)]
+        frags = [MetaFragment('frag_1', 'raw', FragRaw(buf_vert, uv, rgb))]
         temp = Template(t_projectile, cs, frags, [], [])
         ret = self.client.addTemplates([temp])
         del frags, temp
