@@ -29,6 +29,7 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.test.test_clerk import killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
+from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 
 ipshell = IPython.embed
 
@@ -74,7 +75,8 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # ----------------------------------------------------------------------
     # Encode source data.
     data = {'cshape': cs, 'boosters': [b0, b1], 'factories': [f0],
-            'aabb': aabb, 'url_geo': 'http://somewhere'}
+            'aabb': aabb, 'url': 'http://somewhere',
+            'fragments': MetaFragment('foo', 'raw', None)}
     templates = {template_name: data}
     ok, enc = protocol.FromClerk_GetTemplates_Encode(templates)
 
