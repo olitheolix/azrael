@@ -28,8 +28,6 @@ import time
 import json
 import pytest
 import IPython
-import subprocess
-import urllib.request
 
 import numpy as np
 
