@@ -548,7 +548,8 @@ def test_add_get_template_AABB():
     max_sidelen = max(8, 5, 6)
 
     # Add- and fetch the template.
-    t1 = Template('t1', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    t1 = Template('t1', cs, frags, [], [])
     assert clerk.addTemplates([t1]).ok
     ret = clerk.getTemplates([t1.name])
     assert ret.ok
@@ -566,7 +567,8 @@ def test_add_get_template_AABB():
     max_sidelen = max(8, 14, 8)
 
     # Add template and retrieve it again.
-    t2 = Template('t2', cs, [Fragment('bar', vert, uv, rgb)], [], [])
+    frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+    t2 = Template('t2', cs, frags, [], [])
     assert clerk.addTemplates([t2]).ok
     ret = clerk.getTemplates([t2.name])
     assert ret.ok
