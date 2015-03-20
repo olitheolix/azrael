@@ -1220,12 +1220,16 @@ def test_getGeometry():
     print('Test passed')
 
 
-def test_instanceDB_checksum():
+@mock.patch.object(azrael.clerk.Clerk, '_saveRawFragment')
+def test_instanceDB_checksum(mock_srf):
     """
     Spawn two objects, modify their geometries, and verify that the
     'lastChanged' flag changes accordingly.
     """
     killAzrael()
+
+    # 'clerk._saveFragmentRaw' always succeeds.
+    mock_srf.return_value = azrael.util.RetVal(True, None, 1)
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
@@ -1256,16 +1260,20 @@ def test_instanceDB_checksum():
     assert ret.ok and (set((objID0, objID1)) == set(ret.data.keys()))
     ref_lastChanged = ret.data[objID0]['sv'].lastChanged
 
-    # Modify the 'bar' fragment of objID0 and verify its 'lastChanged'
-    # attribute is now different.
+    # Modify the 'bar' fragment of objID0 and verify that exactly one geometry
+    # was updated.
     frags = [MetaFragment('bar', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
+    tmp = mock_srf.call_count
     assert clerk.setGeometry(objID0, frags).ok
+    mock_srf.call_count == tmp + 1
+    del tmp
+
+    # Verify that the new 'lastChanged' flag is now different for that object.
     ret = clerk.getStateVariables([objID0])
     assert ret.ok
     assert ref_lastChanged != ret.data[objID0]['sv'].lastChanged
 
-    # Verify further that the lastChanged attribute of objID1 has not changed
-    # since we did not touch its geometry.
+    # Verify further that the lastChanged attribute of objID1 has not changed.
     ret = clerk.getStateVariables([objID1])
     assert ret.ok
     assert ref_lastChanged == ret.data[objID1]['sv'].lastChanged
@@ -1273,11 +1281,6 @@ def test_instanceDB_checksum():
     # Query the geometry and verify it has the new values.
     ret = clerk.getGeometry(objID0)
     assert ret.ok
-
-    # fixme: use mock to make these tests redundant
-#    assert np.array_equal(ret.data['bar'].vert, 2 * vert)
-#    assert np.array_equal(ret.data['bar'].uv, 2 * uv)
-#    assert np.array_equal(ret.data['bar'].rgb, 2 * rgb)
 
     # Kill all spawned Client processes.
     killAzrael()
