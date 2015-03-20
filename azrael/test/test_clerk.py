@@ -25,6 +25,7 @@ import IPython
 import urllib.request
 
 import numpy as np
+import unittest.mock as mock
 
 import azrael.util
 import azrael.clerk
@@ -468,15 +469,20 @@ def test_add_get_template_single():
     print('Test passed')
 
 
-def test_add_get_template_multi_url():
+@mock.patch.object(azrael.clerk.Clerk, '_saveRawFragment')
+def test_add_get_template_multi_url(mock_srf):
     """
     Add templates in bulk and verify that the models are availabe via the
     correct URL.
     """
     killAzrael()
 
-    # Start the necessary services and instantiate a Client.
-    clerk, client, clacks = startAzrael('Websocket')
+    # All calls to _saveRawFragment will succeed.
+    mock_srf.return_value = azrael.util.RetVal(True, None, 1)
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk()
+    assert mock_srf.call_count == 3
 
     # Convenience.
     base_url = 'http://localhost:8080'
@@ -492,9 +498,11 @@ def test_add_get_template_multi_url():
 
     # Add two valid templates. This must succeed.
     assert clerk.addTemplates([t1, t2]).ok
+    assert mock_srf.call_count == 5
 
     # Attempt to add the same templates again. This must fail.
     assert not clerk.addTemplates([t1, t2]).ok
+    assert mock_srf.call_count == 5
 
     # Fetch the just added template in order to get the URL where its
     # geometries are stored.
@@ -503,26 +511,17 @@ def test_add_get_template_multi_url():
     assert MetaFragment(*(ret.data[name_1]['fragments'][0])).type == 'raw'
     assert ret.data[name_1]['url'] == '/templates/' + name_1
 
-    # fixme: fixture that verifes clerk._saveRawFragment was called
-    pass
-
     # Fetch the second template.
     ret = clerk.getTemplates([name_2])
     assert ret.ok
     assert MetaFragment(*(ret.data[name_2]['fragments'][0])).type == 'raw'
     assert ret.data[name_2]['url'] == '/templates/' + name_2
 
-    # fixme: fixture that verifes clerk._saveRawFragment was called
-    pass
-
     # Fetch both templates at once.
     ret = clerk.getTemplates([name_1, name_2])
     assert ret.ok and (len(ret.data) == 2)
     assert ret.data[name_1]['url'] == '/templates/' + name_1
     assert ret.data[name_2]['url'] == '/templates/' + name_2
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
 
     print('Test passed')
 
