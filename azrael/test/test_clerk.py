@@ -135,7 +135,7 @@ def test_spawn():
     assert (ret.ok, ret.data) == (True, (1, ))
 
     # Geometry for this object must now exist.
-    assert clerk.getGeometry(1).ok
+    assert clerk.getGeometry([1]).data[1] is not None
 
     # Spawn two more objects with a single call.
     name_2 = '_templateSphere'
@@ -144,16 +144,18 @@ def test_spawn():
     assert (ret.ok, ret.data) == (True, (2, 3))
 
     # Geometry for last two object must now exist as well.
-    assert clerk.getGeometry(2).ok
-    assert clerk.getGeometry(3).ok
+    ret = clerk.getGeometry([2, 3])
+    assert ret.data[2] is not None
+    assert ret.data[3] is not None
 
     # Spawn two identical objects with a single call.
     ret = clerk.spawn([(name_2, sv_2), (name_2, sv_2)])
     assert (ret.ok, ret.data) == (True, (4, 5))
 
     # Geometry for last two object must now exist as well.
-    assert clerk.getGeometry(4).ok
-    assert clerk.getGeometry(5).ok
+    ret = clerk.getGeometry([4, 5])
+    assert ret.data[4] is not None
+    assert ret.data[5] is not None
 
     # Invalid: list of objects must not be empty.
     assert not clerk.spawn([]).ok
@@ -1158,17 +1160,18 @@ def test_get_all_objectids():
 
 def test_getGeometry():
     """
-    Spawn an object and query its geometry.
+    Spawn two objects and query their geometries.
     """
     killAzrael()
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
 
-    # Raw object: specify vertices, UV, and texture (rgb) values directly.
+    # Raw object: specify vertices, UV, and texture (RGB) values directly.
     cs, vert = [1, 2, 3, 4], list(range(9))
     uv, rgb = [9, 10], [1, 2, 250]
-    sv = bullet_data.BulletData()
+    sv1 = bullet_data.BulletData(position=[1, 2, 3])
+    sv2 = bullet_data.BulletData(position=[4, 5, 6])
     f_raw = FragRaw(vert=vert, uv=uv, rgb=rgb)
 
     # Collada format: a .dae file plus a list of textures in jpg or png format.
@@ -1181,7 +1184,7 @@ def test_getGeometry():
                          'rgb2.jpg': dae_rgb2})
     del b
 
-    # Put both framgents into a valid list of MetaFragments.
+    # Put both fragments into a valid list of MetaFragments.
     frags = [MetaFragment('f_raw', 'raw', f_raw),
              MetaFragment('f_dae', 'dae', f_dae)]
 
@@ -1192,28 +1195,42 @@ def test_getGeometry():
     assert clerk.getTemplates([temp.name]).ok
 
     # Attempt to query the geometry of a non-existing object.
-    assert not clerk.getGeometry(1).ok
+    assert clerk.getGeometry([123]) == (True, None, {123: None})
 
-    # Spawn an object from the previously added template.
-    ret = clerk.spawn([(temp.name, sv)])
-    assert ret.ok and (len(ret.data) == 1)
-    objID = ret.data[0]
-
-    # Query the geometry of the just spawned object.
-    ret = clerk.getGeometry(objID)
+    # Spawn two objects from the previously added template.
+    ret = clerk.spawn([(temp.name, sv1), (temp.name, sv2)])
     assert ret.ok
-    ret = ret.data
+    objID_1, objID_2 = ret.data
 
-    # The object must have two fragments, an 'f_raw' with type 'raw' and
-    # an 'f_dae' with type 'dae'.
-    assert ret['f_raw']['type'] == 'raw'
-    assert ret['f_raw']['url'] == '/instances/' + str(objID) + '/f_raw'
-    assert ret['f_dae']['type'] == 'dae'
-    assert ret['f_dae']['url'] == '/instances/' + str(objID) + '/f_dae'
+    def _verify(_ret, _objID):
+        _ret = _ret[_objID]
+        # The object must have two fragments, an 'f_raw' with type 'raw' and
+        # an 'f_dae' with type 'dae'.
+        assert _ret['f_raw']['type'] == 'raw'
+        assert _ret['f_raw']['url'] == '/instances/' + str(_objID) + '/f_raw'
+        assert _ret['f_dae']['type'] == 'dae'
+        assert _ret['f_dae']['url'] == '/instances/' + str(_objID) + '/f_dae'
+        return True
 
-    # Delete the object and attempt to query its geometry afterwards.
-    assert clerk.removeObject(objID).ok
-    assert not clerk.getGeometry(objID).ok
+    # Query and verify the geometry of the first instance.
+    ret = clerk.getGeometry([objID_1])
+    assert ret.ok and _verify(ret.data, objID_1)
+
+    # Query and verify the geometry of the second instance.
+    ret = clerk.getGeometry([objID_2])
+    assert ret.ok and _verify(ret.data, objID_2)
+
+    # Query both instances at once and verify them.
+    ret = clerk.getGeometry([objID_1, objID_2])
+    assert ret.ok and _verify(ret.data, objID_1)
+    assert ret.ok and _verify(ret.data, objID_2)
+
+    # Delete first and query again.
+    assert clerk.removeObject(objID_1).ok
+    ret = clerk.getGeometry([objID_1, objID_2])
+    assert ret.ok
+    assert ret.data[objID_1] is None
+    assert _verify(ret.data, objID_2)
 
     # Kill all spawned Client processes.
     killAzrael()
@@ -1277,10 +1294,6 @@ def test_instanceDB_checksum(mock_srf):
     ret = clerk.getStateVariables([objID1])
     assert ret.ok
     assert ref_lastChanged == ret.data[objID1]['sv'].lastChanged
-
-    # Query the geometry and verify it has the new values.
-    ret = clerk.getGeometry(objID0)
-    assert ret.ok
 
     # Kill all spawned Client processes.
     killAzrael()
@@ -1578,12 +1591,14 @@ def test_fragments_end2end():
                    'test', 8, [8, 8, 8], [8, 8, 8, 8])
 
     # Query the fragment _geometries_.
-    ret = clerk.getGeometry(objID)
+    ret = clerk.getGeometry([objID])
     assert ret.ok
+    data = ret.data[objID]
+    del ret
 
     # Download the 'raw' file and verify its content is correct.
     base_url = 'http://localhost:8080'
-    url = base_url + ret.data['10']['url'] + '/model.json'
+    url = base_url + data['10']['url'] + '/model.json'
     tmp = urllib.request.urlopen(url).readall()
     tmp = json.loads(tmp.decode('utf8'))
     assert np.array_equal(tmp['vert'], vert_1)
@@ -1592,17 +1607,17 @@ def test_fragments_end2end():
     # Download and verify the dae file. Note that the file name itself matches
     # the name of the fragment (ie. 'test'), *not* the name of the original
     # Collada file ('cube.dae').
-    url = base_url + ret.data['test']['url'] + '/test'
+    url = base_url + data['test']['url'] + '/test'
     tmp = urllib.request.urlopen(url).readall()
     assert tmp == dae_file
 
     # Download and verify the first texture.
-    url = base_url + ret.data['test']['url'] + '/rgb1.png'
+    url = base_url + data['test']['url'] + '/rgb1.png'
     tmp = urllib.request.urlopen(url).readall()
     assert tmp == dae_rgb1
 
     # Download and verify the second texture.
-    url = base_url + ret.data['test']['url'] + '/rgb2.jpg'
+    url = base_url + data['test']['url'] + '/rgb2.jpg'
     tmp = urllib.request.urlopen(url).readall()
     assert tmp == dae_rgb2
 
@@ -1614,12 +1629,14 @@ def test_fragments_end2end():
     frags = [MetaFragment('10', 'raw', f_raw),
              MetaFragment('test', 'dae', f_dae)]
     assert clerk.setGeometry(objID, frags).ok
-    ret = clerk.getGeometry(objID)
+    ret = clerk.getGeometry([objID])
     assert ret.ok
+    data = ret.data[objID]
+    del ret
 
     # Download the 'raw' file and verify its content is correct.
     base_url = 'http://localhost:8080'
-    url = base_url + ret.data['10']['url'] + '/model.json'
+    url = base_url + data['10']['url'] + '/model.json'
     tmp = urllib.request.urlopen(url).readall()
     tmp = json.loads(tmp.decode('utf8'))
     assert np.array_equal(tmp['vert'], vert_2)
@@ -1628,17 +1645,17 @@ def test_fragments_end2end():
     # Download and verify the dae file. Note that the file name itself matches
     # the name of the fragment (ie. 'test'), *not* the name of the original
     # Collada file ('cube.dae').
-    url = base_url + ret.data['test']['url'] + '/test'
+    url = base_url + data['test']['url'] + '/test'
     tmp = urllib.request.urlopen(url).readall()
     assert tmp == dae_file
 
     # Download and verify the first texture.
-    url = base_url + ret.data['test']['url'] + '/rgb1.png'
+    url = base_url + data['test']['url'] + '/rgb1.png'
     tmp = urllib.request.urlopen(url).readall()
     assert tmp == dae_rgb2
 
     # Download and verify the second texture.
-    url = base_url + ret.data['test']['url'] + '/rgb2.jpg'
+    url = base_url + data['test']['url'] + '/rgb2.jpg'
     tmp = urllib.request.urlopen(url).readall()
     assert tmp == dae_rgb1
 

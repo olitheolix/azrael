@@ -931,9 +931,9 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, ret.msg, None)
 
     @typecheck
-    def getGeometry(self, objID: int):
+    def getGeometry(self, objIDs: list):
         """
-        fixme: docu update
+        fixme: docu update; args; return type
         Return the vertices, UV map, and RGB map for ``objID``.
 
         All returned values are NumPy arrays.
@@ -951,15 +951,20 @@ class Clerk(multiprocessing.Process):
         # Retrieve the geometry. Return an error if the ID does not exist.
         # Note: an empty geometry field is valid because Azrael supports dummy
         # objects without geometries.
-        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
-        if doc is None:
-            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
+        db = database.dbHandles['ObjInstances']
+        docs = list(db.find({'objID': {'$in': objIDs}}))
 
-        out = {}
-        for f in doc['fragments']:
-            f = MetaFragment(*f)
-            out[f.name] = {'type': f.type,
-                           'url': os.path.join(doc['url'], f.name)}
+        out = {_: None for _ in objIDs}
+        for doc in docs:
+            objID = doc['objID']
+            assert objID in out
+
+            obj = {}
+            for f in doc['fragments']:
+                f = MetaFragment(*f)
+                obj[f.name] = {'type': f.type,
+                               'url': os.path.join(doc['url'], f.name)}
+            out[objID] = obj
         return RetVal(True, None, out)
 
     @typecheck
