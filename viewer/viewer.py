@@ -36,6 +36,7 @@ del p
 import time
 import json
 import argparse
+import model_import
 import azrael.client
 import urllib.request
 
@@ -514,16 +515,39 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             if not ret.ok:
                 continue
 
-            # Upload the fragment geometry to the GPU.
+            # Fetch fragment model from Azrael and pass it to the GPU.
             base_url = 'http://' + self.ip + ':8080'
             for frag_name, frag_data in ret.data[objID].items():
-                if frag_data['type'] != 'raw':
+                if frag_data['type'] == 'raw':
+                    url = base_url + frag_data['url'] + '/model.json'
+                    frag = urllib.request.urlopen(url).readall()
+                    frag = json.loads(frag.decode('utf8'))
+                    frag = FragRaw(**frag)
+                    frag = MetaFragment(frag_name, 'raw', frag)
+                elif frag_data['type'] == 'dae':
+                    url = base_url + frag_data['url'] + '/' + frag_name
+                    frag = urllib.request.urlopen(url).readall()
+                    # fixme: use a BytesIO or binary temp file.
+                    # fixme: delete delme.del from hard drive after the change
+                    open('delme.del', 'wb').write(frag)
+
+                    mesh = model_import.loadModelAll('delme.del')
+                    # The model may contain several sub-models. Each one has a
+                    # set of vertices, UV- and texture maps. The following code
+                    # simply flattens the three lists of lists into just three
+                    # lists.
+                    vert = np.array(mesh['vertices']).flatten()
+                    uv = np.array(mesh['UV']).flatten()
+                    rgb = np.array(mesh['RGB']).flatten()
+
+                    # Ensure the data has the correct format.
+                    vert = np.array(vert)
+                    uv = np.array(uv, np.float32)
+                    rgb = np.array(rgb, np.uint8)
+                    frag = FragRaw(vert, uv, rgb)
+                    frag = MetaFragment(frag_name, 'raw', frag)
+                else:
                     continue
-                url = base_url + frag_data['url'] + '/model.json'
-                frag = urllib.request.urlopen(url).readall()
-                frag = json.loads(frag.decode('utf8'))
-                frag = FragRaw(**frag)
-                frag = MetaFragment(frag_name, 'raw', frag)
                 self.upload2GPU(objID, frag)
 
             # Only draw visible triangles for this fragment.
