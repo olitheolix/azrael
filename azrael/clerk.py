@@ -1000,38 +1000,45 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def getGeometry(self, objIDs: list):
         """
-        fixme: docu update; args; return type
-        Return the vertices, UV map, and RGB map for ``objID``.
+        Return information about the fragments of each object in ``objIDs``.
 
-        All returned values are NumPy arrays.
+        This method returns a dictionary of the form
 
-        If the ID does not exist return an error.
+         {objID_1: {'type': 'raw', 'url': 'http:...'},
+          objID_2: {'type': 'dae', 'url': 'http:...'},
+          objID_3: None,
+          ...
+        }
 
-        .. note::
-           It is possible that an object has no geometry. An empty array will
-           be returned in that case.
+        Every element in ``objIDs`` will be a key in the returned dictionary.
+        However, the corresponding value will be *None* if the object does not
+        exist in Azrael.
 
-        :param int objID: object ID
-        :return: Vertices, UV, and RGB data for ``objID``.
-        :rtype: {'vert': arr_float64, 'uv': arr_float64, 'rgb': arr_uint8}
+        :param list objIDs: return geometry information for all of them.
+        :return: meta information about all fragment for each object.
+        :rtype: dict
         """
         # Retrieve the geometry. Return an error if the ID does not exist.
-        # Note: an empty geometry field is valid because Azrael supports dummy
-        # objects without geometries.
+        # Note: an empty geometry field is still valid object.
         db = database.dbHandles['ObjInstances']
         docs = list(db.find({'objID': {'$in': objIDs}}))
 
+        # Initialise the output dictionary with a None value for every
+        # requested object. The loop below will overwrite these values for all
+        # those objects that actually exist.
         out = {_: None for _ in objIDs}
-        for doc in docs:
-            objID = doc['objID']
-            assert objID in out
 
-            obj = {}
-            for f in doc['fragments']:
-                f = MetaFragment(*f)
-                obj[f.name] = {'type': f.type,
-                               'url': os.path.join(doc['url'], f.name)}
-            out[objID] = obj
+        # Determine the fragment- type (eg. 'raw' or 'dae') and URL and put it
+        # into the output dictionary. This will create a dictionary of the form
+        # {objID_1: {'type': 'raw', 'url': 'http:...'},
+        #  objID_2: {'type': 'dae', 'url': 'http:...'},...
+        # }
+        pj = os.path.join
+        for doc in docs:
+            f = [MetaFragment(*_) for _ in doc['fragments']]
+            u = doc['url']
+            obj = {_.name: {'type': _.type, 'url': pj(u, _.name)} for _ in f}
+            out[doc['objID']] = obj
         return RetVal(True, None, out)
 
     @typecheck
@@ -1043,18 +1050,9 @@ class Clerk(multiprocessing.Process):
         fixup: docu update due to new signature
 
         :param int objID: the object for which to update the geometry.
-        :param list vert: list of vertices.
-        :param list uv: list of UV coordinate pairs.
-        :param list RGB: list of RGB values for every UV pair.
+        :param list fragments: the fragments for ``objID``.
         :return: Success
         """
-        # Fetch the instance data for ``objID`` to find out where the current
-        # geometry is stored.
-        db = database.dbHandles['ObjInstances']
-        doc = db.find_one({'objID': objID})
-        if doc is None:
-            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
-
         for frag in fragments:
             # fixme: code duplication with spawn
             frag_dir = os.path.join(config.dir_instance, str(objID)) + '/'
@@ -1065,8 +1063,9 @@ class Clerk(multiprocessing.Process):
             if not ret.ok:
                 return ret
 
-        # Update the 'lastChanged' flag. Any clients will automatically receive
-        # this flag whenever they query state variables.
+        # Update the 'lastChanged' flag in the database. All clients
+        # automatically receive this flag with their state variables.
+        db = database.dbHandles['ObjInstances']
         ret = db.update({'objID': objID}, {'$inc': {'lastChanged': 1}})
 
         # Verify the update worked.
