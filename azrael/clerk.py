@@ -651,7 +651,14 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def saveModel(self, dirname: str, model):
         """
-        fixme: docu
+        Save the ``model`` to ``dirname`` and return the success.
+
+        This function is merely a wrapper around dedicated methods to save
+        individual file formats like Collada (dae) or Raw (for testing) files.
+
+        :param str dirname: the destination directory.
+        :param model: Container for the respective file format.
+        :return: success.
         """
         if model.type == 'raw':
             return self._saveModelRaw(dirname, model)
@@ -913,6 +920,8 @@ class Clerk(multiprocessing.Process):
                 # Convenience.
                 objID = objIDs[idx]
 
+                # Make a copy of the current template dictionary and populate
+                # it with the values that describe the template instance.
                 doc = dict(templates[name])
                 doc['objID'] = objID
                 doc['lastChanged'] = 0
