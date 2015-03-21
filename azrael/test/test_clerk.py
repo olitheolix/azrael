@@ -37,7 +37,7 @@ from azrael.test.test_clacks import startAzrael, stopAzrael
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 
-from azrael.util import Template, Fragment
+from azrael.util import Template, Fragment, RetVal
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 
 ipshell = IPython.embed
@@ -361,11 +361,15 @@ def test_set_force():
     print('Test passed')
 
 
-def test_add_get_template_single():
+@mock.patch.object(azrael.clerk.Clerk, 'saveModel')
+def test_add_get_template_single(mock_sm):
     """
     Add a new object to the templateID DB and query it again.
     """
     killAzrael()
+
+    # Assume saveModel returns ok.
+    mock_sm.return_value = RetVal(True, None, 1.0)
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
@@ -403,25 +407,31 @@ def test_add_get_template_single():
     cs, vert = [1, 2, 3, 4], list(range(9))
     uv, rgb = [9, 10], [1, 2, 250]
 
+    # Keep track of the current call count to 'saveModel'.
+    cnt = mock_sm.call_count
+
     # Wrong argument .
     ret = clerk.addTemplates([1])
     assert (ret.ok, ret.msg) == (False, 'Invalid arguments')
+    assert mock_sm.call_count == cnt
 
-    # Attempt to add a template where the number of vertices is not a multiple
-    # of 9. This must fail.
-    frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert[:-1], uv=uv, rgb=rgb))]
-    ret = clerk.addTemplates([Template('t1', cs, frags, [], [])])
-    assert not ret.ok
-    assert ret.msg.startswith('Invalid geometry for template')
-
-    # Add a valid template. This must succeed.
     frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=uv, rgb=rgb))]
-    assert clerk.addTemplates([Template('bar', cs, frags, [], [])]).ok
 
-    # Attempt to add another template with the same name. This must fail.
-    frags = [MetaFragment('foo', 'raw', FragRaw(vert=2 * vert, uv=uv, rgb=rgb))]
-    temp = Template('bar', 2 * cs, frags, [], [])
+    # Add template when 'saveModel' fails.
+    mock_sm.return_value = RetVal(False, 'test_error', None)
+    ret = clerk.addTemplates([Template('t1', cs, frags, [], [])])
+    assert (ret.ok, ret.msg) == (False, 'test_error')
+    assert mock_sm.call_count == cnt + 1
+
+    # Add template when 'saveModel' succeeds.
+    mock_sm.return_value = RetVal(True, None, 1.0)
+    assert clerk.addTemplates([Template('bar', cs, frags, [], [])]).ok
+    assert mock_sm.call_count == cnt + 2
+
+    # Adding the same template again must fail.
+    temp = Template('bar', cs, frags, [], [])
     assert not clerk.addTemplates([temp]).ok
+    assert mock_sm.call_count == cnt + 2
 
     # Fetch the template and verify it was really not updated.
     ret = clerk.getTemplates([temp.name])
@@ -446,6 +456,7 @@ def test_add_get_template_single():
     frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=uv, rgb=rgb))]
     temp = Template('t3', cs, frags, [b0, b1], [f0])
     assert clerk.addTemplates([temp]).ok
+    assert mock_sm.call_count == cnt + 3
 
     # Retrieve the just created object and verify the CS and geometry.
     ret = clerk.getTemplates([temp.name])
@@ -483,7 +494,7 @@ def test_add_get_template_multi_url(mock_smr):
     killAzrael()
 
     # All calls to _saveModelRaw will succeed.
-    mock_smr.return_value = azrael.util.RetVal(True, None, 1)
+    mock_smr.return_value = RetVal(True, None, 1)
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
@@ -1249,7 +1260,7 @@ def test_instanceDB_checksum(mock_smr):
     killAzrael()
 
     # 'clerk._saveFragmentRaw' always succeeds.
-    mock_smr.return_value = azrael.util.RetVal(True, None, 1)
+    mock_smr.return_value = RetVal(True, None, 1)
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()

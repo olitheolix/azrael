@@ -702,6 +702,8 @@ class Clerk(multiprocessing.Process):
                 # fixme: double check the directory does not yet exist.
                 # Build directory name for this template.
                 model_dir = os.path.join(config.dir_template, tt.name)
+                if os.path.exists(model_dir):
+                    return RetVal(False, 'Template path already exists', None)
 
                 geo = {}
                 aabb = 0
