@@ -478,8 +478,8 @@ def test_add_get_template_single(mock_sm):
     print('Test passed')
 
 
-@mock.patch.object(azrael.clerk.Clerk, '_saveModelRaw')
-def test_add_get_template_multi_url(mock_smr):
+@mock.patch.object(azrael.clerk.Clerk, 'saveModel')
+def test_add_get_template_multi_url(mock_sm):
     """
     Add templates in bulk and verify that the models are availabe via the
     correct URL.
@@ -487,11 +487,11 @@ def test_add_get_template_multi_url(mock_smr):
     killAzrael()
 
     # All calls to _saveModelRaw will succeed.
-    mock_smr.return_value = RetVal(True, None, 1)
+    mock_sm.return_value = RetVal(True, None, 1)
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
-    assert mock_smr.call_count == 3
+    assert mock_sm.call_count == 3
 
     # Convenience.
     base_url = 'http://localhost:8080'
@@ -507,11 +507,11 @@ def test_add_get_template_multi_url(mock_smr):
 
     # Add two valid templates. This must succeed.
     assert clerk.addTemplates([t1, t2]).ok
-    assert mock_smr.call_count == 5
+    assert mock_sm.call_count == 5
 
     # Attempt to add the same templates again. This must fail.
     assert not clerk.addTemplates([t1, t2]).ok
-    assert mock_smr.call_count == 5
+    assert mock_sm.call_count == 5
 
     # Fetch the just added template in order to get the URL where its
     # geometries are stored.
@@ -1244,8 +1244,8 @@ def test_getGeometry():
     print('Test passed')
 
 
-@mock.patch.object(azrael.clerk.Clerk, '_saveModelRaw')
-def test_instanceDB_checksum(mock_smr):
+@mock.patch.object(azrael.clerk.Clerk, 'saveModel')
+def test_instanceDB_checksum(mock_sm):
     """
     Spawn two objects, modify their geometries, and verify that the
     'lastChanged' flag changes accordingly.
@@ -1253,7 +1253,7 @@ def test_instanceDB_checksum(mock_smr):
     killAzrael()
 
     # 'clerk._saveFragmentRaw' always succeeds.
-    mock_smr.return_value = RetVal(True, None, 1)
+    mock_sm.return_value = RetVal(True, None, 1)
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
@@ -1287,9 +1287,9 @@ def test_instanceDB_checksum(mock_smr):
     # Modify the 'bar' fragment of objID0 and verify that exactly one geometry
     # was updated.
     frags = [MetaFragment('bar', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
-    tmp = mock_smr.call_count
+    tmp = mock_sm.call_count
     assert clerk.setGeometry(objID0, frags).ok
-    mock_smr.call_count == tmp + 1
+    mock_sm.call_count == tmp + 1
     del tmp
 
     # Verify that the new 'lastChanged' flag is now different for that object.
