@@ -26,6 +26,7 @@ This moduel implement ZeroMQ version of the ``Clerk``. For a Websocket version
 is identical).
 
 """
+import io
 import os
 import sys
 import zmq
@@ -34,6 +35,7 @@ import shutil
 import IPython
 import cytoolz
 import logging
+import traceback
 import subprocess
 import setproctitle
 import multiprocessing
@@ -263,11 +265,22 @@ class Clerk(multiprocessing.Process):
                 # errors and prevent Clerk from dying.
                 try:
                     self.runCommand(enc, proc, dec)
-                except Exception as err:
-                    msg = 'Client data for <{}> raised error in Clerk'
+                except Exception:
+                    msg = 'Client data for <{}> raised an error in Clerk'
                     msg = msg.format(cmd)
-                    self.logit.error(msg)
-                    self.returnErr(self.last_addr, msg)
+
+                    # Get stack trace as string.
+                    buf = io.StringIO()
+                    traceback.print_exc(file=buf)
+                    buf.seek(0)
+                    msg_st = [' -> ' + _ for _ in buf.readlines()]
+                    msg_st = msg + '\n' + ''.join(msg_st)
+
+                    # Log the error message with stack trace, but return only
+                    # the error message.
+                    self.logit.error(msg_st)
+                    self.returnErr(self.last_addr, msg, addToLog=False)
+                    del msg, buf, msg_st
             else:
                 # Unknown command.
                 self.returnErr(self.last_addr,
@@ -294,19 +307,21 @@ class Clerk(multiprocessing.Process):
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
     @typecheck
-    def returnErr(self, addr, msg: str=''):
+    def returnErr(self, addr, msg: str='', addToLog: bool=True):
         """
         Send negative reply and log a warning message.
 
         This is a convenience method to enhance readability.
 
         :param addr: ZeroMQ address as returned by the router socket.
+        :param bool addToLog: logs a Warning with ``msg`` if *True*
         :param str msg: error message.
         :return: None
         """
         # Convert the message to a byte string (if it is not already).
         ret = json.dumps({'ok': False, 'payload': {}, 'msg': msg})
-        self.logit.warning(msg)
+        if addToLog:
+            self.logit.warning(msg)
 
         # Send the message.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
@@ -557,7 +572,7 @@ class Clerk(multiprocessing.Process):
             for v in model.data.rgb.values():
                 assert isinstance(v, bytes)
         except AssertionError as err:
-            msg = 'Invalid fragment data types'
+            msg = 'Invalid data types for Collada fragments'
             return RetVal(False, msg, None)
 
         # Save the dae file to "templates/mymodel/name.dae".
@@ -590,7 +605,7 @@ class Clerk(multiprocessing.Process):
             assert isinstance(data.uv, list)
             assert isinstance(data.rgb, list)
         except (AssertionError, TypeError):
-            msg = 'Invalid fragment data types'
+            msg = 'Invalid data types for Raw fragments'
             return RetVal(False, msg, None)
 
         if not self._isGeometrySane(data):
