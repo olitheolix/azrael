@@ -419,7 +419,7 @@ def test_add_get_template_single(mock_sm):
 
     # Add template when 'saveModel' fails.
     mock_sm.return_value = RetVal(False, 'test_error', None)
-    ret = clerk.addTemplates([Template('t1', cs, frags, [], [])])
+    ret = clerk.addTemplates([Template('bar', cs, frags, [], [])])
     assert (ret.ok, ret.msg) == (False, 'test_error')
     assert mock_sm.call_count == cnt + 1
 

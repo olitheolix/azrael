@@ -30,6 +30,7 @@ import os
 import sys
 import zmq
 import json
+import shutil
 import IPython
 import cytoolz
 import logging
@@ -702,7 +703,9 @@ class Clerk(multiprocessing.Process):
                 # fixme: double check the directory does not yet exist.
                 # Build directory name for this template.
                 model_dir = os.path.join(config.dir_template, tt.name)
-                if os.path.exists(model_dir):
+                try:
+                    os.makedirs(model_dir, exist_ok=False)
+                except FileExistsError:
                     return RetVal(False, 'Template path already exists', None)
 
                 geo = {}
@@ -720,17 +723,19 @@ class Clerk(multiprocessing.Process):
                     # eg. "templates/mymodel/"
                     try:
                         os.makedirs(frag_dir, exist_ok=False)
-                    except:
+                    except FileExistsError:
                         # fixme: This error should only be possible if two or
                         # more fragment have the same name. add a sanity check
                         # for this somewhere.
                         msg = 'Frag dir <{}> already exists'.format(frag_dir)
+                        shutil.rmtree(model_dir)
                         return RetVal(False, msg, None)
 
                     # fixme: remove aabb
                     # Save the Fragment in model_dir + tt.name
                     ret = self.saveModel(frag_dir, frag)
                     if not ret.ok:
+                        shutil.rmtree(model_dir)
                         return ret
 
                     aabb = np.amax((ret.data, aabb))
