@@ -100,8 +100,6 @@ def parseCommandLine():
 def addModel(scale, fname):
     """
     Import a new template and spawn it.
-
-    This will become the first object to populate the simulation.
     """
     # Get a Client instance.
     client = azrael.client.Client()
@@ -183,18 +181,12 @@ def addModel(scale, fname):
     objID = ret.data[0]
     print('done (ID=<{}>)'.format(objID))
 
-    # Disable the booster fragments by settings its scale to Zero.
+    # Disable the booster fragments by settings their scale to Zero.
     newStates = {objID: [
         FragState('b_left', 0, [0, 0, 0], [0, 0, 0, 1]),
         FragState('b_right', 0, [0, 0, 0], [0, 0, 0, 1]),
         ]}
     assert client.updateFragmentStates(newStates).ok
-
-    # Construct an attribute object (will be needed to reset the simulation).
-    z = np.zeros(3, np.float64)
-    attr = BulletDataOverride(
-        position=pos, velocityLin=z, velocityRot=z, orientation=orient)
-    return objID, attr
 
 
 def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
