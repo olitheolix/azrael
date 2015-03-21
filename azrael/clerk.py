@@ -649,6 +649,19 @@ class Clerk(multiprocessing.Process):
         return set(name).issubset(ref)
 
     @typecheck
+    def saveModel(self, dirname: str, model):
+        """
+        fixme: docu
+        """
+        if model.type == 'raw':
+            return self._saveModelRaw(dirname, model)
+        elif model.type == 'dae':
+            return self._saveModelDae(dirname, model)
+        else:
+            msg = 'Unknown type <{}>'.format(model.type)
+            return RetVal(False, msg, None)
+
+    @typecheck
     def addTemplates(self, templates: list):
         """
         Add all ``templates`` to the system so that they can be spawned.
@@ -714,15 +727,7 @@ class Clerk(multiprocessing.Process):
 
                     # fixme: remove aabb
                     # Save the Fragment in model_dir + tt.name
-                    if frag.type == 'raw':
-                        ret = self._saveModelRaw(frag_dir, frag)
-                    elif frag.type == 'dae':
-                        ret = self._saveModelDae(frag_dir, frag)
-                    else:
-                        # fixme: return a proper error
-                        print('Unknown type <{}>'.format(frag.type))
-                        assert False
-
+                    ret = self.saveModel(frag_dir, frag)
                     if not ret.ok:
                         return ret
 
@@ -960,6 +965,8 @@ class Clerk(multiprocessing.Process):
         """
         Remove ``objID`` from the physics simulation.
 
+        fixme: delete model data from file system
+
         :param int objID: ID of object to remove.
         :return: Success
         """
@@ -1034,15 +1041,7 @@ class Clerk(multiprocessing.Process):
             frag_dir = os.path.join(frag_dir, frag.name)
 
             # Save the Fragment in model_dir + tt.name
-            if frag.type == 'raw':
-                ret = self._saveModelRaw(frag_dir, frag)
-            elif frag.type == 'dae':
-                ret = self._saveModelDae(frag_dir, frag)
-            else:
-                # fixme: return a proper error
-                print('Unknown type <{}>'.format(frag.type))
-                assert False
-
+            ret = self.saveModel(frag_dir, frag)
             if not ret.ok:
                 return ret
 
