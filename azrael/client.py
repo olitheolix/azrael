@@ -28,6 +28,7 @@ import zmq
 import json
 import base64
 import logging
+import IPython
 import urllib.request
 
 import numpy as np
@@ -450,16 +451,13 @@ class Client():
         :return: Success
         """
         try:
-            for idx, tt in enumerate(templates):
-                assert isinstance(tt, Template)
-                assert len(tt) == 5
-                name, cs, frags, boosters, factories = tt
-
-                assert isinstance(name, str)
-                assert isinstance(cs, (list, np.ndarray))
-                assert isinstance(frags, list)
-                new_frags = []
-                for frag in frags:
+            for idx, temp in enumerate(templates):
+                assert isinstance(temp, Template)
+                assert isinstance(temp.name, str)
+                assert isinstance(temp.cs, (list, np.ndarray))
+                assert isinstance(temp.fragments, list)
+                frags = []
+                for frag in temp.fragments:
                     assert isinstance(frag, MetaFragment)
                     if frag.type == 'raw':
                         _ = FragRaw(*frag.data)
@@ -477,7 +475,7 @@ class Client():
                         # Replace the original fragment with one where vert, UV,
                         # and RGB are definitively Python lists.
                         tmp = MetaFragment(frag.name, 'raw', FragRaw(v, u, r))
-                        new_frags.append(tmp)
+                        frags.append(tmp)
                     else:
                         _ = FragDae(*frag.data)
                         assert isinstance(_.dae, bytes)
@@ -488,26 +486,24 @@ class Client():
                             assert isinstance(rr, str)
                             assert isinstance(_.rgb[rr], bytes)
                             _rgb[rr] = base64.b64encode(_.rgb[rr])
-                        new_frags.append(FragDae(_dae, _rgb))
+                        frags.append(FragDae(_dae, _rgb))
 
-                frags = new_frags
-                del new_frags
+                assert isinstance(temp.boosters, list)
+                assert isinstance(temp.factories, list)
 
-                assert isinstance(boosters, list)
-                assert isinstance(factories, list)
-
-                for b in boosters:
+                for b in temp.boosters:
                     assert isinstance(b, parts.Booster)
-                for f in factories:
+                for f in temp.factories:
                     assert isinstance(f, parts.Factory)
 
                 # Ensure the collision shape and Fragment geometry are lists,
                 # not NumPy arrays.
-                cs = np.array(cs, np.float64).tolist()
+                cs = np.array(temp.cs, np.float64).tolist()
 
                 # Replace the original entry with a new one where CS is
                 # definitively a list.
-                templates[idx] = Template(name, cs, frags, boosters, factories)
+                templates[idx] = Template(
+                    temp.name, cs, frags, temp.boosters, temp.factories)
         except AssertionError as err:
             return RetVal(False, 'Data type error', None)
         return self.serialiseAndSend('add_templates', templates)
