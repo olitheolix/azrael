@@ -1047,18 +1047,17 @@ class Clerk(multiprocessing.Process):
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
         Return with an error if ``objID`` does not exist.
-        fixup: docu update due to new signature
 
         :param int objID: the object for which to update the geometry.
-        :param list fragments: the fragments for ``objID``.
+        :param list fragments: the new fragments for ``objID``.
         :return: Success
         """
         for frag in fragments:
-            # fixme: code duplication with spawn
+            # Note: this naming scheme must match the one in 'spawn'!
             frag_dir = os.path.join(config.dir_instance, str(objID)) + '/'
             frag_dir = os.path.join(frag_dir, frag.name)
 
-            # Save the Fragment in model_dir + tt.name
+            # Save the fragment models.
             ret = self.saveModel(frag_dir, frag)
             if not ret.ok:
                 return ret
@@ -1068,7 +1067,7 @@ class Clerk(multiprocessing.Process):
         db = database.dbHandles['ObjInstances']
         ret = db.update({'objID': objID}, {'$inc': {'lastChanged': 1}})
 
-        # Verify the update worked.
+        # Return the success status of the database update.
         if ret['n'] == 1:
             return RetVal(True, None, None)
         else:
