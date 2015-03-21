@@ -34,7 +34,7 @@ from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 ipshell = IPython.embed
 
 
-def test_encoding_add_get_template(clientType='ZeroMQ'):
+def test_encoding_get_template(clientType='ZeroMQ'):
     """
     Test codec for {add,get}Template functions.
     """
@@ -42,16 +42,10 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     killAzrael()
 
     # Test parameters and constants.
-    cs = [1, 2, 3, 4]
-    vert = [5, 6, 7, 8]
-    uv = [9, 10]
-    rgb = [1, 2, 250]
-    aabb = float(1)
     template_name = 'mytemplate'
-
     b0 = parts.Booster(partID=0, pos=np.zeros(3), direction=[0, 0, 1],
                        minval=0, maxval=0.5, force=0)
-    b1 = parts.Booster(partID=0, pos=np.zeros(3), direction=[1, 1, 0],
+    b1 = parts.Booster(partID=1, pos=np.zeros(3), direction=[1, 1, 0],
                        minval=0, maxval=0.6, force=0)
     f0 = parts.Factory(
         partID=0, pos=np.zeros(3), direction=[0, 0, 1],
@@ -74,8 +68,9 @@ def test_encoding_add_get_template(clientType='ZeroMQ'):
     # Clerk --> Client.
     # ----------------------------------------------------------------------
     # Encode source data.
+    cs = [1, 2, 3, 4]
     data = {'cshape': cs, 'boosters': [b0, b1], 'factories': [f0],
-            'aabb': aabb, 'url': 'http://somewhere',
+            'aabb': 1.0, 'url': 'http://somewhere',
             'fragments': MetaFragment('foo', 'raw', None)}
     templates = {template_name: data}
     ok, enc = protocol.FromClerk_GetTemplates_Encode(templates)
@@ -210,4 +205,5 @@ def test_GetStateVariable():
 if __name__ == '__main__':
     test_GetStateVariable()
     test_send_command()
-    test_encoding_add_get_template()
+    test_encoding_get_template()
+
