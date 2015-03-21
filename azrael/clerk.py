@@ -187,7 +187,7 @@ class Clerk(multiprocessing.Process):
         ok, out = fun_decode(self.payload)
         if not ok:
             # Error during decoding.
-            self.returnErr(self.last_addr, {}, out)
+            self.returnErr(self.last_addr, out)
         else:
             # Decoding was successful. Pass all returned parameters directly
             # to the processing method.
@@ -199,7 +199,7 @@ class Clerk(multiprocessing.Process):
                 self.returnOk(self.last_addr, ret, '')
             else:
                 # The processing method encountered an error.
-                self.returnErr(self.last_addr, {}, ret.msg)
+                self.returnErr(self.last_addr, ret.msg)
 
     def run(self):
         """
@@ -241,13 +241,12 @@ class Clerk(multiprocessing.Process):
             try:
                 msg = json.loads(msg.decode('utf8'))
             except (ValueError, TypeError) as err:
-                self.returnErr(self.last_addr, {},
-                               'JSON decoding error in Clerk')
+                self.returnErr(self.last_addr, 'JSON decoding error in Clerk')
                 continue
 
             # Sanity check: every message must contain at least a command byte.
             if not (('cmd' in msg) and ('payload' in msg)):
-                self.returnErr(self.last_addr, {}, 'Invalid command format')
+                self.returnErr(self.last_addr, 'Invalid command format')
                 continue
 
             # Extract the command word and payload.
@@ -267,10 +266,10 @@ class Clerk(multiprocessing.Process):
                     msg = 'Client data for <{}> raised error in Clerk'
                     msg = msg.format(cmd)
                     self.logit.error(msg)
-                    self.returnErr(self.last_addr, {}, msg)
+                    self.returnErr(self.last_addr, msg)
             else:
                 # Unknown command.
-                self.returnErr(self.last_addr, {},
+                self.returnErr(self.last_addr,
                                'Invalid command <{}>'.format(cmd))
 
     @typecheck
@@ -288,34 +287,25 @@ class Clerk(multiprocessing.Process):
         try:
             ret = json.dumps({'ok': True, 'payload': data, 'msg': msg})
         except (ValueError, TypeError) as err:
-            self.returnErr(addr, {}, 'JSON encoding error in Clerk')
+            self.returnErr(addr, 'JSON encoding error in Clerk')
             return
 
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
     @typecheck
-    def returnErr(self, addr, data: dict, msg: str=''):
+    def returnErr(self, addr, msg: str=''):
         """
         Send negative reply and log a warning message.
 
         This is a convenience method to enhance readability.
 
         :param addr: ZeroMQ address as returned by the router socket.
-        :param dict data: arbitrary data to pass back to client.
-        :param str msg: message to pass along.
+        :param str msg: error message.
         :return: None
         """
-        # fixme: is this try/except still necessary?
-        try:
-            # Convert the message to a byte string (if it is not already).
-            ret = json.dumps({'ok': False, 'payload': {}, 'msg': msg})
-        except (ValueError, TypeError) as err:
-            ret = json.dumps({'ok': False, 'payload': {},
-                              'msg': 'JSON encoding error in Clerk'})
-
-        # For record keeping.
-        if isinstance(msg, str):
-            self.logit.warning(msg)
+        # Convert the message to a byte string (if it is not already).
+        ret = json.dumps({'ok': False, 'payload': {}, 'msg': msg})
+        self.logit.warning(msg)
 
         # Send the message.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
