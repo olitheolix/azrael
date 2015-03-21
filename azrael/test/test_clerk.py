@@ -361,15 +361,11 @@ def test_set_force():
     print('Test passed')
 
 
-@mock.patch.object(azrael.clerk.Clerk, 'saveModel')
-def test_add_get_template_single(mock_sm):
+def test_get_default_templates():
     """
-    Add a new object to the templateID DB and query it again.
+    Query the defautl templates in Azrael.
     """
     killAzrael()
-
-    # Assume saveModel returns ok.
-    mock_sm.return_value = RetVal(True, None, 1.0)
 
     # Instantiate a Clerk.
     clerk = azrael.clerk.Clerk()
@@ -403,36 +399,54 @@ def test_add_get_template_single(mock_sm):
     assert np.array_equal(ret.data[name_2]['cshape'], np.array([3, 1, 1, 1]))
     assert np.array_equal(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
 
-    # Convenience.
-    cs, vert = [1, 2, 3, 4], list(range(9))
-    uv, rgb = [9, 10], [1, 2, 250]
+    print('Test passed')
 
-    # Keep track of the current call count to 'saveModel'.
-    cnt = mock_sm.call_count
+
+@mock.patch.object(azrael.clerk.Clerk, 'saveModel')
+def test_add_get_template_single(mock_sm):
+    """
+    Add a new object to the templateID DB and query it again.
+    """
+    killAzrael()
+
+    # Assume saveModel returns ok.
+    mock_sm.return_value = RetVal(True, None, 1.0)
+
+    # Instantiate a Clerk.
+    clerk = azrael.clerk.Clerk()
+
+    # Convenience.
+    cs = [1, 2, 3, 4]
+
+    # Reset the call_count of the mock.
+    mock_sm.call_count = 0
+
+    # Request an invalid ID.
+    assert not clerk.getTemplates(['blah']).ok
 
     # Wrong argument .
     ret = clerk.addTemplates([1])
     assert (ret.ok, ret.msg) == (False, 'Invalid arguments')
-    assert mock_sm.call_count == cnt
+    assert mock_sm.call_count == 0
 
     # Compile a template structure.
-    frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=uv, rgb=rgb))]
+    frags = [MetaFragment('foo', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
     temp = Template('bar', cs, frags, [], [])
 
     # Add template when 'saveModel' fails.
     mock_sm.return_value = RetVal(False, 'test_error', None)
     ret = clerk.addTemplates([temp])
     assert (ret.ok, ret.msg) == (False, 'test_error')
-    assert mock_sm.call_count == cnt + 1
+    assert mock_sm.call_count == 1
 
     # Add template when 'saveModel' succeeds.
     mock_sm.return_value = RetVal(True, None, 1.0)
     assert clerk.addTemplates([temp]).ok
-    assert mock_sm.call_count == cnt + 2
+    assert mock_sm.call_count == 2
 
     # Adding the same template again must fail.
     assert not clerk.addTemplates([temp]).ok
-    assert mock_sm.call_count == cnt + 2
+    assert mock_sm.call_count == 2
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
@@ -449,7 +463,7 @@ def test_add_get_template_single(mock_sm):
     # Add the new template.
     temp = Template('t3', cs, frags, [b0, b1], [f0])
     assert clerk.addTemplates([temp]).ok
-    assert mock_sm.call_count == cnt + 3
+    assert mock_sm.call_count == 3
 
     # Retrieve the just created object and verify the collision shape.
     ret = clerk.getTemplates([temp.name])
@@ -1726,6 +1740,7 @@ if __name__ == '__main__':
     test_updateFragmentState()
     test_updateBoosterValues()
     test_getAllStateVariables()
+    test_get_default_templates()
     test_add_get_template_single()
     test_add_get_template_multi_url()
     test_getGeometry()
