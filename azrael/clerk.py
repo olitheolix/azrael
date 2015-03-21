@@ -673,11 +673,14 @@ class Clerk(multiprocessing.Process):
         """
         Add all ``templates`` to the system so that they can be spawned.
 
-        Return an error if one or more templates with the same name
-        exists. However, all new and unique templates will be added
-        regardless, whereas those with a name clash will be ignored.
+        This method returns with an error if a template could not be added.
 
-        ``templates`` is a list of :ref:``azrael.util.Template`` instances.
+        ..note:: due to the primitive way the model files are stored
+                 in the file system it is possible that model files were
+                 written to disk yet Azrael does not know about them.
+
+        The elements in ``templates`` are instances of
+        :ref:``azrael.util.Template``.
 
         :param list templates: list of Template definitions.
         :return: success
