@@ -415,30 +415,24 @@ def test_add_get_template_single(mock_sm):
     assert (ret.ok, ret.msg) == (False, 'Invalid arguments')
     assert mock_sm.call_count == cnt
 
+    # Compile a template structure.
     frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=uv, rgb=rgb))]
+    temp = Template('bar', cs, frags, [], [])
 
     # Add template when 'saveModel' fails.
     mock_sm.return_value = RetVal(False, 'test_error', None)
-    ret = clerk.addTemplates([Template('bar', cs, frags, [], [])])
+    ret = clerk.addTemplates([temp])
     assert (ret.ok, ret.msg) == (False, 'test_error')
     assert mock_sm.call_count == cnt + 1
 
     # Add template when 'saveModel' succeeds.
     mock_sm.return_value = RetVal(True, None, 1.0)
-    assert clerk.addTemplates([Template('bar', cs, frags, [], [])]).ok
+    assert clerk.addTemplates([temp]).ok
     assert mock_sm.call_count == cnt + 2
 
     # Adding the same template again must fail.
-    temp = Template('bar', cs, frags, [], [])
     assert not clerk.addTemplates([temp]).ok
     assert mock_sm.call_count == cnt + 2
-
-    # Fetch the template and verify it was really not updated.
-    ret = clerk.getTemplates([temp.name])
-    ret = ret.data[temp.name]
-    assert ret['fragments'] == [list(MetaFragment('foo', 'raw', None))]
-    assert np.array_equal(ret['cshape'], cs)
-    del temp, ret
 
     # Define a new object with two boosters and one factory unit.
     # The 'boosters' and 'factories' arguments are a list of named
@@ -453,12 +447,11 @@ def test_add_get_template_single(mock_sm):
         templateID='_templateCube', exit_speed=[0.1, 0.5])
 
     # Add the new template.
-    frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=uv, rgb=rgb))]
     temp = Template('t3', cs, frags, [b0, b1], [f0])
     assert clerk.addTemplates([temp]).ok
     assert mock_sm.call_count == cnt + 3
 
-    # Retrieve the just created object and verify the CS and geometry.
+    # Retrieve the just created object and verify the collision shape.
     ret = clerk.getTemplates([temp.name])
     assert ret.ok
     assert np.array_equal(ret.data[temp.name]['cshape'], cs)
