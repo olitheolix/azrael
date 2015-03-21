@@ -699,23 +699,28 @@ class Clerk(multiprocessing.Process):
                 if not self._isTemplateNameValid(tt.name):
                     return RetVal(False, 'Invalid template name', None)
 
-                # fixme: double check the directory does not yet exist.
-                # Build directory name for this template.
+                # Ensure all fragments have the correct type, their names are
+                # all strings, and their names are unique.
+                tmp = [_ for _ in tt.fragments if isinstance(_, MetaFragment)]
+                tmp = [_ for _ in tmp if self._isTemplateNameValid(_.name)]
+                tmp = set([_.name for _ in tmp])
+                if len(set(tmp)) < len(tt.fragments):
+                    msg = 'One or more fragments names are invalid',
+                    return RetVal(False, msg, None)
+                del tmp
+
+                # Create the directory for this error and return with an error
+                # if it already exists.
                 model_dir = os.path.join(config.dir_template, tt.name)
                 try:
                     os.makedirs(model_dir, exist_ok=False)
                 except FileExistsError:
-                    return RetVal(False, 'Template path already exists', None)
-
-                geo = {}
-                aabb = 0
+                    msg = 'Template path <{}> already exists'.format(model_dir)
+                    return RetVal(False, msg, None)
 
                 # Store all fragment models for this template.
+                aabb = 0
                 for frag in tt.fragments:
-                    # Ensure 'frag' is a MetaFragment instance.
-                    # fixme: proper error handling.
-                    assert isinstance(frag, MetaFragment)
-
                     frag_dir = os.path.join(model_dir, frag.name)
 
                     # Create the directory for this fragment:
@@ -723,15 +728,15 @@ class Clerk(multiprocessing.Process):
                     try:
                         os.makedirs(frag_dir, exist_ok=False)
                     except FileExistsError:
-                        # fixme: This error should only be possible if two or
-                        # more fragment have the same name. add a sanity check
-                        # for this somewhere.
+                        # This error should be impossible because we already
+                        # verified that all fragments have unique names...
+                        # famous last words --> handle the error and remove the
+                        # entire template directory.
                         msg = 'Frag dir <{}> already exists'.format(frag_dir)
                         shutil.rmtree(model_dir)
                         return RetVal(False, msg, None)
 
-                    # fixme: remove aabb
-                    # Save the Fragment in model_dir + tt.name
+                    # Write the model file to disk.
                     ret = self.saveModel(frag_dir, frag)
                     if not ret.ok:
                         shutil.rmtree(model_dir)
