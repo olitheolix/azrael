@@ -624,9 +624,8 @@ class Clerk(multiprocessing.Process):
         """
         Return *True* if ``name`` is a valid template name.
 
-        The template ``name`` is valid when it is a non-empty string that does
-        not start with a digit and contains only alphanumeric characters
-        (a-zA-Z0-9) and '_' otherwise.
+        The template ``name`` is valid when it is a non-empty string which
+        contains only alphanumeric characters (ie [a-zA-Z0-9]) and '_'.
 
         :param str name: name to validate.
         :return: *True* if ``name`` is valid, *False* otherwise.
@@ -636,7 +635,7 @@ class Clerk(multiprocessing.Process):
             return False
 
         # Must contain at least one character and  not start with a digit.
-        if (len(name) == 0) or (name[0].isdigit()):
+        if len(name) == 0:
             return False
 
         # Compile the set of admissible characters.

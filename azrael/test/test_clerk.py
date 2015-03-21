@@ -1722,11 +1722,11 @@ def test_isTemplateNameValid():
     assert itnv('a1')
     assert itnv('a_')
     assert itnv('_a')
+    assert itnv('1')
+    assert itnv('1a')
 
     # Test invalid names.
     assert not itnv('')
-    assert not itnv('1')
-    assert not itnv('1a')
     assert not itnv('.')
     assert not itnv('a.b')
 
