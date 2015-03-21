@@ -619,6 +619,36 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, aabb)
 
     @typecheck
+    def _isTemplateNameValid(self, name):
+        """
+        Return *True* if ``name`` is a valid template name.
+
+        The template ``name`` is valid when it is a non-empty string that does
+        not start with a digit and contains only alphanumeric characters
+        (a-zA-Z0-9) and '_' otherwise.
+
+        :param str name: name to validate.
+        :return: *True* if ``name`` is valid, *False* otherwise.
+        """
+        # Template name must be a string.
+        if not isinstance(name, str):
+            return False
+
+        # Must contain at least one character and  not start with a digit.
+        if (len(name) == 0) or (name[0].isdigit()):
+            return False
+
+        # Compile the set of admissible characters.
+        ref = 'abcdefghijklmnopqrstuvwxyz'
+        ref += ref.upper()
+        ref += '0123456789_'
+        ref = set(ref)
+
+        # Return true if ``name`` only consists of characters from the just
+        # defined reference set.
+        return set(name).issubset(ref)
+
+    @typecheck
     def addTemplates(self, templates: list):
         """
         Add all ``templates`` to the system so that they can be spawned.
@@ -643,19 +673,19 @@ class Clerk(multiprocessing.Process):
             if len(tmp) > 0:
                 return RetVal(False, 'Invalid arguments', None)
 
-            # The templates will be inserted in bulk for efficiency reasons.
+            # The templates will be inserted with a single bulk operation.
             db = database.dbHandles['Templates']
             bulk = db.initialize_unordered_bulk_op()
 
-            # Add each template to the bulk operation.
+            # Add each template to the bulk.
             aabb = 0
             for tt in templates:
-                # Initial AABB size. We will expand it when we parse the
-                # geometries to fit the largest one.
-                assert isinstance(tt.name, str)
-                assert isinstance(tt.fragments, list)
+                # Sanity check:
+                if not isinstance(tt.fragments, list):
+                    return RetVal(False, 'Fragments must be in a list', None)
+                if not self._isTemplateNameValid(tt.name):
+                    return RetVal(False, 'Invalid template name', None)
 
-                # fixme: ensure tt.name is sane
                 # fixme: double check the directory does not yet exist.
                 # Build directory name for this template.
                 model_dir = os.path.join(config.dir_template, tt.name)

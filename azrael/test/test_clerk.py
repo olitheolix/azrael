@@ -1688,7 +1688,35 @@ def test_saveModelDae():
     pass
 
 
+def test_isTemplateNameValid():
+    """
+    Test _isTemplateValid function.
+    """
+    # Reset Azrael.
+    killAzrael()
+
+    # Create a Clerk instance and a shortcut to the test method.
+    clerk = azrael.clerk.Clerk()
+    itnv = clerk._isTemplateNameValid
+
+    # Thest valid names.
+    assert itnv('a')
+    assert itnv('a1')
+    assert itnv('a_')
+    assert itnv('_a')
+
+    # Test invalid names.
+    assert not itnv('')
+    assert not itnv('1')
+    assert not itnv('1a')
+    assert not itnv('.')
+    assert not itnv('a.b')
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
+    test_isTemplateNameValid()
     test_controlParts_Boosters_bug_102()
     test_fragments_end2end()
     test_updateFragmentState()
