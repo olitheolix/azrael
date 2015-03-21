@@ -174,8 +174,9 @@ class Client():
         try:
             payload = json.dumps({'cmd': cmd, 'payload': data})
         except (ValueError, TypeError) as err:
-            self.logit.warning(err)
-            return RetVal(False, 'JSON encoding error', None)
+            msg = 'JSON encoding error for Client command <{}>'.format(cmd)
+            self.logit.warning(msg)
+            return RetVal(False, msg, None)
 
         # Send data and wait for response.
         self.send(payload)
