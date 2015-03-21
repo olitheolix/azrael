@@ -1,4 +1,4 @@
-# Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
+# Copyright 2015, Oliver Nagy <olitheolix@gmail.com>
 #
 # This file is part of Azrael (https://github.com/olitheolix/azrael)
 #
@@ -14,9 +14,10 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
-
+import os
 import sys
 import json
+import base64
 import pytest
 import IPython
 import numpy as np
@@ -29,7 +30,7 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.test.test_clerk import killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
-from azrael.util import FragState, FragDae, FragRaw, MetaFragment
+from azrael.util import FragState, FragDae, FragRaw, MetaFragment, Template
 
 ipshell = IPython.embed
 
@@ -202,8 +203,61 @@ def test_GetStateVariable():
     print('Test passed')
 
 
+def test_addTemplate_collada(clientType='ZeroMQ'):
+    """
+    Test addTemplate codec with Collada data.
+    """
+
+    killAzrael()
+
+    # Collada format: a .dae file plus a list of textures in jpg or png format.
+    dae_file = b'abc'
+    dae_rgb1 = b'def'
+    dae_rgb2 = b'ghj'
+
+    # Encode the data as Base64.
+    b64e = base64.b64encode
+    b64_dae_file = b64e(dae_file).decode('utf8')
+    b64_dae_rgb1 = b64e(dae_rgb1).decode('utf8')
+    b64_dae_rgb2 = b64e(dae_rgb2).decode('utf8')
+
+    # Compile the Collada fragment with the Base64 encoded data.
+    f_dae = FragDae(dae=dae_file,
+                    rgb={'rgb1.png': dae_rgb1,
+                         'rgb2.jpg': dae_rgb2})
+
+    # Same, but all entries are Base64 encoded.
+    b64_f_dae = FragDae(dae=b64_dae_file,
+                        rgb={'rgb1.png': b64_dae_rgb1,
+                             'rgb2.jpg': b64_dae_rgb2})
+
+    # Compile a valid Template structure.
+    frags = [MetaFragment('f_dae', 'dae', b64_f_dae)]
+    temp = Template('foo', [4, 1, 1, 1], frags, [], [])
+
+    # ----------------------------------------------------------------------
+    # Client --> Clerk.
+    # ----------------------------------------------------------------------
+    # Encode source data.
+    ok, enc = protocol.ToClerk_AddTemplates_Encode([temp])
+
+    # Convert output to JSON and back (simulates the wire transmission).
+    enc = json.loads(json.dumps(enc))
+
+    # Decode the data.
+    ok, dec = protocol.ToClerk_AddTemplates_Decode(enc)
+
+    # Extract the data from the first fragment of the first template.
+    dec_frag = dec[0][0].fragments[0].data
+
+    # Compare with the Fragment before it was Base64 encoded.
+    assert dec_frag == f_dae
+
+    print('Test passed')
+
+
 if __name__ == '__main__':
     test_GetStateVariable()
     test_send_command()
     test_encoding_get_template()
-
+    test_addTemplate_collada()

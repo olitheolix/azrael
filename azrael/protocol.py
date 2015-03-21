@@ -167,15 +167,16 @@ def ToClerk_AddTemplates_Decode(payload: dict):
 
             # Wrap fragments into their dedicated tuple type.
             # fixme: simplify; document; add error checks.
-            tmp = [MetaFragment(*_) for _ in data['frags']]
+            meta_frags = [MetaFragment(*_) for _ in data['frags']]
             frags = []
             b64d = base64.b64decode
-            for f in tmp:
-                if f.type == 'dae':
-                    dae = b64d(f.dae)
-                    rgb = {k: b64d(v) for (k, v) in f.rgb.items()}
-                    f = f._replace(data=FragDae(dae, rgb))
-                frags.append(f)
+            for mf in meta_frags:
+                if mf.type == 'dae':
+                    fd = FragDae(*mf.data)
+                    dae = b64d(fd.dae.encode('utf8'))
+                    rgb = {k: b64d(v.encode('utf8')) for (k, v) in fd.rgb.items()}
+                    mf = mf._replace(data=FragDae(dae, rgb))
+                frags.append(mf)
 
             try:
                 tmp = Template(name=data['name'], cs=data['cs'],
