@@ -26,6 +26,7 @@ feature set is identical).
 
 import zmq
 import json
+import base64
 import logging
 import urllib.request
 
@@ -438,7 +439,7 @@ class Client():
         Return an error if one or more template names already exist.
         fixup: new template structure with Fragment
 
-        The ``templates`` variables is a list of tuples/lists. Each entry in
+        The ``templates`` variable is a list of tuples/lists. Each entry in
         this list must contain:
         * ``str`` name: the name of the new template.
         * ``list`` cs: collision shape
@@ -457,24 +458,41 @@ class Client():
                 assert isinstance(name, str)
                 assert isinstance(cs, (list, np.ndarray))
                 assert isinstance(frags, list)
-                for ii, _ in enumerate(frags):
-                    assert isinstance(_, MetaFragment)
-                    frag_name = _.name
-                    _ = FragRaw(*_.data)
+                new_frags = []
+                for frag in frags:
+                    assert isinstance(frag, MetaFragment)
+                    if frag.type == 'raw':
+                        _ = FragRaw(*frag.data)
 
-                    # Ensure that vertices, UV, and RGB are lists or NumPy
-                    # arrays. Then replace them them with pure Python list to
-                    # make them JSON compliant.
-                    assert isinstance(_.vert, (list, np.ndarray))
-                    assert isinstance(_.uv, (list, np.ndarray))
-                    assert isinstance(_.rgb, (list, np.ndarray))
-                    v = np.array(_.vert, np.float64).tolist()
-                    u = np.array(_.uv, np.float64).tolist()
-                    r = np.array(_.rgb, np.uint8).tolist()
+                        # Ensure that vertices, UV, and RGB are lists or NumPy
+                        # arrays. Then replace them them with pure Python list to
+                        # make them JSON compliant.
+                        assert isinstance(_.vert, (list, np.ndarray))
+                        assert isinstance(_.uv, (list, np.ndarray))
+                        assert isinstance(_.rgb, (list, np.ndarray))
+                        v = np.array(_.vert, np.float64).tolist()
+                        u = np.array(_.uv, np.float64).tolist()
+                        r = np.array(_.rgb, np.uint8).tolist()
 
-                    # Replace the original fragment with one where vert, UV,
-                    # and RGB are definitively Python lists.
-                    frags[ii] = MetaFragment(frag_name, 'raw', FragRaw(v, u, r))
+                        # Replace the original fragment with one where vert, UV,
+                        # and RGB are definitively Python lists.
+                        tmp = MetaFragment(frag.name, 'raw', FragRaw(v, u, r))
+                        new_frags.append(tmp)
+                    else:
+                        _ = FragDae(*frag.data)
+                        assert isinstance(_.dae, bytes)
+                        assert isinstance(_.rgb, dict)
+                        _dae = base64.b64encode(_.dae)
+                        _rgb = {}
+                        for rr in _.rgb:
+                            assert isinstance(rr, str)
+                            assert isinstance(_.rgb[rr], bytes)
+                            _rgb[rr] = base64.b64encode(_.rgb[rr])
+                        new_frags.append(FragDae(_dae, _rgb))
+
+                frags = new_frags
+                del new_frags
+
                 assert isinstance(boosters, list)
                 assert isinstance(factories, list)
 

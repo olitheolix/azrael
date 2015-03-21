@@ -40,6 +40,7 @@ agnostic encodings of strings, JSON objects, or C-arrays (via NumPy). This
 should make it possible to write clients in other languages.
 """
 
+import base64
 import IPython
 import numpy as np
 import azrael.util
@@ -165,7 +166,16 @@ def ToClerk_AddTemplates_Decode(payload: dict):
             factories = [parts.Factory(*_) for _ in data['factories']]
 
             # Wrap fragments into their dedicated tuple type.
-            frags = [MetaFragment(*_) for _ in data['frags']]
+            # fixme: simplify; document; add error checks.
+            tmp = [MetaFragment(*_) for _ in data['frags']]
+            frags = []
+            b64d = base64.b64decode
+            for f in tmp:
+                if f.type == 'dae':
+                    dae = b64d(f.dae)
+                    rgb = {k: b64d(v) for (k, v) in f.rgb.items()}
+                    f = f._replace(data=FragDae(dae, rgb))
+                frags.append(f)
 
             try:
                 tmp = Template(name=data['name'], cs=data['cs'],

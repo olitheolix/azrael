@@ -22,7 +22,7 @@ The client class is merely a convenience class to wrap the Clerk
 commands. As such the tests here merely test these wrappers. See `test_clerk`
 if you want to see thorough tests for the Clerk functionality.
 """
-
+import os
 import sys
 import time
 import json
@@ -669,8 +669,56 @@ def test_updateFragmentStates(client_type):
     print('Test passed')
 
 
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_collada_model(client_type):
+    """
+    Add a template based on a Collada model, spawn it, and query its geometry.
+    """
+    killAzrael()
+
+    # Start the necessary services.
+    clerk, client, clacks = startAzrael(client_type)
+
+    # Collada format: a .dae file plus a list of textures in jpg or png format.
+    b = os.path.dirname(__file__)
+    dae_file = open(b + '/cube.dae', 'rb').read()
+    dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
+    dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
+    f_dae = FragDae(dae=dae_file,
+                    rgb={'rgb1.png': dae_rgb1,
+                         'rgb2.jpg': dae_rgb2})
+    del b
+
+    # Put both fragments into a valid list of MetaFragments.
+    frags = [MetaFragment('f_dae', 'dae', f_dae)]
+
+    # Add a valid template with the just specified fragments and verify the
+    # upload worked.
+    temp = Template('foo', [4, 1, 1, 1], frags, [], [])
+    assert clerk.addTemplates([temp]).ok
+
+    # Spawn the template.
+    ret = client.spawn([{'template': temp.name, 'position': np.zeros(3)}])
+    assert ret.ok
+    objID = ret.data[0]
+
+    # Query and the geometry.
+    ret = client.getGeometry([objID])
+    assert ret.ok
+
+    # Verify it has the correct type ('dae') and address.
+    ret = ret.data[objID]
+    assert ret['f_dae']['type'] == 'dae'
+    assert ret['f_dae']['url'] == '/instances/' + str(objID) + '/f_dae'
+
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
+    print('Test passed')
+
+
 if __name__ == '__main__':
     for _transport_type in ('ZeroMQ', 'Websocket'):
+        test_collada_model(_transport_type)
         test_updateFragmentStates(_transport_type)
         test_setStateVariable(_transport_type)
         test_setGeometry(_transport_type)
