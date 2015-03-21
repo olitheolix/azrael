@@ -155,8 +155,8 @@ function getTemplate(templateID) {
     return [cmd, dec]
 }
 
-function getGeometry(objID) {
-    var cmd = {'cmd': 'get_geometry', 'payload': {'objID': objID}}
+function getGeometry(objIDs) {
+    var cmd = {'cmd': 'get_geometry', 'payload': {'objIDs': objIDs}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
@@ -425,6 +425,44 @@ function* mycoroutine(connection) {
     var old_SVs = {}
     var obj_cache = {}
 
+    // Start a dedicated worker for model downloads.
+    var worker = new Worker('load_model.js');
+    var worker_idle = true;
+    var worker_jobs = [];
+    worker.onmessage = function (e) {
+        // Status message.
+        console.log('Received ' + Object.keys(e.data).length +
+                    ' new object models from <load_model.js> Worker');
+
+        // Iterate over all downloaded models by object ID.
+        for (var objID in e.data) {
+            // Keys are always strings in JS, but object IDs are
+            // integers in Azrael.
+            objID = parseInt(objID);
+
+            // Create an empty entry in the local object cache for the
+            // new object.
+            obj_cache[objID] = {};
+            for (var frag_name in e.data[objID]) {
+                var d = e.data[objID][frag_name];
+                var geo = compileMesh(
+                    objID,
+                    d['vert'],
+                    d['uv'],
+                    allSVs[objID]['sv'].scale);
+
+                // Add the fragment to the local object cache and scene.
+                obj_cache[objID][frag_name] = geo;
+                scene.add(geo);
+            }
+        }
+
+        // Mark the model download Worker as idle again and clear the
+        // work list.
+        worker_idle = true;
+        worker_jobs = [];
+    }
+
     // Query the state variables of all visible objects and update
     // their position on the screen.
     while (true) {
@@ -435,9 +473,9 @@ function* mycoroutine(connection) {
 
         // Update the position and orientation of all objects. If an
         // object does not yet exist then create one.
-        $(".progress-bar").css('width', '0%')
-        var numObjects = Object.keys(allSVs).length
-        var objCnt = 0
+        $(".progress-bar").css('width', '0%');
+        var numObjects = Object.keys(allSVs).length;
+        var objCnt = 0;
         for (var objID in allSVs) {
             // Convert the objID to an integer and increment the counter.
             objID = parseInt(objID);
@@ -483,33 +521,37 @@ function* mycoroutine(connection) {
             // Do not render ourselves.
             if (arrayEqual(playerID, objID)) continue;
 
-            // Download the entire object geometry if we do not have it
-            // in the local cache yet.
-            if (obj_cache[objID] == undefined) {
-                // Download.
-                msg = yield getGeometry(objID);
-                if (msg.ok == false) {
-                    console.log('Error getGeometry');
-                    return;
-                }
-
-                // Unpack the geometry of each fragment and add them to ThreeJS.
-                obj_cache[objID] = {}
-                for (var fragname in msg.data) {
-                    var geo = compileMesh(
-                        objID,
-                        msg.data[fragname][1], // UV array
-                        msg.data[fragname][2], // RGB array
-                        allSVs[objID]['sv'].scale);
-
-                    // Add the object to the cache and scene.
-                    obj_cache[objID][fragname] = geo;
-                    scene.add(geo);
-                }
+            // Update the object visuals. If the object does not yet
+            // exist in our scene then earmark it for download later.
+            if (obj_cache[objID] != undefined) {
+                // Update the visual appearance of all fragments in objID.
+                updateObjectGeometries(objID, allSVs, obj_cache);
+            } else {
+                // Schedule the model for download in a separate
+                // thread if the Worker for that download is not
+                // already busy (and potentially downloading the
+                // desired models already.
+                if (worker_idle == true) worker_jobs.push(objID);
             }
+        }
+        
+        // Request the undefined models if the worker is idle.
+        if ((worker_jobs.length > 0) && (worker_idle == true)) {
+            // Download the meta data for the models.
+            msg = yield getGeometry(worker_jobs);
+            if (msg.ok == false) {
+                console.log('Error getGeometry');
+            } else {
+                // Mark the Worker as being busy.
+                worker_idle = false;
 
-            // Update the visual appearance of all fragments in objID.
-            updateObjectGeometries(objID, allSVs, obj_cache);
+                // Send the list of objIDs for which we need the model
+                // The worker also needs to know from where to
+                // download them.
+                worker.postMessage(
+                    {'objData': msg.data,
+                     'baseURL': 'http://' + window.location.host});
+            }
         }
 
         // Remove models that do not exist anymore.
