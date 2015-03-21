@@ -541,40 +541,50 @@ class Clerk(multiprocessing.Process):
             return False
         return True
 
-    def _saveDaeFragment(self, frag_dir, frag):
+    def _saveModelDae(self, frag_dir, model):
         """
-        fixme: docu
-        fixme: rename to _saveModelDae
+        Save the Collada ``model`` to ``frag_dir``.
+
+        :param str frag_dir: directory where to store ``model``.
+        :param FragDae model: the Collada model.
+        :return: success
         """
         # Sanity checks.
         try:
-            assert isinstance(frag.data, FragDae)
-            assert isinstance(frag.data.dae, bytes)
-            for v in frag.data.rgb.values():
+            assert isinstance(model.data, FragDae)
+            assert isinstance(model.data.dae, bytes)
+            for v in model.data.rgb.values():
                 assert isinstance(v, bytes)
         except AssertionError as err:
             msg = 'Invalid fragment data types'
             return RetVal(False, msg, None)
 
         # Save the dae file to "templates/mymodel/name.dae".
-        open(os.path.join(frag_dir, frag.name), 'wb').write(frag.data.dae)
+        open(os.path.join(frag_dir, model.name), 'wb').write(model.data.dae)
 
         # Save the textures. These are stored as dictionaries with the texture
         # file name as key and the data as a binary stream, eg,
         # {'house.jpg': b';lj;lkj', 'tree.png': b'fdfu', ...}
-        for name, rgb in frag.data.rgb.items():
+        for name, rgb in model.data.rgb.items():
             open(os.path.join(frag_dir, name), 'wb').write(rgb)
 
         return RetVal(True, None, 1.0)
 
-    def _saveRawFragment(self, frag_dir, frag):
+    def _saveModelRaw(self, frag_dir, model):
         """
-        fixme: docu
-        fixme: rename to _saveModelRaw
+        Save the raw ``model`` to ``frag_dir``.
+
+        A 'raw' model is one where the vertices, UV map, and RGB textures is
+        provided directly. This is mostly useful for debugging because it
+        circumvents 3D file formats altogether.
+
+        :param str frag_dir: directory where to store ``model``.
+        :param FragDae model: the Collada model.
+        :return: success
         """
         # Sanity checks.
         try:
-            data = FragRaw(*frag.data)
+            data = FragRaw(*model.data)
             assert isinstance(data.vert, list)
             assert isinstance(data.uv, list)
             assert isinstance(data.rgb, list)
@@ -584,7 +594,7 @@ class Clerk(multiprocessing.Process):
 
         if not self._isGeometrySane(data):
             msg = 'Invalid geometry for template <{}>'
-            return RetVal(False, msg.format(frag.name), None)
+            return RetVal(False, msg.format(model.name), None)
 
         # Write the fragment data as a JSON to eg "templates/mymodel/model".
         file_data = dict(zip(data._fields, data))
@@ -675,9 +685,9 @@ class Clerk(multiprocessing.Process):
                     # fixme: remove aabb
                     # Save the Fragment in model_dir + tt.name
                     if frag.type == 'raw':
-                        ret = self._saveRawFragment(frag_dir, frag)
+                        ret = self._saveModelRaw(frag_dir, frag)
                     elif frag.type == 'dae':
-                        ret = self._saveDaeFragment(frag_dir, frag)
+                        ret = self._saveModelDae(frag_dir, frag)
                     else:
                         # fixme: return a proper error
                         print('Unknown type <{}>'.format(frag.type))
@@ -995,9 +1005,9 @@ class Clerk(multiprocessing.Process):
 
             # Save the Fragment in model_dir + tt.name
             if frag.type == 'raw':
-                ret = self._saveRawFragment(frag_dir, frag)
+                ret = self._saveModelRaw(frag_dir, frag)
             elif frag.type == 'dae':
-                ret = self._saveDaeFragment(frag_dir, frag)
+                ret = self._saveModelDae(frag_dir, frag)
             else:
                 # fixme: return a proper error
                 print('Unknown type <{}>'.format(frag.type))
