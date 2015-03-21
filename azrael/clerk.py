@@ -264,7 +264,8 @@ class Clerk(multiprocessing.Process):
                 try:
                     self.runCommand(enc, proc, dec)
                 except Exception as err:
-                    msg = 'Client data raised error in Clerk'
+                    msg = 'Client data for <{}> raised error in Clerk'
+                    msg = msg.format(cmd)
                     self.logit.error(msg)
                     self.returnErr(self.last_addr, {}, msg)
             else:
