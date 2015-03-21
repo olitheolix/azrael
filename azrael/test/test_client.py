@@ -695,7 +695,7 @@ def test_collada_model(client_type):
     # Add a valid template with the just specified fragments and verify the
     # upload worked.
     temp = Template('foo', [4, 1, 1, 1], frags, [], [])
-    assert clerk.addTemplates([temp]).ok
+    assert client.addTemplates([temp]).ok
 
     # Spawn the template.
     ret = client.spawn([{'template': temp.name, 'position': np.zeros(3)}])

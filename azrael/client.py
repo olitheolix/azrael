@@ -438,7 +438,8 @@ class Client():
         Add all ``templates`` to Azrael.
 
         Return an error if one or more template names already exist.
-        fixup: new template structure with Fragment
+        fixme: new template structure with Fragment
+        fixme: clean up code
 
         The ``templates`` variable is a list of tuples/lists. Each entry in
         this list must contain:
@@ -476,17 +477,20 @@ class Client():
                         # and RGB are definitively Python lists.
                         tmp = MetaFragment(frag.name, 'raw', FragRaw(v, u, r))
                         frags.append(tmp)
-                    else:
-                        _ = FragDae(*frag.data)
-                        assert isinstance(_.dae, bytes)
-                        assert isinstance(_.rgb, dict)
-                        _dae = base64.b64encode(_.dae)
+                    elif frag.type == 'dae':
+                        # fixme: docu
+                        _f = FragDae(*frag.data)
+                        assert isinstance(_f.dae, bytes)
+                        assert isinstance(_f.rgb, dict)
+                        _dae = base64.b64encode(_f.dae).decode('utf8')
                         _rgb = {}
-                        for rr in _.rgb:
+                        for rr in _f.rgb:
                             assert isinstance(rr, str)
-                            assert isinstance(_.rgb[rr], bytes)
-                            _rgb[rr] = base64.b64encode(_.rgb[rr])
-                        frags.append(FragDae(_dae, _rgb))
+                            assert isinstance(_f.rgb[rr], bytes)
+                            _rgb[rr] = base64.b64encode(_f.rgb[rr]).decode('utf8')
+
+                        tmp = MetaFragment(frag.name, 'dae', FragDae(_dae, _rgb))
+                        frags.append(tmp)
 
                 assert isinstance(temp.boosters, list)
                 assert isinstance(temp.factories, list)
