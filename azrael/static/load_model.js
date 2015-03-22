@@ -8,7 +8,7 @@ onmessage = function (e) {
     var xmlhttp = new XMLHttpRequest();
     
     for (var objID in e.data.objData) {
-        var url, tmp;
+        var url, tmp, model;
 
         // Convenience.
         var obj = e.data.objData[objID];
@@ -19,14 +19,22 @@ onmessage = function (e) {
         // Iterate over all fragments, download them, and add them to
         // the just defined `out` object.
         for (var frag_name in obj) {
-            // Compile the URL for the fragment. All raw fragments are
-            // stored in a JSON file on the server called 'model.json'
-            url = e.data.baseURL + obj[frag_name]['url'] + '/model.json';
-
-            // Download the model data for the current fragment.
-            xmlhttp.open("GET", url, false);
-            xmlhttp.send();
-            model = JSON.parse(xmlhttp.responseText);
+            url = e.data.baseURL + obj[frag_name]['url']
+            switch (obj[frag_name].type) {
+            case 'raw':
+                // All raw fragments are stored in a JSON file on the
+                // server called 'model.json'. Download it.
+                xmlhttp.open("GET", url + '/model.json', false);
+                xmlhttp.send();
+                model = JSON.parse(xmlhttp.responseText);
+                model['type'] = 'raw';
+                break;
+            case 'dae':
+                model = {'type': 'dae', 'url': url + '/' + frag_name};
+                break;
+            default:
+                model = {'type': null};
+            }
 
             // Add the model to the output object.
             out[objID][frag_name] = model;

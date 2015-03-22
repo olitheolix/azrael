@@ -434,6 +434,8 @@ function* mycoroutine(connection) {
         console.log('Received ' + Object.keys(e.data).length +
                     ' new object models from <load_model.js> Worker');
 
+        var loader = new THREE.ColladaLoader();
+
         // Iterate over all downloaded models by object ID.
         for (var objID in e.data) {
             // Keys are always strings in JS, but object IDs are
@@ -445,15 +447,33 @@ function* mycoroutine(connection) {
             obj_cache[objID] = {};
             for (var frag_name in e.data[objID]) {
                 var d = e.data[objID][frag_name];
-                var geo = compileMesh(
-                    objID,
-                    d['vert'],
-                    d['uv'],
-                    allSVs[objID]['sv'].scale);
+                var scale = allSVs[objID]['sv'].scale;
+                switch (d.type) {
+                case 'raw':
+                    var geo = compileMesh(objID, d.vert, d.uv, scale);
 
-                // Add the fragment to the local object cache and scene.
-                obj_cache[objID][frag_name] = geo;
-                scene.add(geo);
+                    // Add the fragment to the local object cache and scene.
+                    obj_cache[objID][frag_name] = geo;
+                    scene.add(geo);
+                    break;
+                case 'dae':
+                    console.log('Loading dae from <' + d.url + '>');
+                    loader.load(
+                        d.url,
+                        // Function when resource is loaded
+                        function (collada) {
+                            console.log('Loader callback.');
+                            var dae = collada.scene;
+	                    dae.scale.x = dae.scale.y = dae.scale.z = scale;
+	                    dae.position.x = -1;
+	                    dae.updateMatrix();
+    	                    scene.add(collada.scene);
+                        }
+                    )
+                    break;
+                default:
+                    break;
+                }
             }
         }
 
