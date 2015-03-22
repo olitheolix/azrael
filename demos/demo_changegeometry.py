@@ -191,7 +191,11 @@ class SetGeometry(multiprocessing.Process):
 
             # Apply the new geometry to each fragment.
             for objID in objIDs:
-                client.setGeometry(objID, list(geo[objID].values()))
+                ret = client.setGeometry(objID, list(geo[objID].values()))
+                if not ret.ok:
+                    print(ret)
+                    print('--> Terminating geometry updates')
+                    sys.exit(1)
 
             # Modify the global scale and a fragment position.
             scale = (cnt + 1) / 10
