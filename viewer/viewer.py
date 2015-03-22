@@ -506,8 +506,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             if objID == self.player_id:
                 continue
 
-            # Skip the object if we have already downloaded its geometry and it
-            # has not changed.
+            # Skip the object if we already have its model, unless the model
+            # changed.
             if (objID in self.oldSVs) and not self.hasGeometryChanged(objID):
                 continue
 
@@ -534,7 +534,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
                     # The model may contain several sub-models. Each one has a
                     # set of vertices, UV- and texture maps. The following code
-                    # simply flattens the three lists of lists into just three
+                    # simply flattens the three list-of-lists into three plain
                     # lists.
                     vert = np.array(mesh['vertices']).flatten()
                     uv = np.array(mesh['UV']).flatten()
