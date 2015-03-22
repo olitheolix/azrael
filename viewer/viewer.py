@@ -35,6 +35,7 @@ del p
 
 import time
 import json
+import tempfile
 import argparse
 import model_import
 import azrael.client
@@ -527,11 +528,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 elif frag_data['type'] == 'dae':
                     url = base_url + frag_data['url'] + '/' + frag_name
                     frag = urllib.request.urlopen(url).readall()
-                    # fixme: use a BytesIO or binary temp file.
-                    # fixme: delete delme.del from hard drive after the change
-                    open('delme.del', 'wb').write(frag)
+                    with tempfile.TemporaryDirectory() as tmpdir:
+                        open('model.dae', 'wb').write(frag)
+                        mesh = model_import.loadModelAll('model.dae')
 
-                    mesh = model_import.loadModelAll('delme.del')
                     # The model may contain several sub-models. Each one has a
                     # set of vertices, UV- and texture maps. The following code
                     # simply flattens the three lists of lists into just three
