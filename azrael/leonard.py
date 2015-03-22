@@ -1023,6 +1023,10 @@ class WorkerManager(multiprocessing.Process):
                  workerCls):
         super().__init__()
 
+        # Create logger instance for this class.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
+
         # Sanity checks.
         assert numWorkers > 0
         assert isinstance(minSteps, int)
@@ -1071,7 +1075,7 @@ class WorkerManager(multiprocessing.Process):
                 proc = self.workerCls(workerID, suq)
                 proc.start()
                 workers[workerID] = proc
-                print('Restarted Worker {}'.format(workerID))
+                self.logit.info('Restarted Worker {}'.format(workerID))
 
     def run(self):
         """
