@@ -56,28 +56,40 @@ def normaliseModel(scene):
 
 
 def loadMaterials(scene, fname):
-    material_list = []
+    """
+    Load the textures from files into RGB arrays.
+
+    The RGB data for non-existing files is an empty array.
+    """
+    # Get the path of the model file
+    fname = os.path.abspath(fname)
+    fpath, fname, = os.path.split(fname)
+
+    # Load each texture file.
+    materials = []
     for mat_idx, mat in enumerate(scene.materials):
-        if 'file' in mat.properties.keys():
+        try:
+            # Extract the texture file name (may raise a KeyError).
             mat_aux = dict(mat.properties)
-            model_dir = os.path.split(fname)[0]
-            texture_file = model_dir + '/' + mat_aux[('file', 1)]
+            texture_file = fpath + '/' + mat_aux[('file', 1)]
+
+            # Load the image (may raise a FileNotFoundError).
             img = PIL.Image.open(texture_file)
-            width, height = img.size
-            img = img.transpose(PIL.Image.FLIP_TOP_BOTTOM)
-            RGB = np.fromstring(img.tobytes(), np.uint8)
-
-            del mat_aux, model_dir, texture_file, img
-        else:
+        except (FileNotFoundError, KeyError):
             # No texture available.
-            width = height = 0
-            RGB = np.array([], np.float64)
+            materials.append({'RGB': [], 'width': 0, 'height': 0})
+            continue
 
+        # Convert the image to an RGB array.
+        width, height = img.size
+        img = img.transpose(PIL.Image.FLIP_TOP_BOTTOM)
+        RGB = np.fromstring(img.tobytes(), np.uint8).tolist()
+        del mat_aux, texture_file, img
+
+        # Sanity check.
         assert (len(RGB) == width * height * 3)
-        material_list.append({'RGB': RGB.tolist(),
-                              'width': width,
-                              'height': height})
-    return material_list
+        materials.append({'RGB': RGB, 'width': width, 'height': height})
+    return materials
 
 
 def loadObjects(scene, material_list):
