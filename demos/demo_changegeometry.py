@@ -23,6 +23,8 @@ Periodically change the geometry of the objects.
 import os
 import sys
 import time
+import json
+import urllib
 import IPython
 import argparse
 import demo_default
@@ -38,7 +40,7 @@ import azrael.util as util
 import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 
-from azrael.util import Fragment, FragState
+from azrael.util import MetaFragment, FragRaw, FragState
 
 # Convenience.
 ipshell = IPython.embed
@@ -147,27 +149,49 @@ class SetGeometry(multiprocessing.Process):
         objIDs = ret.data
         print('\n-- {} objects --\n'.format(len(objIDs)))
 
-        # Query the geometries of all these objects.
-        geometries = {_: client.getGeometry(_).data for _ in objIDs}
+        # Query and backup all models currently in the scene.
+        geo_meta = client.getGeometry(objIDs).data
+        base_url = 'http://localhost:8080'
+        geo_orig = {}
+        for objID in objIDs:
+            frags = {}
+            for frag_name in geo_meta[objID]:
+                url = base_url + geo_meta[objID][frag_name]['url']
+                url += '/model.json'
+                tmp = urllib.request.urlopen(url).readall()
+                tmp = json.loads(tmp.decode('utf8'))
+                tmp = FragRaw(**tmp)
+                frags[frag_name] = MetaFragment(frag_name, 'raw', tmp)
+                del url, tmp
+            geo_orig[objID] = frags
+            del frags, objID
+        del geo_meta, base_url
 
+        # Compile a set of sphere models for all objects. These will be
+        # periodically swapped out for the original models.
         sphere_vert, sphere_uv, sphere_rgb = loadSphere()
+        sphere = FragRaw(sphere_vert, sphere_uv, sphere_rgb)
+        geo_spheres = {}
+        for objID in objIDs:
+            tmp = {_: MetaFragment(_, 'raw', sphere) for _ in geo_orig[objID]}
+            geo_spheres[objID] = tmp
+            del tmp
+        del sphere_vert, sphere_uv, sphere_rgb, sphere
+
         cnt = 0
         while True:
+            cnt += 1
             time.sleep(self.period)
 
             # Swap out the geometry.
+            if (cnt % 2) == 0:
+                geo = geo_spheres
+            else:
+                geo = geo_orig
+
+            # Apply the new geometry to each fragment.
             for objID in objIDs:
-                if (cnt % 2) == 0:
-                    tmp = []
-                    for frag in geometries[objID].values():
-                        tmp.append(Fragment(frag.name,
-                                            sphere_vert,
-                                            sphere_uv,
-                                            sphere_rgb))
-                    client.setGeometry(objID, tmp)
-                else:
-                    tmp = list(geometries[objID].values())
-                    client.setGeometry(objID, tmp)
+                client.setGeometry(objID, list(geo[objID].values()))
 
             # Modify the global scale and a fragment position.
             scale = (cnt + 1) / 10
