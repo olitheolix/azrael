@@ -39,7 +39,7 @@ import azrael.client
 import azrael.util as util
 import azrael.parts as parts
 
-from azrael.util import Template, Fragment, FragState
+from azrael.util import Template, MetaFragment, FragRaw, FragState
 
 # Convenience.
 ipshell = IPython.embed
@@ -147,10 +147,10 @@ def spawnBoosterSphere(scale, fname):
     tID = 'ground'
     cs = np.array([3, 1, 1, 1], np.float64)
     z = np.array([])
-    frags = [Fragment('frag_1', vert, uv, rgb),
-             Fragment('b_x', vert_b, z, z),
-             Fragment('b_y', vert_b, z, z),
-             Fragment('b_z', vert_b, z, z),
+    frags = [MetaFragment('frag_1', 'raw', FragRaw(vert, uv, rgb)),
+             MetaFragment('b_x', 'raw', FragRaw(vert_b, z, z)),
+             MetaFragment('b_y', 'raw', FragRaw(vert_b, z, z)),
+             MetaFragment('b_z', 'raw', FragRaw(vert_b, z, z)),
              ]
     temp = Template(tID, cs, frags, [b0, b1, b2], [])
     assert client.addTemplates([temp]).ok
