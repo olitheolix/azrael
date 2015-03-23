@@ -334,14 +334,19 @@ def ToClerk_SetGeometry_Encode(objID: int, frags: list):
         for idx, frag in enumerate(frags):
             assert isinstance(frag, MetaFragment)
             assert isinstance(frag.name, str)
-            assert isinstance(frag.data, FragRaw)
-            assert isinstance(frag.data.vert, np.ndarray)
-            assert isinstance(frag.data.uv, np.ndarray)
-            assert isinstance(frag.data.rgb, np.ndarray)
-            raw = FragRaw(
-                vert=frag.data.vert.tolist(),
-                uv=frag.data.uv.tolist(),
-                rgb=frag.data.rgb.tolist())
+            tmp = FragRaw(*frag.data)
+            assert isinstance(tmp, FragRaw)
+            assert isinstance(tmp.vert, (list, np.ndarray))
+            assert isinstance(tmp.uv, (list, np.ndarray))
+            assert isinstance(tmp.rgb, (list, np.ndarray))
+            newval = {}
+            for attr in ('vert', 'uv', 'rgb'):
+                if isinstance(getattr(tmp, attr), np.ndarray):
+                    newval[attr] = getattr(tmp, attr).tolist()
+                else:
+                    newval[attr] = getattr(tmp, attr)
+
+            raw = FragRaw(**newval)
             frags[idx] = MetaFragment(frag.name, 'raw', raw)
     except AssertionError:
         return False, 'Invalid fragment data types'
