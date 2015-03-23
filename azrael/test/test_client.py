@@ -26,6 +26,7 @@ import os
 import sys
 import time
 import json
+import urllib
 import pytest
 import IPython
 
@@ -559,7 +560,7 @@ def test_controlParts(client_type):
 
 
 @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-def test_setGeometry(client_type):
+def test_setGeometry_raw(client_type):
     """
     Spawn a new object and modify its geometry at runtime.
     """
@@ -601,6 +602,13 @@ def test_setGeometry(client_type):
     assert ret.ok
     assert ret.data[objID]['bar']['type'] == 'raw'
 
+    # Download the fragment.
+    base_url = 'http://localhost:8080'
+    url = base_url + ret.data[objID]['bar']['url'] + '/model.json'
+    tmp = urllib.request.urlopen(url).readall()
+    tmp = json.loads(tmp.decode('utf8'))
+    assert np.array_equal(tmp['vert'], vert)
+
     # Change the fragment geometries.
     frags = [MetaFragment('bar', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
     assert client.setGeometry(objID, frags).ok
@@ -608,6 +616,99 @@ def test_setGeometry(client_type):
     ret = client.getGeometry([objID])
     assert ret.ok
     assert ret.data[objID]['bar']['type'] == 'raw'
+
+    # Download the fragment.
+    url = base_url + ret.data[objID]['bar']['url'] + '/model.json'
+    tmp = urllib.request.urlopen(url).readall()
+    tmp = json.loads(tmp.decode('utf8'))
+    assert np.array_equal(tmp['vert'], 2 * vert)
+
+    # Ensure 'lastChanged' is different as well.
+    ret = client.getStateVariables(objID)
+    assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
+
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
+    print('Test passed')
+
+
+@pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+def test_setGeometry_dae(client_type):
+    """
+    Spawn a new object and modify its geometry at runtime.
+    """
+    killAzrael()
+
+    # Reset the SV database and instantiate a Leonard.
+    leo = getLeonard()
+
+    # Start the necessary services.
+    clerk, client, clacks = startAzrael(client_type)
+
+    # Convenience.
+    cs = np.array([1, 2, 3, 4], np.float64)
+    vert = np.arange(9).astype(np.float64)
+    uv = np.array([9, 10], np.float64)
+    rgb = np.array([1, 2, 250], np.uint8)
+
+    # Collada format: a .dae file plus a list of textures in jpg or png format.
+    b = os.path.dirname(__file__)
+    dae_file = open(b + '/cube.dae', 'rb').read()
+    dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
+    dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
+    f_dae = FragDae(dae=dae_file,
+                    rgb={'rgb1.png': dae_rgb1,
+                         'rgb2.jpg': dae_rgb2})
+    del b
+
+    # Put both fragments into a valid list of MetaFragments.
+    frags = [MetaFragment('f_dae', 'dae', f_dae)]
+
+    # Add a new template and spawn it.
+    temp = Template('t1', cs, frags, [], [])
+    assert client.addTemplates([temp]).ok
+
+    new_obj = {'template': temp.name,
+               'position': np.ones(3),
+               'velocityLin': -np.ones(3)}
+    ret = client.spawn([new_obj])
+    objID = ret.data[0]
+    assert ret.ok and ret.data == (objID, )
+    del temp, new_obj, ret, cs
+
+    # Query the SV to obtain the 'lastChanged' value.
+    leo.processCommandsAndSync()
+    ret = client.getStateVariables(objID)
+    assert ret.ok
+    lastChanged = ret.data[objID]['sv'].lastChanged
+
+    # Fetch-, modify-, update- and verify the geometry.
+    ret = client.getGeometry([objID])
+    assert ret.ok
+    assert ret.data[objID]['f_dae']['type'] == 'dae'
+
+    # Change the fragment geometries.
+    frags = [MetaFragment('f_dae', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
+    assert client.setGeometry(objID, frags).ok
+
+    # Ensure it now has type 'raw'.
+    ret = client.getGeometry([objID])
+    assert ret.ok
+    assert ret.data[objID]['f_dae']['type'] == 'raw'
+
+    # Ensure 'lastChanged' is different as well.
+    ret = client.getStateVariables(objID)
+    assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
+
+    # Change the fragment geometries.
+    lastChanged = ret.data[objID]['sv'].lastChanged
+    frags = [MetaFragment('f_dae', 'dae', f_dae)]
+    assert client.setGeometry(objID, frags).ok
+
+    # Ensure it now has type 'dae' again.
+    ret = client.getGeometry([objID])
+    assert ret.ok
+    assert ret.data[objID]['f_dae']['type'] == 'dae'
 
     # Ensure 'lastChanged' is different as well.
     ret = client.getStateVariables(objID)
@@ -721,7 +822,8 @@ if __name__ == '__main__':
         test_collada_model(_transport_type)
         test_updateFragmentStates(_transport_type)
         test_setStateVariable(_transport_type)
-        test_setGeometry(_transport_type)
+        test_setGeometry_raw(_transport_type)
+        test_setGeometry_dae(_transport_type)
         test_spawn_and_delete_one_client(_transport_type)
         test_spawn_and_get_state_variables(_transport_type)
         test_ping()

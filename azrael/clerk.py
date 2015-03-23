@@ -1080,10 +1080,15 @@ class Clerk(multiprocessing.Process):
             if not ret.ok:
                 return ret
 
+        new_frags = [MetaFragment(_.name, _.type, None) for _ in fragments]
+
         # Update the 'lastChanged' flag in the database. All clients
         # automatically receive this flag with their state variables.
         db = database.dbHandles['ObjInstances']
-        ret = db.update({'objID': objID}, {'$inc': {'lastChanged': 1}})
+        ret = db.update({'objID': objID},
+                        {'$inc': {'lastChanged': 1},
+                         '$set': {'fragments': new_frags}
+                         })
 
         # Return the success status of the database update.
         if ret['n'] == 1:
