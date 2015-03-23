@@ -635,6 +635,29 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, aabb)
 
     @typecheck
+    def saveModel(self, dirname: str, model):
+        """
+        Save the ``model`` to ``dirname`` and return the success.
+
+        This function is merely a wrapper around dedicated methods to save
+        individual file formats like Collada (dae) or Raw (for testing) files.
+
+        :param str dirname: the destination directory.
+        :param model: Container for the respective file format.
+        :return: success.
+        """
+        # Create a pristine fragment directory.
+        shutil.rmtree(dirname)
+        os.makedirs(dirname)
+        if model.type == 'raw':
+            return self._saveModelRaw(dirname, model)
+        elif model.type == 'dae':
+            return self._saveModelDae(dirname, model)
+        else:
+            msg = 'Unknown type <{}>'.format(model.type)
+            return RetVal(False, msg, None)
+
+    @typecheck
     def _isTemplateNameValid(self, name):
         """
         Return *True* if ``name`` is a valid template name.
@@ -662,28 +685,6 @@ class Clerk(multiprocessing.Process):
         # Return true if ``name`` only consists of characters from the just
         # defined reference set.
         return set(name).issubset(ref)
-
-    @typecheck
-    def saveModel(self, dirname: str, model):
-        """
-        Save the ``model`` to ``dirname`` and return the success.
-
-        This function is merely a wrapper around dedicated methods to save
-        individual file formats like Collada (dae) or Raw (for testing) files.
-
-        :param str dirname: the destination directory.
-        :param model: Container for the respective file format.
-        :return: success.
-        """
-        # fixme: delete the fragment directory before calling the save
-        # functions.
-        if model.type == 'raw':
-            return self._saveModelRaw(dirname, model)
-        elif model.type == 'dae':
-            return self._saveModelDae(dirname, model)
-        else:
-            msg = 'Unknown type <{}>'.format(model.type)
-            return RetVal(False, msg, None)
 
     @typecheck
     def addTemplates(self, templates: list):
