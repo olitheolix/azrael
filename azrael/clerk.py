@@ -567,21 +567,21 @@ class Clerk(multiprocessing.Process):
         """
         # Sanity checks.
         try:
-            assert isinstance(model.data, FragDae)
-            assert isinstance(model.data.dae, bytes)
-            for v in model.data.rgb.values():
+            data = FragDae(*model.data)
+            assert isinstance(data.dae, bytes)
+            for v in data.rgb.values():
                 assert isinstance(v, bytes)
-        except AssertionError as err:
+        except KeyError:
             msg = 'Invalid data types for Collada fragments'
             return RetVal(False, msg, None)
 
         # Save the dae file to "templates/mymodel/name.dae".
-        open(os.path.join(frag_dir, model.name), 'wb').write(model.data.dae)
+        open(os.path.join(frag_dir, model.name), 'wb').write(data.dae)
 
         # Save the textures. These are stored as dictionaries with the texture
         # file name as key and the data as a binary stream, eg,
-        # {'house.jpg': b';lj;lkj', 'tree.png': b'fdfu', ...}
-        for name, rgb in model.data.rgb.items():
+        # {'house.jpg': b'abc', 'tree.png': b'def', ...}
+        for name, rgb in data.rgb.items():
             open(os.path.join(frag_dir, name), 'wb').write(rgb)
 
         return RetVal(True, None, 1.0)
@@ -675,6 +675,8 @@ class Clerk(multiprocessing.Process):
         :param model: Container for the respective file format.
         :return: success.
         """
+        # fixme: delete the fragment directory before calling the save
+        # functions.
         if model.type == 'raw':
             return self._saveModelRaw(dirname, model)
         elif model.type == 'dae':
