@@ -180,20 +180,20 @@ class SetGeometry(multiprocessing.Process):
 
         cnt = 0
         while True:
-            cnt += 1
+            # Update the counter and pause for the specified time.
+            cnt = (cnt + 1) % 20
             time.sleep(self.period)
 
             # Swap out the geometry.
-            if (cnt % 2) == 0:
+            if (cnt % 2) == 1:
                 geo = geo_spheres
             else:
                 geo = geo_orig
 
             # Apply the new geometry to each fragment.
-            for objID in objIDs:
-                ret = client.setGeometry(objID, list(geo[objID].values()))
+            for objID, val in geo.items():
+                ret = client.setGeometry(objID, list(val.values()))
                 if not ret.ok:
-                    print(ret)
                     print('--> Terminating geometry updates')
                     sys.exit(1)
 
@@ -211,8 +211,7 @@ class SetGeometry(multiprocessing.Process):
                 }
                 client.updateFragmentStates(newStates)
 
-            # Update counter and print status for user.
-            cnt = (cnt + 1) % 20
+            # Print status for user.
             print('Scale={:.1f}'.format(scale))
 
 
