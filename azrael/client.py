@@ -78,9 +78,9 @@ class Client():
             'ping_clerk': (
                 protocol.ToClerk_Ping_Encode,
                 protocol.FromClerk_Ping_Decode),
-            'get_geometry': (
-                protocol.ToClerk_GetGeometry_Encode,
-                protocol.FromClerk_GetGeometry_Decode),
+            'get_geometries': (
+                protocol.ToClerk_GetGeometries_Encode,
+                protocol.FromClerk_GetGeometries_Decode),
             'set_geometry': (
                 protocol.ToClerk_SetGeometry_Encode,
                 protocol.FromClerk_SetGeometry_Decode),
@@ -247,7 +247,7 @@ class Client():
         return self.serialiseAndSend('ping_clerk', None)
 
     @typecheck
-    def getGeometry(self, objIDs: list):
+    def getGeometries(self, objIDs: list):
         """
         fixme: fix docu since this function only returns URLs these days
         Return the vertices, UV map, and RGB map for ``objID``.
@@ -258,7 +258,7 @@ class Client():
         :return: tupleof NumPy arrays: (vert, UV, RGB)
         :rtype: tuple(arrays)
         """
-        return self.serialiseAndSend('get_geometry', objIDs)
+        return self.serialiseAndSend('get_geometries', objIDs)
 
     @typecheck
     def setGeometry(self, objID: int, frags: list):
@@ -397,7 +397,7 @@ class Client():
         """
         Return the template data for all  ``templateIDs`` in a dictionary.
 
-        Use ``getGeometry`` to just query the geometry.
+        Use ``getGeometries`` to just query the geometry.
 
         :param bytes templateID: return the description of this template.
         :return: (cs, geo, boosters, factories)

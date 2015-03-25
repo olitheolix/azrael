@@ -290,17 +290,17 @@ def FromClerk_SetForce_Decode(dummyarg):
 
 
 # ---------------------------------------------------------------------------
-# GetGeometry
+# GetGeometries
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_GetGeometry_Encode(objIDs: list):
+def ToClerk_GetGeometries_Encode(objIDs: list):
     return True, {'objIDs': objIDs}
 
 
 @typecheck
-def ToClerk_GetGeometry_Decode(payload: dict):
+def ToClerk_GetGeometries_Decode(payload: dict):
     objIDs = payload['objIDs']
     if not isinstance(objIDs, list):
         return False, 'Expected <list> but got <{}>'.format(type(objIDs))
@@ -308,17 +308,17 @@ def ToClerk_GetGeometry_Decode(payload: dict):
     try:
         objIDs = [int(_) for _ in objIDs]
     except TypeError:
-        return False, 'Expected integers in ToClerk_GetGeometry_Decode'
+        return False, 'Expected integers in ToClerk_GetGeometries_Decode'
     return True, (objIDs, )
 
 
 @typecheck
-def FromClerk_GetGeometry_Encode(geo):
+def FromClerk_GetGeometries_Encode(geo):
     return True, geo
 
 
 @typecheck
-def FromClerk_GetGeometry_Decode(payload: dict):
+def FromClerk_GetGeometries_Decode(payload: dict):
     payload = {int(k): v for (k, v) in payload.items()}
     return RetVal(True, None, payload)
 

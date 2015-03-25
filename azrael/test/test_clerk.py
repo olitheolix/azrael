@@ -137,7 +137,7 @@ def test_spawn():
     assert (ret.ok, ret.data) == (True, (1, ))
 
     # Geometry for this object must now exist.
-    assert clerk.getGeometry([1]).data[1] is not None
+    assert clerk.getGeometries([1]).data[1] is not None
 
     # Spawn two more objects with a single call.
     name_2 = '_templateSphere'
@@ -146,7 +146,7 @@ def test_spawn():
     assert (ret.ok, ret.data) == (True, (2, 3))
 
     # Geometry for last two object must now exist as well.
-    ret = clerk.getGeometry([2, 3])
+    ret = clerk.getGeometries([2, 3])
     assert ret.data[2] is not None
     assert ret.data[3] is not None
 
@@ -155,7 +155,7 @@ def test_spawn():
     assert (ret.ok, ret.data) == (True, (4, 5))
 
     # Geometry for last two object must now exist as well.
-    ret = clerk.getGeometry([4, 5])
+    ret = clerk.getGeometries([4, 5])
     assert ret.data[4] is not None
     assert ret.data[5] is not None
 
@@ -1179,7 +1179,7 @@ def test_get_all_objectids():
     print('Test passed')
 
 
-def test_getGeometry():
+def test_getGeometries():
     """
     Spawn two objects and query their geometries.
     """
@@ -1216,7 +1216,7 @@ def test_getGeometry():
     assert clerk.getTemplates([temp.name]).ok
 
     # Attempt to query the geometry of a non-existing object.
-    assert clerk.getGeometry([123]) == (True, None, {123: None})
+    assert clerk.getGeometries([123]) == (True, None, {123: None})
 
     # Spawn two objects from the previously added template.
     ret = clerk.spawn([(temp.name, sv1), (temp.name, sv2)])
@@ -1234,21 +1234,21 @@ def test_getGeometry():
         return True
 
     # Query and verify the geometry of the first instance.
-    ret = clerk.getGeometry([objID_1])
+    ret = clerk.getGeometries([objID_1])
     assert ret.ok and _verify(ret.data, objID_1)
 
     # Query and verify the geometry of the second instance.
-    ret = clerk.getGeometry([objID_2])
+    ret = clerk.getGeometries([objID_2])
     assert ret.ok and _verify(ret.data, objID_2)
 
     # Query both instances at once and verify them.
-    ret = clerk.getGeometry([objID_1, objID_2])
+    ret = clerk.getGeometries([objID_1, objID_2])
     assert ret.ok and _verify(ret.data, objID_1)
     assert ret.ok and _verify(ret.data, objID_2)
 
     # Delete first and query again.
     assert clerk.removeObject(objID_1).ok
-    ret = clerk.getGeometry([objID_1, objID_2])
+    ret = clerk.getGeometries([objID_1, objID_2])
     assert ret.ok
     assert ret.data[objID_1] is None
     assert _verify(ret.data, objID_2)
@@ -1612,7 +1612,7 @@ def test_fragments_end2end():
                    'test', 8, [8, 8, 8], [8, 8, 8, 8])
 
     # Query the fragment _geometries_.
-    ret = clerk.getGeometry([objID])
+    ret = clerk.getGeometries([objID])
     assert ret.ok
     data = ret.data[objID]
     del ret
@@ -1650,7 +1650,7 @@ def test_fragments_end2end():
     frags = [MetaFragment('10', 'raw', f_raw),
              MetaFragment('test', 'dae', f_dae)]
     assert clerk.setGeometry(objID, frags).ok
-    ret = clerk.getGeometry([objID])
+    ret = clerk.getGeometries([objID])
     assert ret.ok
     data = ret.data[objID]
     del ret
@@ -1743,7 +1743,7 @@ if __name__ == '__main__':
     test_get_default_templates()
     test_add_get_template_single()
     test_add_get_template_multi_url()
-    test_getGeometry()
+    test_getGeometries()
     test_instanceDB_checksum()
     test_add_get_template_AABB()
     test_controlParts_invalid_commands()

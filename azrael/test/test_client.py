@@ -385,7 +385,7 @@ def test_create_fetch_template(client_type):
         templateID='_templateCube', exit_speed=[0.1, 0.5])
 
     # Attempt to query the geometry of a non-existing object.
-    assert client.getGeometry([1]) == (True, None, {1: None})
+    assert client.getGeometries([1]) == (True, None, {1: None})
 
     # Define a new template, add it to Azrael, and spawn it.
     frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
@@ -396,7 +396,7 @@ def test_create_fetch_template(client_type):
     objID = ret.data[0]
 
     # Retrieve the geometry of the new object and verify it is correct.
-    ret = client.getGeometry([objID])
+    ret = client.getGeometries([objID])
     assert ret.ok
     assert ret.data[objID]['bar']['type'] == 'raw'
 
@@ -598,7 +598,7 @@ def test_setGeometry_raw(client_type):
     lastChanged = ret.data[objID]['sv'].lastChanged
 
     # Fetch-, modify-, update- and verify the geometry.
-    ret = client.getGeometry([objID])
+    ret = client.getGeometries([objID])
     assert ret.ok
     assert ret.data[objID]['bar']['type'] == 'raw'
 
@@ -613,7 +613,7 @@ def test_setGeometry_raw(client_type):
     frags = [MetaFragment('bar', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
     assert client.setGeometry(objID, frags).ok
 
-    ret = client.getGeometry([objID])
+    ret = client.getGeometries([objID])
     assert ret.ok
     assert ret.data[objID]['bar']['type'] == 'raw'
 
@@ -683,7 +683,7 @@ def test_setGeometry_dae(client_type):
     lastChanged = ret.data[objID]['sv'].lastChanged
 
     # Fetch-, modify-, update- and verify the geometry.
-    ret = client.getGeometry([objID])
+    ret = client.getGeometries([objID])
     assert ret.ok
     assert ret.data[objID]['f_dae']['type'] == 'dae'
 
@@ -692,7 +692,7 @@ def test_setGeometry_dae(client_type):
     assert client.setGeometry(objID, frags).ok
 
     # Ensure it now has type 'raw'.
-    ret = client.getGeometry([objID])
+    ret = client.getGeometries([objID])
     assert ret.ok
     assert ret.data[objID]['f_dae']['type'] == 'raw'
 
@@ -706,7 +706,7 @@ def test_setGeometry_dae(client_type):
     assert client.setGeometry(objID, frags).ok
 
     # Ensure it now has type 'dae' again.
-    ret = client.getGeometry([objID])
+    ret = client.getGeometries([objID])
     assert ret.ok
     assert ret.data[objID]['f_dae']['type'] == 'dae'
 
@@ -804,7 +804,7 @@ def test_collada_model(client_type):
     objID = ret.data[0]
 
     # Query and the geometry.
-    ret = client.getGeometry([objID])
+    ret = client.getGeometries([objID])
     assert ret.ok
 
     # Verify it has the correct type ('dae') and address.

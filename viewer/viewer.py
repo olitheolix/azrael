@@ -93,7 +93,7 @@ def perspective(fov, ar, near, far):
     return mat.astype(np.float32)
 
 
-def getGeometryCube(pos=np.zeros(3)):
+def getGeometriesCube(pos=np.zeros(3)):
     buf_vert = 0.5 * np.array([
         -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
         +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
@@ -367,7 +367,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if len(frag.data.vert) == 0:
             return
 
-        # fixme: getGeometry must provide this (what about getGeometry?).
+        # fixme: getGeometries must provide this (what about getGeometries?).
         width = height = int(np.sqrt(len(frag.data.rgb) // 3))
 
         # GPU needs float32 values for vertices and UV, and uint8 for RGB.
@@ -512,7 +512,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Download the latest geometry for this object.
-            ret = self.client.getGeometry([objID])
+            ret = self.client.getGeometries([objID])
             if not ret.ok:
                 continue
 
@@ -563,7 +563,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Every projectile has the shape of the cube.
         """
         # Geometry.
-        buf_vert = getGeometryCube()
+        buf_vert = getGeometriesCube()
         cs = np.array([4, 1, 1, 1])
         uv = np.array([], np.float64)
         rgb = np.array([], np.uint8)

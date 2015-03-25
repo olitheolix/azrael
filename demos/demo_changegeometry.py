@@ -150,7 +150,7 @@ class SetGeometry(multiprocessing.Process):
         print('\n-- {} objects --\n'.format(len(objIDs)))
 
         # Query and backup all models currently in the scene.
-        geo_meta = client.getGeometry(objIDs).data
+        geo_meta = client.getGeometries(objIDs).data
         base_url = 'http://localhost:8080'
         geo_orig = {}
         for objID in objIDs:

@@ -113,10 +113,10 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_SetStateVector_Decode,
                 self.setStateVariable,
                 protocol.FromClerk_SetStateVector_Encode),
-            'get_geometry': (
-                protocol.ToClerk_GetGeometry_Decode,
-                self.getGeometry,
-                protocol.FromClerk_GetGeometry_Encode),
+            'get_geometries': (
+                protocol.ToClerk_GetGeometries_Decode,
+                self.getGeometries,
+                protocol.FromClerk_GetGeometries_Encode),
             'set_geometry': (
                 protocol.ToClerk_SetGeometry_Decode,
                 self.setGeometry,
@@ -1019,7 +1019,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, ret.msg, None)
 
     @typecheck
-    def getGeometry(self, objIDs: list):
+    def getGeometries(self, objIDs: list):
         """
         Return information about the fragments of each object in ``objIDs``.
 
