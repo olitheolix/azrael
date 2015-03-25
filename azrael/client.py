@@ -249,14 +249,17 @@ class Client():
     @typecheck
     def getGeometries(self, objIDs: list):
         """
-        fixme: fix docu since this function only returns URLs these days
-        Return the vertices, UV map, and RGB map for ``objID``.
+        Return links to the models for the objects in ``objIDs``.
 
-        All returned values are NumPy arrays.
+         {objID_1: {'type': 'raw', 'url': 'http:...'},
+          objID_2: {'type': 'dae', 'url': 'http:...'},
+          objID_3: None,
+          ...
+        }
 
-        :param int objID: return geometry for this object.
-        :return: tupleof NumPy arrays: (vert, UV, RGB)
-        :rtype: tuple(arrays)
+        :param int objIDs: list of objIDs to query.
+        :return: links to model data for all ``objIDs``.
+        :rtype: dict
         """
         return self.serialiseAndSend('get_geometries', objIDs)
 
@@ -407,8 +410,8 @@ class Client():
     @typecheck
     def getTemplateGeometry(self, template):
         """
-        fixme: changed signature; add type chck to template
-        Fetch the geometry from ``url`` and return it.
+        fixme: remove this method
+        Return the ``template`` geometry.
 
         The return value is a dictionary. The keys are the fragment names and
         the values are ``Fragment`` instances:
@@ -438,28 +441,25 @@ class Client():
     @typecheck
     def addTemplates(self, templates: list):
         """
-        Add all ``templates`` to Azrael.
+        Add the ``templates`` to Azrael.
 
         Return an error if one or more template names already exist.
-        fixme: new template structure with Fragment
-        fixme: clean up code
 
-        The ``templates`` variable is a list of tuples/lists. Each entry in
-        this list must contain:
-        * ``str`` name: the name of the new template.
-        * ``list`` cs: collision shape
-        * ``list`` frags: list of ``MetaFragment`` objects.
-        * ``parts.Booster`` boosters: list of Booster instances.
-        * ``parts.Factory`` boosters: list of Factory instances.
+        * ``list`` templates: list of ``Template`` objects.
 
         :return: Success
         """
+        # Return an error unless all templates pass the sanity checks.
         try:
+            # Sanity check each template.
             for idx, temp in enumerate(templates):
+                # Sanity checks.
                 assert isinstance(temp, Template)
                 assert isinstance(temp.name, str)
                 assert isinstance(temp.cs, (list, np.ndarray))
                 assert isinstance(temp.fragments, list)
+
+                # Sanity check each fragment.
                 frags = []
                 for frag in temp.fragments:
                     assert isinstance(frag, MetaFragment)
@@ -481,30 +481,38 @@ class Client():
                         tmp = MetaFragment(frag.name, 'raw', FragRaw(v, u, r))
                         frags.append(tmp)
                     elif frag.type == 'dae':
-                        # fixme: docu
+                        # This must be a Collada fragment.
                         _f = FragDae(*frag.data)
+
+                        # The dae is the actual collada file content, whereas
+                        # 'rgb' is a dictionary of texture files (the file name
+                        # is the key).
                         assert isinstance(_f.dae, bytes)
                         assert isinstance(_f.rgb, dict)
+
+                        # Encode the dae content for HTTP compatibility.
                         _dae = base64.b64encode(_f.dae).decode('utf8')
+
+                        # Encode each texture for HTTP compatibility.
                         _rgb = {}
                         for rr in _f.rgb:
                             assert isinstance(rr, str)
                             assert isinstance(_f.rgb[rr], bytes)
                             _rgb[rr] = base64.b64encode(_f.rgb[rr]).decode('utf8')
 
+                        # Compile HTTP compatible fragment.
                         tmp = MetaFragment(frag.name, 'dae', FragDae(_dae, _rgb))
                         frags.append(tmp)
 
+                # Sanity checks.
                 assert isinstance(temp.boosters, list)
                 assert isinstance(temp.factories, list)
-
                 for b in temp.boosters:
                     assert isinstance(b, parts.Booster)
                 for f in temp.factories:
                     assert isinstance(f, parts.Factory)
 
-                # Ensure the collision shape and Fragment geometry are lists,
-                # not NumPy arrays.
+                # The collision shape must be a numeric list.
                 cs = np.array(temp.cs, np.float64).tolist()
 
                 # Replace the original entry with a new one where CS is

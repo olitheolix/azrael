@@ -46,8 +46,6 @@ ipshell = IPython.embed
 def test_invalid():
     """
     Send an invalid command to Clerk.
-
-    fixme: needs a Mock
     """
     class ClientTest(azrael.client.Client):
         def testSend(self, data):
@@ -1558,7 +1556,7 @@ def test_fragments_end2end():
         assert _frags[name_2] == FragState(name_2, scale_2, pos_2, rot_2)
         del ret, _frags
 
-    # fixme: docu
+    # Create a raw Fragment.
     f_raw = FragRaw(vert=vert_1, uv=[], rgb=[])
 
     # Collada format: a .dae file plus a list of textures in jpg or png format.
@@ -1684,26 +1682,6 @@ def test_fragments_end2end():
     stopAzrael(clerk, clacks)
     killAzrael()
     print('Test passed')
-
-
-def test_saveModelRaw():
-    """
-    * ensure it calls _isGeometrySane
-    * test _isGeometrySane separately
-    * do not test invalid geometries outside these tests
-
-    fixme: implement
-    """
-    pass
-
-
-def test_saveModelDae():
-    """
-    * verify that pyassimp can load the model
-
-    fixme: implement
-    """
-    pass
 
 
 def test_isTemplateNameValid():
