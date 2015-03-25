@@ -641,7 +641,15 @@ class Client():
 
     def updateFragmentStates(self, fragStates: dict):
         """
-        fixme: docu
+        Modify the fragment states specified in ``fragStates``.
+
+        Fragment states specify the size, position, and orientation of
+        individual fragment. They do not specify the geometry.
+
+        Each key in ``fragStates`` must be an object ID and each value a
+        ``FragState`` instance, eg.
+
+           {objID: [FragState('bar', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
 
         :param dict fragStates: new fragment states.
         :return: Success
