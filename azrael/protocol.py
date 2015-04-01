@@ -340,45 +340,6 @@ def FromClerk_GetGeometries_Decode(payload: dict):
 
 @typecheck
 def ToClerk_SetGeometry_Encode(objID: int, frags: list):
-    # fixme: all these checks/conversions should go into the client module,
-    # just like it is for 'addTemplate'.
-    try:
-        for idx, frag in enumerate(frags):
-            assert isinstance(frag, MetaFragment)
-            assert isinstance(frag.name, str)
-            if frag.type == 'raw':
-                tmp = FragRaw(*frag.data)
-                assert isinstance(tmp, FragRaw)
-                assert isinstance(tmp.vert, (list, np.ndarray))
-                assert isinstance(tmp.uv, (list, np.ndarray))
-                assert isinstance(tmp.rgb, (list, np.ndarray))
-                newval = {}
-                for attr in ('vert', 'uv', 'rgb'):
-                    if isinstance(getattr(tmp, attr), np.ndarray):
-                        newval[attr] = getattr(tmp, attr).tolist()
-                    else:
-                        newval[attr] = getattr(tmp, attr)
-
-                raw = FragRaw(**newval)
-                frags[idx] = MetaFragment(frag.name, 'raw', raw)
-            elif frag.type == 'dae':
-                # fixme: docu
-                _f = FragDae(*frag.data)
-                assert isinstance(_f.dae, bytes)
-                assert isinstance(_f.rgb, dict)
-                _dae = base64.b64encode(_f.dae).decode('utf8')
-                _rgb = {}
-                for rr in _f.rgb:
-                    assert isinstance(rr, str)
-                    assert isinstance(_f.rgb[rr], bytes)
-                    _rgb[rr] = base64.b64encode(_f.rgb[rr]).decode('utf8')
-
-                tmp = MetaFragment(frag.name, 'dae', FragDae(_dae, _rgb))
-                frags[idx] = tmp
-            else:
-                assert False
-    except AssertionError:
-        return False, 'Invalid fragment data types'
     return True, {'objID': objID, 'frags': frags}
 
 
