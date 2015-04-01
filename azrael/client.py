@@ -531,45 +531,46 @@ class Client():
                 for frag in temp.fragments:
                     assert isinstance(frag, MetaFragment)
                     if frag.type == 'raw':
-                        _ = FragRaw(*frag.data)
+                        f = FragRaw(*frag.data)
 
                         # Ensure that vertices, UV, and RGB are lists or NumPy
                         # arrays. Then replace them them with pure Python list to
                         # make them JSON compliant.
-                        assert isinstance(_.vert, (list, np.ndarray))
-                        assert isinstance(_.uv, (list, np.ndarray))
-                        assert isinstance(_.rgb, (list, np.ndarray))
-                        v = np.array(_.vert, np.float64).tolist()
-                        u = np.array(_.uv, np.float64).tolist()
-                        r = np.array(_.rgb, np.uint8).tolist()
+                        assert isinstance(f.vert, (list, np.ndarray))
+                        assert isinstance(f.uv, (list, np.ndarray))
+                        assert isinstance(f.rgb, (list, np.ndarray))
+                        v = np.array(f.vert, np.float64).tolist()
+                        u = np.array(f.uv, np.float64).tolist()
+                        r = np.array(f.rgb, np.uint8).tolist()
 
                         # Replace the original fragment with one where vert, UV,
                         # and RGB are definitively Python lists.
-                        tmp = MetaFragment(frag.name, 'raw', FragRaw(v, u, r))
-                        frags.append(tmp)
+                        mf = MetaFragment(frag.name, 'raw', FragRaw(v, u, r))
+                        frags.append(mf)
+                        del mf
                     elif frag.type == 'dae':
                         # This must be a Collada fragment.
-                        _f = FragDae(*frag.data)
+                        f = FragDae(*frag.data)
 
                         # The dae is the actual collada file content, whereas
                         # 'rgb' is a dictionary of texture files (the file name
                         # is the key).
-                        assert isinstance(_f.dae, bytes)
-                        assert isinstance(_f.rgb, dict)
+                        assert isinstance(f.dae, bytes)
+                        assert isinstance(f.rgb, dict)
 
                         # Encode the dae content for HTTP compatibility.
-                        _dae = base64.b64encode(_f.dae).decode('utf8')
+                        dae = base64.b64encode(f.dae).decode('utf8')
 
                         # Encode each texture for HTTP compatibility.
-                        _rgb = {}
-                        for rr in _f.rgb:
+                        rgb = {}
+                        for rr in f.rgb:
                             assert isinstance(rr, str)
-                            assert isinstance(_f.rgb[rr], bytes)
-                            _rgb[rr] = base64.b64encode(_f.rgb[rr]).decode('utf8')
+                            assert isinstance(f.rgb[rr], bytes)
+                            rgb[rr] = base64.b64encode(f.rgb[rr]).decode('utf8')
 
                         # Compile HTTP compatible fragment.
-                        tmp = MetaFragment(frag.name, 'dae', FragDae(_dae, _rgb))
-                        frags.append(tmp)
+                        mf = MetaFragment(frag.name, 'dae', FragDae(dae, rgb))
+                        frags.append(mf)
 
                 # Sanity checks.
                 assert isinstance(temp.boosters, list)
