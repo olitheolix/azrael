@@ -410,7 +410,6 @@ class Client():
     @typecheck
     def getTemplateGeometry(self, template):
         """
-        fixme: remove this method
         Return the ``template`` geometry.
 
         The return value is a dictionary. The keys are the fragment names and

@@ -362,8 +362,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         instances variables instead.
         """
         # This is to mask a bug in Clacks: newly spawned objects can
-        # become active before their geometry data hits the DB.  fixme:
-        # now unnecessary?
+        # become active before their geometry hits the DB.
         if len(frag.data.vert) == 0:
             return
 
