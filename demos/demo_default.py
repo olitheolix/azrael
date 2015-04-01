@@ -462,7 +462,7 @@ def main():
 
     # Helper class to start/stop Azrael stack and other processes.
     az = azrael.startup.AzraelStack(param.loglevel)
-        
+
     # Start Azrael services.
     with azrael.util.Timeit('Startup Time', True):
         az.start()

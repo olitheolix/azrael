@@ -659,10 +659,10 @@ def test_controlParts_Boosters_bug_102():
 
     # Define a new template with two boosters and add it to Azrael.
     template = Template('t1',
-                    cs=[1, 2, 3, 4],
-                    fragments=frags,
-                    boosters=[booster],
-                    factories=[])
+                        cs=[1, 2, 3, 4],
+                        fragments=frags,
+                        boosters=[booster],
+                        factories=[])
     assert clerk.addTemplates([template]).ok
 
     # Spawn an instance of the template and get the object ID.

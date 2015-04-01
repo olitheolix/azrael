@@ -153,10 +153,10 @@ class Clerk(multiprocessing.Process):
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        frags = [MetaFragment('NoName', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
-        t1 = Template('_templateNone', [0, 1, 1, 1], frags, [], [])
-        t2 = Template('_templateSphere', [3, 1, 1, 1], frags, [], [])
-        t3 = Template('_templateCube', [4, 1, 1, 1], frags, [], [])
+        frag = [MetaFragment('NoName', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
+        t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
+        t2 = Template('_templateSphere', [3, 1, 1, 1], frag, [], [])
+        t3 = Template('_templateCube', [4, 1, 1, 1], frag, [], [])
         self.addTemplates([t1, t2, t3])
 
     def runCommand(self, fun_decode, fun_process, fun_encode):

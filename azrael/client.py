@@ -348,7 +348,7 @@ class Client():
                 assert isinstance(frag, MetaFragment)
                 assert isinstance(frag.name, str)
 
-                # Check and encode the content of each individual fragment. 
+                # Check and encode the content of each individual fragment.
                 if frag.type == 'raw':
                     frags[idx] = self._encodeRawFragment(frag)
                 elif frag.type == 'dae':
@@ -544,7 +544,7 @@ class Client():
                 assert isinstance(temp.cs, (list, np.ndarray))
                 assert isinstance(temp.fragments, list)
 
-                # Check and Base64 encode each individual fragment. 
+                # Check and Base64 encode each individual fragment.
                 frags = []
                 for frag in temp.fragments:
                     # Check the Fragment header.

@@ -88,7 +88,7 @@ class AzraelStack:
         # Empty the process list since the destructor will otherwise try to
         # destroy already destroyed processes.
         self.procs = []
-        
+
     def startProcess(self, proc):
         """
         Start ``proc`` and keep a handle to it alive.

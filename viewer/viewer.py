@@ -760,8 +760,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             VAO = self.vertex_array_object[objID][frag.name]
             numVertices = self.numVertices[objID][frag.name]
 
-            # Activate the shader depending on whether or not we have a texture for
-            # the current object.
+            # Activate the shader depending on whether or not we have a texture
+            # for the current object.
             if textureHandle is None:
                 shader = self.shaderDict['passthrough']
             else:

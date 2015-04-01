@@ -86,7 +86,7 @@ def main():
             time.sleep(1)
 
             # Generate a new force value at random.
-            force  = 0.01 * np.random.randn()
+            force = 0.01 * np.random.randn()
 
             # Assemble the command to the booster (the partID must match the
             # one we used to define the booster!)
