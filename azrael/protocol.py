@@ -159,31 +159,41 @@ def ToClerk_AddTemplates_Encode(templates: list):
 @typecheck
 def ToClerk_AddTemplates_Decode(payload: dict):
     templates = []
+    b64d = base64.b64decode
+
+    def _decodeDae(mf):
+        """
+        Decode the Collada fragment data ``mf``.
+        """
+        fd = FragDae(*mf.data)
+        dae = b64d(fd.dae.encode('utf8'))
+        rgb = {k: b64d(v.encode('utf8')) for (k, v) in fd.rgb.items()}
+        return mf._replace(data=FragDae(dae, rgb))
+
     with azrael.util.Timeit('clerk.decode') as timeit:
         for data in payload['data']:
             # Wrap the Booster/Factory data into their dedicated tuples type.
             boosters = [parts.Booster(*_) for _ in data['boosters']]
             factories = [parts.Factory(*_) for _ in data['factories']]
 
-            # Wrap fragments into their dedicated tuple type.
-            # fixme: simplify; document; add error checks.
+            # Wrap the Meta fragments into its dedicated tuple type.
             meta_frags = [MetaFragment(*_) for _ in data['frags']]
+
+            # Wrap each fragment model into its dedicated tuple type.
             frags = []
-            b64d = base64.b64decode
             for mf in meta_frags:
                 if mf.type == 'dae':
-                    fd = FragDae(*mf.data)
-                    dae = b64d(fd.dae.encode('utf8'))
-                    rgb = {k: b64d(v.encode('utf8')) for (k, v) in fd.rgb.items()}
-                    mf = mf._replace(data=FragDae(dae, rgb))
-                frags.append(mf)
+                    # Collada format.
+                    frags.append(_decodeDae(mf))
+                else:
+                    frags.append(mf)
 
             try:
                 tmp = Template(name=data['name'], cs=data['cs'],
                                fragments=frags, boosters=boosters,
                                factories=factories)
                 templates.append(tmp)
-            except TypeError:
+            except KeyError:
                 return False, 'Template payload is corrupt'
 
     # Return decoded quantities.
