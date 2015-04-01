@@ -263,6 +263,76 @@ class Client():
         """
         return self.serialiseAndSend('get_geometries', objIDs)
 
+    def _encodeRawFragment(self, frag):
+        """
+        Return encoded Raw fragment if ``frag`` is valid.
+
+        The returned tuple is a ``MetaFragment`` that can be JSON encoded
+        without any further transformations.
+
+        This is an auxiliary method only. It raises an ``AssertionError`` as
+        soon as it encounters an unexpected data type in ``frag``.
+
+        :param tuple frag: data for Collada fragment.
+        :return: encoded data in ``MetaFragment`` tuple.
+        """
+        # Wrap the Raw fragment into its dedicated tuple.
+        f = FragRaw(*frag.data)
+
+        # Sanity checks.
+        assert isinstance(f, FragRaw)
+        assert isinstance(f.vert, (tuple, list, np.ndarray))
+        assert isinstance(f.uv, (tuple, list, np.ndarray))
+        assert isinstance(f.rgb, (tuple, list, np.ndarray))
+
+        # Convert all vertices, UV maps, and textures to Python lists.
+        newval = {}
+        for attr in ('vert', 'uv', 'rgb'):
+            newval[attr] = np.array(getattr(f, attr)).tolist()
+
+        # Compile a new Raw fragment with the sanitised data.
+        raw = FragRaw(**newval)
+
+        # Return a JSON compatible version of the MetaFragment ``frag``.
+        return MetaFragment(frag.name, 'raw', raw)
+
+    def _encodeDaeFragment(self, frag):
+        """
+        Return encoded Collada fragment if ``frag`` is valid.
+
+        The returned tuple is a ``MetaFragment`` that can be JSON encoded
+        without any further transformations.
+
+        This is an auxiliary method only. It raises an ``AssertionError`` as
+        soon as it encounters an unexpected data type in ``frag``.
+
+        :param tuple frag: data for Raw fragment.
+        :return: encoded data in ``MetaFragment`` tuple.
+        """
+        # Wrap the data into a Named tuple for Collada models and verify
+        # that the Collada file is a byte stream and the textures are a
+        # dictionary.
+        f = FragDae(*frag.data)
+        assert isinstance(f.dae, bytes)
+        assert isinstance(f.rgb, dict)
+
+        # Base64 encode the DAE file.
+        dae = base64.b64encode(f.dae).decode('utf8')
+
+        # Encode each texture as Base64.
+        rgb = {}
+        for rr in f.rgb:
+            # The key must be string (denotes the file name of the
+            # texture), whereas the texture itself must be a byte string.
+            assert isinstance(rr, str)
+            assert isinstance(f.rgb[rr], bytes)
+
+            # Base64 encode the texture.
+            rgb[rr] = base64.b64encode(f.rgb[rr]).decode('utf8')
+
+        # Return a JSON compatible version of the MetaFragment ``frag``.
+        return MetaFragment(frag.name, 'dae', FragDae(dae, rgb))
+
     @typecheck
     def setGeometry(self, objID: int, frags: list):
         """
@@ -272,69 +342,17 @@ class Client():
         :param list frags: list of ``Fragment`` instances.
         :return: Success
         """
-        def _checkRaw(frag):
-            """
-            Return encoded Raw fragment if ``frag`` is valid.
-            """
-            # Wrap the Raw fragment into its dedicated tuple.
-            f = FragRaw(*frag.data)
-
-            # Sanity checks.
-            assert isinstance(f, FragRaw)
-            assert isinstance(f.vert, (tuple, list, np.ndarray))
-            assert isinstance(f.uv, (tuple, list, np.ndarray))
-            assert isinstance(f.rgb, (tuple, list, np.ndarray))
-
-            # Convert all vertices, UV maps, and textures to Python lists.
-            newval = {}
-            for attr in ('vert', 'uv', 'rgb'):
-                newval[attr] = np.array(getattr(f, attr)).tolist()
-
-            # Compile a new Raw fragment with the sanitised data.
-            raw = FragRaw(**newval)
-
-            # Return a JSON compatible version of the MetaFragment ``frag``.
-            return MetaFragment(frag.name, 'raw', raw)
-                    
-        def _checkDae(frag):
-            """
-            Return encoded Collada fragment if ``frag`` is valid.
-            """
-            # Wrap the data into a Named tuple for Collada models and verify
-            # that the Collada file is a byte stream and the textures are a
-            # dictionary.
-            f = FragDae(*frag.data)
-            assert isinstance(f.dae, bytes)
-            assert isinstance(f.rgb, dict)
-
-            # Base64 encode the DAE file.
-            dae = base64.b64encode(f.dae).decode('utf8')
-
-            # Encode each texture as Base64.
-            rgb = {}
-            for rr in f.rgb:
-                # The key must be string (denotes the file name of the
-                # texture), whereas the texture itself must be a byte string.
-                assert isinstance(rr, str)
-                assert isinstance(f.rgb[rr], bytes)
-
-                # Base64 encode the texture.
-                rgb[rr] = base64.b64encode(f.rgb[rr]).decode('utf8')
-
-            # Return a JSON compatible version of the MetaFragment ``frag``.
-            return MetaFragment(frag.name, 'dae', FragDae(dae, rgb))
-
         try:
             for idx, frag in enumerate(frags):
                 # Check the Fragment header.
                 assert isinstance(frag, MetaFragment)
                 assert isinstance(frag.name, str)
 
-                # Check the content of each individual fragment. 
+                # Check and encode the content of each individual fragment. 
                 if frag.type == 'raw':
-                    frags[idx] = _checkRaw(frag)
+                    frags[idx] = self._encodeRawFragment(frag)
                 elif frag.type == 'dae':
-                    frags[idx] = _checkDae(frag)
+                    frags[idx] = self._encodeDaeFragment(frag)
                 else:
                     assert False
         except AssertionError:
@@ -526,53 +544,19 @@ class Client():
                 assert isinstance(temp.cs, (list, np.ndarray))
                 assert isinstance(temp.fragments, list)
 
-                # Sanity check each fragment.
+                # Check and Base64 encode each individual fragment. 
                 frags = []
                 for frag in temp.fragments:
+                    # Check the Fragment header.
                     assert isinstance(frag, MetaFragment)
+
+                    # Check and encode the fragment itself.
                     if frag.type == 'raw':
-                        f = FragRaw(*frag.data)
-
-                        # Ensure that vertices, UV, and RGB are lists or NumPy
-                        # arrays. Then replace them them with pure Python list to
-                        # make them JSON compliant.
-                        assert isinstance(f.vert, (list, np.ndarray))
-                        assert isinstance(f.uv, (list, np.ndarray))
-                        assert isinstance(f.rgb, (list, np.ndarray))
-                        v = np.array(f.vert, np.float64).tolist()
-                        u = np.array(f.uv, np.float64).tolist()
-                        r = np.array(f.rgb, np.uint8).tolist()
-
-                        # Replace the original fragment with one where vert, UV,
-                        # and RGB are definitively Python lists.
-                        mf = MetaFragment(frag.name, 'raw', FragRaw(v, u, r))
-                        frags.append(mf)
-                        del mf
+                        frags.append(self._encodeRawFragment(frag))
                     elif frag.type == 'dae':
-                        # This must be a Collada fragment.
-                        f = FragDae(*frag.data)
+                        frags.append(self._encodeDaeFragment(frag))
 
-                        # The dae is the actual collada file content, whereas
-                        # 'rgb' is a dictionary of texture files (the file name
-                        # is the key).
-                        assert isinstance(f.dae, bytes)
-                        assert isinstance(f.rgb, dict)
-
-                        # Encode the dae content for HTTP compatibility.
-                        dae = base64.b64encode(f.dae).decode('utf8')
-
-                        # Encode each texture for HTTP compatibility.
-                        rgb = {}
-                        for rr in f.rgb:
-                            assert isinstance(rr, str)
-                            assert isinstance(f.rgb[rr], bytes)
-                            rgb[rr] = base64.b64encode(f.rgb[rr]).decode('utf8')
-
-                        # Compile HTTP compatible fragment.
-                        mf = MetaFragment(frag.name, 'dae', FragDae(dae, rgb))
-                        frags.append(mf)
-
-                # Sanity checks.
+                # Sanity checks for boosters and factories.
                 assert isinstance(temp.boosters, list)
                 assert isinstance(temp.factories, list)
                 for b in temp.boosters:
