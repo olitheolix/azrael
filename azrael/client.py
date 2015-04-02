@@ -38,7 +38,7 @@ import azrael.config as config
 import azrael.protocol as protocol
 
 from azrael.typecheck import typecheck
-from azrael.util import RetVal, Template, Fragment
+from azrael.util import RetVal, Template
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 from azrael.bullet.bullet_data import BulletDataOverride, _BulletData
 
@@ -501,7 +501,7 @@ class Client():
         The return value is a dictionary. The keys are the fragment names and
         the values are ``Fragment`` instances:
 
-            {'frag_1': Fragment(...), 'frag_2': Fragment(...), ...}
+            {'frag_1': FragRaw(...), 'frag_2': FragDae(...), ...}
 
         :param str url: template URL
         :return: fragments.

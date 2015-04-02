@@ -47,8 +47,7 @@ import azrael.bullet.bullet_data as bullet_data
 
 from azrael.test.test_clerk import getLeonard, killAzrael
 from azrael.test.test_clerk import startAzrael, stopAzrael
-from azrael.util import Template, Fragment
-from azrael.util import FragState, FragDae, FragRaw, MetaFragment
+from azrael.util import Template, FragState, FragDae, FragRaw, MetaFragment
 
 ipshell = IPython.embed
 WSClient = azrael.wsclient.WSClient

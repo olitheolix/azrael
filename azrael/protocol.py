@@ -50,7 +50,7 @@ import azrael.physics_interface as physics_interface
 
 from collections import namedtuple
 from azrael.typecheck import typecheck
-from azrael.util import RetVal, Template, Fragment
+from azrael.util import RetVal, Template
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 
 ipshell = IPython.embed

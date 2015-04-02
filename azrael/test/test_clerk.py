@@ -37,7 +37,7 @@ from azrael.test.test_clacks import startAzrael, stopAzrael
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 
-from azrael.util import Template, Fragment, RetVal
+from azrael.util import Template, RetVal
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 
 ipshell = IPython.embed
