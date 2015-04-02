@@ -51,7 +51,6 @@ import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
-from collections import namedtuple
 from azrael.typecheck import typecheck
 
 from azrael.util import Template, RetVal

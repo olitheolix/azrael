@@ -25,7 +25,6 @@ import bullet as pybullet
 import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
-from collections import namedtuple
 from azrael.typecheck import typecheck
 
 ipshell = IPython.embed
