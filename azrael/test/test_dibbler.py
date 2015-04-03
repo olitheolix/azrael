@@ -24,6 +24,7 @@ import pickle
 import tornado.web
 import azrael.dibbler
 import tornado.testing
+import unittest.mock as mock
 import azrael.config as config
 
 from IPython import embed as ipshell
@@ -40,35 +41,37 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
 
         # fixme: the static paths used below should be temporary directories
 
-        dirNames = {'templates': os.path.join('/tmp/dibbler', 'templates'),
-                     'instances': os.path.join('/tmp/dibbler', 'instances')}
-        self.dirNames = dirNames
+        self.dirNameBase = '/tmp/dibbler'
+        self.dirNames = {
+            'templates': os.path.join(self.dirNameBase, 'templates'),
+            'instances': os.path.join(self.dirNameBase, 'instances')}
 
         # Template geometries.
         handlers.append(
-            ('/templates/(.*)', FH, {'path': dirNames['templates']}))
+            ('/templates/(.*)', FH, {'path': self.dirNames['templates']}))
 
         # Instance geometries.
         handlers.append(
-            ('/instances/(.*)', FH, {'path': dirNames['instances']}))
+            ('/instances/(.*)', FH, {'path': self.dirNames['instances']}))
 
         # Dibbler API.
-        handlers.append(('/dibbler', azrael.dibbler.Dibbler, dirNames))
+        handlers.append(('/dibbler', azrael.dibbler.Dibbler, self.dirNames))
 
         return tornado.web.Application(handlers)
+
+    def resetDibbler(self):
+        for dirname in self.dirNames.values():
+            azrael.dibbler.rmtree([dirname], ignore_errors=True)
 
     def test_template_raw(self):
         """
         Add and query a template with one Raw fragment.
 
-        fixme: add tests for Collada; existing model;
-               multi-fragments; mixed fragments; spawnTemplate;
-               updateGeometry; reset;
+        fixme: add tests for Collada; multi-fragments; mixed fragments;
+               spawnTemplate; updateGeometry
         """
-        for dirname in self.dirNames.values():
-            shutil.rmtree(dirname, ignore_errors=True)
-            os.makedirs(dirname)
-
+        self.resetDibbler()
+        
         # Create a Template instance.
         cs = [1, 2, 3, 4]
         vert = list(range(9))
@@ -115,9 +118,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         """
         Make invalid queries to Dibbler which must handle them gracefully.
         """
-        for dirname in self.dirNames.values():
-            shutil.rmtree(dirname, ignore_errors=True)
-            os.makedirs(dirname)
+        self.resetDibbler()
 
         # Paylod is not a valid pickled Python object.
         body = base64.b64encode(b'blah')
@@ -154,3 +155,21 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert not ret.ok
 
         print('Test passed')
+
+    @mock.patch('azrael.dibbler.rmtree')
+    def test_reset(self, mock_rmtree):
+        """
+        Reset Dibbler.
+        """
+        assert mock_rmtree.call_count == 0
+
+        # Tell Dibbler to delete all template- and instance data.
+        req = {'cmd': 'reset', 'data': 'empty'}
+        req = base64.b64encode(pickle.dumps(req))
+        ret = self.fetch(config.url_dibbler, method='POST', body=req)
+        ret = json.loads(ret.body.decode('utf-8'))
+        assert RetVal(**ret).ok
+
+        # the 'rmtree' function must have been called twice (once for the
+        # 'templates' and once for the 'instances').
+        assert mock_rmtree.call_count == 1

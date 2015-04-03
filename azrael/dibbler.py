@@ -73,6 +73,19 @@ from IPython import embed as ipshell
 from azrael.typecheck import typecheck
 
 
+@typecheck
+def rmtree(dirnames: list, ignore_errors=False):
+    """
+    fixme: docu string
+    """
+    # Precaution: refuse to delete anything outside /tmp/
+    for dirname in dirnames:
+        assert dirname.startswith('/tmp/')
+    
+    for dirname in dirnames:
+        shutil.rmtree(dirname, ignore_errors=ignore_errors)
+
+
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """
     A static file handler that tells the client to never cache anything.
@@ -229,7 +242,7 @@ class Dibbler(tornado.web.RequestHandler):
         :return: success.
         """
         # Create a pristine fragment directory.
-        shutil.rmtree(dirname)
+        rmtree([dirname])
         os.makedirs(dirname)
         if model.type == 'raw':
             return self._saveModelRaw(dirname, model)
@@ -271,8 +284,12 @@ class Dibbler(tornado.web.RequestHandler):
             return
 
         # Decide on the command to run.
-        if body['cmd'] == 'add_template':
+        if cmd == 'add_template':
             ret = self.addTemplate(data)
+        elif cmd == 'reset' and data in ('empty',):
+            if data == 'empty':
+                rmtree([self.dir_templates, self.dir_instances])
+            ret = RetVal(True, None, None)
         else:
             msg = 'Invalid Dibbler command <{}>'.format(body['cmd'])
             ret = RetVal(False, msg, None)
@@ -307,13 +324,13 @@ class Dibbler(tornado.web.RequestHandler):
                 # Famous last words: this error is impossible --> handle it
                 # anyway and remove the entire template directory.
                 msg = 'Frag dir <{}> already exists'.format(frag_dir)
-                shutil.rmtree(model_dir)
+                rmtree([model_dir])
                 return RetVal(False, msg, None)
 
             # Save the model data to disk.
             ret = self.saveModel(frag_dir, frag)
             if not ret.ok:
-                shutil.rmtree(model_dir)
+                rmtree([model_dir])
                 return ret
             frag_names.append(frag.name)
             tmp = json.dumps({'frag_names': frag_names}).encode('utf8')
