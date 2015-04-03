@@ -15,6 +15,19 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+fixme: add tests for
+  * Collada
+  * multi-fragments
+  * mixed fragments
+  * spawnTemplate
+  * updateGeometry
+  * delete template
+  * delete instance
+  * write 'startDibbler' function to start Dibbler Tornado process
+  * integration test with urllib and an actual Tornado process
+"""
+
 import os
 import json
 import shutil
@@ -63,54 +76,67 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         for dirname in self.dirNames.values():
             azrael.dibbler.rmtree([dirname], ignore_errors=True)
 
-    def test_template_raw(self):
-        """
-        Add and query a template with one Raw fragment.
-
-        fixme: add tests for Collada; multi-fragments; mixed fragments;
-               spawnTemplate; updateGeometry
-        """
-        self.resetDibbler()
-        
-        # Create a Template instance.
-        cs = [1, 2, 3, 4]
-        vert = list(range(9))
-        uv, rgb = [9, 10], [1, 2, 250]
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        data = Template('t1', cs, frags, [], [])
-
-        # Compile the Dibbler command structure.
-        body = {'cmd': 'add_template', 'data': data}
-        body = base64.b64encode(pickle.dumps(body))
+    def addTemplate(self, template: Template):
+        # Compile the Dibbler request.
+        req = {'cmd': 'add_template', 'data': template}
+        req = base64.b64encode(pickle.dumps(req))
 
         # Make a request to add the template. This must succeed and return the
         # URL where it can be downloaded.
-        ret = self.fetch(config.url_dibbler, method='POST', body=body)
+        ret = self.fetch(config.url_dibbler, method='POST', body=req)
         ret = json.loads(ret.body.decode('utf-8'))
-        ret = RetVal(**ret)
-        assert ret.ok
-        assert ret.data['url'] == config.url_template + '/t1'
-
-        # Attempt to add the template a second time. This must fail.
-        ret2 = self.fetch(config.url_dibbler, method='POST', body=body)
-        ret2 = json.loads(ret2.body.decode('utf-8'))
-        ret2 = RetVal(**ret2)
-        assert not ret2.ok
-        del ret2
-
-        # Download the model and verify it matches the one we uploaded.
-        url = ret.data['url'] + '/bar/model.json'
+        return RetVal(**ret)
+        
+    def downloadFragRaw(self, url):
+        # fixme: docu
         ret = self.fetch(url, method='GET')
         ret = json.loads(ret.body.decode('utf8'))
-        ret = FragRaw(**(ret))
-        assert ret == FragRaw(vert, uv, rgb)
-
-        # Load the meta files for this template. It must contain a list of all
-        # fragment names.
+        return FragRaw(**(ret))
+        
+    def downloadJSON(self, url):
+        # fixme: docu
         url = config.url_template + '/t1/meta.json'
         ret = self.fetch(url, method='GET')
-        ret = json.loads(ret.body.decode('utf8'))
+        return json.loads(ret.body.decode('utf8'))
+        
+    def test_template_raw(self):
+        """
+        Add and query a template with one Raw fragment.
+        """
+        self.resetDibbler()
+        
+        # Create two Template instances.
+        vert, uv, rgb = list(range(9)), [9, 10], [1, 2, 250]
+        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+        t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
+        del vert, uv, rgb, frags
+
+        # Add the first template.
+        ret = self.addTemplate(t1)
+        assert ret.ok and ret.data['url'] == config.url_template + '/t1'
+
+        # Attempt to add the template a second time. This must fail.
+        assert not self.addTemplate(t1).ok
+
+        # Download the model and verify it matches the one we uploaded.
+        ret = self.downloadFragRaw(ret.data['url'] + '/bar/model.json')
+        assert ret == t1.fragments[0].data
+
+        # Load the meta file for this template which must contain a list of all
+        # fragment names.
+        ret = self.downloadJSON(config.url_template + '/t1/meta.json')
         ret['frag_names'] == ['bar']
+
+        # Add the second template.
+        ret = self.addTemplate(t2)
+        assert ret.ok and ret.data['url'] == config.url_template + '/t2'
+
+        # Verify that both templates are now available.
+        ret = self.downloadFragRaw(config.url_template + '/t1/bar/model.json')
+        assert ret == t1.fragments[0].data
+        ret = self.downloadFragRaw(config.url_template + '/t2/bar/model.json')
+        assert ret == t2.fragments[0].data
 
         print('Test passed')
 
@@ -133,14 +159,14 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         ret = RetVal(**json.loads(ret.body.decode('utf-8')))
         assert not ret.ok
 
-        # Paylod misses the command word.
+        # Payload misses the command word.
         body = {'data': None}
         body = base64.b64encode(pickle.dumps(body))
         ret = self.fetch(config.url_dibbler, method='POST', body=body)
         ret = RetVal(**json.loads(ret.body.decode('utf-8')))
         assert not ret.ok
 
-        # Paylod misses the data.
+        # Payload misses the data.
         body = {'cmd': 'add_template'}
         body = base64.b64encode(pickle.dumps(body))
         ret = self.fetch(config.url_dibbler, method='POST', body=body)
@@ -170,6 +196,6 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         ret = json.loads(ret.body.decode('utf-8'))
         assert RetVal(**ret).ok
 
-        # the 'rmtree' function must have been called twice (once for the
+        # The 'rmtree' function must have been called twice (once for the
         # 'templates' and once for the 'instances').
         assert mock_rmtree.call_count == 1
