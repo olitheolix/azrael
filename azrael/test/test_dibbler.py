@@ -63,31 +63,37 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
                multi-fragments; mixed fragments; spawnTemplate;
                updateGeometry; reset;
         """
+        # Create a Template instance.
         cs = [1, 2, 3, 4]
         vert = list(range(9))
-        uv = [9, 10]
-        rgb = [1, 2, 250]
+        uv, rgb = [9, 10], [1, 2, 250]
         frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
         data = Template('t1', cs, frags, [], [])
+
+        # Compile the Dibbler command structure.
         body = {'cmd': 'add_template', 'data': data}
         body = base64.b64encode(pickle.dumps(body))
 
+        # Make a request to add the template. This must succeed and return the
+        # URL where it can be downloaded.
         ret = self.fetch(config.url_dibbler, method='POST', body=body)
         ret = json.loads(ret.body.decode('utf-8'))
         ret = RetVal(**ret)
         assert ret.ok
         assert ret.data['url'] == config.url_template + '/t1'
 
+        # Download the model and verify it matches the one we uploaded.
         url = ret.data['url'] + '/bar/model.json'
-        print('***', url)
         ret = self.fetch(url, method='GET')
         ret = json.loads(ret.body.decode('utf8'))
         ret = FragRaw(**(ret))
         assert ret == FragRaw(vert, uv, rgb)
 
-        # fixme: Dibbler should have a '.../t1/meta.json' which contains the
-        # names of all fragments. Fetch it, load it, and access all fragments
-        # (only one in this case anyway).
-        #url = ret.data['url'] + 'meta.json'
+        # Load the meta files for this template. It must contain a list of all
+        # fragment names.
+        url = config.url_template + '/t1/meta.json'
+        ret = self.fetch(url, method='GET')
+        ret = json.loads(ret.body.decode('utf8'))
+        ret['frag_names'] == ['bar']
 
         print('Test passed')

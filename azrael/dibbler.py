@@ -269,6 +269,7 @@ class Dibbler(tornado.web.RequestHandler):
 
         # Store all fragment models for this template.
         aabb = 0
+        frag_names = []
         for frag in tt.fragments:
             frag_dir = os.path.join(model_dir, frag.name)
 
@@ -289,6 +290,10 @@ class Dibbler(tornado.web.RequestHandler):
             if not ret.ok:
                 shutil.rmtree(model_dir)
                 return ret
+            frag_names.append(frag.name)
+            tmp = json.dumps({'frag_names': frag_names}).encode('utf8')
+            open(os.path.join(model_dir, 'meta.json'), 'wb').write(tmp)
+            del tmp
 
             aabb = np.amax((ret.data, aabb))
 
