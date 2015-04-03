@@ -208,6 +208,63 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
 
         print('Test passed')
 
+    def test_template_mixed_fragments(self):
+        """
+        Add templates with multiple fragments of different types.
+        """
+        self.resetDibbler()
+        
+        # Collada fragments consists of a .dae file plus a list of textures in
+        # jpg or png format. 
+        b = os.path.dirname(__file__)
+        dae_file = open(b + '/cube.dae', 'rb').read()
+        dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
+        dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
+        f_dae = FragDae(dae=dae_file,
+                        rgb={'rgb1.png': dae_rgb1,
+                             'rgb2.jpg': dae_rgb2})
+
+        vert, uv, rgb = list(range(9)), [9, 10], [1, 2, 250]
+        frags = [
+            MetaFragment('bar_raw', 'raw', FragRaw(vert, uv, rgb)),
+            MetaFragment('bar_dae', 'dae', f_dae)
+        ]
+        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+        t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
+        del vert, uv, rgb, frags, b, dae_file, dae_rgb1, dae_rgb2, f_dae
+
+        # Add the first template.
+        ret = self.addTemplate(t1)
+        url1 = ret.data['url']
+        assert ret.ok and url1 == config.url_template + '/t1'
+
+        # Load the meta file for this template which must contain a list of all
+        # fragment names.
+        ret = self.downloadJSON(url1 + '/meta.json')
+        set(ret['frag_names']) == set(['bar_raw', 'bar_dae'])
+
+        # Download the model and verify it matches the one we uploaded.
+        ret = self.downloadFragDae(url1 + '/bar_dae/',
+                                   'bar_dae', ['rgb1.png', 'rgb2.jpg'])
+        assert ret == t1.fragments[1].data
+        ret = self.downloadFragRaw(url1 + '/bar_raw/model.json')
+        assert ret == t1.fragments[0].data
+
+        # Add the second template.
+        ret = self.addTemplate(t2)
+        url2 = ret.data['url']
+        assert ret.ok and url2 == config.url_template + '/t2'
+
+        # Verify that both templates are now available.
+        ret = self.downloadFragDae(url1 + '/bar_dae/',
+                                   'bar_dae', ['rgb1.png', 'rgb2.jpg'])
+        assert ret == t1.fragments[1].data
+        ret = self.downloadFragDae(url2 + '/bar_dae/',
+                                   'bar_dae', ['rgb1.png', 'rgb2.jpg'])
+        assert ret == t2.fragments[1].data
+
+        print('Test passed')
+
     def test_template_invalid(self):
         """
         Make invalid queries to Dibbler which must handle them gracefully.
