@@ -17,7 +17,6 @@
 
 """
 fixme: add tests for
-  * Collada
   * multi-fragments
   * mixed fragments
   * spawnTemplate
@@ -93,6 +92,16 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         ret = json.loads(ret.body.decode('utf8'))
         return FragRaw(**(ret))
         
+    def downloadFragDae(self, url, dae, textures):
+        # fixme: docu
+        dae = self.fetch(url + dae, method='GET').body
+        
+        rgb = {}
+        for texture in textures:
+            tmp = self.fetch(url + texture, method='GET').body
+            rgb[texture] = tmp
+        return FragDae(dae=dae, rgb=rgb)
+        
     def downloadJSON(self, url):
         # fixme: docu
         url = config.url_template + '/t1/meta.json'
@@ -136,6 +145,59 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         ret = self.downloadFragRaw(config.url_template + '/t1/bar/model.json')
         assert ret == t1.fragments[0].data
         ret = self.downloadFragRaw(config.url_template + '/t2/bar/model.json')
+        assert ret == t2.fragments[0].data
+
+        print('Test passed')
+
+    def test_template_collada(self):
+        """
+        Add and query a template with one Collada fragment.
+        """
+        self.resetDibbler()
+        
+        # Collada fragments consists of a .dae file plus a list of textures in
+        # jpg or png format. 
+        b = os.path.dirname(__file__)
+        dae_file = open(b + '/cube.dae', 'rb').read()
+        dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
+        dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
+        f_dae = FragDae(dae=dae_file,
+                        rgb={'rgb1.png': dae_rgb1,
+                             'rgb2.jpg': dae_rgb2})
+
+        # Create a Template instances.
+        frags = [MetaFragment('bar', 'dae', f_dae)]
+        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+        t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
+        del b, dae_file, dae_rgb1, dae_rgb2, f_dae, frags
+
+        # Add the first template.
+        ret = self.addTemplate(t1)
+        assert ret.ok and ret.data['url'] == config.url_template + '/t1'
+
+        # Attempt to add the template a second time. This must fail.
+        assert not self.addTemplate(t1).ok
+
+        # Load the meta file for this template which must contain a list of all
+        # fragment names.
+        ret = self.downloadJSON(config.url_template + '/t1/meta.json')
+        ret['frag_names'] == ['bar']
+
+        # Download the model and verify it matches the one we uploaded.
+        ret = self.downloadFragDae(config.url_template + '/t1/bar/',
+                                   'bar', ['rgb1.png', 'rgb2.jpg'])
+        assert ret == t1.fragments[0].data
+
+        # Add the second template.
+        ret = self.addTemplate(t2)
+        assert ret.ok and ret.data['url'] == config.url_template + '/t2'
+
+        # Verify that both templates are now available.
+        ret = self.downloadFragDae(config.url_template + '/t1/bar/',
+                                   'bar', ['rgb1.png', 'rgb2.jpg'])
+        assert ret == t1.fragments[0].data
+        ret = self.downloadFragDae(config.url_template + '/t2/bar/',
+                                   'bar', ['rgb1.png', 'rgb2.jpg'])
         assert ret == t2.fragments[0].data
 
         print('Test passed')

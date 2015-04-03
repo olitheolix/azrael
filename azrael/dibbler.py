@@ -247,6 +247,7 @@ class Dibbler(tornado.web.RequestHandler):
         if model.type == 'raw':
             return self._saveModelRaw(dirname, model)
         elif model.type == 'dae':
+            print('***check')
             return self._saveModelDae(dirname, model)
         else:
             msg = 'Unknown type <{}>'.format(model.type)
