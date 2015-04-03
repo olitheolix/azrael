@@ -141,7 +141,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         # Load the meta file for this template which must contain a list of all
         # fragment names.
         ret = self.downloadJSON(config.url_template + '/t1/meta.json')
-        ret['frag_names'] == ['bar']
+        ret['fragments'] == {'bar': 'raw'}
 
         # Add the second template.
         ret = self.addTemplate(t2)
@@ -187,7 +187,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         # Load the meta file for this template which must contain a list of all
         # fragment names.
         ret = self.downloadJSON(config.url_template + '/t1/meta.json')
-        ret['frag_names'] == ['bar']
+        ret['fragments'] == {'bar': 'dae'}
 
         # Download the model and verify it matches the one we uploaded.
         ret = self.downloadFragDae(config.url_template + '/t1/bar/',
@@ -241,7 +241,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         # Load the meta file for this template which must contain a list of all
         # fragment names.
         ret = self.downloadJSON(url1 + '/meta.json')
-        set(ret['frag_names']) == set(['bar_raw', 'bar_dae'])
+        ret['fragments'] == {'bar_raw': 'raw', 'bar_dae': 'dae'}
 
         # Download the model and verify it matches the one we uploaded.
         ret = self.downloadFragDae(url1 + '/bar_dae/',
