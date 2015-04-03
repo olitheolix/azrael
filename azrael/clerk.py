@@ -611,7 +611,7 @@ class Clerk(multiprocessing.Process):
             msg = 'Invalid geometry for template <{}>'
             return RetVal(False, msg.format(model.name), None)
 
-        # Write the fragment data as a JSON to eg "templates/mymodel/model".
+        # Save the fragments as JSON data to eg "templates/mymodel/model.json".
         file_data = dict(zip(data._fields, data))
         file_data = json.dumps(file_data)
         open(os.path.join(frag_dir, 'model.json'), 'w').write(file_data)
@@ -736,7 +736,10 @@ class Clerk(multiprocessing.Process):
                     return RetVal(False, msg, None)
                 del tmp
 
-                # Create the directory for this error and return with an error
+                # Call Dibbler here; something like
+                # aabb, url = callDibbler('somewhere.com/dibbler', tt_pickled)
+
+                # Create the directory for this model and return with an error
                 # if it already exists.
                 model_dir = os.path.join(config.dir_template, tt.name)
                 try:
@@ -751,7 +754,7 @@ class Clerk(multiprocessing.Process):
                     frag_dir = os.path.join(model_dir, frag.name)
 
                     # Create the directory for this fragment:
-                    # eg. "templates/mymodel/"
+                    # eg. "some_url/template_name/fragment_name"
                     try:
                         os.makedirs(frag_dir, exist_ok=False)
                     except FileExistsError:
@@ -977,7 +980,7 @@ class Clerk(multiprocessing.Process):
         with util.Timeit('spawn:3 addCmds') as timeit:
             # Compile the list of spawn commands that will be sent to Leonard.
             objs = []
-            for objID, name, sv in zip(objIDs, t_names, SVs):
+            for name, sv, objID in zip(t_names, SVs, objIDs):
                 # Convenience.
                 t = templates[name]
 
