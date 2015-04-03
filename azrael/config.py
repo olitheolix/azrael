@@ -91,3 +91,4 @@ dir_instance = os.path.join(dir_data, 'instances')
 
 url_template = '/templates'
 url_instance = '/instances'
+url_dibbler = '/dibbler'
