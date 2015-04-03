@@ -50,6 +50,8 @@ As an even longer term goal it should be possible to run several ``Dibbler``
 instances behind a user facing Nginx server, but that will require changes to
 how models are stored to avoid race conditions. Again, Azrael does not
 yet require this level of sophistication.
+
+fixme: update module doc string once it is clearer how everything fits.
 """
 import os
 import json
@@ -92,19 +94,15 @@ class Dibbler(tornado.web.RequestHandler):
         self.dir_templates = templates
         self.dir_instances = instances
 
-        try:
-            shutil.rmtree(self.dir_templates)
-            os.makedirs(self.dir_templates)
-        except FileNotFoundError:
-            pass
-        try:
-            shutil.rmtree(self.dir_instances)
-            os.makedirs(self.dir_instances)
-        except FileNotFoundError:
-            pass
+        # Create pristine data directories.
+        shutil.rmtree(self.dir_templates, ignore_errors=True)
+        shutil.rmtree(self.dir_instances, ignore_errors=True)
+        os.makedirs(self.dir_templates)
+        os.makedirs(self.dir_instances)
 
     def get(self):
         """
+        fixme: delete me?
         """
         # Attempt to parse the arguments from the URL
         try:
@@ -245,12 +243,17 @@ class Dibbler(tornado.web.RequestHandler):
 
     def post(self):
         # fixme: intercept all errors
+        # fixme: decode payload and decide which method to call (eg
+        #        addTemplate, spawnTemplate, updateModel, ...)
         ret = self._post()
         self.write(json.dumps(ret._asdict()))
         
     def _post(self):
         """
+        # fixme: docstring
+        # fixme: document method
         """
+        # fixme: must go into 'post' method
         body = base64.b64decode(self.request.body)
         body = pickle.loads(body)
         assert body['cmd'] == 'add_template'

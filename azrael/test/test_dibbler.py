@@ -58,6 +58,10 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
     def test_template_raw(self):
         """
         Add and query a template with one Raw fragment.
+
+        fixme: add tests for Collada; try invalid queries; existing model;
+               multi-fragments; mixed fragments; spawnTemplate;
+               updateGeometry; reset;
         """
         cs = [1, 2, 3, 4]
         vert = list(range(9))
