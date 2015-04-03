@@ -59,6 +59,7 @@ import shutil
 import base64
 import pytest
 import pickle
+import binascii
 import tornado.web
 import tornado.testing
 import azrael.config as config
@@ -94,11 +95,8 @@ class Dibbler(tornado.web.RequestHandler):
         self.dir_templates = templates
         self.dir_instances = instances
 
-        # Create pristine data directories.
-        shutil.rmtree(self.dir_templates, ignore_errors=True)
-        shutil.rmtree(self.dir_instances, ignore_errors=True)
-        os.makedirs(self.dir_templates)
-        os.makedirs(self.dir_instances)
+        # fixme: add logger instance
+        # fixme: use logger instead of print
 
     def get(self):
         """
@@ -245,26 +243,54 @@ class Dibbler(tornado.web.RequestHandler):
         # fixme: intercept all errors
         # fixme: decode payload and decide which method to call (eg
         #        addTemplate, spawnTemplate, updateModel, ...)
-        ret = self._post()
+
+        # Base64 decode the payload.
+        try:
+            body = base64.b64decode(self.request.body)
+        except (binascii.Error, TypeError):
+            msg = 'Base64 decoding error'
+            self.write(json.dumps(RetVal(False, msg, None)._asdict()))
+            return
+
+        # Payload is a pickled Python dictionary.
+        try:
+            body = pickle.loads(body)
+        except (TypeError, pickle.UnpicklingError):
+            msg = 'Unpickling error'
+            self.write(json.dumps(RetVal(False, msg, None)._asdict()))
+            return
+
+        # The Python dictionary must contain a 'cmd' and a 'data' key. The
+        # 'cmd' value must a be a string.
+        try:
+            cmd, data = body['cmd'], body['data']
+            assert isinstance(cmd, str)
+        except (TypeError, KeyError):
+            msg = 'Received invalid body'
+            self.write(json.dumps(RetVal(False, msg, None)._asdict()))
+            return
+
+        # Decide on the command to run.
+        if body['cmd'] == 'add_template':
+            ret = self.addTemplate(data)
+        else:
+            msg = 'Invalid Dibbler command <{}>'.format(body['cmd'])
+            ret = RetVal(False, msg, None)
+
         self.write(json.dumps(ret._asdict()))
         
-    def _post(self):
+    def addTemplate(self, tt):
         """
         # fixme: docstring
         # fixme: document method
         """
-        # fixme: must go into 'post' method
-        body = base64.b64decode(self.request.body)
-        body = pickle.loads(body)
-        assert body['cmd'] == 'add_template'
-        
-        tt = body['data']
         model_dir = os.path.join(self.dir_templates, tt.name)
         model_url = os.path.join(config.url_template, tt.name)
         try:
             os.makedirs(model_dir, exist_ok=False)
         except FileExistsError:
-            msg = 'Template path <{}> already exists'.format(model_dir)
+            msg = 'Template <{}> already exists'.format(tt.name)
+            print(msg)
             return RetVal(False, msg, None)
 
         # Store all fragment models for this template.
@@ -278,14 +304,13 @@ class Dibbler(tornado.web.RequestHandler):
             try:
                 os.makedirs(frag_dir, exist_ok=False)
             except FileExistsError:
-                # This error should be impossible if Clerk did its job
-                # ... famous last words --> handle it anyway by removing the
-                # entire template directory.
+                # Famous last words: this error is impossible --> handle it
+                # anyway and remove the entire template directory.
                 msg = 'Frag dir <{}> already exists'.format(frag_dir)
                 shutil.rmtree(model_dir)
                 return RetVal(False, msg, None)
 
-            # Write the model file to disk.
+            # Save the model data to disk.
             ret = self.saveModel(frag_dir, frag)
             if not ret.ok:
                 shutil.rmtree(model_dir)
