@@ -86,6 +86,131 @@ def rmtree(dirnames: list, ignore_errors=False):
         shutil.rmtree(dirname, ignore_errors=ignore_errors)
 
 
+@typecheck
+def isGeometrySane(frag: FragRaw):
+    """
+    Return *True* if the geometry is consistent.
+
+    :param Fragment frag: a geometry Fragment
+    :return: Sucess
+    :rtype: bool
+    """
+    # The number of vertices must be an integer multiple of 9 to
+    # constitute a valid triangle mesh (every triangle has three
+    # edges and every edge requires an (x, y, z) triplet to
+    # describe its position).
+    try:
+        assert len(frag.vert) % 9 == 0
+        assert len(frag.uv) % 2 == 0
+        assert len(frag.rgb) % 3 == 0
+    except AssertionError:
+        return False
+    return True
+
+
+def saveModelDae(frag_dir, model):
+    """
+    Save the Collada ``model`` to ``frag_dir``.
+
+    :param str frag_dir: directory where to store ``model``.
+    :param FragDae model: the Collada model.
+    :return: success
+    """
+    # Sanity checks.
+    try:
+        data = FragDae(*model.data)
+        assert isinstance(data.dae, bytes)
+        for v in data.rgb.values():
+            assert isinstance(v, bytes)
+    except KeyError:
+        msg = 'Invalid data types for Collada fragments'
+        return RetVal(False, msg, None)
+
+    # Save the dae file to "templates/mymodel/name.dae".
+    open(os.path.join(frag_dir, model.name), 'wb').write(data.dae)
+
+    # Save the textures. These are stored as dictionaries with the texture
+    # file name as key and the data as a binary stream, eg,
+    # {'house.jpg': b'abc', 'tree.png': b'def', ...}
+    for name, rgb in data.rgb.items():
+        open(os.path.join(frag_dir, name), 'wb').write(rgb)
+
+    return RetVal(True, None, 1.0)
+
+
+def saveModelRaw(frag_dir, model):
+    """
+    Save the raw ``model`` to ``frag_dir``.
+
+    A 'raw' model is one where the vertices, UV map, and RGB textures is
+    provided directly. This is mostly useful for debugging because it
+    circumvents 3D file formats altogether.
+
+    :param str frag_dir: directory where to store ``model``.
+    :param FragDae model: the Collada model.
+    :return: success
+    """
+    # Sanity checks.
+    try:
+        data = FragRaw(*model.data)
+        assert isinstance(data.vert, list)
+        assert isinstance(data.uv, list)
+        assert isinstance(data.rgb, list)
+    except (AssertionError, TypeError):
+        msg = 'Invalid data types for Raw fragments'
+        return RetVal(False, msg, None)
+
+    if not isGeometrySane(data):
+        msg = 'Invalid geometry for template <{}>'
+        return RetVal(False, msg.format(model.name), None)
+
+    # Save the fragments as JSON data to eg "templates/mymodel/model.json".
+    file_data = dict(zip(data._fields, data))
+    file_data = json.dumps(file_data)
+    open(os.path.join(frag_dir, 'model.json'), 'w').write(file_data)
+    del file_data
+
+    # Determine the largest possible side length of the
+    # AABB. To find it, just determine the largest spatial
+    # extent in any axis direction. That is the side length of
+    # the AABB cube. Then multiply it with sqrt(3) to ensure
+    # that any rotation angle of the object is covered. The
+    # slightly larger value of sqrt(3.1) adds some slack.
+    aabb = 0
+    if len(data.vert) > 0:
+        len_x = max(data.vert[0::3]) - min(data.vert[0::3])
+        len_y = max(data.vert[1::3]) - min(data.vert[1::3])
+        len_z = max(data.vert[2::3]) - min(data.vert[2::3])
+        tmp = np.sqrt(3.1) * max(len_x, len_y, len_z)
+        aabb = np.amax((aabb, tmp))
+
+    return RetVal(True, None, aabb)
+
+
+@typecheck
+def saveModel(dirname: str, model):
+    """
+    Save the ``model`` to ``dirname`` and return the success.
+
+    This function is merely a wrapper around dedicated methods to save
+    individual file formats like Collada (dae) or Raw (for testing) files.
+
+    :param str dirname: the destination directory.
+    :param model: Container for the respective file format.
+    :return: success.
+    """
+    # Create a pristine fragment directory.
+    rmtree([dirname])
+    os.makedirs(dirname)
+    if model.type == 'raw':
+        return saveModelRaw(dirname, model)
+    elif model.type == 'dae':
+        return saveModelDae(dirname, model)
+    else:
+        msg = 'Unknown type <{}>'.format(model.type)
+        return RetVal(False, msg, None)
+
+
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """
     A static file handler that tells the client to never cache anything.
@@ -130,128 +255,6 @@ class Dibbler(tornado.web.RequestHandler):
         data = {'name': 'test', 'x + y': '|'.join([x, y])}
         ret = RetVal(True, None, data)
         self.write(json.dumps(ret._asdict()))
-
-    @typecheck
-    def _isGeometrySane(self, frag: FragRaw):
-        """
-        Return *True* if the geometry is consistent.
-
-        :param Fragment frag: a geometry Fragment
-        :return: Sucess
-        :rtype: bool
-        """
-        # The number of vertices must be an integer multiple of 9 to
-        # constitute a valid triangle mesh (every triangle has three
-        # edges and every edge requires an (x, y, z) triplet to
-        # describe its position).
-        try:
-            assert len(frag.vert) % 9 == 0
-            assert len(frag.uv) % 2 == 0
-            assert len(frag.rgb) % 3 == 0
-        except AssertionError:
-            return False
-        return True
-
-    def _saveModelDae(self, frag_dir, model):
-        """
-        Save the Collada ``model`` to ``frag_dir``.
-
-        :param str frag_dir: directory where to store ``model``.
-        :param FragDae model: the Collada model.
-        :return: success
-        """
-        # Sanity checks.
-        try:
-            data = FragDae(*model.data)
-            assert isinstance(data.dae, bytes)
-            for v in data.rgb.values():
-                assert isinstance(v, bytes)
-        except KeyError:
-            msg = 'Invalid data types for Collada fragments'
-            return RetVal(False, msg, None)
-
-        # Save the dae file to "templates/mymodel/name.dae".
-        open(os.path.join(frag_dir, model.name), 'wb').write(data.dae)
-
-        # Save the textures. These are stored as dictionaries with the texture
-        # file name as key and the data as a binary stream, eg,
-        # {'house.jpg': b'abc', 'tree.png': b'def', ...}
-        for name, rgb in data.rgb.items():
-            open(os.path.join(frag_dir, name), 'wb').write(rgb)
-
-        return RetVal(True, None, 1.0)
-
-    def _saveModelRaw(self, frag_dir, model):
-        """
-        Save the raw ``model`` to ``frag_dir``.
-
-        A 'raw' model is one where the vertices, UV map, and RGB textures is
-        provided directly. This is mostly useful for debugging because it
-        circumvents 3D file formats altogether.
-
-        :param str frag_dir: directory where to store ``model``.
-        :param FragDae model: the Collada model.
-        :return: success
-        """
-        # Sanity checks.
-        try:
-            data = FragRaw(*model.data)
-            assert isinstance(data.vert, list)
-            assert isinstance(data.uv, list)
-            assert isinstance(data.rgb, list)
-        except (AssertionError, TypeError):
-            msg = 'Invalid data types for Raw fragments'
-            return RetVal(False, msg, None)
-
-        if not self._isGeometrySane(data):
-            msg = 'Invalid geometry for template <{}>'
-            return RetVal(False, msg.format(model.name), None)
-
-        # Save the fragments as JSON data to eg "templates/mymodel/model.json".
-        file_data = dict(zip(data._fields, data))
-        file_data = json.dumps(file_data)
-        open(os.path.join(frag_dir, 'model.json'), 'w').write(file_data)
-        del file_data
-
-        # Determine the largest possible side length of the
-        # AABB. To find it, just determine the largest spatial
-        # extent in any axis direction. That is the side length of
-        # the AABB cube. Then multiply it with sqrt(3) to ensure
-        # that any rotation angle of the object is covered. The
-        # slightly larger value of sqrt(3.1) adds some slack.
-        aabb = 0
-        if len(data.vert) > 0:
-            len_x = max(data.vert[0::3]) - min(data.vert[0::3])
-            len_y = max(data.vert[1::3]) - min(data.vert[1::3])
-            len_z = max(data.vert[2::3]) - min(data.vert[2::3])
-            tmp = np.sqrt(3.1) * max(len_x, len_y, len_z)
-            aabb = np.amax((aabb, tmp))
-
-        return RetVal(True, None, aabb)
-
-    @typecheck
-    def saveModel(self, dirname: str, model):
-        """
-        Save the ``model`` to ``dirname`` and return the success.
-
-        This function is merely a wrapper around dedicated methods to save
-        individual file formats like Collada (dae) or Raw (for testing) files.
-
-        :param str dirname: the destination directory.
-        :param model: Container for the respective file format.
-        :return: success.
-        """
-        # Create a pristine fragment directory.
-        rmtree([dirname])
-        os.makedirs(dirname)
-        if model.type == 'raw':
-            return self._saveModelRaw(dirname, model)
-        elif model.type == 'dae':
-            print('***check')
-            return self._saveModelDae(dirname, model)
-        else:
-            msg = 'Unknown type <{}>'.format(model.type)
-            return RetVal(False, msg, None)
 
     def post(self):
         # fixme: intercept all errors
@@ -329,7 +332,7 @@ class Dibbler(tornado.web.RequestHandler):
                 return RetVal(False, msg, None)
 
             # Save the model data to disk.
-            ret = self.saveModel(frag_dir, frag)
+            ret = saveModel(frag_dir, frag)
             if not ret.ok:
                 rmtree([model_dir])
                 return ret

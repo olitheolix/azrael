@@ -17,6 +17,7 @@
 
 """
 fixme: add tests for
+  * send invalid fragment data
   * multi-fragments
   * mixed fragments
   * spawnTemplate
@@ -83,7 +84,12 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         # Make a request to add the template. This must succeed and return the
         # URL where it can be downloaded.
         ret = self.fetch(config.url_dibbler, method='POST', body=req)
-        ret = json.loads(ret.body.decode('utf-8'))
+        try:
+            ret = json.loads(ret.body.decode('utf-8'))
+        except ValueError:
+            # This typically happens when the server responded with a 404
+            # error, usually because we did not provide a valid URL to 'fetch'.
+            return RetVal(False, 'JSON decoding error', None)
         return RetVal(**ret)
         
     def downloadFragRaw(self, url):
@@ -208,7 +214,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         """
         self.resetDibbler()
 
-        # Paylod is not a valid pickled Python object.
+        # Payload is not a valid pickled Python object.
         body = base64.b64encode(b'blah')
         ret = self.fetch(config.url_dibbler, method='POST', body=body)
         ret = RetVal(**json.loads(ret.body.decode('utf-8')))
