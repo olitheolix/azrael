@@ -211,6 +211,19 @@ def saveModel(dirname: str, model):
         return RetVal(False, msg, None)
 
 
+@typecheck
+def removeTemplate(dirname: str):
+    """
+    fixme: docu
+    """
+    try:
+        rmtree([dirname])
+        return RetVal(True, None, None)
+    except FileNotFoundError:
+        msg = 'Template <{}> does not exist'.format(dirname)
+        return RetVal(False, msg, None)
+
+
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """
     A static file handler that tells the client to never cache anything.
@@ -290,6 +303,8 @@ class Dibbler(tornado.web.RequestHandler):
         # Decide on the command to run.
         if cmd == 'add_template':
             ret = self.addTemplate(data)
+        elif cmd == 'del_template':
+            ret = removeTemplate(os.path.join(self.dir_templates, data))
         elif cmd == 'reset' and data in ('empty',):
             if data == 'empty':
                 rmtree([self.dir_templates, self.dir_instances])

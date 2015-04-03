@@ -92,9 +92,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         rgb = np.random.randint(0, 100, 3).tolist()
         return FragRaw(vert, uv, rgb)
 
-    def addTemplate(self, template: Template):
-        # Compile the Dibbler request.
-        req = {'cmd': 'add_template', 'data': template}
+    def sendRequest(self, req):
         req = base64.b64encode(pickle.dumps(req))
 
         # Make a request to add the template. This must succeed and return the
@@ -107,11 +105,19 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
             # error, usually because we did not provide a valid URL to 'fetch'.
             return RetVal(False, 'JSON decoding error', None)
         return RetVal(**ret)
+
+    def addTemplate(self, template: Template):
+        # Compile the Dibbler request.
+        req = {'cmd': 'add_template', 'data': template}
+        return self.sendRequest(req)
         
     def downloadFragRaw(self, url):
         # fixme: docu
         ret = self.fetch(url, method='GET')
-        ret = json.loads(ret.body.decode('utf8'))
+        try:
+            ret = json.loads(ret.body.decode('utf8'))
+        except ValueError:
+            assert False
         return FragRaw(**(ret))
         
     def downloadFragDae(self, url, dae, textures):
@@ -128,7 +134,11 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         # fixme: docu
         url = config.url_template + '/t1/meta.json'
         ret = self.fetch(url, method='GET')
-        return json.loads(ret.body.decode('utf8'))
+        try:
+            return json.loads(ret.body.decode('utf8'))
+        except ValueError:
+            assert False
+
         
     def test_template_raw(self):
         """
@@ -324,3 +334,64 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         # The 'rmtree' function must have been called twice (once for the
         # 'templates' and once for the 'instances').
         assert mock_rmtree.call_count == 1
+
+    def test_remove_template(self):
+        """
+        Add a template, verify it exists, remove it, verify it does not exist
+        anymore.
+        """
+        self.resetDibbler()
+
+        # Create two Templates with one Raw fragment each.
+        frags = [MetaFragment('bar', 'raw', self.createFragRaw())]
+        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+        t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
+        del frags
+
+        def _templateOk(url, frag):
+            try:
+                # Load the meta file for this template which must contain a list of
+                # all fragment names.
+                ret = self.downloadJSON(url + '/meta.json')
+                assert ret['fragments'] == {'bar': 'raw'}
+
+                # Download the model and verify it matches the one we uploaded.
+                url = url + '/bar/model.json'
+                assert self.downloadFragRaw(url) == frag.data
+            except AssertionError:
+                return False
+            return True
+
+        # Add both templates and verify they now exist.
+        ret1 = self.addTemplate(t1)
+        ret2 = self.addTemplate(t2)
+        assert ret1.ok
+        assert ret2.ok
+        assert _templateOk(ret1.data['url'], t1.fragments[0])
+        assert _templateOk(ret2.data['url'], t2.fragments[0])
+
+        # Attempt to delete non-existing template.
+        req = {'cmd': 'del_template', 'data': 'blah'}
+        assert not self.sendRequest(req).ok
+        assert _templateOk(ret1.data['url'], t1.fragments[0])
+        assert _templateOk(ret2.data['url'], t2.fragments[0])
+        
+        # Delete second template.
+        req = {'cmd': 'del_template', 'data': t2.name}
+        assert self.sendRequest(req).ok
+        assert _templateOk(ret1.data['url'], t1.fragments[0])
+        assert not _templateOk(ret2.data['url'], t2.fragments[0])
+        
+        # Delete first template.
+        req = {'cmd': 'del_template', 'data': t1.name}
+        assert self.sendRequest(req).ok
+        assert not _templateOk(ret1.data['url'], t1.fragments[0])
+        assert not _templateOk(ret2.data['url'], t2.fragments[0])
+        
+        # Attempt to delete the first template again.
+        req = {'cmd': 'del_template', 'data': t1.name}
+        assert not self.sendRequest(req).ok
+        assert not _templateOk(ret1.data['url'], t1.fragments[0])
+        assert not _templateOk(ret2.data['url'], t2.fragments[0])
+        
+        print('Test passed')
