@@ -189,7 +189,7 @@ def saveModelRaw(frag_dir, model):
 
 
 @typecheck
-def saveModel(dirname: str, model):
+def saveModel(model_dir, fragments, update_existing):
     """
     Save the ``model`` to ``dirname`` and return the success.
 
@@ -200,17 +200,51 @@ def saveModel(dirname: str, model):
     :param model: Container for the respective file format.
     :return: success.
     """
-    # Create a pristine fragment directory.
-    rmtree([dirname], ignore_errors=True)
-    os.makedirs(dirname)
-    if model.type == 'raw':
-        return saveModelRaw(dirname, model)
-    elif model.type == 'dae':
-        return saveModelDae(dirname, model)
-    else:
-        msg = 'Unknown type <{}>'.format(model.type)
-        return RetVal(False, msg, None)
+    # Store all fragment models for this template.
+    aabb = -1
+    frag_names = {}
+    for frag in fragments:
+        # Fragment directory, eg .../instances/mymodle/frag1
+        frag_dir = os.path.join(model_dir, frag.name)
 
+        # Create a pristine fragment directory.
+        rmtree([frag_dir], ignore_errors=True)
+        os.makedirs(frag_dir)
+
+        # Save the fragment.
+        if frag.type == 'raw':
+            # Raw.
+            ret = saveModelRaw(frag_dir, frag)
+        elif frag.type == 'dae':
+            # Collada.
+            ret = saveModelDae(frag_dir, frag)
+        else:
+            # Unknown model format.
+            msg = 'Unknown type <{}>'.format(frag.type)
+            ret = RetVal(False, msg, None)
+
+        # Delete the fragment directory if something went wrong and proceed to
+        # the next fragment.
+        if not ret.ok:
+            rmtree([frag_dir])
+            continue
+
+        # Update the 'meta.json': it contains a dictionary with all fragment
+        # names and their model type, eg. {'foo': 'raw', 'bar': 'dae', ...}
+        frag_names[frag.name] = frag.type
+        tmp = json.dumps({'fragments': frag_names}).encode('utf8')
+        open(os.path.join(model_dir, 'meta.json'), 'wb').write(tmp)
+        del tmp
+
+        # Find the largest AABB.
+        aabb = np.amax((ret.data, aabb))
+
+    # Sanity check: if the AABB was negative than not a single fragment was
+    # valid. This is an error.
+    if aabb < 0:
+        msg = 'Model contains no valid fragments'
+        return RetVal(False, msg, None)
+    return RetVal(True, None, aabb)
 
 @typecheck
 def removeTemplate(dirname: str):
@@ -301,11 +335,11 @@ class Dibbler(tornado.web.RequestHandler):
             self.write(json.dumps(RetVal(False, msg, None)._asdict()))
             return
 
-        # Decide on the command to run.
+        # Parse the command word.
         if cmd == 'add_template':
             ret = self.addTemplate(data)
         elif cmd == 'del_template':
-            ret = removeTemplate(os.path.join(self.dir_templates, data))
+            ret = removeTemplate(self.getTemplateDir(data))
         elif cmd == 'spawn':
             ret = self.spawnTemplate(data)
         elif cmd == 'del_instance':
@@ -313,15 +347,25 @@ class Dibbler(tornado.web.RequestHandler):
         elif cmd == 'set_geometry':
             ret = self.setGeometry(data)
         elif cmd == 'reset' and data in ('empty',):
-            if data == 'empty':
-                rmtree([self.dir_templates, self.dir_instances])
             ret = RetVal(True, None, None)
+            if data == 'empty':
+                rmtree([self.dir_templates, self.dir_instances],
+                       ignore_errors=True)
+            else:
+                msg = 'Unknown reset option <{}>'.format(data)
+                ret = RetVal(False, msg, None)
         else:
             msg = 'Invalid Dibbler command <{}>'.format(body['cmd'])
             ret = RetVal(False, msg, None)
 
         self.write(json.dumps(ret._asdict()))
         
+    def getTemplateDir(self, name: str):
+        return os.path.join(self.dir_templates, name)
+
+    def getInstanceDir(self, objID: str):
+        return os.path.join(self.dir_instances, objID)
+
     def setGeometry(self, data: dict):
         try:
             assert isinstance(data, dict)
@@ -335,21 +379,14 @@ class Dibbler(tornado.web.RequestHandler):
             msg = 'Invalid parameters in setGeometry command'
             return RetVal(False, msg, None)
 
-        model_dir = os.path.join(self.dir_instances, objID)
-        frag_names = {}
-        for frag in frags:
-            frag_dir = os.path.join(model_dir, frag.name)
+        # Ensure that an instance with ``objID`` exists.
+        model_dir = self.getInstanceDir(objID)
+        if not os.path.exists(model_dir):
+            msg = 'Object <{}> does not exist'.format(objID)
+            return RetVal(False, msg, None)
 
-            # Save the model data to disk.
-            ret = saveModel(frag_dir, frag)
-            if not ret.ok:
-                rmtree([model_dir], ignore_error=True)
-                return ret
-            frag_names[frag.name] = frag.type
-            tmp = json.dumps({'fragments': frag_names}).encode('utf8')
-            open(os.path.join(model_dir, 'meta.json'), 'wb').write(tmp)
-            del tmp
-        return RetVal(True, None, None)        
+        # Overwrite the model for instance with ``objID``.
+        return saveModel(model_dir, frags, update_existing=True)
         
     def spawnTemplate(self, data: dict):
         try:
@@ -362,8 +399,8 @@ class Dibbler(tornado.web.RequestHandler):
             return RetVal(False, msg, None)
         
         # Copy the model from the template- to the instance directory.
-        src = os.path.join(self.dir_templates, name, '*')
-        dst = os.path.join(self.dir_instances, objID) + '/'
+        src = self.getTemplateDir(name)
+        dst = self.getInstanceDir(objID)
         try:
             os.makedirs(dst)
         except FileExistsError:
@@ -372,7 +409,7 @@ class Dibbler(tornado.web.RequestHandler):
 
         # Copy the model data from the template directory to the instance
         # directory 'dst'.
-        cmd = 'cp -r {} {}'.format(src, dst)
+        cmd = 'cp -r {}/* {}'.format(src, dst)
         ret = subprocess.call(cmd, shell=True, stderr=subprocess.DEVNULL)
         if ret == 0:
             url = config.url_instance + '/{}'.format(objID)
@@ -384,7 +421,7 @@ class Dibbler(tornado.web.RequestHandler):
             return RetVal(False, msg, None)
 
     def deleteInstance(self, objID: str):
-        dst = os.path.join(self.dir_instances, objID)
+        dst = self.getInstanceDir(objID)
         try:
             rmtree([dst], ignore_errors=False)
         except (AssertionError, FileNotFoundError):
@@ -397,7 +434,7 @@ class Dibbler(tornado.web.RequestHandler):
         # fixme: docstring
         # fixme: document method
         """
-        model_dir = os.path.join(self.dir_templates, tt.name)
+        model_dir = self.getTemplateDir(tt.name)
         model_url = os.path.join(config.url_template, tt.name)
         try:
             os.makedirs(model_dir, exist_ok=False)
@@ -406,35 +443,10 @@ class Dibbler(tornado.web.RequestHandler):
             print(msg)
             return RetVal(False, msg, None)
 
-        # Store all fragment models for this template.
-        aabb = 0
-        frag_names = {}
-        for frag in tt.fragments:
-            frag_dir = os.path.join(model_dir, frag.name)
-
-            # Create the directory for this fragment:
-            # eg. "some_url/template_name/fragment_name"
-            try:
-                os.makedirs(frag_dir, exist_ok=False)
-            except FileExistsError:
-                # Famous last words: this error is impossible --> handle it
-                # anyway and remove the entire template directory.
-                msg = 'Frag dir <{}> already exists'.format(frag_dir)
-                rmtree([model_dir])
-                return RetVal(False, msg, None)
-
-            # Save the model data to disk.
-            ret = saveModel(frag_dir, frag)
-            if not ret.ok:
-                rmtree([model_dir])
-                return ret
-            frag_names[frag.name] = frag.type
-            tmp = json.dumps({'fragments': frag_names}).encode('utf8')
-            open(os.path.join(model_dir, 'meta.json'), 'wb').write(tmp)
-            del tmp
-
-            aabb = np.amax((ret.data, aabb))
+        ret = saveModel(model_dir, tt.fragments, update_existing=False)
+        if not ret.ok:
+            return ret
 
         # Return message 
-        return RetVal(True, None, {'aabb': aabb, 'url': model_url})
+        return RetVal(True, None, {'aabb': ret.data, 'url': model_url})
 

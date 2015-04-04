@@ -545,7 +545,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         # Attempt to change the fragment of a non-existing object.
         req = {'cmd': 'set_geometry',
                'data': {'objID': '100', 'frags': [frag_new]}}
-        assert self.sendRequest(req).ok
+        assert not self.sendRequest(req).ok
 
         # The old fragments must not have changed.
         assert _instanceOk(ret1.data['url'], frag_orig)
