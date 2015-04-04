@@ -1516,7 +1516,7 @@ def test_updateFragmentState():
 def test_fragments_end2end():
     """
     Integration test: create a live system, add a template with two fragments,
-    spawn it, query and very its geometry, the alter its geometry and verify
+    spawn it, query it, very its geometry, alter its geometry, and verify
     again.
     """
     killAzrael()

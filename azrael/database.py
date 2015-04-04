@@ -41,6 +41,8 @@ def init(reset=False):
     """
     Connect to the State Variable database. Flush it if ``reset`` is **True**.
 
+    fixme: docu update
+
     :param bool reset: flush the database.
     """
     global dbHandles
@@ -49,6 +51,8 @@ def init(reset=False):
     if reset:
         client.drop_database(dbName)
         logit.info('Deleting data directory <{}>'.format(config.dir_data))
+
+        # fixme: delete the rest of this if-block once Dibbler works.
         try:
             shutil.rmtree(config.dir_data)
         except FileNotFoundError:
