@@ -20,7 +20,6 @@ fixme: add tests for
   * send invalid fragment data
   * spawnTemplate
   * updateGeometry
-  * delete template
   * delete instance
   * write 'startDibbler' function to start Dibbler Tornado process
   * integration test with urllib and an actual Tornado process
@@ -59,11 +58,11 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
             'templates': os.path.join(self.dirNameBase, 'templates'),
             'instances': os.path.join(self.dirNameBase, 'instances')}
 
-        # Template geometries.
+        # Template models.
         handlers.append(
             ('/templates/(.*)', FH, {'path': self.dirNames['templates']}))
 
-        # Instance geometries.
+        # Instance models.
         handlers.append(
             ('/instances/(.*)', FH, {'path': self.dirNames['instances']}))
 
@@ -394,4 +393,51 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert not _templateOk(ret1.data['url'], t1.fragments[0])
         assert not _templateOk(ret2.data['url'], t2.fragments[0])
         
+        print('Test passed')
+
+    def test_spawn_template(self):
+        """
+        Add a template and spawn it. The net effect must be that the instance
+        data must be available via Dibbler.
+        """
+        self.resetDibbler()
+
+        # Create a Templates with a Raw fragment.
+        frags = [MetaFragment('bar', 'raw', self.createFragRaw())]
+        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+        del frags
+
+        def _instanceOk(url, frag):
+            try:
+                # Load the meta file for this template which must contain a list of
+                # all fragment names.
+                ret = self.downloadJSON(url + '/meta.json')
+                assert ret['fragments'] == {'bar': 'raw'}
+
+                # Download the model and verify it matches the one we uploaded.
+                url = url + '/bar/model.json'
+                assert self.downloadFragRaw(url) == frag.data
+            except AssertionError:
+                return False
+            return True
+
+        # Add the template.
+        assert self.addTemplate(t1).ok
+
+        # Attempt to spawn a non-existing template.
+        req = {'cmd': 'spawn', 'data': {'name': 'blah', 'objID': '1'}}
+        assert not self.sendRequest(req).ok
+
+        # Spawn a valid template.
+        req = {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '1'}}
+        ret = self.sendRequest(req)
+        assert ret.ok
+        assert ret.data['url'] == config.url_instance + '/1'
+        assert _instanceOk(ret.data['url'], t1.fragments[0])
+
+        # Attempt to spawn another template with the same objID.
+        req = {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '1'}}
+        assert not self.sendRequest(req).ok
+        assert _instanceOk(ret.data['url'], t1.fragments[0])
+
         print('Test passed')

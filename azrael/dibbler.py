@@ -60,6 +60,7 @@ import base64
 import pytest
 import pickle
 import binascii
+import subprocess
 import tornado.web
 import tornado.testing
 import azrael.config as config
@@ -305,6 +306,8 @@ class Dibbler(tornado.web.RequestHandler):
             ret = self.addTemplate(data)
         elif cmd == 'del_template':
             ret = removeTemplate(os.path.join(self.dir_templates, data))
+        elif cmd == 'spawn':
+            ret = self.spawnTemplate(data)
         elif cmd == 'reset' and data in ('empty',):
             if data == 'empty':
                 rmtree([self.dir_templates, self.dir_instances])
@@ -315,6 +318,38 @@ class Dibbler(tornado.web.RequestHandler):
 
         self.write(json.dumps(ret._asdict()))
         
+    def spawnTemplate(self, data: dict):
+        try:
+            assert isinstance(data, dict)
+            name, objID = data['name'], data['objID']
+            assert isinstance(objID, str)
+            int(objID)
+        except (AssertionError, TypeError, ValueError, KeyError):
+            msg = 'Invalid parameters in spawn command'
+            return RetVal(False, msg, None)
+        
+        # Copy the model from the template- to the instance directory.
+        src = os.path.join(self.dir_templates, name, '*')
+        dst = os.path.join(self.dir_instances, objID) + '/'
+        try:
+            os.makedirs(dst)
+        except FileExistsError:
+            msg = 'Directory for instance <{}> already exists'.format(objID)
+            return RetVal(False, msg, None)
+
+        # Copy the model data from the template directory to the instance
+        # directory 'dst'.
+        cmd = 'cp -r {} {}'.format(src, dst)
+        ret = subprocess.call(cmd, shell=True, stderr=subprocess.DEVNULL)
+        if ret == 0:
+            url = config.url_instance + '/{}'.format(objID)
+            return RetVal(True, None, {'url': url})
+        else:
+            msg = 'Error creating the instance directory:\n  cmd={}'
+            msg = msg.format(cmd)
+            rmtree([dst])
+            return RetVal(False, msg, None)
+
     def addTemplate(self, tt):
         """
         # fixme: docstring
