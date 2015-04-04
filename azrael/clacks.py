@@ -231,7 +231,7 @@ class ClacksServer(multiprocessing.Process):
         http = tornado.httpserver.HTTPServer(app)
 
         # Specify the server port and create Tornado instance.
-        http.listen(config.webserver_port)
+        http.listen(config.port_clacks)
         tornado_app = ioloop.IOLoop.instance()
 
         # Start Tornado event loop.

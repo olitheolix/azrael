@@ -63,9 +63,6 @@ del console, logFormat, formatter, fileHandler
 # Global variables.
 # ---------------------------------------------------------------------------
 
-# Port of Tornado server.
-webserver_port = 8080
-
 # Determine the host IP address. Try eth0  first. Use localhost is a fallback
 # option if no configured ethernet card was found.
 try:
@@ -77,9 +74,16 @@ except (ValueError, KeyError):
         logger.critical('Could not find a valid network interface')
         sys.exit(1)
 
-# Address of the various Azrael services.
+# Addresses of the various Azrael services.
+addr_clacks = host_ip
+port_clacks = 8080
+
+addr_dibbler = host_ip
+port_dibbler = 8081
+
 addr_clerk = host_ip
 port_clerk = 5555
+
 addr_leonard_pushpull = 'tcp://' + host_ip + ':5556'
 
 # Data directory where the template- geometries, textures, and UV map will be
