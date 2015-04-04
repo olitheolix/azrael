@@ -18,8 +18,6 @@
 """
 fixme: add tests for
   * send invalid fragment data
-  * updateGeometry
-  * delete instance
   * write 'startDibbler' function to start Dibbler Tornado process
   * integration test with urllib and an actual Tornado process
 """
@@ -501,4 +499,65 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert not _instanceOk(ret1.data['url'], t1.fragments[0])
         assert not _instanceOk(ret2.data['url'], t1.fragments[0])
         
+        print('Test passed')
+
+    def test_setGeometry(self):
+        """
+        Spawn an instance, verify it exists, remove it, and verify it does not
+        exist anymore.
+        """
+        self.resetDibbler()
+
+        # Create a Templates with a Raw fragment.
+        frag_orig = MetaFragment('bar', 'raw', self.createFragRaw())
+        t1 = Template('t1', [1, 2, 3, 4], [frag_orig], [], [])
+
+        def _instanceOk(url, frag):
+            try:
+                # Load the meta file for this template which must contain a list of
+                # all fragment names.
+                ret = self.downloadJSON(url + '/meta.json')
+                assert ret['fragments'] == {'bar': 'raw'}
+
+                # Download the model and verify it matches the one we uploaded.
+                url = url + '/bar/model.json'
+                assert self.downloadFragRaw(url) == frag.data
+            except AssertionError:
+                return False
+            return True
+
+        # Add the template and spawn two instances.
+        assert self.addTemplate(t1).ok
+        ret1 = self.sendRequest(
+            {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '1'}})
+        ret2 = self.sendRequest(
+            {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '2'}})
+        assert ret1.ok
+        assert ret2.ok
+
+        # Verify the fragment models.
+        assert _instanceOk(ret1.data['url'], frag_orig)
+        assert _instanceOk(ret2.data['url'], frag_orig)
+
+        # Create a replacement fragment.
+        frag_new = MetaFragment('bar', 'raw', self.createFragRaw())
+
+        # Attempt to change the fragment of a non-existing object.
+        req = {'cmd': 'set_geometry',
+               'data': {'objID': '100', 'frags': [frag_new]}}
+        assert self.sendRequest(req).ok
+
+        # The old fragments must not have changed.
+        assert _instanceOk(ret1.data['url'], frag_orig)
+        assert _instanceOk(ret2.data['url'], frag_orig)
+
+        # Change the fragment models for the first object.
+        req = {'cmd': 'set_geometry',
+               'data': {'objID': '1', 'frags': [frag_new]}}
+        assert self.sendRequest(req).ok
+
+        # Verify that the models are correct.
+        assert _instanceOk(ret1.data['url'], frag_new)
+        assert _instanceOk(ret2.data['url'], frag_orig)
+
         print('Test passed')

@@ -201,7 +201,7 @@ def saveModel(dirname: str, model):
     :return: success.
     """
     # Create a pristine fragment directory.
-    rmtree([dirname])
+    rmtree([dirname], ignore_errors=True)
     os.makedirs(dirname)
     if model.type == 'raw':
         return saveModelRaw(dirname, model)
@@ -310,6 +310,8 @@ class Dibbler(tornado.web.RequestHandler):
             ret = self.spawnTemplate(data)
         elif cmd == 'del_instance':
             ret = self.deleteInstance(data)
+        elif cmd == 'set_geometry':
+            ret = self.setGeometry(data)
         elif cmd == 'reset' and data in ('empty',):
             if data == 'empty':
                 rmtree([self.dir_templates, self.dir_instances])
@@ -319,6 +321,35 @@ class Dibbler(tornado.web.RequestHandler):
             ret = RetVal(False, msg, None)
 
         self.write(json.dumps(ret._asdict()))
+        
+    def setGeometry(self, data: dict):
+        try:
+            assert isinstance(data, dict)
+            frags, objID = data['frags'], data['objID']
+            assert isinstance(objID, str)
+            assert isinstance(frags, list)
+            for _ in frags:
+                assert isinstance(_, MetaFragment)
+            int(objID)
+        except (AssertionError, TypeError, ValueError, KeyError):
+            msg = 'Invalid parameters in setGeometry command'
+            return RetVal(False, msg, None)
+
+        model_dir = os.path.join(self.dir_instances, objID)
+        frag_names = {}
+        for frag in frags:
+            frag_dir = os.path.join(model_dir, frag.name)
+
+            # Save the model data to disk.
+            ret = saveModel(frag_dir, frag)
+            if not ret.ok:
+                rmtree([model_dir], ignore_error=True)
+                return ret
+            frag_names[frag.name] = frag.type
+            tmp = json.dumps({'fragments': frag_names}).encode('utf8')
+            open(os.path.join(model_dir, 'meta.json'), 'wb').write(tmp)
+            del tmp
+        return RetVal(True, None, None)        
         
     def spawnTemplate(self, data: dict):
         try:
