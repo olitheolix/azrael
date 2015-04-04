@@ -18,7 +18,6 @@
 """
 fixme: add tests for
   * send invalid fragment data
-  * spawnTemplate
   * updateGeometry
   * delete instance
   * write 'startDibbler' function to start Dibbler Tornado process
@@ -440,4 +439,66 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert not self.sendRequest(req).ok
         assert _instanceOk(ret.data['url'], t1.fragments[0])
 
+        print('Test passed')
+
+    def test_remove_instance(self):
+        """
+        Spawn an instance, verify it exists, remove it, and verify it does not
+        exist anymore.
+        """
+        self.resetDibbler()
+
+        # Create a Templates with a Raw fragment.
+        frags = [MetaFragment('bar', 'raw', self.createFragRaw())]
+        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+        del frags
+
+        def _instanceOk(url, frag):
+            try:
+                # Load the meta file for this template which must contain a list of
+                # all fragment names.
+                ret = self.downloadJSON(url + '/meta.json')
+                assert ret['fragments'] == {'bar': 'raw'}
+
+                # Download the model and verify it matches the one we uploaded.
+                url = url + '/bar/model.json'
+                assert self.downloadFragRaw(url) == frag.data
+            except AssertionError:
+                return False
+            return True
+
+        # Add the template.
+        assert self.addTemplate(t1).ok
+
+        # Spawn two instances.
+        ret1 = self.sendRequest(
+            {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '1'}})
+        ret2 = self.sendRequest(
+            {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '2'}})
+        assert ret1.ok
+        assert ret2.ok
+
+        assert _instanceOk(ret1.data['url'], t1.fragments[0])
+        assert _instanceOk(ret2.data['url'], t1.fragments[0])
+
+        # Attempt to delete non-existing instance.
+        assert not self.sendRequest({'cmd': 'del_instance', 'data': '100'}).ok
+        assert _instanceOk(ret1.data['url'], t1.fragments[0])
+        assert _instanceOk(ret2.data['url'], t1.fragments[0])
+                
+        # Delete second instance.
+        assert self.sendRequest({'cmd': 'del_instance', 'data': '2'}).ok
+        assert _instanceOk(ret1.data['url'], t1.fragments[0])
+        assert not _instanceOk(ret2.data['url'], t1.fragments[0])
+        
+        # Delete first instance.
+        assert self.sendRequest({'cmd': 'del_instance', 'data': '1'}).ok
+        assert not _instanceOk(ret1.data['url'], t1.fragments[0])
+        assert not _instanceOk(ret2.data['url'], t1.fragments[0])
+        
+        # Attempt to delete the first instance again.
+        assert not self.sendRequest({'cmd': 'del_instance', 'data': '1'}).ok
+        assert not _instanceOk(ret1.data['url'], t1.fragments[0])
+        assert not _instanceOk(ret2.data['url'], t1.fragments[0])
+        
         print('Test passed')

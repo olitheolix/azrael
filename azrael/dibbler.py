@@ -308,6 +308,8 @@ class Dibbler(tornado.web.RequestHandler):
             ret = removeTemplate(os.path.join(self.dir_templates, data))
         elif cmd == 'spawn':
             ret = self.spawnTemplate(data)
+        elif cmd == 'del_instance':
+            ret = self.deleteInstance(data)
         elif cmd == 'reset' and data in ('empty',):
             if data == 'empty':
                 rmtree([self.dir_templates, self.dir_instances])
@@ -350,6 +352,15 @@ class Dibbler(tornado.web.RequestHandler):
             rmtree([dst])
             return RetVal(False, msg, None)
 
+    def deleteInstance(self, objID: str):
+        dst = os.path.join(self.dir_instances, objID)
+        try:
+            rmtree([dst], ignore_errors=False)
+        except (AssertionError, FileNotFoundError):
+            msg = 'Could not delete objID <{}>'.format(objID)
+            return RetVal(False, msg, None)
+        return RetVal(True, None, None)
+        
     def addTemplate(self, tt):
         """
         # fixme: docstring
