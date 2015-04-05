@@ -81,70 +81,12 @@ class TestClerk:
         tmp = json.loads(tmp.decode('utf8'))
         return RetVal(**tmp)
 
-    def test_invalid(self):
-        """
-        Send an invalid command to Clerk.
-        """
-        class ClientTest(azrael.client.Client):
-            def testSend(self, data):
-                """
-                Pass data verbatim to Clerk.
+    def setup_method(self, method):
+        azrael.database.init(reset=True)
+        self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
-                This method is to test Clerk's ability to handle corrupt and
-                invalid commands. If we used a normal Client then the protocol
-                module would probably pick up most errors without them ever
-                reaching Clerk.
-                """
-                self.sock_cmd.send(data)
-                data = self.sock_cmd.recv()
-                data = json.loads(data.decode('utf8'))
-                return data['ok'], data['msg']
-
-        killAzrael()
-
-        # Start Clerk and instantiate a Client.
-        clerk = azrael.clerk.Clerk()
-        clerk.start()
-        client = ClientTest()
-
-        # Send a corrupt JSON to Clerk.
-        msg = 'invalid_cmd'
-        ret = client.testSend(msg.encode('utf8'))
-        assert ret == (False, 'JSON decoding error in Clerk')
-
-        # Send a malformatted JSON (it misses the 'payload' field).
-        msg = json.dumps({'cmd': 'blah'})
-        ok, ret = client.testSend(msg.encode('utf8'))
-        assert (ok, ret) == (False, 'Invalid command format')
-
-        # Send an invalid command.
-        msg = json.dumps({'cmd': 'blah', 'payload': ''})
-        ok, ret = client.testSend(msg.encode('utf8'))
-        assert (ok, ret) == (False, 'Invalid command <blah>')
-
-        # Terminate the Clerk.
-        clerk.terminate()
-        clerk.join()
-
-        killAzrael()
-        print('Test passed')
-
-
-    def test_ping(self):
-        """
-        Send a ping to the Clerk and check the response is correct.
-        """
-        # Start the necessary services and instantiate a Client.
-        clerk, client, clacks = startAzrael('ZeroMQ')
-
-        # Send the Ping command.
-        ret = client.ping()
-        assert (ret.ok, ret.data) == (True, 'pong clerk')
-
-        # Shutdown the services.
-        stopAzrael(clerk, clacks)
-        print('Test passed')
-
+    def teardown_method(self, method):
+        self.setup_method(method)
 
     def test_spawn(self):
         """
@@ -1575,6 +1517,71 @@ class TestClerk:
         assert not itnv('a.b')
 
         print('Test passed')
+
+
+def test_ping():
+    """
+    Send a ping to the Clerk and check the response is correct.
+    """
+    # Start the necessary services and instantiate a Client.
+    clerk, client, clacks = startAzrael('ZeroMQ')
+
+    # Send the Ping command.
+    ret = client.ping()
+    assert (ret.ok, ret.data) == (True, 'pong clerk')
+
+    # Shutdown the services.
+    stopAzrael(clerk, clacks)
+    print('Test passed')
+
+
+def test_invalid():
+    """
+    Send an invalid command to Clerk.
+    """
+    class ClientTest(azrael.client.Client):
+        def testSend(self, data):
+            """
+            Pass data verbatim to Clerk.
+
+            This method is to test Clerk's ability to handle corrupt and
+            invalid commands. If we used a normal Client then the protocol
+            module would probably pick up most errors without them ever
+            reaching Clerk.
+            """
+            self.sock_cmd.send(data)
+            data = self.sock_cmd.recv()
+            data = json.loads(data.decode('utf8'))
+            return data['ok'], data['msg']
+
+    killAzrael()
+
+    # Start Clerk and instantiate a Client.
+    clerk = azrael.clerk.Clerk()
+    clerk.start()
+    client = ClientTest()
+
+    # Send a corrupt JSON to Clerk.
+    msg = 'invalid_cmd'
+    ret = client.testSend(msg.encode('utf8'))
+    assert ret == (False, 'JSON decoding error in Clerk')
+
+    # Send a malformatted JSON (it misses the 'payload' field).
+    msg = json.dumps({'cmd': 'blah'})
+    ok, ret = client.testSend(msg.encode('utf8'))
+    assert (ok, ret) == (False, 'Invalid command format')
+
+    # Send an invalid command.
+    msg = json.dumps({'cmd': 'blah', 'payload': ''})
+    ok, ret = client.testSend(msg.encode('utf8'))
+    assert (ok, ret) == (False, 'Invalid command <blah>')
+
+    # Terminate the Clerk.
+    clerk.terminate()
+    clerk.join()
+
+    killAzrael()
+    print('Test passed')
 
 
 def test_fragments_end2end():
