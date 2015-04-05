@@ -32,9 +32,17 @@ ipshell = IPython.embed
 RetVal = azrael.util.RetVal
 
 # Global database handles.
-dbHandles = {}
 logit = logging.getLogger('azrael.' + __name__)
 
+client = pymongo.MongoClient()
+dbName = 'azrael'
+dbHandles = {
+    'SV': client[dbName]['sv'],
+    'Commands': client[dbName]['Cmd'],
+    'Templates': client[dbName]['template'],
+    'ObjInstances': client[dbName]['objinstances'],
+    'Counters': client[dbName]['Counters']
+}
 
 @typecheck
 def init(reset=False):
@@ -42,12 +50,10 @@ def init(reset=False):
     Connect to the State Variable database. Flush it if ``reset`` is **True**.
 
     fixme: docu update
+    fixme: reset parameter is now redundant
 
     :param bool reset: flush the database.
     """
-    global dbHandles
-    client = pymongo.MongoClient()
-    dbName = 'azrael'
     if reset:
         client.drop_database(dbName)
         logit.info('Deleting data directory <{}>'.format(config.dir_data))
@@ -60,11 +66,6 @@ def init(reset=False):
         os.makedirs(config.dir_template, exist_ok=True)
         os.makedirs(config.dir_instance, exist_ok=True)
 
-    dbHandles['SV'] = client[dbName]['sv']
-    dbHandles['Commands'] = client[dbName]['Cmd']
-    dbHandles['Templates'] = client[dbName]['template']
-    dbHandles['ObjInstances'] = client[dbName]['objinstances']
-    dbHandles['Counters'] = client[dbName]['Counters']
 
 
 @typecheck
