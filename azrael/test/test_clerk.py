@@ -43,6 +43,7 @@ from azrael.bullet.test_boost_bullet import isEqualBD
 
 from azrael.util import Template, RetVal
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
+from azrael.test.test import createFragRaw, createFragDae
 
 ipshell = IPython.embed
 
@@ -105,12 +106,6 @@ class TestClerk:
         """
         ip = azrael.config.addr_dibbler
         port = azrael.config.port_dibbler
-
-        def createFragRaw():
-            vert = np.random.randint(0, 100, 9).tolist()
-            uv = np.random.randint(0, 100, 2).tolist()
-            rgb = np.random.randint(0, 100, 3).tolist()
-            return FragRaw(vert, uv, rgb)
 
         # Wait until Dibbler is live, then tell it to reset its Database. 
         clerk = azrael.clerk.Clerk()

@@ -41,7 +41,7 @@ from IPython import embed as ipshell
 
 from azrael.util import Template, RetVal
 from azrael.util import FragDae, FragRaw, MetaFragment
-
+from azrael.test.test import createFragRaw, createFragDae
 
 class TestDibbler(tornado.testing.AsyncHTTPTestCase):
     def get_app(self):
@@ -70,24 +70,9 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         return tornado.web.Application(handlers)
 
     def resetDibbler(self):
+        # fixme: create dedicated function in Dibbler and call that instead.
         for dirname in self.dirNames.values():
             azrael.dibbler.rmtree([dirname], ignore_errors=True)
-
-    def createFragDae(self):
-        b = os.path.dirname(__file__)
-        dae_file = open(b + '/cube.dae', 'rb').read()
-        dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
-        dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
-        frag = FragDae(dae=dae_file,
-                        rgb={'rgb1.png': dae_rgb1,
-                             'rgb2.jpg': dae_rgb2})
-        return frag
-
-    def createFragRaw(self):
-        vert = np.random.randint(0, 100, 9).tolist()
-        uv = np.random.randint(0, 100, 2).tolist()
-        rgb = np.random.randint(0, 100, 3).tolist()
-        return FragRaw(vert, uv, rgb)
 
     def sendRequest(self, req):
         req = base64.b64encode(pickle.dumps(req))
@@ -144,7 +129,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         self.resetDibbler()
         
         # Create two Templates with one Raw fragment each.
-        frags = [MetaFragment('bar', 'raw', self.createFragRaw())]
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
         t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
         del frags
@@ -185,7 +170,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         self.resetDibbler()
         
         # Create two Templates with one Collada fragment each.
-        frags = [MetaFragment('bar', 'dae', self.createFragDae())]
+        frags = [MetaFragment('bar', 'dae', createFragDae())]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
         t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
         del frags
@@ -227,8 +212,8 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         
         # Create two Templates. Each template has a Raw and Collada fragment.
         frags = [
-            MetaFragment('bar_raw', 'raw', self.createFragRaw()),
-            MetaFragment('bar_dae', 'dae', self.createFragDae())
+            MetaFragment('bar_raw', 'raw', createFragRaw()),
+            MetaFragment('bar_dae', 'dae', createFragDae())
         ]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
         t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
@@ -340,7 +325,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         self.resetDibbler()
 
         # Create two Templates with one Raw fragment each.
-        frags = [MetaFragment('bar', 'raw', self.createFragRaw())]
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
         t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
         del frags
@@ -401,7 +386,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         self.resetDibbler()
 
         # Create a Templates with a Raw fragment.
-        frags = [MetaFragment('bar', 'raw', self.createFragRaw())]
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
         del frags
 
@@ -448,7 +433,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         self.resetDibbler()
 
         # Create a Templates with a Raw fragment.
-        frags = [MetaFragment('bar', 'raw', self.createFragRaw())]
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
         del frags
 
@@ -510,7 +495,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         self.resetDibbler()
 
         # Create a Templates with a Raw fragment.
-        frag_orig = MetaFragment('bar', 'raw', self.createFragRaw())
+        frag_orig = MetaFragment('bar', 'raw', createFragRaw())
         t1 = Template('t1', [1, 2, 3, 4], [frag_orig], [], [])
 
         def _instanceOk(url, frag):
@@ -541,7 +526,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert _instanceOk(ret2.data['url'], frag_orig)
 
         # Create a replacement fragment.
-        frag_new = MetaFragment('bar', 'raw', self.createFragRaw())
+        frag_new = MetaFragment('bar', 'raw', createFragRaw())
 
         # Attempt to change the fragment of a non-existing object.
         req = {'cmd': 'set_geometry',
