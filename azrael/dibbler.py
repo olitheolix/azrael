@@ -239,7 +239,7 @@ def saveModel(model_dir, fragments, update_existing):
         del tmp
 
         # Find the largest AABB.
-        aabb = np.amax((ret.data, aabb))
+        aabb = float(np.amax((ret.data, aabb)))
 
     # Sanity check: if the AABB was negative than not a single fragment was
     # valid. This is an error.

@@ -97,7 +97,8 @@ class TestClerk:
         clerk.addTemplates([t1, t2, t3])
 
     def teardown_method(self, method):
-        self.setup_method(method)
+        azrael.database.init(reset=True)
+        self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
     def test_spawn(self):
         """
@@ -379,13 +380,13 @@ class TestClerk:
         print('Test passed')
 
 
-    @mock.patch.object(azrael.clerk.Clerk, 'saveModel')
-    def test_add_get_template_single(self, mock_sm):
+    @mock.patch.object(azrael.clerk.Clerk, 'sendRequest')
+    def test_add_get_template_single(self, mock_sr):
         """
         Add a new object to the templateID DB and query it again.
         """
         # Assume saveModel returns ok.
-        mock_sm.return_value = RetVal(True, None, 1.0)
+        mock_sr.return_value = RetVal(True, None, {'aabb': 1.0})
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -394,7 +395,7 @@ class TestClerk:
         cs = [1, 2, 3, 4]
 
         # Reset the call_count of the mock.
-        mock_sm.call_count = 0
+        mock_sr.call_count = 0
 
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
@@ -402,26 +403,26 @@ class TestClerk:
         # Wrong argument .
         ret = clerk.addTemplates([1])
         assert (ret.ok, ret.msg) == (False, 'Invalid arguments')
-        assert mock_sm.call_count == 0
+        assert mock_sr.call_count == 0
 
         # Compile a template structure.
         frags = [MetaFragment('foo', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
         temp = Template('bar', cs, frags, [], [])
 
         # Add template when 'saveModel' fails.
-        mock_sm.return_value = RetVal(False, 'test_error', None)
+        mock_sr.return_value = RetVal(False, 'test_error', None)
         ret = clerk.addTemplates([temp])
         assert (ret.ok, ret.msg) == (False, 'test_error')
-        assert mock_sm.call_count == 1
+        assert mock_sr.call_count == 1
 
         # Add template when 'saveModel' succeeds.
-        mock_sm.return_value = RetVal(True, None, 1.0)
+        mock_sr.return_value = RetVal(True, None, {'aabb': 1.0})
         assert clerk.addTemplates([temp]).ok
-        assert mock_sm.call_count == 2
+        assert mock_sr.call_count == 2
 
         # Adding the same template again must fail.
         assert not clerk.addTemplates([temp]).ok
-        assert mock_sm.call_count == 2
+        assert mock_sr.call_count == 3
 
         # Define a new object with two boosters and one factory unit.
         # The 'boosters' and 'factories' arguments are a list of named
@@ -438,7 +439,7 @@ class TestClerk:
         # Add the new template.
         temp = Template('t3', cs, frags, [b0, b1], [f0])
         assert clerk.addTemplates([temp]).ok
-        assert mock_sm.call_count == 3
+        assert mock_sr.call_count == 4
 
         # Retrieve the just created object and verify the collision shape.
         ret = clerk.getTemplates([temp.name])
@@ -467,18 +468,18 @@ class TestClerk:
         print('Test passed')
 
 
-    @mock.patch.object(azrael.clerk.Clerk, 'saveModel')
-    def test_add_get_template_multi_url(self, mock_sm):
+    @mock.patch.object(azrael.clerk.Clerk, 'sendRequest')
+    def test_add_get_template_multi_url(self, mock_sr):
         """
         Add templates in bulk and verify that the models are availabe via the
         correct URL.
         """
         # All calls to _saveModelRaw will succeed.
-        mock_sm.return_value = RetVal(True, None, 1)
+        mock_sr.return_value = RetVal(True, None, {'aabb': 1.0})
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
-        assert mock_sm.call_count == 0
+        assert mock_sr.call_count == 0
 
         # Convenience.
         base_url = 'http://localhost:8080'
@@ -494,11 +495,11 @@ class TestClerk:
 
         # Add two valid templates. This must succeed.
         assert clerk.addTemplates([t1, t2]).ok
-        assert mock_sm.call_count == 2
+        assert mock_sr.call_count == 2
 
         # Attempt to add the same templates again. This must fail.
         assert not clerk.addTemplates([t1, t2]).ok
-        assert mock_sm.call_count == 2
+        assert mock_sr.call_count == 4
 
         # Fetch the just added template in order to get the URL where its
         # geometries are stored.
@@ -1194,15 +1195,11 @@ class TestClerk:
 
         print('Test passed')
 
-    @mock.patch.object(azrael.clerk.Clerk, 'saveModel')
-    def test_instanceDB_checksum(self, mock_sm):
+    def test_instanceDB_checksum(self):
         """
         Spawn two objects, modify their geometries, and verify that the
         'lastChanged' flag changes accordingly.
         """
-        # 'clerk._saveFragmentRaw' always succeeds.
-        mock_sm.return_value = RetVal(True, None, 1)
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
@@ -1235,10 +1232,7 @@ class TestClerk:
         # Modify the 'bar' fragment of objID0 and verify that exactly one geometry
         # was updated.
         frags = [MetaFragment('bar', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
-        tmp = mock_sm.call_count
         assert clerk.setGeometry(objID0, frags).ok
-        mock_sm.call_count == tmp + 1
-        del tmp
 
         # Verify that the new 'lastChanged' flag is now different for that object.
         ret = clerk.getStateVariables([objID0])
@@ -1461,6 +1455,171 @@ class TestClerk:
 
         print('Test passed')
 
+    def test_fragments_end2end(self):
+        """
+        Integration test: create a live system, add a template with two fragments,
+        spawn it, query it, very its geometry, alter its geometry, and verify
+        again.
+        """
+        clerk = azrael.clerk.Clerk()
+        
+        # Reset the SV database and instantiate a Leonard and Clerk.
+        leo = getLeonard()
+
+        # Convenience.
+        sv = bullet_data.BulletData()
+        cs = [1, 2, 3, 4]
+        vert_1 = list(range(0, 9))
+        vert_2 = list(range(9, 18))
+
+        def checkFragState(objID, name_1, scale_1, pos_1, rot_1,
+                           name_2, scale_2, pos_2, rot_2):
+            """
+            Convenience function to verify the fragment states of ``objID``. This
+            function assumes the object has exactly two fragments.
+            """
+            # Query the SV for both objects.
+            ret = clerk.getStateVariables([objID])
+            assert ret.ok and (len(ret.data) == 1)
+
+            # Extract the fragments and verify there are the two.
+            _frags = ret.data[objID]['frag']
+            assert len(_frags) == 2
+
+            # Convert the [FragState(), FragState()] list into a
+            # {name_1: FragState, name_2: FragState, ...} dictionary. This is
+            # purely for convenience below.
+            _frags = {_.name: _ for _ in _frags}
+            assert (name_1 in _frags) and (name_2 in _frags)
+
+            # Verify the fragments have the expected values.
+            assert _frags[name_1] == FragState(name_1, scale_1, pos_1, rot_1)
+            assert _frags[name_2] == FragState(name_2, scale_2, pos_2, rot_2)
+            del ret, _frags
+
+        # Create a raw Fragment.
+        f_raw = FragRaw(vert=vert_1, uv=[], rgb=[])
+
+        # Collada format: a .dae file plus a list of textures in jpg or png format.
+        b = os.path.dirname(__file__)
+        dae_file = open(b + '/cube.dae', 'rb').read()
+        dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
+        dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
+        f_dae = FragDae(dae=dae_file,
+                        rgb={'rgb1.png': dae_rgb1,
+                             'rgb2.jpg': dae_rgb2})
+        del b
+
+        frags = [MetaFragment('10', 'raw', f_raw),
+                 MetaFragment('test', 'dae', f_dae)]
+
+        t1 = Template('t1', cs, frags, boosters=[], factories=[])
+        assert clerk.addTemplates([t1]).ok
+        ret = clerk.spawn([(t1.name, sv)])
+        assert ret.ok
+        objID = ret.data[0]
+        leo.processCommandsAndSync()
+
+        # Query the SV for the object and verify it has as many FragmentState
+        # vectors as it has fragments.
+        ret = clerk.getStateVariables([objID])
+        assert ret.ok
+        ret_frags = ret.data[objID]['frag']
+        assert len(ret_frags) == len(frags)
+
+        # Same as before, but this time use 'getAllStateVariables' instead of
+        # 'getStateVariables'.
+        ret = clerk.getAllStateVariables()
+        assert ret.ok
+        ret_frags = ret.data[objID]['frag']
+        assert len(ret_frags) == len(frags)
+
+        # Verify the fragment _states_ themselves.
+        checkFragState(objID,
+                       '10', 1, [0, 0, 0], [0, 0, 0, 1],
+                       'test', 1, [0, 0, 0], [0, 0, 0, 1])
+
+        # Modify the _state_ of both fragments and verify it worked.
+        newStates = {
+            objID: [
+                FragState('10', 7, [7, 7, 7], [7, 7, 7, 7]),
+                FragState('test', 8, [8, 8, 8], [8, 8, 8, 8])]
+        }
+        assert clerk.updateFragmentStates(newStates).ok
+        checkFragState(objID,
+                       '10', 7, [7, 7, 7], [7, 7, 7, 7],
+                       'test', 8, [8, 8, 8], [8, 8, 8, 8])
+
+        # Query the fragment _geometries_.
+        ret = clerk.getGeometries([objID])
+        assert ret.ok
+        data = ret.data[objID]
+        del ret
+
+        # Download the 'raw' file and verify its content is correct.
+        ip, port = azrael.config.addr_dibbler, azrael.config.port_dibbler
+        base_url = 'http://{}:{}'.format(ip, port)
+        url = base_url + data['10']['url'] + '/model.json'
+        tmp = urllib.request.urlopen(url).readall()
+        tmp = json.loads(tmp.decode('utf8'))
+        assert np.array_equal(tmp['vert'], vert_1)
+        assert tmp['uv'] == tmp['rgb'] == []
+
+        # Download and verify the dae file. Note that the file name itself matches
+        # the name of the fragment (ie. 'test'), *not* the name of the original
+        # Collada file ('cube.dae').
+        url = base_url + data['test']['url'] + '/test'
+        tmp = urllib.request.urlopen(url).readall()
+        assert tmp == dae_file
+
+        # Download and verify the first texture.
+        url = base_url + data['test']['url'] + '/rgb1.png'
+        tmp = urllib.request.urlopen(url).readall()
+        assert tmp == dae_rgb1
+
+        # Download and verify the second texture.
+        url = base_url + data['test']['url'] + '/rgb2.jpg'
+        tmp = urllib.request.urlopen(url).readall()
+        assert tmp == dae_rgb2
+
+        # Change the fragment geometries.
+        f_raw = FragRaw(vert=vert_2, uv=[], rgb=[])
+        f_dae = FragDae(dae=dae_file,
+                        rgb={'rgb1.png': dae_rgb2,
+                             'rgb2.jpg': dae_rgb1})
+        frags = [MetaFragment('10', 'raw', f_raw),
+                 MetaFragment('test', 'dae', f_dae)]
+        assert clerk.setGeometry(objID, frags).ok
+        ret = clerk.getGeometries([objID])
+        assert ret.ok
+        data = ret.data[objID]
+        del ret
+
+        # Download the 'raw' file and verify its content is correct.
+        url = base_url + data['10']['url'] + '/model.json'
+        tmp = urllib.request.urlopen(url).readall()
+        tmp = json.loads(tmp.decode('utf8'))
+        assert np.array_equal(tmp['vert'], vert_2)
+        assert tmp['uv'] == tmp['rgb'] == []
+
+        # Download and verify the dae file. Note that the file name itself matches
+        # the name of the fragment (ie. 'test'), *not* the name of the original
+        # Collada file ('cube.dae').
+        url = base_url + data['test']['url'] + '/test'
+        tmp = urllib.request.urlopen(url).readall()
+        assert tmp == dae_file
+
+        # Download and verify the first texture.
+        url = base_url + data['test']['url'] + '/rgb1.png'
+        tmp = urllib.request.urlopen(url).readall()
+        assert tmp == dae_rgb2
+
+        # Download and verify the second texture.
+        url = base_url + data['test']['url'] + '/rgb2.jpg'
+        tmp = urllib.request.urlopen(url).readall()
+        assert tmp == dae_rgb1
+
+        print('Test passed')
 
 def test_ping():
     """
@@ -1523,176 +1682,5 @@ def test_invalid():
     clerk.terminate()
     clerk.join()
 
-    killAzrael()
-    print('Test passed')
-
-
-def test_fragments_end2end():
-    """
-    Integration test: create a live system, add a template with two fragments,
-    spawn it, query it, very its geometry, alter its geometry, and verify
-    again.
-    """
-    killAzrael()
-
-    # Reset the SV database and instantiate a Leonard and Clerk.
-    leo = getLeonard()
-    clerk, client, clacks = startAzrael('Websocket')
-
-    # Convenience.
-    sv = bullet_data.BulletData()
-    cs = [1, 2, 3, 4]
-    vert_1 = list(range(0, 9))
-    vert_2 = list(range(9, 18))
-
-    def checkFragState(objID, name_1, scale_1, pos_1, rot_1,
-                       name_2, scale_2, pos_2, rot_2):
-        """
-        Convenience function to verify the fragment states of ``objID``. This
-        function assumes the object has exactly two fragments.
-        """
-        # Query the SV for both objects.
-        ret = clerk.getStateVariables([objID])
-        assert ret.ok and (len(ret.data) == 1)
-
-        # Extract the fragments and verify there are the two.
-        _frags = ret.data[objID]['frag']
-        assert len(_frags) == 2
-
-        # Convert the [FragState(), FragState()] list into a
-        # {name_1: FragState, name_2: FragState, ...} dictionary. This is
-        # purely for convenience below.
-        _frags = {_.name: _ for _ in _frags}
-        assert (name_1 in _frags) and (name_2 in _frags)
-
-        # Verify the fragments have the expected values.
-        assert _frags[name_1] == FragState(name_1, scale_1, pos_1, rot_1)
-        assert _frags[name_2] == FragState(name_2, scale_2, pos_2, rot_2)
-        del ret, _frags
-
-    # Create a raw Fragment.
-    f_raw = FragRaw(vert=vert_1, uv=[], rgb=[])
-
-    # Collada format: a .dae file plus a list of textures in jpg or png format.
-    b = os.path.dirname(__file__)
-    dae_file = open(b + '/cube.dae', 'rb').read()
-    dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
-    dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
-    f_dae = FragDae(dae=dae_file,
-                    rgb={'rgb1.png': dae_rgb1,
-                         'rgb2.jpg': dae_rgb2})
-    del b
-
-    frags = [MetaFragment('10', 'raw', f_raw),
-             MetaFragment('test', 'dae', f_dae)]
-
-    t1 = Template('t1', cs, frags, boosters=[], factories=[])
-    assert clerk.addTemplates([t1]).ok
-    ret = clerk.spawn([(t1.name, sv)])
-    assert ret.ok
-    objID = ret.data[0]
-    leo.processCommandsAndSync()
-
-    # Query the SV for the object and verify it has as many FragmentState
-    # vectors as it has fragments.
-    ret = clerk.getStateVariables([objID])
-    assert ret.ok
-    ret_frags = ret.data[objID]['frag']
-    assert len(ret_frags) == len(frags)
-
-    # Same as before, but this time use 'getAllStateVariables' instead of
-    # 'getStateVariables'.
-    ret = clerk.getAllStateVariables()
-    assert ret.ok
-    ret_frags = ret.data[objID]['frag']
-    assert len(ret_frags) == len(frags)
-
-    # Verify the fragment _states_ themselves.
-    checkFragState(objID,
-                   '10', 1, [0, 0, 0], [0, 0, 0, 1],
-                   'test', 1, [0, 0, 0], [0, 0, 0, 1])
-
-    # Modify the _state_ of both fragments and verify it worked.
-    newStates = {
-        objID: [
-            FragState('10', 7, [7, 7, 7], [7, 7, 7, 7]),
-            FragState('test', 8, [8, 8, 8], [8, 8, 8, 8])]
-    }
-    assert clerk.updateFragmentStates(newStates).ok
-    checkFragState(objID,
-                   '10', 7, [7, 7, 7], [7, 7, 7, 7],
-                   'test', 8, [8, 8, 8], [8, 8, 8, 8])
-
-    # Query the fragment _geometries_.
-    ret = clerk.getGeometries([objID])
-    assert ret.ok
-    data = ret.data[objID]
-    del ret
-
-    # Download the 'raw' file and verify its content is correct.
-    base_url = 'http://localhost:8080'
-    url = base_url + data['10']['url'] + '/model.json'
-    tmp = urllib.request.urlopen(url).readall()
-    tmp = json.loads(tmp.decode('utf8'))
-    assert np.array_equal(tmp['vert'], vert_1)
-    assert tmp['uv'] == tmp['rgb'] == []
-
-    # Download and verify the dae file. Note that the file name itself matches
-    # the name of the fragment (ie. 'test'), *not* the name of the original
-    # Collada file ('cube.dae').
-    url = base_url + data['test']['url'] + '/test'
-    tmp = urllib.request.urlopen(url).readall()
-    assert tmp == dae_file
-
-    # Download and verify the first texture.
-    url = base_url + data['test']['url'] + '/rgb1.png'
-    tmp = urllib.request.urlopen(url).readall()
-    assert tmp == dae_rgb1
-
-    # Download and verify the second texture.
-    url = base_url + data['test']['url'] + '/rgb2.jpg'
-    tmp = urllib.request.urlopen(url).readall()
-    assert tmp == dae_rgb2
-
-    # Change the fragment geometries.
-    f_raw = FragRaw(vert=vert_2, uv=[], rgb=[])
-    f_dae = FragDae(dae=dae_file,
-                    rgb={'rgb1.png': dae_rgb2,
-                         'rgb2.jpg': dae_rgb1})
-    frags = [MetaFragment('10', 'raw', f_raw),
-             MetaFragment('test', 'dae', f_dae)]
-    assert clerk.setGeometry(objID, frags).ok
-    ret = clerk.getGeometries([objID])
-    assert ret.ok
-    data = ret.data[objID]
-    del ret
-
-    # Download the 'raw' file and verify its content is correct.
-    base_url = 'http://localhost:8080'
-    url = base_url + data['10']['url'] + '/model.json'
-    tmp = urllib.request.urlopen(url).readall()
-    tmp = json.loads(tmp.decode('utf8'))
-    assert np.array_equal(tmp['vert'], vert_2)
-    assert tmp['uv'] == tmp['rgb'] == []
-
-    # Download and verify the dae file. Note that the file name itself matches
-    # the name of the fragment (ie. 'test'), *not* the name of the original
-    # Collada file ('cube.dae').
-    url = base_url + data['test']['url'] + '/test'
-    tmp = urllib.request.urlopen(url).readall()
-    assert tmp == dae_file
-
-    # Download and verify the first texture.
-    url = base_url + data['test']['url'] + '/rgb1.png'
-    tmp = urllib.request.urlopen(url).readall()
-    assert tmp == dae_rgb2
-
-    # Download and verify the second texture.
-    url = base_url + data['test']['url'] + '/rgb2.jpg'
-    tmp = urllib.request.urlopen(url).readall()
-    assert tmp == dae_rgb1
-
-    # Kill all spawned Client processes.
-    stopAzrael(clerk, clacks)
     killAzrael()
     print('Test passed')
