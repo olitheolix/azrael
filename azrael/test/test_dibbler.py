@@ -593,7 +593,7 @@ def test_dibbler_real():
             ret = sendRequest({'cmd': 'reset', 'data': 'empty'})
             assert ret.ok
             break
-        except urllib.HTTPError:
+        except (urllib.request.HTTPError, urllib.request.URLError):
             time.sleep(0.05)
 
     # Create a templates with one raw fragment.

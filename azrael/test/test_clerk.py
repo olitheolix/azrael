@@ -65,7 +65,7 @@ class TestClerk:
                 ret = cls.sendRequest({'cmd': 'reset', 'data': 'empty'})
                 assert ret.ok
                 break
-            except urllib.request.HTTPError:
+            except (urllib.request.HTTPError, urllib.request.URLError):
                 time.sleep(0.05)
 
     @classmethod
