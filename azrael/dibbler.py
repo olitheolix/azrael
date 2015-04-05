@@ -349,6 +349,9 @@ class Dibbler(tornado.web.RequestHandler):
         elif cmd == 'set_geometry':
             ret = self.setGeometry(data)
         elif cmd == 'reset' and data in ('empty',):
+            # fixme: put this into dedicated module function. Then add a new
+            # utility function to 'azrael.test.test.py' and use that in
+            # 'TestDibbler.resetDibbler' test class.
             ret = RetVal(True, None, None)
             if data == 'empty':
                 rmtree([self.dir_templates, self.dir_instances],

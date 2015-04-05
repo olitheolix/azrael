@@ -61,6 +61,7 @@ class TestClerk:
         cls.url_dibbler = 'http://{}:{}/dibbler'.format(ip, port)
 
         # Wait until Dibbler is live and tell it to reset its Database. 
+        # fixme: put this into dedicated method.
         while True:
             try:
                 ret = cls.sendRequest({'cmd': 'reset', 'data': 'empty'})
@@ -84,6 +85,8 @@ class TestClerk:
 
     def setup_method(self, method):
         azrael.database.init(reset=True)
+
+        # fixme: error check
         self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
         clerk = azrael.clerk.Clerk()

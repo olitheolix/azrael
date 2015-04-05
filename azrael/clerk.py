@@ -1197,7 +1197,8 @@ class Clerk(multiprocessing.Process):
         fixme: docu
         fixme: error checks
         fixme: test error checks.
-        fixme: rename method
+        fixme: do not call this method directly; instead, call it via dedicated
+               methods to add/update/delete objects.
         """
         import base64, pickle
         import urllib.request
