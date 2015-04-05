@@ -27,102 +27,36 @@ def killAzrael():
     azrael.database.init(reset=True)
 
 
-def startAzrael(client_type):
-    """
-    Start all Azrael services and return their handles.
-
-    ``client_type`` may be  either 'ZeroMQ' or 'Websocket'. The only difference
-    this makes is that the 'Websocket' version will also start a Clacks server,
-    whereas for 'ZeroMQ' the respective handle will be **None**.
-
-    :param str client_type: the client type ('ZeroMQ' or 'Websocket').
-    :return: handles to (clerk, client, clacks)
-    """
-    killAzrael()
-
-    # Start Clerk and instantiate a Client.
-    clerk = azrael.clerk.Clerk()
-    clerk.start()
-
-    # Start a Clacks process.
-    clacks = azrael.clacks.ClacksServer()
-    clacks.start()
-
-    if client_type == 'ZeroMQ':
-        # Instantiate the ZeroMQ version of the Client.
-        client = azrael.client.Client()
-
-    elif client_type == 'Websocket':
-        # Instantiate the Websocket version of the Client.
-        client = azrael.wsclient.WSClient(
-            ip='127.0.0.1', port=8080, timeout=1)
-        assert client.ping()
-    else:
-        print('Unknown protocol type <{}>'.format(client_type))
-        assert False
-    return clerk, client, clacks
-
-
-def stopAzrael(clerk, clacks):
-    """
-    Kill all processes related to Azrael.
-
-    :param clerk: handle to Clerk process.
-    :param clacks: handle to Clacks process.
-    """
-    # Terminate the Clerk.
-    clerk.terminate()
-    clerk.join(timeout=3)
-
-    # Terminate Clacks (if one was started).
-    if clacks is not None:
-        clacks.terminate()
-        clacks.join(timeout=3)
-
-    # Forcefully terminate everything.
-    killAzrael()
-
-
 def test_ping_clacks():
     """
     Start services and send Ping to Clacks. Then terminate clacks and verify
     that the ping fails.
     """
-    # Start the necessary services.
-    clerk, client, clacks = startAzrael('Websocket')
+    ip, port = config.addr_clacks, config.port_clacks
 
-    # Ping the Clacks.
+    # Start the services.
+    clerk = azrael.clerk.Clerk()
+    clacks = azrael.clacks.ClacksServer()
+    clerk.start()
+    clacks.start()
+
+    # Create a Websocket client.
+    client = azrael.wsclient.WSClient(ip=ip, port=port, timeout=1)
+
+    # Ping Clerk via Clacks.
     assert client.ping()
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
-
-    # Connection must now be impossible.
-    with pytest.raises(ConnectionRefusedError):
-        WSClient(ip='127.0.0.1', port=8080, timeout=1)
-
-    print('Test passed')
-
-
-def test_ping_clerk():
-    """
-    Ping the Clerk instance via Clacks.
-    """
-    # Start the necessary services.
-    clerk, client, clacks = startAzrael('Websocket')
-
-    # And send 'PING' command.
     assert client.pingClacks().ok
 
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
+    # Terminate the services.
+    clerk.terminate()
+    clacks.terminate()
+    clerk.join()
+    clacks.join()
 
-    # And send 'PING' command.
+    # Ping must now be impossible.
+    with pytest.raises(ConnectionRefusedError):
+        WSClient(ip=ip, port=port, timeout=1)
+
     assert not client.pingClacks().ok
-
+    
     print('Test passed')
-
-
-if __name__ == '__main__':
-    test_ping_clacks()
-    test_ping_clerk()
