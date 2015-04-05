@@ -18,17 +18,17 @@
 """
 fixme: add tests for
   * send invalid fragment data
-  * write 'startDibbler' function to start Dibbler Tornado process
-  * integration test with urllib and an actual Tornado process
 """
 
 import os
 import json
+import time
 import shutil
 import base64
 import pytest
 import pickle
 import tornado.web
+import urllib.request
 import azrael.dibbler
 import tornado.testing
 
@@ -561,3 +561,62 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert _instanceOk(ret2.data['url'], frag_orig)
 
         print('Test passed')
+
+
+def test_dibbler_real():
+    """
+    Start an actual Dibbler server and add/query/update models.
+    """
+    addr = config.addr_dibbler
+    port = config.port_dibbler
+
+    def sendRequest(req):
+        req = base64.b64encode(pickle.dumps(req))
+        url = 'http://{}:{}/dibbler'.format(addr, port)
+        tmp = urllib.request.urlopen(url, data=req).readall()
+        tmp = json.loads(tmp.decode('utf8'))
+        return RetVal(**tmp)
+
+    def createFragRaw():
+        vert = np.random.randint(0, 100, 9).tolist()
+        uv = np.random.randint(0, 100, 2).tolist()
+        rgb = np.random.randint(0, 100, 3).tolist()
+        return FragRaw(vert, uv, rgb)
+
+    # Start Dibbler.
+    dibbler = azrael.dibbler.DibblerServer(addr=addr, port=port)
+    dibbler.start()
+
+    # Wait until Dibbler is live, then tell it to reset its Database. 
+    while True:
+        try:
+            ret = sendRequest({'cmd': 'reset', 'data': 'empty'})
+            assert ret.ok
+            break
+        except urllib.HTTPError:
+            time.sleep(0.05)
+
+    # Create a templates with one raw fragment.
+    frags = [MetaFragment('bar', 'raw', createFragRaw())]
+    t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+
+    # Add the template.
+    ret = sendRequest({'cmd': 'add_template', 'data': t1})
+    assert ret.ok
+
+    # Spawn an instance thereof.
+    ret = sendRequest(
+        {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '1'}})
+    assert ret.ok
+
+    # Download the fragment via a standard GET request.
+    url = 'http://{ip}:{port}'.format(ip=addr, port=port)
+    url = url + ret.data['url'] + '/bar/model.json'
+    ret = urllib.request.urlopen(url).readall()
+    ret = json.loads(ret.decode('utf8'))
+
+    # Terminate Dibbler.
+    dibbler.terminate()
+    dibbler.join()
+
+    print('Test passed')

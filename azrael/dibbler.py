@@ -63,6 +63,8 @@ import binascii
 import subprocess
 import tornado.web
 import tornado.testing
+import multiprocessing
+import tornado.ioloop
 import azrael.config as config
 
 import numpy as np
@@ -450,3 +452,54 @@ class Dibbler(tornado.web.RequestHandler):
         # Return message 
         return RetVal(True, None, {'aabb': ret.data, 'url': model_url})
 
+
+class DibblerServer(multiprocessing.Process):
+    """
+    Start Dibbler (a Tornado process).
+    """
+    def __init__(self, addr, port):
+        super().__init__()
+        self.addr = addr
+        self.port = port
+
+    def __del__(self):
+        self.terminate()
+
+    def run(self):
+        # Not sure if this really does anything but it certainly does not hurt.
+        self.daemon = True
+
+        # Initialise the list of Tornado handlers.
+        handlers = []
+
+        self.dirNameBase = '/tmp/dibbler'
+        self.dirNames = {
+            'templates': os.path.join(self.dirNameBase, 'templates'),
+            'instances': os.path.join(self.dirNameBase, 'instances')}
+
+        FH = MyStaticFileHandler
+
+        # Template models.
+        handlers.append(
+            ('/templates/(.*)', FH, {'path': self.dirNames['templates']}))
+
+        # Instance models.
+        handlers.append(
+            ('/instances/(.*)', FH, {'path': self.dirNames['instances']}))
+
+        # Dibbler API.
+        handlers.append(('/dibbler', Dibbler, self.dirNames))
+
+        # Instantiate Tornado.
+        app = tornado.web.Application(handlers)
+        http = tornado.httpserver.HTTPServer(app)
+
+        # Specify the server port and start Tornado.
+        http.listen(port=self.port, address=self.addr)
+        tornado_app = tornado.ioloop.IOLoop.instance()
+
+        # Start Tornado event loop.
+        try:
+            tornado_app.start()
+        except KeyboardInterrupt:
+            print(' Dibbler interrupted by user')
