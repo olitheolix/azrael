@@ -21,6 +21,7 @@ Test the Clerk module.
 import os
 import sys
 import json
+import time
 import base64
 import pickle
 import pytest
@@ -85,6 +86,16 @@ class TestClerk:
         azrael.database.init(reset=True)
         self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
+        clerk = azrael.clerk.Clerk()
+
+        # Insert default objects. None of them has an actual geometry but
+        # their collision shapes are: none, sphere, cube.
+        frag = [MetaFragment('NoName', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
+        t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
+        t2 = Template('_templateSphere', [3, 1, 1, 1], frag, [], [])
+        t3 = Template('_templateCube', [4, 1, 1, 1], frag, [], [])
+        clerk.addTemplates([t1, t2, t3])
+
     def teardown_method(self, method):
         self.setup_method(method)
 
@@ -92,8 +103,6 @@ class TestClerk:
         """
         Test the 'spawn' command in the Clerk.
         """
-        killAzrael()
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
@@ -156,8 +165,6 @@ class TestClerk:
         Spawn an object and ensure it exists, then delete it and ensure it does not
         exist anymore.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -206,8 +213,6 @@ class TestClerk:
         """
         Test the 'get_statevar' command in the Clerk.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -263,8 +268,6 @@ class TestClerk:
         """
         Test the 'getAllStateVariables' command in the Clerk.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -309,8 +312,6 @@ class TestClerk:
         """
         Set and retrieve force and torque values.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -343,8 +344,6 @@ class TestClerk:
         """
         Query the defautl templates in Azrael.
         """
-        killAzrael()
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
@@ -385,8 +384,6 @@ class TestClerk:
         """
         Add a new object to the templateID DB and query it again.
         """
-        killAzrael()
-
         # Assume saveModel returns ok.
         mock_sm.return_value = RetVal(True, None, 1.0)
 
@@ -476,14 +473,12 @@ class TestClerk:
         Add templates in bulk and verify that the models are availabe via the
         correct URL.
         """
-        killAzrael()
-
         # All calls to _saveModelRaw will succeed.
         mock_sm.return_value = RetVal(True, None, 1)
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
-        assert mock_sm.call_count == 3
+        assert mock_sm.call_count == 0
 
         # Convenience.
         base_url = 'http://localhost:8080'
@@ -499,11 +494,11 @@ class TestClerk:
 
         # Add two valid templates. This must succeed.
         assert clerk.addTemplates([t1, t2]).ok
-        assert mock_sm.call_count == 5
+        assert mock_sm.call_count == 2
 
         # Attempt to add the same templates again. This must fail.
         assert not clerk.addTemplates([t1, t2]).ok
-        assert mock_sm.call_count == 5
+        assert mock_sm.call_count == 2
 
         # Fetch the just added template in order to get the URL where its
         # geometries are stored.
@@ -531,8 +526,6 @@ class TestClerk:
         """
         Similarly to test_add_get_template but focuses exclusively on the AABB.
         """
-        killAzrael()
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
@@ -584,8 +577,6 @@ class TestClerk:
         Spawn two objects from different templates. Then query the template ID
         based on the object ID.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -614,8 +605,6 @@ class TestClerk:
         # Attempt to retrieve a non-existing object.
         assert not clerk.getTemplateID(100).ok
 
-        # Shutdown.
-        killAzrael()
         print('Test passed')
 
 
@@ -625,8 +614,6 @@ class TestClerk:
         when an object receives control commands _after_ it was spawned but
         _before_ Leonard has picked it up.
         """
-        killAzrael()
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
@@ -664,8 +651,6 @@ class TestClerk:
         """
         Send invalid control commands to object.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -740,8 +725,6 @@ class TestClerk:
         assert not clerk.controlParts(objID_2, [cmd_b, cmd_b], []).ok
         assert not clerk.controlParts(objID_2, [], [cmd_f, cmd_f]).ok
 
-        # Clean up.
-        killAzrael()
         print('Test passed')
 
 
@@ -751,8 +734,6 @@ class TestClerk:
 
         The parent object does not move in the world coordinate system.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -823,8 +804,6 @@ class TestClerk:
         assert np.array_equal(tmp[0], tot_force)
         assert np.array_equal(tmp[1], tot_torque)
 
-        # Clean up.
-        killAzrael()
         print('Test passed')
 
 
@@ -834,8 +813,6 @@ class TestClerk:
 
         The parent object does not move in the world coordinate system.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -903,8 +880,6 @@ class TestClerk:
         assert np.allclose(sv_3.position, pos_1)
         assert np.allclose(sv_3.orientation, [0, 0, 0, 1])
 
-        # Clean up.
-        killAzrael()
         print('Test passed')
 
 
@@ -914,8 +889,6 @@ class TestClerk:
 
         In this test the parent object moves at a non-zero velocity.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard and Clerk.
         leo = getLeonard()
         clerk = azrael.clerk.Clerk()
@@ -985,8 +958,6 @@ class TestClerk:
         assert np.allclose(sv_3.position, pos_1 + pos_parent)
         assert np.allclose(sv_3.orientation, [0, 0, 0, 1])
 
-        # Clean up.
-        killAzrael()
         print('Test passed')
 
 
@@ -999,8 +970,6 @@ class TestClerk:
         In this test the parent object moves and is oriented away from its
         default.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -1108,8 +1077,6 @@ class TestClerk:
         assert np.array_equal(tmp[0], tot_force)
         assert np.array_equal(tmp[1], tot_torque)
 
-        # Clean up.
-        killAzrael()
         print('Test passed')
 
 
@@ -1117,8 +1084,6 @@ class TestClerk:
         """
         Test getAllObjects.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
@@ -1152,8 +1117,6 @@ class TestClerk:
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
-        # Kill all spawned Client processes.
-        killAzrael()
         print('Test passed')
 
 
@@ -1161,8 +1124,6 @@ class TestClerk:
         """
         Spawn two objects and query their geometries.
         """
-        killAzrael()
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
@@ -1231,10 +1192,7 @@ class TestClerk:
         assert ret.data[objID_1] is None
         assert _verify(ret.data, objID_2)
 
-        # Kill all spawned Client processes.
-        killAzrael()
         print('Test passed')
-
 
     @mock.patch.object(azrael.clerk.Clerk, 'saveModel')
     def test_instanceDB_checksum(self, mock_sm):
@@ -1242,8 +1200,6 @@ class TestClerk:
         Spawn two objects, modify their geometries, and verify that the
         'lastChanged' flag changes accordingly.
         """
-        killAzrael()
-
         # 'clerk._saveFragmentRaw' always succeeds.
         mock_sm.return_value = RetVal(True, None, 1)
 
@@ -1294,8 +1250,6 @@ class TestClerk:
         assert ret.ok
         assert ref_lastChanged == ret.data[objID1]['sv'].lastChanged
 
-        # Kill all spawned Client processes.
-        killAzrael()
         print('Test passed')
 
 
@@ -1304,8 +1258,6 @@ class TestClerk:
         Query and update the booster values in the instance data base.
         The query includes computing the correct force in object coordinates.
         """
-        killAzrael()
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
@@ -1379,8 +1331,6 @@ class TestClerk:
         cmd_0 = parts.CmdBooster(partID=0, force=1)
         assert not clerk.updateBoosterForces(1000, [cmd_0]).ok
 
-        # Kill all spawned Client processes.
-        killAzrael()
         print('Test passed')
 
 
@@ -1389,8 +1339,6 @@ class TestClerk:
         Create a new template with one fragment and create two instances. Then
         query and update the fragment states.
         """
-        killAzrael()
-
         # Reset the SV database and instantiate a Leonard and Clerk.
         leo = getLeonard()
         clerk = azrael.clerk.Clerk()
@@ -1488,17 +1436,12 @@ class TestClerk:
         assert clerk.updateFragmentStates(newStates).ok
         assert clerk.updateFragmentStates(newStates).ok
 
-        # Kill all spawned Client processes.
-        killAzrael()
         print('Test passed')
 
     def test_isTemplateNameValid(self):
         """
         Test _isTemplateValid function.
         """
-        # Reset Azrael.
-        killAzrael()
-
         # Create a Clerk instance and a shortcut to the test method.
         clerk = azrael.clerk.Clerk()
         itnv = clerk._isTemplateNameValid
