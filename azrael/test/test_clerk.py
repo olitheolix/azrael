@@ -21,6 +21,8 @@ Test the Clerk module.
 import os
 import sys
 import json
+import base64
+import pickle
 import pytest
 import IPython
 import urllib.request
@@ -47,22 +49,37 @@ ipshell = IPython.embed
 
 class TestClerk:
     @classmethod
-    @pytest.fixture(scope='class', autouse=True)
-    def setup(self, request):
+    def setup_class(cls):
         killAzrael()
-        self.clerk = azrael.clerk.Clerk()
+        cls.clerk = azrael.clerk.Clerk()
 
         # Start Dibbler.
         ip, port = azrael.config.addr_dibbler, azrael.config.port_dibbler
-        self.dibbler = azrael.dibbler.DibblerServer(addr=ip, port=port)
-        self.dibbler.start()
+        cls.dibbler = azrael.dibbler.DibblerServer(addr=ip, port=port)
+        cls.dibbler.start()
+        cls.url_dibbler = 'http://{}:{}/dibbler'.format(ip, port)
 
-        def fin():
-            killAzrael()
-            self.dibbler.terminate()
-            self.dibbler.join()
+        # Wait until Dibbler is live and tell it to reset its Database. 
+        while True:
+            try:
+                ret = cls.sendRequest({'cmd': 'reset', 'data': 'empty'})
+                assert ret.ok
+                break
+            except urllib.request.HTTPError:
+                time.sleep(0.05)
 
-        request.addfinalizer(fin)
+    @classmethod
+    def teardown_class(cls):
+        killAzrael()
+        cls.dibbler.terminate()
+        cls.dibbler.join()
+
+    @classmethod
+    def sendRequest(cls, req):
+        req = base64.b64encode(pickle.dumps(req))
+        tmp = urllib.request.urlopen(cls.url_dibbler, data=req).readall()
+        tmp = json.loads(tmp.decode('utf8'))
+        return RetVal(**tmp)
 
     def test_invalid(self):
         """
