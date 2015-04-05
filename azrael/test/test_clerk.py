@@ -21,6 +21,7 @@ Test the Clerk module.
 import os
 import sys
 import json
+import pytest
 import IPython
 import urllib.request
 
@@ -30,6 +31,7 @@ import unittest.mock as mock
 import azrael.util
 import azrael.clerk
 import azrael.client
+import azrael.dibbler
 import azrael.parts as parts
 import azrael.bullet.bullet_data as bullet_data
 
@@ -44,6 +46,24 @@ ipshell = IPython.embed
 
 
 class TestClerk:
+    @classmethod
+    @pytest.fixture(scope='class', autouse=True)
+    def setup(self, request):
+        killAzrael()
+        self.clerk = azrael.clerk.Clerk()
+
+        # Start Dibbler.
+        ip, port = azrael.config.addr_dibbler, azrael.config.port_dibbler
+        self.dibbler = azrael.dibbler.DibblerServer(addr=ip, port=port)
+        self.dibbler.start()
+
+        def fin():
+            killAzrael()
+            self.dibbler.terminate()
+            self.dibbler.join()
+
+        request.addfinalizer(fin)
+
     def test_invalid(self):
         """
         Send an invalid command to Clerk.
