@@ -509,7 +509,7 @@ class Client():
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
-            ip=self.ip, port=config.port_clacks, url=template.url)
+            ip=self.ip, port=config.port_dibbler, url=template.url)
 
         # Fetch the geometry from the web server and decode it.
         out = {}
