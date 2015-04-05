@@ -31,6 +31,7 @@ import tornado.web
 import urllib.request
 import azrael.dibbler
 import tornado.testing
+import azrael.clerk
 
 import numpy as np
 import unittest.mock as mock
@@ -570,13 +571,6 @@ def test_dibbler_real():
     addr = config.addr_dibbler
     port = config.port_dibbler
 
-    def sendRequest(req):
-        req = base64.b64encode(pickle.dumps(req))
-        url = 'http://{}:{}/dibbler'.format(addr, port)
-        tmp = urllib.request.urlopen(url, data=req).readall()
-        tmp = json.loads(tmp.decode('utf8'))
-        return RetVal(**tmp)
-
     def createFragRaw():
         vert = np.random.randint(0, 100, 9).tolist()
         uv = np.random.randint(0, 100, 2).tolist()
@@ -588,9 +582,10 @@ def test_dibbler_real():
     dibbler.start()
 
     # Wait until Dibbler is live, then tell it to reset its Database. 
+    clerk = azrael.clerk.Clerk()
     while True:
         try:
-            ret = sendRequest({'cmd': 'reset', 'data': 'empty'})
+            ret = clerk.sendRequest({'cmd': 'reset', 'data': 'empty'})
             assert ret.ok
             break
         except (urllib.request.HTTPError, urllib.request.URLError):
@@ -601,11 +596,11 @@ def test_dibbler_real():
     t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
 
     # Add the template.
-    ret = sendRequest({'cmd': 'add_template', 'data': t1})
+    ret = clerk.sendRequest({'cmd': 'add_template', 'data': t1})
     assert ret.ok
 
     # Spawn an instance thereof.
-    ret = sendRequest(
+    ret = clerk.sendRequest(
         {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '1'}})
     assert ret.ok
 

@@ -1348,4 +1348,24 @@ class Clerk(multiprocessing.Process):
         if ok:
             return RetVal(True, None, None)
         else:
-            return RetVal(False, 'Could not udpate all fragments', None)
+            return RetVal(False, 'Could not update all fragments', None)
+
+    @typecheck
+    def sendRequest(self, req):
+        """
+        fixme: docu
+        fixme: error checks
+        fixme: test error checks.
+        fixme: rename method
+        """
+        import base64, pickle
+        import urllib.request
+
+        req = base64.b64encode(pickle.dumps(req))
+        url = 'http://{}:{}/dibbler'.format(
+                config.addr_dibbler, config.port_dibbler)
+        tmp = urllib.request.urlopen(url, data=req).readall()
+        tmp = json.loads(tmp.decode('utf8'))
+        return RetVal(**tmp)
+
+        
