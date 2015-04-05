@@ -99,6 +99,50 @@ class TestClerk:
         azrael.database.init(reset=True)
         self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
+    def test_communicate_with_dibbler(self):
+        """
+        Use a Clerk instance to add/query/update models in Dibbler.
+        """
+        ip = azrael.config.addr_dibbler
+        port = azrael.config.port_dibbler
+
+        def createFragRaw():
+            vert = np.random.randint(0, 100, 9).tolist()
+            uv = np.random.randint(0, 100, 2).tolist()
+            rgb = np.random.randint(0, 100, 3).tolist()
+            return FragRaw(vert, uv, rgb)
+
+        # Wait until Dibbler is live, then tell it to reset its Database. 
+        clerk = azrael.clerk.Clerk()
+        while True:
+            try:
+                ret = clerk.sendRequest({'cmd': 'reset', 'data': 'empty'})
+                assert ret.ok
+                break
+            except (urllib.request.HTTPError, urllib.request.URLError):
+                time.sleep(0.05)
+
+        # Create a templates with one raw fragment.
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+
+        # Add the template.
+        ret = clerk.sendRequest({'cmd': 'add_template', 'data': t1})
+        assert ret.ok
+
+        # Spawn an instance thereof.
+        ret = clerk.sendRequest(
+            {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '1'}})
+        assert ret.ok
+
+        # Download the fragment via a standard GET request.
+        url = 'http://{ip}:{port}'.format(ip=ip, port=port)
+        url = url + ret.data['url'] + '/bar/model.json'
+        ret = urllib.request.urlopen(url).readall()
+        ret = json.loads(ret.decode('utf8'))
+
+        print('Test passed')
+
     def test_spawn(self):
         """
         Test the 'spawn' command in the Clerk.
