@@ -38,7 +38,6 @@ import azrael.dibbler
 import azrael.parts as parts
 import azrael.bullet.bullet_data as bullet_data
 
-from azrael.test.test_clacks import startAzrael, stopAzrael
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 
@@ -1620,22 +1619,6 @@ class TestClerk:
         assert tmp == dae_rgb1
 
         print('Test passed')
-
-def test_ping():
-    """
-    Send a ping to the Clerk and check the response is correct.
-    """
-    # Start the necessary services and instantiate a Client.
-    clerk, client, clacks = startAzrael('ZeroMQ')
-
-    # Send the Ping command.
-    ret = client.ping()
-    assert (ret.ok, ret.data) == (True, 'pong clerk')
-
-    # Shutdown the services.
-    stopAzrael(clerk, clacks)
-    print('Test passed')
-
 
 def test_invalid():
     """
