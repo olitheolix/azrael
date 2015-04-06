@@ -52,6 +52,8 @@ from azrael.test.test_clerk import getLeonard, killAzrael
 from azrael.util import Template, FragState, FragDae, FragRaw, MetaFragment
 from azrael.util import RetVal
 
+from azrael.test.test import createFragRaw, createFragDae
+
 ipshell = IPython.embed
 WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client
@@ -388,27 +390,21 @@ class TestClerk:
         assert np.array_equal(ret.data[name_3].cs, np.array([4, 1, 1, 1]))
 
         # Add a new object template.
-        cs = np.array([1, 2, 3, 4], np.float64)
-        vert = np.arange(9).astype(np.float64)
-        uv = np.array([9, 10], np.float64)
-        rgb = np.array([1, 2, 250], np.uint8)
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t1', cs, frags, [], [])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t1', [0, 1, 2, 3], frags, [], [])
         assert client.addTemplates([temp]).ok
 
         # Fetch the just added template again.
         ret = client.getTemplates([temp.name])
         assert ret.ok and (len(ret.data) == 1)
-        assert np.array_equal(ret.data[temp.name].cs, cs)
+        assert np.array_equal(ret.data[temp.name].cs, [0, 1, 2, 3])
         assert len(ret.data[temp.name].boosters) == 0
         assert len(ret.data[temp.name].factories) == 0
 
         # Fetch the geometry from the Web server and verify it is correct.
         ret = client.getTemplateGeometry(ret.data[temp.name])
         assert ret.ok
-        assert np.array_equal(ret.data['bar'].vert, vert)
-        assert np.array_equal(ret.data['bar'].uv, uv)
-        assert np.array_equal(ret.data['bar'].rgb, rgb)
+        assert ret.data['bar'] == frags[0].data
         del temp, ret
 
         # Define a new object with two boosters and one factory unit.
@@ -427,8 +423,8 @@ class TestClerk:
         assert client.getGeometries([1]) == (True, None, {1: None})
 
         # Define a new template, add it to Azrael, and spawn it.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t2', cs, frags, [b0, b1], [f0])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t2', [0, 1, 2, 3], frags, [b0, b1], [f0])
         assert client.addTemplates([temp]).ok
         ret = client.spawn([{'template': temp.name, 'position': np.zeros(3)}])
         assert ret.ok and len(ret.data) == 1
@@ -444,16 +440,14 @@ class TestClerk:
         ret = client.getTemplates([temp.name])
         assert ret.ok and (len(ret.data) == 1)
         t_data = ret.data[temp.name]
-        assert np.array_equal(t_data.cs, cs)
+        assert np.array_equal(t_data.cs, [0, 1, 2, 3])
         assert len(t_data.boosters) == 2
         assert len(t_data.factories) == 1
 
         # Fetch the geometry from the Web server and verify it is correct.
         ret = client.getTemplateGeometry(ret.data[temp.name])
         assert ret.ok
-        assert np.array_equal(ret.data['bar'].vert, vert)
-        assert np.array_equal(ret.data['bar'].uv, uv)
-        assert np.array_equal(ret.data['bar'].rgb, rgb)
+        assert ret.data['bar'] == frags[0].data
 
         # Explicitly verify the booster- and factory units. The easiest (albeit
         # not most readable) way to do the comparison is to convert the unit
@@ -487,10 +481,6 @@ class TestClerk:
         id_1 = 1
         pos_parent = np.array([1, 2, 3], np.float64)
         vel_parent = np.array([4, 5, 6], np.float64)
-        cs = np.array([1, 2, 3, 4], np.float64)
-        vert = np.arange(9).astype(np.float64)
-        uv = np.array([9, 10], np.float64)
-        rgb = np.array([1, 2, 250], np.uint8)
 
         # Part positions relative to parent.
         dir_0 = np.array([0, 0, +2], np.float64)
@@ -533,8 +523,8 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn an instance.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t1', cs, frags, [b0, b1], [f0, f1])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t1', [1, 2, 3, 4], frags, [b0, b1], [f0, f1])
         assert client.addTemplates([temp]).ok
         new_obj = {'template': temp.name,
                    'position': pos_parent,
@@ -604,15 +594,11 @@ class TestClerk:
         leo = getLeonard()
 
         # Convenience.
-        cs = np.array([1, 2, 3, 4], np.float64)
-        vert = np.arange(9).astype(np.float64)
-        uv = np.array([9, 10], np.float64)
-        rgb = np.array([1, 2, 250], np.uint8)
         objID = 1
 
         # Add a new template and spawn it.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t1', cs, frags, [], [])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t1', [1, 2, 3, 4], frags, [], [])
         assert client.addTemplates([temp]).ok
 
         new_obj = {'template': temp.name,
@@ -620,7 +606,7 @@ class TestClerk:
                    'velocityLin': -np.ones(3)}
         ret = client.spawn([new_obj])
         assert ret.ok and ret.data == (objID, )
-        del temp, new_obj, ret, cs
+        del temp, new_obj, ret
 
         # Query the SV to obtain the 'lastChanged' value.
         leo.processCommandsAndSync()
@@ -645,10 +631,10 @@ class TestClerk:
             except urllib.request.URLError:
                 time.sleep(0.2)
         tmp = json.loads(tmp.decode('utf8'))
-        assert np.array_equal(tmp['vert'], vert)
+        assert FragRaw(**tmp) == frags[0].data
 
         # Change the fragment geometries.
-        frags = [MetaFragment('bar', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
         assert client.setGeometry(objID, frags).ok
 
         ret = client.getGeometries([objID])
@@ -659,7 +645,7 @@ class TestClerk:
         url = base_url + ret.data[objID]['bar']['url'] + '/model.json'
         tmp = urllib.request.urlopen(url).readall()
         tmp = json.loads(tmp.decode('utf8'))
-        assert np.array_equal(tmp['vert'], 2 * vert)
+        assert FragRaw(**tmp) == frags[0].data
 
         # Ensure 'lastChanged' is different as well.
         ret = client.getStateVariables(objID)
@@ -678,27 +664,14 @@ class TestClerk:
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
-        # Convenience.
-        cs = np.array([1, 2, 3, 4], np.float64)
-        vert = np.arange(9).astype(np.float64)
-        uv = np.array([9, 10], np.float64)
-        rgb = np.array([1, 2, 250], np.uint8)
-
         # Collada format: a .dae file plus a list of textures in jpg or png format.
-        b = os.path.dirname(__file__)
-        dae_file = open(b + '/cube.dae', 'rb').read()
-        dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
-        dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
-        f_dae = FragDae(dae=dae_file,
-                        rgb={'rgb1.png': dae_rgb1,
-                             'rgb2.jpg': dae_rgb2})
-        del b
+        f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
         frags = [MetaFragment('f_dae', 'dae', f_dae)]
 
         # Add a new template and spawn it.
-        temp = Template('t1', cs, frags, [], [])
+        temp = Template('t1', [1, 2, 3, 4], frags, [], [])
         assert client.addTemplates([temp]).ok
 
         new_obj = {'template': temp.name,
@@ -707,7 +680,7 @@ class TestClerk:
         ret = client.spawn([new_obj])
         objID = ret.data[0]
         assert ret.ok and ret.data == (objID, )
-        del temp, new_obj, ret, cs
+        del temp, new_obj, ret
 
         # Query the SV to obtain the 'lastChanged' value.
         leo.processCommandsAndSync()
@@ -721,7 +694,7 @@ class TestClerk:
         assert ret.data[objID]['f_dae']['type'] == 'dae'
 
         # Change the fragment geometries.
-        frags = [MetaFragment('f_dae', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
+        frags = [MetaFragment('f_dae', 'raw', createFragRaw())]
         assert client.setGeometry(objID, frags).ok
 
         # Ensure it now has type 'raw'.
@@ -759,18 +732,14 @@ class TestClerk:
         client = self.clients[client_type]
 
         # Convenience.
-        cs = np.array([1, 2, 3, 4], np.float64)
-        vert = np.arange(9).astype(np.float64)
-        uv = np.array([9, 10], np.float64)
-        rgb = np.array([1, 2, 250], np.uint8)
         objID = 1
 
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
         # Add a new template and spawn it.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t1', cs, frags, [], [])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t1', [1, 2, 3, 4], frags, [], [])
         assert client.addTemplates([temp]).ok
 
         new_obj = {'template': temp.name,
@@ -778,7 +747,7 @@ class TestClerk:
                    'velocityLin': -np.ones(3)}
         ret = client.spawn([new_obj])
         assert ret.ok and ret.data == (objID, )
-        del temp, new_obj, ret, rgb, uv, vert, cs
+        del temp, new_obj, ret
 
         # Query the SV and verify the fragment state for 'bar'.
         leo.processCommandsAndSync()
@@ -806,14 +775,7 @@ class TestClerk:
         client = self.clients[client_type]
 
         # Collada format: a .dae file plus a list of textures in jpg or png format.
-        b = os.path.dirname(__file__)
-        dae_file = open(b + '/cube.dae', 'rb').read()
-        dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
-        dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
-        f_dae = FragDae(dae=dae_file,
-                        rgb={'rgb1.png': dae_rgb1,
-                             'rgb2.jpg': dae_rgb2})
-        del b
+        f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
         frags = [MetaFragment('f_dae', 'dae', f_dae)]
