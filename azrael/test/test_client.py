@@ -252,7 +252,7 @@ class TestClerk:
 
         # Spawn one of the default templates.
         new_obj = {'template': templateID,
-                   'position': np.ones(3),
+                   'position': [0, 0, 0],
                    'velocityLin': -np.ones(3)}
         ret = client.spawn([new_obj])
         assert ret.ok and (ret.data == (objID, ))
@@ -363,27 +363,27 @@ class TestClerk:
         name_1 = '_templateNone'
         ret = client.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
-        assert np.array_equal(ret.data[name_1].cs, np.array([0, 1, 1, 1]))
+        assert np.array_equal(ret.data[name_1].cs, [0, 1, 1, 1])
 
         # ... this one is a sphere...
         name_2 = '_templateSphere'
         ret = client.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
-        assert np.array_equal(ret.data[name_2].cs, np.array([3, 1, 1, 1]))
+        assert np.array_equal(ret.data[name_2].cs, [3, 1, 1, 1])
 
         # ... and this one is a cube.
         name_3 = '_templateCube'
         ret = client.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
-        assert np.array_equal(ret.data[name_3].cs, np.array([4, 1, 1, 1]))
+        assert np.array_equal(ret.data[name_3].cs, [4, 1, 1, 1])
 
         # Retrieve all three again but with a single call.
         ret = client.getTemplates([name_1, name_2, name_3])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3))
-        assert np.array_equal(ret.data[name_1].cs, np.array([0, 1, 1, 1]))
-        assert np.array_equal(ret.data[name_2].cs, np.array([3, 1, 1, 1]))
-        assert np.array_equal(ret.data[name_3].cs, np.array([4, 1, 1, 1]))
+        assert np.array_equal(ret.data[name_1].cs, [0, 1, 1, 1])
+        assert np.array_equal(ret.data[name_2].cs, [3, 1, 1, 1])
+        assert np.array_equal(ret.data[name_3].cs, [4, 1, 1, 1])
 
         # Add a new object template.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
@@ -475,14 +475,14 @@ class TestClerk:
 
         # Parameters and constants for this test.
         objID_1 = 1
-        pos_parent = np.array([1, 2, 3], np.float64)
-        vel_parent = np.array([4, 5, 6], np.float64)
+        pos_parent = [1, 2, 3]
+        vel_parent = [4, 5, 6]
 
         # Part positions relative to parent.
-        dir_0 = np.array([0, 0, +2], np.float64)
-        dir_1 = np.array([0, 0, -1], np.float64)
-        pos_0 = np.array([0, 0, +3], np.float64)
-        pos_1 = np.array([0, 0, -4], np.float64)
+        dir_0 = [0, 0, +2]
+        dir_1 = [0, 0, -1]
+        pos_0 = [0, 0, +3]
+        pos_1 = [0, 0, -4]
 
         # Describes a rotation of 180 degrees around x-axis.
         orient_parent = [1, 0, 0, 0]
@@ -491,16 +491,19 @@ class TestClerk:
         # degrees around the x-axis. The normalisation of the direction is
         # necessary because the parts will automatically normalise all direction
         # vectors, including dir_0 and dir_1 which are not unit vectors.
-        dir_0_out = np.array(-dir_0) / np.sum(abs(dir_0))
-        dir_1_out = np.array(-dir_1) / np.sum(abs(dir_1))
-        pos_0_out = np.array(-pos_0)
-        pos_1_out = np.array(-pos_1)
+        dir_0_out = -np.array(dir_0) / np.sum(abs(np.array(dir_0)))
+        dir_1_out = -np.array(dir_1) / np.sum(abs(np.array(dir_1)))
+        pos_0_out = -np.array(pos_0)
+        pos_1_out = -np.array(pos_1)
 
-        # State variable for parent. It has a position, speed, and is rotated 180
-        # degrees around the x-axis. This means the x-values of all forces
-        # (boosters) and exit speeds of factory spawned objects must be inverted.
+        # State variable for parent. It has a position, speed, and is rotated
+        # 180 degrees around the x-axis. This means the x-values of all forces
+        # (boosters) and exit speeds of factory spawned objects must be
+        # inverted.
         sv = bullet_data.BulletData(
-            position=pos_parent, velocityLin=vel_parent, orientation=orient_parent)
+            position=pos_parent,
+            velocityLin=vel_parent,
+            orientation=orient_parent)
 
         # ------------------------------------------------------------------------
         # Create a template with two factories and spawn it.

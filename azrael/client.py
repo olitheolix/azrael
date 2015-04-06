@@ -384,10 +384,10 @@ class Client():
             'scale': 1,
             'imass': 1,
             'position': None,
-            'orientation': np.array([0, 0, 0, 1]).tolist(),
-            'velocityLin': np.zeros(3).tolist(),
-            'axesLockLin': np.ones(3).tolist(),
-            'axesLockRot': np.ones(3).tolist(),
+            'orientation': [0, 0, 0, 1],
+            'velocityLin': [0, 0, 0],
+            'axesLockLin': [0, 0, 0],
+            'axesLockRot': [0, 0, 0],
             'template': None}
 
         # Create valid object descriptions by copying the 'template' and
