@@ -513,16 +513,6 @@ class DibblerServer(multiprocessing.Process):
             'templates': os.path.join(self.dirNameBase, 'templates'),
             'instances': os.path.join(self.dirNameBase, 'instances')}
 
-        FH = MyStaticFileHandler
-
-        # Template models.
-        handlers.append(
-            ('/templates/(.*)', FH, {'path': self.dirNames['templates']}))
-
-        # Instance models.
-        handlers.append(
-            ('/instances/(.*)', FH, {'path': self.dirNames['instances']}))
-
         # Dibbler API.
         handlers.append(('/dibbler', Dibbler, self.dirNames))
 

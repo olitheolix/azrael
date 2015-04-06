@@ -111,8 +111,8 @@ class TestClerk:
         """
         Use a Clerk instance to add/query/update models in Dibbler.
         """
-        ip = azrael.config.addr_dibbler
-        port = azrael.config.port_dibbler
+        clacks = azrael.clacks.ClacksServer()
+        clacks.start()
 
         # Wait until Dibbler is live, then tell it to reset its Database. 
         clerk = azrael.clerk.Clerk()
@@ -124,7 +124,7 @@ class TestClerk:
             except (urllib.request.HTTPError, urllib.request.URLError):
                 time.sleep(0.05)
 
-        # Create a templates with one raw fragment.
+        # Create a template with one raw fragment.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
 
@@ -138,11 +138,22 @@ class TestClerk:
         assert ret.ok
 
         # Download the fragment via a standard GET request.
+        ip = azrael.config.addr_clacks
+        port = azrael.config.port_clacks
         url = 'http://{ip}:{port}'.format(ip=ip, port=port)
         url = url + ret.data['url'] + '/bar/model.json'
-        ret = urllib.request.urlopen(url).readall()
+        for ii in range(10):
+            assert ii < 5
+            try:
+                ret = urllib.request.urlopen(url).readall()
+                break
+            except urllib.request.URLError:
+                time.sleep(0.2)
+                
         ret = json.loads(ret.decode('utf8'))
 
+        clacks.terminate()
+        clacks.join()
         print('Test passed')
 
     def test_spawn(self):
@@ -1507,6 +1518,8 @@ class TestClerk:
         again.
         """
         clerk = azrael.clerk.Clerk()
+        clacks = azrael.clacks.ClacksServer()
+        clacks.start()
         
         # Reset the SV database and instantiate a Leonard and Clerk.
         leo = getLeonard()
@@ -1602,8 +1615,8 @@ class TestClerk:
         del ret
 
         # Download the 'raw' file and verify its content is correct.
-        ip, port = azrael.config.addr_dibbler, azrael.config.port_dibbler
-        base_url = 'http://{}:{}'.format(ip, port)
+        base_url = 'http://{}:{}'.format(
+            azrael.config.addr_clacks, azrael.config.port_clacks)
         url = base_url + data['10']['url'] + '/model.json'
         tmp = urllib.request.urlopen(url).readall()
         tmp = json.loads(tmp.decode('utf8'))
@@ -1663,6 +1676,9 @@ class TestClerk:
         url = base_url + data['test']['url'] + '/rgb2.jpg'
         tmp = urllib.request.urlopen(url).readall()
         assert tmp == dae_rgb1
+
+        clacks.terminate()
+        clacks.join()
 
         print('Test passed')
 

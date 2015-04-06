@@ -635,9 +635,15 @@ class TestClerk:
 
         # Download the fragment.
         base_url = 'http://{ip}:{port}'.format(
-            ip=config.addr_dibbler, port=config.port_dibbler)
+            ip=config.addr_clacks, port=config.port_clacks)
         url = base_url + ret.data[objID]['bar']['url'] + '/model.json'
-        tmp = urllib.request.urlopen(url).readall()
+        for ii in range(10):
+            assert ii < 8
+            try:
+                tmp = urllib.request.urlopen(url).readall()
+                break
+            except urllib.request.URLError:
+                time.sleep(0.2)
         tmp = json.loads(tmp.decode('utf8'))
         assert np.array_equal(tmp['vert'], vert)
 
@@ -660,7 +666,6 @@ class TestClerk:
         assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
 
         print('Test passed')
-
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_setGeometry_dae(self, client_type):
