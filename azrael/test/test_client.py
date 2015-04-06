@@ -191,32 +191,31 @@ class TestClerk:
         client = self.clients[client_type]
 
         # Constants and parameters for this test.
-        templateID = '_templateNone'
-        id_1 = 1
+        templateID, objID_1 = '_templateNone', 1
 
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
         # Query the state variable for a non existing object.
-        id_tmp = 100
+        objID_tmp = 100
         ok, _, sv = client.getAllStateVariables()
         assert (ok, sv) == (True, {})
 
-        ok, _, sv = client.getStateVariables(id_tmp)
-        assert (ok, sv) == (True, {id_tmp: None})
-        del id_tmp
+        ok, _, sv = client.getStateVariables(objID_tmp)
+        assert (ok, sv) == (True, {objID_tmp: None})
+        del objID_tmp
 
         # Instruct Clerk to spawn a new object. Its objID must be '1'.
         new_obj = {'template': templateID,
                    'position': np.zeros(3),
                    'velocityLin': -np.ones(3)}
         ret = client.spawn([new_obj])
-        assert ret.ok and ret.data == (id_1, )
+        assert ret.ok and ret.data == (objID_1, )
 
         # The new object has not yet been picked up by Leonard --> its state
         # vector must thus be None.
-        ret = client.getStateVariables(id_1)
-        assert ret.ok and (len(ret.data) == 1) and (ret.data == {id_1: None})
+        ret = client.getStateVariables(objID_1)
+        assert ret.ok and (len(ret.data) == 1) and (ret.data == {objID_1: None})
 
         # getAllStateVarialbes must return an empty dictionary.
         ret = client.getAllStateVariables()
@@ -225,13 +224,13 @@ class TestClerk:
         # Run one Leonard step. This will pick up the newly spawned object and SV
         # queries must now return valid data.
         leo.processCommandsAndSync()
-        ret = client.getStateVariables(id_1)
-        assert ret.ok and (len(ret.data) == 1) and (id_1 in ret.data)
-        assert ret.data[id_1] is not None
+        ret = client.getStateVariables(objID_1)
+        assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
+        assert ret.data[objID_1] is not None
 
         ret = client.getAllStateVariables()
-        assert ret.ok and (len(ret.data) == 1) and (id_1 in ret.data)
-        assert ret.data[id_1] is not None
+        assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
+        assert ret.data[objID_1] is not None
 
         print('Test passed')
 
@@ -296,10 +295,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Constants and parameters for this test.
-        templateID = '_templateNone'
-
-        # Parameters and constants for this test.
-        id_1 = 1
+        templateID, objID_1 = '_templateNone', 1
 
         # So far no objects have been spawned.
         ret = client.getAllObjectIDs()
@@ -309,12 +305,12 @@ class TestClerk:
         new_obj = {'template': templateID,
                    'position': np.zeros(3)}
         ret = client.spawn([new_obj])
-        assert ret.ok and ret.data == (id_1, )
+        assert ret.ok and ret.data == (objID_1, )
 
         # The object list must now contain the ID of the just spawned object.
         leo.processCommandsAndSync()
         ret = client.getAllObjectIDs()
-        assert (ret.ok, ret.data) == (True, [id_1])
+        assert (ret.ok, ret.data) == (True, [objID_1])
 
         print('Test passed')
 
@@ -328,7 +324,7 @@ class TestClerk:
         client = self.clients[client_type]
 
         # Parameters and constants for this test.
-        id_1, id_2 = 1, 2
+        objID_1, objID_2 = 1, 2
         templateID_0 = '_templateNone'
         templateID_1 = '_templateCube'
 
@@ -336,14 +332,14 @@ class TestClerk:
         new_objs = [{'template': templateID_0, 'position': np.zeros(3)},
                     {'template': templateID_1, 'position': np.zeros(3)}]
         ret = client.spawn(new_objs)
-        assert ret.ok and ret.data == (id_1, id_2)
+        assert ret.ok and ret.data == (objID_1, objID_2)
 
         # Retrieve template of first object.
-        ret = client.getTemplateID(id_1)
+        ret = client.getTemplateID(objID_1)
         assert ret.ok and (ret.data == templateID_0)
 
         # Retrieve template of second object.
-        ret = client.getTemplateID(id_2)
+        ret = client.getTemplateID(objID_2)
         assert ret.ok and (ret.data == templateID_1)
 
         # Attempt to retrieve a non-existing object.
@@ -478,7 +474,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Parameters and constants for this test.
-        id_1 = 1
+        objID_1 = 1
         pos_parent = np.array([1, 2, 3], np.float64)
         vel_parent = np.array([4, 5, 6], np.float64)
 
@@ -531,7 +527,7 @@ class TestClerk:
                    'velocityLin': vel_parent,
                    'orientation': orient_parent}
         ret = client.spawn([new_obj])
-        assert ret.ok and (ret.data == (id_1, ))
+        assert ret.ok and (ret.data == (objID_1, ))
         leo.processCommandsAndSync()
         del b0, b1, f0, f1, temp, new_obj, frags
 
@@ -551,7 +547,7 @@ class TestClerk:
 
         # Send the commands and ascertain that the returned object IDs now exist in
         # the simulation. These IDs must be '2' and '3'.
-        ret = client.controlParts(id_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
+        ret = client.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
         spawnIDs = ret.data
         assert (ret.ok, len(spawnIDs)) == (True, 2)
         assert spawnIDs == [2, 3]
@@ -575,7 +571,7 @@ class TestClerk:
                       np.cross(pos_1_out, forcevec_1))
 
         # Query the torque and force from Azrael and verify they are correct.
-        leo_force, leo_torque = leo.totalForceAndTorque(id_1)
+        leo_force, leo_torque = leo.totalForceAndTorque(objID_1)
         assert np.array_equal(leo_force, tot_force)
         assert np.array_equal(leo_torque, tot_torque)
 
