@@ -541,8 +541,8 @@ class Client():
                 # Sanity checks.
                 assert isinstance(temp, Template)
                 assert isinstance(temp.name, str)
-                assert isinstance(temp.cs, (list, np.ndarray))
-                assert isinstance(temp.fragments, list)
+                assert isinstance(temp.cs, (tuple, list, np.ndarray))
+                assert isinstance(temp.fragments, (tuple, list))
 
                 # Check and Base64 encode each individual fragment.
                 frags = []
