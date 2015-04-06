@@ -1197,6 +1197,8 @@ class Clerk(multiprocessing.Process):
         fixme: docu
         fixme: error checks
         fixme: test error checks.
+        fixme: replace calls to this method with calls to
+               'azrael.dibbler.sendDibbler' 
         fixme: do not call this method directly; instead, call it via dedicated
                methods to add/update/delete objects.
         """

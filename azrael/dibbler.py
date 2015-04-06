@@ -54,6 +54,7 @@ yet require this level of sophistication.
 fixme: update module doc string once it is clearer how everything fits.
 """
 import os
+import time
 import json
 import shutil
 import base64
@@ -62,9 +63,10 @@ import pickle
 import binascii
 import subprocess
 import tornado.web
+import tornado.ioloop
 import tornado.testing
 import multiprocessing
-import tornado.ioloop
+import urllib.request
 import azrael.config as config
 
 import numpy as np
@@ -74,6 +76,37 @@ from azrael.util import FragDae, FragRaw, MetaFragment
 
 from IPython import embed as ipshell
 from azrael.typecheck import typecheck
+
+
+def sendDibbler(url, req):
+    """
+    fixme: docu
+    fixme: error handling for base64, urllib, json
+    """
+    req = base64.b64encode(pickle.dumps(req))
+    tmp = urllib.request.urlopen(url, data=req).readall()
+    tmp = json.loads(tmp.decode('utf8'))
+    return RetVal(**tmp)
+
+
+def resetDibbler(url):
+    """
+    fixme: docu
+    fixme: move try/except clause into sendDibbler
+    """
+    # Wait until Dibbler is live and tell it to reset its Database. 
+    req = {'cmd': 'reset', 'data': 'empty'}
+    req = base64.b64encode(pickle.dumps(req))
+
+    # Wait until Dibbler is live and tell it to reset its Database. 
+    # fixme: put this into dedicated method.
+    while True:
+        try:
+            ret = sendDibbler(url, {'cmd': 'reset', 'data': 'empty'})
+            assert ret.ok
+            break
+        except (urllib.request.HTTPError, urllib.request.URLError):
+            time.sleep(0.05)
 
 
 @typecheck

@@ -78,6 +78,10 @@ class TestClerk:
 
     @classmethod
     def sendRequest(cls, req):
+        """
+        fixme: replace calls to this method with calls to
+               'azrael.dibbler.sendDibbler' instead.
+        """
         req = base64.b64encode(pickle.dumps(req))
         tmp = urllib.request.urlopen(cls.url_dibbler, data=req).readall()
         tmp = json.loads(tmp.decode('utf8'))

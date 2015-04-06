@@ -25,9 +25,11 @@ import subprocess
 import azrael.util
 import azrael.clerk
 import azrael.clacks
+import azrael.dibbler
 import azrael.leonard
 import azrael.database
 import azrael.vectorgrid
+import azrael.config as config
 
 
 class AzraelStack:
@@ -67,16 +69,25 @@ class AzraelStack:
         clerk = azrael.clerk.Clerk()
         clacks = azrael.clacks.ClacksServer()
 
+        ip, port = config.addr_dibbler, config.port_dibbler
+        dibbler = azrael.dibbler.DibblerServer(addr=ip, port=port)
+
         # Start the physics engine.
         #leo = leonard.LeonardBase()
         #leo = leonard.LeonardBullet()
         #leo = leonard.LeonardSweeping()
         leo = azrael.leonard.LeonardDistributedZeroMQ()
 
+        # Start and reset Dibbler
+        self.startProcess(dibbler)
+        url = 'http://{}:{}/dibbler'.format(ip, port)
+        azrael.dibbler.resetDibbler(url)
+
         # Start Clerk, Clacks, and Leonard.
         self.startProcess(clerk)
         self.startProcess(clacks)
         self.startProcess(leo)
+
 
     def stop(self):
         """
