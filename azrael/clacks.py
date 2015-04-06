@@ -215,13 +215,21 @@ class ClacksServer(multiprocessing.Process):
         dirname = os.path.join(base, 'static')
         handlers.append(('/static/(.*)', FH, {'path': dirname}))
 
-        # Template geometries.
-        handlers.append(
-            ('/templates/(.*)', FH, {'path': config.dir_template}))
+        # Fixme: these directories are also hard coded in Dibbler.
+        self.dirNameBase = '/tmp/dibbler'
+        self.dirNames = {
+            'templates': os.path.join(self.dirNameBase, 'templates'),
+            'instances': os.path.join(self.dirNameBase, 'instances')}
 
-        # Instance geometries.
+        FH = MyStaticFileHandler
+
+        # Template models.
         handlers.append(
-            ('/instances/(.*)', FH, {'path': config.dir_instance}))
+            ('/templates/(.*)', FH, {'path': self.dirNames['templates']}))
+
+        # Instance models.
+        handlers.append(
+            ('/instances/(.*)', FH, {'path': self.dirNames['instances']}))
 
         # Websocket to Clacks.
         handlers.append(('/websocket', WebsocketHandler))
