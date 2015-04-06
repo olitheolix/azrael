@@ -24,11 +24,13 @@ version (eg. JavaScript developers) use ``WSClient`` from `wsclient.py` (their
 feature set is identical).
 """
 
+import io
 import zmq
 import json
 import base64
 import logging
 import IPython
+import traceback
 import urllib.request
 
 import numpy as np
@@ -221,18 +223,34 @@ class Client():
         # Convenience.
         ToClerk_Encode, FromClerk_Decode = self.codec[cmd]
 
-        # Encode the arguments and send them to Clerk.
-        ok, data = ToClerk_Encode(*args)
-        if not ok:
-            msg = 'ToClerk_Encode_* error for <{}>'.format(cmd)
-            self.logit.error(msg)
-            return RetVal(False, msg, None)
-        ret = self.sendToClerk(cmd, data)
-        if not ret.ok:
-            return ret
+        try:
+            # Encode the arguments and send them to Clerk.
+            ok, data = ToClerk_Encode(*args)
+            if not ok:
+                msg = 'ToClerk_Encode_* error for <{}>'.format(cmd)
+                self.logit.error(msg)
+                return RetVal(False, msg, None)
+            ret = self.sendToClerk(cmd, data)
+            if not ret.ok:
+                return ret
 
-        # Command completed without error. Return the decode output.
-        return FromClerk_Decode(ret.data)
+            # Command completed without error. Return the decode output.
+            return FromClerk_Decode(ret.data)
+        except Exception:
+            msg = 'Error during (de)serialisation on Client for cmd <{}>'
+            msg = msg.format(cmd)
+
+            # Get stack trace as string.
+            buf = io.StringIO()
+            traceback.print_exc(file=buf)
+            buf.seek(0)
+            msg_st = [' -> ' + _ for _ in buf.readlines()]
+            msg_st = msg + '\n' + ''.join(msg_st)
+
+            # Log the error message with stack trace, but return only
+            # the error message.
+            self.logit.error(msg_st)
+            return RetVal(False, msg_st, None)
 
     def ping(self):
         """
