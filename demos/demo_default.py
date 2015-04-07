@@ -49,7 +49,7 @@ import azrael.physics_interface as physAPI
 del p
 
 from IPython import embed as ipshell
-from azrael.util import Template, MetaFragment, FragRaw, FragState
+from azrael.types import Template, MetaFragment, FragRaw, FragState
 
 # Convenience.
 BulletDataOverride = physAPI.BulletDataOverride

@@ -25,22 +25,11 @@ import pymongo
 import numpy as np
 import azrael.config as config
 
-from collections import namedtuple
 from azrael.types import typecheck
+
 
 # Global handle to the collection for timing metrics.
 dbTiming = pymongo.MongoClient()['timing']['timing']
-
-# Uniform return value signature.
-RetVal = namedtuple('RetVal', 'ok msg data')
-
-# Template dataset.
-Template = namedtuple('Template', 'name cs fragments boosters factories')
-FragState = namedtuple('FragState', 'name scale position orientation')
-
-FragRaw = namedtuple('FragRaw', 'vert uv rgb')
-FragDae = namedtuple('FragDae', 'dae rgb')
-MetaFragment = namedtuple('MetaFragment', 'name type data')
 
 
 def resetTiming():

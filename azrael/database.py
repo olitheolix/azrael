@@ -23,12 +23,9 @@ import shutil
 import pymongo
 import logging
 
-import azrael.util
 import azrael.config as config
 from IPython import embed as ipshell
-from azrael.types import typecheck
-
-RetVal = azrael.util.RetVal
+from azrael.types import typecheck, RetVal
 
 # Global database handles.
 logit = logging.getLogger('azrael.' + __name__)

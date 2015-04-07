@@ -40,7 +40,7 @@ import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 
 from IPython import embed as ipshell
-from azrael.util import MetaFragment, FragRaw, FragState
+from azrael.types import MetaFragment, FragRaw, FragState
 
 # Convenience.
 BulletDataOverride = physAPI.BulletDataOverride

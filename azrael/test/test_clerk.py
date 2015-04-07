@@ -41,8 +41,8 @@ from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 
 from IPython import embed as ipshell
-from azrael.util import Template, RetVal
-from azrael.util import FragState, FragDae, FragRaw, MetaFragment
+from azrael.types import Template, RetVal
+from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 from azrael.test.test import createFragRaw, createFragDae
 
 

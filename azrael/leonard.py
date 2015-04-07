@@ -37,21 +37,12 @@ import azrael.bullet.boost_bullet
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
-from collections import namedtuple
 from IPython import embed as ipshell
-from azrael.types import typecheck
-
-RetVal = azrael.util.RetVal
-
-# Work package related.
-WPData = namedtuple('WPRecord', 'id sv force torque')
-WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
-Forces = namedtuple('Forces',
-                    'forceDirect forceBoost torqueDirect torqueBoost')
+from azrael.types import _BulletData
+from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Convenience.
 BulletData = bullet_data.BulletData
-_BulletData = bullet_data._BulletData
 BulletDataOverride = bullet_data.BulletDataOverride
 
 

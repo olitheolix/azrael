@@ -38,8 +38,7 @@ import websocket
 import azrael.util
 import azrael.client
 
-from azrael.util import RetVal
-from azrael.types import typecheck
+from azrael.types import typecheck, RetVal
 
 
 class WSClient(azrael.client.Client):

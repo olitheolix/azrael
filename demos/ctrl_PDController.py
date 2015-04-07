@@ -34,7 +34,7 @@ p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
 import azrael.client
 import azrael.parts as parts
-from azrael.util import FragState
+from azrael.types import FragState
 del p
 
 

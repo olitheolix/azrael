@@ -41,16 +41,16 @@ should make it possible to write clients in other languages.
 """
 
 import base64
-import numpy as np
 import azrael.util
-import azrael.parts as parts
 import azrael.bullet.bullet_data as bullet_data
 import azrael.physics_interface as physics_interface
 
+import numpy as np
+import azrael.parts as parts
+
 from collections import namedtuple
-from azrael.types import typecheck
-from azrael.util import RetVal, Template
-from azrael.util import FragState, FragDae, FragRaw, MetaFragment
+from azrael.types import typecheck, RetVal, Template
+from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 
 from IPython import embed as ipshell
 

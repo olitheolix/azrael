@@ -28,18 +28,10 @@ point.
 import sys
 import logging
 import numpy as np
-import azrael.util
 import azrael.config as config
 
-from collections import namedtuple
 from IPython import embed as ipshell
-from azrael.types import typecheck
-
-# All relevant physics data.
-_BulletData = namedtuple('_BulletData',
-                         'scale imass restitution orientation '
-                         'position velocityLin velocityRot cshape '
-                         'axesLockLin axesLockRot lastChanged')
+from azrael.types import typecheck, _BulletData
 
 
 @typecheck

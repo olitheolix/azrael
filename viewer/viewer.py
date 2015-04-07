@@ -48,7 +48,7 @@ import azrael.config as config
 import azrael.physics_interface as physAPI
 
 from PySide import QtCore, QtGui, QtOpenGL
-from azrael.util import Template, MetaFragment, FragRaw, FragState
+from azrael.types import Template, MetaFragment, FragRaw, FragState
 
 
 def parseCommandLine():

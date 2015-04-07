@@ -30,7 +30,7 @@ import azrael.bullet.bullet_data as bullet_data
 from IPython import embed as ipshell
 from azrael.test.test_clerk import killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
-from azrael.util import FragState, FragDae, FragRaw, MetaFragment, Template
+from azrael.types import FragState, FragDae, FragRaw, MetaFragment, Template
 
 
 def test_encoding_get_template(clientType='ZeroMQ'):

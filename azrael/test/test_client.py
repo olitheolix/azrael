@@ -48,11 +48,10 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.test.test_clerk import getLeonard, killAzrael
-from azrael.util import Template, FragState, FragDae, FragRaw, MetaFragment
-from azrael.util import RetVal
-
+from azrael.types import RetVal, Template
+from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 from azrael.test.test import createFragRaw, createFragDae
+from azrael.test.test_clerk import getLeonard, killAzrael
 
 WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client

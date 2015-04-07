@@ -32,19 +32,14 @@ import sys
 import logging
 import pymongo
 import numpy as np
-import azrael.util as util
 import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import typecheck
+from azrael.types import typecheck, RetVal
 
 # Global database handle.
 _DB_Grid = pymongo.MongoClient()['azrael_grid']
-
-
-# Return value specification.
-RetVal = util.RetVal
 
 
 # Create module logger.

@@ -38,8 +38,7 @@ import unittest.mock as mock
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.util import Template, RetVal
-from azrael.util import FragDae, FragRaw, MetaFragment
+from azrael.types import Template, RetVal, FragDae, FragRaw, MetaFragment
 from azrael.test.test import createFragRaw, createFragDae
 
 class TestDibbler(tornado.testing.AsyncHTTPTestCase):

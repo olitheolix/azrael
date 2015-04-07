@@ -24,10 +24,10 @@ import azrael.bullet.bullet_data as bullet_data
 
 import numpy as np
 
+from azrael.types import _BulletData
 from IPython import embed as ipshell
 
 BulletData = bullet_data.BulletData
-_BulletData = bullet_data._BulletData
 
 
 def isEqualBD(bd1: _BulletData, bd2: _BulletData):

@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import azrael.startup
-from azrael.util import Template, Fragment
+from azrael.types import Template, Fragment
 
 
 def defineCube():

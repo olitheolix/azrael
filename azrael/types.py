@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Decorator for automatic type checking.
+A collection of named tuples and a typecheck decorator.
 
 The decorator automatically verifies function arguments based on their
 annotations in the signature.
@@ -32,7 +32,31 @@ Usage example::
 """
 import inspect
 import functools
+from collections import namedtuple
 
+# Uniform return value signature.
+RetVal = namedtuple('RetVal', 'ok msg data')
+
+# Template dataset.
+Template = namedtuple('Template', 'name cs fragments boosters factories')
+FragState = namedtuple('FragState', 'name scale position orientation')
+
+# Fragments.
+FragRaw = namedtuple('FragRaw', 'vert uv rgb')
+FragDae = namedtuple('FragDae', 'dae rgb')
+MetaFragment = namedtuple('MetaFragment', 'name type data')
+
+# Work package related.
+WPData = namedtuple('WPRecord', 'id sv force torque')
+WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
+Forces = namedtuple('Forces',
+                    'forceDirect forceBoost torqueDirect torqueBoost')
+
+# Motion state of an object.
+_BulletData = namedtuple('_BulletData',
+                         'scale imass restitution orientation '
+                         'position velocityLin velocityRot cshape '
+                         'axesLockLin axesLockRot lastChanged')
 
 def typecheck(func_handle):
     """

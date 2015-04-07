@@ -21,7 +21,7 @@ other tests.
 """
 import os
 import numpy as np
-from azrael.util import FragDae, FragRaw
+from azrael.types import FragDae, FragRaw
 
 
 def createFragDae():

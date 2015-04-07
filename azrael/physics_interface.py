@@ -29,14 +29,10 @@ import azrael.database as database
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import typecheck
+from azrael.types import typecheck, RetVal, _BulletData
 
 # Convenience.
-_BulletData = bullet_data._BulletData
 BulletDataOverride = bullet_data.BulletDataOverride
-
-# Return value signature.
-RetVal = util.RetVal
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
