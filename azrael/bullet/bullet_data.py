@@ -18,7 +18,7 @@
 """
 Define the State Variables structure and its cencoding.
 
-The state variables are encapsulated by the named tuple ``BulletData``. This
+The state variables are encapsulated by the named tuple ``MotionState``. This
 module contains the necessary conversions to/from binary, as well as a
 conversion to NumPy. The NumPy conversion was necessary for the Cython
 wrapper to Bullet. This has become redundant and will be cleaned up at some
@@ -31,11 +31,11 @@ import numpy as np
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, _BulletData
+from azrael.types import typecheck, _MotionState
 
 
 @typecheck
-def BulletData(scale: (int, float)=1,
+def MotionState(scale: (int, float)=1,
                imass: (int, float)=1,
                restitution: (int, float)=0.9,
                orientation: (list, np.ndarray)=[0, 0, 0, 1],
@@ -47,9 +47,9 @@ def BulletData(scale: (int, float)=1,
                axesLockRot: (list, np.ndarray)=[1, 1, 1],
                lastChanged: int=0):
     """
-    Return a ``_BulletData`` object.
+    Return a ``_MotionState`` object.
 
-    Without any arguments this function will return a valid ``BulletData``
+    Without any arguments this function will return a valid ``MotionState``
     specimen with sensible defaults.
     """
 
@@ -72,7 +72,7 @@ def BulletData(scale: (int, float)=1,
         return None
 
     # Build the actual named tuple.
-    return _BulletData(
+    return _MotionState(
         scale=scale,
         imass=imass,
         restitution=restitution,
@@ -86,11 +86,11 @@ def BulletData(scale: (int, float)=1,
         lastChanged=lastChanged)
 
 
-class BulletDataOverride(_BulletData):
+class MotionStateOverride(_MotionState):
     """
-    Create a ``_BulletData`` named tuple.
+    Create a ``_MotionState`` named tuple.
 
-    The only difference between this class and ``bullet_data.BulletData`` is
+    The only difference between this class and ``bullet_data.MotionState`` is
     that this class permits *None* values.
     """
     @typecheck
@@ -102,7 +102,7 @@ class BulletDataOverride(_BulletData):
         # Convert all positional- and keyword arguments that are not None to a
         # dictionary of keyword arguments. Step 1: convert the positional
         # arguments to a dictionary...
-        kwargs_tmp = dict(zip(_BulletData._fields, args))
+        kwargs_tmp = dict(zip(_MotionState._fields, args))
 
         # ... Step 2: Remove all keys where the value is None...
         kwargs_tmp = {k: v for (k, v) in kwargs_tmp.items() if v is not None}
@@ -114,9 +114,9 @@ class BulletDataOverride(_BulletData):
         kwargs = kwargs_tmp
         del args, kwargs_tmp
 
-        # Create a BulletData instance. Return an error if this fails.
+        # Create a MotionState instance. Return an error if this fails.
         try:
-            sv = BulletData(**kwargs)
+            sv = MotionState(**kwargs)
         except TypeError:
             sv = None
         if sv is None:
@@ -124,15 +124,15 @@ class BulletDataOverride(_BulletData):
 
         # Create keyword arguments for all fields and populate them all
         # with *None*.
-        kwargs_all = {f: None for f in _BulletData._fields}
+        kwargs_all = {f: None for f in _MotionState._fields}
 
         # Overwrite those keys for which we actually have a value. Note that we
         # will not use the valued supplied to this function directly but use
-        # the ones from the temporary BulletData object because this ensures
+        # the ones from the temporary MotionState object because this ensures
         # the data types were correctly converted (mosty lists to NumPy
         # arrays).
         for key in kwargs:
             kwargs_all[key] = getattr(sv, key)
 
-        # Create the ``_BulletData`` named tuple.
+        # Create the ``_MotionState`` named tuple.
         return super().__new__(cls, **kwargs_all)

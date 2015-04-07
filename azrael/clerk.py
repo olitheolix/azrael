@@ -443,7 +443,7 @@ class Clerk(multiprocessing.Process):
 
             # Create the state variables that encode the just determined
             # position and speed.
-            sv = bullet_data.BulletData(position=pos, velocityLin=velocityLin,
+            sv = bullet_data.MotionState(position=pos, velocityLin=velocityLin,
                                         orientation=sv_parent.orientation)
 
             # Spawn the actual object that this factory can create. Retain
@@ -719,7 +719,7 @@ class Clerk(multiprocessing.Process):
         The ``newObjects`` must have the following format:
         newObjects = [(template_name_1, sv_1), (template_name_2, sv_2), ...]
 
-        where ``template_name_k`` is a string and ``sv_k`` is a ``BulletData``
+        where ``template_name_k`` is a string and ``sv_k`` is a ``MotionState``
         instance.
 
         The new object will get ``sv_k`` as the initial state vector. However,
@@ -740,7 +740,7 @@ class Clerk(multiprocessing.Process):
                 assert len(ii) == 2
                 templateID, sv = ii
                 assert isinstance(templateID, str)
-                assert isinstance(sv, bullet_data._BulletData)
+                assert isinstance(sv, bullet_data._MotionState)
                 del templateID, sv
         except AssertionError:
             return RetVal(False, '<spawn> received invalid arguments', None)
@@ -947,7 +947,7 @@ class Clerk(multiprocessing.Process):
 
     @typecheck
     def setStateVariable(self, objID: int,
-                         data: bullet_data.BulletDataOverride):
+                         data: bullet_data.MotionStateOverride):
         """
         Set the State Variables of ``objID`` to ``data``.
 
@@ -955,7 +955,7 @@ class Clerk(multiprocessing.Process):
         since this method is only a wrapper for it.
 
         :param int objID: object ID
-        :param BulletDataOverride data: new object attributes.
+        :param MotionStateOverride data: new object attributes.
         :return: Success
         """
         ret = physAPI.addCmdModifyStateVariable(objID, data)
@@ -1006,12 +1006,12 @@ class Clerk(multiprocessing.Process):
 
         The returned dictionary has the following form:
 
-          {objID_1: {'frag': [FragState(), ...], 'sv': _BulletData()},
-           objID_2: {'frag': [FragState(), ...], 'sv': _BulletData()},
+          {objID_1: {'frag': [FragState(), ...], 'sv': _MotionState()},
+           objID_2: {'frag': [FragState(), ...], 'sv': _MotionState()},
            ...}
 
         :param dict SVs: SV dictionary. Each key is an object ID and the
-            corresponding value a ``BulletData`` instance.
+            corresponding value a ``MotionState`` instance.
         """
         # Convenience: extract all objIDs from ``SVs``.
         objIDs = list(SVs.keys())
@@ -1055,7 +1055,7 @@ class Clerk(multiprocessing.Process):
         Return the State Variables for all ``objIDs`` in a dictionary.
 
         The dictionary keys will be the elements of ``objIDs``, whereas the
-        values are ``BulletData`` instances, or *None* if the corresponding
+        values are ``MotionState`` instances, or *None* if the corresponding
         objID did not exist.
 
         :param list(int) objIDs: list of objects for which to return the SV.

@@ -38,12 +38,12 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import _BulletData
+from azrael.types import _MotionState
 from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Convenience.
-BulletData = bullet_data.BulletData
-BulletDataOverride = bullet_data.BulletDataOverride
+MotionState = bullet_data.MotionState
+MotionStateOverride = bullet_data.MotionStateOverride
 
 
 @typecheck
@@ -324,7 +324,7 @@ class LeonardBase(multiprocessing.Process):
 
         # Convenience.
         cmds = ret.data
-        fields = BulletDataOverride._fields
+        fields = MotionStateOverride._fields
 
         # Remove objects.
         for doc in cmds['remove']:
@@ -343,19 +343,19 @@ class LeonardBase(multiprocessing.Process):
                 self.logit.warning(msg.format(objID))
             else:
                 sv_old = doc['sv']
-                self.allObjects[objID] = _BulletData(*sv_old)
+                self.allObjects[objID] = _MotionState(*sv_old)
                 self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
                 self.allAABBs[objID] = float(doc['AABB'])
 
         # Update State Vectors.
-        fun = physAPI._updateBulletDataTuple
+        fun = physAPI._updateMotionStateTuple
         for doc in cmds['modify']:
             objID, sv_new = doc['objID'], doc['sv']
             if objID in self.allObjects:
-                sv_new = BulletDataOverride(**dict(zip(fields, sv_new)))
+                sv_new = MotionStateOverride(**dict(zip(fields, sv_new)))
                 sv_old = self.allObjects[objID]
                 sv_old = [getattr(sv_old, _) for _ in fields]
-                sv_old = BulletData(*sv_old)
+                sv_old = MotionState(*sv_old)
                 self.allObjects[objID] = fun(sv_old, sv_new)
 
         # Update direct force- and torque values.
@@ -810,7 +810,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Reset force and torque for all objects in the WP, and overwrite
         # the old State Vector with the new one from the processed WP.
         for (objID, sv) in wpdata:
-            self.allObjects[objID] = _BulletData(*sv)
+            self.allObjects[objID] = _MotionState(*sv)
 
 
 class LeonardWorkerZeroMQ(multiprocessing.Process):

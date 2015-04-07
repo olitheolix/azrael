@@ -259,12 +259,12 @@ class TestClerk:
         leo.processCommandsAndSync()
         ok, _, ret_sv = client.getStateVariables(objID)
         ret_sv = ret_sv[objID]['sv']
-        assert isinstance(ret_sv, bullet_data._BulletData)
+        assert isinstance(ret_sv, bullet_data._MotionState)
         assert np.array_equal(ret_sv.position, new_obj['position'])
         assert np.array_equal(ret_sv.velocityLin, new_obj['velocityLin'])
 
         # Create and apply a new State Vector.
-        new_sv = bullet_data.BulletDataOverride(
+        new_sv = bullet_data.MotionStateOverride(
             position=[1, -1, 1], imass=2, scale=3, cshape=[4, 1, 1, 1])
         assert client.setStateVariable(objID, new_sv).ok
 
@@ -272,7 +272,7 @@ class TestClerk:
         leo.processCommandsAndSync()
         ok, _, ret_sv = client.getStateVariables(objID)
         ret_sv = ret_sv[objID]['sv']
-        assert isinstance(ret_sv, bullet_data._BulletData)
+        assert isinstance(ret_sv, bullet_data._MotionState)
         assert ret_sv.imass == new_sv.imass
         assert ret_sv.scale == new_sv.scale
         assert np.array_equal(ret_sv.position, new_sv.position)
@@ -498,7 +498,7 @@ class TestClerk:
         # 180 degrees around the x-axis. This means the x-values of all forces
         # (boosters) and exit speeds of factory spawned objects must be
         # inverted.
-        sv = bullet_data.BulletData(
+        sv = bullet_data.MotionState(
             position=pos_parent,
             velocityLin=vel_parent,
             orientation=orient_parent)

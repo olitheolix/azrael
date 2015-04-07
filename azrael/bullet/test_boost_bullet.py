@@ -24,19 +24,19 @@ import azrael.bullet.bullet_data as bullet_data
 
 import numpy as np
 
-from azrael.types import _BulletData
+from azrael.types import _MotionState
 from IPython import embed as ipshell
 
-BulletData = bullet_data.BulletData
+MotionState = bullet_data.MotionState
 
 
-def isEqualBD(bd1: _BulletData, bd2: _BulletData):
+def isEqualBD(bd1: _MotionState, bd2: _MotionState):
     """
     Return *True* if the content of ``bd1`` is (roughly) equal to ``bd2``.
 
     This is a convenience function only.
     """
-    for f in _BulletData._fields:
+    for f in _MotionState._fields:
         if not np.allclose(getattr(bd1, f), getattr(bd2, f), atol=1E-9):
             return False
     return True
@@ -47,7 +47,7 @@ def test_getset_object():
     Send/retrieve object to/from Bullet and verify the integrity.
     """
     # Create an object and serialise it.
-    obj_a = bullet_data.BulletData(
+    obj_a = bullet_data.MotionState(
         scale=3.5,
         imass=4.5,
         cshape=[3, 1, 1, 1],
@@ -80,7 +80,7 @@ def test_update_object():
     Add an object to Bullet, then change its parameters.
     """
     # Create an object and serialise it.
-    obj_a = bullet_data.BulletData(
+    obj_a = bullet_data.MotionState(
         scale=3.5,
         imass=4.5,
         cshape=[3, 1, 1, 1],
@@ -100,7 +100,7 @@ def test_update_object():
     assert isEqualBD(ret.data, obj_a)
 
     # Update the object.
-    obj_a = bullet_data.BulletData(
+    obj_a = bullet_data.MotionState(
         scale=6.5,
         imass=7.5,
         cshape=[3, 1, 1, 1],
@@ -129,7 +129,7 @@ def test_apply_force(force_fun_id):
     dt, maxsteps = 1.0, 60
 
     # Create an object and overwrite the CShape data to obtain a sphere.
-    obj_a = bullet_data.BulletData()
+    obj_a = bullet_data.MotionState()
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -187,7 +187,7 @@ def test_apply_force_and_torque():
 
     # Create a spherical object. Adjust the mass so that the sphere's inertia
     # is roughly unity.
-    obj_a = bullet_data.BulletData(cshape=[3, 1, 1, 1], imass=2 / 5)
+    obj_a = bullet_data.MotionState(cshape=[3, 1, 1, 1], imass=2 / 5)
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -244,7 +244,7 @@ def test_remove_object():
     Remove an object from the Bullet cache.
     """
     # Create a spherical object.
-    obj_a = bullet_data.BulletData()
+    obj_a = bullet_data.MotionState()
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -280,8 +280,8 @@ def test_modify_mass():
     torque = np.array([0, 0, 0], np.float64)
 
     # Create two identical spheres, one left, one right (x-axis).
-    obj_a = bullet_data.BulletData(position=pos_a, cshape=cshape, imass=1)
-    obj_b = bullet_data.BulletData(position=pos_b, cshape=cshape, imass=1)
+    obj_a = bullet_data.MotionState(position=pos_a, cshape=cshape, imass=1)
+    obj_b = bullet_data.MotionState(position=pos_b, cshape=cshape, imass=1)
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -331,8 +331,8 @@ def test_modify_size():
     cshape = [3, 1, 1, 1]
 
     # Create two identical spheres, one left, one right (x-axis).
-    obj_a = bullet_data.BulletData(position=pos_a, cshape=cshape)
-    obj_b = bullet_data.BulletData(position=pos_b, cshape=cshape)
+    obj_a = bullet_data.MotionState(position=pos_a, cshape=cshape)
+    obj_b = bullet_data.MotionState(position=pos_b, cshape=cshape)
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -388,8 +388,8 @@ def test_modify_cshape():
     cs_sphere = [3, 1, 1, 1]
 
     # Create two identical unit spheres, offset along the x/y axis.
-    obj_a = bullet_data.BulletData(position=pos_a, cshape=cs_sphere)
-    obj_b = bullet_data.BulletData(position=pos_b, cshape=cs_sphere)
+    obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_sphere)
+    obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_sphere)
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -408,8 +408,8 @@ def test_modify_cshape():
     assert isEqualBD(ret.data, obj_b)
 
     # Change the collision shape of both objects to a unit cube.
-    obj_a = bullet_data.BulletData(position=pos_a, cshape=cs_cube)
-    obj_b = bullet_data.BulletData(position=pos_b, cshape=cs_cube)
+    obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_cube)
+    obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_cube)
     bullet.setObjectData(objID_a, obj_a)
     bullet.setObjectData(objID_b, obj_b)
 

@@ -124,14 +124,14 @@ def test_setStateVariable_basic(clsLeonard):
 
     # Parameters and constants for this test.
     id_0, id_1, aabb = 0, 1, 1.0
-    sv = bullet_data.BulletData()
+    sv = bullet_data.MotionState()
     templateID = '_templateSphere'.encode('utf8')
 
     # State Vector.
     p = np.array([1, 2, 5])
     vl = np.array([8, 9, 10.5])
     vr = vl + 1
-    data = bullet_data.BulletDataOverride(
+    data = bullet_data.MotionStateOverride(
         position=p, velocityLin=vl, velocityRot=vr)
     del p, vl, vr
 
@@ -170,7 +170,7 @@ def test_setStateVariable_advanced(clsLeonard):
     # Parameters and constants for this test.
     cs_cube = [3, 1, 1, 1]
     cs_sphere = [3, 1, 1, 1]
-    sv = bullet_data.BulletData(imass=2, scale=3, cshape=cs_sphere)
+    sv = bullet_data.MotionState(imass=2, scale=3, cshape=cs_sphere)
     templateID = '_templateSphere'.encode('utf8')
 
     # Spawn an object.
@@ -186,7 +186,7 @@ def test_setStateVariable_advanced(clsLeonard):
     assert np.array_equal(ret.data[objID].cshape, cs_sphere)
 
     # Update the object's SV data.
-    sv_new = bullet_data.BulletDataOverride(imass=4, scale=5, cshape=cs_cube)
+    sv_new = bullet_data.MotionStateOverride(imass=4, scale=5, cshape=cs_cube)
     assert physAPI.addCmdModifyStateVariable(objID, sv_new).ok
 
     # Verify the SV data.
@@ -213,7 +213,7 @@ def test_move_single_object(clsLeonard):
 
     # Constants and parameters for this test.
     id_0, aabb = 0, 1
-    sv = bullet_data.BulletData()
+    sv = bullet_data.MotionState()
 
     # Spawn an object.
     assert physAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
@@ -225,7 +225,7 @@ def test_move_single_object(clsLeonard):
     assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
     # Give the object a velocity.
-    sv = bullet_data.BulletDataOverride(velocityLin=np.array([1, 0, 0]))
+    sv = bullet_data.MotionStateOverride(velocityLin=np.array([1, 0, 0]))
     assert physAPI.addCmdModifyStateVariable(id_0, sv).ok
 
     # Advance the simulation by another second and verify the objects have
@@ -251,8 +251,8 @@ def test_move_two_objects_no_collision(clsLeonard):
 
     # Constants and parameters for this test.
     id_0, id_1, aabb = 0, 1, 1
-    sv_0 = bullet_data.BulletData(position=[0, 0, 0], velocityLin=[1, 0, 0])
-    sv_1 = bullet_data.BulletData(position=[0, 10, 0], velocityLin=[0, -1, 0])
+    sv_0 = bullet_data.MotionState(position=[0, 0, 0], velocityLin=[1, 0, 0])
+    sv_1 = bullet_data.MotionState(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
     # Create two objects.
     tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
@@ -302,9 +302,9 @@ def test_worker_respawn():
     aabb = 1
 
     # Two State Vectors for this test.
-    sv_0 = bullet_data.BulletData(
+    sv_0 = bullet_data.MotionState(
         position=[0, 0, 0], velocityLin=[1, 0, 0], cshape=cshape)
-    sv_1 = bullet_data.BulletData(
+    sv_1 = bullet_data.MotionState(
         position=[0, 10, 0], velocityLin=[0, -1, 0], cshape=cshape)
 
     # Create two objects.
@@ -461,11 +461,11 @@ def test_computeCollisionSetsAABB(dim):
     all_id = list(range(10))
 
     if dim == 0:
-        SVs = [bullet_data.BulletData(position=[_, 0, 0]) for _ in range(10)]
+        SVs = [bullet_data.MotionState(position=[_, 0, 0]) for _ in range(10)]
     elif dim == 1:
-        SVs = [bullet_data.BulletData(position=[0, _, 0]) for _ in range(10)]
+        SVs = [bullet_data.MotionState(position=[0, _, 0]) for _ in range(10)]
     elif dim == 2:
-        SVs = [bullet_data.BulletData(position=[0, 0, _]) for _ in range(10)]
+        SVs = [bullet_data.MotionState(position=[0, 0, _]) for _ in range(10)]
     else:
         print('Invalid dimension for this test')
         assert False
@@ -542,7 +542,7 @@ def test_force_grid(clsLeonard):
 
     # Constants and parameters for this test.
     id_0, aabb = 0, 1
-    sv = bullet_data.BulletData()
+    sv = bullet_data.MotionState()
 
     # Spawn one object.
     assert physAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
@@ -606,8 +606,8 @@ def test_createWorkPackages():
     assert not leo.createWorkPackage([10], dt, maxsteps).ok
 
     # Test data.
-    sv_1 = bullet_data.BulletData(imass=1)
-    sv_2 = bullet_data.BulletData(imass=2)
+    sv_1 = bullet_data.MotionState(imass=1)
+    sv_2 = bullet_data.MotionState(imass=2)
 
     # Add two new objects to Leonard.
     tmp = [(id_1, sv_1, aabb), (id_2, sv_2, aabb)]
@@ -653,8 +653,8 @@ def test_updateLocalCache():
 
     # Convenience.
     WPData = azrael.leonard.WPData
-    data_1 = bullet_data.BulletData(imass=1)
-    data_2 = bullet_data.BulletData(imass=2)
+    data_1 = bullet_data.MotionState(imass=1)
+    data_2 = bullet_data.MotionState(imass=2)
     id_1, id_2, aabb = 1, 2, 1
 
     # Spawn new objects.
@@ -666,7 +666,7 @@ def test_updateLocalCache():
     ret = leo.createWorkPackage([id_1, id_2], dt=3, maxsteps=4)
 
     # Create a new State Vector to replace the old one.
-    data_3 = bullet_data.BulletData(imass=4, position=[1, 2, 3])
+    data_3 = bullet_data.MotionState(imass=4, position=[1, 2, 3])
     newWP = [(id_1, data_3)]
 
     # Check the State Vector for objID=id_1 before and after the update.
@@ -691,8 +691,8 @@ def test_processCommandQueue():
     leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
     # Convenience.
-    sv_1 = bullet_data.BulletData(imass=1)
-    sv_2 = bullet_data.BulletData(imass=2)
+    sv_1 = bullet_data.MotionState(imass=1)
+    sv_2 = bullet_data.MotionState(imass=2)
     id_1, id_2, aabb = 1, 2, 1
 
     # Cache must be empty.
@@ -719,7 +719,7 @@ def test_processCommandQueue():
 
     # Change the State Vector of id_2.
     pos = [10, 11.5, 12]
-    sv_3 = bullet_data.BulletDataOverride(position=pos)
+    sv_3 = bullet_data.MotionStateOverride(position=pos)
     assert leo.allObjects[id_2].position == [0, 0, 0]
     assert physAPI.addCmdModifyStateVariable(id_2, sv_3).ok
     leo.processCommandsAndSync()
@@ -755,7 +755,7 @@ def test_maintain_forces():
     leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
     # Convenience.
-    sv = bullet_data.BulletData(imass=1)
+    sv = bullet_data.MotionState(imass=1)
     objID, aabb = 1, 1
 
     # Spawn two objects.
@@ -826,7 +826,7 @@ def test_totalForceAndTorque_no_rotation():
 
     # Spawn one object.
     orient = np.array([0, 0, 0, 1])
-    sv = bullet_data.BulletData(imass=1, orientation=orient)
+    sv = bullet_data.MotionState(imass=1, orientation=orient)
     objID, aabb = 1, 1
     assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
     leo.processCommandsAndSync()
@@ -876,7 +876,7 @@ def test_totalForceAndTorque_with_rotation():
 
     # Spawn one object rotated 180 degress around x-axis.
     orient = np.array([1, 0, 0, 0])
-    sv = bullet_data.BulletData(imass=1, orientation=orient)
+    sv = bullet_data.MotionState(imass=1, orientation=orient)
     objID, aabb = 1, 1
     assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
     leo.processCommandsAndSync()

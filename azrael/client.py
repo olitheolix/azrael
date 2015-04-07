@@ -40,7 +40,7 @@ import azrael.protocol as protocol
 
 from azrael.types import typecheck, RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
-from azrael.bullet.bullet_data import BulletDataOverride, _BulletData
+from azrael.bullet.bullet_data import MotionStateOverride, _MotionState
 
 
 class Client():
@@ -600,8 +600,8 @@ class Client():
         ``get{All}StateVariables``.
 
         The returned dictionary has the format:
-          {objID_1: {'frag': [FragState(), ...], 'sv': BulletData()},
-           objID_2: {'frag': [FragState(), ...], 'sv': BulletData()},
+          {objID_1: {'frag': [FragState(), ...], 'sv': MotionState()},
+           objID_2: {'frag': [FragState(), ...], 'sv': MotionState()},
            ...
         }
 
@@ -624,7 +624,7 @@ class Client():
 
             # Fill in the SV and fragment state data.
             out[objID] = {'frag': [FragState(**_) for _ in v['frag']],
-                          'sv': _BulletData(**v['sv'])}
+                          'sv': _MotionState(**v['sv'])}
         return RetVal(True, None, out)
 
     @typecheck
@@ -667,7 +667,7 @@ class Client():
         return self._unpackSVData(ret.data)
 
     @typecheck
-    def setStateVariable(self, objID: int, new_SV: BulletDataOverride):
+    def setStateVariable(self, objID: int, new_SV: MotionStateOverride):
         """
         Overwrite the the State Variables of ``objID`` with ``new_SV``.
 
@@ -676,7 +676,7 @@ class Client():
         will only be applied once.
 
         :param int objID: the object to move.
-        :param BulletDataOverride new_SV: the object attributes to set.
+        :param MotionStateOverride new_SV: the object attributes to set.
         :return: Success
         """
         new_SV = tuple(new_SV)

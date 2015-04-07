@@ -25,12 +25,12 @@ import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _BulletData
+from azrael.types import typecheck, RetVal, _MotionState
 
 # Convenience.
 btVector3 = pybullet.btVector3
 btQuaternion = pybullet.btQuaternion
-BulletData = bullet_data.BulletData
+MotionState = bullet_data.MotionState
 
 
 class PyBulletPhys():
@@ -203,7 +203,7 @@ class PyBulletPhys():
         not exists.
 
         :param list objIDs: the IDs of all objects to retrieve.
-        :return: list of ``_BulletData`` instances.
+        :return: list of ``_MotionState`` instances.
         :rtype: list
         """
         out = []
@@ -240,23 +240,23 @@ class PyBulletPhys():
             _ = obj.angular_factor
             axesLockRot = [_.x, _.y, _.z]
 
-            # Construct a new _BulletData structure and add it to the list that
+            # Construct a new _MotionState structure and add it to the list that
             # will eventually be returned to the caller.
             out.append(
-                _BulletData(obj.azrael[1].scale, obj.inv_mass, obj.restitution,
+                _MotionState(obj.azrael[1].scale, obj.inv_mass, obj.restitution,
                             rot, pos, vLin, vRot, cshape, axesLockLin,
                             axesLockRot, 0))
         return RetVal(True, None, out[0])
 
     @typecheck
-    def setObjectData(self, objID: int, obj: _BulletData):
+    def setObjectData(self, objID: int, obj: _MotionState):
         """
         Update State Variables of ``objID`` to ``obj``.
 
         Create a new object with ``objID`` if it does not yet exist.
 
         :param int objID: the IDs of all objects to retrieve.
-        :param ``_BulletData`` obj: object description.
+        :param ``_MotionState`` obj: object description.
         :return: Success
         """
         # Create the Rigid Body if it does not exist yet.
@@ -305,19 +305,19 @@ class PyBulletPhys():
         # Apply the new mass and inertia.
         body.set_mass_props(m, i)
 
-        # Overwrite the old BulletData instance with the latest version.
+        # Overwrite the old MotionState instance with the latest version.
         body.azrael = (objID, obj)
         return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, objID: int, obj: _BulletData):
+    def compileCollisionShape(self, objID: int, obj: _MotionState):
         """
         Return the correct Bullet collision shape based on ``obj``.
 
         This is a convenience method only.
 
         :param int objID: object ID.
-        :param _BulletData obj: Azrael's meta data that describes the body.
+        :param _MotionState obj: Azrael's meta data that describes the body.
         :return: Bullet collision shape.
         """
         # Instantiate a new collision shape.
@@ -343,12 +343,12 @@ class PyBulletPhys():
         return RetVal(True, None, cshape)
 
     @typecheck
-    def createRigidBody(self, objID: int, obj: _BulletData):
+    def createRigidBody(self, objID: int, obj: _MotionState):
         """
         Create a new rigid body ``obj`` with ``objID``.
 
         :param int objID: ID of new rigid body.
-        :param _BulletData obj: State Variables of rigid body.
+        :param _MotionState obj: State Variables of rigid body.
         :return: Success
         """
         # Convert orientation and position to btVector3.

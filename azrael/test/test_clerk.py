@@ -161,9 +161,9 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Default object.
-        sv_1 = bullet_data.BulletData(imass=1)
-        sv_2 = bullet_data.BulletData(imass=2)
-        sv_3 = bullet_data.BulletData(imass=3)
+        sv_1 = bullet_data.MotionState(imass=1)
+        sv_2 = bullet_data.MotionState(imass=2)
+        sv_3 = bullet_data.MotionState(imass=3)
 
         # Invalid templateID.
         templateID = 'blah'
@@ -233,7 +233,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, [])
 
         # Spawn two default objects.
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
         templateID = '_templateNone'
         ret = clerk.spawn([(templateID, sv), (templateID, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
@@ -273,8 +273,8 @@ class TestClerk:
         # Test parameters and constants.
         objID_1 = 1
         objID_2 = 2
-        sv_1 = bullet_data.BulletData(position=np.arange(3), velocityLin=[2, 4, 6])
-        sv_2 = bullet_data.BulletData(position=[2, 4, 6], velocityLin=[6, 8, 10])
+        sv_1 = bullet_data.MotionState(position=np.arange(3), velocityLin=[2, 4, 6])
+        sv_2 = bullet_data.MotionState(position=[2, 4, 6], velocityLin=[6, 8, 10])
         templateID = '_templateNone'
 
         # Instantiate a Clerk.
@@ -327,8 +327,8 @@ class TestClerk:
 
         # Test parameters and constants.
         objID_1, objID_2 = 1, 2
-        sv_1 = bullet_data.BulletData(position=np.arange(3), velocityLin=[2, 4, 6])
-        sv_2 = bullet_data.BulletData(position=[2, 4, 6], velocityLin=[6, 8, 10])
+        sv_1 = bullet_data.MotionState(position=np.arange(3), velocityLin=[2, 4, 6])
+        sv_2 = bullet_data.MotionState(position=[2, 4, 6], velocityLin=[6, 8, 10])
         templateID = '_templateNone'
 
         # Instantiate a Clerk.
@@ -371,7 +371,7 @@ class TestClerk:
 
         # Parameters and constants for this test.
         id_1 = 1
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
         force = np.array([1, 2, 3], np.float64).tolist()
         relpos = np.array([4, 5, 6], np.float64).tolist()
 
@@ -638,7 +638,7 @@ class TestClerk:
         id_0, id_1 = 1, 2
         templateID_0 = '_templateNone'
         templateID_1 = '_templateCube'
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -687,7 +687,7 @@ class TestClerk:
         assert clerk.addTemplates([template]).ok
 
         # Spawn an instance of the template and get the object ID.
-        ret = clerk.spawn([(template.name, bullet_data.BulletData())])
+        ret = clerk.spawn([(template.name, bullet_data.MotionState())])
         assert ret.ok
         objID = ret.data[0]
 
@@ -711,7 +711,7 @@ class TestClerk:
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
         templateID_1 = '_templateNone'
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -760,7 +760,7 @@ class TestClerk:
         frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
         temp = Template('t1', cs, frags, [b0], [f0])
         assert clerk.addTemplates([temp]).ok
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
         ret = clerk.spawn([(temp.name, sv)])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
         leo.processCommandsAndSync()
@@ -802,7 +802,7 @@ class TestClerk:
         # ------------------------------------------------------------------------
 
         # Constants for the new template object.
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
         cs, vert = [1, 2, 3, 4], list(range(9))
         uv, rgb = [9, 10], [1, 2, 250]
 
@@ -879,7 +879,7 @@ class TestClerk:
 
         # Constants for the new template object.
         objID_1 = 1
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
         cs, vert = [1, 2, 3, 4], list(range(9))
         uv, rgb = [9, 10], [1, 2, 250]
         dir_0 = np.array([1, 0, 0], np.float64)
@@ -959,7 +959,7 @@ class TestClerk:
         pos_1 = np.array([-1, -1, 0], np.float64)
 
         # State variables for parent object.
-        sv = bullet_data.BulletData(position=pos_parent, velocityLin=vel_parent)
+        sv = bullet_data.MotionState(position=pos_parent, velocityLin=vel_parent)
 
         # ------------------------------------------------------------------------
         # Create a template with two factories and spawn it.
@@ -1056,7 +1056,7 @@ class TestClerk:
         # is rotate 180 degrees around the x-axis. This means the x-values of all
         # forces (boosters) and exit speeds (factory spawned objects) must be
         # inverted.
-        sv = bullet_data.BulletData(position=pos_parent,
+        sv = bullet_data.MotionState(position=pos_parent,
                                     velocityLin=vel_parent,
                                     orientation=orient_parent)
         # Instantiate a Clerk.
@@ -1144,7 +1144,7 @@ class TestClerk:
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
         templateID = '_templateNone'
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -1184,8 +1184,8 @@ class TestClerk:
         # Raw object: specify vertices, UV, and texture (RGB) values directly.
         cs, vert = [1, 2, 3, 4], list(range(9))
         uv, rgb = [9, 10], [1, 2, 250]
-        sv1 = bullet_data.BulletData(position=[1, 2, 3])
-        sv2 = bullet_data.BulletData(position=[4, 5, 6])
+        sv1 = bullet_data.MotionState(position=[1, 2, 3])
+        sv2 = bullet_data.MotionState(position=[4, 5, 6])
         f_raw = FragRaw(vert=vert, uv=uv, rgb=rgb)
 
         # Collada format: a .dae file plus a list of textures in jpg or png format.
@@ -1262,7 +1262,7 @@ class TestClerk:
         # Convenience.
         cs, vert = [1, 2, 3, 4], list(range(9))
         uv, rgb = [9, 10], [1, 2, 250]
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
 
         # Add a valid template and verify it now exists in Azrael.
         frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
@@ -1314,7 +1314,7 @@ class TestClerk:
         # z-direction.
         # ------------------------------------------------------------------------
         # Convenience.
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
         cs, vert = [1, 2, 3, 4], list(range(9))
 
         b0 = parts.Booster(partID=0, pos=[-1, 0, 0], direction=[0, 0, 1],
@@ -1396,7 +1396,7 @@ class TestClerk:
         assert not ret.ok
 
         # Convenience.
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
         cs, vert = [1, 2, 3, 4], list(range(9))
 
         # Define a new template with one fragment.
@@ -1522,7 +1522,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Convenience.
-        sv = bullet_data.BulletData()
+        sv = bullet_data.MotionState()
         cs = [1, 2, 3, 4]
         vert_1 = list(range(0, 9))
         vert_2 = list(range(9, 18))

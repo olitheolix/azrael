@@ -28,8 +28,8 @@ from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 
-BulletData = bullet_data.BulletData
-BulletDataOverride = bullet_data.BulletDataOverride
+MotionState = bullet_data.MotionState
+MotionStateOverride = bullet_data.MotionStateOverride
 
 
 def test_add_get_remove_single():
@@ -51,7 +51,7 @@ def test_add_get_remove_single():
     assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create an object and serialise it.
-    data = BulletData()
+    data = MotionState()
 
     # Add the object to the DB with ID=0.
     assert physAPI.addCmdSpawn([(id_0, data, aabb)])
@@ -101,8 +101,8 @@ def test_add_get_multiple():
     assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create an object and serialise it.
-    data_0 = BulletData(position=[0, 0, 0])
-    data_1 = BulletData(position=[10, 10, 10])
+    data_0 = MotionState(position=[0, 0, 0])
+    data_1 = MotionState(position=[10, 10, 10])
 
     # Add the objects to the DB.
     tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
@@ -155,9 +155,9 @@ def test_add_same():
     assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
     # Create two State Vectors.
-    data_0 = BulletData(imass=1)
-    data_1 = BulletData(imass=2)
-    data_2 = BulletData(imass=3)
+    data_0 = MotionState(imass=1)
+    data_1 = MotionState(imass=2)
+    data_2 = MotionState(imass=3)
 
     # The command queue for spawning objects must be empty.
     ret = physAPI.dequeueCommands()
@@ -207,8 +207,8 @@ def test_commandQueue():
     leo = getLeonard()
 
     # Convenience.
-    data_0 = BulletData()
-    data_1 = BulletDataOverride(imass=2, scale=3)
+    data_0 = MotionState()
+    data_1 = MotionStateOverride(imass=2, scale=3)
     id_0, id_1 = 0, 1
     aabb = 1
 
@@ -246,7 +246,7 @@ def test_commandQueue():
     assert ret.data['booster_force'] == []
 
     # Modify State Variable for id_0.
-    newSV = BulletDataOverride(imass=10, position=[3, 4, 5])
+    newSV = MotionStateOverride(imass=10, position=[3, 4, 5])
     assert physAPI.addCmdModifyStateVariable(id_0, newSV).ok
     ret = physAPI.dequeueCommands()
     modify = ret.data['modify']
@@ -320,7 +320,7 @@ def test_setStateVariable():
     vl = np.array([8, 9, 10.5])
     vr = 1 + vl
     o = np.array([11, 12.5, 13, 13.5])
-    data = BulletDataOverride(imass=2, scale=3, position=p, velocityLin=vl,
+    data = MotionStateOverride(imass=2, scale=3, position=p, velocityLin=vl,
                               velocityRot=vr, orientation=o)
     del p, vl, vr, o
 
@@ -328,7 +328,7 @@ def test_setStateVariable():
     id_0, aabb = 0, 0
 
     # Create an object and serialise it.
-    btdata = BulletData()
+    btdata = MotionState()
 
     # Add the object to the DB with ID=0.
     assert physAPI.addCmdSpawn([(id_0, btdata, aabb)]).ok
@@ -351,57 +351,57 @@ def test_setStateVariable():
     print('Test passed')
 
 
-def test_BulletDataOverride():
+def test_MotionStateOverride():
     """
-    ``BulletDataOverride`` must only accept valid input where the
-    ``BulletData`` function defines what constitutes as "valid".
+    ``MotionStateOverride`` must only accept valid input where the
+    ``MotionState`` function defines what constitutes as "valid".
     """
     killAzrael()
 
     # Convenience.
-    BulletData = bullet_data.BulletData
-    BulletDataOverride = bullet_data.BulletDataOverride
+    MotionState = bullet_data.MotionState
+    MotionStateOverride = bullet_data.MotionStateOverride
 
-    # Valid BulletData and BulletDataOverride calls.
-    assert BulletData() is not None
-    assert BulletDataOverride() is not None
+    # Valid MotionState and MotionStateOverride calls.
+    assert MotionState() is not None
+    assert MotionStateOverride() is not None
 
-    assert BulletData(position=[1, 2, 3]) is not None
-    assert BulletDataOverride(position=[1, 2, 3]) is not None
+    assert MotionState(position=[1, 2, 3]) is not None
+    assert MotionStateOverride(position=[1, 2, 3]) is not None
 
     # Pass positional arguments with None values.
-    assert BulletDataOverride(None, None) is not None
+    assert MotionStateOverride(None, None) is not None
 
     # Pass a dictionary with None values. This must still result in the default
     # structure.
     tmp = {'velocityRot': None, 'cshape': None}
-    assert BulletDataOverride(**tmp) is not None
+    assert MotionStateOverride(**tmp) is not None
     tmp = {'velocityRot': np.array([1, 2, 3], np.float64), 'cshape': None}
-    out = BulletDataOverride(**tmp)
+    out = MotionStateOverride(**tmp)
     assert out is not None
     assert np.array_equal(out.velocityRot, tmp['velocityRot'])
 
     # Combine positional and keyword arguments.
-    assert BulletDataOverride(None, None, **tmp) is not None
+    assert MotionStateOverride(None, None, **tmp) is not None
 
     # Pass Python- scalars and lists instead of NumPy types. The scalars must
     # remain unaffected but the lists must become NumPy arrays.
-    ret = BulletData(imass=3, position=[1, 2, 3])
+    ret = MotionState(imass=3, position=[1, 2, 3])
     assert isinstance(ret.imass, int)
     assert isinstance(ret.position, list)
 
-    ret = BulletDataOverride(imass=3, position=[1, 2, 3])
+    ret = MotionStateOverride(imass=3, position=[1, 2, 3])
     assert isinstance(ret.imass, int)
     assert isinstance(ret.position, list)
 
     # Invalid calls.
-    assert BulletData(position=[1, 2]) is None
-    assert BulletDataOverride(position=[1, 2]) is None
-    assert BulletData(position=np.array([1, 2])) is None
-    assert BulletDataOverride(position=np.array([1, 2])) is None
+    assert MotionState(position=[1, 2]) is None
+    assert MotionStateOverride(position=[1, 2]) is None
+    assert MotionState(position=np.array([1, 2])) is None
+    assert MotionStateOverride(position=np.array([1, 2])) is None
 
-    assert BulletDataOverride(position=1) is None
-    assert BulletDataOverride(position='blah') is None
+    assert MotionStateOverride(position=1) is None
+    assert MotionStateOverride(position='blah') is None
 
     print('Test passed')
 
@@ -419,8 +419,8 @@ def test_get_set_forceandtorque():
     id_0, id_1, aabb = 0, 1, 0
 
     # Create two objects and serialise them.
-    data_0 = BulletData(position=[0, 0, 0])
-    data_1 = BulletData(position=[10, 10, 10])
+    data_0 = MotionState(position=[0, 0, 0])
+    data_1 = MotionState(position=[10, 10, 10])
 
     # Add the two objects to the simulation.
     tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
@@ -455,18 +455,18 @@ def test_get_set_forceandtorque():
 
 def test_StateVariable_tuple():
     """
-    Test the BulletData class, most notably comparison and (de)serialisation.
+    Test the MotionState class, most notably comparison and (de)serialisation.
     """
     killAzrael()
 
     # Compare two identical objects.
-    sv1 = BulletData()
-    sv2 = BulletData()
+    sv1 = MotionState()
+    sv2 = MotionState()
     assert isEqualBD(sv1, sv2)
 
     # Compare two different objects.
-    sv1 = BulletData()
-    sv2 = BulletData(position=[1, 2, 3])
+    sv1 = MotionState()
+    sv2 = MotionState(position=[1, 2, 3])
     assert not isEqualBD(sv1, sv2)
 
     print('Test passed')
@@ -481,11 +481,11 @@ def test_set_get_AABB():
     # Reset the SV database and instantiate a Leonard.
     leo = getLeonard()
 
-    # Create two object IDs and a BulletData instances for this test.
+    # Create two object IDs and a MotionState instances for this test.
     id_0, id_1 = 0, 1
     id_2, id_3 = 2, 3
     aabb_1, aabb_2 = 1.5, 2.5
-    data = BulletData()
+    data = MotionState()
 
     # Attempt to add an object with a negative AABB value. This must fail.
     assert not physAPI.addCmdSpawn([(id_0, data, -1.5)]).ok
@@ -515,7 +515,7 @@ def test_set_get_AABB():
 
 if __name__ == '__main__':
     test_commandQueue()
-    test_BulletDataOverride()
+    test_MotionStateOverride()
     test_set_get_AABB()
     test_StateVariable_tuple()
     test_get_set_forceandtorque()

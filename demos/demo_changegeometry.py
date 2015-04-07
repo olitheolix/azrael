@@ -43,7 +43,7 @@ from IPython import embed as ipshell
 from azrael.types import MetaFragment, FragRaw, FragState
 
 # Convenience.
-BulletDataOverride = physAPI.BulletDataOverride
+MotionStateOverride = physAPI.MotionStateOverride
 
 
 def parseCommandLine():
@@ -200,7 +200,7 @@ class SetGeometry(multiprocessing.Process):
             scale = (cnt + 1) / 10
             for objID in objIDs:
                 # Change the scale of the overall object.
-                new_sv = BulletDataOverride(scale=scale)
+                new_sv = MotionStateOverride(scale=scale)
                 client.setStateVariable(objID, new_sv)
 
                 # Move the second fragment.

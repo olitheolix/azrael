@@ -52,7 +52,7 @@ from IPython import embed as ipshell
 from azrael.types import Template, MetaFragment, FragRaw, FragState
 
 # Convenience.
-BulletDataOverride = physAPI.BulletDataOverride
+MotionStateOverride = physAPI.MotionStateOverride
 
 
 def parseCommandLine():
@@ -443,10 +443,10 @@ class ResetSim(multiprocessing.Process):
             # Forcefully reset the position and velocity of every object. Do
             # this several times since network latency may result in some
             # objects being reset sooner than others.
-            BulletDataOverride = azrael.physics_interface.BulletDataOverride
+            MotionStateOverride = azrael.physics_interface.MotionStateOverride
             for ii in range(5):
                 for objID, SV in allowed_objIDs.items():
-                    tmp = BulletDataOverride(
+                    tmp = MotionStateOverride(
                         position=SV.position,
                         velocityLin=SV.velocityLin,
                         velocityRot=SV.velocityRot,
