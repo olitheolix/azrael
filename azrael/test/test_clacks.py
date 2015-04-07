@@ -17,15 +17,6 @@ from IPython import embed as ipshell
 WSClient = azrael.wsclient.WSClient
 
 
-def killAzrael():
-    subprocess.call(['pkill', 'killme'])
-
-    # Delete all grids used in this test.
-    assert azrael.vectorgrid.deleteAllGrids().ok
-
-    azrael.database.init(reset=True)
-
-
 def test_ping_clacks():
     """
     Start services and send Ping to Clacks. Then terminate clacks and verify

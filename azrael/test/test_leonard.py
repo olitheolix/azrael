@@ -12,7 +12,6 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.test.test_clacks import killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 
 import numpy as np
@@ -24,6 +23,15 @@ allEngines = [
     azrael.leonard.LeonardBullet,
     azrael.leonard.LeonardSweeping,
     azrael.leonard.LeonardDistributedZeroMQ]
+
+
+def killAzrael():
+    subprocess.call(['pkill', 'killme'])
+
+    # Delete all grids used in this test.
+    assert azrael.vectorgrid.deleteAllGrids().ok
+
+    azrael.database.init(reset=True)
 
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):

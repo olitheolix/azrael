@@ -51,7 +51,7 @@ from IPython import embed as ipshell
 from azrael.types import RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 from azrael.test.test import createFragRaw, createFragDae
-from azrael.test.test_clerk import getLeonard, killAzrael
+from azrael.test.test_leonard import getLeonard, killAzrael
 
 WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client

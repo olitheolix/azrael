@@ -28,7 +28,7 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.test.test_clerk import killAzrael
+from azrael.test.test_leonard import killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment, Template
 

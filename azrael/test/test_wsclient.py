@@ -30,7 +30,7 @@ import azrael.client
 import azrael.wsclient
 
 from IPython import embed as ipshell
-from azrael.test.test_clerk import killAzrael
+from azrael.test.test_leonard import killAzrael
 
 Client = azrael.client.Client
 WSClient = azrael.wsclient.WSClient
