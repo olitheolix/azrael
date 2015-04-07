@@ -37,7 +37,7 @@ import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 # Global database handle.
 _DB_Grid = pymongo.MongoClient()['azrael_grid']

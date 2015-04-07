@@ -26,7 +26,7 @@ import logging
 import azrael.util
 import azrael.config as config
 from IPython import embed as ipshell
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 RetVal = azrael.util.RetVal
 

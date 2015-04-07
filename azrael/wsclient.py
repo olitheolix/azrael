@@ -39,7 +39,7 @@ import azrael.util
 import azrael.client
 
 from azrael.util import RetVal
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 
 class WSClient(azrael.client.Client):

@@ -29,7 +29,7 @@ import azrael.database as database
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 # Convenience.
 _BulletData = bullet_data._BulletData

@@ -50,7 +50,7 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 from azrael.util import Template, RetVal
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 

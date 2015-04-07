@@ -25,7 +25,7 @@ import azrael.config as config
 from IPython import embed as ipshell
 import azrael.bullet.bullet_data as bullet_data
 
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 # Convenience.
 btVector3 = pybullet.btVector3

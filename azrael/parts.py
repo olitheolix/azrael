@@ -21,7 +21,7 @@ Defines object parts like Boosters and their commands.
 import numpy as np
 
 from collections import namedtuple as NT
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 
 # -----------------------------------------------------------------------------

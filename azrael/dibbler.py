@@ -75,7 +75,7 @@ from azrael.util import Template, RetVal
 from azrael.util import FragDae, FragRaw, MetaFragment
 
 from IPython import embed as ipshell
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 
 def sendDibbler(url, req):

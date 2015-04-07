@@ -48,7 +48,7 @@ import azrael.bullet.bullet_data as bullet_data
 import azrael.physics_interface as physics_interface
 
 from collections import namedtuple
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 from azrael.util import RetVal, Template
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 

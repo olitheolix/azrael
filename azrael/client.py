@@ -38,7 +38,7 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 from azrael.util import RetVal, Template
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 from azrael.bullet.bullet_data import BulletDataOverride, _BulletData

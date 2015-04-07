@@ -38,7 +38,7 @@ import azrael.client
 import azrael.util as util
 import azrael.config as config
 
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 
 class WebsocketHandler(tornado.websocket.WebSocketHandler):

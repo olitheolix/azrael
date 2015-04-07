@@ -39,7 +39,7 @@ import azrael.bullet.bullet_data as bullet_data
 
 from collections import namedtuple
 from IPython import embed as ipshell
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 RetVal = azrael.util.RetVal
 

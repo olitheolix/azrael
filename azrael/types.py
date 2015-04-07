@@ -23,7 +23,7 @@ annotations in the signature.
 
 Usage example::
 
-    from azrael.typecheck import typecheck
+    from azrael.types import typecheck
 
     @typecheck
     def foo(a, b:str, c:int =0, d:(int, str)=None):

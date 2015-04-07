@@ -33,7 +33,7 @@ import azrael.config as config
 
 from collections import namedtuple
 from IPython import embed as ipshell
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 # All relevant physics data.
 _BulletData = namedtuple('_BulletData',

@@ -26,7 +26,7 @@ import numpy as np
 import azrael.config as config
 
 from collections import namedtuple
-from azrael.typecheck import typecheck
+from azrael.types import typecheck
 
 # Global handle to the collection for timing metrics.
 dbTiming = pymongo.MongoClient()['timing']['timing']
