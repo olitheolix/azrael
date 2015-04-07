@@ -644,7 +644,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
     def setup(self):
         self.ctx = zmq.Context()
         self.sock = self.ctx.socket(zmq.REP)
-        self.sock.bind(config.addr_leonard_pushpull)
+        self.sock.bind(config.addr_leonard_repreq)
 
         # Spawn the Workers.
         workermanager = WorkerManager(
@@ -950,7 +950,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
             # Setup ZeroMQ.
             ctx = zmq.Context()
             sock = ctx.socket(zmq.REQ)
-            sock.connect(config.addr_leonard_pushpull)
+            sock.connect(config.addr_leonard_repreq)
             self.logit.info('Worker {} connected'.format(self.workerID))
 
             # Contact Leonard with an empty payload.

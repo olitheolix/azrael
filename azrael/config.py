@@ -84,7 +84,7 @@ port_dibbler = 8081
 addr_clerk = host_ip
 port_clerk = 5555
 
-addr_leonard_pushpull = 'tcp://' + host_ip + ':5556'
+addr_leonard_repreq = 'tcp://' + host_ip + ':5556'
 
 # Data directory where the template- geometries, textures, and UV map will be
 # stored.
