@@ -18,18 +18,17 @@
 import sys
 import pytest
 import cytoolz
-import IPython
 import numpy as np
 
 import azrael.leonard as leonard
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
+from IPython import embed as ipshell
 from azrael.test.test_clacks import killAzrael
 from azrael.test.test_leonard import getLeonard
 from azrael.bullet.test_boost_bullet import isEqualBD
 
-ipshell = IPython.embed
 BulletData = bullet_data.BulletData
 BulletDataOverride = bullet_data.BulletDataOverride
 

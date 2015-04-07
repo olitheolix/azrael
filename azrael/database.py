@@ -21,14 +21,13 @@ Database abstractions.
 import os
 import shutil
 import pymongo
-import IPython
 import logging
 
 import azrael.util
 import azrael.config as config
+from IPython import embed as ipshell
 from azrael.typecheck import typecheck
 
-ipshell = IPython.embed
 RetVal = azrael.util.RetVal
 
 # Global database handles.

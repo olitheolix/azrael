@@ -17,7 +17,6 @@
 
 import sys
 import pytest
-import IPython
 import cytoolz
 import azrael.bullet.boost_bullet
 import azrael.physics_interface as physAPI
@@ -25,10 +24,10 @@ import azrael.bullet.bullet_data as bullet_data
 
 import numpy as np
 
+from IPython import embed as ipshell
 
 BulletData = bullet_data.BulletData
 _BulletData = bullet_data._BulletData
-ipshell = IPython.embed
 
 
 def isEqualBD(bd1: _BulletData, bd2: _BulletData):

@@ -31,7 +31,6 @@ import os
 import sys
 import zmq
 import json
-import IPython
 import cytoolz
 import logging
 import traceback
@@ -50,13 +49,10 @@ import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
+from IPython import embed as ipshell
 from azrael.typecheck import typecheck
-
 from azrael.util import Template, RetVal
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
-
-# Convenience.
-ipshell = IPython.embed
 
 
 class Clerk(multiprocessing.Process):

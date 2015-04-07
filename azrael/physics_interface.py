@@ -22,16 +22,14 @@ state variables.
 
 import sys
 import logging
-import IPython
 import numpy as np
 import azrael.util as util
 import azrael.config as config
 import azrael.database as database
 import azrael.bullet.bullet_data as bullet_data
 
+from IPython import embed as ipshell
 from azrael.typecheck import typecheck
-
-ipshell = IPython.embed
 
 # Convenience.
 _BulletData = bullet_data._BulletData

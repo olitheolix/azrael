@@ -25,14 +25,12 @@ specific to this client type. Only these are covered here.
 
 import sys
 import pytest
-import IPython
 
 import azrael.client
 import azrael.wsclient
 
+from IPython import embed as ipshell
 from azrael.test.test_clerk import killAzrael
-
-ipshell = IPython.embed
 
 Client = azrael.client.Client
 WSClient = azrael.wsclient.WSClient

@@ -27,15 +27,13 @@ point.
 
 import sys
 import logging
-import IPython
 import numpy as np
 import azrael.util
 import azrael.config as config
 
 from collections import namedtuple
+from IPython import embed as ipshell
 from azrael.typecheck import typecheck
-
-ipshell = IPython.embed
 
 # All relevant physics data.
 _BulletData = namedtuple('_BulletData',

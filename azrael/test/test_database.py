@@ -1,6 +1,4 @@
 import pytest
-import IPython
-
 import azrael.database as database
 
 

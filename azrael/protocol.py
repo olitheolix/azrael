@@ -41,7 +41,6 @@ should make it possible to write clients in other languages.
 """
 
 import base64
-import IPython
 import numpy as np
 import azrael.util
 import azrael.parts as parts
@@ -53,7 +52,7 @@ from azrael.typecheck import typecheck
 from azrael.util import RetVal, Template
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 
-ipshell = IPython.embed
+from IPython import embed as ipshell
 
 
 # ---------------------------------------------------------------------------

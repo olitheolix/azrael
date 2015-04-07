@@ -24,7 +24,6 @@ import zmq
 import time
 import pickle
 import pymongo
-import IPython
 import logging
 import setproctitle
 import multiprocessing
@@ -39,9 +38,9 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from collections import namedtuple
+from IPython import embed as ipshell
 from azrael.typecheck import typecheck
 
-ipshell = IPython.embed
 RetVal = azrael.util.RetVal
 
 # Work package related.

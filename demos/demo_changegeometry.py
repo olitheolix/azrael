@@ -25,7 +25,6 @@ import sys
 import time
 import json
 import urllib
-import IPython
 import argparse
 import demo_default
 import multiprocessing
@@ -40,10 +39,10 @@ import azrael.util as util
 import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 
+from IPython import embed as ipshell
 from azrael.util import MetaFragment, FragRaw, FragState
 
 # Convenience.
-ipshell = IPython.embed
 BulletDataOverride = physAPI.BulletDataOverride
 
 

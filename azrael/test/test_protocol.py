@@ -19,7 +19,6 @@ import sys
 import json
 import base64
 import pytest
-import IPython
 import numpy as np
 
 import azrael.parts as parts
@@ -28,11 +27,10 @@ import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
+from IPython import embed as ipshell
 from azrael.test.test_clerk import killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment, Template
-
-ipshell = IPython.embed
 
 
 def test_encoding_get_template(clientType='ZeroMQ'):

@@ -27,7 +27,6 @@ Use this script in conjunction with ``ctrl_PDController.py``.
 import os
 import sys
 import time
-import IPython
 import argparse
 
 import numpy as np
@@ -39,10 +38,8 @@ import azrael.client
 import azrael.util as util
 import azrael.parts as parts
 
+from IPython import embed as ipshell
 from azrael.util import Template, MetaFragment, FragRaw, FragState
-
-# Convenience.
-ipshell = IPython.embed
 
 
 def parseCommandLine():

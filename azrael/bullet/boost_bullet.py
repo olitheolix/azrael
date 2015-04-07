@@ -17,17 +17,15 @@
 
 import sys
 import logging
-import IPython
 import azrael.util
 
 import numpy as np
 import bullet as pybullet
 import azrael.config as config
+from IPython import embed as ipshell
 import azrael.bullet.bullet_data as bullet_data
 
 from azrael.typecheck import typecheck
-
-ipshell = IPython.embed
 
 # Convenience.
 btVector3 = pybullet.btVector3

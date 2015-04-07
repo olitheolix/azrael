@@ -24,13 +24,11 @@ Compute and print statistics for all metrics recorded by Azrael.
 import io
 import sys
 import time
-import IPython
 import pymongo
 import argparse
 import numpy as np
 import pandas as pd
-
-ipshell = IPython.embed
+from IPython import embed as ipshell
 
 
 def parseCommandLine():

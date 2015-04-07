@@ -25,7 +25,6 @@ import time
 import base64
 import pickle
 import pytest
-import IPython
 import urllib.request
 
 import numpy as np
@@ -41,11 +40,10 @@ import azrael.bullet.bullet_data as bullet_data
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 
+from IPython import embed as ipshell
 from azrael.util import Template, RetVal
 from azrael.util import FragState, FragDae, FragRaw, MetaFragment
 from azrael.test.test import createFragRaw, createFragDae
-
-ipshell = IPython.embed
 
 
 class TestClerk:

@@ -20,13 +20,12 @@
 import os
 import sys
 import time
-import IPython
 import pyassimp
-import pyassimp.postprocess
 import PIL.Image
-import numpy as np
+import pyassimp.postprocess
 
-ipshell = IPython.embed
+import numpy as np
+from IPython import embed as ipshell
 
 
 def normaliseModel(scene):

@@ -1,12 +1,11 @@
 import sys
 import time
 import pytest
-import IPython
 import subprocess
 import azrael.vectorgrid as vectorgrid
 import numpy as np
 
-ipshell = IPython.embed
+from IPython import embed as ipshell
 
 
 def test_set_get_single_invalid():

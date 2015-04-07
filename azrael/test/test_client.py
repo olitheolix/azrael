@@ -30,7 +30,6 @@ import urllib
 import pytest
 import base64
 import pickle
-import IPython
 import urllib.request
 
 import numpy as np
@@ -48,13 +47,13 @@ import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
+from IPython import embed as ipshell
 from azrael.test.test_clerk import getLeonard, killAzrael
 from azrael.util import Template, FragState, FragDae, FragRaw, MetaFragment
 from azrael.util import RetVal
 
 from azrael.test.test import createFragRaw, createFragDae
 
-ipshell = IPython.embed
 WSClient = azrael.wsclient.WSClient
 Client = azrael.client.Client
 

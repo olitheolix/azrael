@@ -31,15 +31,13 @@ all those set to zero.
 import sys
 import logging
 import pymongo
-import IPython
 import numpy as np
 import azrael.util as util
 import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
+from IPython import embed as ipshell
 from azrael.typecheck import typecheck
-
-ipshell = IPython.embed
 
 # Global database handle.
 _DB_Grid = pymongo.MongoClient()['azrael_grid']

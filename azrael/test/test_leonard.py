@@ -1,7 +1,6 @@
 import sys
 import time
 import pytest
-import IPython
 import subprocess
 import azrael.clerk
 import azrael.client
@@ -12,12 +11,11 @@ import azrael.vectorgrid
 import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
+from IPython import embed as ipshell
 from azrael.test.test_clacks import killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 
 import numpy as np
-
-ipshell = IPython.embed
 
 # List all available engines. This simplifies the parameterisation of those
 # tests that must pass for all engines.

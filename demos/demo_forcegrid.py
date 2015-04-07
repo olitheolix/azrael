@@ -28,7 +28,6 @@ effect, simulate cubes "riding" the wave.
 import os
 import sys
 import time
-import IPython
 import argparse
 import multiprocessing
 
@@ -40,8 +39,7 @@ import azrael.client
 import azrael.util as util
 import azrael.vectorgrid as vectorgrid
 
-# Convenience.
-ipshell = IPython.embed
+from IPython import embed as ipshell
 
 
 def parseCommandLine():

@@ -29,7 +29,6 @@ import zmq
 import json
 import base64
 import logging
-import IPython
 import traceback
 import urllib.request
 

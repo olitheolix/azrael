@@ -28,7 +28,6 @@ Qt Viewer.
 import os
 import sys
 import time
-import IPython
 import argparse
 import subprocess
 import multiprocessing
@@ -49,10 +48,10 @@ import azrael.config as config
 import azrael.physics_interface as physAPI
 del p
 
+from IPython import embed as ipshell
 from azrael.util import Template, MetaFragment, FragRaw, FragState
 
 # Convenience.
-ipshell = IPython.embed
 BulletDataOverride = physAPI.BulletDataOverride
 
 

@@ -2,7 +2,6 @@ import sys
 import time
 import pytest
 import logging
-import IPython
 import websocket
 import subprocess
 import numpy as np
@@ -13,9 +12,9 @@ import azrael.vectorgrid
 import azrael.wsclient
 import azrael.config as config
 
-WSClient = azrael.wsclient.WSClient
+from IPython import embed as ipshell
 
-ipshell = IPython.embed
+WSClient = azrael.wsclient.WSClient
 
 
 def killAzrael():
