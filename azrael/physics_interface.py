@@ -352,16 +352,14 @@ def _updateMotionStateTuple(orig: _MotionState,
     if new is None:
         return orig
 
-    # Convert the named tuple ``orig`` into a dictionary.
-    fields = orig._fields
-    dict_orig = {_: getattr(orig, _) for _ in fields}
-
-    # Copy all not-None values from ``new`` into ``dict_orig``.
-    for k, v in zip(fields, new):
+    # Copy all not-None values from ``new`` into the dictionary version of
+    # ``orig``.
+    dict_orig = orig._asdict()
+    for k, v in zip(dict_orig, new):
         if v is not None:
             dict_orig[k] = v
 
-    # Build a new _MotionState instance and return it.
+    # Convert the dictionary back to a _MotionState instance and return it.
     return _MotionState(**dict_orig)
 
 

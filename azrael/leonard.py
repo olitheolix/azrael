@@ -324,7 +324,6 @@ class LeonardBase(multiprocessing.Process):
 
         # Convenience.
         cmds = ret.data
-        fields = MotionStateOverride._fields
 
         # Remove objects.
         for doc in cmds['remove']:
@@ -352,9 +351,8 @@ class LeonardBase(multiprocessing.Process):
         for doc in cmds['modify']:
             objID, sv_new = doc['objID'], doc['sv']
             if objID in self.allObjects:
-                sv_new = MotionStateOverride(**dict(zip(fields, sv_new)))
+                sv_new = MotionStateOverride(*sv_new)
                 sv_old = self.allObjects[objID]
-                sv_old = [getattr(sv_old, _) for _ in fields]
                 sv_old = MotionState(*sv_old)
                 self.allObjects[objID] = fun(sv_old, sv_new)
 
