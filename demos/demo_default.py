@@ -72,7 +72,7 @@ def parseCommandLine():
          help='Do not spawn a viewer')
     padd('--noinit', action='store_true', default=False,
          help='Do not load any models')
-    padd('--port', metavar='port', type=int, default=8080,
+    padd('--port', metavar='port', type=int, default=azrael.config.port_clacks,
          help='Port number')
     padd('--cubes', metavar='X,Y,Z', type=str, default='1,1,1',
          help='Number of cubes in each dimension')

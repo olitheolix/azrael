@@ -55,7 +55,8 @@ def test_custom_objid():
     clacks = azrael.clacks.ClacksServer()
     clacks.start()
 
-    ip, port = '127.0.0.1', 8080
+    # Convenience.
+    ip, port = azrael.config.addr_clacks, azrael.config.port_clacks
 
     # Instantiate a WSClient without specifiying an object ID.
     client_0 = azrael.wsclient.WSClient(ip, port)

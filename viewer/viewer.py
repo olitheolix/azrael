@@ -516,7 +516,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Fetch fragment model from Azrael and pass it to the GPU.
-            base_url = 'http://' + self.ip + ':8080'
+            base_url = 'http://{}:{}'.format(self.ip, config.port_clacks)
             for frag_name, frag_data in ret.data[objID].items():
                 if frag_data['type'] == 'raw':
                     url = base_url + frag_data['url'] + '/model.json'

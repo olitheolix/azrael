@@ -535,7 +535,9 @@ class TestClerk:
         assert mock_sr.call_count == 0
 
         # Convenience.
-        base_url = 'http://localhost:8080'
+        base_url = 'http://{}:{}'.format(
+            azrael.config.addr_clacks,
+            azrael.config.port_clacks)
         cs, vert = [1, 2, 3, 4], list(range(9))
         uv, rgb = [9, 10], [1, 2, 250]
         name_1, name_2 = 't1', 't2'

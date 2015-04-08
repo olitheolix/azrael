@@ -36,6 +36,7 @@ import demo_default as demolib
 import model_import
 import azrael.client
 import azrael.util as util
+import azrael.config as config
 import azrael.vectorgrid as vectorgrid
 import azrael.physics_interface as physAPI
 
@@ -63,7 +64,7 @@ def parseCommandLine():
          help='Do not spawn a viewer')
     padd('--noinit', action='store_true', default=False,
          help='Do not load any models')
-    padd('--port', metavar='port', type=int, default=8080,
+    padd('--port', metavar='port', type=int, default=azrael.config.port_clacks,
          help='Port number')
     padd('--cubes', metavar='X,Y,Z', type=str, default='1,1,1',
          help='Number of cubes in each dimension')
@@ -150,7 +151,8 @@ class SetGeometry(multiprocessing.Process):
 
         # Query and backup all models currently in the scene.
         geo_meta = client.getGeometries(objIDs).data
-        base_url = 'http://localhost:8080'
+        base_url = 'http://{}:{}'.format(
+            azrael.config.addr_clacks, azrael.config.port_clacks)
         geo_orig = {}
         for objID in objIDs:
             frags = {}
