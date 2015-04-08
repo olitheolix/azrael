@@ -61,7 +61,7 @@ from IPython import embed as ipshell
 
 @typecheck
 def ToClerk_Ping_Encode(dummyarg=None):
-    return True, {}
+    return RetVal(True, None, {})
 
 
 @typecheck
@@ -86,7 +86,7 @@ def FromClerk_Ping_Decode(payload: dict):
 
 @typecheck
 def ToClerk_GetTemplateID_Encode(objID: int):
-    return True, {'objID': objID}
+    return RetVal(True, None, {'objID': objID})
 
 
 @typecheck
@@ -110,7 +110,7 @@ def FromClerk_GetTemplateID_Decode(payload: dict):
 
 @typecheck
 def ToClerk_GetTemplates_Encode(templateIDs: list):
-    return True, {'templateIDs': templateIDs}
+    return RetVal(True, None, {'templateIDs': templateIDs})
 
 
 @typecheck
@@ -152,7 +152,7 @@ def ToClerk_AddTemplates_Encode(templates: list):
                  'boosters': tt.boosters, 'factories': tt.factories}
             assert isinstance(d['cs'], list)
             out.append(d)
-    return True, {'data': out}
+    return RetVal(True, None, {'data': out})
 
 
 @typecheck
@@ -216,7 +216,7 @@ def FromClerk_AddTemplates_Decode(dummyarg):
 
 @typecheck
 def ToClerk_GetAllObjectIDs_Encode(dummyarg=None):
-    return True, {}
+    return RetVal(True, None, {})
 
 
 @typecheck
@@ -241,7 +241,7 @@ def FromClerk_GetAllObjectIDs_Decode(payload: dict):
 
 @typecheck
 def ToClerk_SetStateVector_Encode(objID: int, sv: tuple):
-    return True, {'objID': objID, 'sv': sv}
+    return RetVal(True, None, {'objID': objID, 'sv': sv})
 
 
 @typecheck
@@ -276,7 +276,7 @@ def FromClerk_SetStateVector_Decode(dummyarg):
 @typecheck
 def ToClerk_SetForce_Encode(objID: int, force: np.ndarray, rpos: np.ndarray):
     d = {'objID': objID, 'rel_pos': rpos, 'force': force}
-    return True, d
+    return RetVal(True, None, d)
 
 
 @typecheck
@@ -305,7 +305,7 @@ def FromClerk_SetForce_Decode(dummyarg):
 
 @typecheck
 def ToClerk_GetGeometries_Encode(objIDs: list):
-    return True, {'objIDs': objIDs}
+    return RetVal(True, None, {'objIDs': objIDs})
 
 
 @typecheck
@@ -339,7 +339,7 @@ def FromClerk_GetGeometries_Decode(payload: dict):
 
 @typecheck
 def ToClerk_SetGeometry_Encode(objID: int, frags: list):
-    return True, {'objID': objID, 'frags': frags}
+    return RetVal(True, None, {'objID': objID, 'frags': frags})
 
 
 @typecheck
@@ -377,7 +377,7 @@ def FromClerk_SetGeometry_Decode(dummyarg):
 def ToClerk_GetStateVariable_Encode(objIDs: (list, tuple)):
     for objID in objIDs:
         assert isinstance(objID, int)
-    return True, {'objIDs': objIDs}
+    return RetVal(True, None, {'objIDs': objIDs})
 
 
 @typecheck
@@ -423,7 +423,7 @@ def FromClerk_GetStateVariable_Decode(payload: dict):
 
 @typecheck
 def ToClerk_GetAllStateVariables_Encode():
-    return True, None
+    return RetVal(True, None, None)
 
 
 @typecheck
@@ -443,7 +443,7 @@ FromClerk_GetAllStateVariables_Decode = FromClerk_GetStateVariable_Decode
 
 @typecheck
 def ToClerk_Spawn_Encode(objectInfos: (tuple, list)):
-    return True, {'objInfos': objectInfos}
+    return RetVal(True, None, {'objInfos': objectInfos})
 
 
 @typecheck
@@ -484,7 +484,7 @@ def FromClerk_Spawn_Decode(payload: dict):
 
 @typecheck
 def ToClerk_Remove_Encode(objID: int):
-    return True, {'objID': objID}
+    return RetVal(True, None, {'objID': objID})
 
 
 @typecheck
@@ -514,7 +514,7 @@ def ToClerk_ControlParts_Encode(objID: int, cmds_b: list, cmds_f: list):
          'cmd_boosters': cmds_b,
          'cmd_factories': cmds_f}
 
-    return True, d
+    return RetVal(True, None, d)
 
 
 @typecheck
@@ -545,7 +545,7 @@ def FromClerk_ControlParts_Decode(payload: dict):
 def ToClerk_UpdateFragmentStates_Encode(fragData: dict):
     # fragData = {objID_1: [FragState, FragState, ...],
     #             objID_2: [FragState, FragState, ...],}
-    return True, fragData
+    return RetVal(True, None, fragData)
 
 
 @typecheck

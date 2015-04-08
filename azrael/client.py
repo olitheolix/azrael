@@ -223,12 +223,13 @@ class Client():
 
         try:
             # Encode the arguments and send them to Clerk.
-            ok, data = ToClerk_Encode(*args)
-            if not ok:
+            ret = ToClerk_Encode(*args)
+            if not ret.ok:
                 msg = 'ToClerk_Encode_* error for <{}>'.format(cmd)
+                msg += '\n ' + ret.err
                 self.logit.error(msg)
                 return RetVal(False, msg, None)
-            ret = self.sendToClerk(cmd, data)
+            ret = self.sendToClerk(cmd, ret.data)
             if not ret.ok:
                 return ret
 

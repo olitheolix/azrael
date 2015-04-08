@@ -54,10 +54,10 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     # Client --> Clerk.
     # ----------------------------------------------------------------------
     # Encode source data.
-    ok, enc = protocol.ToClerk_GetTemplates_Encode([template_name])
+    ret = protocol.ToClerk_GetTemplates_Encode([template_name])
 
     # Convert output to JSON and back (simulates the wire transmission).
-    enc = json.loads(json.dumps(enc))
+    enc = json.loads(json.dumps(ret.data))
 
     # Decode the data.
     ok, dec = protocol.ToClerk_GetTemplates_Decode(enc)
@@ -111,11 +111,11 @@ def test_send_command():
     dec_fun = protocol.ToClerk_ControlParts_Decode
 
     # Encode the booster- and factory commands.
-    ok, enc = enc_fun(objID, [cmd_0, cmd_1], [cmd_2, cmd_3, cmd_4])
-    assert ok
+    ret = enc_fun(objID, [cmd_0, cmd_1], [cmd_2, cmd_3, cmd_4])
+    assert ret.ok
 
     # Convert output to JSON and back (simulates the wire transmission).
-    enc = json.loads(json.dumps(enc))
+    enc = json.loads(json.dumps(ret.data))
 
     # Decode the data and verify the correct number of commands was returned.
     ok, (dec_objID, dec_booster, dec_factory) = dec_fun(enc)
@@ -165,10 +165,11 @@ def test_GetStateVariable():
     # Client --> Clerk.
     # ----------------------------------------------------------------------
     # Encode source data.
-    ok, enc = protocol.ToClerk_GetStateVariable_Encode(objIDs)
+    ret = protocol.ToClerk_GetStateVariable_Encode(objIDs)
+    assert ret.ok
 
     # Convert output to JSON and back (simulates the wire transmission).
-    enc = json.loads(json.dumps(enc))
+    enc = json.loads(json.dumps(ret.data))
 
     # Decode the data.
     ok, (dec_ids, ) = protocol.ToClerk_GetStateVariable_Decode(enc)
@@ -237,10 +238,11 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
     # Client --> Clerk.
     # ----------------------------------------------------------------------
     # Encode source data.
-    ok, enc = protocol.ToClerk_AddTemplates_Encode([temp])
+    ret = protocol.ToClerk_AddTemplates_Encode([temp])
+    assert ret.ok
 
     # Convert output to JSON and back (simulates the wire transmission).
-    enc = json.loads(json.dumps(enc))
+    enc = json.loads(json.dumps(ret.data))
 
     # Decode the data.
     ok, dec = protocol.ToClerk_AddTemplates_Decode(enc)
