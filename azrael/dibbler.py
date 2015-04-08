@@ -199,10 +199,9 @@ def saveModelRaw(frag_dir, model):
         return RetVal(False, msg.format(model.name), None)
 
     # Save the fragments as JSON data to eg "templates/mymodel/model.json".
-    file_data = dict(zip(data._fields, data))
-    file_data = json.dumps(file_data)
-    open(os.path.join(frag_dir, 'model.json'), 'w').write(file_data)
-    del file_data
+    tmp = json.dumps(data._asdict())
+    open(os.path.join(frag_dir, 'model.json'), 'w').write(tmp)
+    del tmp
 
     # Determine the largest possible side length of the
     # AABB. To find it, just determine the largest spatial
