@@ -94,7 +94,7 @@ class TestClerk:
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        frag = [MetaFragment('NoName', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
+        frag = [MetaFragment('NoName', 'raw', createFragRaw())]
         t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
         t2 = Template('_templateSphere', [3, 1, 1, 1], frag, [], [])
         t3 = Template('_templateCube', [4, 1, 1, 1], frag, [], [])
@@ -459,7 +459,7 @@ class TestClerk:
         assert mock_sr.call_count == 0
 
         # Compile a template structure.
-        frags = [MetaFragment('foo', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
+        frags = [MetaFragment('foo', 'raw', createFragRaw())]
         temp = Template('bar', cs, frags, [], [])
 
         # Add template when 'saveModel' fails.
@@ -538,15 +538,13 @@ class TestClerk:
         base_url = 'http://{}:{}'.format(
             azrael.config.addr_clacks,
             azrael.config.port_clacks)
-        cs, vert = [1, 2, 3, 4], list(range(9))
-        uv, rgb = [9, 10], [1, 2, 250]
         name_1, name_2 = 't1', 't2'
 
         # Define templates.
-        frags_1 = [MetaFragment('foo', 'raw', FragRaw(vert, uv, rgb))]
-        frags_2 = [MetaFragment('foo', 'raw', FragRaw(2 * vert, uv, rgb))]
-        t1 = Template(name_1, cs, frags_1, [], [])
-        t2 = Template(name_2, 2 * cs, frags_2, [], [])
+        frags_1 = [MetaFragment('foo', 'raw', createFragRaw())]
+        frags_2 = [MetaFragment('foo', 'raw', createFragRaw())]
+        t1 = Template(name_1, [1, 2], frags_1, [], [])
+        t2 = Template(name_2, [3, 4], frags_2, [], [])
 
         # Add two valid templates. This must succeed.
         assert clerk.addTemplates([t1, t2]).ok
@@ -678,7 +676,7 @@ class TestClerk:
         booster = parts.Booster(
             partID=0, pos=v, direction=v, minval=0, maxval=1, force=0)
 
-        frags = [MetaFragment('bar', 'raw', FragRaw(list(range(9)), [], []))]
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
 
         # Define a new template with two boosters and add it to Azrael.
         template = Template('t1',
@@ -757,10 +755,8 @@ class TestClerk:
             templateID='_templateCube', exit_speed=[0, 1])
 
         # Define a new template, add it to Azrael, and spawn an instance.
-        cs, vert = [1, 2, 3, 4], list(range(9))
-        uv, rgb = [9, 10], [1, 2, 250]
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t1', cs, frags, [b0], [f0])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t1', [1, 2], frags, [b0], [f0])
         assert clerk.addTemplates([temp]).ok
         sv = bullet_data.MotionState()
         ret = clerk.spawn([(temp.name, sv)])
@@ -805,8 +801,6 @@ class TestClerk:
 
         # Constants for the new template object.
         sv = bullet_data.MotionState()
-        cs, vert = [1, 2, 3, 4], list(range(9))
-        uv, rgb = [9, 10], [1, 2, 250]
 
         dir_0 = np.array([1, 0, 0], np.float64)
         dir_1 = np.array([0, 1, 0], np.float64)
@@ -820,8 +814,8 @@ class TestClerk:
                            minval=0, maxval=0.5, force=0)
 
         # Define a new template with two boosters and add it to Azrael.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t1', cs, frags, [b0, b1], [])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t1', [1, 2], frags, [b0, b1], [])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn an instance of the template.
@@ -882,8 +876,6 @@ class TestClerk:
         # Constants for the new template object.
         objID_1 = 1
         sv = bullet_data.MotionState()
-        cs, vert = [1, 2, 3, 4], list(range(9))
-        uv, rgb = [9, 10], [1, 2, 250]
         dir_0 = np.array([1, 0, 0], np.float64)
         dir_1 = np.array([0, 1, 0], np.float64)
         pos_0 = np.array([1, 1, -1], np.float64)
@@ -899,13 +891,13 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t1', cs, frags, [], [f0, f1])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t1', [1, 2], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.name, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
-        del ret, temp, f0, f1, sv, cs, uv, rgb
+        del ret, temp, f0, f1, sv
 
         # ------------------------------------------------------------------------
         # Instruct factories to create an object with a specific exit velocity.
@@ -953,8 +945,6 @@ class TestClerk:
         objID_1, objID_2, objID_3 = 1, 2, 3
         pos_parent = np.array([1, 2, 3], np.float64)
         vel_parent = np.array([4, 5, 6], np.float64)
-        cs, vert = [1, 2, 3, 4], list(range(9))
-        uv, rgb = [9, 10], [1, 2, 250]
         dir_0 = np.array([1, 0, 0], np.float64)
         dir_1 = np.array([0, 1, 0], np.float64)
         pos_0 = np.array([1, 1, -1], np.float64)
@@ -976,8 +966,8 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t1', cs, frags, [], [f0, f1])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t1', [1, 2], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.name, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -1033,8 +1023,6 @@ class TestClerk:
         objID_1, objID_2, objID_3 = 1, 2, 3
         pos_parent = np.array([1, 2, 3], np.float64)
         vel_parent = np.array([4, 5, 6], np.float64)
-        cs, vert = [1, 2, 3, 4], list(range(9))
-        uv, rgb = [9, 10], [1, 2, 250]
 
         # Part positions relative to parent.
         dir_0 = np.array([0, 0, +2], np.float64)
@@ -1081,8 +1069,8 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('t1', cs, frags, [b0, b1], [f0, f1])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('t1', [1, 2], frags, [b0, b1], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.name, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -1184,21 +1172,12 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Raw object: specify vertices, UV, and texture (RGB) values directly.
-        cs, vert = [1, 2, 3, 4], list(range(9))
-        uv, rgb = [9, 10], [1, 2, 250]
         sv1 = bullet_data.MotionState(position=[1, 2, 3])
         sv2 = bullet_data.MotionState(position=[4, 5, 6])
-        f_raw = FragRaw(vert=vert, uv=uv, rgb=rgb)
+        f_raw = createFragRaw()
 
         # Collada format: a .dae file plus a list of textures in jpg or png format.
-        b = os.path.dirname(__file__)
-        dae_file = open(b + '/cube.dae', 'rb').read()
-        dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
-        dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
-        f_dae = FragDae(dae=dae_file,
-                        rgb={'rgb1.png': dae_rgb1,
-                             'rgb2.jpg': dae_rgb2})
-        del b
+        f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
         frags = [MetaFragment('f_raw', 'raw', f_raw),
@@ -1206,7 +1185,7 @@ class TestClerk:
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
-        temp = Template('foo', cs, frags, [], [])
+        temp = Template('foo', [1, 2], frags, [], [])
         assert clerk.addTemplates([temp]).ok
         assert clerk.getTemplates([temp.name]).ok
 
@@ -1262,13 +1241,11 @@ class TestClerk:
         leo = getLeonard()
 
         # Convenience.
-        cs, vert = [1, 2, 3, 4], list(range(9))
-        uv, rgb = [9, 10], [1, 2, 250]
         sv = bullet_data.MotionState()
 
         # Add a valid template and verify it now exists in Azrael.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        temp = Template('foo', cs, frags, [], [])
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        temp = Template('foo', [1, 2], frags, [], [])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
@@ -1286,7 +1263,7 @@ class TestClerk:
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one geometry
         # was updated.
-        frags = [MetaFragment('bar', 'raw', FragRaw(2 * vert, 2 * uv, 2 * rgb))]
+        frags = [MetaFragment('bar', 'raw', createFragRaw())]
         assert clerk.setGeometry(objID0, frags).ok
 
         # Verify that the new 'lastChanged' flag is now different for that object.
@@ -1317,7 +1294,6 @@ class TestClerk:
         # ------------------------------------------------------------------------
         # Convenience.
         sv = bullet_data.MotionState()
-        cs, vert = [1, 2, 3, 4], list(range(9))
 
         b0 = parts.Booster(partID=0, pos=[-1, 0, 0], direction=[0, 0, 1],
                            minval=-1, maxval=1, force=0)
@@ -1325,8 +1301,8 @@ class TestClerk:
                            minval=-1, maxval=1, force=0)
 
         # Define a template with one fragment.
-        frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=[], rgb=[]))]
-        t1 = Template('t1', cs, frags, [b0, b1], [])
+        frags = [MetaFragment('foo', 'raw', createFragRaw())]
+        t1 = Template('t1', [1, 2], frags, [b0, b1], [])
 
         # Add the template and spawn two instances.
         assert clerk.addTemplates([t1]).ok
@@ -1399,11 +1375,10 @@ class TestClerk:
 
         # Convenience.
         sv = bullet_data.MotionState()
-        cs, vert = [1, 2, 3, 4], list(range(9))
 
         # Define a new template with one fragment.
-        frags = [MetaFragment('foo', 'raw', FragRaw(vert=vert, uv=[], rgb=[]))]
-        t1 = Template('t1', cs, fragments=frags, boosters=[], factories=[])
+        frags = [MetaFragment('foo', 'raw', createFragRaw())]
+        t1 = Template('t1', [1, 2], fragments=frags, boosters=[], factories=[])
 
         # Add the template to Azrael, spawn two instances, and make sure Leonard
         # picks it up so that the object becomes available.
@@ -1555,17 +1530,8 @@ class TestClerk:
             del ret, _frags
 
         # Create a raw Fragment.
-        f_raw = FragRaw(vert=vert_1, uv=[], rgb=[])
-
-        # Collada format: a .dae file plus a list of textures in jpg or png format.
-        b = os.path.dirname(__file__)
-        dae_file = open(b + '/cube.dae', 'rb').read()
-        dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
-        dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
-        f_dae = FragDae(dae=dae_file,
-                        rgb={'rgb1.png': dae_rgb1,
-                             'rgb2.jpg': dae_rgb2})
-        del b
+        f_raw = createFragRaw()
+        f_dae = createFragDae()
 
         frags = [MetaFragment('10', 'raw', f_raw),
                  MetaFragment('test', 'dae', f_dae)]
@@ -1627,31 +1593,27 @@ class TestClerk:
         url = base_url + data['10']['url'] + '/model.json'
         tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
-        assert np.array_equal(tmp['vert'], vert_1)
-        assert tmp['uv'] == tmp['rgb'] == []
+        assert FragRaw(**tmp) == f_raw
 
         # Download and verify the dae file. Note that the file name itself matches
         # the name of the fragment (ie. 'test'), *not* the name of the original
         # Collada file ('cube.dae').
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
-        assert tmp == dae_file
+        assert tmp == f_dae.dae
 
         # Download and verify the first texture.
         url = base_url + data['test']['url'] + '/rgb1.png'
         tmp = _download(url)
-        assert tmp == dae_rgb1
+        assert tmp == f_dae.rgb['rgb1.png']
 
         # Download and verify the second texture.
         url = base_url + data['test']['url'] + '/rgb2.jpg'
         tmp = _download(url)
-        assert tmp == dae_rgb2
+        assert tmp == f_dae.rgb['rgb2.jpg']
 
         # Change the fragment geometries.
-        f_raw = FragRaw(vert=vert_2, uv=[], rgb=[])
-        f_dae = FragDae(dae=dae_file,
-                        rgb={'rgb1.png': dae_rgb2,
-                             'rgb2.jpg': dae_rgb1})
+        f_raw = createFragRaw()
         frags = [MetaFragment('10', 'raw', f_raw),
                  MetaFragment('test', 'dae', f_dae)]
         assert clerk.setGeometry(objID, frags).ok
@@ -1664,25 +1626,24 @@ class TestClerk:
         url = base_url + data['10']['url'] + '/model.json'
         tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
-        assert np.array_equal(tmp['vert'], vert_2)
-        assert tmp['uv'] == tmp['rgb'] == []
+        assert FragRaw(**tmp) == f_raw
 
         # Download and verify the dae file. Note that the file name itself matches
         # the name of the fragment (ie. 'test'), *not* the name of the original
         # Collada file ('cube.dae').
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
-        assert tmp == dae_file
+        assert tmp == f_dae.dae
 
         # Download and verify the first texture.
         url = base_url + data['test']['url'] + '/rgb1.png'
         tmp = _download(url)
-        assert tmp == dae_rgb2
+        assert tmp == f_dae.rgb['rgb1.png']
 
         # Download and verify the second texture.
         url = base_url + data['test']['url'] + '/rgb2.jpg'
         tmp = _download(url)
-        assert tmp == dae_rgb1
+        assert tmp == f_dae.rgb['rgb2.jpg']
 
         clacks.terminate()
         clacks.join()
