@@ -1613,11 +1613,19 @@ class TestClerk:
         data = ret.data[objID]
         del ret
 
+        def _download(url):
+            for ii in range(10):
+                try:
+                    return urllib.request.urlopen(url).readall()
+                except (urllib.request.HTTPError, urllib.request.URLError):
+                    time.sleep(0.1)
+            assert False
+
         # Download the 'raw' file and verify its content is correct.
         base_url = 'http://{}:{}'.format(
             azrael.config.addr_clacks, azrael.config.port_clacks)
         url = base_url + data['10']['url'] + '/model.json'
-        tmp = urllib.request.urlopen(url).readall()
+        tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
         assert np.array_equal(tmp['vert'], vert_1)
         assert tmp['uv'] == tmp['rgb'] == []
@@ -1626,17 +1634,17 @@ class TestClerk:
         # the name of the fragment (ie. 'test'), *not* the name of the original
         # Collada file ('cube.dae').
         url = base_url + data['test']['url'] + '/test'
-        tmp = urllib.request.urlopen(url).readall()
+        tmp = _download(url)
         assert tmp == dae_file
 
         # Download and verify the first texture.
         url = base_url + data['test']['url'] + '/rgb1.png'
-        tmp = urllib.request.urlopen(url).readall()
+        tmp = _download(url)
         assert tmp == dae_rgb1
 
         # Download and verify the second texture.
         url = base_url + data['test']['url'] + '/rgb2.jpg'
-        tmp = urllib.request.urlopen(url).readall()
+        tmp = _download(url)
         assert tmp == dae_rgb2
 
         # Change the fragment geometries.
@@ -1654,7 +1662,7 @@ class TestClerk:
 
         # Download the 'raw' file and verify its content is correct.
         url = base_url + data['10']['url'] + '/model.json'
-        tmp = urllib.request.urlopen(url).readall()
+        tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
         assert np.array_equal(tmp['vert'], vert_2)
         assert tmp['uv'] == tmp['rgb'] == []
@@ -1663,17 +1671,17 @@ class TestClerk:
         # the name of the fragment (ie. 'test'), *not* the name of the original
         # Collada file ('cube.dae').
         url = base_url + data['test']['url'] + '/test'
-        tmp = urllib.request.urlopen(url).readall()
+        tmp = _download(url)
         assert tmp == dae_file
 
         # Download and verify the first texture.
         url = base_url + data['test']['url'] + '/rgb1.png'
-        tmp = urllib.request.urlopen(url).readall()
+        tmp = _download(url)
         assert tmp == dae_rgb2
 
         # Download and verify the second texture.
         url = base_url + data['test']['url'] + '/rgb2.jpg'
-        tmp = urllib.request.urlopen(url).readall()
+        tmp = _download(url)
         assert tmp == dae_rgb1
 
         clacks.terminate()
