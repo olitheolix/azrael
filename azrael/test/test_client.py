@@ -38,6 +38,7 @@ import azrael.util
 import azrael.clerk
 import azrael.clacks
 import azrael.client
+import azrael.dibbler
 import azrael.wsclient
 import azrael.parts as parts
 import azrael.config as config
