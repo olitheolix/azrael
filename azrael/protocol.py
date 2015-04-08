@@ -145,13 +145,7 @@ def FromClerk_GetTemplates_Decode(payload: dict):
 
 @typecheck
 def ToClerk_AddTemplates_Encode(templates: list):
-    out = []
-    with azrael.util.Timeit('clerk.encode') as timeit:
-        for tt in templates:
-            d = {'name': tt.name, 'cs': tt.cs, 'frags': tt.fragments,
-                 'boosters': tt.boosters, 'factories': tt.factories}
-            assert isinstance(d['cs'], list)
-            out.append(d)
+    out = [tt._asdict() for tt in templates]
     return RetVal(True, None, {'data': out})
 
 
@@ -176,7 +170,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
             factories = [parts.Factory(*_) for _ in data['factories']]
 
             # Wrap the Meta fragments into its dedicated tuple type.
-            meta_frags = [MetaFragment(*_) for _ in data['frags']]
+            meta_frags = [MetaFragment(*_) for _ in data['fragments']]
 
             # Wrap each fragment model into its dedicated tuple type.
             frags = []
@@ -375,8 +369,6 @@ def FromClerk_SetGeometry_Decode(dummyarg):
 
 @typecheck
 def ToClerk_GetStateVariable_Encode(objIDs: (list, tuple)):
-    for objID in objIDs:
-        assert isinstance(objID, int)
     return RetVal(True, None, {'objIDs': objIDs})
 
 
@@ -387,10 +379,6 @@ def ToClerk_GetStateVariable_Decode(payload: dict):
 
 @typecheck
 def FromClerk_GetStateVariable_Encode(data: dict):
-    # Convenience: field names of named tuples.
-    fields_bd = bullet_data._MotionState._fields
-    fields_fs = FragState._fields
-
     # For each objID compile a dictionary with the SV and fragment data in a JS
     # friendly hashmap format.
     for k, v in data.items():
@@ -398,16 +386,13 @@ def FromClerk_GetStateVariable_Encode(data: dict):
             data[k] = None
             continue
 
-        # Convert the list of ``FragState`` tuples to a list of dictionary with
-        # the tuple fields as keys. This will make it easier in JS to extract
-        # specific values instead of using magic array index numbers.
-        frags = [dict(zip(fields_fs, _)) for _ in v['frag']]
-
-        # Same with the SV structure (``MotionState`` tuple).
-        sv = dict(zip(fields_bd, v['sv']))
+        # Convert the list of ``FragState`` tuples into a list of dictionaries.
+        # This will make it easier in JS to extract specific values instead of
+        # using magic array index numbers.
+        frags = [_._asdict() for _ in v['frag']]
 
         # Add the converted tuples to the output dictionary.
-        data[k] = {'frag': frags, 'sv': sv}
+        data[k] = {'frag': frags, 'sv': v['sv']._asdict()}
     return True, {'data': data}
 
 
