@@ -481,12 +481,12 @@ class TestClerk:
         # The 'boosters' and 'factories' arguments are a list of named
         # tuples. Their first argument is the unit ID (Azrael does not assign
         # automatically assign any IDs).
-        b0 = parts.Booster(partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
+        b0 = parts.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=0.5, force=0)
-        b1 = parts.Booster(partID=1, pos=[0, 0, 0], direction=[0, 0, 1],
+        b1 = parts.Booster(partID='1', pos=[0, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=0.5, force=0)
         f0 = parts.Factory(
-            partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
+            partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
             templateID='_templateCube', exit_speed=[0.1, 0.5])
 
         # Add the new template.
@@ -674,7 +674,7 @@ class TestClerk:
         # Define a boosters.
         v = np.array([1, 0, 0], np.float64)
         booster = parts.Booster(
-            partID=0, pos=v, direction=v, minval=0, maxval=1, force=0)
+            partID='0', pos=v, direction=v, minval=0, maxval=1, force=0)
 
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
 
@@ -692,7 +692,7 @@ class TestClerk:
         objID = ret.data[0]
 
         # Create a Booster command.
-        cmd = parts.CmdBooster(partID=0, force=2)
+        cmd = parts.CmdBooster(partID='0', force=2)
 
         # Send the command to Clerk. With the bug present this triggered a stack
         # trace, whereas now it must simply return with cleared ok flag.
@@ -722,11 +722,11 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Create commands for a Booster and a Factory.
-        cmd_b = parts.CmdBooster(partID=0, force=0.2)
-        cmd_f = parts.CmdFactory(partID=0, exit_speed=0.5)
+        cmd_b = parts.CmdBooster(partID='0', force=0.2)
+        cmd_f = parts.CmdFactory(partID='0', exit_speed=0.5)
 
-        # Call 'controlParts'. This must fail because the chosen template has no
-        # boosters or factory units.
+        # Call 'controlParts'. This must fail because the template for objID_1
+        # has neither boosters nor factories.
         leo.processCommandsAndSync()
         assert not clerk.controlParts(objID_1, [cmd_b], []).ok
 
@@ -748,10 +748,10 @@ class TestClerk:
         # ------------------------------------------------------------------------
 
         # Define the Booster and Factory parts.
-        b0 = parts.Booster(partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
+        b0 = parts.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=0.5, force=0)
         f0 = parts.Factory(
-            partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
+            partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
             templateID='_templateCube', exit_speed=[0, 1])
 
         # Define a new template, add it to Azrael, and spawn an instance.
@@ -764,8 +764,8 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Tell each factory to spawn an object.
-        cmd_b = parts.CmdBooster(partID=0, force=0.5)
-        cmd_f = parts.CmdFactory(partID=0, exit_speed=0.5)
+        cmd_b = parts.CmdBooster(partID='0', force=0.5)
+        cmd_f = parts.CmdFactory(partID='0', exit_speed=0.5)
 
         # Valid: Clerk must accept these commands.
         assert clerk.controlParts(objID_2, [cmd_b], [cmd_f]).ok
@@ -808,9 +808,9 @@ class TestClerk:
         pos_1 = np.array([-1, -1, 0], np.float64)
 
         # Define two boosters.
-        b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0,
+        b0 = parts.Booster(partID='0', pos=pos_0, direction=dir_0,
                            minval=0, maxval=0.5, force=0)
-        b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
+        b1 = parts.Booster(partID='1', pos=pos_1, direction=dir_1,
                            minval=0, maxval=0.5, force=0)
 
         # Define a new template with two boosters and add it to Azrael.
@@ -830,8 +830,8 @@ class TestClerk:
 
         # Create the commands to activate both boosters with a different force.
         forcemag_0, forcemag_1 = 0.2, 0.4
-        cmd_0 = parts.CmdBooster(partID=0, force=forcemag_0)
-        cmd_1 = parts.CmdBooster(partID=1, force=forcemag_1)
+        cmd_0 = parts.CmdBooster(partID='0', force=forcemag_0)
+        cmd_1 = parts.CmdBooster(partID='1', force=forcemag_1)
 
         # Send booster commands to Clerk.
         assert clerk.controlParts(objID_1, [cmd_0, cmd_1], []).ok
@@ -884,10 +884,10 @@ class TestClerk:
         # Define a new object with two factory parts. The Factory parts are named
         # tuples passed to addTemplates. The user must assign the partIDs manually.
         f0 = parts.Factory(
-            partID=0, pos=pos_0, direction=dir_0,
+            partID='0', pos=pos_0, direction=dir_0,
             templateID='_templateCube', exit_speed=[0.1, 0.5])
         f1 = parts.Factory(
-            partID=1, pos=pos_1, direction=dir_1,
+            partID='1', pos=pos_1, direction=dir_1,
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
@@ -905,8 +905,8 @@ class TestClerk:
 
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
-        cmd_0 = parts.CmdFactory(partID=0, exit_speed=exit_speed_0)
-        cmd_1 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
+        cmd_0 = parts.CmdFactory(partID='0', exit_speed=exit_speed_0)
+        cmd_1 = parts.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
         # Send the commands and ascertain that the returned object IDs now exist in
         # the simulation. These IDs must be '2' and '3'.
@@ -959,10 +959,10 @@ class TestClerk:
 
         # Define factory parts.
         f0 = parts.Factory(
-            partID=0, pos=pos_0, direction=dir_0,
+            partID='0', pos=pos_0, direction=dir_0,
             templateID='_templateCube', exit_speed=[0.1, 0.5])
         f1 = parts.Factory(
-            partID=1, pos=pos_1, direction=dir_1,
+            partID='1', pos=pos_1, direction=dir_1,
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
@@ -980,8 +980,8 @@ class TestClerk:
 
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
-        cmd_0 = parts.CmdFactory(partID=0, exit_speed=exit_speed_0)
-        cmd_1 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
+        cmd_0 = parts.CmdFactory(partID='0', exit_speed=exit_speed_0)
+        cmd_1 = parts.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
         # Send the commands and ascertain that the returned object IDs now exist in
         # the simulation.
@@ -1057,15 +1057,15 @@ class TestClerk:
         # ------------------------------------------------------------------------
 
         # Define the Booster and Factory parts.
-        b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0,
+        b0 = parts.Booster(partID='0', pos=pos_0, direction=dir_0,
                            minval=0, maxval=0.5, force=0)
-        b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
+        b1 = parts.Booster(partID='1', pos=pos_1, direction=dir_1,
                            minval=0, maxval=1.0, force=0)
         f0 = parts.Factory(
-            partID=0, pos=pos_0, direction=dir_0,
+            partID='0', pos=pos_0, direction=dir_0,
             templateID='_templateCube', exit_speed=[0.1, 0.5])
         f1 = parts.Factory(
-            partID=1, pos=pos_1, direction=dir_1,
+            partID='1', pos=pos_1, direction=dir_1,
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
@@ -1085,10 +1085,10 @@ class TestClerk:
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
         forcemag_0, forcemag_1 = 0.2, 0.4
-        cmd_0 = parts.CmdBooster(partID=0, force=forcemag_0)
-        cmd_1 = parts.CmdBooster(partID=1, force=forcemag_1)
-        cmd_2 = parts.CmdFactory(partID=0, exit_speed=exit_speed_0)
-        cmd_3 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
+        cmd_0 = parts.CmdBooster(partID='0', force=forcemag_0)
+        cmd_1 = parts.CmdBooster(partID='1', force=forcemag_1)
+        cmd_2 = parts.CmdFactory(partID='0', exit_speed=exit_speed_0)
+        cmd_3 = parts.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
         # Send the commands and ascertain that the returned object IDs now exist in
         # the simulation. These IDs must be '2' and '3'.
@@ -1295,9 +1295,9 @@ class TestClerk:
         # Convenience.
         sv = bullet_data.MotionState()
 
-        b0 = parts.Booster(partID=0, pos=[-1, 0, 0], direction=[0, 0, 1],
+        b0 = parts.Booster(partID='0', pos=[-1, 0, 0], direction=[0, 0, 1],
                            minval=-1, maxval=1, force=0)
-        b1 = parts.Booster(partID=1, pos=[+1, 0, 0], direction=[0, 0, 1],
+        b1 = parts.Booster(partID='1', pos=[+1, 0, 0], direction=[0, 0, 1],
                            minval=-1, maxval=1, force=0)
 
         # Define a template with one fragment.
@@ -1314,8 +1314,8 @@ class TestClerk:
         # Update the Booster forces on the first object: both accelerate the object
         # in z-direction, which means a force purely in z-direction and no torque.
         # ------------------------------------------------------------------------
-        cmd_0 = parts.CmdBooster(partID=0, force=1)
-        cmd_1 = parts.CmdBooster(partID=1, force=1)
+        cmd_0 = parts.CmdBooster(partID='0', force=1)
+        cmd_1 = parts.CmdBooster(partID='1', force=1)
         ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
         assert ret.ok
         assert ret.data == ([0, 0, 2], [0, 0, 0])
@@ -1325,8 +1325,8 @@ class TestClerk:
         # upwards and the right one downwards. This must result in a zero net force
         # but non-zero torque.
         # ------------------------------------------------------------------------
-        cmd_0 = parts.CmdBooster(partID=0, force=1)
-        cmd_1 = parts.CmdBooster(partID=1, force=-1)
+        cmd_0 = parts.CmdBooster(partID='0', force=1)
+        cmd_1 = parts.CmdBooster(partID='1', force=-1)
         ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
         assert ret.ok
         assert ret.data == ([0, 0, 0], [0, 2, 0])
@@ -1336,13 +1336,13 @@ class TestClerk:
         # correctly distinguishes between objects.
         # ------------------------------------------------------------------------
         # Turn off left Booster of first object (right booster is still active).
-        cmd_0 = parts.CmdBooster(partID=0, force=0)
+        cmd_0 = parts.CmdBooster(partID='0', force=0)
         ret = clerk.updateBoosterForces(objID_1, [cmd_0])
         assert ret.ok
         assert ret.data == ([0, 0, -1], [0, 1, 0])
 
         # Turn on left Booster of the second object.
-        cmd_0 = parts.CmdBooster(partID=0, force=1)
+        cmd_0 = parts.CmdBooster(partID='0', force=1)
         ret = clerk.updateBoosterForces(objID_2, [cmd_0])
         assert ret.ok
         assert ret.data == ([0, 0, +1], [0, 1, 0])
@@ -1350,10 +1350,10 @@ class TestClerk:
         # ------------------------------------------------------------------------
         # Attempt to update a non-existing Booster or a non-existing object.
         # ------------------------------------------------------------------------
-        cmd_0 = parts.CmdBooster(partID=10, force=1)
+        cmd_0 = parts.CmdBooster(partID='10', force=1)
         assert not clerk.updateBoosterForces(objID_2, [cmd_0]).ok
 
-        cmd_0 = parts.CmdBooster(partID=0, force=1)
+        cmd_0 = parts.CmdBooster(partID='0', force=1)
         assert not clerk.updateBoosterForces(1000, [cmd_0]).ok
 
         print('Test passed')

@@ -20,8 +20,9 @@ Defines object parts like Boosters and their commands.
 """
 import numpy as np
 
-from collections import namedtuple as NT
 from azrael.types import typecheck
+from IPython import embed as ipshell
+from collections import namedtuple as NT
 
 
 # -----------------------------------------------------------------------------
@@ -49,7 +50,7 @@ class Booster(_Booster):
        ``direction`` is *not* a Quaternion but merely a unit vector that points
        in the direction of the force.
 
-    :param int partID: Booster ID (arbitrary)
+    :param str partID: Booster ID (arbitrary)
     :param ndarray pos: position vector (3-elements)
     :param ndarray direction: force direction (3-elements)
     :param float minval: minimum force this Booster can generate.
@@ -58,7 +59,7 @@ class Booster(_Booster):
     :return Booster: compiled booster description.
     """
     @typecheck
-    def __new__(cls, partID: int, pos: (list, np.ndarray),
+    def __new__(cls, partID: str, pos: (list, np.ndarray),
                 direction: (list, np.ndarray), minval: (int, float),
                 maxval: (int, float), force: (int, float)):
         # Position must be a 3-element vector.
@@ -86,10 +87,16 @@ class Booster(_Booster):
         if not isinstance(ref, type(self)):
             return False
 
-        # Test if all fields are essentially identical.
+        # Test if all fields are essentially identical. All fields except
+        # partID must be numeric arrays (Python lists or NumPy arrays).
         for f in self._fields:
-            if not np.allclose(getattr(self, f), getattr(ref, f), atol=1E-9):
-                return False
+            a, b = getattr(self, f), getattr(ref, f)
+            if isinstance(a, (tuple, list, np.ndarray)):
+                if not np.allclose(a, b, atol=1E-9):
+                    return False
+            else:
+                if a != b:
+                    return False
         return True
 
     def __ne__(self, ref):
@@ -102,12 +109,12 @@ class CmdBooster(_CmdBooster):
 
     This wrapper only ensures the provided data is sane.
 
-    :param int partID: Booster ID (arbitrary)
+    :param str partID: Booster ID (arbitrary)
     :param float force: magnitude of force (a scalar!)
     :return Booster: compiled description of booster command.
     """
     @typecheck
-    def __new__(cls, partID: int, force: (int, float, np.float64)):
+    def __new__(cls, partID: str, force: (int, float, np.float64)):
         force = float(force)
         self = super().__new__(cls, partID, force)
         return self
@@ -117,10 +124,16 @@ class CmdBooster(_CmdBooster):
         if not isinstance(ref, type(self)):
             return False
 
-        # Test if all fields are essentially identical.
+        # Test if all fields are essentially identical. All fields except
+        # partID must be numeric arrays (Python lists or NumPy arrays).
         for f in self._fields:
-            if not np.allclose(getattr(self, f), getattr(ref, f), atol=1E-9):
-                return False
+            a, b = getattr(self, f), getattr(ref, f)
+            if isinstance(a, (tuple, list, np.ndarray)):
+                if not np.allclose(a, b, atol=1E-9):
+                    return False
+            else:
+                if a != b:
+                    return False
         return True
 
     def __ne__(self, ref):
@@ -143,8 +156,9 @@ _CmdFactory = NT('CmdFactory', 'partID exit_speed')
 
 class Factory(_Factory):
     @typecheck
-    def __new__(cls, partID, pos, direction, templateID: str,
-                exit_speed):
+    def __new__(cls, partID: str, pos: (list, np.ndarray),
+                direction: (list, np.ndarray), templateID: str,
+                exit_speed: (list, np.ndarray)):
         """
         Return a ``Factory`` instance.
 
@@ -157,10 +171,11 @@ class Factory(_Factory):
            points in the nozzle direction of the factory (it the direction in
            which new objects will be spawned).
 
-        :param int partID: factory ID (arbitrary)
-        :param ndarray pos: position vector (3-elements)
-        :param ndarray direction: exit direction of new objects (3-elements)
-        :param ndarray exit_speed: min/max exit speed of spawned object.
+        :param str partID: factory ID (arbitrary).
+        :param ndarray pos: position vector (3-elements).
+        :param ndarray direction: exit direction of new objects (3-elements).
+        :param str templateID: name of template spawned by this factory.
+        :param ndarray exit_speed: [min, max] exit speed of spawned object.
         :return Factory: compiled factory description.
         """
         # Position must be a 3-element vector.
@@ -210,12 +225,12 @@ class CmdFactory(_CmdFactory):
 
     This wrapper only ensures the provided data is sane.
 
-    :param int partID: Factory ID (arbitrary)
+    :param str partID: Factory ID (arbitrary)
     :param float force: magnitude of force (a scalar!)
     :return Factory: compiled description of factory command.
     """
     @typecheck
-    def __new__(cls, partID: int, exit_speed: (int, float, np.float64)):
+    def __new__(cls, partID: str, exit_speed: (int, float, np.float64)):
         exit_speed = float(exit_speed)
         self = super().__new__(cls, partID, exit_speed)
         return self
@@ -227,8 +242,13 @@ class CmdFactory(_CmdFactory):
 
         # Test if all fields are essentially identical.
         for f in self._fields:
-            if not np.allclose(getattr(self, f), getattr(ref, f), atol=1E-9):
-                return False
+            a, b = getattr(self, f), getattr(ref, f)
+            if isinstance(a, (tuple, list, np.ndarray)):
+                if not np.allclose(a, b, 1E-9):
+                    return False
+            else:
+                if a != b:
+                    return False
         return True
 
     def __ne__(self, ref):

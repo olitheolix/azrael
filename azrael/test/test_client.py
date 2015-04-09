@@ -406,12 +406,12 @@ class TestClerk:
         # The 'boosters' and 'factories' arguments are a list of named
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any).
-        b0 = parts.Booster(partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
+        b0 = parts.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=0.5, force=0)
-        b1 = parts.Booster(partID=1, pos=[0, 0, 0], direction=[0, 0, 1],
+        b1 = parts.Booster(partID='1', pos=[0, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=0.5, force=0)
         f0 = parts.Factory(
-            partID=0, pos=[0, 0, 0], direction=[0, 0, 1],
+            partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
             templateID='_templateCube', exit_speed=[0.1, 0.5])
 
         # Attempt to query the geometry of a non-existing object.
@@ -509,15 +509,15 @@ class TestClerk:
         # ------------------------------------------------------------------------
 
         # Define the parts.
-        b0 = parts.Booster(partID=0, pos=pos_0, direction=dir_0,
+        b0 = parts.Booster(partID='0', pos=pos_0, direction=dir_0,
                            minval=0, maxval=0.5, force=0)
-        b1 = parts.Booster(partID=1, pos=pos_1, direction=dir_1,
+        b1 = parts.Booster(partID='1', pos=pos_1, direction=dir_1,
                            minval=0, maxval=1.0, force=0)
         f0 = parts.Factory(
-            partID=0, pos=pos_0, direction=dir_0,
+            partID='0', pos=pos_0, direction=dir_0,
             templateID='_templateCube', exit_speed=[0.1, 0.5])
         f1 = parts.Factory(
-            partID=1, pos=pos_1, direction=dir_1,
+            partID='1', pos=pos_1, direction=dir_1,
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn an instance.
@@ -542,10 +542,10 @@ class TestClerk:
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
         forcemag_0, forcemag_1 = 0.2, 0.4
-        cmd_0 = parts.CmdBooster(partID=0, force=forcemag_0)
-        cmd_1 = parts.CmdBooster(partID=1, force=forcemag_1)
-        cmd_2 = parts.CmdFactory(partID=0, exit_speed=exit_speed_0)
-        cmd_3 = parts.CmdFactory(partID=1, exit_speed=exit_speed_1)
+        cmd_0 = parts.CmdBooster(partID='0', force=forcemag_0)
+        cmd_1 = parts.CmdBooster(partID='1', force=forcemag_1)
+        cmd_2 = parts.CmdFactory(partID='0', exit_speed=exit_speed_0)
+        cmd_3 = parts.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
         # Send the commands and ascertain that the returned object IDs now exist in
         # the simulation. These IDs must be '2' and '3'.
