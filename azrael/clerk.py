@@ -601,6 +601,16 @@ class Clerk(multiprocessing.Process):
                     return RetVal(False, msg, None)
                 del tmp
 
+                # Ensure all Boosters and Factories have a sane partID.
+                try:
+                    for booster in tt.boosters:
+                        assert self._isNameValid(booster.partID)
+                    for factory in tt.factories:
+                        assert self._isNameValid(factory.partID)
+                except AssertionError:
+                    msg = 'One or more Booster/Factory names are invalid'
+                    return RetVal(False, msg, None)
+
                 # Ask Dibbler to add the template.
                 ret = self.sendRequest({'cmd': 'add_template', 'data': tt})
                 if not ret.ok:
@@ -907,6 +917,13 @@ class Clerk(multiprocessing.Process):
         :param list fragments: the new fragments for ``objID``.
         :return: Success
         """
+        # Sanity check the names of all fragments.
+        for frag in fragments:
+            if not self._isNameValid(frag.name):
+                msg = 'Invalid fragment name <{}>'.format(frag.name)
+                return RetVal(False, msg, None)
+
+        # Update the fragments in Dibbler.
         for frag in fragments:
             req = {'cmd': 'set_geometry',
                    'data': {'objID': str(objID), 'frags': fragments}}
@@ -914,6 +931,7 @@ class Clerk(multiprocessing.Process):
             if not ret.ok:
                 return ret
 
+        # Update the fragment meta data in the DB.
         new_frags = [MetaFragment(_.name, _.type, None) for _ in fragments]
 
         # Update the 'lastChanged' flag in the database. All clients
