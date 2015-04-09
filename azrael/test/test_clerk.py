@@ -1477,11 +1477,13 @@ class TestClerk:
         assert inv('_a')
         assert inv('1')
         assert inv('1a')
+        assert inv('a' * 32)
 
         # Test invalid names.
         assert not inv('')
         assert not inv('.')
         assert not inv('a.b')
+        assert not inv('a' * 33)
 
         print('Test passed')
 

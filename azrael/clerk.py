@@ -526,8 +526,9 @@ class Clerk(multiprocessing.Process):
         """
         Return *True* if ``name`` is a valid template name.
 
-        The template ``name`` is valid when it is a non-empty string which
-        contains only alphanumeric characters (ie [a-zA-Z0-9]) and '_'.
+        The template ``name`` is valid when it is a non-empty string, at most
+        32 characters long, and contains only alphanumeric characters (ie
+        [a-zA-Z0-9]) and '_'.
 
         :param str name: name to validate.
         :return: *True* if ``name`` is valid, *False* otherwise.
@@ -536,8 +537,8 @@ class Clerk(multiprocessing.Process):
         if not isinstance(name, str):
             return False
 
-        # Must contain at least one character and  not start with a digit.
-        if len(name) == 0:
+        # Must contain at least one character and no more than 32 characters.
+        if not (0 < len(name) <= 32):
             return False
 
         # Compile the set of admissible characters.
@@ -590,8 +591,8 @@ class Clerk(multiprocessing.Process):
                 if not self._isNameValid(tt.name):
                     return RetVal(False, 'Invalid template name', None)
 
-                # Ensure all fragments have the correct type, their names are
-                # all strings, and their names are unique.
+                # Ensure all fragments have the correct type, and their names
+                # are valid and unique.
                 tmp = [_ for _ in tt.fragments if isinstance(_, MetaFragment)]
                 tmp = [_ for _ in tmp if self._isNameValid(_.name)]
                 tmp = set([_.name for _ in tmp])
