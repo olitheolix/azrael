@@ -522,7 +522,7 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, out)
 
     @typecheck
-    def _isTemplateNameValid(self, name):
+    def _isNameValid(self, name):
         """
         Return *True* if ``name`` is a valid template name.
 
@@ -587,13 +587,13 @@ class Clerk(multiprocessing.Process):
                 # Sanity check:
                 if not isinstance(tt.fragments, list):
                     return RetVal(False, 'Fragments must be in a list', None)
-                if not self._isTemplateNameValid(tt.name):
+                if not self._isNameValid(tt.name):
                     return RetVal(False, 'Invalid template name', None)
 
                 # Ensure all fragments have the correct type, their names are
                 # all strings, and their names are unique.
                 tmp = [_ for _ in tt.fragments if isinstance(_, MetaFragment)]
-                tmp = [_ for _ in tmp if self._isTemplateNameValid(_.name)]
+                tmp = [_ for _ in tmp if self._isNameValid(_.name)]
                 tmp = set([_.name for _ in tmp])
                 if len(set(tmp)) < len(tt.fragments):
                     msg = 'One or more fragments names are invalid',

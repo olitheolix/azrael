@@ -1462,26 +1462,26 @@ class TestClerk:
 
         print('Test passed')
 
-    def test_isTemplateNameValid(self):
+    def test_isNameValid(self):
         """
-        Test _isTemplateValid function.
+        Test _isValid function.
         """
         # Create a Clerk instance and a shortcut to the test method.
         clerk = azrael.clerk.Clerk()
-        itnv = clerk._isTemplateNameValid
+        inv = clerk._isNameValid
 
         # Thest valid names.
-        assert itnv('a')
-        assert itnv('a1')
-        assert itnv('a_')
-        assert itnv('_a')
-        assert itnv('1')
-        assert itnv('1a')
+        assert inv('a')
+        assert inv('a1')
+        assert inv('a_')
+        assert inv('_a')
+        assert inv('1')
+        assert inv('1a')
 
         # Test invalid names.
-        assert not itnv('')
-        assert not itnv('.')
-        assert not itnv('a.b')
+        assert not inv('')
+        assert not inv('.')
+        assert not inv('a.b')
 
         print('Test passed')
 
