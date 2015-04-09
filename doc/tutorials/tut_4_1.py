@@ -41,7 +41,7 @@ def createTemplate():
 
     # Define a booster
     myBooster = azrael.parts.Booster(
-        partID=0,                         # Booster has this ID,
+        partID='0',                       # Booster has this ID,
         pos=[0, 0, 0],                    # is located here,
         direction=[1, 0, 0],              # and points into this direction.
         minval=0,                         # Minimum allowed force.

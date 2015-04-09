@@ -116,13 +116,13 @@ def compileCommands(force):
     for dim, frag_name in enumerate(('b_x', 'b_y', 'b_z')):
         # Force value for booster with ID `dim` (these were defined in
         # ``demo_lockedsphere``.
-        cmds.append(parts.CmdBooster(partID=dim, force=force[dim]))
+        cmds.append(parts.CmdBooster(partID=frag_name, force=force[dim]))
 
         # Scale the flame according to the booster force.
         scale = 3 * abs(force[dim])
 
         # Only one "flame" is visible in each direction. Which one depends one
-        # whether we "push" the object along the positive or negative "dim"
+        # whether we "push" the object along the positive or negative "frag_name"
         # direction.
         pos = [0, 0, 0]
         if force[dim] < 0:

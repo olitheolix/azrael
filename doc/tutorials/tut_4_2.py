@@ -41,7 +41,7 @@ def createTemplate():
 
     # Define a booster
     myBooster = parts.Booster(
-        partID=0,                         # Booster has this ID,
+        partID='0',                       # Booster has this ID,
         pos=[0, 0, 0],                    # is located here,
         direction=[1, 0, 0],              # and points into this direction.
         minval=0,                         # Minimum allowed force.
@@ -90,7 +90,7 @@ def main():
 
             # Assemble the command to the booster (the partID must match the
             # one we used to define the booster!)
-            cmd = parts.CmdBooster(partID=0, force=force)
+            cmd = parts.CmdBooster(partID='0', force=force)
 
             # Send the command to Azrael.
             ret = client.controlParts(objID, [cmd], [])

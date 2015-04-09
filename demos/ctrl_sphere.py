@@ -41,34 +41,34 @@ def startController(objID):
     client = azrael.client.Client()
 
     # ---------------------------------------------------------------------
-    # Central booster (partID=1)
+    # Central booster (partID='1')
     # ---------------------------------------------------------------------
     #time.sleep(2)
     # Engage. This will accelerate the sphere forwards.
     print('Fire central booster...', end='', flush=True)
-    central = parts.CmdBooster(partID=1, force=20)
+    central = parts.CmdBooster(partID='1', force=20)
     client.controlParts(objID, [central], [])
 
     return
     # Turn off after 4s.
     time.sleep(2)
-    central = parts.CmdBooster(partID=1, force=0)
+    central = parts.CmdBooster(partID='1', force=0)
 #    client.controlParts(objID, [central], [])
     print('done')
 
     # ---------------------------------------------------------------------
-    # Peripheral booster to the left and right (partID=0 and partID=2)
+    # Peripheral booster to the left and right (partID='0' and partID='2')
     # ---------------------------------------------------------------------
     # Engage. This will induce spinning due to the booster positions.
     print('Fire peripheral boosters...', end='', flush=True)
-    left = parts.CmdBooster(partID=0, force=10)
-    right = parts.CmdBooster(partID=2, force=10)
+    left = parts.CmdBooster(partID='0', force=10)
+    right = parts.CmdBooster(partID='2', force=10)
     client.controlParts(objID, [left, right], [])
 
     # Turn off after 2s.
     time.sleep(2)
-    left = parts.CmdBooster(partID=0, force=0)
-    right = parts.CmdBooster(partID=2, force=0)
+    left = parts.CmdBooster(partID='0', force=0)
+    right = parts.CmdBooster(partID='2', force=0)
     client.controlParts(objID, [left, right], [])
     print('done')
 
