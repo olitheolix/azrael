@@ -581,7 +581,7 @@ class TestClerk:
 
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_setGeometry_raw(self, client_type):
+    def test_updateFragments_raw(self, client_type):
         """
         Spawn a new object and modify its geometry at runtime.
         """
@@ -633,7 +633,7 @@ class TestClerk:
 
         # Change the fragment geometries.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        assert client.setGeometry(objID, frags).ok
+        assert client.updateFragments(objID, frags).ok
 
         ret = client.getGeometries([objID])
         assert ret.ok
@@ -652,7 +652,7 @@ class TestClerk:
         print('Test passed')
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_setGeometry_dae(self, client_type):
+    def test_updateFragments_dae(self, client_type):
         """
         Spawn a new object and modify its geometry at runtime.
         """
@@ -693,7 +693,7 @@ class TestClerk:
 
         # Change the fragment geometries.
         frags = [MetaFragment('f_dae', 'raw', createFragRaw())]
-        assert client.setGeometry(objID, frags).ok
+        assert client.updateFragments(objID, frags).ok
 
         # Ensure it now has type 'raw'.
         ret = client.getGeometries([objID])
@@ -707,7 +707,7 @@ class TestClerk:
         # Change the fragment geometries.
         lastChanged = ret.data[objID]['sv'].lastChanged
         frags = [MetaFragment('f_dae', 'dae', f_dae)]
-        assert client.setGeometry(objID, frags).ok
+        assert client.updateFragments(objID, frags).ok
 
         # Ensure it now has type 'dae' again.
         ret = client.getGeometries([objID])
@@ -805,8 +805,8 @@ if __name__ == '__main__':
         test_collada_model(_transport_type)
         test_updateFragmentStates(_transport_type)
         test_setStateVariable(_transport_type)
-        test_setGeometry_raw(_transport_type)
-        test_setGeometry_dae(_transport_type)
+        test_updateFragments_raw(_transport_type)
+        test_updateFragments_dae(_transport_type)
         test_spawn_and_delete_one_client(_transport_type)
         test_spawn_and_get_state_variables(_transport_type)
         test_ping()

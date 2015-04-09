@@ -485,7 +485,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         
         print('Test passed')
 
-    def test_setGeometry(self):
+    def test_updateFragments(self):
         """
         Spawn an instance, verify it exists, remove it, and verify it does not
         exist anymore.
@@ -527,7 +527,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         frag_new = MetaFragment('bar', 'raw', createFragRaw())
 
         # Attempt to change the fragment of a non-existing object.
-        req = {'cmd': 'set_geometry',
+        req = {'cmd': 'update_fragments',
                'data': {'objID': '100', 'frags': [frag_new]}}
         assert not self.sendRequest(req).ok
 
@@ -536,7 +536,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert _instanceOk(ret2.data['url'], frag_orig)
 
         # Change the fragment models for the first object.
-        req = {'cmd': 'set_geometry',
+        req = {'cmd': 'update_fragments',
                'data': {'objID': '1', 'frags': [frag_new]}}
         assert self.sendRequest(req).ok
 

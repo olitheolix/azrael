@@ -193,7 +193,7 @@ class SetGeometry(multiprocessing.Process):
 
             # Apply the new geometry to each fragment.
             for objID, val in geo.items():
-                ret = client.setGeometry(objID, list(val.values()))
+                ret = client.updateFragments(objID, list(val.values()))
                 if not ret.ok:
                     print('--> Terminating geometry updates')
                     sys.exit(1)

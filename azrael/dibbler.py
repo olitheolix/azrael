@@ -376,8 +376,8 @@ class Dibbler(tornado.web.RequestHandler):
             ret = self.spawnTemplate(data)
         elif cmd == 'del_instance':
             ret = self.deleteInstance(data)
-        elif cmd == 'set_geometry':
-            ret = self.setGeometry(data)
+        elif cmd == 'update_fragments':
+            ret = self.updateFragments(data)
         elif cmd == 'reset' and data in ('empty',):
             # fixme: put this into dedicated module function. Then add a new
             # utility function to 'azrael.test.test.py' and use that in
@@ -401,7 +401,7 @@ class Dibbler(tornado.web.RequestHandler):
     def getInstanceDir(self, objID: str):
         return os.path.join(self.dir_instances, objID)
 
-    def setGeometry(self, data: dict):
+    def updateFragments(self, data: dict):
         try:
             assert isinstance(data, dict)
             frags, objID = data['frags'], data['objID']
@@ -411,7 +411,7 @@ class Dibbler(tornado.web.RequestHandler):
                 assert isinstance(_, MetaFragment)
             int(objID)
         except (AssertionError, TypeError, ValueError, KeyError):
-            msg = 'Invalid parameters in setGeometry command'
+            msg = 'Invalid parameters in updateFragments command'
             return RetVal(False, msg, None)
 
         # Ensure that an instance with ``objID`` exists.

@@ -110,9 +110,9 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_GetGeometries_Decode,
                 self.getGeometries,
                 protocol.FromClerk_GetGeometries_Encode),
-            'set_geometry': (
+            'update_fragments': (
                 protocol.ToClerk_SetGeometry_Decode,
-                self.setGeometry,
+                self.updateFragments,
                 protocol.FromClerk_SetGeometry_Encode),
             'set_force': (
                 protocol.ToClerk_SetForce_Decode,
@@ -907,7 +907,7 @@ class Clerk(multiprocessing.Process):
         return RetVal(True, None, out)
 
     @typecheck
-    def setGeometry(self, objID: int, fragments: list):
+    def updateFragments(self, objID: int, fragments: list):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
@@ -925,7 +925,7 @@ class Clerk(multiprocessing.Process):
 
         # Update the fragments in Dibbler.
         for frag in fragments:
-            req = {'cmd': 'set_geometry',
+            req = {'cmd': 'update_fragments',
                    'data': {'objID': str(objID), 'frags': fragments}}
             ret = self.sendRequest(req)
             if not ret.ok:

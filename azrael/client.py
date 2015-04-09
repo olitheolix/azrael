@@ -81,7 +81,7 @@ class Client():
             'get_geometries': (
                 protocol.ToClerk_GetGeometries_Encode,
                 protocol.FromClerk_GetGeometries_Decode),
-            'set_geometry': (
+            'update_fragments': (
                 protocol.ToClerk_SetGeometry_Encode,
                 protocol.FromClerk_SetGeometry_Decode),
             'spawn': (
@@ -351,7 +351,7 @@ class Client():
         return MetaFragment(frag.name, 'dae', FragDae(dae, rgb))
 
     @typecheck
-    def setGeometry(self, objID: int, frags: list):
+    def updateFragments(self, objID: int, frags: list):
         """
         Change the geometry parameters of ``objID``.
 
@@ -375,7 +375,7 @@ class Client():
         except AssertionError:
             return RetVal(False, 'Invalid fragment data types', None)
 
-        return self.serialiseAndSend('set_geometry', objID, frags)
+        return self.serialiseAndSend('update_fragments', objID, frags)
 
     @typecheck
     def spawn(self, new_objects: (tuple, list)):
