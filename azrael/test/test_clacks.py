@@ -1,20 +1,10 @@
-import sys
-import time
 import pytest
-import logging
-import websocket
-import subprocess
-import numpy as np
-
 import azrael.clerk
 import azrael.clacks
-import azrael.vectorgrid
 import azrael.wsclient
 import azrael.config as config
 
 from IPython import embed as ipshell
-
-WSClient = azrael.wsclient.WSClient
 
 
 def test_ping_clacks():
@@ -22,6 +12,8 @@ def test_ping_clacks():
     Start services and send Ping to Clacks. Then terminate clacks and verify
     that the ping fails.
     """
+    # Convenience.
+    WSClient = azrael.wsclient.WSClient
     ip, port = config.addr_clacks, config.port_clacks
 
     # Start the services.
