@@ -850,8 +850,6 @@ class Clerk(multiprocessing.Process):
         """
         Remove ``objID`` from the physics simulation.
 
-        fixme: this function must also delete model on the file system
-
         :param int objID: ID of object to remove.
         :return: Success
         """
