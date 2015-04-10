@@ -61,7 +61,7 @@ class TestClerk:
         # The number of SV entries must now be zero.
         assert physAPI.getNumObjects() == 0
 
-        # Query an object. Since none exists yet this must return with an error.
+        # Query an object. Since none exists yet this must fail.
         assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
@@ -76,8 +76,8 @@ class TestClerk:
         assert ret.ok
         assert isEqualBD(ret.data[id_0], data)
 
-        # Query the same object but supply it as a list. This must return a list
-        # with one element which is the exact same object as before.
+        # Query the same object but supply it as a list. This must return a
+        # list with one element which is the exact same object as before.
         ret = physAPI.getStateVariables([id_0])
         assert ret.ok
         assert isEqualBD(ret.data[id_0], data)
@@ -94,9 +94,6 @@ class TestClerk:
         assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
         ret = physAPI.getAllStateVariables()
         assert (ret.ok, len(ret.data)) == (True, 0)
-
-        print('Test passed')
-
 
     def test_add_get_multiple(self):
         """
@@ -147,9 +144,6 @@ class TestClerk:
         assert isEqualBD(ret.data[id_0], data_0)
         assert isEqualBD(ret.data[id_1], data_1)
 
-        print('Test passed')
-
-
     def test_add_same(self):
         """
         Try to add two objects with the same ID.
@@ -173,9 +167,9 @@ class TestClerk:
         ret = physAPI.dequeueCommands()
         assert ret.ok and (ret.data['spawn'] == [])
 
-        # Spawn the first object, then attempt to spawn another with the same objID
-        # *before* Leonard gets around to add even the first one --> this must fail
-        # and not add anything.
+        # Spawn the first object, then attempt to spawn another with the same
+        # objID *before* Leonard gets around to add even the first one --> this
+        # must fail and not add anything.
         assert physAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
         assert not physAPI.addCmdSpawn([(id_0, data_1, aabb)]).ok
         ret = physAPI.dequeueCommands()
@@ -183,14 +177,14 @@ class TestClerk:
         assert ret.ok and (len(spawn) == 1) and (spawn[0]['objID'] == id_0)
 
         # Similar test as before, but this time Leonard has already pulled id_0
-        # into the simulation *before* are we want to spawn yet another object with
-        # the same ID. the 'addSpawnCmd' must succeed because it cannot reliably
-        # verify if Leonard has an object id_0 (it can only verify if another such
-        # request is in the queue already -- see above). However, Leonard itself
-        # must ignore that request. To verify this claim we will now spawn a new
-        # object with the same id_0 but a different State Vectors, let  Leonard
-        # process the queue, and then verify that it did not add/modify the object
-        # with id_0.
+        # into the simulation *before* are we want to spawn yet another object
+        # with the same ID. the 'addSpawnCmd' must succeed because it cannot
+        # reliably verify if Leonard has an object id_0 (it can only verify if
+        # another such request is in the queue already -- see above). However,
+        # Leonard itself must ignore that request. To verify this claim we will
+        # now spawn a new object with the same id_0 but a different State
+        # Vectors, let  Leonard process the queue, and then verify that it did
+        # not add/modify the object with id_0.
         assert physAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
         leo.processCommandsAndSync()
         ret = physAPI.getStateVariables([id_0])
@@ -203,9 +197,6 @@ class TestClerk:
         # The State Vector for id_0 must still be data_0.
         ret = physAPI.getStateVariables([id_0])
         assert ret.ok and isEqualBD(ret.data[id_0], data_0)
-
-        print('Test passed')
-
 
     def test_commandQueue(self):
         """
@@ -291,8 +282,8 @@ class TestClerk:
         assert ret.ok and ret.data['remove'][0]['objID'] == id_0
 
         # Add commands for two objects (it is perfectly ok to add commands for
-        # non-existing object IDs since this is just a command queue - Leonard will
-        # skip commands for non-existing IDs automatically).
+        # non-existing object IDs since this is just a command queue - Leonard
+        # will skip commands for non-existing IDs automatically).
         force, torque = [7, 8, 9], [10, 11.5, 12.5]
         for objID in (id_0, id_1):
             assert physAPI.addCmdSpawn([(objID, data_0, aabb)]).ok
@@ -310,13 +301,10 @@ class TestClerk:
         assert len(ret.data['direct_force']) == 2
         assert len(ret.data['booster_force']) == 2
 
-        print('Test passed')
-
-
     def test_setStateVariable(self):
         """
-        Set and retrieve object attributes like position, velocity, acceleration,
-        and orientation.
+        Set and retrieve object attributes like position, velocity,
+        acceleration, and orientation.
         """
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
@@ -326,8 +314,9 @@ class TestClerk:
         vl = np.array([8, 9, 10.5])
         vr = 1 + vl
         o = np.array([11, 12.5, 13, 13.5])
-        data = MotionStateOverride(imass=2, scale=3, position=p, velocityLin=vl,
-                                  velocityRot=vr, orientation=o)
+        data = MotionStateOverride(
+            imass=2, scale=3, position=p, velocityLin=vl,
+            velocityRot=vr, orientation=o)
         del p, vl, vr, o
 
         # Create an object ID for the test.
@@ -354,9 +343,6 @@ class TestClerk:
         assert np.array_equal(ret.velocityRot, data.velocityRot)
         assert np.array_equal(ret.orientation, data.orientation)
 
-        print('Test passed')
-
-
     def test_MotionStateOverride(self):
         """
         ``MotionStateOverride`` must only accept valid input where the
@@ -376,8 +362,8 @@ class TestClerk:
         # Pass positional arguments with None values.
         assert MotionStateOverride(None, None) is not None
 
-        # Pass a dictionary with None values. This must still result in the default
-        # structure.
+        # Pass a dictionary with None values. This must still result in the
+        # default structure.
         tmp = {'velocityRot': None, 'cshape': None}
         assert MotionStateOverride(**tmp) is not None
         tmp = {'velocityRot': np.array([1, 2, 3], np.float64), 'cshape': None}
@@ -388,8 +374,8 @@ class TestClerk:
         # Combine positional and keyword arguments.
         assert MotionStateOverride(None, None, **tmp) is not None
 
-        # Pass Python- scalars and lists instead of NumPy types. The scalars must
-        # remain unaffected but the lists must become NumPy arrays.
+        # Pass Python- scalars and lists instead of NumPy types. The scalars
+        # must remain unaffected but the lists must become NumPy arrays.
         ret = MotionState(imass=3, position=[1, 2, 3])
         assert isinstance(ret.imass, int)
         assert isinstance(ret.position, list)
@@ -406,9 +392,6 @@ class TestClerk:
 
         assert MotionStateOverride(position=1) is None
         assert MotionStateOverride(position='blah') is None
-
-        print('Test passed')
-
 
     def test_get_set_forceandtorque(self):
         """
@@ -452,12 +435,9 @@ class TestClerk:
         assert np.array_equal(leo.allForces[id_1].forceDirect, force)
         assert np.array_equal(leo.allForces[id_1].torqueDirect, torque)
 
-        print('Test passed')
-
-
     def test_StateVariable_tuple(self):
         """
-        Test the MotionState class, most notably comparison and (de)serialisation.
+        Test the ``MotionState`` class, most notably the __eq__ method.
         """
         # Compare two identical objects.
         sv1 = MotionState()
@@ -468,9 +448,6 @@ class TestClerk:
         sv1 = MotionState()
         sv2 = MotionState(position=[1, 2, 3])
         assert not isEqualBD(sv1, sv2)
-
-        print('Test passed')
-
 
     def test_set_get_AABB(self):
         """

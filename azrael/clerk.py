@@ -443,8 +443,9 @@ class Clerk(multiprocessing.Process):
 
             # Create the state variables that encode the just determined
             # position and speed.
-            sv = bullet_data.MotionState(position=pos, velocityLin=velocityLin,
-                                        orientation=sv_parent.orientation)
+            sv = bullet_data.MotionState(
+                position=pos, velocityLin=velocityLin,
+                orientation=sv_parent.orientation)
 
             # Spawn the actual object that this factory can create. Retain
             # the objID as it will be returned to the caller.
@@ -797,7 +798,7 @@ class Clerk(multiprocessing.Process):
                      'data': {'name': name, 'objID': str(objID)}})
                 if not ret.ok:
                     continue
-                
+
                 doc['url'] = ret.data['url']
 
                 # Parse the geometry data to determine all fragment names.
@@ -1210,7 +1211,7 @@ class Clerk(multiprocessing.Process):
         fixme: error checks
         fixme: test error checks.
         fixme: replace calls to this method with calls to
-               'azrael.dibbler.sendDibbler' 
+               'azrael.dibbler.sendDibbler'
         fixme: do not call this method directly; instead, call it via dedicated
                methods to add/update/delete objects.
         """
@@ -1219,9 +1220,7 @@ class Clerk(multiprocessing.Process):
 
         req = base64.b64encode(pickle.dumps(req))
         url = 'http://{}:{}/dibbler'.format(
-                config.addr_dibbler, config.port_dibbler)
+              config.addr_dibbler, config.port_dibbler)
         tmp = urllib.request.urlopen(url, data=req).readall()
         tmp = json.loads(tmp.decode('utf8'))
         return RetVal(**tmp)
-
-        

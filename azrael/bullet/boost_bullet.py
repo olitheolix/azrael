@@ -240,12 +240,12 @@ class PyBulletPhys():
             _ = obj.angular_factor
             axesLockRot = [_.x, _.y, _.z]
 
-            # Construct a new _MotionState structure and add it to the list that
-            # will eventually be returned to the caller.
+            # Construct a new _MotionState structure and add it to the list
+            # that will eventually be returned to the caller.
             out.append(
-                _MotionState(obj.azrael[1].scale, obj.inv_mass, obj.restitution,
-                            rot, pos, vLin, vRot, cshape, axesLockLin,
-                            axesLockRot, 0))
+                _MotionState(obj.azrael[1].scale, obj.inv_mass,
+                             obj.restitution, rot, pos, vLin, vRot, cshape,
+                             axesLockLin, axesLockRot, 0))
         return RetVal(True, None, out[0])
 
     @typecheck

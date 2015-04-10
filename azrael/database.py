@@ -42,6 +42,7 @@ dbHandles = {
     'Counters': client[dbName]['Counters']
 }
 
+
 @typecheck
 def init():
     """

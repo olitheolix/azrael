@@ -70,7 +70,7 @@ class TestClerk:
         cls.dibbler.start()
         cls.url_dibbler = 'http://{}:{}/dibbler'.format(ip, port)
 
-        # Wait until Dibbler is live and tell it to reset its Database. 
+        # Wait until Dibbler is live and tell it to reset its Database.
         while True:
             try:
                 ret = cls.sendRequest({'cmd': 'reset', 'data': 'empty'})
@@ -98,7 +98,7 @@ class TestClerk:
         cls.dibbler.terminate()
         cls.clerk.terminate()
         cls.clacks.terminate()
-        
+
         cls.dibbler.join()
         cls.clerk.join()
         cls.clacks.join()
@@ -134,7 +134,6 @@ class TestClerk:
         """
         client = self.clients['ZeroMQ']
         assert client.ping() == (True, None, 'pong clerk')
-        print('Test passed')
 
     @pytest.mark.parametrize('client_type', ['ZeroMQ', 'Websocket'])
     def test_spawn_and_delete_one_client(self, client_type):
@@ -178,9 +177,6 @@ class TestClerk:
         ret = client.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_spawn_and_get_state_variables(self, client_type):
         """
@@ -214,14 +210,15 @@ class TestClerk:
         # The new object has not yet been picked up by Leonard --> its state
         # vector must thus be None.
         ret = client.getStateVariables(objID_1)
-        assert ret.ok and (len(ret.data) == 1) and (ret.data == {objID_1: None})
+        assert ret.ok and (len(ret.data) == 1)
+        assert ret.data == {objID_1: None}
 
         # getAllStateVarialbes must return an empty dictionary.
         ret = client.getAllStateVariables()
         assert ret.ok and (ret.data == {})
 
-        # Run one Leonard step. This will pick up the newly spawned object and SV
-        # queries must now return valid data.
+        # Run one Leonard step. This will pick up the newly spawned object and
+        # SV queries must now return valid data.
         leo.processCommandsAndSync()
         ret = client.getStateVariables(objID_1)
         assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
@@ -230,9 +227,6 @@ class TestClerk:
         ret = client.getAllStateVariables()
         assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
         assert ret.data[objID_1] is not None
-
-        print('Test passed')
-
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_setStateVariable(self, client_type):
@@ -279,9 +273,6 @@ class TestClerk:
         assert np.array_equal(ret_sv.position, new_sv.position)
         assert np.array_equal(ret_sv.cshape, new_sv.cshape)
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_getAllObjectIDs(self, client_type):
         """
@@ -311,13 +302,10 @@ class TestClerk:
         ret = client.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID_1])
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_get_template(self, client_type):
         """
-        Spawn some objects from the default templates and query their template IDs.
+        Spawn some default templates and query their template IDs.
         """
         # Get the client for this test.
         client = self.clients[client_type]
@@ -343,9 +331,6 @@ class TestClerk:
 
         # Attempt to retrieve a non-existing object.
         assert not client.getTemplateID(100).ok
-
-        print('Test passed')
-
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_create_fetch_template(self, client_type):
@@ -430,8 +415,8 @@ class TestClerk:
         assert ret.ok
         assert ret.data[objID]['bar']['type'] == 'raw'
 
-        # Retrieve the entire template and verify the CS and geometry, and number
-        # of boosters/factories.
+        # Retrieve the entire template and verify the CS and geometry, and
+        # number of boosters/factories.
         ret = client.getTemplates([temp.name])
         assert ret.ok and (len(ret.data) == 1)
         t_data = ret.data[temp.name]
@@ -446,22 +431,20 @@ class TestClerk:
 
         # Explicitly verify the booster- and factory units. The easiest (albeit
         # not most readable) way to do the comparison is to convert the unit
-        # descriptions (which are named tuples) to byte strings and compare those.
+        # descriptions (which are named tuples) to byte strings and compare
+        # those.
         out_boosters = [parts.Booster(*_) for _ in t_data.boosters]
         out_factories = [parts.Factory(*_) for _ in t_data.factories]
         assert b0 in out_boosters
         assert b1 in out_boosters
         assert f0 in out_factories
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_controlParts(self, client_type):
         """
-        Create a template with boosters and factories. Then send control commands
-        to them and ensure the applied forces, torques, and spawned objects are
-        correct.
+        Create a template with boosters and factories. Then send control
+        commands to them and ensure the applied forces, torques, and
+        spawned objects are correct.
 
         In this test the parent object moves and is oriented away from its
         default.
@@ -488,8 +471,9 @@ class TestClerk:
 
         # Part position in world coordinates if the parent is rotated by 180
         # degrees around the x-axis. The normalisation of the direction is
-        # necessary because the parts will automatically normalise all direction
-        # vectors, including dir_0 and dir_1 which are not unit vectors.
+        # necessary because the parts will automatically normalise all
+        # direction vectors, including dir_0 and dir_1 which are not unit
+        # vectors.
         dir_0_out = -np.array(dir_0) / np.sum(abs(np.array(dir_0)))
         dir_1_out = -np.array(dir_1) / np.sum(abs(np.array(dir_1)))
         pos_0_out = -np.array(pos_0)
@@ -504,9 +488,9 @@ class TestClerk:
             velocityLin=vel_parent,
             orientation=orient_parent)
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Create a template with two factories and spawn it.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Define the parts.
         b0 = parts.Booster(partID='0', pos=pos_0, direction=dir_0,
@@ -533,11 +517,11 @@ class TestClerk:
         leo.processCommandsAndSync()
         del b0, b1, f0, f1, temp, new_obj, frags
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Activate booster and factories and verify that the applied force and
-        # torque is correct, as well as that the spawned objects have the correct
-        # state variables attached to them.
-        # ------------------------------------------------------------------------
+        # torque is correct, as well as that the spawned objects have the
+        # correct state variables attached to them.
+        # ---------------------------------------------------------------------
 
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
@@ -547,8 +531,8 @@ class TestClerk:
         cmd_2 = parts.CmdFactory(partID='0', exit_speed=exit_speed_0)
         cmd_3 = parts.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
-        # Send the commands and ascertain that the returned object IDs now exist in
-        # the simulation. These IDs must be '2' and '3'.
+        # Send the commands and ascertain that the returned object IDs now
+        # exist in the simulation. These IDs must be '2' and '3'.
         ret = client.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
         spawnIDs = ret.data
         assert (ret.ok, len(spawnIDs)) == (True, 2)
@@ -561,10 +545,11 @@ class TestClerk:
 
         # Verify the position and velocity of the spawned objects is correct.
         sv_2, sv_3 = [ret_SVs[_]['sv'] for _ in spawnIDs]
-        assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
-        assert np.allclose(sv_2.position, pos_0_out + pos_parent)
-        assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
-        assert np.allclose(sv_3.position, pos_1_out + pos_parent)
+        ac = np.allclose
+        assert ac(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
+        assert ac(sv_2.position, pos_0_out + pos_parent)
+        assert ac(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
+        assert ac(sv_3.position, pos_1_out + pos_parent)
 
         # Manually compute the total force and torque exerted by the boosters.
         forcevec_0, forcevec_1 = forcemag_0 * dir_0_out, forcemag_1 * dir_1_out
@@ -576,9 +561,6 @@ class TestClerk:
         leo_force, leo_torque = leo.totalForceAndTorque(objID_1)
         assert np.array_equal(leo_force, tot_force)
         assert np.array_equal(leo_torque, tot_torque)
-
-        print('Test passed')
-
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_updateFragments_raw(self, client_type):
@@ -649,8 +631,6 @@ class TestClerk:
         ret = client.getStateVariables(objID)
         assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
 
-        print('Test passed')
-
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_updateFragments_dae(self, client_type):
         """
@@ -662,7 +642,7 @@ class TestClerk:
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
-        # Collada format: a .dae file plus a list of textures in jpg or png format.
+        # Get a Collada fragment.
         f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
@@ -718,9 +698,6 @@ class TestClerk:
         ret = client.getStateVariables(objID)
         assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_updateFragmentStates(self, client_type):
         """
@@ -761,18 +738,16 @@ class TestClerk:
         assert ret.ok
         assert ret.data[objID]['frag'] == newStates[objID]
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_collada_model(self, client_type):
         """
-        Add a template based on a Collada model, spawn it, and query its geometry.
+        Add a template based on a Collada model, spawn it, and query its
+        geometry.
         """
         # Get the client for this test.
         client = self.clients[client_type]
 
-        # Collada format: a .dae file plus a list of textures in jpg or png format.
+        # Get a Collada fragment.
         f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
@@ -796,21 +771,3 @@ class TestClerk:
         ret = ret.data[objID]
         assert ret['f_dae']['type'] == 'dae'
         assert ret['f_dae']['url'] == '/instances/' + str(objID) + '/f_dae'
-
-        print('Test passed')
-
-
-if __name__ == '__main__':
-    for _transport_type in ('ZeroMQ', 'Websocket'):
-        test_collada_model(_transport_type)
-        test_updateFragmentStates(_transport_type)
-        test_setStateVariable(_transport_type)
-        test_updateFragments_raw(_transport_type)
-        test_updateFragments_dae(_transport_type)
-        test_spawn_and_delete_one_client(_transport_type)
-        test_spawn_and_get_state_variables(_transport_type)
-        test_ping()
-        test_get_template(_transport_type)
-        test_controlParts(_transport_type)
-        test_getAllObjectIDs(_transport_type)
-        test_create_fetch_template(_transport_type)

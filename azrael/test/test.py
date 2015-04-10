@@ -30,8 +30,8 @@ def createFragDae():
     dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
     dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
     frag = FragDae(dae=dae_file,
-                    rgb={'rgb1.png': dae_rgb1,
-                         'rgb2.jpg': dae_rgb2})
+                   rgb={'rgb1.png': dae_rgb1,
+                        'rgb2.jpg': dae_rgb2})
     return frag
 
 

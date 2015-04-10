@@ -89,12 +89,13 @@ class TestLeonardAllEngines:
         for x in range(Nx):
             for y in range(Ny):
                 for z in range(Nz):
-                    # Assign integer values (allows for equality comparisions later
-                    # on without having to worry about rounding effects).
+                    # Assign integer values (allows for equality comparisions
+                    # later on without having to worry about rounding effects).
                     force[x, y, z] = [val, val + 1, val + 2]
 
                     # Build the input dictionary for ``getGridForces``.
-                    idPos[objID] = np.array([x + ofs[0], y + ofs[1], z + ofs[2]])
+                    idPos[objID] = np.array(
+                        [x + ofs[0], y + ofs[1], z + ofs[2]])
 
                     # Keep track of the value assigned to this position.
                     idVal[objID] = force[x, y, z]
@@ -106,7 +107,7 @@ class TestLeonardAllEngines:
         # Set the grid values with a region operator.
         ret = vg.setRegion('force', ofs, force)
 
-        # Query the grid values at the positions specified in the idPos dictionary.
+        # Query the grid values at the positions specified in idPos.
         ret = leo.getGridForces(idPos)
         assert ret.ok
         gridForces = ret.data
@@ -119,9 +120,6 @@ class TestLeonardAllEngines:
 
             # Compare: direct <--> getGridForces.
             assert np.array_equal(val_direct, val_gridforce)
-
-        print('Test passed')
-
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_setStateVariable_basic(self, clsLeonard):
@@ -163,9 +161,6 @@ class TestLeonardAllEngines:
         assert np.array_equal(sv.velocityLin, data.velocityLin)
         assert np.array_equal(sv.velocityRot, data.velocityRot)
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_setStateVariable_advanced(self, clsLeonard):
         """
@@ -194,7 +189,8 @@ class TestLeonardAllEngines:
         assert np.array_equal(ret.data[objID].cshape, cs_sphere)
 
         # Update the object's SV data.
-        sv_new = bullet_data.MotionStateOverride(imass=4, scale=5, cshape=cs_cube)
+        sv_new = bullet_data.MotionStateOverride(
+            imass=4, scale=5, cshape=cs_cube)
         assert physAPI.addCmdModifyStateVariable(objID, sv_new).ok
 
         # Verify the SV data.
@@ -205,14 +201,11 @@ class TestLeonardAllEngines:
         assert (sv.imass == 4) and (sv.scale == 5)
         assert np.array_equal(sv.cshape, cs_cube)
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_move_single_object(self, clsLeonard):
         """
-        Create a single object with non-zero initial speed and ensure Leonard moves
-        it accordingly.
+        Create a single object with non-zero initial speed and ensure
+        Leonard moves it accordingly.
         """
         # Get a Leonard instance.
         leonard = getLeonard(clsLeonard)
@@ -242,9 +235,6 @@ class TestLeonardAllEngines:
         assert 0.9 <= ret.data[id_0].position[0] < 1.1
         assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_move_two_objects_no_collision(self, clsLeonard):
         """
@@ -255,8 +245,9 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0, id_1, aabb = 0, 1, 1
-        sv_0 = bullet_data.MotionState(position=[0, 0, 0], velocityLin=[1, 0, 0])
-        sv_1 = bullet_data.MotionState(position=[0, 10, 0], velocityLin=[0, -1, 0])
+        MS = bullet_data.MotionState
+        sv_0 = MS(position=[0, 0, 0], velocityLin=[1, 0, 0])
+        sv_1 = MS(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
         # Create two objects.
         tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
@@ -271,19 +262,17 @@ class TestLeonardAllEngines:
         assert ret.ok
         pos_1 = ret.data[id_1].position
 
-        # Verify that the objects have moved according to their initial velocity.
+        # The objects must have moved according to their initial velocity.
         assert pos_0[1] == pos_0[2] == 0
         assert pos_1[0] == pos_1[2] == 0
         assert 0.9 <= pos_0[0] <= 1.1
         assert 8.9 <= pos_1[1] <= 9.1
 
-        print('Test passed')
-
     @pytest.mark.parametrize('dim', [0, 1, 2])
     def test_computeCollisionSetsAABB(self, dim):
         """
-        Create a sequence of 10 test objects. Their position only differs in the
-        ``dim`` dimension.
+        Create a sequence of 10 test objects. Their position only
+        differs in the ``dim`` dimension.
 
         Then use subsets of these 10 objects to test basic collision detection.
         """
@@ -293,12 +282,13 @@ class TestLeonardAllEngines:
         # Create several objects for this test.
         all_id = list(range(10))
 
+        MS = bullet_data.MotionState
         if dim == 0:
-            SVs = [bullet_data.MotionState(position=[_, 0, 0]) for _ in range(10)]
+            SVs = [MS(position=[_, 0, 0]) for _ in range(10)]
         elif dim == 1:
-            SVs = [bullet_data.MotionState(position=[0, _, 0]) for _ in range(10)]
+            SVs = [MS(position=[0, _, 0]) for _ in range(10)]
         elif dim == 2:
-            SVs = [bullet_data.MotionState(position=[0, 0, _]) for _ in range(10)]
+            SVs = [MS(position=[0, 0, _]) for _ in range(10)]
         else:
             print('Invalid dimension for this test')
             assert False
@@ -315,15 +305,16 @@ class TestLeonardAllEngines:
 
         def ccsWrapper(test_objIDs, expected_objIDs):
             """
-            Assert that all ``test_objIDs`` resulted in the ``expected_objIDs``.
+            Assert that all ``test_objIDs`` are ``expected_objIDs``.
 
-            This is merely a convenience wrapper to facilitate readable tests.
+            This is a convenience wrapper to facilitate readable tests.
 
-            This wrapper converts the human readable entries in ``IDs_hr``  into
-            the internally used binary format. It then passes this new list, along
-            with the corresponding SVs, to the collision detection algorithm.
-            Finally, it converts the returned list of object sets back into human
-            readable list of object sets and compares them for equality.
+            This wrapper converts the human readable entries in
+            ``IDs_hr``  into the internally used binary format. It then
+            passes this new list, along with the corresponding SVs, to
+            the collision detection algorithm.  Finally, it converts the
+            returned list of object sets back into human readable list
+            of object sets and compares them for equality.
             """
             # Compile the set of SVs for curIDs.
             SVs = {_: leo.allObjects[_] for _ in test_objIDs}
@@ -349,21 +340,18 @@ class TestLeonardAllEngines:
         # Three sets.
         ccsWrapper([0, 1, 5, 8, 9], [[0, 1], [5], [8, 9]])
 
-        # Same test, but objects are passed in a different sequence. This must not
-        # alter the test outcome.
+        # Same test, but objects are passed in a different sequence. This must
+        # not alter the test outcome.
         ccsWrapper([0, 5, 1, 9, 8], [[0, 1], [5], [8, 9]])
 
         # All objects must form one connected set.
         ccsWrapper(list(range(10)), [list(range(10))])
 
-        print('Test passed')
-
-
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_force_grid(self, clsLeonard):
         """
-        Create a force grid and ensure Leonard applies its values to the center of
-        the mass.
+        Create a force grid and ensure Leonard applies its values to the
+        center of the mass.
         """
         # Convenience.
         vg = azrael.vectorgrid
@@ -387,8 +375,8 @@ class TestLeonardAllEngines:
         # Define a force grid.
         assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
-        # Specify a non-zero value somewhere away from the object. This means the
-        # object must still not move.
+        # Specify a non-zero value somewhere away from the object. This means
+        # the object must still not move.
         pos = np.array([1, 2, 3], np.float64)
         value = np.ones(3, np.float64)
         assert vg.setValues('force', [(pos, value)]).ok
@@ -411,8 +399,6 @@ class TestLeonardAllEngines:
         assert ret.ok
         assert 0.4 <= ret.data[id_0].position[0] < 0.6
         assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
-
-        print('Test passed')
 
 
 class TestLeonardOther:
@@ -463,8 +449,8 @@ class TestLeonardOther:
         tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
         assert physAPI.addCmdSpawn(tmp).ok
 
-        # Advance the simulation by 1s, but use many small time steps. This ensures
-        # that the Workers will restart themselves frequently.
+        # Advance the simulation by 1s, but use many small time steps. This
+        # ensures that the Workers will restart themselves frequently.
         for ii in range(60):
             leonard.step(1.0 / 60, 1)
 
@@ -476,24 +462,23 @@ class TestLeonardOther:
         assert ret.ok
         pos_1 = ret.data[id_1].position
 
-        # Verify that the objects have moved according to their initial velocity.
+        # The objects must have moved according to their initial velocity.
         assert pos_0[1] == pos_0[2] == 0
         assert pos_1[0] == pos_1[2] == 0
         assert 0.9 <= pos_0[0] <= 1.1
         assert 8.9 <= pos_1[1] <= 9.1
 
         killAzrael()
-        print('Test passed')
-
 
     def test_sweeping_2objects(self):
         """
         Ensure the Sweeping algorithm finds the correct sets.
 
-        The algorithm takes a list of dictionarys and returns a list of lists.
+        The algorithm takes a list of dictionarys and returns a list of
+        lists.
 
-        The input dictionary each contains the AABB coordinates. The output list
-        contains the set of overlapping AABBs.
+        The input dictionary each contains the AABB coordinates. The output
+        list contains the set of overlapping AABBs.
         """
         # Define a force grid (not used in this test but prevent a plethora
         # of meaningleass warning messages).
@@ -546,9 +531,6 @@ class TestLeonardOther:
         res = sweeping(aabbs, np.array([0], np.int64), 'x').data
         assert sorted(res) == sorted([set([0])])
 
-        print('Test passed')
-
-
     def test_sweeping_3objects(self):
         """
         Same as test_sweeping_2objects but with three objects.
@@ -576,9 +558,9 @@ class TestLeonardOther:
         res = sweeping(aabbs, np.array([2, 4, 10], np.int64), 'x').data
         assert sorted(res) == sorted([set([2, 4]), set([10])])
 
-        # First overlaps with second, second overlaps with third, but third does
-        # not overlap with first. The algorithm must nevertheless return all three
-        # in a single set.
+        # First overlaps with second, second overlaps with third, but third
+        # does not overlap with first. The algorithm must nevertheless return
+        # all three in a single set.
         aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [3, 6]}]
         res = sweeping(aabbs, labels, 'x').data
         assert sorted(res) == sorted([set([0, 1, 2])])
@@ -587,9 +569,6 @@ class TestLeonardOther:
         aabbs = [{'x': [1, 2]}, {'x': [10, 11]}, {'x': [0, 1.5]}]
         res = sweeping(aabbs, labels, 'x').data
         assert sorted(res) == sorted([set([0, 2]), set([1])])
-
-        print('Test passed')
-
 
     def test_createWorkPackages(self):
         """
@@ -622,7 +601,7 @@ class TestLeonardOther:
         ret_wpid, ret_wpdata = ret.data['wpid'], ret.data['wpdata']
         assert (ret.ok, ret_wpid, len(ret_wpdata)) == (True, 0, 1)
 
-        # Create a second WP. This one must have WPID=2 and contain two objects.
+        # Create a second WP: it must have WPID=2 and contain two objects.
         ret = leo.createWorkPackage([id_1, id_2], dt, maxsteps)
         ret_wpid, ret_wpdata = ret.data['wpid'], ret.data['wpdata']
         assert (ret.ok, ret_wpid, len(ret_wpdata)) == (True, 1, 2)
@@ -642,8 +621,6 @@ class TestLeonardOther:
 
         # Cleanup.
         killAzrael()
-        print('Test passed')
-
 
     def test_updateLocalCache(self):
         """
@@ -677,8 +654,6 @@ class TestLeonardOther:
 
         # Cleanup.
         killAzrael()
-        print('Test passed')
-
 
     def test_processCommandQueue(self):
         """
@@ -740,13 +715,12 @@ class TestLeonardOther:
 
         # Cleanup.
         killAzrael()
-        print('Test passed')
-
 
     def test_maintain_forces(self):
         """
-        Leonard must not reset any forces from one iteration to the next (used to
-        be the case at some point and thus requires a dedicated test now).
+        Leonard must not reset any forces from one iteration to the next
+        (used to be the case at some point and thus requires a dedicated
+        test now).
         """
         # Get a Leonard instance.
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
@@ -808,13 +782,12 @@ class TestLeonardOther:
 
         # Cleanup.
         killAzrael()
-        print('Test passed')
-
 
     def test_totalForceAndTorque_no_rotation(self):
         """
-        Verify that 'totalForceAndTorque' correctly adds up the direct- and booster
-        forces for an object that is in neutral position (ie without rotation).
+        Verify that 'totalForceAndTorque' correctly adds up the direct-
+        and booster forces for an object that is in neutral position (ie
+        without rotation).
         """
         # Get a Leonard instance.
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
@@ -854,15 +827,13 @@ class TestLeonardOther:
 
         # Cleanup.
         killAzrael()
-        print('Test passed')
-
 
     def test_totalForceAndTorque_with_rotation(self):
         """
-        Similar to the previou 'test_totalForceAndTorque_no_rotation' but this time
-        the object does not have a neutral rotation in world coordinates. This must
-        have no effect on the direct force values, but the booster forces must be
-        re-oriented accordingly.
+        Similar to the previou 'test_totalForceAndTorque_no_rotation'
+        but this time the object does not have a neutral rotation in
+        world coordinates. This must have no effect on the direct force
+        values, but the booster forces must be re-oriented accordingly.
         """
         # Get a Leonard instance.
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
@@ -882,12 +853,12 @@ class TestLeonardOther:
         assert physAPI.addCmdBoosterForce(objID, [1, 2, 3], [-1, -2, -3]).ok
         leo.processCommandsAndSync()
 
-        # The net forces in must have their signs flipped in the y/z directions,
-        # and remain unchanged for x since the object itself is rotated 180 degrees
-        # around the x-axis.
+        # The net forces in must have their signs flipped in the y/z
+        # directions, and remain unchanged for x since the object itself is
+        # rotated 180 degrees around the x-axis.
         assert leo.totalForceAndTorque(objID) == ([1, -2, -3], [-1, 2, 3])
 
-        # The object's rotation must have not effect the direct force and torque.
+        # The object's rotation must not effect the direct force and torque.
         assert physAPI.addCmdBoosterForce(objID, [0, 0, 0], [0, 0, 0]).ok
         assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
         leo.processCommandsAndSync()
@@ -895,4 +866,3 @@ class TestLeonardOther:
 
         # Cleanup.
         killAzrael()
-        print('Test passed')

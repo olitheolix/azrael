@@ -39,6 +39,7 @@ from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, MetaFragment
 from azrael.test.test import createFragRaw, createFragDae
 
+
 class TestDibbler(tornado.testing.AsyncHTTPTestCase):
     def get_app(self):
         handlers = []
@@ -86,7 +87,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         # Compile the Dibbler request.
         req = {'cmd': 'add_template', 'data': template}
         return self.sendRequest(req)
-        
+
     def downloadFragRaw(self, url):
         # fixme: docu
         ret = self.fetch(url, method='GET')
@@ -95,17 +96,17 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         except ValueError:
             assert False
         return FragRaw(**(ret))
-        
+
     def downloadFragDae(self, url, dae, textures):
         # fixme: docu
         dae = self.fetch(url + dae, method='GET').body
-        
+
         rgb = {}
         for texture in textures:
             tmp = self.fetch(url + texture, method='GET').body
             rgb[texture] = tmp
         return FragDae(dae=dae, rgb=rgb)
-        
+
     def downloadJSON(self, url):
         # fixme: docu
         url = config.url_template + '/t1/meta.json'
@@ -115,13 +116,12 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         except ValueError:
             assert False
 
-        
     def test_template_raw(self):
         """
         Add and query a template with one Raw fragment.
         """
         self.resetDibbler()
-        
+
         # Create two Templates with one Raw fragment each.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
@@ -146,7 +146,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
 
         # Verify the first template.
         _verifyTemplate(ret1.data['url'], t1.fragments[0])
-            
+
         # Add the second template.
         ret2 = self.addTemplate(t2)
         assert ret2.ok and ret2.data['url'] == config.url_template + '/t2'
@@ -162,7 +162,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         Add and query a template with one Collada fragment.
         """
         self.resetDibbler()
-        
+
         # Create two Templates with one Collada fragment each.
         frags = [MetaFragment('bar', 'dae', createFragDae())]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
@@ -203,7 +203,7 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         Add templates with multiple fragments of different types.
         """
         self.resetDibbler()
-        
+
         # Create two Templates. Each template has a Raw and Collada fragment.
         frags = [
             MetaFragment('bar_raw', 'raw', createFragRaw()),
@@ -229,13 +229,13 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
             # Check the Raw fragment.
             tmp_url = url + '/bar_raw/model.json'
             assert self.downloadFragRaw(tmp_url) == frag[0].data
-        
+
             # Check the Collada fragment.
             tmp_url = url + '/bar_dae/'
             ret = self.downloadFragDae(
                 tmp_url, 'bar_dae', ['rgb1.png', 'rgb2.jpg'])
             assert ret == frag[1].data
-            
+
         # Add the first template and verify it.
         ret1 = self.addTemplate(t1)
         assert ret1.ok and ret1.data['url'] == config.url_template + '/t1'
@@ -326,8 +326,8 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
 
         def _templateOk(url, frag):
             try:
-                # Load the meta file for this template which must contain a list of
-                # all fragment names.
+                # Load the meta file for this template which must contain a
+                # list of all fragment names.
                 ret = self.downloadJSON(url + '/meta.json')
                 assert ret['fragments'] == {'bar': 'raw'}
 
@@ -351,25 +351,25 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert not self.sendRequest(req).ok
         assert _templateOk(ret1.data['url'], t1.fragments[0])
         assert _templateOk(ret2.data['url'], t2.fragments[0])
-        
+
         # Delete second template.
         req = {'cmd': 'del_template', 'data': t2.name}
         assert self.sendRequest(req).ok
         assert _templateOk(ret1.data['url'], t1.fragments[0])
         assert not _templateOk(ret2.data['url'], t2.fragments[0])
-        
+
         # Delete first template.
         req = {'cmd': 'del_template', 'data': t1.name}
         assert self.sendRequest(req).ok
         assert not _templateOk(ret1.data['url'], t1.fragments[0])
         assert not _templateOk(ret2.data['url'], t2.fragments[0])
-        
+
         # Attempt to delete the first template again.
         req = {'cmd': 'del_template', 'data': t1.name}
         assert not self.sendRequest(req).ok
         assert not _templateOk(ret1.data['url'], t1.fragments[0])
         assert not _templateOk(ret2.data['url'], t2.fragments[0])
-        
+
         print('Test passed')
 
     def test_spawn_template(self):
@@ -386,8 +386,8 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
 
         def _instanceOk(url, frag):
             try:
-                # Load the meta file for this template which must contain a list of
-                # all fragment names.
+                # Load the meta file for this template which must contain a
+                # list of all fragment names.
                 ret = self.downloadJSON(url + '/meta.json')
                 assert ret['fragments'] == {'bar': 'raw'}
 
@@ -433,8 +433,8 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
 
         def _instanceOk(url, frag):
             try:
-                # Load the meta file for this template which must contain a list of
-                # all fragment names.
+                # Load the meta file for this template which must contain a
+                # list of  all fragment names.
                 ret = self.downloadJSON(url + '/meta.json')
                 assert ret['fragments'] == {'bar': 'raw'}
 
@@ -463,22 +463,22 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert not self.sendRequest({'cmd': 'del_instance', 'data': '100'}).ok
         assert _instanceOk(ret1.data['url'], t1.fragments[0])
         assert _instanceOk(ret2.data['url'], t1.fragments[0])
-                
+
         # Delete second instance.
         assert self.sendRequest({'cmd': 'del_instance', 'data': '2'}).ok
         assert _instanceOk(ret1.data['url'], t1.fragments[0])
         assert not _instanceOk(ret2.data['url'], t1.fragments[0])
-        
+
         # Delete first instance.
         assert self.sendRequest({'cmd': 'del_instance', 'data': '1'}).ok
         assert not _instanceOk(ret1.data['url'], t1.fragments[0])
         assert not _instanceOk(ret2.data['url'], t1.fragments[0])
-        
+
         # Attempt to delete the first instance again.
         assert not self.sendRequest({'cmd': 'del_instance', 'data': '1'}).ok
         assert not _instanceOk(ret1.data['url'], t1.fragments[0])
         assert not _instanceOk(ret2.data['url'], t1.fragments[0])
-        
+
         print('Test passed')
 
     def test_updateFragments(self):
@@ -494,8 +494,8 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
 
         def _instanceOk(url, frag):
             try:
-                # Load the meta file for this template which must contain a list of
-                # all fragment names.
+                # Load the meta file for this template which must contain a
+                # list of all fragment names.
                 ret = self.downloadJSON(url + '/meta.json')
                 assert ret['fragments'] == {'bar': 'raw'}
 

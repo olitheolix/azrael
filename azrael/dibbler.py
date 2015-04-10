@@ -92,11 +92,11 @@ def resetDibbler(url):
     fixme: docu
     fixme: move try/except clause into sendDibbler
     """
-    # Wait until Dibbler is live and tell it to reset its Database. 
+    # Wait until Dibbler is live and tell it to reset its Database.
     req = {'cmd': 'reset', 'data': 'empty'}
     req = base64.b64encode(pickle.dumps(req))
 
-    # Wait until Dibbler is live and tell it to reset its Database. 
+    # Wait until Dibbler is live and tell it to reset its Database.
     # fixme: put this into dedicated method.
     while True:
         try:
@@ -115,7 +115,7 @@ def rmtree(dirnames: list, ignore_errors=False):
     # Precaution: refuse to delete anything outside /tmp/
     for dirname in dirnames:
         assert dirname.startswith('/tmp/')
-    
+
     for dirname in dirnames:
         shutil.rmtree(dirname, ignore_errors=ignore_errors)
 
@@ -278,6 +278,7 @@ def saveModel(model_dir, fragments, update_existing):
         return RetVal(False, msg, None)
     return RetVal(True, None, aabb)
 
+
 @typecheck
 def removeTemplate(dirname: str):
     """
@@ -331,7 +332,7 @@ class Dibbler(tornado.web.RequestHandler):
             self.write(json.dumps(ret))
             return
 
-        # Return message 
+        # Return message.
         data = {'name': 'test', 'x + y': '|'.join([x, y])}
         ret = RetVal(True, None, data)
         self.write(json.dumps(ret._asdict()))
@@ -394,7 +395,7 @@ class Dibbler(tornado.web.RequestHandler):
             ret = RetVal(False, msg, None)
 
         self.write(json.dumps(ret._asdict()))
-        
+
     def getTemplateDir(self, name: str):
         return os.path.join(self.dir_templates, name)
 
@@ -422,7 +423,7 @@ class Dibbler(tornado.web.RequestHandler):
 
         # Overwrite the model for instance with ``objID``.
         return saveModel(model_dir, frags, update_existing=True)
-        
+
     def spawnTemplate(self, data: dict):
         try:
             assert isinstance(data, dict)
@@ -432,7 +433,7 @@ class Dibbler(tornado.web.RequestHandler):
         except (AssertionError, TypeError, ValueError, KeyError):
             msg = 'Invalid parameters in spawn command'
             return RetVal(False, msg, None)
-        
+
         # Copy the model from the template- to the instance directory.
         src = self.getTemplateDir(name)
         dst = self.getInstanceDir(objID)
@@ -463,7 +464,7 @@ class Dibbler(tornado.web.RequestHandler):
             msg = 'Could not delete objID <{}>'.format(objID)
             return RetVal(False, msg, None)
         return RetVal(True, None, None)
-        
+
     def addTemplate(self, tt):
         """
         # fixme: docstring
@@ -482,7 +483,7 @@ class Dibbler(tornado.web.RequestHandler):
         if not ret.ok:
             return ret
 
-        # Return message 
+        # Return message.
         return RetVal(True, None, {'aabb': ret.data, 'url': model_url})
 
 

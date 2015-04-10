@@ -54,9 +54,10 @@ Forces = namedtuple('Forces',
 
 # Motion state of an object.
 _MotionState = namedtuple('_MotionState',
-                         'scale imass restitution orientation '
-                         'position velocityLin velocityRot cshape '
-                         'axesLockLin axesLockRot lastChanged')
+                          'scale imass restitution orientation '
+                          'position velocityLin velocityRot cshape '
+                          'axesLockLin axesLockRot lastChanged')
+
 
 def typecheck(func_handle):
     """

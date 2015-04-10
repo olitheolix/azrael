@@ -57,7 +57,7 @@ class TestClerk:
         cls.dibbler.start()
         cls.url_dibbler = 'http://{}:{}/dibbler'.format(ip, port)
 
-        # Wait until Dibbler is live and tell it to reset its Database. 
+        # Wait until Dibbler is live and tell it to reset its Database.
         # fixme: put this into dedicated method.
         while True:
             try:
@@ -110,7 +110,7 @@ class TestClerk:
         clacks = azrael.clacks.ClacksServer()
         clacks.start()
 
-        # Wait until Dibbler is live, then tell it to reset its Database. 
+        # Wait until Dibbler is live, then tell it to reset its Database.
         clerk = azrael.clerk.Clerk()
         while True:
             try:
@@ -145,12 +145,11 @@ class TestClerk:
                 break
             except urllib.request.URLError:
                 time.sleep(0.2)
-                
+
         ret = json.loads(ret.decode('utf8'))
 
         clacks.terminate()
         clacks.join()
-        print('Test passed')
 
     def test_spawn(self):
         """
@@ -208,15 +207,12 @@ class TestClerk:
         # Invalid: one template does not exist.
         assert not clerk.spawn([(name_2, sv_2), (b'blah', sv_3)]).ok
 
-        print('Test passed')
-
-
     def test_delete(self):
         """
         Test the 'removeObject' command in the Clerk.
 
-        Spawn an object and ensure it exists, then delete it and ensure it does not
-        exist anymore.
+        Spawn an object and ensure it exists, then delete it and ensure it does
+        not exist anymore.
         """
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
@@ -259,9 +255,6 @@ class TestClerk:
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
-        print('Test passed')
-
-
     def test_get_statevar(self):
         """
         Test the 'get_statevar' command in the Clerk.
@@ -272,8 +265,9 @@ class TestClerk:
         # Test parameters and constants.
         objID_1 = 1
         objID_2 = 2
-        sv_1 = bullet_data.MotionState(position=np.arange(3), velocityLin=[2, 4, 6])
-        sv_2 = bullet_data.MotionState(position=[2, 4, 6], velocityLin=[6, 8, 10])
+        MS = bullet_data.MotionState
+        sv_1 = MS(position=np.arange(3), velocityLin=[2, 4, 6])
+        sv_2 = MS(position=[2, 4, 6], velocityLin=[6, 8, 10])
         templateID = '_templateNone'
 
         # Instantiate a Clerk.
@@ -314,9 +308,6 @@ class TestClerk:
         assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
         assert isEqualBD(ret.data[objID_2]['sv'], sv_2)
 
-        print('Test passed')
-
-
     def test_getAllStateVariables(self):
         """
         Test the 'getAllStateVariables' command in the Clerk.
@@ -326,8 +317,9 @@ class TestClerk:
 
         # Test parameters and constants.
         objID_1, objID_2 = 1, 2
-        sv_1 = bullet_data.MotionState(position=np.arange(3), velocityLin=[2, 4, 6])
-        sv_2 = bullet_data.MotionState(position=[2, 4, 6], velocityLin=[6, 8, 10])
+        MS = bullet_data.MotionState
+        sv_1 = MS(position=np.arange(3), velocityLin=[2, 4, 6])
+        sv_2 = MS(position=[2, 4, 6], velocityLin=[6, 8, 10])
         templateID = '_templateNone'
 
         # Instantiate a Clerk.
@@ -358,9 +350,6 @@ class TestClerk:
         assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
         assert isEqualBD(ret.data[objID_2]['sv'], sv_2)
 
-        print('Test passed')
-
-
     def test_set_force(self):
         """
         Set and retrieve force and torque values.
@@ -390,9 +379,6 @@ class TestClerk:
         assert np.array_equal(tmp[0], force)
         assert np.array_equal(tmp[1], np.cross(relpos, force))
 
-        print('Test passed')
-
-
     def test_get_default_templates(self):
         """
         Query the defautl templates in Azrael.
@@ -403,34 +389,34 @@ class TestClerk:
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
 
+        AE = np.array_equal
+
         # Clerk has a few default objects. This one has no collision shape...
         name_1 = '_templateNone'
         ret = clerk.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
-        assert np.array_equal(ret.data[name_1]['cshape'], np.array([0, 1, 1, 1]))
+        assert AE(ret.data[name_1]['cshape'], np.array([0, 1, 1, 1]))
 
         # ... this one is a sphere...
         name_2 = '_templateSphere'
         ret = clerk.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
-        assert np.array_equal(ret.data[name_2]['cshape'], np.array([3, 1, 1, 1]))
+        assert np.array_equal(ret.data[name_2]['cshape'],
+                              np.array([3, 1, 1, 1]))
 
         # ... and this one is a cube.
         name_3 = '_templateCube'
         ret = clerk.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
-        assert np.array_equal(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
+        assert AE(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
 
         # Retrieve all three again but with a single call.
         ret = clerk.getTemplates([name_1, name_2, name_3])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3))
-        assert np.array_equal(ret.data[name_1]['cshape'], np.array([0, 1, 1, 1]))
-        assert np.array_equal(ret.data[name_2]['cshape'], np.array([3, 1, 1, 1]))
-        assert np.array_equal(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
-
-        print('Test passed')
-
+        assert AE(ret.data[name_1]['cshape'], np.array([0, 1, 1, 1]))
+        assert AE(ret.data[name_2]['cshape'], np.array([3, 1, 1, 1]))
+        assert AE(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
 
     @mock.patch.object(azrael.clerk.Clerk, 'sendRequest')
     def test_add_get_template_single(self, mock_sr):
@@ -502,9 +488,10 @@ class TestClerk:
         assert len(ret.data[temp.name]['boosters']) == 2
         assert len(ret.data[temp.name]['factories']) == 1
 
-        # Explicitly verify the booster- and factory units. The easisest (albeit
-        # not most readable) way to do the comparison is to convert the unit
-        # descriptions (which are named tuples) to byte strings and compare those.
+        # Explicitly verify the booster- and factory units. The easisest
+        # (albeit not most readable) way to do the comparison is to convert the
+        # unit descriptions (which are named tuples) to byte strings and
+        # compare those.
         Booster, Factory = parts.Booster, parts.Factory
         out_boosters = [Booster(*_) for _ in ret.data[temp.name]['boosters']]
         out_factories = [Factory(*_) for _ in ret.data[temp.name]['factories']]
@@ -513,12 +500,10 @@ class TestClerk:
         assert f0 in out_factories
 
         # Request the same templates multiple times in a single call. This must
-        # return a dictionary with as many keys as there are unique template IDs.
+        # return a dictionary with as many keys as there are unique template
+        # IDs.
         ret = clerk.getTemplates([temp.name, temp.name, temp.name])
         assert ret.ok and (len(ret.data) == 1) and (temp.name in ret.data)
-
-        print('Test passed')
-
 
     @mock.patch.object(azrael.clerk.Clerk, 'sendRequest')
     def test_add_get_template_multi_url(self, mock_sr):
@@ -572,9 +557,6 @@ class TestClerk:
         assert ret.data[name_1]['url'] == '/templates/' + name_1
         assert ret.data[name_2]['url'] == '/templates/' + name_2
 
-        print('Test passed')
-
-
     def test_add_get_template_AABB(self):
         """
         Similarly to test_add_get_template but focuses exclusively on the AABB.
@@ -586,8 +568,8 @@ class TestClerk:
         cs = [1, 2, 3, 4]
         uv = rgb = []
 
-        # Manually specify the vertices and its spatial extent in the 'max_sidelen'
-        # variable beneath.
+        # Manually specify the vertices and its spatial extent in the
+        # 'max_sidelen' variable beneath.
         vert = [-4, 0, 0,
                 1, 2, 3,
                 4, 5, 6]
@@ -622,9 +604,6 @@ class TestClerk:
         # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
         assert (ret.data[t2.name]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
 
-        print('Test passed')
-
-
     def test_get_object_template_id(self):
         """
         Spawn two objects from different templates. Then query the template ID
@@ -658,14 +637,11 @@ class TestClerk:
         # Attempt to retrieve a non-existing object.
         assert not clerk.getTemplateID(100).ok
 
-        print('Test passed')
-
-
     def test_controlParts_Boosters_bug_102(self):
         """
-        ControlParts breaks when the objID does not exist. This typically happens
-        when an object receives control commands _after_ it was spawned but
-        _before_ Leonard has picked it up.
+        ControlParts breaks when the objID does not exist. This
+        typically happens when an object receives control commands
+        _after_ it was spawned but _before_ Leonard has picked it up.
         """
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -693,12 +669,9 @@ class TestClerk:
         # Create a Booster command.
         cmd = parts.CmdBooster(partID='0', force=2)
 
-        # Send the command to Clerk. With the bug present this triggered a stack
-        # trace, whereas now it must simply return with cleared ok flag.
+        # Send the command to Clerk. With the bug present this triggered a
+        # stack trace, whereas now it must simply return with cleared ok flag.
         assert not clerk.controlParts(objID, [cmd], []).ok
-
-        print('Test passed')
-
 
     def test_controlParts_invalid_commands(self):
         """
@@ -735,16 +708,16 @@ class TestClerk:
         # Must fail: objects still has neither a booster nor a factory.
         assert not clerk.controlParts(objID_1, [cmd_b], [cmd_f]).ok
 
-        # Must fail: Factory command where a Booster is expected and vice versa.
+        # Must fail: Factory where Booster is expected and vice versa.
         assert not clerk.controlParts(objID_1, [cmd_f], [cmd_b]).ok
 
         # Must fail: Booster command among Factory commands.
         assert not clerk.controlParts(objID_1, [], [cmd_f, cmd_b]).ok
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Create a template with one booster and one factory. Then send
         # commands to them.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Define the Booster and Factory parts.
         b0 = parts.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
@@ -776,9 +749,6 @@ class TestClerk:
         assert not clerk.controlParts(objID_2, [cmd_b, cmd_b], []).ok
         assert not clerk.controlParts(objID_2, [], [cmd_f, cmd_f]).ok
 
-        print('Test passed')
-
-
     def test_controlParts_Boosters_notmoving(self):
         """
         Create a template with boosters and send control commands to it.
@@ -794,9 +764,9 @@ class TestClerk:
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Define an object with a booster and spawn it.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Constants for the new template object.
         sv = bullet_data.MotionState()
@@ -823,9 +793,9 @@ class TestClerk:
         leo.processCommandsAndSync()
         del ret, temp
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Engage the boosters and verify the total force exerted on the object.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Create the commands to activate both boosters with a different force.
         forcemag_0, forcemag_1 = 0.2, 0.4
@@ -853,9 +823,6 @@ class TestClerk:
         assert np.array_equal(tmp[0], tot_force)
         assert np.array_equal(tmp[1], tot_torque)
 
-        print('Test passed')
-
-
     def test_controlParts_Factories_notmoving(self):
         """
         Create a template with factories and let them spawn objects.
@@ -868,9 +835,9 @@ class TestClerk:
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Create a template with two factories and spawn it.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Constants for the new template object.
         objID_1 = 1
@@ -880,8 +847,9 @@ class TestClerk:
         pos_0 = np.array([1, 1, -1], np.float64)
         pos_1 = np.array([-1, -1, 0], np.float64)
 
-        # Define a new object with two factory parts. The Factory parts are named
-        # tuples passed to addTemplates. The user must assign the partIDs manually.
+        # Define a new object with two factory parts. The Factory parts are
+        # named tuples passed to addTemplates. The user must assign the partIDs
+        # manually.
         f0 = parts.Factory(
             partID='0', pos=pos_0, direction=dir_0,
             templateID='_templateCube', exit_speed=[0.1, 0.5])
@@ -898,17 +866,17 @@ class TestClerk:
         leo.processCommandsAndSync()
         del ret, temp, f0, f1, sv
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Instruct factories to create an object with a specific exit velocity.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
         cmd_0 = parts.CmdFactory(partID='0', exit_speed=exit_speed_0)
         cmd_1 = parts.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
-        # Send the commands and ascertain that the returned object IDs now exist in
-        # the simulation. These IDs must be '2' and '3'.
+        # Send the commands and ascertain that the returned object IDs now
+        # exist in the simulation. These IDs must be '2' and '3'.
         ok, _, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
         assert (ok, spawnedIDs) == (True, [2, 3])
         leo.processCommandsAndSync()
@@ -917,8 +885,8 @@ class TestClerk:
         ret = clerk.getStateVariables(spawnedIDs)
         assert (ret.ok, len(ret.data)) == (True, 2)
 
-        # Ensure the position, velocity, and orientation of the spawned objects are
-        # correct.
+        # Ensure the position, velocity, and orientation of the spawned objects
+        # are correct.
         sv_2, sv_3 = [ret.data[_]['sv'] for _ in spawnedIDs]
         assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0)
         assert np.allclose(sv_2.position, pos_0)
@@ -926,9 +894,6 @@ class TestClerk:
         assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1)
         assert np.allclose(sv_3.position, pos_1)
         assert np.allclose(sv_3.orientation, [0, 0, 0, 1])
-
-        print('Test passed')
-
 
     def test_controlParts_Factories_moving(self):
         """
@@ -950,11 +915,12 @@ class TestClerk:
         pos_1 = np.array([-1, -1, 0], np.float64)
 
         # State variables for parent object.
-        sv = bullet_data.MotionState(position=pos_parent, velocityLin=vel_parent)
+        sv = bullet_data.MotionState(position=pos_parent,
+                                     velocityLin=vel_parent)
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Create a template with two factories and spawn it.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Define factory parts.
         f0 = parts.Factory(
@@ -973,17 +939,17 @@ class TestClerk:
         leo.processCommandsAndSync()
         del temp, ret, f0, f1, sv
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Instruct factories to create an object with a specific exit velocity.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
         cmd_0 = parts.CmdFactory(partID='0', exit_speed=exit_speed_0)
         cmd_1 = parts.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
-        # Send the commands and ascertain that the returned object IDs now exist in
-        # the simulation.
+        # Send the commands and ascertain that the returned object IDs now
+        # exist in the simulation.
         ret = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
         assert ret.ok and (len(ret.data) == 2)
         spawnedIDs = ret.data
@@ -994,7 +960,7 @@ class TestClerk:
         ret = clerk.getStateVariables(spawnedIDs)
         assert (ret.ok, len(ret.data)) == (True, 2)
 
-        # Ensure the position/velocity/orientation of the new objects are correct.
+        # Ensure the position/velocity/orientation are correct.
         sv_2, sv_3 = ret.data[objID_2]['sv'], ret.data[objID_3]['sv']
         assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0 + vel_parent)
         assert np.allclose(sv_2.position, pos_0 + pos_parent)
@@ -1003,14 +969,11 @@ class TestClerk:
         assert np.allclose(sv_3.position, pos_1 + pos_parent)
         assert np.allclose(sv_3.orientation, [0, 0, 0, 1])
 
-        print('Test passed')
-
-
     def test_controlParts_Boosters_and_Factories_move_and_rotated(self):
         """
-        Create a template with boosters and factories. Then send control commands
-        to them and ensure the applied forces, torques, and spawned objects are
-        correct.
+        Create a template with boosters and factories. Then send control
+        commands to them and ensure the applied forces, torques, and
+        spawned objects are correct.
 
         In this test the parent object moves and is oriented away from its
         default.
@@ -1034,26 +997,27 @@ class TestClerk:
 
         # Part position in world coordinates if the parent is rotated by 180
         # degrees around the x-axis. The normalisation of the direction is
-        # necessary because the parts will automatically normalise all direction
-        # vectors, including dir_0 and dir_1 which are not unit vectors.
+        # necessary because the parts will automatically normalise all
+        # direction vectors, including dir_0 and dir_1 which are not unit
+        # vectors.
         dir_0_out = np.array(-dir_0) / np.sum(abs(dir_0))
         dir_1_out = np.array(-dir_1) / np.sum(abs(dir_1))
         pos_0_out = np.array(-pos_0)
         pos_1_out = np.array(-pos_1)
 
-        # State variables for parent object. This one has a position and speed, and
-        # is rotate 180 degrees around the x-axis. This means the x-values of all
-        # forces (boosters) and exit speeds (factory spawned objects) must be
-        # inverted.
+        # State variables for parent object. This one has a position and speed,
+        # and is rotate 180 degrees around the x-axis. This means the x-values
+        # of all forces (boosters) and exit speeds (factory spawned objects)
+        # must be inverted.
         sv = bullet_data.MotionState(position=pos_parent,
-                                    velocityLin=vel_parent,
-                                    orientation=orient_parent)
+                                     velocityLin=vel_parent,
+                                     orientation=orient_parent)
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Define and spawn a template with two boosters and two factories.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Define the Booster and Factory parts.
         b0 = parts.Booster(partID='0', pos=pos_0, direction=dir_0,
@@ -1076,10 +1040,10 @@ class TestClerk:
         leo.processCommandsAndSync()
         del b0, b1, f0, f1, temp
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Activate booster and factories. Then verify that boosters apply the
         # correct force and the spawned objects have the correct State Vector.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
 
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
@@ -1089,8 +1053,8 @@ class TestClerk:
         cmd_2 = parts.CmdFactory(partID='0', exit_speed=exit_speed_0)
         cmd_3 = parts.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
-        # Send the commands and ascertain that the returned object IDs now exist in
-        # the simulation. These IDs must be '2' and '3'.
+        # Send the commands and ascertain that the returned object IDs now
+        # exist in the simulation. These IDs must be '2' and '3'.
         ok, _, spawnIDs = clerk.controlParts(
             objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
         assert (ok, spawnIDs) == (True, [objID_2, objID_3])
@@ -1100,14 +1064,15 @@ class TestClerk:
         ret = clerk.getStateVariables(spawnIDs)
         assert (ret.ok, len(ret.data)) == (True, 2)
 
-        # Verify the positions and velocities of the spawned objects are correct.
+        # Verify the positions and velocities are correct.
         sv_2, sv_3 = ret.data[objID_2]['sv'], ret.data[objID_3]['sv']
-        assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
-        assert np.allclose(sv_2.position, pos_0_out + pos_parent)
-        assert np.allclose(sv_2.orientation, orient_parent)
-        assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
-        assert np.allclose(sv_3.position, pos_1_out + pos_parent)
-        assert np.allclose(sv_3.orientation, orient_parent)
+        AC = np.allclose
+        assert AC(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
+        assert AC(sv_2.position, pos_0_out + pos_parent)
+        assert AC(sv_2.orientation, orient_parent)
+        assert AC(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
+        assert AC(sv_3.position, pos_1_out + pos_parent)
+        assert AC(sv_3.orientation, orient_parent)
 
         # Manually compute the total force and torque exerted by the boosters.
         forcevec_0, forcevec_1 = forcemag_0 * dir_0_out, forcemag_1 * dir_1_out
@@ -1119,9 +1084,6 @@ class TestClerk:
         tmp = leo.totalForceAndTorque(objID_1)
         assert np.array_equal(tmp[0], tot_force)
         assert np.array_equal(tmp[1], tot_torque)
-
-        print('Test passed')
-
 
     def test_get_all_objectids(self):
         """
@@ -1160,9 +1122,6 @@ class TestClerk:
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
-        print('Test passed')
-
-
     def test_getGeometries(self):
         """
         Spawn two objects and query their geometries.
@@ -1175,7 +1134,7 @@ class TestClerk:
         sv2 = bullet_data.MotionState(position=[4, 5, 6])
         f_raw = createFragRaw()
 
-        # Collada format: a .dae file plus a list of textures in jpg or png format.
+        # Get Collada fragment.
         f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
@@ -1198,12 +1157,14 @@ class TestClerk:
 
         def _verify(_ret, _objID):
             _ret = _ret[_objID]
-            # The object must have two fragments, an 'f_raw' with type 'raw' and
-            # an 'f_dae' with type 'dae'.
+            _objID = str(_objID)
+
+            # The object must have two fragments, an 'f_raw' with type 'raw'
+            # and an 'f_dae' with type 'dae'.
             assert _ret['f_raw']['type'] == 'raw'
-            assert _ret['f_raw']['url'] == '/instances/' + str(_objID) + '/f_raw'
+            assert _ret['f_raw']['url'] == '/instances/' + _objID + '/f_raw'
             assert _ret['f_dae']['type'] == 'dae'
-            assert _ret['f_dae']['url'] == '/instances/' + str(_objID) + '/f_dae'
+            assert _ret['f_dae']['url'] == '/instances/' + _objID + '/f_dae'
             return True
 
         # Query and verify the geometry of the first instance.
@@ -1225,8 +1186,6 @@ class TestClerk:
         assert ret.ok
         assert ret.data[objID_1] is None
         assert _verify(ret.data, objID_2)
-
-        print('Test passed')
 
     def test_instanceDB_checksum(self):
         """
@@ -1260,23 +1219,20 @@ class TestClerk:
         assert ret.ok and (set((objID0, objID1)) == set(ret.data.keys()))
         ref_lastChanged = ret.data[objID0]['sv'].lastChanged
 
-        # Modify the 'bar' fragment of objID0 and verify that exactly one geometry
-        # was updated.
+        # Modify the 'bar' fragment of objID0 and verify that exactly one
+        # geometry was updated.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
         assert clerk.updateFragments(objID0, frags).ok
 
-        # Verify that the new 'lastChanged' flag is now different for that object.
+        # Verify that the new 'lastChanged' flag is now different.
         ret = clerk.getStateVariables([objID0])
         assert ret.ok
         assert ref_lastChanged != ret.data[objID0]['sv'].lastChanged
 
-        # Verify further that the lastChanged attribute of objID1 has not changed.
+        # Verify further that the lastChanged attribute of objID1 is unchanged.
         ret = clerk.getStateVariables([objID1])
         assert ret.ok
         assert ref_lastChanged == ret.data[objID1]['sv'].lastChanged
-
-        print('Test passed')
-
 
     def test_updateBoosterValues(self):
         """
@@ -1286,11 +1242,11 @@ class TestClerk:
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Create a template with two boosters and spawn it. The Boosters are
         # to the left/right of the object and point both in the positive
         # z-direction.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Convenience.
         sv = bullet_data.MotionState()
 
@@ -1309,32 +1265,33 @@ class TestClerk:
         assert ret.ok
         objID_1, objID_2 = ret.data
 
-        # ------------------------------------------------------------------------
-        # Update the Booster forces on the first object: both accelerate the object
-        # in z-direction, which means a force purely in z-direction and no torque.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
+        # Update the Booster forces on the first object: both accelerate the
+        # object in z-direction, which means a force purely in z-direction and
+        # no torque.
+        # ---------------------------------------------------------------------
         cmd_0 = parts.CmdBooster(partID='0', force=1)
         cmd_1 = parts.CmdBooster(partID='1', force=1)
         ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
         assert ret.ok
         assert ret.data == ([0, 0, 2], [0, 0, 0])
 
-        # ------------------------------------------------------------------------
-        # Update the Booster forces on the first object: accelerate the left one
-        # upwards and the right one downwards. This must result in a zero net force
-        # but non-zero torque.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
+        # Update the Booster forces on the first object: accelerate the left
+        # one upwards and the right one downwards. This must result in a zero
+        # net force but non-zero torque.
+        # ---------------------------------------------------------------------
         cmd_0 = parts.CmdBooster(partID='0', force=1)
         cmd_1 = parts.CmdBooster(partID='1', force=-1)
         ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
         assert ret.ok
         assert ret.data == ([0, 0, 0], [0, 2, 0])
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Update the Booster forces on the second object to ensure the function
         # correctly distinguishes between objects.
-        # ------------------------------------------------------------------------
-        # Turn off left Booster of first object (right booster is still active).
+        # ---------------------------------------------------------------------
+        # Turn off left Booster of first object (right booster remains active).
         cmd_0 = parts.CmdBooster(partID='0', force=0)
         ret = clerk.updateBoosterForces(objID_1, [cmd_0])
         assert ret.ok
@@ -1346,17 +1303,14 @@ class TestClerk:
         assert ret.ok
         assert ret.data == ([0, 0, +1], [0, 1, 0])
 
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Attempt to update a non-existing Booster or a non-existing object.
-        # ------------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         cmd_0 = parts.CmdBooster(partID='10', force=1)
         assert not clerk.updateBoosterForces(objID_2, [cmd_0]).ok
 
         cmd_0 = parts.CmdBooster(partID='0', force=1)
         assert not clerk.updateBoosterForces(1000, [cmd_0]).ok
-
-        print('Test passed')
-
 
     def test_updateFragmentState(self):
         """
@@ -1379,17 +1333,18 @@ class TestClerk:
         frags = [MetaFragment('foo', 'raw', createFragRaw())]
         t1 = Template('t1', [1, 2], fragments=frags, boosters=[], factories=[])
 
-        # Add the template to Azrael, spawn two instances, and make sure Leonard
-        # picks it up so that the object becomes available.
+        # Add the template to Azrael, spawn two instances, and make sure
+        # Leonard picks it up so that the object becomes available.
         assert clerk.addTemplates([t1]).ok
         _, _, (objID_1, objID_2) = clerk.spawn([(t1.name, sv), (t1.name, sv)])
         leo.processCommandsAndSync()
 
         def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
             """
-            Convenience function to verify the fragment states of objID_1 and
-            objID_2 (defined in outer scope). This function assumes there are two
-            objects and each has one fragment with name 'foo'.
+            Convenience function to verify the fragment states of
+            objID_1 and objID_2 (defined in outer scope). This function
+            assumes there are two objects and each has one fragment with
+            name 'foo'.
             """
             # Query the SV for both objects.
             ret = clerk.getStateVariables([objID_1, objID_2])
@@ -1422,10 +1377,10 @@ class TestClerk:
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        4.4, [1, 2, 5], [0, 3, 0, 0])
 
-        # Attempt to update the fragment state of two objects. However, this time
-        # only one of the objects actually exists. The expected behaviour is that
-        # the command returns an error yet correctly updates the fragment state of
-        # the existing object.
+        # Attempt to update the fragment state of two objects. However, this
+        # time only one of the objects actually exists. The expected behaviour
+        # is that the command returns an error yet correctly updates the
+        # fragment state of the existing object.
         newStates = {
             1000000: [FragState('foo', 5, [5, 5, 5], [5, 5, 5, 5])],
             objID_2: [FragState('foo', 5, [5, 5, 5], [5, 5, 5, 5])]
@@ -1459,8 +1414,6 @@ class TestClerk:
         assert clerk.updateFragmentStates(newStates).ok
         assert clerk.updateFragmentStates(newStates).ok
 
-        print('Test passed')
-
     def test_isNameValid(self):
         """
         Test _isValid function.
@@ -1484,18 +1437,16 @@ class TestClerk:
         assert not inv('a.b')
         assert not inv('a' * 33)
 
-        print('Test passed')
-
     def test_fragments_end2end(self):
         """
-        Integration test: create a live system, add a template with two fragments,
-        spawn it, query it, very its geometry, alter its geometry, and verify
-        again.
+        Integration test: create a live system, add a template with two
+        fragments, spawn it, query it, very its geometry, alter its
+        geometry, and verify again.
         """
         clerk = azrael.clerk.Clerk()
         clacks = azrael.clacks.ClacksServer()
         clacks.start()
-        
+
         # Reset the SV database and instantiate a Leonard and Clerk.
         leo = getLeonard()
 
@@ -1508,8 +1459,8 @@ class TestClerk:
         def checkFragState(objID, name_1, scale_1, pos_1, rot_1,
                            name_2, scale_2, pos_2, rot_2):
             """
-            Convenience function to verify the fragment states of ``objID``. This
-            function assumes the object has exactly two fragments.
+            Convenience function to verify the fragment states of ``objID``.
+            This function assumes the object has exactly two fragments.
             """
             # Query the SV for both objects.
             ret = clerk.getStateVariables([objID])
@@ -1596,9 +1547,9 @@ class TestClerk:
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == f_raw
 
-        # Download and verify the dae file. Note that the file name itself matches
-        # the name of the fragment (ie. 'test'), *not* the name of the original
-        # Collada file ('cube.dae').
+        # Download and verify the dae file. Note that the file name itself
+        # matches the name of the fragment (ie. 'test'), *not* the name of the
+        # original Collada file ('cube.dae').
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
         assert tmp == f_dae.dae
@@ -1629,9 +1580,9 @@ class TestClerk:
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == f_raw
 
-        # Download and verify the dae file. Note that the file name itself matches
-        # the name of the fragment (ie. 'test'), *not* the name of the original
-        # Collada file ('cube.dae').
+        # Download and verify the dae file. Note that the file name itself
+        # matches the name of the fragment (ie. 'test'), *not* the name of the
+        # original Collada file ('cube.dae').
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
         assert tmp == f_dae.dae
@@ -1649,7 +1600,6 @@ class TestClerk:
         clacks.terminate()
         clacks.join()
 
-        print('Test passed')
 
 def test_invalid():
     """

@@ -122,8 +122,8 @@ def compileCommands(force):
         scale = 3 * abs(force[dim])
 
         # Only one "flame" is visible in each direction. Which one depends one
-        # whether we "push" the object along the positive or negative "frag_name"
-        # direction.
+        # whether we "push" the object along the positive or negative
+        # "frag_name" direction.
         pos = [0, 0, 0]
         if force[dim] < 0:
             # Pushing in negative direction.

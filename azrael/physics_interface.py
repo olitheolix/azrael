@@ -333,7 +333,7 @@ def getAABB(objIDs: (list, tuple)):
 
 @typecheck
 def _updateMotionStateTuple(orig: _MotionState,
-                           new: bullet_data.MotionStateOverride):
+                            new: bullet_data.MotionStateOverride):
     """
     Overwrite fields in ``orig`` with content of ``new``.
 
@@ -345,7 +345,7 @@ def _updateMotionStateTuple(orig: _MotionState,
     same base class.
 
     :param _MotionState orig: the original tuple.
-    :param MotionStateOverride new: the new values (*None* entries are ignored).
+    :param MotionStateOverride new: new values (*None* entries are ignored).
     :return: updated version of ``orig``.
     :rtype: _MotionState
     """

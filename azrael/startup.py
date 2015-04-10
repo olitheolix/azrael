@@ -88,7 +88,6 @@ class AzraelStack:
         self.startProcess(clacks)
         self.startProcess(leo)
 
-
     def stop(self):
         """
         Terminate and join all processes registered with this instance.

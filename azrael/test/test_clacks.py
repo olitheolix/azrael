@@ -48,5 +48,5 @@ def test_ping_clacks():
         WSClient(ip=ip, port=port, timeout=1)
 
     assert not client.pingClacks().ok
-    
+
     print('Test passed')
