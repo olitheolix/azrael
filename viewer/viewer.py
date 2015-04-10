@@ -288,7 +288,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.port = port
 
         # Place the window in the top left corner.
-        self.updateFragments(0, 0, 640, 480)
+        self.setGeometry(0, 0, 640, 480)
 
         # Binary movement flags to indicate which keys are currently pressed.
         self.movement = {
