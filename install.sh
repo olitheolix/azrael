@@ -17,7 +17,7 @@ apt-get install -y \
   python3-zmq
 
 # PIP repos.
-pip3 install cytoolz setproctitle websocket-client==0.15 pymongo pytest-cov
+pip3 install cytoolz setproctitle websocket-client==0.15 pymongo==2.7 pytest-cov
 
 # PIP install boost-python-wrapper directory from GitHub.
 pip3 install --install-option="-j" \
