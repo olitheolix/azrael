@@ -43,7 +43,7 @@ class TestClerk:
         pass
 
     def setup_method(self, method):
-        azrael.database.init(reset=True)
+        azrael.database.init()
 
     def teardown_method(self, method):
         pass

@@ -7,7 +7,7 @@ def test_increment_WPCounter():
     Reset the Counter DB and fetch a few counter values.
     """
     # Reset Azrael.
-    database.init(reset=True)
+    database.init()
     ret = database.getUniqueObjectIDs(0)
     assert ret.ok and ret.data == 0
 
@@ -21,7 +21,7 @@ def test_increment_WPCounter():
         assert ret.data == (ii + 2, )
 
     # Reset Azrael again and verify that all counters start at '1' again.
-    database.init(reset=True)
+    database.init()
     ret = database.getUniqueObjectIDs(0)
     assert ret.ok and ret.data == 0
 
@@ -30,7 +30,7 @@ def test_increment_WPCounter():
     assert ret.data == (1, 2, 3)
 
     # Increment the counter by a different values.
-    database.init(reset=True)
+    database.init()
     ret = database.getUniqueObjectIDs(0)
     assert ret.ok and ret.data == 0
 

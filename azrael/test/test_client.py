@@ -112,7 +112,7 @@ class TestClerk:
         return RetVal(**tmp)
 
     def setup_method(self, method):
-        azrael.database.init(reset=True)
+        azrael.database.init()
         self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
         # Insert default objects. None of them has an actual geometry but
@@ -125,7 +125,7 @@ class TestClerk:
         clerk.addTemplates([t1, t2, t3])
 
     def teardown_method(self, method):
-        azrael.database.init(reset=True)
+        azrael.database.init()
         self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
     def test_ping(self):

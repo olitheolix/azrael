@@ -30,6 +30,8 @@ from azrael.types import typecheck, RetVal
 # Global database handles.
 logit = logging.getLogger('azrael.' + __name__)
 
+# Connect to MongoDB and store the relevant collection handles in the
+# 'dbHandles' variables to avoid hard coded collection names in Azrael.
 client = pymongo.MongoClient()
 dbName = 'azrael'
 dbHandles = {
@@ -41,27 +43,21 @@ dbHandles = {
 }
 
 @typecheck
-def init(reset=False):
+def init():
     """
-    Connect to the State Variable database. Flush it if ``reset`` is **True**.
-
-    fixme: docu update
-    fixme: reset parameter is now redundant
-
-    :param bool reset: flush the database.
+    Flush the database.
     """
-    if reset:
-        client.drop_database(dbName)
-        logit.info('Deleting data directory <{}>'.format(config.dir_data))
+    # Delete the database.
+    client.drop_database(dbName)
+    logit.info('Deleting data directory <{}>'.format(config.dir_data))
 
-        # fixme: delete the rest of this if-block once Dibbler works.
-        try:
-            shutil.rmtree(config.dir_data)
-        except FileNotFoundError:
-            pass
-        os.makedirs(config.dir_template, exist_ok=True)
-        os.makedirs(config.dir_instance, exist_ok=True)
-
+    # fixme: delete the rest of this if-block once Dibbler works.
+    try:
+        shutil.rmtree(config.dir_data)
+    except FileNotFoundError:
+        pass
+    os.makedirs(config.dir_template, exist_ok=True)
+    os.makedirs(config.dir_instance, exist_ok=True)
 
 
 @typecheck

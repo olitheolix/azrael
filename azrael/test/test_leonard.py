@@ -31,7 +31,7 @@ def killAzrael():
     # Delete all grids used in this test.
     assert azrael.vectorgrid.deleteAllGrids().ok
 
-    azrael.database.init(reset=True)
+    azrael.database.init()
 
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
@@ -48,7 +48,7 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     return leo
 
 
-class TestEngines:
+class TestLeonardAllEngines:
     @classmethod
     def setup_class(cls):
         pass
@@ -415,7 +415,7 @@ class TestEngines:
         print('Test passed')
 
 
-class TestOther:
+class TestLeonardOther:
     @classmethod
     def setup_class(cls):
         pass
@@ -426,7 +426,7 @@ class TestOther:
 
     def setup_method(self, method):
         assert azrael.vectorgrid.deleteAllGrids().ok
-        azrael.database.init(reset=True)
+        azrael.database.init()
 
     def teardown_method(self, method):
         pass
