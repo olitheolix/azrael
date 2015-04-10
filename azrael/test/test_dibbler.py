@@ -16,8 +16,6 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-fixme: add tests for
-  * send invalid fragment data
 """
 
 import os
@@ -48,7 +46,6 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         FH = azrael.dibbler.MyStaticFileHandler
 
         # fixme: the static paths used below should be temporary directories
-
         self.dirNameBase = '/tmp/dibbler'
         self.dirNames = {
             'templates': os.path.join(self.dirNameBase, 'templates'),
@@ -68,7 +65,6 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         return tornado.web.Application(handlers)
 
     def resetDibbler(self):
-        # fixme: create dedicated function in Dibbler and call that instead.
         for dirname in self.dirNames.values():
             azrael.dibbler.rmtree([dirname], ignore_errors=True)
 

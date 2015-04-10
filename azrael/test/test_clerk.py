@@ -87,7 +87,6 @@ class TestClerk:
     def setup_method(self, method):
         azrael.database.init()
 
-        # fixme: error check
         self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
         clerk = azrael.clerk.Clerk()
