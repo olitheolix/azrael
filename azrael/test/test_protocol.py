@@ -28,7 +28,6 @@ import azrael.physics_interface as physAPI
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.test.test_leonard import killAzrael
 from azrael.bullet.test_boost_bullet import isEqualBD
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment, Template
 
@@ -37,9 +36,6 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     """
     Test codec for {add,get}Template functions.
     """
-
-    killAzrael()
-
     # Test parameters and constants.
     template_name = 'mytemplate'
     b0 = parts.Booster(partID='0', pos=np.zeros(3), direction=[0, 0, 1],
@@ -206,9 +202,6 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
     """
     Test addTemplate codec with Collada data.
     """
-
-    killAzrael()
-
     # Collada format: a .dae file plus a list of textures in jpg or png format.
     dae_file = b'abc'
     dae_rgb1 = b'def'
