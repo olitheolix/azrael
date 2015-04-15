@@ -403,8 +403,8 @@ class Client():
             'position': None,
             'orientation': [0, 0, 0, 1],
             'velocityLin': [0, 0, 0],
-            'axesLockLin': [0, 0, 0],
-            'axesLockRot': [0, 0, 0],
+            'axesLockLin': [1, 1, 1],
+            'axesLockRot': [1, 1, 1],
             'template': None}
 
         # Create valid object descriptions by copying the 'template' and
