@@ -121,9 +121,9 @@ def compileCommands(force):
         # Scale the flame according to the booster force.
         scale = 3 * abs(force[dim])
 
-        # Only one "flame" is visible in each direction. Which one depends one
-        # whether we "push" the object along the positive or negative
-        # "frag_name" direction.
+        # Only one "flame" is visible in each direction. Which one depends on
+        # whether we accelerate the object in the positive or negative "dim"
+        # direction.
         pos = [0, 0, 0]
         if force[dim] < 0:
             # Pushing in negative direction.
