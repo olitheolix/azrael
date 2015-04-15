@@ -193,7 +193,7 @@ def main():
             p = os.path.dirname(os.path.abspath(__file__))
             p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
             fname = os.path.join(p, 'sphere.obj')
-            spawnBoosterSphere(scale=1.25, fname=fname)
+            spawnBoosterSphere(scale=1.0, fname=fname)
 
             # Add the specified number of cubes in a grid layout.
             demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
