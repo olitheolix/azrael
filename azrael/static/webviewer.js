@@ -14,7 +14,7 @@ var StateVariable = function(pos, vel, orientation, scale, imass) {
 /*
   Create a ThreeJS geometry object.
 */
-function compileMesh (objID, vert, uv, scale) {
+function compileMesh (objID, vert, uv, rgb, scale) {
     var geo = new THREE.Geometry()
 
     console.log('Compiling mesh with ' + vert.length + ' vertices');
@@ -24,6 +24,7 @@ function compileMesh (objID, vert, uv, scale) {
 
     // Determine if there are any UV coordinates available.
     var hasUV = (uv.length > 0)
+    var hasRGB = (rgb.length > 0)
 
     // Compile the geometry.
     geo.faceVertexUvs[0] = []
@@ -49,11 +50,21 @@ function compileMesh (objID, vert, uv, scale) {
         geo.faces.push( new THREE.Face3(facecnt, facecnt+1, facecnt+2))
     }
 
+    // Assign the face colors, either via directly specified colors or a texture map.
     if (!hasUV) {
-        // Assign random face colours.
         for (var i = 0; i < geo.faces.length; i++) {
             var face = geo.faces[i];
-            face.color.setHex(Math.random() * 0xffffff);
+            if (hasRGB) {
+                // No UV map, but RGB values are available: use them
+                // for the face colours. The multiplier of 9 is necessary
+                // because the RGB array from Azrael specifes the
+                // color of each vertex, whereas here we only specify
+                // the color of the entire triangle.
+                face.color.setRGB(rgb[9 * i] / 255, rgb[9 * i + 1] / 255, rgb[9 * i + 2] / 255);
+            } else {
+                // No UV map, no RGB values: assign random face colours.
+                face.color.setHex(Math.random() * 0xffffff);
+            }
         }
 
         // Build a new object in ThreeJS.
@@ -450,7 +461,7 @@ function* mycoroutine(connection) {
                 var scale = allSVs[objID]['sv'].scale;
                 switch (d.type) {
                 case 'raw':
-                    var geo = compileMesh(objID, d.vert, d.uv, scale);
+                    var geo = compileMesh(objID, d.vert, d.uv, d.rgb, scale);
 
                     // Add the fragment to the local object cache and scene.
                     obj_cache[objID][frag_name] = geo;
