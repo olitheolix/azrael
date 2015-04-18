@@ -95,22 +95,10 @@ def spawnBoosterSphere(scale, fname):
     # Get a Client instance.
     client = azrael.client.Client()
 
-    # Load the model.
-    print('  Importing <{}>... '.format(fname), end='', flush=True)
-    mesh = model_import.loadModelAll(fname)
-
-    # The model may contain several sub-models. Each one has a set of vertices,
-    # UV- and texture maps. The following code simply flattens the three lists
-    # of lists into just three lists.
-    vert = np.array(mesh['vertices']).flatten()
-    uv = np.array(mesh['UV']).flatten()
-    rgb = np.array(mesh['RGB']).flatten()
-
-    # Ensure the data has the correct format.
-    vert = scale * np.array(vert)
-    uv = np.array(uv, np.float32)
-    rgb = np.array(rgb, np.uint8)
-    print('done')
+    # Load the model
+    vert, uv, rgb = demolib.loadBoosterCubeBlender()
+    frag_cube = FragRaw(vert, uv, rgb)
+    del vert, uv, rgb
 
     # Attach six boosters, two for every axis.
     dir_x = np.array([1, 0, 0])
@@ -138,21 +126,21 @@ def spawnBoosterSphere(scale, fname):
               (a + c + d) +
               (b + c + d)]
     vert_b = np.array(vert_b[0], np.float64)
-    del a, b, c, d, y
+    frag_flame = FragRaw(vert_b, np.array([]), np.array([]))
+    del a, b, c, d, y, vert_b
 
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'
     cs = np.array([3, 1, 1, 1], np.float64)
-    z = np.array([])
-    frags = [MetaFragment('frag_1', 'raw', FragRaw(vert, uv, rgb)),
-             MetaFragment('b_x', 'raw', FragRaw(vert_b, z, z)),
-             MetaFragment('b_y', 'raw', FragRaw(vert_b, z, z)),
-             MetaFragment('b_z', 'raw', FragRaw(vert_b, z, z)),
+    frags = [MetaFragment('frag_1', 'raw', frag_cube),
+             MetaFragment('b_x', 'raw', frag_flame),
+             MetaFragment('b_y', 'raw', frag_flame),
+             MetaFragment('b_z', 'raw', frag_flame),
              ]
     temp = Template(tID, cs, frags, [b0, b1, b2], [])
     assert client.addTemplates([temp]).ok
-    del cs, frags, temp, z
+    del cs, frags, temp, frag_cube, frag_flame
     print('done')
 
     # Spawn the template near the center.
