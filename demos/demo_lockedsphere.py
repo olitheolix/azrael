@@ -116,18 +116,15 @@ def spawnBoosterSphere(scale, fname):
 
     # Construct a Tetrahedron (triangular Pyramid). This is going to be the
     # (super simple) "flame" that comes out of the (still invisible) boosters.
-    y = 0.5 * np.arctan(np.pi / 6)
-    a = (-0.5, -y, 1)
-    b = (0.5, -y, 1)
-    c = (0, 3 / 4 - y, 1)
-    d = (0, 0, 0)
-    vert_b = [(a + b + c) +
-              (a + b + d) +
-              (a + c + d) +
-              (b + c + d)]
-    vert_b = np.array(vert_b[0], np.float64)
-    frag_flame = FragRaw(vert_b, np.array([]), np.array([]))
-    del a, b, c, d, y, vert_b
+    p = os.path.dirname(os.path.abspath(__file__))
+    p = os.path.join(p, '..', 'viewer', 'models')
+    fname = os.path.join(p, 'sphere', 'sphere.obj')
+    vert, uv, rgb = demolib.loadModel(fname)
+    rgb = np.tile([0, 0, 0.8], len(vert) // 3)
+    rgb += 0.2 * np.random.rand(len(rgb))
+    rgb = np.array(255 * rgb.clip(0, 1), np.uint8)
+    frag_flame = FragRaw(vert, np.array([]), rgb)
+    del p, fname, vert, uv, rgb
 
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
