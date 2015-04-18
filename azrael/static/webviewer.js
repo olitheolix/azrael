@@ -363,7 +363,7 @@ function* mycoroutine(connection) {
     console.log('Added player template')
 
     // Spawn the just defined player template.
-    var initPos = [5, 0, -20]
+    var initPos = [-20, 0, 0]
     if (false) {
         // Spawn a player object.
         msg = yield spawn(templateID, initPos, [0, 0, 0], [0, 0, 0, 1], 1, 1)
