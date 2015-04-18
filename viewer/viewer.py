@@ -411,7 +411,16 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         gl.glEnableVertexAttribArray(0)
 
         if len(buf_uv) == 0:
-            buf_col = np.random.rand(4 * numVertices)
+            if len(buf_rgb) == numVertices * 3:
+                # No UV map, but vertex colors. Add the missing alpha value
+                # but use as is otherwise.
+                buf_col = np.ones((numVertices, 4))
+                buf_col[:, :3] = np.reshape(buf_rgb, (len(buf_rgb) // 3, 3)) / 255
+            else:
+                # Neither an UV map nor vertices are available: create random colors.
+                buf_col = np.random.rand(4 * numVertices)
+
+            # Convert the vector to GPU compatible format.
             buf_col = buf_col.astype(np.float32)
 
             # Repeat with UV data. Each vertex has one associated (U,V)
