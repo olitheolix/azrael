@@ -96,13 +96,82 @@ def parseCommandLine():
     return param
 
 
-def addModel(scale, fname):
+def loadBoosterCubeBlender():
     """
-    Import a new template and spawn it.
-    """
-    # Get a Client instance.
-    client = azrael.client.Client()
+    Load the Booster Sphere model from "boostercube.dae".
 
+    This is function is custom made for the model because the Collada model
+    exported via Blender is only partially imported. In particular, the
+    ``loadModel`` function will only return the vertices for the body (cube)
+    and one thruster. This function will scale-, rotate-, and copy that
+    thruster so that each side of the cube has one. Furthermore, it will
+    manually assign colors.
+    """
+
+    # Load the Collada model.
+    p = os.path.dirname(os.path.abspath(__file__))
+    fname = os.path.join(p, 'boostercube.dae')
+    vert, uv, rgb = loadModel(fname)
+
+    # Extract the body and thruster component.
+    body, thruster_z = np.array(vert[0]), np.array(vert[1])
+
+    # Reduce the thruster size, translate it to the cube's surface, and
+    # duplicate on -z axis.
+    thruster_z = 0.3 * np.reshape(thruster_z, (len(thruster_z) // 3, 3))
+    thruster_z += [0, 0, -.6]
+    thruster_z = thruster_z.flatten()
+    thruster_z = np.hstack((thruster_z, -thruster_z))
+
+    # Reshape the vertices into an N x 3 matrix and duplicate for the other
+    # four thrusters.
+    thruster_z = np.reshape(thruster_z, (len(thruster_z) // 3, 3))
+    thruster_x, thruster_y = np.array(thruster_z), np.array(thruster_z)
+
+    # We will compute the thrusters for the remaining two cube faces with a
+    # 90degree rotation around the x- and y axis.
+    s2 = 1 / np.sqrt(2)
+    quat_x = util.Quaternion(s2, [s2, 0, 0])
+    quat_y = util.Quaternion(s2, [0, s2, 0])
+    for ii, (tx, ty) in enumerate(zip(thruster_x, thruster_y)):
+        thruster_x[ii] = quat_x * tx
+        thruster_y[ii] = quat_y * ty
+
+    # Flatten the arrays.
+    thruster_z = thruster_z.flatten()
+    thruster_x = thruster_x.flatten()
+    thruster_y = thruster_y.flatten()
+
+    # Combine all thrusters and the body into a single triangle mesh.
+    vert = np.hstack((thruster_z, thruster_x, thruster_y, body))
+
+    # Assign the same base color to all three thrusters.
+    rgb_thruster = np.tile([0.8, 0, 0], len(thruster_x) // 3)
+    rgb_thrusters = np.tile(rgb_thruster, 3)
+
+    # Assign a color to the body.
+    rgb_body = np.tile([0.8, 0.8, 0.8], len(body) // 3)
+
+    # Combine the RGB vectors into single one to match the vector of vertices.
+    rgb = np.hstack((rgb_thrusters, rgb_body))
+    del rgb_thruster, rgb_thrusters, rgb_body
+
+    # Add some random "noise" to the colors.
+    rgb += 0.2 * (np.random.rand(len(rgb)) - 0.5)
+
+    # Convert the RGB values from a triple of [0, 1] floats to a triple of [0,
+    # 255] integers.
+    rgb = rgb.clip(0, 1)
+    rgb = np.array(rgb * 255, np.uint8)
+
+    # Return the model data.
+    return vert, uv, rgb
+    
+
+def loadModel(fname):
+    """
+    Load the 3D model from ``fname`` and return the vertices, UV, and RGB arrays.
+    """
     # Load the model.
     print('  Importing <{}>... '.format(fname), end='', flush=True)
     mesh = model_import.loadModelAll(fname)
@@ -113,6 +182,13 @@ def addModel(scale, fname):
     vert = np.array(mesh['vertices']).flatten()
     uv = np.array(mesh['UV']).flatten()
     rgb = np.array(mesh['RGB']).flatten()
+
+    return vert, uv, rgb
+
+
+def addBoosterCubeTemplate(scale, vert, uv, rgb):
+    # Get a Client instance.
+    client = azrael.client.Client()
 
     # Ensure the data has the correct format.
     vert = scale * np.array(vert)
@@ -476,12 +552,18 @@ def main():
 #            fname = os.path.join(p, 'house', 'house.obj')
 #            fname = '/home/oliver/delme/export/monster.dae'
 #            fname = os.path.join(p, 'test.obj')
-            model_name = (1.25, fname)
-            #model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
-            #model_name = (1.25, 'viewer/models/house/house.3ds')
-            addModel(*model_name)
+            scale, model_name = (1.25, fname)
+            #scale, model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
+            #scale, model_name = (1.25, 'viewer/models/house/house.3ds')
+            vert, uv, rgb = loadModel(model_name)
 
-            # Define additional templates.
+            # Load the Booster Cube Model created in Blender.
+            scale, (vert, uv, rgb) = 1, loadBoosterCubeBlender()
+
+            # Wrap the UV data into a BoosterCube template and add it to Azrael.
+            addBoosterCubeTemplate(scale, vert, uv, rgb)
+
+            # Define additional templates, in this case the wall of cubes.
             spawnCubes(*param.cubes, center=(0, 0, 10))
             del p, fname, model_name
 
