@@ -426,11 +426,13 @@ class LeonardBase(multiprocessing.Process):
         self.setup()
         self.logit.debug('Setup complete.')
 
-        # Trigger the `step` method every 10ms, if possible.
+        # Trigger the `step` method every `stepinterval` seconds, if possible.
         t0 = time.time()
+        stepinterval = 0.050
+
         while True:
             # Wait, if less than 10ms have passed, or proceed immediately.
-            sleep_time = 0.01 - (time.time() - t0)
+            sleep_time = stepinterval - (time.time() - t0)
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
@@ -439,7 +441,7 @@ class LeonardBase(multiprocessing.Process):
 
             # Trigger the physics update step.
             with util.Timeit('Leonard:1.0 Step') as timeit:
-                self.step(0.1, 10)
+                self.step(stepinterval, 10)
 
 
 class LeonardBullet(LeonardBase):
