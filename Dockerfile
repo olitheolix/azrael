@@ -59,7 +59,7 @@ RUN apt-get install -y python3-pip && \
 # Clone Azrael from GitHub.
 RUN git clone https://github.com/olitheolix/azrael /demo/azrael
 
-# Expose the necessary ZeroMQ and Tornado ports.
+# Expose the ports for Clerk and Clacks.
 EXPOSE 5555 8080
 
 # Special environment variable to let Azrael know it runs in Docker.
