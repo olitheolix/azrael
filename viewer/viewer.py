@@ -977,7 +977,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if button == 1:
             # Determine the initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
-            vel = 2 * self.camera.view
+            vel = 10 * self.camera.view
 
             # Spawn the object.
             d = {'template': self.t_projectile,
@@ -991,13 +991,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         elif button == 2:
             # Determine the initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
-            vel = 2 * self.camera.view
+            vel = 5 * self.camera.view
 
             # Spawn the object.
             d = {'template': self.t_projectile,
                  'position': pos,
                  'velocityLin': vel,
-                 'scale': 0.25,
+                 'scale': 0.75,
                  'imass': 2}
             ret = self.client.spawn([d])
             if not ret.ok:
