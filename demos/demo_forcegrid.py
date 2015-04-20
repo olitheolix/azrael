@@ -139,7 +139,7 @@ class UpdateGrid(multiprocessing.Process):
 
                 # Points towards the center.
                 v = -np.array([x, y, 0], np.float64)
-                force_lin[x + Nx, y + Ny, :] = 0.1 * v
+                force_lin[x + Nx, y + Ny, :] = v
 
         while True:
             # Activate the circular grid.
