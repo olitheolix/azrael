@@ -51,7 +51,7 @@ RUN apt-get install -y python3-pip && \
       pytest-cov \
       setproctitle \
       websocket-client==0.15 &&\
-    pip3 install --install-option -j \
+    pip3 install --install-option \
     git+https://github.com/Klumhru/boost-python-bullet.git@d9ffae09157#egg=boost-python-bullet  && \
     apt-get remove -y python3-pip && \
     apt-get autoremove -y && apt-get -y clean
