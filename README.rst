@@ -24,7 +24,7 @@ overview. Interested programmers may find the
 `Tutorial Section <https://olitheolix.com/azrael-doc/tutorials.html>`_ more
 useful.
 
-To find out what I am working on check out my
+To find out what I am working on, check out my
 `Trello Board <https://trello.com/b/3XJRlgt9>`_.
 
 How and Why
@@ -48,7 +48,7 @@ own space shuttle, design my own sub-marine, invent my own Mars rover with
 awesome navigation abilities, launch my own Rosetta mission, invent my own
 reusable rocket ... no job at ESA, NASA or SpaceX required.
 
-How It (Might) Work
+How It (Might) Works
 ===================
 
 Classical Physics engines assume they run on a single computer, which means
@@ -66,7 +66,7 @@ My current approach is as follows:
 The Workers are little more than standard Physics Engines (currently Bullet)
 with some wrapper code to interface with Azrael.
 
-Feel free to drop my a line if you have any questions or suggestions.
+Feel free to drop me a line if you have any questions or suggestions.
 
 
 Project Status
