@@ -1620,8 +1620,6 @@ def test_invalid():
             data = json.loads(data.decode('utf8'))
             return data['ok'], data['msg']
 
-    killAzrael()
-
     # Start Clerk and instantiate a Client.
     clerk = azrael.clerk.Clerk()
     clerk.start()
@@ -1646,5 +1644,4 @@ def test_invalid():
     clerk.terminate()
     clerk.join()
 
-    killAzrael()
     print('Test passed')
