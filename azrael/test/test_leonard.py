@@ -51,15 +51,19 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
 class TestLeonardAllEngines:
     @classmethod
     def setup_class(cls):
-        pass
+        assert azrael.vectorgrid.deleteAllGrids().ok
 
     @classmethod
     def teardown_class(cls):
-        pass
+        assert azrael.vectorgrid.deleteAllGrids().ok
 
+    @classmethod
     def teardown_method(self, method):
         pass
-        killAzrael()
+
+    @classmethod
+    def setup_method(self, method):
+        assert azrael.vectorgrid.deleteAllGrids().ok
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_getGridForces(self, clsLeonard):
