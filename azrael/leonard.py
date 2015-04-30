@@ -22,6 +22,7 @@ import os
 import sys
 import zmq
 import time
+import signal
 import pickle
 import pymongo
 import logging
@@ -621,9 +622,10 @@ class LeonardDistributedZeroMQ(LeonardBase):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.workers = []
         self.numWorkers = 3
         self.wpid_counter = 0
+        self.ctx = None
+        self.sock = None
 
         # Worker terminate automatically after a certain number of processed
         # Work Packages. The precise number is a constructor argument and the
@@ -632,25 +634,55 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # instance to avoid the situation where all die simultaneously).
         self.minSteps, self.maxSteps = (500, 700)
 
+        # Initialise worker manager handle.
+        self.workermanager = None
+
     def __del__(self):
         """
         Kill all worker processes.
         """
-        for worker in self.workers:
-            if worker.is_alive():
-                worker.terminate()
-                worker.join()
+        if self.workermanager is not None:
+            # Send Keyboard interrupt to Worker manager and try to join it.
+            os.kill(self.workermanager.pid, signal.SIGINT)
+            self.workermanager.join(1)
+
+            # Kill the Worker Manager if we could not join it.
+            if self.workermanager.is_alive():
+                self.workermanager.terminate()
+                self.workermanager.join()
+
+        # Close the Leonard <---> Worker socket.
+        if self.sock is not None:
+            self.sock.unbind(config.addr_leonard_repreq)
+            self.sock.close(linger=100)
+
+        # Terminate the ZeroMQ context.
+        if self.ctx is not None:
+            self.ctx.term()
+            self.ctx.destroy()
 
     def setup(self):
-        self.ctx = zmq.Context()
-        self.sock = self.ctx.socket(zmq.REP)
-        self.sock.bind(config.addr_leonard_repreq)
-
-        # Spawn the Workers.
-        workermanager = WorkerManager(
+        # Start the Worker manager which, in turn, will spawn the workers.
+        self.workermanager = WorkerManager(
             self.numWorkers, self.minSteps,
             self.maxSteps, LeonardWorkerZeroMQ)
-        workermanager.start()
+        self.workermanager.start()
+
+        # Create the ZeroMQ context. Note: this MUST happen AFTER the Worker
+        # Manager was started, because otherwise the child processes will get a
+        # copy of the ZeroMQ context with the already bound address, which it
+        # may never release.
+        self.ctx = zmq.Context()
+        self.sock = self.ctx.socket(zmq.REP)
+
+        # Bind the socket to the specified address. Retry a few times if necessary.
+        for ii in range(10):
+            try:
+                self.sock.bind(config.addr_leonard_repreq)
+                break
+            except zmq.error.ZMQError:
+                time.sleep(0.2)
+            assert ii < 9
         self.logit.info('Setup complete')
 
     @typecheck
@@ -994,6 +1026,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         # Terminate.
         sock.close(linger=0)
         ctx.destroy()
+        print('Worker {} exited cleanly'.format(self.workerID))
 
 
 class WorkerManager(multiprocessing.Process):
@@ -1028,6 +1061,9 @@ class WorkerManager(multiprocessing.Process):
         self.workerCls = workerCls
         self.minSteps, self.maxSteps = minSteps, maxSteps
 
+        # Initialise the list of workers.
+        self.workers = []
+
     def _run(self):
         """
         Start the initial collection of Workers and ensure they remain alive.
@@ -1036,7 +1072,6 @@ class WorkerManager(multiprocessing.Process):
         setproctitle.setproctitle('killme ' + self.__class__.__name__)
 
         # Spawn the initial collection of Workers.
-        workers = []
         delta = self.maxSteps - self.minSteps
         for ii in range(self.numWorkers):
             # Random number in [minSteps, maxSteps]. The process will
@@ -1044,14 +1079,14 @@ class WorkerManager(multiprocessing.Process):
             suq = self.minSteps + int(np.random.rand() * delta)
 
             # Instantiate the process and add it to the list.
-            workers.append(self.workerCls(ii + 1, suq))
-            workers[-1].start()
+            self.workers.append(self.workerCls(ii + 1, suq))
+            self.workers[-1].start()
 
         # Periodically monitor the processes and restart any that have died.
         while True:
             # Only check once a second.
             time.sleep(1)
-            for workerID, proc in enumerate(workers):
+            for workerID, proc in enumerate(self.workers):
                 # Skip current process if it is still running.
                 if proc.is_alive():
                     continue
@@ -1064,7 +1099,7 @@ class WorkerManager(multiprocessing.Process):
                 suq = self.minSteps + int(np.random.rand() * delta)
                 proc = self.workerCls(workerID, suq)
                 proc.start()
-                workers[workerID] = proc
+                self.workers[workerID] = proc
                 self.logit.info('Restarted Worker {}'.format(workerID))
 
     def run(self):
@@ -1074,4 +1109,11 @@ class WorkerManager(multiprocessing.Process):
         try:
             self._run()
         except KeyboardInterrupt:
-            pass
+            print('Worker Manager was aborted')
+
+        # Terminate all workers.
+        for w in self.workers:
+            if w is not None and w.is_alive():
+                w.terminate()
+                w.join()
+        print('Worker manager finished')

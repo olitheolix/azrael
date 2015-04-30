@@ -22,6 +22,8 @@ import pymongo
 import subprocess
 import multiprocessing
 
+# Use 'fork' system call to create new processes.
+multiprocessing.set_start_method('fork')
 
 def isMongoLive():
     """
