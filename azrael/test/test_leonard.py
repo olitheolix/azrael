@@ -57,10 +57,8 @@ class TestLeonardAllEngines:
     def teardown_class(cls):
         pass
 
-    def setup_method(self, method):
-        killAzrael()
-
     def teardown_method(self, method):
+        pass
         killAzrael()
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
@@ -468,8 +466,6 @@ class TestLeonardOther:
         assert 0.9 <= pos_0[0] <= 1.1
         assert 8.9 <= pos_1[1] <= 9.1
 
-        killAzrael()
-
     def test_sweeping_2objects(self):
         """
         Ensure the Sweeping algorithm finds the correct sets.
@@ -619,9 +615,6 @@ class TestLeonardOther:
         assert np.array_equal(data[0].force, [0, 0, 0])
         assert np.array_equal(data[1].force, [0, 0, 0])
 
-        # Cleanup.
-        killAzrael()
-
     def test_updateLocalCache(self):
         """
         Update the local object cache in Leonard based on a Work Package.
@@ -651,9 +644,6 @@ class TestLeonardOther:
         assert isEqualBD(leo.allObjects[id_1], data_1)
         leo.updateLocalCache(newWP)
         assert isEqualBD(leo.allObjects[id_1], data_3)
-
-        # Cleanup.
-        killAzrael()
 
     def test_processCommandQueue(self):
         """
@@ -712,9 +702,6 @@ class TestLeonardOther:
         leo.processCommandsAndSync()
         assert leo.allForces[id_2].forceBoost == force
         assert leo.allForces[id_2].torqueBoost == torque
-
-        # Cleanup.
-        killAzrael()
 
     def test_maintain_forces(self):
         """
@@ -780,9 +767,6 @@ class TestLeonardOther:
             assert tmp.forceBoost == [-3, -2, -1]
             assert tmp.torqueBoost == [-6, -5, -4]
 
-        # Cleanup.
-        killAzrael()
-
     def test_totalForceAndTorque_no_rotation(self):
         """
         Verify that 'totalForceAndTorque' correctly adds up the direct-
@@ -825,9 +809,6 @@ class TestLeonardOther:
         leo.processCommandsAndSync()
         assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
 
-        # Cleanup.
-        killAzrael()
-
     def test_totalForceAndTorque_with_rotation(self):
         """
         Similar to the previou 'test_totalForceAndTorque_no_rotation'
@@ -863,6 +844,3 @@ class TestLeonardOther:
         assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
         leo.processCommandsAndSync()
         assert leo.totalForceAndTorque(objID) == ([1, 2, 3], [4, 5, 6])
-
-        # Cleanup.
-        killAzrael()
