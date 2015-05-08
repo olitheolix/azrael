@@ -42,7 +42,7 @@ should make it possible to write clients in other languages.
 
 import base64
 import azrael.util
-import azrael.bullet.bullet_data as bullet_data
+import azrael.bullet_data as bullet_data
 import azrael.physics_interface as physics_interface
 
 import numpy as np

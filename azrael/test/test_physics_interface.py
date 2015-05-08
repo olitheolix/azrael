@@ -23,11 +23,11 @@ import numpy as np
 import azrael.database
 import azrael.leonard as leonard
 import azrael.physics_interface as physAPI
-import azrael.bullet.bullet_data as bullet_data
+import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
-from azrael.bullet.test_boost_bullet import isEqualBD
+from azrael.test_boost_bullet import isEqualBD
 
 MotionState = bullet_data.MotionState
 MotionStateOverride = bullet_data.MotionStateOverride

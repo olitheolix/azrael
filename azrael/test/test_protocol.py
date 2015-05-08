@@ -25,10 +25,10 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
-import azrael.bullet.bullet_data as bullet_data
+import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.bullet.test_boost_bullet import isEqualBD
+from azrael.test_boost_bullet import isEqualBD
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment, Template
 
 

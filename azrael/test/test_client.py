@@ -46,7 +46,7 @@ import azrael.leonard as leonard
 import azrael.database as database
 import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
-import azrael.bullet.bullet_data as bullet_data
+import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
 from azrael.types import RetVal, Template

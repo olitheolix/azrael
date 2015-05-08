@@ -34,9 +34,9 @@ import azrael.database
 import azrael.vectorgrid
 import azrael.util as util
 import azrael.config as config
-import azrael.bullet.boost_bullet
+import azrael.boost_bullet
 import azrael.physics_interface as physAPI
-import azrael.bullet.bullet_data as bullet_data
+import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
 from azrael.types import _MotionState
@@ -458,7 +458,7 @@ class LeonardBullet(LeonardBase):
     def setup(self):
         # Instantiate the Bullet engine. The (1, 0) parameters mean
         # the engine has ID '1' and does not build explicit pair caches.
-        self.bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
+        self.bullet = azrael.boost_bullet.PyBulletDynamicsWorld(1)
 
     @typecheck
     def step(self, dt, maxsteps):
@@ -869,7 +869,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         self.parentPID = os.getpid()
 
         # Instantiate a Bullet engine.
-        engine = azrael.bullet.boost_bullet.PyBulletDynamicsWorld
+        engine = azrael.boost_bullet.PyBulletDynamicsWorld
         self.bullet = engine(self.workerID)
 
     def getGridForces(self, idPos: dict):

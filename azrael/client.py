@@ -40,7 +40,7 @@ import azrael.protocol as protocol
 
 from azrael.types import typecheck, RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
-from azrael.bullet.bullet_data import MotionStateOverride, _MotionState
+from azrael.bullet_data import MotionStateOverride, _MotionState
 
 
 class Client():

@@ -35,10 +35,10 @@ import azrael.clerk
 import azrael.client
 import azrael.dibbler
 import azrael.parts as parts
-import azrael.bullet.bullet_data as bullet_data
+import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.bullet.test_boost_bullet import isEqualBD
+from azrael.test_boost_bullet import isEqualBD
 from azrael.test.test import createFragRaw, createFragDae
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal

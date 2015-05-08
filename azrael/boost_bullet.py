@@ -18,20 +18,20 @@
 # fixme: rename boost_bullet
 import sys
 import logging
-import azBullet
 import azrael.util
+import azrael.bullet.azBullet as azBullet
 
 import numpy as np
 import azrael.config as config
-import azrael.bullet.bullet_data as bullet_data
+import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _MotionState, CollisionShape
 
 # Convenience.
 # fixme: capitalise vec3
-from azBullet import vec3 as Vec3
-from azBullet import Quaternion
+Vec3 = azBullet.vec3
+Quaternion = azBullet.Quaternion
 
 # Convenience.
 MotionState = bullet_data.MotionState

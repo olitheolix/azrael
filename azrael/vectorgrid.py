@@ -33,7 +33,7 @@ import logging
 import pymongo
 import numpy as np
 import azrael.config as config
-import azrael.bullet.bullet_data as bullet_data
+import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal
