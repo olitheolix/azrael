@@ -47,7 +47,7 @@ import azrael.util as util
 import azrael.config as config
 import azrael.physics_interface as physAPI
 
-from PySide import QtCore, QtGui, QtOpenGL
+from PyQt4 import QtCore, QtGui, QtOpenGL
 from azrael.types import Template, MetaFragment, FragRaw, FragState
 
 
@@ -123,8 +123,8 @@ class ImageWriter(QtCore.QObject):
     """
 
     # Signals must be class variables.
-    sigUpdate = QtCore.Signal(float, QtGui.QImage)
-    sigReset = QtCore.Signal()
+    sigUpdate = QtCore.pyqtSignal(float, QtGui.QImage)
+    sigReset = QtCore.pyqtSignal()
 
     def __init__(self, baseDir):
         super().__init__()
@@ -144,7 +144,7 @@ class ImageWriter(QtCore.QObject):
         self.imgCnt = 0
         self.videoDir = None
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def work(self, grabTime, img):
         """
         Write the images to disk (PNG format).
@@ -162,7 +162,7 @@ class ImageWriter(QtCore.QObject):
         # Increase the image counter.
         self.imgCnt += 1
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def reset(self):
         """
         Create a new recording directory and reset the image counter.
