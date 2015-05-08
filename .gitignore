@@ -1,4 +1,5 @@
 **/*~
+**/*.cache
 **/__pycache__/
 /azrael/bullet/.sconsign.dblite
 /azrael/bullet/bin/
@@ -13,5 +14,4 @@
 /viewer/video/
 /azrael/data/
 /volume/
-**/*.cache
 /doc/images/orig
