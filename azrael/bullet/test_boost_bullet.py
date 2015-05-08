@@ -123,7 +123,7 @@ def test_apply_force(force_fun_id):
     Create object, send it to Bullet, apply a force, progress the simulation,
     and verify the object moved correctly.
     """
-    # Constants and paramters for this test.
+    # Constants and parameters for this test.
     objID = 10
     force = np.array([0, 0, 1], np.float64)
     dt, maxsteps = 1.0, 60
@@ -179,7 +179,7 @@ def test_apply_force_and_torque():
     Create object, send it to Bullet, apply a force, progress the simulation,
     and verify the object moved correctly.
     """
-    # Constants and paramters for this test.
+    # Constants and parameters for this test.
     objID = 10
     force = np.array([0, 0, 1], np.float64)
     torque = np.array([0, 0, 1], np.float64)
@@ -271,7 +271,7 @@ def test_modify_mass():
     Create two identical spheres, double the mass of one, and apply the same
     force to both. The heavier sphere must have moved only half as far.
     """
-    # Constants and paramters for this test.
+    # Constants and parameters for this test.
     objID_a, objID_b = 10, 20
     pos_a = [+5, 0, 0]
     pos_b = [-5, 0, 0]
@@ -327,7 +327,7 @@ def test_modify_size():
     touchs the other. This time Bullet must pick up on the interpenetration and
     modify the sphere's position (somehow).
     """
-    # Constants and paramters for this test.
+    # Constants and parameters for this test.
     objID_a, objID_b = 10, 20
     pos_a = [0, 0, 0]
     pos_b = [3, 0, 0]
@@ -391,7 +391,7 @@ def test_modify_cshape():
     edges will interpenetrate and Bullet will move them apart. We can identify
     this movement.
     """
-    # Constants and paramters for this test.
+    # Constants and parameters for this test.
     objID_a, objID_b = 10, 20
     pos_a = [-0.8, -0.8, 0]
     pos_b = [0.8, 0.8, 0]
