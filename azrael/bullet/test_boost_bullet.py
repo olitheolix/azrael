@@ -37,8 +37,14 @@ def isEqualBD(bd1: _MotionState, bd2: _MotionState):
     This is a convenience function only.
     """
     for f in _MotionState._fields:
-        if not np.allclose(getattr(bd1, f), getattr(bd2, f), atol=1E-9):
-            return False
+        a, b = getattr(bd1, f), getattr(bd2, f)
+        if f == 'cs2':
+            if list(a) != list(b):
+                return False
+        else:
+            if not np.allclose(a, b, atol=1E-9):
+                return False
+
     return True
 
 
@@ -55,7 +61,8 @@ def test_getset_object():
         orientation=np.array([0, 1, 0, 0], np.float64),
         position=np.array([0.2, 0.4, 0.6], np.float64),
         velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
-        velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
+        velocityRot=np.array([1.4, 1.6, 1.8], np.float64),
+        cs2=('SPHERE', None))
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -88,7 +95,8 @@ def test_update_object():
         orientation=np.array([0, 1, 0, 0], np.float64),
         position=np.array([0.2, 0.4, 0.6], np.float64),
         velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
-        velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
+        velocityRot=np.array([1.4, 1.6, 1.8], np.float64),
+        cs2=('SPHERE', None))
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -108,7 +116,8 @@ def test_update_object():
         orientation=np.array([0, 0, 1, 0], np.float64),
         position=np.array([1.2, 1.4, 1.6], np.float64),
         velocityLin=np.array([2.8, 2.0, 2.2], np.float64),
-        velocityRot=np.array([2.4, 2.6, 2.8], np.float64))
+        velocityRot=np.array([2.4, 2.6, 2.8], np.float64),
+        cs2=('SPHERE', None))
     bullet.setObjectData(0, obj_a)
     ret = bullet.getObjectData([0])
     assert ret.ok
@@ -187,7 +196,8 @@ def test_apply_force_and_torque():
 
     # Create a spherical object. Adjust the mass so that the sphere's inertia
     # is roughly unity.
-    obj_a = bullet_data.MotionState(cshape=[3, 1, 1, 1], imass=2 / 5)
+    obj_a = bullet_data.MotionState(
+        cshape=[3, 1, 1, 1], imass=2 / 5, cs2=('SPHERE', None))
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
@@ -336,8 +346,10 @@ def test_modify_size():
     torque = np.array([0, 0, 0], np.float64)
 
     # Create two identical spheres, one left, one right (x-axis).
-    obj_a = bullet_data.MotionState(position=pos_a, cshape=cshape)
-    obj_b = bullet_data.MotionState(position=pos_b, cshape=cshape)
+    cs2=('SPHERE', None)
+    obj_a = bullet_data.MotionState(position=pos_a, cshape=cshape, cs2=cs2)
+    obj_b = bullet_data.MotionState(position=pos_b, cshape=cshape, cs2=cs2)
+    del cs2
 
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)

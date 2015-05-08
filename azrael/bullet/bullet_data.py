@@ -31,7 +31,7 @@ import numpy as np
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, _MotionState
+from azrael.types import typecheck, _MotionState, CollisionShape
 
 
 @typecheck
@@ -45,7 +45,8 @@ def MotionState(scale: (int, float)=1,
                 cshape: (tuple, list, np.ndarray)=[0, 1, 1, 1],
                 axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
                 axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
-                lastChanged: int=0):
+                lastChanged: int=0,
+                cs2: (tuple, list, CollisionShape)=CollisionShape('Empty', None)):
     """
     Return a ``_MotionState`` object.
 
@@ -68,6 +69,7 @@ def MotionState(scale: (int, float)=1,
         assert len(orientation) == len(cshape) == 4
         assert len(position) == len(velocityLin) == len(velocityRot) == 3
         assert lastChanged >= 0
+        cs2 = CollisionShape(*cs2)
     except (AssertionError, TypeError) as err:
         return None
 
@@ -83,7 +85,8 @@ def MotionState(scale: (int, float)=1,
         cshape=cshape,
         axesLockLin=axesLockLin,
         axesLockRot=axesLockRot,
-        lastChanged=lastChanged)
+        lastChanged=lastChanged,
+        cs2=cs2)
 
 
 class MotionStateOverride(_MotionState):

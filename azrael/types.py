@@ -56,7 +56,9 @@ Forces = namedtuple('Forces',
 _MotionState = namedtuple('_MotionState',
                           'scale imass restitution orientation '
                           'position velocityLin velocityRot cshape '
-                          'axesLockLin axesLockRot lastChanged')
+                          'axesLockLin axesLockRot lastChanged cs2')
+
+CollisionShape = namedtuple('CollisionShape', 'name data')
 
 
 def typecheck(func_handle):
