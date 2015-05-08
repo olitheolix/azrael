@@ -354,40 +354,47 @@ def test_modify_size():
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
-    # Send object to Bullet and progress the simulation by one second.
-    # The objects must not move because no forces are at play.
+    # Send objects to Bullet and progress the simulation. The sole point of the
+    # progressing the simulation is to make sure Bullet actually accesses the
+    # objects; we do not actually care if/how the objects moved.
     bullet.setObjectData(objID_a, obj_a)
     bullet.setObjectData(objID_b, obj_b)
-
-    # Progress the simulation for one second. Nothing must happen.
     bullet.compute([objID_a, objID_b], 1.0, 60)
 
+    # Verify that the collision shapes are as expected.
     ret = bullet.getObjectData([objID_a])
     assert ret.ok
-    assert isEqualBD(ret.data, obj_a)
+    assert ret.data.cs2.name.upper() == 'SPHERE'
+    tmp_cs = bullet.all_objs[objID_a].getCollisionShape()
+    assert tmp_cs.getLocalScaling().tolist() == (1.0, 1.0, 1.0)
+
     ret = bullet.getObjectData([objID_b])
     assert ret.ok
-    assert isEqualBD(ret.data, obj_b)
+    assert ret.data.cs2.name.upper() == 'SPHERE'
+    tmp_cs = bullet.all_objs[objID_b].getCollisionShape()
+    assert tmp_cs.getLocalScaling().tolist() == (1.0, 1.0, 1.0)
 
-    # Enlarge the second object so that the spheres do not overlap.
+    # Enlarge the second object so that the spheres do not overlap.  Then step
+    # the simulation again to ensure Bullet accesses each object and nothing
+    # bad happens (eg a segfault).
     obj_b = obj_b._replace(scale=2.5)
     bullet.setObjectData(objID_b, obj_b)
-
-    # Progress the simulation for one second. Bullet must move the spheres away
-    # from each other.
     bullet.compute([objID_a, objID_b], 1.0, 60)
-
-    # Apply the same central force that pulls both spheres forward (y-axis).
-    bullet.applyForceAndTorque(objID_a, force, torque)
-    bullet.applyForceAndTorque(objID_b, force, torque)
 
     # Progress the simulation for one second. Bullet must move the objects away
     # from each other (in y-direction only).
     bullet.compute([objID_a, objID_b], 1.0, 60)
     ret = bullet.getObjectData([objID_a])
-    assert ret.data.position[1] > pos_a[1]
+    assert ret.ok
+    assert ret.data.cs2.name.upper() == 'SPHERE'
+    tmp_cs = bullet.all_objs[objID_a].getCollisionShape()
+    assert tmp_cs.getLocalScaling().tolist() == (1.0, 1.0, 1.0)
+
     ret = bullet.getObjectData([objID_b])
-    assert ret.data.position[1] > pos_b[1]
+    assert ret.ok
+    assert ret.data.cs2.name.upper() == 'SPHERE'
+    tmp_cs = bullet.all_objs[objID_b].getCollisionShape()
+    assert tmp_cs.getLocalScaling().tolist() == (2.5, 2.5, 2.5)
 
     print('Test passed')
 

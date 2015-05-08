@@ -353,12 +353,13 @@ class PyBulletPhys():
         :return: Bullet collision shape.
         """
         # Instantiate a new collision shape.
+        scale = btVector3(obj.scale, obj.scale, obj.scale)
         if obj.cshape[0] == 3:
             # Sphere.
-            cshape = azBullet.SphereShape(obj.scale)
+            cshape = azBullet.SphereShape(1)
         elif obj.cshape[0] == 4:
             # Prism.
-            w, h, l = obj.scale * np.array(obj.cshape[1:]) / 2
+            w, h, l = np.array(obj.cshape[1:]) / 2
             cshape = azBullet.BoxShape(btVector3(w, h, l))
         else:
             # Empty- or unrecognised collision shape.
@@ -368,8 +369,11 @@ class PyBulletPhys():
             # The actual collision shape.
             cshape = azBullet.EmptyShape()
 
+        # Apply the scale.
+        cshape.setLocalScaling(scale)
+
         # Add the collision shape to a list. Albeit not explicitly used
-        # anywhere this is necessary regradless to ensure the underlying pointers
+        # anywhere this is necessary regardless to ensure the underlying pointers
         # are kept alive (Bullet only accesse them but does not own them).
         self.collision_shapes[objID] = cshape
         return RetVal(True, None, cshape)
