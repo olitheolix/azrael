@@ -65,7 +65,7 @@ def test_getset_object():
         cs2=('SPHERE', None))
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+    bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
 
     # Request an invalid object ID.
     ret = bullet.getObjectData([0])
@@ -99,7 +99,7 @@ def test_update_object():
         cs2=('SPHERE', None))
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+    bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
 
     # Send object to Bullet and request it back.
     bullet.setObjectData(0, obj_a)
@@ -141,7 +141,7 @@ def test_apply_force(force_fun_id):
     obj_a = bullet_data.MotionState()
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+    bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
@@ -200,7 +200,7 @@ def test_apply_force_and_torque():
         cshape=[3, 1, 1, 1], imass=2 / 5, cs2=('SPHERE', None))
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+    bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
@@ -257,7 +257,7 @@ def test_remove_object():
     obj_a = bullet_data.MotionState()
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+    bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
 
     # Request an invalid object ID.
     ret = bullet.getObjectData([0])
@@ -294,7 +294,7 @@ def test_modify_mass():
     obj_b = bullet_data.MotionState(position=pos_b, cshape=cshape, imass=1)
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+    bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
 
     # Send object to Bullet and progress the simulation by one second.
     # The objects must not move because no forces are at play.
@@ -352,7 +352,7 @@ def test_modify_size():
     del cs2
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+    bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
 
     # Send objects to Bullet and progress the simulation. The sole point of the
     # progressing the simulation is to make sure Bullet actually accesses the
@@ -422,7 +422,7 @@ def test_modify_cshape():
     obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_sphere)
 
     # Instantiate Bullet engine.
-    bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+    bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
 
     # Send objects to Bullet and progress the simulation. The sole point of the
     # progressing the simulation is to make sure Bullet actually accesses the

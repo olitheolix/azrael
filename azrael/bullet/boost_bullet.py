@@ -38,7 +38,7 @@ from azBullet import Quaternion
 MotionState = bullet_data.MotionState
 
 
-class MyRigidBody(azBullet.RigidBody):
+class PyRigidBody(azBullet.RigidBody):
     """
     Wrapper around RigidBody class.
 
@@ -51,7 +51,7 @@ class MyRigidBody(azBullet.RigidBody):
         super().__init__(mass, ms, cshape, inertia)
 
 
-class PyBulletPhys():
+class PyBulletDynamicsWorld():
     """
     High level wrapper around the low level Bullet bindings.
 
@@ -396,7 +396,7 @@ class PyBulletPhys():
         del l
 
         # Instantiate the actual rigid body object.
-        body = MyRigidBody(mass, ms, cshape, inertia)
+        body = PyRigidBody(mass, ms, cshape, inertia)
 
         # Set additional parameters.
         body.setFriction(1)

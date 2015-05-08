@@ -458,7 +458,7 @@ class LeonardBullet(LeonardBase):
     def setup(self):
         # Instantiate the Bullet engine. The (1, 0) parameters mean
         # the engine has ID '1' and does not build explicit pair caches.
-        self.bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
+        self.bullet = azrael.bullet.boost_bullet.PyBulletDynamicsWorld(1)
 
     @typecheck
     def step(self, dt, maxsteps):
@@ -869,7 +869,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         self.parentPID = os.getpid()
 
         # Instantiate a Bullet engine.
-        engine = azrael.bullet.boost_bullet.PyBulletPhys
+        engine = azrael.bullet.boost_bullet.PyBulletDynamicsWorld
         self.bullet = engine(self.workerID)
 
     def getGridForces(self, idPos: dict):
