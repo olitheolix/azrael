@@ -291,6 +291,9 @@ def test_modify_mass():
     bullet.setObjectData(objID_a, obj_a)
     bullet.setObjectData(objID_b, obj_b)
 
+    # Progress the simulation for one second. Nothing must happen.
+    bullet.compute([objID_a, objID_b], 1.0, 60)
+
     # Update the mass of the second object.
     obj_b = obj_b._replace(imass=0.5 * obj_b.imass)
     bullet.setObjectData(objID_b, obj_b)
@@ -329,6 +332,8 @@ def test_modify_size():
     pos_a = [0, 0, 0]
     pos_b = [3, 0, 0]
     cshape = [3, 1, 1, 1]
+    force = np.array([0, 1, 0], np.float64)
+    torque = np.array([0, 0, 0], np.float64)
 
     # Create two identical spheres, one left, one right (x-axis).
     obj_a = bullet_data.MotionState(position=pos_a, cshape=cshape)
@@ -352,7 +357,7 @@ def test_modify_size():
     assert ret.ok
     assert isEqualBD(ret.data, obj_b)
 
-    # Enlarge the second object so that the spheres no overlap.
+    # Enlarge the second object so that the spheres do not overlap.
     obj_b = obj_b._replace(scale=2.5)
     bullet.setObjectData(objID_b, obj_b)
 
@@ -360,11 +365,17 @@ def test_modify_size():
     # from each other.
     bullet.compute([objID_a, objID_b], 1.0, 60)
 
-    ret = bullet.getObjectData([objID_a])
-    assert ret.data.position[0] < obj_a.position[0]
+    # Apply the same central force that pulls both spheres forward (y-axis).
+    bullet.applyForceAndTorque(objID_a, force, torque)
+    bullet.applyForceAndTorque(objID_b, force, torque)
 
+    # Progress the simulation for one second. Bullet must move the objects away
+    # from each other (in y-direction only).
+    bullet.compute([objID_a, objID_b], 1.0, 60)
+    ret = bullet.getObjectData([objID_a])
+    assert ret.data.position[1] > pos_a[1]
     ret = bullet.getObjectData([objID_b])
-    assert ret.data.position[0] > obj_b.position[0]
+    assert ret.data.position[1] > pos_b[1]
 
     print('Test passed')
 
@@ -386,6 +397,8 @@ def test_modify_cshape():
     pos_b = [0.8, 0.8, 0]
     cs_cube = [4, 2, 2, 2]
     cs_sphere = [3, 1, 1, 1]
+    force = np.array([0, 1, 0], np.float64)
+    torque = np.array([0, 0, 0], np.float64)
 
     # Create two identical unit spheres, offset along the x/y axis.
     obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_sphere)
@@ -413,13 +426,17 @@ def test_modify_cshape():
     bullet.setObjectData(objID_a, obj_a)
     bullet.setObjectData(objID_b, obj_b)
 
+    # Apply the same central force that pulls both spheres forward (y-axis).
+    bullet.applyForceAndTorque(objID_a, force, torque)
+    bullet.applyForceAndTorque(objID_b, force, torque)
+
     # Progress the simulation for one second. Bullet must move the objects away
-    # from each other.
+    # from each other (in y-direction only).
     bullet.compute([objID_a, objID_b], 1.0, 60)
     ret = bullet.getObjectData([objID_a])
-    assert ret.data.position[0] < obj_a.position[0]
+    assert ret.data.position[1] > pos_a[1]
     ret = bullet.getObjectData([objID_b])
-    assert ret.data.position[0] > obj_b.position[0]
+    assert ret.data.position[1] > pos_b[1]
 
     print('Test passed')
 

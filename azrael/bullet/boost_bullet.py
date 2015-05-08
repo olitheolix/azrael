@@ -15,12 +15,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
+# fixme: rename boost_bullet
+#        rename obj to body (and related names)
 import sys
 import logging
 import azrael.util
 
+import azBullet
+
 import numpy as np
-import bullet as pybullet
 import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
@@ -28,9 +31,15 @@ from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _MotionState
 
 # Convenience.
-btVector3 = pybullet.btVector3
-btQuaternion = pybullet.btQuaternion
+# fixme: names
+btVector3 = azBullet.vec3
+btQuaternion = azBullet.Quaternion
 MotionState = bullet_data.MotionState
+
+# fixme: docu
+class MyRigidBody(azBullet.RigidBody):
+    def __init__(self, mass, ms, cshape, inertia):
+        super().__init__(mass, ms, cshape, inertia)
 
 
 class PyBulletPhys():
@@ -44,20 +53,24 @@ class PyBulletPhys():
         # To distinguish engines.
         self.engineID = engineID
 
+        # fixme: clean up
         # Instnatiate a solver for a dynamic world.
-        self.broadphase = pybullet.btDbvtBroadphase()
-        self.collisionConfig = pybullet.btDefaultCollisionConfiguration()
-        self.dispatcher = pybullet.btCollisionDispatcher(self.collisionConfig)
-        self.solver = pybullet.btSequentialImpulseConstraintSolver()
-        self.dynamicsWorld = pybullet.btDiscreteDynamicsWorld(
-            self.dispatcher,
-            self.broadphase,
-            self.solver,
-            self.collisionConfig
-        )
+        # self.broadphase = pybullet.btDbvtBroadphase()
+        # self.collisionConfig = pybullet.btDefaultCollisionConfiguration()
+        # self.dispatcher = pybullet.btCollisionDispatcher(self.collisionConfig)
+        # self.solver = pybullet.btSequentialImpulseConstraintSolver()
+        # self.dynamicsWorld = pybullet.btDiscreteDynamicsWorld(
+        #     self.dispatcher,
+        #     self.broadphase,
+        #     self.solver,
+        #     self.collisionConfig
+        # )
 
-        # Gravity is disabled by default.
-        self.dynamicsWorld.gravity = pybullet.btVector3(0, 0, 0)
+        # fixme: rename BulletBase
+        self.dynamicsWorld = azBullet.BulletBase()
+
+        # Disable gravity.
+        self.dynamicsWorld.setGravity(0, 0, 0)
 
         # Not sure what this does but it was recommended at
         # http://bulletphysics.org/Bullet/phpBB3/viewtopic.php?t=9441
@@ -126,18 +139,18 @@ class PyBulletPhys():
             # Bullet may otherwise decide to simply set its velocity to zero
             # and ignore the body.
             obj = self.all_objs[objID]
-            self.dynamicsWorld.add_rigid_body(obj)
-            obj.activate()
+            self.dynamicsWorld.addRigidBody(obj)
+            obj.forceActivationState(4)
 
         # The max_substeps parameter instructs Bullet to subdivide the
         # specified timestep (dt) into at most max_substeps. For example, if
         # dt= 0.1 and max_substeps=10, then, internally, Bullet will simulate
         # no finer than dt / max_substeps = 0.01s.
-        self.dynamicsWorld.step_simulation(dt, max_substeps)
+        self.dynamicsWorld.stepSimulation(dt, max_substeps)
 
         # Remove the object from the simulation again.
         for objID in objIDs:
-            self.dynamicsWorld.remove_rigidbody(self.all_objs[objID])
+            self.dynamicsWorld.removeRigidBody(self.all_objs[objID])
         return RetVal(True, None, None)
 
     def applyForceAndTorque(self, objID, force, torque):
@@ -163,9 +176,9 @@ class PyBulletPhys():
 
         # Clear pending forces (should be cleared automatically by Bullet when
         # it steps the simulation) and apply the new ones.
-        obj.clear_forces()
-        obj.apply_central_force(b_force)
-        obj.apply_torque(b_torque)
+        obj.clearForces()
+        obj.applyCentralForce(b_force)
+        obj.applyTorque(b_torque)
         return RetVal(True, None, None)
 
     def applyForce(self, objID: int, force, rel_pos):
@@ -191,8 +204,8 @@ class PyBulletPhys():
 
         # Clear pending forces (should be cleared automatically by Bullet when
         # it steps the simulation) and apply the new ones.
-        obj.clear_forces()
-        obj.apply_force(b_force, b_relpos)
+        obj.clearForces()
+        obj.applyForce(b_force, b_relpos)
         return RetVal(True, None, None)
 
     def getObjectData(self, objIDs: (list, tuple)):
@@ -219,32 +232,43 @@ class PyBulletPhys():
             obj = self.all_objs[objID]
             scale = obj.azrael[1].scale
 
+            # fixme: clean up below
             # Determine rotation and position.
-            _ = obj.get_center_of_mass_transform().get_rotation()
-            rot = [_.x, _.y, _.z, _.w]
-            _ = obj.get_center_of_mass_transform().get_origin()
-            pos = [_.x, _.y, _.z]
+            _ = obj.getCenterOfMassTransform().getRotation()
+#            rot = [_.x, _.y, _.z, _.w]
+            rot = _.tolist()
+            _ = obj.getCenterOfMassTransform().getOrigin()
+#            pos = [_.x, _.y, _.z]
+            pos = _.tolist()
 
             # Determine linear and angular velocity.
-            _ = obj.linear_velocity
-            vLin = [_.x, _.y, _.z]
-            _ = obj.angular_velocity
-            vRot = [_.x, _.y, _.z]
+            _ = obj.getLinearVelocity()
+#            vLin = [_.x, _.y, _.z]
+            vLin = _.tolist()
+            _ = obj.getAngularVelocity()
+#            vRot = [_.x, _.y, _.z]
+            vRot = _.tolist()
 
             # Dummy value for the collision shape.
+            # fixme: this must be the JSON version of collisionShape description
             cshape = obj.azrael[1].cshape
 
             # Linear/angular factors.
-            _ = obj.linear_factor
-            axesLockLin = [_.x, _.y, _.z]
-            _ = obj.angular_factor
-            axesLockRot = [_.x, _.y, _.z]
+            _ = obj.getLinearFactor()
+#            axesLockLin = [_.x, _.y, _.z]
+            axesLockLin = _.tolist()
+
+            _ = obj.getAngularFactor()
+#            axesLockRot = [_.x, _.y, _.z]
+            axesLockRot = _.tolist()
 
             # Construct a new _MotionState structure and add it to the list
             # that will eventually be returned to the caller.
+            # fixme: do not use azrael[1].scale but query the scale from the
+            # collisionShape object
             out.append(
-                _MotionState(obj.azrael[1].scale, obj.inv_mass,
-                             obj.restitution, rot, pos, vLin, vRot, cshape,
+                _MotionState(obj.azrael[1].scale, obj.getInvMass(),
+                             obj.getRestitution(), rot, pos, vLin, vRot, cshape,
                              axesLockLin, axesLockRot, 0))
         return RetVal(True, None, out[0])
 
@@ -271,18 +295,23 @@ class PyBulletPhys():
         pos = btVector3(*obj.position)
 
         # Assign body properties.
-        tmp = pybullet.btTransform(rot, pos)
-        body.set_center_of_mass_transform(tmp)
-        body.linear_velocity = btVector3(*obj.velocityLin)
-        body.angular_velocity = btVector3(*obj.velocityRot)
-        body.restitution = obj.restitution
-        body.linear_factor = btVector3(*obj.axesLockLin)
-        body.angular_factor = btVector3(*obj.axesLockRot)
+        tmp = azBullet.Transform(rot, pos)
+        body.setCenterOfMassTransform(tmp)
+        body.setLinearVelocity(btVector3(*obj.velocityLin))
+        body.setAngularVelocity(btVector3(*obj.velocityRot))
+        body.setRestitution(obj.restitution)
+        body.setLinearFactor(btVector3(*obj.axesLockLin))
+        body.setAngularFactor(btVector3(*obj.axesLockRot))
 
         # Build and assign the new collision shape, if necessary.
         old = body.azrael[1]
         if (old.scale != obj.scale) or \
            not (np.array_equal(old.cshape, obj.cshape)):
+            # fixme: why is there an "body.azrael[1].cshape" and another
+            # "body.collision_shape"?
+            # fixme: the new collision shape must be applied with
+            # "body.setCollisionShape" method.
+            # fixme: the current tests for changing the scale and/or shape are rubbish.
             body.collision_shape = self.compileCollisionShape(objID, obj).data
         del old
 
@@ -290,20 +319,20 @@ class PyBulletPhys():
         # awkward to implement because Bullet returns the inverse values yet
         # expects the non-inverted ones in 'set_mass_props'.
         m = obj.imass
-        i = body.get_inv_inertia_diag_local()
-        if (m < 1E-10) or (i.x < 1E-10) or (i.y < 1E-10) or (i.z < 1E-10):
+        x, y, z = body.getInvInertiaDiagLocal().tolist()
+        if (m < 1E-10) or (x < 1E-10) or (y < 1E-10) or (z < 1E-10):
             # Use safe values if either the inertia or the mass is too small
             # for inversion.
-            m = i.x = i.y = i.z = 1
+            m = x = y = z = 1
         else:
             # Inverse mass and inertia.
-            i.x = 1 / i.x
-            i.y = 1 / i.y
-            i.z = 1 / i.z
+            x = 1 / x
+            y = 1 / y
+            z = 1 / z
             m = 1 / m
 
         # Apply the new mass and inertia.
-        body.set_mass_props(m, i)
+        body.setMassProps(m, btVector3(x, y, z))
 
         # Overwrite the old MotionState instance with the latest version.
         body.azrael = (objID, obj)
@@ -320,25 +349,32 @@ class PyBulletPhys():
         :param _MotionState obj: Azrael's meta data that describes the body.
         :return: Bullet collision shape.
         """
+        # fixme: debug/start
+        if objID in self.collision_shapes:
+            name = 'hithereitsme' + str(np.random.rand())
+            self.collision_shapes[name] = self.collision_shapes[objID]
+            del name
+        # debug/stop
+
         # Instantiate a new collision shape.
         if obj.cshape[0] == 3:
             # Sphere.
-            cshape = pybullet.btSphereShape(obj.scale)
+            cshape = azBullet.SphereShape(obj.scale)
         elif obj.cshape[0] == 4:
             # Prism.
             w, h, l = obj.scale * np.array(obj.cshape[1:]) / 2
-            cshape = pybullet.btBoxShape(btVector3(w, h, l))
+            cshape = azBullet.BoxShape(btVector3(w, h, l))
         else:
             # Empty- or unrecognised collision shape.
             if obj.cshape[0] != 0:
                 print('Unrecognised collision shape ', obj.cshape)
 
             # The actual collision shape.
-            cshape = pybullet.btEmptyShape()
+            cshape = azBullet.EmptyShape()
 
         # Add the collision shape to a list. Albeit not explicitly used
-        # anywhere this is necessary regradless to ensure the underlying points
-        # are kept alive (Bullet does not own them but accesses them).
+        # anywhere this is necessary regradless to ensure the underlying pointers
+        # are kept alive (Bullet only accesse them but does not own them).
         self.collision_shapes[objID] = cshape
         return RetVal(True, None, cshape)
 
@@ -360,7 +396,7 @@ class PyBulletPhys():
         cshape = ret.data
 
         # Create a motion state for the initial orientation and position.
-        ms = pybullet.btDefaultMotionState(pybullet.btTransform(rot, pos))
+        ms = azBullet.DefaultMotionState(azBullet.Transform(rot, pos))
 
         # Ask Bullet to compute the mass and inertia for us. The inertia will
         # be passed as a reference whereas the 'mass' is irrelevant due to how
@@ -370,22 +406,22 @@ class PyBulletPhys():
         if obj.imass > 1E-4:
             # The calcuate_local_inertia function will update the `inertia`
             # variable directly.
-            cshape.calculate_local_inertia(mass, inertia)
+            cshape.calculateLocalInertia(mass, inertia)
 
         # Compute inertia magnitude and warn about unreasonable values.
-        if (inertia.length > 20) or (inertia.length < 1E-5):
-            print('Bullet warning: Inertia = {}'.format(inertia.length))
-
-        # Bullet requires this admin structure to construct the rigid body.
-        ci = pybullet.btRigidBodyConstructionInfo(mass, ms, cshape, inertia)
+        l = np.array(inertia.tolist())
+        l = np.dot(l, l)
+        if not (1E-5 < l < 20):
+            print('Bullet warning: Inertia = {}'.format(l))
+        del l
 
         # Instantiate the actual rigid body object.
-        body = pybullet.btRigidBody(ci)
+        body = MyRigidBody(mass, ms, cshape, inertia)
 
         # Set additional parameters.
-        body.friction = 1
-        body.set_damping(0.02, 0.02)
-        body.set_sleeping_thresholds(0.1, 0.1)
+        body.setFriction(1)
+        body.setDamping(0.02, 0.02)
+        body.setSleepingThresholds(0.1, 0.1)
 
         # Attach my own admin structure to the object.
         body.azrael = (objID, obj)
