@@ -38,13 +38,13 @@ from azrael.types import typecheck, _MotionState
 def MotionState(scale: (int, float)=1,
                 imass: (int, float)=1,
                 restitution: (int, float)=0.9,
-                orientation: (list, np.ndarray)=[0, 0, 0, 1],
-                position: (list, np.ndarray)=[0, 0, 0],
-                velocityLin: (list, np.ndarray)=[0, 0, 0],
-                velocityRot: (list, np.ndarray)=[0, 0, 0],
-                cshape: (list, np.ndarray)=[0, 1, 1, 1],
-                axesLockLin: (list, np.ndarray)=[1, 1, 1],
-                axesLockRot: (list, np.ndarray)=[1, 1, 1],
+                orientation: (tuple, list, np.ndarray)=[0, 0, 0, 1],
+                position: (tuple, list, np.ndarray)=[0, 0, 0],
+                velocityLin: (tuple, list, np.ndarray)=[0, 0, 0],
+                velocityRot: (tuple, list, np.ndarray)=[0, 0, 0],
+                cshape: (tuple, list, np.ndarray)=[0, 1, 1, 1],
+                axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
+                axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
                 lastChanged: int=0):
     """
     Return a ``_MotionState`` object.
