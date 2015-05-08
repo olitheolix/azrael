@@ -409,8 +409,6 @@ def test_modify_cshape():
     pos_b = [0.8, 0.8, 0]
     cs_cube = [4, 2, 2, 2]
     cs_sphere = [3, 1, 1, 1]
-    force = np.array([0, 1, 0], np.float64)
-    torque = np.array([0, 0, 0], np.float64)
 
     # Create two identical unit spheres, offset along the x/y axis.
     obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_sphere)
@@ -419,36 +417,36 @@ def test_modify_cshape():
     # Instantiate Bullet engine.
     bullet = azrael.bullet.boost_bullet.PyBulletPhys(1)
 
-    # Send objects to Bullet and progress the simulation by one second.
-    # The objects must not move because no forces are at play and the spheres
-    # do not touch.
+    # Send objects to Bullet and progress the simulation. The sole point of the
+    # progressing the simulation is to make sure Bullet actually accesses the
+    # objects; we do not actually care if/how the objects moved.
     bullet.setObjectData(objID_a, obj_a)
     bullet.setObjectData(objID_b, obj_b)
     bullet.compute([objID_a, objID_b], 1.0, 60)
+
+    # Verify the collision shapes are as expected.
     ret = bullet.getObjectData([objID_a])
     assert ret.ok
-    assert isEqualBD(ret.data, obj_a)
+    assert ret.data.cs2.name.upper() == 'SPHERE'
     ret = bullet.getObjectData([objID_b])
     assert ret.ok
-    assert isEqualBD(ret.data, obj_b)
+    assert ret.data.cs2.name.upper() == 'SPHERE'
 
-    # Change the collision shape of both objects to a unit cube.
+    # Change both collision shape to unit cubes. Then step the simulation again
+    # to ensure Bullet accesses each object and nothing bad happens (eg a segfault).
     obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_cube)
     obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_cube)
     bullet.setObjectData(objID_a, obj_a)
     bullet.setObjectData(objID_b, obj_b)
-
-    # Apply the same central force that pulls both spheres forward (y-axis).
-    bullet.applyForceAndTorque(objID_a, force, torque)
-    bullet.applyForceAndTorque(objID_b, force, torque)
-
-    # Progress the simulation for one second. Bullet must move the objects away
-    # from each other (in y-direction only).
     bullet.compute([objID_a, objID_b], 1.0, 60)
+
+    # Verify the collision shapes have been updated to boxes.
     ret = bullet.getObjectData([objID_a])
-    assert ret.data.position[1] > pos_a[1]
+    assert ret.ok
+    assert ret.data.cs2.name.upper() == 'BOX'
     ret = bullet.getObjectData([objID_b])
-    assert ret.data.position[1] > pos_b[1]
+    assert ret.ok
+    assert ret.data.cs2.name.upper() == 'BOX'
 
     print('Test passed')
 

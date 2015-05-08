@@ -28,7 +28,7 @@ import azrael.config as config
 import azrael.bullet.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _MotionState
+from azrael.types import typecheck, RetVal, _MotionState, CollisionShape
 
 # Convenience.
 # fixme: names
@@ -266,10 +266,12 @@ class PyBulletPhys():
             # that will eventually be returned to the caller.
             # fixme: do not use azrael[1].scale but query the scale from the
             # collisionShape object
+            csname = obj.getCollisionShape().getName()
+            cs2 = CollisionShape(csname.decode('utf8'), None)
             out.append(
                 _MotionState(obj.azrael[1].scale, obj.getInvMass(),
                              obj.getRestitution(), rot, pos, vLin, vRot, cshape,
-                             axesLockLin, axesLockRot, 0))
+                             axesLockLin, axesLockRot, 0, cs2))
         return RetVal(True, None, out[0])
 
     @typecheck
@@ -312,7 +314,8 @@ class PyBulletPhys():
             # fixme: the new collision shape must be applied with
             # "body.setCollisionShape" method.
             # fixme: the current tests for changing the scale and/or shape are rubbish.
-            body.collision_shape = self.compileCollisionShape(objID, obj).data
+            self.compileCollisionShape(objID, obj).data
+            body.setCollisionShape(self.collision_shapes[objID])
         del old
 
         # Update the mass but leave the inertia intact. This is somewhat
@@ -349,13 +352,6 @@ class PyBulletPhys():
         :param _MotionState obj: Azrael's meta data that describes the body.
         :return: Bullet collision shape.
         """
-        # fixme: debug/start
-        if objID in self.collision_shapes:
-            name = 'hithereitsme' + str(np.random.rand())
-            self.collision_shapes[name] = self.collision_shapes[objID]
-            del name
-        # debug/stop
-
         # Instantiate a new collision shape.
         if obj.cshape[0] == 3:
             # Sphere.
