@@ -18,10 +18,10 @@ import pytest
 import numpy as np
 from IPython import embed as ipshell
 
-import azBullet
-from azBullet import vec3, Quaternion
-from azBullet import BoxShape, StaticPlaneShape, SphereShape, EmptyShape
-from azBullet import Transform, MotionState, DefaultMotionState, RigidBody
+import azrael.bullet.azBullet
+from azrael.bullet.azBullet import vec3, Quaternion
+from azrael.bullet.azBullet import BoxShape, StaticPlaneShape, SphereShape, EmptyShape
+from azrael.bullet.azBullet import Transform, MotionState, DefaultMotionState, RigidBody
 
 
 class TestVector3:
@@ -332,7 +332,7 @@ class TestRigidBody:
         body2.forceActivationState(5)
 
         # Creat a simulation and specify gravity.
-        sim = azBullet.BulletBase()
+        sim = azrael.bullet.azBullet.BulletBase()
         sim.setGravity(0, -10, 0)
 
         # Add the bodies.
