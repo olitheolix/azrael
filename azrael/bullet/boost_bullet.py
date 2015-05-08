@@ -36,8 +36,15 @@ btVector3 = azBullet.vec3
 btQuaternion = azBullet.Quaternion
 MotionState = bullet_data.MotionState
 
-# fixme: docu
 class MyRigidBody(azBullet.RigidBody):
+    """
+    Wrapper around RigidBody class.
+
+    The original azBullet.RigidBody class cannot be extended since it is a
+    compiled module. However, by subclassing it we get the convenience of
+    a pure Python class (eg adding attributes at runtime). This is transparent
+    to the end user.
+    """
     def __init__(self, mass, ms, cshape, inertia):
         super().__init__(mass, ms, cshape, inertia)
 
@@ -52,19 +59,6 @@ class PyBulletPhys():
     def __init__(self, engineID: int):
         # To distinguish engines.
         self.engineID = engineID
-
-        # fixme: clean up
-        # Instnatiate a solver for a dynamic world.
-        # self.broadphase = pybullet.btDbvtBroadphase()
-        # self.collisionConfig = pybullet.btDefaultCollisionConfiguration()
-        # self.dispatcher = pybullet.btCollisionDispatcher(self.collisionConfig)
-        # self.solver = pybullet.btSequentialImpulseConstraintSolver()
-        # self.dynamicsWorld = pybullet.btDiscreteDynamicsWorld(
-        #     self.dispatcher,
-        #     self.broadphase,
-        #     self.solver,
-        #     self.collisionConfig
-        # )
 
         # fixme: rename BulletBase
         self.dynamicsWorld = azBullet.BulletBase()
@@ -232,35 +226,21 @@ class PyBulletPhys():
             obj = self.all_objs[objID]
             scale = obj.azrael[1].scale
 
-            # fixme: clean up below
             # Determine rotation and position.
-            _ = obj.getCenterOfMassTransform().getRotation()
-#            rot = [_.x, _.y, _.z, _.w]
-            rot = _.tolist()
-            _ = obj.getCenterOfMassTransform().getOrigin()
-#            pos = [_.x, _.y, _.z]
-            pos = _.tolist()
+            rot = obj.getCenterOfMassTransform().getRotation().tolist()
+            pos = obj.getCenterOfMassTransform().getOrigin().tolist()
 
             # Determine linear and angular velocity.
-            _ = obj.getLinearVelocity()
-#            vLin = [_.x, _.y, _.z]
-            vLin = _.tolist()
-            _ = obj.getAngularVelocity()
-#            vRot = [_.x, _.y, _.z]
-            vRot = _.tolist()
+            vLin = obj.getLinearVelocity().tolist()
+            vRot = obj.getAngularVelocity().tolist()
 
             # Dummy value for the collision shape.
             # fixme: this must be the JSON version of collisionShape description
             cshape = obj.azrael[1].cshape
 
-            # Linear/angular factors.
-            _ = obj.getLinearFactor()
-#            axesLockLin = [_.x, _.y, _.z]
-            axesLockLin = _.tolist()
-
-            _ = obj.getAngularFactor()
-#            axesLockRot = [_.x, _.y, _.z]
-            axesLockRot = _.tolist()
+            # Linear/angular damping factors.
+            axesLockLin = obj.getLinearFactor().tolist()
+            axesLockRot = obj.getAngularFactor().tolist()
 
             # Construct a new _MotionState structure and add it to the list
             # that will eventually be returned to the caller.
@@ -309,12 +289,10 @@ class PyBulletPhys():
         old = body.azrael[1]
         if (old.scale != obj.scale) or \
            not (np.array_equal(old.cshape, obj.cshape)):
-            # fixme: why is there an "body.azrael[1].cshape" and another
-            # "body.collision_shape"?
-            # fixme: the new collision shape must be applied with
-            # "body.setCollisionShape" method.
-            # fixme: the current tests for changing the scale and/or shape are rubbish.
+            # Create a new collision shape.
             self.compileCollisionShape(objID, obj).data
+
+            # Replace the existing collision shape with the new one.
             body.setCollisionShape(self.collision_shapes[objID])
         del old
 
