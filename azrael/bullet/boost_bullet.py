@@ -19,9 +19,8 @@
 #        rename obj to body (and related names)
 import sys
 import logging
-import azrael.util
-
 import azBullet
+import azrael.util
 
 import numpy as np
 import azrael.config as config
@@ -31,10 +30,13 @@ from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _MotionState, CollisionShape
 
 # Convenience.
-# fixme: names
-btVector3 = azBullet.vec3
-btQuaternion = azBullet.Quaternion
+# fixme: capitalise vec3
+from azBullet import vec3 as Vec3
+from azBullet import Quaternion
+
+# Convenience.
 MotionState = bullet_data.MotionState
+
 
 class MyRigidBody(azBullet.RigidBody):
     """
@@ -164,9 +166,9 @@ class PyBulletPhys():
         # Convenience.
         obj = self.all_objs[objID]
 
-        # Convert the force and torque to btVector3.
-        b_force = btVector3(*force)
-        b_torque = btVector3(*torque)
+        # Convert the force and torque to Vec3.
+        b_force = Vec3(*force)
+        b_torque = Vec3(*torque)
 
         # Clear pending forces (should be cleared automatically by Bullet when
         # it steps the simulation) and apply the new ones.
@@ -192,9 +194,9 @@ class PyBulletPhys():
         # Convenience.
         obj = self.all_objs[objID]
 
-        # Convert the force and torque to btVector3.
-        b_force = btVector3(*force)
-        b_relpos = btVector3(*rel_pos)
+        # Convert the force and torque to Vec3.
+        b_force = Vec3(*force)
+        b_relpos = Vec3(*rel_pos)
 
         # Clear pending forces (should be cleared automatically by Bullet when
         # it steps the simulation) and apply the new ones.
@@ -272,18 +274,18 @@ class PyBulletPhys():
         # Convenience.
         body = self.all_objs[objID]
 
-        # Convert orientation and position to btVector3.
-        rot = btQuaternion(*obj.orientation)
-        pos = btVector3(*obj.position)
+        # Convert orientation and position to Vec3.
+        rot = Quaternion(*obj.orientation)
+        pos = Vec3(*obj.position)
 
         # Assign body properties.
         tmp = azBullet.Transform(rot, pos)
         body.setCenterOfMassTransform(tmp)
-        body.setLinearVelocity(btVector3(*obj.velocityLin))
-        body.setAngularVelocity(btVector3(*obj.velocityRot))
+        body.setLinearVelocity(Vec3(*obj.velocityLin))
+        body.setAngularVelocity(Vec3(*obj.velocityRot))
         body.setRestitution(obj.restitution)
-        body.setLinearFactor(btVector3(*obj.axesLockLin))
-        body.setAngularFactor(btVector3(*obj.axesLockRot))
+        body.setLinearFactor(Vec3(*obj.axesLockLin))
+        body.setAngularFactor(Vec3(*obj.axesLockRot))
 
         # Build and assign the new collision shape, if necessary.
         old = body.azrael[1]
@@ -313,7 +315,7 @@ class PyBulletPhys():
             m = 1 / m
 
         # Apply the new mass and inertia.
-        body.setMassProps(m, btVector3(x, y, z))
+        body.setMassProps(m, Vec3(x, y, z))
 
         # Overwrite the old MotionState instance with the latest version.
         body.azrael = (objID, obj)
@@ -331,14 +333,14 @@ class PyBulletPhys():
         :return: Bullet collision shape.
         """
         # Instantiate a new collision shape.
-        scale = btVector3(obj.scale, obj.scale, obj.scale)
+        scale = Vec3(obj.scale, obj.scale, obj.scale)
         if obj.cshape[0] == 3:
             # Sphere.
             cshape = azBullet.SphereShape(1)
         elif obj.cshape[0] == 4:
             # Prism.
             w, h, l = np.array(obj.cshape[1:]) / 2
-            cshape = azBullet.BoxShape(btVector3(w, h, l))
+            cshape = azBullet.BoxShape(Vec3(w, h, l))
         else:
             # Empty- or unrecognised collision shape.
             if obj.cshape[0] != 0:
@@ -365,9 +367,9 @@ class PyBulletPhys():
         :param _MotionState obj: State Variables of rigid body.
         :return: Success
         """
-        # Convert orientation and position to btVector3.
-        rot = btQuaternion(*obj.orientation)
-        pos = btVector3(*obj.position)
+        # Convert orientation and position to Vec3.
+        rot = Quaternion(*obj.orientation)
+        pos = Vec3(*obj.position)
 
         # Build the collision shape.
         ret = self.compileCollisionShape(objID, obj)
@@ -379,7 +381,7 @@ class PyBulletPhys():
         # Ask Bullet to compute the mass and inertia for us. The inertia will
         # be passed as a reference whereas the 'mass' is irrelevant due to how
         # the C++ function was wrapped.
-        inertia = btVector3(0, 0, 0)
+        inertia = Vec3(0, 0, 0)
         mass = 1.0 / obj.imass
         if obj.imass > 1E-4:
             # The calcuate_local_inertia function will update the `inertia`
