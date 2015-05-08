@@ -147,7 +147,7 @@ class Quaternion:
         """
         # Sanity checks. 'w' must be a scalar, and 'v' a 3D vector.
         assert isinstance(w, (int, float))
-        assert isinstance(v, (list, np.ndarray))
+        assert isinstance(v, (tuple, list, np.ndarray))
         assert len(v) == 3
 
         # Store 'w' and 'v' as Numpy types in the class.
