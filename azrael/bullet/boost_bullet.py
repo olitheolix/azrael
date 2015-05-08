@@ -16,7 +16,6 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 # fixme: rename boost_bullet
-#        rename obj to body (and related names)
 import sys
 import logging
 import azBullet
@@ -68,13 +67,8 @@ class PyBulletDynamicsWorld():
         # Disable gravity.
         self.dynamicsWorld.setGravity(0, 0, 0)
 
-        # Not sure what this does but it was recommended at
-        # http://bulletphysics.org/Bullet/phpBB3/viewtopic.php?t=9441
-        # dynamicsWorld->getSolverInfo().m_solverMode |= \
-        #     SOLVER_USE_2_FRICTION_DIRECTIONS
-
         # Dictionary of all objects.
-        self.all_objs = {}
+        self.rigidBodies = {}
 
         # Auxiliary dictionary to avoid motion states and collision shapes to
         # be garbage collected because Bullet will internally only hold
@@ -96,11 +90,11 @@ class PyBulletDynamicsWorld():
         # Remove every object, skipping non-existing ones.
         for objID in objIDs:
             # Skip non-existing objects.
-            if objID not in self.all_objs:
+            if objID not in self.rigidBodies:
                 continue
 
             # Delete the object from all caches.
-            del self.all_objs[objID]
+            del self.rigidBodies[objID]
             del self.motion_states[objID]
             del self.collision_shapes[objID]
             cnt += 1
@@ -126,7 +120,7 @@ class PyBulletDynamicsWorld():
         # Add the objects from the cache to the Bullet simulation.
         for objID in objIDs:
             # Abort immediately if the object does not exist in the local
-            if objID not in self.all_objs:
+            if objID not in self.rigidBodies:
                 print('Object <{}> does not exist'.format(objID))
                 return RetVal(False, None, None)
 
@@ -134,7 +128,7 @@ class PyBulletDynamicsWorld():
             # Add the body to the world and make sure it is activated, as
             # Bullet may otherwise decide to simply set its velocity to zero
             # and ignore the body.
-            obj = self.all_objs[objID]
+            obj = self.rigidBodies[objID]
             self.dynamicsWorld.addRigidBody(obj)
             obj.forceActivationState(4)
 
@@ -146,7 +140,7 @@ class PyBulletDynamicsWorld():
 
         # Remove the object from the simulation again.
         for objID in objIDs:
-            self.dynamicsWorld.removeRigidBody(self.all_objs[objID])
+            self.dynamicsWorld.removeRigidBody(self.rigidBodies[objID])
         return RetVal(True, None, None)
 
     def applyForceAndTorque(self, objID, force, torque):
@@ -159,12 +153,12 @@ class PyBulletDynamicsWorld():
         :return: Success
         """
         # Sanity check.
-        if objID not in self.all_objs:
+        if objID not in self.rigidBodies:
             print('Cannot set force of unknown object <{}>'.format(objID))
             return RetVal(False, None, None)
 
         # Convenience.
-        obj = self.all_objs[objID]
+        obj = self.rigidBodies[objID]
 
         # Convert the force and torque to Vec3.
         b_force = Vec3(*force)
@@ -187,12 +181,12 @@ class PyBulletDynamicsWorld():
         :return: Success
         """
         # Sanity check.
-        if objID not in self.all_objs:
+        if objID not in self.rigidBodies:
             msg = 'Cannot set force of unknown object <{}>'.format(objID)
             return RetVal(False, msg, None)
 
         # Convenience.
-        obj = self.all_objs[objID]
+        obj = self.rigidBodies[objID]
 
         # Convert the force and torque to Vec3.
         b_force = Vec3(*force)
@@ -220,12 +214,12 @@ class PyBulletDynamicsWorld():
         # Compile a list of object attributes.
         for objID in objIDs:
             # Abort immediately if one or more objects don't exist.
-            if objID not in self.all_objs:
+            if objID not in self.rigidBodies:
                 msg = 'Cannot find object with ID <{}>'.format(objID)
                 return RetVal(False, msg, None)
 
             # Convenience.
-            obj = self.all_objs[objID]
+            obj = self.rigidBodies[objID]
             scale = obj.azrael[1].scale
 
             # Determine rotation and position.
@@ -268,11 +262,11 @@ class PyBulletDynamicsWorld():
         :return: Success
         """
         # Create the Rigid Body if it does not exist yet.
-        if objID not in self.all_objs:
+        if objID not in self.rigidBodies:
             self.createRigidBody(objID, obj)
 
         # Convenience.
-        body = self.all_objs[objID]
+        body = self.rigidBodies[objID]
 
         # Convert orientation and position to Vec3.
         rot = Quaternion(*obj.orientation)
@@ -407,7 +401,7 @@ class PyBulletDynamicsWorld():
         body.azrael = (objID, obj)
 
         # Add the rigid body to the object cache.
-        self.all_objs[objID] = body
+        self.rigidBodies[objID] = body
 
         # Add the mostion state to a list. Albeit not explicitly used anywhere
         # this is necessary regradless to ensure the underlying points are kept
