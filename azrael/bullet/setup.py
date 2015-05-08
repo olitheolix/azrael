@@ -36,12 +36,11 @@ import numpy as np
 from Cython.Build import cythonize
 from distutils.core import setup, Extension
 
-
 def compileBullet(tarball: str, libdir: str, double_precision: bool):
     """
     Compile Bullet as a shared library.
 
-    This function will extract the ``tarball`` (must be bz2 archive) into a
+    This function will extract the ``tarball`` (must be tgz archive) into a
     temporary directory, compile it there, and place the results in ``libdir``.
 
     The ``double_precision`` flag specifies whether Bullet should use single-
@@ -51,7 +50,7 @@ def compileBullet(tarball: str, libdir: str, double_precision: bool):
        No root privileges are requires, unless ``libdir`` is inaccessible to
        the user.
 
-    :param str tarball: Bullet archive, eg. 'bullet-2.82-r2704.tar.bz'.
+    :param str tarball: Bullet archive, eg. 'bullet-2.82-r2704.tgz'.
     :param str libdir: directory where the library will be installed
     :param double_precision: whether to compile with 64Bit arithmetic or not.
     :return: None
@@ -64,8 +63,8 @@ def compileBullet(tarball: str, libdir: str, double_precision: bool):
             print('Cannot change into temporary directory')
             sys.exit(1)
 
-        # Unpack the bzip2 archive into the temporary directory.
-        cmd = ['tar', '-xvjf', tarball]
+        # Unpack the tgz archive into the temporary directory.
+        cmd = ['tar', '-xvzf', tarball]
         assert subprocess.call(cmd, stdout=subprocess.DEVNULL) == 0
 
         # Move into the newly created directory and generate the Makefiles. To
@@ -99,6 +98,39 @@ def compileBullet(tarball: str, libdir: str, double_precision: bool):
         cmd = ['make', '-j', 'install']
         assert subprocess.call(cmd) == 0
 
+
+def getBulletTarball():
+    """
+    Return absolute path to Bullet tarball.
+
+    :return: path to Bullet tarball, eg '/opt/bullet/bullet-2.82-r2704.tgz'
+    """
+    # Name of tarball.
+    tarball = 'bullet-2.82-r2704.tgz'
+
+    # Absolute path to tarball.
+    tarball_abs = os.path.join(os.getcwd(), tarball)
+
+    # Do not download if it already exists.
+    if os.path.exists(tarball_abs):
+        print('Tarball <{}> already downloaded'.format(tarball))
+        return tarball_abs
+
+    # Download the Bullet tarball.
+    cmd = ['wget', 'https://bullet.googlecode.com/files/' + tarball]
+    print('Downloading Bullet: ', cmd)
+    ret = subprocess.call(cmd)
+    if ret != 0:
+        print('Error downloading Bullet - abort')
+        sys.exit(1)
+
+    # Sanity check.
+    assert os.path.exists(tarball_abs)
+
+    # Return the absolute path to the just download tarball.
+    return tarball_abs
+
+
 def main():
     """
     Compile Bullet, then compile the Cython extension.
@@ -114,8 +146,8 @@ def main():
     # Backup the current working directory because we will change it.
     cwd = os.getcwd()
 
-    # Location of the Bullet tarball.
-    tarball = os.path.join(cwd, 'bullet-2.82-r2704.tar.bz2')
+    # Get absolute path to Bullet tarball (download if necessary).
+    tarball = getBulletTarball()
 
     # Path where the Bullet libraries and headers should be installed.
     dir_prefix = os.path.dirname(os.path.abspath(__file__))
@@ -154,11 +186,6 @@ def main():
     # Build the Bullet library if it does not yet exist AND the user did not
     # specify the 'clean' option.
     if ('clean' not in sys.argv) and (not os.path.exists(dir_prefix)):
-        # Sanity check: tarball must exist.
-        if not os.path.exists(tarball):
-            print('Cannot find tarball <{}>'.format(tarball))
-            sys.exit(1)
-
         # Attempt to compile the Bullet library.
         try:
             compileBullet(tarball, dir_prefix, double_precision)
