@@ -33,7 +33,7 @@ import subprocess
 import multiprocessing
 
 import numpy as np
-import matplotlib.pyplot as plt
+import PIL.Image
 
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
@@ -321,7 +321,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Load the texture and convert it to flat vector because this is how OpenGL
     # will want it.
-    img = plt.imread(fname)
+    img = PIL.Image.open(fname)
+    img = np.array(img)
     rgb = np.rollaxis(np.flipud(img), 1).flatten()
 
     # ----------------------------------------------------------------------
@@ -374,7 +375,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         # Load the texture image. If the image is unavailable do not endow the
         # cube with a texture.
         try:
-            img = plt.imread(fname)
+            img = PIL.Image.open(fname)
+            img = np.array(img)
             rgb = np.rollaxis(np.flipud(img), 1).flatten()
             curUV = uv
         except FileNotFoundError:
