@@ -52,6 +52,7 @@ def ensureMongoIsLive():
         # Start MongoDB.
         print('Launching MongoDB ', end='', flush=True)
         proc = multiprocessing.Process(target=startMongo)
+        proc.daemon = True
         proc.start()
 
         # Give MongoDB at most 2 minutes to start up.
