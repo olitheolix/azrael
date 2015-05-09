@@ -1,0 +1,34 @@
+name: azrael_docker
+dependencies:
+- cython=0.22=py34_0
+- cytoolz=0.7.2=py34_0
+- freetype=2.5.2=1
+- ipython=3.1.0=py34_0
+- jpeg=8d=0
+- libpng=1.5.13=1
+- libsodium=0.4.5=0
+- libtiff=4.0.2=1
+- numpy=1.9.2=py34_0
+- openssl=1.0.1k=1
+- pillow=2.8.1=py34_1
+- pip=6.1.1=py34_0
+- py=1.4.26=py34_0
+- pymongo=2.8=py34_0
+- pytest=2.7.0=py34_0
+- python=3.4.3=0
+- pyzmq=14.6.0=py34_0
+- readline=6.2=2
+- setuptools=15.2=py34_0
+- sqlite=3.8.4.1=1
+- system=5.8=2
+- tk=8.5.18=0
+- tornado=4.1=py34_0
+- xz=5.0.5=0
+- zeromq=4.0.5=0
+- zlib=1.2.8=0
+- pip:
+  - netifaces==0.10.4
+  - setproctitle==1.1.8
+  - six==1.9.0
+  - websocket-client-py3==0.15.0
+

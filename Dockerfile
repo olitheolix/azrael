@@ -22,52 +22,70 @@ MAINTAINER Oliver Nagy <olitheolix@gmail.com>
 RUN mkdir -p /demo/mongodb
 
 # Add APT credentials for MongoDB.
-RUN sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
-RUN echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.0.list
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+RUN echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.0.list
 
 # Install Ubuntu packages for Azrael.
 RUN apt-get update && apt-get install -y \
-    IPython3 \
+    build-essential \
+    cmake \
     git \
     libassimp-dev \
     libassimp3 \
-    libboost-python-dev \
     mongodb-org \
-    python3-matplotlib \
-    python3-netifaces \
-    python3-numpy \
-    python3-pandas \
-    python3-pil \
-    python3-tornado \
-    python3-zmq
+    wget \
+    && apt-get clean
 
-# Install PIP packages, download and compile the Bullet-Python
-# bindings, and clean up to reduce the size of the container image.
-WORKDIR /tmp
-RUN apt-get install -y python3-pip && \
-    pip3 install \
-      cytoolz \
-      pymongo==2.7 \
-      pytest-cov \
-      setproctitle \
-      websocket-client==0.15 &&\
-    pip3 install \
-    git+https://github.com/Klumhru/boost-python-bullet.git@d9ffae09157#egg=boost-python-bullet  && \
-    apt-get remove -y python3-pip && \
-    apt-get autoremove -y && apt-get -y clean
+# Install Miniconda (Python 3 version).
+RUN wget -O miniconda3.sh \
+    http://repo.continuum.io/miniconda/Miniconda3-3.10.1-Linux-x86_64.sh \
+    && bash miniconda3.sh -b -p /opt/miniconda3 \
+    && rm miniconda3.sh
+
+# Add the path to the Anaconda binaries to the path.
+ENV PATH /opt/miniconda3/bin:$PATH
+
+# Install basic set of packages to speed up the build of this container.
+RUN conda install --name root \
+    numpy \
+    pyzmq \
+    cython \
+    cytoolz \
+    pymongo \
+    pytest \
+    ipython \
+    pillow -y \
+    && conda clean -p -t -y
 
 # Clone Azrael from GitHub.
 RUN git clone https://github.com/olitheolix/azrael /demo/azrael
 
+# This will let Azrael know it runs inside a Docker container.
+ENV INSIDEDOCKER 1
+
+# Move into Azrael's home directory.
+WORKDIR /demo/azrael
+RUN find . -type d -iname '__pycache__' | xargs rm -rf
+
+# Update the Anaconda environment to ensure all necessary packages are installed.
+RUN conda env update --name root --file environment_docker.yml \
+    && conda clean -p -t -y
+
+# Move into Bullet wrapper directory to compile- and test the extension modules.
+WORKDIR /demo/azrael/azrael/bullet
+RUN python setup.py build_ext --inplace \
+    && rm -rf build/ \
+    && py.test -x
+
+# Move into Azrael's home directory.
+WORKDIR /demo/azrael
+
+# Run Azrael's entire test suite.
+RUN py.test -x
+
 # Expose the ports for Clerk and Clacks.
 EXPOSE 5555 8080
 
-# Special environment variable to let Azrael know it runs in Docker.
-ENV INSIDEDOCKER 1
-
-# Home directory.
-WORKDIR /demo/azrael
-
 # Default command: start the force grid demo.
-CMD ["/usr/bin/python3", "demos/demo_forcegrid.py", "--noviewer", \
+CMD ["python", "demos/demo_forcegrid.py", "--noviewer", \
      "--reset=30", "--cubes=3,3,1", "--linear=1", "--circular=1"]
