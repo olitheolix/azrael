@@ -1,29 +1,15 @@
-# An all-in-one container for Azrael.
-# To start a specific demo:
+# Azrael in a Docker container.
 #
-#   >> docker run -d -p 8080:8080 \
-#             olitheolix/azrael:latest \
-#             demos/demo_forcegrid.py --noviewer --cubes=4,4,1
+# To start the demo you need 'docker-compose' and the 'docker-compose' file.
 #
-# Since the container contains a full MongoDB installation, you may
-# want to export the MongoDB data directory to a temporary directory
-# or otherwise your image will grow rapidly over time:
-#
-#   >> docker run -d -p 8080:8080 -v /tmp/azrael:/demo/azrael/volume \
-#             olitheolix/azrael:latest \
-#             demos/demo_forcegrid.py --noviewer --cubes=4,4,1
+#   >> docker-compose up
 
 # Ubuntu 14.04 base image.
 FROM ubuntu:14.04
 MAINTAINER Oliver Nagy <olitheolix@gmail.com>
 
-# Create "/demo" and "/demo/mongodb" to hold the Azrael repo and
-# MongoDB files, respectively.
-RUN mkdir -p /demo/mongodb
-
-# Add APT credentials for MongoDB.
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
-RUN echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.0.list
+# Create "/demo" to hold the Azrael repo.
+RUN mkdir -p /demo/
 
 # Install Ubuntu packages for Azrael.
 RUN apt-get update && apt-get install -y \
@@ -32,7 +18,6 @@ RUN apt-get update && apt-get install -y \
     git \
     libassimp-dev \
     libassimp3 \
-    mongodb-org \
     wget \
     && apt-get clean
 
@@ -42,20 +27,8 @@ RUN wget -O miniconda3.sh \
     && bash miniconda3.sh -b -p /opt/miniconda3 \
     && rm miniconda3.sh
 
-# Add the path to the Anaconda binaries to the path.
+# Add the Anaconda binaries to the path.
 ENV PATH /opt/miniconda3/bin:$PATH
-
-# Install basic set of packages to speed up the build of this container.
-RUN conda install --name root \
-    numpy \
-    pyzmq \
-    cython \
-    cytoolz \
-    pymongo \
-    pytest \
-    ipython \
-    pillow -y \
-    && conda clean -p -t -y
 
 # Clone Azrael from GitHub.
 RUN git clone https://github.com/olitheolix/azrael /demo/azrael
@@ -71,20 +44,16 @@ RUN find . -type d -iname '__pycache__' | xargs rm -rf
 RUN conda env update --name root --file environment_docker.yml \
     && conda clean -p -t -y
 
+# Expose the ports for Clerk and Clacks.
+EXPOSE 5555 8080
+
 # Move into Bullet wrapper directory to compile- and test the extension modules.
 WORKDIR /demo/azrael/azrael/bullet
 RUN python setup.py build_ext --inplace \
-    && rm -rf build/ \
-    && py.test -x
+    && rm -rf build
 
 # Move into Azrael's home directory.
 WORKDIR /demo/azrael
-
-# Run Azrael's entire test suite.
-RUN py.test -x
-
-# Expose the ports for Clerk and Clacks.
-EXPOSE 5555 8080
 
 # Default command: start the force grid demo.
 CMD ["python", "demos/demo_forcegrid.py", "--noviewer", \

@@ -1,0 +1,13 @@
+# Create a basic Azrael stack for the demo.
+# Once the stack is live point your browser to http://127.0.0.1:8080.
+database:
+  image: mongo:3.0
+  volumes:
+    - /tmp/azrael:/data/db
+
+azrael:
+  image: olitheolix/azrael:latest
+  ports:
+    - "8080:8080"
+  links:
+    - database
