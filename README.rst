@@ -85,35 +85,58 @@ Installation
 
 From Source
 -----------
-On Ubuntu 14.04 you can install Azrael and its requirements with the following
-commands:
+Azrael requires Python 3.4 or higher. To use the source code you must have
+
+* `Anaconda <https://store.continuum.io/cshop/anaconda/>`_ installed and
+  'conda' in your path,
+* a running MongoDB instance (listening on its default port 27017),
+* (K)Ubuntu 14.04 or 15.04 (but should work on other Debian based systems as
+  well).
 
 .. code-block:: bash
 
    git clone https://github.com/olitheolix/azrael
    cd azrael
-   sudo bash install.sh
-   python3 demos/demo_default.py --noviewer --cubes 4,4,1
+   sudo apt-get install build-essential cmake git libassimp-dev wget
+
+   # Create the Anaconda environment 'azrael' and compile the extension modules.
+   ./create_anaconda_env.sh
+
+   # Activate the environment, run the tests, and start the demo.
+   source activate azrael
+   py.test -x
+   python demos/demo_default.py --noviewer --cubes 4,4,1
+
+See `Viewing the Scene in the Browser`_ for details on how to visualise the demo.
 
 
 Docker
 ------
+To try the demo without installing source code you will need `Docker
+<http://www.docker.com/>`_ and
+`Docker-Compose<https://docs.docker.com/compose/>`_.
 
 .. code-block:: bash
 
-   docker run -d -v /tmp/azrael:/demo/azrael/volume -p 8080:8080 olitheolix/azrael:latest
+   git clone https://github.com/olitheolix/azrael
+   cd azrael
 
-View the Scene
---------------
+   # Start the demo.
+   docker-compose up
 
-You will need a recent Firefox or Chrome to view the scene.
+See next section for details on how to visualise the demo.
 
-Wait until Azrael is up and running. Note: this may take a minute or two if you
-use a Docker container because Mongo will have to initialise its database
-first. Then browse to http://localhost:8080 to view the scene.
 
-Use the WASD keys to fly through the scene, or use the mouse to navigate and
-the left/right button to move forwards and backwards.
+Viewing the Scene in the Browser
+--------------------------------
+
+You will need a recent version of Firefox or Chrome. Once Azrael is up you
+can view the scene at http://localhost:8080.
+
+Note: it may take a minute or two for the URL to come live the first time
+because MongoDB may have to initialise its database first.
+
+Use the WASD keys, or the mouse, to fly through the scene.
 
 
 License
