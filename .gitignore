@@ -17,3 +17,6 @@
 /doc/images/orig
 /azrael/bullet/bulletlib/
 /azrael/bullet/build/
+/azrael/bullet/azBullet.cpp
+/azrael/bullet/azBullet.cpython-34m.so
+/azrael/bullet/bullet-2.82-r2704.tgz
