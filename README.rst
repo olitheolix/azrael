@@ -118,10 +118,7 @@ To try the demo without installing source code you will need `Docker
 
 .. code-block:: bash
 
-   git clone https://github.com/olitheolix/azrael
-   cd azrael
-
-   # Start the demo.
+   wget https://github.com/olitheolix/azrael/raw/master/docker-compose.yml
    docker-compose up
 
 See next section for details on how to visualise the demo.
