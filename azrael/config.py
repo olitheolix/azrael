@@ -17,9 +17,18 @@
 
 """
 Global configuration parameters.
+
+.. note::
+   This module has no side effects and can be imported from anywhere by anyone.
+
+.. warning::
+   To keep this module free of side effects it is paramount to not import other
+   Azrael modules here (circular imports), *and* that *no* other module
+   modifies any variables here during run time.
 """
 import os
 import sys
+import pymongo
 import logging
 import netifaces
 
@@ -74,6 +83,14 @@ except (ValueError, KeyError):
         logger.critical('Could not find a valid network interface')
         sys.exit(1)
 
+# Database host.
+if 'INSIDEDOCKER' in os.environ:
+    addr_database = 'database'
+    port_database = 27017
+else:
+    addr_database = 'localhost'
+    port_database = 27017
+
 # Addresses of the various Azrael services.
 addr_clacks = host_ip
 port_clacks = 8080
@@ -96,3 +113,20 @@ dir_instance = os.path.join(dir_data, 'instances')
 url_template = '/templates'
 url_instance = '/instances'
 url_dibbler = '/dibbler'
+
+
+def getMongoClient():
+    """
+    Return a connected `MongoClient` instance.
+
+    This is a convenience method that automatically connects to the correct
+    host on the correct address.
+
+    This function does intercept any errors. It is the responsibility of the
+    caller to use the correct try/except statement.
+
+    :return: connection to MongoDB
+    :rtype: `pymongo.MongoClient`.
+    :raises: pymongo.errors.*
+    """
+    return pymongo.MongoClient(host=addr_database, port=port_database)

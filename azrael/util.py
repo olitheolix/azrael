@@ -29,7 +29,7 @@ from azrael.types import typecheck
 
 
 # Global handle to the collection for timing metrics.
-dbTiming = pymongo.MongoClient()['timing']['timing']
+dbTiming = config.getMongoClient()['timing']['timing']
 
 
 def resetTiming():
@@ -39,7 +39,7 @@ def resetTiming():
     global dbTiming
 
     # Drop existing collection.
-    col = pymongo.MongoClient()['timing']
+    col = config.getMongoClient()['timing']
     col.drop_collection('timing')
 
     # Create a new capped collection and update the dbTiming variable.

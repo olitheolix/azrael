@@ -18,6 +18,7 @@
 import time
 import pymongo
 import multiprocessing
+import azrael.config as config
 
 # Use 'fork' system call to create new processes.
 multiprocessing.set_start_method('fork')
@@ -36,7 +37,7 @@ def waitForDatabase(timeout=60):
         Return *True* if connecting to MongoDB is possible.
         """
         try:
-            client = pymongo.MongoClient()
+            client = config.getMongoClient()
         except pymongo.errors.ConnectionFailure:
             return False
         return True

@@ -32,7 +32,7 @@ logit = logging.getLogger('azrael.' + __name__)
 
 # Connect to MongoDB and store the relevant collection handles in the
 # 'dbHandles' variables to avoid hard coded collection names in Azrael.
-client = pymongo.MongoClient()
+client = config.getMongoClient()
 dbName = 'azrael'
 dbHandles = {
     'SV': client[dbName]['sv'],

@@ -39,7 +39,7 @@ from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal
 
 # Global database handle.
-_DB_Grid = pymongo.MongoClient()['azrael_grid']
+_DB_Grid = config.getMongoClient()['azrael_grid']
 
 
 # Create module logger.
@@ -53,7 +53,7 @@ def deleteAllGrids():
     :return: Success
     """
     global _DB_Grid
-    client = pymongo.MongoClient()
+    client = config.getMongoClient()
     name = 'azrael_grid'
     client.drop_database(name)
     _DB_Grid = client[name]
