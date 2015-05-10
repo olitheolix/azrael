@@ -15,65 +15,45 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
 import time
 import pymongo
-import subprocess
 import multiprocessing
 
 # Use 'fork' system call to create new processes.
 multiprocessing.set_start_method('fork')
 
-def isMongoLive():
+
+def waitForDatabase(timeout=60):
     """
-    Return *True* if MongoDB is now online.
+    Raise `ImportError` if we cannot reach MongoDB within ``timeout`` seconds.
+
+    Azrael crucially relies on MongoDB. The main purpose of this function is to
+    ensure it is ready. However, MongoDB may need time to start up because it eg
+    runs in a different container, started slower than Azrael, ...
     """
-    try:
-        client = pymongo.MongoClient()
-    except pymongo.errors.ConnectionFailure:
-        return False
-    return True
+    def isMongoLive():
+        """
+        Return *True* if connecting to MongoDB is possible.
+        """
+        try:
+            client = pymongo.MongoClient()
+        except pymongo.errors.ConnectionFailure:
+            return False
+        return True
+
+    # Attempt to reach MongoDB for `timeout` seconds before giving up.
+    t0 = time.time()
+    print('Connecting to MongoDB: ', flush=True, end='')
+    while not isMongoLive():
+        if time.time() - t0 > timeout:
+            # A minute has passed - abort with an error.
+            print('failed!')
+            print('Could not connect to MongoDB -- Abort')
+            raise ImportError('Could not connect to MongoDB')
+        time.sleep(1)
+        print('.', end='', flush=True)
+    print('success!')
 
 
-def ensureMongoIsLive():
-    """
-    Start MongoDB if it is not already live.
-    """
-    def startMongo():
-        mdir = '/demo/azrael/volume/mongodb'
-        os.makedirs(mdir, exist_ok=True)
-        cmd_mongo = ('/usr/bin/mongod --smallfiles --dbpath {}'.format(mdir))
-        subprocess.call(cmd_mongo, shell=True, stdout=subprocess.DEVNULL)
-
-    # Start MongoDB and wait until it is live.
-    proc = None
-    if not isMongoLive():
-        # Start MongoDB.
-        print('Launching MongoDB ', end='', flush=True)
-        proc = multiprocessing.Process(target=startMongo)
-        proc.daemon = True
-        proc.start()
-
-        # Give MongoDB at most 2 minutes to start up.
-        for ii in range(120):
-            if isMongoLive():
-                # Yep, it is live.
-                break
-
-            # 120 seconds have expired.
-            if ii >= 60:
-                print(' error. Could not connect to MongoDB -- Abort')
-                sys.exit(1)
-
-            # Print status to terminal.
-            print('.', end='', flush=True)
-            time.sleep(2)
-        print(' success')
-
-    print('MongoDB now live. Azrael ready to launch.')
-
-
-# Start MongoDB if we are running inside a Docker container.
-if 'INSIDEDOCKER' in os.environ:
-    ensureMongoIsLive()
+# Do not proceed with Azrael until MongoDB is accessible.
+waitForDatabase(timeout=60)
