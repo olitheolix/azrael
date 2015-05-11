@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
-# fixme: rename boost_bullet
+# fixme: rename bullet_api
 import sys
 import logging
 import azrael.util

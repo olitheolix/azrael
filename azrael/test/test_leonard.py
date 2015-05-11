@@ -12,7 +12,7 @@ import azrael.physics_interface as physAPI
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.test_boost_bullet import isEqualBD
+from azrael.test_bullet_api import isEqualBD
 
 import numpy as np
 
