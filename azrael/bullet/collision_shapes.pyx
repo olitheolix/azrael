@@ -4,15 +4,15 @@ cdef class CollisionShape:
     def __cinit__(self):
         self.ptr_CollisionShape = NULL
 
-    def setLocalScaling(self, vec3 scaling):
+    def setLocalScaling(self, Vec3 scaling):
         self.ptr_CollisionShape.setLocalScaling(scaling.thisptr[0])
 
     def getLocalScaling(self):
-        v = vec3()
+        v = Vec3()
         v.thisptr[0] = self.ptr_CollisionShape.getLocalScaling()
         return v
 
-    def calculateLocalInertia(self, double mass, vec3 inertia):
+    def calculateLocalInertia(self, double mass, Vec3 inertia):
         self.ptr_CollisionShape.calculateLocalInertia(btScalar(mass), inertia.thisptr[0])
 
     def getName(self):
@@ -32,7 +32,7 @@ cdef class StaticPlaneShape(ConcaveShape):
     def __cinit__(self):
         self.ptr_StaticPlaneShape = NULL
 
-    def __init__(self, vec3 v, double plane_const):
+    def __init__(self, Vec3 v, double plane_const):
         self.ptr_StaticPlaneShape = new btStaticPlaneShape(
                 v.thisptr[0], btScalar(plane_const))
 
@@ -106,10 +106,10 @@ cdef class PolyhedralConvexShape(ConvexInternalShape):
 cdef class BoxShape(PolyhedralConvexShape):
     cdef btBoxShape *ptr_BoxShape
 
-    def __cinit__(self, vec3 v):
+    def __cinit__(self, Vec3 v):
         self.ptr_BoxShape = NULL
 
-    def __init__(self, vec3 v):
+    def __init__(self, Vec3 v):
         self.ptr_BoxShape = new btBoxShape(v.thisptr[0])
 
         # Assign the base pointers.

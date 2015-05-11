@@ -30,7 +30,7 @@ from azrael.types import typecheck, RetVal, _MotionState, CollisionShape
 
 # Convenience.
 # fixme: capitalise vec3
-Vec3 = azBullet.vec3
+Vec3 = azBullet.Vec3
 Quaternion = azBullet.Quaternion
 
 # Convenience.

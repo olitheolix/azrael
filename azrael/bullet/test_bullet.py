@@ -19,7 +19,7 @@ import numpy as np
 from IPython import embed as ipshell
 
 import azrael.bullet.azBullet
-from azrael.bullet.azBullet import vec3, Quaternion
+from azrael.bullet.azBullet import Vec3, Quaternion
 from azrael.bullet.azBullet import BoxShape, StaticPlaneShape, SphereShape, EmptyShape
 from azrael.bullet.azBullet import Transform, MotionState, DefaultMotionState, RigidBody
 
@@ -34,8 +34,8 @@ class TestVector3:
         pass
 
     def test_comparison(self):
-        v1 = vec3(1, -2.5, 3000.1234)
-        v2 = vec3(2, -2.5, 3000.1234)
+        v1 = Vec3(1, -2.5, 3000.1234)
+        v2 = Vec3(2, -2.5, 3000.1234)
 
         # Equality.
         assert v1 == v1
@@ -46,21 +46,21 @@ class TestVector3:
         assert v2 != v1
 
         # Equality with a different object that has same values.
-        assert v1 == vec3(1, -2.5, 3000.1234)
-        assert v2 == vec3(2, -2.5, 3000.1234)
+        assert v1 == Vec3(1, -2.5, 3000.1234)
+        assert v2 == Vec3(2, -2.5, 3000.1234)
 
     def test_arithmetic(self):
-        v1 = vec3(1, 2, 3)
-        v2 = vec3(.5, .6, .7)
+        v1 = Vec3(1, 2, 3)
+        v2 = Vec3(.5, .6, .7)
 
         # Addition.
-        assert v1 + v2 == vec3(1.5, 2.6, 3.7)
+        assert v1 + v2 == Vec3(1.5, 2.6, 3.7)
 
         # Subtraction.
-        assert v1 - v2 == vec3(0.5, 1.4, 2.3)
+        assert v1 - v2 == Vec3(0.5, 1.4, 2.3)
 
         # Negation.
-        assert -v1 == vec3(-1, -2, -3)
+        assert -v1 == Vec3(-1, -2, -3)
 
 
 class TestRigidBody:
@@ -72,7 +72,7 @@ class TestRigidBody:
     def teardown_class(cls):
         pass
 
-    def getRB(self, pos=vec3(0, 0, 0)):
+    def getRB(self, pos=Vec3(0, 0, 0)):
         """
         Return a Rigid Body tuple.
 
@@ -85,7 +85,7 @@ class TestRigidBody:
         t = Transform(Quaternion(0, 0, 0, 1), pos)
         ms = DefaultMotionState(t)
         mass = 1
-        inertia = vec3(0, 0, 0)
+        inertia = Vec3(0, 0, 0)
         b = RigidBody(mass, ms, cs, inertia)
         return b, (cs, ms)
 
@@ -119,13 +119,13 @@ class TestRigidBody:
         body, _ = self.getRB()
 
         # Set the linear factor and verify it is correct.
-        lf = vec3(-1, 2, 2.5)
+        lf = Vec3(-1, 2, 2.5)
         body.setLinearFactor(lf)
         rest_out = body.getLinearFactor()
         assert lf == rest_out
 
         # Repeat with a different value.
-        lf = vec3(10.12345, -2.0, 20000.5)
+        lf = Vec3(10.12345, -2.0, 20000.5)
         body.setLinearFactor(lf)
         rest_out = body.getLinearFactor()
         assert lf == rest_out
@@ -141,13 +141,13 @@ class TestRigidBody:
         body, _ = self.getRB()
 
         # Set the angular factor and verify it is correct.
-        lf = vec3(-1, 2, 2.5)
+        lf = Vec3(-1, 2, 2.5)
         body.setAngularFactor(lf)
         rest_out = body.getAngularFactor()
         assert lf == rest_out
 
         # Repeat with a different value.
-        lf = vec3(10.12345, -2.0, 20000.5)
+        lf = Vec3(10.12345, -2.0, 20000.5)
         body.setAngularFactor(lf)
         rest_out = body.getAngularFactor()
         assert lf == rest_out
@@ -160,13 +160,13 @@ class TestRigidBody:
         body, _ = self.getRB()
 
         # Set the linear velocity and verify it is correct.
-        lf = vec3(-1, 2, 2.5)
+        lf = Vec3(-1, 2, 2.5)
         body.setLinearVelocity(lf)
         rest_out = body.getLinearVelocity()
         assert lf == rest_out
 
         # Repeat with a different value.
-        lf = vec3(10.12345, -2.0, 20000.5)
+        lf = Vec3(10.12345, -2.0, 20000.5)
         body.setLinearVelocity(lf)
         rest_out = body.getLinearVelocity()
         assert lf == rest_out
@@ -179,13 +179,13 @@ class TestRigidBody:
         body, _ = self.getRB()
 
         # Set the angular velocity and verify it is correct.
-        lf = vec3(-1, 2, 2.5)
+        lf = Vec3(-1, 2, 2.5)
         body.setAngularVelocity(lf)
         rest_out = body.getAngularVelocity()
         assert lf == rest_out
 
         # Repeat with a different value.
-        lf = vec3(10.12345, -2.0, 20000.5)
+        lf = Vec3(10.12345, -2.0, 20000.5)
         body.setAngularVelocity(lf)
         rest_out = body.getAngularVelocity()
         assert lf == rest_out
@@ -220,11 +220,11 @@ class TestRigidBody:
 
         # Clear all forces.
         body.clearForces()
-        assert body.getTotalForce() == vec3(0, 0, 0)
-        assert body.getTotalTorque() == vec3(0, 0, 0)
+        assert body.getTotalForce() == Vec3(0, 0, 0)
+        assert body.getTotalTorque() == Vec3(0, 0, 0)
 
         # Apply central force and verify it was set correctly.
-        force = vec3(1, 2, -3.5)
+        force = Vec3(1, 2, -3.5)
         body.applyCentralForce(force)
         body.applyTorque(-force)
         assert body.getTotalForce() == force
@@ -232,17 +232,17 @@ class TestRigidBody:
 
         # Verify that clearForces works.
         body.clearForces()
-        assert body.getTotalForce() == vec3(0, 0, 0)
-        assert body.getTotalTorque() == vec3(0, 0, 0)
+        assert body.getTotalForce() == Vec3(0, 0, 0)
+        assert body.getTotalTorque() == Vec3(0, 0, 0)
 
         # Apply a non-central force.
-        force = vec3(3.5, -4.12, 5.345)
-        pos = vec3(1, 1, 1)
+        force = Vec3(3.5, -4.12, 5.345)
+        pos = Vec3(1, 1, 1)
         body.applyForce(force, pos)
         assert body.getTotalForce() == force
         
         # Add more force and torque.
-        inc = vec3(1, 2, 3)
+        inc = Vec3(1, 2, 3)
         body.applyCentralForce(inc)
         body.applyTorque(inc)
         assert body.getTotalForce() == force + inc
@@ -301,19 +301,19 @@ class TestRigidBody:
 
         # The default body has unit mass and no inertia.
         assert body.getInvMass() == 1
-        assert body.getInvInertiaDiagLocal() == vec3(0, 0, 0)
+        assert body.getInvInertiaDiagLocal() == Vec3(0, 0, 0)
 
         # Set the linear- and angular friction coefficients.
-        mass, inertia = 2, vec3(1, 10, 100)
+        mass, inertia = 2, Vec3(1, 10, 100)
         body.setMassProps(mass, inertia)
         assert body.getInvMass() == 1 / mass
-        assert body.getInvInertiaDiagLocal() == vec3(1, 0.1, 0.01)
+        assert body.getInvInertiaDiagLocal() == Vec3(1, 0.1, 0.01)
 
         # Repeat with a different set of values.
-        mass, inertia = 5, vec3(10, 1, 1000)
+        mass, inertia = 5, Vec3(10, 1, 1000)
         body.setMassProps(mass, inertia)
         assert body.getInvMass() == 1 / mass
-        assert body.getInvInertiaDiagLocal() == vec3(0.1, 1, 0.001)
+        assert body.getInvInertiaDiagLocal() == Vec3(0.1, 1, 0.001)
 
     def test_activation(self):
         """
@@ -322,8 +322,8 @@ class TestRigidBody:
         falls (due to gravity).
         """
         # Create two RigidBody objects at distinct positions.
-        ref_pos1 = vec3(0, 0, 0)
-        ref_pos2 = vec3(10, 10, 10)
+        ref_pos1 = Vec3(0, 0, 0)
+        ref_pos2 = Vec3(10, 10, 10)
         body1, _1 = self.getRB(pos=ref_pos1)
         body2, _2 = self.getRB(pos=ref_pos2)
 
@@ -362,7 +362,7 @@ class TestRigidBody:
         t.setIdentity()
 
         # Set the position and orientation.
-        pos = vec3(1, 2, 3.5)
+        pos = Vec3(1, 2, 3.5)
         rot = Quaternion(0, 1, 0, 0)
         t.setOrigin(pos)
         t.setRotation(rot)
@@ -370,7 +370,7 @@ class TestRigidBody:
         assert t.getRotation().tolist() == rot.tolist()
 
         # Repeat with different values.
-        pos = vec3(-1, 2.5, 3.5)
+        pos = Vec3(-1, 2.5, 3.5)
         rot = Quaternion(0, 0, 0, 1)
         t.setOrigin(pos)
         t.setRotation(rot)
@@ -385,7 +385,7 @@ class TestRigidBody:
         body, _ = self.getRB()
 
         # Create a new Transform.
-        pos = vec3(1, 2, 3.5)
+        pos = Vec3(1, 2, 3.5)
         rot = Quaternion(0, 1, 0, 0)
         t = Transform()
         t.setOrigin(pos)
@@ -416,7 +416,7 @@ class TestRigidBody:
         body, _ = self.getRB()
 
         # Create a new Transform.
-        pos = vec3(1, 2, 3.5)
+        pos = Vec3(1, 2, 3.5)
         rot = Quaternion(0, 1, 0, 0)
         t1 = Transform()
         t1.setOrigin(pos)
@@ -438,7 +438,7 @@ class TestRigidBody:
         body, _ = self.getRB()
 
         sphere = SphereShape(1.5)
-        box = BoxShape(vec3(1, 2, 3))
+        box = BoxShape(Vec3(1, 2, 3))
 
         # Specify a sphere shape.
         body.setCollisionShape(sphere)
@@ -460,25 +460,25 @@ class TestCollisionShapes:
 
     def test_StaticPlaneShape(self):
         # Create a Static Plane and change its scaling.
-        cs = StaticPlaneShape(vec3(0, 1, 2), 3)
-        scale = vec3(1.5, 2.5, 3.5)
+        cs = StaticPlaneShape(Vec3(0, 1, 2), 3)
+        scale = Vec3(1.5, 2.5, 3.5)
         cs.setLocalScaling(scale)
         assert cs.getLocalScaling() == scale
 
         # Create a Sphere and change its scaling.
         cs = SphereShape(3)
-        scale = vec3(1.5, 2.5, 3.5)
+        scale = Vec3(1.5, 2.5, 3.5)
         cs.setLocalScaling(scale)
         assert cs.getLocalScaling() == scale
 
         # Create a Box and change its scaling.
-        cs = BoxShape(vec3(1, 2, 3))
-        scale = vec3(1.5, 2.5, 3.5)
+        cs = BoxShape(Vec3(1, 2, 3))
+        scale = Vec3(1.5, 2.5, 3.5)
         cs.setLocalScaling(scale)
         assert cs.getLocalScaling() == scale
 
         # Create an Empty shape and change its scaling.
         cs = EmptyShape()
-        scale = vec3(1.5, 2.5, 3.5)
+        scale = Vec3(1.5, 2.5, 3.5)
         cs.setLocalScaling(scale)
         assert cs.getLocalScaling() == scale

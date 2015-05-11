@@ -1,10 +1,10 @@
 cdef class RigidBody(CollisionObject):
     cdef btRigidBody *thisptr
 
-    def __cinit__(self, double mass, MotionState ms, CollisionShape cs, vec3 localInertia):
+    def __cinit__(self, double mass, MotionState ms, CollisionShape cs, Vec3 localInertia):
         self.thisptr = NULL
 
-    def __init__(self, double mass, MotionState ms, CollisionShape cs, vec3 localInertia):
+    def __init__(self, double mass, MotionState ms, CollisionShape cs, Vec3 localInertia):
         self.thisptr = new btRigidBody(
             btScalar(mass),
             ms.ptr_MotionState,
@@ -25,35 +25,35 @@ cdef class RigidBody(CollisionObject):
         return <double>self.thisptr.getRestitution()
 
     def getLinearFactor(self):
-        p = vec3()
+        p = Vec3()
         p.thisptr[0] = self.thisptr.getLinearFactor()
         return p
 
-    def setLinearFactor(self, vec3 linearFactor):
+    def setLinearFactor(self, Vec3 linearFactor):
         self.thisptr.setLinearFactor(linearFactor.thisptr[0])
 
     def getAngularFactor(self):
-        p = vec3()
+        p = Vec3()
         p.thisptr[0] = self.thisptr.getAngularFactor()
         return p
 
-    def setAngularFactor(self, vec3 angularFactor):
+    def setAngularFactor(self, Vec3 angularFactor):
         self.thisptr.setAngularFactor(angularFactor.thisptr[0])
 
     def getLinearVelocity(self):
-        p = vec3()
+        p = Vec3()
         p.thisptr[0] = self.thisptr.getLinearVelocity()
         return p
 
-    def setLinearVelocity(self, vec3 linearVelocity):
+    def setLinearVelocity(self, Vec3 linearVelocity):
         self.thisptr.setLinearVelocity(linearVelocity.thisptr[0])
 
     def getAngularVelocity(self):
-        p = vec3()
+        p = Vec3()
         p.thisptr[0] = self.thisptr.getAngularVelocity()
         return p
 
-    def setAngularVelocity(self, vec3 angularVelocity):
+    def setAngularVelocity(self, Vec3 angularVelocity):
         self.thisptr.setAngularVelocity(angularVelocity.thisptr[0])
 
     def getMotionState(self):
@@ -89,35 +89,35 @@ cdef class RigidBody(CollisionObject):
         return <double>self.thisptr.getAngularDamping()
 
     def getTotalForce(self):
-        p = vec3()
+        p = Vec3()
         p.thisptr[0] = self.thisptr.getTotalForce()
         return p
 
     def getTotalTorque(self):
-        p = vec3()
+        p = Vec3()
         p.thisptr[0] = self.thisptr.getTotalTorque()
         return p
 
     def clearForces(self):
         self.thisptr.clearForces()
 
-    def applyForce(self, vec3 force, vec3 pos):
+    def applyForce(self, Vec3 force, Vec3 pos):
         self.thisptr.applyForce(force.thisptr[0], pos.thisptr[0])
 
-    def applyCentralForce(self, vec3 force):
+    def applyCentralForce(self, Vec3 force):
         self.thisptr.applyCentralForce(force.thisptr[0])
 
-    def applyTorque(self, vec3 torque):
+    def applyTorque(self, Vec3 torque):
         self.thisptr.applyTorque(torque.thisptr[0])
 
-    def setMassProps(self, double mass, vec3 inertia):
+    def setMassProps(self, double mass, Vec3 inertia):
         self.thisptr.setMassProps(btScalar(mass), inertia.thisptr[0])
 
     def getInvMass(self):
         return <double>self.thisptr.getInvMass()
 
     def getInvInertiaDiagLocal(self):
-        p = vec3()
+        p = Vec3()
         p.thisptr[0] = self.thisptr.getInvInertiaDiagLocal()
         return p
 
