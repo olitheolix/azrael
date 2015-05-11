@@ -1,0 +1,141 @@
+cdef class RigidBody(CollisionObject):
+    cdef btRigidBody *thisptr
+
+    def __cinit__(self, double mass, MotionState ms, CollisionShape cs, vec3 localInertia):
+        self.thisptr = NULL
+
+    def __init__(self, double mass, MotionState ms, CollisionShape cs, vec3 localInertia):
+        self.thisptr = new btRigidBody(
+            btScalar(mass),
+            ms.ptr_MotionState,
+            cs.ptr_CollisionShape,
+            localInertia.thisptr[0])
+
+        # Assign the base pointers.
+        self.ptr_CollisionObject = <btCollisionObject*?>self.thisptr
+
+    def __dealloc__(self):
+        if self.thisptr != NULL:
+            del self.thisptr
+
+    def setRestitution(self, double r):
+        self.thisptr.setRestitution(btScalar(r))
+
+    def getRestitution(self):
+        return <double>self.thisptr.getRestitution()
+
+    def getLinearFactor(self):
+        p = vec3()
+        p.thisptr[0] = self.thisptr.getLinearFactor()
+        return p
+
+    def setLinearFactor(self, vec3 linearFactor):
+        self.thisptr.setLinearFactor(linearFactor.thisptr[0])
+
+    def getAngularFactor(self):
+        p = vec3()
+        p.thisptr[0] = self.thisptr.getAngularFactor()
+        return p
+
+    def setAngularFactor(self, vec3 angularFactor):
+        self.thisptr.setAngularFactor(angularFactor.thisptr[0])
+
+    def getLinearVelocity(self):
+        p = vec3()
+        p.thisptr[0] = self.thisptr.getLinearVelocity()
+        return p
+
+    def setLinearVelocity(self, vec3 linearVelocity):
+        self.thisptr.setLinearVelocity(linearVelocity.thisptr[0])
+
+    def getAngularVelocity(self):
+        p = vec3()
+        p.thisptr[0] = self.thisptr.getAngularVelocity()
+        return p
+
+    def setAngularVelocity(self, vec3 angularVelocity):
+        self.thisptr.setAngularVelocity(angularVelocity.thisptr[0])
+
+    def getMotionState(self):
+        ms = MotionState()
+        ms.ptr_MotionState = self.thisptr.getMotionState()
+        return ms
+
+    def setMotionState(self, MotionState ms):
+        self.thisptr.setMotionState(ms.ptr_MotionState)
+
+    def getLinearSleepingThreshold(self):
+        return <double>self.thisptr.getLinearSleepingThreshold()
+
+    def getAngularSleepingThreshold(self):
+        return <double>self.thisptr.getAngularSleepingThreshold()
+
+    def setSleepingThresholds(self, double linear, double angular):
+        self.thisptr.setSleepingThresholds(btScalar(linear), btScalar(angular))
+
+    def setFriction(self, double friction):
+        self.thisptr.setFriction(btScalar(friction))
+
+    def getFriction(self):
+        return <double>self.thisptr.getFriction()
+
+    def setDamping(self, double lin_damping, double ang_damping):
+        self.thisptr.setDamping(btScalar(lin_damping), btScalar(ang_damping))
+
+    def getLinearDamping(self):
+        return <double>self.thisptr.getLinearDamping()
+
+    def getAngularDamping(self):
+        return <double>self.thisptr.getAngularDamping()
+
+    def getTotalForce(self):
+        p = vec3()
+        p.thisptr[0] = self.thisptr.getTotalForce()
+        return p
+
+    def getTotalTorque(self):
+        p = vec3()
+        p.thisptr[0] = self.thisptr.getTotalTorque()
+        return p
+
+    def clearForces(self):
+        self.thisptr.clearForces()
+
+    def applyForce(self, vec3 force, vec3 pos):
+        self.thisptr.applyForce(force.thisptr[0], pos.thisptr[0])
+
+    def applyCentralForce(self, vec3 force):
+        self.thisptr.applyCentralForce(force.thisptr[0])
+
+    def applyTorque(self, vec3 torque):
+        self.thisptr.applyTorque(torque.thisptr[0])
+
+    def setMassProps(self, double mass, vec3 inertia):
+        self.thisptr.setMassProps(btScalar(mass), inertia.thisptr[0])
+
+    def getInvMass(self):
+        return <double>self.thisptr.getInvMass()
+
+    def getInvInertiaDiagLocal(self):
+        p = vec3()
+        p.thisptr[0] = self.thisptr.getInvInertiaDiagLocal()
+        return p
+
+    def forceActivationState(self, int newState):
+        """
+        The possible activation states are defined in  btCollisionObject.h
+          * ACTIVE_TAG 1               --> ?
+          * ISLAND_SLEEPING 2          --> ?
+          * WANTS_DEACTIVATION 3       --> ?
+          * DISABLE_DEACTIVATION 4     --> Make object active forever
+          * DISABLE_SIMULATION 5       --> Deactivate object forever
+        """
+        self.thisptr.forceActivationState(newState)
+
+    def getCenterOfMassTransform(self):
+        t = Transform()
+        t.thisptr[0] = self.thisptr.getCenterOfMassTransform()
+        return t
+
+    def setCenterOfMassTransform(self, Transform xform):
+        self.thisptr.setCenterOfMassTransform(xform.thisptr[0])
