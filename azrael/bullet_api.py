@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
-# fixme: rename bullet_api
 import sys
 import logging
 import azrael.util
@@ -29,7 +28,6 @@ from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _MotionState, CollisionShape
 
 # Convenience.
-# fixme: capitalise vec3
 Vec3 = azBullet.Vec3
 Quaternion = azBullet.Quaternion
 
@@ -61,7 +59,7 @@ class PyBulletDynamicsWorld():
         # To distinguish engines.
         self.engineID = engineID
 
-        # fixme: rename BulletBase
+        # Create a standard Bullet Dynamics World.
         self.dynamicsWorld = azBullet.BulletBase()
 
         # Disable gravity.
