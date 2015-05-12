@@ -553,12 +553,11 @@ class TestDibblerAPI:
         pass
 
     def setup_method(self, method):
-        dibbler = azrael.dibbler.DibblerAPI()
-        dibbler.reset()
+        self.dibbler = azrael.dibbler.DibblerAPI()
+        self.dibbler.reset()
         
     def teardown_method(self, method):
-        dibbler = azrael.dibbler.DibblerAPI()
-        dibbler.reset()
+        self.dibbler.reset()
         
     def test_addRawTemplate(self):
         """
@@ -570,7 +569,7 @@ class TestDibblerAPI:
         t3 = Template('_templateCube', [4, 1, 1, 1], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
-        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler = self.dibbler
         dibbler.reset()
         assert dibbler.getNumFiles() == (True, None, 0)
 
@@ -595,11 +594,12 @@ class TestDibblerAPI:
         """
         Add a Collada template and fetch the individual files again afterwards.
         """
+        dibbler = self.dibbler
+
         frag = [MetaFragment('NoNameDae', 'dae', createFragDae())]
         t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
-        dibbler = azrael.dibbler.DibblerAPI()
         dibbler.reset()
         assert dibbler.getNumFiles() == (True, None, 0)
 
@@ -623,3 +623,25 @@ class TestDibblerAPI:
         # Reset Dibbler and verify that the number of files is now zero again.
         dibbler.reset()
         assert dibbler.getNumFiles() == (True, None, 0)
+
+    def test_invalid(self):
+        """
+        Query a non-existing file.
+        """
+        self.dibbler.reset()
+        ret = self.dibbler.getFile('/blah/')
+        assert not ret.ok
+        assert ret.data is None
+        print('check')
+
+    def test_spawnTemplate(self):
+        """
+        Add two templates, then spawn the first two times and the second once.
+        """
+        pass
+
+    def test_updateTemplate(self):
+        """
+        ?
+        """
+        pass

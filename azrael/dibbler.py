@@ -459,7 +459,14 @@ class DibblerAPI:
         return RetVal(True, None, {'aabb': ret.data, 'url': model_url})
 
     def getFile(self, name):
-        ret = self.fs.get_last_version(name)
+        try:
+            ret = self.fs.get_last_version(name)
+        except gridfs.errors.NoFile as err:
+            return RetVal(False, repr(err), None)
+        except gridfs.errors.GridFSError as err:
+            # All other GridFS errors.
+            return RetVal(False, None, None)
+
         if ret is None:
             return RetVal(False, 'File not found', None)
         else:
