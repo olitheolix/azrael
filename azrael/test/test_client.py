@@ -124,7 +124,15 @@ class TestClerk:
         t3 = Template('_templateCube', [4, 1, 1, 1], frag, [], [])
         clerk.addTemplates([t1, t2, t3])
 
+        # fixme: integrate with database.init?
+        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler.reset()
+
     def teardown_method(self, method):
+        # fixme: integrate with database.init?
+        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler.reset()
+
         azrael.database.init()
         self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 

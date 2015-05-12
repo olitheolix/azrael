@@ -35,6 +35,7 @@ import zmq.eventloop.zmqstream
 import numpy as np
 
 import azrael.client
+import azrael.dibbler
 import azrael.util as util
 import azrael.config as config
 
@@ -167,8 +168,27 @@ class ServeViewer(tornado.web.RequestHandler):
         self.redirect("/static/webviewer.html", permanent=True)
 
 
+class MyGridFSHandler(tornado.web.RequestHandler):
+    """
+    fixme: docu
+    fixme: rename
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.dibbler = azrael.dibbler.DibblerAPI()
+
+        # fixme: add logger instance
+        # fixme: use logger instead of print
+
+    def get(self, username):
+        tmp = self.dibbler.getFile(self.request.path)
+        self.write(tmp.data)
+
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """
+    fixme: remove this class
+
     A static file handler that tells the client to never cache anything.
 
     For more information see
@@ -221,15 +241,18 @@ class ClacksServer(multiprocessing.Process):
             'templates': os.path.join(self.dirNameBase, 'templates'),
             'instances': os.path.join(self.dirNameBase, 'instances')}
 
-        FH = MyStaticFileHandler
+        FH = MyGridFSHandler
 
-        # Template models.
-        handlers.append(
-            ('/templates/(.*)', FH, {'path': self.dirNames['templates']}))
+        # # Template models.
+        # handlers.append(
+        #     ('/templates/(.*)', FH, {'path': self.dirNames['templates']}))
 
-        # Instance models.
-        handlers.append(
-            ('/instances/(.*)', FH, {'path': self.dirNames['instances']}))
+        # # Instance models.
+        # handlers.append(
+        #     ('/instances/(.*)', FH, {'path': self.dirNames['instances']}))
+
+        handlers.append(('/templates/(.*)', FH))
+        handlers.append(('/instances/(.*)', FH))
 
         # Websocket to Clacks.
         handlers.append(('/websocket', WebsocketHandler))

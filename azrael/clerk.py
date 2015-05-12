@@ -44,6 +44,7 @@ import azrael.database
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
+import azrael.dibbler as dibbler
 import azrael.database as database
 import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
@@ -76,6 +77,9 @@ class Clerk(multiprocessing.Process):
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
+
+        # Create a Dibbler instance to gain access to the model database.
+        self.dibbler = dibbler.DibblerAPI()
 
         # Specify the decoding-processing-encoding triplet functions for
         # (almost) every command supported by Clerk. The only exceptions are
@@ -1209,18 +1213,17 @@ class Clerk(multiprocessing.Process):
         """
         fixme: docu
         fixme: error checks
-        fixme: test error checks.
-        fixme: replace calls to this method with calls to
-               'azrael.dibbler.sendDibbler'
-        fixme: do not call this method directly; instead, call it via dedicated
-               methods to add/update/delete objects.
+        fixme: remove this method and add the respective self.dibbler.something
+               calls to their respective locations in Clerk.
         """
-        import base64, pickle
-        import urllib.request
-
-        req = base64.b64encode(pickle.dumps(req))
-        url = 'http://{}:{}/dibbler'.format(
-              config.addr_dibbler, config.port_dibbler)
-        tmp = urllib.request.urlopen(url, data=req).readall()
-        tmp = json.loads(tmp.decode('utf8'))
-        return RetVal(**tmp)
+        cmd, data = req['cmd'], req['data']
+        if cmd == 'add_template':
+            return self.dibbler.addTemplate(data)
+        elif cmd == 'spawn':
+            return self.dibbler.spawnTemplate(data)
+        elif cmd == 'update_fragments':
+            return self.dibbler.updateFragments(data)
+        elif cmd == 'reset' and data in ('empty',):
+            return self.dibbler.reset()
+        else:
+            assert False
