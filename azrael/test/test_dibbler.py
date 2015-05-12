@@ -559,6 +559,34 @@ class TestDibblerAPI:
     def teardown_method(self, method):
         self.dibbler.reset()
         
+    def verifyDae(self, url, ref):
+        name = ref.name
+        ref = ref.data
+
+        # Fetch- and verify the file.
+        ret = self.dibbler.getFile(url + '/{}/{}'.format(name, name))
+        assert ret.ok
+        assert ret.data == ref.dae
+
+        ret = self.dibbler.getFile(url + '/{}/rgb1.png'.format(name))
+        assert ret.ok
+        assert ret.data == ref.rgb['rgb1.png']
+        ret = self.dibbler.getFile(url + '/{}/rgb2.jpg'.format(name))
+        assert ret.ok
+        assert ret.data == ref.rgb['rgb2.jpg']
+        
+    def verifyRaw(self, url, ref):
+        name = ref.name
+        ref = ref.data
+        
+        # Fetch- and verify the file.
+        ret = self.dibbler.getFile('{}/{}/model.json'.format(url, name))
+        assert ret.ok
+        ret = json.loads(ret.data.decode('utf8'))
+        assert ret['uv'] == ref.uv
+        assert ret['rgb'] == ref.rgb
+        assert ret['vert'] == ref.vert
+        
     def test_addRawTemplate(self):
         """
         Add a raw template and fetch the individual files again afterwards.
@@ -573,16 +601,11 @@ class TestDibblerAPI:
 
         # Add the first template and verify that the database now contains
         # exactly two files (a meta file, and the actual fragment data).
-        dibbler.addTemplate(t_raw)
+        ret = dibbler.addTemplate(t_raw)
         assert dibbler.getNumFiles() == (True, None, 2)
         
-        # Fetch- and verify the file.
-        ret = dibbler.getFile('/templates/_templateNone/NoNameRaw/model.json')
-        assert ret.ok
-        ret = json.loads(ret.data.decode('utf8'))
-        assert ret['uv'] == frag[0].data.uv
-        assert ret['rgb'] == frag[0].data.rgb
-        assert ret['vert'] == frag[0].data.vert
+        # Fetch- and verify the model.
+        self.verifyRaw(ret.data['url'], frag[0])
 
         # Reset Dibbler and verify that the number of files is now zero again.
         dibbler.reset()
@@ -603,20 +626,11 @@ class TestDibblerAPI:
 
         # Add the first template and verify that the database now contains
         # extactly fourc files (a meta file, the DAE file, and two textures).
-        dibbler.addTemplate(t_dae)
+        ret = dibbler.addTemplate(t_dae)
         assert dibbler.getNumFiles() == (True, None, 4)
         
-        # Fetch- and verify the file.
-        ret = dibbler.getFile('/templates/_templateNone/NoNameDae/NoNameDae')
-        assert ret.ok
-        assert ret.data == frag[0].data.dae
-
-        ret = dibbler.getFile('/templates/_templateNone/NoNameDae/rgb1.png')
-        assert ret.ok
-        assert ret.data == frag[0].data.rgb['rgb1.png']
-        ret = dibbler.getFile('/templates/_templateNone/NoNameDae/rgb2.jpg')
-        assert ret.ok
-        assert ret.data == frag[0].data.rgb['rgb2.jpg']
+        # Fetch- and verify the model.
+        self.verifyDae(ret.data['url'], frag[0])
 
         # Reset Dibbler and verify that the number of files is now zero again.
         dibbler.reset()
@@ -634,7 +648,7 @@ class TestDibblerAPI:
 
     def test_spawnTemplate(self):
         """
-        Add two templates, then spawn the first one two times and the second
+        Add two templates, then spawn the first one twice and the second
         one once.
         """
         dibbler = self.dibbler
@@ -653,17 +667,10 @@ class TestDibblerAPI:
         ret_3 = dibbler.spawnTemplate({'name': t2.name, 'objID': '3'})
         assert ret_1.ok and ret_2.ok and ret_3.ok
 
-        # Fetch- and verify the file.
-        ret = dibbler.getFile(ret_3.data['url'] + '/fragname_dae/fragname_dae')
-        assert ret.ok
-        assert ret.data == frag_dae.data.dae
-
-        ret = dibbler.getFile(ret_3.data['url'] + '/fragname_dae/rgb1.png')
-        assert ret.ok
-        assert ret.data == frag_dae.data.rgb['rgb1.png']
-        ret = dibbler.getFile(ret_3.data['url'] + '/fragname_dae/rgb2.jpg')
-        assert ret.ok
-        assert ret.data == frag_dae.data.rgb['rgb2.jpg']
+        # Verify that all files are correct.
+        self.verifyRaw(ret_1.data['url'], frag_raw)
+        self.verifyRaw(ret_2.data['url'], frag_raw)
+        self.verifyDae(ret_3.data['url'], frag_dae)
 
 
     def test_updateTemplate(self):
