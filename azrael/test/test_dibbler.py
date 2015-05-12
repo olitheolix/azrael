@@ -677,4 +677,36 @@ class TestDibblerAPI:
         """
         ?
         """
-        pass
+        dibbler = self.dibbler
+
+        # Create a Template with a Raw fragment.
+        frag_orig = MetaFragment('bar', 'raw', createFragRaw())
+        t1 = Template('t1', [1, 2, 3, 4], [frag_orig], [], [])
+
+        # Add the template and spawn two instances.
+        assert dibbler.addTemplate(t1).ok
+        ret_1 = dibbler.spawnTemplate({'name': t1.name, 'objID': '1'})
+        ret_2 = dibbler.spawnTemplate({'name': t1.name, 'objID': '2'})
+        assert ret_1.ok and ret_2.ok
+
+        self.verifyRaw(ret_1.data['url'], frag_orig)
+        self.verifyRaw(ret_2.data['url'], frag_orig)
+
+        # Create a replacement fragment.
+        frag_new = MetaFragment('bar', 'raw', createFragRaw())
+
+        # Attempt to change the fragment of a non-existing object.
+        ret = dibbler.updateFragments({'objID': '20', 'frags': [frag_new]})
+#        assert not ret.ok
+
+        # The old fragments must not have changed.
+        self.verifyRaw(ret_1.data['url'], frag_orig)
+        self.verifyRaw(ret_2.data['url'], frag_orig)
+
+        # Change the fragment models for the first object.
+        ret = dibbler.updateFragments({'objID': '1', 'frags': [frag_new]})
+        assert ret.ok
+
+        # Verify that the models are correct.
+        self.verifyRaw(ret_1.data['url'], frag_new)
+        self.verifyRaw(ret_2.data['url'], frag_orig)

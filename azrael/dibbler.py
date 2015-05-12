@@ -502,6 +502,25 @@ class DibblerAPI:
             return RetVal(False, msg, None)
         return RetVal(True, None, None)
 
+    def updateFragments(self, data: dict):
+        try:
+            assert isinstance(data, dict)
+            frags, objID = data['frags'], data['objID']
+            assert isinstance(objID, str)
+            assert isinstance(frags, list)
+            for _ in frags:
+                assert isinstance(_, MetaFragment)
+            int(objID)
+        except (AssertionError, TypeError, ValueError, KeyError):
+            msg = 'Invalid parameters in updateFragments command'
+            return RetVal(False, msg, None)
+
+        # Ensure that ``objID`` exists.
+        model_dir = self.getInstanceDir(objID)
+
+        # Overwrite the model for instance with ``objID``.
+        return self.saveModel(model_dir, frags)
+
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """
@@ -626,7 +645,7 @@ class Dibbler(tornado.web.RequestHandler):
             msg = 'Invalid parameters in updateFragments command'
             return RetVal(False, msg, None)
 
-        # Ensure that an instance with ``objID`` exists.
+        # Ensure that ``objID`` exists.
         model_dir = self.getInstanceDir(objID)
         if not os.path.exists(model_dir):
             msg = 'Object <{}> does not exist'.format(objID)
