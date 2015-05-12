@@ -472,6 +472,36 @@ class DibblerAPI:
         else:
             return RetVal(True, None, ret.read())
     
+    def spawnTemplate(self, data: dict):
+        try:
+            assert isinstance(data, dict)
+            name, objID = data['name'], data['objID']
+            assert isinstance(objID, str)
+            int(objID)
+        except (AssertionError, TypeError, ValueError, KeyError):
+            msg = 'Invalid parameters in spawn command'
+            return RetVal(False, msg, None)
+
+        # Copy the model from the template- to the instance directory.
+        src = self.getTemplateDir(name)
+        dst = self.getInstanceDir(objID)
+
+        query = {'filename': {'$regex': '^{}/.*'.format(src)}}
+        for f in self.fs.find(query):
+            name = f.filename.replace(src, dst)
+            self.fs.put(f.read(), filename=name)
+        url = config.url_instance + '/{}'.format(objID)
+        return RetVal(True, None, {'url': url})
+
+    def deleteInstance(self, objID: str):
+        dst = self.getInstanceDir(objID)
+        try:
+            rmtree([dst], ignore_errors=False)
+        except (AssertionError, FileNotFoundError):
+            msg = 'Could not delete objID <{}>'.format(objID)
+            return RetVal(False, msg, None)
+        return RetVal(True, None, None)
+
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """

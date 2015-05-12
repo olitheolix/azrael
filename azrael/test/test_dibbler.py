@@ -564,9 +564,7 @@ class TestDibblerAPI:
         Add a raw template and fetch the individual files again afterwards.
         """
         frag = [MetaFragment('NoNameRaw', 'raw', createFragRaw())]
-        t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
-        t2 = Template('_templateSphere', [3, 1, 1, 1], frag, [], [])
-        t3 = Template('_templateCube', [4, 1, 1, 1], frag, [], [])
+        t_raw = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
         dibbler = self.dibbler
@@ -574,8 +572,8 @@ class TestDibblerAPI:
         assert dibbler.getNumFiles() == (True, None, 0)
 
         # Add the first template and verify that the database now contains
-        # extactly two files (a meta file, and the actual fragment data).
-        dibbler.addTemplate(t1)
+        # exactly two files (a meta file, and the actual fragment data).
+        dibbler.addTemplate(t_raw)
         assert dibbler.getNumFiles() == (True, None, 2)
         
         # Fetch- and verify the file.
@@ -597,7 +595,7 @@ class TestDibblerAPI:
         dibbler = self.dibbler
 
         frag = [MetaFragment('NoNameDae', 'dae', createFragDae())]
-        t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
+        t_dae = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
         dibbler.reset()
@@ -605,7 +603,7 @@ class TestDibblerAPI:
 
         # Add the first template and verify that the database now contains
         # extactly fourc files (a meta file, the DAE file, and two textures).
-        dibbler.addTemplate(t1)
+        dibbler.addTemplate(t_dae)
         assert dibbler.getNumFiles() == (True, None, 4)
         
         # Fetch- and verify the file.
@@ -636,9 +634,37 @@ class TestDibblerAPI:
 
     def test_spawnTemplate(self):
         """
-        Add two templates, then spawn the first two times and the second once.
+        Add two templates, then spawn the first one two times and the second
+        one once.
         """
-        pass
+        dibbler = self.dibbler
+
+        frag_raw = MetaFragment('fragname_raw', 'raw', createFragRaw())
+        frag_dae = MetaFragment('fragname_dae', 'dae', createFragDae())
+        t1 = Template('t_name_raw', [0, 1, 1, 1], [frag_raw], [], [])
+        t2 = Template('t_name_dae', [0, 1, 1, 1], [frag_dae], [], [])
+
+        dibbler.addTemplate(t1)
+        dibbler.addTemplate(t2)
+        assert dibbler.getNumFiles() == (True, None, 2 + 4)
+
+        ret_1 = dibbler.spawnTemplate({'name': t1.name, 'objID': '1'})
+        ret_2 = dibbler.spawnTemplate({'name': t1.name, 'objID': '2'})
+        ret_3 = dibbler.spawnTemplate({'name': t2.name, 'objID': '3'})
+        assert ret_1.ok and ret_2.ok and ret_3.ok
+
+        # Fetch- and verify the file.
+        ret = dibbler.getFile(ret_3.data['url'] + '/fragname_dae/fragname_dae')
+        assert ret.ok
+        assert ret.data == frag_dae.data.dae
+
+        ret = dibbler.getFile(ret_3.data['url'] + '/fragname_dae/rgb1.png')
+        assert ret.ok
+        assert ret.data == frag_dae.data.rgb['rgb1.png']
+        ret = dibbler.getFile(ret_3.data['url'] + '/fragname_dae/rgb2.jpg')
+        assert ret.ok
+        assert ret.data == frag_dae.data.rgb['rgb2.jpg']
+
 
     def test_updateTemplate(self):
         """
