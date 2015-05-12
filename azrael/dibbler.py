@@ -56,6 +56,7 @@ fixme: update module doc string once it is clearer how everything fits.
 import os
 import time
 import json
+import gridfs
 import shutil
 import base64
 import pytest
@@ -236,7 +237,7 @@ def saveModel(model_dir, fragments, update_existing):
     aabb = -1
     frag_names = {}
     for frag in fragments:
-        # Fragment directory, eg .../instances/mymodle/frag1
+        # Fragment directory, eg .../instances/mymodel/frag1
         frag_dir = os.path.join(model_dir, frag.name)
 
         # Create a pristine fragment directory.
@@ -291,6 +292,179 @@ def removeTemplate(dirname: str):
         msg = 'Template <{}> does not exist'.format(dirname)
         return RetVal(False, msg, None)
 
+
+class DibblerAPI:
+    def __init__(self):
+        # Connect to GridFS.
+        self.db = config.getMongoClient()['AzraelGridDB']
+        self.fs = gridfs.GridFS(self.db)
+
+    def reset(self):
+        """
+        Flush the entire database content.
+        """
+        for _ in self.fs.find():
+            self.fs.delete(_._id)
+        return RetVal(True, None, None)
+
+    def getNumFiles(self):
+        """
+        Return the number of files in GridFS.
+        """
+        return RetVal(True, None, self.fs.find().count())
+
+    def saveModelDae(self, frag_dir, model):
+        """
+        Save the Collada ``model`` to ``frag_dir``.
+
+        :param str frag_dir: directory where to store ``model``.
+        :param FragDae model: the Collada model.
+        :return: success
+        """
+        # Sanity checks.
+        try:
+            data = FragDae(*model.data)
+            assert isinstance(data.dae, bytes)
+            for v in data.rgb.values():
+                assert isinstance(v, bytes)
+        except KeyError:
+            msg = 'Invalid data types for Collada fragments'
+            return RetVal(False, msg, None)
+
+        # Save the dae file to "templates/model_name/frag_name/name.dae".
+        self.fs.put(data.dae, filename=os.path.join(frag_dir, model.name))
+
+        # Save the textures. These are stored as dictionaries with the texture
+        # file name as key and the data as a binary stream, eg,
+        # {'house.jpg': b'abc', 'tree.png': b'def', ...}
+        for name, rgb in data.rgb.items():
+            self.fs.put(rgb, filename=os.path.join(frag_dir, name))
+
+        return RetVal(True, None, 1.0)
+
+    def saveModelRaw(self, frag_dir, model):
+        """
+        Save the raw ``model`` to ``frag_dir``.
+
+        A 'raw' model is one where the vertices, UV map, and RGB textures is
+        provided directly. This is mostly useful for debugging because it
+        circumvents 3D file formats altogether.
+
+        :param str frag_dir: directory where to store ``model``.
+        :param FragDae model: the Collada model.
+        :return: success
+        """
+        # Sanity checks.
+        try:
+            data = FragRaw(*model.data)
+            assert isinstance(data.vert, list)
+            assert isinstance(data.uv, list)
+            assert isinstance(data.rgb, list)
+        except (AssertionError, TypeError):
+            msg = 'Invalid data types for Raw fragments'
+            return RetVal(False, msg, None)
+
+        if not isGeometrySane(data):
+            msg = 'Invalid geometry for template <{}>'
+            return RetVal(False, msg.format(model.name), None)
+
+        # Save the fragments as JSON data to eg "templates/mymodel/model.json".
+        self.fs.put(json.dumps(data._asdict()).encode('utf8'),
+                    filename=os.path.join(frag_dir, 'model.json'))
+
+        # Determine the largest possible side length of the
+        # AABB. To find it, just determine the largest spatial
+        # extent in any axis direction. That is the side length of
+        # the AABB cube. Then multiply it with sqrt(3) to ensure
+        # that any rotation angle of the object is covered. The
+        # slightly larger value of sqrt(3.1) adds some slack.
+        aabb = 0
+        if len(data.vert) > 0:
+            len_x = max(data.vert[0::3]) - min(data.vert[0::3])
+            len_y = max(data.vert[1::3]) - min(data.vert[1::3])
+            len_z = max(data.vert[2::3]) - min(data.vert[2::3])
+            tmp = np.sqrt(3.1) * max(len_x, len_y, len_z)
+            aabb = np.amax((aabb, tmp))
+
+        return RetVal(True, None, aabb)
+
+    @typecheck
+    def saveModel(self, model_dir, fragments):
+        """
+        Save the ``model`` to ``dirname`` and return the success.
+
+        This function is merely a wrapper around dedicated methods to save
+        individual file formats like Collada (dae) or Raw (for testing) files.
+
+        :param str dirname: the destination directory.
+        :param model: Container for the respective file format.
+        :return: success.
+        """
+        # Store all fragment models for this template.
+        aabb = -1
+        frag_names = {}
+        for frag in fragments:
+            # Fragment directory, eg .../instances/mymodel/frag1
+            frag_dir = os.path.join(model_dir, frag.name)
+
+            # Save the fragment.
+            if frag.type == 'raw':
+                # Raw.
+                ret = self.saveModelRaw(frag_dir, frag)
+            elif frag.type == 'dae':
+                # Collada.
+                ret = self.saveModelDae(frag_dir, frag)
+            else:
+                # Unknown model format.
+                msg = 'Unknown type <{}>'.format(frag.type)
+                ret = RetVal(False, msg, None)
+
+            # Delete the fragment directory if something went wrong and proceed to
+            # the next fragment.
+            if not ret.ok:
+                fs.delete({'filename': {'$regex': '^{}/.*'.format(frag_dir)}})
+                continue
+
+            # Update the 'meta.json': it contains a dictionary with all fragment
+            # names and their model type, eg. {'foo': 'raw', 'bar': 'dae', ...}
+            frag_names[frag.name] = frag.type
+            self.fs.put(json.dumps({'fragments': frag_names}).encode('utf8'),
+                        filename=os.path.join(model_dir, 'meta.json'))
+
+            # Find the largest AABB.
+            aabb = float(np.amax((ret.data, aabb)))
+
+        # Sanity check: if the AABB was negative then not a single fragment was
+        # valid. This is an error.
+        if aabb < 0:
+            msg = 'Model contains no valid fragments'
+            return RetVal(False, msg, None)
+        return RetVal(True, None, aabb)
+
+    def getTemplateDir(self, name: str):
+        return os.path.join('/', 'templates', name)
+
+    def getInstanceDir(self, objID: str):
+        return os.path.join('/', 'instances', objID)
+
+    def addTemplate(self, tt):
+        model_dir = self.getTemplateDir(tt.name)
+        model_url = os.path.join(config.url_template, tt.name)
+
+        ret = self.saveModel(model_dir, tt.fragments)
+        if not ret.ok:
+            return ret
+
+        # Return message.
+        return RetVal(True, None, {'aabb': ret.data, 'url': model_url})
+
+    def getFile(self, name):
+        ret = self.fs.get_last_version(name)
+        if ret is None:
+            return RetVal(False, 'File not found', None)
+        else:
+            return RetVal(True, None, ret.read())
+    
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """

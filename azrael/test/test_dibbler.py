@@ -541,3 +541,85 @@ class TestDibbler(tornado.testing.AsyncHTTPTestCase):
         assert _instanceOk(ret2.data['url'], frag_orig)
 
         print('Test passed')
+
+
+class TestDibblerAPI:
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler.reset()
+        
+    def teardown_method(self, method):
+        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler.reset()
+        
+    def test_addRawTemplate(self):
+        """
+        Add a raw template and fetch the individual files again afterwards.
+        """
+        frag = [MetaFragment('NoNameRaw', 'raw', createFragRaw())]
+        t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
+        t2 = Template('_templateSphere', [3, 1, 1, 1], frag, [], [])
+        t3 = Template('_templateCube', [4, 1, 1, 1], frag, [], [])
+
+        # Create a Dibbler instance and flush all data.
+        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler.reset()
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Add the first template and verify that the database now contains
+        # extactly two files (a meta file, and the actual fragment data).
+        dibbler.addTemplate(t1)
+        assert dibbler.getNumFiles() == (True, None, 2)
+        
+        # Fetch- and verify the file.
+        ret = dibbler.getFile('/templates/_templateNone/NoNameRaw/model.json')
+        assert ret.ok
+        ret = json.loads(ret.data.decode('utf8'))
+        assert ret['uv'] == frag[0].data.uv
+        assert ret['rgb'] == frag[0].data.rgb
+        assert ret['vert'] == frag[0].data.vert
+
+        # Reset Dibbler and verify that the number of files is now zero again.
+        dibbler.reset()
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+    def test_addDaeTemplate(self):
+        """
+        Add a Collada template and fetch the individual files again afterwards.
+        """
+        frag = [MetaFragment('NoNameDae', 'dae', createFragDae())]
+        t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
+
+        # Create a Dibbler instance and flush all data.
+        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler.reset()
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Add the first template and verify that the database now contains
+        # extactly fourc files (a meta file, the DAE file, and two textures).
+        dibbler.addTemplate(t1)
+        assert dibbler.getNumFiles() == (True, None, 4)
+        
+        # Fetch- and verify the file.
+        ret = dibbler.getFile('/templates/_templateNone/NoNameDae/NoNameDae')
+        assert ret.ok
+        assert ret.data == frag[0].data.dae
+
+        ret = dibbler.getFile('/templates/_templateNone/NoNameDae/rgb1.png')
+        assert ret.ok
+        assert ret.data == frag[0].data.rgb['rgb1.png']
+        ret = dibbler.getFile('/templates/_templateNone/NoNameDae/rgb2.jpg')
+        assert ret.ok
+        assert ret.data == frag[0].data.rgb['rgb2.jpg']
+
+        # Reset Dibbler and verify that the number of files is now zero again.
+        dibbler.reset()
+        assert dibbler.getNumFiles() == (True, None, 0)
