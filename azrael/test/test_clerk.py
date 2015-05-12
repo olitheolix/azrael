@@ -38,7 +38,7 @@ import azrael.parts as parts
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.test_bullet_api import isEqualBD
+from azrael.test.test_bullet_api import isEqualBD
 from azrael.test.test import createFragRaw, createFragDae
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal

@@ -27,7 +27,7 @@ import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
-from azrael.test_bullet_api import isEqualBD
+from azrael.test.test_bullet_api import isEqualBD
 
 MotionState = bullet_data.MotionState
 MotionStateOverride = bullet_data.MotionStateOverride
