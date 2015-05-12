@@ -685,11 +685,11 @@ class TestDibblerAPI:
 
         # Add the template and spawn two instances.
         assert dibbler.addTemplate(t1).ok
-        ret_1 = dibbler.spawnTemplate({'name': t1.name, 'objID': '1'})
+        ret_11 = dibbler.spawnTemplate({'name': t1.name, 'objID': '11'})
         ret_2 = dibbler.spawnTemplate({'name': t1.name, 'objID': '2'})
-        assert ret_1.ok and ret_2.ok
+        assert ret_11.ok and ret_2.ok
 
-        self.verifyRaw(ret_1.data['url'], frag_orig)
+        self.verifyRaw(ret_11.data['url'], frag_orig)
         self.verifyRaw(ret_2.data['url'], frag_orig)
 
         # Create a replacement fragment.
@@ -697,16 +697,26 @@ class TestDibblerAPI:
 
         # Attempt to change the fragment of a non-existing object.
         ret = dibbler.updateFragments({'objID': '20', 'frags': [frag_new]})
-#        assert not ret.ok
+        assert not ret.ok
+
+        # Attempt to change the fragment of another non-existing object, but
+        # the object ID of this one is '1', which means it is available at
+        # '/somewhere/1/...'. However, an object at '/somewhere/11/...' already
+        # exists, and without the trailing '/' the first would be a sub-string
+        # of the latter. The update method must therefore take care to properly
+        # test for existence, especially since directories, internally, do not
+        # have a trailing '/'.
+        ret = dibbler.updateFragments({'objID': '1', 'frags': [frag_new]})
+        assert not ret.ok
 
         # The old fragments must not have changed.
-        self.verifyRaw(ret_1.data['url'], frag_orig)
+        self.verifyRaw(ret_11.data['url'], frag_orig)
         self.verifyRaw(ret_2.data['url'], frag_orig)
 
         # Change the fragment models for the first object.
-        ret = dibbler.updateFragments({'objID': '1', 'frags': [frag_new]})
+        ret = dibbler.updateFragments({'objID': '11', 'frags': [frag_new]})
         assert ret.ok
 
         # Verify that the models are correct.
-        self.verifyRaw(ret_1.data['url'], frag_new)
+        self.verifyRaw(ret_11.data['url'], frag_new)
         self.verifyRaw(ret_2.data['url'], frag_orig)

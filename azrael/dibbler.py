@@ -389,7 +389,7 @@ class DibblerAPI:
         return RetVal(True, None, aabb)
 
     @typecheck
-    def saveModel(self, model_dir, fragments):
+    def saveModel(self, model_dir, fragments, update=False):
         """
         Save the ``model`` to ``dirname`` and return the success.
 
@@ -400,6 +400,11 @@ class DibblerAPI:
         :param model: Container for the respective file format.
         :return: success.
         """
+        if update:
+            ret = self.fs.find_one({'filename': {'$regex': '^' + model_dir + '/'}})
+            if ret is None:
+                return RetVal(False, 'Model does not exist', None)
+
         # Store all fragment models for this template.
         aabb = -1
         frag_names = {}
@@ -519,7 +524,7 @@ class DibblerAPI:
         model_dir = self.getInstanceDir(objID)
 
         # Overwrite the model for instance with ``objID``.
-        return self.saveModel(model_dir, frags)
+        return self.saveModel(model_dir, frags, update=True)
 
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
