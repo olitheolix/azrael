@@ -6,6 +6,7 @@ import azrael.clacks
 import azrael.wsclient
 import tornado.testing
 import azrael.config as config
+import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, MetaFragment
@@ -95,6 +96,46 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         self.verifyTemplate('/templates/t1', t1.fragments)
         self.verifyTemplate('/templates/t2', t2.fragments)
 
+    def test_spawnTemplates(self):
+        """
+        Spawn a template and verify it is available via Clacks.
+        """
+        self.dibbler.reset()
+        azrael.database.init()
+        clerk = azrael.clerk.Clerk()
+
+        # Create two Templates with one Raw fragment each.
+        frags_t1 = [MetaFragment('raw1', 'raw', createFragRaw()),
+                    MetaFragment('dae2', 'dae', createFragDae()),
+                    MetaFragment('dae3', 'dae', createFragDae())]
+        frags_t2 = [MetaFragment('raw4', 'raw', createFragRaw()),
+                    MetaFragment('raw5', 'raw', createFragRaw()),
+                    MetaFragment('dae6', 'dae', createFragDae())]
+        t1 = Template('t1', [1, 2, 3, 4], frags_t1, [], [])
+        t2 = Template('t2', [5, 6, 7, 8], frags_t2, [], [])
+        del frags_t1, frags_t2
+
+        # Add both templates and verify they are available.
+        assert clerk.addTemplates([t1]).ok
+        assert clerk.addTemplates([t2]).ok
+        self.verifyTemplate('/templates/t1', t1.fragments)
+        self.verifyTemplate('/templates/t2', t2.fragments)
+
+        # No object instance with ID=1 must exist yet.
+        with pytest.raises(AssertionError):
+            self.verifyTemplate('/instances/{}'.format(1), t1.fragments)
+
+        # Spawn the first template (it will must get objID=1).
+        sv_1 = bullet_data.MotionState(imass=1)
+        ret = clerk.spawn([('t1', sv_1)])
+        assert ret.data == (1, )
+        self.verifyTemplate('/instances/{}'.format(1), t1.fragments)
+
+        # Spawn two more templates and very the instance models.
+        ret = clerk.spawn([('t2', sv_1), ('t1', sv_1)])
+        assert ret.data == (2, 3)
+        self.verifyTemplate('/instances/{}'.format(2), t2.fragments)
+        self.verifyTemplate('/instances/{}'.format(3), t1.fragments)
 
 
 def test_ping_clacks():
