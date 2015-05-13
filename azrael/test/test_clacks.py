@@ -140,6 +140,44 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         self.verifyTemplate('/instances/{}'.format(2), t2.fragments)
         self.verifyTemplate('/instances/{}'.format(3), t1.fragments)
 
+    def test_updateFragments(self):
+        """
+        Modify the fragments of a spawned object.
+        """
+        self.dibbler.reset()
+        azrael.database.init()
+        clerk = azrael.clerk.Clerk()
+
+        # Create two Templates with one Raw fragment each.
+        frags_old = [MetaFragment('name1', 'raw', createFragRaw()),
+                     MetaFragment('name2', 'dae', createFragDae()),
+                     MetaFragment('name3', 'dae', createFragDae())]
+        frags_new = [MetaFragment('name1', 'dae', createFragDae()),
+                     MetaFragment('name2', 'dae', createFragDae()),
+                     MetaFragment('name3', 'raw', createFragRaw())]
+        t1 = Template('t1', [1, 2, 3, 4], frags_old, [], [])
+
+        # Add-, spawn-, and verify the template.
+        assert clerk.addTemplates([t1]).ok
+        self.verifyTemplate('/templates/t1', t1.fragments)
+        sv_1 = bullet_data.MotionState(imass=1)
+        ret = clerk.spawn([('t1', sv_1)])
+        assert ret.data == (1, )
+
+        # Verify the that the instance has the old fragments, not the new ones.
+        self.verifyTemplate('/instances/{}'.format(1), frags_old)
+        with pytest.raises(AssertionError):
+            self.verifyTemplate('/instances/{}'.format(1), frags_new)
+
+        # Update the fragments.
+        clerk.updateFragments(objID=1, fragments=frags_new)
+
+        # Verify that the instance now has the new fragments, but not the old
+        # ones anymore.
+        self.verifyTemplate('/instances/{}'.format(1), frags_new)
+        with pytest.raises(AssertionError):
+            self.verifyTemplate('/instances/{}'.format(1), frags_old)
+
 
 def test_ping_clacks():
     """
