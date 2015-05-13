@@ -241,9 +241,11 @@ class ClacksServer(multiprocessing.Process):
             'templates': os.path.join(self.dirNameBase, 'templates'),
             'instances': os.path.join(self.dirNameBase, 'instances')}
 
+        # fixme: rename mygridfshandler
         FH = MyGridFSHandler
 
         # # Template models.
+        # fixme: remove these comments
         # handlers.append(
         #     ('/templates/(.*)', FH, {'path': self.dirNames['templates']}))
 
