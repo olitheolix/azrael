@@ -1203,23 +1203,3 @@ class Clerk(multiprocessing.Process):
             return RetVal(True, None, None)
         else:
             return RetVal(False, 'Could not update all fragments', None)
-
-    @typecheck
-    def sendRequest(self, req):
-        """
-        fixme: docu
-        fixme: error checks
-        fixme: remove this method and add the respective self.dibbler.something
-               calls to their respective locations in Clerk.
-        """
-        cmd, data = req['cmd'], req['data']
-        if cmd == 'add_template':
-            return self.dibbler.addTemplate(data)
-        elif cmd == 'spawn':
-            return self.dibbler.spawnTemplate(data)
-        elif cmd == 'update_fragments':
-            return self.dibbler.updateFragments(data)
-        elif cmd == 'reset' and data in ('empty',):
-            return self.dibbler.reset()
-        else:
-            assert False

@@ -51,48 +51,23 @@ class TestClerk:
         killAzrael()
         cls.clerk = azrael.clerk.Clerk()
 
-        # Start Dibbler.
-        ip, port = azrael.config.addr_dibbler, azrael.config.port_dibbler
-        cls.dibbler = azrael.dibbler.DibblerServer(addr=ip, port=port)
-        cls.dibbler.start()
-        cls.url_dibbler = 'http://{}:{}/dibbler'.format(ip, port)
-
-        # Wait until Dibbler is live and tell it to reset its Database.
-        # fixme: put this into dedicated method.
-        while True:
-            try:
-                ret = cls.sendRequest({'cmd': 'reset', 'data': 'empty'})
-                assert ret.ok
-                break
-            except (urllib.request.HTTPError, urllib.request.URLError):
-                time.sleep(0.05)
-
     @classmethod
     def teardown_class(cls):
         killAzrael()
-        cls.dibbler.terminate()
-        cls.dibbler.join()
 
-    @classmethod
-    def sendRequest(cls, req):
-        """
-        fixme: replace calls to this method with calls to
-               'azrael.dibbler.sendDibbler' instead.
-        """
-        req = base64.b64encode(pickle.dumps(req))
-        tmp = urllib.request.urlopen(cls.url_dibbler, data=req).readall()
-        tmp = json.loads(tmp.decode('utf8'))
-        return RetVal(**tmp)
+    def setup_method(self, method):
+        self.dibbler = azrael.dibbler.DibblerAPI()
+        self.dibbler.reset()
+
+    def teardown_method(self, method):
+        self.dibbler.reset()
 
     def setup_method(self, method):
         azrael.database.init()
 
-        self.sendRequest({'cmd': 'reset', 'data': 'empty'})
-
-        clerk = azrael.clerk.Clerk()
-
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
+        clerk = azrael.clerk.Clerk()
         frag = [MetaFragment('NoName', 'raw', createFragRaw())]
         t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
         t2 = Template('_templateSphere', [3, 1, 1, 1], frag, [], [])
@@ -101,55 +76,6 @@ class TestClerk:
 
     def teardown_method(self, method):
         azrael.database.init()
-        self.sendRequest({'cmd': 'reset', 'data': 'empty'})
-
-    def test_communicate_with_dibbler(self):
-        """
-        Use a Clerk instance to add/query/update models in Dibbler.
-        """
-        clacks = azrael.clacks.ClacksServer()
-        clacks.start()
-
-        # Wait until Dibbler is live, then tell it to reset its Database.
-        clerk = azrael.clerk.Clerk()
-        while True:
-            try:
-                ret = clerk.sendRequest({'cmd': 'reset', 'data': 'empty'})
-                assert ret.ok
-                break
-            except (urllib.request.HTTPError, urllib.request.URLError):
-                time.sleep(0.05)
-
-        # Create a template with one raw fragment.
-        frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
-
-        # Add the template.
-        ret = clerk.sendRequest({'cmd': 'add_template', 'data': t1})
-        assert ret.ok
-
-        # Spawn an instance thereof.
-        ret = clerk.sendRequest(
-            {'cmd': 'spawn', 'data': {'name': t1.name, 'objID': '1'}})
-        assert ret.ok
-
-        # Download the fragment via a standard GET request.
-        ip = azrael.config.addr_clacks
-        port = azrael.config.port_clacks
-        url = 'http://{ip}:{port}'.format(ip=ip, port=port)
-        url = url + ret.data['url'] + '/bar/model.json'
-        for ii in range(10):
-            assert ii < 5
-            try:
-                ret = urllib.request.urlopen(url).readall()
-                break
-            except urllib.request.URLError:
-                time.sleep(0.2)
-
-        ret = json.loads(ret.decode('utf8'))
-
-        clacks.terminate()
-        clacks.join()
 
     def test_spawn(self):
         """
