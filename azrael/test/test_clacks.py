@@ -40,15 +40,6 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             rgb[texture] = tmp
         return FragDae(dae=dae, rgb=rgb)
 
-    def downloadJSON(self, url):
-        # fixme: docu
-        url = config.url_template + '/t1/meta.json'
-        ret = self.fetch(url, method='GET')
-        try:
-            return json.loads(ret.body.decode('utf8'))
-        except ValueError:
-            assert False
-
     def verifyTemplate(self, url, template):
         # Fetch- and decode the meta file.
         ret = self.fetch(url + '/meta.json', method='GET')
@@ -71,7 +62,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             else:
                 assert False
 
-    def test_template_raw(self):
+    def test_addTemplates(self):
         """
         Add and query a template with one Raw fragment.
         """
@@ -80,10 +71,15 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         clerk = azrael.clerk.Clerk()
 
         # Create two Templates with one Raw fragment each.
-        frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
-        t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
-        del frags
+        frags_t1 = [MetaFragment('foo1', 'raw', createFragRaw()),
+                    MetaFragment('bar2', 'dae', createFragDae()),
+                    MetaFragment('bar3', 'dae', createFragDae())]
+        frags_t2 = [MetaFragment('foo4', 'raw', createFragRaw()),
+                    MetaFragment('foo5', 'raw', createFragRaw()),
+                    MetaFragment('bar6', 'dae', createFragDae())]
+        t1 = Template('t1', [1, 2, 3, 4], frags_t1, [], [])
+        t2 = Template('t2', [5, 6, 7, 8], frags_t2, [], [])
+        del frags_t1, frags_t2
 
         # Add the first template.
         assert clerk.addTemplates([t1]).ok
@@ -99,33 +95,6 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         self.verifyTemplate('/templates/t1', t1.fragments)
         self.verifyTemplate('/templates/t2', t2.fragments)
 
-    def test_template_dae(self):
-        """
-        Add and query a template with one Collada fragment.
-        """
-        self.dibbler.reset()
-        azrael.database.init()
-        clerk = azrael.clerk.Clerk()
-
-        # Create two Templates with one Collada fragment each.
-        frags = [MetaFragment('bar', 'dae', createFragDae())]
-        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
-        t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
-        del frags
-
-        # Add the first template.
-        assert clerk.addTemplates([t1]).ok
-
-        # Attempt to add the template a second time. This must fail.
-        assert not clerk.addTemplates([t1]).ok
-
-        # Verify the first template.
-        self.verifyTemplate('/templates/t1', t1.fragments)
-
-        # Add the second template and verify both.
-        assert clerk.addTemplates([t2]).ok
-        self.verifyTemplate('/templates/t1', t1.fragments)
-        self.verifyTemplate('/templates/t2', t2.fragments)
 
 
 def test_ping_clacks():
