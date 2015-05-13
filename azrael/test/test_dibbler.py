@@ -26,10 +26,10 @@ import base64
 import pytest
 import pickle
 import tornado.web
-import urllib.request
-import azrael.dibbler
-import tornado.testing
 import azrael.clerk
+import azrael.dibbler
+import urllib.request
+import tornado.testing
 
 import numpy as np
 import unittest.mock as mock
@@ -564,7 +564,7 @@ class TestDibblerAPI:
         ref = ref.data
 
         # Fetch- and verify the file.
-        ret = self.dibbler.getFile(url + '/{}/{}'.format(name, name))
+        ret = self.dibbler.getFile(url + '/{name}/{name}'.format(name=name))
         assert ret.ok
         assert ret.data == ref.dae
 
