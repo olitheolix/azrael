@@ -183,7 +183,10 @@ class MyGridFSHandler(tornado.web.RequestHandler):
 
     def get(self, username):
         tmp = self.dibbler.getFile(self.request.path)
-        self.write(tmp.data)
+        if isinstance(tmp.data, bytes):
+            self.write(tmp.data)
+        else:
+            self.write(b'')
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """
