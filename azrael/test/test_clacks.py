@@ -63,6 +63,11 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             if tt.type == 'raw':
                 tmp_url = url + '/{}/model.json'.format(tt.name)
                 assert self.downloadFragRaw(tmp_url) == tt.data
+            elif tt.type == 'dae':
+                tmp_url = url + '/{name}/'.format(name=tt.name)
+                texture_names = list(tt.data.rgb.keys())
+                ret = self.downloadFragDae(tmp_url, tt.name, texture_names)
+                assert ret == tt.data
             else:
                 assert False
 
@@ -76,6 +81,34 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Create two Templates with one Raw fragment each.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+        t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
+        del frags
+
+        # Add the first template.
+        assert clerk.addTemplates([t1]).ok
+
+        # Attempt to add the template a second time. This must fail.
+        assert not clerk.addTemplates([t1]).ok
+
+        # Verify the first template.
+        self.verifyTemplate('/templates/t1', t1.fragments)
+
+        # Add the second template and verify both.
+        assert clerk.addTemplates([t2]).ok
+        self.verifyTemplate('/templates/t1', t1.fragments)
+        self.verifyTemplate('/templates/t2', t2.fragments)
+
+    def test_template_dae(self):
+        """
+        Add and query a template with one Collada fragment.
+        """
+        self.dibbler.reset()
+        azrael.database.init()
+        clerk = azrael.clerk.Clerk()
+
+        # Create two Templates with one Collada fragment each.
+        frags = [MetaFragment('bar', 'dae', createFragDae())]
         t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
         t2 = Template('t2', [5, 6, 7, 8], frags, [], [])
         del frags
@@ -128,5 +161,3 @@ def test_ping_clacks():
         WSClient(ip=ip, port=port, timeout=1)
 
     assert not client.pingClacks().ok
-
-    print('Test passed')
