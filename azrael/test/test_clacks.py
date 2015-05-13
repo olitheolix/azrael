@@ -44,7 +44,10 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
     def verifyTemplate(self, url, template):
         # Fetch- and decode the meta file.
         ret = self.fetch(url + '/meta.json', method='GET')
-        ret = json.loads(ret.body.decode('utf8'))
+        try:
+            ret = json.loads(ret.body.decode('utf8'))
+        except ValueError:
+            assert False
 
         # Verify that the meta file contains the correct fragment names.
         expected_fragment_names = {_.name: _.type for _ in template}
