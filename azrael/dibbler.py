@@ -497,8 +497,13 @@ class DibblerAPI:
 
         query = {'filename': {'$regex': '^{}/.*'.format(src)}}
         for f in self.fs.find(query):
+            # Modify the original file name from
+            # '/templates/temp_name/*' to '/instances/objID/*'.
             name = f.filename.replace(src, dst)
-            self.fs.put(f.read(), filename=name)
+
+            # Copy the last version of the file.
+            src_data = self.fs.get_last_version(f.filename)
+            self.fs.put(src_data, filename=name)
         url = config.url_instance + '/{}'.format(objID)
         return RetVal(True, None, {'url': url})
 
