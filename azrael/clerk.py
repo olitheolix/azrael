@@ -617,7 +617,7 @@ class Clerk(multiprocessing.Process):
                     return RetVal(False, msg, None)
 
                 # Ask Dibbler to add the template.
-                ret = self.sendRequest({'cmd': 'add_template', 'data': tt})
+                ret = self.dibbler.addTemplate(tt)
                 if not ret.ok:
                     return ret
 
@@ -797,9 +797,7 @@ class Clerk(multiprocessing.Process):
                 doc['lastChanged'] = 0
                 doc['templateID'] = name
 
-                ret = self.sendRequest(
-                    {'cmd': 'spawn',
-                     'data': {'name': name, 'objID': str(objID)}})
+                ret = self.dibbler.spawnTemplate({'name': name, 'objID': str(objID)})
                 if not ret.ok:
                     continue
 
@@ -928,9 +926,7 @@ class Clerk(multiprocessing.Process):
 
         # Update the fragments in Dibbler.
         for frag in fragments:
-            req = {'cmd': 'update_fragments',
-                   'data': {'objID': str(objID), 'frags': fragments}}
-            ret = self.sendRequest(req)
+            ret = self.dibbler.updateFragments({'objID': str(objID), 'frags': fragments})
             if not ret.ok:
                 return ret
 

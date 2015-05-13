@@ -418,22 +418,27 @@ class TestClerk:
         assert AE(ret.data[name_2]['cshape'], np.array([3, 1, 1, 1]))
         assert AE(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
 
-    @mock.patch.object(azrael.clerk.Clerk, 'sendRequest')
-    def test_add_get_template_single(self, mock_sr):
+    def test_add_get_template_single(self):
         """
         Add a new object to the templateID DB and query it again.
         """
-        # Assume saveModel returns ok.
-        mock_sr.return_value = RetVal(True, None, {'aabb': 1.0})
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
+
+        # Install a mock for DibblerAPI with an 'addTemplate' function that
+        # always succeeds.
+        mock_dibbler = mock.create_autospec(azrael.dibbler.DibblerAPI)
+        clerk.dibbler = mock_dibbler
+        mock_dibbler.return_value = RetVal(True, None, {'aabb': 1.0})
+
+        # The mock must not have been called so far.
+        assert mock_dibbler.addTemplate.call_count == 0
 
         # Convenience.
         cs = [1, 2, 3, 4]
 
         # Reset the call_count of the mock.
-        mock_sr.call_count = 0
+        mock_dibbler.addTemplate.call_count = 0
 
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
@@ -441,26 +446,26 @@ class TestClerk:
         # Wrong argument .
         ret = clerk.addTemplates([1])
         assert (ret.ok, ret.msg) == (False, 'Invalid arguments')
-        assert mock_sr.call_count == 0
+        assert mock_dibbler.addTemplate.call_count == 0
 
         # Compile a template structure.
         frags = [MetaFragment('foo', 'raw', createFragRaw())]
         temp = Template('bar', cs, frags, [], [])
 
         # Add template when 'saveModel' fails.
-        mock_sr.return_value = RetVal(False, 'test_error', None)
+        mock_dibbler.addTemplate.return_value = RetVal(False, 'test_error', None)
         ret = clerk.addTemplates([temp])
         assert (ret.ok, ret.msg) == (False, 'test_error')
-        assert mock_sr.call_count == 1
+        assert mock_dibbler.addTemplate.call_count == 1
 
         # Add template when 'saveModel' succeeds.
-        mock_sr.return_value = RetVal(True, None, {'aabb': 1.0})
+        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1.0})
         assert clerk.addTemplates([temp]).ok
-        assert mock_sr.call_count == 2
+        assert mock_dibbler.addTemplate.call_count == 2
 
         # Adding the same template again must fail.
         assert not clerk.addTemplates([temp]).ok
-        assert mock_sr.call_count == 3
+        assert mock_dibbler.addTemplate.call_count == 3
 
         # Define a new object with two boosters and one factory unit.
         # The 'boosters' and 'factories' arguments are a list of named
@@ -477,7 +482,7 @@ class TestClerk:
         # Add the new template.
         temp = Template('t3', cs, frags, [b0, b1], [f0])
         assert clerk.addTemplates([temp]).ok
-        assert mock_sr.call_count == 4
+        assert mock_dibbler.addTemplate.call_count == 4
 
         # Retrieve the just created object and verify the collision shape.
         ret = clerk.getTemplates([temp.name])
@@ -505,18 +510,22 @@ class TestClerk:
         ret = clerk.getTemplates([temp.name, temp.name, temp.name])
         assert ret.ok and (len(ret.data) == 1) and (temp.name in ret.data)
 
-    @mock.patch.object(azrael.clerk.Clerk, 'sendRequest')
-    def test_add_get_template_multi_url(self, mock_sr):
+    def test_add_get_template_multi_url(self):
         """
         Add templates in bulk and verify that the models are availabe via the
         correct URL.
         """
-        # All calls to _saveModelRaw will succeed.
-        mock_sr.return_value = RetVal(True, None, {'aabb': 1.0})
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
-        assert mock_sr.call_count == 0
+
+        # Install a mock for DibblerAPI with an 'addTemplate' function that
+        # always succeeds.
+        mock_dibbler = mock.create_autospec(azrael.dibbler.DibblerAPI)
+        clerk.dibbler = mock_dibbler
+        mock_dibbler.return_value = RetVal(True, None, {'aabb': 1.0})
+
+        # The mock must not have been called so far.
+        assert mock_dibbler.addTemplate.call_count == 0
 
         # Convenience.
         base_url = 'http://{}:{}'.format(
@@ -532,11 +541,11 @@ class TestClerk:
 
         # Add two valid templates. This must succeed.
         assert clerk.addTemplates([t1, t2]).ok
-        assert mock_sr.call_count == 2
+        assert mock_dibbler.addTemplate.call_count == 2
 
         # Attempt to add the same templates again. This must fail.
         assert not clerk.addTemplates([t1, t2]).ok
-        assert mock_sr.call_count == 4
+        assert mock_dibbler.addTemplate.call_count == 4
 
         # Fetch the just added template in order to get the URL where its
         # geometries are stored.
