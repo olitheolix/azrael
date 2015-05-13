@@ -672,10 +672,9 @@ class TestDibblerAPI:
         self.verifyRaw(ret_2.data['url'], frag_raw)
         self.verifyDae(ret_3.data['url'], frag_dae)
 
-
     def test_updateTemplate(self):
         """
-        ?
+        fixme: docu
         """
         dibbler = self.dibbler
 
@@ -720,3 +719,15 @@ class TestDibblerAPI:
         # Verify that the models are correct.
         self.verifyRaw(ret_11.data['url'], frag_new)
         self.verifyRaw(ret_2.data['url'], frag_orig)
+
+    def test_removeTemplate(self):
+        """
+        Add and remove a template.
+        """
+        assert False
+
+    def test_removeInstance(self):
+        """
+        Add and remove an instance.
+        """
+        assert False

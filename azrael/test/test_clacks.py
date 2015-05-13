@@ -15,6 +15,8 @@ from azrael.test.test import createFragRaw, createFragDae
 
 class TestClacks(tornado.testing.AsyncHTTPTestCase):
     def get_app(self):
+        # Dibbler instance is necessary because this test suite contains
+        # several integration tests between Dibbler and Clacks.
         self.dibbler = azrael.dibbler.DibblerAPI()
 
         # Handler to serve up models.
@@ -177,6 +179,18 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         self.verifyTemplate('/instances/{}'.format(1), frags_new)
         with pytest.raises(AssertionError):
             self.verifyTemplate('/instances/{}'.format(1), frags_old)
+
+    def test_removeTemplate(self):
+        """
+        Add and remove a template from Dibbler via Clacks.
+        """
+        assert False
+
+    def test_removeInstance(self):
+        """
+        Add and remove an instance from Dibbler via Clacks.
+        """
+        assert False
 
 
 def test_ping_clacks():
