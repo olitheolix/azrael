@@ -22,14 +22,10 @@ The client class is merely a convenience class to wrap the Clerk
 commands. As such the tests here merely test these wrappers. See `test_clerk`
 if you want to see thorough tests for the Clerk functionality.
 """
-import os
 import sys
 import time
 import json
-import urllib
 import pytest
-import base64
-import pickle
 import urllib.request
 
 import numpy as np
@@ -42,10 +38,7 @@ import azrael.dibbler
 import azrael.wsclient
 import azrael.parts as parts
 import azrael.config as config
-import azrael.leonard as leonard
 import azrael.database as database
-import azrael.protocol as protocol
-import azrael.physics_interface as physAPI
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
@@ -54,45 +47,48 @@ from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 from azrael.test.test import createFragRaw, createFragDae
 from azrael.test.test_leonard import getLeonard, killAzrael
 
-WSClient = azrael.wsclient.WSClient
-Client = azrael.client.Client
-
 
 class TestClerk:
     @classmethod
     def setup_class(cls):
+        # Kill all lingering Azrael processes.
         killAzrael()
+
+        # Start a Clerk and Clacks instance.
         cls.clerk = azrael.clerk.Clerk()
+        cls.clacks = azrael.clacks.ClacksServer()
+        cls.clerk.start()
+        cls.clacks.start()
 
-        clerk = azrael.clerk.Clerk()
-        clerk.start()
+        # Dibbler.
+        cls.dibbler = azrael.dibbler.Dibbler()
 
-        clacks = azrael.clacks.ClacksServer()
-        clacks.start()
-
+        # Create a ZMQ- and Websocket client.
         client_zmq = azrael.client.Client()
         client_ws = azrael.wsclient.WSClient(
             ip=config.addr_clacks, port=config.port_clacks, timeout=1)
         assert client_ws.ping()
         cls.clients = {'ZeroMQ': client_zmq, 'Websocket': client_ws}
-        cls.clerk = clerk
-        cls.clacks = clacks
 
     @classmethod
     def teardown_class(cls):
+        # Terminate the processes.
         cls.clerk.terminate()
         cls.clacks.terminate()
 
-        cls.clerk.join()
-        cls.clacks.join()
+        cls.clerk.join(5)
+        cls.clacks.join(5)
         del cls.clients, cls.clerk, cls.clacks
 
+        # Kill all lingering Azrael processes.
+        killAzrael()
+
     def setup_method(self, method):
+        # Reset the database.
         azrael.database.init()
 
-        # fixme: integrate with database.init?
-        dibbler = azrael.dibbler.Dibbler()
-        dibbler.reset()
+        # Flush the model database.
+        self.dibbler.reset()
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
@@ -104,10 +100,9 @@ class TestClerk:
         clerk.addTemplates([t1, t2, t3])
 
     def teardown_method(self, method):
-        # fixme: integrate with database.init?
-        dibbler = azrael.dibbler.Dibbler()
-        dibbler.reset()
+        # Clean up.
         azrael.database.init()
+        self.dibbler.reset()
 
     def test_ping(self):
         """
