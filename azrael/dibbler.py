@@ -347,7 +347,7 @@ class Dibbler:
         return self.saveModel(model_dir, frags, update=True)
 
     @typecheck
-    def removeTemplate(self, name: str):
+    def deleteTemplate(self, name: str):
         """
         fixme: docu
         """
@@ -359,7 +359,7 @@ class Dibbler:
         return RetVal(True, None, cnt)
 
     @typecheck
-    def removeInstance(self, objID: str):
+    def deleteInstance(self, objID: str):
         """
         fixme: docu
         """

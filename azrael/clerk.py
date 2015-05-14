@@ -875,7 +875,7 @@ class Clerk(multiprocessing.Process):
         ret = physAPI.addCmdRemoveObject(objID)
         database.dbHandles['ObjInstances'].remove({'objID': objID}, mult=True)
         if ret.ok:
-            self.dibbler.removeInstance(str(objID))
+            self.dibbler.deleteInstance(str(objID))
             return RetVal(True, None, None)
         else:
             return RetVal(False, ret.msg, None)

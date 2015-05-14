@@ -180,7 +180,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         with pytest.raises(AssertionError):
             self.verifyTemplate('/instances/{}'.format(1), frags_old)
 
-    def test_removeInstance(self):
+    def test_deleteInstance(self):
         """
         Add/remove an instance from Dibbler via Clerk and verify via Clacks.
         """
