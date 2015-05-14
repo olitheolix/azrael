@@ -115,6 +115,10 @@ class TestClerk:
         azrael.database.init()
         self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
+        # fixme: integrate with database.init?
+        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler.reset()
+
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
         clerk = azrael.clerk.Clerk()
@@ -123,10 +127,6 @@ class TestClerk:
         t2 = Template('_templateSphere', [3, 1, 1, 1], frag, [], [])
         t3 = Template('_templateCube', [4, 1, 1, 1], frag, [], [])
         clerk.addTemplates([t1, t2, t3])
-
-        # fixme: integrate with database.init?
-        dibbler = azrael.dibbler.DibblerAPI()
-        dibbler.reset()
 
     def teardown_method(self, method):
         # fixme: integrate with database.init?
@@ -144,7 +144,7 @@ class TestClerk:
         assert client.ping() == (True, None, 'pong clerk')
 
     @pytest.mark.parametrize('client_type', ['ZeroMQ', 'Websocket'])
-    def test_spawn_and_delete_one_client(self, client_type):
+    def test_spawn_and_delete_one_object(self, client_type):
         """
         Ask Clerk to spawn one object.
         """
