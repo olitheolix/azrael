@@ -800,7 +800,7 @@ class Clerk(multiprocessing.Process):
                 doc['templateID'] = name
 
                 # Copy the template files to the instance collection.
-                ret = self.dibbler.spawnTemplate({'name': name, 'objID': str(objID)})
+                ret = self.dibbler.spawnTemplate(name, str(objID))
                 if not ret.ok:
                     # Skip this 'spawn' command because Dibbler and Clerk are
                     # out of sync; Clerk has found the template but Dibbler

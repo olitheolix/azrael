@@ -151,9 +151,9 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 2 + 4)
 
         # Spawn some instances.
-        ret_1 = dibbler.spawnTemplate({'name': t_raw.name, 'objID': '1'})
-        ret_2 = dibbler.spawnTemplate({'name': t_raw.name, 'objID': '2'})
-        ret_3 = dibbler.spawnTemplate({'name': t_dae.name, 'objID': '3'})
+        ret_1 = dibbler.spawnTemplate(t_raw.name, '1')
+        ret_2 = dibbler.spawnTemplate(t_raw.name, '2')
+        ret_3 = dibbler.spawnTemplate(t_dae.name, '3')
         assert ret_1.ok and ret_2.ok and ret_3.ok
 
         # Dibbler must now hold the original 6 files plus an additional 8 files
@@ -168,7 +168,7 @@ class TestDibbler:
 
         # Attempt to spawn a non-existing template. This must fail and the
         # number of files in Dibbler must not change.
-        assert not dibbler.spawnTemplate({'name': 'blah', 'objID': '10'}).ok
+        assert not dibbler.spawnTemplate('blah', '10').ok
         assert dibbler.getNumFiles() == (True, None, (2 + 4) + (2 * 2 + 4))
 
     def test_updateTemplate(self):
@@ -183,8 +183,8 @@ class TestDibbler:
 
         # Add the template and spawn two instances.
         assert dibbler.addTemplate(t1).ok
-        ret_11 = dibbler.spawnTemplate({'name': t1.name, 'objID': '11'})
-        ret_2 = dibbler.spawnTemplate({'name': t1.name, 'objID': '2'})
+        ret_11 = dibbler.spawnTemplate(t1.name, '11')
+        ret_2 = dibbler.spawnTemplate(t1.name, '2')
         assert ret_11.ok and ret_2.ok
 
         self.verifyRaw(ret_11.data['url'], frag_orig)
@@ -307,9 +307,9 @@ class TestDibbler:
         self.verifyDae(ret.data['url'], frag_dae[0])
 
         # Spawn some instances.
-        assert dibbler.spawnTemplate({'name': 'temp_raw', 'objID': '1'}).ok
-        assert dibbler.spawnTemplate({'name': 'temp_dae', 'objID': '2'}).ok
-        assert dibbler.spawnTemplate({'name': 'temp_raw', 'objID': '3'}).ok
+        assert dibbler.spawnTemplate('temp_raw', '1').ok
+        assert dibbler.spawnTemplate('temp_dae', '2').ok
+        assert dibbler.spawnTemplate('temp_raw', '3').ok
         self.verifyRaw('/instances/1', frag_raw[0])
         self.verifyDae('/instances/2', frag_dae[0])
         self.verifyRaw('/instances/3', frag_raw[0])

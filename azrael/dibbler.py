@@ -287,13 +287,11 @@ class Dibbler:
         else:
             return RetVal(True, None, ret.read())
     
-    def spawnTemplate(self, data: dict):
+    def spawnTemplate(self, name: str, objID: str):
         try:
-            assert isinstance(data, dict)
-            name, objID = data['name'], data['objID']
-            assert isinstance(objID, str)
+            # objID, albeit a string, must be a valid integer.
             int(objID)
-        except (AssertionError, TypeError, ValueError, KeyError):
+        except (TypeError, ValueError):
             msg = 'Invalid parameters in spawn command'
             return RetVal(False, msg, None)
 
