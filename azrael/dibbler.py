@@ -537,6 +537,30 @@ class DibblerAPI:
         # Overwrite the model for instance with ``objID``.
         return self.saveModel(model_dir, frags, update=True)
 
+    @typecheck
+    def removeTemplate(self, name: str):
+        """
+        fixme: docu
+        """
+        query = {'filename': {'$regex': '^/templates/{}/.*'.format(name)}}
+        cnt = 0
+        for f in self.fs.find(query):
+            self.fs.delete(f._id)
+            cnt += 1
+        return RetVal(True, None, cnt)
+
+    @typecheck
+    def removeInstance(self, objID: str):
+        """
+        fixme: docu
+        """
+        query = {'filename': {'$regex': '^/instances/{}/.*'.format(objID)}}
+        cnt = 0
+        for f in self.fs.find(query):
+            self.fs.delete(f._id)
+            cnt += 1
+        return RetVal(True, None, cnt)
+
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """

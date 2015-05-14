@@ -349,14 +349,139 @@ class TestDibblerAPI:
         self.verifyRaw(ret_11.data['url'], frag_new)
         self.verifyRaw(ret_2.data['url'], frag_orig)
 
-    def test_removeTemplate(self):
+    def test_deleteTemplate(self):
         """
         Add and remove a template.
         """
-        assert False
+        dibbler = self.dibbler
 
-    def test_removeInstance(self):
+        # Define two templates.
+        frag_raw = [MetaFragment('frag_raw', 'raw', createFragRaw())]
+        frag_dae = [MetaFragment('frag_dae', 'dae', createFragDae())]
+        t11 = Template('name11', [0, 1, 1, 1], frag_raw, [], [])
+        t1 = Template('name1', [0, 1, 1, 1], frag_dae, [], [])
+
+        # Verify that Dibbler is pristine.
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Add- and verify the Raw template.
+        ret = dibbler.addTemplate(t11)
+        assert dibbler.getNumFiles() == (True, None, 2)
+        self.verifyRaw(ret.data['url'], frag_raw[0])
+
+        # Remove the Raw template and ensure it does not exist anymore.
+        assert dibbler.removeTemplate('name11').ok
+        assert dibbler.getNumFiles() == (True, None, 0)
+        with pytest.raises(AssertionError):
+            self.verifyRaw(ret.data['url'], frag_raw[0])
+
+        # Attempt to remove the Raw template once more. Dibbler must not delte
+        # any files, albeit the call itself must succeed.
+        assert dibbler.removeTemplate('blah').ok
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Add- and verify the Raw- and Collada templates.
+        del ret
+        ret_raw = dibbler.addTemplate(t11)
+        ret_dae = dibbler.addTemplate(t1)
+        assert dibbler.getNumFiles() == (True, None, 6)
+        self.verifyRaw(ret_raw.data['url'], frag_raw[0])
+        self.verifyDae(ret_dae.data['url'], frag_dae[0])
+
+        # Remove the Collada template whose name is a substring of the first.
+        assert dibbler.removeTemplate('name1') == (True, None, 4)
+        assert dibbler.getNumFiles() == (True, None, 2)
+        self.verifyRaw(ret_raw.data['url'], frag_raw[0])
+        with pytest.raises(AssertionError):
+            self.verifyRaw(ret_dae.data['url'], frag_dae[0])
+
+        # Remove the Collada template again. No files must be deleted this time.
+        assert dibbler.removeTemplate('name1') == (True, None, 0)
+        assert dibbler.getNumFiles() == (True, None, 2)
+
+        # Attempt to remove a non-existing template. The call must succeed but
+        # Dibbler must not delete any files.
+        assert dibbler.removeTemplate('blah') == (True, None, 0)
+        assert dibbler.getNumFiles() == (True, None, 2)
+
+        # Delete the one remaining template (Raw template) and verify that
+        # Dibbler does not hold any files anymore whatsoever afterwards.
+        assert dibbler.removeTemplate('name11') == (True, None, 2)
+        assert dibbler.getNumFiles() == (True, None, 0)
+        with pytest.raises(AssertionError):
+            self.verifyRaw(ret_raw.data['url'], frag_raw[0])
+        with pytest.raises(AssertionError):
+            self.verifyRaw(ret_dae.data['url'], frag_dae[0])
+
+    def test_deleteInstance(self):
         """
         Add and remove an instance.
         """
-        assert False
+        dibbler = self.dibbler
+
+        # Define two templates.
+        frag_raw = [MetaFragment('frag_raw', 'raw', createFragRaw())]
+        frag_dae = [MetaFragment('frag_dae', 'dae', createFragDae())]
+        t_raw = Template('temp_raw', [0, 1, 1, 1], frag_raw, [], [])
+        t_dae = Template('temp_dae', [0, 1, 1, 1], frag_dae, [], [])
+
+        # Verify that Dibbler is empty.
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Add- and verify a Raw- and Collada template.
+        ret = dibbler.addTemplate(t_raw)
+        assert dibbler.getNumFiles() == (True, None, 2)
+        self.verifyRaw(ret.data['url'], frag_raw[0])
+        ret = dibbler.addTemplate(t_dae)
+        assert dibbler.getNumFiles() == (True, None, 2 + 4)
+        self.verifyDae(ret.data['url'], frag_dae[0])
+
+        # Spawn some instances.
+        assert dibbler.spawnTemplate({'name': 'temp_raw', 'objID': '1'}).ok
+        assert dibbler.spawnTemplate({'name': 'temp_dae', 'objID': '2'}).ok
+        assert dibbler.spawnTemplate({'name': 'temp_raw', 'objID': '3'}).ok
+        self.verifyRaw('/instances/1', frag_raw[0])
+        self.verifyDae('/instances/2', frag_dae[0])
+        self.verifyRaw('/instances/3', frag_raw[0])
+        base_cnt = (2 + 4) + 2 * 2 + 4
+        assert dibbler.getNumFiles() == (True, None, base_cnt)
+
+        # Remove a non-existing object. This must succeed but Dibbler must not
+        # have removed any files.
+        assert dibbler.removeInstance('10') == (True, None, 0)
+        assert dibbler.getNumFiles() == (True, None, base_cnt)
+
+        # Remove the first Raw object. This must remove two files and leave the
+        # other two instances intact.
+        assert dibbler.removeInstance('1') == (True, None, 2)
+        base_cnt -= 2
+        assert dibbler.getNumFiles() == (True, None, base_cnt)
+        with pytest.raises(AssertionError):
+            self.verifyRaw('/instances/1', frag_raw[0])
+        self.verifyDae('/instances/2', frag_dae[0])
+        self.verifyRaw('/instances/3', frag_raw[0])
+
+        # Remove the same instance again. This must succeed but Dibbler must
+        # not remove any files.
+        assert dibbler.removeInstance('1') == (True, None, 0)
+
+        # Remove the collada instance. This must delete four files.
+        assert dibbler.removeInstance('2') == (True, None, 4)
+        base_cnt -= 4
+        assert dibbler.getNumFiles() == (True, None, base_cnt)
+        with pytest.raises(AssertionError):
+            self.verifyRaw('/instances/1', frag_raw[0])
+        with pytest.raises(AssertionError):
+            self.verifyDae('/instances/2', frag_dae[0])
+        self.verifyRaw('/instances/3', frag_raw[0])
+
+        # Remove the second Raw instance.
+        assert dibbler.removeInstance('3') == (True, None, 2)
+        base_cnt -= 2
+        assert dibbler.getNumFiles() == (True, None, base_cnt)
+        with pytest.raises(AssertionError):
+            self.verifyRaw('/instances/1', frag_raw[0])
+        with pytest.raises(AssertionError):
+            self.verifyDae('/instances/2', frag_dae[0])
+        with pytest.raises(AssertionError):
+            self.verifyRaw('/instances/3', frag_raw[0])
