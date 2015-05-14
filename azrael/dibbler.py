@@ -54,23 +54,11 @@ yet require this level of sophistication.
 fixme: update module doc string once it is clearer how everything fits.
 """
 import os
-import time
 import json
 import gridfs
-import shutil
-import base64
-import pytest
-import pickle
-import binascii
-import subprocess
-import tornado.web
-import tornado.ioloop
-import tornado.testing
-import multiprocessing
-import urllib.request
-import azrael.config as config
 
 import numpy as np
+import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, Template, RetVal
@@ -106,8 +94,8 @@ class Dibbler:
     """
     def __init__(self):
         # Connect to GridFS.
-        self.db = config.getMongoClient()['AzraelGridDB']
-        self.fs = gridfs.GridFS(self.db)
+        db = config.getMongoClient()['AzraelGridDB']
+        self.fs = gridfs.GridFS(db)
 
     def reset(self):
         """
