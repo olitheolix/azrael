@@ -178,10 +178,12 @@ class TestDibblerAPI:
     def setup_method(self, method):
         self.dibbler = azrael.dibbler.DibblerAPI()
         self.dibbler.reset()
+        assert self.dibbler.getNumFiles() == (True, None, 0)
         
     def teardown_method(self, method):
         self.dibbler.reset()
-        
+        assert self.dibbler.getNumFiles() == (True, None, 0)
+
     def verifyDae(self, url, ref):
         name = ref.name
         ref = ref.data
