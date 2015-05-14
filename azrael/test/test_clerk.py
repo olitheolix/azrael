@@ -133,6 +133,28 @@ class TestClerk:
         # Invalid: one template does not exist.
         assert not clerk.spawn([(name_2, sv_2), (b'blah', sv_3)]).ok
 
+    def test_spawn_DibblerClerkSyncProblem(self):
+        """
+        Try to spawn a template that Clerk finds in its template database but
+        that is not in Dibbler.
+        """
+        # Instantiate a Clerk.
+        clerk = azrael.clerk.Clerk()
+
+        # Mock the Dibbler instance.
+        mock_dibbler = mock.create_autospec(azrael.dibbler.DibblerAPI)
+        clerk.dibbler = mock_dibbler
+        mock_dibbler.spawnTemplate.return_value = RetVal(False, 'test error', None)
+
+        # Attempt to spawn a valid template. The template exists in the
+        # template database (the setup method for this test did it), but
+        # because Dibbler cannot find the model data Clerk will skip it. The
+        # net effect is that the spawn command must succeed but not spawn any
+        # objects.
+        sv_1 = bullet_data.MotionState(imass=1)
+        ret = clerk.spawn([('_templateNone', sv_1)])
+        assert ret == (True, None, tuple())
+
     def test_delete(self):
         """
         Test the 'removeObject' command in the Clerk.

@@ -800,8 +800,14 @@ class Clerk(multiprocessing.Process):
                 # Copy the template files to the instance collection.
                 ret = self.dibbler.spawnTemplate({'name': name, 'objID': str(objID)})
                 if not ret.ok:
-                    # Skip this spawn command if an error occurred (typically
-                    # because a template does not exist).
+                    # Skip this 'spawn' command because Dibbler and Clerk are
+                    # out of sync; Clerk has found the template but Dibbler
+                    # has not --> should not happen!
+                    msg = 'Dibbler and Clerk are out of sync for template {}.'
+                    msg = msg.format(name)
+                    msg += ' Dibbler returned with this error: <{}>'
+                    msg = msg.format(ret.msg)
+                    self.logit.warning(msg)
                     continue
                 else:
                     # URL where the instance data is available.
@@ -821,6 +827,10 @@ class Clerk(multiprocessing.Process):
                 # Add the new template document.
                 dbDocs.append(doc)
                 del idx, name, objID, doc
+
+            # Return if no objects were spawned (eg the templates did not exist).
+            if len(dbDocs) == 0:
+                return RetVal(True, None, tuple())
 
             # Insert all objects into the State Variable DB. Note: this does
             # not make Leonard aware of their existence (see next step).
