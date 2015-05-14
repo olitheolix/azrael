@@ -103,16 +103,9 @@ port_clerk = 5555
 
 addr_leonard_repreq = 'tcp://' + host_ip + ':5556'
 
-# Data directory where the template- geometries, textures, and UV map will be
-# stored.
-dir_data = os.path.dirname(os.path.abspath(__file__))
-dir_data = os.path.join(dir_data, 'data')
-dir_template = os.path.join(dir_data, 'templates')
-dir_instance = os.path.join(dir_data, 'instances')
-
+# Clacks URLs for the model- templates and instances.
 url_template = '/templates'
 url_instance = '/instances'
-url_dibbler = '/dibbler'
 
 
 def getMongoClient():

@@ -50,15 +50,6 @@ def init():
     """
     # Delete the database.
     client.drop_database(dbName)
-    logit.info('Deleting data directory <{}>'.format(config.dir_data))
-
-    # fixme: delete the rest of this if-block once Dibbler works.
-    try:
-        shutil.rmtree(config.dir_data)
-    except FileNotFoundError:
-        pass
-    os.makedirs(config.dir_template, exist_ok=True)
-    os.makedirs(config.dir_instance, exist_ok=True)
 
 
 @typecheck
