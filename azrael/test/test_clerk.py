@@ -355,16 +355,12 @@ class TestClerk:
         # always succeeds.
         mock_dibbler = mock.create_autospec(azrael.dibbler.DibblerAPI)
         clerk.dibbler = mock_dibbler
-        mock_dibbler.return_value = RetVal(True, None, {'aabb': 1.0})
 
         # The mock must not have been called so far.
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Convenience.
         cs = [1, 2, 3, 4]
-
-        # Reset the call_count of the mock.
-        mock_dibbler.addTemplate.call_count = 0
 
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
@@ -448,7 +444,7 @@ class TestClerk:
         # always succeeds.
         mock_dibbler = mock.create_autospec(azrael.dibbler.DibblerAPI)
         clerk.dibbler = mock_dibbler
-        mock_dibbler.return_value = RetVal(True, None, {'aabb': 1.0})
+        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1.0})
 
         # The mock must not have been called so far.
         assert mock_dibbler.addTemplate.call_count == 0
