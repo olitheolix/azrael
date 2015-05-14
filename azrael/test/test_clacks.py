@@ -25,19 +25,43 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
                     (config.url_instances + '/(.*)', FH)]
         return tornado.web.Application(handlers)
 
-    def downloadFragRaw(self, url):
-        # fixme: docu
-        ret = self.fetch(url, method='GET')
+    def downloadFragRaw(self, url: str):
+        """
+        Download and unpack the Raw model from ``url`` and return it as a
+        ``FragRaw`` instance.
+
+        Example: downloadFragRaw('/instances/3/raw1/')
+
+        :param str url: download URL
+        :return: Raw model
+        :rtype: FragRaw
+        :raises: AssertionError if there was a problem.
+        """
+        ret = self.fetch(url + 'model.json', method='GET')
         try:
             ret = json.loads(ret.body.decode('utf8'))
         except ValueError:
             assert False
         return FragRaw(**(ret))
 
-    def downloadFragDae(self, url, dae, textures):
-        # fixme: docu
+    def downloadFragDae(self, url: str, dae: str, textures: list):
+        """
+        Download and unpack the Collada model from ``url`` and return it as a
+        ``FragDae`` instance.
+
+        Example: downloadFragDae('/instances/1/name1/')
+
+        :param str url: download URL
+        :param str dae: name of Collada model.
+        :param list textures: list of strings denoting the texture files.
+        :return: Dae model
+        :rtype: FragDae
+        :raises: AssertionError if there was a problem.
+        """
+        # Download the Collada file itself.
         dae = self.fetch(url + dae, method='GET').body
 
+        # Download all the textures.
         rgb = {}
         for texture in textures:
             tmp = self.fetch(url + texture, method='GET').body
@@ -45,6 +69,18 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         return FragDae(dae=dae, rgb=rgb)
 
     def verifyTemplate(self, url, template):
+        """
+        Raise an error if ``template`` is not available at ``url``.
+
+        This method will automatically adapt to the model type and verify
+        associated texture (if any) as well.
+
+        :param str url: base location of template
+        :param Template template: the template (can contain multiple
+                                  fragments).
+        :raises: AssertionError if not all fragments in ``template`` match
+                 those available at ``url``.
+        """
         # Fetch- and decode the meta file.
         ret = self.fetch(url + '/meta.json', method='GET')
         try:
@@ -59,7 +95,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         # Download- and verify each template.
         for tt in template:
             if tt.type == 'raw':
-                tmp_url = url + '/{}/model.json'.format(tt.name)
+                tmp_url = url + '/{name}/'.format(name=tt.name)
                 assert self.downloadFragRaw(tmp_url) == tt.data
             elif tt.type == 'dae':
                 tmp_url = url + '/{name}/'.format(name=tt.name)
