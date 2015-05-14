@@ -166,7 +166,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
 
-        # Verify the that the instance has the old fragments, not the new ones.
+        # Verify that the instance has the old fragments, not the new ones.
         self.verifyTemplate('/instances/{}'.format(1), frags_old)
         with pytest.raises(AssertionError):
             self.verifyTemplate('/instances/{}'.format(1), frags_new)
@@ -180,17 +180,34 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         with pytest.raises(AssertionError):
             self.verifyTemplate('/instances/{}'.format(1), frags_old)
 
-    def test_removeTemplate(self):
-        """
-        Add and remove a template from Dibbler via Clacks.
-        """
-        assert False
-
     def test_removeInstance(self):
         """
-        Add and remove an instance from Dibbler via Clacks.
+        Add/remove an instance from Dibbler via Clerk and verify via Clacks.
         """
-        assert False
+        self.dibbler.reset()
+        azrael.database.init()
+        clerk = azrael.clerk.Clerk()
+
+        # Create two Templates with one Raw fragment each.
+        frags = [MetaFragment('name1', 'raw', createFragRaw())]
+        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+
+        # Add-, spawn-, and verify the template.
+        assert clerk.addTemplates([t1]).ok
+        self.verifyTemplate('/templates/t1', t1.fragments)
+        sv_1 = bullet_data.MotionState(imass=1)
+        ret = clerk.spawn([('t1', sv_1)])
+        assert ret.data == (1, )
+
+        # Verify that the instance exists.
+        self.verifyTemplate('/instances/{}'.format(1), frags)
+
+        # Delete the instance and verify it is now gone.
+        cnt = self.dibbler.getNumFiles().data
+        assert clerk.removeObject(objID=1) == (True, None, None)
+        self.dibbler.getNumFiles().data == cnt - 2
+        with pytest.raises(AssertionError):
+            self.verifyTemplate('/instances/{}'.format(1), frags)
 
 
 def test_ping_clacks():
