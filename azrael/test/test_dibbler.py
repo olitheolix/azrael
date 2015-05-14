@@ -216,13 +216,13 @@ class TestDibblerAPI:
         """
         Add a raw template and fetch the individual files again afterwards.
         """
-        frag = [MetaFragment('NoNameRaw', 'raw', createFragRaw())]
-        t_raw = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
-
         # Create a Dibbler instance and flush all data.
         dibbler = self.dibbler
-        dibbler.reset()
         assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Define a template for this test.
+        frag = [MetaFragment('NoNameRaw', 'raw', createFragRaw())]
+        t_raw = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
 
         # Add the first template and verify that the database now contains
         # exactly two files (a meta file, and the actual fragment data).
@@ -232,21 +232,17 @@ class TestDibblerAPI:
         # Fetch- and verify the model.
         self.verifyRaw(ret.data['url'], frag[0])
 
-        # Reset Dibbler and verify that the number of files is now zero again.
-        dibbler.reset()
-        assert dibbler.getNumFiles() == (True, None, 0)
-
     def test_addDaeTemplate(self):
         """
         Add a Collada template and fetch the individual files again afterwards.
         """
         dibbler = self.dibbler
 
+        # Define a template for this test.
         frag = [MetaFragment('NoNameDae', 'dae', createFragDae())]
         t_dae = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
-        dibbler.reset()
         assert dibbler.getNumFiles() == (True, None, 0)
 
         # Add the first template and verify that the database now contains
@@ -257,19 +253,13 @@ class TestDibblerAPI:
         # Fetch- and verify the model.
         self.verifyDae(ret.data['url'], frag[0])
 
-        # Reset Dibbler and verify that the number of files is now zero again.
-        dibbler.reset()
-        assert dibbler.getNumFiles() == (True, None, 0)
-
     def test_invalid(self):
         """
         Query a non-existing file.
         """
-        self.dibbler.reset()
         ret = self.dibbler.getFile('/blah/')
         assert not ret.ok
         assert ret.data is None
-        print('check')
 
     def test_spawnTemplate(self):
         """
@@ -278,24 +268,38 @@ class TestDibblerAPI:
         """
         dibbler = self.dibbler
 
+        # Define two templates.
         frag_raw = MetaFragment('fragname_raw', 'raw', createFragRaw())
         frag_dae = MetaFragment('fragname_dae', 'dae', createFragDae())
-        t1 = Template('t_name_raw', [0, 1, 1, 1], [frag_raw], [], [])
-        t2 = Template('t_name_dae', [0, 1, 1, 1], [frag_dae], [], [])
+        t_raw = Template('t_name_raw', [0, 1, 1, 1], [frag_raw], [], [])
+        t_dae = Template('t_name_dae', [0, 1, 1, 1], [frag_dae], [], [])
 
-        dibbler.addTemplate(t1)
-        dibbler.addTemplate(t2)
+        # Add the templates and verify there are 6 files in the DB now (2 for
+        # the Raw fragment, and 4 for the Collada fragment).
+        dibbler.addTemplate(t_raw)
+        dibbler.addTemplate(t_dae)
         assert dibbler.getNumFiles() == (True, None, 2 + 4)
 
-        ret_1 = dibbler.spawnTemplate({'name': t1.name, 'objID': '1'})
-        ret_2 = dibbler.spawnTemplate({'name': t1.name, 'objID': '2'})
-        ret_3 = dibbler.spawnTemplate({'name': t2.name, 'objID': '3'})
+        # Spawn some instances.
+        ret_1 = dibbler.spawnTemplate({'name': t_raw.name, 'objID': '1'})
+        ret_2 = dibbler.spawnTemplate({'name': t_raw.name, 'objID': '2'})
+        ret_3 = dibbler.spawnTemplate({'name': t_dae.name, 'objID': '3'})
         assert ret_1.ok and ret_2.ok and ret_3.ok
+
+        # Dibbler must now hold the original 6 files plus an additional 8 files
+        # (2x2 for the two Raw instances, and another 4 for the one Collada
+        # instance).
+        assert dibbler.getNumFiles() == (True, None, (2 + 4) + (2 * 2 + 4))
 
         # Verify that all files are correct.
         self.verifyRaw(ret_1.data['url'], frag_raw)
         self.verifyRaw(ret_2.data['url'], frag_raw)
         self.verifyDae(ret_3.data['url'], frag_dae)
+
+        # Attempt to spawn a non-existing template. This must fail and the
+        # number of files in Dibbler must not change.
+        assert not dibbler.spawnTemplate({'name': 'blah', 'objID': '10'}).ok
+        assert dibbler.getNumFiles() == (True, None, (2 + 4) + (2 * 2 + 4))
 
     def test_updateTemplate(self):
         """
