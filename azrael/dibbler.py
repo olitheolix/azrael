@@ -16,42 +16,26 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Dibbler is a Web interface to the model library.
+Dibbler stored and provides all model files.
 
-It provides the following features:
- * get/set the fragments for a template
- * get/set the fragments for an object instance
- * update one- or more fragments of an object instance
- * delete one- or more  object instances
- * delete all instances and/or templates
+Dibbler itself is a stateless service to store and retrieve model files. For
+that purpose it provides dedicated methods to store- and sanity check the
+various model types supported in Azrael. Furthermore, it provides a simple
+`getFile` method to fetch the latest version of any file, if it exists.
 
-Dibbler is only accessible via HTTP POST requests. The urls are:
- * http://somewhere.com:port/template
- * http://somewhere.com:port/instance
- * http://somewhere.com:port/reset
+Internally, Dibbler uses Mongo's GridFS to actually store the files.
 
-The message body is a JSON string that specifies the action and data.
-For instance, sending {'type': 'instances'} to '.../reset' will delete
-all instance data.
+By design, Dibbler will be useful to Clerk instances to add/remove models, and
+Clacks to serve them up via HTTP. Its stateless design makes it possible to
+create as many instances as necessary.
 
-Dibbler does not face the user. Instead, it receives all requests from
-``Clerk`` instances which ensure the request is sane. The only exception
-from this rule are read-only requests, most notably to query the
-geometry for a specific object instance. This is almost certainly the
-most common request, and since it has no side effects it is more
-efficient to give users direct access instead of routing it to a
-``Clerk`` every time.
-
-This policy is not yet enforced since it is not crucial to Azrael right
-now.  However, my goal is to enforce it once multi-machine (or
-multi-container) deployments are a reality.
-
-As an even longer term goal it should be possible to run several ``Dibbler``
-instances behind a user facing Nginx server, but that will require changes to
-how models are stored to avoid race conditions. Again, Azrael does not
-yet require this level of sophistication.
-
-fixme: update module doc string once it is clearer how everything fits.
+.. note:: Dibbler sanity checks models but has hardly any safe guards for
+          overwriting existing files or concurrent access, other than those
+          provided by GridFS itself. This is deliberate, partially because
+          GridFS makes this considerably harder than plain MongoDB, and mostly
+          because the Clerks already take care of it with the meta data they
+          store in MongoDB. After all, Dibbler is merely the storage engine for
+          large files.
 """
 import os
 import json
