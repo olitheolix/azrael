@@ -123,7 +123,8 @@ class Dibbler:
         """
         return RetVal(True, None, self.fs.find().count())
 
-    def saveModelDae(self, frag_dir, model):
+    @typecheck
+    def saveModelDae(self, frag_dir: str, model: MetaFragment):
         """
         Save the Collada ``model`` to ``frag_dir``.
 
@@ -152,7 +153,8 @@ class Dibbler:
 
         return RetVal(True, None, 1.0)
 
-    def saveModelRaw(self, frag_dir, model):
+    @typecheck
+    def saveModelRaw(self, frag_dir: str, model: MetaFragment):
         """
         Save the raw ``model`` to ``frag_dir``.
 
@@ -199,15 +201,15 @@ class Dibbler:
         return RetVal(True, None, aabb)
 
     @typecheck
-    def saveModel(self, model_dir, fragments, update=False):
+    def saveModel(self, model_dir: str, fragments: (tuple, list),
+                  update: bool=False):
         """
         Save the ``model`` to ``dirname`` and return the success.
 
         This function is merely a wrapper around dedicated methods to save
         individual file formats like Collada (dae) or Raw (for testing) files.
 
-        :param str dirname: the destination directory.
-        :param model: Container for the respective file format.
+        fixme: parameters
         :return: success.
         """
         if update:
@@ -256,13 +258,16 @@ class Dibbler:
             return RetVal(False, msg, None)
         return RetVal(True, None, aabb)
 
+    @typecheck
     def getTemplateDir(self, name: str):
         return os.path.join('/', 'templates', name)
 
+    @typecheck
     def getInstanceDir(self, objID: str):
         return os.path.join('/', 'instances', objID)
 
-    def addTemplate(self, tt):
+    @typecheck
+    def addTemplate(self, tt: Template):
         model_dir = self.getTemplateDir(tt.name)
         model_url = os.path.join(config.url_template, tt.name)
 
@@ -273,7 +278,8 @@ class Dibbler:
         # Return message.
         return RetVal(True, None, {'aabb': ret.data, 'url': model_url})
 
-    def getFile(self, name):
+    @typecheck
+    def getFile(self, name: str):
         try:
             ret = self.fs.get_last_version(name)
         except gridfs.errors.NoFile as err:
@@ -287,6 +293,7 @@ class Dibbler:
         else:
             return RetVal(True, None, ret.read())
     
+    @typecheck
     def spawnTemplate(self, name: str, objID: str):
         try:
             # 'objID', albeit a string, must correspond a valid integer.
@@ -322,7 +329,8 @@ class Dibbler:
             url = config.url_instance + '/{}'.format(objID)
             return RetVal(True, None, {'url': url})
 
-    def updateFragments(self, objID: str, frags: list):
+    @typecheck
+    def updateFragments(self, objID: str, frags: (tuple, list)):
         try:
             for _ in frags:
                 assert isinstance(_, MetaFragment)
