@@ -943,7 +943,7 @@ class Clerk(multiprocessing.Process):
 
         # Update the fragments in Dibbler.
         for frag in fragments:
-            ret = self.dibbler.updateFragments({'objID': str(objID), 'frags': fragments})
+            ret = self.dibbler.updateFragments(str(objID), fragments)
             if not ret.ok:
                 return ret
 

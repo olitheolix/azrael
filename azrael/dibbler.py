@@ -289,7 +289,7 @@ class Dibbler:
     
     def spawnTemplate(self, name: str, objID: str):
         try:
-            # objID, albeit a string, must be a valid integer.
+            # 'objID', albeit a string, must correspond a valid integer.
             int(objID)
         except (TypeError, ValueError):
             msg = 'Invalid parameters in spawn command'
@@ -322,16 +322,13 @@ class Dibbler:
             url = config.url_instance + '/{}'.format(objID)
             return RetVal(True, None, {'url': url})
 
-    def updateFragments(self, data: dict):
+    def updateFragments(self, objID: str, frags: list):
         try:
-            assert isinstance(data, dict)
-            frags, objID = data['frags'], data['objID']
-            assert isinstance(objID, str)
-            assert isinstance(frags, list)
             for _ in frags:
                 assert isinstance(_, MetaFragment)
+            # 'objID', albeit a string, must correspond a valid integer.
             int(objID)
-        except (AssertionError, TypeError, ValueError, KeyError):
+        except (TypeError, ValueError):
             msg = 'Invalid parameters in updateFragments command'
             return RetVal(False, msg, None)
 

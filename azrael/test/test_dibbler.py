@@ -194,7 +194,7 @@ class TestDibbler:
         frag_new = MetaFragment('bar', 'raw', createFragRaw())
 
         # Attempt to change the fragment of a non-existing object.
-        ret = dibbler.updateFragments({'objID': '20', 'frags': [frag_new]})
+        ret = dibbler.updateFragments('20', [frag_new])
         assert not ret.ok
 
         # Attempt to change the fragment of another non-existing object, but
@@ -204,7 +204,7 @@ class TestDibbler:
         # of the latter. The update method must therefore take care to properly
         # test for existence, especially since directories, internally, do not
         # have a trailing '/'.
-        ret = dibbler.updateFragments({'objID': '1', 'frags': [frag_new]})
+        ret = dibbler.updateFragments('1', [frag_new])
         assert not ret.ok
 
         # The old fragments must not have changed.
@@ -212,7 +212,7 @@ class TestDibbler:
         self.verifyRaw(ret_2.data['url'], frag_orig)
 
         # Change the fragment models for the first object.
-        ret = dibbler.updateFragments({'objID': '11', 'frags': [frag_new]})
+        ret = dibbler.updateFragments('11', [frag_new])
         assert ret.ok
 
         # Verify that the models are correct.
