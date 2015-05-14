@@ -797,11 +797,15 @@ class Clerk(multiprocessing.Process):
                 doc['lastChanged'] = 0
                 doc['templateID'] = name
 
+                # Copy the template files to the instance collection.
                 ret = self.dibbler.spawnTemplate({'name': name, 'objID': str(objID)})
                 if not ret.ok:
+                    # Skip this spawn command if an error occurred (typically
+                    # because a template does not exist).
                     continue
-
-                doc['url'] = ret.data['url']
+                else:
+                    # URL where the instance data is available.
+                    doc['url'] = ret.data['url']
 
                 # Parse the geometry data to determine all fragment names.
                 # Then compile a neutral initial state for each.
