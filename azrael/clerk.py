@@ -625,7 +625,7 @@ class Clerk(multiprocessing.Process):
 
                 # Compile the Mongo document for the new template.
                 data = {
-                    'url': config.url_template + '/' + tt.name,
+                    'url': config.url_templates + '/' + tt.name,
                     'name': tt.name,
                     'cshape': tt.cs,
                     'aabb': float(ret.data['aabb']),

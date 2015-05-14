@@ -260,16 +260,16 @@ class Dibbler:
 
     @typecheck
     def getTemplateDir(self, name: str):
-        return os.path.join('/', 'templates', name)
+        return os.path.join(config.url_templates, name)
 
     @typecheck
     def getInstanceDir(self, objID: str):
-        return os.path.join('/', 'instances', objID)
+        return os.path.join(config.url_instances, objID)
 
     @typecheck
     def addTemplate(self, tt: Template):
         model_dir = self.getTemplateDir(tt.name)
-        model_url = os.path.join(config.url_template, tt.name)
+        model_url = os.path.join(config.url_templates, tt.name)
 
         ret = self.saveModel(model_dir, tt.fragments)
         if not ret.ok:
@@ -326,7 +326,7 @@ class Dibbler:
             return RetVal(False, msg, None)
         else:
             # Found at least one template file to copy.
-            url = config.url_instance + '/{}'.format(objID)
+            url = config.url_instances + '/{}'.format(objID)
             return RetVal(True, None, {'url': url})
 
     @typecheck
@@ -351,7 +351,8 @@ class Dibbler:
         """
         fixme: docu
         """
-        query = {'filename': {'$regex': '^/templates/{}/.*'.format(name)}}
+        query = {'filename':
+                 {'$regex': '^{}/{}/.*'.format(config.url_templates, name)}}
         cnt = 0
         for f in self.fs.find(query):
             self.fs.delete(f._id)
@@ -363,7 +364,8 @@ class Dibbler:
         """
         fixme: docu
         """
-        query = {'filename': {'$regex': '^/instances/{}/.*'.format(objID)}}
+        query = {'filename':
+                 {'$regex': '^{}/{}/.*'.format(config.url_instances, objID)}}
         cnt = 0
         for f in self.fs.find(query):
             self.fs.delete(f._id)

@@ -240,8 +240,10 @@ class ClacksServer(multiprocessing.Process):
         )
 
         # Serve up template- and instance models.
-        handlers.append(('/templates/(.*)', MyGridFSHandler))
-        handlers.append(('/instances/(.*)', MyGridFSHandler))
+        handlers.append(
+            (config.url_templates + '/(.*)', MyGridFSHandler))
+        handlers.append(
+            (config.url_instances + '/(.*)', MyGridFSHandler))
 
         # Proxy handler to arbitrate between Websockets and Clacks.
         handlers.append(('/websocket', WebsocketHandler))

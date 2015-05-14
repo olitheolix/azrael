@@ -746,4 +746,5 @@ class TestClerk:
         # Verify it has the correct type ('dae') and address.
         ret = ret.data[objID]
         assert ret['f_dae']['type'] == 'dae'
-        assert ret['f_dae']['url'] == '/instances/' + str(objID) + '/f_dae'
+        assert ret['f_dae']['url'] == (
+            config.url_instances + '/' + str(objID) + '/f_dae')

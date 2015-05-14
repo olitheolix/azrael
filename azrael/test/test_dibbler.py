@@ -310,9 +310,9 @@ class TestDibbler:
         assert dibbler.spawnTemplate('temp_raw', '1').ok
         assert dibbler.spawnTemplate('temp_dae', '2').ok
         assert dibbler.spawnTemplate('temp_raw', '3').ok
-        self.verifyRaw('/instances/1', frag_raw[0])
-        self.verifyDae('/instances/2', frag_dae[0])
-        self.verifyRaw('/instances/3', frag_raw[0])
+        self.verifyRaw('{}/1'.format(config.url_instances), frag_raw[0])
+        self.verifyDae('{}/2'.format(config.url_instances), frag_dae[0])
+        self.verifyRaw('{}/3'.format(config.url_instances), frag_raw[0])
         base_cnt = (2 + 4) + 2 * 2 + 4
         assert dibbler.getNumFiles() == (True, None, base_cnt)
 
@@ -327,9 +327,9 @@ class TestDibbler:
         base_cnt -= 2
         assert dibbler.getNumFiles() == (True, None, base_cnt)
         with pytest.raises(AssertionError):
-            self.verifyRaw('/instances/1', frag_raw[0])
-        self.verifyDae('/instances/2', frag_dae[0])
-        self.verifyRaw('/instances/3', frag_raw[0])
+            self.verifyRaw('{}/1'.format(config.url_instances), frag_raw[0])
+        self.verifyDae('{}/2'.format(config.url_instances), frag_dae[0])
+        self.verifyRaw('{}/3'.format(config.url_instances), frag_raw[0])
 
         # Remove the same instance again. This must succeed but Dibbler must
         # not remove any files.
@@ -340,18 +340,18 @@ class TestDibbler:
         base_cnt -= 4
         assert dibbler.getNumFiles() == (True, None, base_cnt)
         with pytest.raises(AssertionError):
-            self.verifyRaw('/instances/1', frag_raw[0])
+            self.verifyRaw('{}/1'.format(config.url_instances), frag_raw[0])
         with pytest.raises(AssertionError):
-            self.verifyDae('/instances/2', frag_dae[0])
-        self.verifyRaw('/instances/3', frag_raw[0])
+            self.verifyDae('{}/2'.format(config.url_instances), frag_dae[0])
+        self.verifyRaw('{}/3'.format(config.url_instances), frag_raw[0])
 
         # Remove the second Raw instance.
         assert dibbler.deleteInstance('3') == (True, None, 2)
         base_cnt -= 2
         assert dibbler.getNumFiles() == (True, None, base_cnt)
         with pytest.raises(AssertionError):
-            self.verifyRaw('/instances/1', frag_raw[0])
+            self.verifyRaw('{}/1'.format(config.url_instances), frag_raw[0])
         with pytest.raises(AssertionError):
-            self.verifyDae('/instances/2', frag_dae[0])
+            self.verifyDae('{}/2'.format(config.url_instances), frag_dae[0])
         with pytest.raises(AssertionError):
-            self.verifyRaw('/instances/3', frag_raw[0])
+            self.verifyRaw('{}/3'.format(config.url_instances), frag_raw[0])

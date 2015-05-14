@@ -18,23 +18,19 @@
 """
 Test the Clerk module.
 """
-import os
-import sys
 import json
 import time
-import base64
-import pickle
 import pytest
 import urllib.request
 
 import numpy as np
 import unittest.mock as mock
 
-import azrael.util
 import azrael.clerk
 import azrael.client
 import azrael.dibbler
 import azrael.parts as parts
+import azrael.config as config
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
@@ -495,20 +491,21 @@ class TestClerk:
         # geometries are stored.
         ret = clerk.getTemplates([name_1])
         assert ret.ok
+        url_template = config.url_templates
         assert MetaFragment(*(ret.data[name_1]['fragments'][0])).type == 'raw'
-        assert ret.data[name_1]['url'] == '/templates/' + name_1
+        assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
 
         # Fetch the second template.
         ret = clerk.getTemplates([name_2])
         assert ret.ok
         assert MetaFragment(*(ret.data[name_2]['fragments'][0])).type == 'raw'
-        assert ret.data[name_2]['url'] == '/templates/' + name_2
+        assert ret.data[name_2]['url'] == config.url_templates + '/' + name_2
 
         # Fetch both templates at once.
         ret = clerk.getTemplates([name_1, name_2])
         assert ret.ok and (len(ret.data) == 2)
-        assert ret.data[name_1]['url'] == '/templates/' + name_1
-        assert ret.data[name_2]['url'] == '/templates/' + name_2
+        assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
+        assert ret.data[name_2]['url'] == '{}/'.format(url_template) + name_2
 
     def test_add_get_template_AABB(self):
         """
@@ -1114,10 +1111,11 @@ class TestClerk:
 
             # The object must have two fragments, an 'f_raw' with type 'raw'
             # and an 'f_dae' with type 'dae'.
+            _url_inst = config.url_instances + '/'
             assert _ret['f_raw']['type'] == 'raw'
-            assert _ret['f_raw']['url'] == '/instances/' + _objID + '/f_raw'
+            assert _ret['f_raw']['url'] == _url_inst + _objID + '/f_raw'
             assert _ret['f_dae']['type'] == 'dae'
-            assert _ret['f_dae']['url'] == '/instances/' + _objID + '/f_dae'
+            assert _ret['f_dae']['url'] == _url_inst + _objID + '/f_dae'
             return True
 
         # Query and verify the geometry of the first instance.

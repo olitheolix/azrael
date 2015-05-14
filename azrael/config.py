@@ -103,9 +103,11 @@ port_clerk = 5555
 
 addr_leonard_repreq = 'tcp://' + host_ip + ':5556'
 
-# Clacks URLs for the model- templates and instances.
-url_template = '/templates'
-url_instance = '/instances'
+# Clacks URLs for the model- templates and instances. These *must not* include
+# the trailing slash.
+url_templates = '/templates'
+url_instances = '/instances'
+assert not url_templates.endswith('/') and not url_templates.endswith('/')
 
 
 def getMongoClient():

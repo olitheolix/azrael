@@ -21,7 +21,8 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Handler to serve up models.
         FH = azrael.clacks.MyGridFSHandler
-        handlers = [('/templates/(.*)', FH), ('/instances/(.*)', FH)]
+        handlers = [(config.url_templates + '/(.*)', FH),
+                    (config.url_instances + '/(.*)', FH)]
         return tornado.web.Application(handlers)
 
     def downloadFragRaw(self, url):
@@ -94,12 +95,13 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         assert not clerk.addTemplates([t1]).ok
 
         # Verify the first template.
-        self.verifyTemplate('/templates/t1', t1.fragments)
+        url_template = config.url_templates
+        self.verifyTemplate('{}/t1'.format(url_template), t1.fragments)
 
         # Add the second template and verify both.
         assert clerk.addTemplates([t2]).ok
-        self.verifyTemplate('/templates/t1', t1.fragments)
-        self.verifyTemplate('/templates/t2', t2.fragments)
+        self.verifyTemplate('{}/t1'.format(url_template), t1.fragments)
+        self.verifyTemplate('{}/t2'.format(url_template), t2.fragments)
 
     def test_spawnTemplates(self):
         """
@@ -123,24 +125,25 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         # Add both templates and verify they are available.
         assert clerk.addTemplates([t1]).ok
         assert clerk.addTemplates([t2]).ok
-        self.verifyTemplate('/templates/t1', t1.fragments)
-        self.verifyTemplate('/templates/t2', t2.fragments)
+        self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
+        self.verifyTemplate('{}/t2'.format(config.url_templates), t2.fragments)
 
         # No object instance with ID=1 must exist yet.
+        url_inst = config.url_instances
         with pytest.raises(AssertionError):
-            self.verifyTemplate('/instances/{}'.format(1), t1.fragments)
+            self.verifyTemplate('{}/{}'.format(url_inst, 1), t1.fragments)
 
         # Spawn the first template (it will must get objID=1).
         sv_1 = bullet_data.MotionState(imass=1)
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
-        self.verifyTemplate('/instances/{}'.format(1), t1.fragments)
+        self.verifyTemplate('{}/{}'.format(url_inst, 1), t1.fragments)
 
         # Spawn two more templates and very the instance models.
         ret = clerk.spawn([('t2', sv_1), ('t1', sv_1)])
         assert ret.data == (2, 3)
-        self.verifyTemplate('/instances/{}'.format(2), t2.fragments)
-        self.verifyTemplate('/instances/{}'.format(3), t1.fragments)
+        self.verifyTemplate('{}/{}'.format(url_inst, 2), t2.fragments)
+        self.verifyTemplate('{}/{}'.format(url_inst, 3), t1.fragments)
 
     def test_updateFragments(self):
         """
@@ -161,24 +164,25 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
-        self.verifyTemplate('/templates/t1', t1.fragments)
+        self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
         sv_1 = bullet_data.MotionState(imass=1)
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
 
         # Verify that the instance has the old fragments, not the new ones.
-        self.verifyTemplate('/instances/{}'.format(1), frags_old)
+        url_inst = config.url_instances
+        self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_old)
         with pytest.raises(AssertionError):
-            self.verifyTemplate('/instances/{}'.format(1), frags_new)
+            self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_new)
 
         # Update the fragments.
         clerk.updateFragments(objID=1, fragments=frags_new)
 
         # Verify that the instance now has the new fragments, but not the old
         # ones anymore.
-        self.verifyTemplate('/instances/{}'.format(1), frags_new)
+        self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_new)
         with pytest.raises(AssertionError):
-            self.verifyTemplate('/instances/{}'.format(1), frags_old)
+            self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_old)
 
     def test_deleteInstance(self):
         """
@@ -194,20 +198,21 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
-        self.verifyTemplate('/templates/t1', t1.fragments)
+        self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
         sv_1 = bullet_data.MotionState(imass=1)
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
 
         # Verify that the instance exists.
-        self.verifyTemplate('/instances/{}'.format(1), frags)
+        url_inst = config.url_instances
+        self.verifyTemplate('{}/{}'.format(url_inst, 1), frags)
 
         # Delete the instance and verify it is now gone.
         cnt = self.dibbler.getNumFiles().data
         assert clerk.removeObject(objID=1) == (True, None, None)
         self.dibbler.getNumFiles().data == cnt - 2
         with pytest.raises(AssertionError):
-            self.verifyTemplate('/instances/{}'.format(1), frags)
+            self.verifyTemplate('{}/{}'.format(url_inst, 1), frags)
 
 
 def test_ping_clacks():
