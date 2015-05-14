@@ -64,21 +64,6 @@ class TestClerk:
         killAzrael()
         cls.clerk = azrael.clerk.Clerk()
 
-        # Start Dibbler.
-        ip, port = azrael.config.addr_dibbler, azrael.config.port_dibbler
-        cls.dibbler = azrael.dibbler.DibblerServer(addr=ip, port=port)
-        cls.dibbler.start()
-        cls.url_dibbler = 'http://{}:{}/dibbler'.format(ip, port)
-
-        # Wait until Dibbler is live and tell it to reset its Database.
-        while True:
-            try:
-                ret = cls.sendRequest({'cmd': 'reset', 'data': 'empty'})
-                assert ret.ok
-                break
-            except (urllib.request.HTTPError, urllib.request.URLError):
-                time.sleep(0.05)
-
         clerk = azrael.clerk.Clerk()
         clerk.start()
 
@@ -95,25 +80,15 @@ class TestClerk:
 
     @classmethod
     def teardown_class(cls):
-        cls.dibbler.terminate()
         cls.clerk.terminate()
         cls.clacks.terminate()
 
-        cls.dibbler.join()
         cls.clerk.join()
         cls.clacks.join()
         del cls.clients, cls.clerk, cls.clacks
 
-    @classmethod
-    def sendRequest(cls, req):
-        req = base64.b64encode(pickle.dumps(req))
-        tmp = urllib.request.urlopen(cls.url_dibbler, data=req).readall()
-        tmp = json.loads(tmp.decode('utf8'))
-        return RetVal(**tmp)
-
     def setup_method(self, method):
         azrael.database.init()
-        self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
         # fixme: integrate with database.init?
         dibbler = azrael.dibbler.DibblerAPI()
@@ -132,9 +107,7 @@ class TestClerk:
         # fixme: integrate with database.init?
         dibbler = azrael.dibbler.DibblerAPI()
         dibbler.reset()
-
         azrael.database.init()
-        self.sendRequest({'cmd': 'reset', 'data': 'empty'})
 
     def test_ping(self):
         """

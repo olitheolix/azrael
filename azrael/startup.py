@@ -69,19 +69,15 @@ class AzraelStack:
         clerk = azrael.clerk.Clerk()
         clacks = azrael.clacks.ClacksServer()
 
-        ip, port = config.addr_dibbler, config.port_dibbler
-        dibbler = azrael.dibbler.DibblerServer(addr=ip, port=port)
+        # Flush the model database.
+        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler.reset()
 
         # Start the physics engine.
         #leo = leonard.LeonardBase()
         #leo = leonard.LeonardBullet()
         #leo = leonard.LeonardSweeping()
         leo = azrael.leonard.LeonardDistributedZeroMQ()
-
-        # Start and reset Dibbler
-        self.startProcess(dibbler)
-        url = 'http://{}:{}/dibbler'.format(ip, port)
-        azrael.dibbler.resetDibbler(url)
 
         # Start Clerk, Clacks, and Leonard.
         self.startProcess(clerk)
