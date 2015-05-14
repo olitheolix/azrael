@@ -496,6 +496,7 @@ class DibblerAPI:
         dst = self.getInstanceDir(objID)
 
         query = {'filename': {'$regex': '^{}/.*'.format(src)}}
+        cnt = 0
         for f in self.fs.find(query):
             # Modify the original file name from
             # '/templates/temp_name/*' to '/instances/objID/*'.
@@ -504,17 +505,18 @@ class DibblerAPI:
             # Copy the last version of the file.
             src_data = self.fs.get_last_version(f.filename)
             self.fs.put(src_data, filename=name)
-        url = config.url_instance + '/{}'.format(objID)
-        return RetVal(True, None, {'url': url})
 
-    def deleteInstance(self, objID: str):
-        dst = self.getInstanceDir(objID)
-        try:
-            rmtree([dst], ignore_errors=False)
-        except (AssertionError, FileNotFoundError):
-            msg = 'Could not delete objID <{}>'.format(objID)
+            # Increment the file counter.
+            cnt += 1
+
+        if cnt == 0:
+            # Did not find any template files.
+            msg = 'Could not find template <{}>'.format(name)
             return RetVal(False, msg, None)
-        return RetVal(True, None, None)
+        else:
+            # Found at least one template file to copy.
+            url = config.url_instance + '/{}'.format(objID)
+            return RetVal(True, None, {'url': url})
 
     def updateFragments(self, data: dict):
         try:
