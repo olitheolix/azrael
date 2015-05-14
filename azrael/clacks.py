@@ -20,6 +20,8 @@ Bridge between Websocket Client and Clerk.
 
 It does little more than wrapping a ``Client`` instance. As such it has
 the same capabilities.
+
+fixme: update docu
 """
 
 import os
@@ -190,8 +192,6 @@ class MyGridFSHandler(tornado.web.RequestHandler):
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """
-    fixme: remove this class
-
     A static file handler that tells the client to never cache anything.
 
     For more information see
@@ -233,40 +233,24 @@ class ClacksServer(multiprocessing.Process):
         handlers.append(('/', ServeViewer))
 
         # Static HTML files.
-        FH = MyStaticFileHandler
         base = os.path.dirname(__file__)
         dirname = os.path.join(base, 'static')
-        handlers.append(('/static/(.*)', FH, {'path': dirname}))
+        handlers.append(
+            ('/static/(.*)', MyStaticFileHandler, {'path': dirname})
+        )
 
-        # Fixme: these directories are also hard coded in Dibbler.
-        self.dirNameBase = '/tmp/dibbler'
-        self.dirNames = {
-            'templates': os.path.join(self.dirNameBase, 'templates'),
-            'instances': os.path.join(self.dirNameBase, 'instances')}
+        # Serve up template- and instance models.
+        handlers.append(('/templates/(.*)', MyGridFSHandler))
+        handlers.append(('/instances/(.*)', MyGridFSHandler))
 
-        # fixme: rename mygridfshandler
-        FH = MyGridFSHandler
-
-        # # Template models.
-        # fixme: remove these comments
-        # handlers.append(
-        #     ('/templates/(.*)', FH, {'path': self.dirNames['templates']}))
-
-        # # Instance models.
-        # handlers.append(
-        #     ('/instances/(.*)', FH, {'path': self.dirNames['instances']}))
-
-        handlers.append(('/templates/(.*)', FH))
-        handlers.append(('/instances/(.*)', FH))
-
-        # Websocket to Clacks.
+        # Proxy handler to arbitrate between Websockets and Clacks.
         handlers.append(('/websocket', WebsocketHandler))
 
-        # Install the Websocket handler.
+        # Install the handlers and create the Tornado instance.
         app = tornado.web.Application(handlers)
         http = tornado.httpserver.HTTPServer(app)
 
-        # Specify the server port and create Tornado instance.
+        # Specify the server port and start the ioloop.
         http.listen(config.port_clacks)
         tornado_app = ioloop.IOLoop.instance()
 
