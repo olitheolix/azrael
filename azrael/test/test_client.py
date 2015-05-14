@@ -91,7 +91,7 @@ class TestClerk:
         azrael.database.init()
 
         # fixme: integrate with database.init?
-        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler = azrael.dibbler.Dibbler()
         dibbler.reset()
 
         # Insert default objects. None of them has an actual geometry but
@@ -105,7 +105,7 @@ class TestClerk:
 
     def teardown_method(self, method):
         # fixme: integrate with database.init?
-        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler = azrael.dibbler.Dibbler()
         dibbler.reset()
         azrael.database.init()
 

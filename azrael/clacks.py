@@ -176,7 +176,7 @@ class MyGridFSHandler(tornado.web.RequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.dibbler = azrael.dibbler.DibblerAPI()
+        self.dibbler = azrael.dibbler.Dibbler()
 
         # fixme: add logger instance
         # fixme: use logger instead of print

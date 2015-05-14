@@ -56,7 +56,7 @@ class TestClerk:
         killAzrael()
 
     def setup_method(self, method):
-        self.dibbler = azrael.dibbler.DibblerAPI()
+        self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
 
     def teardown_method(self, method):
@@ -142,7 +142,7 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Mock the Dibbler instance.
-        mock_dibbler = mock.create_autospec(azrael.dibbler.DibblerAPI)
+        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
         clerk.dibbler = mock_dibbler
         mock_dibbler.spawnTemplate.return_value = RetVal(False, 'test error', None)
 
@@ -373,9 +373,9 @@ class TestClerk:
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
-        # Install a mock for DibblerAPI with an 'addTemplate' function that
+        # Install a mock for Dibbler with an 'addTemplate' function that
         # always succeeds.
-        mock_dibbler = mock.create_autospec(azrael.dibbler.DibblerAPI)
+        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
         clerk.dibbler = mock_dibbler
 
         # The mock must not have been called so far.
@@ -462,9 +462,9 @@ class TestClerk:
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
-        # Install a mock for DibblerAPI with an 'addTemplate' function that
+        # Install a mock for Dibbler with an 'addTemplate' function that
         # always succeeds.
-        mock_dibbler = mock.create_autospec(azrael.dibbler.DibblerAPI)
+        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
         clerk.dibbler = mock_dibbler
         mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1.0})
 

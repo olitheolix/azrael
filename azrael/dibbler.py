@@ -99,7 +99,7 @@ def isGeometrySane(frag: FragRaw):
     return True
 
 
-class DibblerAPI:
+class Dibbler:
     """
     fixme: docu
     fixme: rename to just 'Dibbler' after the current 'Dibbler' was removed.

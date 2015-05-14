@@ -36,7 +36,7 @@ from azrael.types import Template, RetVal, FragDae, FragRaw, MetaFragment
 from azrael.test.test import createFragRaw, createFragDae
 
 
-class TestDibblerAPI:
+class TestDibbler:
     @classmethod
     def setup_class(cls):
         pass
@@ -46,7 +46,7 @@ class TestDibblerAPI:
         pass
 
     def setup_method(self, method):
-        self.dibbler = azrael.dibbler.DibblerAPI()
+        self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
         assert self.dibbler.getNumFiles() == (True, None, 0)
         

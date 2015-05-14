@@ -17,7 +17,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
     def get_app(self):
         # Dibbler instance is necessary because this test suite contains
         # several integration tests between Dibbler and Clacks.
-        self.dibbler = azrael.dibbler.DibblerAPI()
+        self.dibbler = azrael.dibbler.Dibbler()
 
         # Handler to serve up models.
         FH = azrael.clacks.MyGridFSHandler

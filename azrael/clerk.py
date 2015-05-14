@@ -79,7 +79,7 @@ class Clerk(multiprocessing.Process):
         self.logit = logging.getLogger(name)
 
         # Create a Dibbler instance to gain access to the model database.
-        self.dibbler = dibbler.DibblerAPI()
+        self.dibbler = dibbler.Dibbler()
 
         # Specify the decoding-processing-encoding triplet functions for
         # (almost) every command supported by Clerk. The only exceptions are

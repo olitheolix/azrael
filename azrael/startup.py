@@ -70,7 +70,7 @@ class AzraelStack:
         clacks = azrael.clacks.ClacksServer()
 
         # Flush the model database.
-        dibbler = azrael.dibbler.DibblerAPI()
+        dibbler = azrael.dibbler.Dibbler()
         dibbler.reset()
 
         # Start the physics engine.
