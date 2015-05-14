@@ -596,13 +596,13 @@ class Clerk(multiprocessing.Process):
                 if not self._isNameValid(tt.name):
                     return RetVal(False, 'Invalid template name', None)
 
-                # Ensure all fragments have the correct type, and their names
-                # are valid and unique.
+                # Ensure all fragments have the correct type and their names
+                # are both valid and unique.
                 tmp = [_ for _ in tt.fragments if isinstance(_, MetaFragment)]
                 tmp = [_ for _ in tmp if self._isNameValid(_.name)]
                 tmp = set([_.name for _ in tmp])
                 if len(set(tmp)) < len(tt.fragments):
-                    msg = 'One or more fragments names are invalid',
+                    msg = 'One or more fragment names are invalid',
                     return RetVal(False, msg, None)
                 del tmp
 
@@ -616,7 +616,9 @@ class Clerk(multiprocessing.Process):
                     msg = 'One or more Booster/Factory names are invalid'
                     return RetVal(False, msg, None)
 
-                # Ask Dibbler to add the template.
+                # Ask Dibbler to add the template. Abort immediately if Dibbler
+                # came back with an error (should be impossible, but just to
+                # be sure).
                 ret = self.dibbler.addTemplate(tt)
                 if not ret.ok:
                     return ret
