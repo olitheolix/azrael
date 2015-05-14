@@ -73,18 +73,20 @@ def isGeometrySane(frag: FragRaw):
 
 class Dibbler:
     """
-    fixme: docu
-    fixme: rename to just 'Dibbler' after the current 'Dibbler' was removed.
+    Stateless storage backend for Azrael's models.
     """
     def __init__(self):
-        # Connect to GridFS.
+        # Create a GridFS handle.
         db = config.getMongoClient()['AzraelGridDB']
         self.fs = gridfs.GridFS(db)
 
     def reset(self):
         """
-        Flush the entire database content.
+        Flush all models.
+
+        :return: Success
         """
+        # Find all versions of all files and delete everything.
         for _ in self.fs.find():
             self.fs.delete(_._id)
         return RetVal(True, None, None)
@@ -92,16 +94,36 @@ class Dibbler:
     def getNumFiles(self):
         """
         Return the number of files in GridFS.
+
+        .. note:: This count include possible duplicates when multiple versions
+                  of the same file exist.
+        :return: Number of files in storage.
         """
         return RetVal(True, None, self.fs.find().count())
 
     @typecheck
-    def saveModelDae(self, frag_dir: str, model: MetaFragment):
+    def saveModelDae(self, location: str, model: MetaFragment):
         """
-        Save the Collada ``model`` to ``frag_dir``.
+        Save the Collada ``model`` to ``location``.
 
-        :param str frag_dir: directory where to store ``model``.
-        :param FragDae model: the Collada model.
+        This will create the necessary files under ``location`` to store all
+        the attached information.
+
+        The "directory" structure will contain the Collada file named after the
+        model (without the .dae extension), plus any texture files. For
+        instance:
+          location/model_name/model_name
+          location/model_name/pic1.png
+          location/model_name/pic2.jpg
+          location/model_name/blah.jpg
+
+        .. note:: ``location`` will usually look like a path and file name (eg.
+                  '/instances/1/') but as far as the storage is
+                  concerned, it is merely a prefix string (hopefully) unique to
+                  this ``model``.
+
+        :param str location: location where to store the ``model``.
+        :param MetaFragment model: the Collada model itself.
         :return: success
         """
         # Sanity checks.
@@ -114,28 +136,30 @@ class Dibbler:
             msg = 'Invalid data types for Collada fragments'
             return RetVal(False, msg, None)
 
-        # Save the dae file to "templates/model_name/frag_name/name.dae".
-        self.fs.put(data.dae, filename=os.path.join(frag_dir, model.name))
+        # Save the dae file to "location/model_name/model_name".
+        self.fs.put(data.dae, filename=os.path.join(location, model.name))
 
         # Save the textures. These are stored as dictionaries with the texture
         # file name as key and the data as a binary stream, eg,
         # {'house.jpg': b'abc', 'tree.png': b'def', ...}
         for name, rgb in data.rgb.items():
-            self.fs.put(rgb, filename=os.path.join(frag_dir, name))
+            self.fs.put(rgb, filename=os.path.join(location, name))
 
         return RetVal(True, None, 1.0)
 
     @typecheck
-    def saveModelRaw(self, frag_dir: str, model: MetaFragment):
+    def saveModelRaw(self, location: str, model: MetaFragment):
         """
-        Save the raw ``model`` to ``frag_dir``.
+        Save the Raw ``model`` to ``location``.
 
-        A 'raw' model is one where the vertices, UV map, and RGB textures is
-        provided directly. This is mostly useful for debugging because it
-        circumvents 3D file formats altogether.
+        This will create the necessary files under ``location`` to store all
+        the attached information.
 
-        :param str frag_dir: directory where to store ``model``.
-        :param FragDae model: the Collada model.
+        The "directory" structure will contain only a single entry:
+          location/model_name/model.json
+
+        :param str location: directory where to store ``model``.
+        :param MetaFragment model: the Raw model itself.
         :return: success
         """
         # Sanity checks.
@@ -154,7 +178,7 @@ class Dibbler:
 
         # Save the fragments as JSON data to eg "templates/mymodel/model.json".
         self.fs.put(json.dumps(data._asdict()).encode('utf8'),
-                    filename=os.path.join(frag_dir, 'model.json'))
+                    filename=os.path.join(location, 'model.json'))
 
         # Determine the largest possible side length of the
         # AABB. To find it, just determine the largest spatial
@@ -173,19 +197,44 @@ class Dibbler:
         return RetVal(True, None, aabb)
 
     @typecheck
-    def saveModel(self, model_dir: str, fragments: (tuple, list),
+    def saveModel(self, location: str, fragments: (tuple, list),
                   update: bool=False):
         """
-        Save the ``model`` to ``dirname`` and return the success.
+        Save the ``model`` to ``location`` and return the success status.
 
         This function is merely a wrapper around dedicated methods to save
-        individual file formats like Collada (dae) or Raw (for testing) files.
+        individual fragment (eg Collada or Raw). It will store all
+        ``fragments`` under the same ``location`` prefix and create a
+        `meta.json` file to list all fragments, their names, and types.
 
-        fixme: parameters
+        If ``update`` is *True* then 'location/meta.json' must already exist.
+
+        .. note:: The ``update`` flag does not guarnatee that meta.json still
+                  exists when the files are written because another Dibbler
+                  from another process may delete it at the same time. It is
+                  the responsibility of the caller (usually Clerk) to ensure
+                  this does not happen.
+
+        For instance, if location='/foo' the the "directory" structure in the
+        model databae will look like this:
+           /foo/meta.json
+           /foo/frag_name_1/...
+           /foo/frag_name_2/...
+           ...
+
+        The "meta.json" file contains a dictionary with the fragment names
+        (keys) and their types (values), eg. {'foo': 'raw', 'bar': 'dae'}.
+
+        :param str location: the common location prefix used for all
+                             ``fragments``.
+        :param list fragments: list of ``MetaFragment`` instances.
+        :param bool update: if *True* then the ``location`` prefix must already
+                             exist.
         :return: success.
         """
         if update:
-            ret = self.fs.find_one({'filename': {'$regex': '^' + model_dir + '/'}})
+            query = {'filename': {'$regex': '^' + location + '/meta.json'}}
+            ret = self.fs.find_one(query)
             if ret is None:
                 return RetVal(False, 'Model does not exist', None)
 
@@ -194,7 +243,7 @@ class Dibbler:
         frag_names = {}
         for frag in fragments:
             # Fragment directory, eg .../instances/mymodel/frag1
-            frag_dir = os.path.join(model_dir, frag.name)
+            frag_dir = os.path.join(location, frag.name)
 
             # Save the fragment.
             if frag.type == 'raw':
@@ -218,7 +267,7 @@ class Dibbler:
             # names and their model type, eg. {'foo': 'raw', 'bar': 'dae', ...}
             frag_names[frag.name] = frag.type
             self.fs.put(json.dumps({'fragments': frag_names}).encode('utf8'),
-                        filename=os.path.join(model_dir, 'meta.json'))
+                        filename=os.path.join(location, 'meta.json'))
 
             # Find the largest AABB.
             aabb = float(np.amax((ret.data, aabb)))
@@ -231,29 +280,47 @@ class Dibbler:
         return RetVal(True, None, aabb)
 
     @typecheck
-    def getTemplateDir(self, name: str):
-        return os.path.join(config.url_templates, name)
+    def getTemplateDir(self, template_name: str):
+        """
+        Return the location of ``template_name``.
+
+        This is a convenience method only to avoid code duplication. All it
+        does is prefix ``template_name`` with the ``config.url_templates``
+        value.
+
+        :param str template_name: name of template (eg. 'foo')
+        :return: location string (eg /templates/foo/').
+        """
+        return os.path.join(config.url_templates, template_name)
 
     @typecheck
     def getInstanceDir(self, objID: str):
+        """
+        Return the location of the object with ``objID``.
+
+        This is a convenience method only to avoid code duplication. All it
+        does is prefix ``template_name`` with the ``config.url_instances``
+        value.
+
+        :param str objID: object ID (eg. 8)
+        :return: location string (eg /instances/8/').
+        """
         return os.path.join(config.url_instances, objID)
 
     @typecheck
-    def addTemplate(self, tt: Template):
-        model_dir = self.getTemplateDir(tt.name)
-        model_url = os.path.join(config.url_templates, tt.name)
+    def getFile(self, location: str):
+        """
+        Return the latest version of ``location``.
 
-        ret = self.saveModel(model_dir, tt.fragments)
-        if not ret.ok:
-            return ret
+        If ``location`` does not exist then return an error.
 
-        # Return message.
-        return RetVal(True, None, {'aabb': ret.data, 'url': model_url})
-
-    @typecheck
-    def getFile(self, name: str):
+        :param str location: the location to retrieve (eg.
+                             '/instances/8/meta.json').
+        :return: content of ``location`` (or *None* if an error occurred).
+        :rtype: bytes
+        """
         try:
-            ret = self.fs.get_last_version(name)
+            ret = self.fs.get_last_version(location)
         except gridfs.errors.NoFile as err:
             return RetVal(False, repr(err), None)
         except gridfs.errors.GridFSError as err:
@@ -266,7 +333,30 @@ class Dibbler:
             return RetVal(True, None, ret.read())
     
     @typecheck
+    def addTemplate(self, model: Template):
+        """
+        Add the ``model`` to the template database.
+
+        :param Template model: the model (eg Collad or Raw) to store.
+        :return: success
+        """
+        location = self.getTemplateDir(model.name)
+        ret = self.saveModel(location, model.fragments)
+        if not ret.ok:
+            return ret
+        else:
+            return RetVal(True, None, {'aabb': ret.data, 'url': location})
+
+    @typecheck
     def spawnTemplate(self, name: str, objID: str):
+        """
+        .. note:: It is the caller's responsibility to ensure that ``objID`` is
+                  unique. Dibbler will happily overwrite existing data.
+
+        :param str name: the name of the template to spawn.
+        :param str objID: the object ID
+        :return: #file copied.
+        """
         try:
             # 'objID', albeit a string, must correspond a valid integer.
             int(objID)
@@ -278,10 +368,12 @@ class Dibbler:
         src = self.getTemplateDir(name)
         dst = self.getInstanceDir(objID)
 
-        query = {'filename': {'$regex': '^{}/.*'.format(src)}}
+        # Copy every fragment from the template location to the instance
+        # location.
         cnt = 0
+        query = {'filename': {'$regex': '^{}/.*'.format(src)}}
         for f in self.fs.find(query):
-            # Modify the original file name from
+            # Modify the original file name from eg
             # '/templates/temp_name/*' to '/instances/objID/*'.
             name = f.filename.replace(src, dst)
 
@@ -293,7 +385,7 @@ class Dibbler:
             cnt += 1
 
         if cnt == 0:
-            # Did not find any template files.
+            # Did not copy any files.
             msg = 'Could not find template <{}>'.format(name)
             return RetVal(False, msg, None)
         else:
@@ -303,28 +395,44 @@ class Dibbler:
 
     @typecheck
     def updateFragments(self, objID: str, frags: (tuple, list)):
+        """
+        Overwrite all ``frags`` for ``objID``.
+
+        # fixme: the following functionality is still missing.
+        This function will overwrite (or add) all specified ``frags`` unless
+        they are ``FragEmpty`` instances, in which case this method will delete
+        the respective fragment and update the `meta.json` file.
+
+        :param str objID: the object for which to update the ``fragments``.
+        :param list frags: list of new ``MetaFragment`` instances.
+        :return: see :func:`saveModel`
+        """
         try:
             for _ in frags:
                 assert isinstance(_, MetaFragment)
-            # 'objID', albeit a string, must correspond a valid integer.
+            # 'objID', albeit a string, it must correspond to a valid integer.
             int(objID)
         except (TypeError, ValueError):
             msg = 'Invalid parameters in updateFragments command'
             return RetVal(False, msg, None)
 
-        # Ensure that ``objID`` exists.
-        model_dir = self.getInstanceDir(objID)
-
-        # Overwrite the model for instance with ``objID``.
-        return self.saveModel(model_dir, frags, update=True)
+        # Overwrite all fragments for the instance with with ``objID``.
+        location = self.getInstanceDir(objID)
+        return self.saveModel(location, frags, update=True)
 
     @typecheck
-    def deleteTemplate(self, name: str):
+    def deleteTemplate(self, location: str):
         """
-        fixme: docu
+        Delete the all files under ``location``.
+
+        This function always succeeds but returns the number of actually
+        deleted files. 
+
+        :param str location: template location
+        :return: #files deleted.
         """
-        query = {'filename':
-                 {'$regex': '^{}/{}/.*'.format(config.url_templates, name)}}
+        location = self.getTemplateDir(location)
+        query = {'filename': {'$regex': '^{}/.*'.format(location)}}
         cnt = 0
         for f in self.fs.find(query):
             self.fs.delete(f._id)
@@ -334,10 +442,16 @@ class Dibbler:
     @typecheck
     def deleteInstance(self, objID: str):
         """
-        fixme: docu
+        Delete the all files belonging to the instance with ``objID``.
+
+        This function always succeeds but returns the number of actually
+        deleted files. 
+
+        :param str objID: ID of object delete.
+        :return: #files deleted.
         """
-        query = {'filename':
-                 {'$regex': '^{}/{}/.*'.format(config.url_instances, objID)}}
+        location = self.getInstanceDir(objID)
+        query = {'filename': {'$regex': '^{}/.*'.format(location)}}
         cnt = 0
         for f in self.fs.find(query):
             self.fs.delete(f._id)
