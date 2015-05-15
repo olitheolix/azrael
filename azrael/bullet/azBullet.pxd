@@ -1,5 +1,6 @@
 from basic cimport *
 from rigid_body cimport *
+from typed_constraint cimport *
 
 cdef extern from "btBulletDynamicsCommon.h":
     cdef cppclass btDefaultCollisionConfiguration:
@@ -28,4 +29,4 @@ cdef extern from "btBulletDynamicsCommon.h":
         void addRigidBody(btRigidBody *body)
         int stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
         void removeRigidBody(btRigidBody *body)
-
+        void addConstraint(btTypedConstraint *constraint, bint disable)

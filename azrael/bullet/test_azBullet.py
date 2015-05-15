@@ -25,7 +25,7 @@ from azrael.bullet.azBullet import SphereShape, EmptyShape
 from azrael.bullet.azBullet import Transform, MotionState
 from azrael.bullet.azBullet import DefaultMotionState, RigidBody
 from azrael.bullet.azBullet import CompoundShape
-from azrael.bullet.azBullet import Point2PointConstraint
+from azrael.bullet.azBullet import Point2PointConstraint, BulletBase
 
 
 class TestVector3:
@@ -455,16 +455,15 @@ class TestRigidBody:
         """
         Set, query, and replace a collision shape.
         """
+        # Create two rigid bodies.
         cs_a = SphereShape(1)
         cs_b = BoxShape(Vec3(1, 2, 3))
-
-        # Get RigidBody object.
-        rb1, _ = self.getRB(cs=cs_a)
-        rb2, _ = self.getRB(cs=cs_b)
+        rb_a, _a = self.getRB(pos=Vec3(-1, 0, 0), cs=cs_a)
+        rb_b, _b = self.getRB(pos=Vec3(1, 0, 0), cs=cs_b)
 
         # Connect the two rigid bodies.
-        pivot_a, pivot_b = Vec3(0, 0, -10), Vec3(0, 0, 10)
-        p2p = Point2PointConstraint(rb1, rb2, pivot_a, pivot_b)
+        pivot_a, pivot_b = Vec3(0, 0, 0), Vec3(0, 0, 0)
+        p2p = Point2PointConstraint(rb_a, rb_b, pivot_a, pivot_b)
 
         # Verify that their pivot is as specified.
         assert p2p.getPivotInA() == pivot_a
@@ -488,6 +487,42 @@ class TestRigidBody:
         p2p.setEnabled(True)
         assert p2p.isEnabled() == True
 
+        # Add both rigid bodies into a simulation.
+        bb = BulletBase()
+        bb.setGravity(0, 0, 0)
+        bb.addRigidBody(rb_a)
+        bb.addRigidBody(rb_b)
+
+        # Tell the simulation about the constraint.
+        bb.addConstraint(p2p)
+
+        # Verify that the objects are at x-position +/-1, and thus 2 Meters
+        # apart.
+        p_a = rb_a.getCenterOfMassTransform().getOrigin().tolist()
+        p_b = rb_b.getCenterOfMassTransform().getOrigin().tolist()
+        init_pos = (p_a[0], p_b[0])
+        fixed_dist = p_a[0] - p_b[0]
+        assert init_pos == (-1, 1)
+
+        # Apply opposing forces to both objects, step the simulation a few times,
+        # and verify at each step that *both* objects move in the *same*
+        # direction due to the constraint.
+        rb_a.applyCentralForce(Vec3(10, 0, 0))
+        rb_b.applyCentralForce(Vec3(-1, 0, 0))
+        for ii in range(3):
+            # Step simulation.
+            bb.stepSimulation(10 / 60, 60)
+
+            # Query the position of the objects.
+            p_a = rb_a.getCenterOfMassTransform().getOrigin().tolist()
+            p_b = rb_b.getCenterOfMassTransform().getOrigin().tolist()
+
+            # Verify that both objects continue to move to right, yet maintain
+            # their initial distance.
+            assert p_a[0] > init_pos[0]
+            assert p_b[0] > init_pos[1]
+            assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
+            init_pos = (p_a[0], p_b[0])
 
 class TestCollisionShapes:
     @classmethod

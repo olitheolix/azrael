@@ -89,6 +89,9 @@ cdef class BulletBase:
     def addRigidBody(self, RigidBody body):
         self.dynamicsWorld.addRigidBody(body.thisptr)
 
+    def addConstraint(self, TypedConstraint constraint):
+        self.dynamicsWorld.addConstraint(constraint.ptr_TypedConstraint, False)
+
     def stepSimulation(self, double timeStep, int maxSubSteps):
         self.dynamicsWorld.stepSimulation(
             btScalar(timeStep), maxSubSteps, btScalar(1.0 / 60.0))
