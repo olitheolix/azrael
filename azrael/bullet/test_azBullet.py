@@ -520,6 +520,9 @@ class TestCollisionShapes:
         # Remove the sphere. This must reduce the number of shapes to 2.
         comp.removeChildShape(cs_s)
         assert comp.getNumChildShapes() == 2
-
         assert comp.getChildShape(0).getName() == b'STATICPLANE'
         assert comp.getChildShape(1).getName() == b'Box'
+
+        # Attempt to access a non-existing index.
+        assert comp.getChildShape(-1) is None
+        assert comp.getChildShape(2) is None

@@ -145,6 +145,8 @@ cdef class CompoundShape(CollisionShape):
             shape.ptr_CollisionShape)
 
     def getChildShape(self, int index):
+        if not (0 <= index < self.getNumChildShapes()):
+            return None
         cs = CollisionShape()
         cs.ptr_CollisionShape = self.ptr_CompoundShape.getChildShape(index)
         return cs
