@@ -354,7 +354,7 @@ def test_modify_size():
     # Instantiate Bullet engine.
     bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
-    # Send objects to Bullet and progress the simulation. The sole point of the
+    # Send objects to Bullet and progress the simulation. The sole point of
     # progressing the simulation is to make sure Bullet actually accesses the
     # objects; we do not actually care if/how the objects moved.
     bullet.setObjectData(objID_a, obj_a)
@@ -424,7 +424,7 @@ def test_modify_cshape():
     # Instantiate Bullet engine.
     bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
-    # Send objects to Bullet and progress the simulation. The sole point of the
+    # Send objects to Bullet and progress the simulation. The sole point of
     # progressing the simulation is to make sure Bullet actually accesses the
     # objects; we do not actually care if/how the objects moved.
     bullet.setObjectData(objID_a, obj_a)
