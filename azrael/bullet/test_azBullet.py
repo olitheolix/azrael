@@ -454,27 +454,34 @@ class TestRigidBody:
     def test_Constraint_fixme_move_somewhere_else(self):
         """
         Set, query, and replace a collision shape.
+
+        fixme: split this into two tests
+        fixme: move the Point2Point class test into dedicated test class.
         """
-        # Create two rigid bodies.
+        # Create two rigid bodies side by side (they touch, but neither overlap
+        # nor is there a gap between them).
         cs_a = SphereShape(1)
         cs_b = BoxShape(Vec3(1, 2, 3))
-        rb_a, _a = self.getRB(pos=Vec3(-1, 0, 0), cs=cs_a)
-        rb_b, _b = self.getRB(pos=Vec3(1, 0, 0), cs=cs_b)
+        pos_a = Vec3(-1, 0, 0)
+        pos_b = Vec3(1, 0, 0)
+        rb_a, _a = self.getRB(pos=pos_a, cs=cs_a)
+        rb_b, _b = self.getRB(pos=pos_b, cs=cs_b)
 
-        # Connect the two rigid bodies.
-        pivot_a, pivot_b = Vec3(0, 0, 0), Vec3(0, 0, 0)
+        # Connect the two rigid bodies at their left/right boundary.
+        pivot_a, pivot_b = pos_b, pos_a
         p2p = Point2PointConstraint(rb_a, rb_b, pivot_a, pivot_b)
 
         # Verify that their pivot is as specified.
         assert p2p.getPivotInA() == pivot_a
         assert p2p.getPivotInB() == pivot_b
 
-        # Swap the pivot points.
-        p2p.setPivotA(pivot_b)
-        p2p.setPivotB(pivot_a)
-        # Verify that their pivot is as specified.
-        assert p2p.getPivotInA() == pivot_b
-        assert p2p.getPivotInB() == pivot_a
+        # # Swap the pivot points.
+        # fixme: enable in first test again.
+        # p2p.setPivotA(pivot_b)
+        # p2p.setPivotB(pivot_a)
+        # # Verify that their pivot is as specified.
+        # assert p2p.getPivotInA() == pivot_b
+        # assert p2p.getPivotInB() == pivot_a
 
         # Query the two objects and verify they have the correct type.
         assert p2p.getRigidBodyA().getCollisionShape().getName() == b'SPHERE'
@@ -516,6 +523,9 @@ class TestRigidBody:
             # Query the position of the objects.
             p_a = rb_a.getCenterOfMassTransform().getOrigin().tolist()
             p_b = rb_b.getCenterOfMassTransform().getOrigin().tolist()
+#            print(p_a)
+#            print(p_b)
+#            continue
 
             # Verify that both objects continue to move to right, yet maintain
             # their initial distance.
