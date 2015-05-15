@@ -1,4 +1,5 @@
 from basic cimport *
+from transform cimport *
 
 cdef extern from "btBulletDynamicsCommon.h":
     cdef cppclass btCollisionShape:
@@ -31,3 +32,10 @@ cdef extern from "btBulletDynamicsCommon.h":
 
     cdef cppclass btStaticPlaneShape:
         btStaticPlaneShape(btVector3 &v, btScalar plane_const)
+
+    cdef cppclass btCompoundShape:
+       btCompoundShape(bint enableDynamicAabbTree)
+       void addChildShape(const btTransform &localTransform, btCollisionShape *shape)
+       btCollisionShape *getChildShape(int index)
+       void removeChildShape(btCollisionShape *shape)
+       int getNumChildShapes()

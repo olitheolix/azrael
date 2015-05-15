@@ -24,6 +24,7 @@ from azrael.bullet.azBullet import BoxShape, StaticPlaneShape
 from azrael.bullet.azBullet import SphereShape, EmptyShape
 from azrael.bullet.azBullet import Transform, MotionState
 from azrael.bullet.azBullet import DefaultMotionState, RigidBody
+from azrael.bullet.azBullet import CompoundShape
 
 
 class TestVector3:
@@ -460,7 +461,7 @@ class TestCollisionShapes:
     def teardown_class(cls):
         pass
 
-    def test_StaticPlaneShape(self):
+    def test_BasicShapes(self):
         # Create a Static Plane and change its scaling.
         cs = StaticPlaneShape(Vec3(0, 1, 2), 3)
         scale = Vec3(1.5, 2.5, 3.5)
@@ -484,3 +485,38 @@ class TestCollisionShapes:
         scale = Vec3(1.5, 2.5, 3.5)
         cs.setLocalScaling(scale)
         assert cs.getLocalScaling() == scale
+
+    def test_CompoundShapes(self):
+        # Create some shapes.
+        cs_p = StaticPlaneShape(Vec3(0, 1, 2), 3)
+        cs_s = SphereShape(3)
+        cs_b = BoxShape(Vec3(1, 2, 3))
+        cs_e = EmptyShape()
+
+        # Create a compound shape and verify it is empty.
+        comp = CompoundShape()
+        assert comp.getNumChildShapes() == 0
+
+        # Add a plane with a default Transform.
+        comp.addChildShape(Transform(), cs_p)
+        assert comp.getNumChildShapes() == 1
+
+        # Add sphere with a default Transform.
+        comp.addChildShape(Transform(), cs_s)
+        assert comp.getNumChildShapes() == 2
+
+        # Add box with a default Transform.
+        comp.addChildShape(Transform(), cs_b)
+        assert comp.getNumChildShapes() == 3
+
+        # Verify the collision shape types.
+        assert comp.getChildShape(0).getName() == b'STATICPLANE'
+        assert comp.getChildShape(1).getName() == b'SPHERE'
+        assert comp.getChildShape(2).getName() == b'Box'
+
+        # Remove the sphere. This must reduce the number of shapes to 2.
+        comp.removeChildShape(cs_s)
+        assert comp.getNumChildShapes() == 2
+
+        assert comp.getChildShape(0).getName() == b'STATICPLANE'
+        assert comp.getChildShape(1).getName() == b'Box'

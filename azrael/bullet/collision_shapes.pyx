@@ -121,3 +121,36 @@ cdef class BoxShape(PolyhedralConvexShape):
     def __dealloc__(self):
         if self.ptr_BoxShape != NULL:
             del self.ptr_BoxShape
+
+
+cdef class CompoundShape(CollisionShape):
+    cdef btCompoundShape *ptr_CompoundShape
+
+    def __cinit__(self, bint enableDynamicAabbTree=True):
+        self.ptr_CompoundShape = NULL
+
+    def __init__(self, bint enableDynamicAabbTree=True):
+        self.ptr_CompoundShape = new btCompoundShape(enableDynamicAabbTree)
+
+        # Assign the base pointers.
+        self.ptr_CollisionShape = <btCollisionShape*>self.ptr_CompoundShape
+
+    def __dealloc__(self):
+        if self.ptr_CompoundShape != NULL:
+            del self.ptr_CompoundShape
+
+    def addChildShape(self, Transform localTransform, CollisionShape shape):
+        self.ptr_CompoundShape.addChildShape(
+            localTransform.thisptr[0],
+            shape.ptr_CollisionShape)
+
+    def getChildShape(self, int index):
+        cs = CollisionShape()
+        cs.ptr_CollisionShape = self.ptr_CompoundShape.getChildShape(index)
+        return cs
+
+    def removeChildShape(self, CollisionShape shape):
+        self.ptr_CompoundShape.removeChildShape(shape.ptr_CollisionShape)
+
+    def getNumChildShapes(self):
+        return self.ptr_CompoundShape.getNumChildShapes()
