@@ -93,13 +93,15 @@ class Dibbler:
 
     def getNumFiles(self):
         """
-        Return the number of files in GridFS.
+        Return the number of distinct files in GridFS.
 
-        .. note:: This count include possible duplicates when multiple versions
-                  of the same file exist.
+        ..note:: There may be more files in Dibbler because old versions of the
+                 same files are not deleted. However, the returned corresponds
+                 to the number of files with distinct file names.
+
         :return: Number of files in storage.
         """
-        return RetVal(True, None, self.fs.find().count())
+        return RetVal(True, None, len(self.fs.list()))
 
     @typecheck
     def saveModelDae(self, location: str, model: MetaFragment):
@@ -247,11 +249,24 @@ class Dibbler:
 
             # Save the fragment.
             if frag.type == 'raw':
+                query = {'filename': {'$regex': '^{}/.*'.format(frag_dir)}}
+                for _ in self.fs.find(query):
+                    self.fs.delete(_._id)
+                    del _
+                del query
                 # Raw.
                 ret = self.saveModelRaw(frag_dir, frag)
             elif frag.type == 'dae':
+                query = {'filename': {'$regex': '^{}/.*'.format(frag_dir)}}
+                for _ in self.fs.find(query):
+                    self.fs.delete(_._id)
+                    del _
+                del query
                 # Collada.
                 ret = self.saveModelDae(frag_dir, frag)
+            elif frag.type == '_none_':
+                # Dummy fragment that tells us to remove it.
+                ret = RetVal(False, None, None)
             else:
                 # Unknown model format.
                 msg = 'Unknown type <{}>'.format(frag.type)
@@ -260,7 +275,11 @@ class Dibbler:
             # Delete the fragment directory if something went wrong and proceed to
             # the next fragment.
             if not ret.ok:
-                fs.delete({'filename': {'$regex': '^{}/.*'.format(frag_dir)}})
+                query = {'filename': {'$regex': '^{}/.*'.format(frag_dir)}}
+                for _ in self.fs.find(query):
+                    self.fs.delete(_._id)
+                    del _
+                del query
                 continue
 
             # Update the 'meta.json': it contains a dictionary with all fragment

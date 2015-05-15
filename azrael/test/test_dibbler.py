@@ -239,52 +239,55 @@ class TestDibbler:
         self.verifyRaw(ret_2.data['url'], frags_orig[0])
         self.verifyDae(ret_2.data['url'], frags_orig[1])
 
+    def test_updateFragments_partial(self):
         """
-        Spawn a template and update all its fragments.
+        Simliar to previous test in the sense that it spawns and updates
+        fragments. However, this time some fragments will be removed
+        altogether, instead of just being updated.
         """
         dibbler = self.dibbler
 
-        # Create a Template with a Raw fragment.
-        frag_orig = MetaFragment('bar', 'raw', createFragRaw())
-        t1 = Template('t1', [1, 2, 3, 4], [frag_orig], [], [])
+        # The original template has three fragments. Then we will leave the
+        # first intact, remove the second, and modify the third.
+        frags_orig = [
+            MetaFragment('fname_1', 'raw', createFragRaw()),
+            MetaFragment('fname_2', 'dae', createFragDae()),
+            MetaFragment('fname_3', 'raw', createFragRaw())
+        ]
+        frags_new = [
+            MetaFragment('fname_2', '_none_', None),
+            MetaFragment('fname_3', 'dae', createFragDae())
+        ]
+        t1 = Template('t1', [1, 2, 3, 4], frags_orig, [], [])
 
-        # Add the template and spawn two instances.
+        # Add the template, spawn one instance, and verify all fragments.
         assert dibbler.addTemplate(t1).ok
-        ret_11 = dibbler.spawnTemplate(t1.name, '11')
-        ret_2 = dibbler.spawnTemplate(t1.name, '2')
-        assert ret_11.ok and ret_2.ok
-
-        self.verifyRaw(ret_11.data['url'], frag_orig)
-        self.verifyRaw(ret_2.data['url'], frag_orig)
-
-        # Create a replacement fragment.
-        frag_new = MetaFragment('bar', 'raw', createFragRaw())
-
-        # Attempt to change the fragment of a non-existing object.
-        ret = dibbler.updateFragments('20', [frag_new])
-        assert not ret.ok
-
-        # Attempt to change the fragment of another non-existing object, but
-        # the object ID of this one is '1', which means it is available at
-        # '/somewhere/1/...'. However, an object at '/somewhere/11/...' already
-        # exists, and without the trailing '/' the first would be a sub-string
-        # of the latter. The update method must therefore take care to properly
-        # test for existence, especially since directories, internally, do not
-        # have a trailing '/'.
-        ret = dibbler.updateFragments('1', [frag_new])
-        assert not ret.ok
-
-        # The old fragments must not have changed.
-        self.verifyRaw(ret_11.data['url'], frag_orig)
-        self.verifyRaw(ret_2.data['url'], frag_orig)
-
-        # Change the fragment models for the first object.
-        ret = dibbler.updateFragments('11', [frag_new])
+        ret = dibbler.spawnTemplate(t1.name, '1')
         assert ret.ok
+        self.verifyRaw(ret.data['url'], frags_orig[0])
+        self.verifyDae(ret.data['url'], frags_orig[1])
+        self.verifyRaw(ret.data['url'], frags_orig[2])
 
-        # Verify that the models are correct.
-        self.verifyRaw(ret_11.data['url'], frag_new)
-        self.verifyRaw(ret_2.data['url'], frag_orig)
+        # Record the current number of files in Dibbler. There must be one
+        # 'meta.json', two raw files (one each), 3 Collada files (dae + 2
+        # textures). These files exist twice, one in the template store and one
+        # in the instance store.
+        file_cnt = dibbler.getNumFiles().data
+        assert file_cnt == 2 * (1 + 2 * 1 + 1 * 3)
+
+        # Update the fragments: keep first (raw, +0), delete second (dae, -3),
+        # convert third from raw to dae (-1 + 3).
+        assert dibbler.updateFragments('1', frags_new).ok
+
+        # Record the current number of files in Dibbler.
+        assert dibbler.getNumFiles().data == file_cnt + (0) + (-3) + (-1 + 3)
+
+        # Verify that the first fragment is still intact, the second does not
+        # exist anymore, and the third was updated.
+        self.verifyRaw(ret.data['url'], frags_orig[0])
+        with pytest.raises(AssertionError):
+            self.verifyDae(ret.data['url'], frags_orig[1])
+        self.verifyDae(ret.data['url'], frags_new[1])
 
     def test_deleteTemplate(self):
         """
