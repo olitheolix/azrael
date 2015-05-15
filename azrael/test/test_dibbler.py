@@ -180,7 +180,65 @@ class TestDibbler:
         assert not dibbler.spawnTemplate('blah', '10').ok
         assert dibbler.getNumFiles() == (True, None, (2 + 4) + (2 * 2 + 4))
 
-    def test_updateTemplate(self):
+    def test_updateFragments_all(self):
+        """
+        Spawn a template and update all its fragments.
+        """
+        dibbler = self.dibbler
+
+        # The original template has two fragments, and we will update one of
+        # them.
+        frags_orig = [
+            MetaFragment('fname_1', 'raw', createFragRaw()),
+            MetaFragment('fname_2', 'dae', createFragDae())
+        ]
+        frags_new = [
+            MetaFragment('fname_1', 'dae', createFragDae()),
+        ]
+        t1 = Template('t1', [1, 2, 3, 4], frags_orig, [], [])
+
+        # Add the template and spawn two instances.
+        assert dibbler.addTemplate(t1).ok
+        ret_11 = dibbler.spawnTemplate(t1.name, '11')
+        ret_2 = dibbler.spawnTemplate(t1.name, '2')
+        assert ret_11.ok and ret_2.ok
+
+        self.verifyRaw(ret_11.data['url'], frags_orig[0])
+        self.verifyDae(ret_11.data['url'], frags_orig[1])
+        self.verifyRaw(ret_2.data['url'], frags_orig[0])
+        self.verifyDae(ret_2.data['url'], frags_orig[1])
+
+        # Attempt to change the fragment of a non-existing object.
+        ret = dibbler.updateFragments('20', frags_new)
+        assert not ret.ok
+
+        # Attempt to change the fragment of another non-existing object, but
+        # the object ID of this one is '1', which means it is available at
+        # '/somewhere/1/...'. However, an object at '/somewhere/11/...' already
+        # exists, and without the trailing '/' the first would be a sub-string
+        # of the latter. The update method must therefore take care to properly
+        # test for existence, especially since directories, internally, do not
+        # have a trailing '/'.
+        ret = dibbler.updateFragments('1', frags_new)
+        assert not ret.ok
+
+        # The previous attempts to modify fragments of non-existing objectst
+        # must not have modified the fragments.
+        self.verifyRaw(ret_11.data['url'], frags_orig[0])
+        self.verifyDae(ret_11.data['url'], frags_orig[1])
+        self.verifyRaw(ret_2.data['url'], frags_orig[0])
+        self.verifyDae(ret_2.data['url'], frags_orig[1])
+
+        # Change the first fragments of the first object.
+        ret = dibbler.updateFragments('11', frags_new)
+        assert ret.ok
+
+        # Verify that only the first fragment of the '11' object has changed.
+        self.verifyDae(ret_11.data['url'], frags_new[0])
+        self.verifyDae(ret_11.data['url'], frags_orig[1])
+        self.verifyRaw(ret_2.data['url'], frags_orig[0])
+        self.verifyDae(ret_2.data['url'], frags_orig[1])
+
         """
         Spawn a template and update all its fragments.
         """
