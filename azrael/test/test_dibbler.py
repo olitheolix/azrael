@@ -153,8 +153,9 @@ class TestDibbler:
         t_raw = Template('t_name_raw', [0, 1, 1, 1], [frag_raw], [], [])
         t_dae = Template('t_name_dae', [0, 1, 1, 1], [frag_dae], [], [])
 
-        # Add the templates and verify there are 6 files in the DB now (2 for
-        # the Raw fragment, and 4 for the Collada fragment).
+        # Add the templates and verify there are 6 files in the DB now. The
+        # first template has two files (1 meta.json plus 1 for the raw data)
+        # and the second has 4 files (1 meta.json plus 3 for the Collada data).
         dibbler.addTemplate(t_raw)
         dibbler.addTemplate(t_dae)
         assert dibbler.getNumFiles() == (True, None, 2 + 4)
@@ -168,7 +169,7 @@ class TestDibbler:
         # Dibbler must now hold the original 6 files plus an additional 8 files
         # (2x2 for the two Raw instances, and another 4 for the one Collada
         # instance).
-        assert dibbler.getNumFiles() == (True, None, (2 + 4) + (2 * 2 + 4))
+        assert dibbler.getNumFiles() == (True, None, (2 + 4) + (2 * 2 + 1 * 4))
 
         # Verify that all files are correct.
         self.verifyRaw(ret_1.data['url'], frag_raw)
@@ -178,7 +179,7 @@ class TestDibbler:
         # Attempt to spawn a non-existing template. This must fail and the
         # number of files in Dibbler must not change.
         assert not dibbler.spawnTemplate('blah', '10').ok
-        assert dibbler.getNumFiles() == (True, None, (2 + 4) + (2 * 2 + 4))
+        assert dibbler.getNumFiles() == (True, None, (2 + 4) + (2 * 2 + 1 * 4))
 
     def test_updateFragments_all(self):
         """
@@ -368,7 +369,9 @@ class TestDibbler:
         # Verify that Dibbler is empty.
         assert dibbler.getNumFiles() == (True, None, 0)
 
-        # Add- and verify a Raw- and Collada template.
+        # Add- and verify a Raw- and Collada template. The raw template 2 files
+        # (meta.json plus model.json) whereas the Collada template has 4 files
+        # (meta.json plus 1 dae file plus 2 textures).
         ret = dibbler.addTemplate(t_raw)
         assert dibbler.getNumFiles() == (True, None, 2)
         self.verifyRaw(ret.data['url'], frag_raw[0])
@@ -383,7 +386,7 @@ class TestDibbler:
         self.verifyRaw('{}/1'.format(config.url_instances), frag_raw[0])
         self.verifyDae('{}/2'.format(config.url_instances), frag_dae[0])
         self.verifyRaw('{}/3'.format(config.url_instances), frag_raw[0])
-        base_cnt = (2 + 4) + 2 * 2 + 4
+        base_cnt = (2 + 4) + 2 * 2 + 1 * 4
         assert dibbler.getNumFiles() == (True, None, base_cnt)
 
         # Remove a non-existing object. This must succeed but Dibbler must not
@@ -405,7 +408,8 @@ class TestDibbler:
         # not remove any files.
         assert dibbler.deleteInstance('1') == (True, None, 0)
 
-        # Remove the collada instance. This must delete four files.
+        # Remove the Collada instance. This must delete four files (meta.json +
+        # dae + 2 textures).
         assert dibbler.deleteInstance('2') == (True, None, 4)
         base_cnt -= 4
         assert dibbler.getNumFiles() == (True, None, base_cnt)
