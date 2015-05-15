@@ -199,6 +199,24 @@ class Dibbler:
         return RetVal(True, None, aabb)
 
     @typecheck
+    def _deleteSubLocation(self, url: str):
+        """
+        Delete all files under ``url``.
+
+        This function is the equivalent of 'rm -rf url/*'. It always succeeds
+        and returns the number of deleted files.
+
+        :param str url: location (eg. '/instances/blah/')
+        :return: number of deleted files
+       """
+        query = {'filename': {'$regex': '^{}/.*'.format(url)}}
+        cnt = 0
+        for _ in self.fs.find(query):
+            self.fs.delete(_._id)
+            cnt += 1
+        return RetVal(True, None, cnt)
+
+    @typecheck
     def saveModel(self, location: str, fragments: (tuple, list),
                   update: bool=False):
         """
@@ -247,22 +265,12 @@ class Dibbler:
             # Fragment directory, eg .../instances/mymodel/frag1
             frag_dir = os.path.join(location, frag.name)
 
-            # Save the fragment.
+            # Delete the current fragments and save the new ones.
             if frag.type == 'raw':
-                query = {'filename': {'$regex': '^{}/.*'.format(frag_dir)}}
-                for _ in self.fs.find(query):
-                    self.fs.delete(_._id)
-                    del _
-                del query
-                # Raw.
+                self._deleteSubLocation(frag_dir)
                 ret = self.saveModelRaw(frag_dir, frag)
             elif frag.type == 'dae':
-                query = {'filename': {'$regex': '^{}/.*'.format(frag_dir)}}
-                for _ in self.fs.find(query):
-                    self.fs.delete(_._id)
-                    del _
-                del query
-                # Collada.
+                self._deleteSubLocation(frag_dir)
                 ret = self.saveModelDae(frag_dir, frag)
             elif frag.type == '_none_':
                 # Dummy fragment that tells us to remove it.
@@ -275,11 +283,7 @@ class Dibbler:
             # Delete the fragment directory if something went wrong and proceed to
             # the next fragment.
             if not ret.ok:
-                query = {'filename': {'$regex': '^{}/.*'.format(frag_dir)}}
-                for _ in self.fs.find(query):
-                    self.fs.delete(_._id)
-                    del _
-                del query
+                self._deleteSubLocation(frag_dir)
                 continue
 
             # Update the 'meta.json': it contains a dictionary with all fragment
@@ -417,10 +421,10 @@ class Dibbler:
         """
         Overwrite all ``frags`` for ``objID``.
 
-        # fixme: the following functionality is still missing.
         This function will overwrite (or add) all specified ``frags`` unless
-        they are ``FragEmpty`` instances, in which case this method will delete
-        the respective fragment and update the `meta.json` file.
+        their type is *_none_*. If the type is *_none_* then this method will
+        delete the respective fragment and update the `meta.json` file
+        accordingly.
 
         :param str objID: the object for which to update the ``fragments``.
         :param list frags: list of new ``MetaFragment`` instances.
@@ -451,12 +455,7 @@ class Dibbler:
         :return: #files deleted.
         """
         location = self.getTemplateDir(location)
-        query = {'filename': {'$regex': '^{}/.*'.format(location)}}
-        cnt = 0
-        for f in self.fs.find(query):
-            self.fs.delete(f._id)
-            cnt += 1
-        return RetVal(True, None, cnt)
+        return self._deleteSubLocation(location)
 
     @typecheck
     def deleteInstance(self, objID: str):
@@ -470,9 +469,4 @@ class Dibbler:
         :return: #files deleted.
         """
         location = self.getInstanceDir(objID)
-        query = {'filename': {'$regex': '^{}/.*'.format(location)}}
-        cnt = 0
-        for f in self.fs.find(query):
-            self.fs.delete(f._id)
-            cnt += 1
-        return RetVal(True, None, cnt)
+        return self._deleteSubLocation(location)
