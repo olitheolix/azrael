@@ -166,11 +166,11 @@ def loadBoosterCubeBlender():
 
     # Return the model data.
     return vert, uv, rgb
-    
+
 
 def loadModel(fname):
     """
-    Load the 3D model from ``fname`` and return the vertices, UV, and RGB arrays.
+    Load 3D model from ``fname`` and return the vertices, UV, and RGB arrays.
     """
     # Load the model.
     print('  Importing <{}>... '.format(fname), end='', flush=True)
@@ -260,7 +260,7 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     newStates = {objID: [
         FragState('b_left', 0, [0, 0, 0], [0, 0, 0, 1]),
         FragState('b_right', 0, [0, 0, 0], [0, 0, 0, 1]),
-        ]}
+    ]}
     assert client.updateFragmentStates(newStates).ok
 
 
@@ -291,7 +291,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         +1.0, +1.0, -1.0,   +1.0, -1.0, -1.0,   -1.0, -1.0, -1.0,
         -1.0, +1.0, +1.0,   -1.0, -1.0, +1.0,   +1.0, -1.0, +1.0,
         +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0
-        ])
+    ])
 
     # Convenience.
     cs = np.array([4, 1, 1, 1], np.float64)
@@ -555,14 +555,17 @@ def main():
 #            fname = '/home/oliver/delme/export/monster.dae'
 #            fname = os.path.join(p, 'test.obj')
             scale, model_name = (1.25, fname)
-            #scale, model_name = (50, 'viewer/models/vatican/vatican-cathedral.3ds')
-            #scale, model_name = (1.25, 'viewer/models/house/house.3ds')
+            # scale, model_name = (
+            #     50, 'viewer/models/vatican/vatican-cathedral.3ds')
+            # scale, model_name = (
+            #     1.25, 'viewer/models/house/house.3ds')
             vert, uv, rgb = loadModel(model_name)
 
             # Load the Booster Cube Model created in Blender.
             scale, (vert, uv, rgb) = 1, loadBoosterCubeBlender()
 
-            # Wrap the UV data into a BoosterCube template and add it to Azrael.
+            # Wrap the UV data into a BoosterCube template and add it to
+            # Azrael.
             addBoosterCubeTemplate(scale, vert, uv, rgb)
 
             # Define additional templates, in this case the wall of cubes.

@@ -47,7 +47,7 @@ logger.propagate = False
 # Create a handler instance to log the messages to stdout.
 console = logging.StreamHandler(sys.stdout)
 console.setLevel(logging.DEBUG)
-#console.setLevel(logging.ERROR)
+# console.setLevel(logging.ERROR)
 
 logFormat = '%(levelname)s - %(name)s - %(message)s'
 console.setFormatter(logging.Formatter(logFormat))

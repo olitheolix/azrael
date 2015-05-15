@@ -20,8 +20,10 @@ from IPython import embed as ipshell
 
 import azrael.bullet.azBullet
 from azrael.bullet.azBullet import Vec3, Quaternion
-from azrael.bullet.azBullet import BoxShape, StaticPlaneShape, SphereShape, EmptyShape
-from azrael.bullet.azBullet import Transform, MotionState, DefaultMotionState, RigidBody
+from azrael.bullet.azBullet import BoxShape, StaticPlaneShape
+from azrael.bullet.azBullet import SphereShape, EmptyShape
+from azrael.bullet.azBullet import Transform, MotionState
+from azrael.bullet.azBullet import DefaultMotionState, RigidBody
 
 
 class TestVector3:
@@ -240,7 +242,7 @@ class TestRigidBody:
         pos = Vec3(1, 1, 1)
         body.applyForce(force, pos)
         assert body.getTotalForce() == force
-        
+
         # Add more force and torque.
         inc = Vec3(1, 2, 3)
         body.applyCentralForce(inc)
@@ -396,17 +398,17 @@ class TestRigidBody:
         ms_ref.setWorldTransform(t)
 
         # Verify the MotionState does not yet match ours.
-        ms_out = body.getMotionState()
-        assert ms_out.getWorldTransform().getOrigin() != pos
-        assert ms_out.getWorldTransform().getRotation().tolist() != rot.tolist()
+        ms = body.getMotionState()
+        assert ms.getWorldTransform().getOrigin() != pos
+        assert ms.getWorldTransform().getRotation().tolist() != rot.tolist()
 
         # Apply- and query the MotionState.
         body.setMotionState(ms_ref)
-        ms_out = body.getMotionState()
+        ms = body.getMotionState()
 
         # Verify the MotionState is correct.
-        assert ms_out.getWorldTransform().getOrigin() == pos
-        assert ms_out.getWorldTransform().getRotation().tolist() == rot.tolist()
+        assert ms.getWorldTransform().getOrigin() == pos
+        assert ms.getWorldTransform().getRotation().tolist() == rot.tolist()
 
     def test_centerOfMassTransform(self):
         """

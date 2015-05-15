@@ -229,7 +229,8 @@ class PyBulletDynamicsWorld():
             vRot = obj.getAngularVelocity().tolist()
 
             # Dummy value for the collision shape.
-            # fixme: this must be the JSON version of collisionShape description
+            # fixme: this must be the JSON version of collisionShape
+            #        description.
             cshape = obj.azrael[1].cshape
 
             # Linear/angular damping factors.
@@ -244,8 +245,8 @@ class PyBulletDynamicsWorld():
             cs2 = CollisionShape(csname.decode('utf8'), None)
             out.append(
                 _MotionState(obj.azrael[1].scale, obj.getInvMass(),
-                             obj.getRestitution(), rot, pos, vLin, vRot, cshape,
-                             axesLockLin, axesLockRot, 0, cs2))
+                             obj.getRestitution(), rot, pos, vLin, vRot,
+                             cshape, axesLockLin, axesLockRot, 0, cs2))
         return RetVal(True, None, out[0])
 
     @typecheck
@@ -345,8 +346,9 @@ class PyBulletDynamicsWorld():
         cshape.setLocalScaling(scale)
 
         # Add the collision shape to a list. Albeit not explicitly used
-        # anywhere this is necessary regardless to ensure the underlying pointers
-        # are kept alive (Bullet only accesse them but does not own them).
+        # anywhere this is necessary regardless to ensure the underlying
+        # pointers are kept alive (Bullet only accesse them but does not own
+        # them).
         self.collision_shapes[objID] = cshape
         return RetVal(True, None, cshape)
 

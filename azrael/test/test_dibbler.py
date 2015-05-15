@@ -39,7 +39,7 @@ class TestDibbler:
         self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
         assert self.dibbler.getNumFiles() == (True, None, 0)
-        
+
     def teardown_method(self, method):
         # Flush Dibbler.
         self.dibbler.reset()
@@ -69,7 +69,7 @@ class TestDibbler:
         ret = self.dibbler.getFile(url + '/{}/rgb2.jpg'.format(name))
         assert ret.ok
         assert ret.data == frag.rgb['rgb2.jpg']
-        
+
     def verifyRaw(self, url: str, mf: MetaFragment):
         """
         Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
@@ -82,7 +82,7 @@ class TestDibbler:
         # Convenience.
         name = mf.name
         frag = mf.data
-        
+
         # Fetch- and verify the file.
         ret = self.dibbler.getFile('{}/{}/model.json'.format(url, name))
         assert ret.ok
@@ -90,7 +90,7 @@ class TestDibbler:
         assert ret['uv'] == frag.uv
         assert ret['rgb'] == frag.rgb
         assert ret['vert'] == frag.vert
-        
+
     def test_addRawTemplate(self):
         """
         Add a raw template and fetch the individual files again afterwards.
@@ -107,7 +107,7 @@ class TestDibbler:
         # exactly two files (a meta file, and the actual fragment data).
         ret = dibbler.addTemplate(t_raw)
         assert dibbler.getNumFiles() == (True, None, 2)
-        
+
         # Fetch- and verify the model.
         self.verifyRaw(ret.data['url'], frag[0])
 
@@ -128,7 +128,7 @@ class TestDibbler:
         # extactly fourc files (a meta file, the DAE file, and two textures).
         ret = dibbler.addTemplate(t_dae)
         assert dibbler.getNumFiles() == (True, None, 4)
-        
+
         # Fetch- and verify the model.
         self.verifyDae(ret.data['url'], frag[0])
 
@@ -336,7 +336,8 @@ class TestDibbler:
         with pytest.raises(AssertionError):
             self.verifyRaw(ret_dae.data['url'], frag_dae[0])
 
-        # Remove the Collada template again. No files must be deleted this time.
+        # Remove the Collada template again. No files must be deleted this
+        # time.
         assert dibbler.deleteTemplate('name1') == (True, None, 0)
         assert dibbler.getNumFiles() == (True, None, 2)
 

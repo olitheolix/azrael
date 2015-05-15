@@ -346,7 +346,7 @@ def test_modify_size():
     torque = np.array([0, 0, 0], np.float64)
 
     # Create two identical spheres, one left, one right (x-axis).
-    cs2=('SPHERE', None)
+    cs2 = ('SPHERE', None)
     obj_a = bullet_data.MotionState(position=pos_a, cshape=cshape, cs2=cs2)
     obj_b = bullet_data.MotionState(position=pos_b, cshape=cshape, cs2=cs2)
     del cs2
@@ -440,7 +440,8 @@ def test_modify_cshape():
     assert ret.data.cs2.name.upper() == 'SPHERE'
 
     # Change both collision shape to unit cubes. Then step the simulation again
-    # to ensure Bullet accesses each object and nothing bad happens (eg a segfault).
+    # to ensure Bullet accesses each object and nothing bad happens (eg a
+    # segfault).
     obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_cube)
     obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_cube)
     bullet.setObjectData(objID_a, obj_a)

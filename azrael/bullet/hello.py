@@ -31,7 +31,7 @@ sim.addRigidBody(fallRigidBody)
 
 # Step the simulation and print the position of the sphere.
 for ii in range(10):
-    sim.stepSimulation(0.5, 30);
+    sim.stepSimulation(0.5, 30)
     ms = fallRigidBody.getMotionState()
     wt = ms.getWorldTransform()
     print(wt.getOrigin())

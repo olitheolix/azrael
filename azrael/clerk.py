@@ -146,7 +146,7 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_UpdateFragmentStates_Decode,
                 self.updateFragmentStates,
                 protocol.FromClerk_UpdateFragmentStates_Encode),
-            }
+        }
 
     def runCommand(self, fun_decode, fun_process, fun_encode):
         """
@@ -219,7 +219,7 @@ class Clerk(multiprocessing.Process):
         # Wait for socket activity.
         while True:
             sock = dict(poller.poll())
-            if not self.sock_cmd in sock:
+            if self.sock_cmd not in sock:
                 continue
 
             # Read from ROUTER socket and perform sanity checks.
@@ -830,7 +830,8 @@ class Clerk(multiprocessing.Process):
                 dbDocs.append(doc)
                 del idx, name, objID, doc
 
-            # Return if no objects were spawned (eg the templates did not exist).
+            # Return if no objects were spawned (eg the templates did not
+            # exist).
             if len(dbDocs) == 0:
                 return RetVal(True, None, tuple())
 

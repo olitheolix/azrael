@@ -189,8 +189,8 @@ def loadModelMesh(fname):
 
 if __name__ == '__main__':
     fname = 'models/pencil/pencil.obj'
-    #fname = 'models/house/house.obj'
-    #fname = "models/cube/Rubik's Cube.obj"
+    # fname = 'models/house/house.obj'
+    # fname = "models/cube/Rubik's Cube.obj"
 
     data = loadModelAll(fname)
     data = loadModelMesh(fname)

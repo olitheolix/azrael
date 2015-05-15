@@ -140,7 +140,7 @@ class TestClerk:
         # Mock the Dibbler instance.
         mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
         clerk.dibbler = mock_dibbler
-        mock_dibbler.spawnTemplate.return_value = RetVal(False, 'test error', None)
+        mock_dibbler.spawnTemplate.return_value = RetVal(False, 'error', None)
 
         # Attempt to spawn a valid template. The template exists in the
         # template database (the setup method for this test did it), but
@@ -393,13 +393,13 @@ class TestClerk:
         temp = Template('bar', cs, frags, [], [])
 
         # Add template when 'saveModel' fails.
-        mock_dibbler.addTemplate.return_value = RetVal(False, 'test_error', None)
+        mock_dibbler.addTemplate.return_value = RetVal(False, 't_error', None)
         ret = clerk.addTemplates([temp])
-        assert (ret.ok, ret.msg) == (False, 'test_error')
+        assert (ret.ok, ret.msg) == (False, 't_error')
         assert mock_dibbler.addTemplate.call_count == 1
 
         # Add template when 'saveModel' succeeds.
-        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1.0})
+        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1})
         assert clerk.addTemplates([temp]).ok
         assert mock_dibbler.addTemplate.call_count == 2
 
@@ -462,7 +462,7 @@ class TestClerk:
         # always succeeds.
         mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
         clerk.dibbler = mock_dibbler
-        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1.0})
+        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1})
 
         # The mock must not have been called so far.
         assert mock_dibbler.addTemplate.call_count == 0

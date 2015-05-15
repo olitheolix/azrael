@@ -120,7 +120,7 @@ class Client():
             'update_fragment_states': (
                 protocol.ToClerk_UpdateFragmentStates_Encode,
                 protocol.FromClerk_UpdateFragmentStates_Decode),
-            }
+        }
 
     def __del__(self):
         if self.sock_cmd is not None:

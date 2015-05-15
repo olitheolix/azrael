@@ -675,7 +675,8 @@ class LeonardDistributedZeroMQ(LeonardBase):
         self.ctx = zmq.Context()
         self.sock = self.ctx.socket(zmq.REP)
 
-        # Bind the socket to the specified address. Retry a few times if necessary.
+        # Bind the socket to the specified address. Retry a few times if
+        # necessary.
         for ii in range(10):
             try:
                 self.sock.bind(config.addr_leonard_repreq)

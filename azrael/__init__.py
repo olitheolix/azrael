@@ -29,8 +29,8 @@ def waitForDatabase(timeout=60):
     Raise `ImportError` if we cannot reach MongoDB within ``timeout`` seconds.
 
     Azrael crucially relies on MongoDB. The main purpose of this function is to
-    ensure it is ready. However, MongoDB may need time to start up because it eg
-    runs in a different container, started slower than Azrael, ...
+    ensure it is ready. However, MongoDB may need time to start up because it
+    eg runs in a different container, started slower than Azrael, ...
     """
     def isMongoLive():
         """

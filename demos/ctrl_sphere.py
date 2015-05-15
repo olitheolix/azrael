@@ -43,7 +43,7 @@ def startController(objID):
     # ---------------------------------------------------------------------
     # Central booster (partID='1')
     # ---------------------------------------------------------------------
-    #time.sleep(2)
+    # time.sleep(2)
     # Engage. This will accelerate the sphere forwards.
     print('Fire central booster...', end='', flush=True)
     central = parts.CmdBooster(partID='1', force=20)

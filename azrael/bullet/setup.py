@@ -36,6 +36,7 @@ import numpy as np
 from Cython.Build import cythonize
 from distutils.core import setup, Extension
 
+
 def compileBullet(tarball: str, libdir: str, double_precision: bool):
     """
     Compile Bullet as a shared library.
@@ -93,7 +94,7 @@ def compileBullet(tarball: str, libdir: str, double_precision: bool):
         # actual library path.
         cmd = [_.format(libdir=libdir) for _ in cmd]
         assert subprocess.call(cmd) == 0
-        
+
         # Run 'make install -j' to build and install Bullet.
         cmd = ['make', '-j', 'install']
         assert subprocess.call(cmd) == 0
@@ -138,9 +139,9 @@ def main():
     # Specify the precision we would like to use.
     double_precision = True
 
-    # Note: the name of the library *MUST* match the name of the pyx file. You are
-    # also *NOT* allowed to rename the library file name once it was built! If you
-    # do, Python will throw an error when importing the module.
+    # Note: the name of the library *MUST* match the name of the pyx file. You
+    # are also *NOT* allowed to rename the library file name once it was built!
+    # If you do, Python will throw an error when importing the module.
     libname = 'azBullet'
 
     # Backup the current working directory because we will change it.
@@ -167,7 +168,7 @@ def main():
         shutil.rmtree(tmp, ignore_errors=True)
 
         # Remove Cython generated cpp file.
-        subprocess.call('rm {}.cpp'.format(libname), shell=True)        
+        subprocess.call('rm {}.cpp'.format(libname), shell=True)
 
         # It is necessary to remove the 'cleanall' argument because distutils
         # will otherwise complain about an 'unknown argument'. In this case, we
@@ -192,7 +193,8 @@ def main():
         except Exception as err:
             raise err
         finally:
-            # Whatever happens, make sure we get back to the original directory.
+            # Whatever happens, make sure we get back to the original
+            # directory.
             os.chdir(cwd)
 
     # If Bullet was compiled with double precision types then it is paramount
@@ -201,12 +203,14 @@ def main():
         macros = [('BT_USE_DOUBLE_PRECISION', None)]
     else:
         macros = []
-        
-    # Let distutils Extension function take care to specify all the compiler options.
-    ext =Extension(
+
+    # Let distutils Extension function take care to specify all the compiler
+    # options.
+    ext = Extension(
         name=libname,
         sources=[libname + '.pyx'],
-        include_dirs=[os.path.join(dir_prefix, 'include/bullet'), np.get_include()],
+        include_dirs=[os.path.join(dir_prefix, 'include/bullet'),
+                      np.get_include()],
         library_dirs=[os.path.join(dir_prefix, 'lib')],
         runtime_library_dirs=[os.path.join(dir_prefix, 'lib')],
         libraries=['BulletCollision', 'BulletDynamics', 'LinearMath'],
@@ -218,7 +222,8 @@ def main():
     )
 
     # Build the extension module.
-    setup(name=libname,
+    setup(
+        name=libname,
         version='0.1',
         description='Bullet Wrapper for Azrael',
         author='Oliver Nagy',

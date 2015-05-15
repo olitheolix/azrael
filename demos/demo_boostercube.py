@@ -154,11 +154,13 @@ def spawnBoosterSphere(scale, fname):
     print('done (ID=<{}>)'.format(objID))
 
     # Disable the booster fragments by settings its scale to Zero.
-    newStates = {objID: [
-        FragState('b_x', 0, [0, 0, 0], [0, 0, 0, 1]),
-        FragState('b_y', 0, [0, 0, 0], [0, 0, 0, 1]),
-        FragState('b_z', 0, [0, 0, 0], [0, 0, 0, 1]),
-        ]}
+    newStates = {
+        objID: [
+            FragState('b_x', 0, [0, 0, 0], [0, 0, 0, 1]),
+            FragState('b_y', 0, [0, 0, 0], [0, 0, 0, 1]),
+            FragState('b_z', 0, [0, 0, 0], [0, 0, 0, 1]),
+        ]
+    }
     assert client.updateFragmentStates(newStates).ok
     return objID
 

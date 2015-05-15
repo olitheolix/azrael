@@ -280,14 +280,15 @@ class Dibbler:
                 msg = 'Unknown type <{}>'.format(frag.type)
                 ret = RetVal(False, msg, None)
 
-            # Delete the fragment directory if something went wrong and proceed to
-            # the next fragment.
+            # Delete the fragment directory if something went wrong and proceed
+            # to the next fragment.
             if not ret.ok:
                 self._deleteSubLocation(frag_dir)
                 continue
 
-            # Update the 'meta.json': it contains a dictionary with all fragment
-            # names and their model type, eg. {'foo': 'raw', 'bar': 'dae', ...}
+            # Update the 'meta.json': it contains a dictionary with all
+            # fragment names and their type, for instance:
+            # {'foo': 'raw', 'bar': # 'dae', ...}
             frag_names[frag.name] = frag.type
             self.fs.put(json.dumps({'fragments': frag_names}).encode('utf8'),
                         filename=os.path.join(location, 'meta.json'))
@@ -354,7 +355,7 @@ class Dibbler:
             return RetVal(False, 'File not found', None)
         else:
             return RetVal(True, None, ret.read())
-    
+
     @typecheck
     def addTemplate(self, model: Template):
         """
@@ -449,7 +450,7 @@ class Dibbler:
         Delete the all files under ``location``.
 
         This function always succeeds but returns the number of actually
-        deleted files. 
+        deleted files.
 
         :param str location: template location
         :return: #files deleted.
@@ -463,7 +464,7 @@ class Dibbler:
         Delete the all files belonging to the instance with ``objID``.
 
         This function always succeeds but returns the number of actually
-        deleted files. 
+        deleted files.
 
         :param str objID: ID of object delete.
         :return: #files deleted.

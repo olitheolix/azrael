@@ -211,9 +211,18 @@ class Quaternion:
         w = self.w
 
         # Standard formula.
+        a11 = 1 - 2 * y * y - 2 * z * z
+        a12 = 2 * x * y - 2 * z * w
+        a13 = 2 * x * z + 2 * y * w
+        a21 = 2 * x * y + 2 * z * w
+        a22 = 1 - 2 * x * x - 2 * z * z
+        a23 = 2 * y * z - 2 * x * w
+        a31 = 2 * x * z - 2 * y * w
+        a32 = 2 * y * z + 2 * x * w
+        a33 = 1 - 2 * x * x - 2 * y * y
         mat = np.array([
-            [1 - 2*y*y - 2*z*z, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
-            [2*x*y + 2*z*w, 1 - 2*x*x - 2*z*z, 2*y*z - 2*x*w, 0],
-            [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x*x - 2*y*y, 0],
+            [a11, a12, a12, 0],
+            [a21, a22, a23, 0],
+            [a31, a32, a33, 0],
             [0, 0, 0, 1]])
         return mat.astype(np.float32)

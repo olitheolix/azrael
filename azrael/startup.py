@@ -74,9 +74,9 @@ class AzraelStack:
         dibbler.reset()
 
         # Start the physics engine.
-        #leo = leonard.LeonardBase()
-        #leo = leonard.LeonardBullet()
-        #leo = leonard.LeonardSweeping()
+        # leo = leonard.LeonardBase()
+        # leo = leonard.LeonardBullet()
+        # leo = leonard.LeonardSweeping()
         leo = azrael.leonard.LeonardDistributedZeroMQ()
 
         # Start Clerk, Clacks, and Leonard.
