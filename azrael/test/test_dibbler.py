@@ -35,41 +35,61 @@ class TestDibbler:
         pass
 
     def setup_method(self, method):
+        # Flush Dibbler.
         self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
         assert self.dibbler.getNumFiles() == (True, None, 0)
         
     def teardown_method(self, method):
+        # Flush Dibbler.
         self.dibbler.reset()
         assert self.dibbler.getNumFiles() == (True, None, 0)
 
-    def verifyDae(self, url, ref):
-        name = ref.name
-        ref = ref.data
+    def verifyDae(self, url: str, mf: MetaFragment):
+        """
+        Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
+
+        :param str url: the URL where the Collada fragment is supposed to be.
+        :param MetaFragment mf: the fragment to compare it with.
+        :return: None
+        :raises: AssertionError if the fragment does not match.
+        """
+        # Convenience.
+        name = mf.name
+        frag = mf.data
 
         # Fetch- and verify the file.
         ret = self.dibbler.getFile(url + '/{name}/{name}'.format(name=name))
         assert ret.ok
-        assert ret.data == ref.dae
+        assert ret.data == frag.dae
 
         ret = self.dibbler.getFile(url + '/{}/rgb1.png'.format(name))
         assert ret.ok
-        assert ret.data == ref.rgb['rgb1.png']
+        assert ret.data == frag.rgb['rgb1.png']
         ret = self.dibbler.getFile(url + '/{}/rgb2.jpg'.format(name))
         assert ret.ok
-        assert ret.data == ref.rgb['rgb2.jpg']
+        assert ret.data == frag.rgb['rgb2.jpg']
         
-    def verifyRaw(self, url, ref):
-        name = ref.name
-        ref = ref.data
+    def verifyRaw(self, url: str, mf: MetaFragment):
+        """
+        Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
+
+        :param str url: the URL where the Collada fragment is supposed to be.
+        :param MetaFragment mf: the fragment to compare it with.
+        :return: None
+        :raises: AssertionError if the fragment does not match.
+        """
+        # Convenience.
+        name = mf.name
+        frag = mf.data
         
         # Fetch- and verify the file.
         ret = self.dibbler.getFile('{}/{}/model.json'.format(url, name))
         assert ret.ok
         ret = json.loads(ret.data.decode('utf8'))
-        assert ret['uv'] == ref.uv
-        assert ret['rgb'] == ref.rgb
-        assert ret['vert'] == ref.vert
+        assert ret['uv'] == frag.uv
+        assert ret['rgb'] == frag.rgb
+        assert ret['vert'] == frag.vert
         
     def test_addRawTemplate(self):
         """
@@ -162,7 +182,7 @@ class TestDibbler:
 
     def test_updateTemplate(self):
         """
-        fixme: docu
+        Spawn a template and update all its fragments.
         """
         dibbler = self.dibbler
 
