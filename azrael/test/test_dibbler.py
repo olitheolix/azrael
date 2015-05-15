@@ -14,21 +14,10 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
-import os
 import json
-import time
-import shutil
-import base64
 import pytest
-import pickle
-import tornado.web
-import azrael.clerk
 import azrael.dibbler
-import urllib.request
-import tornado.testing
 
-import numpy as np
-import unittest.mock as mock
 import azrael.config as config
 
 from IPython import embed as ipshell
