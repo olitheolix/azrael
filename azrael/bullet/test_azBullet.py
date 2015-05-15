@@ -25,6 +25,7 @@ from azrael.bullet.azBullet import SphereShape, EmptyShape
 from azrael.bullet.azBullet import Transform, MotionState
 from azrael.bullet.azBullet import DefaultMotionState, RigidBody
 from azrael.bullet.azBullet import CompoundShape
+from azrael.bullet.azBullet import Point2PointConstraint
 
 
 class TestVector3:
@@ -75,7 +76,7 @@ class TestRigidBody:
     def teardown_class(cls):
         pass
 
-    def getRB(self, pos=Vec3(0, 0, 0)):
+    def getRB(self, pos=Vec3(0, 0, 0), cs=SphereShape(1)):
         """
         Return a Rigid Body tuple.
 
@@ -84,7 +85,6 @@ class TestRigidBody:
         rigid body requires several indepenent structures that need to remain
         in memory.
         """
-        cs = SphereShape(1)
         t = Transform(Quaternion(0, 0, 0, 1), pos)
         ms = DefaultMotionState(t)
         mass = 1
@@ -450,6 +450,43 @@ class TestRigidBody:
         # Change to box shape.
         body.setCollisionShape(box)
         assert body.getCollisionShape().getName() == b'Box'
+
+    def test_Constraint_fixme_move_somewhere_else(self):
+        """
+        Set, query, and replace a collision shape.
+        """
+        cs_a = SphereShape(1)
+        cs_b = BoxShape(Vec3(1, 2, 3))
+
+        # Get RigidBody object.
+        rb1, _ = self.getRB(cs=cs_a)
+        rb2, _ = self.getRB(cs=cs_b)
+
+        # Connect the two rigid bodies.
+        pivot_a, pivot_b = Vec3(0, 0, -10), Vec3(0, 0, 10)
+        p2p = Point2PointConstraint(rb1, rb2, pivot_a, pivot_b)
+
+        # Verify that their pivot is as specified.
+        assert p2p.getPivotInA() == pivot_a
+        assert p2p.getPivotInB() == pivot_b
+
+        # Swap the pivot points.
+        p2p.setPivotA(pivot_b)
+        p2p.setPivotB(pivot_a)
+        # Verify that their pivot is as specified.
+        assert p2p.getPivotInA() == pivot_b
+        assert p2p.getPivotInB() == pivot_a
+
+        # Query the two objects and verify they have the correct type.
+        assert p2p.getRigidBodyA().getCollisionShape().getName() == b'SPHERE'
+        assert p2p.getRigidBodyB().getCollisionShape().getName() == b'Box'
+
+        # Enable- and disable the contstraint.
+        assert p2p.isEnabled() == True
+        p2p.setEnabled(False)
+        assert p2p.isEnabled() == False
+        p2p.setEnabled(True)
+        assert p2p.isEnabled() == True
 
 
 class TestCollisionShapes:

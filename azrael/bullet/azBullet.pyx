@@ -31,13 +31,17 @@ from transform cimport *
 from motion_state cimport *
 from collision_object cimport *
 from rigid_body cimport *
+from typed_constraint cimport *
 
+# Important: the order of the includes matter; make sure it is compatible with
+#            the class hierarchy!
 include 'basic.pyx'
 include 'collision_shapes.pyx'
 include 'transform.pyx'
 include 'motion_state.pyx'
 include 'collision_object.pyx'
 include 'rigid_body.pyx'
+include 'typed_constraint.pyx'
 
 
 cdef class BulletBase:
