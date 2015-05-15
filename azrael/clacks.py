@@ -180,6 +180,15 @@ class MyGridFSHandler(tornado.web.RequestHandler):
         name = '.'.join([__name__, self.__class__.__name__])
         self.logit = logging.getLogger(name)
 
+    def set_extra_headers(self, path):
+        """
+        Disable all caches (maybe). For more information see
+        http://stackoverflow.com/questions/12031007/\
+        disable-static-file-caching-in-tornado
+        """
+        self.set_header('Cache-Control',
+                        'no-store, no-cache, must-revalidate, max-age=0')
+
     def get(self, username):
         """
         Fetch the file from Dibbler and serve it up, if possible.
