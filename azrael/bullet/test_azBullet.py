@@ -462,31 +462,34 @@ class TestCollisionShapes:
         pass
 
     def test_BasicShapes(self):
-        # Create a Static Plane and change its scaling.
-        cs = StaticPlaneShape(Vec3(0, 1, 2), 3)
-        scale = Vec3(1.5, 2.5, 3.5)
-        cs.setLocalScaling(scale)
-        assert cs.getLocalScaling() == scale
+        """
+        Create the basic shapes and verify their names. Furthermore, verify
+        that scaling them works.
+        """
+        # Create the Collision Shape instances.
+        cs_p = StaticPlaneShape(Vec3(0, 1, 2), 3)
+        cs_s = SphereShape(3)
+        cs_b = BoxShape(Vec3(1, 2, 3))
+        cs_e = EmptyShape()
 
-        # Create a Sphere and change its scaling.
-        cs = SphereShape(3)
-        scale = Vec3(1.5, 2.5, 3.5)
-        cs.setLocalScaling(scale)
-        assert cs.getLocalScaling() == scale
+        # Put the collision shapes into a dictionary where the key is the
+        # expected name.
+        shapes = {b'STATICPLANE': cs_p,
+                 b'SPHERE': cs_s,
+                 b'Box': cs_b,
+                 b'Empty': cs_e}
 
-        # Create a Box and change its scaling.
-        cs = BoxShape(Vec3(1, 2, 3))
+        # Verify the name of each shape and modify its scale.
         scale = Vec3(1.5, 2.5, 3.5)
-        cs.setLocalScaling(scale)
-        assert cs.getLocalScaling() == scale
-
-        # Create an Empty shape and change its scaling.
-        cs = EmptyShape()
-        scale = Vec3(1.5, 2.5, 3.5)
-        cs.setLocalScaling(scale)
-        assert cs.getLocalScaling() == scale
+        for name, cs in shapes.items():
+            cs.setLocalScaling(scale)
+            assert cs.getLocalScaling() == scale
+            assert cs.getName() == name
 
     def test_CompoundShapes(self):
+        """
+        Create a compound shape, then add- and remove objects in it.
+        """
         # Create some shapes.
         cs_p = StaticPlaneShape(Vec3(0, 1, 2), 3)
         cs_s = SphereShape(3)
