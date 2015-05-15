@@ -16,16 +16,19 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Bridge between Websocket Client and Clerk.
+Clacks relays Websocket connections to Clerk, and serves up the files from
+Dibbler.
 
-It does little more than wrapping a ``Client`` instance. As such it has
-the same capabilities.
+Clacks facilitate browser access to Clerk. This is necessary since Websocket
+are supported in all (relevant) browsers, yet ZeroMQ access is still
+non-trivial from JavaScript. This bridge remove that hurdle to make Azrael
+accessible from almost any platform.
 
-fixme: update docu
+The second purpose of Clacks is to serve up model files. This is little more
+than a wrapper around Dibbler which administrates all model files.
 """
 
 import os
-import sys
 import time
 import json
 import logging
@@ -33,8 +36,6 @@ import multiprocessing
 import tornado.websocket
 import tornado.httpserver
 import zmq.eventloop.zmqstream
-
-import numpy as np
 
 import azrael.client
 import azrael.dibbler
@@ -46,12 +47,6 @@ from azrael.types import typecheck
 
 class WebsocketHandler(tornado.websocket.WebSocketHandler):
     """
-    Clacks server.
-
-    Clacks is nothing more than Websocket relay to Clerk. Its main purpose is
-    to facilitate browser access to Azrael/Clerk since most browsers support
-    Websockets but not necessarily ZeroMQ.
-
     Internally, every Websocket instance creates a standard ``Client``
     instance, and uses to relay the request to a Clerk.
 
@@ -172,23 +167,31 @@ class ServeViewer(tornado.web.RequestHandler):
 
 class MyGridFSHandler(tornado.web.RequestHandler):
     """
-    fixme: docu
-    fixme: rename
+    Serve up files from Dibbler.
+
+    This handle is merely a wrapper around Dibbler's 'getFile' function.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.dibbler = azrael.dibbler.Dibbler()
 
-        # fixme: add logger instance
-        # fixme: use logger instead of print
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
 
     def get(self, username):
+        """
+        Fetch the file from Dibbler and serve it up, if possible.
+
+        If the file does not exist then return an empty string to the client.
+        """
         tmp = self.dibbler.getFile(self.request.path)
         if isinstance(tmp.data, bytes):
             self.write(tmp.data)
         else:
             self.write(b'')
+
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     """
