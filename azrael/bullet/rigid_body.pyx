@@ -134,8 +134,8 @@ cdef class RigidBody(CollisionObject):
 
     def getCenterOfMassTransform(self):
         t = Transform()
-        t.thisptr[0] = self.thisptr.getCenterOfMassTransform()
+        t.ptr_Transform[0] = self.thisptr.getCenterOfMassTransform()
         return t
 
-    def setCenterOfMassTransform(self, Transform xform):
-        self.thisptr.setCenterOfMassTransform(xform.thisptr[0])
+    def setCenterOfMassTransform(self, Transform t):
+        self.thisptr.setCenterOfMassTransform(t.ptr_Transform[0])

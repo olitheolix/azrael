@@ -141,7 +141,7 @@ cdef class CompoundShape(CollisionShape):
 
     def addChildShape(self, Transform localTransform, CollisionShape shape):
         self.ptr_CompoundShape.addChildShape(
-            localTransform.thisptr[0],
+            localTransform.ptr_Transform[0],
             shape.ptr_CollisionShape)
 
     def getChildShape(self, int index):
