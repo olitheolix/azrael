@@ -1,17 +1,17 @@
 cdef class Scalar:
-    cdef btScalar *thisptr
+    cdef btScalar *ptr_btScalar
 
     def __cinit__(self, double x=0):
-        self.thisptr = new btScalar(x)
+        self.ptr_btScalar = new btScalar(x)
 
     def __dealloc__(self):
-        del self.thisptr
+        del self.ptr_btScalar
 
     def value(self):
-        return <double>(self.thisptr[0])
+        return <double>(self.ptr_btScalar[0])
 
     def __repr__(self):
-        return str(<double>self.thisptr[0])
+        return str(<double>self.ptr_btScalar[0])
 
 cdef class Vec3:
     cdef btVector3 *thisptr
