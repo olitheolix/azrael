@@ -1,3 +1,167 @@
+cdef class RigidBodyConstructionInfo:
+    cdef btRigidBodyConstructionInfo *ptr_RigidBodyConstructionInfo
+
+    def __cinit__(self, double mass, MotionState ms, CollisionShape cs,
+                  Vec3 inert=Vec3(0, 0, 0)):
+        self.ptr_RigidBodyConstructionInfo = NULL
+
+    def __init__(self, double mass, MotionState ms, CollisionShape cs,
+                  Vec3 inert=Vec3(0, 0, 0)):
+        self.ptr_RigidBodyConstructionInfo = new btRigidBodyConstructionInfo(
+            btScalar(mass),
+            ms.ptr_MotionState,
+            cs.ptr_CollisionShape,
+            inert.ptr_Vector3[0])
+
+    def __dealloc__(self):
+        if self.ptr_RigidBodyConstructionInfo != NULL:
+            del self.ptr_RigidBodyConstructionInfo
+
+    property localInertia:
+        def __get__(self):
+            v = Vec3()
+            v.ptr_Vector3[0] = self.ptr_RigidBodyConstructionInfo.m_localInertia
+            return v
+
+        def __set__(self, Vec3 value):
+            self.ptr_RigidBodyConstructionInfo.m_localInertia = value.ptr_Vector3[0]
+
+        def __del__(self):
+            pass
+
+
+    property mass:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_mass
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_mass = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property linearDamping:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_linearDamping
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_linearDamping = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property angularDamping:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_angularDamping
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_angularDamping = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property friction:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_friction
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_friction = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property rollingFriction:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_rollingFriction
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_rollingFriction = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property restitution:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_restitution
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_restitution = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property linearSleepingThreshold:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_linearSleepingThreshold
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_linearSleepingThreshold = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property angularSleepingThreshold:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_angularSleepingThreshold
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_angularSleepingThreshold = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property additionalDampingFactor:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_additionalDampingFactor
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_additionalDampingFactor = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property additionalLinearDampingThresholdSqr:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_additionalLinearDampingThresholdSqr
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_additionalLinearDampingThresholdSqr = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property additionalAngularDampingThresholdSqr:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_additionalAngularDampingThresholdSqr
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_additionalAngularDampingThresholdSqr = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
+    property additionalAngularDampingFactor:
+        def __get__(self):
+            return <double>self.ptr_RigidBodyConstructionInfo.m_additionalAngularDampingFactor
+
+        def __set__(self, double value):
+            self.ptr_RigidBodyConstructionInfo.m_additionalAngularDampingFactor = btScalar(value)
+
+        def __del__(self):
+            pass
+
+
 cdef class RigidBody(CollisionObject):
     cdef btRigidBody *ptr_RigidBody
 

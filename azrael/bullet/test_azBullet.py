@@ -26,6 +26,7 @@ from azrael.bullet.azBullet import Transform, MotionState
 from azrael.bullet.azBullet import DefaultMotionState, RigidBody
 from azrael.bullet.azBullet import CompoundShape
 from azrael.bullet.azBullet import Point2PointConstraint, BulletBase
+from azrael.bullet.azBullet import RigidBodyConstructionInfo
 
 
 class TestVector3:
@@ -361,8 +362,16 @@ class TestRigidBody:
         """
         Test the Transform class.
         """
-        t = Transform()
+        pos = Vec3(1, 2, 3.5)
+        rot = Quaternion(0, 1, 0, 0)
+        t = Transform(rot, pos)
+        assert t.getOrigin() == pos
+        assert t.getRotation().tolist() == rot.tolist()
+
+        # Set to identity.
         t.setIdentity()
+        assert t.getOrigin() == Vec3(0, 0, 0)
+        assert t.getRotation().tolist()== Quaternion(0, 0, 0, 1).tolist()
 
         # Set the position and orientation.
         pos = Vec3(1, 2, 3.5)
@@ -533,6 +542,34 @@ class TestRigidBody:
             assert p_b[0] > init_pos[1]
             assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
             init_pos = (p_a[0], p_b[0])
+
+    def test_ConstructionInfo(self):
+        """
+        Create a RigidBodyConstructionInfo class and set/get some attributes.
+        """
+        mass = 1.5
+        pos = Vec3(1, 2, 3)
+        t = Transform(Quaternion(0, 0, 0, 1), pos)
+        ms = MotionState(t)
+        cs = EmptyShape()
+        c = RigidBodyConstructionInfo(mass, ms, cs)
+
+        # Mass was specified in Ctor.
+        assert c.mass == mass
+        c.mass = 1.1
+        assert c.mass == 1.1
+        c.mass = 1.1
+        assert c.mass == 1.1
+        
+        # Mass was specified in Ctor.
+        assert c.localInertia == Vec3(0, 0, 0)
+        inert = Vec3(1, 2, 10)
+        c.localInertia = inert
+        assert c.localInertia == inert
+        inert = Vec3(1, 2, 20)
+        c.localInertia = inert
+        assert c.localInertia == inert
+        
 
 class TestCollisionShapes:
     @classmethod

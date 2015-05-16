@@ -6,6 +6,33 @@ from motion_state cimport *
 from collision_object cimport *
 from rigid_body cimport *
 
+
+cdef extern from "btBulletDynamicsCommon.h" namespace "btRigidBody":
+    cdef cppclass btRigidBodyConstructionInfo:
+        btRigidBodyConstructionInfo(
+            btScalar mass, btMotionState* motionState,
+            btCollisionShape* collisionShape,
+            const btVector3& localInertia)
+
+        btScalar          m_mass
+        btMotionState*    m_motionState
+        btTransform       m_startWorldTransform
+        btCollisionShape* m_collisionShape
+        btVector3         m_localInertia
+        btScalar          m_linearDamping
+        btScalar          m_angularDamping
+        btScalar          m_friction
+        btScalar          m_rollingFriction
+        btScalar          m_restitution
+        btScalar          m_linearSleepingThreshold
+        btScalar          m_angularSleepingThreshold
+        bint              m_additionalDamping
+        btScalar          m_additionalDampingFactor
+        btScalar          m_additionalLinearDampingThresholdSqr
+        btScalar          m_additionalAngularDampingThresholdSqr
+        btScalar          m_additionalAngularDampingFactor
+
+
 cdef extern from "btBulletDynamicsCommon.h":
     cdef cppclass btRigidBody:
         btRigidBody(
