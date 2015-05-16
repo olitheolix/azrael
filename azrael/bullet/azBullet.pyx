@@ -87,7 +87,7 @@ cdef class BulletBase:
         return (x, y, z)
 
     def addRigidBody(self, RigidBody body):
-        self.dynamicsWorld.addRigidBody(body.thisptr)
+        self.dynamicsWorld.addRigidBody(body.ptr_RigidBody)
 
     def addConstraint(self, TypedConstraint constraint):
         self.dynamicsWorld.addConstraint(constraint.ptr_TypedConstraint, False)
@@ -97,4 +97,4 @@ cdef class BulletBase:
             btScalar(timeStep), maxSubSteps, btScalar(1.0 / 60.0))
 
     def removeRigidBody(self, RigidBody body):
-        self.dynamicsWorld.removeRigidBody(body.thisptr)
+        self.dynamicsWorld.removeRigidBody(body.ptr_RigidBody)

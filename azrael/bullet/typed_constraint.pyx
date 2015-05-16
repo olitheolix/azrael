@@ -20,7 +20,7 @@ cdef class TypedConstraint:
         mass = 1
         inertia = Vec3(0, 0, 0)
         body = RigidBody(mass, ms, cs, inertia)
-        body.thisptr[0] = self.ptr_TypedConstraint.getRigidBodyA()
+        body.ptr_RigidBody[0] = self.ptr_TypedConstraint.getRigidBodyA()
         return body
 
     def getRigidBodyB(self):
@@ -31,7 +31,7 @@ cdef class TypedConstraint:
         mass = 1
         inertia = Vec3(0, 0, 0)
         body = RigidBody(mass, ms, cs, inertia)
-        body.thisptr[0] = self.ptr_TypedConstraint.getRigidBodyB()
+        body.ptr_RigidBody[0] = self.ptr_TypedConstraint.getRigidBodyB()
         return body
 
     def isEnabled(self):
@@ -55,7 +55,7 @@ cdef class Point2PointConstraint(TypedConstraint):
                        Vec3 pivotInA,
                        Vec3 pivotInB):
         self.ptr_Point2PointConstraint = new btPoint2PointConstraint(
-            rbA.thisptr[0], rbB.thisptr[0],
+            rbA.ptr_RigidBody[0], rbB.ptr_RigidBody[0],
             pivotInA.ptr_Vector3[0], pivotInB.ptr_Vector3[0])
 
         # Assign the base pointers.
