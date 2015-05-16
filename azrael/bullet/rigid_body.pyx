@@ -9,7 +9,7 @@ cdef class RigidBody(CollisionObject):
             btScalar(mass),
             ms.ptr_MotionState,
             cs.ptr_CollisionShape,
-            localInertia.thisptr[0])
+            localInertia.ptr_Vector3[0])
 
         # Assign the base pointers.
         self.ptr_CollisionObject = <btCollisionObject*?>self.thisptr
@@ -26,35 +26,35 @@ cdef class RigidBody(CollisionObject):
 
     def getLinearFactor(self):
         p = Vec3()
-        p.thisptr[0] = self.thisptr.getLinearFactor()
+        p.ptr_Vector3[0] = self.thisptr.getLinearFactor()
         return p
 
     def setLinearFactor(self, Vec3 linearFactor):
-        self.thisptr.setLinearFactor(linearFactor.thisptr[0])
+        self.thisptr.setLinearFactor(linearFactor.ptr_Vector3[0])
 
     def getAngularFactor(self):
         p = Vec3()
-        p.thisptr[0] = self.thisptr.getAngularFactor()
+        p.ptr_Vector3[0] = self.thisptr.getAngularFactor()
         return p
 
     def setAngularFactor(self, Vec3 angularFactor):
-        self.thisptr.setAngularFactor(angularFactor.thisptr[0])
+        self.thisptr.setAngularFactor(angularFactor.ptr_Vector3[0])
 
     def getLinearVelocity(self):
         p = Vec3()
-        p.thisptr[0] = self.thisptr.getLinearVelocity()
+        p.ptr_Vector3[0] = self.thisptr.getLinearVelocity()
         return p
 
     def setLinearVelocity(self, Vec3 linearVelocity):
-        self.thisptr.setLinearVelocity(linearVelocity.thisptr[0])
+        self.thisptr.setLinearVelocity(linearVelocity.ptr_Vector3[0])
 
     def getAngularVelocity(self):
         p = Vec3()
-        p.thisptr[0] = self.thisptr.getAngularVelocity()
+        p.ptr_Vector3[0] = self.thisptr.getAngularVelocity()
         return p
 
     def setAngularVelocity(self, Vec3 angularVelocity):
-        self.thisptr.setAngularVelocity(angularVelocity.thisptr[0])
+        self.thisptr.setAngularVelocity(angularVelocity.ptr_Vector3[0])
 
     def getMotionState(self):
         ms = MotionState()
@@ -90,35 +90,35 @@ cdef class RigidBody(CollisionObject):
 
     def getTotalForce(self):
         p = Vec3()
-        p.thisptr[0] = self.thisptr.getTotalForce()
+        p.ptr_Vector3[0] = self.thisptr.getTotalForce()
         return p
 
     def getTotalTorque(self):
         p = Vec3()
-        p.thisptr[0] = self.thisptr.getTotalTorque()
+        p.ptr_Vector3[0] = self.thisptr.getTotalTorque()
         return p
 
     def clearForces(self):
         self.thisptr.clearForces()
 
     def applyForce(self, Vec3 force, Vec3 pos):
-        self.thisptr.applyForce(force.thisptr[0], pos.thisptr[0])
+        self.thisptr.applyForce(force.ptr_Vector3[0], pos.ptr_Vector3[0])
 
     def applyCentralForce(self, Vec3 force):
-        self.thisptr.applyCentralForce(force.thisptr[0])
+        self.thisptr.applyCentralForce(force.ptr_Vector3[0])
 
     def applyTorque(self, Vec3 torque):
-        self.thisptr.applyTorque(torque.thisptr[0])
+        self.thisptr.applyTorque(torque.ptr_Vector3[0])
 
     def setMassProps(self, double mass, Vec3 inertia):
-        self.thisptr.setMassProps(btScalar(mass), inertia.thisptr[0])
+        self.thisptr.setMassProps(btScalar(mass), inertia.ptr_Vector3[0])
 
     def getInvMass(self):
         return <double>self.thisptr.getInvMass()
 
     def getInvInertiaDiagLocal(self):
         p = Vec3()
-        p.thisptr[0] = self.thisptr.getInvInertiaDiagLocal()
+        p.ptr_Vector3[0] = self.thisptr.getInvInertiaDiagLocal()
         return p
 
     def forceActivationState(self, int newState):

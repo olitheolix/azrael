@@ -56,7 +56,7 @@ cdef class Point2PointConstraint(TypedConstraint):
                        Vec3 pivotInB):
         self.ptr_Point2PointConstraint = new btPoint2PointConstraint(
             rbA.thisptr[0], rbB.thisptr[0],
-            pivotInA.thisptr[0], pivotInB.thisptr[0])
+            pivotInA.ptr_Vector3[0], pivotInB.ptr_Vector3[0])
 
         # Assign the base pointers.
         self.ptr_TypedConstraint = <btTypedConstraint*?>self.ptr_Point2PointConstraint
@@ -67,17 +67,17 @@ cdef class Point2PointConstraint(TypedConstraint):
 
 
     def setPivotA(self, Vec3 pivotA):
-        self.ptr_Point2PointConstraint.setPivotA(pivotA.thisptr[0])
+        self.ptr_Point2PointConstraint.setPivotA(pivotA.ptr_Vector3[0])
 
     def setPivotB(self, Vec3 pivotB):
-        self.ptr_Point2PointConstraint.setPivotB(pivotB.thisptr[0])
+        self.ptr_Point2PointConstraint.setPivotB(pivotB.ptr_Vector3[0])
 
     def getPivotInA(self):
         v = Vec3(0, 0, 0)
-        v.thisptr[0] = self.ptr_Point2PointConstraint.getPivotInA()
+        v.ptr_Vector3[0] = self.ptr_Point2PointConstraint.getPivotInA()
         return v
 
     def getPivotInB(self):
         v = Vec3(0, 0, 0)
-        v.thisptr[0] = self.ptr_Point2PointConstraint.getPivotInB()
+        v.ptr_Vector3[0] = self.ptr_Point2PointConstraint.getPivotInB()
         return v

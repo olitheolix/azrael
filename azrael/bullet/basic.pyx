@@ -14,39 +14,39 @@ cdef class Scalar:
         return str(<double>self.ptr_btScalar[0])
 
 cdef class Vec3:
-    cdef btVector3 *thisptr
+    cdef btVector3 *ptr_Vector3
 
     def __cinit__(self, double x=0, double y=0, double z=0):
-        self.thisptr = new btVector3(x, y, z)
+        self.ptr_Vector3 = new btVector3(x, y, z)
 
     def __dealloc__(self):
-        del self.thisptr
+        del self.ptr_Vector3
 
     def __neg__(self):
         ret = Vec3()
-        ret.thisptr[0] = -self.thisptr[0]
+        ret.ptr_Vector3[0] = -self.ptr_Vector3[0]
         return ret
 
     def __add__(Vec3 self, Vec3 v):
         ret = Vec3()
-        ret.thisptr[0] = self.thisptr[0] + v.thisptr[0]
+        ret.ptr_Vector3[0] = self.ptr_Vector3[0] + v.ptr_Vector3[0]
         return ret
 
     def __sub__(Vec3 self, Vec3 v):
         ret = Vec3()
-        ret.thisptr[0] = self.thisptr[0] - v.thisptr[0]
+        ret.ptr_Vector3[0] = self.ptr_Vector3[0] - v.ptr_Vector3[0]
         return ret
 
     def __richcmp__(Vec3 x, Vec3 y, int op):
         if op == Py_EQ:
-            return (x.thisptr[0] == y.thisptr[0])
+            return (x.ptr_Vector3[0] == y.ptr_Vector3[0])
         elif op == Py_NE:
-            return (x.thisptr[0] != y.thisptr[0])
+            return (x.ptr_Vector3[0] != y.ptr_Vector3[0])
         else:
             assert False
 
     def tolist(self):
-        t = self.thisptr
+        t = self.ptr_Vector3
         return (<double>t.x(), <double>t.y(), <double>t.z())
 
     def __repr__(self):
