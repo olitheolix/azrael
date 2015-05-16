@@ -1,3 +1,28 @@
+cdef class TypedConstraintType:
+    cdef readonly int POINT2POINT_CONSTRAINT_TYPE
+    cdef readonly int HINGE_CONSTRAINT_TYPE
+    cdef readonly int CONETWIST_CONSTRAINT_TYPE
+    cdef readonly int D6_CONSTRAINT_TYPE
+    cdef readonly int SLIDER_CONSTRAINT_TYPE
+    cdef readonly int CONTACT_CONSTRAINT_TYPE
+    cdef readonly int D6_SPRING_CONSTRAINT_TYPE
+    cdef readonly int GEAR_CONSTRAINT_TYPE
+    cdef readonly int FIXED_CONSTRAINT_TYPE
+    cdef readonly int MAX_CONSTRAINT_TYPE
+
+    def __cinit__(self):
+       self.POINT2POINT_CONSTRAINT_TYPE = POINT2POINT_CONSTRAINT_TYPE
+       self.HINGE_CONSTRAINT_TYPE = HINGE_CONSTRAINT_TYPE
+       self.CONETWIST_CONSTRAINT_TYPE = CONETWIST_CONSTRAINT_TYPE
+       self.D6_CONSTRAINT_TYPE = D6_CONSTRAINT_TYPE
+       self.SLIDER_CONSTRAINT_TYPE = SLIDER_CONSTRAINT_TYPE
+       self.CONTACT_CONSTRAINT_TYPE = CONTACT_CONSTRAINT_TYPE
+       self.D6_SPRING_CONSTRAINT_TYPE = D6_SPRING_CONSTRAINT_TYPE
+       self.GEAR_CONSTRAINT_TYPE = GEAR_CONSTRAINT_TYPE
+       self.FIXED_CONSTRAINT_TYPE = FIXED_CONSTRAINT_TYPE
+       self.MAX_CONSTRAINT_TYPE = MAX_CONSTRAINT_TYPE
+
+
 cdef class TypedConstraint:
     cdef btTypedConstraint *ptr_TypedConstraint
 

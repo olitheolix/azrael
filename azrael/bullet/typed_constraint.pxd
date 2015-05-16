@@ -3,7 +3,7 @@ from rigid_body cimport *
 
 cdef extern from "btBulletDynamicsCommon.h":
     cdef enum btTypedConstraintType:
-        POINT2POINT_CONSTRAINT_TYPE=3
+        POINT2POINT_CONSTRAINT_TYPE
         HINGE_CONSTRAINT_TYPE
         CONETWIST_CONSTRAINT_TYPE
         D6_CONSTRAINT_TYPE
