@@ -44,8 +44,8 @@ class PyRigidBody(azBullet.RigidBody):
     a pure Python class (eg adding attributes at runtime). This is transparent
     to the end user.
     """
-    def __init__(self, mass, ms, cshape, inertia):
-        super().__init__(mass, ms, cshape, inertia)
+    def __init__(self, ci):
+        super().__init__(ci)
 
 
 class PyBulletDynamicsWorld():
@@ -390,7 +390,9 @@ class PyBulletDynamicsWorld():
         del l
 
         # Instantiate the actual rigid body object.
-        body = PyRigidBody(mass, ms, cshape, inertia)
+        ci = azBullet.RigidBodyConstructionInfo(mass, ms, cshape)
+        ci.localInertia = inertia
+        body = PyRigidBody(ci)
 
         # Set additional parameters.
         body.setFriction(1)
