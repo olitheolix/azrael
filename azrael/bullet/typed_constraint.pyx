@@ -73,10 +73,7 @@ cdef class TypedConstraint:
 cdef class Point2PointConstraint(TypedConstraint):
     cdef btPoint2PointConstraint *ptr_Point2PointConstraint
 
-    def __cinit__(self, RigidBody rbA,
-                        RigidBody rbB,
-                        Vec3 pivotInA,
-                        Vec3 pivotInB):
+    def __cinit__(self):
         self.ptr_Point2PointConstraint = NULL
 
     def __init__(self, RigidBody rbA,

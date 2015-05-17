@@ -106,7 +106,7 @@ cdef class PolyhedralConvexShape(ConvexInternalShape):
 cdef class BoxShape(PolyhedralConvexShape):
     cdef btBoxShape *ptr_BoxShape
 
-    def __cinit__(self, Vec3 v):
+    def __cinit__(self):
         self.ptr_BoxShape = NULL
 
     def __init__(self, Vec3 v):
@@ -126,7 +126,7 @@ cdef class BoxShape(PolyhedralConvexShape):
 cdef class CompoundShape(CollisionShape):
     cdef btCompoundShape *ptr_CompoundShape
 
-    def __cinit__(self, bint enableDynamicAabbTree=True):
+    def __cinit__(self):
         self.ptr_CompoundShape = NULL
 
     def __init__(self, bint enableDynamicAabbTree=True):

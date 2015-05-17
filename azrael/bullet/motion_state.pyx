@@ -30,7 +30,7 @@ cdef class MotionState:
 cdef class DefaultMotionState(MotionState):
     cdef btDefaultMotionState *ptr_DefaultMotionState
 
-    def __cinit__(self, Transform t=Transform()):
+    def __cinit__(self):
         self.ptr_DefaultMotionState = NULL
 
     def __init__(self, Transform t=Transform()):

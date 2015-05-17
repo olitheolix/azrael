@@ -1,8 +1,7 @@
 cdef class RigidBodyConstructionInfo:
     cdef btRigidBodyConstructionInfo *ptr_RigidBodyConstructionInfo
 
-    def __cinit__(self, double mass, MotionState ms, CollisionShape cs,
-                  Vec3 inert=Vec3(0, 0, 0)):
+    def __cinit__(self):
         self.ptr_RigidBodyConstructionInfo = NULL
 
     def __init__(self, double mass, MotionState ms, CollisionShape cs,
@@ -165,7 +164,7 @@ cdef class RigidBodyConstructionInfo:
 cdef class RigidBody(CollisionObject):
     cdef btRigidBody *ptr_RigidBody
 
-    def __cinit__(self, RigidBodyConstructionInfo ci):
+    def __cinit__(self):
         self.ptr_RigidBody = NULL
 
     def __init__(self, RigidBodyConstructionInfo ci):

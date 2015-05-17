@@ -4,7 +4,7 @@ NT = namedtuple('Transform', 'origin rotation')
 cdef class Transform:
     cdef btTransform *ptr_Transform
 
-    def __cinit__(self, Quaternion q=Quaternion(0, 0, 0, 1), Vec3 c=Vec3(0, 0, 0)):
+    def __cinit__(self):
         self.ptr_Transform = NULL
 
     def __init__(self, Quaternion q=Quaternion(0, 0, 0, 1), Vec3 c=Vec3(0, 0, 0)):

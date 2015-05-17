@@ -1,11 +1,16 @@
 cdef class Scalar:
     cdef btScalar *ptr_btScalar
 
-    def __cinit__(self, double x=0):
+    def __cinit__(self):
+        self.ptr_btScalar = NULL
+
+    def __init__(self, double x=0):
         self.ptr_btScalar = new btScalar(x)
 
     def __dealloc__(self):
-        del self.ptr_btScalar
+        if self.ptr_btScalar != NULL:
+            del self.ptr_btScalar
+            self.ptr_btScalar = NULL
 
     def value(self):
         return <double>(self.ptr_btScalar[0])
@@ -16,11 +21,16 @@ cdef class Scalar:
 cdef class Vec3:
     cdef btVector3 *ptr_Vector3
 
-    def __cinit__(self, double x=0, double y=0, double z=0):
+    def __cinit__(self):
+        self.ptr_Vector3 = NULL
+
+    def __init__(self, double x=0, double y=0, double z=0):
         self.ptr_Vector3 = new btVector3(x, y, z)
 
     def __dealloc__(self):
-        del self.ptr_Vector3
+        if self.ptr_Vector3 != NULL:
+            del self.ptr_Vector3
+            self.ptr_Vector3 = NULL
 
     def __neg__(self):
         ret = Vec3()
@@ -56,11 +66,16 @@ cdef class Vec3:
 cdef class Quaternion:
     cdef btQuaternion *ptr_Quaternion
 
-    def __cinit__(self, double x=0, double y=0, double z=0, double w=1):
+    def __cinit__(self):
+        self.ptr_Quaternion = NULL
+
+    def __init__(self, double x=0, double y=0, double z=0, double w=1):
         self.ptr_Quaternion = new btQuaternion(x, y, z, w)
 
     def __dealloc__(self):
-        del self.ptr_Quaternion
+        if self.ptr_Quaternion != NULL:
+            del self.ptr_Quaternion
+            self.ptr_Quaternion = NULL
 
     def topy(self):
         t = self.ptr_Quaternion
