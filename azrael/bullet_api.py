@@ -115,20 +115,19 @@ class PyBulletDynamicsWorld():
         :param int max_substeps: maximum number of sub-steps.
         :return: Success
         """
-        # Add the objects from the cache to the Bullet simulation.
-        for objID in objIDs:
-            # Abort immediately if the object does not exist in the local
-            if objID not in self.rigidBodies:
-                print('Object <{}> does not exist'.format(objID))
-                return RetVal(False, None, None)
+        # All specified objects must exist. Abort otherwise.
+        try:
+            rigidBodies = [self.rigidBodies[_] for _ in objIDs]
+        except KeyError as err:
+            print('Object <{}> does not exist'.format(err.args))
+            return RetVal(False, None, None)
 
-        for objID in objIDs:
-            # Add the body to the world and make sure it is activated, as
-            # Bullet may otherwise decide to simply set its velocity to zero
-            # and ignore the body.
-            obj = self.rigidBodies[objID]
-            self.dynamicsWorld.addRigidBody(obj)
-            obj.forceActivationState(4)
+        # Add the body to the world and make sure it is activated, as
+        # Bullet may otherwise decide to simply set its velocity to zero
+        # and ignore the body.
+        for body in rigidBodies:
+            self.dynamicsWorld.addRigidBody(body)
+            body.forceActivationState(4)
 
         # The max_substeps parameter instructs Bullet to subdivide the
         # specified timestep (dt) into at most max_substeps. For example, if
@@ -136,9 +135,9 @@ class PyBulletDynamicsWorld():
         # no finer than dt / max_substeps = 0.01s.
         self.dynamicsWorld.stepSimulation(dt, max_substeps)
 
-        # Remove the object from the simulation again.
-        for objID in objIDs:
-            self.dynamicsWorld.removeRigidBody(self.rigidBodies[objID])
+        # Remove all objects from the simulation again.
+        for body in rigidBodies:
+            self.dynamicsWorld.removeRigidBody(body)
         return RetVal(True, None, None)
 
     def applyForceAndTorque(self, objID, force, torque):

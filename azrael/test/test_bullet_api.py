@@ -178,6 +178,35 @@ class TestBulletAPI:
         #   v = t * F * imass
         assert np.allclose(ret.data.velocityLin, dt * force * 1, atol=1E-2)
 
+    def test_compute_invalid(self):
+        """
+        Call 'compute' method for non-existing object IDs.
+        """
+        # Constants and parameters for this test.
+        objID = 10
+        dt, maxsteps = 1.0, 60
+
+        # Create an object and overwrite the CShape data to obtain a sphere.
+        obj_a = bullet_data.MotionState()
+
+        # Instantiate Bullet engine.
+        bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
+
+        # Call 'compute' on non-existing object.
+        assert not bullet.compute([objID], dt, maxsteps).ok
+
+        # Send object to Bullet and progress the simulation by one second.
+        # The objects must not move because no forces are at play.
+        bullet.setObjectData(objID, obj_a)
+        assert bullet.compute([objID], dt, maxsteps).ok
+        ret = bullet.getObjectData([objID])
+        assert ret.ok
+        assert isEqualBD(ret.data, obj_a)
+
+        # Call compute again with one (in)valid object.
+        assert not bullet.compute([objID, 100], dt, maxsteps).ok
+        assert not bullet.compute([100, objID], dt, maxsteps).ok
+
     def test_apply_force_and_torque(self):
         """
         Create object, send it to Bullet, apply a force, progress the simulation,
