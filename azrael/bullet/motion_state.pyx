@@ -17,8 +17,14 @@ cdef class DefaultMotionState(MotionState):
     cdef btDefaultMotionState *ptr_DefaultMotionState
 
     def __cinit__(self, Transform t=Transform()):
+        self.ptr_DefaultMotionState = NULL
+
+    def __init__(self, Transform t=Transform()):
         self.ptr_DefaultMotionState = new btDefaultMotionState(t.ptr_Transform[0])
         self.ptr_MotionState = <btMotionState*>self.ptr_DefaultMotionState
 
     def __dealloc__(self):
-        del self.ptr_DefaultMotionState
+        if self.ptr_DefaultMotionState != NULL:
+            del self.ptr_DefaultMotionState
+            self.ptr_MotionState = NULL
+            self.ptr_DefaultMotionState = NULL
