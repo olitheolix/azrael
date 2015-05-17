@@ -2,6 +2,9 @@ cdef class Transform:
     cdef btTransform *ptr_Transform
 
     def __cinit__(self, Quaternion q=Quaternion(0, 0, 0, 1), Vec3 c=Vec3(0, 0, 0)):
+        self.ptr_Transform = NULL
+
+    def __init__(self, Quaternion q=Quaternion(0, 0, 0, 1), Vec3 c=Vec3(0, 0, 0)):
         self.ptr_Transform = new btTransform(q.ptr_Quaternion[0], c.ptr_Vector3[0]) 
 
     def setIdentity(self):
