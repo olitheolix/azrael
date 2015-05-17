@@ -1,3 +1,6 @@
+from collections import namedtuple
+NT = namedtuple('Transform', 'origin rotation')
+
 cdef class Transform:
     cdef btTransform *ptr_Transform
 
@@ -6,6 +9,20 @@ cdef class Transform:
 
     def __init__(self, Quaternion q=Quaternion(0, 0, 0, 1), Vec3 c=Vec3(0, 0, 0)):
         self.ptr_Transform = new btTransform(q.ptr_Quaternion[0], c.ptr_Vector3[0]) 
+
+    def __dealloc__(self):
+        if self.ptr_Transform != NULL:
+            del self.ptr_Transform
+
+    def __repr__(self):
+        tmp = self.topy()
+        attr = ['{}={}'.format(name, getattr(tmp, name)) for name in tmp._fields]
+        return '  '.join(attr)
+
+    def topy(self):
+        p, r = self.getOrigin(), self.getRotation()
+        ret = NT(p.topy(), r.topy())
+        return ret
 
     def setIdentity(self):
         self.ptr_Transform.setIdentity()
@@ -26,6 +43,3 @@ cdef class Transform:
         q.ptr_Quaternion[0] = self.ptr_Transform.getRotation()
         return q
 
-    def __dealloc__(self):
-        if self.ptr_Transform != NULL:
-            del self.ptr_Transform

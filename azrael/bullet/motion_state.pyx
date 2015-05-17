@@ -12,6 +12,12 @@ cdef class MotionState:
             del self.ptr_MotionState
             self.ptr_MotionState = NULL
 
+    def __repr__(self):
+        return repr(self.getWorldTransform())
+
+    def topy(self):
+        return self.getWorldTransform().topy()
+
     def getWorldTransform(self):
         t = Transform()
         self.ptr_MotionState.getWorldTransform(t.ptr_Transform[0])
