@@ -370,12 +370,12 @@ class TestRigidBody:
         rot = Quaternion(0, 1, 0, 0)
         t = Transform(rot, pos)
         assert t.getOrigin() == pos
-        assert t.getRotation().tolist() == rot.tolist()
+        assert t.getRotation() == rot
 
         # Set to identity.
         t.setIdentity()
         assert t.getOrigin() == Vec3(0, 0, 0)
-        assert t.getRotation().tolist()== Quaternion(0, 0, 0, 1).tolist()
+        assert t.getRotation()== Quaternion(0, 0, 0, 1)
 
         # Set the position and orientation.
         pos = Vec3(1, 2, 3.5)
@@ -383,7 +383,7 @@ class TestRigidBody:
         t.setOrigin(pos)
         t.setRotation(rot)
         assert t.getOrigin() == pos
-        assert t.getRotation().tolist() == rot.tolist()
+        assert t.getRotation() == rot
 
         # Repeat with different values.
         pos = Vec3(-1, 2.5, 3.5)
@@ -391,7 +391,7 @@ class TestRigidBody:
         t.setOrigin(pos)
         t.setRotation(rot)
         assert t.getOrigin() == pos
-        assert t.getRotation().tolist() == rot.tolist()
+        assert t.getRotation() == rot
 
     def test_motionstate(self):
         """
@@ -418,7 +418,7 @@ class TestRigidBody:
         # Verify the MotionState does not yet match ours.
         ms = body.getMotionState()
         assert ms.getWorldTransform().getOrigin() != pos
-        assert ms.getWorldTransform().getRotation().tolist() != rot.tolist()
+        assert ms.getWorldTransform().getRotation() != rot
 
         # Apply- and query the MotionState.
         body.setMotionState(ms_ref)
@@ -426,7 +426,7 @@ class TestRigidBody:
 
         # Verify the MotionState is correct.
         assert ms.getWorldTransform().getOrigin() == pos
-        assert ms.getWorldTransform().getRotation().tolist() == rot.tolist()
+        assert ms.getWorldTransform().getRotation() == rot
 
     def test_centerOfMassTransform(self):
         """
@@ -448,7 +448,7 @@ class TestRigidBody:
 
         # Verify the result.
         assert t1.getOrigin() == t2.getOrigin()
-        assert t1.getRotation().tolist() == t2.getRotation().tolist()
+        assert t1.getRotation() == t2.getRotation()
 
     def test_GetSet_CollisionShape(self):
         """
@@ -522,8 +522,8 @@ class TestRigidBody:
 
         # Verify that the objects are at x-position +/-1, and thus 2 Meters
         # apart.
-        p_a = rb_a.getCenterOfMassTransform().getOrigin().tolist()
-        p_b = rb_b.getCenterOfMassTransform().getOrigin().tolist()
+        p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+        p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
         init_pos = (p_a[0], p_b[0])
         fixed_dist = p_a[0] - p_b[0]
         assert init_pos == (-1, 1)
@@ -538,8 +538,8 @@ class TestRigidBody:
             bb.stepSimulation(10 / 60, 60)
 
             # Query the position of the objects.
-            p_a = rb_a.getCenterOfMassTransform().getOrigin().tolist()
-            p_b = rb_b.getCenterOfMassTransform().getOrigin().tolist()
+            p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+            p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
 #            print(p_a)
 #            print(p_b)
 #            continue
@@ -604,7 +604,7 @@ class TestRigidBody:
         # mass and inertia.
         t = body.getMotionState().getWorldTransform()
         assert t.getOrigin() == pos
-        assert t.getRotation().tolist() == rot.tolist()
+        assert t.getRotation() == rot
         assert body.getInvMass() == 1 / mass
         assert body.getInvInertiaDiagLocal() == Vec3(1, 0.5, 0.25)
 

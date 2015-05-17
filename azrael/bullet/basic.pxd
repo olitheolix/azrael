@@ -9,6 +9,7 @@ cdef extern from "btBulletDynamicsCommon.h":
         const btScalar &y()
         const btScalar &z()
         const btScalar &w()
+        bint operator==(btScalar)
 
     cdef cppclass btVector3:
         btVector3(double, double, double)

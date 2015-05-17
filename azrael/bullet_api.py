@@ -221,12 +221,12 @@ class PyBulletDynamicsWorld():
             scale = obj.azrael[1].scale
 
             # Determine rotation and position.
-            rot = obj.getCenterOfMassTransform().getRotation().tolist()
-            pos = obj.getCenterOfMassTransform().getOrigin().tolist()
+            rot = obj.getCenterOfMassTransform().getRotation().topy()
+            pos = obj.getCenterOfMassTransform().getOrigin().topy()
 
             # Determine linear and angular velocity.
-            vLin = obj.getLinearVelocity().tolist()
-            vRot = obj.getAngularVelocity().tolist()
+            vLin = obj.getLinearVelocity().topy()
+            vRot = obj.getAngularVelocity().topy()
 
             # Dummy value for the collision shape.
             # fixme: this must be the JSON version of collisionShape
@@ -234,8 +234,8 @@ class PyBulletDynamicsWorld():
             cshape = obj.azrael[1].cshape
 
             # Linear/angular damping factors.
-            axesLockLin = obj.getLinearFactor().tolist()
-            axesLockRot = obj.getAngularFactor().tolist()
+            axesLockLin = obj.getLinearFactor().topy()
+            axesLockRot = obj.getAngularFactor().topy()
 
             # Construct a new _MotionState structure and add it to the list
             # that will eventually be returned to the caller.
@@ -295,7 +295,7 @@ class PyBulletDynamicsWorld():
         # awkward to implement because Bullet returns the inverse values yet
         # expects the non-inverted ones in 'set_mass_props'.
         m = obj.imass
-        x, y, z = body.getInvInertiaDiagLocal().tolist()
+        x, y, z = body.getInvInertiaDiagLocal().topy()
         if (m < 1E-10) or (x < 1E-10) or (y < 1E-10) or (z < 1E-10):
             # Use safe values if either the inertia or the mass is too small
             # for inversion.
@@ -383,7 +383,7 @@ class PyBulletDynamicsWorld():
             cshape.calculateLocalInertia(mass, inertia)
 
         # Compute inertia magnitude and warn about unreasonable values.
-        l = np.array(inertia.tolist())
+        l = np.array(inertia.topy())
         l = np.dot(l, l)
         if not (1E-5 < l < 20):
             print('Bullet warning: Inertia = {}'.format(l))

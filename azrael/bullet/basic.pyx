@@ -45,12 +45,12 @@ cdef class Vec3:
         else:
             assert False
 
-    def tolist(self):
+    def topy(self):
         t = self.ptr_Vector3
         return (<double>t.x(), <double>t.y(), <double>t.z())
 
     def __repr__(self):
-        return repr(self.tolist())
+        return repr(self.topy())
 
 
 cdef class Quaternion:
@@ -62,9 +62,26 @@ cdef class Quaternion:
     def __dealloc__(self):
         del self.ptr_Quaternion
 
-    def tolist(self):
+    def topy(self):
         t = self.ptr_Quaternion
         return (<double>t.x(), <double>t.y(), <double>t.z(), <double>t.w())
 
+    def __richcmp__(Quaternion a, Quaternion b, int op):
+        def isEqual():
+            p_a = a.ptr_Quaternion
+            p_b = b.ptr_Quaternion
+            return (
+                (<double?>p_a.x() == <double?>p_b.x()) and 
+                (<double?>p_a.y() == <double?>p_b.y()) and
+                (<double?>p_a.z() == <double?>p_b.z()) and
+                (<double?>p_a.w() == <double?>p_b.w()))
+            
+        if op == Py_EQ:
+            return isEqual()
+        elif op == Py_NE:
+            return not isEqual()
+        else:
+            assert False
+
     def __repr__(self):
-        return repr(self.tolist())
+        return repr(self.topy())

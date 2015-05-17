@@ -366,13 +366,13 @@ def test_modify_size():
     assert ret.ok
     assert ret.data.cs2.name.upper() == 'SPHERE'
     tmp_cs = bullet.rigidBodies[objID_a].getCollisionShape()
-    assert tmp_cs.getLocalScaling().tolist() == (1.0, 1.0, 1.0)
+    assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
 
     ret = bullet.getObjectData([objID_b])
     assert ret.ok
     assert ret.data.cs2.name.upper() == 'SPHERE'
     tmp_cs = bullet.rigidBodies[objID_b].getCollisionShape()
-    assert tmp_cs.getLocalScaling().tolist() == (1.0, 1.0, 1.0)
+    assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
 
     # Enlarge the second object so that the spheres do not overlap.  Then step
     # the simulation again to ensure Bullet accesses each object and nothing
@@ -388,13 +388,13 @@ def test_modify_size():
     assert ret.ok
     assert ret.data.cs2.name.upper() == 'SPHERE'
     tmp_cs = bullet.rigidBodies[objID_a].getCollisionShape()
-    assert tmp_cs.getLocalScaling().tolist() == (1.0, 1.0, 1.0)
+    assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
 
     ret = bullet.getObjectData([objID_b])
     assert ret.ok
     assert ret.data.cs2.name.upper() == 'SPHERE'
     tmp_cs = bullet.rigidBodies[objID_b].getCollisionShape()
-    assert tmp_cs.getLocalScaling().tolist() == (2.5, 2.5, 2.5)
+    assert tmp_cs.getLocalScaling().topy() == (2.5, 2.5, 2.5)
 
     print('Test passed')
 
