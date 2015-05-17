@@ -210,7 +210,7 @@ class Quaternion:
         x, y, z = self.v
         w = self.w
 
-        # Standard formula.
+        # Elements of the Rotation Matrix based on the Quaternion elements.
         a11 = 1 - 2 * y * y - 2 * z * z
         a12 = 2 * x * y - 2 * z * w
         a13 = 2 * x * z + 2 * y * w
@@ -220,9 +220,10 @@ class Quaternion:
         a31 = 2 * x * z - 2 * y * w
         a32 = 2 * y * z + 2 * x * w
         a33 = 1 - 2 * x * x - 2 * y * y
-        mat = np.array([
-            [a11, a12, a12, 0],
+
+        # Arrange- and return in matrix form.
+        return np.array([
+            [a11, a12, a13, 0],
             [a21, a22, a23, 0],
             [a31, a32, a33, 0],
-            [0, 0, 0, 1]])
-        return mat.astype(np.float32)
+            [0, 0, 0, 1]], np.float32)
