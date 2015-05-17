@@ -407,86 +407,6 @@ class TestRigidBody:
         body.setCollisionShape(box)
         assert body.getCollisionShape().getName() == b'Box'
 
-    def test_Constraint_fixme_move_somewhere_else(self):
-        """
-        Set, query, and replace a collision shape.
-
-        fixme: split this into two tests
-        fixme: move the Point2Point class test into dedicated test class.
-        """
-        # Create two rigid bodies side by side (they touch, but neither overlap
-        # nor is there a gap between them).
-        cs_a = SphereShape(1)
-        cs_b = BoxShape(Vec3(1, 2, 3))
-        pos_a = Vec3(-1, 0, 0)
-        pos_b = Vec3(1, 0, 0)
-        rb_a, _a = getRB(pos=pos_a, cs=cs_a)
-        rb_b, _b = getRB(pos=pos_b, cs=cs_b)
-
-        # Connect the two rigid bodies at their left/right boundary.
-        pivot_a, pivot_b = pos_b, pos_a
-        p2p = Point2PointConstraint(rb_a, rb_b, pivot_a, pivot_b)
-
-        # Verify that their pivot is as specified.
-        assert p2p.getPivotInA() == pivot_a
-        assert p2p.getPivotInB() == pivot_b
-
-        # # Swap the pivot points.
-        # fixme: enable in first test again.
-        # p2p.setPivotA(pivot_b)
-        # p2p.setPivotB(pivot_a)
-        # # Verify that their pivot is as specified.
-        # assert p2p.getPivotInA() == pivot_b
-        # assert p2p.getPivotInB() == pivot_a
-
-        # Query the two objects and verify they have the correct type.
-        assert p2p.getRigidBodyA().getCollisionShape().getName() == b'SPHERE'
-        assert p2p.getRigidBodyB().getCollisionShape().getName() == b'Box'
-
-        # Enable- and disable the contstraint.
-        assert p2p.isEnabled() == True
-        p2p.setEnabled(False)
-        assert p2p.isEnabled() == False
-        p2p.setEnabled(True)
-        assert p2p.isEnabled() == True
-
-        # Add both rigid bodies into a simulation.
-        bb = BulletBase()
-        bb.setGravity(0, 0, 0)
-        bb.addRigidBody(rb_a)
-        bb.addRigidBody(rb_b)
-
-        # Tell the simulation about the constraint.
-        bb.addConstraint(p2p)
-
-        # Verify that the objects are at x-position +/-1, and thus 2 Meters
-        # apart.
-        p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
-        p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
-        init_pos = (p_a[0], p_b[0])
-        fixed_dist = p_a[0] - p_b[0]
-        assert init_pos == (-1, 1)
-
-        # Apply opposing forces to both objects, step the simulation a few times,
-        # and verify at each step that *both* objects move in the *same*
-        # direction due to the constraint.
-        rb_a.applyCentralForce(Vec3(10, 0, 0))
-        rb_b.applyCentralForce(Vec3(-1, 0, 0))
-        for ii in range(3):
-            # Step simulation.
-            bb.stepSimulation(10 / 60, 60)
-
-            # Query the position of the objects.
-            p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
-            p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
-
-            # Verify that both objects continue to move to right, yet maintain
-            # their initial distance.
-            assert p_a[0] > init_pos[0]
-            assert p_b[0] > init_pos[1]
-            assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
-            init_pos = (p_a[0], p_b[0])
-
     def test_ConstructionInfo(self):
         """
         Create a RigidBodyConstructionInfo class and set/get some attributes.
@@ -505,7 +425,7 @@ class TestRigidBody:
         assert ci.mass == 1.1
         ci.mass = 1.1
         assert ci.mass == 1.1
-        
+
         # Local inertia was specified in Ctor.
         assert ci.localInertia == Vec3(0, 0, 0)
         inert = Vec3(1, 2, 10)
@@ -514,7 +434,7 @@ class TestRigidBody:
         inert = Vec3(1, 2, 20)
         ci.localInertia = inert
         assert ci.localInertia == inert
-        
+
     def test_ConstructionInfo_to_RigidBody(self):
         """
         Verify that the initial motion state is transferred correctly to the
@@ -568,9 +488,9 @@ class TestCollisionShapes:
         # Put the collision shapes into a dictionary where the key is the
         # expected name.
         shapes = {b'STATICPLANE': cs_p,
-                 b'SPHERE': cs_s,
-                 b'Box': cs_b,
-                 b'Empty': cs_e}
+                  b'SPHERE': cs_s,
+                  b'Box': cs_b,
+                  b'Empty': cs_e}
 
         # Verify the name of each shape and modify its scale.
         scale = Vec3(1.5, 2.5, 3.5)
@@ -643,7 +563,7 @@ class TestTransform:
         # Set to identity.
         t.setIdentity()
         assert t.getOrigin() == Vec3(0, 0, 0)
-        assert t.getRotation()== Quaternion(0, 0, 0, 1)
+        assert t.getRotation() == Quaternion(0, 0, 0, 1)
 
         # Set the position and orientation.
         pos = Vec3(1, 2, 3.5)
@@ -727,3 +647,103 @@ class TestMotionState:
         # Verify the result.
         assert t1.getOrigin() == t2.getOrigin()
         assert t1.getRotation() == t2.getRotation()
+
+
+class TestConstraints:
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def test_Point2Point(self):
+        """
+        Set, query, and replace a collision shape.
+        """
+        # Create two rigid bodies side by side (they *do* touch, but just).
+        cs_a = SphereShape(1)
+        cs_b = BoxShape(Vec3(1, 2, 3))
+        pos_a = Vec3(-1, 0, 0)
+        pos_b = Vec3(1, 0, 0)
+        rb_a, _a = getRB(pos=pos_a, cs=cs_a)
+        rb_b, _b = getRB(pos=pos_b, cs=cs_b)
+
+        # Connect the two rigid bodies at their left/right boundary.
+        pivot_a, pivot_b = pos_b, pos_a
+        p2p = Point2PointConstraint(rb_a, rb_b, pivot_a, pivot_b)
+
+        # Verify that their pivot is as specified.
+        assert p2p.getPivotInA() == pivot_a
+        assert p2p.getPivotInB() == pivot_b
+
+        # Swap the pivot points.
+        p2p.setPivotA(pivot_b)
+        p2p.setPivotB(pivot_a)
+
+        # Verify that their pivot is as specified.
+        assert p2p.getPivotInA() == pivot_b
+        assert p2p.getPivotInB() == pivot_a
+
+        # Query the two objects and verify they have the correct type.
+        assert p2p.getRigidBodyA().getCollisionShape().getName() == b'SPHERE'
+        assert p2p.getRigidBodyB().getCollisionShape().getName() == b'Box'
+
+        # Enable- and disable the contstraint.
+        assert p2p.isEnabled() == True
+        p2p.setEnabled(False)
+        assert p2p.isEnabled() == False
+        p2p.setEnabled(True)
+        assert p2p.isEnabled() == True
+
+    def test_Point2Point_sim(self):
+        """
+        Test the Point2Point constraint in a Bullet simulation.
+        """
+        # Create two rigid bodies side by side (they *do* touch, but just).
+        pos_a = Vec3(-1, 0, 0)
+        pos_b = Vec3(1, 0, 0)
+        rb_a, _a = getRB(pos=pos_a, cs=SphereShape(1))
+        rb_b, _b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+
+        # Connect the two rigid bodies at their left/right boundary.
+        pivot_a, pivot_b = pos_b, pos_a
+        p2p = Point2PointConstraint(rb_a, rb_b, pivot_a, pivot_b)
+
+        # Add both rigid bodies into a simulation.
+        bb = BulletBase()
+        bb.setGravity(0, 0, 0)
+        bb.addRigidBody(rb_a)
+        bb.addRigidBody(rb_b)
+
+        # Tell the simulation about the constraint.
+        bb.addConstraint(p2p)
+
+        # Verify that the objects are at x-position +/-1, and thus 2 Meters
+        # apart.
+        p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+        p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
+        init_pos = (p_a[0], p_b[0])
+        fixed_dist = p_a[0] - p_b[0]
+        assert init_pos == (-1, 1)
+
+        # Apply opposing forces to both objects, step the simulation a few
+        # times, and verify at each step that *both* objects move in the *same*
+        # direction due to the constraint.
+        rb_a.applyCentralForce(Vec3(10, 0, 0))
+        rb_b.applyCentralForce(Vec3(-1, 0, 0))
+        for ii in range(3):
+            # Step simulation.
+            bb.stepSimulation(10 / 60, 60)
+
+            # Query the position of the objects.
+            p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+            p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
+
+            # Verify that both objects continue to move to right, yet maintain
+            # their initial distance.
+            assert p_a[0] > init_pos[0]
+            assert p_b[0] > init_pos[1]
+            assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
+            init_pos = (p_a[0], p_b[0])
