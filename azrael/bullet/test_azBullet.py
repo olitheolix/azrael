@@ -89,7 +89,6 @@ class TestRigidBody:
         t = Transform(Quaternion(0, 0, 0, 1), pos)
         ms = DefaultMotionState(t)
         mass = 1
-        inertia = Vec3(0, 0, 0)
 
         # Build construction info and instantiate the rigid body.
         ci = RigidBodyConstructionInfo(mass, ms, cs)
@@ -558,47 +557,56 @@ class TestRigidBody:
         """
         mass = 1.5
         pos = Vec3(1, 2, 3)
-        t = Transform(Quaternion(0, 0, 0, 1), pos)
+        rot = Quaternion(0, 0, 0, 1)
+        t = Transform(rot, pos)
         ms = DefaultMotionState(t)
         cs = EmptyShape()
-        c = RigidBodyConstructionInfo(mass, ms, cs)
+        ci = RigidBodyConstructionInfo(mass, ms, cs)
 
         # Mass was specified in Ctor.
-        assert c.mass == mass
-        c.mass = 1.1
-        assert c.mass == 1.1
-        c.mass = 1.1
-        assert c.mass == 1.1
+        assert ci.mass == mass
+        ci.mass = 1.1
+        assert ci.mass == 1.1
+        ci.mass = 1.1
+        assert ci.mass == 1.1
         
-        # Mass was specified in Ctor.
-        assert c.localInertia == Vec3(0, 0, 0)
+        # Local inertia was specified in Ctor.
+        assert ci.localInertia == Vec3(0, 0, 0)
         inert = Vec3(1, 2, 10)
-        c.localInertia = inert
-        assert c.localInertia == inert
+        ci.localInertia = inert
+        assert ci.localInertia == inert
         inert = Vec3(1, 2, 20)
-        c.localInertia = inert
-        assert c.localInertia == inert
+        ci.localInertia = inert
+        assert ci.localInertia == inert
         
     def test_ConstructionInfo_to_RigidBody(self):
         """
         Verify that the initial motion state is transferred correctly to the
         RigidBody.
         """
-        mass = 1.5
+        mass = 10
         pos = Vec3(1, 2, 3)
         rot = Quaternion(0, 1, 0, 0)
         t = Transform(rot, pos)
         ms = DefaultMotionState(t)
         cs = EmptyShape()
+        inert = Vec3(1, 2, 4)
+
+        # Compile the Rigid Body parameters.
         ci = RigidBodyConstructionInfo(mass, ms, cs)
+        ci.localInertia = inert
 
-        # fixme: return these from previous call.
-        #        del mass, t, ms, cs
-
+        # Construct the rigid body and delete the construction info.
         body = RigidBody(ci)
-        body.getMotionState()
-        assert body.getMotionState().getWorldTransform().getOrigin() == pos
-        assert ms.getWorldTransform().getRotation().tolist() == rot.tolist()
+        del ci
+
+        # Verify that the object is at the correct position and has the correct
+        # mass and inertia.
+        t = body.getMotionState().getWorldTransform()
+        assert t.getOrigin() == pos
+        assert t.getRotation().tolist() == rot.tolist()
+        assert body.getInvMass() == 1 / mass
+        assert body.getInvInertiaDiagLocal() == Vec3(1, 0.5, 0.25)
 
 
 class TestCollisionShapes:
