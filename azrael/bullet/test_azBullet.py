@@ -89,6 +89,32 @@ class TestVector3:
         assert -v1 == Vec3(-1, -2, -3)
 
 
+class TestQuaternion:
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def test_comparison(self):
+        q1 = Quaternion(0, 0, 0, 1)
+        q2 = Quaternion(0, 0, 1, 0)
+
+        # Equality.
+        assert q1 == q1
+        assert q2 == q2
+
+        # Inequality.
+        assert q1 != q2
+        assert q2 != q1
+
+        # Equality with a different Quaternion that has the same values.
+        assert q1 == Quaternion(0, 0, 0, 1)
+        assert q2 == Quaternion(0, 0, 1, 0)
+
+
 class TestRigidBody:
     @classmethod
     def setup_class(cls):
