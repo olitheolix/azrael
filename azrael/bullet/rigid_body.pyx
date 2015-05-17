@@ -165,15 +165,11 @@ cdef class RigidBodyConstructionInfo:
 cdef class RigidBody(CollisionObject):
     cdef btRigidBody *ptr_RigidBody
 
-    def __cinit__(self, double mass, MotionState ms, CollisionShape cs, Vec3 localInertia):
+    def __cinit__(self, RigidBodyConstructionInfo ci):
         self.ptr_RigidBody = NULL
 
-    def __init__(self, double mass, MotionState ms, CollisionShape cs, Vec3 localInertia):
-        self.ptr_RigidBody = new btRigidBody(
-            btScalar(mass),
-            ms.ptr_MotionState,
-            cs.ptr_CollisionShape,
-            localInertia.ptr_Vector3[0])
+    def __init__(self, RigidBodyConstructionInfo ci):
+        self.ptr_RigidBody = new btRigidBody(ci.ptr_RigidBodyConstructionInfo[0])
 
         # Assign the base pointers.
         self.ptr_CollisionObject = <btCollisionObject*?>self.ptr_RigidBody

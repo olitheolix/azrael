@@ -90,7 +90,11 @@ class TestRigidBody:
         ms = DefaultMotionState(t)
         mass = 1
         inertia = Vec3(0, 0, 0)
-        b = RigidBody(mass, ms, cs, inertia)
+
+        # Build construction info and instantiate the rigid body.
+        ci = RigidBodyConstructionInfo(mass, ms, cs)
+        b = RigidBody(ci)
+
         return b, (cs, ms)
 
     def test_restitution(self):
@@ -361,6 +365,7 @@ class TestRigidBody:
     def test_transform(self):
         """
         Test the Transform class.
+        fixme: move into dedicated class to test Transform
         """
         pos = Vec3(1, 2, 3.5)
         rot = Quaternion(0, 1, 0, 0)
@@ -574,6 +579,27 @@ class TestRigidBody:
         c.localInertia = inert
         assert c.localInertia == inert
         
+    def test_ConstructionInfo_to_RigidBody(self):
+        """
+        Verify that the initial motion state is transferred correctly to the
+        RigidBody.
+        """
+        mass = 1.5
+        pos = Vec3(1, 2, 3)
+        rot = Quaternion(0, 1, 0, 0)
+        t = Transform(rot, pos)
+        ms = DefaultMotionState(t)
+        cs = EmptyShape()
+        ci = RigidBodyConstructionInfo(mass, ms, cs)
+
+        # fixme: return these from previous call.
+        #        del mass, t, ms, cs
+
+        body = RigidBody(ci)
+        body.getMotionState()
+        assert body.getMotionState().getWorldTransform().getOrigin() == pos
+        assert ms.getWorldTransform().getRotation().tolist() == rot.tolist()
+
 
 class TestCollisionShapes:
     @classmethod

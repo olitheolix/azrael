@@ -35,11 +35,7 @@ cdef extern from "btBulletDynamicsCommon.h" namespace "btRigidBody":
 
 cdef extern from "btBulletDynamicsCommon.h":
     cdef cppclass btRigidBody:
-        btRigidBody(
-            btScalar mass,
-            btMotionState *motionState,
-            btCollisionShape *collisionShape,
-            btVector3 &localInertia)
+        btRigidBody (btRigidBodyConstructionInfo &constructionInfo)
 
         # getMotionState
         btMotionState *getMotionState()

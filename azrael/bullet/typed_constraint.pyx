@@ -43,9 +43,11 @@ cdef class TypedConstraint:
         t = Transform(Quaternion(0, 0, 0, 1), Vec3(0, 0, 0))
         ms = DefaultMotionState(t)
         mass = 1
-        inertia = Vec3(0, 0, 0)
-        body = RigidBody(mass, ms, cs, inertia)
+        ci = RigidBodyConstructionInfo(mass, ms, cs)
+        body = RigidBody(ci)
+
         body.ptr_RigidBody[0] = self.ptr_TypedConstraint.getRigidBodyA()
+        del ci, t, ms, mass
         return body
 
     def getRigidBodyB(self):
@@ -54,9 +56,11 @@ cdef class TypedConstraint:
         t = Transform(Quaternion(0, 0, 0, 1), Vec3(0, 0, 0))
         ms = DefaultMotionState(t)
         mass = 1
-        inertia = Vec3(0, 0, 0)
-        body = RigidBody(mass, ms, cs, inertia)
+        ci = RigidBodyConstructionInfo(mass, ms, cs)
+        body = RigidBody(ci)
+
         body.ptr_RigidBody[0] = self.ptr_TypedConstraint.getRigidBodyB()
+        del ci, t, ms, mass
         return body
 
     def isEnabled(self):
