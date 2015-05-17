@@ -403,6 +403,10 @@ class TestRigidBody:
         t.setOrigin(pos)
         t.setRotation(rot)
 
+        # It must be impossible to instantiate 'MotionState' directly.
+        with pytest.raises(NotImplementedError):
+            MotionState()
+
         # Create a MotionState and apply the new transform.
         ms_ref = DefaultMotionState()
         ms_ref.setWorldTransform(t)
@@ -550,7 +554,7 @@ class TestRigidBody:
         mass = 1.5
         pos = Vec3(1, 2, 3)
         t = Transform(Quaternion(0, 0, 0, 1), pos)
-        ms = MotionState(t)
+        ms = DefaultMotionState(t)
         cs = EmptyShape()
         c = RigidBodyConstructionInfo(mass, ms, cs)
 

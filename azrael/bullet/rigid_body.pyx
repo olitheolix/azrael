@@ -221,7 +221,7 @@ cdef class RigidBody(CollisionObject):
         self.ptr_RigidBody.setAngularVelocity(angularVelocity.ptr_Vector3[0])
 
     def getMotionState(self):
-        ms = MotionState()
+        ms = DefaultMotionState()
         ms.ptr_MotionState = self.ptr_RigidBody.getMotionState()
         return ms
 
