@@ -690,7 +690,7 @@ class TestConstraints:
         assert p2p.getRigidBodyA().getCollisionShape().getName() == b'SPHERE'
         assert p2p.getRigidBodyB().getCollisionShape().getName() == b'Box'
 
-        # Enable- and disable the contstraint.
+        # Enable- and disable the constraint.
         assert p2p.isEnabled() == True
         p2p.setEnabled(False)
         assert p2p.isEnabled() == False

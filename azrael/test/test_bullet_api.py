@@ -79,8 +79,7 @@ class TestBulletAPI:
         ret = bullet.getObjectData([0])
         assert ret.ok
 
-        # De-serialise the data and verify it is identical (small rounding errors
-        # are admissible because Bullet uses float32 types).
+        # De-serialise the data and verify it is identical.
         assert isEqualBD(obj_a, ret.data)
 
     def test_update_object(self):
@@ -203,7 +202,7 @@ class TestBulletAPI:
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
-        # Call compute again with one (in)valid object.
+        # Call 'compute' again with one (in)valid object.
         assert not bullet.compute([objID, 100], dt, maxsteps).ok
         assert not bullet.compute([100, objID], dt, maxsteps).ok
 

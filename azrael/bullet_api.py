@@ -346,7 +346,7 @@ class PyBulletDynamicsWorld():
 
         # Add the collision shape to a list. Albeit not explicitly used
         # anywhere this is necessary regardless to ensure the underlying
-        # pointers are kept alive (Bullet only accesse them but does not own
+        # pointers are kept alive (Bullet only accesses them but does not own
         # them).
         self.collision_shapes[objID] = cshape
         return RetVal(True, None, cshape)
