@@ -4,6 +4,14 @@ cdef class MotionState:
     def __cinit__(self):
         self.ptr_MotionState = NULL
 
+    def __init__(self):
+        raise NotImplementedError
+
+    def __dealloc__(self):
+        if self.ptr_MotionState != NULL:
+            del self.ptr_MotionState
+            self.ptr_MotionState = NULL
+
     def getWorldTransform(self):
         t = Transform()
         self.ptr_MotionState.getWorldTransform(t.ptr_Transform[0])
