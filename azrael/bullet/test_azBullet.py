@@ -29,6 +29,27 @@ from azrael.bullet.azBullet import Point2PointConstraint, BulletBase
 from azrael.bullet.azBullet import RigidBodyConstructionInfo
 
 
+def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
+    """
+    Return a Rigid Body plus auxiliary information (do *not* delete; see
+    note below).
+
+    .. note:: Do not delete the tuple until the end of the test
+    because it may lead to memory access violations. The reason is that a
+    rigid body requires several indepenent structures that need to remain
+    in memory.
+    """
+    t = Transform(Quaternion(0, 0, 0, 1), pos)
+    ms = DefaultMotionState(t)
+    mass = 1
+
+    # Build construction info and instantiate the rigid body.
+    ci = RigidBodyConstructionInfo(mass, ms, cs)
+    b = RigidBody(ci)
+
+    return b, (cs, ms)
+
+
 class TestVector3:
     @classmethod
     def setup_class(cls):
@@ -77,31 +98,12 @@ class TestRigidBody:
     def teardown_class(cls):
         pass
 
-    def getRB(self, pos=Vec3(0, 0, 0), cs=SphereShape(1)):
-        """
-        Return a Rigid Body tuple.
-
-        .. note:: Do not delete the tuple until the end of the test
-        because it may lead to memory access violations. The reason is that a
-        rigid body requires several indepenent structures that need to remain
-        in memory.
-        """
-        t = Transform(Quaternion(0, 0, 0, 1), pos)
-        ms = DefaultMotionState(t)
-        mass = 1
-
-        # Build construction info and instantiate the rigid body.
-        ci = RigidBodyConstructionInfo(mass, ms, cs)
-        b = RigidBody(ci)
-
-        return b, (cs, ms)
-
     def test_restitution(self):
         """
         Specify and query "Restitution".
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # Set restitution coefficient and verify it is correct.
         rest_ref = 2.4
@@ -123,7 +125,7 @@ class TestRigidBody:
         value of zero means the object cannot move in that direction at all.
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # Set the linear factor and verify it is correct.
         lf = Vec3(-1, 2, 2.5)
@@ -145,7 +147,7 @@ class TestRigidBody:
         value of zero means the object cannot rotate along that axis.
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # Set the angular factor and verify it is correct.
         lf = Vec3(-1, 2, 2.5)
@@ -164,7 +166,7 @@ class TestRigidBody:
         Specify and query the "LinearVelocity".
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # Set the linear velocity and verify it is correct.
         lf = Vec3(-1, 2, 2.5)
@@ -183,7 +185,7 @@ class TestRigidBody:
         Specify and query the "AngularVelocity".
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # Set the angular velocity and verify it is correct.
         lf = Vec3(-1, 2, 2.5)
@@ -202,7 +204,7 @@ class TestRigidBody:
         Set/get the {linear,angular} sleeping threshold.
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # Set the threshold (must both be set at the same time).
         th_lin, th_ang = 1.2, 3.4
@@ -223,7 +225,7 @@ class TestRigidBody:
         Apply and query forces in various ways.
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # Clear all forces.
         body.clearForces()
@@ -259,7 +261,7 @@ class TestRigidBody:
         Set/get damping factors.
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # Set the linear- and angular damping factors (must be in [0, 1] each).
         damp_lin, damp_ang = 0.2, 0.4
@@ -287,7 +289,7 @@ class TestRigidBody:
         Set/get friction coefficients.
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # Set the linear- and angular friction coefficients.
         friction = 1.8
@@ -304,7 +306,7 @@ class TestRigidBody:
         Set/get mass- and inertia.
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         # The default body has unit mass and no inertia.
         assert body.getInvMass() == 1
@@ -331,8 +333,8 @@ class TestRigidBody:
         # Create two RigidBody objects at distinct positions.
         ref_pos1 = Vec3(0, 0, 0)
         ref_pos2 = Vec3(10, 10, 10)
-        body1, _1 = self.getRB(pos=ref_pos1)
-        body2, _2 = self.getRB(pos=ref_pos2)
+        body1, _1 = getRB(pos=ref_pos1)
+        body2, _2 = getRB(pos=ref_pos2)
 
         # Active- and inactive forever.
         body1.forceActivationState(4)
@@ -361,101 +363,12 @@ class TestRigidBody:
         assert pos1 != ref_pos1
         assert pos2 == ref_pos2
 
-    def test_transform(self):
-        """
-        Test the Transform class.
-        fixme: move into dedicated class to test Transform
-        """
-        pos = Vec3(1, 2, 3.5)
-        rot = Quaternion(0, 1, 0, 0)
-        t = Transform(rot, pos)
-        assert t.getOrigin() == pos
-        assert t.getRotation() == rot
-
-        # Set to identity.
-        t.setIdentity()
-        assert t.getOrigin() == Vec3(0, 0, 0)
-        assert t.getRotation()== Quaternion(0, 0, 0, 1)
-
-        # Set the position and orientation.
-        pos = Vec3(1, 2, 3.5)
-        rot = Quaternion(0, 1, 0, 0)
-        t.setOrigin(pos)
-        t.setRotation(rot)
-        assert t.getOrigin() == pos
-        assert t.getRotation() == rot
-
-        # Repeat with different values.
-        pos = Vec3(-1, 2.5, 3.5)
-        rot = Quaternion(0, 0, 0, 1)
-        t.setOrigin(pos)
-        t.setRotation(rot)
-        assert t.getOrigin() == pos
-        assert t.getRotation() == rot
-
-    def test_motionstate(self):
-        """
-        Set and get a motion state.
-        """
-        # Get RigidBody object.
-        body, _ = self.getRB()
-
-        # Create a new Transform.
-        pos = Vec3(1, 2, 3.5)
-        rot = Quaternion(0, 1, 0, 0)
-        t = Transform()
-        t.setOrigin(pos)
-        t.setRotation(rot)
-
-        # It must be impossible to instantiate 'MotionState' directly.
-        with pytest.raises(NotImplementedError):
-            MotionState()
-
-        # Create a MotionState and apply the new transform.
-        ms_ref = DefaultMotionState()
-        ms_ref.setWorldTransform(t)
-
-        # Verify the MotionState does not yet match ours.
-        ms = body.getMotionState()
-        assert ms.getWorldTransform().getOrigin() != pos
-        assert ms.getWorldTransform().getRotation() != rot
-
-        # Apply- and query the MotionState.
-        body.setMotionState(ms_ref)
-        ms = body.getMotionState()
-
-        # Verify the MotionState is correct.
-        assert ms.getWorldTransform().getOrigin() == pos
-        assert ms.getWorldTransform().getRotation() == rot
-
-    def test_centerOfMassTransform(self):
-        """
-        Get/set the centerOfMassTransform.
-        """
-        # Get RigidBody object.
-        body, _ = self.getRB()
-
-        # Create a new Transform.
-        pos = Vec3(1, 2, 3.5)
-        rot = Quaternion(0, 1, 0, 0)
-        t1 = Transform()
-        t1.setOrigin(pos)
-        t1.setRotation(rot)
-
-        # Apply the Transform to the body.
-        body.setCenterOfMassTransform(t1)
-        t2 = body.getCenterOfMassTransform()
-
-        # Verify the result.
-        assert t1.getOrigin() == t2.getOrigin()
-        assert t1.getRotation() == t2.getRotation()
-
     def test_GetSet_CollisionShape(self):
         """
         Set, query, and replace a collision shape.
         """
         # Get RigidBody object.
-        body, _ = self.getRB()
+        body, _ = getRB()
 
         sphere = SphereShape(1.5)
         box = BoxShape(Vec3(1, 2, 3))
@@ -481,8 +394,8 @@ class TestRigidBody:
         cs_b = BoxShape(Vec3(1, 2, 3))
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a, _a = self.getRB(pos=pos_a, cs=cs_a)
-        rb_b, _b = self.getRB(pos=pos_b, cs=cs_b)
+        rb_a, _a = getRB(pos=pos_a, cs=cs_a)
+        rb_b, _b = getRB(pos=pos_b, cs=cs_b)
 
         # Connect the two rigid bodies at their left/right boundary.
         pivot_a, pivot_b = pos_b, pos_a
@@ -540,9 +453,6 @@ class TestRigidBody:
             # Query the position of the objects.
             p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
             p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
-#            print(p_a)
-#            print(p_b)
-#            continue
 
             # Verify that both objects continue to move to right, yet maintain
             # their initial distance.
@@ -683,3 +593,111 @@ class TestCollisionShapes:
         # Attempt to access a non-existing index.
         assert comp.getChildShape(-1) is None
         assert comp.getChildShape(2) is None
+
+
+class TestTransform:
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def test_transform(self):
+        """
+        Test the Transform class.
+        """
+        pos = Vec3(1, 2, 3.5)
+        rot = Quaternion(0, 1, 0, 0)
+        t = Transform(rot, pos)
+        assert t.getOrigin() == pos
+        assert t.getRotation() == rot
+
+        # Set to identity.
+        t.setIdentity()
+        assert t.getOrigin() == Vec3(0, 0, 0)
+        assert t.getRotation()== Quaternion(0, 0, 0, 1)
+
+        # Set the position and orientation.
+        pos = Vec3(1, 2, 3.5)
+        rot = Quaternion(0, 1, 0, 0)
+        t.setOrigin(pos)
+        t.setRotation(rot)
+        assert t.getOrigin() == pos
+        assert t.getRotation() == rot
+
+        # Repeat with different values.
+        pos = Vec3(-1, 2.5, 3.5)
+        rot = Quaternion(0, 0, 0, 1)
+        t.setOrigin(pos)
+        t.setRotation(rot)
+        assert t.getOrigin() == pos
+        assert t.getRotation() == rot
+
+
+class TestMotionState:
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def test_motionstate(self):
+        """
+        Set and get a motion state.
+        """
+        # Get RigidBody object.
+        body, _ = getRB()
+
+        # Create a new Transform.
+        pos = Vec3(1, 2, 3.5)
+        rot = Quaternion(0, 1, 0, 0)
+        t = Transform()
+        t.setOrigin(pos)
+        t.setRotation(rot)
+
+        # It must be impossible to instantiate 'MotionState' directly.
+        with pytest.raises(NotImplementedError):
+            MotionState()
+
+        # Create a MotionState and apply the new transform.
+        ms_ref = DefaultMotionState()
+        ms_ref.setWorldTransform(t)
+
+        # Verify the MotionState does not yet match ours.
+        ms = body.getMotionState()
+        assert ms.getWorldTransform().getOrigin() != pos
+        assert ms.getWorldTransform().getRotation() != rot
+
+        # Apply- and query the MotionState.
+        body.setMotionState(ms_ref)
+        ms = body.getMotionState()
+
+        # Verify the MotionState is correct.
+        assert ms.getWorldTransform().getOrigin() == pos
+        assert ms.getWorldTransform().getRotation() == rot
+
+    def test_centerOfMassTransform(self):
+        """
+        Get/set the centerOfMassTransform.
+        """
+        # Get RigidBody object.
+        body, _ = getRB()
+
+        # Create a new Transform.
+        pos = Vec3(1, 2, 3.5)
+        rot = Quaternion(0, 1, 0, 0)
+        t1 = Transform()
+        t1.setOrigin(pos)
+        t1.setRotation(rot)
+
+        # Apply the Transform to the body.
+        body.setCenterOfMassTransform(t1)
+        t2 = body.getCenterOfMassTransform()
+
+        # Verify the result.
+        assert t1.getOrigin() == t2.getOrigin()
+        assert t1.getRotation() == t2.getRotation()
