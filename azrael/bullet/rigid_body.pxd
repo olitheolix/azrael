@@ -14,11 +14,12 @@ cdef extern from "btBulletDynamicsCommon.h" namespace "btRigidBody":
             btCollisionShape* collisionShape,
             const btVector3& localInertia)
 
-        btScalar          m_mass
         btMotionState*    m_motionState
         btTransform       m_startWorldTransform
         btCollisionShape* m_collisionShape
+        bint              m_additionalDamping
         btVector3         m_localInertia
+        btScalar          m_mass
         btScalar          m_linearDamping
         btScalar          m_angularDamping
         btScalar          m_friction
@@ -26,7 +27,6 @@ cdef extern from "btBulletDynamicsCommon.h" namespace "btRigidBody":
         btScalar          m_restitution
         btScalar          m_linearSleepingThreshold
         btScalar          m_angularSleepingThreshold
-        bint              m_additionalDamping
         btScalar          m_additionalDampingFactor
         btScalar          m_additionalLinearDampingThresholdSqr
         btScalar          m_additionalAngularDampingThresholdSqr
