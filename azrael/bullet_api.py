@@ -344,33 +344,6 @@ class PyBulletDynamicsWorld():
         # Apply the scale.
         cshape.setLocalScaling(scale)
 
-        # Add the collision shape to a list. Albeit not explicitly used
-        # anywhere this is necessary regardless to ensure the underlying
-        # pointers are kept alive (Bullet only accesses them but does not own
-        # them).
-        self.collision_shapes[objID] = cshape
-        return RetVal(True, None, cshape)
-
-    @typecheck
-    def createRigidBody(self, objID: int, obj: _MotionState):
-        """
-        Create a new rigid body ``obj`` with ``objID``.
-
-        :param int objID: ID of new rigid body.
-        :param _MotionState obj: State Variables of rigid body.
-        :return: Success
-        """
-        # Convert orientation and position to Vec3.
-        rot = Quaternion(*obj.orientation)
-        pos = Vec3(*obj.position)
-
-        # Build the collision shape.
-        ret = self.compileCollisionShape(objID, obj)
-        cshape = ret.data
-
-        # Create a motion state for the initial orientation and position.
-        ms = azBullet.DefaultMotionState(azBullet.Transform(rot, pos))
-
         # Ask Bullet to compute the mass and inertia for us. The inertia will
         # be passed as a reference whereas the 'mass' is irrelevant due to how
         # the C++ function was wrapped.
@@ -388,9 +361,35 @@ class PyBulletDynamicsWorld():
             print('Bullet warning: Inertia = {}'.format(l))
         del l
 
+        # Add the collision shape to a list. Albeit not explicitly used
+        # anywhere this is necessary regardless to ensure the underlying
+        # pointers are kept alive (Bullet only accesses them but does not own
+        # them).
+        self.collision_shapes[objID] = cshape
+        return RetVal(True, None, (mass, inertia, cshape))
+
+    @typecheck
+    def createRigidBody(self, objID: int, obj: _MotionState):
+        """
+        Create a new rigid body ``obj`` with ``objID``.
+
+        :param int objID: ID of new rigid body.
+        :param _MotionState obj: State Variables of rigid body.
+        :return: Success
+        """
+        # Convert orientation and position to Vec3.
+        rot = Quaternion(*obj.orientation)
+        pos = Vec3(*obj.position)
+
+        # Build the collision shape.
+        ret = self.compileCollisionShape(objID, obj)
+        mass, inertia, cshape = ret.data
+
+        # Create a motion state for the initial orientation and position.
+        ms = azBullet.DefaultMotionState(azBullet.Transform(rot, pos))
+
         # Instantiate the actual rigid body object.
-        ci = azBullet.RigidBodyConstructionInfo(mass, ms, cshape)
-        ci.localInertia = inertia
+        ci = azBullet.RigidBodyConstructionInfo(mass, ms, cshape, inertia)
         body = PyRigidBody(ci)
 
         # Set additional parameters.
