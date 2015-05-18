@@ -449,8 +449,10 @@ class TestRigidBody:
         inert = Vec3(1, 2, 4)
 
         # Compile the Rigid Body parameters.
-        ci = RigidBodyConstructionInfo(mass, ms, cs)
+        ci = RigidBodyConstructionInfo(mass, ms, cs, Vec3(2, 4, 6))
+        assert ci.localInertia == Vec3(2, 4, 6)
         ci.localInertia = inert
+        assert ci.localInertia == inert
 
         # Construct the rigid body and delete the construction info.
         body = RigidBody(ci)
