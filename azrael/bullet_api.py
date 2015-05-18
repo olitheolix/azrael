@@ -240,7 +240,7 @@ class PyBulletDynamicsWorld():
             # that will eventually be returned to the caller.
             # fixme: do not use azrael[1].scale but query the scale from the
             # collisionShape object
-            csname = obj.getCollisionShape().getName()
+            csname = self.collision_shapes[objID][0].getName()
             cs2 = CollisionShape(csname.decode('utf8'), None)
             out.append(
                 _MotionState(obj.azrael[1].scale, obj.getInvMass(),
@@ -284,10 +284,10 @@ class PyBulletDynamicsWorld():
         if (old.scale != obj.scale) or \
            not (np.array_equal(old.cshape, obj.cshape)):
             # Create a new collision shape.
-            self.compileCollisionShape(objID, obj).data
+            mass, inertia, cshape = self.compileCollisionShape(objID, obj).data
 
             # Replace the existing collision shape with the new one.
-            body.setCollisionShape(self.collision_shapes[objID])
+            body.setCollisionShape(cshape)
         del old
 
         # Update the mass but leave the inertia intact. This is somewhat
@@ -341,9 +341,6 @@ class PyBulletDynamicsWorld():
             # The actual collision shape.
             cshape = azBullet.EmptyShape()
 
-        # Apply the scale.
-        cshape.setLocalScaling(scale)
-
         # Ask Bullet to compute the mass and inertia for us. The inertia will
         # be passed as a reference whereas the 'mass' is irrelevant due to how
         # the C++ function was wrapped.
@@ -361,12 +358,19 @@ class PyBulletDynamicsWorld():
             print('Bullet warning: Inertia = {}'.format(l))
         del l
 
+        # Create the compound shape that will hold all other shapes.
+        compound = azBullet.CompoundShape()
+        compound.addChildShape(azBullet.Transform(), cshape)
+
+        # Apply the scale.
+        compound.setLocalScaling(scale)
+
         # Add the collision shape to a list. Albeit not explicitly used
         # anywhere this is necessary regardless to ensure the underlying
         # pointers are kept alive (Bullet only accesses them but does not own
         # them).
-        self.collision_shapes[objID] = cshape
-        return RetVal(True, None, (mass, inertia, cshape))
+        self.collision_shapes[objID] = (cshape, compound)
+        return RetVal(True, None, (mass, inertia, compound))
 
     @typecheck
     def createRigidBody(self, objID: int, obj: _MotionState):
