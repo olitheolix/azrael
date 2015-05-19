@@ -556,7 +556,6 @@ class TestCollisionShapes:
         # Test iterator support.
         comp.addChildShape(Transform(), cs_s)
         comp.addChildShape(Transform(), cs_e)
-        print(list(comp))
         tmp = [_.getName() for _ in comp]
         assert tmp == [b'STATICPLANE', b'Box', b'SPHERE', b'Empty']
 
@@ -767,3 +766,72 @@ class TestConstraints:
             assert p_b[0] > init_pos[1]
             assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
             init_pos = (p_a[0], p_b[0])
+
+    def test_add_get_remove_iterate(self):
+        """
+        Test the various functions
+        fixme: need one more constraint to make this really useful.
+        """
+        # Create two rigid bodies side by side (they *do* touch, but just).
+        pos_a = Vec3(-3, 0, 0)
+        pos_b = Vec3(-1, 0, 0)
+        pos_c = Vec3(1, 0, 0)
+        pos_d = Vec3(3, 0, 0)
+        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+        rb_c = getRB(pos=pos_c, cs=SphereShape(1))
+        rb_d = getRB(pos=pos_d, cs=BoxShape(Vec3(1, 2, 3)))
+
+        # Connect the two rigid bodies at their left/right boundary.
+        pivot_a, pivot_b, pivot_c, pivot_d = pos_a, pos_b, pos_c, pos_d
+        p2p_ab = Point2PointConstraint(rb_a, rb_b, pivot_a, pivot_b)
+        p2p_bc = Point2PointConstraint(rb_b, rb_c, pivot_b, pivot_c)
+        p2p_cd = Point2PointConstraint(rb_c, rb_d, pivot_c, pivot_d)
+
+        # Add both rigid bodies into a simulation.
+        bb = BulletBase()
+        bb.addRigidBody(rb_a)
+        bb.addRigidBody(rb_b)
+
+        # So far we have not added any constraints.
+        assert bb.getNumConstraints() == 0
+        assert bb.getConstraint(0) == None
+        assert bb.getConstraint(10) == None
+
+        # Add the first constraint.
+        bb.addConstraint(p2p_ab)
+        assert bb.getNumConstraints() == 1
+        assert bb.getConstraint(0) == p2p_ab
+        assert bb.getConstraint(1) == None
+        assert list(bb.iterateConstraints()) == [p2p_ab]
+
+        # Add the first constraint a second time. This must suceed but the
+        # constraint must not have been added again.
+        bb.addConstraint(p2p_ab)
+        assert bb.getNumConstraints() == 1
+        assert bb.getConstraint(0) == p2p_ab
+        assert bb.getConstraint(1) == None
+        assert list(bb.iterateConstraints()) == [p2p_ab]
+
+        # Add the second and third constraint.
+        bb.addConstraint(p2p_bc)
+        assert bb.getNumConstraints() == 2
+        assert list(bb.iterateConstraints()) == [p2p_ab, p2p_bc]
+        bb.addConstraint(p2p_cd)
+        assert bb.getNumConstraints() == 3
+        assert bb.getConstraint(0) == p2p_ab
+        assert bb.getConstraint(1) == p2p_bc
+        assert bb.getConstraint(2) == p2p_cd
+        assert list(bb.iterateConstraints()) == [p2p_ab, p2p_bc, p2p_cd]
+
+        # Remove the middle constraint twice.
+        p2p_none = Point2PointConstraint(rb_a, rb_d, pivot_b, pivot_c)
+        for ii in range(2):
+            bb.removeConstraint(p2p_bc)
+            assert bb.getNumConstraints() == 2
+            assert bb.getConstraint(0) == p2p_ab
+            assert bb.getConstraint(1) == p2p_cd
+            assert bb.getConstraint(2) == None
+
+            # Remove non-existing constraint.
+            bb.removeConstraint(p2p_none)

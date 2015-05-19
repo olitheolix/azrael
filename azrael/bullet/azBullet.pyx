@@ -53,6 +53,7 @@ cdef class BulletBase:
     cdef btDbvtBroadphase *pairCache
     cdef btSequentialImpulseConstraintSolver *solver
     cdef btDiscreteDynamicsWorld *dynamicsWorld
+    cdef list _list_constraints
 
     def __cinit__(self):
         self.collisionConfiguration = new btDefaultCollisionConfiguration()
@@ -65,6 +66,7 @@ cdef class BulletBase:
             <btBroadphaseInterface*>self.pairCache,
             self.solver,
             self.collisionConfiguration)
+        self._list_constraints = []
 
     def __dealloc__(self):
         del self.dynamicsWorld
@@ -90,7 +92,37 @@ cdef class BulletBase:
         self.dynamicsWorld.addRigidBody(body.ptr_RigidBody)
 
     def addConstraint(self, TypedConstraint constraint):
+        # Return immediately if the constraint has already been added.
+        if constraint in self._list_constraints:
+            return
+
+        # Add the constraint.
+        self._list_constraints.append(constraint)
         self.dynamicsWorld.addConstraint(constraint.ptr_TypedConstraint, False)
+
+    def getConstraint(self, int index):
+        try:
+            return self._list_constraints[index]
+        except IndexError:
+            return None
+
+    def iterateConstraints(self):
+        return (_ for _ in self._list_constraints)
+
+    def removeConstraint(self, TypedConstraint constraint):
+        tmp = [_ for _ in self._list_constraints if _ != constraint]
+        if len(tmp) == self._list_constraints:
+            # `shape` was not in the list.
+            return None
+        else:
+            self._list_constraints = tmp
+            self.dynamicsWorld.removeConstraint(constraint.ptr_TypedConstraint)
+
+    def getNumConstraints(self):
+        if len(self._list_constraints) != self.dynamicsWorld.getNumConstraints():
+            raise AssertionError(
+                'Invalid #Constraints in DynamicsWorld')
+        return self.dynamicsWorld.getNumConstraints()
 
     def stepSimulation(self, double timeStep, int maxSubSteps):
         self.dynamicsWorld.stepSimulation(

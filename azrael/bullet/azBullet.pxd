@@ -30,3 +30,6 @@ cdef extern from "btBulletDynamicsCommon.h":
         int stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
         void removeRigidBody(btRigidBody *body)
         void addConstraint(btTypedConstraint *constraint, bint disable)
+        void removeConstraint(btTypedConstraint *constraint)
+        int getNumConstraints()
+        btTypedConstraint *getConstraint(int index)
