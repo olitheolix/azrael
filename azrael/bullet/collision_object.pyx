@@ -9,7 +9,9 @@ cdef class CollisionObject:
 
     def getCollisionShape(self):
         cdef btCollisionShape *tmp = self.ptr_CollisionObject.getCollisionShape()
-        assert <long>tmp == <long>self._ref_cs.ptr_CollisionShape
+        if <long>tmp != <long>self._ref_cs.ptr_CollisionShape:
+            raise AssertionError(
+                'Invalid pointer in CollisionObject.getCollisionShape')
         return self._ref_cs
 
     def setCollisionShape(self, CollisionShape collisionShape):

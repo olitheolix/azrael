@@ -28,9 +28,7 @@ cdef class RigidBodyConstructionInfo:
 
     property motionState:
         def __get__(self):
-            ms = DefaultMotionState(Transform())
-            ms.ptr_MotionState = self.ptr_RigidBodyConstructionInfo.m_motionState
-            return ms
+            return self._ref_ms
 
         def __set__(self, MotionState ms):
             self.ptr_RigidBodyConstructionInfo.m_motionState = ms.ptr_MotionState
@@ -50,7 +48,6 @@ cdef class RigidBodyConstructionInfo:
         def __del__(self):
             pass
 
-
     property mass:
         def __get__(self):
             return <double>self.ptr_RigidBodyConstructionInfo.m_mass
@@ -60,7 +57,6 @@ cdef class RigidBodyConstructionInfo:
 
         def __del__(self):
             pass
-
 
     property linearDamping:
         def __get__(self):
@@ -72,7 +68,6 @@ cdef class RigidBodyConstructionInfo:
         def __del__(self):
             pass
 
-
     property angularDamping:
         def __get__(self):
             return <double>self.ptr_RigidBodyConstructionInfo.m_angularDamping
@@ -82,7 +77,6 @@ cdef class RigidBodyConstructionInfo:
 
         def __del__(self):
             pass
-
 
     property friction:
         def __get__(self):
@@ -94,7 +88,6 @@ cdef class RigidBodyConstructionInfo:
         def __del__(self):
             pass
 
-
     property rollingFriction:
         def __get__(self):
             return <double>self.ptr_RigidBodyConstructionInfo.m_rollingFriction
@@ -104,7 +97,6 @@ cdef class RigidBodyConstructionInfo:
 
         def __del__(self):
             pass
-
 
     property restitution:
         def __get__(self):
@@ -116,7 +108,6 @@ cdef class RigidBodyConstructionInfo:
         def __del__(self):
             pass
 
-
     property linearSleepingThreshold:
         def __get__(self):
             return <double>self.ptr_RigidBodyConstructionInfo.m_linearSleepingThreshold
@@ -126,7 +117,6 @@ cdef class RigidBodyConstructionInfo:
 
         def __del__(self):
             pass
-
 
     property angularSleepingThreshold:
         def __get__(self):
@@ -138,7 +128,6 @@ cdef class RigidBodyConstructionInfo:
         def __del__(self):
             pass
 
-
     property additionalDampingFactor:
         def __get__(self):
             return <double>self.ptr_RigidBodyConstructionInfo.m_additionalDampingFactor
@@ -148,7 +137,6 @@ cdef class RigidBodyConstructionInfo:
 
         def __del__(self):
             pass
-
 
     property additionalLinearDampingThresholdSqr:
         def __get__(self):
@@ -160,7 +148,6 @@ cdef class RigidBodyConstructionInfo:
         def __del__(self):
             pass
 
-
     property additionalAngularDampingThresholdSqr:
         def __get__(self):
             return <double>self.ptr_RigidBodyConstructionInfo.m_additionalAngularDampingThresholdSqr
@@ -170,7 +157,6 @@ cdef class RigidBodyConstructionInfo:
 
         def __del__(self):
             pass
-
 
     property additionalAngularDampingFactor:
         def __get__(self):
@@ -243,7 +229,8 @@ cdef class RigidBody(CollisionObject):
         # Verify that self._ref_ms points to the same object that the underlying
         # btRigidBody uses.
         cdef btMotionState *tmp = self.ptr_RigidBody.getMotionState()
-        assert <long>tmp == <long>self._ref_ms.ptr_MotionState
+        if <long>tmp != <long>self._ref_ms.ptr_MotionState:
+            raise AssertionError('Invalid pointer in RigidBody.getMotionState')
 
         # Return the MotionState.
         return self._ref_ms
