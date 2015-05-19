@@ -146,6 +146,10 @@ cdef class CompoundShape(CollisionShape):
         if self.ptr_CompoundShape != NULL:
             del self.ptr_CompoundShape
 
+    def __iter__(self):
+        # Return the iterator over all collision shapes.
+        return (_.cshape for _ in self._list_cs)
+
     def addChildShape(self, Transform localTransform, CollisionShape shape):
         self._list_cs.append(ChildElement(localTransform, shape))
         self.ptr_CompoundShape.addChildShape(

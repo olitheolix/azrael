@@ -547,6 +547,16 @@ class TestCollisionShapes:
         assert comp.getChildShape(-1) is None
         assert comp.getChildShape(2) is None
 
+        # Test iterator support.
+        assert [_.getName() for _ in comp] == [b'STATICPLANE', b'Box']
+
+        # Test iterator support.
+        comp.addChildShape(Transform(), cs_s)
+        comp.addChildShape(Transform(), cs_b)
+        print(list(comp))
+        tmp = [_.getName() for _ in comp]
+        assert tmp == [b'STATICPLANE', b'Box', b'SPHERE', b'Box']
+
 
 class TestTransform:
     @classmethod
