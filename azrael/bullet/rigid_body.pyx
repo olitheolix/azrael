@@ -28,10 +28,30 @@ cdef class RigidBodyConstructionInfo:
 
     property motionState:
         def __get__(self):
+            if (<long>self.ptr_RigidBodyConstructionInfo.m_motionState
+                != <long>self._ref_ms.ptr_MotionState):
+                raise AssertionError(
+                    'Invalid pointer in ConstructionInfo.motionState attribute')
             return self._ref_ms
 
         def __set__(self, MotionState ms):
+            self._ref_ms = ms
             self.ptr_RigidBodyConstructionInfo.m_motionState = ms.ptr_MotionState
+
+        def __del__(self):
+            pass
+
+    property collisionShape:
+        def __get__(self):
+            if (<long>self.ptr_RigidBodyConstructionInfo.m_collisionShape
+                != <long>self._ref_cs.ptr_CollisionShape):
+                raise AssertionError(
+                    'Invalid pointer in ConstructionInfo.collisionShape attribute')
+            return self._ref_cs
+
+        def __set__(self, CollisionShape cs):
+            self._ref_cs = cs
+            self.ptr_RigidBodyConstructionInfo.m_collisionShape = cs.ptr_CollisionShape
 
         def __del__(self):
             pass

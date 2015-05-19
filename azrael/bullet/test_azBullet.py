@@ -433,6 +433,13 @@ class TestRigidBody:
         ci.localInertia = inert
         assert ci.localInertia == inert
 
+        # Verify the 'motionState' attribute.
+        assert ci.motionState.getWorldTransform().getOrigin() == pos
+        assert ci.motionState.getWorldTransform().getRotation() == rot
+
+        # Verify the 'collisionShape' attribute.
+        assert ci.collisionShape.getName() == b'Empty'
+
     def test_ConstructionInfo_to_RigidBody(self):
         """
         Verify that the initial motion state is transferred correctly to the
