@@ -1,4 +1,6 @@
 cdef class RigidBodyConstructionInfo:
+    cdef MotionState _ref_ms
+    cdef CollisionShape _ref_cs
     cdef btRigidBodyConstructionInfo *ptr_RigidBodyConstructionInfo
 
     def __cinit__(self):
@@ -11,6 +13,14 @@ cdef class RigidBodyConstructionInfo:
             ms.ptr_MotionState,
             cs.ptr_CollisionShape,
             inert.ptr_Vector3[0])
+
+        # Keep a handle to the MotionState and CollisionShape to ensure they
+        # stay alive until this object destructs. Otherwise it would be well
+        # possible that the caller deletes the passed in 'ms' or 'cs' object in
+        # which case this class will end up with an invalid pointer to where
+        # the 'cs' and 'ms' data used to be.
+        self._ref_ms = ms
+        self._ref_cs = cs
 
     def __dealloc__(self):
         if self.ptr_RigidBodyConstructionInfo != NULL:
@@ -181,6 +191,8 @@ cdef class RigidBody(CollisionObject):
 
     def __init__(self, RigidBodyConstructionInfo ci):
         self.ptr_RigidBody = new btRigidBody(ci.ptr_RigidBodyConstructionInfo[0])
+        self._ref_cs = ci._ref_cs
+        self._ref_ms = ci._ref_ms
 
         # Assign the base pointers.
         self.ptr_CollisionObject = <btCollisionObject*?>self.ptr_RigidBody
@@ -228,11 +240,17 @@ cdef class RigidBody(CollisionObject):
         self.ptr_RigidBody.setAngularVelocity(angularVelocity.ptr_Vector3[0])
 
     def getMotionState(self):
-        ms = DefaultMotionState()
-        ms.ptr_MotionState = self.ptr_RigidBody.getMotionState()
-        return ms
+        # Verify that self._ref_ms points to the same object that the underlying
+        # btRigidBody uses.
+        cdef btMotionState *tmp = self.ptr_RigidBody.getMotionState()
+        assert <long>self._ref_ms.ptr_MotionState == <long>tmp
+
+        # Return the MotionState.
+        return self._ref_ms
 
     def setMotionState(self, MotionState ms):
+        # Update our local copy of the motion state.
+        self._ref_ms = ms
         self.ptr_RigidBody.setMotionState(ms.ptr_MotionState)
 
     def getLinearSleepingThreshold(self):

@@ -45,9 +45,7 @@ def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
 
     # Build construction info and instantiate the rigid body.
     ci = RigidBodyConstructionInfo(mass, ms, cs)
-    b = RigidBody(ci)
-
-    return b, (cs, ms)
+    return RigidBody(ci)
 
 
 class TestVector3:
@@ -129,7 +127,7 @@ class TestRigidBody:
         Specify and query "Restitution".
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Set restitution coefficient and verify it is correct.
         rest_ref = 2.4
@@ -151,7 +149,7 @@ class TestRigidBody:
         value of zero means the object cannot move in that direction at all.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Set the linear factor and verify it is correct.
         lf = Vec3(-1, 2, 2.5)
@@ -173,7 +171,7 @@ class TestRigidBody:
         value of zero means the object cannot rotate along that axis.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Set the angular factor and verify it is correct.
         lf = Vec3(-1, 2, 2.5)
@@ -192,7 +190,7 @@ class TestRigidBody:
         Specify and query the "LinearVelocity".
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Set the linear velocity and verify it is correct.
         lf = Vec3(-1, 2, 2.5)
@@ -211,7 +209,7 @@ class TestRigidBody:
         Specify and query the "AngularVelocity".
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Set the angular velocity and verify it is correct.
         lf = Vec3(-1, 2, 2.5)
@@ -230,7 +228,7 @@ class TestRigidBody:
         Set/get the {linear,angular} sleeping threshold.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Set the threshold (must both be set at the same time).
         th_lin, th_ang = 1.2, 3.4
@@ -251,7 +249,7 @@ class TestRigidBody:
         Apply and query forces in various ways.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Clear all forces.
         body.clearForces()
@@ -287,7 +285,7 @@ class TestRigidBody:
         Set/get damping factors.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Set the linear- and angular damping factors (must be in [0, 1] each).
         damp_lin, damp_ang = 0.2, 0.4
@@ -315,7 +313,7 @@ class TestRigidBody:
         Set/get friction coefficients.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Set the linear- and angular friction coefficients.
         friction = 1.8
@@ -332,7 +330,7 @@ class TestRigidBody:
         Set/get mass- and inertia.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # The default body has unit mass and no inertia.
         assert body.getInvMass() == 1
@@ -359,8 +357,8 @@ class TestRigidBody:
         # Create two RigidBody objects at distinct positions.
         ref_pos1 = Vec3(0, 0, 0)
         ref_pos2 = Vec3(10, 10, 10)
-        body1, _1 = getRB(pos=ref_pos1)
-        body2, _2 = getRB(pos=ref_pos2)
+        body1 = getRB(pos=ref_pos1)
+        body2 = getRB(pos=ref_pos2)
 
         # Active- and inactive forever.
         body1.forceActivationState(4)
@@ -394,7 +392,7 @@ class TestRigidBody:
         Set, query, and replace a collision shape.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         sphere = SphereShape(1.5)
         box = BoxShape(Vec3(1, 2, 3))
@@ -598,7 +596,7 @@ class TestMotionState:
         Set and get a motion state.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Create a new Transform.
         pos = Vec3(1, 2, 3.5)
@@ -633,7 +631,7 @@ class TestMotionState:
         Get/set the centerOfMassTransform.
         """
         # Get RigidBody object.
-        body, _ = getRB()
+        body = getRB()
 
         # Create a new Transform.
         pos = Vec3(1, 2, 3.5)
@@ -669,8 +667,8 @@ class TestConstraints:
         cs_b = BoxShape(Vec3(1, 2, 3))
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a, _a = getRB(pos=pos_a, cs=cs_a)
-        rb_b, _b = getRB(pos=pos_b, cs=cs_b)
+        rb_a = getRB(pos=pos_a, cs=cs_a)
+        rb_b = getRB(pos=pos_b, cs=cs_b)
 
         # Connect the two rigid bodies at their left/right boundary.
         pivot_a, pivot_b = pos_b, pos_a
@@ -706,8 +704,8 @@ class TestConstraints:
         # Create two rigid bodies side by side (they *do* touch, but just).
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a, _a = getRB(pos=pos_a, cs=SphereShape(1))
-        rb_b, _b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
 
         # Connect the two rigid bodies at their left/right boundary.
         pivot_a, pivot_b = pos_b, pos_a
