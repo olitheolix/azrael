@@ -24,12 +24,12 @@ cdef class TypedConstraintType:
 
 
 cdef class TypedConstraint:
-    cdef RigidBody _rb_a, _rb_b
+    cdef RigidBody _ref_rbA, _ref_rbB
     cdef btTypedConstraint *ptr_TypedConstraint
 
     def __cinit__(self):
         self.ptr_TypedConstraint = NULL
-        self._rb_a = self._rb_b = None
+        self._ref_rbA = self._ref_rbB = None
     # int getUserConstraintType()
     # void setUserConstraintType(int userConstraintType)
 
@@ -40,10 +40,10 @@ cdef class TypedConstraint:
         pass
 
     def getRigidBodyA(self):
-        return self._rb_a
+        return self._ref_rbA
 
     def getRigidBodyB(self):
-        return self._rb_b
+        return self._ref_rbB
 
     def isEnabled(self):
         return self.ptr_TypedConstraint.isEnabled()
@@ -67,8 +67,8 @@ cdef class Point2PointConstraint(TypedConstraint):
             pivotInA.ptr_Vector3[0], pivotInB.ptr_Vector3[0])
 
         # Keep handles to the two objects alive.
-        self._rb_a = rbA
-        self._rb_b = rbB
+        self._ref_rbA = rbA
+        self._ref_rbB = rbB
 
         # Assign the base pointers.
         self.ptr_TypedConstraint = <btTypedConstraint*?>self.ptr_Point2PointConstraint
@@ -76,7 +76,6 @@ cdef class Point2PointConstraint(TypedConstraint):
     def __dealloc__(self):
         if self.ptr_TypedConstraint != NULL:
             del self.ptr_TypedConstraint
-
 
     def setPivotA(self, Vec3 pivotA):
         self.ptr_Point2PointConstraint.setPivotA(pivotA.ptr_Vector3[0])
