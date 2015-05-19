@@ -532,10 +532,13 @@ class TestCollisionShapes:
         comp.addChildShape(Transform(), cs_b)
         assert comp.getNumChildShapes() == 3
 
-        # Verify the collision shape types.
+        # Verify the collision shapes.
         assert comp.getChildShape(0).getName() == b'STATICPLANE'
+        assert isinstance(comp.getChildShape(0), StaticPlaneShape)
         assert comp.getChildShape(1).getName() == b'SPHERE'
+        assert isinstance(comp.getChildShape(1), SphereShape)
         assert comp.getChildShape(2).getName() == b'Box'
+        assert isinstance(comp.getChildShape(2), BoxShape)
 
         # Remove the sphere. This must reduce the number of shapes to 2.
         comp.removeChildShape(cs_s)
@@ -552,10 +555,10 @@ class TestCollisionShapes:
 
         # Test iterator support.
         comp.addChildShape(Transform(), cs_s)
-        comp.addChildShape(Transform(), cs_b)
+        comp.addChildShape(Transform(), cs_e)
         print(list(comp))
         tmp = [_.getName() for _ in comp]
-        assert tmp == [b'STATICPLANE', b'Box', b'SPHERE', b'Box']
+        assert tmp == [b'STATICPLANE', b'Box', b'SPHERE', b'Empty']
 
 
 class TestTransform:
