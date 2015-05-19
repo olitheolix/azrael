@@ -1,3 +1,7 @@
+cimport cython
+from collections import namedtuple
+ChildElement = namedtuple('ChildElement', 'transform cshape')
+
 cdef class CollisionShape:
     cdef btCollisionShape *ptr_CollisionShape
 
@@ -126,9 +130,11 @@ cdef class BoxShape(PolyhedralConvexShape):
 
 cdef class CompoundShape(CollisionShape):
     cdef btCompoundShape *ptr_CompoundShape
+    cdef list _list_cs
 
     def __cinit__(self):
         self.ptr_CompoundShape = NULL
+        self._list_cs = []
 
     def __init__(self, bint enableDynamicAabbTree=True):
         self.ptr_CompoundShape = new btCompoundShape(enableDynamicAabbTree)
@@ -141,6 +147,7 @@ cdef class CompoundShape(CollisionShape):
             del self.ptr_CompoundShape
 
     def addChildShape(self, Transform localTransform, CollisionShape shape):
+        self._list_cs.append(ChildElement(localTransform, shape))
         self.ptr_CompoundShape.addChildShape(
             localTransform.ptr_Transform[0],
             shape.ptr_CollisionShape)
@@ -148,12 +155,19 @@ cdef class CompoundShape(CollisionShape):
     def getChildShape(self, int index):
         if not (0 <= index < self.getNumChildShapes()):
             return None
-        cs = CollisionShape()
-        cs.ptr_CollisionShape = self.ptr_CompoundShape.getChildShape(index)
-        return cs
+        return self._list_cs[index].cshape
 
     def removeChildShape(self, CollisionShape shape):
-        self.ptr_CompoundShape.removeChildShape(shape.ptr_CollisionShape)
+        tmp = [_ for _ in self._list_cs if _.cshape != shape]
+        if len(tmp) == self._list_cs:
+            # `shape` was not in the list.
+            return None
+        else:
+            self._list_cs = tmp
+            self.ptr_CompoundShape.removeChildShape(shape.ptr_CollisionShape)
 
     def getNumChildShapes(self):
+        if len(self._list_cs) != self.ptr_CompoundShape.getNumChildShapes():
+            raise AssertionError(
+                'Invalid #ChildShapes in CompoundShape')
         return self.ptr_CompoundShape.getNumChildShapes()
