@@ -16,6 +16,18 @@ cdef class RigidBodyConstructionInfo:
         if self.ptr_RigidBodyConstructionInfo != NULL:
             del self.ptr_RigidBodyConstructionInfo
 
+    property motionState:
+        def __get__(self):
+            ms = DefaultMotionState(Transform())
+            ms.ptr_MotionState = self.ptr_RigidBodyConstructionInfo.m_motionState
+            return ms
+
+        def __set__(self, MotionState ms):
+            self.ptr_RigidBodyConstructionInfo.m_motionState = ms.ptr_MotionState
+
+        def __del__(self):
+            pass
+
     property localInertia:
         def __get__(self):
             v = Vec3()
