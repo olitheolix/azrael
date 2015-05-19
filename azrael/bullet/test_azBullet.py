@@ -674,7 +674,7 @@ class TestConstraints:
         pivot_a, pivot_b = pos_b, pos_a
         p2p = Point2PointConstraint(rb_a, rb_b, pivot_a, pivot_b)
 
-        # Verify that their pivot is as specified.
+        # Verify that their pivot is at the specified position.
         assert p2p.getPivotInA() == pivot_a
         assert p2p.getPivotInB() == pivot_b
 

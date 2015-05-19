@@ -8,9 +8,10 @@ cdef class CollisionObject:
         self._ref_ms = self._ref_cs = None
 
     def getCollisionShape(self):
-        cs = CollisionShape()
-        cs.ptr_CollisionShape = self.ptr_CollisionObject.getCollisionShape()
-        return cs
+        cdef btCollisionShape *tmp = self.ptr_CollisionObject.getCollisionShape()
+        assert <long>tmp == <long>self._ref_cs.ptr_CollisionShape
+        return self._ref_cs
 
     def setCollisionShape(self, CollisionShape collisionShape):
+        self._ref_cs = collisionShape
         self.ptr_CollisionObject.setCollisionShape(collisionShape.ptr_CollisionShape)

@@ -24,10 +24,12 @@ cdef class TypedConstraintType:
 
 
 cdef class TypedConstraint:
+    cdef RigidBody _rb_a, _rb_b
     cdef btTypedConstraint *ptr_TypedConstraint
 
     def __cinit__(self):
         self.ptr_TypedConstraint = NULL
+        self._rb_a = self._rb_b = None
     # int getUserConstraintType()
     # void setUserConstraintType(int userConstraintType)
 
@@ -38,30 +40,10 @@ cdef class TypedConstraint:
         pass
 
     def getRigidBodyA(self):
-        # fixme: this is ridiculous, just to get a RigidBody object.
-        cs = SphereShape(1)
-        t = Transform(Quaternion(0, 0, 0, 1), Vec3(0, 0, 0))
-        ms = DefaultMotionState(t)
-        mass = 1
-        ci = RigidBodyConstructionInfo(mass, ms, cs)
-        body = RigidBody(ci)
-
-        body.ptr_RigidBody[0] = self.ptr_TypedConstraint.getRigidBodyA()
-        del ci, t, ms, mass
-        return body
+        return self._rb_a
 
     def getRigidBodyB(self):
-        # fixme: this is ridiculous, just to get a RigidBody object.
-        cs = SphereShape(1)
-        t = Transform(Quaternion(0, 0, 0, 1), Vec3(0, 0, 0))
-        ms = DefaultMotionState(t)
-        mass = 1
-        ci = RigidBodyConstructionInfo(mass, ms, cs)
-        body = RigidBody(ci)
-
-        body.ptr_RigidBody[0] = self.ptr_TypedConstraint.getRigidBodyB()
-        del ci, t, ms, mass
-        return body
+        return self._rb_b
 
     def isEnabled(self):
         return self.ptr_TypedConstraint.isEnabled()
@@ -83,6 +65,10 @@ cdef class Point2PointConstraint(TypedConstraint):
         self.ptr_Point2PointConstraint = new btPoint2PointConstraint(
             rbA.ptr_RigidBody[0], rbB.ptr_RigidBody[0],
             pivotInA.ptr_Vector3[0], pivotInB.ptr_Vector3[0])
+
+        # Keep handles to the two objects alive.
+        self._rb_a = rbA
+        self._rb_b = rbB
 
         # Assign the base pointers.
         self.ptr_TypedConstraint = <btTypedConstraint*?>self.ptr_Point2PointConstraint

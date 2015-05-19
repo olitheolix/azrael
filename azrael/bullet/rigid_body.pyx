@@ -243,7 +243,7 @@ cdef class RigidBody(CollisionObject):
         # Verify that self._ref_ms points to the same object that the underlying
         # btRigidBody uses.
         cdef btMotionState *tmp = self.ptr_RigidBody.getMotionState()
-        assert <long>self._ref_ms.ptr_MotionState == <long>tmp
+        assert <long>tmp == <long>self._ref_ms.ptr_MotionState
 
         # Return the MotionState.
         return self._ref_ms
