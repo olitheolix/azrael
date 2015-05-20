@@ -68,12 +68,6 @@ class PyBulletDynamicsWorld():
         # Dictionary of all objects.
         self.rigidBodies = {}
 
-        # Auxiliary dictionary to avoid motion states and collision shapes to
-        # be garbage collected because Bullet will internally only hold
-        # pointers to them.
-        self.motion_states = {}
-        self.collision_shapes = {}
-
     def removeObject(self, objIDs: (list, tuple)):
         """
         Remove ``objIDs`` from Bullet and return the number of removed objects.
@@ -93,8 +87,6 @@ class PyBulletDynamicsWorld():
 
             # Delete the object from all caches.
             del self.rigidBodies[objID]
-            del self.motion_states[objID]
-            del self.collision_shapes[objID]
             cnt += 1
 
         # Return the total number of removed objects.
@@ -240,7 +232,7 @@ class PyBulletDynamicsWorld():
             # that will eventually be returned to the caller.
             # fixme: do not use azrael[1].scale but query the scale from the
             # collisionShape object
-            csname = self.collision_shapes[objID][0].getName()
+            csname = obj.getCollisionShape().getChildShape(0).getName()
             cs2 = CollisionShape(csname.decode('utf8'), None)
             out.append(
                 _MotionState(obj.azrael[1].scale, obj.getInvMass(),
@@ -365,11 +357,6 @@ class PyBulletDynamicsWorld():
         # Apply the scale.
         compound.setLocalScaling(scale)
 
-        # Add the collision shape to a list. Albeit not explicitly used
-        # anywhere this is necessary regardless to ensure the underlying
-        # pointers are kept alive (Bullet only accesses them but does not own
-        # them).
-        self.collision_shapes[objID] = (cshape, compound)
         return RetVal(True, None, (mass, inertia, compound))
 
     @typecheck
@@ -406,10 +393,4 @@ class PyBulletDynamicsWorld():
 
         # Add the rigid body to the object cache.
         self.rigidBodies[objID] = body
-
-        # Add the mostion state to a list. Albeit not explicitly used anywhere
-        # this is necessary regradless to ensure the underlying points are kept
-        # alive (Bullet does not own them but accesses them).
-        self.motion_states[objID] = ms
-
         return RetVal(True, None, None)
