@@ -43,6 +43,10 @@ def isEqualBD(bd1: _MotionState, bd2: _MotionState):
                     tmp_b = CollShapeMeta(*csm_b)
                     tmp_a = tmp_a._replace(cs=list(tmp_a.cs))
                     tmp_b = tmp_b._replace(cs=list(tmp_b.cs))
+                    tmp_a = tmp_a._replace(pos=list(tmp_a.pos))
+                    tmp_b = tmp_b._replace(pos=list(tmp_b.pos))
+                    tmp_a = tmp_a._replace(rot=list(tmp_a.rot))
+                    tmp_b = tmp_b._replace(rot=list(tmp_b.rot))
                     tmp_a = list(tmp_a)
                     tmp_b = list(tmp_b)
                     assert tmp_a == tmp_b
@@ -134,8 +138,9 @@ class TestBulletAPI:
         assert not isEqualBD(obj_a, obj_a._replace(position=pos_new))
 
         # Replace the CollShape named tuple with just a list.
-        cs2_1 = CollShapeMeta('csfoo', None, None, CollShapeSphere(2))
-        cs2_2 = list(CollShapeMeta('csfoo', None, None, list(CollShapeSphere(2))))
+        p, q = (0, 0, 0), (0, 0, 0, 1)
+        cs2_1 = CollShapeMeta('csfoo', p, q, CollShapeSphere(2))
+        cs2_2 = list(CollShapeMeta('csfoo', p, q, list(CollShapeSphere(2))))
         obj_a1 = obj_a._replace(cshape=[cs2_1])
         obj_a2 = obj_a._replace(cshape=[cs2_2])
 
