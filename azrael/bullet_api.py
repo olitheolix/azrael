@@ -25,7 +25,9 @@ import azrael.config as config
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _MotionState, CollShapeMeta
+from azrael.types import typecheck, RetVal, _MotionState
+from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.types import CollShapeBox
 
 # Convenience.
 Vec3 = azBullet.Vec3
@@ -238,8 +240,7 @@ class PyBulletDynamicsWorld():
             out.append(
                 _MotionState(obj.azrael[1].scale, obj.getInvMass(),
                              obj.getRestitution(), rot, pos, vLin, vRot,
-                             cshape, axesLockLin, axesLockRot, 0,
-                             obj.azrael[1].cs2))
+                             cshape, axesLockLin, axesLockRot, 0))
         return RetVal(True, None, out[0])
 
     @typecheck
@@ -314,52 +315,63 @@ class PyBulletDynamicsWorld():
 
         This is a convenience method only.
 
+        fixme: document return types.
+        fixme: find out how to combine mass/inertia of multi body objects.
+
         :param int objID: object ID.
         :param _MotionState obj: Azrael's meta data that describes the body.
-        :return: Bullet collision shape.
+        :return:
         """
-        # Instantiate a new collision shape.
-        scale = Vec3(obj.scale, obj.scale, obj.scale)
-        if obj.cshape[0] == 3:
-            # Sphere.
-            cshape = azBullet.SphereShape(1)
-        elif obj.cshape[0] == 4:
-            # Prism.
-            w, h, l = np.array(obj.cshape[1:]) / 2
-            cshape = azBullet.BoxShape(Vec3(w, h, l))
-        else:
-            # Empty- or unrecognised collision shape.
-            if obj.cshape[0] != 0:
-                print('Unrecognised collision shape ', obj.cshape)
-
-            # The actual collision shape.
-            cshape = azBullet.EmptyShape()
-
-        # Ask Bullet to compute the mass and inertia for us. The inertia will
-        # be passed as a reference whereas the 'mass' is irrelevant due to how
-        # the C++ function was wrapped.
-        inertia = Vec3(0, 0, 0)
-        mass = 1.0 / obj.imass
-        if obj.imass > 1E-4:
-            # The calcuate_local_inertia function will update the `inertia`
-            # variable directly.
-            cshape.calculateLocalInertia(mass, inertia)
-
-        # Compute inertia magnitude and warn about unreasonable values.
-        l = np.array(inertia.topy())
-        l = np.dot(l, l)
-        if not (1E-5 < l < 20):
-            print('Bullet warning: Inertia = {}'.format(l))
-        del l
-
         # Create the compound shape that will hold all other shapes.
         compound = azBullet.CompoundShape()
-        compound.addChildShape(azBullet.Transform(), cshape)
+
+        # Aggregate the total mass and inertia.
+        tot_mass = 0
+        tot_inertia = Vec3(0, 0, 0)
+
+        # Create the collision shapes one by one.
+        for cs in obj.cshape:
+            # Determine which CollisionShape to instantiate.
+            csname = type(cs.cs).__name__
+            if csname == 'CollShapeSphere':
+                child = azBullet.SphereShape(*cs.cs)
+            elif csname == 'CollShapeBox':
+                child = azBullet.BoxShape(Vec3(*cs.cs))
+            elif csname == 'CollShapeEmpty':
+                child = azBullet.EmptyShape()
+            else:
+                child = azBullet.EmptyShape()
+                msg = 'Unrecognised collision shape <{}>'.format(csname)
+                self.logit.warning(msg)
+
+            # Ask Bullet to compute the mass and inertia for us. The inertia will
+            # be passed as a reference whereas the 'mass' is irrelevant due to how
+            # the C++ function was wrapped.
+            inertia = Vec3(0, 0, 0)
+            mass = 1.0 / obj.imass
+            if obj.imass > 1E-4:
+                # The calculate_local_inertia function will update the `inertia`
+                # variable directly.
+                child.calculateLocalInertia(mass, inertia)
+
+            # Compute inertia magnitude and warn about unreasonable values.
+            l = np.array(inertia.topy())
+            l = np.dot(l, l)
+            if not (1E-5 < l < 20):
+                self.logit.warning('Inertia = {:.1E}'.format(l))
+            del l
+
+            # Add the collision shape at the respective position and
+            # orientation relative to the parent.
+            t = azBullet.Transform(Quaternion(*cs.rot), Vec3(*cs.pos))
+            compound.addChildShape(t, child)
+            tot_mass += mass
+            tot_inertia += inertia
 
         # Apply the scale.
-        compound.setLocalScaling(scale)
+        compound.setLocalScaling(Vec3(obj.scale, obj.scale, obj.scale))
 
-        return RetVal(True, None, (mass, inertia, compound))
+        return RetVal(True, None, (tot_mass, tot_inertia, compound))
 
     @typecheck
     def createRigidBody(self, objID: int, obj: _MotionState):

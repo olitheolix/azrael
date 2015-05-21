@@ -56,7 +56,7 @@ Forces = namedtuple('Forces',
 _MotionState = namedtuple('_MotionState',
                           'scale imass restitution orientation '
                           'position velocityLin velocityRot cshape '
-                          'axesLockLin axesLockRot lastChanged cs2')
+                          'axesLockLin axesLockRot lastChanged')
 
 CollShapeMeta = namedtuple('CollShapeMeta', 'name pos rot cs')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')

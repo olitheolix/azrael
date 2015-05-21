@@ -34,6 +34,9 @@ from IPython import embed as ipshell
 from azrael.types import typecheck, _MotionState
 from azrael.types import CollShapeMeta, CollShapeEmpty
 
+# Default argument for MotionState below (purely for visual appeal, not because
+# anyone would/should use it).
+_CSDefault = [CollShapeMeta('', (0, 0, 0), (0, 0, 0, 1), CollShapeEmpty())]
 
 @typecheck
 def MotionState(scale: (int, float)=1,
@@ -43,11 +46,10 @@ def MotionState(scale: (int, float)=1,
                 position: (tuple, list, np.ndarray)=[0, 0, 0],
                 velocityLin: (tuple, list, np.ndarray)=[0, 0, 0],
                 velocityRot: (tuple, list, np.ndarray)=[0, 0, 0],
-                cshape: (tuple, list, np.ndarray)=[0, 1, 1, 1],
+                cshape: (tuple, list)=_CSDefault,
                 axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
                 axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
-                lastChanged: int=0,
-                cs2: (tuple, list)=[CollShapeMeta('', None, None, CollShapeEmpty())]):
+                lastChanged: int=0):
     """
     Return a ``_MotionState`` object.
 
@@ -59,17 +61,24 @@ def MotionState(scale: (int, float)=1,
     orientation = np.array(orientation, np.float64).tolist()
     velocityLin = np.array(velocityLin, np.float64).tolist()
     velocityRot = np.array(velocityRot, np.float64).tolist()
-    cshape = np.array(cshape, np.float64).tolist()
     axesLockLin = np.array(axesLockLin, np.float64).tolist()
     axesLockRot = np.array(axesLockRot, np.float64).tolist()
 
     # Sanity checks.
     try:
         assert len(axesLockLin) == len(axesLockRot) == 3
-        assert len(orientation) == len(cshape) == 4
+        assert len(orientation) == 4
         assert len(position) == len(velocityLin) == len(velocityRot) == 3
         assert lastChanged >= 0
-        cs2 = [CollShapeMeta(*_) for _ in cs2]
+        cshape = [CollShapeMeta(*_) for _ in cshape]
+        for cs in cshape:
+            assert isinstance(cs.name, str)
+            assert isinstance(cs.pos, (tuple, list, np.ndarray))
+            assert isinstance(cs.rot, (tuple, list, np.ndarray))
+            assert len(np.array(cs.pos)) == 3
+            assert len(np.array(cs.rot)) == 4
+            # fixme: do I need additional sanity checks for the various
+            # Collision shapes, or is the protocol module going to handle it?
     except (AssertionError, TypeError) as err:
         return None
 
@@ -85,8 +94,7 @@ def MotionState(scale: (int, float)=1,
         cshape=cshape,
         axesLockLin=axesLockLin,
         axesLockRot=axesLockRot,
-        lastChanged=lastChanged,
-        cs2=cs2)
+        lastChanged=lastChanged)
 
 
 class MotionStateOverride(_MotionState):
