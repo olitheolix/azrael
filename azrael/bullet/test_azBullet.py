@@ -18,15 +18,15 @@ import pytest
 import numpy as np
 from IPython import embed as ipshell
 
-import azrael.bullet.azBullet
-from azrael.bullet.azBullet import Vec3, Quaternion
-from azrael.bullet.azBullet import BoxShape, StaticPlaneShape
-from azrael.bullet.azBullet import SphereShape, EmptyShape
-from azrael.bullet.azBullet import Transform, MotionState
-from azrael.bullet.azBullet import DefaultMotionState, RigidBody
-from azrael.bullet.azBullet import CompoundShape
-from azrael.bullet.azBullet import Point2PointConstraint, BulletBase
-from azrael.bullet.azBullet import RigidBodyConstructionInfo
+import azBullet
+from azBullet import Vec3, Quaternion
+from azBullet import BoxShape, StaticPlaneShape
+from azBullet import SphereShape, EmptyShape
+from azBullet import Transform, MotionState
+from azBullet import DefaultMotionState, RigidBody
+from azBullet import CompoundShape
+from azBullet import Point2PointConstraint, BulletBase
+from azBullet import RigidBodyConstructionInfo
 
 
 def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
@@ -365,7 +365,7 @@ class TestRigidBody:
         body2.forceActivationState(5)
 
         # Creat a simulation and specify gravity.
-        sim = azrael.bullet.azBullet.BulletBase()
+        sim = azBullet.BulletBase()
         sim.setGravity(0, -10, 0)
 
         # Add the bodies.
