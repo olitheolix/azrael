@@ -25,7 +25,7 @@ import azrael.config as config
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _MotionState, CollisionShape
+from azrael.types import typecheck, RetVal, _MotionState, CollShapeMeta
 
 # Convenience.
 Vec3 = azBullet.Vec3
@@ -230,11 +230,11 @@ class PyBulletDynamicsWorld():
             # fixme: do not use azrael[1].scale but query the scale from the
             # collisionShape object
             csname = obj.getCollisionShape().getChildShape(0).getName()
-            cs2 = CollisionShape(csname.decode('utf8'), None)
             out.append(
                 _MotionState(obj.azrael[1].scale, obj.getInvMass(),
                              obj.getRestitution(), rot, pos, vLin, vRot,
-                             cshape, axesLockLin, axesLockRot, 0, cs2))
+                             cshape, axesLockLin, axesLockRot, 0,
+                             obj.azrael[1].cs2))
         return RetVal(True, None, out[0])
 
     @typecheck

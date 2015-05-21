@@ -22,6 +22,8 @@ import numpy as np
 
 from IPython import embed as ipshell
 from azrael.types import _MotionState
+from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.types import CollShapeBox
 
 
 def isEqualBD(bd1: _MotionState, bd2: _MotionState):
@@ -32,13 +34,22 @@ def isEqualBD(bd1: _MotionState, bd2: _MotionState):
     """
     for f in _MotionState._fields:
         a, b = getattr(bd1, f), getattr(bd2, f)
-        if f == 'cs2':
-            if list(a) != list(b):
-                return False
-        else:
-            if not np.allclose(a, b, atol=1E-9):
-                return False
-
+        try:
+            if f == 'cs2':
+                assert isinstance(bd1, (tuple, list))
+                assert isinstance(bd2, (tuple, list))
+                for csm_a, csm_b in zip(a, b):
+                    tmp_a = CollShapeMeta(*csm_a)
+                    tmp_b = CollShapeMeta(*csm_b)
+                    tmp_a = tmp_a._replace(cs=list(tmp_a.cs))
+                    tmp_b = tmp_b._replace(cs=list(tmp_b.cs))
+                    tmp_a = list(tmp_a)
+                    tmp_b = list(tmp_b)
+                    assert tmp_a == tmp_b
+            else:
+                assert np.allclose(a, b, atol=1E-9)
+        except (AssertionError, ValueError):
+            return False
     return True
 
 
@@ -50,6 +61,85 @@ class TestBulletAPI:
     @classmethod
     def teardown_class(cls):
         pass
+
+    def test_isEqualBD(self):
+        """
+        Verify that the auxiliary `isEqualBD` function works as expected.
+        """
+        # Define a set of collision shapes.
+        pos = (0, 1, 2)
+        rot = (0, 0, 0, 1)
+        cs2 = [
+            CollShapeMeta('1', pos, rot, CollShapeEmpty()),
+            CollShapeMeta('2', pos, rot, CollShapeSphere(radius=1))
+        ]
+
+        # Create an object and serialise it.
+        obj_a = bullet_data.MotionState(
+            scale=3.5,
+            imass=4.5,
+            cshape=[3, 1, 1, 1],
+            restitution=5.5,
+            orientation=np.array([0, 1, 0, 0], np.float64),
+            position=np.array([0.2, 0.4, 0.6], np.float64),
+            velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
+            velocityRot=np.array([1.4, 1.6, 1.8], np.float64),
+            cs2=cs2)
+
+        obj_b = bullet_data.MotionState(
+            scale=3.5,
+            imass=4.5,
+            cshape=[3, 1, 1, 1],
+            restitution=5.5,
+            orientation=np.array([0, 1, 0, 0], np.float64),
+            position=np.array([0.2, 0.4, 0.6], np.float64),
+            velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
+            velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
+
+        # Swap out the Collision shape.
+        obj_c = obj_a._replace(
+            cs2=[CollShapeMeta('2', pos, rot, CollShapeBox(1, 1, 1))])
+
+        # Verify that the original objects are all identical to themselves but
+        # distinct from each other.
+        assert obj_a is not None
+        assert obj_b is not None
+        assert obj_c is not None
+        assert isEqualBD(obj_a, obj_a)
+        assert isEqualBD(obj_b, obj_b)
+        assert isEqualBD(obj_c, obj_c)
+        assert not isEqualBD(obj_a, obj_b)
+        assert not isEqualBD(obj_a, obj_c)
+        assert not isEqualBD(obj_b, obj_c)
+
+        # Replace a scalar value and verify that 'isEqualBD' picks it up.
+        assert isEqualBD(obj_a, obj_a._replace(scale=3.5))
+        assert not isEqualBD(obj_a, obj_a._replace(scale=1))
+
+        # Replace a vector value with various combinations of being a tuple,
+        # list, or NumPy array.
+        pos_old = np.array([0.2, 0.4, 0.6])
+        pos_new = 2 * pos_old
+        assert isEqualBD(obj_a, obj_a._replace(position=tuple(pos_old)))
+        assert isEqualBD(obj_a, obj_a._replace(position=list(pos_old)))
+        assert isEqualBD(obj_a, obj_a._replace(position=pos_old))
+        assert not isEqualBD(obj_a, obj_a._replace(position=tuple(pos_new)))
+        assert not isEqualBD(obj_a, obj_a._replace(position=list(pos_new)))
+        assert not isEqualBD(obj_a, obj_a._replace(position=pos_new))
+
+        # Try to replace a 3-vector with a 4-vector.
+        pos_old = np.array([0.2, 0.4, 0.6])
+        pos_new = np.array([0.2, 0.4, 0.6, 0.8])
+        assert isEqualBD(obj_a, obj_a._replace(position=pos_old))
+        assert not isEqualBD(obj_a, obj_a._replace(position=pos_new))
+
+        # Replace the CollShape named tuple with just a list.
+        cs2_1 = CollShapeMeta('csfoo', None, None, CollShapeSphere(2))
+        cs2_2 = list(CollShapeMeta('csfoo', None, None, list(CollShapeSphere(2))))
+        obj_a1 = obj_a._replace(cs2=[cs2_1])
+        obj_a2 = obj_a._replace(cs2=[cs2_2])
+
+        assert isEqualBD(obj_a1, obj_a2)
 
     def test_getset_object(self):
         """

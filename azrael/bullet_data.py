@@ -31,7 +31,8 @@ import numpy as np
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, _MotionState, CollisionShape
+from azrael.types import typecheck, _MotionState
+from azrael.types import CollShapeMeta, CollShapeEmpty
 
 
 @typecheck
@@ -46,14 +47,13 @@ def MotionState(scale: (int, float)=1,
                 axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
                 axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
                 lastChanged: int=0,
-                cs2: (tuple, list, CollisionShape)=CollisionShape('Empty', None)):
+                cs2: (tuple, list)=[CollShapeMeta('', None, None, CollShapeEmpty())]):
     """
     Return a ``_MotionState`` object.
 
     Without any arguments this function will return a valid ``MotionState``
     specimen with sensible defaults.
     """
-
     # Convert arguments to NumPy types where necessary.
     position = np.array(position, np.float64).tolist()
     orientation = np.array(orientation, np.float64).tolist()
@@ -69,7 +69,7 @@ def MotionState(scale: (int, float)=1,
         assert len(orientation) == len(cshape) == 4
         assert len(position) == len(velocityLin) == len(velocityRot) == 3
         assert lastChanged >= 0
-        cs2 = CollisionShape(*cs2)
+        cs2 = [CollShapeMeta(*_) for _ in cs2]
     except (AssertionError, TypeError) as err:
         return None
 
