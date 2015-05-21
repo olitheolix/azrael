@@ -61,7 +61,7 @@ _MotionState = namedtuple('_MotionState',
 CollShapeMeta = namedtuple('CollShapeMeta', 'name pos rot cs')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
-CollShapeSphere = namedtuple('CollShapeShape', 'radius')
+CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
 
 
 def typecheck(func_handle):
