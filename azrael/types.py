@@ -58,7 +58,10 @@ _MotionState = namedtuple('_MotionState',
                           'position velocityLin velocityRot cshape '
                           'axesLockLin axesLockRot lastChanged cs2')
 
-CollisionShape = namedtuple('CollisionShape', 'name data')
+CollShapeMeta = namedtuple('CollShapeMeta', 'name pos rot cs')
+CollShapeBox = namedtuple('CollShapeBox', 'x y z')
+CollShapeEmpty = namedtuple('CollShapeEmpty', '')
+CollShapeSphere = namedtuple('CollShapeShape', 'radius')
 
 
 def typecheck(func_handle):
