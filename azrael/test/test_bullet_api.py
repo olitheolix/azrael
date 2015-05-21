@@ -145,6 +145,14 @@ class TestBulletAPI:
         """
         Send/retrieve object to/from Bullet and verify the integrity.
         """
+        # Define a set of collision shapes.
+        pos = (0, 1, 2)
+        rot = (0, 0, 0, 1)
+        cs2 = [
+            CollShapeMeta('1', pos, rot, CollShapeEmpty()),
+            CollShapeMeta('2', pos, rot, CollShapeSphere(radius=1))
+        ]
+
         # Create an object and serialise it.
         obj_a = bullet_data.MotionState(
             scale=3.5,
@@ -155,7 +163,8 @@ class TestBulletAPI:
             position=np.array([0.2, 0.4, 0.6], np.float64),
             velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
             velocityRot=np.array([1.4, 1.6, 1.8], np.float64),
-            cs2=('SPHERE', None))
+            cs2=cs2)
+        assert obj_a is not None
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -176,6 +185,8 @@ class TestBulletAPI:
         """
         Add an object to Bullet, then change its parameters.
         """
+        cs2 = [CollShapeMeta(None, (0, 0, 0), (0, 0, 0, 1), CollShapeEmpty())]
+
         # Create an object and serialise it.
         obj_a = bullet_data.MotionState(
             scale=3.5,
@@ -186,7 +197,7 @@ class TestBulletAPI:
             position=np.array([0.2, 0.4, 0.6], np.float64),
             velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
             velocityRot=np.array([1.4, 1.6, 1.8], np.float64),
-            cs2=('SPHERE', None))
+            cs2=cs2)
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -207,7 +218,7 @@ class TestBulletAPI:
             position=np.array([1.2, 1.4, 1.6], np.float64),
             velocityLin=np.array([2.8, 2.0, 2.2], np.float64),
             velocityRot=np.array([2.4, 2.6, 2.8], np.float64),
-            cs2=('SPHERE', None))
+            cs2=cs2)
         bullet.setObjectData(0, obj_a)
         ret = bullet.getObjectData([0])
         assert ret.ok
@@ -309,8 +320,9 @@ class TestBulletAPI:
 
         # Create a spherical object. Adjust the mass so that the sphere's inertia
         # is roughly unity.
+        cs2 = [CollShapeMeta(None, (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
         obj_a = bullet_data.MotionState(
-            cshape=[3, 1, 1, 1], imass=2 / 5, cs2=('SPHERE', None))
+            cshape=[3, 1, 1, 1], imass=2 / 5, cs2=cs2)
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -450,10 +462,11 @@ class TestBulletAPI:
         torque = np.array([0, 0, 0], np.float64)
 
         # Create two identical spheres, one left, one right (x-axis).
-        cs2 = ('SPHERE', None)
-        obj_a = bullet_data.MotionState(position=pos_a, cshape=cshape, cs2=cs2)
-        obj_b = bullet_data.MotionState(position=pos_b, cshape=cshape, cs2=cs2)
-        del cs2
+        cs_a = [CollShapeMeta('csfoo', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
+        cs_b = [CollShapeMeta('csbar', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
+        obj_a = bullet_data.MotionState(position=pos_a, cshape=cshape, cs2=cs_a)
+        obj_b = bullet_data.MotionState(position=pos_b, cshape=cshape, cs2=cs_b)
+        del cs_a, cs_b
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -468,13 +481,13 @@ class TestBulletAPI:
         # Verify that the collision shapes are as expected.
         ret = bullet.getObjectData([objID_a])
         assert ret.ok
-        assert ret.data.cs2.name.upper() == 'SPHERE'
+        assert ret.data.cs2[0].name.upper() == 'CSFOO'
         tmp_cs = bullet.rigidBodies[objID_a].getCollisionShape()
         assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
 
         ret = bullet.getObjectData([objID_b])
         assert ret.ok
-        assert ret.data.cs2.name.upper() == 'SPHERE'
+        assert ret.data.cs2[0].name.upper() == 'CSBAR'
         tmp_cs = bullet.rigidBodies[objID_b].getCollisionShape()
         assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
 
@@ -490,13 +503,13 @@ class TestBulletAPI:
         bullet.compute([objID_a, objID_b], 1.0, 60)
         ret = bullet.getObjectData([objID_a])
         assert ret.ok
-        assert ret.data.cs2.name.upper() == 'SPHERE'
+        assert ret.data.cs2[0].name.upper() == 'CSFOO'
         tmp_cs = bullet.rigidBodies[objID_a].getCollisionShape()
         assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
 
         ret = bullet.getObjectData([objID_b])
         assert ret.ok
-        assert ret.data.cs2.name.upper() == 'SPHERE'
+        assert ret.data.cs2[0].name.upper() == 'CSBAR'
         tmp_cs = bullet.rigidBodies[objID_b].getCollisionShape()
         assert tmp_cs.getLocalScaling().topy() == (2.5, 2.5, 2.5)
 
@@ -517,10 +530,16 @@ class TestBulletAPI:
         pos_b = [0.8, 0.8, 0]
         cs_cube = [4, 2, 2, 2]
         cs_sphere = [3, 1, 1, 1]
+        p, q = (0, 0, 0), (0, 0, 0, 1)
+        cs2_box = [CollShapeMeta('csbox', p, q, CollShapeBox(1, 1, 1))]
+        cs2_sphere = [CollShapeMeta('cssphere', p, q, CollShapeSphere(1))]
+        del p, q
 
         # Create two identical unit spheres, offset along the x/y axis.
-        obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_sphere)
-        obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_sphere)
+        obj_a = bullet_data.MotionState(
+            position=pos_a, cshape=cs_sphere, cs2=cs2_sphere)
+        obj_b = bullet_data.MotionState(
+            position=pos_b, cshape=cs_sphere, cs2=cs2_sphere)
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -535,16 +554,16 @@ class TestBulletAPI:
         # Verify the collision shapes are as expected.
         ret = bullet.getObjectData([objID_a])
         assert ret.ok
-        assert ret.data.cs2.name.upper() == 'SPHERE'
+        assert ret.data.cs2[0].name.upper() == 'CSSPHERE'
         ret = bullet.getObjectData([objID_b])
         assert ret.ok
-        assert ret.data.cs2.name.upper() == 'SPHERE'
+        assert ret.data.cs2[0].name.upper() == 'CSSPHERE'
 
         # Change both collision shape to unit cubes. Then step the simulation again
         # to ensure Bullet accesses each object and nothing bad happens (eg a
         # segfault).
-        obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_cube)
-        obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_cube)
+        obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_cube, cs2=cs2_box)
+        obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_cube, cs2=cs2_box)
         bullet.setObjectData(objID_a, obj_a)
         bullet.setObjectData(objID_b, obj_b)
         bullet.compute([objID_a, objID_b], 1.0, 60)
@@ -552,7 +571,7 @@ class TestBulletAPI:
         # Verify the collision shapes have been updated to boxes.
         ret = bullet.getObjectData([objID_a])
         assert ret.ok
-        assert ret.data.cs2.name.upper() == 'BOX'
+        assert ret.data.cs2[0].name.upper() == 'CSBOX'
         ret = bullet.getObjectData([objID_b])
         assert ret.ok
-        assert ret.data.cs2.name.upper() == 'BOX'
+        assert ret.data.cs2[0].name.upper() == 'CSBOX'
