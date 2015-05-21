@@ -51,9 +51,6 @@ class PyRigidBody(azBullet.RigidBody):
 class PyBulletDynamicsWorld():
     """
     High level wrapper around the low level Bullet bindings.
-
-    The Bullet bindings use here are courtesy of Hogni Gylfaso
-    https://github.com/Klumhru/boost-python-bullet
     """
     def __init__(self, engineID: int):
         # To distinguish engines.
@@ -72,7 +69,7 @@ class PyBulletDynamicsWorld():
         """
         Remove ``objIDs`` from Bullet and return the number of removed objects.
 
-        Non-existing objects are ignored and not counted.
+        Non-existing objects are not counted (and ignored).
 
         :param list objIDs: list of objIDs to remove.
         :return: number of actually removed objects.
