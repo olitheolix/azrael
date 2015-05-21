@@ -1,50 +1,49 @@
-import sys
-import azBullet as bt
-from azBullet import vec3, BoxShape, StaticPlaneShape, SphereShape, Quaternion
-from azBullet import Transform
-from azBullet import DefaultMotionState
-from azBullet import RigidBody
+"""
+Python version of Bullet's own 'Hello World' demo using 'azBullet' wrapper.
+"""
+import azBullet
+from azBullet import Vec3, Quaternion
+from azBullet import StaticPlaneShape, SphereShape
+from azBullet import DefaultMotionState, Transform
+from azBullet import RigidBody, RigidBodyConstructionInfo
 
-sim = bt.BulletBase()
+sim = azBullet.BulletBase()
 sim.setGravity(0, -10, 0)
 
-# Declare the two shapes.
-groundShape = StaticPlaneShape(vec3(0, 1, 0), 1)
-fallShape = SphereShape(1)
+# Create a collision shape for the Ball and for the Ground.
+ballShape = SphereShape(1)
+groundShape = StaticPlaneShape(Vec3(0, 1, 0), 1)
 
-# Specify the ground shape.
+# Create a Rigid body for the Ground based on the collision shape.
+mass = 0
 groundMotionState = DefaultMotionState(
-    Transform(Quaternion(0, 0, 0, 1), vec3(0, -1, 0)))
-groundRigidBody = RigidBody(0, groundMotionState, groundShape, vec3(0, 0, 0))
+    Transform(Quaternion(0, 0, 0, 1), Vec3(0, -1, 0)))
+ci = RigidBodyConstructionInfo(mass, groundMotionState, groundShape)
+groundRigidBody = RigidBody(ci)
 groundRigidBody.setRestitution(1.0)
 sim.addRigidBody(groundRigidBody)
+del mass, ci
 
-# Specify the ball shape.
+# Create a Rigid body for the Ball based on its collision shape. Let Bullet do
+# the heavy lifting and compute the mass and inertia for us.
 fallMotionState = DefaultMotionState(
-    Transform(Quaternion(0, 0, 0, 1), vec3(0, 20, 0)))
+    Transform(Quaternion(0, 0, 0, 1), Vec3(0, 20, 0)))
 mass = 1
-fallInertia = vec3(0, 0, 0)
-fallShape.calculateLocalInertia(mass, fallInertia)
-fallRigidBody = RigidBody(mass, fallMotionState, fallShape, fallInertia)
+fallInertia = Vec3(0, 0, 0)
+ballShape.calculateLocalInertia(mass, fallInertia)
+ci = RigidBodyConstructionInfo(mass, fallMotionState, ballShape, fallInertia)
+fallRigidBody = RigidBody(ci)
 fallRigidBody.setRestitution(0.5)
 sim.addRigidBody(fallRigidBody)
+del mass, fallInertia, ci
 
-# Step the simulation and print the position of the sphere.
+# Step the simulation and print the position of the ball.
 for ii in range(10):
     sim.stepSimulation(0.5, 30)
     ms = fallRigidBody.getMotionState()
     wt = ms.getWorldTransform()
     print(wt.getOrigin())
 
+# Remove the rigid bodies from the simulation.
 sim.removeRigidBody(fallRigidBody)
 sim.removeRigidBody(groundRigidBody)
-
-del fallMotionState
-del fallRigidBody
-
-del groundMotionState
-del groundRigidBody
-
-del fallShape
-del groundShape
-del sim
