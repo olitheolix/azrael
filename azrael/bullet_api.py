@@ -53,6 +53,10 @@ class PyBulletDynamicsWorld():
     High level wrapper around the low level Bullet bindings.
     """
     def __init__(self, engineID: int):
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
+
         # To distinguish engines.
         self.engineID = engineID
 
@@ -108,7 +112,7 @@ class PyBulletDynamicsWorld():
         try:
             rigidBodies = [self.rigidBodies[_] for _ in objIDs]
         except KeyError as err:
-            print('Object <{}> does not exist'.format(err.args))
+            self.logit.warning('Object IDs {} do not exist'.format(err.args))
             return RetVal(False, None, None)
 
         # Add the body to the world and make sure it is activated, as
@@ -140,8 +144,9 @@ class PyBulletDynamicsWorld():
         """
         # Sanity check.
         if objID not in self.rigidBodies:
-            print('Cannot set force of unknown object <{}>'.format(objID))
-            return RetVal(False, None, None)
+            msg = 'Cannot set force of unknown object <{}>'.format(objID)
+            self.logit.warning(msg)
+            return RetVal(False, msg, None)
 
         # Convenience.
         obj = self.rigidBodies[objID]
@@ -365,7 +370,7 @@ class PyBulletDynamicsWorld():
         :param _MotionState obj: State Variables of rigid body.
         :return: Success
         """
-        # Convert orientation and position to Vec3.
+        # Convert orientation and position to Bullet types.
         rot = Quaternion(*obj.orientation)
         pos = Vec3(*obj.position)
 
