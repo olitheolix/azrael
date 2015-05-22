@@ -1031,7 +1031,11 @@ class Clerk(multiprocessing.Process):
         :param MotionStateOverride data: new object attributes.
         :return: Success
         """
-        assert False
+        # Sanity check.
+        ret = self._verifyCollisionShapes(data.cshape)
+        if not ret.ok:
+            return ret
+        
         ret = physAPI.addCmdModifyStateVariable(objID, data)
         if ret.ok:
             return RetVal(True, None, None)

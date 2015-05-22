@@ -374,7 +374,7 @@ class TestClerk:
 
         # Create and apply a new State Vector.
         new_sv = bullet_data.MotionStateOverride(
-            position=[1, -1, 1], imass=2, scale=3, cshape=[4, 1, 1, 1])
+            position=[1, -1, 1], imass=2, scale=3, cshape=[getCSSphere()])
         assert client.setStateVariable(objID, new_sv).ok
 
         # Verify that the new attributes came into effect.
@@ -385,7 +385,7 @@ class TestClerk:
         assert ret_sv.imass == new_sv.imass
         assert ret_sv.scale == new_sv.scale
         assert np.array_equal(ret_sv.position, new_sv.position)
-        assert np.array_equal(ret_sv.cshape, new_sv.cshape)
+        assert isEqualCS(ret_sv.cshape, [getCSSphere()])
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_getAllObjectIDs(self, client_type):
@@ -483,7 +483,7 @@ class TestClerk:
 
         # Define the template, add it to Azrael, and spawn an instance.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        temp = Template('t1', [1, 2, 3, 4], frags, [b0, b1], [f0, f1])
+        temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert client.addTemplates([temp]).ok
         new_obj = {'template': temp.name,
                    'position': pos_parent,
@@ -555,7 +555,7 @@ class TestClerk:
 
         # Add a new template and spawn it.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        temp = Template('t1', [1, 2, 3, 4], frags, [], [])
+        temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
         new_obj = {'template': temp.name,
@@ -626,7 +626,7 @@ class TestClerk:
         frags = [MetaFragment('f_dae', 'dae', f_dae)]
 
         # Add a new template and spawn it.
-        temp = Template('t1', [1, 2, 3, 4], frags, [], [])
+        temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
         new_obj = {'template': temp.name,
@@ -691,7 +691,7 @@ class TestClerk:
 
         # Add a new template and spawn it.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        temp = Template('t1', [1, 2, 3, 4], frags, [], [])
+        temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
         new_obj = {'template': temp.name,
@@ -732,7 +732,7 @@ class TestClerk:
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
-        temp = Template('foo', [4, 1, 1, 1], frags, [], [])
+        temp = Template('foo', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
         # Spawn the template.
