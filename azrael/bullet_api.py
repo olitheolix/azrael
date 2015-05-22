@@ -431,12 +431,13 @@ class PyBulletDynamicsWorld():
             # Ask Bullet to compute the mass and inertia for us. The inertia will
             # be passed as a reference whereas the 'mass' is irrelevant due to how
             # the C++ function was wrapped.
-            inertia = Vec3(0, 0, 0)
             mass = 1.0 / obj.imass
             if obj.imass > 1E-4:
                 # The calculate_local_inertia function will update the `inertia`
                 # variable directly.
-                child.calculateLocalInertia(mass, inertia)
+                inertia = child.calculateLocalInertia(mass)
+            else:
+                inertia = Vec3(0, 0, 0)
 
             # Compute inertia magnitude and warn about unreasonable values.
             l = np.array(inertia.topy())
