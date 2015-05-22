@@ -1,20 +1,19 @@
-import sys
-import time
 import pytest
 import subprocess
-import azrael.clerk
-import azrael.client
-import azrael.clacks
 import azrael.leonard
 import azrael.database
 import azrael.vectorgrid
-import azrael.physics_interface as physAPI
+
+import numpy as np
 import azrael.bullet_data as bullet_data
+import azrael.physics_interface as physAPI
 
 from IPython import embed as ipshell
 from azrael.test.test_bullet_api import isEqualBD
+from azrael.types import CollShapeBox, CollShapeSphere
+from azrael.types import CollShapeMeta, CollShapeEmpty
+from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 
-import numpy as np
 
 # List all available engines. This simplifies the parameterisation of those
 # tests that must pass for all engines.
@@ -173,9 +172,9 @@ class TestLeonardAllEngines:
         leo = getLeonard(clsLeonard)
 
         # Parameters and constants for this test.
-        cs_cube = [3, 1, 1, 1]
-        cs_sphere = [3, 1, 1, 1]
-        sv = bullet_data.MotionState(imass=2, scale=3, cshape=cs_sphere)
+        cshape_box = [getCSBox('csbox')]
+        cshape_sphere = [getCSSphere('cssphere')]
+        sv = bullet_data.MotionState(imass=2, scale=3, cshape=cshape_sphere)
         templateID = '_templateSphere'.encode('utf8')
 
         # Spawn an object.
@@ -188,11 +187,13 @@ class TestLeonardAllEngines:
         assert ret.ok
         assert ret.data[objID].imass == 2
         assert ret.data[objID].scale == 3
-        assert np.array_equal(ret.data[objID].cshape, cs_sphere)
+        tmp = CollShapeMeta(*ret.data[objID].cshape[0]).name
+        assert tmp == cshape_sphere[0].name
+        del tmp
 
         # Update the object's SV data.
         sv_new = bullet_data.MotionStateOverride(
-            imass=4, scale=5, cshape=cs_cube)
+            imass=4, scale=5, cshape=cshape_box)
         assert physAPI.addCmdModifyStateVariable(objID, sv_new).ok
 
         # Verify the SV data.
@@ -201,7 +202,9 @@ class TestLeonardAllEngines:
         assert (ret.ok, len(ret.data)) == (True, 1)
         sv = ret.data[objID]
         assert (sv.imass == 4) and (sv.scale == 5)
-        assert np.array_equal(sv.cshape, cs_cube)
+        tmp = CollShapeMeta(*ret.data[objID].cshape[0]).name
+        assert tmp == cshape_box[0].name
+        del tmp
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_move_single_object(self, clsLeonard):
@@ -437,9 +440,9 @@ class TestLeonardOther:
         assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
         # Constants and parameters for this test.
-        id_0, id_1 = 0, 1
-        cshape = [3, 1, 1, 1]
         aabb = 1
+        id_0, id_1 = 0, 1
+        cshape = [getCSSphere(radius=1)]
 
         # Two State Vectors for this test.
         sv_0 = bullet_data.MotionState(
