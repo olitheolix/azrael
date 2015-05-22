@@ -57,21 +57,21 @@ def isEqualBD(bd1: _MotionState, bd2: _MotionState):
     return True
 
 
-def getCSEmpty(name='csempty', pos=(0, 0, 0), rot=(0, 0, 0, 1)):
+def getCSEmpty(name='csempty', pos=[0, 0, 0], rot=[0, 0, 0, 1]):
     """
     Convenience function to construct an Empty shape.
     """
     return CollShapeMeta('empty', name, pos, rot, CollShapeEmpty())
 
 
-def getCSBox(name='csbox', pos=(0, 0, 0), rot=(0, 0, 0, 1), dim=(1, 1, 1)):
+def getCSBox(name='csbox', pos=[0, 0, 0], rot=[0, 0, 0, 1], dim=[1, 1, 1]):
     """
     Convenience function to construct a Box shape.
     """
     return CollShapeMeta('box', name, pos, rot, CollShapeBox(*dim))
 
 
-def getCSSphere(name='cssphere', pos=(0, 0, 0), rot=(0, 0, 0, 1), radius=1):
+def getCSSphere(name='cssphere', pos=[0, 0, 0], rot=[0, 0, 0, 1], radius=1):
     """
     Convenience function to construct a Sphere shape.
     """

@@ -36,7 +36,7 @@ from azrael.types import CollShapeMeta, CollShapeEmpty
 
 # Default argument for MotionState below (purely for visual appeal, not because
 # anyone would/should use it).
-_CSDefault = [CollShapeMeta('Empty', '', (0, 0, 0), (0, 0, 0, 1), CollShapeEmpty())]
+_CSDefault = CollShapeMeta('Empty', '', (0, 0, 0), (0, 0, 0, 1), CollShapeEmpty())
 
 @typecheck
 def MotionState(scale: (int, float)=1,
@@ -46,7 +46,7 @@ def MotionState(scale: (int, float)=1,
                 position: (tuple, list, np.ndarray)=[0, 0, 0],
                 velocityLin: (tuple, list, np.ndarray)=[0, 0, 0],
                 velocityRot: (tuple, list, np.ndarray)=[0, 0, 0],
-                cshape: (tuple, list)=_CSDefault,
+                cshape: (tuple, list)=[_CSDefault],
                 axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
                 axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
                 lastChanged: int=0):
