@@ -82,7 +82,8 @@ class TestClerk:
         t1 = Template('_templateNone', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
-        clerk.addTemplates([t1, t2, t3])
+        ret = clerk.addTemplates([t1, t2, t3])
+        assert ret.ok
 
     def teardown_method(self, method):
         azrael.database.init()
