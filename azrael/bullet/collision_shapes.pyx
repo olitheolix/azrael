@@ -16,9 +16,11 @@ cdef class CollisionShape:
         v.ptr_Vector3[0] = self.ptr_CollisionShape.getLocalScaling()
         return v
 
-    def calculateLocalInertia(self, double mass, Vec3 inertia):
+    def calculateLocalInertia(self, double mass):
+        inertia = Vec3(0, 0, 0)
         self.ptr_CollisionShape.calculateLocalInertia(
             btScalar(mass), inertia.ptr_Vector3[0])
+        return inertia
 
     def getName(self):
         return self.ptr_CollisionShape.getName()
