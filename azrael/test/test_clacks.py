@@ -11,6 +11,7 @@ import azrael.bullet_data as bullet_data
 from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, MetaFragment
 from azrael.test.test import createFragRaw, createFragDae
+from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 
 
 class TestClacks(tornado.testing.AsyncHTTPTestCase):
@@ -120,8 +121,8 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_t2 = [MetaFragment('foo4', 'raw', createFragRaw()),
                     MetaFragment('foo5', 'raw', createFragRaw()),
                     MetaFragment('bar6', 'dae', createFragDae())]
-        t1 = Template('t1', [1, 2, 3, 4], frags_t1, [], [])
-        t2 = Template('t2', [5, 6, 7, 8], frags_t2, [], [])
+        t1 = Template('t1', [getCSSphere()], frags_t1, [], [])
+        t2 = Template('t2', [getCSBox()], frags_t2, [], [])
         del frags_t1, frags_t2
 
         # Add the first template.
@@ -154,8 +155,8 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_t2 = [MetaFragment('raw4', 'raw', createFragRaw()),
                     MetaFragment('raw5', 'raw', createFragRaw()),
                     MetaFragment('dae6', 'dae', createFragDae())]
-        t1 = Template('t1', [1, 2, 3, 4], frags_t1, [], [])
-        t2 = Template('t2', [5, 6, 7, 8], frags_t2, [], [])
+        t1 = Template('t1', [getCSSphere()], frags_t1, [], [])
+        t2 = Template('t2', [getCSBox()], frags_t2, [], [])
         del frags_t1, frags_t2
 
         # Add both templates and verify they are available.
@@ -196,7 +197,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_new = [MetaFragment('name1', 'dae', createFragDae()),
                      MetaFragment('name2', 'dae', createFragDae()),
                      MetaFragment('name3', 'raw', createFragRaw())]
-        t1 = Template('t1', [1, 2, 3, 4], frags_old, [], [])
+        t1 = Template('t1', [getCSSphere()], frags_old, [], [])
 
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
@@ -230,7 +231,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Create two Templates with one Raw fragment each.
         frags = [MetaFragment('name1', 'raw', createFragRaw())]
-        t1 = Template('t1', [1, 2, 3, 4], frags, [], [])
+        t1 = Template('t1', [getCSSphere()], frags, [], [])
 
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok

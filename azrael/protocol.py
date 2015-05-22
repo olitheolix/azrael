@@ -245,7 +245,6 @@ def ToClerk_SetStateVector_Decode(payload: dict):
 
     # Convert the state variable into a MotionStateOverride instance.
     sv = payload['sv']
-    sv = [np.array(_) if isinstance(_, list) else _ for _ in sv]
     tmp = dict(zip(bullet_data.MotionStateOverride._fields, sv))
     sv = bullet_data.MotionStateOverride(**tmp)
 
