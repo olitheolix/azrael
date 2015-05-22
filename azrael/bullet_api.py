@@ -74,7 +74,7 @@ class PyBulletDynamicsWorld():
         # Disable gravity.
         self.dynamicsWorld.setGravity(0, 0, 0)
 
-        # Dictionary of all objects.
+        # Dictionary of all bodies.
         self.rigidBodies = {}
 
     def removeObject(self, objIDs: (list, tuple)):
@@ -136,7 +136,7 @@ class PyBulletDynamicsWorld():
         # no finer than dt / max_substeps = 0.01s.
         self.dynamicsWorld.stepSimulation(dt, max_substeps)
 
-        # Remove all objects from the simulation again.
+        # Remove all bodies from the simulation again.
         for body in rigidBodies:
             self.dynamicsWorld.removeRigidBody(body)
         return RetVal(True, None, None)
@@ -157,7 +157,7 @@ class PyBulletDynamicsWorld():
             return RetVal(False, msg, None)
 
         # Convenience.
-        obj = self.rigidBodies[objID]
+        body = self.rigidBodies[objID]
 
         # Convert the force and torque to Vec3.
         b_force = Vec3(*force)
@@ -165,9 +165,9 @@ class PyBulletDynamicsWorld():
 
         # Clear pending forces (should be cleared automatically by Bullet when
         # it steps the simulation) and apply the new ones.
-        obj.clearForces()
-        obj.applyCentralForce(b_force)
-        obj.applyTorque(b_torque)
+        body.clearForces()
+        body.applyCentralForce(b_force)
+        body.applyTorque(b_torque)
         return RetVal(True, None, None)
 
     def applyForce(self, objID: int, force, rel_pos):
@@ -185,7 +185,7 @@ class PyBulletDynamicsWorld():
             return RetVal(False, msg, None)
 
         # Convenience.
-        obj = self.rigidBodies[objID]
+        body = self.rigidBodies[objID]
 
         # Convert the force and torque to Vec3.
         b_force = Vec3(*force)
@@ -193,8 +193,8 @@ class PyBulletDynamicsWorld():
 
         # Clear pending forces (should be cleared automatically by Bullet when
         # it steps the simulation) and apply the new ones.
-        obj.clearForces()
-        obj.applyForce(b_force, b_relpos)
+        body.clearForces()
+        body.applyForce(b_force, b_relpos)
         return RetVal(True, None, None)
 
     def getObjectData(self, objID: int):
@@ -214,35 +214,35 @@ class PyBulletDynamicsWorld():
             return RetVal(False, msg, None)
 
         # Convenience.
-        obj = self.rigidBodies[objID]
+        body = self.rigidBodies[objID]
 
         # fixme: must come from collision shape
-        scale = obj.azrael[1].scale
+        scale = body.azrael[1].scale
 
         # Determine rotation and position.
-        rot = obj.getCenterOfMassTransform().getRotation().topy()
-        pos = obj.getCenterOfMassTransform().getOrigin().topy()
+        rot = body.getCenterOfMassTransform().getRotation().topy()
+        pos = body.getCenterOfMassTransform().getOrigin().topy()
 
         # Determine linear and angular velocity.
-        vLin = obj.getLinearVelocity().topy()
-        vRot = obj.getAngularVelocity().topy()
+        vLin = body.getLinearVelocity().topy()
+        vRot = body.getAngularVelocity().topy()
 
         # Dummy value for the collision shape.
         # fixme: this must be the JSON version of collisionShape
         #        description.
-        cshape = obj.azrael[1].cshape
+        cshape = body.azrael[1].cshape
 
         # Linear/angular damping factors.
-        axesLockLin = obj.getLinearFactor().topy()
-        axesLockRot = obj.getAngularFactor().topy()
+        axesLockLin = body.getLinearFactor().topy()
+        axesLockRot = body.getAngularFactor().topy()
 
         # Construct a new _MotionState structure and add it to the list
         # that will eventually be returned to the caller.
         # fixme: do not use azrael[1].scale but query the scale from the
         # collisionShape object
-        csname = obj.getCollisionShape().getChildShape(0).getName()
-        out= _MotionState(obj.azrael[1].scale, obj.getInvMass(),
-                         obj.getRestitution(), rot, pos, vLin, vRot,
+        csname = body.getCollisionShape().getChildShape(0).getName()
+        out= _MotionState(body.azrael[1].scale, body.getInvMass(),
+                         body.getRestitution(), rot, pos, vLin, vRot,
                          cshape, axesLockLin, axesLockRot, 0)
         return RetVal(True, None, out)
 
