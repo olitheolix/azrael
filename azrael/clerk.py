@@ -1035,7 +1035,7 @@ class Clerk(multiprocessing.Process):
         ret = self._verifyCollisionShapes(data.cshape)
         if not ret.ok:
             return ret
-        
+
         ret = physAPI.addCmdModifyStateVariable(objID, data)
         if ret.ok:
             return RetVal(True, None, None)

@@ -241,9 +241,9 @@ class PyBulletDynamicsWorld():
         # fixme: do not use azrael[1].scale but query the scale from the
         # collisionShape object
         csname = body.getCollisionShape().getChildShape(0).getName()
-        out= _MotionState(body.azrael[1].scale, body.getInvMass(),
-                         body.getRestitution(), rot, pos, vLin, vRot,
-                         cshape, axesLockLin, axesLockRot, 0)
+        out = _MotionState(body.azrael[1].scale, body.getInvMass(),
+                           body.getRestitution(), rot, pos, vLin, vRot,
+                           cshape, axesLockLin, axesLockRot, 0)
         return RetVal(True, None, out)
 
     @typecheck
@@ -340,10 +340,10 @@ class PyBulletDynamicsWorld():
             # unknown).
             if c.type.upper() == 'P2P':
                 out = azBullet.Point2PointConstraint(
-                        rb_a, rb_b,
-                        Vec3(*c.data.pivot_a),
-                        Vec3(*c.data.pivot_b)
-                    )
+                    rb_a, rb_b,
+                    Vec3(*c.data.pivot_a),
+                    Vec3(*c.data.pivot_b)
+                )
             else:
                 assert False
             # Return the Bullet constraint object.
@@ -428,13 +428,13 @@ class PyBulletDynamicsWorld():
                 msg = 'Unrecognised collision shape <{}>'.format(csname)
                 self.logit.warning(msg)
 
-            # Ask Bullet to compute the mass and inertia for us. The inertia will
-            # be passed as a reference whereas the 'mass' is irrelevant due to how
-            # the C++ function was wrapped.
+            # Ask Bullet to compute the mass and inertia for us. The inertia
+            # will be passed as a reference whereas the 'mass' is irrelevant
+            # due to how the C++ function was wrapped.
             mass = 1.0 / obj.imass
             if obj.imass > 1E-4:
-                # The calculate_local_inertia function will update the `inertia`
-                # variable directly.
+                # The calculate_local_inertia function will update the
+                # `inertia` variable directly.
                 inertia = child.calculateLocalInertia(mass)
             else:
                 inertia = Vec3(0, 0, 0)

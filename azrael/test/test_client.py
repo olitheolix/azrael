@@ -48,6 +48,7 @@ from azrael.test.test import createFragRaw, createFragDae, isEqualCS
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 
+
 class TestClerk:
     @classmethod
     def setup_class(cls):

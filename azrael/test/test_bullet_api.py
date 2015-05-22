@@ -243,11 +243,11 @@ class TestBulletAPI:
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
-    @pytest.mark.parametrize('force_fun_id', ['applyForce', 'applyForceAndTorque'])
-    def test_apply_force(self, force_fun_id):
+    @pytest.mark.parametrize('forceFun', ['applyForce', 'applyForceAndTorque'])
+    def test_apply_force(self, forceFun):
         """
-        Create object, send it to Bullet, apply a force, progress the simulation,
-        and verify the object moved correctly.
+        Create object, send it to Bullet, apply a force, progress the
+        simulation, and verify the object moved correctly.
         """
         # Constants and parameters for this test.
         objID = 10
@@ -269,9 +269,9 @@ class TestBulletAPI:
         assert isEqualBD(ret.data, obj_a)
 
         # Now apply a central force of one Newton in z-direction.
-        if force_fun_id == 'applyForce':
+        if forceFun == 'applyForce':
             applyForceFun = bullet.applyForce
-        elif force_fun_id == 'applyForceAndTorque':
+        elif forceFun == 'applyForceAndTorque':
             applyForceFun = bullet.applyForceAndTorque
         else:
             assert False
@@ -328,8 +328,8 @@ class TestBulletAPI:
 
     def test_apply_force_and_torque(self):
         """
-        Create object, send it to Bullet, apply a force, progress the simulation,
-        and verify the object moved correctly.
+        Create object, send it to Bullet, apply a force, progress the
+        simulation, and verify the object moved correctly.
         """
         # Constants and parameters for this test.
         objID = 10
@@ -337,8 +337,8 @@ class TestBulletAPI:
         torque = np.array([0, 0, 1], np.float64)
         dt, maxsteps = 1.0, 60
 
-        # Create a spherical object. Adjust the mass so that the sphere's inertia
-        # is roughly unity.
+        # Create a spherical object. Adjust the mass so that the sphere's
+        # inertia is roughly unity.
         cshape = [getCSSphere('foo')]
         obj_a = bullet_data.MotionState(cshape=cshape, imass=2 / 5)
 
@@ -353,8 +353,8 @@ class TestBulletAPI:
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
-        # Now apply a central force of one Newton in z-direction and a torque of
-        # two NewtonMeters.
+        # Now apply a central force of one Newton in z-direction and a torque
+        # of two NewtonMeters.
         bullet.applyForceAndTorque(objID, force, torque)
 
         # Nothing must have happened because the simulation has not progressed.
@@ -380,13 +380,16 @@ class TestBulletAPI:
 
         # The object must have accelerated to the angular velocity omega
         #   omega = OMEGA * t                  (1)
+        #
         # where the torque $T$ follows from angular acceleration OMEGA
         #   T = I * OMEGA --> OMEGA = T / I    (2)
+        #
         # Substitue (2) into (1) to obtain
         #   omega = t * (T / I)
+        #
         # Our Inertia is roughly unity because we adjusted the sphere's mass
-        # accordingly when we created it (ie. set it 5/2kg or 2/5 for the inverse
-        # mass).
+        # accordingly when we created it (ie. set it 5/2kg or 2/5 for the
+        # inverse mass).
         assert np.allclose(velRot, dt * torque * 1, atol=1E-2)
 
     def test_remove_object(self):
@@ -415,8 +418,9 @@ class TestBulletAPI:
 
     def test_modify_mass(self):
         """
-        Create two identical spheres, double the mass of one, and apply the same
-        force to both. The heavier sphere must have moved only half as far.
+        Create two identical spheres, double the mass of one, and apply the
+        same force to both. The heavier sphere must have moved only half as
+        far.
         """
         # Constants and parameters for this test.
         objID_a, objID_b = 10, 20
@@ -446,7 +450,8 @@ class TestBulletAPI:
         obj_b = obj_b._replace(imass=0.5 * obj_b.imass)
         bullet.setObjectData(objID_b, obj_b)
 
-        # Apply the same central force that pulls both spheres forward (y-axis).
+        # Apply the same central force that pulls both spheres forward
+        # (y-axis).
         bullet.applyForceAndTorque(objID_a, force, torque)
         bullet.applyForceAndTorque(objID_b, force, torque)
 
@@ -467,10 +472,10 @@ class TestBulletAPI:
         changing the mass (see previous test) because this time the entire
         collision shape must be swapped out underneath.
 
-        To test this we create two spheres that do not touch, which means nothing
-        must happen during a physics update. Then we enlarge one sphere so that it
-        touchs the other. This time Bullet must pick up on the interpenetration and
-        modify the sphere's position (somehow).
+        To test this we create two spheres that do not touch, which means
+        nothing must happen during a physics update. Then we enlarge one sphere
+        so that it touchs the other. This time Bullet must pick up on the
+        interpenetration and modify the sphere's position (somehow).
         """
         # Constants and parameters for this test.
         objID_a, objID_b = 10, 20
@@ -488,8 +493,8 @@ class TestBulletAPI:
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Send objects to Bullet and progress the simulation. The sole point of
-        # progressing the simulation is to make sure Bullet actually accesses the
-        # objects; we do not actually care if/how the objects moved.
+        # progressing the simulation is to make sure Bullet actually accesses
+        # the objects; we do not actually care if/how the objects moved.
         bullet.setObjectData(objID_a, obj_a)
         bullet.setObjectData(objID_b, obj_b)
         bullet.compute([objID_a, objID_b], 1.0, 60)
@@ -507,15 +512,15 @@ class TestBulletAPI:
         tmp_cs = bullet.rigidBodies[objID_b].getCollisionShape()
         assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
 
-        # Enlarge the second object so that the spheres do not overlap.  Then step
-        # the simulation again to ensure Bullet accesses each object and nothing
-        # bad happens (eg a segfault).
+        # Enlarge the second object so that the spheres do not overlap.  Then
+        # step the simulation again to ensure Bullet accesses each object and
+        # nothing bad happens (eg a segfault).
         obj_b = obj_b._replace(scale=2.5)
         bullet.setObjectData(objID_b, obj_b)
         bullet.compute([objID_a, objID_b], 1.0, 60)
 
-        # Progress the simulation for one second. Bullet must move the objects away
-        # from each other (in y-direction only).
+        # Progress the simulation for one second. Bullet must move the objects
+        # away from each other (in y-direction only).
         bullet.compute([objID_a, objID_b], 1.0, 60)
         ret = bullet.getObjectData(objID_a)
         assert ret.ok
@@ -536,9 +541,9 @@ class TestBulletAPI:
         collision shape must be swapped out underneath.
 
         To test this we create two spheres that (just) do not touch. They are
-        offset along the x/y axis. Once we change the spheres to cubes the their
-        edges will interpenetrate and Bullet will move them apart. We can identify
-        this movement.
+        offset along the x/y axis. Once we change the spheres to cubes the
+        their edges will interpenetrate and Bullet will move them apart. We can
+        identify this movement.
         """
         # Constants and parameters for this test.
         objID_a, objID_b = 10, 20
@@ -557,8 +562,8 @@ class TestBulletAPI:
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Send objects to Bullet and progress the simulation. The sole point of
-        # progressing the simulation is to make sure Bullet actually accesses the
-        # objects; we do not actually care if/how the objects moved.
+        # progressing the simulation is to make sure Bullet actually accesses
+        # the objects; we do not actually care if/how the objects moved.
         bullet.setObjectData(objID_a, obj_a)
         bullet.setObjectData(objID_b, obj_b)
         bullet.compute([objID_a, objID_b], 1.0, 60)
@@ -626,8 +631,8 @@ class TestBulletAPI:
         # Apply a force that will pull the left object further to the left.
         bullet.applyForceAndTorque(id_a, (-10, 0, 0), (0, 0, 0))
 
-        # Step the simulation. Both objects must have moved (almost) exactly the same
-        # amount to the left.
+        # Step the simulation. Both objects must have moved (almost) exactly
+        # the same amount to the left.
         bullet.compute([id_a, id_b], 1.0, 60)
         ret_a = bullet.getObjectData(id_a)
         ret_b = bullet.getObjectData(id_b)

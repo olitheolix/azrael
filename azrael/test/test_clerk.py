@@ -1282,7 +1282,8 @@ class TestClerk:
 
         # Define a new template with one fragment.
         frags = [MetaFragment('foo', 'raw', createFragRaw())]
-        t1 = Template('t1', [getCSSphere()], fragments=frags, boosters=[], factories=[])
+        t1 = Template('t1', [getCSSphere()], fragments=frags,
+                      boosters=[], factories=[])
 
         # Add the template to Azrael, spawn two instances, and make sure
         # Leonard picks it up so that the object becomes available.
