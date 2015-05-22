@@ -397,13 +397,26 @@ class TestRigidBody:
         sphere = SphereShape(1.5)
         box = BoxShape(Vec3(1, 2, 3))
 
-        # Specify a sphere shape.
+        # Specify a Sphere shape.
         body.setCollisionShape(sphere)
         assert body.getCollisionShape().getName() == b'SPHERE'
 
-        # Change to box shape.
+        # Change to Box shape.
         body.setCollisionShape(box)
         assert body.getCollisionShape().getName() == b'Box'
+
+    def test_calculateLocalInertia(self):
+        """
+        Create a sphere and let Bullet compute its inertia via the
+        'calculateLocalInertia' method. Verify that the result is correct.
+        """
+        # Compute the inertia of the sphere. The inertia for a sphere is
+        # I = 2 / 5 * mass * (R ** 2)
+        mass, radius = 2, 3
+        sphere = SphereShape(radius)
+        inertia = sphere.calculateLocalInertia(mass)
+        ref = 2 / 5 * mass * radius ** 2
+        assert np.allclose(inertia.topy(), ref * np.ones(3))
 
     def test_ConstructionInfo(self):
         """
