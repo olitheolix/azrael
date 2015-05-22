@@ -763,7 +763,7 @@ class Clerk(multiprocessing.Process):
         except AssertionError:
             return RetVal(False, '<spawn> received invalid arguments', None)
 
-        # Convenience: convert the list of tuples into to plain list, ie
+        # Convenience: convert the list of tuples into a plain list, ie
         # [(t1, sv1), (t2, sv2), ...]  -->  [t1, t2, ...] and [sv1, sv2, ...].
         t_names = [_[0] for _ in newObjects]
         SVs = [_[1] for _ in newObjects]
