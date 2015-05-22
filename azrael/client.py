@@ -581,8 +581,8 @@ class Client():
                 for f in temp.factories:
                     assert isinstance(f, parts.Factory)
 
-                # The collision shape must be a numeric list.
-                cs = np.array(temp.cs, np.float64).tolist()
+                # fixme: sanity check the Collision Shape
+                cs = list(temp.cs)
 
                 # Replace the original entry with a new one where CS is
                 # definitively a list.

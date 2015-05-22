@@ -132,7 +132,7 @@ def FromClerk_GetTemplates_Decode(payload: dict):
         # Return the complete information in a named tuple.
         nt = namedtuple('Template',
                         'cs boosters factories aabb url fragments')
-        ret = nt(np.array(data['cshape'], np.float64),
+        ret = nt(data['cshape'],
                  data['boosters'], data['factories'], data['aabb'],
                  data['url'], data['fragments'])
         out[name] = ret
