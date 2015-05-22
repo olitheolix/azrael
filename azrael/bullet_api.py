@@ -197,7 +197,7 @@ class PyBulletDynamicsWorld():
         obj.applyForce(b_force, b_relpos)
         return RetVal(True, None, None)
 
-    def getObjectData(self, objIDs: (list, tuple)):
+    def getObjectData(self, objID: int):
         """
         Return State Variables of all ``objIDs``.
 
@@ -208,46 +208,43 @@ class PyBulletDynamicsWorld():
         :return: list of ``_MotionState`` instances.
         :rtype: list
         """
-        out = []
+        # Abort immediately if one or more objects don't exist.
+        if objID not in self.rigidBodies:
+            msg = 'Cannot find object with ID <{}>'.format(objID)
+            return RetVal(False, msg, None)
 
-        # Compile a list of object attributes.
-        for objID in objIDs:
-            # Abort immediately if one or more objects don't exist.
-            if objID not in self.rigidBodies:
-                msg = 'Cannot find object with ID <{}>'.format(objID)
-                return RetVal(False, msg, None)
+        # Convenience.
+        obj = self.rigidBodies[objID]
 
-            # Convenience.
-            obj = self.rigidBodies[objID]
-            scale = obj.azrael[1].scale
+        # fixme: must come from collision shape
+        scale = obj.azrael[1].scale
 
-            # Determine rotation and position.
-            rot = obj.getCenterOfMassTransform().getRotation().topy()
-            pos = obj.getCenterOfMassTransform().getOrigin().topy()
+        # Determine rotation and position.
+        rot = obj.getCenterOfMassTransform().getRotation().topy()
+        pos = obj.getCenterOfMassTransform().getOrigin().topy()
 
-            # Determine linear and angular velocity.
-            vLin = obj.getLinearVelocity().topy()
-            vRot = obj.getAngularVelocity().topy()
+        # Determine linear and angular velocity.
+        vLin = obj.getLinearVelocity().topy()
+        vRot = obj.getAngularVelocity().topy()
 
-            # Dummy value for the collision shape.
-            # fixme: this must be the JSON version of collisionShape
-            #        description.
-            cshape = obj.azrael[1].cshape
+        # Dummy value for the collision shape.
+        # fixme: this must be the JSON version of collisionShape
+        #        description.
+        cshape = obj.azrael[1].cshape
 
-            # Linear/angular damping factors.
-            axesLockLin = obj.getLinearFactor().topy()
-            axesLockRot = obj.getAngularFactor().topy()
+        # Linear/angular damping factors.
+        axesLockLin = obj.getLinearFactor().topy()
+        axesLockRot = obj.getAngularFactor().topy()
 
-            # Construct a new _MotionState structure and add it to the list
-            # that will eventually be returned to the caller.
-            # fixme: do not use azrael[1].scale but query the scale from the
-            # collisionShape object
-            csname = obj.getCollisionShape().getChildShape(0).getName()
-            out.append(
-                _MotionState(obj.azrael[1].scale, obj.getInvMass(),
-                             obj.getRestitution(), rot, pos, vLin, vRot,
-                             cshape, axesLockLin, axesLockRot, 0))
-        return RetVal(True, None, out[0])
+        # Construct a new _MotionState structure and add it to the list
+        # that will eventually be returned to the caller.
+        # fixme: do not use azrael[1].scale but query the scale from the
+        # collisionShape object
+        csname = obj.getCollisionShape().getChildShape(0).getName()
+        out= _MotionState(obj.azrael[1].scale, obj.getInvMass(),
+                         obj.getRestitution(), rot, pos, vLin, vRot,
+                         cshape, axesLockLin, axesLockRot, 0)
+        return RetVal(True, None, out)
 
     @typecheck
     def setObjectData(self, objID: int, obj: _MotionState):
