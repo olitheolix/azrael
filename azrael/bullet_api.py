@@ -338,12 +338,12 @@ class PyBulletDynamicsWorld():
         # Create the collision shapes one by one.
         for cs in obj.cshape:
             # Determine which CollisionShape to instantiate.
-            csname = type(cs.cs).__name__
-            if csname == 'CollShapeSphere':
+            csname = cs.type.upper()
+            if csname == 'SPHERE':
                 child = azBullet.SphereShape(*cs.cs)
-            elif csname == 'CollShapeBox':
+            elif csname == 'BOX':
                 child = azBullet.BoxShape(Vec3(*cs.cs))
-            elif csname == 'CollShapeEmpty':
+            elif csname == 'EMPTY':
                 child = azBullet.EmptyShape()
             else:
                 child = azBullet.EmptyShape()

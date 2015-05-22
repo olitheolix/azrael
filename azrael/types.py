@@ -58,7 +58,7 @@ _MotionState = namedtuple('_MotionState',
                           'position velocityLin velocityRot cshape '
                           'axesLockLin axesLockRot lastChanged')
 
-CollShapeMeta = namedtuple('CollShapeMeta', 'name pos rot cs')
+CollShapeMeta = namedtuple('CollShapeMeta', 'type name pos rot cs')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')

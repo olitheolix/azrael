@@ -36,7 +36,7 @@ from azrael.types import CollShapeMeta, CollShapeEmpty
 
 # Default argument for MotionState below (purely for visual appeal, not because
 # anyone would/should use it).
-_CSDefault = [CollShapeMeta('', (0, 0, 0), (0, 0, 0, 1), CollShapeEmpty())]
+_CSDefault = [CollShapeMeta('Empty', '', (0, 0, 0), (0, 0, 0, 1), CollShapeEmpty())]
 
 @typecheck
 def MotionState(scale: (int, float)=1,
@@ -72,11 +72,14 @@ def MotionState(scale: (int, float)=1,
         assert lastChanged >= 0
         cshape = [CollShapeMeta(*_) for _ in cshape]
         for cs in cshape:
+            assert isinstance(cs.type, str)
             assert isinstance(cs.name, str)
             assert isinstance(cs.pos, (tuple, list, np.ndarray))
             assert isinstance(cs.rot, (tuple, list, np.ndarray))
             assert len(np.array(cs.pos)) == 3
             assert len(np.array(cs.rot)) == 4
+            assert cs.type.lower() in ('empty', 'sphere', 'box')
+
             # fixme: do I need additional sanity checks for the various
             # Collision shapes, or is the protocol module going to handle it?
     except (AssertionError, TypeError) as err:

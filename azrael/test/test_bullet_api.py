@@ -74,8 +74,8 @@ class TestBulletAPI:
         pos = (0, 1, 2)
         rot = (0, 0, 0, 1)
         cshape = [
-            CollShapeMeta('1', pos, rot, CollShapeEmpty()),
-            CollShapeMeta('2', pos, rot, CollShapeSphere(radius=1))
+            CollShapeMeta('empty', '1', pos, rot, CollShapeEmpty()),
+            CollShapeMeta('empty', '2', pos, rot, CollShapeSphere(radius=1))
         ]
 
         # Create an object and serialise it.
@@ -102,7 +102,7 @@ class TestBulletAPI:
 
         # Swap out the Collision shape.
         obj_c = obj_a._replace(
-            cshape=[CollShapeMeta('2', pos, rot, CollShapeBox(1, 1, 1))])
+            cshape=[CollShapeMeta('box', '2', pos, rot, CollShapeBox(1, 1, 1))])
 
         # Verify that the original objects are all identical to themselves but
         # distinct from each other.
@@ -139,8 +139,8 @@ class TestBulletAPI:
 
         # Replace the CollShape named tuple with just a list.
         p, q = (0, 0, 0), (0, 0, 0, 1)
-        cshape_1 = CollShapeMeta('csfoo', p, q, CollShapeSphere(2))
-        cshape_2 = list(CollShapeMeta('csfoo', p, q, list(CollShapeSphere(2))))
+        cshape_1 = CollShapeMeta('sphere', 'csfoo', p, q, CollShapeSphere(2))
+        cshape_2 = list(CollShapeMeta('sphere', 'csfoo', p, q, list(CollShapeSphere(2))))
         obj_a1 = obj_a._replace(cshape=[cshape_1])
         obj_a2 = obj_a._replace(cshape=[cshape_2])
 
@@ -154,8 +154,8 @@ class TestBulletAPI:
         pos = (0, 1, 2)
         rot = (0, 0, 0, 1)
         cshape = [
-            CollShapeMeta('1', pos, rot, CollShapeEmpty()),
-            CollShapeMeta('2', pos, rot, CollShapeSphere(radius=1))
+            CollShapeMeta('empty', '1', pos, rot, CollShapeEmpty()),
+            CollShapeMeta('sphere', '2', pos, rot, CollShapeSphere(radius=1))
         ]
         del pos, rot
 
@@ -188,7 +188,7 @@ class TestBulletAPI:
         """
         Add an object to Bullet, then change its parameters.
         """
-        cshape = [CollShapeMeta('foo', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
+        cshape = [CollShapeMeta('sphere', 'foo', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
 
         # Create an object and serialise it.
         obj_a = bullet_data.MotionState(
@@ -323,7 +323,7 @@ class TestBulletAPI:
 
         # Create a spherical object. Adjust the mass so that the sphere's inertia
         # is roughly unity.
-        cshape = [CollShapeMeta('foo', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
+        cshape = [CollShapeMeta('sphere', 'foo', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
         obj_a = bullet_data.MotionState(cshape=cshape, imass=2 / 5)
 
         # Instantiate Bullet engine.
@@ -408,7 +408,7 @@ class TestBulletAPI:
         pos_b = [-5, 0, 0]
         force = np.array([0, 1, 0], np.float64)
         torque = np.array([0, 0, 0], np.float64)
-        cshape = [CollShapeMeta('foo', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
+        cshape = [CollShapeMeta('sphere', 'foo', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
 
         # Create two identical spheres, one left, one right (x-axis).
         obj_a = bullet_data.MotionState(position=pos_a, cshape=cshape, imass=1)
@@ -464,8 +464,8 @@ class TestBulletAPI:
         torque = np.array([0, 0, 0], np.float64)
 
         # Create two identical spheres, one left, one right (x-axis).
-        cs_a = [CollShapeMeta('csfoo', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
-        cs_b = [CollShapeMeta('csbar', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
+        cs_a = [CollShapeMeta('sphere', 'csfoo', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
+        cs_b = [CollShapeMeta('sphere', 'csbar', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1))]
         obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_a)
         obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_b)
         del cs_a, cs_b, pos_a, pos_b
@@ -531,8 +531,8 @@ class TestBulletAPI:
         pos_a = [-0.8, -0.8, 0]
         pos_b = [0.8, 0.8, 0]
         p, q = (0, 0, 0), (0, 0, 0, 1)
-        cshape_box = [CollShapeMeta('csbox', p, q, CollShapeBox(1, 1, 1))]
-        cshape_sphere = [CollShapeMeta('cssphere', p, q, CollShapeSphere(1))]
+        cshape_box = [CollShapeMeta('box', 'csbox', p, q, CollShapeBox(1, 1, 1))]
+        cshape_sphere = [CollShapeMeta('sphere', 'cssphere', p, q, CollShapeSphere(1))]
         del p, q
 
         # Create two identical unit spheres, offset along the x/y axis.
