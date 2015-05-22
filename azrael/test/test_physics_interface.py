@@ -28,6 +28,7 @@ import azrael.bullet_data as bullet_data
 from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
 from azrael.test.test_bullet_api import isEqualBD
+from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 
 MotionState = bullet_data.MotionState
@@ -66,10 +67,7 @@ class TestClerk:
         assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
-        p, q = (0, 0, 0), (0, 0, 0, 1)
-        cshape = [CollShapeMeta('cssphere', p, q, CollShapeSphere(1))]
-        data = MotionState(cshape=cshape)
-        del p, q, cshape
+        data = MotionState(cshape=[getCSSphere('cssphere')])
 
         # Add the object to the DB with ID=0.
         assert physAPI.addCmdSpawn([(id_0, data, aabb)])
