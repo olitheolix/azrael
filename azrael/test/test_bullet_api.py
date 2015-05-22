@@ -24,6 +24,7 @@ from IPython import embed as ipshell
 from azrael.types import _MotionState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox
+from azrael.types import ConstraintMeta, ConstraintP2P
 
 
 def isEqualBD(bd1: _MotionState, bd2: _MotionState):
@@ -475,8 +476,6 @@ class TestBulletAPI:
         objID_a, objID_b = 10, 20
         pos_a = [0, 0, 0]
         pos_b = [3, 0, 0]
-        force = np.array([0, 1, 0], np.float64)
-        torque = np.array([0, 0, 0], np.float64)
 
         # Create two identical spheres, one left, one right (x-axis).
         cs_a = [getCSSphere('csfoo')]
@@ -588,3 +587,79 @@ class TestBulletAPI:
         ret = bullet.getObjectData([objID_b])
         assert ret.ok
         assert ret.data.cshape[0].name.upper() == 'CSBOX'
+
+    def test_specify_constraints(self):
+        """
+        Create two objects, add a P2P constraint, and step the simulation.
+        """
+        # Instantiate Bullet engine.
+        bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
+
+        # Create identical unit spheres at x=+/-1.
+        id_a, id_b = 10, 20
+        pos_a = (-1, 0, 0)
+        pos_b = (1, 0, 0)
+        obj_a = bullet_data.MotionState(position=pos_a, cshape=[getCSSphere()])
+        obj_b = bullet_data.MotionState(position=pos_b, cshape=[getCSSphere()])
+
+        # Load the objects into the physics engine.
+        bullet.setObjectData(id_a, obj_a)
+        bullet.setObjectData(id_b, obj_b)
+
+        # Compile the constraint.
+        pivot_a, pivot_b = pos_b, pos_a
+        constraints = [
+            ConstraintMeta('p2p', id_a, id_b, ConstraintP2P(pivot_a, pivot_b)),
+        ]
+
+        # Load the constraints into the physics engine.
+        assert bullet.setConstraints(constraints).ok
+
+        # Step the simulation. Nothing must happen.
+        bullet.compute([id_a, id_b], 1.0, 60)
+        ret_a = bullet.getObjectData([id_a])
+        ret_b = bullet.getObjectData([id_b])
+        assert ret_a.ok and ret_b.ok
+        assert np.allclose(ret_a.data.position, pos_a)
+        assert np.allclose(ret_b.data.position, pos_b)
+
+        # Apply a force that will pull the left object further to the left.
+        bullet.applyForceAndTorque(id_a, (-10, 0, 0), (0, 0, 0))
+
+        # Step the simulation. Both objects must have moved (almost) exactly the same
+        # amount to the left.
+        bullet.compute([id_a, id_b], 1.0, 60)
+        ret_a = bullet.getObjectData([id_a])
+        ret_b = bullet.getObjectData([id_b])
+        assert ret_a.ok and ret_b.ok
+        pos_diff_a = np.array(ret_a.data.position) - np.array(pos_a)
+        pos_diff_b = np.array(ret_b.data.position) - np.array(pos_b)
+        assert np.allclose(pos_diff_a, pos_diff_b)
+        assert pos_diff_a[1] == pos_diff_a[2] == 0
+
+        # Remove all constraints (do it twice to test the case when there are
+        # no constraints).
+        assert bullet.clearAllConstraints().ok
+        assert bullet.clearAllConstraints().ok
+
+        # Overwrite the objects with the default data (ie put them back into
+        # the original position and set their velocity to zero).
+        bullet.setObjectData(id_a, obj_a)
+        bullet.setObjectData(id_b, obj_b)
+        bullet.compute([id_a, id_b], 1.0, 60)
+        ret_a = bullet.getObjectData([id_a])
+        ret_b = bullet.getObjectData([id_b])
+        assert ret_a.ok and ret_b.ok
+        assert np.allclose(ret_a.data.position, pos_a)
+        assert np.allclose(ret_b.data.position, pos_b)
+
+        # Apply a force that will pull the left object further to the left.
+        # However, now *only* the left one must move because there are not
+        # constraint anymore.
+        bullet.applyForceAndTorque(id_a, (-10, 0, 0), (0, 0, 0))
+        bullet.compute([id_a, id_b], 1.0, 60)
+        ret_a = bullet.getObjectData([id_a])
+        ret_b = bullet.getObjectData([id_b])
+        assert ret_a.ok and ret_b.ok
+        assert not np.allclose(ret_a.data.position, pos_a)
+        assert np.allclose(ret_b.data.position, pos_b)

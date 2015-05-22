@@ -63,6 +63,9 @@ CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
 
+ConstraintMeta = namedtuple('ConstraintMeta', 'type rb_a rb_b data')
+ConstraintP2P = namedtuple('ConstraintP2P', 'pivot_a pivot_b')
+
 
 def typecheck(func_handle):
     """

@@ -314,6 +314,83 @@ class PyBulletDynamicsWorld():
         body.azrael = (objID, obj)
         return RetVal(True, None, None)
 
+    def setConstraints(self, constraints: (tuple, list)):
+        """
+        Apply the ``constraints`` to the specified objects in the world.
+
+        If one or more of the rigid bodies specified in any of the constraints
+        do not exist then this method will abort. Similarly, it will also abort
+        if one or more constraints could not be constructed for whatever
+        reason (eg. unknown constraint name).
+
+        In any case, this function will either apply all constraints or none.
+        It is not possible that this function applies only some constraints.
+
+        :param list constraints: list of `ConstraintMeta` instances.
+        :return: Success
+        """
+        def _buildConstraint(c):
+            """
+            Compile the constraint `c` into the proper C-level Bullet object.
+            """
+            # Get handles to the two objects. This will raise a KeyError unless
+            # both objects exist.
+            rb_a = self.rigidBodies[c.rb_a]
+            rb_b = self.rigidBodies[c.rb_b]
+
+            # Construct the specified constraint type. Raise an error if the
+            # constraint could not be constructed (eg the constraint name is
+            # unknown).
+            if c.type.upper() == 'P2P':
+                out = azBullet.Point2PointConstraint(
+                        rb_a, rb_b,
+                        Vec3(*c.data.pivot_a),
+                        Vec3(*c.data.pivot_b)
+                    )
+            else:
+                assert False
+            # Return the Bullet constraint object.
+            return out
+
+        # Compile a list of all Bullet constraints.
+        try:
+            out = [_buildConstraint(_) for _ in constraints]
+        except (TypeError, AssertionError):
+            msg = 'Unknown object ID {} or {}'
+            msg = msg.format(c.rb_a, c.rb_b)
+            return RetVal(False, msg, None)
+
+        # Apply the constraints.
+        fun = self.dynamicsWorld.addConstraint
+        for c in out:
+            fun(c)
+
+        # All went well.
+        return RetVal(True, None, None)
+
+    def clearAllConstraints(self):
+        """
+        Remove all constraints from the simulation.
+
+        :return: success
+        """
+        # Convenience.
+        world = self.dynamicsWorld
+
+        # Return immediately if the world has no constraints to remove.
+        if world.getNumConstraints() == 0:
+            return RetVal(True, None, None)
+
+        # Iterate over all constraints and remove them.
+        for c in world.iterateConstraints():
+            world.removeConstraint(c)
+
+        # Verify that the number of constraints is now zero.
+        if world.getNumConstraints() != 0:
+            return RetVal(False, 'Bug: #constraints must now be zero', None)
+        else:
+            return RetVal(True, None, None)
+
     @typecheck
     def compileCollisionShape(self, objID: int, obj: _MotionState):
         """
