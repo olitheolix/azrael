@@ -677,6 +677,16 @@ class TestConstraints:
     def teardown_class(cls):
         pass
 
+    def test_typedObject(self):
+        """
+        Bullet uses TypedObjects as a "rudimentary" base class for all
+        constraints. This is the equally rudimentary test for it, most notably
+        that it cannot be instantiated directly.
+        """
+        with pytest.raises(NotImplementedError):
+            # Requires an integer argument; not sure what it really means.
+            azBullet.TypedObject(1)
+
     def test_Point2Point(self):
         """
         Set, query, and replace a collision shape.
@@ -715,6 +725,10 @@ class TestConstraints:
         assert p2p.isEnabled() == False
         p2p.setEnabled(True)
         assert p2p.isEnabled() == True
+
+        # Query the object type; not sure what this is, but if it does not
+        # segfault it works :)
+        p2p.getObjectType()
 
     def test_Point2Point_sim(self):
         """

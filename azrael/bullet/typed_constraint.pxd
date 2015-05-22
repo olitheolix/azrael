@@ -14,6 +14,10 @@ cdef extern from "btBulletDynamicsCommon.h":
         FIXED_CONSTRAINT_TYPE
         MAX_CONSTRAINT_TYPE
 
+    cdef cppclass btTypedObject:
+        btTypedObject(int objectType)
+        int getObjectType()
+
     cdef cppclass btTypedConstraint:
         btTypedConstraint(btTypedConstraintType t, btRigidBody &rbA)
         btTypedConstraint(btTypedConstraintType t, btRigidBody &rbA, btRigidBody &rbB)

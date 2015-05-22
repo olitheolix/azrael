@@ -23,15 +23,32 @@ cdef class TypedConstraintType:
        self.MAX_CONSTRAINT_TYPE = MAX_CONSTRAINT_TYPE
 
 
-cdef class TypedConstraint:
+cdef class TypedObject:
+    cdef btTypedObject *ptr_TypedObject
+
+    def __cinit__(self):
+        self.ptr_TypedObject = NULL
+
+    def __init__(self, int objectType):
+        raise NotImplementedError
+
+    def __dealloc__(self):
+        pass
+
+    def getObjectType(self):
+        return self.ptr_TypedObject.getObjectType()
+
+
+cdef class TypedConstraint(TypedObject):
     cdef RigidBody _ref_rbA, _ref_rbB
     cdef btTypedConstraint *ptr_TypedConstraint
 
     def __cinit__(self):
         self.ptr_TypedConstraint = NULL
         self._ref_rbA = self._ref_rbB = None
-    # int getUserConstraintType()
-    # void setUserConstraintType(int userConstraintType)
+
+        # Assign the base pointers.
+        self.ptr_TypedObject = <btTypedObject*?>self.ptr_TypedConstraint
 
     def __init__(self):
         pass
@@ -72,7 +89,8 @@ cdef class Point2PointConstraint(TypedConstraint):
 
         # Assign the base pointers.
         self.ptr_TypedConstraint = <btTypedConstraint*?>self.ptr_Point2PointConstraint
-
+        self.ptr_TypedObject = <btTypedObject*?>self.ptr_TypedConstraint
+        
     def __dealloc__(self):
         if self.ptr_TypedConstraint != NULL:
             del self.ptr_TypedConstraint
