@@ -21,7 +21,7 @@ other tests.
 """
 import os
 import numpy as np
-from azrael.types import FragDae, FragRaw
+from azrael.types import FragDae, FragRaw, CollShapeMeta
 
 
 def createFragDae():
@@ -40,3 +40,16 @@ def createFragRaw():
     uv = np.random.randint(0, 100, 2).tolist()
     rgb = np.random.randint(0, 100, 3).tolist()
     return FragRaw(vert, uv, rgb)
+
+
+def isEqualCS(la, lb):
+    """
+    fixme: docu, and probably a few tests.
+    """
+    for a, b in zip(la, lb):
+        a = CollShapeMeta(*a)
+        b = CollShapeMeta(*b)
+        assert list(a.cs) == list(b.cs)
+        for f in a._fields:
+            assert list(getattr(a, f)) == list(getattr(b, f))
+    return True

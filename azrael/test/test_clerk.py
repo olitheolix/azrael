@@ -36,23 +36,11 @@ import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
 from azrael.test.test_bullet_api import isEqualBD
-from azrael.test.test import createFragRaw, createFragDae
+from azrael.test.test import createFragRaw, createFragDae, isEqualCS
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
-
-def isEqualCS(la, lb):
-    """
-    fixme: docu, and probably a few tests.
-    """
-    for a, b in zip(la, lb):
-        a = CollShapeMeta(*a)
-        b = CollShapeMeta(*b)
-        assert list(a.cs) == list(b.cs)
-        for f in a._fields:
-            assert list(getattr(a, f)) == list(getattr(b, f))
-    return True
 
 
 class TestClerk:
