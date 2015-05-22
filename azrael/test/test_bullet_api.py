@@ -663,3 +663,59 @@ class TestBulletAPI:
         assert ret_a.ok and ret_b.ok
         assert not np.allclose(ret_a.data.position, pos_a)
         assert np.allclose(ret_b.data.position, pos_b)
+
+    def test_specify_constraints_invalid(self):
+        """
+        Call the constraint- related methods with invalid data and verify that
+        nothing breaks.
+        """
+        # Instantiate Bullet engine.
+        bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
+
+        # Create to spheres.
+        id_a, id_b = 10, 20
+        obj_a = bullet_data.MotionState(cshape=[getCSSphere()])
+        obj_b = bullet_data.MotionState(cshape=[getCSSphere()])
+
+        # An empty list is valid, albeit nothing will happen.
+        assert bullet.setConstraints([]).ok
+
+        # Invalid constraint types.
+        assert not bullet.setConstraints([1]).ok
+
+        # Compile the constraint.
+        pivot_a, pivot_b = (0, 0, 0), (1, 1, 1)
+        constraints = [
+            ConstraintMeta('p2p', id_a, id_b, ConstraintP2P(pivot_a, pivot_b)),
+        ]
+
+        # Constraint is valid but the objects do not exist.
+        assert not bullet.setConstraints([constraints]).ok
+
+        # Add one sphere to the world.
+        bullet.setObjectData(id_a, obj_a)
+
+        # Load the constraints into the physics engine.
+        assert not bullet.setConstraints(constraints).ok
+
+        # Load the second sphere and apply the constraint. This time it must
+        # have worked.
+        bullet.setObjectData(id_b, obj_b)
+        assert bullet.setConstraints(constraints).ok
+
+        # Clear all constraints
+        assert bullet.clearAllConstraints().ok
+
+        # Compile a P2P constraint with an invalid pivot.
+        pivot_a, pivot_b = (0, 0, 0), (1, 1, 1, 1, 1)
+        constraints = [
+            ConstraintMeta('p2p', id_a, id_b, ConstraintP2P(pivot_a, pivot_b)),
+        ]
+        assert not bullet.setConstraints(constraints).ok
+
+        # Another invalid pivot.
+        pivot_a, pivot_b = (0, 0, 0), (1, 1, 's')
+        constraints = [
+            ConstraintMeta('p2p', id_a, id_b, ConstraintP2P(pivot_a, pivot_b)),
+        ]
+        assert not bullet.setConstraints(constraints).ok

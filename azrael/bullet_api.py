@@ -352,10 +352,8 @@ class PyBulletDynamicsWorld():
         # Compile a list of all Bullet constraints.
         try:
             out = [_buildConstraint(_) for _ in constraints]
-        except (TypeError, AssertionError):
-            msg = 'Unknown object ID {} or {}'
-            msg = msg.format(c.rb_a, c.rb_b)
-            return RetVal(False, msg, None)
+        except (TypeError, AttributeError, KeyError, AssertionError):
+            return RetVal(False, 'Could not compile all Constraints.', None)
 
         # Apply the constraints.
         fun = self.dynamicsWorld.addConstraint
