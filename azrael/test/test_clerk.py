@@ -27,6 +27,7 @@ import numpy as np
 import unittest.mock as mock
 
 import azrael.clerk
+import azrael.clacks
 import azrael.client
 import azrael.dibbler
 import azrael.parts as parts
@@ -37,8 +38,21 @@ from IPython import embed as ipshell
 from azrael.test.test_bullet_api import isEqualBD
 from azrael.test.test import createFragRaw, createFragDae
 from azrael.test.test_leonard import getLeonard, killAzrael
-from azrael.types import Template, RetVal
+from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
+from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
+
+def isEqualCS(la, lb):
+    """
+    fixme: docu, and probably a few tests.
+    """
+    for a, b in zip(la, lb):
+        a = CollShapeMeta(*a)
+        b = CollShapeMeta(*b)
+        assert list(a.cs) == list(b.cs)
+        for f in a._fields:
+            assert list(getattr(a, f)) == list(getattr(b, f))
+    return True
 
 
 class TestClerk:
@@ -65,13 +79,274 @@ class TestClerk:
         # their collision shapes are: none, sphere, cube.
         clerk = azrael.clerk.Clerk()
         frag = [MetaFragment('NoName', 'raw', createFragRaw())]
-        t1 = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
-        t2 = Template('_templateSphere', [3, 1, 1, 1], frag, [], [])
-        t3 = Template('_templateCube', [4, 1, 1, 1], frag, [], [])
+        t1 = Template('_templateNone', [getCSEmpty()], frag, [], [])
+        t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
+        t3 = Template('_templateCube', [getCSBox()], frag, [], [])
         clerk.addTemplates([t1, t2, t3])
 
     def teardown_method(self, method):
         azrael.database.init()
+
+    def test_get_default_templates(self):
+        """
+        Query the defautl templates in Azrael.
+        """
+        # Instantiate a Clerk.
+        clerk = azrael.clerk.Clerk()
+
+        # Request an invalid ID.
+        assert not clerk.getTemplates(['blah']).ok
+
+        # Clerk has a few default objects. This one has no collision shape...
+        name_1 = '_templateNone'
+        ret = clerk.getTemplates([name_1])
+        assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
+        assert isEqualCS(ret.data[name_1]['cshape'], [getCSEmpty()])
+
+        # ... this one is a sphere...
+        name_2 = '_templateSphere'
+        ret = clerk.getTemplates([name_2])
+        assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
+        assert isEqualCS(ret.data[name_2]['cshape'], [getCSSphere()])
+
+        # ... and this one is a cube.
+        name_3 = '_templateCube'
+        ret = clerk.getTemplates([name_3])
+        assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
+        assert isEqualCS(ret.data[name_3]['cshape'], [getCSBox()])
+
+        # Retrieve all three again but with a single call.
+        ret = clerk.getTemplates([name_1, name_2, name_3])
+        assert ret.ok
+        assert set(ret.data.keys()) == set((name_1, name_2, name_3))
+        assert isEqualCS(ret.data[name_1]['cshape'], [getCSEmpty()])
+        assert isEqualCS(ret.data[name_2]['cshape'], [getCSSphere()])
+        assert isEqualCS(ret.data[name_3]['cshape'], [getCSBox()])
+
+    def test_add_get_template_single(self):
+        """
+        Add a new object to the templateID DB and query it again.
+        """
+        # Instantiate a Clerk.
+        clerk = azrael.clerk.Clerk()
+
+        # Install a mock for Dibbler with an 'addTemplate' function that
+        # always succeeds.
+        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
+        clerk.dibbler = mock_dibbler
+
+        # The mock must not have been called so far.
+        assert mock_dibbler.addTemplate.call_count == 0
+
+        # Convenience.
+        cs = getCSSphere()
+
+        # Request an invalid ID.
+        assert not clerk.getTemplates(['blah']).ok
+
+        # Wrong argument .
+        ret = clerk.addTemplates([1])
+        assert (ret.ok, ret.msg) == (False, 'Invalid arguments')
+        assert mock_dibbler.addTemplate.call_count == 0
+
+        # Compile a template structure.
+        frags = [MetaFragment('foo', 'raw', createFragRaw())]
+        temp = Template('bar', [cs], frags, [], [])
+
+        # Add template when 'saveModel' fails.
+        mock_dibbler.addTemplate.return_value = RetVal(False, 't_error', None)
+        ret = clerk.addTemplates([temp])
+        assert (ret.ok, ret.msg) == (False, 't_error')
+        assert mock_dibbler.addTemplate.call_count == 1
+
+        # Add template when 'saveModel' succeeds.
+        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1})
+        assert clerk.addTemplates([temp]).ok
+        assert mock_dibbler.addTemplate.call_count == 2
+
+        # Adding the same template again must fail.
+        assert not clerk.addTemplates([temp]).ok
+        assert mock_dibbler.addTemplate.call_count == 3
+
+        # Define a new object with two boosters and one factory unit.
+        # The 'boosters' and 'factories' arguments are a list of named
+        # tuples. Their first argument is the unit ID (Azrael does not assign
+        # automatically assign any IDs).
+        b0 = parts.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
+                           minval=0, maxval=0.5, force=0)
+        b1 = parts.Booster(partID='1', pos=[0, 0, 0], direction=[0, 0, 1],
+                           minval=0, maxval=0.5, force=0)
+        f0 = parts.Factory(
+            partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
+            templateID='_templateCube', exit_speed=[0.1, 0.5])
+
+        # Add the new template.
+        temp = Template('t3', [cs], frags, [b0, b1], [f0])
+        assert clerk.addTemplates([temp]).ok
+        assert mock_dibbler.addTemplate.call_count == 4
+
+        # Retrieve the just created object and verify the collision shape.
+        ret = clerk.getTemplates([temp.name])
+        assert ret.ok
+        assert isEqualCS(ret.data[temp.name]['cshape'], [cs])
+
+        # The template must also feature two boosters and one factory.
+        assert len(ret.data[temp.name]['boosters']) == 2
+        assert len(ret.data[temp.name]['factories']) == 1
+
+        # Explicitly verify the booster- and factory units. The easisest
+        # (albeit not most readable) way to do the comparison is to convert the
+        # unit descriptions (which are named tuples) to byte strings and
+        # compare those.
+        Booster, Factory = parts.Booster, parts.Factory
+        out_boosters = [Booster(*_) for _ in ret.data[temp.name]['boosters']]
+        out_factories = [Factory(*_) for _ in ret.data[temp.name]['factories']]
+        assert b0 in out_boosters
+        assert b1 in out_boosters
+        assert f0 in out_factories
+
+        # Request the same templates multiple times in a single call. This must
+        # return a dictionary with as many keys as there are unique template
+        # IDs.
+        ret = clerk.getTemplates([temp.name, temp.name, temp.name])
+        assert ret.ok and (len(ret.data) == 1) and (temp.name in ret.data)
+
+    def test_add_get_template_multi_url(self):
+        """
+        Add templates in bulk and verify that the models are availabe via the
+        correct URL.
+        """
+        # Instantiate a Clerk.
+        clerk = azrael.clerk.Clerk()
+
+        # Install a mock for Dibbler with an 'addTemplate' function that
+        # always succeeds.
+        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
+        clerk.dibbler = mock_dibbler
+        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1})
+
+        # The mock must not have been called so far.
+        assert mock_dibbler.addTemplate.call_count == 0
+
+        # Convenience.
+        base_url = 'http://{}:{}'.format(
+            azrael.config.addr_clacks,
+            azrael.config.port_clacks)
+        name_1, name_2 = 't1', 't2'
+
+        # Define templates.
+        frags_1 = [MetaFragment('foo', 'raw', createFragRaw())]
+        frags_2 = [MetaFragment('foo', 'raw', createFragRaw())]
+        t1 = Template(name_1, [getCSSphere()], frags_1, [], [])
+        t2 = Template(name_2, [getCSSphere()], frags_2, [], [])
+
+        # Add two valid templates. This must succeed.
+        assert clerk.addTemplates([t1, t2]).ok
+        assert mock_dibbler.addTemplate.call_count == 2
+
+        # Attempt to add the same templates again. This must fail.
+        assert not clerk.addTemplates([t1, t2]).ok
+        assert mock_dibbler.addTemplate.call_count == 4
+
+        # Fetch the just added template in order to get the URL where its
+        # geometries are stored.
+        ret = clerk.getTemplates([name_1])
+        assert ret.ok
+        url_template = config.url_templates
+        assert MetaFragment(*(ret.data[name_1]['fragments'][0])).type == 'raw'
+        assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
+
+        # Fetch the second template.
+        ret = clerk.getTemplates([name_2])
+        assert ret.ok
+        assert MetaFragment(*(ret.data[name_2]['fragments'][0])).type == 'raw'
+        assert ret.data[name_2]['url'] == config.url_templates + '/' + name_2
+
+        # Fetch both templates at once.
+        ret = clerk.getTemplates([name_1, name_2])
+        assert ret.ok and (len(ret.data) == 2)
+        assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
+        assert ret.data[name_2]['url'] == '{}/'.format(url_template) + name_2
+
+    def test_add_get_template_AABB(self):
+        """
+        Similarly to test_add_get_template but focuses exclusively on the AABB.
+        """
+        # Instantiate a Clerk.
+        clerk = azrael.clerk.Clerk()
+
+        # Convenience.
+        cs = getCSSphere()
+        uv = rgb = []
+
+        # Manually specify the vertices and its spatial extent in the
+        # 'max_sidelen' variable beneath.
+        vert = [-4, 0, 0,
+                1, 2, 3,
+                4, 5, 6]
+        max_sidelen = max(8, 5, 6)
+
+        # Add- and fetch the template.
+        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+        t1 = Template('t1', [cs], frags, [], [])
+        assert clerk.addTemplates([t1]).ok
+        ret = clerk.getTemplates([t1.name])
+        assert ret.ok
+
+        # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
+        assert (ret.data[t1.name]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
+
+        # Repeat the experiment with a larger mesh.
+        vert = [0, 0, 0,
+                1, 2, 3,
+                4, 5, 6,
+                8, 2, 7,
+                -5, -9, 8,
+                3, 2, 3]
+        max_sidelen = max(8, 14, 8)
+
+        # Add template and retrieve it again.
+        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
+        t2 = Template('t2', [cs], frags, [], [])
+        assert clerk.addTemplates([t2]).ok
+        ret = clerk.getTemplates([t2.name])
+        assert ret.ok
+
+        # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
+        assert (ret.data[t2.name]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
+
+    def test_get_object_template_id(self):
+        """
+        Spawn two objects from different templates. Then query the template ID
+        based on the object ID.
+        """
+        # Reset the SV database and instantiate a Leonard.
+        leo = getLeonard()
+
+        # Parameters and constants for this test.
+        id_0, id_1 = 1, 2
+        templateID_0 = '_templateNone'
+        templateID_1 = '_templateCube'
+        sv = bullet_data.MotionState()
+
+        # Instantiate a Clerk.
+        clerk = azrael.clerk.Clerk()
+
+        # Spawn two object. They must have id_0 and id_1, respectively.
+        ret = clerk.spawn([(templateID_0, sv), (templateID_1, sv)])
+        assert (ret.ok, ret.data) == (True, (id_0, id_1))
+
+        # Retrieve template of first object.
+        leo.processCommandsAndSync()
+        ret = clerk.getTemplateID(id_0)
+        assert (ret.ok, ret.data) == (True, templateID_0)
+
+        # Retrieve template of second object.
+        ret = clerk.getTemplateID(id_1)
+        assert (ret.ok, ret.data) == (True, templateID_1)
+
+        # Attempt to retrieve a non-existing object.
+        assert not clerk.getTemplateID(100).ok
 
     def test_spawn(self):
         """
@@ -323,270 +598,6 @@ class TestClerk:
         assert np.array_equal(tmp[0], force)
         assert np.array_equal(tmp[1], np.cross(relpos, force))
 
-    def test_get_default_templates(self):
-        """
-        Query the defautl templates in Azrael.
-        """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
-
-        # Request an invalid ID.
-        assert not clerk.getTemplates(['blah']).ok
-
-        AE = np.array_equal
-
-        # Clerk has a few default objects. This one has no collision shape...
-        name_1 = '_templateNone'
-        ret = clerk.getTemplates([name_1])
-        assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
-        assert AE(ret.data[name_1]['cshape'], np.array([0, 1, 1, 1]))
-
-        # ... this one is a sphere...
-        name_2 = '_templateSphere'
-        ret = clerk.getTemplates([name_2])
-        assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
-        assert np.array_equal(ret.data[name_2]['cshape'],
-                              np.array([3, 1, 1, 1]))
-
-        # ... and this one is a cube.
-        name_3 = '_templateCube'
-        ret = clerk.getTemplates([name_3])
-        assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
-        assert AE(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
-
-        # Retrieve all three again but with a single call.
-        ret = clerk.getTemplates([name_1, name_2, name_3])
-        assert ret.ok
-        assert set(ret.data.keys()) == set((name_1, name_2, name_3))
-        assert AE(ret.data[name_1]['cshape'], np.array([0, 1, 1, 1]))
-        assert AE(ret.data[name_2]['cshape'], np.array([3, 1, 1, 1]))
-        assert AE(ret.data[name_3]['cshape'], np.array([4, 1, 1, 1]))
-
-    def test_add_get_template_single(self):
-        """
-        Add a new object to the templateID DB and query it again.
-        """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
-
-        # Install a mock for Dibbler with an 'addTemplate' function that
-        # always succeeds.
-        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
-        clerk.dibbler = mock_dibbler
-
-        # The mock must not have been called so far.
-        assert mock_dibbler.addTemplate.call_count == 0
-
-        # Convenience.
-        cs = [1, 2, 3, 4]
-
-        # Request an invalid ID.
-        assert not clerk.getTemplates(['blah']).ok
-
-        # Wrong argument .
-        ret = clerk.addTemplates([1])
-        assert (ret.ok, ret.msg) == (False, 'Invalid arguments')
-        assert mock_dibbler.addTemplate.call_count == 0
-
-        # Compile a template structure.
-        frags = [MetaFragment('foo', 'raw', createFragRaw())]
-        temp = Template('bar', cs, frags, [], [])
-
-        # Add template when 'saveModel' fails.
-        mock_dibbler.addTemplate.return_value = RetVal(False, 't_error', None)
-        ret = clerk.addTemplates([temp])
-        assert (ret.ok, ret.msg) == (False, 't_error')
-        assert mock_dibbler.addTemplate.call_count == 1
-
-        # Add template when 'saveModel' succeeds.
-        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1})
-        assert clerk.addTemplates([temp]).ok
-        assert mock_dibbler.addTemplate.call_count == 2
-
-        # Adding the same template again must fail.
-        assert not clerk.addTemplates([temp]).ok
-        assert mock_dibbler.addTemplate.call_count == 3
-
-        # Define a new object with two boosters and one factory unit.
-        # The 'boosters' and 'factories' arguments are a list of named
-        # tuples. Their first argument is the unit ID (Azrael does not assign
-        # automatically assign any IDs).
-        b0 = parts.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
-                           minval=0, maxval=0.5, force=0)
-        b1 = parts.Booster(partID='1', pos=[0, 0, 0], direction=[0, 0, 1],
-                           minval=0, maxval=0.5, force=0)
-        f0 = parts.Factory(
-            partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
-            templateID='_templateCube', exit_speed=[0.1, 0.5])
-
-        # Add the new template.
-        temp = Template('t3', cs, frags, [b0, b1], [f0])
-        assert clerk.addTemplates([temp]).ok
-        assert mock_dibbler.addTemplate.call_count == 4
-
-        # Retrieve the just created object and verify the collision shape.
-        ret = clerk.getTemplates([temp.name])
-        assert ret.ok
-        assert np.array_equal(ret.data[temp.name]['cshape'], cs)
-
-        # The template must also feature two boosters and one factory.
-        assert len(ret.data[temp.name]['boosters']) == 2
-        assert len(ret.data[temp.name]['factories']) == 1
-
-        # Explicitly verify the booster- and factory units. The easisest
-        # (albeit not most readable) way to do the comparison is to convert the
-        # unit descriptions (which are named tuples) to byte strings and
-        # compare those.
-        Booster, Factory = parts.Booster, parts.Factory
-        out_boosters = [Booster(*_) for _ in ret.data[temp.name]['boosters']]
-        out_factories = [Factory(*_) for _ in ret.data[temp.name]['factories']]
-        assert b0 in out_boosters
-        assert b1 in out_boosters
-        assert f0 in out_factories
-
-        # Request the same templates multiple times in a single call. This must
-        # return a dictionary with as many keys as there are unique template
-        # IDs.
-        ret = clerk.getTemplates([temp.name, temp.name, temp.name])
-        assert ret.ok and (len(ret.data) == 1) and (temp.name in ret.data)
-
-    def test_add_get_template_multi_url(self):
-        """
-        Add templates in bulk and verify that the models are availabe via the
-        correct URL.
-        """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
-
-        # Install a mock for Dibbler with an 'addTemplate' function that
-        # always succeeds.
-        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
-        clerk.dibbler = mock_dibbler
-        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1})
-
-        # The mock must not have been called so far.
-        assert mock_dibbler.addTemplate.call_count == 0
-
-        # Convenience.
-        base_url = 'http://{}:{}'.format(
-            azrael.config.addr_clacks,
-            azrael.config.port_clacks)
-        name_1, name_2 = 't1', 't2'
-
-        # Define templates.
-        frags_1 = [MetaFragment('foo', 'raw', createFragRaw())]
-        frags_2 = [MetaFragment('foo', 'raw', createFragRaw())]
-        t1 = Template(name_1, [1, 2], frags_1, [], [])
-        t2 = Template(name_2, [3, 4], frags_2, [], [])
-
-        # Add two valid templates. This must succeed.
-        assert clerk.addTemplates([t1, t2]).ok
-        assert mock_dibbler.addTemplate.call_count == 2
-
-        # Attempt to add the same templates again. This must fail.
-        assert not clerk.addTemplates([t1, t2]).ok
-        assert mock_dibbler.addTemplate.call_count == 4
-
-        # Fetch the just added template in order to get the URL where its
-        # geometries are stored.
-        ret = clerk.getTemplates([name_1])
-        assert ret.ok
-        url_template = config.url_templates
-        assert MetaFragment(*(ret.data[name_1]['fragments'][0])).type == 'raw'
-        assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
-
-        # Fetch the second template.
-        ret = clerk.getTemplates([name_2])
-        assert ret.ok
-        assert MetaFragment(*(ret.data[name_2]['fragments'][0])).type == 'raw'
-        assert ret.data[name_2]['url'] == config.url_templates + '/' + name_2
-
-        # Fetch both templates at once.
-        ret = clerk.getTemplates([name_1, name_2])
-        assert ret.ok and (len(ret.data) == 2)
-        assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
-        assert ret.data[name_2]['url'] == '{}/'.format(url_template) + name_2
-
-    def test_add_get_template_AABB(self):
-        """
-        Similarly to test_add_get_template but focuses exclusively on the AABB.
-        """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
-
-        # Convenience.
-        cs = [1, 2, 3, 4]
-        uv = rgb = []
-
-        # Manually specify the vertices and its spatial extent in the
-        # 'max_sidelen' variable beneath.
-        vert = [-4, 0, 0,
-                1, 2, 3,
-                4, 5, 6]
-        max_sidelen = max(8, 5, 6)
-
-        # Add- and fetch the template.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        t1 = Template('t1', cs, frags, [], [])
-        assert clerk.addTemplates([t1]).ok
-        ret = clerk.getTemplates([t1.name])
-        assert ret.ok
-
-        # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-        assert (ret.data[t1.name]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
-
-        # Repeat the experiment with a larger mesh.
-        vert = [0, 0, 0,
-                1, 2, 3,
-                4, 5, 6,
-                8, 2, 7,
-                -5, -9, 8,
-                3, 2, 3]
-        max_sidelen = max(8, 14, 8)
-
-        # Add template and retrieve it again.
-        frags = [MetaFragment('bar', 'raw', FragRaw(vert, uv, rgb))]
-        t2 = Template('t2', cs, frags, [], [])
-        assert clerk.addTemplates([t2]).ok
-        ret = clerk.getTemplates([t2.name])
-        assert ret.ok
-
-        # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-        assert (ret.data[t2.name]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
-
-    def test_get_object_template_id(self):
-        """
-        Spawn two objects from different templates. Then query the template ID
-        based on the object ID.
-        """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
-        # Parameters and constants for this test.
-        id_0, id_1 = 1, 2
-        templateID_0 = '_templateNone'
-        templateID_1 = '_templateCube'
-        sv = bullet_data.MotionState()
-
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
-
-        # Spawn two object. They must have id_0 and id_1, respectively.
-        ret = clerk.spawn([(templateID_0, sv), (templateID_1, sv)])
-        assert (ret.ok, ret.data) == (True, (id_0, id_1))
-
-        # Retrieve template of first object.
-        leo.processCommandsAndSync()
-        ret = clerk.getTemplateID(id_0)
-        assert (ret.ok, ret.data) == (True, templateID_0)
-
-        # Retrieve template of second object.
-        ret = clerk.getTemplateID(id_1)
-        assert (ret.ok, ret.data) == (True, templateID_1)
-
-        # Attempt to retrieve a non-existing object.
-        assert not clerk.getTemplateID(100).ok
-
     def test_controlParts_Boosters_bug_102(self):
         """
         ControlParts breaks when the objID does not exist. This
@@ -605,7 +616,7 @@ class TestClerk:
 
         # Define a new template with two boosters and add it to Azrael.
         template = Template('t1',
-                            cs=[1, 2, 3, 4],
+                            cs=[getCSSphere()],
                             fragments=frags,
                             boosters=[booster],
                             factories=[])
@@ -678,7 +689,7 @@ class TestClerk:
 
         # Define a new template, add it to Azrael, and spawn an instance.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        temp = Template('t1', [1, 2], frags, [b0], [f0])
+        temp = Template('t1', [getCSSphere()], frags, [b0], [f0])
         assert clerk.addTemplates([temp]).ok
         sv = bullet_data.MotionState()
         ret = clerk.spawn([(temp.name, sv)])
@@ -734,7 +745,7 @@ class TestClerk:
 
         # Define a new template with two boosters and add it to Azrael.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        temp = Template('t1', [1, 2], frags, [b0, b1], [])
+        temp = Template('t1', [getCSSphere()], frags, [b0, b1], [])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn an instance of the template.
@@ -809,7 +820,7 @@ class TestClerk:
 
         # Add the template to Azrael and spawn one instance.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        temp = Template('t1', [1, 2], frags, [], [f0, f1])
+        temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.name, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -882,7 +893,7 @@ class TestClerk:
 
         # Define a template with two factories, add it to Azrael, and spawn it.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        temp = Template('t1', [1, 2], frags, [], [f0, f1])
+        temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.name, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -983,7 +994,7 @@ class TestClerk:
 
         # Define the template, add it to Azrael, and spawn one instance.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        temp = Template('t1', [1, 2], frags, [b0, b1], [f0, f1])
+        temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.name, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -1093,7 +1104,7 @@ class TestClerk:
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
-        temp = Template('foo', [1, 2], frags, [], [])
+        temp = Template('foo', [getCSSphere()], frags, [], [])
         assert clerk.addTemplates([temp]).ok
         assert clerk.getTemplates([temp.name]).ok
 
@@ -1154,7 +1165,7 @@ class TestClerk:
 
         # Add a valid template and verify it now exists in Azrael.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
-        temp = Template('foo', [1, 2], frags, [], [])
+        temp = Template('foo', [getCSSphere()], frags, [], [])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
@@ -1208,7 +1219,7 @@ class TestClerk:
 
         # Define a template with one fragment.
         frags = [MetaFragment('foo', 'raw', createFragRaw())]
-        t1 = Template('t1', [1, 2], frags, [b0, b1], [])
+        t1 = Template('t1', [getCSSphere()], frags, [b0, b1], [])
 
         # Add the template and spawn two instances.
         assert clerk.addTemplates([t1]).ok
@@ -1282,7 +1293,7 @@ class TestClerk:
 
         # Define a new template with one fragment.
         frags = [MetaFragment('foo', 'raw', createFragRaw())]
-        t1 = Template('t1', [1, 2], fragments=frags, boosters=[], factories=[])
+        t1 = Template('t1', [getCSSphere()], fragments=frags, boosters=[], factories=[])
 
         # Add the template to Azrael, spawn two instances, and make sure
         # Leonard picks it up so that the object becomes available.
@@ -1403,7 +1414,7 @@ class TestClerk:
 
         # Convenience.
         sv = bullet_data.MotionState()
-        cs = [1, 2, 3, 4]
+        cs = [getCSSphere()]
         vert_1 = list(range(0, 9))
         vert_2 = list(range(9, 18))
 

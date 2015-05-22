@@ -51,7 +51,7 @@ import azrael.physics_interface as physAPI
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, Template
+from azrael.types import typecheck, RetVal, Template, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 
 
@@ -557,6 +557,31 @@ class Clerk(multiprocessing.Process):
         return set(name).issubset(ref)
 
     @typecheck
+    def _verifyCollisionShapes(self, cshapes: (tuple, list)):
+        """
+        fixme: incomplete; untested; good enough for now until its merit is
+        clear.
+        """
+        try:
+            for cs in cshapes:
+                cs = CollShapeMeta(*cs)
+                assert isinstance(cs.name, str)
+                assert isinstance(cs.type, str)
+                assert isinstance(cs.pos, (tuple, list))
+                assert isinstance(cs.rot, (tuple, list))
+
+                assert len(cs.pos) == 3
+                assert len(cs.rot) == 4
+                for _ in cs.pos:
+                    assert isinstance(_, (float, int))
+                for _ in cs.rot:
+                    assert isinstance(_, (float, int))
+            return RetVal(True, None, None)
+        except (AssertionError, TypeError):
+            msg = 'Invalid Collision shape'
+            return RetVal(False, msg, None)
+
+    @typecheck
     def addTemplates(self, templates: list):
         """
         Add all ``templates`` to the system so that they can be spawned.
@@ -605,6 +630,11 @@ class Clerk(multiprocessing.Process):
                     msg = 'One or more fragment names are invalid',
                     return RetVal(False, msg, None)
                 del tmp
+
+                # Ensure all collision shapes are valid.
+                ret = self._verifyCollisionShapes(tt.cs)
+                if not ret.ok:
+                    return RetVal(False, ret.msg, None)
 
                 # Ensure all Boosters and Factories have a sane partID.
                 try:
@@ -840,6 +870,13 @@ class Clerk(multiprocessing.Process):
             database.dbHandles['ObjInstances'].insert(dbDocs)
 
         with util.Timeit('spawn:3 addCmds') as timeit:
+            # Sanity check: collision shapes.
+            for name, sv, objID in zip(t_names, SVs, objIDs):
+                cs = templates[name]['cshape']
+                ret = self._verifyCollisionShapes(cs)
+                if not ret.ok:
+                    return ret
+
             # Compile the list of spawn commands that will be sent to Leonard.
             objs = []
             for name, sv, objID in zip(t_names, SVs, objIDs):
@@ -994,6 +1031,7 @@ class Clerk(multiprocessing.Process):
         :param MotionStateOverride data: new object attributes.
         :return: Success
         """
+        assert False
         ret = physAPI.addCmdModifyStateVariable(objID, data)
         if ret.ok:
             return RetVal(True, None, None)
