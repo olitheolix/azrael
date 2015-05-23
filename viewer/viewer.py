@@ -49,6 +49,7 @@ import azrael.physics_interface as physAPI
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from azrael.types import Template, MetaFragment, FragRaw, FragState
+from azrael.types import CollShapeMeta, CollShapeBox
 
 
 def parseCommandLine():
@@ -575,14 +576,15 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         # Geometry.
         buf_vert = getGeometriesCube()
-        cs = np.array([4, 1, 1, 1])
+        cs = CollShapeBox(1, 1, 1)
+        cs = CollShapeMeta('box', 'player', (0, 0, 0), (0, 0, 0, 1), cs)
         uv = np.array([], np.float64)
         rgb = np.array([], np.uint8)
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'
         frags = [MetaFragment('frag_1', 'raw', FragRaw(buf_vert, uv, rgb))]
-        temp = Template(t_projectile, cs, frags, [], [])
+        temp = Template(t_projectile, [cs], frags, [], [])
         ret = self.client.addTemplates([temp])
         del frags, temp
 
@@ -590,6 +592,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # this script).
         if not ret.ok:
             print('Viewer could not add new template: {}'.format(ret.msg))
+            sys.exit(1)
 
         print('Created template <{}>'.format(t_projectile))
         return t_projectile
@@ -877,8 +880,11 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             self.camera.strafeLeft()
 
         pos = self.camera.position
-        attr = physAPI.MotionStateOverride(position=pos)
+        cs = CollShapeBox(1, 1, 1)
+        cs = CollShapeMeta('box', 'player', (0, 0, 0), (0, 0, 0, 1), cs)
+        attr = physAPI.MotionStateOverride(position=pos, cshape=[cs])
         assert self.client.setStateVariable(self.player_id, attr).ok
+        del cs
 
         # Do not update the camera rotation if the mouse is not grabbed.
         if not self.mouseGrab:

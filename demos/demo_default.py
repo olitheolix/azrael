@@ -50,6 +50,8 @@ del p
 
 from IPython import embed as ipshell
 from azrael.types import Template, MetaFragment, FragRaw, FragState
+from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.types import CollShapeBox
 
 # Convenience.
 MotionStateOverride = physAPI.MotionStateOverride
@@ -230,14 +232,15 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'
-    cs = np.array([3, 1, 1, 1], np.float64)
+    cs = CollShapeSphere(1)
+    cs = CollShapeMeta('sphere', '', (0, 0, 0), (0, 0, 0, 1), cs)
     z = np.array([])
     frags = [
         MetaFragment('frag_1', 'raw', FragRaw(vert, uv, rgb)),
         MetaFragment('b_left', 'raw', FragRaw(vert_b, z, z)),
         MetaFragment('b_right', 'raw', FragRaw(vert_b, z, z)),
     ]
-    temp = Template(tID, cs, frags, [b0, b1, b2, b3], [])
+    temp = Template(tID, [cs], frags, [b0, b1, b2, b3], [])
     assert client.addTemplates([temp]).ok
     del cs, frags, temp, z
     print('done')
@@ -294,7 +297,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     ])
 
     # Convenience.
-    cs = np.array([4, 1, 1, 1], np.float64)
+    cs = CollShapeBox(1, 1, 1)
+    cs = CollShapeMeta('box', '', (0, 0, 0), (0, 0, 0, 1), cs)
     uv = np.array([], np.float64)
     rgb = np.array([], np.uint8)
 
@@ -332,8 +336,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     tID_2 = 'Product2'
     frags_1 = [MetaFragment('frag_1', 'raw', FragRaw(0.75 * vert, uv, rgb))]
     frags_2 = [MetaFragment('frag_1', 'raw', FragRaw(0.24 * vert, uv, rgb))]
-    t1 = Template(tID_1, cs, frags_1, [], [])
-    t2 = Template(tID_2, cs, frags_2, [], [])
+    t1 = Template(tID_1, [cs], frags_1, [], [])
+    t2 = Template(tID_2, [cs], frags_2, [], [])
     assert client.addTemplates([t1, t2]).ok
     del frags_1, frags_2, t1, t2
 
@@ -358,7 +362,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # Add the template.
     tID_3 = 'BoosterCube'
     frags = [MetaFragment('frag_1', 'raw', FragRaw(vert, uv, rgb))]
-    t3 = Template(tID_3, cs, frags, [b0, b1], [f0, f1])
+    t3 = Template(tID_3, [cs], frags, [b0, b1], [f0, f1])
     assert client.addTemplates([t3]).ok
     del frags, t3
 
@@ -387,7 +391,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         tID = ('BoosterCube_{}'.format(ii))
         frags = [MetaFragment('frag_1', 'raw', FragRaw(vert, curUV, rgb)),
                  MetaFragment('frag_2', 'raw', FragRaw(vert, curUV, rgb))]
-        tmp = Template(tID, cs, frags, [b0, b1], [])
+        tmp = Template(tID, [cs], frags, [b0, b1], [])
         templates.append(tmp)
 
         # Add the templateID to a dictionary because we will need it in the
