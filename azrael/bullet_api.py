@@ -216,8 +216,9 @@ class PyBulletDynamicsWorld():
         # Convenience.
         body = self.rigidBodies[objID]
 
-        # fixme: must come from collision shape
-        scale = body.azrael[1].scale
+        # fixme: scale is a vector quantity in Bullet and a scalar in Azrael.
+        scale = np.mean(body.getCollisionShape().getLocalScaling().topy())
+        scale = float(scale)
 
         # Determine rotation and position.
         rot = body.getCenterOfMassTransform().getRotation().topy()
@@ -238,10 +239,8 @@ class PyBulletDynamicsWorld():
 
         # Construct a new _MotionState structure and add it to the list
         # that will eventually be returned to the caller.
-        # fixme: do not use azrael[1].scale but query the scale from the
-        # collisionShape object
         csname = body.getCollisionShape().getChildShape(0).getName()
-        out = _MotionState(body.azrael[1].scale, body.getInvMass(),
+        out = _MotionState(scale, body.getInvMass(),
                            body.getRestitution(), rot, pos, vLin, vRot,
                            cshape, axesLockLin, axesLockRot, 0)
         return RetVal(True, None, out)
@@ -451,7 +450,7 @@ class PyBulletDynamicsWorld():
             tot_mass += obj_mass
             tot_inertia += inertia
 
-        # Apply the scale.
+        # Apply the scale. (fixme: should be a vector quantity).
         compound.setLocalScaling(Vec3(obj.scale, obj.scale, obj.scale))
 
         return RetVal(True, None, (tot_mass, tot_inertia, compound))
