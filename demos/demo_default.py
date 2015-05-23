@@ -123,6 +123,11 @@ def loadBoosterCubeBlender():
     # Extract the body and thruster component.
     body, thruster_z = np.array(vert[0]), np.array(vert[1])
 
+    # The body should be a unit cube, but I do not know what Blender created
+    # exactly. Therefore, determine the average position values (which should
+    # all have the same value except for the sign).
+    body_scale = np.mean(np.abs(body))
+
     # Reduce the thruster size, translate it to the cube's surface, and
     # duplicate on -z axis.
     thruster_z = 0.3 * np.reshape(thruster_z, (len(thruster_z) // 3, 3))
@@ -149,8 +154,10 @@ def loadBoosterCubeBlender():
     thruster_x = thruster_x.flatten()
     thruster_y = thruster_y.flatten()
 
-    # Combine all thrusters and the body into a single triangle mesh.
+    # Combine all thrusters and the body into a single triangle mesh. Then
+    # scale the entire mesh to ensure the cube part is indeed a unit cube.
     vert = np.hstack((thruster_z, thruster_x, thruster_y, body))
+    vert /= body_scale
 
     # Assign the same base color to all three thrusters.
     rgb_thruster = np.tile([0.8, 0, 0], len(thruster_x) // 3)
@@ -285,8 +292,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # Get a Client instance.
     client = azrael.client.Client()
 
-    # Cube vertices.
-    vert = 0.5 * np.array([
+    # Vertices that define a Cube.
+    vert = 1 * np.array([
         -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
         -1.0, -1.0, -1.0,   -1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,
         +1.0, -1.0, -1.0,   +1.0, +1.0, +1.0,   +1.0, -1.0, +1.0,
