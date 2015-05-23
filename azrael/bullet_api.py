@@ -216,10 +216,6 @@ class PyBulletDynamicsWorld():
         # Convenience.
         body = self.rigidBodies[objID]
 
-        # fixme: scale is a vector quantity in Bullet and a scalar in Azrael.
-        scale = np.mean(body.getCollisionShape().getLocalScaling().topy())
-        scale = float(scale)
-
         # Determine rotation and position.
         rot = body.getCenterOfMassTransform().getRotation().topy()
         pos = body.getCenterOfMassTransform().getOrigin().topy()
@@ -228,14 +224,18 @@ class PyBulletDynamicsWorld():
         vLin = body.getLinearVelocity().topy()
         vRot = body.getAngularVelocity().topy()
 
-        # Dummy value for the collision shape.
-        # fixme: this must be the JSON version of collisionShape
-        #        description.
-        cshape = body.azrael[1].cshape
-
         # Linear/angular damping factors.
         axesLockLin = body.getLinearFactor().topy()
         axesLockRot = body.getAngularFactor().topy()
+
+        # Bullet does not support scaling collision shape (actually, it does,
+        # but it is frought with problems). Therefore, we may thus copy the
+        # 'scale' value from the object's meta data.
+        scale = body.azrael[1].scale
+
+        # Bullet will never modify the Collision shape. We may thus use the
+        # information from the object's meta data.
+        cshape = body.azrael[1].cshape
 
         # Construct a new _MotionState structure and add it to the list
         # that will eventually be returned to the caller.
@@ -422,10 +422,11 @@ class PyBulletDynamicsWorld():
 
             # Determine which CollisionShape to instantiate.
             csname = cs.type.upper()
+            csgeo = [obj.scale * _ for _ in cs.cs]
             if csname == 'SPHERE':
-                child = azBullet.SphereShape(*cs.cs)
+                child = azBullet.SphereShape(*csgeo)
             elif csname == 'BOX':
-                child = azBullet.BoxShape(Vec3(*cs.cs))
+                child = azBullet.BoxShape(Vec3(*csgeo))
             elif csname == 'EMPTY':
                 child = azBullet.EmptyShape()
             else:
@@ -449,9 +450,6 @@ class PyBulletDynamicsWorld():
             compound.addChildShape(t, child)
             tot_mass += obj_mass
             tot_inertia += inertia
-
-        # Apply the scale. (fixme: should be a vector quantity).
-        compound.setLocalScaling(Vec3(obj.scale, obj.scale, obj.scale))
 
         return RetVal(True, None, (tot_mass, tot_inertia, compound))
 

@@ -475,7 +475,8 @@ class TestBulletAPI:
         To test this we create two spheres that do not touch, which means
         nothing must happen during a physics update. Then we enlarge one sphere
         so that it touchs the other. This time Bullet must pick up on the
-        interpenetration and modify the sphere's position (somehow).
+        interpenetration and modify the sphere's position somehow (we do not
+        really care how).
         """
         # Constants and parameters for this test.
         objID_a, objID_b = 10, 20
@@ -483,8 +484,9 @@ class TestBulletAPI:
         pos_b = [3, 0, 0]
 
         # Create two identical spheres, one left, one right (x-axis).
-        cs_a = [getCSSphere('csfoo')]
-        cs_b = [getCSSphere('csbar')]
+        radius = 2
+        cs_a = [getCSSphere('csfoo', radius=radius)]
+        cs_b = [getCSSphere('csbar', radius=radius)]
         obj_a = bullet_data.MotionState(position=pos_a, cshape=cs_a)
         obj_b = bullet_data.MotionState(position=pos_b, cshape=cs_b)
         del cs_a, cs_b, pos_a, pos_b
@@ -499,40 +501,28 @@ class TestBulletAPI:
         bullet.setObjectData(objID_b, obj_b)
         bullet.compute([objID_a, objID_b], 1.0, 60)
 
-        # Verify that the collision shapes are as expected.
-        ret = bullet.getObjectData(objID_a)
-        assert ret.ok
-        assert ret.data.cshape[0].name.upper() == 'CSFOO'
+        # Request the object back and inspect the collision shapes.
+        ret_a = bullet.getObjectData(objID_a)
+        ret_b = bullet.getObjectData(objID_b)
+        assert ret_a.ok and ret_b.ok
+        assert ret_a.data.cshape[0].name.upper() == 'CSFOO'
+        assert ret_b.data.cshape[0].name.upper() == 'CSBAR'
         tmp_cs = bullet.rigidBodies[objID_a].getCollisionShape()
-        assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
-
-        ret = bullet.getObjectData(objID_b)
-        assert ret.ok
-        assert ret.data.cshape[0].name.upper() == 'CSBAR'
+        assert tmp_cs.getChildShape(0).getRadius() == radius
         tmp_cs = bullet.rigidBodies[objID_b].getCollisionShape()
-        assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
+        assert tmp_cs.getChildShape(0).getRadius() == radius
 
-        # Enlarge the second object so that the spheres do not overlap.  Then
-        # step the simulation again to ensure Bullet accesses each object and
-        # nothing bad happens (eg a segfault).
+        # Enlarge the second object so that the spheres do not overlap.
         obj_b = obj_b._replace(scale=2.5)
         bullet.setObjectData(objID_b, obj_b)
-        bullet.compute([objID_a, objID_b], 1.0, 60)
-
-        # Progress the simulation for one second. Bullet must move the objects
-        # away from each other (in y-direction only).
-        bullet.compute([objID_a, objID_b], 1.0, 60)
-        ret = bullet.getObjectData(objID_a)
-        assert ret.ok
-        assert ret.data.cshape[0].name.upper() == 'CSFOO'
-        tmp_cs = bullet.rigidBodies[objID_a].getCollisionShape()
-        assert tmp_cs.getLocalScaling().topy() == (1.0, 1.0, 1.0)
-
         ret = bullet.getObjectData(objID_b)
         assert ret.ok
-        assert ret.data.cshape[0].name.upper() == 'CSBAR'
         tmp_cs = bullet.rigidBodies[objID_b].getCollisionShape()
-        assert tmp_cs.getLocalScaling().topy() == (2.5, 2.5, 2.5)
+        assert tmp_cs.getChildShape(0).getRadius() == 2.5 * radius
+
+        # Then step the simulation again to ensure Bullet accesses each object
+        # and nothing bad happens (eg a segfault).
+        bullet.compute([objID_a, objID_b], 1.0, 60)
 
     def test_modify_cshape(self):
         """
