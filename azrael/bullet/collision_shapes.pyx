@@ -102,6 +102,9 @@ cdef class SphereShape(ConvexInternalShape):
         if self.ptr_SphereShape != NULL:
             del self.ptr_SphereShape
 
+    def getRadius(self):
+        return <double> self.ptr_SphereShape.getRadius()
+
 
 cdef class PolyhedralConvexShape(ConvexInternalShape):
     cdef btPolyhedralConvexShape *ptr_PolyhedralConvexShape
@@ -128,6 +131,16 @@ cdef class BoxShape(PolyhedralConvexShape):
     def __dealloc__(self):
         if self.ptr_BoxShape != NULL:
             del self.ptr_BoxShape
+
+    def getHalfExtentsWithMargin(self):
+        v = Vec3(0, 0, 0)
+        v.ptr_Vector3[0] = self.ptr_BoxShape.getHalfExtentsWithMargin()
+        return v
+
+    def getHalfExtentsWithoutMargin(self):
+        v = Vec3(0, 0, 0)
+        v.ptr_Vector3[0] = self.ptr_BoxShape.getHalfExtentsWithoutMargin()
+        return v
 
 
 cdef class CompoundShape(CollisionShape):

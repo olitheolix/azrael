@@ -20,9 +20,12 @@ cdef extern from "btBulletDynamicsCommon.h":
 
     cdef cppclass btBoxShape:
         btBoxShape(btVector3)
+        btVector3 getHalfExtentsWithMargin()
+        const btVector3 &getHalfExtentsWithoutMargin()
 
     cdef cppclass btSphereShape:
         btSphereShape(btScalar radius)
+        btScalar getRadius()
 
     cdef cppclass btConcaveShape:
         btConcaveShape()

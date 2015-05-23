@@ -394,16 +394,19 @@ class TestRigidBody:
         # Get RigidBody object.
         body = getRB()
 
-        sphere = SphereShape(1.5)
-        box = BoxShape(Vec3(1, 2, 3))
+        radius, extent = 1.5, Vec3(1, 2, 3)
+        sphere = SphereShape(radius)
+        box = BoxShape(extent)
 
         # Specify a Sphere shape.
         body.setCollisionShape(sphere)
         assert body.getCollisionShape().getName() == b'SPHERE'
+        assert body.getCollisionShape().getRadius() == radius
 
         # Change to Box shape.
         body.setCollisionShape(box)
         assert body.getCollisionShape().getName() == b'Box'
+        assert body.getCollisionShape().getHalfExtentsWithMargin() == extent
 
     def test_calculateLocalInertia(self):
         """
@@ -504,6 +507,10 @@ class TestCollisionShapes:
         cs_s = SphereShape(3)
         cs_b = BoxShape(Vec3(1, 2, 3))
         cs_e = EmptyShape()
+
+        # Verify the dimensions of the sphere and the box.
+        assert cs_s.getRadius() == 3
+        assert cs_b.getHalfExtentsWithMargin() == Vec3(1, 2, 3)
 
         # Put the collision shapes into a dictionary where the key is the
         # expected name.
