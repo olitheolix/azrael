@@ -408,6 +408,11 @@ class PyBulletDynamicsWorld():
         tot_mass = 0
         tot_inertia = Vec3(0, 0, 0)
 
+        if obj.imass > 1E-4:
+            obj_mass = 1.0 / obj.imass
+        else:
+            obj_mass = 0
+
         # Create the collision shapes one by one.
         for cs in obj.cshape:
             # Convert the input data to a CollShapeMeta tuple. This is
@@ -429,29 +434,21 @@ class PyBulletDynamicsWorld():
                 msg = 'Unrecognised collision shape <{}>'.format(csname)
                 self.logit.warning(msg)
 
-            # Ask Bullet to compute the mass and inertia for us. The inertia
-            # will be passed as a reference whereas the 'mass' is irrelevant
-            # due to how the C++ function was wrapped.
-            mass = 1.0 / obj.imass
-            if obj.imass > 1E-4:
-                # The calculate_local_inertia function will update the
-                # `inertia` variable directly.
-                inertia = child.calculateLocalInertia(mass)
-            else:
-                inertia = Vec3(0, 0, 0)
+            # Let Bullet compute the local inertia of the body.
+            inertia = child.calculateLocalInertia(obj_mass)
 
             # Compute inertia magnitude and warn about unreasonable values.
-            l = np.array(inertia.topy())
-            l = np.dot(l, l)
-            if not (1E-5 < l < 20):
-                self.logit.warning('Inertia = {:.1E}'.format(l))
-            del l
+            tmp = np.array(inertia.topy())
+            if not (1E-5 < np.sqrt(np.dot(tmp, tmp)) < 100):
+                msg = 'Inertia = ({:.1E}, {:.1E}, {:.1E})'
+                self.logit.warning(msg.format(*inertia.topy()))
+            del tmp
 
             # Add the collision shape at the respective position and
             # orientation relative to the parent.
             t = azBullet.Transform(Quaternion(*cs.rot), Vec3(*cs.pos))
             compound.addChildShape(t, child)
-            tot_mass += mass
+            tot_mass += obj_mass
             tot_inertia += inertia
 
         # Apply the scale.
