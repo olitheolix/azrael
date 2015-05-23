@@ -29,11 +29,15 @@ import os
 import sys
 import time
 import argparse
+import PIL.Image
 import subprocess
 import multiprocessing
 
+# Import 'setproctitle' *before* NumPy, even though it is not even used
+# in this script. Howver, if it is import after NumPy then the various Azrael
+# modules cannot rename themselves. No, I do not know why.
+import setproctitle
 import numpy as np
-import PIL.Image
 
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
@@ -52,6 +56,7 @@ from IPython import embed as ipshell
 from azrael.types import Template, MetaFragment, FragRaw, FragState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox
+
 
 # Convenience.
 MotionStateOverride = physAPI.MotionStateOverride
