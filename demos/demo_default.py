@@ -237,8 +237,8 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'
-    cs = CollShapeSphere(1)
-    cs = CollShapeMeta('sphere', '', (0, 0, 0), (0, 0, 0, 1), cs)
+    cs = CollShapeBox(1, 1, 1)
+    cs = CollShapeMeta('box', '', (0, 0, 0), (0, 0, 0, 1), cs)
     z = np.array([])
     frags = [
         MetaFragment('frag_1', 'raw', FragRaw(vert, uv, rgb)),
