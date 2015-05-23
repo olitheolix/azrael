@@ -283,6 +283,7 @@ class PyBulletDynamicsWorld():
            not (np.array_equal(old.cshape, obj.cshape)):
             # Create a new collision shape.
             mass, inertia, cshape = self.compileCollisionShape(objID, obj).data
+            del mass, inertia
 
             # Replace the existing collision shape with the new one.
             body.setCollisionShape(cshape)
