@@ -1,4 +1,4 @@
-# Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
+# Copyright 2015, Oliver Nagy <olitheolix@gmail.com>
 #
 # This file is part of Azrael (https://github.com/olitheolix/azrael)
 #
