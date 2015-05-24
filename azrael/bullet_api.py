@@ -34,6 +34,7 @@ from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _MotionState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox
+from azrael.types import ConstraintMeta, ConstraintP2P
 
 # Convenience.
 Vec3 = azBullet.Vec3
@@ -339,13 +340,15 @@ class PyBulletDynamicsWorld():
             # constraint could not be constructed (eg the constraint name is
             # unknown).
             if c.type.upper() == 'P2P':
+                tmp = ConstraintP2P(*c.data)
                 out = azBullet.Point2PointConstraint(
                     rb_a, rb_b,
-                    Vec3(*c.data.pivot_a),
-                    Vec3(*c.data.pivot_b)
+                    Vec3(*tmp.pivot_a),
+                    Vec3(*tmp.pivot_b)
                 )
             else:
                 assert False
+
             # Return the Bullet constraint object.
             return out
 
