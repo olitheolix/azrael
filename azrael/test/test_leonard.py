@@ -1,5 +1,6 @@
 import pytest
 import subprocess
+import azrael.igor
 import azrael.leonard
 import azrael.database
 import azrael.vectorgrid
@@ -12,6 +13,7 @@ from IPython import embed as ipshell
 from azrael.test.test_bullet_api import isEqualBD
 from azrael.types import CollShapeBox, CollShapeSphere
 from azrael.types import CollShapeMeta, CollShapeEmpty
+from azrael.types import ConstraintMeta, ConstraintP2P
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 
 
@@ -51,18 +53,18 @@ class TestLeonardAllEngines:
     @classmethod
     def setup_class(cls):
         assert azrael.vectorgrid.deleteAllGrids().ok
+        cls.igor = azrael.igor.Igor()
 
     @classmethod
     def teardown_class(cls):
         assert azrael.vectorgrid.deleteAllGrids().ok
 
-    @classmethod
-    def teardown_method(self, method):
-        pass
-
-    @classmethod
     def setup_method(self, method):
         assert azrael.vectorgrid.deleteAllGrids().ok
+        self.igor.reset()
+
+    def teardown_method(self, method):
+        pass
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_getGridForces(self, clsLeonard):
@@ -409,15 +411,16 @@ class TestLeonardAllEngines:
 class TestLeonardOther:
     @classmethod
     def setup_class(cls):
-        pass
+        cls.igor = azrael.igor.Igor()
 
     @classmethod
     def teardown_class(cls):
-        pass
+        cls.igor.reset()
 
     def setup_method(self, method):
         assert azrael.vectorgrid.deleteAllGrids().ok
         azrael.database.init()
+        self.igor.reset()
 
     def teardown_method(self, method):
         pass
@@ -723,7 +726,7 @@ class TestLeonardOther:
         sv = bullet_data.MotionState(imass=1)
         objID, aabb = 1, 1
 
-        # Spawn two objects.
+        # Spawn object.
         assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
         leo.processCommandsAndSync()
 
@@ -851,3 +854,39 @@ class TestLeonardOther:
         assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
         leo.processCommandsAndSync()
         assert leo.totalForceAndTorque(objID) == ([1, 2, 3], [4, 5, 6])
+
+    def test_constraint_p2p(self):
+        """
+        Link two bodies together with a Point2Point constraint.
+
+        For this test I will use `LeonardSweeping`.
+        """
+        # Get a Leonard- and Igor instance.
+        leo = getLeonard(azrael.leonard.LeonardSweeping)
+
+        # Convenience.
+        id_a, id_b, aabb = 1, 2, 1
+        pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
+        sv_a = bullet_data.MotionState(position=pos_a)
+        sv_b = bullet_data.MotionState(position=pos_b)
+
+        # Specify the constraints.
+        p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
+        self.igor.add(ConstraintMeta('p2p', id_a, id_b, p2p))
+
+        # Spawn both objects.
+        assert physAPI.addCmdSpawn([(id_a, sv_a, aabb), (id_b, sv_b, aabb)]).ok
+        leo.processCommandsAndSync()
+
+        # Apply a force to the left sphere only.
+        assert physAPI.addCmdDirectForce(id_a, [-10, 0, 0], [0, 0, 0]).ok
+        leo.processCommandsAndSync()
+
+        # Both object must have move the same distance 'delta' because they are
+        # linked.
+        leo.step(1.0, 60)
+        delta_a = leo.allObjects[id_a].position - np.array(pos_a)
+        delta_b = leo.allObjects[id_b].position - np.array(pos_b)
+        assert delta_a[0] < pos_a[0]
+        assert np.allclose(delta_a, delta_b)
+        assert False
