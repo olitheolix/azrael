@@ -29,6 +29,7 @@ import setproctitle
 import multiprocessing
 import numpy as np
 
+import azrael.igor
 import azrael.database
 import azrael.vectorgrid
 import azrael.util as util
@@ -38,7 +39,7 @@ import azrael.physics_interface as physAPI
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import _MotionState
+from azrael.types import _MotionState, ConstraintMeta
 from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Convenience.
@@ -162,7 +163,50 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
 
     # Convert the labels back to object IDs.
     out = [[IDs[objID] for objID in objIDs] for objIDs in stage_2]
+
+    # Merge the sets that are linked via a constraint.
+    out = mergeConstraintSets(out).data
+
+    # Return the sets.
     return RetVal(True, None, out)
+
+
+def mergeConstraintSets(data: (tuple, list)):
+    """
+    fixme:
+      - must expect a list of ConstraintMeta objects
+      - must not instantiate an Igor every time
+      - please, implement something more elegant!
+    """
+    igor = azrael.igor.Igor()
+    flat = []
+    for _ in data:
+        flat.extend(_)
+    constr = []
+    for f in flat:
+        tmp = igor.get(f).data
+        if len(tmp) == 0:
+            continue
+        tmp = [ConstraintMeta(**_) for _ in tmp]
+        tmp = [(_.rb_a, _.rb_b) for _ in tmp]
+        constr.extend(tmp)
+    constr = set(constr)
+
+    for a, b in constr:
+        idx_a = [ii for ii, _ in enumerate(data) if a in _]
+        assert len(idx_a) < 2
+        if len(idx_a) == 0:
+            continue
+        val_a = data.pop(idx_a[0])
+        idx_b = [ii for ii, _ in enumerate(data) if b in _]
+        assert len(idx_b) < 2
+        if len(idx_b) == 0:
+            data.append(val_a)
+            continue
+        val_b = data.pop(idx_b[0])
+
+        data.append(val_a + val_b)
+    return RetVal(True, None, data)
 
 
 class LeonardBase(multiprocessing.Process):
@@ -561,6 +605,9 @@ class LeonardSweeping(LeonardBullet):
         # Convenience.
         vg = azrael.vectorgrid
 
+        # fixme: must be an instance variable.
+        igor = azrael.igor.Igor()
+
         # Process all subsets individually.
         for subset in collSets:
             # Compile the subset dictionary for the current collision set.
@@ -578,6 +625,7 @@ class LeonardSweeping(LeonardBullet):
             del ret, idPos
 
             # Iterate over all objects and update them.
+            constr = []
             for objID, sv in coll_SV.items():
                 # Pass the SV data from the DB to Bullet.
                 self.bullet.setObjectData(objID, sv)
@@ -591,9 +639,37 @@ class LeonardSweeping(LeonardBullet):
                 # Apply the final force to the object.
                 self.bullet.applyForceAndTorque(objID, force, torque)
 
+                # Query the constraints (if any) for this object.
+                # fixme: move this call out of this loop and replace it with a
+                # single call to 'get' that accepts a list of IDs and returns
+                # only *uniqu* constraints.
+                tmp = igor.get(objID)
+                if tmp.ok and len(tmp.data) > 0:
+                    constr.extend([ConstraintMeta(**_) for _ in tmp.data])
+
+            # Filter the constraints.
+            # fixme: this step must become redundant once Igor.get() accepts
+            # lists and returns only unique constraints.
+            constr_filtered = {}
+            for c in constr:
+                key = (c.rb_a, c.rb_b, c.type)
+                if key not in constr_filtered:
+                    constr_filtered[key] = c
+                del key, c
+            constr = list(constr_filtered.values())
+            del constr_filtered
+
+            # Apply the constraints.
+            if not self.bullet.setConstraints(constr).ok:
+                # fixme: log a message here and move on.
+                assert False
+
             # Wait for Bullet to advance the simulation by one step.
             with util.Timeit('compute') as timeit:
                 self.bullet.compute(list(coll_SV.keys()), dt, maxsteps)
+
+            # Remove all constraints.
+            self.bullet.clearAllConstraints()
 
             # Retrieve all objects from Bullet.
             for objID, sv in coll_SV.items():

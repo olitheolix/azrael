@@ -27,6 +27,10 @@ class Igor:
     """
     fixme:
      - return error if objects do not exist?
+     - add: accept list argument
+     - get: accept list argument; must only return unique constraints; must
+            return ConstraintMeta tuples (not necessary to wrap the data in its
+            respective eg ConstraintsP2P tuple)
     """
     def __init__(self):
         self.db = database.dbHandles['Constraints']

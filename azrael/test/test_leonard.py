@@ -278,8 +278,8 @@ class TestLeonardAllEngines:
     @pytest.mark.parametrize('dim', [0, 1, 2])
     def test_computeCollisionSetsAABB(self, dim):
         """
-        Create a sequence of 10 test objects. Their position only
-        differs in the ``dim`` dimension.
+        Create a sequence of 10 test objects. Their positions only
+        differ in the ``dim`` dimension.
 
         Then use subsets of these 10 objects to test basic collision detection.
         """
@@ -855,9 +855,69 @@ class TestLeonardOther:
         leo.processCommandsAndSync()
         assert leo.totalForceAndTorque(objID) == ([1, 2, 3], [4, 5, 6])
 
+    def test_mergeConstraintSets(self):
+        """
+        Create a few disjoint sets, specify some constraints, and verify that
+        they are merged correctly.
+        """
+        def checkEqual(_src, _dst):
+            ret = azrael.leonard.mergeConstraintSets(_src)
+            assert ret.ok
+            _ret = [set(tuple(_)) for _ in ret.data]
+            _dst = [set(tuple(_)) for _ in _dst]
+            assert len(_ret) == len(_dst)
+            for _ in _ret:
+                assert _ in _dst
+
+        # Empty set.
+        self.igor.reset()
+        assert azrael.leonard.mergeConstraintSets([]) == (True, None, [])
+        checkEqual([], [])
+
+        # Set with only one subset.
+        self.igor.reset()
+        assert azrael.leonard.mergeConstraintSets([[1]]) == (True, None, [[1]])
+        assert azrael.leonard.mergeConstraintSets([[1, 2, 3]]) == (True, None, [[1, 2, 3]])
+        checkEqual([[1]], [[1]])
+        checkEqual([[1, 2, 3]], [[1, 2, 3]])
+
+        # Two disjoint sets.
+        self.igor.reset()
+        s = [[1], [2]]
+        checkEqual(s, s)
+        assert self.igor.add(ConstraintMeta('p2p', 1, 2, None)).ok
+        checkEqual(s, [[1, 2]])
+        self.igor.reset()
+        checkEqual(s, s)
+
+        # Two disjoint sets but the constraint does not link them.
+        self.igor.reset()
+        s = [[1], [2]]
+        checkEqual(s, s)
+        assert self.igor.add(ConstraintMeta('p2p', 1, 3, None)).ok
+        checkEqual(s, s)
+
+        # Three disjoint sets and the constraint links two of them.
+        self.igor.reset()
+        s = [[1, 2, 3], [4, 5], [6]]
+        checkEqual(s, s)
+        assert self.igor.add(ConstraintMeta('p2p', 1, 6, None)).ok
+        checkEqual(s, [[1, 2, 3, 6], [4, 5]])
+
+        # Three disjoint sets and two constraint link both of them.
+        self.igor.reset()
+        s = [[1, 2, 3], [4, 5], [6]]
+        checkEqual(s, s)
+        assert self.igor.add(ConstraintMeta('p2p', 1, 6, None)).ok
+        assert self.igor.add(ConstraintMeta('p2p', 3, 4, None)).ok
+        checkEqual(s, [[1, 2, 3, 6, 4, 5]])
+
     def test_constraint_p2p(self):
         """
         Link two bodies together with a Point2Point constraint.
+
+        # fixme: update docu here once it works for ZeroMQ engine (and maybe
+        plain Leonard.Bullet engine).
 
         For this test I will use `LeonardSweeping`.
         """
@@ -889,4 +949,16 @@ class TestLeonardOther:
         delta_b = leo.allObjects[id_b].position - np.array(pos_b)
         assert delta_a[0] < pos_a[0]
         assert np.allclose(delta_a, delta_b)
+
+    def test_constraint_p2p_zmq(self):
+        """
+        Same as 'test_constraint_p2p_sweeping' but this time the engine is
+        LeonardZeroMQ. The major difference is therefore that the constraints
+        must be distributed via the work packages.
+        """
+        # fixme: implement this test.
+
+        # When this test works the merge it with the previous one and use a
+        # pytest decorator to run it for both engine types. Can I also use the
+        # leonard.Bullet engine?
         assert False
