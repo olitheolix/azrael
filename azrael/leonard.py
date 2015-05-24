@@ -24,7 +24,6 @@ import zmq
 import time
 import signal
 import pickle
-import pymongo
 import logging
 import setproctitle
 import multiprocessing
