@@ -39,7 +39,8 @@ dbHandles = {
     'Commands': client[dbName]['Cmd'],
     'Templates': client[dbName]['template'],
     'ObjInstances': client[dbName]['objinstances'],
-    'Counters': client[dbName]['Counters']
+    'Counters': client[dbName]['Counters'],
+    'Constraints': client[dbName]['Constraints'],
 }
 
 
