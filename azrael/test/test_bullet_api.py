@@ -622,15 +622,15 @@ class TestBulletAPI:
         bullet.applyForceAndTorque(id_a, (-10, 0, 0), (0, 0, 0))
 
         # Step the simulation. Both objects must have moved (almost) exactly
-        # the same amount to the left.
+        # the same amount "delta".
         bullet.compute([id_a, id_b], 1.0, 60)
         ret_a = bullet.getObjectData(id_a)
         ret_b = bullet.getObjectData(id_b)
         assert ret_a.ok and ret_b.ok
-        pos_diff_a = np.array(ret_a.data.position) - np.array(pos_a)
-        pos_diff_b = np.array(ret_b.data.position) - np.array(pos_b)
-        assert np.allclose(pos_diff_a, pos_diff_b)
-        assert pos_diff_a[1] == pos_diff_a[2] == 0
+        delta_a = np.array(ret_a.data.position) - np.array(pos_a)
+        delta_b = np.array(ret_b.data.position) - np.array(pos_b)
+        assert np.allclose(delta_a, delta_b)
+        assert delta_a[1] == delta_a[2] == 0
 
         # Remove all constraints (do it twice to test the case when there are
         # no constraints).

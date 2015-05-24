@@ -85,7 +85,7 @@ def getUniqueObjectIDs(numIDs: int):
     # Extract the new counter value (after it was incremented).
     cnt = doc['cnt']
 
-    # Return the either the current value or the range of new IDs.
+    # Return either the current value or the range of new IDs.
     if numIDs == 0:
         return RetVal(True, None, cnt)
     else:

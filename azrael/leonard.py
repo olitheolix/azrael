@@ -614,9 +614,6 @@ class LeonardDistributedZeroMQ(LeonardBase):
     Package is self contained and holds all the information Bullet requires to
     step the simulation.
 
-    This class is single threaded. All Bullet engines run sequentially in the
-    main thread. The work packages are distributed at random to the engines.
-
     This class uses the sweeping algorithm to determine collision sets, just
     like ``LeonardSweeping`` does.
     """
