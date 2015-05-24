@@ -1552,6 +1552,54 @@ class TestClerk:
         clacks.terminate()
         clacks.join()
 
+    def test_createConstraints(self):
+        """
+        Spawn two rigid bodies and define a Point2Point constraint among them.
+        """
+        # Reset the SV database and instantiate a Leonard and a Clerk.
+        leo = getLeonard()
+        clerk = azrael.clerk.Clerk()
+
+        # Parameters and constants for this test.
+        id_a, id_b = 1, 2
+        templateID = '_templateSphere'
+
+        # Define two spherical collision shapes at x=+/-2. Since the default
+        # sphere is a unit sphere this ensures that the spheres do not touch
+        # each other, but have a gap of 2 Meters between them.
+        pos_a, pos_b = (0, 0, -2), (0, 0, 2)
+        sv_a = bullet_data.MotionState(position=pos_a)
+        sv_b = bullet_data.MotionState(position=pos_b)
+
+        # Spawn the two bodies with a constraint among them.
+        templates = [(templateID, sv_a), (templateID, sv_b)]
+        ret = clerk.spawn(templates)
+        assert (ret.ok, ret.data) == (True, (id_a, id_b))
+
+        # Verify that both objects were spawned (simply query their template
+        # original template to establish that they now actually exist).
+        leo.processCommandsAndSync()
+        ret_a = clerk.getTemplateID(id_a)
+        ret_b = clerk.getTemplateID(id_b)
+        assert ret_a.ok and ret_b.ok
+        assert ret_a.data == ret_b.data == templateID
+
+        # Define the constraints.
+        p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
+        constraints = [ConstraintMeta('p2p', id_a, id_b, p2p)]
+        assert clerk.createConstraints(constraints).ok
+
+        # Apply a force that will pull the left object further to the left.
+        # However, both objects must move because they are linked together.
+        assert clerk.setForce(id_a, (-10, 0, 0), (0, 0, 0)).ok
+        leo.processCommandsAndSync()
+        ret = clerk.getStateVariables([id_a, id_b])
+        assert ret.ok
+        pos_a2, pos_b2 = ret.data[id_a]['position'], ret.data[id_b]['position']
+        delta_a = np.array(pos_a2) - np.array(pos_a)
+        delta_b = np.array(pos_b2) - np.array(pos_b)
+        assert np.allclose(delta_a, delta_b)
+
 
 def test_invalid():
     """
