@@ -56,24 +56,19 @@ class TestClerk:
     def setup_method(self, method):
         self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
-
-    def teardown_method(self, method):
-        self.dibbler.reset()
-
-    def setup_method(self, method):
         azrael.database.init()
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        clerk = azrael.clerk.Clerk()
         frag = [MetaFragment('NoName', 'raw', createFragRaw())]
         t1 = Template('_templateNone', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
-        ret = clerk.addTemplates([t1, t2, t3])
+        ret = self.clerk.addTemplates([t1, t2, t3])
         assert ret.ok
 
     def teardown_method(self, method):
+        self.dibbler.reset()
         azrael.database.init()
 
     def test_get_default_templates(self):
