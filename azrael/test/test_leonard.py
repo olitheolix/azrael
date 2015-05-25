@@ -949,8 +949,8 @@ class TestLeonardOther:
         assert physAPI.addCmdDirectForce(id_a, [-10, 0, 0], [0, 0, 0]).ok
         leo.processCommandsAndSync()
 
-        # Both object must have move the same distance 'delta' because they are
-        # linked.
+        # Both object must have moved the same distance 'delta' because they
+        # are linked.
         leo.step(1.0, 60)
         delta_a = leo.allObjects[id_a].position - np.array(pos_a)
         delta_b = leo.allObjects[id_b].position - np.array(pos_b)

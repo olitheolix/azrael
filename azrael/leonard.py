@@ -165,19 +165,13 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     # Convert the labels back to object IDs.
     out = [[IDs[objID] for objID in objIDs] for objIDs in stage_2]
 
-    # Merge the sets that are linked via a constraint.
-    out = mergeConstraintSets(out).data
-
     # Return the sets.
     return RetVal(True, None, out)
 
 
 def mergeConstraintSets(uniquePairs: tuple, data: (tuple, list)):
     """
-    fixme:
-      - must expect a list of ConstraintMeta objects
-      - must not instantiate an Igor every time
-      - please, implement something more elegant!
+    fixme: docu
     """
     # Merge the collision sets that are linked via constraints.
     for (a, b) in uniquePairs:
@@ -564,6 +558,11 @@ class LeonardSweeping(LeonardBullet):
     This class is single threaded and uses a single Bullet instance to
     sequentially update the physics for each collision set.
     """
+    def __init__(self, *args, **kwargs):
+        # fixme: move this into LeonardBase?
+        super().__init__(*args, **kwargs)
+        self.igor = azrael.igor.Igor()
+
     @typecheck
     def step(self, dt, maxsteps):
         """
@@ -580,22 +579,32 @@ class LeonardSweeping(LeonardBullet):
         """
         self.processCommandQueue()
 
+        # fixme: combine the CCS and merging into a single method to avoid code
+        # duplication in LeonardDistributedZeroMQ.
         # Compute the collision sets.
         with util.Timeit('CCS') as timeit:
             collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
-        if not collSets.ok:
-            self.logit.error('ComputeCollisionSetsAABB returned an error')
-            sys.exit(1)
-        collSets = collSets.data
+            if not collSets.ok:
+                self.logit.error('ComputeCollisionSetsAABB returned an error')
+                sys.exit(1)
+            collSets = collSets.data
+
+            uniquePairs = self.igor.getUniquePairs()
+            if not uniquePairs.ok:
+                self.logit.error('Igor.getUniquePairs returned an error')
+            else:
+                collSets = mergeConstraintSets(uniquePairs.data, collSets)
+                if not collSets.ok:
+                    self.logit.error('mergeConstraintSets returned an error')
+                    sys.exit(1)
+                del uniquePairs
+            collSets = collSets.data
 
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
 
         # Convenience.
         vg = azrael.vectorgrid
-
-        # fixme: must be an instance variable.
-        igor = azrael.igor.Igor()
 
         # Process all subsets individually.
         for subset in collSets:
@@ -628,28 +637,13 @@ class LeonardSweeping(LeonardBullet):
                 # Apply the final force to the object.
                 self.bullet.applyForceAndTorque(objID, force, torque)
 
-                # Query the constraints (if any) for this object.
-                # fixme: move this call out of this loop and replace it with a
-                # single call to 'get' that accepts a list of IDs and returns
-                # only *uniqu* constraints.
-                tmp = igor.get(objID)
-                if tmp.ok and len(tmp.data) > 0:
-                    constr.extend([ConstraintMeta(**_) for _ in tmp.data])
-
-            # Filter the constraints.
-            # fixme: this step must become redundant once Igor.get() accepts
-            # lists and returns only unique constraints.
-            constr_filtered = {}
-            for c in constr:
-                key = (c.rb_a, c.rb_b, c.type)
-                if key not in constr_filtered:
-                    constr_filtered[key] = c
-                del key, c
-            constr = list(constr_filtered.values())
-            del constr_filtered
-
-            # Apply the constraints.
-            if not self.bullet.setConstraints(constr).ok:
+            # Query all constraints and apply them in the next step.
+            ret = self.igor.getMulti(list(coll_SV.keys()))
+            if not ret.ok:
+                # fixme: error handling
+                assert False
+            ret = self.bullet.setConstraints(ret.data)
+            if not ret.ok:
                 # fixme: log a message here and move on.
                 assert False
 
