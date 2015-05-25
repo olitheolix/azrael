@@ -25,6 +25,7 @@ import time
 import signal
 import pickle
 import logging
+import itertools
 import setproctitle
 import multiprocessing
 import numpy as np
@@ -179,9 +180,10 @@ def mergeConstraintSets(data: (tuple, list)):
       - please, implement something more elegant!
     """
     igor = azrael.igor.Igor()
-    flat = []
-    for _ in data:
-        flat.extend(_)
+
+    # Flatten the list of list into a single list.
+    flat = itertools.chain.from_iterable(data)
+
     constr = []
     for f in flat:
         tmp = igor.get(f).data
@@ -192,19 +194,21 @@ def mergeConstraintSets(data: (tuple, list)):
         constr.extend(tmp)
     constr = set(constr)
 
-    for a, b in constr:
-        idx_a = [ii for ii, _ in enumerate(data) if a in _]
-        assert len(idx_a) < 2
-        if len(idx_a) == 0:
-            continue
-        val_a = data.pop(idx_a[0])
-        idx_b = [ii for ii, _ in enumerate(data) if b in _]
-        assert len(idx_b) < 2
-        if len(idx_b) == 0:
-            data.append(val_a)
-            continue
-        val_b = data.pop(idx_b[0])
+    # Merge the collision sets that are linked via constraints.
+    for (a, b) in constr:
+        # Find (and remove) the set(s) where object_a and object_b are in.
+        val_a = [data.pop(idx) for idx, val in enumerate(data) if a in val]
+        val_b = [data.pop(idx) for idx, val in enumerate(data) if b in val]
 
+        # Sanity check: each element can be in at most one set.
+        assert 0 <= len(val_a) < 2
+        assert 0 <= len(val_b) < 2
+
+        # Remove the list from the list comprehension.
+        val_a = val_a[0] if len(val_a) == 1 else []
+        val_b = val_b[0] if len(val_b) == 1 else []
+
+        # Merge the collision sets.
         data.append(val_a + val_b)
     return RetVal(True, None, data)
 
