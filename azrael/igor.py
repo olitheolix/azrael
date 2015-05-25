@@ -44,6 +44,7 @@ class Igor:
         assert rb_a is not None
         if rb_b is not None:
             rb_a, rb_b = sorted((rb_a, rb_b))
+        con = con._replace(rb_a=rb_a, rb_b=rb_b)
         
         query = {'rb_a': rb_a, 'rb_b': rb_b, 'type': con.type}
         r = self.db.update(query, {'$setOnInsert': con._asdict()}, upsert=True)
@@ -76,3 +77,8 @@ class Igor:
         prj['_id'] = False
         res = [ConstraintMeta(**_) for _ in self.db.find(query, prj)]
         return RetVal(True, None, tuple(res))
+
+    def getUniquePairs(self):
+        prj = {'rb_a': True, 'rb_b': True, '_id': False}
+        out = [(_['rb_a'], _['rb_b']) for _ in self.db.find({}, prj)]
+        return RetVal(True, None, tuple(out))

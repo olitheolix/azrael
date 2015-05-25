@@ -179,3 +179,44 @@ class TestClerk:
             else:
                 assert isEqualConstraint(ret.data[1]._asdict(), c1._asdict())
                 assert isEqualConstraint(ret.data[0]._asdict(), c2._asdict())
+
+    def test_getUniquePairs(self):
+        """
+        Create a few constraints and verify that getUniquePairs returns the
+        correct pairs.
+        """
+        # Define a few dummy constraint for this test.
+        id_a, id_b, id_c, id_d = 1, 2, 3, 4
+        p2p = ConstraintP2P([0, 0, -1], [0, 0, 1])
+        c1 = ConstraintMeta('p2p', id_b, id_a, p2p)
+        c2 = ConstraintMeta('p2p', id_b, id_c, p2p)
+        c3 = ConstraintMeta('p2p', id_d, id_c, p2p)
+
+        # Query the constraint for a non-existing object.
+        assert self.igor.getUniquePairs() == (True, None, tuple())
+
+        # Add the first constraint and verify. The IDs in the returned tuple
+        # must always be sorted.
+        for c in [c1, c2, c3]:
+            self.igor.reset()
+            assert self.igor.add(c) == (True, None, 1)
+            ret = self.igor.getUniquePairs()
+            assert ret.ok
+            assert len(ret.data) == 1
+            assert ret.data[0] == tuple(sorted([c.rb_a, c.rb_b]))
+
+        # Reset and verify that no pairs are returned.
+        self.igor.reset()
+        assert self.igor.getUniquePairs() == (True, None, tuple())
+
+        # Add all three constraints.
+        assert self.igor.add(c1) == (True, None, 1)
+        assert self.igor.add(c2) == (True, None, 1)
+        assert self.igor.add(c3) == (True, None, 1)
+
+        ret = self.igor.getUniquePairs()
+        assert ret.ok
+        expected = [sorted([_.rb_a, _.rb_b]) for _ in [c1, c2, c3]]
+        expected = [tuple(_) for _ in expected]
+        expected = set(expected)
+        assert set(ret.data) == expected
