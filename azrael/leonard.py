@@ -181,21 +181,14 @@ def mergeConstraintSets(data: (tuple, list)):
     """
     igor = azrael.igor.Igor()
 
-    # Flatten the list of list into a single list.
-    flat = itertools.chain.from_iterable(data)
-
-    constr = []
-    for f in flat:
-        tmp = igor.get(f).data
-        if len(tmp) == 0:
-            continue
-        tmp = [ConstraintMeta(**_) for _ in tmp]
-        tmp = [(_.rb_a, _.rb_b) for _ in tmp]
-        constr.extend(tmp)
-    constr = set(constr)
+    # Fetch all unique constraint pairs.
+    ret = igor.getUniquePairs()
+    if not ret.ok:
+        # fixme: add log message and return original 'data'.
+        assert False
 
     # Merge the collision sets that are linked via constraints.
-    for (a, b) in constr:
+    for (a, b) in ret.data:
         # Find (and remove) the set(s) where object_a and object_b are in.
         val_a = [data.pop(idx) for idx, val in enumerate(data) if a in val]
         val_b = [data.pop(idx) for idx, val in enumerate(data) if b in val]
