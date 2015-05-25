@@ -172,23 +172,15 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     return RetVal(True, None, out)
 
 
-def mergeConstraintSets(data: (tuple, list)):
+def mergeConstraintSets(uniquePairs: tuple, data: (tuple, list)):
     """
     fixme:
       - must expect a list of ConstraintMeta objects
       - must not instantiate an Igor every time
       - please, implement something more elegant!
     """
-    igor = azrael.igor.Igor()
-
-    # Fetch all unique constraint pairs.
-    ret = igor.getUniquePairs()
-    if not ret.ok:
-        # fixme: add log message and return original 'data'.
-        assert False
-
     # Merge the collision sets that are linked via constraints.
-    for (a, b) in ret.data:
+    for (a, b) in uniquePairs:
         # Find (and remove) the set(s) where object_a and object_b are in.
         val_a = [data.pop(idx) for idx, val in enumerate(data) if a in val]
         val_b = [data.pop(idx) for idx, val in enumerate(data) if b in val]

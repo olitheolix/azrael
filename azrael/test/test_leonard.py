@@ -861,7 +861,10 @@ class TestLeonardOther:
         they are merged correctly.
         """
         def checkEqual(_src, _dst):
-            ret = azrael.leonard.mergeConstraintSets(_src)
+            # Fetch all unique constraint pairs.
+            ret = self.igor.getUniquePairs()
+            assert ret.ok
+            ret = azrael.leonard.mergeConstraintSets(ret.data, _src)
             assert ret.ok
             _ret = [set(tuple(_)) for _ in ret.data]
             _dst = [set(tuple(_)) for _ in _dst]
@@ -871,13 +874,17 @@ class TestLeonardOther:
 
         # Empty set.
         self.igor.reset()
-        assert azrael.leonard.mergeConstraintSets([]) == (True, None, [])
+        ret = self.igor.getUniquePairs()
+        assert ret.ok
+        assert azrael.leonard.mergeConstraintSets(ret.data, []) == (True, None, [])
         checkEqual([], [])
 
         # Set with only one subset.
         self.igor.reset()
-        assert azrael.leonard.mergeConstraintSets([[1]]) == (True, None, [[1]])
-        assert azrael.leonard.mergeConstraintSets([[1, 2, 3]]) == (True, None, [[1, 2, 3]])
+        ret = self.igor.getUniquePairs()
+        assert ret.ok
+        assert azrael.leonard.mergeConstraintSets(ret.data, [[1]]) == (True, None, [[1]])
+        assert azrael.leonard.mergeConstraintSets(ret.data, [[1, 2, 3]]) == (True, None, [[1, 2, 3]])
         checkEqual([[1]], [[1]])
         checkEqual([[1, 2, 3]], [[1, 2, 3]])
 
