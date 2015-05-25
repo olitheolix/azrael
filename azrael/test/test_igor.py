@@ -120,3 +120,62 @@ class TestClerk:
         else:
            assert isEqualConstraint(ret.data[1], c1._asdict())
            assert isEqualConstraint(ret.data[0], c2._asdict())
+
+    def test_get_multi(self):
+        """
+        Query multiple constraints at once. This must always return a list of
+        ConstraintMeta instances.
+        """
+        # Define a few dummy constraint for this test.
+        id_a, id_b, id_c, id_d = 1, 2, 3, 4
+        p2p = ConstraintP2P([0, 0, -1], [0, 0, 1])
+        c1 = ConstraintMeta('p2p', id_a, id_b, p2p)
+        c2 = ConstraintMeta('p2p', id_b, id_c, p2p)
+        c3 = ConstraintMeta('p2p', id_c, id_d, p2p)
+
+        # Query the constraint for a non-existing object.
+        ret = self.igor.getMulti([10])
+        assert ret == (True, None, tuple())
+
+        # Query the constraint several non-existing objects.
+        ret = self.igor.getMulti([10, 20])
+        assert ret == (True, None, tuple())
+
+        # Add the first constraint.
+        assert self.igor.add(c1) == (True, None, 1)
+
+        # Query the constraint for rb_a and rb_b individually.
+        ret_a = self.igor.getMulti([c1.rb_a])
+        ret_b = self.igor.getMulti([c1.rb_b])
+        assert ret_a.ok and ret_b.ok
+        assert ret_a == ret_b
+
+        # Query two objects that are linked by a single constraint. This must
+        # return exactly one match.
+        ret = self.igor.getMulti([c1.rb_a, c1.rb_b])
+        assert ret.ok
+        assert len(ret.data) == 1
+        assert isEqualConstraint(ret.data[0]._asdict(), c1._asdict())
+
+        # Query two objects, only one of which exists. This must produce only
+        # one constraint (the same as before).
+        ret = self.igor.getMulti([c1.rb_a, c2.rb_b])
+        assert len(ret.data) == 1
+        assert isEqualConstraint(ret.data[0]._asdict(), c1._asdict())
+
+        # Add the other two constraints.
+        assert self.igor.add(c2) == (True, None, 1)
+        assert self.igor.add(c3) == (True, None, 1)
+
+        # Query the constraints for only the second object, once in conjunction
+        # with the first object and once without. In both cases we must receive
+        # the same two constraints, nameley a-b, and b-c.
+        for query in ([id_b], [id_a, id_b]):
+            ret = self.igor.getMulti(query)
+            assert ret.ok
+            assert len(ret.data) == 2
+            if isEqualConstraint(ret.data[0]._asdict(), c1._asdict()):
+                assert isEqualConstraint(ret.data[1]._asdict(), c2._asdict())
+            else:
+                assert isEqualConstraint(ret.data[1]._asdict(), c1._asdict())
+                assert isEqualConstraint(ret.data[0]._asdict(), c2._asdict())

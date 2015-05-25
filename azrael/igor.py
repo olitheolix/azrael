@@ -31,6 +31,7 @@ class Igor:
      - get: accept list argument; must only return unique constraints; must
             return ConstraintMeta tuples (not necessary to wrap the data in its
             respective eg ConstraintsP2P tuple)
+     - docu
     """
     def __init__(self):
         self.db = database.dbHandles['Constraints']
@@ -67,4 +68,11 @@ class Igor:
 
         for el in res:
             del el['_id']
+        return RetVal(True, None, tuple(res))
+
+    def getMulti(self, IDs: (tuple, list)):
+        query = {'$or': [{'rb_a': {'$in': IDs}}, {'rb_b': {'$in': IDs}}]}
+        prj = {_: True for _ in ConstraintMeta._fields}
+        prj['_id'] = False
+        res = [ConstraintMeta(**_) for _ in self.db.find(query, prj)]
         return RetVal(True, None, tuple(res))
