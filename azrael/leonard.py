@@ -192,6 +192,25 @@ def mergeConstraintSets(uniquePairs: tuple, data: (tuple, list)):
     return RetVal(True, None, data)
 
 
+def getFinalCollisionSets(uniquePairs, allObjects, allAABBs):
+    """
+    fixme: docu + tests
+    """
+    ret = computeCollisionSetsAABB(allObjects, allAABBs)
+    if not ret.ok:
+        msg = 'ComputeCollisionSetsAABB returned an error'
+        self.logit.error(msg)
+        return RetVal(False, msg, None)
+
+    collSets = ret.data
+    ret = mergeConstraintSets(uniquePairs, collSets)
+    if not ret.ok:
+        msg = 'mergeConstraintSets returned an error'
+        self.logit.error(msg)
+        return RetVal(False, msg, None)
+    return ret
+
+
 class LeonardBase(multiprocessing.Process):
     """
     Base class for Physics manager.
@@ -593,26 +612,19 @@ class LeonardSweeping(LeonardBase):
         """
         self.processCommandQueue()
 
-        # fixme: combine the CCS and merging into a single method to avoid code
-        # duplication in LeonardDistributedZeroMQ.
-        # Compute the collision sets.
+        # Compute all collision sets.
         with util.Timeit('CCS') as timeit:
-            collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
-            if not collSets.ok:
-                self.logit.error('ComputeCollisionSetsAABB returned an error')
-                sys.exit(1)
-            collSets = collSets.data
+            # fixme: keep a local copy of all unique pairs
+            ret = self.igor.getUniquePairs()
+            if not ret.ok:
+                return
+            uniquePairs = ret.data
 
-            uniquePairs = self.igor.getUniquePairs()
-            if not uniquePairs.ok:
-                self.logit.error('Igor.getUniquePairs returned an error')
-            else:
-                collSets = mergeConstraintSets(uniquePairs.data, collSets)
-                if not collSets.ok:
-                    self.logit.error('mergeConstraintSets returned an error')
-                    sys.exit(1)
-                del uniquePairs
-            collSets = collSets.data
+            ret = getFinalCollisionSets(uniquePairs, self.allObjects, self.allAABBs)
+            if not ret.ok:
+                return
+            collSets = ret.data
+            del ret, uniquePairs
 
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
@@ -777,23 +789,17 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Compute the collision sets.
         with util.Timeit('Leonard:1.2  CCS') as timeit:
-            collSets = computeCollisionSetsAABB(self.allObjects, self.allAABBs)
-            if not collSets.ok:
-                self.logit.error('ComputeCollisionSetsAABB returned an error')
-                sys.exit(1)
-            collSets = collSets.data
+            # fixme: keep a local copy of all unique pairs
+            ret = self.igor.getUniquePairs()
+            if not ret.ok:
+                return
+            uniquePairs = ret.data
 
-            # fixme: code duplication.
-            uniquePairs = self.igor.getUniquePairs()
-            if not uniquePairs.ok:
-                self.logit.error('Igor.getUniquePairs returned an error')
-            else:
-                collSets = mergeConstraintSets(uniquePairs.data, collSets)
-                if not collSets.ok:
-                    self.logit.error('mergeConstraintSets returned an error')
-                    sys.exit(1)
-                del uniquePairs
-            collSets = collSets.data
+            ret = getFinalCollisionSets(uniquePairs, self.allObjects, self.allAABBs)
+            if not ret.ok:
+                return
+            collSets = ret.data
+            del ret, uniquePairs
 
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
