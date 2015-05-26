@@ -533,6 +533,16 @@ class LeonardBullet(LeonardBase):
             # Apply the force to the object.
             self.bullet.applyForceAndTorque(objID, force, torque)
 
+        # Fetch all the constraints and apply them.
+        ret = self.igor.getMulti(list(self.allObjects.keys()))
+        if not ret.ok:
+            # fixme: error handling
+            assert False
+        ret = self.bullet.setConstraints(ret.data)
+        if not ret.ok:
+            # fixme: log a message here and move on.
+            assert False
+
         # Wait for Bullet to advance the simulation by one step.
         with util.Timeit('compute') as timeit:
             self.bullet.compute(list(self.allObjects.keys()), dt, maxsteps)
@@ -643,6 +653,7 @@ class LeonardSweeping(LeonardBullet):
                 self.bullet.applyForceAndTorque(objID, force, torque)
 
             # Query all constraints and apply them in the next step.
+            # fixme: code duplication with LeonardBullet.
             ret = self.igor.getMulti(list(coll_SV.keys()))
             if not ret.ok:
                 # fixme: error handling
@@ -1033,7 +1044,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
                     self.logit.error('Unable to get all objects from Bullet')
                 out.append((obj.id, sv))
 
-        # Update the data and delete the WP.
+        # Return the updated WP data.
         return {'wpid': meta.wpid, 'wpdata': out}
 
     @typecheck
