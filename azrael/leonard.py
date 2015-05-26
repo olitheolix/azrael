@@ -535,6 +535,9 @@ class LeonardBullet(LeonardBase):
         with util.Timeit('compute') as timeit:
             self.bullet.compute(list(self.allObjects.keys()), dt, maxsteps)
 
+            # Remove all constraints.
+            self.bullet.clearAllConstraints()
+
         # Retrieve all objects from Bullet, overwrite the state variables that
         # the user wanted to change explicitly (if any)
         for objID in self.allObjects:
@@ -1011,6 +1014,9 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         with util.Timeit('Worker:1.2.0  compute') as timeit:
             IDs = [_.id for _ in worklist]
             self.bullet.compute(IDs, meta.dt, meta.maxsteps)
+
+            # Remove all constraints.
+            self.bullet.clearAllConstraints()
 
         with util.Timeit('Worker:1.3.0  fetchFromBullet') as timeit:
             # Retrieve the objects from Bullet again and update them in the DB.
