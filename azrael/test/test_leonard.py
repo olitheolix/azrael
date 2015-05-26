@@ -919,17 +919,17 @@ class TestLeonardOther:
         assert self.igor.add(ConstraintMeta('p2p', 3, 4, None)).ok
         checkEqual(s, [[1, 2, 3, 6, 4, 5]])
 
-    def test_constraint_p2p(self):
+    @pytest.mark.parametrize('clsLeonard', [
+        azrael.leonard.LeonardBullet,
+        azrael.leonard.LeonardSweeping,
+        azrael.leonard.LeonardDistributedZeroMQ])
+    def test_constraint_p2p(self, clsLeonard):
         """
-        Link two bodies together with a Point2Point constraint.
-
-        # fixme: update docu here once it works for ZeroMQ engine (and maybe
-        plain Leonard.Bullet engine).
-
-        For this test I will use `LeonardSweeping`.
+        Link two bodies together with a Point2Point constraint and verify that
+        they move together.
         """
-        # Get a Leonard- and Igor instance.
-        leo = getLeonard(azrael.leonard.LeonardSweeping)
+        # Get a Leonard instance.
+        leo = getLeonard(clsLeonard)
 
         # Convenience.
         id_a, id_b, aabb = 1, 2, 1
@@ -956,16 +956,3 @@ class TestLeonardOther:
         delta_b = leo.allObjects[id_b].position - np.array(pos_b)
         assert delta_a[0] < pos_a[0]
         assert np.allclose(delta_a, delta_b)
-
-    def test_constraint_p2p_zmq(self):
-        """
-        Same as 'test_constraint_p2p_sweeping' but this time the engine is
-        LeonardZeroMQ. The major difference is therefore that the constraints
-        must be distributed via the work packages.
-        """
-        # fixme: implement this test.
-
-        # When this test works the merge it with the previous one and use a
-        # pytest decorator to run it for both engine types. Can I also use the
-        # leonard.Bullet engine?
-        assert False

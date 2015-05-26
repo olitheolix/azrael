@@ -784,6 +784,18 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 sys.exit(1)
             collSets = collSets.data
 
+            # fixme: code duplication.
+            uniquePairs = self.igor.getUniquePairs()
+            if not uniquePairs.ok:
+                self.logit.error('Igor.getUniquePairs returned an error')
+            else:
+                collSets = mergeConstraintSets(uniquePairs.data, collSets)
+                if not collSets.ok:
+                    self.logit.error('mergeConstraintSets returned an error')
+                    sys.exit(1)
+                del uniquePairs
+            collSets = collSets.data
+
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
 
@@ -896,10 +908,19 @@ class LeonardDistributedZeroMQ(LeonardBase):
         except KeyError as err:
             return RetVal(False, 'Cannot form WP', None)
 
+        # Query all constraints.
+        ret = self.igor.getMulti(objIDs)
+        if not ret.ok:
+            # fixme: log error
+            constraints = []
+        else:
+            constraints = ret.data
+
         # Form the content of the Work Package as it will appear in the DB.
         data = {'wpid': self.wpid_counter,
                 'wpmeta': (self.wpid_counter, dt, maxsteps),
                 'wpdata': wpdata,
+                'wpconstraints': constraints,
                 'ts': None}
         self.wpid_counter += 1
         return RetVal(True, None, data)
@@ -987,6 +1008,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         :return dict: {'wpdata': list_of_SVs, 'wpid': wpid}
         """
         worklist, meta = wp['wpdata'], WPMeta(*wp['wpmeta'])
+        constraints = wp['wpconstraints']
 
         # Log the number of collision-sets in the current Work Package.
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
@@ -1022,6 +1044,12 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
                     # Add the force defined on the 'force' grid.
                     force = obj.force + gridForces[obj.id]
                     applyForceAndTorque(obj.id, force, obj.torque)
+
+        # Apply the constraints.
+        ret = self.bullet.setConstraints(constraints)
+        if not ret.ok:
+            # fixme: log a message here and move on.
+            assert False
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
