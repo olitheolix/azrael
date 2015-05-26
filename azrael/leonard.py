@@ -482,8 +482,7 @@ class LeonardBullet(LeonardBase):
         self.bullet = None
 
     def setup(self):
-        # Instantiate the Bullet engine. The (1, 0) parameters mean
-        # the engine has ID '1' and does not build explicit pair caches.
+        # Instantiate the Bullet engine with ID=1.
         self.bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
     @typecheck
