@@ -212,6 +212,9 @@ class LeonardBase(multiprocessing.Process):
         # Create the DB handles.
         self._DB_SV = azrael.database.dbHandles['SV']
 
+        # Create an Igor instance.
+        self.igor = azrael.igor.Igor()
+
         self.allObjects = {}
         self.allAABBs = {}
         self.allForces = {}
@@ -560,9 +563,10 @@ class LeonardSweeping(LeonardBullet):
     sequentially update the physics for each collision set.
     """
     def __init__(self, *args, **kwargs):
-        # fixme: move this into LeonardBase?
+        # fixme: this inherits from LeonardBullet yet re-implements the one and
+        # only method that LeonardBullet implements as well. Can this class
+        # thus inhert directly from LeonardBase?
         super().__init__(*args, **kwargs)
-        self.igor = azrael.igor.Igor()
 
     @typecheck
     def step(self, dt, maxsteps):
