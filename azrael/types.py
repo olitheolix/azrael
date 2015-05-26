@@ -47,7 +47,7 @@ FragDae = namedtuple('FragDae', 'dae rgb')
 MetaFragment = namedtuple('MetaFragment', 'name type data')
 
 # Work package related.
-WPData = namedtuple('WPRecord', 'id sv force torque')
+WPData = namedtuple('WPData', 'id sv force torque')
 WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
 Forces = namedtuple('Forces',
                     'forceDirect forceBoost torqueDirect torqueBoost')

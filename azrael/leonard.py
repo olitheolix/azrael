@@ -903,13 +903,12 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Compile the State Vectors and forces for all objects into a list of
         # ``WPData`` named tuples.
-        # fixme: currently, no WPData objects are created.
         try:
             wpdata = []
             for objID in objIDs:
                 sv = self.allObjects[objID]
                 force, torque = self.totalForceAndTorque(objID)
-                wpdata.append((objID, sv, force, torque))
+                wpdata.append(WPData(objID, sv, force, torque))
         except KeyError as err:
             return RetVal(False, 'Cannot form WP', None)
 
