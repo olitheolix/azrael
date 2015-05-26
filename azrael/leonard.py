@@ -223,8 +223,9 @@ class LeonardBase(multiprocessing.Process):
         """
         Stub for initialisation code that cannot go into the constructor.
 
-        Since Leonard is a process not everything can be initialised in the
-        constructor because it executes before the process forks.
+        This is typically necessary for code that must not execute until
+        *after* the class forked into a new process. ZeroMQ contexts are a good
+        example for this - *never* fork processes *after* creating the context.
         """
         pass
 
