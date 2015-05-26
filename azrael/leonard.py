@@ -561,7 +561,7 @@ class LeonardBullet(LeonardBase):
         self.syncObjects(writeconcern=False)
 
 
-class LeonardSweeping(LeonardBullet):
+class LeonardSweeping(LeonardBase):
     """
     Compute physics on independent collision sets.
 
@@ -572,11 +572,9 @@ class LeonardSweeping(LeonardBullet):
     This class is single threaded and uses a single Bullet instance to
     sequentially update the physics for each collision set.
     """
-    def __init__(self, *args, **kwargs):
-        # fixme: this inherits from LeonardBullet yet re-implements the one and
-        # only method that LeonardBullet implements as well. Can this class
-        # thus inhert directly from LeonardBase?
-        super().__init__(*args, **kwargs)
+    def setup(self):
+        # Instantiate the Bullet engine with ID=1.
+        self.bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
     @typecheck
     def step(self, dt, maxsteps):
