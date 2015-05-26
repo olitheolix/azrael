@@ -500,7 +500,6 @@ class LeonardBullet(LeonardBase):
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
-
         # Convenience.
         vg = azrael.vectorgrid
 
@@ -775,7 +774,8 @@ class LeonardDistributedZeroMQ(LeonardBase):
         with util.Timeit('Leonard:1.3  CreateWPs') as timeit:
             all_WPs = {}
             for subset in collSets:
-                # Compile the Work Package.
+                # Compile the Work Package. Skip this physics step altogether
+                # if an error occurs.
                 ret = self.createWorkPackage(list(subset), dt, maxsteps)
                 if not ret.ok:
                     self.logit.error(ret.msg)
@@ -814,7 +814,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
                         worklist.remove(wpid)
                         del all_WPs[wpid]
 
-                # Send an empty message to the Worker if now Work Packages are
+                # Send an empty message to the Worker if no Work Packages are
                 # pending anymore. This empty message is important to avoid
                 # breaking the REQ/REP pattern enforced by ZeroMQ.
                 if len(all_WPs) == 0:
@@ -822,6 +822,8 @@ class LeonardDistributedZeroMQ(LeonardBase):
                     break
 
                 # Pick the next pending Work Package and increment the index.
+                # fixme: I believe Python may have a primitive type that
+                # supports this kind of iteration natively.
                 if wpIdx >= len(worklist):
                     wpIdx = 0
                 wp = all_WPs[worklist[wpIdx]]
@@ -867,6 +869,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Compile the State Vectors and forces for all objects into a list of
         # ``WPData`` named tuples.
+        # fixme: currently, no WPData objects are created.
         try:
             wpdata = []
             for objID in objIDs:
