@@ -528,6 +528,15 @@ class LeonardBullet(LeonardBase):
         # Process pending commands.
         self.processCommandQueue()
 
+        # Fetch all currently active constraints.
+        ret = self.igor.getMulti(list(self.allObjects.keys()))
+        if ret.ok:
+            allConstraints = ret.data
+        else:
+            self.logit.error(ret.msg)
+            allConstraints = []
+        del ret
+
         # Fetch the forces for all object positions.
         idPos = {k: v.position for (k, v) in self.allObjects.items()}
         ret = self.getGridForces(idPos)
@@ -553,17 +562,13 @@ class LeonardBullet(LeonardBase):
             # Apply the force to the object.
             self.bullet.applyForceAndTorque(objID, force, torque)
 
-        # Fetch all the constraints and apply them.
-        ret = self.igor.getMulti(list(self.allObjects.keys()))
+        # Apply all constraints. Log any errors but ignore them otherwise as
+        # they are harmless (simply means no constraints were applied).
+        ret = self.bullet.setConstraints(allConstraints)
         if not ret.ok:
-            # fixme: error handling
-            assert False
-        ret = self.bullet.setConstraints(ret.data)
-        if not ret.ok:
-            # fixme: log a message here and move on.
-            assert False
+            self.logit.warning(ret.msg)
 
-        # Wait for Bullet to advance the simulation by one step.
+        # Advance the simulation by one time step.
         with util.Timeit('compute') as timeit:
             self.bullet.compute(list(self.allObjects.keys()), dt, maxsteps)
 
