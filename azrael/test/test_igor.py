@@ -57,6 +57,73 @@ class TestClerk:
     def teardown_method(self, method):
         self.igor.reset()
 
+    def test_all(self):
+        """
+        Integration test of Igor.
+        """
+        def _getC(_a, _b, _tag):
+            p2p = ConstraintP2P([0, 0, -1], [0, 0, 1])
+            _cm = ConstraintMeta
+            assert len(_a) == len(_b) == len(_tag)
+            t = [_cm('p2p', _[0], _[1], _[2], p2p) for _ in zip(_a, _b, _tag)]
+            return t
+
+        # Create two constraints.
+        c1, c2, c3, c4 = _getC([1, 2, 3, 4], [2, 3, 4, 5], ['a'] * 4)
+
+        igor = self.igor
+        assert igor.updateLocalCache() == (True, None, 0)
+        assert igor.addConstraints([c1]) == (True, None, 1)
+        assert igor.addConstraints([c1]) == (True, None, 0)
+        assert igor.addConstraints([c2, c3]) == (True, None, 2)
+        assert igor.addConstraints([c3, c4]) == (True, None, 1)
+
+        assert igor.reset() == (True, None, None)
+        assert igor.updateLocalCache() == (True, None, 0)
+        assert igor.addConstraints([c2, c3]) == (True, None, 2)
+        assert igor.updateLocalCache() == (True, None, 2)
+        assert igor.addConstraints([c3, c4]) == (True, None, 1)
+        assert igor.updateLocalCache() == (True, None, 3)
+
+        assert igor.delete([c1]) == (True, None, 0)
+        assert igor.updateLocalCache() == (True, None, 3)
+
+        assert igor.delete([c1, c2]) == (True, None, 1)
+        assert igor.updateLocalCache() == (True, None, 2)
+
+        assert igor.reset() == (True, None, None)
+        assert igor.uniquePairs() == (True, None, tuple())
+        assert igor.addConstraints([c1]) == (True, None, 1)
+        assert igor.uniquePairs() == (True, None, tuple())
+        assert igor.updateLocalCache() == (True, None, 1)
+        assert igor.uniquePairs().data == ((c1.rb_a, c1.rb_b), )
+
+        assert igor.addConstraints([c1, c2, c3, c4]) == (True, None, 3)
+        assert igor.updateLocalCache() == (True, None, 4)
+        ref = [(_.rb_a, _.rb_b) for _ in (c1, c2, c3, c4)]
+        ret = igor.uniquePairs()
+        assert set(ret.data) == set(tuple(ref))
+
+        ret = igor.getConstraints([1, 2, 3, 4, 5])
+        assert sorted(ret.data) == sorted((c1, c2, c3, c4))
+
+        ret = igor.getConstraints([1])
+        assert ret.data == (c1, )
+
+        ret = igor.getConstraints([1, 5])
+        assert sorted(ret.data) == sorted((c1, c4))
+
+        ret = igor.getConstraints([1, 2, 5])
+        assert len(ret.data) == 3
+        assert sorted(ret.data) == sorted((c1, c2, c4))
+
+        ret = igor.getConstraints([10])
+        assert ret.data == tuple()
+
+        ret = igor.getConstraints([1, 10])
+        assert ret.data == (c1, )
+
+
     def test_add_get(self):
         """
         Add/get several constraints.

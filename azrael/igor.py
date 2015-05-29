@@ -20,24 +20,64 @@ Manage the constraints between objects.
 import azrael.config as config
 import azrael.database as database
 
-from azrael.types import RetVal, ConstraintMeta
+from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
+from IPython import embed as ipshell
 
 
 class Igor:
     """
-    fixme:
-     - return error if objects do not exist?
-     - add: accept list argument
-     - get: accept list argument; must only return unique constraints; must
-            return ConstraintMeta tuples (not necessary to wrap the data in its
-            respective eg ConstraintsP2P tuple)
-     - docu
     """
     def __init__(self):
         self.db = database.dbHandles['Constraints']
 
     def reset(self):
         self.db.drop()
+        self._cache = tuple()
+        return RetVal(True, None, None)
+
+    def updateLocalCache(self):
+        prj = {'_id': False}
+        cursor = self.db.find({}, prj)
+        self._cache = tuple([ConstraintMeta(**_) for _ in cursor])
+        return RetVal(True, None, len(self._cache))
+
+    def getConstraints(self, bodyIDs: (tuple, list)):
+        """
+        """
+        bodyIDs = set(bodyIDs)
+        out = {}
+        for tmp in self._cache:
+            if not (tmp.rb_a in bodyIDs or tmp.rb_b in bodyIDs):
+                continue
+            if tmp.type.upper() == 'P2P':
+                c = tmp._replace(data=ConstraintP2P(**tmp.data))
+                out[(c.rb_a, c.rb_b, c.tag)] = c
+            else:
+                continue
+        return RetVal(True, None, tuple(list(out.values())))
+
+    def addConstraints(self, constraints: (tuple, list)):
+        """
+        Merge this code into the 'add' function.
+        """
+        cnt = 0
+        for constr in constraints:
+            cnt += self.add(constr).data
+        return RetVal(True, None, cnt)
+
+    def delete(self, constraints: (tuple, list)):
+        cnt = 0
+        for constr in constraints:
+            query = {'rb_a': constr.rb_a,
+                     'rb_b': constr.rb_b,
+                     'tag': constr.tag}
+            ret = self.db.remove(query)
+            cnt += ret['n']
+        return RetVal(True, None, cnt)
+
+    def uniquePairs(self):
+        out = {(_.rb_a, _.rb_b) for _ in self._cache}
+        return RetVal(True, None, tuple(out))
     
     def add(self, con: ConstraintMeta):
         rb_a, rb_b = con.rb_a, con.rb_b
@@ -45,6 +85,7 @@ class Igor:
         if rb_b is not None:
             rb_a, rb_b = sorted((rb_a, rb_b))
         con = con._replace(rb_a=rb_a, rb_b=rb_b)
+        con = con._replace(data=con.data._asdict())
         
         query = {'rb_a': rb_a, 'rb_b': rb_b, 'type': con.type}
         r = self.db.update(query, {'$setOnInsert': con._asdict()}, upsert=True)
@@ -79,6 +120,9 @@ class Igor:
         return RetVal(True, None, tuple(res))
 
     def getUniquePairs(self):
+        """
+        fixme: rename, eg getAllConstraintPairs
+        """
         prj = {'rb_a': True, 'rb_b': True, '_id': False}
         out = [(_['rb_a'], _['rb_b']) for _ in self.db.find({}, prj)]
         return RetVal(True, None, tuple(out))

@@ -63,7 +63,7 @@ CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
 
-ConstraintMeta = namedtuple('ConstraintMeta', 'type rb_a rb_b data')
+ConstraintMeta = namedtuple('ConstraintMeta', 'type rb_a rb_b tag data')
 ConstraintP2P = namedtuple('ConstraintP2P', 'pivot_a pivot_b')
 
 
