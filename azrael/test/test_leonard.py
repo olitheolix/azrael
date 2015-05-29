@@ -889,10 +889,11 @@ class TestLeonardOther:
         checkEqual([[1, 2, 3]], [[1, 2, 3]])
 
         # Two disjoint sets.
+        p2p = ConstraintP2P((0, 0, 0), (0, 0, 0))
         self.igor.reset()
         s = [[1], [2]]
         checkEqual(s, s)
-        assert self.igor.add(ConstraintMeta('p2p', 1, 2, None)).ok
+        assert self.igor.add(ConstraintMeta('p2p', 1, 2, '', p2p)).ok
         checkEqual(s, [[1, 2]])
         self.igor.reset()
         checkEqual(s, s)
@@ -901,22 +902,22 @@ class TestLeonardOther:
         self.igor.reset()
         s = [[1], [2]]
         checkEqual(s, s)
-        assert self.igor.add(ConstraintMeta('p2p', 1, 3, None)).ok
+        assert self.igor.add(ConstraintMeta('p2p', 1, 3, '', p2p)).ok
         checkEqual(s, s)
 
         # Three disjoint sets and the constraint links two of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
         checkEqual(s, s)
-        assert self.igor.add(ConstraintMeta('p2p', 1, 6, None)).ok
+        assert self.igor.add(ConstraintMeta('p2p', 1, 6, '', p2p)).ok
         checkEqual(s, [[1, 2, 3, 6], [4, 5]])
 
         # Three disjoint sets and two constraint link both of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
         checkEqual(s, s)
-        assert self.igor.add(ConstraintMeta('p2p', 1, 6, None)).ok
-        assert self.igor.add(ConstraintMeta('p2p', 3, 4, None)).ok
+        assert self.igor.add(ConstraintMeta('p2p', 1, 6, '', p2p)).ok
+        assert self.igor.add(ConstraintMeta('p2p', 3, 4, '', p2p)).ok
         checkEqual(s, [[1, 2, 3, 6, 4, 5]])
 
     @pytest.mark.parametrize('clsLeonard', [
@@ -939,7 +940,7 @@ class TestLeonardOther:
 
         # Specify the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
-        self.igor.add(ConstraintMeta('p2p', id_a, id_b, p2p))
+        self.igor.add(ConstraintMeta('p2p', id_a, id_b, '', p2p))
 
         # Spawn both objects.
         assert physAPI.addCmdSpawn([(id_a, sv_a, aabb), (id_b, sv_b, aabb)]).ok
@@ -956,3 +957,7 @@ class TestLeonardOther:
         delta_b = leo.allObjects[id_b].position - np.array(pos_b)
         assert delta_a[0] < pos_a[0]
         assert np.allclose(delta_a, delta_b)
+
+        # fixme: unlink the objects again, apply a right-pointing force to the
+        # right object and verify that the left continues to move left and the
+        # right does not.

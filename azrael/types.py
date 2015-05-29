@@ -58,11 +58,13 @@ _MotionState = namedtuple('_MotionState',
                           'position velocityLin velocityRot cshape '
                           'axesLockLin axesLockRot lastChanged')
 
+# fixme: rename 'name' to 'id'
 CollShapeMeta = namedtuple('CollShapeMeta', 'type name pos rot cs')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
 
+# fixme: rename 'tag' to 'id'
 ConstraintMeta = namedtuple('ConstraintMeta', 'type rb_a rb_b tag data')
 ConstraintP2P = namedtuple('ConstraintP2P', 'pivot_a pivot_b')
 
