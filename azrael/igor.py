@@ -207,6 +207,16 @@ class Igor:
         """
         queries = []
         for constr in constraints:
+            # Sanity checks.
+            try:
+                assert isinstance(constr.rb_a, int)
+                assert isinstance(constr.rb_b, int)
+                assert isinstance(constr.type, str)
+                assert isinstance(constr.tag, str)
+            except AssertionError:
+                continue
+
+            # Create the query for the current constraint.
             tmp = {'rb_a': constr.rb_a,
                    'rb_b': constr.rb_b,
                    'type': constr.type,
