@@ -57,244 +57,223 @@ class TestClerk:
     def teardown_method(self, method):
         self.igor.reset()
 
-    def test_all(self):
+    def getP2P(self, rb_a, rb_b, constraint_id):
         """
-        Integration test of Igor.
+        Convenience method to construct a complete Point2Point constraint for
+        bodies ``rb_a`` and ``rb_b`.
         """
-        def _getC(_a, _b, _tag):
-            p2p = ConstraintP2P([0, 0, -1], [0, 0, 1])
-            _cm = ConstraintMeta
-            assert len(_a) == len(_b) == len(_tag)
-            t = [_cm('p2p', _[0], _[1], _[2], p2p) for _ in zip(_a, _b, _tag)]
-            return t
+        pivot_a, pivot_b = [0, 0, -1], [0, 0, 1]
+        p2p = ConstraintP2P(pivot_a, pivot_b)
+        return ConstraintMeta('p2p', rb_a, rb_b, constraint_id, p2p)
+        
+    def test_basic(self):
+        """
+        Verify that it is safe to call any Igor methods right from the start
+        without updating the cache or resetting the database.
+        """
+        igor = azrael.igor.Igor()
+        assert igor.getAllConstraints().ok
+        assert igor.getConstraints([1, 2]).ok
+        assert igor.getUniquePairs().ok
 
-        # Create two constraints.
-        c1, c2, c3, c4 = _getC([1, 2, 3, 4], [2, 3, 4, 5], ['a'] * 4)
-
-        tmp_igor = azrael.igor.Igor()
-        assert tmp_igor.getAllConstraints().ok
-        assert tmp_igor.getConstraints([1, 2]).ok
-        assert tmp_igor.getUniquePairs().ok
-        del tmp_igor
-
+    def test_update_and_add(self):
+        """
+        Verify that 'updateLocalCache' downloads the correct number of
+        constraints.
+        """
+        # Convenience.
         igor = self.igor
-        assert igor.updateLocalCache() == (True, None, 0)
-        assert igor.addConstraints([c1]) == (True, None, 1)
-        assert igor.addConstraints([c1]) == (True, None, 0)
-        assert igor.addConstraints([c2, c3]) == (True, None, 2)
-        assert igor.addConstraints([c3, c4]) == (True, None, 1)
+        igor.reset()
 
+        # Create the constraints for this test.
+        c1 = self.getP2P(1, 2, 'foo')
+        c2 = self.getP2P(2, 3, 'foo')
+        c3 = self.getP2P(3, 4, 'foo')
+        c4 = self.getP2P(4, 5, 'foo')
+        c5 = self.getP2P(5, 6, 'foo')
+        c6 = self.getP2P(6, 7, 'foo')
+
+        # There must not be any objectgs to download.
+        assert igor.updateLocalCache() == (True, None, 0)
+
+        # Add one constraint and update the cache.
+        assert igor.addConstraints([c1]) == (True, None, 1)
+        assert igor.updateLocalCache() == (True, None, 1)
+
+        # Add the same constraint. This must add no constraint, but the update
+        # function must still fetch exactly one constraint.
+        assert igor.addConstraints([c1]) == (True, None, 0)
+        assert igor.updateLocalCache() == (True, None, 1)
+
+        # Add two new constraints.
+        assert igor.addConstraints([c2, c3]) == (True, None, 2)
+        assert igor.updateLocalCache() == (True, None, 3)
+
+        # Add two more constraints, one of which is not new. This must add one
+        # new constraint and increase the total number of unique constraints to
+        # four.
+        assert igor.addConstraints([c3, c4]) == (True, None, 1)
+        assert igor.updateLocalCache() == (True, None, 4)
+
+        # Add five more constaints, but only two of them are actually unique.
+        assert igor.addConstraints([c5, c5, c6, c6, c6] ) == (True, None, 2)
+        assert igor.updateLocalCache() == (True, None, 6)
+        ref = sorted((c1, c2, c3, c4, c5, c6))
+        assert sorted(igor.getAllConstraints().data) == ref
+
+    def test_getAllConstraints(self):
+        """
+        Add constraints and very that Igor can return them after cache updates.
+        """
+        # Convenience.
+        igor = self.igor
+
+        # Create the constraints for this test.
+        c1 = self.getP2P(1, 2, 'foo')
+        c2 = self.getP2P(2, 3, 'foo')
+        c3 = self.getP2P(3, 4, 'foo')
+        c4 = self.getP2P(4, 5, 'foo')
+
+        # The list of constraints must be empty after a reset.
         assert igor.reset() == (True, None, None)
         assert igor.getAllConstraints().data == tuple()
         assert igor.updateLocalCache() == (True, None, 0)
+        assert igor.getAllConstraints().data == tuple()
+
+        # Add two constraints and verify that Igor returns them *after* a cache
+        # update.
         assert igor.addConstraints([c2, c3]) == (True, None, 2)
         assert igor.getAllConstraints().data == tuple()
         assert igor.updateLocalCache() == (True, None, 2)
         assert sorted(igor.getAllConstraints().data) == sorted((c2, c3))
+
+        # Add another two constraints, only one of which is new. Verify that
+        # Igor returns the correct three constraints.
         assert igor.addConstraints([c3, c4]) == (True, None, 1)
         assert igor.updateLocalCache() == (True, None, 3)
         assert sorted(igor.getAllConstraints().data) == sorted((c2, c3, c4))
 
+    def test_delete(self):
+        """
+        Add- and delete several constraints.
+        """
+        # Convenience.
+        igor = self.igor
+
+        # Create the constraints for this test.
+        c1 = self.getP2P(1, 2, 'foo')
+        c2 = self.getP2P(2, 3, 'foo')
+        c3 = self.getP2P(3, 4, 'foo')
+        c4 = self.getP2P(4, 5, 'foo')
+
+        # Attempt to delete a non-existing constraint. This must neither return an
+        # error not delete anything.
+        assert igor.reset().ok
         assert igor.delete([c1]) == (True, None, 0)
+        assert igor.delete([c1, c2]) == (True, None, 0)
+        assert igor.updateLocalCache() == (True, None, 0)
+
+        # Add some constraints, delete them, and update the cache.
+        assert igor.addConstraints([c1, c2, c3]) == (True, None, 3)
         assert igor.updateLocalCache() == (True, None, 3)
+        assert igor.delete([c1, c2]) == (True, None, 2)
+        assert igor.updateLocalCache() == (True, None, 1)
 
+        # Add/delete more constraints without every updating the cache. These
+        # operations must not affect the local cache of constraints in Igor.
+        assert igor.reset().ok
+        assert igor.addConstraints([c1, c2, c3]) == (True, None, 3)
+        assert igor.delete([c1, c2]) == (True, None, 2)
+        assert igor.delete([c1, c2]) == (True, None, 0)
+        assert igor.addConstraints([c1, c2]) == (True, None, 2)
+        assert igor.delete([c1]) == (True, None, 1)
         assert igor.delete([c1, c2]) == (True, None, 1)
-        assert igor.updateLocalCache() == (True, None, 2)
+        assert igor.delete([c1, c2]) == (True, None, 0)
+        assert igor.updateLocalCache() == (True, None, 1)
+        assert igor.getAllConstraints().data == (c3, )
 
+    def test_uniquePairs(self):
+        """
+        Add- and delete constraints and verify that Igor maintins a consistent
+        list of unique body pairs.
+        """
+        # Convenience.
+        igor = self.igor
+
+        # Create the constraints for this test.
+        c1 = self.getP2P(1, 2, 'foo')
+        c2 = self.getP2P(2, 3, 'foo')
+        c3 = self.getP2P(3, 4, 'foo')
+
+        # There must not be any pairs after a reset.
         assert igor.reset() == (True, None, None)
         assert igor.uniquePairs() == (True, None, tuple())
+
+        # Adding a constraint must result in one unique pair of IDs *after*
+        # updating the Igor cache.
         assert igor.addConstraints([c1]) == (True, None, 1)
         assert igor.uniquePairs() == (True, None, tuple())
         assert igor.updateLocalCache() == (True, None, 1)
         assert igor.uniquePairs().data == ((c1.rb_a, c1.rb_b), )
 
-        assert sorted(igor.getAllConstraints().data) == sorted((c1,))
-        assert igor.addConstraints([c1, c2, c3, c4]) == (True, None, 3)
-        assert igor.updateLocalCache() == (True, None, 4)
-        ref = [(_.rb_a, _.rb_b) for _ in (c1, c2, c3, c4)]
-        ret = igor.uniquePairs()
-        assert set(ret.data) == set(tuple(ref))
+        # Add three more constraints, only two of which are actually new.
+        assert igor.addConstraints([c1, c2, c3]) == (True, None, 2)
+        assert igor.updateLocalCache() == (True, None, 3)
 
-        ret = igor.getConstraints([1, 2, 3, 4, 5])
-        assert sorted(ret.data) == sorted((c1, c2, c3, c4))
+        # Verify that the set of unique pairs now covers those involved in the
+        # constraints.
+        ref = [(_.rb_a, _.rb_b) for _ in (c1, c2, c3)]
+        assert set(igor.uniquePairs().data) == set(tuple(ref))
+        
+        # Delete two constraints.
+        assert igor.delete([c1, c3]) == (True, None, 2)
+        assert set(igor.uniquePairs().data) == set(tuple(ref))
+        assert igor.updateLocalCache() == (True, None, 1)
+        assert igor.uniquePairs().data == ((c2.rb_a, c2.rb_b), )
 
+    def test_getConstraint(self):
+        """
+        Verify that Igor returns the correct constraints.
+        """
+        # Convenience.
+        igor = self.igor
+
+        # Create the constraints for this test.
+        c1 = self.getP2P(1, 2, 'foo')
+        c2 = self.getP2P(2, 3, 'foo')
+        c3 = self.getP2P(3, 4, 'foo')
+
+        # Query the constraints for bodies that do not feature in any
+        # constraints.
+        assert igor.reset() == (True, None, None)
+        assert igor.getConstraints([]) == (True, None, tuple())
+        assert igor.getConstraints([1]) == (True, None, tuple())
+        assert igor.getConstraints([1, 2]) == (True, None, tuple())
+
+        # Add four constraints for the following tests.
+        assert igor.addConstraints([c1, c2, c3]) == (True, None, 3)
+
+        # Query the constraints that involve object one. This must return only
+        # the first object, and only *after* the local Igor cache was updated.
+        assert igor.getConstraints([1]) == (True, None, ())
+        assert igor.updateLocalCache() == (True, None, 3)
         ret = igor.getConstraints([1])
         assert ret.data == (c1, )
 
+        # Query the constraints that involve body 1 & 5. This must again return
+        # only a single hit because body 5 is not part of any constraint.
         ret = igor.getConstraints([1, 5])
-        assert sorted(ret.data) == sorted((c1, c4))
-
-        ret = igor.getConstraints([1, 2, 5])
-        assert len(ret.data) == 3
-        assert sorted(ret.data) == sorted((c1, c2, c4))
-
-        ret = igor.getConstraints([10])
-        assert ret.data == tuple()
-
-        ret = igor.getConstraints([1, 10])
         assert ret.data == (c1, )
 
+        # Objects 1 & 4 feature in to individual constraints.
+        ret = igor.getConstraints([1, 4])
+        assert sorted(ret.data) == sorted((c1, c3))
 
-    def test_add_get(self):
-        """
-        Add/get several constraints.
-        """
-        # Define a few dummy constraint for this test.
-        id_a, id_b, id_c, id_d = 1, 2, 3, 4
-        p2p = ConstraintP2P([0, 0, -1], [0, 0, 1])
-        c1 = ConstraintMeta('p2p', id_a, id_b, p2p)
-        c2 = ConstraintMeta('p2p', id_b, id_c, p2p)
-        c3 = ConstraintMeta('p2p', id_c, id_d, p2p)
+        # Objects 1 & 2 & 4 feature in all three constraints.
+        ret = igor.getConstraints([1, 2, 4])
+        assert len(ret.data) == 3
+        assert sorted(ret.data) == sorted((c1, c2, c3))
 
-        # Query the constraint for a non-existing object.
-        ret = self.igor.get(10)
-        assert ret == (True, None, tuple())
-
-        # Query the constraint for a non-existing pair.
-        ret = self.igor.get(10, 20)
-        assert ret == (True, None, tuple())
-        
-        # Add the first constraint. Exactly one constraint must have been
-        # added.
-        assert self.igor.add(c1) == (True, None, 1)
-
-        # Add the same constraint again. This time none must have been added.
-        assert self.igor.add(c1) == (True, None, 0)
-
-        # Query the constraint for rb_a and rb_b individually.
-        ret_a = self.igor.get(c1.rb_a)
-        ret_b = self.igor.get(c1.rb_b)
-        assert ret_a.ok and ret_b.ok
-        assert ret_a == ret_b
-        
-        # Query the joint constraint.
-        ret = self.igor.get(c1.rb_a, c1.rb_b)
-        assert ret.ok
-        assert isEqualConstraint(ret.data[0], c1._asdict())
-
-        # Query the joint constraint between two objects, only one of which
-        # actually exists. This must return nothing.
-        ret = self.igor.get(c1.rb_a, c2.rb_b)
-        assert ret == (True, None, tuple())
-        
-        # Add the other two constraints.
-        assert self.igor.add(c2) == (True, None, 1)
-        assert self.igor.add(c3) == (True, None, 1)
-
-        # Query the constraints individually.
-        for _c in (c1, c2, c3):
-            ret = self.igor.get(_c.rb_a, _c.rb_b)
-            assert ret.ok and isEqualConstraint(ret.data[0], _c._asdict())
-            ret = self.igor.get(_c.rb_b, _c.rb_a)
-            assert ret.ok and isEqualConstraint(ret.data[0], _c._asdict())
-
-        # Query the constraints for the second object. This must return 2
-        # constraints.
-        ret = self.igor.get(id_b)
-        assert ret.ok
-        assert len(ret.data) == 2
-        if isEqualConstraint(ret.data[0], c1._asdict()):
-           assert isEqualConstraint(ret.data[1], c2._asdict())
-        else:
-           assert isEqualConstraint(ret.data[1], c1._asdict())
-           assert isEqualConstraint(ret.data[0], c2._asdict())
-
-    def test_get_multi(self):
-        """
-        Query multiple constraints at once. This must always return a list of
-        ConstraintMeta instances.
-        """
-        # Define a few dummy constraint for this test.
-        id_a, id_b, id_c, id_d = 1, 2, 3, 4
-        p2p = ConstraintP2P([0, 0, -1], [0, 0, 1])
-        c1 = ConstraintMeta('p2p', id_a, id_b, p2p)
-        c2 = ConstraintMeta('p2p', id_b, id_c, p2p)
-        c3 = ConstraintMeta('p2p', id_c, id_d, p2p)
-
-        # Query the constraint for a non-existing object.
-        ret = self.igor.getMulti([10])
-        assert ret == (True, None, tuple())
-
-        # Query the constraint several non-existing objects.
-        ret = self.igor.getMulti([10, 20])
-        assert ret == (True, None, tuple())
-
-        # Add the first constraint.
-        assert self.igor.add(c1) == (True, None, 1)
-
-        # Query the constraint for rb_a and rb_b individually.
-        ret_a = self.igor.getMulti([c1.rb_a])
-        ret_b = self.igor.getMulti([c1.rb_b])
-        assert ret_a.ok and ret_b.ok
-        assert ret_a == ret_b
-
-        # Query two objects that are linked by a single constraint. This must
-        # return exactly one match.
-        ret = self.igor.getMulti([c1.rb_a, c1.rb_b])
-        assert ret.ok
-        assert len(ret.data) == 1
-        assert isEqualConstraint(ret.data[0]._asdict(), c1._asdict())
-
-        # Query two objects, only one of which exists. This must produce only
-        # one constraint (the same as before).
-        ret = self.igor.getMulti([c1.rb_a, c2.rb_b])
-        assert len(ret.data) == 1
-        assert isEqualConstraint(ret.data[0]._asdict(), c1._asdict())
-
-        # Add the other two constraints.
-        assert self.igor.add(c2) == (True, None, 1)
-        assert self.igor.add(c3) == (True, None, 1)
-
-        # Query the constraints for only the second object, once in conjunction
-        # with the first object and once without. In both cases we must receive
-        # the same two constraints, nameley a-b, and b-c.
-        for query in ([id_b], [id_a, id_b]):
-            ret = self.igor.getMulti(query)
-            assert ret.ok
-            assert len(ret.data) == 2
-            if isEqualConstraint(ret.data[0]._asdict(), c1._asdict()):
-                assert isEqualConstraint(ret.data[1]._asdict(), c2._asdict())
-            else:
-                assert isEqualConstraint(ret.data[1]._asdict(), c1._asdict())
-                assert isEqualConstraint(ret.data[0]._asdict(), c2._asdict())
-
-    def test_getUniquePairs(self):
-        """
-        Create a few constraints and verify that getUniquePairs returns the
-        correct pairs.
-        """
-        # Define a few dummy constraint for this test.
-        id_a, id_b, id_c, id_d = 1, 2, 3, 4
-        p2p = ConstraintP2P([0, 0, -1], [0, 0, 1])
-        c1 = ConstraintMeta('p2p', id_b, id_a, p2p)
-        c2 = ConstraintMeta('p2p', id_b, id_c, p2p)
-        c3 = ConstraintMeta('p2p', id_d, id_c, p2p)
-
-        # Query the constraint for a non-existing object.
-        assert self.igor.getUniquePairs() == (True, None, tuple())
-
-        # Add the first constraint and verify. The IDs in the returned tuple
-        # must always be sorted.
-        for c in [c1, c2, c3]:
-            self.igor.reset()
-            assert self.igor.add(c) == (True, None, 1)
-            ret = self.igor.getUniquePairs()
-            assert ret.ok
-            assert len(ret.data) == 1
-            assert ret.data[0] == tuple(sorted([c.rb_a, c.rb_b]))
-
-        # Reset and verify that no pairs are returned.
-        self.igor.reset()
-        assert self.igor.getUniquePairs() == (True, None, tuple())
-
-        # Add all three constraints.
-        assert self.igor.add(c1) == (True, None, 1)
-        assert self.igor.add(c2) == (True, None, 1)
-        assert self.igor.add(c3) == (True, None, 1)
-
-        ret = self.igor.getUniquePairs()
-        assert ret.ok
-        expected = [sorted([_.rb_a, _.rb_b]) for _ in [c1, c2, c3]]
-        expected = [tuple(_) for _ in expected]
-        expected = set(expected)
-        assert set(ret.data) == expected
+        # Body 2 features in two constraints whereas body 10 features in none.
+        ret = igor.getConstraints([2, 10])
+        assert sorted(ret.data) == sorted((c1, c2))
