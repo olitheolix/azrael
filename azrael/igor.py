@@ -29,6 +29,7 @@ class Igor:
     """
     def __init__(self):
         self.db = database.dbHandles['Constraints']
+        self._cache = {}
 
     def reset(self):
         self.db.drop()

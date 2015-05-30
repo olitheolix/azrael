@@ -71,6 +71,12 @@ class TestClerk:
         # Create two constraints.
         c1, c2, c3, c4 = _getC([1, 2, 3, 4], [2, 3, 4, 5], ['a'] * 4)
 
+        tmp_igor = azrael.igor.Igor()
+        assert tmp_igor.getAllConstraints().ok
+        assert tmp_igor.getConstraints([1, 2]).ok
+        assert tmp_igor.getUniquePairs().ok
+        del tmp_igor
+
         igor = self.igor
         assert igor.updateLocalCache() == (True, None, 0)
         assert igor.addConstraints([c1]) == (True, None, 1)
