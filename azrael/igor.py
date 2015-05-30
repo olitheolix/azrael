@@ -122,10 +122,3 @@ class Igor:
         for el in res:
             del el['_id']
         return RetVal(True, None, tuple(res))
-
-    def getMulti(self, IDs: (tuple, list)):
-        query = {'$or': [{'rb_a': {'$in': IDs}}, {'rb_b': {'$in': IDs}}]}
-        prj = {_: True for _ in ConstraintMeta._fields}
-        prj['_id'] = False
-        res = [ConstraintMeta(**_) for _ in self.db.find(query, prj)]
-        return RetVal(True, None, tuple(res))
