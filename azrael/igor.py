@@ -17,6 +17,7 @@
 """
 Igor is a stateless class to manage rigid body constraints.
 """
+import logging
 import azrael.config as config
 import azrael.database as database
 
@@ -28,6 +29,10 @@ class Igor:
     """
     """
     def __init__(self):
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
+
         # Create the database handle and local constraint cache.
         self.db = database.dbHandles['Constraints']
         self._cache = {}
