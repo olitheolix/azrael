@@ -167,8 +167,9 @@ class Igor:
         :return: list of ``ConstraintMeta`` instances.
         :rtype: tuple
         """
-        # Convert the list to a set for fast lookups.
-        bodyIDs = set(bodyIDs)
+        # Sanity check: remove all non-integers and turn the list into a set
+        # for fast look ups.
+        bodyIDs = set([_ for _ in bodyIDs if isinstance(_, int)])
 
         # Iterate over all constraints and pick the ones that contain at least
         # one of the bodies specified in `bodyIDs`.
