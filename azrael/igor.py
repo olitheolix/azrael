@@ -110,7 +110,7 @@ class Igor:
         It will return the number of constraints
 
         fixme: add sanity checks.
-        fixme: must be a buld query
+        fixme: must be a bulk query
         fixme: the key must include the tag
 
         :param list constraints: a list of ``ConstraintMeta`` instances.
@@ -152,10 +152,23 @@ class Igor:
 
         return RetVal(True, None, cnt)
 
-    def getConstraints(self, bodyIDs: (tuple, list)):
+    def getConstraints(self, bodyIDs: (set, tuple, list)):
         """
+        Return all constraints that involve any of bodies in ``bodyIDs``.
+
+        ..note:: this method only consults the local cache. Depending on your
+                 circumstances you may want to to call ``updateLocalCache``
+                 first.
+
+        :param list[int] bodyIDs: list of body IDs
+        :return: list of ``ConstraintMeta`` instances.
+        :rtype: tuple
         """
+        # Convert the list to a set for fast lookups.
         bodyIDs = set(bodyIDs)
+
+        # Iterate over all constraints and pick the ones that contain at least
+        # one of the bodies specified in `bodyIDs`.
         out = []
         for tmp in self._cache:
             if not (tmp.rb_a in bodyIDs or tmp.rb_b in bodyIDs):
@@ -164,9 +177,33 @@ class Igor:
         return RetVal(True, None, tuple(out))
 
     def getAllConstraints(self):
+        """
+        Return all constraints in the local cache.
+
+        ..note:: this method only consults the local cache. Depending on your
+                 circumstances you may want to to call ``updateLocalCache``
+                 first.
+
+        :return: list of all ``ConstraintMeta`` instances in local cache.
+        :rtype: tuple
+        """
         return RetVal(True, None, tuple(self._cache.values()))
 
     def delete(self, constraints: (tuple, list)):
+        """
+        fixme: use bulk query.
+
+        Delete the ``constraints`` in the data base.
+
+        It is save to call this method on non-existing constraints (it will
+        simply skip them).
+
+        ..note:: this will *not* update the local cache. Call
+                 ``updateLocalCache`` to do so.
+
+        :param list constraints: list of `ConstraintMeta` tuples.
+        :return: number of deleted entries.
+        """
         cnt = 0
         for constr in constraints:
             query = {'rb_a': constr.rb_a,
@@ -179,7 +216,14 @@ class Igor:
     def uniquePairs(self):
         """
         fixme: add test where one body is None
-        """
 
+        Return the list of unique body pairs involved in any collision.
+
+        ..note:: this method only consults the local cache. Depending on your
+                 circumstances you may want to to call ``updateLocalCache``
+                 first.
+
+        :return: list of unique body ID pairs (eg ((1, 2), (2, 3), (5, 20)))
+        """
         out = {(_.rb_a, _.rb_b) for _ in self._cache}
         return RetVal(True, None, tuple(out))
