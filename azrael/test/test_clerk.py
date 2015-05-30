@@ -1548,12 +1548,12 @@ class TestClerk:
         clacks.terminate()
         clacks.join()
 
-    def test_createConstraints(self):
+    def test_addConstraints(self):
         """
         Spawn two rigid bodies and define a Point2Point constraint among them.
         """
         # Reset the SV database and instantiate a Leonard and a Clerk.
-        leo = getLeonard()
+        leo = getLeonard(azrael.leonard.LeonardBullet)
         clerk = azrael.clerk.Clerk()
 
         # Reset the constraint database.
@@ -1566,7 +1566,7 @@ class TestClerk:
         # Define two spherical collision shapes at x=+/-2. Since the default
         # sphere is a unit sphere this ensures that the spheres do not touch
         # each other, but have a gap of 2 Meters between them.
-        pos_a, pos_b = (0, 0, -2), (0, 0, 2)
+        pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
         sv_a = bullet_data.MotionState(position=pos_a)
         sv_b = bullet_data.MotionState(position=pos_b)
 
@@ -1586,19 +1586,21 @@ class TestClerk:
         # Define the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
         constraints = [ConstraintMeta('p2p', id_a, id_b, '', p2p)]
-        assert clerk.addConstraints(constraints).ok
+        assert clerk.addConstraints(constraints) == (True, None, 1)
 
         # Apply a force that will pull the left object further to the left.
         # However, both objects must move the same distance in the same
         # direction because they are now linked together.
         assert clerk.setForce(id_a, [-10, 0, 0], [0, 0, 0]).ok
         leo.processCommandsAndSync()
+        leo.step(1.0, 60)
         ret = clerk.getStateVariables([id_a, id_b])
         assert ret.ok
         pos_a2 = ret.data[id_a]['sv'].position
         pos_b2 = ret.data[id_b]['sv'].position
         delta_a = np.array(pos_a2) - np.array(pos_a)
         delta_b = np.array(pos_b2) - np.array(pos_b)
+        assert delta_a[0] < pos_a[0]
         assert np.allclose(delta_a, delta_b)
 
 
