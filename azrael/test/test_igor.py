@@ -128,6 +128,37 @@ class TestClerk:
         assert igor.addConstraints([c1, c6]) == (True, None, 1)
         assert igor.updateLocalCache() == (True, None, 1)
 
+    def test_add_unique_bug1(self):
+        """
+        Add two constraints that are identical except for the 'tag'.
+
+        In the original implementation this was handled incorrectly because the
+        'tag' was not considered when adding constraints. This made it
+        impossible to add more than once constraint of each type (eg more than
+        one Point2Point constraint between objects).
+        """
+        # Convenience.
+        igor = self.igor
+
+        # Two constraints that only differ in the 'tag' attribute.
+        c1 = self.getP2P(1, 2, 'foo')
+        c2 = self.getP2P(1, 2, 'bar')
+
+        # Attempt to add the first constraint twice. Igor must detect this and
+        # only add it once.
+        assert igor.reset().ok
+        assert igor.addConstraints([c1, c1]) == (True, None, 1)
+
+        # Attempt to both constraints. Without the bug fix Igor would only add
+        # the first one, whereas with the bug fix it adds both.
+        assert igor.reset().ok
+        assert igor.addConstraints([c1, c2]) == (True, None, 2)
+
+        # Update the local cache and verify that really both constraints are
+        # available.
+        assert igor.updateLocalCache() == (True, None, 2)
+        assert sorted(igor.getAllConstraints().data) == sorted((c1, c2))
+
     def test_getAllConstraints(self):
         """
         Add constraints and very that Igor can return them after cache updates.

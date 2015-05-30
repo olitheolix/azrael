@@ -111,7 +111,6 @@ class Igor:
 
         fixme: add sanity checks.
         fixme: must be a bulk query
-        fixme: the key must include the tag
 
         :param list constraints: a list of ``ConstraintMeta`` instances.
         :return: number of newly added constraints.
@@ -139,9 +138,10 @@ class Igor:
             # in MongoDB without loosing the attribute names.
             con = con._replace(data=con.data._asdict())
 
-            # Insert the constraints into MongoDB. They key specifies the IDs
-            # of the two involved bodies, the type, and the tag.
-            query = {'rb_a': rb_a, 'rb_b': rb_b, 'type': con.type}
+            # Insert the constraints into MongoDB. The constraint query must
+            # match both objects IDs, the type, and the tag.
+            query = {'rb_a': rb_a, 'rb_b': rb_b,
+                     'type': con.type, 'tag': con.tag}
             r = self.db.update(query, {'$setOnInsert': con._asdict()}, upsert=True)
 
             # Determine how many new constraints were actually added
