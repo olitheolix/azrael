@@ -684,7 +684,7 @@ class Client():
         return self.serialiseAndSend('set_statevar', objID, new_SV)
 
     @typecheck
-    def setForce(self, objID: int, force: np.ndarray):
+    def setForce(self, objID: int, force: (tuple, list, np.ndarray)):
         """
         Apply ``force`` to ``objID``.
 
@@ -694,8 +694,11 @@ class Client():
         :param ndarray force: the actual force vector (3 elements).
         :return: Success
         """
+        force = tuple(np.array(force).tolist())
         assert len(force) == 3
-        pos = np.zeros(3, np.float64)
+
+        # fixme: position should be an optional parameter.
+        pos = (0, 0, 0)
         return self.serialiseAndSend('set_force', objID, force, pos)
 
     def getAllObjectIDs(self):

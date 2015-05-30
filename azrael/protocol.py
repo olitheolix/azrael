@@ -267,7 +267,7 @@ def FromClerk_SetStateVector_Decode(dummyarg):
 
 
 @typecheck
-def ToClerk_SetForce_Encode(objID: int, force: np.ndarray, rpos: np.ndarray):
+def ToClerk_SetForce_Encode(objID: int, force: tuple, rpos: tuple):
     d = {'objID': objID, 'rel_pos': rpos, 'force': force}
     return RetVal(True, None, d)
 
