@@ -15,40 +15,63 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 """
-Manage the constraints between objects.
+Igor is a stateless class to manage rigid body constraints.
 """
 import azrael.config as config
 import azrael.database as database
 
-from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
 from IPython import embed as ipshell
+from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
 
 
 class Igor:
     """
     """
     def __init__(self):
+        # Create the database handle and local constraint cache.
         self.db = database.dbHandles['Constraints']
         self._cache = {}
 
     def reset(self):
+        """
+        Flush the constraint database.
+
+        :return: success
+        """
         self.db.drop()
         self._cache = {}
         return RetVal(True, None, None)
 
     def updateLocalCache(self):
+        """
+        Download *all* constraints from the database into the local cache.
+
+        :return: Success
+        """
+        # Create a Mongo cursor that retrieves all constraints (minus the _id
+        # field).
         prj = {'_id': False}
         cursor = self.db.find({}, prj)
 
+        # Flush the cache.
         self._cache = {}
+
+        # Convenience.
         cache = self._cache
         CM = ConstraintMeta
+
+        # Build an iterator that returns the constraints from the data base and
+        # wraps them into ConstraintMeta tuples.
         constraints = (CM(**_) for _ in cursor)
+
+        # Iterate over all constraints and substitute the 'data' attribute with
+        # the correct named tuple for the respective constraint.
         for constr in constraints:
             if constr.type.upper() == 'P2P':
                 tmp = constr._replace(data=ConstraintP2P(**constr.data))
                 cache[CM(tmp.type, tmp.rb_a, tmp.rb_b, tmp.tag, None)] = tmp
             else:
+                # fixme: log error
                 continue
 
         return RetVal(True, None, len(self._cache))
