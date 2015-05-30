@@ -105,20 +105,3 @@ class Igor:
         else:
             cnt = r['n']
         return RetVal(True, None, cnt)
-
-    def get(self, id_a: int, id_b: int=None):
-        assert id_a is not None
-        if id_b is not None:
-            id_a, id_b = sorted((id_a, id_b))
-
-        if id_b is None:
-            res1 = list(self.db.find({'rb_a': id_a}))
-            res2 = list(self.db.find({'rb_b': id_a}))
-            res = res1 + res2
-        else:
-            query = {'rb_a': id_a, 'rb_b': id_b}
-            res = list(self.db.find(query))
-
-        for el in res:
-            del el['_id']
-        return RetVal(True, None, tuple(res))
