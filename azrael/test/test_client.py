@@ -781,7 +781,7 @@ class TestClerk:
         # Define the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
         constraints = [ConstraintMeta('p2p', id_1, id_2, '', p2p)]
-        client.addConstraints(constraints) == (True, None, 1)
+        assert client.addConstraints(constraints) == (True, None, 1)
 
         # Apply a force that will pull the left object further to the left.
         # However, both objects must move the same distance in the same
