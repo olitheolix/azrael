@@ -528,14 +528,9 @@ class LeonardBullet(LeonardBase):
         # Process pending commands.
         self.processCommandQueue()
 
-        # Fetch all currently active constraints.
-        ret = self.igor.getMulti(list(self.allObjects.keys()))
-        if ret.ok:
-            allConstraints = ret.data
-        else:
-            self.logit.error(ret.msg)
-            allConstraints = []
-        del ret
+        # Update the constraint cache in our Igor instance.
+        self.igor.updateLocalCache()
+        allConstraints = self.igor.getAllConstraints().data
 
         # Fetch the forces for all object positions.
         idPos = {k: v.position for (k, v) in self.allObjects.items()}
