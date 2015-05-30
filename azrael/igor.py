@@ -93,6 +93,60 @@ class Igor:
         # Return the number of valid constraints now in the cache.
         return RetVal(True, None, len(self._cache))
 
+    def addConstraints(self, constraints: (tuple, list)):
+        """
+        Add all ``constraints`` to the database.
+
+        All entries in ``constraints`` must be ``ConstraintMeta`` instances,
+        and their `data` attribute must be a valid ``Consraint***`` instance.
+
+        This method will skip over all constraints with an invalid/unknown type.
+
+        It will return the number of constraints
+
+        fixme: add sanity checks.
+        fixme: must be a buld query
+        fixme: the key must include the tag
+
+        :param list constraints: a list of ``ConstraintMeta`` instances.
+        :return: number of newly added constraints.
+        """
+        cnt = 0
+        for con in constraints:
+            # Skip all constraints with an unknown type.
+            if con.type.upper() not in ['P2P']:
+                continue
+
+            # Convenience.
+            rb_a, rb_b = con.rb_a, con.rb_b
+
+            # The first body must not be None.
+            if rb_a is None:
+                continue
+
+            # If both bodies are not None then sort them to simplify the logic
+            # that fetches constraints.
+            if rb_b is not None:
+                rb_a, rb_b = sorted((rb_a, rb_b))
+            con = con._replace(rb_a=rb_a, rb_b=rb_b)
+
+            # Convert content of the 'data' field into a dictionary to store it
+            # in MongoDB without loosing the attribute names.
+            con = con._replace(data=con.data._asdict())
+
+            # Insert the constraints into MongoDB. They key specifies the IDs
+            # of the two involved bodies, the type, and the tag.
+            query = {'rb_a': rb_a, 'rb_b': rb_b, 'type': con.type}
+            r = self.db.update(query, {'$setOnInsert': con._asdict()}, upsert=True)
+
+            # Determine how many new constraints were actually added
+            if r['updatedExisting']:
+                cnt += r['nModified']
+            else:
+                cnt += r['n']
+
+        return RetVal(True, None, cnt)
+
     def getConstraints(self, bodyIDs: (tuple, list)):
         """
         """
@@ -107,29 +161,6 @@ class Igor:
     def getAllConstraints(self):
         return RetVal(True, None, tuple(self._cache.values()))
 
-    def addConstraints(self, constraints: (tuple, list)):
-        """
-        Merge this code into the 'add' function.
-        """
-        cnt = 0
-        for con in constraints:
-            rb_a, rb_b = con.rb_a, con.rb_b
-
-            assert rb_a is not None
-            if rb_b is not None:
-                rb_a, rb_b = sorted((rb_a, rb_b))
-            con = con._replace(rb_a=rb_a, rb_b=rb_b)
-            con = con._replace(data=con.data._asdict())
-
-            query = {'rb_a': rb_a, 'rb_b': rb_b, 'type': con.type}
-            r = self.db.update(query, {'$setOnInsert': con._asdict()}, upsert=True)
-            if r['updatedExisting']:
-                cnt += r['nModified']
-            else:
-                cnt += r['n']
-
-        return RetVal(True, None, cnt)
-
     def delete(self, constraints: (tuple, list)):
         cnt = 0
         for constr in constraints:
@@ -141,5 +172,9 @@ class Igor:
         return RetVal(True, None, cnt)
 
     def uniquePairs(self):
+        """
+        fixme: add test where one body is None
+        """
+
         out = {(_.rb_a, _.rb_b) for _ in self._cache}
         return RetVal(True, None, tuple(out))

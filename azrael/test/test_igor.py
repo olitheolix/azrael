@@ -121,6 +121,13 @@ class TestClerk:
         ref = sorted((c1, c2, c3, c4, c5, c6))
         assert sorted(igor.getAllConstraints().data) == ref
 
+        # Reset igor and add two constraints, of which only one has a valid
+        # 'type'. The 'addConstraints' must only add the valid one.
+        c6 = c6._replace(type='foo')
+        assert igor.reset().ok
+        assert igor.addConstraints([c1, c6]) == (True, None, 1)
+        assert igor.updateLocalCache() == (True, None, 1)
+
     def test_getAllConstraints(self):
         """
         Add constraints and very that Igor can return them after cache updates.
