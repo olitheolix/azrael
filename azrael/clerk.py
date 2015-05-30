@@ -150,6 +150,10 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_UpdateFragmentStates_Decode,
                 self.updateFragmentStates,
                 protocol.FromClerk_UpdateFragmentStates_Encode),
+            'add_constraints': (
+                protocol.ToClerk_AddConstraints_Decode,
+                self.addConstraints,
+                protocol.FromClerk_AddConstraints_Encode),
         }
 
     def runCommand(self, fun_decode, fun_process, fun_encode):

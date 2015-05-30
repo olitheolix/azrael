@@ -120,6 +120,9 @@ class Client():
             'update_fragment_states': (
                 protocol.ToClerk_UpdateFragmentStates_Encode,
                 protocol.FromClerk_UpdateFragmentStates_Decode),
+            'add_constraints': (
+                protocol.ToClerk_AddConstraints_Encode,
+                protocol.FromClerk_AddConstraints_Decode),
         }
 
     def __del__(self):
@@ -728,3 +731,6 @@ class Client():
         :rtype:
         """
         return self.serialiseAndSend('update_fragment_states', fragStates)
+
+    def addConstraints(self, constraints: (tuple, list)):
+        return self.serialiseAndSend('add_constraints', constraints)

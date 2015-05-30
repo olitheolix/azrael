@@ -42,6 +42,7 @@ should make it possible to write clients in other languages.
 
 import base64
 import azrael.util
+import azrael.igor
 import azrael.bullet_data as bullet_data
 import azrael.physics_interface as physics_interface
 
@@ -50,6 +51,7 @@ import azrael.parts as parts
 
 from collections import namedtuple
 from azrael.types import typecheck, RetVal, Template
+from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 
 from IPython import embed as ipshell
@@ -548,3 +550,49 @@ def FromClerk_UpdateFragmentStates_Encode(dummyarg):
 @typecheck
 def FromClerk_UpdateFragmentStates_Decode(dummyarg):
     return RetVal(True, None, None)
+
+
+# ---------------------------------------------------------------------------
+# AddConstraints
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_AddConstraints_Encode(constraints: (tuple, list)):
+    out = []
+    for con in constraints:
+        data = con.data._asdict()
+        meta = con._replace(data=None)._asdict()
+        out.append({'m': meta, 'd': data})
+    return RetVal(True, None, {'constraints': out})
+
+
+@typecheck
+def ToClerk_AddConstraints_Decode(payload: dict):
+    kc = azrael.igor._Known_Constraints
+    out = []
+    for con in payload['constraints']:
+        data, meta = con['d'], con['m']
+
+        # Build the ConstraintMeta object (its 'data' attribute  will be
+        # *None*).
+        meta = ConstraintMeta(**meta)
+
+        # Look up the correct named tuple for the specified constraint and use
+        # it to wrap the data.
+        fun = kc[meta.type.upper()]
+        data = fun(**data)
+
+        # Add the constructed constraint to the list.
+        out.append(meta._replace(data=data))
+    return True, (out, )
+
+
+@typecheck
+def FromClerk_AddConstraints_Encode(num_added):
+    return True, {'added': num_added}
+
+
+@typecheck
+def FromClerk_AddConstraints_Decode(payload):
+    return RetVal(True, None, payload['added'])

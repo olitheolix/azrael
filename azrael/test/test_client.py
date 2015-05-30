@@ -30,6 +30,7 @@ import urllib.request
 
 import numpy as np
 
+import azrael.igor
 import azrael.util
 import azrael.clerk
 import azrael.clacks
@@ -44,6 +45,7 @@ import azrael.bullet_data as bullet_data
 from IPython import embed as ipshell
 from azrael.types import RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
+from azrael.types import ConstraintMeta, ConstraintP2P
 from azrael.test.test import createFragRaw, createFragDae, isEqualCS
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
@@ -750,3 +752,49 @@ class TestClerk:
         assert ret['f_dae']['type'] == 'dae'
         assert ret['f_dae']['url'] == (
             config.url_instances + '/' + str(objID) + '/f_dae')
+
+    @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+    def test_createConstraints(self, client_type):
+        """
+        Spawn two rigid bodies and define a Point2Point constraint among them.
+        """
+        # Reset the constraint database.
+        igor = azrael.igor.Igor()
+        assert igor.reset().ok
+
+        # Get the client for this test.
+        client = self.clients[client_type]
+
+        # Reset the SV database and instantiate a Leonard.
+        leo = getLeonard(azrael.leonard.LeonardBullet)
+
+        # Spawn the two bodies.
+        pos_a, pos_b = [-2, 0, 0], [2, 0, 0]
+        obj_1 = {'template': '_templateSphere', 'position': pos_a}
+        obj_2 = {'template': '_templateSphere', 'position': pos_b}
+        id_1, id_2 = 1, 2
+        assert client.spawn([obj_1, obj_2]) == (True, None, (id_1, id_2))
+
+        # Verify that both objects were spawned (simply query their template
+        # original template to establish that they now actually exist).
+        leo.processCommandsAndSync()
+
+        # Define the constraints.
+        p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
+        constraints = [ConstraintMeta('p2p', id_1, id_2, '', p2p)]
+        client.addConstraints(constraints) == (True, None, 1)
+
+        # Apply a force that will pull the left object further to the left.
+        # However, both objects must move the same distance in the same
+        # direction because they are now linked together.
+        assert client.setForce(id_1, [-10, 0, 0]).ok
+        leo.processCommandsAndSync()
+        leo.step(1.0, 60)
+        ret = client.getStateVariables([id_1, id_2])
+        assert ret.ok
+        pos_a2 = ret.data[id_1]['sv'].position
+        pos_b2 = ret.data[id_2]['sv'].position
+        delta_a = np.array(pos_a2) - np.array(pos_a)
+        delta_b = np.array(pos_b2) - np.array(pos_b)
+        assert delta_a[0] < pos_a[0]
+        assert np.allclose(delta_a, delta_b)
