@@ -152,8 +152,7 @@ class TestLeonardAllEngines:
         # Update the object's State Vector.
         assert physAPI.addCmdModifyStateVariable(id_1, data).ok
 
-        # Step the simulation by 0 seconds. This will not change the simulation
-        # state but pick up all the queued commands.
+        # Sync the commands to Leonard.
         leo.processCommandsAndSync()
 
         # Verify that the attributes were correctly updated.
@@ -938,8 +937,12 @@ class TestLeonardOther:
         # Convenience.
         id_a, id_b, aabb = 1, 2, 1
         pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
-        sv_a = bullet_data.MotionState(position=pos_a)
-        sv_b = bullet_data.MotionState(position=pos_b)
+        cs = CollShapeMeta(
+            'sphere', '', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1)
+        )
+
+        sv_a = bullet_data.MotionState(position=pos_a, cshape=[cs])
+        sv_b = bullet_data.MotionState(position=pos_b, cshape=[cs])
 
         # Specify the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
