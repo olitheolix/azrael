@@ -96,6 +96,9 @@ class TestClerk:
         # There must not be any objectgs to download.
         assert igor.updateLocalCache() == (True, None, 0)
 
+        # Pass an empty list.
+        assert igor.addConstraints([]) == (True, None, 0)
+
         # Add one constraint and update the cache.
         assert igor.addConstraints([c1]) == (True, None, 1)
         assert igor.updateLocalCache() == (True, None, 1)

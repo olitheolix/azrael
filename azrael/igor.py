@@ -110,12 +110,11 @@ class Igor:
         It will return the number of constraints
 
         fixme: add sanity checks.
-        fixme: must be a bulk query
 
         :param list constraints: a list of ``ConstraintMeta`` instances.
         :return: number of newly added constraints.
         """
-        cnt = 0
+        queries = []
         for con in constraints:
             # Skip all constraints with an unknown type.
             if con.type.upper() not in _Known_Constraints:
@@ -140,17 +139,22 @@ class Igor:
 
             # Insert the constraints into MongoDB. The constraint query must
             # match both objects IDs, the type, and the tag.
-            query = {'rb_a': rb_a, 'rb_b': rb_b,
-                     'type': con.type, 'tag': con.tag}
-            r = self.db.update(query, {'$setOnInsert': con._asdict()}, upsert=True)
+            tmp = {'rb_a': rb_a, 'rb_b': rb_b,
+                   'type': con.type, 'tag': con.tag}
+            queries.append((tmp, con._asdict()))
 
-            # Determine how many new constraints were actually added
-            if r['updatedExisting']:
-                cnt += r['nModified']
-            else:
-                cnt += r['n']
+        # Return immediately if the list of constraints to add is empty.
+        if len(queries) == 0:
+            return RetVal(True, None, 0)
 
-        return RetVal(True, None, cnt)
+        # Compile the bulk query and execute it.
+        bulk = self.db.initialize_unordered_bulk_op()
+        for q, c in queries:
+            bulk.find(q).upsert().update({'$setOnInsert': c})
+        ret = bulk.execute()
+
+        # Return the number of newly created constraints.
+        return RetVal(True, None, ret['nUpserted'])
 
     def getConstraints(self, bodyIDs: (set, tuple, list)):
         """
