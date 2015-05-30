@@ -79,11 +79,15 @@ class TestClerk:
         assert igor.addConstraints([c3, c4]) == (True, None, 1)
 
         assert igor.reset() == (True, None, None)
+        assert igor.getAllConstraints().data == tuple()
         assert igor.updateLocalCache() == (True, None, 0)
         assert igor.addConstraints([c2, c3]) == (True, None, 2)
+        assert igor.getAllConstraints().data == tuple()
         assert igor.updateLocalCache() == (True, None, 2)
+        assert sorted(igor.getAllConstraints().data) == sorted((c2, c3))
         assert igor.addConstraints([c3, c4]) == (True, None, 1)
         assert igor.updateLocalCache() == (True, None, 3)
+        assert sorted(igor.getAllConstraints().data) == sorted((c2, c3, c4))
 
         assert igor.delete([c1]) == (True, None, 0)
         assert igor.updateLocalCache() == (True, None, 3)
@@ -98,6 +102,7 @@ class TestClerk:
         assert igor.updateLocalCache() == (True, None, 1)
         assert igor.uniquePairs().data == ((c1.rb_a, c1.rb_b), )
 
+        assert sorted(igor.getAllConstraints().data) == sorted((c1,))
         assert igor.addConstraints([c1, c2, c3, c4]) == (True, None, 3)
         assert igor.updateLocalCache() == (True, None, 4)
         ref = [(_.rb_a, _.rb_b) for _ in (c1, c2, c3, c4)]

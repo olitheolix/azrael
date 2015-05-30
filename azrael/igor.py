@@ -63,6 +63,9 @@ class Igor:
             out.append(self._cache[tmp])
         return RetVal(True, None, tuple(out))
 
+    def getAllConstraints(self):
+        return RetVal(True, None, tuple(self._cache.values()))
+
     def addConstraints(self, constraints: (tuple, list)):
         """
         Merge this code into the 'add' function.
