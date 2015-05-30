@@ -124,13 +124,12 @@ class Igor:
             rb_a, rb_b = con.rb_a, con.rb_b
 
             # The first body must not be None.
-            if rb_a is None:
+            if rb_a is None or rb_b is None:
                 continue
 
-            # If both bodies are not None then sort them to simplify the logic
-            # that fetches constraints.
-            if rb_b is not None:
-                rb_a, rb_b = sorted((rb_a, rb_b))
+            # Sort the body IDs. This will simplify the logic to fetch- and
+            # process constraints.
+            rb_a, rb_b = sorted((rb_a, rb_b))
             con = con._replace(rb_a=rb_a, rb_b=rb_b)
 
             # Convert content of the 'data' field into a dictionary to store it
@@ -229,8 +228,6 @@ class Igor:
 
     def uniquePairs(self):
         """
-        fixme: add test where one body is None
-
         Return the list of unique body pairs involved in any collision.
 
         ..note:: this method only consults the local cache. Depending on your
