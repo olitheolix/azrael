@@ -24,6 +24,11 @@ import azrael.database as database
 from IPython import embed as ipshell
 from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
 
+# List of known constraints and the associated named tuple.
+_Known_Constraints = {
+    'P2P': ConstraintP2P,
+}
+
 
 class Igor:
     """
@@ -75,10 +80,10 @@ class Igor:
         # value of *None* for the data field, and the value is the same
         # `ConstraintMeta` data but with a valid 'data' attribute.
         for con in constraints:
-            if con.type.upper() == 'P2P':
-                # Build the correct named tuple for the data part.
-                con = con._replace(data=ConstraintP2P(**con.data))
-            else:
+            try:
+                NT = _Known_Constraints[con.type.upper()]
+                con = con._replace(data=NT(**con.data))
+            except KeyError:
                 # Skip over unknown constraints.
                 msg = 'Ignoring unknown constraint {}'.format(con.type)
                 self.logit.info(msg)
@@ -114,7 +119,7 @@ class Igor:
         cnt = 0
         for con in constraints:
             # Skip all constraints with an unknown type.
-            if con.type.upper() not in ['P2P']:
+            if con.type.upper() not in _Known_Constraints:
                 continue
 
             # Convenience.
