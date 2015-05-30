@@ -33,14 +33,14 @@ import numpy as np
 import azrael.igor
 import azrael.database
 import azrael.vectorgrid
+import azrael.bullet_api
 import azrael.util as util
 import azrael.config as config
-import azrael.bullet_api
-import azrael.physics_interface as physAPI
 import azrael.bullet_data as bullet_data
+import azrael.physics_interface as physAPI
 
 from IPython import embed as ipshell
-from azrael.types import _MotionState, ConstraintMeta
+from azrael.types import _MotionState
 from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Convenience.
