@@ -788,10 +788,13 @@ class LeonardDistributedZeroMQ(LeonardBase):
         with util.Timeit('Leonard:1.1  processCmdQueue') as timeit:
             self.processCommandQueue()
 
+        # Update the constraint cache in our local Igor instance.
+        self.igor.updateLocalCache()
+        allConstraints = self.igor.getAllConstraints().data
+
         # Compute the collision sets.
         with util.Timeit('Leonard:1.2  CCS') as timeit:
-            # fixme: keep a local copy of all unique pairs
-            ret = self.igor.getUniquePairs()
+            ret = self.igor.uniquePairs()
             if not ret.ok:
                 return
             uniquePairs = ret.data
@@ -914,12 +917,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
             return RetVal(False, 'Cannot form WP', None)
 
         # Query all constraints.
-        ret = self.igor.getMulti(objIDs)
-        if not ret.ok:
-            # fixme: log error
-            constraints = []
-        else:
-            constraints = ret.data
+        constraints = self.igor.getConstraints(objIDs).data
 
         # Form the content of the Work Package as it will appear in the DB.
         data = {'wpid': self.wpid_counter,
