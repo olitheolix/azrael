@@ -72,8 +72,22 @@ class Igor:
         Merge this code into the 'add' function.
         """
         cnt = 0
-        for constr in constraints:
-            cnt += self.add(constr).data
+        for con in constraints:
+            rb_a, rb_b = con.rb_a, con.rb_b
+
+            assert rb_a is not None
+            if rb_b is not None:
+                rb_a, rb_b = sorted((rb_a, rb_b))
+            con = con._replace(rb_a=rb_a, rb_b=rb_b)
+            con = con._replace(data=con.data._asdict())
+
+            query = {'rb_a': rb_a, 'rb_b': rb_b, 'type': con.type}
+            r = self.db.update(query, {'$setOnInsert': con._asdict()}, upsert=True)
+            if r['updatedExisting']:
+                cnt += r['nModified']
+            else:
+                cnt += r['n']
+
         return RetVal(True, None, cnt)
 
     def delete(self, constraints: (tuple, list)):
@@ -89,19 +103,3 @@ class Igor:
     def uniquePairs(self):
         out = {(_.rb_a, _.rb_b) for _ in self._cache}
         return RetVal(True, None, tuple(out))
-    
-    def add(self, con: ConstraintMeta):
-        rb_a, rb_b = con.rb_a, con.rb_b
-        assert rb_a is not None
-        if rb_b is not None:
-            rb_a, rb_b = sorted((rb_a, rb_b))
-        con = con._replace(rb_a=rb_a, rb_b=rb_b)
-        con = con._replace(data=con.data._asdict())
-        
-        query = {'rb_a': rb_a, 'rb_b': rb_b, 'type': con.type}
-        r = self.db.update(query, {'$setOnInsert': con._asdict()}, upsert=True)
-        if r['updatedExisting']:
-            cnt = r['nModified']
-        else:
-            cnt = r['n']
-        return RetVal(True, None, cnt)
