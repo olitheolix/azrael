@@ -310,8 +310,7 @@ class TestClerk:
 
         # Query the state variable for a non existing object.
         objID_tmp = 100
-        ok, _, sv = client.getAllStateVariables()
-        assert (ok, sv) == (True, {})
+        assert client.getAllStateVariables() == (True, None, {})
 
         ok, _, sv = client.getStateVariables(objID_tmp)
         assert (ok, sv) == (True, {objID_tmp: None})
@@ -330,7 +329,7 @@ class TestClerk:
         assert ret.ok and (len(ret.data) == 1)
         assert ret.data == {objID_1: None}
 
-        # getAllStateVarialbes must return an empty dictionary.
+        # getAllStateVariables must return an empty dictionary.
         ret = client.getAllStateVariables()
         assert ret.ok and (ret.data == {})
 
