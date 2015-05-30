@@ -74,7 +74,7 @@ class TestClerk:
         igor = azrael.igor.Igor()
         assert igor.getAllConstraints().ok
         assert igor.getConstraints([1, 2]).ok
-        assert igor.getUniquePairs().ok
+        assert igor.uniquePairs().ok
 
     def test_update_and_add(self):
         """

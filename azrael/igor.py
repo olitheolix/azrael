@@ -129,11 +129,3 @@ class Igor:
         prj['_id'] = False
         res = [ConstraintMeta(**_) for _ in self.db.find(query, prj)]
         return RetVal(True, None, tuple(res))
-
-    def getUniquePairs(self):
-        """
-        fixme: rename, eg getAllConstraintPairs
-        """
-        prj = {'rb_a': True, 'rb_b': True, '_id': False}
-        out = [(_['rb_a'], _['rb_b']) for _ in self.db.find({}, prj)]
-        return RetVal(True, None, tuple(out))

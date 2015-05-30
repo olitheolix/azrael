@@ -862,7 +862,8 @@ class TestLeonardOther:
         """
         def checkEqual(_src, _dst):
             # Fetch all unique constraint pairs.
-            ret = self.igor.getUniquePairs()
+            assert self.igor.updateLocalCache().ok
+            ret = self.igor.uniquePairs()
             assert ret.ok
             ret = azrael.leonard.mergeConstraintSets(ret.data, _src)
             assert ret.ok
@@ -874,14 +875,16 @@ class TestLeonardOther:
 
         # Empty set.
         self.igor.reset()
-        ret = self.igor.getUniquePairs()
+        assert self.igor.updateLocalCache().ok
+        ret = self.igor.uniquePairs()
         assert ret.ok
         assert azrael.leonard.mergeConstraintSets(ret.data, []) == (True, None, [])
         checkEqual([], [])
 
         # Set with only one subset.
         self.igor.reset()
-        ret = self.igor.getUniquePairs()
+        assert self.igor.updateLocalCache().ok
+        ret = self.igor.uniquePairs()
         assert ret.ok
         assert azrael.leonard.mergeConstraintSets(ret.data, [[1]]) == (True, None, [[1]])
         assert azrael.leonard.mergeConstraintSets(ret.data, [[1, 2, 3]]) == (True, None, [[1, 2, 3]])
