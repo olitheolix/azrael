@@ -604,7 +604,7 @@ class TestBulletAPI:
         # Compile the constraint.
         pivot_a, pivot_b = pos_b, pos_a
         constraints = [
-            ConstraintMeta('p2p', id_a, id_b, ConstraintP2P(pivot_a, pivot_b)),
+            ConstraintMeta('p2p', id_a, id_b, '', ConstraintP2P(pivot_a, pivot_b)),
         ]
 
         # Load the constraints into the physics engine.
@@ -681,7 +681,7 @@ class TestBulletAPI:
         # Compile the constraint.
         pivot_a, pivot_b = (0, 0, 0), (1, 1, 1)
         constraints = [
-            ConstraintMeta('p2p', id_a, id_b, ConstraintP2P(pivot_a, pivot_b)),
+            ConstraintMeta('p2p', id_a, id_b, '', ConstraintP2P(pivot_a, pivot_b)),
         ]
 
         # Constraint is valid but the objects do not exist.
@@ -704,13 +704,13 @@ class TestBulletAPI:
         # Compile a P2P constraint with an invalid pivot.
         pivot_a, pivot_b = (0, 0, 0), (1, 1, 1, 1, 1)
         constraints = [
-            ConstraintMeta('p2p', id_a, id_b, ConstraintP2P(pivot_a, pivot_b)),
+            ConstraintMeta('p2p', id_a, id_b, '', ConstraintP2P(pivot_a, pivot_b)),
         ]
         assert not bullet.setConstraints(constraints).ok
 
         # Another invalid pivot.
         pivot_a, pivot_b = (0, 0, 0), (1, 1, 's')
         constraints = [
-            ConstraintMeta('p2p', id_a, id_b, ConstraintP2P(pivot_a, pivot_b)),
+            ConstraintMeta('p2p', id_a, id_b, '', ConstraintP2P(pivot_a, pivot_b)),
         ]
         assert not bullet.setConstraints(constraints).ok
