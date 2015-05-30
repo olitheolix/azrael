@@ -195,8 +195,6 @@ class Igor:
 
     def delete(self, constraints: (tuple, list)):
         """
-        fixme: use bulk query.
-
         Delete the ``constraints`` in the data base.
 
         It is save to call this method on non-existing constraints (it will
@@ -208,14 +206,26 @@ class Igor:
         :param list constraints: list of `ConstraintMeta` tuples.
         :return: number of deleted entries.
         """
-        cnt = 0
+        queries = []
         for constr in constraints:
-            query = {'rb_a': constr.rb_a,
-                     'rb_b': constr.rb_b,
-                     'tag': constr.tag}
-            ret = self.db.remove(query)
-            cnt += ret['n']
-        return RetVal(True, None, cnt)
+            tmp = {'rb_a': constr.rb_a,
+                   'rb_b': constr.rb_b,
+                   'type': constr.type,
+                   'tag': constr.tag}
+            queries.append(tmp)
+
+        # Return immediately if the list of constraints to add is empty.
+        if len(queries) == 0:
+            return RetVal(True, None, 0)
+
+        # Compile the bulk query and execute it.
+        bulk = self.db.initialize_unordered_bulk_op()
+        for q in queries:
+            bulk.find(q).remove()
+        ret = bulk.execute()
+
+        # Return the number of newly created constraints.
+        return RetVal(True, None, ret['nRemoved'])
 
     def uniquePairs(self):
         """
