@@ -51,7 +51,7 @@ class Igor:
         """
         Download *all* constraints from the database into the local cache.
 
-        :return: Success
+        :return: Number of unique constraints in local cache after operation.
         """
         # Create a Mongo cursor that retrieves all constraints (minus the _id
         # field).
@@ -70,15 +70,27 @@ class Igor:
         constraints = (CM(**_) for _ in cursor)
 
         # Iterate over all constraints and substitute the 'data' attribute with
-        # the correct named tuple for the respective constraint.
-        for constr in constraints:
-            if constr.type.upper() == 'P2P':
-                tmp = constr._replace(data=ConstraintP2P(**constr.data))
-                cache[CM(tmp.type, tmp.rb_a, tmp.rb_b, tmp.tag, None)] = tmp
+        # the correct named tuple for the respective constraint. This will
+        # build a dictionary where the keys are ConstraintMeta tuple with a
+        # value of *None* for the data field, and the value is the same
+        # `ConstraintMeta` data but with a valid 'data' attribute.
+        for con in constraints:
+            if con.type.upper() == 'P2P':
+                # Build the correct named tuple for the data part.
+                con = con._replace(data=ConstraintP2P(**con.data))
             else:
-                # fixme: log error
+                # Skip over unknown constraints.
+                msg = 'Ignoring unknown constraint {}'.format(con.type)
+                self.logit.info(msg)
                 continue
 
+            # Replace the 'data' field in the constraint. This will become
+            # the key for the self._cache dictionary.
+            key = con._replace(data=None)
+            cache[key] = con
+            del con, key
+
+        # Return the number of valid constraints now in the cache.
         return RetVal(True, None, len(self._cache))
 
     def getConstraints(self, bodyIDs: (tuple, list)):
