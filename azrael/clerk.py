@@ -1,4 +1,4 @@
-# Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
+# Copyright 2015, Oliver Nagy <olitheolix@gmail.com>
 #
 # This file is part of Azrael (https://github.com/olitheolix/azrael)
 #
@@ -19,9 +19,9 @@
 Azrael's API.
 
 Use ``Client`` to connect to ``Clerk``. There can be arbitrarily many ``Clerk``
-and ``Client`` client instances connected to each other.
+and ``Client`` instances connected to each other.
 
-This moduel implement ZeroMQ version of the ``Clerk``. For a Websocket version
+This module implement ZeroMQ version of the ``Clerk``. For a Websocket version
 (eg. JavaScript developers) use ``Clacks`` from `clacks.py` (their feature set
 is identical).
 
