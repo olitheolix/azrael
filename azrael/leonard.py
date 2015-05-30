@@ -528,7 +528,7 @@ class LeonardBullet(LeonardBase):
         # Process pending commands.
         self.processCommandQueue()
 
-        # Update the constraint cache in our Igor instance.
+        # Update the constraint cache in our local Igor instance.
         self.igor.updateLocalCache()
         allConstraints = self.igor.getAllConstraints().data
 
@@ -612,10 +612,13 @@ class LeonardSweeping(LeonardBase):
         """
         self.processCommandQueue()
 
+        # Update the constraint cache in our local Igor instance.
+        self.igor.updateLocalCache()
+        allConstraints = self.igor.getAllConstraints().data
+
         # Compute all collision sets.
         with util.Timeit('CCS') as timeit:
-            # fixme: keep a local copy of all unique pairs
-            ret = self.igor.getUniquePairs()
+            ret = self.igor.uniquePairs()
             if not ret.ok:
                 return
             uniquePairs = ret.data
@@ -665,14 +668,12 @@ class LeonardSweeping(LeonardBase):
 
             # Query all constraints and apply them in the next step.
             # fixme: code duplication with LeonardBullet.
-            ret = self.igor.getMulti(list(coll_SV.keys()))
-            if not ret.ok:
-                # fixme: error handling
-                assert False
-            ret = self.bullet.setConstraints(ret.data)
+            tmp = self.igor.getConstraints(coll_SV.keys()).data
+            ret = self.bullet.setConstraints(tmp)
             if not ret.ok:
                 # fixme: log a message here and move on.
                 assert False
+            del tmp
 
             # Wait for Bullet to advance the simulation by one step.
             with util.Timeit('compute') as timeit:
