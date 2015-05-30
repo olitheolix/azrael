@@ -32,29 +32,36 @@ class Igor:
 
     def reset(self):
         self.db.drop()
-        self._cache = tuple()
+        self._cache = {}
         return RetVal(True, None, None)
 
     def updateLocalCache(self):
         prj = {'_id': False}
         cursor = self.db.find({}, prj)
-        self._cache = tuple([ConstraintMeta(**_) for _ in cursor])
+
+        out = {}
+        CM = ConstraintMeta
+        constraints = (CM(**_) for _ in cursor)
+        for constr in constraints:
+            if constr.type.upper() == 'P2P':
+                tmp = constr._replace(data=ConstraintP2P(**constr.data))
+                out[CM(tmp.type, tmp.rb_a, tmp.rb_b, tmp.tag, None)] = tmp
+            else:
+                continue
+        self._cache = out
+
         return RetVal(True, None, len(self._cache))
 
     def getConstraints(self, bodyIDs: (tuple, list)):
         """
         """
         bodyIDs = set(bodyIDs)
-        out = {}
+        out = []
         for tmp in self._cache:
             if not (tmp.rb_a in bodyIDs or tmp.rb_b in bodyIDs):
                 continue
-            if tmp.type.upper() == 'P2P':
-                c = tmp._replace(data=ConstraintP2P(**tmp.data))
-                out[(c.rb_a, c.rb_b, c.tag)] = c
-            else:
-                continue
-        return RetVal(True, None, tuple(list(out.values())))
+            out.append(self._cache[tmp])
+        return RetVal(True, None, tuple(out))
 
     def addConstraints(self, constraints: (tuple, list)):
         """
