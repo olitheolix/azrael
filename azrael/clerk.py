@@ -40,6 +40,7 @@ import multiprocessing
 
 import numpy as np
 
+import azrael.igor
 import azrael.database
 import azrael.util as util
 import azrael.parts as parts
@@ -80,6 +81,9 @@ class Clerk(multiprocessing.Process):
 
         # Create a Dibbler instance to gain access to the model database.
         self.dibbler = dibbler.Dibbler()
+
+        # Igor instance.
+        self.igor = azrael.igor.Igor()
 
         # Specify the decoding-processing-encoding triplet functions for
         # (almost) every command supported by Clerk. The only exceptions are
@@ -1003,7 +1007,7 @@ class Clerk(multiprocessing.Process):
             return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
     @typecheck
-    def setForce(self, objID: int, force: list, rpos: list):
+    def setForce(self, objID: int, force: (tuple, list), rpos: (tuple, list)):
         """
         Apply ``force`` to ``objID``.
 
@@ -1263,3 +1267,16 @@ class Clerk(multiprocessing.Process):
             return RetVal(True, None, None)
         else:
             return RetVal(False, 'Could not update all fragments', None)
+
+    @typecheck
+    def addConstraints(self, constraints: (tuple, list)):
+        """
+        Return the number of ``constraints`` actually added to the simulation.
+
+        See ``Igor.addConstraints`` for details.
+
+        :param list constraints: list of constraints to add.
+        :return: number of newly added constraints (see ``Igor.addConstraints``
+                 for details).
+        """
+        return self.igor.addConstraints(constraints)

@@ -40,6 +40,7 @@ from azrael.test.test import createFragRaw, createFragDae, isEqualCS
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
+from azrael.types import ConstraintMeta, ConstraintP2P
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 
 
@@ -1555,6 +1556,9 @@ class TestClerk:
         leo = getLeonard()
         clerk = azrael.clerk.Clerk()
 
+        # Reset the constraint database.
+        assert clerk.igor.reset().ok
+
         # Parameters and constants for this test.
         id_a, id_b = 1, 2
         templateID = '_templateSphere'
@@ -1581,16 +1585,18 @@ class TestClerk:
 
         # Define the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
-        constraints = [ConstraintMeta('p2p', id_a, id_b, p2p)]
-        assert clerk.createConstraints(constraints).ok
+        constraints = [ConstraintMeta('p2p', id_a, id_b, '', p2p)]
+        assert clerk.addConstraints(constraints).ok
 
         # Apply a force that will pull the left object further to the left.
-        # However, both objects must move because they are linked together.
-        assert clerk.setForce(id_a, (-10, 0, 0), (0, 0, 0)).ok
+        # However, both objects must move the same distance in the same
+        # direction because they are now linked together.
+        assert clerk.setForce(id_a, [-10, 0, 0], [0, 0, 0]).ok
         leo.processCommandsAndSync()
         ret = clerk.getStateVariables([id_a, id_b])
         assert ret.ok
-        pos_a2, pos_b2 = ret.data[id_a]['position'], ret.data[id_b]['position']
+        pos_a2 = ret.data[id_a]['sv'].position
+        pos_b2 = ret.data[id_b]['sv'].position
         delta_a = np.array(pos_a2) - np.array(pos_a)
         delta_b = np.array(pos_b2) - np.array(pos_b)
         assert np.allclose(delta_a, delta_b)
