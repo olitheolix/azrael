@@ -39,16 +39,16 @@ class Igor:
         prj = {'_id': False}
         cursor = self.db.find({}, prj)
 
-        out = {}
+        self._cache = {}
+        cache = self._cache
         CM = ConstraintMeta
         constraints = (CM(**_) for _ in cursor)
         for constr in constraints:
             if constr.type.upper() == 'P2P':
                 tmp = constr._replace(data=ConstraintP2P(**constr.data))
-                out[CM(tmp.type, tmp.rb_a, tmp.rb_b, tmp.tag, None)] = tmp
+                cache[CM(tmp.type, tmp.rb_a, tmp.rb_b, tmp.tag, None)] = tmp
             else:
                 continue
-        self._cache = out
 
         return RetVal(True, None, len(self._cache))
 
