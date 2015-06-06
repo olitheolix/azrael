@@ -695,10 +695,12 @@ class LeonardSweeping(LeonardBase):
             # structure - for now this is acceptable, especially because this
             # class is mostly for testing).
             tmp = self.igor.getConstraints(coll_SV.keys()).data
+
+            # Apply all constraints. Log any errors but ignore them otherwise as
+            # they are harmless (simply means no constraints were applied).
             ret = self.bullet.setConstraints(tmp)
             if not ret.ok:
-                # fixme: log a message here and move on.
-                assert False
+                self.logit.warning(ret.msg)
             del tmp
 
             # Wait for Bullet to advance the simulation by one step.
@@ -1074,11 +1076,11 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
                     force = obj.force + gridForces[obj.id]
                     applyForceAndTorque(obj.id, force, obj.torque)
 
-        # Apply the constraints.
+        # Apply all constraints. Log any errors but ignore them otherwise as
+        # they are harmless (simply means no constraints were applied).
         ret = self.bullet.setConstraints(constraints)
         if not ret.ok:
-            # fixme: log a message here and move on.
-            assert False
+            self.logit.warning(ret.msg)
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
