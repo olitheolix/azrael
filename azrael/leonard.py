@@ -200,16 +200,31 @@ def mergeConstraintSets(constraintPairs: tuple, collSets: (tuple, list)):
     return RetVal(True, None, collSets)
 
 
-def getFinalCollisionSets(constraintPairs, allObjects, allAABBs):
+def getFinalCollisionSets(
+        constraintPairs: list, allObjects: list, allAABBs: list):
     """
-    fixme: docu + tests
+    Return the collision sets.
+
+    This function calls the broadphase solver and then merges those collision
+    sets that are connected via a constraint.
+
+    .. note:: this function is tightly coupled to the inner working of Leonard.
+              Possibly it should not be a standalone function.
+
+    :param list constraintPairs: list of 2-tuples eg [(1, 2), (1, 5), ...].
+    :param list allObjects: Leonard's object cache.
+    :param list allAABBs: Leonard's AABB cache.
+    :return: list of non-overlapping collision sets.
     """
+    # Broadphase based on AABB only.
     ret = computeCollisionSetsAABB(allObjects, allAABBs)
     if not ret.ok:
         msg = 'ComputeCollisionSetsAABB returned an error'
         self.logit.error(msg)
         return RetVal(False, msg, None)
 
+    # Merge all collision sets that have objects which are connected by a
+    # constraint.
     collSets = ret.data
     ret = mergeConstraintSets(constraintPairs, collSets)
     if not ret.ok:
@@ -674,8 +689,11 @@ class LeonardSweeping(LeonardBase):
                 # Apply the final force to the object.
                 self.bullet.applyForceAndTorque(objID, force, torque)
 
-            # Query all constraints and apply them in the next step.
-            # fixme: code duplication with LeonardBullet.
+            # Query all constraints and apply them in the next step (this
+            # duplicates the code from LeonardBullet but I do not know of a
+            # simple way to avoid it without major changes to the class
+            # structure - for now this is acceptable, especially because this
+            # class is mostly for testing).
             tmp = self.igor.getConstraints(coll_SV.keys()).data
             ret = self.bullet.setConstraints(tmp)
             if not ret.ok:
