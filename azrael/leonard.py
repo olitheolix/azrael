@@ -888,8 +888,6 @@ class LeonardDistributedZeroMQ(LeonardBase):
                     break
 
                 # Pick the next pending Work Package and increment the index.
-                # fixme: I believe Python may have a primitive type that
-                # supports this kind of iteration natively.
                 if wpIdx >= len(worklist):
                     wpIdx = 0
                 wp = all_WPs[worklist[wpIdx]]
