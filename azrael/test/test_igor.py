@@ -210,26 +210,26 @@ class TestClerk:
         # Attempt to delete a non-existing constraint. This must neither return an
         # error not delete anything.
         assert igor.reset().ok
-        assert igor.delete([c1]) == (True, None, 0)
-        assert igor.delete([c1, c2]) == (True, None, 0)
+        assert igor.deleteConstraints([c1]) == (True, None, 0)
+        assert igor.deleteConstraints([c1, c2]) == (True, None, 0)
         assert igor.updateLocalCache() == (True, None, 0)
 
         # Add some constraints, delete them, and update the cache.
         assert igor.addConstraints([c1, c2, c3]) == (True, None, 3)
         assert igor.updateLocalCache() == (True, None, 3)
-        assert igor.delete([c1, c2]) == (True, None, 2)
+        assert igor.deleteConstraints([c1, c2]) == (True, None, 2)
         assert igor.updateLocalCache() == (True, None, 1)
 
         # Add/delete more constraints without every updating the cache. These
         # operations must not affect the local cache of constraints in Igor.
         assert igor.reset().ok
         assert igor.addConstraints([c1, c2, c3]) == (True, None, 3)
-        assert igor.delete([c1, c2]) == (True, None, 2)
-        assert igor.delete([c1, c2]) == (True, None, 0)
+        assert igor.deleteConstraints([c1, c2]) == (True, None, 2)
+        assert igor.deleteConstraints([c1, c2]) == (True, None, 0)
         assert igor.addConstraints([c1, c2]) == (True, None, 2)
-        assert igor.delete([c1]) == (True, None, 1)
-        assert igor.delete([c1, c2]) == (True, None, 1)
-        assert igor.delete([c1, c2]) == (True, None, 0)
+        assert igor.deleteConstraints([c1]) == (True, None, 1)
+        assert igor.deleteConstraints([c1, c2]) == (True, None, 1)
+        assert igor.deleteConstraints([c1, c2]) == (True, None, 0)
         assert igor.updateLocalCache() == (True, None, 1)
         assert igor.getAllConstraints().data == (c3, )
 
@@ -267,7 +267,7 @@ class TestClerk:
         assert set(igor.uniquePairs().data) == set(tuple(ref))
         
         # Delete two constraints.
-        assert igor.delete([c1, c3]) == (True, None, 2)
+        assert igor.deleteConstraints([c1, c3]) == (True, None, 2)
         assert set(igor.uniquePairs().data) == set(tuple(ref))
         assert igor.updateLocalCache() == (True, None, 1)
         assert igor.uniquePairs().data == ((c2.rb_a, c2.rb_b), )
