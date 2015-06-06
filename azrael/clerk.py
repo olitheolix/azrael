@@ -154,6 +154,18 @@ class Clerk(multiprocessing.Process):
                 protocol.ToClerk_AddConstraints_Decode,
                 self.addConstraints,
                 protocol.FromClerk_AddConstraints_Encode),
+            'get_constraints': (
+                protocol.ToClerk_GetConstraints_Decode,
+                self.getConstraints,
+                protocol.FromClerk_GetConstraints_Encode),
+            'get_all_constraints': (
+                protocol.ToClerk_GetAllConstraints_Decode,
+                self.getAllConstraints,
+                protocol.FromClerk_GetAllConstraints_Encode),
+            'delete_constraints': (
+                protocol.ToClerk_DeleteConstraints_Decode,
+                self.deleteConstraints,
+                protocol.FromClerk_DeleteConstraints_Encode),
         }
 
     def runCommand(self, fun_decode, fun_process, fun_encode):

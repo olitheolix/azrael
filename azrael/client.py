@@ -123,6 +123,15 @@ class Client():
             'add_constraints': (
                 protocol.ToClerk_AddConstraints_Encode,
                 protocol.FromClerk_AddConstraints_Decode),
+            'get_constraints': (
+                protocol.ToClerk_GetConstraints_Encode,
+                protocol.FromClerk_GetConstraints_Decode),
+            'get_all_constraints': (
+                protocol.ToClerk_GetAllConstraints_Encode,
+                protocol.FromClerk_GetAllConstraints_Decode),
+            'delete_constraints': (
+                protocol.ToClerk_DeleteConstraints_Encode,
+                protocol.FromClerk_DeleteConstraints_Decode),
         }
 
     def __del__(self):
@@ -732,5 +741,46 @@ class Client():
         """
         return self.serialiseAndSend('update_fragment_states', fragStates)
 
+    @typecheck
     def addConstraints(self, constraints: (tuple, list)):
+        """
+        Install the ``constraints``.
+
+        Each element in ``constraints`` must be a `ConstraintMeta` instance.
+
+        :param list constraints: the constraints to install.
+        :return: number of newly added constraints.
+        """
         return self.serialiseAndSend('add_constraints', constraints)
+
+    @typecheck
+    def getConstraints(self, bodyIDs: (set, tuple, list)):
+        """
+        Return all constraints that feature any of the bodies in ``bodyIDs``.
+
+        :param list[int] bodyIDs: list of body IDs.
+        :return: List of ``ConstraintMeta`` instances.
+        """
+        return self.serialiseAndSend('get_constraints', bodyIDs)
+
+    @typecheck
+    def getAllConstraints(self):
+        """
+        Return all currently known constraints.
+
+        :return: List of ``ConstraintMeta`` instances.
+        """
+        return self.serialiseAndSend('get_all_constraints', None)
+
+    @typecheck
+    def deleteConstraints(self, constraints: (tuple, list)):
+        """
+        Remove the ``constraints``.
+
+        Each element in ``constraints`` must be a `ConstraintMeta` instance.
+        Invalid constraints are ignored.
+
+        :param list constraints: the constraints to remove.
+        :return: number of newly added constraints.
+        """
+        return self.serialiseAndSend('delete_constraints', constraints)

@@ -753,9 +753,66 @@ class TestClerk:
             config.url_instances + '/' + str(objID) + '/f_dae')
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_createConstraints(self, client_type):
+    def test_add_get_remove_constraints(self, client_type):
+        """
+        Create some bodies. Then add/query/remove constraints.
+
+        This test only verifies that the Igor interface works. It does *not*
+        verify that the objects are really linked in the actual simulation.
+        """
+        # Reset the constraint database.
+        igor = azrael.igor.Igor()
+        assert igor.reset().ok
+
+        # Get the client for this test.
+        client = self.clients[client_type]
+
+        # Reset the SV database and instantiate a Leonard.
+        leo = getLeonard(azrael.leonard.LeonardBullet)
+
+        # Spawn the two bodies.
+        pos_1, pos_2, pos_3 = [-2, 0, 0], [2, 0, 0], [6, 0, 0]
+        obj_1 = {'template': '_templateSphere', 'position': pos_1}
+        obj_2 = {'template': '_templateSphere', 'position': pos_2}
+        obj_3 = {'template': '_templateSphere', 'position': pos_3}
+        id_1, id_2, id_3 = 1, 2, 3
+        assert client.spawn([obj_1, obj_2, obj_3]) == (True, None, (id_1, id_2, id_3))
+
+        # Define the constraints.
+        p2p_12 = ConstraintP2P(pivot_a=pos_2, pivot_b=pos_1)
+        p2p_23 = ConstraintP2P(pivot_a=pos_3, pivot_b=pos_2)
+        con_1 = ConstraintMeta('p2p', id_1, id_2, '', p2p_12)
+        con_2 = ConstraintMeta('p2p', id_2, id_3, '', p2p_23)
+
+        # Verify that no constraints are currently active.
+        assert client.getAllConstraints() == (True, None, [])
+        assert client.getConstraints([id_1]) == (True, None, [])
+
+        # Add both constraints and verify they are returned correctly.
+        assert client.addConstraints([con_1, con_2]) == (True, None, 2)
+        ret = client.getAllConstraints()
+        assert ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
+
+        ret = client.getConstraints([id_2])
+        assert ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
+
+        assert client.getConstraints([id_1]) == (True, None, [con_1])
+        assert client.getConstraints([id_3]) == (True, None, [con_2])
+
+        # Remove the second constraint and verify the remaining constraint is
+        # returned correctly.
+        assert client.deleteConstraints([con_2]) == (True, None, 1)
+        assert client.getAllConstraints() == (True, None, [con_1])
+        assert client.getConstraints([id_1]) == (True, None, [con_1])
+        assert client.getConstraints([id_2]) == (True, None, [con_1])
+        assert client.getConstraints([id_3]) == (True, None, [])
+
+    @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+    def test_create_constraints_with_physics(self, client_type):
         """
         Spawn two rigid bodies and define a Point2Point constraint among them.
+        Then apply a force onto one of them and verify the second one moves
+        accordingly.
         """
         # Reset the constraint database.
         igor = azrael.igor.Igor()

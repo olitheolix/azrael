@@ -596,3 +596,121 @@ def FromClerk_AddConstraints_Encode(num_added):
 @typecheck
 def FromClerk_AddConstraints_Decode(payload):
     return RetVal(True, None, payload['added'])
+
+
+# ---------------------------------------------------------------------------
+# DeleteConstraints
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_DeleteConstraints_Encode(constraints: (tuple, list)):
+    return ToClerk_AddConstraints_Encode(constraints)
+
+
+@typecheck
+def ToClerk_DeleteConstraints_Decode(payload: dict):
+    return ToClerk_AddConstraints_Decode(payload)
+
+
+@typecheck
+def FromClerk_DeleteConstraints_Encode(num_added):
+    return FromClerk_AddConstraints_Encode(num_added)
+
+
+@typecheck
+def FromClerk_DeleteConstraints_Decode(payload):
+    return FromClerk_AddConstraints_Decode(payload)
+
+
+# ---------------------------------------------------------------------------
+# getConstraints
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_GetConstraints_Encode(bodyIDs: (tuple, list)):
+    return RetVal(True, None, {'bodyIDs': bodyIDs})
+
+
+@typecheck
+def ToClerk_GetConstraints_Decode(payload: dict):
+    return True, (payload['bodyIDs'], )
+
+
+@typecheck
+def FromClerk_GetConstraints_Encode(constraints):
+    out = []
+    for con in constraints:
+        data = con.data._asdict()
+        meta = con._replace(data=None)._asdict()
+        out.append({'m': meta, 'd': data})
+    return True, {'constraints': out}
+
+
+@typecheck
+def FromClerk_GetConstraints_Decode(payload):
+    kc = azrael.igor._Known_Constraints
+    out = []
+    for con in payload['constraints']:
+        data, meta = con['d'], con['m']
+
+        # Build the ConstraintMeta object (its 'data' attribute  will be
+        # *None*).
+        meta = ConstraintMeta(**meta)
+
+        # Look up the correct named tuple for the specified constraint and use
+        # it to wrap the data.
+        fun = kc[meta.type.upper()]
+        data = fun(**data)
+
+        # Add the constructed constraint to the list.
+        out.append(meta._replace(data=data))
+    return RetVal(True, None, out)
+
+
+# ---------------------------------------------------------------------------
+# getAllConstraints
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_GetAllConstraints_Encode(dummyarg):
+    return RetVal(True, None, {})
+
+
+@typecheck
+def ToClerk_GetAllConstraints_Decode(payload):
+    return True, tuple()
+
+
+@typecheck
+def FromClerk_GetAllConstraints_Encode(constraints: (tuple, list)):
+    out = []
+    for con in constraints:
+        data = con.data._asdict()
+        meta = con._replace(data=None)._asdict()
+        out.append({'m': meta, 'd': data})
+    return True, {'constraints': out}
+
+
+@typecheck
+def FromClerk_GetAllConstraints_Decode(payload: dict):
+    kc = azrael.igor._Known_Constraints
+    out = []
+    for con in payload['constraints']:
+        data, meta = con['d'], con['m']
+
+        # Build the ConstraintMeta object (its 'data' attribute  will be
+        # *None*).
+        meta = ConstraintMeta(**meta)
+
+        # Look up the correct named tuple for the specified constraint and use
+        # it to wrap the data.
+        fun = kc[meta.type.upper()]
+        data = fun(**data)
+
+        # Add the constructed constraint to the list.
+        out.append(meta._replace(data=data))
+    return RetVal(True, None, out)
+
