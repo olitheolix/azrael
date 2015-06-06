@@ -169,23 +169,23 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     return RetVal(True, None, out)
 
 
-def mergeConstraintSets(constraintPairs: tuple, data: (tuple, list)):
+def mergeConstraintSets(constraintPairs: tuple, collSets: (tuple, list)):
     """
-    Merge all the sets in ``data`` that contain any of the ``constraintPairs``.
+    Merge all the sets in ``collSets`` that contain any of the ``constraintPairs``.
 
     The purpose of this function is to merge those collision sets that are
     connected via a constraint. Typically, this function takes the output of
-    ``computeCollisionSets`` as the ``data`` argument.
+    ``computeCollisionSets`` as the ``collSets`` argument.
 
     :param list constraintPairs: list of 2-tuples eg [(1, 2), (1, 5), ...].
-    :param list data: a set/list of sets/lists.
+    :param list collSets: a set/list of sets/lists.
     :return: list of collision sets.
     """
     # Merge the collision sets that are linked via constraints.
     for (a, b) in constraintPairs:
         # Find (and remove) the set(s) where object_a and object_b are in.
-        val_a = [data.pop(idx) for idx, val in enumerate(data) if a in val]
-        val_b = [data.pop(idx) for idx, val in enumerate(data) if b in val]
+        val_a = [collSets.pop(idx) for idx, val in enumerate(collSets) if a in val]
+        val_b = [collSets.pop(idx) for idx, val in enumerate(collSets) if b in val]
 
         # Sanity check: each element can be in at most one set.
         assert 0 <= len(val_a) < 2
@@ -196,11 +196,11 @@ def mergeConstraintSets(constraintPairs: tuple, data: (tuple, list)):
         val_b = val_b[0] if len(val_b) == 1 else []
 
         # Merge the collision sets.
-        data.append(val_a + val_b)
-    return RetVal(True, None, data)
+        collSets.append(val_a + val_b)
+    return RetVal(True, None, collSets)
 
 
-def getFinalCollisionSets(uniquePairs, allObjects, allAABBs):
+def getFinalCollisionSets(constraintPairs, allObjects, allAABBs):
     """
     fixme: docu + tests
     """
@@ -211,7 +211,7 @@ def getFinalCollisionSets(uniquePairs, allObjects, allAABBs):
         return RetVal(False, msg, None)
 
     collSets = ret.data
-    ret = mergeConstraintSets(uniquePairs, collSets)
+    ret = mergeConstraintSets(constraintPairs, collSets)
     if not ret.ok:
         msg = 'mergeConstraintSets returned an error'
         self.logit.error(msg)
