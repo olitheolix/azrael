@@ -157,10 +157,10 @@ class Igor:
 
     def getConstraints(self, bodyIDs: (set, tuple, list)):
         """
-        Return all constraints that involve any of bodies in ``bodyIDs``.
+        Return all constraints that involve any of the bodies in ``bodyIDs``.
 
         ..note:: this method only consults the local cache. Depending on your
-                 circumstances you may want to to call ``updateLocalCache``
+                 circumstances you may want to call ``updateLocalCache``
                  first.
 
         :param list[int] bodyIDs: list of body IDs
