@@ -65,7 +65,7 @@ class TestClerk:
         pivot_a, pivot_b = [0, 0, -1], [0, 0, 1]
         p2p = ConstraintP2P(pivot_a, pivot_b)
         return ConstraintMeta('p2p', rb_a, rb_b, constraint_id, p2p)
-        
+
     def test_basic(self):
         """
         Verify that it is safe to call any Igor methods right from the start
@@ -119,7 +119,7 @@ class TestClerk:
         assert igor.updateLocalCache() == (True, None, 4)
 
         # Add five more constaints, but only two of them are actually unique.
-        assert igor.addConstraints([c5, c5, c6, c6, c6] ) == (True, None, 2)
+        assert igor.addConstraints([c5, c5, c6, c6, c6]) == (True, None, 2)
         assert igor.updateLocalCache() == (True, None, 6)
         ref = sorted((c1, c2, c3, c4, c5, c6))
         assert sorted(igor.getAllConstraints().data) == ref
@@ -207,8 +207,8 @@ class TestClerk:
         c3 = self.getP2P(3, 4, 'foo')
         c4 = self.getP2P(4, 5, 'foo')
 
-        # Attempt to delete a non-existing constraint. This must neither return an
-        # error not delete anything.
+        # Attempt to delete a non-existing constraint. This must neither return
+        # an error not delete anything.
         assert igor.reset().ok
         assert igor.deleteConstraints([c1]) == (True, None, 0)
         assert igor.deleteConstraints([c1, c2]) == (True, None, 0)
@@ -265,7 +265,7 @@ class TestClerk:
         # constraints.
         ref = [(_.rb_a, _.rb_b) for _ in (c1, c2, c3)]
         assert set(igor.uniquePairs().data) == set(tuple(ref))
-        
+
         # Delete two constraints.
         assert igor.deleteConstraints([c1, c3]) == (True, None, 2)
         assert set(igor.uniquePairs().data) == set(tuple(ref))

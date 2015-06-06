@@ -105,7 +105,8 @@ class Igor:
         All entries in ``constraints`` must be ``ConstraintMeta`` instances,
         and their `data` attribute must be a valid ``Consraint***`` instance.
 
-        This method will skip over all constraints with an invalid/unknown type.
+        This method will skip over all constraints with an invalid/unknown
+        type.
 
         It will return the number of constraints
 

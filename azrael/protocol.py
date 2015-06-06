@@ -713,4 +713,3 @@ def FromClerk_GetAllConstraints_Decode(payload: dict):
         # Add the constructed constraint to the list.
         out.append(meta._replace(data=data))
     return RetVal(True, None, out)
-

@@ -1589,10 +1589,10 @@ class TestClerk:
         # Add both constraints and verify Clerk returns them correctly.
         assert clerk.addConstraints([con_1, con_2]) == (True, None, 2)
         ret = clerk.getAllConstraints()
-        assert  ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
+        assert ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
 
         ret = clerk.getConstraints([id_2])
-        assert  ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
+        assert ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
 
         assert clerk.getConstraints([id_1]) == (True, None, (con_1, ))
         assert clerk.getConstraints([id_3]) == (True, None, (con_2, ))

@@ -872,12 +872,16 @@ class TestLeonardOther:
             for _ in _ret:
                 assert _ in _dst
 
+        # Convenience.
+        igor = self.igor
+        mergeConstraintSets = azrael.leonard.mergeConstraintSets
+
         # Empty set.
         self.igor.reset()
         assert self.igor.updateLocalCache().ok
         ret = self.igor.uniquePairs()
         assert ret.ok
-        assert azrael.leonard.mergeConstraintSets(ret.data, []) == (True, None, [])
+        assert mergeConstraintSets(ret.data, []) == (True, None, [])
         checkEqual([], [])
 
         # Set with only one subset.
@@ -885,17 +889,17 @@ class TestLeonardOther:
         assert self.igor.updateLocalCache().ok
         ret = self.igor.uniquePairs()
         assert ret.ok
-        assert azrael.leonard.mergeConstraintSets(ret.data, [[1]]) == (True, None, [[1]])
-        assert azrael.leonard.mergeConstraintSets(ret.data, [[1, 2, 3]]) == (True, None, [[1, 2, 3]])
-        checkEqual([[1]], [[1]])
-        checkEqual([[1, 2, 3]], [[1, 2, 3]])
+        assert mergeConstraintSets(ret.data, [[1]]) == (True, None, [[1]])
+        tmp = [[1, 2, 3]]
+        assert mergeConstraintSets(ret.data, tmp) == (True, None, tmp)
+        del tmp
 
         # Two disjoint sets.
         p2p = ConstraintP2P((0, 0, 0), (0, 0, 0))
         self.igor.reset()
         s = [[1], [2]]
         checkEqual(s, s)
-        assert self.igor.addConstraints([ConstraintMeta('p2p', 1, 2, '', p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', 1, 2, '', p2p)]).ok
         checkEqual(s, [[1, 2]])
         self.igor.reset()
         checkEqual(s, s)
@@ -904,22 +908,22 @@ class TestLeonardOther:
         self.igor.reset()
         s = [[1], [2]]
         checkEqual(s, s)
-        assert self.igor.addConstraints([ConstraintMeta('p2p', 1, 3, '', p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', 1, 3, '', p2p)]).ok
         checkEqual(s, s)
 
         # Three disjoint sets and the constraint links two of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
         checkEqual(s, s)
-        assert self.igor.addConstraints([ConstraintMeta('p2p', 1, 6, '', p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', 1, 6, '', p2p)]).ok
         checkEqual(s, [[1, 2, 3, 6], [4, 5]])
 
         # Three disjoint sets and two constraint link both of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
         checkEqual(s, s)
-        assert self.igor.addConstraints([ConstraintMeta('p2p', 1, 6, '', p2p)]).ok
-        assert self.igor.addConstraints([ConstraintMeta('p2p', 3, 4, '', p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', 1, 6, '', p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', 3, 4, '', p2p)]).ok
         checkEqual(s, [[1, 2, 3, 6, 4, 5]])
 
     @pytest.mark.parametrize('clsLeonard', [

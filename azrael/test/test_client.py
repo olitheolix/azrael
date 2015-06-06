@@ -772,11 +772,13 @@ class TestClerk:
 
         # Spawn the two bodies.
         pos_1, pos_2, pos_3 = [-2, 0, 0], [2, 0, 0], [6, 0, 0]
-        obj_1 = {'template': '_templateSphere', 'position': pos_1}
-        obj_2 = {'template': '_templateSphere', 'position': pos_2}
-        obj_3 = {'template': '_templateSphere', 'position': pos_3}
+        objs = [
+            {'template': '_templateSphere', 'position': pos_1},
+            {'template': '_templateSphere', 'position': pos_2},
+            {'template': '_templateSphere', 'position': pos_3}
+        ]
         id_1, id_2, id_3 = 1, 2, 3
-        assert client.spawn([obj_1, obj_2, obj_3]) == (True, None, (id_1, id_2, id_3))
+        assert client.spawn(objs) == (True, None, (id_1, id_2, id_3))
 
         # Define the constraints.
         p2p_12 = ConstraintP2P(pivot_a=pos_2, pivot_b=pos_1)

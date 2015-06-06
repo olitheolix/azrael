@@ -171,7 +171,8 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
 
 def mergeConstraintSets(constraintPairs: tuple, collSets: (tuple, list)):
     """
-    Merge all the sets in ``collSets`` that contain any of the ``constraintPairs``.
+    Merge all the sets in ``collSets`` that contain any of the
+    ``constraintPairs``.
 
     The purpose of this function is to merge those collision sets that are
     connected via a constraint. Typically, this function takes the output of
@@ -183,20 +184,21 @@ def mergeConstraintSets(constraintPairs: tuple, collSets: (tuple, list)):
     """
     # Merge the collision sets that are linked via constraints.
     for (a, b) in constraintPairs:
-        # Find (and remove) the set(s) where object_a and object_b are in.
-        val_a = [collSets.pop(idx) for idx, val in enumerate(collSets) if a in val]
-        val_b = [collSets.pop(idx) for idx, val in enumerate(collSets) if b in val]
+        # Find (and remove) the set(s) that contain object_a or object_b (or
+        # both).
+        s_a = [collSets.pop(ii) for ii, v in enumerate(collSets) if a in v]
+        s_b = [collSets.pop(ii) for ii, v in enumerate(collSets) if b in v]
 
         # Sanity check: each element can be in at most one set.
-        assert 0 <= len(val_a) < 2
-        assert 0 <= len(val_b) < 2
+        assert 0 <= len(s_a) < 2
+        assert 0 <= len(s_b) < 2
 
         # Remove the list from the list comprehension.
-        val_a = val_a[0] if len(val_a) == 1 else []
-        val_b = val_b[0] if len(val_b) == 1 else []
+        s_a = s_a[0] if len(s_a) == 1 else []
+        s_b = s_b[0] if len(s_b) == 1 else []
 
         # Merge the collision sets.
-        collSets.append(val_a + val_b)
+        collSets.append(s_a + s_b)
     return RetVal(True, None, collSets)
 
 
@@ -646,7 +648,8 @@ class LeonardSweeping(LeonardBase):
                 return
             uniquePairs = ret.data
 
-            ret = getFinalCollisionSets(uniquePairs, self.allObjects, self.allAABBs)
+            ret = getFinalCollisionSets(
+                uniquePairs, self.allObjects, self.allAABBs)
             if not ret.ok:
                 return
             collSets = ret.data
@@ -696,8 +699,8 @@ class LeonardSweeping(LeonardBase):
             # class is mostly for testing).
             tmp = self.igor.getConstraints(coll_SV.keys()).data
 
-            # Apply all constraints. Log any errors but ignore them otherwise as
-            # they are harmless (simply means no constraints were applied).
+            # Apply all constraints. Log any errors but ignore them otherwise
+            # as they are harmless (simply means no constraints were applied).
             ret = self.bullet.setConstraints(tmp)
             if not ret.ok:
                 self.logit.warning(ret.msg)
@@ -827,7 +830,8 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 return
             uniquePairs = ret.data
 
-            ret = getFinalCollisionSets(uniquePairs, self.allObjects, self.allAABBs)
+            ret = getFinalCollisionSets(
+                uniquePairs, self.allObjects, self.allAABBs)
             if not ret.ok:
                 return
             collSets = ret.data

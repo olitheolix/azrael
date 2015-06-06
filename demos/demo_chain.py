@@ -157,7 +157,7 @@ class UpdateGrid(multiprocessing.Process):
         while True:
             ret = vg.setRegion('force', ofs, force_grav)
             time.sleep(100000000)
-            
+
             # Activate the circular grid.
             ret = vg.setRegion('force', ofs, 0.3 * force_rot)
             print('Circular force')
@@ -400,7 +400,7 @@ def main():
     param = parseCommandLine()
 
     assert vectorgrid.resetGrid('force').ok
-            
+
     # Helper class to start/stop Azrael stack and other processes.
     az = azrael.startup.AzraelStack(param.loglevel)
 
