@@ -169,12 +169,20 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     return RetVal(True, None, out)
 
 
-def mergeConstraintSets(uniquePairs: tuple, data: (tuple, list)):
+def mergeConstraintSets(constraintPairs: tuple, data: (tuple, list)):
     """
-    fixme: docu
+    Merge all the sets in ``data`` that contain any of the ``constraintPairs``.
+
+    The purpose of this function is to merge those collision sets that are
+    connected via a constraint. Typically, this function takes the output of
+    ``computeCollisionSets`` as the ``data`` argument.
+
+    :param list constraintPairs: list of 2-tuples eg [(1, 2), (1, 5), ...].
+    :param list data: a set/list of sets/lists.
+    :return: list of collision sets.
     """
     # Merge the collision sets that are linked via constraints.
-    for (a, b) in uniquePairs:
+    for (a, b) in constraintPairs:
         # Find (and remove) the set(s) where object_a and object_b are in.
         val_a = [data.pop(idx) for idx, val in enumerate(data) if a in val]
         val_b = [data.pop(idx) for idx, val in enumerate(data) if b in val]
