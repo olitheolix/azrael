@@ -944,13 +944,16 @@ class TestLeonardOther:
         cs = CollShapeMeta(
             'sphere', '', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1)
         )
+        distance = abs(pos_a[0] - pos_b[0])
+        assert distance >= 4
 
         sv_a = bullet_data.MotionState(position=pos_a, cshape=[cs])
         sv_b = bullet_data.MotionState(position=pos_b, cshape=[cs])
 
         # Specify the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
-        self.igor.addConstraints([ConstraintMeta('p2p', id_a, id_b, '', p2p)])
+        con = ConstraintMeta('p2p', id_a, id_b, '', p2p)
+        self.igor.addConstraints([con])
 
         # Spawn both objects.
         assert physAPI.addCmdSpawn([(id_a, sv_a, aabb), (id_b, sv_b, aabb)]).ok
@@ -961,13 +964,26 @@ class TestLeonardOther:
         leo.processCommandsAndSync()
 
         # Both object must have moved the same distance 'delta' because they
-        # are linked.
+        # are linked. Their distance must not have changed.
         leo.step(1.0, 60)
-        delta_a = leo.allObjects[id_a].position - np.array(pos_a)
-        delta_b = leo.allObjects[id_b].position - np.array(pos_b)
+        allObjs = leo.allObjects
+        delta_a = allObjs[id_a].position - np.array(pos_a)
+        delta_b = allObjs[id_b].position - np.array(pos_b)
         assert delta_a[0] < pos_a[0]
         assert np.allclose(delta_a, delta_b)
+        tmp = abs(allObjs[id_a].position[0] - allObjs[id_b].position[0])
+        assert abs(tmp - distance) < 0.01
+        del tmp
 
-        # fixme: unlink the objects again, apply a right-pointing force to the
+        # Unlink the objects again, apply a right-pointing force to the
         # right object and verify that the left continues to move left and the
         # right does not.
+        assert self.igor.deleteConstraints([con]) == (True, None, 1)
+        assert physAPI.addCmdDirectForce(id_b, [10, 0, 0], [0, 0, 0]).ok
+        leo.processCommandsAndSync()
+        leo.step(1.0, 60)
+
+        # The distance between the spheres must have increases since they are
+        # not linked anymore.
+        tmp = abs(allObjs[id_a].position[0] - allObjs[id_b].position[0])
+        assert tmp > (distance + 1)
