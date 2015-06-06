@@ -1284,3 +1284,36 @@ class Clerk(multiprocessing.Process):
                  for details).
         """
         return self.igor.addConstraints(constraints)
+
+    @typecheck
+    def getConstraints(self, bodyIDs: (set, tuple, list)):
+        """
+        Return all constraints that feature any of the bodies in ``bodyIDs``.
+
+        :param list[int] bodyIDs: list of body IDs.
+        :return: List of ``ConstraintMeta`` instances.
+        """
+        self.igor.updateLocalCache()
+        return self.igor.getConstraints(bodyIDs)
+
+    @typecheck
+    def getAllConstraints(self):
+        """
+        Return all currently known constraints.
+
+        :return: List of ``ConstraintMeta`` instances.
+        """
+        self.igor.updateLocalCache()
+        return self.igor.getAllConstraints()
+
+    @typecheck
+    def deleteConstraints(self, constraints: (tuple, list)):
+        """
+        Return the number of ``constraints`` actually deleted.
+
+        See ``Igor.deleteConstraints`` for details.
+
+        :param list constraints: list of `ConstraintMeta` tuples.
+        :return: number of deleted entries.
+        """
+        return self.igor.deleteConstraints(constraints)

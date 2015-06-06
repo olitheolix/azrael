@@ -1548,9 +1548,67 @@ class TestClerk:
         clacks.terminate()
         clacks.join()
 
-    def test_addConstraints(self):
+    def test_add_get_remove_constraints(self):
+        """
+        Create some bodies. Then add/query/remove constraints.
+
+        This test only verifies that the Igor interface works. It does *not*
+        verify that the objects are really linked in the actual simulation.
+        """
+        # Reset the SV database and instantiate a Leonard and a Clerk.
+        leo = getLeonard(azrael.leonard.LeonardBullet)
+        clerk = azrael.clerk.Clerk()
+
+        # Reset the constraint database.
+        assert clerk.igor.reset().ok
+
+        # Define three collision shapes.
+        pos_1, pos_2, pos_3 = [-2, 0, 0], [2, 0, 0], [6, 0, 0]
+        sv_1 = bullet_data.MotionState(position=pos_1)
+        sv_2 = bullet_data.MotionState(position=pos_2)
+        sv_3 = bullet_data.MotionState(position=pos_3)
+
+        # Spawn the two bodies with a constraint among them.
+        tID = '_templateSphere'
+        id_1, id_2, id_3 = 1, 2, 3
+        templates = [(tID, sv_1), (tID, sv_2), (tID, sv_3)]
+        ret = clerk.spawn(templates)
+        assert (ret.ok, ret.data) == (True, (id_1, id_2, id_3))
+        del tID
+
+        # Define two constraints to form a chain.
+        p2p_12 = ConstraintP2P(pivot_a=pos_2, pivot_b=pos_1)
+        p2p_23 = ConstraintP2P(pivot_a=pos_3, pivot_b=pos_2)
+        con_1 = ConstraintMeta('p2p', id_1, id_2, '', p2p_12)
+        con_2 = ConstraintMeta('p2p', id_2, id_3, '', p2p_23)
+
+        # Verify that no constraints are currently active.
+        assert clerk.getAllConstraints() == (True, None, tuple())
+        assert clerk.getConstraints([id_1]) == (True, None, tuple())
+
+        # Add both constraints and verify Clerk returns them correctly.
+        assert clerk.addConstraints([con_1, con_2]) == (True, None, 2)
+        ret = clerk.getAllConstraints()
+        assert  ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
+
+        ret = clerk.getConstraints([id_2])
+        assert  ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
+
+        assert clerk.getConstraints([id_1]) == (True, None, (con_1, ))
+        assert clerk.getConstraints([id_3]) == (True, None, (con_2, ))
+
+        # Remove one constraint and verify Clerk returns them correctly.
+        assert clerk.deleteConstraints([con_2]) == (True, None, 1)
+        assert clerk.getAllConstraints() == (True, None, (con_1, ))
+        assert clerk.getConstraints([id_1]) == (True, None, (con_1, ))
+        assert clerk.getConstraints([id_2]) == (True, None, (con_1,))
+        assert clerk.getConstraints([id_3]) == (True, None, tuple())
+
+    def test_constraints_with_physics(self):
         """
         Spawn two rigid bodies and define a Point2Point constraint among them.
+        Then apply a force onto one of them and verify the second one moves
+        accordingly.
         """
         # Reset the SV database and instantiate a Leonard and a Clerk.
         leo = getLeonard(azrael.leonard.LeonardBullet)
