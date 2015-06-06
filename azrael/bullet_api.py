@@ -396,12 +396,12 @@ class PyBulletDynamicsWorld():
 
         This is a convenience method only.
 
-        fixme: document return types.
         fixme: find out how to combine mass/inertia of multi body objects.
 
         :param int objID: object ID.
         :param _MotionState obj: Azrael's meta data that describes the body.
-        :return:
+        :return: compound shape with all the individual shapes.
+        :rtype: ``CompoundShape``
         """
         # Create the compound shape that will hold all other shapes.
         compound = azBullet.CompoundShape()
@@ -410,6 +410,10 @@ class PyBulletDynamicsWorld():
         tot_mass = 0
         tot_inertia = Vec3(0, 0, 0)
 
+        # Objects with virtually no mass will be converted to static objects.
+        # This is almost certainly not what the user wants but it is the only
+        # safe option here. Note: it is the user's responsibility to ensure the
+        # mass is reasonably large!
         if obj.imass > 1E-4:
             obj_mass = 1.0 / obj.imass
         else:
