@@ -593,7 +593,7 @@ class Client():
                 for f in temp.factories:
                     assert isinstance(f, parts.Factory)
 
-                # fixme: sanity check the Collision Shape
+                # fixme: verify the Collision Shape is valid.
                 cs = list(temp.cs)
 
                 # Replace the original entry with a new one where CS is

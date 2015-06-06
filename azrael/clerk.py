@@ -579,6 +579,8 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def _verifyCollisionShapes(self, cshapes: (tuple, list)):
         """
+        Return *True* if ``cshapes`` contains only valid Collision Shapes.
+
         fixme: incomplete; untested; good enough for now until its merit is
         clear.
         """
