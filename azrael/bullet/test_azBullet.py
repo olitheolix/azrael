@@ -845,6 +845,66 @@ class TestConstraints:
         # segfault it works :)
         dof.getObjectType()
 
+    def test_Generic6DofConstraint_emulateP2P_sim(self):
+        """
+        Test the Generic6Dof constraint in a Bullet simulation.
+
+        The 6DOF constraint in this test emulates a Point2Point constraint
+        because the default values for linear/angular motion are not modified.
+        The test code is therefore mostly identical to that for a Point2Point
+        constraint.
+        """
+        # Create two rigid bodies side by side (they *do* touch, but just).
+        pos_a = Vec3(-1, 0, 0)
+        pos_b = Vec3(1, 0, 0)
+        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+
+        # Create the constraint between the two bodies.
+        frameInA = Transform()
+        frameInB = Transform()
+        frameInA.setIdentity()
+        frameInB.setIdentity()
+        refIsA = True
+        dof = Generic6DofConstraint(rb_a, rb_b, frameInA, frameInB, refIsA)
+
+        # Add both rigid bodies into a simulation.
+        bb = BulletBase()
+        bb.setGravity(0, 0, 0)
+        bb.addRigidBody(rb_a)
+        bb.addRigidBody(rb_b)
+
+        # Add constraint to Bullet simulation.
+        bb.addConstraint(dof)
+
+        # Verify that the objects are at x-position +/-1, and thus 2 Meters
+        # apart.
+        p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+        p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
+        init_pos = (p_a[0], p_b[0])
+        fixed_dist = p_a[0] - p_b[0]
+        assert init_pos == (-1, 1)
+
+        # Apply opposing forces to both objects, step the simulation a few
+        # times, and verify at each step that *both* objects move in the *same*
+        # direction due to the constraint.
+        rb_a.applyCentralForce(Vec3(10, 0, 0))
+        rb_b.applyCentralForce(Vec3(10, 0, 0))
+        for ii in range(3):
+            # Step simulation.
+            bb.stepSimulation(10 / 60, 60)
+
+            # Query the position of the objects.
+            p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+            p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
+
+            # Verify that both objects continue to move to right, yet maintain
+            # their initial distance.
+            assert p_a[0] > init_pos[0]
+            assert p_b[0] > init_pos[1]
+            assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
+            init_pos = (p_a[0], p_b[0])
+
     def test_add_get_remove_iterate(self):
         """
         Test the various functions
