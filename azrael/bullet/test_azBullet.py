@@ -909,6 +909,75 @@ class TestConstraints:
             assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
             init_pos = (p_a[0], p_b[0])
 
+    @pytest.mark.parametrize('clsDof6', [Generic6DofConstraint,
+                                         Generic6DofSpringConstraint])
+    def test_Generic6DofConstraint_emulateSlider_pivot_sim(self, clsDof6):
+        """
+        Same as test_Generic6DofConstraint_emulateP2P_pivot_sim except
+        that the pivot does not coincide with the center of mass and the
+        constraint is setup such that it mimicks a slider.
+        """
+        # Create two rigid bodies side by side (they *do* touch, but just).
+        pos_a = Vec3(-1, 0, 0)
+        pos_b = Vec3(1, 0, 0)
+        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+
+        # Create the constraint between the two bodies. The constraint applies
+        # at (0, 0, 0) in world coordinates.
+        frameInA = Transform(Quaternion(0, 0, 0, 1), pos_b)
+        frameInB = Transform(Quaternion(0, 0, 0, 1), pos_a)
+        refIsA = True
+        dof = clsDof6(rb_a, rb_b, frameInA, frameInB, refIsA)
+
+        # We are now emulating a slider constraint with this 6DOF constraint.
+        # For this purpose we need to specify the linear/angular limits.
+        sliderLimitLo = -1
+        sliderLimitHi = 1
+
+        # Apply the linear/angular limits.
+        dof.setLinearLowerLimit(Vec3(sliderLimitLo, 0, 0))
+        dof.setLinearUpperLimit(Vec3(sliderLimitHi, 0, 0))
+
+        # Add both rigid bodies and the constraint to the Bullet simulation.
+        bb = BulletBase()
+        bb.setGravity(0, 0, 0)
+        bb.addRigidBody(rb_a)
+        bb.addRigidBody(rb_b)
+        bb.addConstraint(dof)
+
+        # Verify that the objects are at x-position +/-1, and thus 2 Meters
+        # apart.
+        p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+        p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
+        init_pos = (p_a[0], p_b[0])
+        fixed_dist = p_a[0] - p_b[0]
+        assert init_pos == (-1, 1)
+
+        # Pull the right object to the right. Initially this must not affect
+        # the object on the left until the slider is fully extended, at which
+        # point the left object must begin to move as well.
+        rb_b.applyCentralForce(Vec3(10, 0, 0))
+        for ii in range(5):
+            # Step simulation.
+            bb.stepSimulation(10 / 60, 60)
+
+            # Query the position of the objects.
+            p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+            p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
+
+            # If the right object has not moved far enough to fully extend the
+            # (emulated) slider constraint then the left object must remain
+            # where it is, otherwise it must move to the right.
+            if p_b[0] <= (init_pos[1] + sliderLimitHi):
+                assert p_a[0] == init_pos[0]
+            else:
+                assert p_a[0] > init_pos[0]
+
+        # Verify that the above loop really pulled the right object far enought
+        # to exhaust the maximum translation allowance.
+        assert p_b[0] > (init_pos[1] + sliderLimitHi)
+
     def test_add_get_remove_iterate(self):
         """
         Test the various functions
