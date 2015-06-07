@@ -49,3 +49,14 @@ cdef extern from "btBulletDynamicsCommon.h":
         void getAngularLowerLimit(btVector3 &angularLower)
         void setAngularUpperLimit(const btVector3 &angularUpper)
         void getAngularUpperLimit(btVector3 &angularUpper)
+
+    cdef cppclass btGeneric6DofSpringConstraint:
+        btGeneric6DofSpringConstraint(btRigidBody &rbA,
+                                      btRigidBody &rbB,
+                                      const btTransform &frameInA,
+                                      const btTransform &frameInB,
+                                      bint useLinearReferenceFrameA)
+        void enableSpring(int index, bint onOff)
+        void setStiffness(int index, btScalar stiffness)
+        void setDamping(int index, btScalar damping)
+        void setEquilibriumPoint()

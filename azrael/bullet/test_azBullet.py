@@ -27,7 +27,7 @@ from azBullet import DefaultMotionState, RigidBody
 from azBullet import CompoundShape
 from azBullet import Point2PointConstraint, BulletBase
 from azBullet import RigidBodyConstructionInfo
-from azBullet import Generic6DofConstraint
+from azBullet import Generic6DofConstraint, Generic6DofSpringConstraint
 
 
 def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
@@ -802,7 +802,9 @@ class TestConstraints:
             assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
             init_pos = (p_a[0], p_b[0])
 
-    def test_Generic6DofConstraint(self):
+    @pytest.mark.parametrize('clsDof6', [Generic6DofConstraint,
+                                         Generic6DofSpringConstraint])
+    def test_Generic6DofConstraint(self, clsDof6):
         """
         Create-, set, and query various `Generic6DofConstraint` attributes.
         """
@@ -820,7 +822,7 @@ class TestConstraints:
         frameInA.setIdentity()
         frameInB.setIdentity()
         refIsA = True
-        dof = Generic6DofConstraint(rb_a, rb_b, frameInA, frameInB, refIsA)
+        dof = clsDof6(rb_a, rb_b, frameInA, frameInB, refIsA)
 
         # We are now emulating a slider constraint with this 6DOF constraint.
         # For this purpose we need to specify the linear/angular limits.
@@ -845,7 +847,9 @@ class TestConstraints:
         # segfault it works :)
         dof.getObjectType()
 
-    def test_Generic6DofConstraint_emulateP2P_sim(self):
+    @pytest.mark.parametrize('clsDof6', [Generic6DofConstraint,
+                                         Generic6DofSpringConstraint])
+    def test_Generic6DofConstraint_emulateP2P_sim(self, clsDof6):
         """
         Test the Generic6Dof constraint in a Bullet simulation.
 
@@ -866,7 +870,7 @@ class TestConstraints:
         frameInA.setIdentity()
         frameInB.setIdentity()
         refIsA = True
-        dof = Generic6DofConstraint(rb_a, rb_b, frameInA, frameInB, refIsA)
+        dof = clsDof6(rb_a, rb_b, frameInA, frameInB, refIsA)
 
         # Add both rigid bodies into a simulation.
         bb = BulletBase()
