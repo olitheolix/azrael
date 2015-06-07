@@ -35,3 +35,17 @@ cdef extern from "btBulletDynamicsCommon.h":
         void setPivotB(const btVector3 &pivotB)
         btVector3 &getPivotInA()
         btVector3 &getPivotInB()
+
+    cdef cppclass btGeneric6DofConstraint:
+        btGeneric6DofConstraint(btRigidBody &rbA, btRigidBody &rbB,
+                                const btTransform &frameInA,
+                                const btTransform &frameInB,
+                                bint useLinearReferenceFrameA)
+        void setLinearLowerLimit(const btVector3 &linearLower)
+        void getLinearLowerLimit(btVector3 &linearLower)
+        void setLinearUpperLimit(const btVector3 &linearUpper)
+        void getLinearUpperLimit(btVector3 &linearUpper)
+        void setAngularLowerLimit (const btVector3 &angularLower)
+        void getAngularLowerLimit(btVector3 &angularLower)
+        void setAngularUpperLimit(const btVector3 &angularUpper)
+        void getAngularUpperLimit(btVector3 &angularUpper)

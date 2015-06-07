@@ -27,6 +27,7 @@ from azBullet import DefaultMotionState, RigidBody
 from azBullet import CompoundShape
 from azBullet import Point2PointConstraint, BulletBase
 from azBullet import RigidBodyConstructionInfo
+from azBullet import Generic6DofConstraint
 
 
 def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
@@ -709,7 +710,7 @@ class TestConstraints:
 
     def test_Point2Point(self):
         """
-        Set, query, and replace a collision shape.
+        Create-, set, and query various Point2Point constraint attributes.
         """
         # Create two rigid bodies side by side (they *do* touch, but just).
         cs_a = SphereShape(1)
@@ -800,6 +801,49 @@ class TestConstraints:
             assert p_b[0] > init_pos[1]
             assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
             init_pos = (p_a[0], p_b[0])
+
+    def test_Generic6DofConstraint(self):
+        """
+        Create-, set, and query various `Generic6DofConstraint` attributes.
+        """
+        # Create two rigid bodies side by side (they *do* touch, but just).
+        cs_a = SphereShape(1)
+        cs_b = BoxShape(Vec3(1, 2, 3))
+        pos_a = Vec3(-1, 0, 0)
+        pos_b = Vec3(1, 0, 0)
+        rb_a = getRB(pos=pos_a, cs=cs_a)
+        rb_b = getRB(pos=pos_b, cs=cs_b)
+
+        # Create the 6DOF constraint between the two bodies.
+        frameInA = Transform()
+        frameInB = Transform()
+        frameInA.setIdentity()
+        frameInB.setIdentity()
+        refIsA = True
+        dof = Generic6DofConstraint(rb_a, rb_b, frameInA, frameInB, refIsA)
+
+        # We are now emulating a slider constraint with this 6DOF constraint.
+        # For this purpose we need to specify the linear/angular limits.
+        sliderLimitLo = Vec3(-10, 0, 0)
+        sliderLimitHi = Vec3(10, 0, 0)
+        angularLimitLo = Vec3(-1.5, 0, 0)
+        angularLimitHi = Vec3(1.5, 0, 0)
+
+        # Apply the linear/angular limits.
+        dof.setLinearLowerLimit(sliderLimitLo)
+        dof.setLinearUpperLimit(sliderLimitHi)
+        dof.setAngularLowerLimit(angularLimitLo)
+        dof.setAngularUpperLimit(angularLimitHi)
+
+        # Verify the linear/angular limits were applied correctly.
+        assert dof.getLinearLowerLimit() == sliderLimitLo
+        assert dof.getLinearUpperLimit() == sliderLimitHi
+        assert dof.getAngularLowerLimit() == angularLimitLo
+        assert dof.getAngularUpperLimit() == angularLimitHi
+
+        # Query the object type; not sure what this is, but if it does not
+        # segfault it works :)
+        dof.getObjectType()
 
     def test_add_get_remove_iterate(self):
         """

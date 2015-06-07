@@ -92,8 +92,12 @@ cdef class Point2PointConstraint(TypedConstraint):
         self.ptr_TypedObject = <btTypedObject*?>self.ptr_TypedConstraint
         
     def __dealloc__(self):
-        if self.ptr_TypedConstraint != NULL:
-            del self.ptr_TypedConstraint
+        if self.ptr_Point2PointConstraint != NULL:
+            del self.ptr_Point2PointConstraint
+
+            self.ptr_Point2PointConstraint = NULL
+            self.ptr_TypedObject = NULL
+            self.ptr_TypedConstraint = NULL
 
     def setPivotA(self, Vec3 pivotA):
         self.ptr_Point2PointConstraint.setPivotA(pivotA.ptr_Vector3[0])
@@ -110,3 +114,71 @@ cdef class Point2PointConstraint(TypedConstraint):
         v = Vec3(0, 0, 0)
         v.ptr_Vector3[0] = self.ptr_Point2PointConstraint.getPivotInB()
         return v
+
+
+cdef class Generic6DofConstraint(TypedConstraint):
+    cdef btGeneric6DofConstraint *ptr_Generic6DofConstraint
+
+    def __cinit__(self):
+        self.ptr_Generic6DofConstraint = NULL
+
+    def __init__(self, RigidBody rbA,
+                       RigidBody rbB,
+                       Transform frameInA,
+                       Transform frameInB,
+                       bint refIsA):
+        self.ptr_Generic6DofConstraint = new btGeneric6DofConstraint(
+            rbA.ptr_RigidBody[0],
+            rbB.ptr_RigidBody[0],
+            frameInA.ptr_Transform[0],
+            frameInB.ptr_Transform[0],
+            refIsA)
+
+        # Keep handles to the two objects alive.
+        self._ref_rbA = rbA
+        self._ref_rbB = rbB
+
+        # Assign the base pointers.
+        self.ptr_TypedConstraint = <btTypedConstraint*?>self.ptr_Generic6DofConstraint
+        self.ptr_TypedObject = <btTypedObject*?>self.ptr_TypedConstraint
+
+    def __dealloc__(self):
+        if self.ptr_Generic6DofConstraint != NULL:
+            del self.ptr_Generic6DofConstraint
+
+            self.ptr_Generic6DofConstraint = NULL
+            self.ptr_TypedObject = NULL
+            self.ptr_TypedConstraint = NULL
+
+    def setLinearLowerLimit(self, Vec3 lim):
+        self.ptr_Generic6DofConstraint.setLinearLowerLimit(lim.ptr_Vector3[0])
+
+    def getLinearLowerLimit(self):
+        ret = Vec3()
+        self.ptr_Generic6DofConstraint.getLinearLowerLimit(ret.ptr_Vector3[0])
+        return ret
+
+    def setLinearUpperLimit(self, Vec3 lim):
+        self.ptr_Generic6DofConstraint.setLinearUpperLimit(lim.ptr_Vector3[0])
+
+    def getLinearUpperLimit(self):
+        ret = Vec3()
+        self.ptr_Generic6DofConstraint.getLinearUpperLimit(ret.ptr_Vector3[0])
+        return ret
+
+    def setAngularLowerLimit(self, Vec3 lim):
+        self.ptr_Generic6DofConstraint.setAngularLowerLimit(lim.ptr_Vector3[0])
+
+    def getAngularLowerLimit(self):
+        ret = Vec3()
+        self.ptr_Generic6DofConstraint.getAngularLowerLimit(ret.ptr_Vector3[0])
+        return ret
+
+    def setAngularUpperLimit(self, Vec3 lim):
+        self.ptr_Generic6DofConstraint.setAngularUpperLimit(lim.ptr_Vector3[0])
+
+    def getAngularUpperLimit(self):
+        ret = Vec3()
+        self.ptr_Generic6DofConstraint.getAngularUpperLimit(ret.ptr_Vector3[0])
+        return ret
+
