@@ -235,3 +235,61 @@ cdef class Generic6DofSpringConstraint(Generic6DofConstraint):
 
     def setEquilibriumPoint(self):
         self.ptr_Generic6DofSpringConstraint.setEquilibriumPoint()
+
+
+cdef class Generic6DofSpring2Constraint(Generic6DofConstraint):
+    cdef btGeneric6DofSpring2Constraint *ptr_Generic6DofSpring2Constraint
+
+    def __cinit__(self):
+        self.ptr_Generic6DofSpring2Constraint = NULL
+
+    def __init__(self, RigidBody rbA,
+                       RigidBody rbB,
+                       Transform frameInA,
+                       Transform frameInB,
+                       RotateOrder rotOrder=RO_XYZ):
+        self.ptr_Generic6DofSpring2Constraint = new btGeneric6DofSpring2Constraint(
+            rbA.ptr_RigidBody[0],
+            rbB.ptr_RigidBody[0],
+            frameInA.ptr_Transform[0],
+            frameInB.ptr_Transform[0],
+            rotOrder)
+
+        # Keep handles to the two objects alive.
+        self._ref_rbA = rbA
+        self._ref_rbB = rbB
+
+        # Assign the base pointers.
+        self.ptr_TypedConstraint = <btTypedConstraint*?>self.ptr_Generic6DofSpring2Constraint
+        self.ptr_Generic6DofConstraint = <btGeneric6DofConstraint*?>self.ptr_Generic6DofSpring2Constraint
+        self.ptr_TypedObject = <btTypedObject*?>self.ptr_TypedConstraint
+
+    def __dealloc__(self):
+        if self.ptr_Generic6DofSpring2Constraint != NULL:
+            del self.ptr_Generic6DofSpring2Constraint
+
+            self.ptr_Generic6DofSpring2Constraint = NULL
+            self.ptr_Generic6DofConstraint = NULL
+            self.ptr_TypedObject = NULL
+            self.ptr_TypedConstraint = NULL
+
+    def enableSpring(self, int index, bint onOff):
+        if not (0 <= index < 6):
+            return
+        self.ptr_Generic6DofSpring2Constraint.enableSpring(index, onOff)
+
+    def setStiffness(self, int index, double stiffness):
+        if not (0 <= index < 6):
+            return
+        self.ptr_Generic6DofSpring2Constraint.setStiffness(index, btScalar(stiffness))
+
+    def setDamping(self, int index, double damping):
+        if not (0 <= index < 6):
+            return
+        self.ptr_Generic6DofSpring2Constraint.setDamping(index, btScalar(damping))
+
+    def setEquilibriumPoint(self):
+        self.ptr_Generic6DofSpring2Constraint.setEquilibriumPoint()
+
+    def setBounce(self, int index, double bounce):
+        self.ptr_Generic6DofSpring2Constraint.setBounce(index, btScalar(bounce))

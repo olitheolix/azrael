@@ -14,6 +14,14 @@ cdef extern from "btBulletDynamicsCommon.h":
         FIXED_CONSTRAINT_TYPE
         MAX_CONSTRAINT_TYPE
 
+    cdef enum RotateOrder:
+        RO_XYZ
+        RO_XZY
+        RO_YXZ
+        RO_YZX
+        RO_ZXY
+        RO_ZYX
+
     cdef cppclass btTypedObject:
         btTypedObject(int objectType)
         int getObjectType()
@@ -60,3 +68,15 @@ cdef extern from "btBulletDynamicsCommon.h":
         void setStiffness(int index, btScalar stiffness)
         void setDamping(int index, btScalar damping)
         void setEquilibriumPoint()
+
+    cdef cppclass btGeneric6DofSpring2Constraint:
+        btGeneric6DofSpring2Constraint(btRigidBody &rbA,
+                                       btRigidBody &rbB,
+                                       const btTransform &frameInA,
+                                       const btTransform &frameInB,
+                                       RotateOrder rotOrder)
+        void enableSpring(int index, bint onOff)
+        void setStiffness(int index, btScalar stiffness)
+        void setDamping(int index, btScalar damping)
+        void setEquilibriumPoint()
+        void setBounce(int index, btScalar bounce)

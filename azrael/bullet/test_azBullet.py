@@ -27,7 +27,8 @@ from azBullet import DefaultMotionState, RigidBody
 from azBullet import CompoundShape
 from azBullet import Point2PointConstraint, BulletBase
 from azBullet import RigidBodyConstructionInfo
-from azBullet import Generic6DofConstraint, Generic6DofSpringConstraint
+from azBullet import Generic6DofConstraint
+from azBullet import Generic6DofSpringConstraint, Generic6DofSpring2Constraint
 
 
 def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
@@ -803,7 +804,9 @@ class TestConstraints:
             init_pos = (p_a[0], p_b[0])
 
     @pytest.mark.parametrize('clsDof6', [Generic6DofConstraint,
-                                         Generic6DofSpringConstraint])
+                                         Generic6DofSpringConstraint,
+                                         Generic6DofSpring2Constraint,
+                                         ])
     def test_Generic6DofConstraint(self, clsDof6):
         """
         Create-, set, and query various `Generic6DofConstraint` attributes.
@@ -848,7 +851,9 @@ class TestConstraints:
         dof.getObjectType()
 
     @pytest.mark.parametrize('clsDof6', [Generic6DofConstraint,
-                                         Generic6DofSpringConstraint])
+                                         Generic6DofSpringConstraint,
+                                         Generic6DofSpring2Constraint,
+                                         ])
     def test_Generic6DofConstraint_emulateP2P_sim(self, clsDof6):
         """
         Test the Generic6Dof constraint in a Bullet simulation.
@@ -957,9 +962,9 @@ class TestConstraints:
         # Pull the right object to the right. Initially this must not affect
         # the object on the left until the slider is fully extended, at which
         # point the left object must begin to move as well.
-        rb_b.applyCentralForce(Vec3(10, 0, 0))
         for ii in range(5):
-            # Step simulation.
+            # Apply the force and step the simulation.
+            rb_b.applyCentralForce(Vec3(10, 0, 0))
             bb.stepSimulation(10 / 60, 60)
 
             # Query the position of the objects.
@@ -971,6 +976,100 @@ class TestConstraints:
             # where it is, otherwise it must move to the right.
             if p_b[0] <= (init_pos[1] + sliderLimitHi):
                 assert p_a[0] == init_pos[0]
+            else:
+                assert p_a[0] > init_pos[0]
+
+        # Verify that the above loop really pulled the right object far enought
+        # to exhaust the maximum translation allowance.
+        assert p_b[0] > (init_pos[1] + sliderLimitHi)
+
+    def test_Generic6DofSpring2Constraint_emulateSlider_pivot_sim(self):
+        """
+        The '6DofSpring2Constraint' (note the '2' in the name) behave slight
+        differently than the '6DofSpringConstraint' (no '2' in the name). For
+        this reason it has a dedicated test.
+
+        The differences are subtle and, as usual with Bullet, not really
+        documented. However, the '2' version is (apparently) more stable and I
+        know that the damping coefficient works (unlike in the version without
+        '2' where it has no effect).
+
+        One of the main difference, and also the reason why the previous slider
+        test would fail with the '2' version is that the slider does not have
+        to extend fully before the second object experiences a force. This is
+        rather plausible for all realistic slider constraints but hard to test
+        rigorously. However, this test attempts to verify this basic feature
+        nevertheless even though the limits are somewhat empirical.
+        """
+        # Create two rigid bodies side by side (they *do* touch, but just).
+        pos_a = Vec3(-1, 0, 0)
+        pos_b = Vec3(1, 0, 0)
+        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+
+        # Create the constraint between the two bodies. The constraint applies
+        # at (0, 0, 0) in world coordinates.
+        frameInA = Transform(Quaternion(0, 0, 0, 1), pos_b)
+        frameInB = Transform(Quaternion(0, 0, 0, 1), pos_a)
+        clsDof6 = Generic6DofSpring2Constraint
+        dof = clsDof6(rb_a, rb_b, frameInA, frameInB)
+
+        # We are now emulating a slider constraint with this 6DOF constraint.
+        # For this purpose we need to specify the linear/angular limits.
+        sliderLimitLo = -1
+        sliderLimitHi = -sliderLimitLo
+
+        # Apply the linear/angular limits.
+        dof.setLinearLowerLimit(Vec3(sliderLimitLo, 0, 0))
+        dof.setLinearUpperLimit(Vec3(sliderLimitHi, 0, 0))
+
+        # Add both rigid bodies and the constraint to the Bullet simulation.
+        bb = BulletBase()
+        bb.setGravity(0, 0, 0)
+        bb.addRigidBody(rb_a)
+        bb.addRigidBody(rb_b)
+        bb.addConstraint(dof)
+
+        # Verify that the objects are at x-position +/-1, and thus 2 Meters
+        # apart.
+        p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+        p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
+        init_pos = (p_a[0], p_b[0])
+        fixed_dist = p_a[0] - p_b[0]
+        assert init_pos == (-1, 1)
+
+        # The ...Spring2... (notice the '2') behaves slightly differently (and
+        # more correctly) than the Dof without the '2' in the name. In
+        # particular, once the slider constraint extends to ~1/sqrt(2) of the
+        # full distance it starts to dampen the motion. For this purpose we
+        # define three regions: half extended, between half- and fully extend,
+        # and fully extended. The two threshold values below specify the two
+        # boundary regions.
+        thresh_1 = init_pos[1] + sliderLimitHi / 2
+        thresh_2 = init_pos[1] + sliderLimitHi
+
+        # Pull the right object to the right. Initially this must not affect
+        # the object on the left until the slider is fully extended, at which
+        # point the left object must begin to move as well.
+        for ii in range(50):
+            # Apply the force and step the simulation.
+            rb_b.applyCentralForce(Vec3(10, 0, 0))
+            bb.stepSimulation(1 / 60, 60)
+
+            # Query the position of the objects.
+            p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
+            p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
+
+            # If the right object has not moved far enough to extend the slider
+            # by at least half then the left object must remain still. If it is
+            # in the region between half- and full extend then the object will
+            # eventually start to move (but we do not know exactly when). When
+            # the right object has moved enough to fully extend the slider the
+            # left object must definitively have moved by then.
+            if p_b[0] < thresh_1:
+                assert p_a[0] == init_pos[0]
+            elif thresh_1 <= p_b[0] < thresh_2:
+                assert p_a[0] >= init_pos[0]
             else:
                 assert p_a[0] > init_pos[0]
 
