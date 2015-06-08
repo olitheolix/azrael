@@ -51,7 +51,7 @@ def compileBullet(tarball: str, libdir: str, double_precision: bool):
        No root privileges are requires, unless ``libdir`` is inaccessible to
        the user.
 
-    :param str tarball: Bullet archive, eg. 'bullet-2.82-r2704.tgz'.
+    :param str tarball: Bullet archive, eg. 'bullet3-2.83.5.tgz'.
     :param str libdir: directory where the library will be installed
     :param double_precision: whether to compile with 64Bit arithmetic or not.
     :return: None
@@ -71,17 +71,23 @@ def compileBullet(tarball: str, libdir: str, double_precision: bool):
         # Move into the newly created directory and generate the Makefiles. To
         # see more options I recommend to unpack the archive somewhere and then
         # run 'cmake-gui'.
-        os.chdir('bullet-2.82-r2704')
+        os.chdir('bullet3-2.83.5')
         cmd = [
             'cmake', '.', '-G', 'Unix Makefiles',
+            '-DBUILD_BULLET2_DEMOS:BOOL=0',
+            '-DBUILD_BULLET3:BOOL=0',
+            '-DBUILD_CPU_DEMOS:BOOL=0',
+            '-DBUILD_DEMOS:BOOL=0',
+            '-DBUILD_OPENGL3_DEMOS:BOOL=0',
+            '-DBUILD_SHARED_LIBS=ON',
+            '-DBUILD_UNIT_TESTS:BOOL=0',
+            '-DCMAKE_BACKWARDS_COMPATIBILITY:STRING=2.4',
             '-DCMAKE_INSTALL_PREFIX:PATH={libdir}',
             '-DINCLUDE_INSTALL_DIR:PATH={libdir}/include/bullet',
-            '-DBUILD_DEMOS:BOOL=0',
-            '-DBUILD_CPU_DEMOS:BOOL=0',
-            '-DCMAKE_BACKWARDS_COMPATIBILITY:STRING=2.4',
             '-DLIB_DESTINATION:STRING={libdir}/lib/',
             '-DPKGCONFIG_INSTALL_PREFIX:STRING={libdir}/lib/pkgconfig/',
-            '-DBUILD_SHARED_LIBS=ON',
+            '-DUSE_GLUT:BOOL=0',
+            '-DUSE_GRAPHICAL_BENCHMARK:BOOL=0',
         ]
 
         # Specify the precision flag.
@@ -104,10 +110,10 @@ def getBulletTarball():
     """
     Return absolute path to Bullet tarball.
 
-    :return: path to Bullet tarball, eg '/opt/bullet/bullet-2.82-r2704.tgz'
+    :return: path to Bullet tarball, eg '/opt/bullet/bullet3-2.83.5.tgz'
     """
     # Name of tarball.
-    tarball = 'bullet-2.82-r2704.tgz'
+    tarball = 'bullet3-2.83.5.tgz'
 
     # Absolute path to tarball.
     tarball_abs = os.path.join(os.getcwd(), tarball)
@@ -118,7 +124,8 @@ def getBulletTarball():
         return tarball_abs
 
     # Download the Bullet tarball.
-    cmd = ['wget', 'https://bullet.googlecode.com/files/' + tarball]
+    url = 'https://github.com/bulletphysics/bullet3/archive/2.83.5.tar.gz'
+    cmd = ['wget', url, '-O' + tarball]
     print('Downloading Bullet: ', cmd)
     ret = subprocess.call(cmd)
     if ret != 0:
@@ -128,7 +135,7 @@ def getBulletTarball():
     # Sanity check.
     assert os.path.exists(tarball_abs)
 
-    # Return the absolute path to the just download tarball.
+    # Return the absolute path to the just downloaded tarball.
     return tarball_abs
 
 
