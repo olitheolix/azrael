@@ -64,9 +64,13 @@ CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
 
-# fixme: rename 'tag' to 'id'
+# fixme: rename 'tag' to 'id' and align fields like in CollShapeMeta.
 ConstraintMeta = namedtuple('ConstraintMeta', 'type rb_a rb_b tag data')
 ConstraintP2P = namedtuple('ConstraintP2P', 'pivot_a pivot_b')
+Constraint6DofSpring2 = namedtuple(
+    'Constraint6DofSpring2', 'frameInA frameInB stiffness damping equilibrium '
+                             'linLimitLo linLimitHi rotLimitLo rotLimitHi '
+                             'bounce enableSpring')
 
 
 def typecheck(func_handle):

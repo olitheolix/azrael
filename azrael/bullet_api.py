@@ -34,11 +34,12 @@ from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _MotionState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox
-from azrael.types import ConstraintMeta, ConstraintP2P
+from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 
 # Convenience.
 Vec3 = azBullet.Vec3
 Quaternion = azBullet.Quaternion
+Transform = azBullet.Transform
 
 # Convenience.
 MotionState = bullet_data.MotionState
@@ -346,6 +347,29 @@ class PyBulletDynamicsWorld():
                     Vec3(*tmp.pivot_a),
                     Vec3(*tmp.pivot_b)
                 )
+            elif c.type.upper() == '6DOFSPRING2':
+                t = Constraint6DofSpring2(*c.data)
+                fa, fb = t.frameInA, t.frameInB
+                frameInA = Transform(Quaternion(*fa[3:]), Vec3(*fa[:3]))
+                frameInB = Transform(Quaternion(*fb[3:]), Vec3(*fb[:3]))
+                out = azBullet.Generic6DofSpring2Constraint(
+                    rb_a, rb_b, frameInA, frameInB
+                )
+                out.setLinearLowerLimit(Vec3(*t.linLimitLo))
+                out.setLinearUpperLimit(Vec3(*t.linLimitHi))
+                out.setAngularLowerLimit(Vec3(*t.rotLimitLo))
+                out.setAngularUpperLimit(Vec3(*t.rotLimitHi))
+                for ii in range(6):
+                    if not t.enableSpring[ii]:
+                        out.enableSpring(ii, False)
+                        continue
+                    out.enableSpring(ii, True)
+                    out.setStiffness(ii, t.stiffness[ii])
+                    out.setDamping(ii, t.damping[ii])
+                    out.setEquilibriumPoint(ii, t.equilibrium[ii])
+
+                for ii in range(3):
+                    out.setBounce(ii, t.bounce[ii])
             else:
                 assert False
 

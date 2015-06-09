@@ -24,7 +24,7 @@ from IPython import embed as ipshell
 from azrael.types import _MotionState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox
-from azrael.types import ConstraintMeta, ConstraintP2P
+from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 
 
 def isEqualBD(bd1: _MotionState, bd2: _MotionState):
@@ -583,9 +583,10 @@ class TestBulletAPI:
         assert ret.ok
         assert ret.data.cshape[0].name.upper() == 'CSBOX'
 
-    def test_specify_constraints(self):
+    def test_specify_P2P_constraint(self):
         """
-        Create two objects, add a P2P constraint, and step the simulation.
+        Use a P2P constraint to test the various methods to add- and remove
+        constraints.
         """
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -659,6 +660,63 @@ class TestBulletAPI:
         assert ret_a.ok and ret_b.ok
         assert not np.allclose(ret_a.data.position, pos_a)
         assert np.allclose(ret_b.data.position, pos_b)
+
+    def test_specify_6DofSpring2_constraint(self):
+        """
+        Create two objects and linke them with a 6DOF constraint. The
+        constraint mimicks a spring-loaded slider that will pull the objects
+        together.
+        """
+        # Create physics simulation.
+        sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
+
+        # Create identical unit spheres 10 meters apart.
+        id_a, id_b = 10, 20
+        pos_a = (-5, 0, 0)
+        pos_b = (5, 0, 0)
+        obj_a = bullet_data.MotionState(position=pos_a, cshape=[getCSSphere()])
+        obj_b = bullet_data.MotionState(position=pos_b, cshape=[getCSSphere()])
+
+        # Load the objects into the physics engine.
+        sim.setObjectData(id_a, obj_a)
+        sim.setObjectData(id_b, obj_b)
+
+        # Compile the 6DOF constraint.
+        c = Constraint6DofSpring2(
+            frameInA=(0, 0, 0, 0, 0, 0, 1),
+            frameInB=(0, 0, 0, 0, 0, 0, 1),
+            stiffness=(1, 2, 3, 4, 5.5, 6),
+            damping=(2, 3.5, 4, 5, 6.5, 7),
+            equilibrium=(-1, -1, -1, 0, 0, 0),
+            linLimitLo=(-10.5, -10.5, -10.5),
+            linLimitHi=(10.5, 10.5, 10.5),
+            rotLimitLo=(-0.1, -0.2, -0.3),
+            rotLimitHi=(0.1, 0.2, 0.3),
+            bounce=(1, 1.5, 2),
+            enableSpring=(True, False, False, False, False, False))
+        constraints = [ConstraintMeta('6DofSpring2', id_a, id_b, '', c)]
+        del c
+
+        # Step the simulation. Nothing must happen because no forces or
+        # constraints act upon the objects.
+        sim.compute([id_a, id_b], 1.0, 60)
+        ret_a = sim.getObjectData(id_a)
+        ret_b = sim.getObjectData(id_b)
+        assert ret_a.ok and ret_b.ok
+        assert np.allclose(ret_a.data.position, pos_a)
+        assert np.allclose(ret_b.data.position, pos_b)
+
+        # Load the constraints into the physics engine and step the simulation
+        # again. This time the objects must move closer together.
+        assert sim.setConstraints(constraints).ok
+
+        # Step the simulation. This must move both objects closer to each other.
+        sim.compute([id_a, id_b], 1.0, 60)
+        ret_a = sim.getObjectData(id_a)
+        ret_b = sim.getObjectData(id_b)
+        assert ret_a.ok and ret_b.ok
+        assert ret_a.data.position[0] > pos_a[0]
+        assert ret_b.data.position[0] < pos_b[0]
 
     def test_specify_constraints_invalid(self):
         """
