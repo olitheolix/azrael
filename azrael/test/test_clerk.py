@@ -40,7 +40,7 @@ from azrael.test.test import createFragRaw, createFragDae, isEqualCS
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
-from azrael.types import ConstraintMeta, ConstraintP2P
+from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 
 
@@ -1576,11 +1576,23 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (id_1, id_2, id_3))
         del tID
 
-        # Define two constraints to form a chain.
+        # Link the three objects. The first two with a Point2Point constraint
+        # and the second two with a 6DofSpring2 constraint.
         p2p_12 = ConstraintP2P(pivot_a=pos_2, pivot_b=pos_1)
-        p2p_23 = ConstraintP2P(pivot_a=pos_3, pivot_b=pos_2)
+        dof_23 = Constraint6DofSpring2(
+            frameInA=[0, 0, 0, 0, 0, 0, 1],
+            frameInB=[0, 0, 0, 0, 0, 0, 1],
+            stiffness=[1, 2, 3, 4, 5.5, 6],
+            damping=[2, 3.5, 4, 5, 6.5, 7],
+            equilibrium=[-1, -1, -1, 0, 0, 0],
+            linLimitLo=[-10.5, -10.5, -10.5],
+            linLimitHi=[10.5, 10.5, 10.5],
+            rotLimitLo=[-0.1, -0.2, -0.3],
+            rotLimitHi=[0.1, 0.2, 0.3],
+            bounce=[1, 1.5, 2],
+            enableSpring=[True, False, False, False, False, False])
         con_1 = ConstraintMeta('p2p', id_1, id_2, '', p2p_12)
-        con_2 = ConstraintMeta('p2p', id_2, id_3, '', p2p_23)
+        con_2 = ConstraintMeta('6DOFSPRING2', id_2, id_3, '', dof_23)
 
         # Verify that no constraints are currently active.
         assert clerk.getAllConstraints() == (True, None, tuple())
