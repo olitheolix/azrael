@@ -23,10 +23,12 @@ import azrael.database as database
 
 from IPython import embed as ipshell
 from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
+from azrael.types import Constraint6DofSpring2
 
 # List of known constraints and the associated named tuple.
 _Known_Constraints = {
     'P2P': ConstraintP2P,
+    '6DOFSPRING2': Constraint6DofSpring2,
 }
 
 
