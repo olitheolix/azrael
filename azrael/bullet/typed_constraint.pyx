@@ -233,8 +233,8 @@ cdef class Generic6DofSpringConstraint(Generic6DofConstraint):
             return
         self.ptr_Generic6DofSpringConstraint.setDamping(index, btScalar(damping))
 
-    def setEquilibriumPoint(self):
-        self.ptr_Generic6DofSpringConstraint.setEquilibriumPoint()
+    def setEquilibriumPoint(self, int index, double val):
+        self.ptr_Generic6DofSpringConstraint.setEquilibriumPoint(index, btScalar(val))
 
 
 cdef class Generic6DofSpring2Constraint(Generic6DofConstraint):
@@ -288,8 +288,8 @@ cdef class Generic6DofSpring2Constraint(Generic6DofConstraint):
             return
         self.ptr_Generic6DofSpring2Constraint.setDamping(index, btScalar(damping))
 
-    def setEquilibriumPoint(self):
-        self.ptr_Generic6DofSpring2Constraint.setEquilibriumPoint()
+    def setEquilibriumPoint(self, int index, double val):
+        self.ptr_Generic6DofSpring2Constraint.setEquilibriumPoint(index, btScalar(val))
 
     def setBounce(self, int index, double bounce):
         self.ptr_Generic6DofSpring2Constraint.setBounce(index, btScalar(bounce))

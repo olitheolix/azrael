@@ -68,6 +68,9 @@ cdef extern from "btBulletDynamicsCommon.h":
         void setStiffness(int index, btScalar stiffness)
         void setDamping(int index, btScalar damping)
         void setEquilibriumPoint()
+        void setEquilibriumPoint(int index)
+        void setEquilibriumPoint(int index, btScalar val)
+
 
     cdef cppclass btGeneric6DofSpring2Constraint:
         btGeneric6DofSpring2Constraint(btRigidBody &rbA,
@@ -78,5 +81,7 @@ cdef extern from "btBulletDynamicsCommon.h":
         void enableSpring(int index, bint onOff)
         void setStiffness(int index, btScalar stiffness)
         void setDamping(int index, btScalar damping)
-        void setEquilibriumPoint()
         void setBounce(int index, btScalar bounce)
+        void setEquilibriumPoint()
+        void setEquilibriumPoint(int index)
+        void setEquilibriumPoint(int index, btScalar val)
