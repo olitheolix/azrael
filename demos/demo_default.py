@@ -439,7 +439,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
                 pos = np.array([col, row, lay], np.float64)
 
                 # Add space in between cubes.
-                pos *= -(1 + cube_spacing)
+                pos *= -(2 + cube_spacing)
 
                 # Correct the cube's position to ensure the center of the
                 # grid coincides with the origin.
