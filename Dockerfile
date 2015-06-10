@@ -38,10 +38,9 @@ ENV INSIDEDOCKER 1
 
 # Move into Azrael's home directory.
 WORKDIR /demo/azrael
-RUN find . -type d -iname '__pycache__' | xargs rm -rf
 
 # Update the Anaconda environment to ensure all necessary packages are installed.
-RUN conda env update --name root --file environment_docker.yml \
+RUN conda env create --name root --file environment_docker.yml \
     && conda clean -p -t -y
 
 # Expose the ports for Clerk and Clacks.
@@ -49,8 +48,7 @@ EXPOSE 5555 8080
 
 # Move into Bullet wrapper directory to compile- and test the extension modules.
 WORKDIR /demo/azrael/azrael/bullet
-RUN python setup.py build_ext --inplace \
-    && rm -rf build
+RUN python setup.py cleanall && python setup.py build_ext --inplace && rm -rf build
 
 # Move into Azrael's home directory.
 WORKDIR /demo/azrael
