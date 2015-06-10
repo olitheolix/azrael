@@ -24,6 +24,8 @@ fixme:
  - clean up
  - the --cubes argument only takes one argument (length of chain)
  - increase damping of the objects to avoid the perpetual jumpiness
+ - the 6Dof constraint is working but ill configured
+ - the code assumes there are at least 4 cubes
 
 """
 import os
@@ -47,6 +49,8 @@ import azrael.physics_interface as physAPI
 from azrael.types import Template, MetaFragment, FragRaw, FragState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, ConstraintMeta, ConstraintP2P
+from azrael.types import Constraint6DofSpring2
+
 from IPython import embed as ipshell
 
 # Convenience.
@@ -348,9 +352,12 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
                 allObjs.append({'template': tID_cube[cube_idx],
                                 'position': pos})
                 cube_idx += 1
-                print(pos)
                 del pos
 
+    # fixme: this code assumes there are at least 4 cubes!
+    if len(allObjs) < 4:
+        print('fixme: start demo with at least 4 cubes!')
+        sys.exit(1)
     allObjs = []
     pos_0 = [2, 0, 10]
     pos_1 = [-2, 0, 10]
@@ -361,10 +368,16 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     allObjs.append({'template': tID_cube[2], 'position': pos_2})
     allObjs.append({'template': tID_cube[3], 'position': pos_3})
 
-    for oo in allObjs:
-        oo['axesLockLin'] = [0, 0, 0]
-        oo['axesLockRot'] = [1, 1, 1]
-        break
+    # The first object cannot move (only rotate). It serves as an anchor for
+    # the connected bodies.
+    allObjs[0]['axesLockLin'] = [0, 0, 0]
+    allObjs[0]['axesLockRot'] = [1, 1, 1]
+
+    # Add a small damping factor to all bodies to avoid them moving around
+    # perpetually.
+    for oo in allObjs[1:]:
+        oo['axesLockLin'] = [0.9, 0.9, 0.9]
+        oo['axesLockRot'] = [0.9, 0.9, 0.9]
 
     print('{:,} objects ({:.1f}s)'.format(len(allObjs), time.time() - t0))
     del cube_idx, cube_spacing, row, col, lay
@@ -375,17 +388,28 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     ret = client.spawn(allObjs)
     assert ret.ok
     ids = ret.data
-    print(ids)
-    print(' {:.1f}s'.format(time.time() - t0))
+    print('{:.1f}s'.format(time.time() - t0))
 
     # Define the constraints.
     p2p_0 = ConstraintP2P(pivot_a=[-2, 0, 0], pivot_b=[2, 0, 0])
     p2p_1 = ConstraintP2P(pivot_a=[-2, 0, 0], pivot_b=[2, 0, 0])
     p2p_2 = ConstraintP2P(pivot_a=[-2, 0, 0], pivot_b=[2, 0, 0])
+    dof = Constraint6DofSpring2(
+        frameInA=[0, 0, 0, 0, 0, 0, 1],
+        frameInB=[0, 0, 0, 0, 0, 0, 1],
+        stiffness=[2, 2, 2, 1, 1, 1],
+        damping=[1, 1, 1, 1, 1, 1],
+        equilibrium=[-2, -2, -2, 0, 0, 0],
+        linLimitLo=[-4.5, -4.5, -4.5],
+        linLimitHi=[4.5, 4.5, 4.5],
+        rotLimitLo=[-0.1, -0.2, -0.3],
+        rotLimitHi=[0.1, 0.2, 0.3],
+        bounce=[1, 1.5, 2],
+        enableSpring=[True, False, False, False, False, False])
     constraints = [
         ConstraintMeta('p2p', ids[0], ids[1], '', p2p_0),
         ConstraintMeta('p2p', ids[1], ids[2], '', p2p_1),
-        ConstraintMeta('p2p', ids[2], ids[3], '', p2p_2),
+        ConstraintMeta('6DOFSPRING2', ids[2], ids[3], '', dof),
     ]
     assert client.addConstraints(constraints) == (True, None, 3)
 
