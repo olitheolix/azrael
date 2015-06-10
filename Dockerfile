@@ -40,7 +40,7 @@ ENV INSIDEDOCKER 1
 WORKDIR /demo/azrael
 
 # Update the Anaconda environment to ensure all necessary packages are installed.
-RUN conda env create --name root --file environment_docker.yml \
+RUN conda env update --name root --file environment_docker.yml \
     && conda clean -p -t -y
 
 # Expose the ports for Clerk and Clacks.
