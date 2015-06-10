@@ -710,7 +710,7 @@ class TestBulletAPI:
         # again. This time the objects must move closer together.
         assert sim.setConstraints(constraints).ok
 
-        # Step the simulation. This must move both objects closer to each other.
+        # Step the simulation --> the objects must move closer together.
         sim.compute([id_a, id_b], 1.0, 60)
         ret_a = sim.getObjectData(id_a)
         ret_b = sim.getObjectData(id_b)
