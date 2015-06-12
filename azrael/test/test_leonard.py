@@ -125,7 +125,7 @@ class TestLeonardAllEngines:
             assert np.array_equal(val_direct, val_gridforce)
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
-    def test_setStateVariable_basic(self, clsLeonard):
+    def test_setBodyState_basic(self, clsLeonard):
         """
         Spawn an object, specify its State Variables explicitly, and verify the
         change propagated through Azrael.
@@ -164,9 +164,9 @@ class TestLeonardAllEngines:
         assert np.array_equal(sv.velocityRot, data.velocityRot)
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
-    def test_setStateVariable_advanced(self, clsLeonard):
+    def test_setBodyState_advanced(self, clsLeonard):
         """
-        Similar to test_setStateVariable_basic but modify the collision shape
+        Similar to test_setBodyState_basic but modify the collision shape
         information as well, namely mass and the collision shape itself.
         """
         # Get a Leonard instance.

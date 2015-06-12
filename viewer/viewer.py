@@ -883,7 +883,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         cs = CollShapeBox(1, 1, 1)
         cs = CollShapeMeta('box', 'player', (0, 0, 0), (0, 0, 0, 1), cs)
         attr = leoAPI.RigidBodyStateOverride(position=pos, cshapes=[cs])
-        assert self.client.setStateVariable(self.player_id, attr).ok
+        assert self.client.setBodyState(self.player_id, attr).ok
         del cs
 
         # Do not update the camera rotation if the mouse is not grabbed.

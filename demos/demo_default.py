@@ -545,7 +545,7 @@ class ResetSim(multiprocessing.Process):
                         velocityLin=SV.velocityLin,
                         velocityRot=SV.velocityRot,
                         orientation=SV.orientation)
-                    client.setStateVariable(objID, tmp)
+                    client.setBodyState(objID, tmp)
                 time.sleep(0.1)
 
 

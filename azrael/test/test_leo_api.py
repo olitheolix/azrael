@@ -303,7 +303,7 @@ class TestClerk:
         assert len(ret.data['direct_force']) == 2
         assert len(ret.data['booster_force']) == 2
 
-    def test_setStateVariable(self):
+    def test_setBodyState(self):
         """
         Set and retrieve object attributes like position, velocity,
         acceleration, and orientation.

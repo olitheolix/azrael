@@ -106,7 +106,7 @@ class Clerk(config.AzraelProcess):
                 protocol.FromClerk_GetAllStateVariables_Encode),
             'set_statevar': (
                 protocol.ToClerk_SetStateVector_Decode,
-                self.setStateVariable,
+                self.setBodyState,
                 protocol.FromClerk_SetStateVector_Encode),
             'get_geometries': (
                 protocol.ToClerk_GetGeometries_Decode,
@@ -1035,7 +1035,7 @@ class Clerk(config.AzraelProcess):
         return leoAPI.addCmdDirectForce(objID, force, torque)
 
     @typecheck
-    def setStateVariable(self, objID: int,
+    def setBodyState(self, objID: int,
                          data: rb_state.RigidBodyStateOverride):
         """
         Set the State Variables of ``objID`` to ``data``.

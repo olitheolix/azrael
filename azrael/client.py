@@ -680,7 +680,7 @@ class Client():
         return self._unpackSVData(ret.data)
 
     @typecheck
-    def setStateVariable(self, objID: int, new_SV: RigidBodyStateOverride):
+    def setBodyState(self, objID: int, new_SV: RigidBodyStateOverride):
         """
         Overwrite the the State Variables of ``objID`` with ``new_SV``.
 

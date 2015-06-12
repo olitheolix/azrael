@@ -345,7 +345,7 @@ class TestClerk:
         assert ret.data[objID_1] is not None
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_setStateVariable(self, client_type):
+    def test_setBodyState(self, client_type):
         """
         Spawn an object and specify its state variables directly.
         """
@@ -377,7 +377,7 @@ class TestClerk:
         # Create and apply a new State Vector.
         new_sv = rb_state.RigidBodyStateOverride(
             position=[1, -1, 1], imass=2, scale=3, cshapes=[getCSSphere()])
-        assert client.setStateVariable(objID, new_sv).ok
+        assert client.setBodyState(objID, new_sv).ok
 
         # Verify that the new attributes came into effect.
         leo.processCommandsAndSync()
