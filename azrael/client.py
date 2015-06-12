@@ -100,14 +100,14 @@ class Client():
                 protocol.ToClerk_AddTemplates_Encode,
                 protocol.FromClerk_AddTemplates_Decode),
             'get_statevar': (
-                protocol.ToClerk_GetStateVariable_Encode,
-                protocol.FromClerk_GetStateVariable_Decode),
+                protocol.ToClerk_GetBodyState_Encode,
+                protocol.FromClerk_GetBodyState_Decode),
             'get_all_statevars': (
-                protocol.ToClerk_GetAllStateVariables_Encode,
-                protocol.FromClerk_GetAllStateVariables_Decode),
+                protocol.ToClerk_GetAllBodyStates_Encode,
+                protocol.FromClerk_GetAllBodyStates_Decode),
             'set_statevar': (
-                protocol.ToClerk_SetStateVector_Encode,
-                protocol.FromClerk_SetStateVector_Decode),
+                protocol.ToClerk_SetBodyState_Encode,
+                protocol.FromClerk_SetBodyState_Decode),
             'set_force': (
                 protocol.ToClerk_SetForce_Encode,
                 protocol.FromClerk_SetForce_Decode),

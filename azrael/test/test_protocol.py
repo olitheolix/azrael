@@ -149,7 +149,7 @@ def test_send_command():
     print('Test passed')
 
 
-def test_GetStateVariable():
+def test_GetBodyState():
     """
     Test codec for RigidBodyState tuple.
     """
@@ -161,14 +161,14 @@ def test_GetStateVariable():
     # Client --> Clerk.
     # ----------------------------------------------------------------------
     # Encode source data.
-    ret = protocol.ToClerk_GetStateVariable_Encode(objIDs)
+    ret = protocol.ToClerk_GetBodyState_Encode(objIDs)
     assert ret.ok
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(ret.data))
 
     # Decode the data.
-    ok, (dec_ids, ) = protocol.ToClerk_GetStateVariable_Decode(enc)
+    ok, (dec_ids, ) = protocol.ToClerk_GetBodyState_Decode(enc)
     assert (ok, len(dec_ids)) == (True, 2)
 
     # Verify.
@@ -179,13 +179,13 @@ def test_GetStateVariable():
     # ----------------------------------------------------------------------
     # Encode source data.
     data = dict(zip(objIDs, objs))
-    ok, enc = protocol.FromClerk_GetStateVariable_Encode(data)
+    ok, enc = protocol.FromClerk_GetBodyState_Encode(data)
 
     # Convert output to JSON and back (simulates the wire transmission).
     enc = json.loads(json.dumps(enc))
 
     # Decode the data.
-    dec_sv = protocol.FromClerk_GetStateVariable_Decode(enc)
+    dec_sv = protocol.FromClerk_GetBodyState_Decode(enc)
     assert (dec_sv.ok, len(dec_sv.data)) == (True, 2)
 
     # Verify.
@@ -250,7 +250,7 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
 
 
 if __name__ == '__main__':
-    test_GetStateVariable()
+    test_GetBodyState()
     test_send_command()
     test_encoding_get_template()
     test_addTemplate_collada()

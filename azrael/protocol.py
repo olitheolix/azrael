@@ -231,17 +231,17 @@ def FromClerk_GetAllObjectIDs_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# SetStateVector
+# SetBodyState
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_SetStateVector_Encode(objID: int, sv: tuple):
+def ToClerk_SetBodyState_Encode(objID: int, sv: tuple):
     return RetVal(True, None, {'objID': objID, 'sv': sv})
 
 
 @typecheck
-def ToClerk_SetStateVector_Decode(payload: dict):
+def ToClerk_SetBodyState_Decode(payload: dict):
     # Convenience.
     objID = payload['objID']
 
@@ -254,12 +254,12 @@ def ToClerk_SetStateVector_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_SetStateVector_Encode(dummyarg):
+def FromClerk_SetBodyState_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_SetStateVector_Decode(dummyarg):
+def FromClerk_SetBodyState_Decode(dummyarg):
     return RetVal(True, None, None)
 
 
@@ -364,22 +364,22 @@ def FromClerk_SetGeometry_Decode(dummyarg):
 
 
 # ---------------------------------------------------------------------------
-# GetStateVariables
+# GetBodyStates
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_GetStateVariable_Encode(objIDs: (list, tuple)):
+def ToClerk_GetBodyState_Encode(objIDs: (list, tuple)):
     return RetVal(True, None, {'objIDs': objIDs})
 
 
 @typecheck
-def ToClerk_GetStateVariable_Decode(payload: dict):
+def ToClerk_GetBodyState_Decode(payload: dict):
     return True, (payload['objIDs'], )
 
 
 @typecheck
-def FromClerk_GetStateVariable_Encode(data: dict):
+def FromClerk_GetBodyState_Encode(data: dict):
     # For each objID compile a dictionary with the SV and fragment data in a JS
     # friendly hashmap format.
     for k, v in data.items():
@@ -398,28 +398,28 @@ def FromClerk_GetStateVariable_Encode(data: dict):
 
 
 @typecheck
-def FromClerk_GetStateVariable_Decode(payload: dict):
+def FromClerk_GetBodyState_Decode(payload: dict):
     return RetVal(True, None, payload['data'])
 
 
 # ---------------------------------------------------------------------------
-# GetAllStateVariables
+# GetAllBodyStates
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_GetAllStateVariables_Encode():
+def ToClerk_GetAllBodyStates_Encode():
     return RetVal(True, None, None)
 
 
 @typecheck
-def ToClerk_GetAllStateVariables_Decode(payload: dict):
+def ToClerk_GetAllBodyStates_Decode(payload: dict):
     return True, (None, )
 
 # Reuse the protocol for 'getBodyStates' for the data that comes
 # back from Clerk.
-FromClerk_GetAllStateVariables_Encode = FromClerk_GetStateVariable_Encode
-FromClerk_GetAllStateVariables_Decode = FromClerk_GetStateVariable_Decode
+FromClerk_GetAllBodyStates_Encode = FromClerk_GetBodyState_Encode
+FromClerk_GetAllBodyStates_Decode = FromClerk_GetBodyState_Decode
 
 
 # ---------------------------------------------------------------------------
