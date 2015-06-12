@@ -44,7 +44,7 @@ class AzraelStack:
         self.procs = []
 
         # Kill any pending processes.
-        subprocess.call(['pkill', 'killme'])
+        subprocess.call(['pkill', 'Azrael:'])
         time.sleep(0.2)
         azrael.database.init()
 

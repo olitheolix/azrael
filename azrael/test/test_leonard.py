@@ -27,7 +27,7 @@ allEngines = [
 
 
 def killAzrael():
-    subprocess.call(['pkill', 'killme'])
+    subprocess.call(['pkill', 'Azreal:'])
 
     # Delete all grids used in this test.
     assert azrael.vectorgrid.deleteAllGrids().ok

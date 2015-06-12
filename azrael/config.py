@@ -155,6 +155,6 @@ class AzraelProcess(multiprocessing.Process):
         # table. This makes it easier to identify and kill the Azrael processes
         # from the command shell.
         if os.getpid() != self._parentPID:
-            procname = 'killme {}'.format(self.__class__.__name__)
+            procname = 'Azrael: {}'.format(self.__class__.__name__)
             setproctitle.setproctitle(procname)
             del procname
