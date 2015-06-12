@@ -98,7 +98,7 @@ class Clerk(config.AzraelProcess):
                 protocol.FromClerk_Remove_Encode),
             'get_statevar': (
                 protocol.ToClerk_GetStateVariable_Decode,
-                self.getStateVariables,
+                self.getBodyStates,
                 protocol.FromClerk_GetStateVariable_Encode),
             'get_all_statevars': (
                 protocol.ToClerk_GetAllStateVariables_Decode,
@@ -377,7 +377,7 @@ class Clerk(config.AzraelProcess):
 
         # Fetch the SV for objID (we need this to determine the orientation of
         # the base object to which the parts are attached).
-        sv_parent = self.getStateVariables([objID])
+        sv_parent = self.getBodyStates([objID])
         if not sv_parent.ok:
             msg = 'Could not retrieve SV for objID={}'.format(objID)
             self.logit.warning(msg)
@@ -1144,7 +1144,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def getStateVariables(self, objIDs: (list, tuple)):
+    def getBodyStates(self, objIDs: (list, tuple)):
         """
         Return the State Variables for all ``objIDs`` in a dictionary.
 
@@ -1158,7 +1158,7 @@ class Clerk(config.AzraelProcess):
         """
         with util.Timeit('leoAPI.getSV') as timeit:
             # Get the State Variables.
-            ret = leoAPI.getStateVariables(objIDs)
+            ret = leoAPI.getBodyStates(objIDs)
             if not ret.ok:
                 return RetVal(False, 'One or more IDs do not exist', None)
         return self._packSVData(ret.data)

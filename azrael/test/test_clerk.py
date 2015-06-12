@@ -478,7 +478,7 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Retrieve the SV for a non-existing ID.
-        ret = clerk.getStateVariables([10])
+        ret = clerk.getBodyStates([10])
         assert (ret.ok, ret.data) == (True, {10: None})
 
         # Spawn a new object. It must have ID=1.
@@ -487,11 +487,11 @@ class TestClerk:
 
         # Retrieve the SV for a non-existing ID --> must fail.
         leo.processCommandsAndSync()
-        ret = clerk.getStateVariables([10])
+        ret = clerk.getBodyStates([10])
         assert (ret.ok, ret.data) == (True, {10: None})
 
         # Retrieve the SV for the existing ID=1.
-        ret = clerk.getStateVariables([objID_1])
+        ret = clerk.getBodyStates([objID_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
         assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
 
@@ -502,12 +502,12 @@ class TestClerk:
         # Retrieve the state variables for both objects individually.
         leo.processCommandsAndSync()
         for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
-            ret = clerk.getStateVariables([objID])
+            ret = clerk.getBodyStates([objID])
             assert (ret.ok, len(ret.data)) == (True, 1)
             assert isEqualBD(ret.data[objID]['sv'], ref_sv)
 
         # Retrieve the state variables for both objects at once.
-        ret = clerk.getStateVariables([objID_1, objID_2])
+        ret = clerk.getBodyStates([objID_1, objID_2])
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
         assert isEqualBD(ret.data[objID_2]['sv'], sv_2)
@@ -828,7 +828,7 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Query the state variables of the objects spawned by the factories.
-        ret = clerk.getStateVariables(spawnedIDs)
+        ret = clerk.getBodyStates(spawnedIDs)
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Ensure the position, velocity, and orientation of the spawned objects
@@ -903,7 +903,7 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Query the state variables of the objects spawned by the factories.
-        ret = clerk.getStateVariables(spawnedIDs)
+        ret = clerk.getBodyStates(spawnedIDs)
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Ensure the position/velocity/orientation are correct.
@@ -1007,7 +1007,7 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Query the state variables of the objects spawned by the factories.
-        ret = clerk.getStateVariables(spawnIDs)
+        ret = clerk.getBodyStates(spawnIDs)
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Verify the positions and velocities are correct.
@@ -1162,7 +1162,7 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Query the State Vectors for both objects.
-        ret = clerk.getStateVariables([objID0, objID1])
+        ret = clerk.getBodyStates([objID0, objID1])
         assert ret.ok and (set((objID0, objID1)) == set(ret.data.keys()))
         ref_lastChanged = ret.data[objID0]['sv'].lastChanged
 
@@ -1172,12 +1172,12 @@ class TestClerk:
         assert clerk.updateFragments(objID0, frags).ok
 
         # Verify that the new 'lastChanged' flag is now different.
-        ret = clerk.getStateVariables([objID0])
+        ret = clerk.getBodyStates([objID0])
         assert ret.ok
         assert ref_lastChanged != ret.data[objID0]['sv'].lastChanged
 
         # Verify further that the lastChanged attribute of objID1 is unchanged.
-        ret = clerk.getStateVariables([objID1])
+        ret = clerk.getBodyStates([objID1])
         assert ret.ok
         assert ref_lastChanged == ret.data[objID1]['sv'].lastChanged
 
@@ -1295,7 +1295,7 @@ class TestClerk:
             name 'foo'.
             """
             # Query the SV for both objects.
-            ret = clerk.getStateVariables([objID_1, objID_2])
+            ret = clerk.getBodyStates([objID_1, objID_2])
             assert ret.ok and (len(ret.data) == 2)
 
             # Exract the one and only fragment of each object.
@@ -1411,7 +1411,7 @@ class TestClerk:
             This function assumes the object has exactly two fragments.
             """
             # Query the SV for both objects.
-            ret = clerk.getStateVariables([objID])
+            ret = clerk.getBodyStates([objID])
             assert ret.ok and (len(ret.data) == 1)
 
             # Extract the fragments and verify there are the two.
@@ -1445,13 +1445,13 @@ class TestClerk:
 
         # Query the SV for the object and verify it has as many FragmentState
         # vectors as it has fragments.
-        ret = clerk.getStateVariables([objID])
+        ret = clerk.getBodyStates([objID])
         assert ret.ok
         ret_frags = ret.data[objID]['frag']
         assert len(ret_frags) == len(frags)
 
         # Same as before, but this time use 'getAllStateVariables' instead of
-        # 'getStateVariables'.
+        # 'getBodyStates'.
         ret = clerk.getAllStateVariables()
         assert ret.ok
         ret_frags = ret.data[objID]['frag']
@@ -1664,7 +1664,7 @@ class TestClerk:
         assert clerk.setForce(id_a, [-10, 0, 0], [0, 0, 0]).ok
         leo.processCommandsAndSync()
         leo.step(1.0, 60)
-        ret = clerk.getStateVariables([id_a, id_b])
+        ret = clerk.getBodyStates([id_a, id_b])
         assert ret.ok
         pos_a2 = ret.data[id_a]['sv'].position
         pos_b2 = ret.data[id_b]['sv'].position

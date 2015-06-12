@@ -156,7 +156,7 @@ class TestLeonardAllEngines:
         leo.processCommandsAndSync()
 
         # Verify that the attributes were correctly updated.
-        ret = leoAPI.getStateVariables([id_1])
+        ret = leoAPI.getBodyStates([id_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
         sv = ret.data[id_1]
         assert np.array_equal(sv.position, data.position)
@@ -184,7 +184,7 @@ class TestLeonardAllEngines:
 
         # Verify the SV data.
         leo.processCommandsAndSync()
-        ret = leoAPI.getStateVariables([objID])
+        ret = leoAPI.getBodyStates([objID])
         assert ret.ok
         assert ret.data[objID].imass == 2
         assert ret.data[objID].scale == 3
@@ -199,7 +199,7 @@ class TestLeonardAllEngines:
 
         # Verify the SV data.
         leo.processCommandsAndSync()
-        ret = leoAPI.getStateVariables([objID])
+        ret = leoAPI.getBodyStates([objID])
         assert (ret.ok, len(ret.data)) == (True, 1)
         sv = ret.data[objID]
         assert (sv.imass == 4) and (sv.scale == 5)
@@ -225,7 +225,7 @@ class TestLeonardAllEngines:
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leonard.step(1.0, 60)
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
@@ -236,7 +236,7 @@ class TestLeonardAllEngines:
         # Advance the simulation by another second and verify the objects have
         # moved accordingly.
         leonard.step(1.0, 60)
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert 0.9 <= ret.data[id_0].position[0] < 1.1
         assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
@@ -261,10 +261,10 @@ class TestLeonardAllEngines:
 
         # Advance the simulation by 1s and query the states of both objects.
         leonard.step(1.0, 60)
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         pos_0 = ret.data[id_0].position
-        ret = leoAPI.getStateVariables([id_1])
+        ret = leoAPI.getBodyStates([id_1])
         assert ret.ok
         pos_1 = ret.data[id_1].position
 
@@ -374,7 +374,7 @@ class TestLeonardAllEngines:
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leonard.step(1.0, 60)
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
@@ -389,7 +389,7 @@ class TestLeonardAllEngines:
 
         # Step the simulation and verify the object remained where it was.
         leonard.step(1.0, 60)
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
@@ -401,7 +401,7 @@ class TestLeonardAllEngines:
         # Step the simulation and verify the object moved accordingly.
         leonard.step(1.0, 60)
 
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert 0.4 <= ret.data[id_0].position[0] < 0.6
         assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
@@ -462,10 +462,10 @@ class TestLeonardOther:
             leonard.step(1.0 / 60, 1)
 
         # Query the states of both objects.
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         pos_0 = ret.data[id_0].position
-        ret = leoAPI.getStateVariables([id_1])
+        ret = leoAPI.getBodyStates([id_1])
         assert ret.ok
         pos_1 = ret.data[id_1].position
 

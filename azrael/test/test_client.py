@@ -312,7 +312,7 @@ class TestClerk:
         objID_tmp = 100
         assert client.getAllStateVariables() == (True, None, {})
 
-        ok, _, sv = client.getStateVariables(objID_tmp)
+        ok, _, sv = client.getBodyStates(objID_tmp)
         assert (ok, sv) == (True, {objID_tmp: None})
         del objID_tmp
 
@@ -325,7 +325,7 @@ class TestClerk:
 
         # The new object has not yet been picked up by Leonard --> its state
         # vector must thus be None.
-        ret = client.getStateVariables(objID_1)
+        ret = client.getBodyStates(objID_1)
         assert ret.ok and (len(ret.data) == 1)
         assert ret.data == {objID_1: None}
 
@@ -336,7 +336,7 @@ class TestClerk:
         # Run one Leonard step. This will pick up the newly spawned object and
         # SV queries must now return valid data.
         leo.processCommandsAndSync()
-        ret = client.getStateVariables(objID_1)
+        ret = client.getBodyStates(objID_1)
         assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
         assert ret.data[objID_1] is not None
 
@@ -368,7 +368,7 @@ class TestClerk:
 
         # Verify that the State Vector is correct.
         leo.processCommandsAndSync()
-        ok, _, ret_sv = client.getStateVariables(objID)
+        ok, _, ret_sv = client.getBodyStates(objID)
         ret_sv = ret_sv[objID]['sv']
         assert isinstance(ret_sv, rb_state._RigidBodyState)
         assert np.array_equal(ret_sv.position, new_obj['position'])
@@ -381,7 +381,7 @@ class TestClerk:
 
         # Verify that the new attributes came into effect.
         leo.processCommandsAndSync()
-        ok, _, ret_sv = client.getStateVariables(objID)
+        ok, _, ret_sv = client.getBodyStates(objID)
         ret_sv = ret_sv[objID]['sv']
         assert isinstance(ret_sv, rb_state._RigidBodyState)
         assert ret_sv.imass == new_sv.imass
@@ -519,7 +519,7 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Query the state variables of the objects spawned by the factories.
-        ok, _, ret_SVs = client.getStateVariables(spawnIDs)
+        ok, _, ret_SVs = client.getBodyStates(spawnIDs)
         assert (ok, len(ret_SVs)) == (True, 2)
 
         # Verify the position and velocity of the spawned objects is correct.
@@ -569,7 +569,7 @@ class TestClerk:
 
         # Query the SV to obtain the 'lastChanged' value.
         leo.processCommandsAndSync()
-        ret = client.getStateVariables(objID)
+        ret = client.getBodyStates(objID)
         assert ret.ok
         lastChanged = ret.data[objID]['sv'].lastChanged
 
@@ -607,7 +607,7 @@ class TestClerk:
         assert FragRaw(**tmp) == frags[0].data
 
         # Ensure 'lastChanged' is different as well.
-        ret = client.getStateVariables(objID)
+        ret = client.getBodyStates(objID)
         assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
@@ -641,7 +641,7 @@ class TestClerk:
 
         # Query the SV to obtain the 'lastChanged' value.
         leo.processCommandsAndSync()
-        ret = client.getStateVariables(objID)
+        ret = client.getBodyStates(objID)
         assert ret.ok
         lastChanged = ret.data[objID]['sv'].lastChanged
 
@@ -660,7 +660,7 @@ class TestClerk:
         assert ret.data[objID]['f_dae']['type'] == 'raw'
 
         # Ensure 'lastChanged' is different as well.
-        ret = client.getStateVariables(objID)
+        ret = client.getBodyStates(objID)
         assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
 
         # Change the fragment geometries.
@@ -674,7 +674,7 @@ class TestClerk:
         assert ret.data[objID]['f_dae']['type'] == 'dae'
 
         # Ensure 'lastChanged' is different as well.
-        ret = client.getStateVariables(objID)
+        ret = client.getBodyStates(objID)
         assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
@@ -705,7 +705,7 @@ class TestClerk:
 
         # Query the SV and verify the fragment state for 'bar'.
         leo.processCommandsAndSync()
-        ret = client.getStateVariables(objID)
+        ret = client.getBodyStates(objID)
         ref = [FragState('bar', 1, [0, 0, 0], [0, 0, 0, 1])]
         assert ret.ok
         assert ret.data[objID]['frag'] == ref
@@ -713,7 +713,7 @@ class TestClerk:
         # Modify the fragment states, then verify them.
         newStates = {objID: [FragState('bar', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
         assert client.updateFragmentStates(newStates).ok
-        ret = client.getStateVariables(objID)
+        ret = client.getBodyStates(objID)
         assert ret.ok
         assert ret.data[objID]['frag'] == newStates[objID]
 
@@ -859,7 +859,7 @@ class TestClerk:
         assert client.setForce(id_1, [-10, 0, 0]).ok
         leo.processCommandsAndSync()
         leo.step(1.0, 60)
-        ret = client.getStateVariables([id_1, id_2])
+        ret = client.getBodyStates([id_1, id_2])
         assert ret.ok
         pos_a2 = ret.data[id_1]['sv'].position
         pos_b2 = ret.data[id_2]['sv'].position

@@ -156,7 +156,7 @@ def main(objID, ref_pos):
     # send those forces to sphere's boosters.
     while True:
         # Query the sphere's position.
-        ret = client.getStateVariables([objID])
+        ret = client.getBodyStates([objID])
         assert ret.ok
         pos = ret.data[objID]['sv'].position
 

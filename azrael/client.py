@@ -641,7 +641,7 @@ class Client():
         return RetVal(True, None, out)
 
     @typecheck
-    def getStateVariables(self, objIDs: (list, tuple, int)):
+    def getBodyStates(self, objIDs: (list, tuple, int)):
         """
         Return the State Variables for all ``objIDs`` in a dictionary.
 

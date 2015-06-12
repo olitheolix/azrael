@@ -270,7 +270,7 @@ def addCmdBoosterForce(objID: int, force: list, torque: list):
 
 
 @typecheck
-def getStateVariables(objIDs: (list, tuple)):
+def getBodyStates(objIDs: (list, tuple)):
     """
     Retrieve the state variables for all ``objIDs``.
 

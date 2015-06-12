@@ -64,7 +64,7 @@ class TestClerk:
         assert leoAPI.getNumObjects() == 0
 
         # Query an object. Since none exists yet this must fail.
-        assert leoAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
+        assert leoAPI.getBodyStates([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
         data = RigidBodyState(cshapes=[getCSSphere('cssphere')])
@@ -74,13 +74,13 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Query the object. This must return the SV data directly.
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert isEqualBD(ret.data[id_0], data)
 
         # Query the same object but supply it as a list. This must return a
         # list with one element which is the exact same object as before.
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert isEqualBD(ret.data[id_0], data)
 
@@ -93,7 +93,7 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Object must not exist anymore in the simulation.
-        assert leoAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
+        assert leoAPI.getBodyStates([id_0]) == (True, None, {id_0: None})
         ret = leoAPI.getAllStateVariables()
         assert (ret.ok, len(ret.data)) == (True, 0)
 
@@ -109,7 +109,7 @@ class TestClerk:
 
         # The number of SV entries must now be zero.
         assert leoAPI.getNumObjects() == 0
-        assert leoAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
+        assert leoAPI.getBodyStates([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
         data_0 = RigidBodyState(position=[0, 0, 0])
@@ -121,21 +121,21 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Query the objects individually.
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert isEqualBD(ret.data[id_0], data_0)
-        ret = leoAPI.getStateVariables([id_1])
+        ret = leoAPI.getBodyStates([id_1])
         assert ret.ok
         assert isEqualBD(ret.data[id_1], data_1)
 
         # Manually query multiple objects.
-        ret = leoAPI.getStateVariables([id_0, id_1])
+        ret = leoAPI.getBodyStates([id_0, id_1])
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert isEqualBD(ret.data[id_0], data_0)
         assert isEqualBD(ret.data[id_1], data_1)
 
         # Repeat, but change the order of the objects.
-        ret = leoAPI.getStateVariables([id_1, id_0])
+        ret = leoAPI.getBodyStates([id_1, id_0])
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert isEqualBD(ret.data[id_0], data_0)
         assert isEqualBD(ret.data[id_1], data_1)
@@ -158,7 +158,7 @@ class TestClerk:
 
         # The number of SV entries must now be zero.
         assert leoAPI.getNumObjects() == 0
-        assert leoAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
+        assert leoAPI.getBodyStates([id_0]) == (True, None, {id_0: None})
 
         # Create two State Vectors.
         data_0 = RigidBodyState(imass=1)
@@ -189,7 +189,7 @@ class TestClerk:
         # not add/modify the object with id_0.
         assert leoAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
         leo.processCommandsAndSync()
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok and isEqualBD(ret.data[id_0], data_0)
 
         # Spawn a new object with same id_0 but different State Vector data_2.
@@ -197,7 +197,7 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # The State Vector for id_0 must still be data_0.
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok and isEqualBD(ret.data[id_0], data_0)
 
     def test_commandQueue(self):
@@ -335,7 +335,7 @@ class TestClerk:
         assert leoAPI.addCmdModifyStateVariable(id_0, data).ok
         leo.processCommandsAndSync()
 
-        ret = leoAPI.getStateVariables([id_0])
+        ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         ret = ret.data[id_0]
         assert ret.imass == data.imass
