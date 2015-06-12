@@ -79,50 +79,50 @@ class PyBulletDynamicsWorld():
         # Dictionary of all bodies.
         self.rigidBodies = {}
 
-    def removeRigidBody(self, objIDs: (list, tuple)):
+    def removeRigidBody(self, bodyIDs: (list, tuple)):
         """
-        Remove ``objIDs`` from Bullet and return the number of removed objects.
+        Remove ``bodyIDs`` from Bullet and return the number of removed bodies.
 
-        Non-existing objects are not counted (and ignored).
+        Non-existing bodies are not counted (and ignored).
 
-        :param list objIDs: list of objIDs to remove.
-        :return: number of actually removed objects.
+        :param list bodyIDs: list of bodyIDs to remove.
+        :return: number of actually removed bodies.
         :rtype: int
         """
         cnt = 0
-        # Remove every object, skipping non-existing ones.
-        for objID in objIDs:
-            # Skip non-existing objects.
-            if objID not in self.rigidBodies:
+        # Remove every body, skipping non-existing ones.
+        for bodyID in bodyIDs:
+            # Skip non-existing bodies.
+            if bodyID not in self.rigidBodies:
                 continue
 
-            # Delete the object from all caches.
-            del self.rigidBodies[objID]
+            # Delete the body from all caches.
+            del self.rigidBodies[bodyID]
             cnt += 1
 
-        # Return the total number of removed objects.
+        # Return the total number of removed bodies.
         return RetVal(True, None, cnt)
 
-    def compute(self, objIDs: (tuple, list), dt: float, max_substeps: int):
+    def compute(self, bodyIDs: (tuple, list), dt: float, max_substeps: int):
         """
-        Step the simulation for all ``objIDs`` by ``dt``.
+        Step the simulation for all ``bodyIDs`` by ``dt``.
 
-        This method aborts immediately if one or more objIDs do not exist.
+        This method aborts immediately if one or more bodyIDs do not exist.
 
         The ``max_substeps`` parameter tells Bullet the maximum allowed
         granularity. Typiclal values for ``dt`` and ``max_substeps`` are
         (1, 60).
 
-        :param list objIDs: list of objIDs for which to update the physics.
+        :param list bodyIDs: list of bodyIDs for which to update the physics.
         :param float dt: time step in seconds
         :param int max_substeps: maximum number of sub-steps.
         :return: Success
         """
-        # All specified objects must exist. Abort otherwise.
+        # All specified bodies must exist. Abort otherwise.
         try:
-            rigidBodies = [self.rigidBodies[_] for _ in objIDs]
+            rigidBodies = [self.rigidBodies[_] for _ in bodyIDs]
         except KeyError as err:
-            self.logit.warning('Object IDs {} do not exist'.format(err.args))
+            self.logit.warning('Body IDs {} do not exist'.format(err.args))
             return RetVal(False, None, None)
 
         # Add the body to the world and make sure it is activated, as
@@ -143,23 +143,23 @@ class PyBulletDynamicsWorld():
             self.dynamicsWorld.removeRigidBody(body)
         return RetVal(True, None, None)
 
-    def applyForceAndTorque(self, objID, force, torque):
+    def applyForceAndTorque(self, bodyID, force, torque):
         """
-        Apply a ``force`` and ``torque`` to the center of mass of ``objID``.
+        Apply a ``force`` and ``torque`` to the center of mass of ``bodyID``.
 
-        :param int objID: the ID of the object to update
+        :param int bodyID: the ID of the body to update
         :param 3-array force: force applied directly to center of mass
         :param 3-array torque: torque around center of mass.
         :return: Success
         """
         # Sanity check.
-        if objID not in self.rigidBodies:
-            msg = 'Cannot set force of unknown object <{}>'.format(objID)
+        if bodyID not in self.rigidBodies:
+            msg = 'Cannot set force of unknown body <{}>'.format(bodyID)
             self.logit.warning(msg)
             return RetVal(False, msg, None)
 
         # Convenience.
-        body = self.rigidBodies[objID]
+        body = self.rigidBodies[bodyID]
 
         # Convert the force and torque to Vec3.
         b_force = Vec3(*force)
@@ -172,22 +172,22 @@ class PyBulletDynamicsWorld():
         body.applyTorque(b_torque)
         return RetVal(True, None, None)
 
-    def applyForce(self, objID: int, force, rel_pos):
+    def applyForce(self, bodyID: int, force, rel_pos):
         """
-        Apply a ``force`` at ``rel_pos`` to ``objID``.
+        Apply a ``force`` at ``rel_pos`` to ``bodyID``.
 
-        :param int objID: the ID of the object to update
+        :param int bodyID: the ID of the body to update
         :param 3-array force: force applied directly to center of mass
         :param 3-array rel_pos: position of force relative to center of mass
         :return: Success
         """
         # Sanity check.
-        if objID not in self.rigidBodies:
-            msg = 'Cannot set force of unknown object <{}>'.format(objID)
+        if bodyID not in self.rigidBodies:
+            msg = 'Cannot set force of unknown body <{}>'.format(bodyID)
             return RetVal(False, msg, None)
 
         # Convenience.
-        body = self.rigidBodies[objID]
+        body = self.rigidBodies[bodyID]
 
         # Convert the force and torque to Vec3.
         b_force = Vec3(*force)
@@ -199,24 +199,24 @@ class PyBulletDynamicsWorld():
         body.applyForce(b_force, b_relpos)
         return RetVal(True, None, None)
 
-    def getRigidBodyData(self, objID: int):
+    def getRigidBodyData(self, bodyID: int):
         """
-        Return State Variables of all ``objIDs``.
+        Return State Variables of all ``bodyIDs``.
 
-        This method aborts immediately if one or more objects in ``objIDs`` do
+        This method aborts immediately if one or more bodies in ``bodyIDs`` do
         not exists.
 
-        :param list objIDs: the IDs of all objects to retrieve.
+        :param list bodyIDs: the IDs of all bodies to retrieve.
         :return: list of ``_RigidBodyState`` instances.
         :rtype: list
         """
-        # Abort immediately if one or more objects don't exist.
-        if objID not in self.rigidBodies:
-            msg = 'Cannot find object with ID <{}>'.format(objID)
+        # Abort immediately if one or more bodies don't exist.
+        if bodyID not in self.rigidBodies:
+            msg = 'Cannot find body with ID <{}>'.format(bodyID)
             return RetVal(False, msg, None)
 
         # Convenience.
-        body = self.rigidBodies[objID]
+        body = self.rigidBodies[bodyID]
 
         # Determine rotation and position.
         rot = body.getCenterOfMassTransform().getRotation().topy()
@@ -232,11 +232,11 @@ class PyBulletDynamicsWorld():
 
         # Bullet does not support scaling collision shape (actually, it does,
         # but it is frought with problems). Therefore, we may thus copy the
-        # 'scale' value from the object's meta data.
+        # 'scale' value from the body's meta data.
         scale = body.azrael[1].scale
 
         # Bullet will never modify the Collision shape. We may thus use the
-        # information from the object's meta data.
+        # information from the body's meta data.
         cshapes = body.azrael[1].cshapes
 
         # Construct a new _RigidBodyState structure and add it to the list
@@ -248,42 +248,42 @@ class PyBulletDynamicsWorld():
         return RetVal(True, None, out)
 
     @typecheck
-    def setRigidBodyData(self, objID: int, obj: _RigidBodyState):
+    def setRigidBodyData(self, bodyID: int, rbState: _RigidBodyState):
         """
-        Update State Variables of ``objID`` to ``obj``.
+        Update State Variables of ``bodyID`` to ``rbState``.
 
-        Create a new object with ``objID`` if it does not yet exist.
+        Create a new body with ``bodyID`` if it does not yet exist.
 
-        :param int objID: the IDs of all objects to retrieve.
-        :param ``_RigidBodyState`` obj: object description.
+        :param int bodyID: the IDs of all bodies to retrieve.
+        :param ``_RigidBodyState`` rbState: body description.
         :return: Success
         """
         # Create the Rigid Body if it does not exist yet.
-        if objID not in self.rigidBodies:
-            self.createRigidBody(objID, obj)
+        if bodyID not in self.rigidBodies:
+            self.createRigidBody(bodyID, rbState)
 
         # Convenience.
-        body = self.rigidBodies[objID]
+        body = self.rigidBodies[bodyID]
 
         # Convert orientation and position to Vec3.
-        rot = Quaternion(*obj.orientation)
-        pos = Vec3(*obj.position)
+        rot = Quaternion(*rbState.orientation)
+        pos = Vec3(*rbState.position)
 
         # Assign body properties.
         tmp = azBullet.Transform(rot, pos)
         body.setCenterOfMassTransform(tmp)
-        body.setLinearVelocity(Vec3(*obj.velocityLin))
-        body.setAngularVelocity(Vec3(*obj.velocityRot))
-        body.setRestitution(obj.restitution)
-        body.setLinearFactor(Vec3(*obj.axesLockLin))
-        body.setAngularFactor(Vec3(*obj.axesLockRot))
+        body.setLinearVelocity(Vec3(*rbState.velocityLin))
+        body.setAngularVelocity(Vec3(*rbState.velocityRot))
+        body.setRestitution(rbState.restitution)
+        body.setLinearFactor(Vec3(*rbState.axesLockLin))
+        body.setAngularFactor(Vec3(*rbState.axesLockRot))
 
         # Build and assign the new collision shape, if necessary.
         old = body.azrael[1]
-        if (old.scale != obj.scale) or \
-           not (np.array_equal(old.cshapes, obj.cshapes)):
+        if (old.scale != rbState.scale) or \
+           not (np.array_equal(old.cshapes, rbState.cshapes)):
             # Create a new collision shape.
-            mass, inertia, cshapes = self.compileCollisionShape(objID, obj).data
+            mass, inertia, cshapes = self.compileCollisionShape(bodyID, rbState).data
             del mass, inertia
 
             # Replace the existing collision shape with the new one.
@@ -293,7 +293,7 @@ class PyBulletDynamicsWorld():
         # Update the mass but leave the inertia intact. This is somewhat
         # awkward to implement because Bullet returns the inverse values yet
         # expects the non-inverted ones in 'set_mass_props'.
-        m = obj.imass
+        m = rbState.imass
         x, y, z = body.getInvInertiaDiagLocal().topy()
         if (m < 1E-10) or (x < 1E-10) or (y < 1E-10) or (z < 1E-10):
             # Use safe values if either the inertia or the mass is too small
@@ -310,12 +310,12 @@ class PyBulletDynamicsWorld():
         body.setMassProps(m, Vec3(x, y, z))
 
         # Overwrite the old RigidBodyState instance with the latest version.
-        body.azrael = (objID, obj)
+        body.azrael = (bodyID, rbState)
         return RetVal(True, None, None)
 
     def setConstraints(self, constraints: (tuple, list)):
         """
-        Apply the ``constraints`` to the specified objects in the world.
+        Apply the ``constraints`` to the specified bodies in the world.
 
         If one or more of the rigid bodies specified in any of the constraints
         do not exist then this method will abort. Similarly, it will also abort
@@ -330,10 +330,10 @@ class PyBulletDynamicsWorld():
         """
         def _buildConstraint(c):
             """
-            Compile the constraint `c` into the proper C-level Bullet object.
+            Compile the constraint `c` into the proper C-level Bullet body.
             """
-            # Get handles to the two objects. This will raise a KeyError unless
-            # both objects exist.
+            # Get handles to the two bodies. This will raise a KeyError unless
+            # both bodies exist.
             rb_a = self.rigidBodies[c.rb_a]
             rb_b = self.rigidBodies[c.rb_b]
 
@@ -373,7 +373,7 @@ class PyBulletDynamicsWorld():
             else:
                 assert False
 
-            # Return the Bullet constraint object.
+            # Return the Bullet constraint body.
             return out
 
         # Compile a list of all Bullet constraints.
@@ -414,16 +414,16 @@ class PyBulletDynamicsWorld():
             return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, objID: int, obj: _RigidBodyState):
+    def compileCollisionShape(self, bodyID: int, rbState: _RigidBodyState):
         """
-        Return the correct Bullet collision shape based on ``obj``.
+        Return the correct Bullet collision shape based on ``rbState``.
 
         This is a convenience method only.
 
-        fixme: find out how to combine mass/inertia of multi body objects.
+        fixme: find out how to combine mass/inertia of multi body bodies.
 
-        :param int objID: object ID.
-        :param _RigidBodyState obj: Azrael's meta data that describes the body.
+        :param int bodyID: body ID.
+        :param _RigidBodyState rbState: Azrael's meta data that describes the body.
         :return: compound shape with all the individual shapes.
         :rtype: ``CompoundShape``
         """
@@ -434,17 +434,17 @@ class PyBulletDynamicsWorld():
         tot_mass = 0
         tot_inertia = Vec3(0, 0, 0)
 
-        # Objects with virtually no mass will be converted to static objects.
+        # Bodies with virtually no mass will be converted to static bodies.
         # This is almost certainly not what the user wants but it is the only
         # safe option here. Note: it is the user's responsibility to ensure the
         # mass is reasonably large!
-        if obj.imass > 1E-4:
-            obj_mass = 1.0 / obj.imass
+        if rbState.imass > 1E-4:
+            rbState_mass = 1.0 / rbState.imass
         else:
-            obj_mass = 0
+            rbState_mass = 0
 
         # Create the collision shapes one by one.
-        for cs in obj.cshapes:
+        for cs in rbState.cshapes:
             # Convert the input data to a CollShapeMeta tuple. This is
             # necessary if the data passed to us here comes straight from the
             # database because then it it is merely a list of values, not (yet)
@@ -453,7 +453,7 @@ class PyBulletDynamicsWorld():
 
             # Determine which CollisionShape to instantiate.
             csname = cs.type.upper()
-            csgeo = [obj.scale * _ for _ in cs.cs]
+            csgeo = [rbState.scale * _ for _ in cs.cs]
             if csname == 'SPHERE':
                 child = azBullet.SphereShape(*csgeo)
             elif csname == 'BOX':
@@ -466,7 +466,7 @@ class PyBulletDynamicsWorld():
                 self.logit.warning(msg)
 
             # Let Bullet compute the local inertia of the body.
-            inertia = child.calculateLocalInertia(obj_mass)
+            inertia = child.calculateLocalInertia(rbState_mass)
 
             # Compute inertia magnitude and warn about unreasonable values.
             tmp = np.array(inertia.topy())
@@ -479,32 +479,32 @@ class PyBulletDynamicsWorld():
             # orientation relative to the parent.
             t = azBullet.Transform(Quaternion(*cs.rot), Vec3(*cs.pos))
             compound.addChildShape(t, child)
-            tot_mass += obj_mass
+            tot_mass += rbState_mass
             tot_inertia += inertia
 
         return RetVal(True, None, (tot_mass, tot_inertia, compound))
 
     @typecheck
-    def createRigidBody(self, objID: int, obj: _RigidBodyState):
+    def createRigidBody(self, bodyID: int, rbState: _RigidBodyState):
         """
-        Create a new rigid body ``obj`` with ``objID``.
+        Create a new rigid body ``rbState`` with ``bodyID``.
 
-        :param int objID: ID of new rigid body.
-        :param _RigidBodyState obj: State Variables of rigid body.
+        :param int bodyID: ID of new rigid body.
+        :param _RigidBodyState rbState: State Variables of rigid body.
         :return: Success
         """
         # Convert orientation and position to Bullet types.
-        rot = Quaternion(*obj.orientation)
-        pos = Vec3(*obj.position)
+        rot = Quaternion(*rbState.orientation)
+        pos = Vec3(*rbState.position)
 
         # Build the collision shape.
-        ret = self.compileCollisionShape(objID, obj)
+        ret = self.compileCollisionShape(bodyID, rbState)
         mass, inertia, cshapes = ret.data
 
         # Create a motion state for the initial orientation and position.
         ms = azBullet.DefaultMotionState(azBullet.Transform(rot, pos))
 
-        # Instantiate the actual rigid body object.
+        # Instantiate the actual rigid body body.
         ci = azBullet.RigidBodyConstructionInfo(mass, ms, cshapes, inertia)
         body = PyRigidBody(ci)
 
@@ -513,9 +513,9 @@ class PyBulletDynamicsWorld():
         body.setDamping(0.02, 0.02)
         body.setSleepingThresholds(0.1, 0.1)
 
-        # Attach my own admin structure to the object.
-        body.azrael = (objID, obj)
+        # Attach my own admin structure to the body.
+        body.azrael = (bodyID, rbState)
 
-        # Add the rigid body to the object cache.
-        self.rigidBodies[objID] = body
+        # Add the rigid body to the body cache.
+        self.rigidBodies[bodyID] = body
         return RetVal(True, None, None)
