@@ -54,7 +54,7 @@ from azrael.types import Constraint6DofSpring2
 from IPython import embed as ipshell
 
 # Convenience.
-MotionStateOverride = physAPI.MotionStateOverride
+RigidBodyStateOverride = physAPI.RigidBodyStateOverride
 
 
 def parseCommandLine():

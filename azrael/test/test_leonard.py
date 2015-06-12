@@ -135,14 +135,14 @@ class TestLeonardAllEngines:
 
         # Parameters and constants for this test.
         id_0, id_1, aabb = 0, 1, 1.0
-        sv = bullet_data.MotionState()
+        sv = bullet_data.RigidBodyState()
         templateID = '_templateSphere'.encode('utf8')
 
         # State Vector.
         p = np.array([1, 2, 5])
         vl = np.array([8, 9, 10.5])
         vr = vl + 1
-        data = bullet_data.MotionStateOverride(
+        data = bullet_data.RigidBodyStateOverride(
             position=p, velocityLin=vl, velocityRot=vr)
         del p, vl, vr
 
@@ -175,7 +175,7 @@ class TestLeonardAllEngines:
         # Parameters and constants for this test.
         cshape_box = [getCSBox('csbox')]
         cshape_sphere = [getCSSphere('cssphere')]
-        sv = bullet_data.MotionState(imass=2, scale=3, cshapes=cshape_sphere)
+        sv = bullet_data.RigidBodyState(imass=2, scale=3, cshapes=cshape_sphere)
         templateID = '_templateSphere'.encode('utf8')
 
         # Spawn an object.
@@ -193,7 +193,7 @@ class TestLeonardAllEngines:
         del tmp
 
         # Update the object's SV data.
-        sv_new = bullet_data.MotionStateOverride(
+        sv_new = bullet_data.RigidBodyStateOverride(
             imass=4, scale=5, cshapes=cshape_box)
         assert physAPI.addCmdModifyStateVariable(objID, sv_new).ok
 
@@ -218,7 +218,7 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0, aabb = 0, 1
-        sv = bullet_data.MotionState()
+        sv = bullet_data.RigidBodyState()
 
         # Spawn an object.
         assert physAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
@@ -230,7 +230,7 @@ class TestLeonardAllEngines:
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
         # Give the object a velocity.
-        sv = bullet_data.MotionStateOverride(velocityLin=np.array([1, 0, 0]))
+        sv = bullet_data.RigidBodyStateOverride(velocityLin=np.array([1, 0, 0]))
         assert physAPI.addCmdModifyStateVariable(id_0, sv).ok
 
         # Advance the simulation by another second and verify the objects have
@@ -251,7 +251,7 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0, id_1, aabb = 0, 1, 1
-        MS = bullet_data.MotionState
+        MS = bullet_data.RigidBodyState
         sv_0 = MS(position=[0, 0, 0], velocityLin=[1, 0, 0])
         sv_1 = MS(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
@@ -288,7 +288,7 @@ class TestLeonardAllEngines:
         # Create several objects for this test.
         all_id = list(range(10))
 
-        MS = bullet_data.MotionState
+        MS = bullet_data.RigidBodyState
         if dim == 0:
             SVs = [MS(position=[_, 0, 0]) for _ in range(10)]
         elif dim == 1:
@@ -367,7 +367,7 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0, aabb = 0, 1
-        sv = bullet_data.MotionState()
+        sv = bullet_data.RigidBodyState()
 
         # Spawn one object.
         assert physAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
@@ -447,9 +447,9 @@ class TestLeonardOther:
         cshapes = [getCSSphere(radius=1)]
 
         # Two State Vectors for this test.
-        sv_0 = bullet_data.MotionState(
+        sv_0 = bullet_data.RigidBodyState(
             position=[0, 0, 0], velocityLin=[1, 0, 0], cshapes=cshapes)
-        sv_1 = bullet_data.MotionState(
+        sv_1 = bullet_data.RigidBodyState(
             position=[0, 10, 0], velocityLin=[0, -1, 0], cshapes=cshapes)
 
         # Create two objects.
@@ -593,8 +593,8 @@ class TestLeonardOther:
         assert not leo.createWorkPackage([10], dt, maxsteps).ok
 
         # Test data.
-        sv_1 = bullet_data.MotionState(imass=1)
-        sv_2 = bullet_data.MotionState(imass=2)
+        sv_1 = bullet_data.RigidBodyState(imass=1)
+        sv_2 = bullet_data.RigidBodyState(imass=2)
 
         # Add two new objects to Leonard.
         tmp = [(id_1, sv_1, aabb), (id_2, sv_2, aabb)]
@@ -633,8 +633,8 @@ class TestLeonardOther:
 
         # Convenience.
         WPData = azrael.leonard.WPData
-        data_1 = bullet_data.MotionState(imass=1)
-        data_2 = bullet_data.MotionState(imass=2)
+        data_1 = bullet_data.RigidBodyState(imass=1)
+        data_2 = bullet_data.RigidBodyState(imass=2)
         id_1, id_2, aabb = 1, 2, 1
 
         # Spawn new objects.
@@ -646,7 +646,7 @@ class TestLeonardOther:
         ret = leo.createWorkPackage([id_1, id_2], dt=3, maxsteps=4)
 
         # Create a new State Vector to replace the old one.
-        data_3 = bullet_data.MotionState(imass=4, position=[1, 2, 3])
+        data_3 = bullet_data.RigidBodyState(imass=4, position=[1, 2, 3])
         newWP = [(id_1, data_3)]
 
         # Check the State Vector for objID=id_1 before and after the update.
@@ -664,8 +664,8 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Convenience.
-        sv_1 = bullet_data.MotionState(imass=1)
-        sv_2 = bullet_data.MotionState(imass=2)
+        sv_1 = bullet_data.RigidBodyState(imass=1)
+        sv_2 = bullet_data.RigidBodyState(imass=2)
         id_1, id_2, aabb = 1, 2, 1
 
         # Cache must be empty.
@@ -692,7 +692,7 @@ class TestLeonardOther:
 
         # Change the State Vector of id_2.
         pos = [10, 11.5, 12]
-        sv_3 = bullet_data.MotionStateOverride(position=pos)
+        sv_3 = bullet_data.RigidBodyStateOverride(position=pos)
         assert leo.allObjects[id_2].position == [0, 0, 0]
         assert physAPI.addCmdModifyStateVariable(id_2, sv_3).ok
         leo.processCommandsAndSync()
@@ -722,7 +722,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Convenience.
-        sv = bullet_data.MotionState(imass=1)
+        sv = bullet_data.RigidBodyState(imass=1)
         objID, aabb = 1, 1
 
         # Spawn object.
@@ -787,7 +787,7 @@ class TestLeonardOther:
 
         # Spawn one object.
         orient = np.array([0, 0, 0, 1])
-        sv = bullet_data.MotionState(imass=1, orientation=orient)
+        sv = bullet_data.RigidBodyState(imass=1, orientation=orient)
         objID, aabb = 1, 1
         assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
         leo.processCommandsAndSync()
@@ -830,7 +830,7 @@ class TestLeonardOther:
 
         # Spawn one object rotated 180 degress around x-axis.
         orient = np.array([1, 0, 0, 0])
-        sv = bullet_data.MotionState(imass=1, orientation=orient)
+        sv = bullet_data.RigidBodyState(imass=1, orientation=orient)
         objID, aabb = 1, 1
         assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
         leo.processCommandsAndSync()
@@ -947,8 +947,8 @@ class TestLeonardOther:
         distance = abs(pos_a[0] - pos_b[0])
         assert distance >= 4
 
-        sv_a = bullet_data.MotionState(position=pos_a, cshapes=[cs])
-        sv_b = bullet_data.MotionState(position=pos_b, cshapes=[cs])
+        sv_a = bullet_data.RigidBodyState(position=pos_a, cshapes=[cs])
+        sv_b = bullet_data.RigidBodyState(position=pos_b, cshapes=[cs])
 
         # Specify the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)

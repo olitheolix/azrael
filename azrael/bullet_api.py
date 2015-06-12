@@ -31,7 +31,7 @@ import azrael.config as config
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _MotionState
+from azrael.types import typecheck, RetVal, _RigidBodyState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
@@ -42,7 +42,7 @@ Quaternion = azBullet.Quaternion
 Transform = azBullet.Transform
 
 # Convenience.
-MotionState = bullet_data.MotionState
+RigidBodyState = bullet_data.RigidBodyState
 
 
 class PyRigidBody(azBullet.RigidBody):
@@ -207,7 +207,7 @@ class PyBulletDynamicsWorld():
         not exists.
 
         :param list objIDs: the IDs of all objects to retrieve.
-        :return: list of ``_MotionState`` instances.
+        :return: list of ``_RigidBodyState`` instances.
         :rtype: list
         """
         # Abort immediately if one or more objects don't exist.
@@ -239,23 +239,23 @@ class PyBulletDynamicsWorld():
         # information from the object's meta data.
         cshapes = body.azrael[1].cshapes
 
-        # Construct a new _MotionState structure and add it to the list
+        # Construct a new _RigidBodyState structure and add it to the list
         # that will eventually be returned to the caller.
         csname = body.getCollisionShape().getChildShape(0).getName()
-        out = _MotionState(scale, body.getInvMass(),
+        out = _RigidBodyState(scale, body.getInvMass(),
                            body.getRestitution(), rot, pos, vLin, vRot,
                            cshapes, axesLockLin, axesLockRot, 0)
         return RetVal(True, None, out)
 
     @typecheck
-    def setObjectData(self, objID: int, obj: _MotionState):
+    def setObjectData(self, objID: int, obj: _RigidBodyState):
         """
         Update State Variables of ``objID`` to ``obj``.
 
         Create a new object with ``objID`` if it does not yet exist.
 
         :param int objID: the IDs of all objects to retrieve.
-        :param ``_MotionState`` obj: object description.
+        :param ``_RigidBodyState`` obj: object description.
         :return: Success
         """
         # Create the Rigid Body if it does not exist yet.
@@ -309,7 +309,7 @@ class PyBulletDynamicsWorld():
         # Apply the new mass and inertia.
         body.setMassProps(m, Vec3(x, y, z))
 
-        # Overwrite the old MotionState instance with the latest version.
+        # Overwrite the old RigidBodyState instance with the latest version.
         body.azrael = (objID, obj)
         return RetVal(True, None, None)
 
@@ -414,7 +414,7 @@ class PyBulletDynamicsWorld():
             return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, objID: int, obj: _MotionState):
+    def compileCollisionShape(self, objID: int, obj: _RigidBodyState):
         """
         Return the correct Bullet collision shape based on ``obj``.
 
@@ -423,7 +423,7 @@ class PyBulletDynamicsWorld():
         fixme: find out how to combine mass/inertia of multi body objects.
 
         :param int objID: object ID.
-        :param _MotionState obj: Azrael's meta data that describes the body.
+        :param _RigidBodyState obj: Azrael's meta data that describes the body.
         :return: compound shape with all the individual shapes.
         :rtype: ``CompoundShape``
         """
@@ -485,12 +485,12 @@ class PyBulletDynamicsWorld():
         return RetVal(True, None, (tot_mass, tot_inertia, compound))
 
     @typecheck
-    def createRigidBody(self, objID: int, obj: _MotionState):
+    def createRigidBody(self, objID: int, obj: _RigidBodyState):
         """
         Create a new rigid body ``obj`` with ``objID``.
 
         :param int objID: ID of new rigid body.
-        :param _MotionState obj: State Variables of rigid body.
+        :param _RigidBodyState obj: State Variables of rigid body.
         :return: Success
         """
         # Convert orientation and position to Bullet types.

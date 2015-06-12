@@ -151,10 +151,10 @@ def test_send_command():
 
 def test_GetStateVariable():
     """
-    Test codec for MotionState tuple.
+    Test codec for RigidBodyState tuple.
     """
-    objs = [{'frag': {}, 'sv': bullet_data.MotionState()},
-            {'frag': {}, 'sv': bullet_data.MotionState()}]
+    objs = [{'frag': {}, 'sv': bullet_data.RigidBodyState()},
+            {'frag': {}, 'sv': bullet_data.RigidBodyState()}]
     objIDs = [1, 2]
 
     # ----------------------------------------------------------------------
@@ -190,7 +190,7 @@ def test_GetStateVariable():
 
     # Verify.
     dec_sv = dec_sv.data
-    dec_sv = {int(_): bullet_data._MotionState(**dec_sv[_]['sv'])
+    dec_sv = {int(_): bullet_data._RigidBodyState(**dec_sv[_]['sv'])
               for _ in dec_sv}
     assert isEqualBD(dec_sv[1], objs[0]['sv'])
     assert isEqualBD(dec_sv[2], objs[1]['sv'])

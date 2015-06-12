@@ -245,10 +245,10 @@ def ToClerk_SetStateVector_Decode(payload: dict):
     # Convenience.
     objID = payload['objID']
 
-    # Convert the state variable into a MotionStateOverride instance.
+    # Convert the state variable into a RigidBodyStateOverride instance.
     sv = payload['sv']
-    tmp = dict(zip(bullet_data.MotionStateOverride._fields, sv))
-    sv = bullet_data.MotionStateOverride(**tmp)
+    tmp = dict(zip(bullet_data.RigidBodyStateOverride._fields, sv))
+    sv = bullet_data.RigidBodyStateOverride(**tmp)
 
     return True, (objID, sv)
 
@@ -435,19 +435,19 @@ def ToClerk_Spawn_Encode(objectInfos: (tuple, list)):
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
     # Convenience.
-    MotionState = bullet_data.MotionState
-    MotionStateOverride = bullet_data.MotionStateOverride
-    _updateMotionStateTuple = physics_interface._updateMotionStateTuple
+    RigidBodyState = bullet_data.RigidBodyState
+    RigidBodyStateOverride = bullet_data.RigidBodyStateOverride
+    _updateRigidBodyStateTuple = physics_interface._updateRigidBodyStateTuple
 
     out = []
     for data in payload['objInfos']:
         templateID = data['template']
         del data['template']
 
-        sv = MotionStateOverride(**data)
+        sv = RigidBodyStateOverride(**data)
         if sv is None:
             return False, 'Invalid State Variable data'
-        sv = _updateMotionStateTuple(MotionState(), sv)
+        sv = _updateRigidBodyStateTuple(RigidBodyState(), sv)
 
         out.append((templateID, sv))
     return True, (out, )

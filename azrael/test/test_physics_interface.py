@@ -31,8 +31,8 @@ from azrael.test.test_bullet_api import isEqualBD
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 
-MotionState = bullet_data.MotionState
-MotionStateOverride = bullet_data.MotionStateOverride
+RigidBodyState = bullet_data.RigidBodyState
+RigidBodyStateOverride = bullet_data.RigidBodyStateOverride
 
 
 class TestClerk:
@@ -67,7 +67,7 @@ class TestClerk:
         assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
-        data = MotionState(cshapes=[getCSSphere('cssphere')])
+        data = RigidBodyState(cshapes=[getCSSphere('cssphere')])
 
         # Add the object to the DB with ID=0.
         assert physAPI.addCmdSpawn([(id_0, data, aabb)])
@@ -112,8 +112,8 @@ class TestClerk:
         assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
-        data_0 = MotionState(position=[0, 0, 0])
-        data_1 = MotionState(position=[10, 10, 10])
+        data_0 = RigidBodyState(position=[0, 0, 0])
+        data_1 = RigidBodyState(position=[10, 10, 10])
 
         # Add the objects to the DB.
         tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
@@ -161,9 +161,9 @@ class TestClerk:
         assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
         # Create two State Vectors.
-        data_0 = MotionState(imass=1)
-        data_1 = MotionState(imass=2)
-        data_2 = MotionState(imass=3)
+        data_0 = RigidBodyState(imass=1)
+        data_1 = RigidBodyState(imass=2)
+        data_2 = RigidBodyState(imass=3)
 
         # The command queue for spawning objects must be empty.
         ret = physAPI.dequeueCommands()
@@ -208,8 +208,8 @@ class TestClerk:
         leo = getLeonard()
 
         # Convenience.
-        data_0 = MotionState()
-        data_1 = MotionStateOverride(imass=2, scale=3)
+        data_0 = RigidBodyState()
+        data_1 = RigidBodyStateOverride(imass=2, scale=3)
         id_0, id_1 = 0, 1
         aabb = 1
 
@@ -247,7 +247,7 @@ class TestClerk:
         assert ret.data['booster_force'] == []
 
         # Modify State Variable for id_0.
-        newSV = MotionStateOverride(imass=10, position=[3, 4, 5])
+        newSV = RigidBodyStateOverride(imass=10, position=[3, 4, 5])
         assert physAPI.addCmdModifyStateVariable(id_0, newSV).ok
         ret = physAPI.dequeueCommands()
         modify = ret.data['modify']
@@ -316,7 +316,7 @@ class TestClerk:
         vl = np.array([8, 9, 10.5])
         vr = 1 + vl
         o = np.array([11, 12.5, 13, 13.5])
-        data = MotionStateOverride(
+        data = RigidBodyStateOverride(
             imass=2, scale=3, position=p, velocityLin=vl,
             velocityRot=vr, orientation=o)
         del p, vl, vr, o
@@ -325,7 +325,7 @@ class TestClerk:
         id_0, aabb = 0, 0
 
         # Create an object and serialise it.
-        btdata = MotionState()
+        btdata = RigidBodyState()
 
         # Add the object to the DB with ID=0.
         assert physAPI.addCmdSpawn([(id_0, btdata, aabb)]).ok
@@ -345,55 +345,55 @@ class TestClerk:
         assert np.array_equal(ret.velocityRot, data.velocityRot)
         assert np.array_equal(ret.orientation, data.orientation)
 
-    def test_MotionStateOverride(self):
+    def test_RigidBodyStateOverride(self):
         """
-        ``MotionStateOverride`` must only accept valid input where the
-        ``MotionState`` function defines what constitutes as "valid".
+        ``RigidBodyStateOverride`` must only accept valid input where the
+        ``RigidBodyState`` function defines what constitutes as "valid".
         """
         # Convenience.
-        MotionState = bullet_data.MotionState
-        MotionStateOverride = bullet_data.MotionStateOverride
+        RigidBodyState = bullet_data.RigidBodyState
+        RigidBodyStateOverride = bullet_data.RigidBodyStateOverride
 
-        # Valid MotionState and MotionStateOverride calls.
-        assert MotionState() is not None
-        assert MotionStateOverride() is not None
+        # Valid RigidBodyState and RigidBodyStateOverride calls.
+        assert RigidBodyState() is not None
+        assert RigidBodyStateOverride() is not None
 
-        assert MotionState(position=[1, 2, 3]) is not None
-        assert MotionStateOverride(position=[1, 2, 3]) is not None
+        assert RigidBodyState(position=[1, 2, 3]) is not None
+        assert RigidBodyStateOverride(position=[1, 2, 3]) is not None
 
         # Pass positional arguments with None values.
-        assert MotionStateOverride(None, None) is not None
+        assert RigidBodyStateOverride(None, None) is not None
 
         # Pass a dictionary with None values. This must still result in the
         # default structure.
         tmp = {'velocityRot': None, 'cshapes': None}
-        assert MotionStateOverride(**tmp) is not None
+        assert RigidBodyStateOverride(**tmp) is not None
         tmp = {'velocityRot': np.array([1, 2, 3], np.float64), 'cshapes': None}
-        out = MotionStateOverride(**tmp)
+        out = RigidBodyStateOverride(**tmp)
         assert out is not None
         assert np.array_equal(out.velocityRot, tmp['velocityRot'])
 
         # Combine positional and keyword arguments.
-        assert MotionStateOverride(None, None, **tmp) is not None
+        assert RigidBodyStateOverride(None, None, **tmp) is not None
 
         # Pass Python- scalars and lists instead of NumPy types. The scalars
         # must remain unaffected but the lists must become NumPy arrays.
-        ret = MotionState(imass=3, position=[1, 2, 3])
+        ret = RigidBodyState(imass=3, position=[1, 2, 3])
         assert isinstance(ret.imass, int)
         assert isinstance(ret.position, list)
 
-        ret = MotionStateOverride(imass=3, position=[1, 2, 3])
+        ret = RigidBodyStateOverride(imass=3, position=[1, 2, 3])
         assert isinstance(ret.imass, int)
         assert isinstance(ret.position, list)
 
         # Invalid calls.
-        assert MotionState(position=[1, 2]) is None
-        assert MotionStateOverride(position=[1, 2]) is None
-        assert MotionState(position=np.array([1, 2])) is None
-        assert MotionStateOverride(position=np.array([1, 2])) is None
+        assert RigidBodyState(position=[1, 2]) is None
+        assert RigidBodyStateOverride(position=[1, 2]) is None
+        assert RigidBodyState(position=np.array([1, 2])) is None
+        assert RigidBodyStateOverride(position=np.array([1, 2])) is None
 
-        assert MotionStateOverride(position=1) is None
-        assert MotionStateOverride(position='blah') is None
+        assert RigidBodyStateOverride(position=1) is None
+        assert RigidBodyStateOverride(position='blah') is None
 
     def test_get_set_forceandtorque(self):
         """
@@ -406,8 +406,8 @@ class TestClerk:
         id_0, id_1, aabb = 0, 1, 0
 
         # Create two objects and serialise them.
-        data_0 = MotionState(position=[0, 0, 0])
-        data_1 = MotionState(position=[10, 10, 10])
+        data_0 = RigidBodyState(position=[0, 0, 0])
+        data_1 = RigidBodyState(position=[10, 10, 10])
 
         # Add the two objects to the simulation.
         tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
@@ -439,16 +439,16 @@ class TestClerk:
 
     def test_StateVariable_tuple(self):
         """
-        Test the ``MotionState`` class, most notably the __eq__ method.
+        Test the ``RigidBodyState`` class, most notably the __eq__ method.
         """
         # Compare two identical objects.
-        sv1 = MotionState()
-        sv2 = MotionState()
+        sv1 = RigidBodyState()
+        sv2 = RigidBodyState()
         assert isEqualBD(sv1, sv2)
 
         # Compare two different objects.
-        sv1 = MotionState()
-        sv2 = MotionState(position=[1, 2, 3])
+        sv1 = RigidBodyState()
+        sv2 = RigidBodyState(position=[1, 2, 3])
         assert not isEqualBD(sv1, sv2)
 
     def test_set_get_AABB(self):
@@ -458,11 +458,11 @@ class TestClerk:
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
-        # Create two object IDs and a MotionState instances for this test.
+        # Create two object IDs and a RigidBodyState instances for this test.
         id_0, id_1 = 0, 1
         id_2, id_3 = 2, 3
         aabb_1, aabb_2 = 1.5, 2.5
-        data = MotionState()
+        data = RigidBodyState()
 
         # Attempt to add an object with a negative AABB value. This must fail.
         assert not physAPI.addCmdSpawn([(id_0, data, -1.5)]).ok

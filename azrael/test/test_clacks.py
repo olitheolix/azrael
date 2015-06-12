@@ -171,7 +171,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             self.verifyTemplate('{}/{}'.format(url_inst, 1), t1.fragments)
 
         # Spawn the first template (it will must get objID=1).
-        sv_1 = bullet_data.MotionState(imass=1)
+        sv_1 = bullet_data.RigidBodyState(imass=1)
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
         self.verifyTemplate('{}/{}'.format(url_inst, 1), t1.fragments)
@@ -202,7 +202,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
         self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
-        sv_1 = bullet_data.MotionState(imass=1)
+        sv_1 = bullet_data.RigidBodyState(imass=1)
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
 
@@ -236,7 +236,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
         self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
-        sv_1 = bullet_data.MotionState(imass=1)
+        sv_1 = bullet_data.RigidBodyState(imass=1)
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
 

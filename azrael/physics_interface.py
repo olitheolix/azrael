@@ -29,10 +29,10 @@ import azrael.database as database
 import azrael.bullet_data as bullet_data
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _MotionState
+from azrael.types import typecheck, RetVal, _RigidBodyState
 
 # Convenience.
-MotionStateOverride = bullet_data.MotionStateOverride
+RigidBodyStateOverride = bullet_data.RigidBodyStateOverride
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
@@ -95,7 +95,7 @@ def addCmdSpawn(objData: (tuple, list)):
     for objID, sv, aabb in objData:
         try:
             assert isinstance(objID, int)
-            assert isinstance(sv, _MotionState)
+            assert isinstance(sv, _RigidBodyState)
             assert isinstance(aabb, (int, float))
         except AssertionError:
             msg = '<addCmdQueue> received invalid argument type'
@@ -156,7 +156,7 @@ def addCmdRemoveObject(objID: int):
 
 
 @typecheck
-def addCmdModifyStateVariable(objID: int, data: MotionStateOverride):
+def addCmdModifyStateVariable(objID: int, data: RigidBodyStateOverride):
     """
     Queue request to Override State Variables of ``objID`` with ``data``.
 
@@ -164,7 +164,7 @@ def addCmdModifyStateVariable(objID: int, data: MotionStateOverride):
     cycle. However, it is impossible to determine when exactly.
 
     :param int objID: object to update.
-    :param MotionStateOverride pos: new object attributes.
+    :param RigidBodyStateOverride pos: new object attributes.
     :return bool: Success
     """
     # Sanity check.
@@ -178,15 +178,15 @@ def addCmdModifyStateVariable(objID: int, data: MotionStateOverride):
         return RetVal(True, None, None)
 
     # Make sure that ``data`` is really valid by constructing a new
-    # MotionStateOverride instance from it.
-    data = MotionStateOverride(*data)
+    # RigidBodyStateOverride instance from it.
+    data = RigidBodyStateOverride(*data)
     if data is None:
         return RetVal(False, 'Invalid override data', None)
 
-    # All fields in ``data`` (a MotionStateOverride instance) are, by
+    # All fields in ``data`` (a RigidBodyStateOverride instance) are, by
     # definition, one of {None, int, float, np.ndarray}. The following code
     # merely converts the  NumPy arrays to normal lists so that Mongo can store
-    # them. For example, MotionStateOverride(None, 2, array([1,2,3]), ...)
+    # them. For example, RigidBodyStateOverride(None, 2, array([1,2,3]), ...)
     # would become [None, 2, [1,2,3], ...].
     data = list(data)
     for idx, val in enumerate(data):
@@ -293,7 +293,7 @@ def getStateVariables(objIDs: (list, tuple)):
 
     with util.Timeit('physAPI.2_getSV') as timeit:
         for doc in tmp:
-            out[doc['objID']] = _MotionState(*doc['sv'])
+            out[doc['objID']] = _RigidBodyState(*doc['sv'])
     return RetVal(True, None, out)
 
 
@@ -332,8 +332,8 @@ def getAABB(objIDs: (list, tuple)):
 
 
 @typecheck
-def _updateMotionStateTuple(orig: _MotionState,
-                            new: bullet_data.MotionStateOverride):
+def _updateRigidBodyStateTuple(orig: _RigidBodyState,
+                            new: bullet_data.RigidBodyStateOverride):
     """
     Overwrite fields in ``orig`` with content of ``new``.
 
@@ -344,10 +344,10 @@ def _updateMotionStateTuple(orig: _MotionState,
     otherwise unavoidable because not all Leonard implementations inherit the
     same base class.
 
-    :param _MotionState orig: the original tuple.
-    :param MotionStateOverride new: new values (*None* entries are ignored).
+    :param _RigidBodyState orig: the original tuple.
+    :param RigidBodyStateOverride new: new values (*None* entries are ignored).
     :return: updated version of ``orig``.
-    :rtype: _MotionState
+    :rtype: _RigidBodyState
     """
     if new is None:
         return orig
@@ -359,8 +359,8 @@ def _updateMotionStateTuple(orig: _MotionState,
         if v is not None:
             dict_orig[k] = v
 
-    # Convert the dictionary back to a _MotionState instance and return it.
-    return _MotionState(**dict_orig)
+    # Convert the dictionary back to a _RigidBodyState instance and return it.
+    return _RigidBodyState(**dict_orig)
 
 
 def getAllStateVariables():
@@ -376,7 +376,7 @@ def getAllStateVariables():
     # Compile all object IDs and state variables into a dictionary.
     out = {}
     for doc in database.dbHandles['SV'].find():
-        key, value = doc['objID'], _MotionState(*doc['sv'])
+        key, value = doc['objID'], _RigidBodyState(*doc['sv'])
         out[key] = value
     return RetVal(True, None, out)
 

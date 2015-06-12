@@ -59,7 +59,7 @@ from azrael.types import CollShapeBox
 
 
 # Convenience.
-MotionStateOverride = physAPI.MotionStateOverride
+RigidBodyStateOverride = physAPI.RigidBodyStateOverride
 
 
 def parseCommandLine():
@@ -537,10 +537,10 @@ class ResetSim(multiprocessing.Process):
             # Forcefully reset the position and velocity of every object. Do
             # this several times since network latency may result in some
             # objects being reset sooner than others.
-            MotionStateOverride = azrael.physics_interface.MotionStateOverride
+            RigidBodyStateOverride = azrael.physics_interface.RigidBodyStateOverride
             for ii in range(5):
                 for objID, SV in allowed_objIDs.items():
-                    tmp = MotionStateOverride(
+                    tmp = RigidBodyStateOverride(
                         position=SV.position,
                         velocityLin=SV.velocityLin,
                         velocityRot=SV.velocityRot,

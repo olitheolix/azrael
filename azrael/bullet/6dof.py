@@ -8,7 +8,7 @@ from IPython import embed as ipshell
 
 import azBullet
 from azBullet import Vec3, Quaternion, Transform
-from azBullet import SphereShape, DefaultMotionState
+from azBullet import SphereShape, DefaultRigidBodyState
 from azBullet import RigidBody, RigidBodyConstructionInfo
 from azBullet import Generic6DofSpring2Constraint
 
@@ -57,7 +57,7 @@ def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
     in memory.
     """
     t = Transform(Quaternion(0, 0, 0, 1), pos)
-    ms = DefaultMotionState(t)
+    ms = DefaultRigidBodyState(t)
     mass = 1
 
     # Build construction info and instantiate the rigid body.

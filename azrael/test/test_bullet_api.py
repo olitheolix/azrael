@@ -21,19 +21,19 @@ import azrael.bullet_data as bullet_data
 import numpy as np
 
 from IPython import embed as ipshell
-from azrael.types import _MotionState
+from azrael.types import _RigidBodyState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 
 
-def isEqualBD(bd1: _MotionState, bd2: _MotionState):
+def isEqualBD(bd1: _RigidBodyState, bd2: _RigidBodyState):
     """
     Return *True* if the content of ``bd1`` is (roughly) equal to ``bd2``.
 
     This is a convenience function only.
     """
-    for f in _MotionState._fields:
+    for f in _RigidBodyState._fields:
         a, b = getattr(bd1, f), getattr(bd2, f)
         try:
             if f == 'cshapes':
@@ -98,7 +98,7 @@ class TestBulletAPI:
         cshapes = [getCSEmpty('1', pos, rot), getCSSphere('2', pos, rot)]
 
         # Create an object and serialise it.
-        obj_a = bullet_data.MotionState(
+        obj_a = bullet_data.RigidBodyState(
             scale=3.5,
             imass=4.5,
             cshapes=cshapes,
@@ -109,7 +109,7 @@ class TestBulletAPI:
             velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
         assert obj_a is not None
 
-        obj_b = bullet_data.MotionState(
+        obj_b = bullet_data.RigidBodyState(
             scale=3.5,
             imass=4.5,
             restitution=5.5,
@@ -176,7 +176,7 @@ class TestBulletAPI:
         del pos, rot
 
         # Create an object and serialise it.
-        obj_a = bullet_data.MotionState(
+        obj_a = bullet_data.RigidBodyState(
             scale=3.5,
             imass=4.5,
             cshapes=cshapes,
@@ -207,7 +207,7 @@ class TestBulletAPI:
         cshapes = [getCSSphere('foo')]
 
         # Create an object and serialise it.
-        obj_a = bullet_data.MotionState(
+        obj_a = bullet_data.RigidBodyState(
             scale=3.5,
             imass=4.5,
             cshapes=cshapes,
@@ -228,7 +228,7 @@ class TestBulletAPI:
         assert isEqualBD(ret.data, obj_a)
 
         # Update the object.
-        obj_a = bullet_data.MotionState(
+        obj_a = bullet_data.RigidBodyState(
             scale=6.5,
             imass=7.5,
             cshapes=cshapes,
@@ -255,7 +255,7 @@ class TestBulletAPI:
         dt, maxsteps = 1.0, 60
 
         # Create an object and overwrite the CShape data to obtain a sphere.
-        obj_a = bullet_data.MotionState()
+        obj_a = bullet_data.RigidBodyState()
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -306,7 +306,7 @@ class TestBulletAPI:
         dt, maxsteps = 1.0, 60
 
         # Create an object and overwrite the CShape data to obtain a sphere.
-        obj_a = bullet_data.MotionState()
+        obj_a = bullet_data.RigidBodyState()
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -340,7 +340,7 @@ class TestBulletAPI:
         # Create a spherical object. Adjust the mass so that the sphere's
         # inertia is roughly unity.
         cshapes = [getCSSphere('foo')]
-        obj_a = bullet_data.MotionState(cshapes=cshapes, imass=2 / 5)
+        obj_a = bullet_data.RigidBodyState(cshapes=cshapes, imass=2 / 5)
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -397,7 +397,7 @@ class TestBulletAPI:
         Remove an object from the Bullet cache.
         """
         # Create a spherical object.
-        obj_a = bullet_data.MotionState()
+        obj_a = bullet_data.RigidBodyState()
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -431,8 +431,8 @@ class TestBulletAPI:
         cshapes = [getCSSphere('foo')]
 
         # Create two identical spheres, one left, one right (x-axis).
-        obj_a = bullet_data.MotionState(position=pos_a, cshapes=cshapes, imass=1)
-        obj_b = bullet_data.MotionState(position=pos_b, cshapes=cshapes, imass=1)
+        obj_a = bullet_data.RigidBodyState(position=pos_a, cshapes=cshapes, imass=1)
+        obj_b = bullet_data.RigidBodyState(position=pos_b, cshapes=cshapes, imass=1)
         del pos_a, pos_b, cshapes
 
         # Instantiate Bullet engine.
@@ -487,8 +487,8 @@ class TestBulletAPI:
         radius = 2
         cs_a = [getCSSphere('csfoo', radius=radius)]
         cs_b = [getCSSphere('csbar', radius=radius)]
-        obj_a = bullet_data.MotionState(position=pos_a, cshapes=cs_a)
-        obj_b = bullet_data.MotionState(position=pos_b, cshapes=cs_b)
+        obj_a = bullet_data.RigidBodyState(position=pos_a, cshapes=cs_a)
+        obj_b = bullet_data.RigidBodyState(position=pos_b, cshapes=cs_b)
         del cs_a, cs_b, pos_a, pos_b
 
         # Instantiate Bullet engine.
@@ -545,8 +545,8 @@ class TestBulletAPI:
         del p, q
 
         # Create two identical unit spheres, offset along the x/y axis.
-        obj_a = bullet_data.MotionState(position=pos_a, cshapes=cshape_sph)
-        obj_b = bullet_data.MotionState(position=pos_b, cshapes=cshape_sph)
+        obj_a = bullet_data.RigidBodyState(position=pos_a, cshapes=cshape_sph)
+        obj_b = bullet_data.RigidBodyState(position=pos_b, cshapes=cshape_sph)
 
         # Instantiate Bullet engine.
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -569,8 +569,8 @@ class TestBulletAPI:
         # Change both collision shape to unit cubes. Then step the simulation
         # again to ensure Bullet accesses each object and nothing bad happens
         # (eg a segfault).
-        obj_a = bullet_data.MotionState(position=pos_a, cshapes=cshape_box)
-        obj_b = bullet_data.MotionState(position=pos_b, cshapes=cshape_box)
+        obj_a = bullet_data.RigidBodyState(position=pos_a, cshapes=cshape_box)
+        obj_b = bullet_data.RigidBodyState(position=pos_b, cshapes=cshape_box)
         bullet.setObjectData(objID_a, obj_a)
         bullet.setObjectData(objID_b, obj_b)
         bullet.compute([objID_a, objID_b], 1.0, 60)
@@ -595,8 +595,8 @@ class TestBulletAPI:
         id_a, id_b = 10, 20
         pos_a = (-1, 0, 0)
         pos_b = (1, 0, 0)
-        obj_a = bullet_data.MotionState(position=pos_a, cshapes=[getCSSphere()])
-        obj_b = bullet_data.MotionState(position=pos_b, cshapes=[getCSSphere()])
+        obj_a = bullet_data.RigidBodyState(position=pos_a, cshapes=[getCSSphere()])
+        obj_b = bullet_data.RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
 
         # Load the objects into the physics engine.
         bullet.setObjectData(id_a, obj_a)
@@ -674,8 +674,8 @@ class TestBulletAPI:
         id_a, id_b = 10, 20
         pos_a = (-5, 0, 0)
         pos_b = (5, 0, 0)
-        obj_a = bullet_data.MotionState(position=pos_a, cshapes=[getCSSphere()])
-        obj_b = bullet_data.MotionState(position=pos_b, cshapes=[getCSSphere()])
+        obj_a = bullet_data.RigidBodyState(position=pos_a, cshapes=[getCSSphere()])
+        obj_b = bullet_data.RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
 
         # Load the objects into the physics engine.
         sim.setObjectData(id_a, obj_a)
@@ -728,8 +728,8 @@ class TestBulletAPI:
 
         # Create to spheres.
         id_a, id_b = 10, 20
-        obj_a = bullet_data.MotionState(cshapes=[getCSSphere()])
-        obj_b = bullet_data.MotionState(cshapes=[getCSSphere()])
+        obj_a = bullet_data.RigidBodyState(cshapes=[getCSSphere()])
+        obj_b = bullet_data.RigidBodyState(cshapes=[getCSSphere()])
 
         # An empty list is valid, albeit nothing will happen.
         assert bullet.setConstraints([]).ok

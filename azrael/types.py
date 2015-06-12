@@ -53,7 +53,7 @@ Forces = namedtuple('Forces',
                     'forceDirect forceBoost torqueDirect torqueBoost')
 
 # Motion state of an object.
-_MotionState = namedtuple('_MotionState',
+_RigidBodyState = namedtuple('_RigidBodyState',
                           'scale imass restitution orientation '
                           'position velocityLin velocityRot cshapes '
                           'axesLockLin axesLockRot lastChanged')

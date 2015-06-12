@@ -882,7 +882,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         pos = self.camera.position
         cs = CollShapeBox(1, 1, 1)
         cs = CollShapeMeta('box', 'player', (0, 0, 0), (0, 0, 0, 1), cs)
-        attr = physAPI.MotionStateOverride(position=pos, cshapes=[cs])
+        attr = physAPI.RigidBodyStateOverride(position=pos, cshapes=[cs])
         assert self.client.setStateVariable(self.player_id, attr).ok
         del cs
 

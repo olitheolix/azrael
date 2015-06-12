@@ -37,12 +37,12 @@ import azrael.bullet_data as bullet_data
 import azrael.physics_interface as physAPI
 
 from IPython import embed as ipshell
-from azrael.types import _MotionState
+from azrael.types import _RigidBodyState
 from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Convenience.
-MotionState = bullet_data.MotionState
-MotionStateOverride = bullet_data.MotionStateOverride
+RigidBodyState = bullet_data.RigidBodyState
+RigidBodyStateOverride = bullet_data.RigidBodyStateOverride
 
 
 @typecheck
@@ -408,18 +408,18 @@ class LeonardBase(config.AzraelProcess):
                 self.logit.warning(msg.format(objID))
             else:
                 sv_old = doc['sv']
-                self.allObjects[objID] = _MotionState(*sv_old)
+                self.allObjects[objID] = _RigidBodyState(*sv_old)
                 self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
                 self.allAABBs[objID] = float(doc['AABB'])
 
         # Update State Vectors.
-        fun = physAPI._updateMotionStateTuple
+        fun = physAPI._updateRigidBodyStateTuple
         for doc in cmds['modify']:
             objID, sv_new = doc['objID'], doc['sv']
             if objID in self.allObjects:
-                sv_new = MotionStateOverride(*sv_new)
+                sv_new = RigidBodyStateOverride(*sv_new)
                 sv_old = self.allObjects[objID]
-                sv_old = MotionState(*sv_old)
+                sv_old = RigidBodyState(*sv_old)
                 self.allObjects[objID] = fun(sv_old, sv_new)
 
         # Update direct force- and torque values.
@@ -965,7 +965,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Reset force and torque for all objects in the WP, and overwrite
         # the old State Vector with the new one from the processed WP.
         for (objID, sv) in wpdata:
-            self.allObjects[objID] = _MotionState(*sv)
+            self.allObjects[objID] = _RigidBodyState(*sv)
 
 
 class LeonardWorkerZeroMQ(config.AzraelProcess):
