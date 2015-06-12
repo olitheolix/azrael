@@ -48,7 +48,7 @@ def MotionState(scale: (int, float)=1,
                 position: (tuple, list, np.ndarray)=[0, 0, 0],
                 velocityLin: (tuple, list, np.ndarray)=[0, 0, 0],
                 velocityRot: (tuple, list, np.ndarray)=[0, 0, 0],
-                cshape: (tuple, list)=[_CSDefault],
+                cshapes: (tuple, list)=[_CSDefault],
                 axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
                 axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
                 lastChanged: int=0):
@@ -72,8 +72,8 @@ def MotionState(scale: (int, float)=1,
         assert len(orientation) == 4
         assert len(position) == len(velocityLin) == len(velocityRot) == 3
         assert lastChanged >= 0
-        cshape = [CollShapeMeta(*_) for _ in cshape]
-        for cs in cshape:
+        cshapes = [CollShapeMeta(*_) for _ in cshapes]
+        for cs in cshapes:
             assert isinstance(cs.type, str)
             assert isinstance(cs.name, str)
             assert isinstance(cs.pos, (tuple, list, np.ndarray))
@@ -96,7 +96,7 @@ def MotionState(scale: (int, float)=1,
         position=position,
         velocityLin=velocityLin,
         velocityRot=velocityRot,
-        cshape=cshape,
+        cshapes=cshapes,
         axesLockLin=axesLockLin,
         axesLockRot=axesLockRot,
         lastChanged=lastChanged)

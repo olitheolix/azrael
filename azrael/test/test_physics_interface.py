@@ -67,7 +67,7 @@ class TestClerk:
         assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
-        data = MotionState(cshape=[getCSSphere('cssphere')])
+        data = MotionState(cshapes=[getCSSphere('cssphere')])
 
         # Add the object to the DB with ID=0.
         assert physAPI.addCmdSpawn([(id_0, data, aabb)])
@@ -366,9 +366,9 @@ class TestClerk:
 
         # Pass a dictionary with None values. This must still result in the
         # default structure.
-        tmp = {'velocityRot': None, 'cshape': None}
+        tmp = {'velocityRot': None, 'cshapes': None}
         assert MotionStateOverride(**tmp) is not None
-        tmp = {'velocityRot': np.array([1, 2, 3], np.float64), 'cshape': None}
+        tmp = {'velocityRot': np.array([1, 2, 3], np.float64), 'cshapes': None}
         out = MotionStateOverride(**tmp)
         assert out is not None
         assert np.array_equal(out.velocityRot, tmp['velocityRot'])

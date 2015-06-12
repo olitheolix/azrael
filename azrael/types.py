@@ -55,7 +55,7 @@ Forces = namedtuple('Forces',
 # Motion state of an object.
 _MotionState = namedtuple('_MotionState',
                           'scale imass restitution orientation '
-                          'position velocityLin velocityRot cshape '
+                          'position velocityLin velocityRot cshapes '
                           'axesLockLin axesLockRot lastChanged')
 
 # fixme: rename 'name' to 'id'

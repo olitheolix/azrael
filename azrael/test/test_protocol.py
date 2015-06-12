@@ -64,7 +64,7 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     # ----------------------------------------------------------------------
     # Encode source data.
     cs = [1, 2, 3, 4]
-    data = {'cshape': cs, 'boosters': [b0, b1], 'factories': [f0],
+    data = {'cshapes': cs, 'boosters': [b0, b1], 'factories': [f0],
             'aabb': 1.0, 'url': 'http://somewhere',
             'fragments': MetaFragment('foo', 'raw', None)}
     templates = {template_name: data}

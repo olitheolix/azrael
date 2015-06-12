@@ -86,27 +86,27 @@ class TestClerk:
         name_1 = '_templateEmpty'
         ret = clerk.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
-        assert isEqualCS(ret.data[name_1]['cshape'], [getCSEmpty()])
+        assert isEqualCS(ret.data[name_1]['cshapes'], [getCSEmpty()])
 
         # ... this one is a sphere...
         name_2 = '_templateSphere'
         ret = clerk.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
-        assert isEqualCS(ret.data[name_2]['cshape'], [getCSSphere()])
+        assert isEqualCS(ret.data[name_2]['cshapes'], [getCSSphere()])
 
         # ... and this one is a cube.
         name_3 = '_templateCube'
         ret = clerk.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
-        assert isEqualCS(ret.data[name_3]['cshape'], [getCSBox()])
+        assert isEqualCS(ret.data[name_3]['cshapes'], [getCSBox()])
 
         # Retrieve all three again but with a single call.
         ret = clerk.getTemplates([name_1, name_2, name_3])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3))
-        assert isEqualCS(ret.data[name_1]['cshape'], [getCSEmpty()])
-        assert isEqualCS(ret.data[name_2]['cshape'], [getCSSphere()])
-        assert isEqualCS(ret.data[name_3]['cshape'], [getCSBox()])
+        assert isEqualCS(ret.data[name_1]['cshapes'], [getCSEmpty()])
+        assert isEqualCS(ret.data[name_2]['cshapes'], [getCSSphere()])
+        assert isEqualCS(ret.data[name_3]['cshapes'], [getCSBox()])
 
     def test_add_get_template_single(self):
         """
@@ -173,7 +173,7 @@ class TestClerk:
         # Retrieve the just created object and verify the collision shape.
         ret = clerk.getTemplates([temp.name])
         assert ret.ok
-        assert isEqualCS(ret.data[temp.name]['cshape'], [cs])
+        assert isEqualCS(ret.data[temp.name]['cshapes'], [cs])
 
         # The template must also feature two boosters and one factory.
         assert len(ret.data[temp.name]['boosters']) == 2

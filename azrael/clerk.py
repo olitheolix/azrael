@@ -673,7 +673,7 @@ class Clerk(config.AzraelProcess):
                 data = {
                     'url': config.url_templates + '/' + tt.name,
                     'name': tt.name,
-                    'cshape': tt.cs,
+                    'cshapes': tt.cs,
                     'aabb': float(ret.data['aabb']),
                     'boosters': tt.boosters,
                     'factories': tt.factories,
@@ -711,10 +711,10 @@ class Clerk(config.AzraelProcess):
 
           ret = {template_names[0]: {
                    fragment_name[0]: {
-                      'cshape': X, 'vert': X, 'uv': X, 'rgb': X,
+                      'cshapes': X, 'vert': X, 'uv': X, 'rgb': X,
                       'boosters': X, 'factories': X, 'aabb': X},
                    fragment_name[1]: {
-                      'cshape': X, 'vert': X, 'uv': X, 'rgb': X,
+                      'cshapes': X, 'vert': X, 'uv': X, 'rgb': X,
                       'boosters': X, 'factories': X, 'aabb': X}},
                  template_names[1]: {}, }.
 
@@ -759,7 +759,7 @@ class Clerk(config.AzraelProcess):
         method (see ``_unpackTemplateData`` for details on that output).
 
         :param int objID: objID
-        :return: Dictionary with keys 'cshape', 'vert', 'uv', 'rgb',
+        :return: Dictionary with keys 'cshapes', 'vert', 'uv', 'rgb',
                  'boosters', 'factories', and 'aabb'.
         :rtype: dict
         :raises: None
@@ -888,7 +888,7 @@ class Clerk(config.AzraelProcess):
         with util.Timeit('spawn:3 addCmds') as timeit:
             # Sanity check: collision shapes.
             for name, sv, objID in zip(t_names, SVs, objIDs):
-                cs = templates[name]['cshape']
+                cs = templates[name]['cshapes']
                 ret = self._verifyCollisionShapes(cs)
                 if not ret.ok:
                     return ret
@@ -905,7 +905,7 @@ class Clerk(config.AzraelProcess):
                 # things may happen (eg a space-ship collision shape in the
                 # template database with a simple sphere collision shape when
                 # it is spawned).
-                sv.cshape[:] = t['cshape']
+                sv.cshapes[:] = t['cshapes']
 
                 # Add the object description to the list.
                 objs.append((objID, sv, t['aabb']))
@@ -1048,7 +1048,7 @@ class Clerk(config.AzraelProcess):
         :return: Success
         """
         # Sanity check.
-        ret = self._verifyCollisionShapes(data.cshape)
+        ret = self._verifyCollisionShapes(data.cshapes)
         if not ret.ok:
             return ret
 

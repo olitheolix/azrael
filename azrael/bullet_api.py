@@ -237,14 +237,14 @@ class PyBulletDynamicsWorld():
 
         # Bullet will never modify the Collision shape. We may thus use the
         # information from the object's meta data.
-        cshape = body.azrael[1].cshape
+        cshapes = body.azrael[1].cshapes
 
         # Construct a new _MotionState structure and add it to the list
         # that will eventually be returned to the caller.
         csname = body.getCollisionShape().getChildShape(0).getName()
         out = _MotionState(scale, body.getInvMass(),
                            body.getRestitution(), rot, pos, vLin, vRot,
-                           cshape, axesLockLin, axesLockRot, 0)
+                           cshapes, axesLockLin, axesLockRot, 0)
         return RetVal(True, None, out)
 
     @typecheck
@@ -281,13 +281,13 @@ class PyBulletDynamicsWorld():
         # Build and assign the new collision shape, if necessary.
         old = body.azrael[1]
         if (old.scale != obj.scale) or \
-           not (np.array_equal(old.cshape, obj.cshape)):
+           not (np.array_equal(old.cshapes, obj.cshapes)):
             # Create a new collision shape.
-            mass, inertia, cshape = self.compileCollisionShape(objID, obj).data
+            mass, inertia, cshapes = self.compileCollisionShape(objID, obj).data
             del mass, inertia
 
             # Replace the existing collision shape with the new one.
-            body.setCollisionShape(cshape)
+            body.setCollisionShape(cshapes)
         del old
 
         # Update the mass but leave the inertia intact. This is somewhat
@@ -444,7 +444,7 @@ class PyBulletDynamicsWorld():
             obj_mass = 0
 
         # Create the collision shapes one by one.
-        for cs in obj.cshape:
+        for cs in obj.cshapes:
             # Convert the input data to a CollShapeMeta tuple. This is
             # necessary if the data passed to us here comes straight from the
             # database because then it it is merely a list of values, not (yet)
@@ -499,13 +499,13 @@ class PyBulletDynamicsWorld():
 
         # Build the collision shape.
         ret = self.compileCollisionShape(objID, obj)
-        mass, inertia, cshape = ret.data
+        mass, inertia, cshapes = ret.data
 
         # Create a motion state for the initial orientation and position.
         ms = azBullet.DefaultMotionState(azBullet.Transform(rot, pos))
 
         # Instantiate the actual rigid body object.
-        ci = azBullet.RigidBodyConstructionInfo(mass, ms, cshape, inertia)
+        ci = azBullet.RigidBodyConstructionInfo(mass, ms, cshapes, inertia)
         body = PyRigidBody(ci)
 
         # Set additional parameters.

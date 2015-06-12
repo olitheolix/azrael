@@ -175,7 +175,7 @@ class TestLeonardAllEngines:
         # Parameters and constants for this test.
         cshape_box = [getCSBox('csbox')]
         cshape_sphere = [getCSSphere('cssphere')]
-        sv = bullet_data.MotionState(imass=2, scale=3, cshape=cshape_sphere)
+        sv = bullet_data.MotionState(imass=2, scale=3, cshapes=cshape_sphere)
         templateID = '_templateSphere'.encode('utf8')
 
         # Spawn an object.
@@ -188,13 +188,13 @@ class TestLeonardAllEngines:
         assert ret.ok
         assert ret.data[objID].imass == 2
         assert ret.data[objID].scale == 3
-        tmp = CollShapeMeta(*ret.data[objID].cshape[0]).name
+        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).name
         assert tmp == cshape_sphere[0].name
         del tmp
 
         # Update the object's SV data.
         sv_new = bullet_data.MotionStateOverride(
-            imass=4, scale=5, cshape=cshape_box)
+            imass=4, scale=5, cshapes=cshape_box)
         assert physAPI.addCmdModifyStateVariable(objID, sv_new).ok
 
         # Verify the SV data.
@@ -203,7 +203,7 @@ class TestLeonardAllEngines:
         assert (ret.ok, len(ret.data)) == (True, 1)
         sv = ret.data[objID]
         assert (sv.imass == 4) and (sv.scale == 5)
-        tmp = CollShapeMeta(*ret.data[objID].cshape[0]).name
+        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).name
         assert tmp == cshape_box[0].name
         del tmp
 
@@ -444,13 +444,13 @@ class TestLeonardOther:
         # Constants and parameters for this test.
         aabb = 1
         id_0, id_1 = 0, 1
-        cshape = [getCSSphere(radius=1)]
+        cshapes = [getCSSphere(radius=1)]
 
         # Two State Vectors for this test.
         sv_0 = bullet_data.MotionState(
-            position=[0, 0, 0], velocityLin=[1, 0, 0], cshape=cshape)
+            position=[0, 0, 0], velocityLin=[1, 0, 0], cshapes=cshapes)
         sv_1 = bullet_data.MotionState(
-            position=[0, 10, 0], velocityLin=[0, -1, 0], cshape=cshape)
+            position=[0, 10, 0], velocityLin=[0, -1, 0], cshapes=cshapes)
 
         # Create two objects.
         tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
@@ -947,8 +947,8 @@ class TestLeonardOther:
         distance = abs(pos_a[0] - pos_b[0])
         assert distance >= 4
 
-        sv_a = bullet_data.MotionState(position=pos_a, cshape=[cs])
-        sv_b = bullet_data.MotionState(position=pos_b, cshape=[cs])
+        sv_a = bullet_data.MotionState(position=pos_a, cshapes=[cs])
+        sv_b = bullet_data.MotionState(position=pos_b, cshapes=[cs])
 
         # Specify the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)

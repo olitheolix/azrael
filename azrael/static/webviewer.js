@@ -7,7 +7,7 @@ var StateVariable = function(pos, vel, orientation, scale, imass) {
          'position': pos,
          'velocityLin': vel,
          'velocityRot': [0, 0, 0],
-         'cshape': [0, 1, 1, 1]};
+         'cshapes': [0, 1, 1, 1]};
     return d
 }
 
@@ -191,7 +191,7 @@ function addTemplate(templateID, cs, vertices) {
 
 function spawn(templateID, pos, vel, orient, scale, imass) {
     var sv = StateVariable(pos, vel, orient, scale, imass)
-    sv.cshape = [4, 1, 1, 1]
+    sv.cshapes = [4, 1, 1, 1]
 
     var payload = {'name': null, 'templateID': templateID, 'sv': sv}
     var cmd = {'cmd': 'spawn', 'payload': payload}

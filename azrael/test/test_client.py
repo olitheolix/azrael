@@ -376,7 +376,7 @@ class TestClerk:
 
         # Create and apply a new State Vector.
         new_sv = bullet_data.MotionStateOverride(
-            position=[1, -1, 1], imass=2, scale=3, cshape=[getCSSphere()])
+            position=[1, -1, 1], imass=2, scale=3, cshapes=[getCSSphere()])
         assert client.setStateVariable(objID, new_sv).ok
 
         # Verify that the new attributes came into effect.
@@ -387,7 +387,7 @@ class TestClerk:
         assert ret_sv.imass == new_sv.imass
         assert ret_sv.scale == new_sv.scale
         assert np.array_equal(ret_sv.position, new_sv.position)
-        assert isEqualCS(ret_sv.cshape, [getCSSphere()])
+        assert isEqualCS(ret_sv.cshapes, [getCSSphere()])
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_getAllObjectIDs(self, client_type):
