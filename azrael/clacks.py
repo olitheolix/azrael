@@ -32,7 +32,6 @@ import os
 import time
 import json
 import logging
-import multiprocessing
 import tornado.websocket
 import tornado.httpserver
 import zmq.eventloop.zmqstream
@@ -215,7 +214,7 @@ class MyStaticFileHandler(tornado.web.StaticFileHandler):
                         'no-store, no-cache, must-revalidate, max-age=0')
 
 
-class ClacksServer(multiprocessing.Process):
+class ClacksServer(config.AzraelProcess):
     """
     Tornado server that constitutes Clacks.
 
@@ -229,6 +228,9 @@ class ClacksServer(multiprocessing.Process):
         self.terminate()
 
     def run(self):
+        # Call `run` method of `AzraelProcess` base class.
+        super().run()
+        
         # Not sure if this really does anything but it certainly does not hurt.
         self.daemon = True
         time.sleep(0.02)

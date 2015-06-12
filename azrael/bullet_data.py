@@ -26,7 +26,6 @@ point.
 """
 
 import sys
-import logging
 import numpy as np
 import azrael.config as config
 

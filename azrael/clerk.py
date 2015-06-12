@@ -35,8 +35,6 @@ import cytoolz
 import logging
 import traceback
 import subprocess
-import setproctitle
-import multiprocessing
 
 import numpy as np
 
@@ -56,7 +54,7 @@ from azrael.types import typecheck, RetVal, Template, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 
 
-class Clerk(multiprocessing.Process):
+class Clerk(config.AzraelProcess):
     """
     Administrate the simulation.
 
@@ -74,10 +72,6 @@ class Clerk(multiprocessing.Process):
     @typecheck
     def __init__(self):
         super().__init__()
-
-        # Create a Class-specific logger.
-        name = '.'.join([__name__, self.__class__.__name__])
-        self.logit = logging.getLogger(name)
 
         # Create a Dibbler instance to gain access to the model database.
         self.dibbler = dibbler.Dibbler()
@@ -221,8 +215,8 @@ class Clerk(multiprocessing.Process):
 
         :raises: None
         """
-        # Rename this process to simplify finding it in the process table.
-        setproctitle.setproctitle('killme Clerk')
+        # Call `run` method of `AzraelProcess` base class.
+        super().run()
 
         # Initialise ZeroMQ and create the command socket. All client request
         # will come through this socket.

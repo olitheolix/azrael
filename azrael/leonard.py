@@ -24,10 +24,7 @@ import zmq
 import time
 import signal
 import pickle
-import logging
 import itertools
-import setproctitle
-import multiprocessing
 import numpy as np
 
 import azrael.igor
@@ -236,7 +233,7 @@ def getFinalCollisionSets(
     return ret
 
 
-class LeonardBase(multiprocessing.Process):
+class LeonardBase(config.AzraelProcess):
     """
     Base class for Physics manager.
 
@@ -246,12 +243,6 @@ class LeonardBase(multiprocessing.Process):
     """
     def __init__(self):
         super().__init__()
-
-        # Create a Class-specific logger.
-        name = '.'.join([__name__, self.__class__.__name__])
-        self.logit = logging.getLogger(name)
-        self.logit.debug('mydebug')
-        self.logit.info('myinfo')
 
         # Create the DB handles.
         self._DB_SV = azrael.database.dbHandles['SV']
@@ -495,7 +486,8 @@ class LeonardBase(multiprocessing.Process):
         """
         Drive the periodic physics updates.
         """
-        setproctitle.setproctitle('killme ' + self.__class__.__name__)
+        # Call `run` method of `AzraelProcess` base class.
+        super().run()
 
         # Initialisation.
         self.setup()
@@ -975,7 +967,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
             self.allObjects[objID] = _MotionState(*sv)
 
 
-class LeonardWorkerZeroMQ(multiprocessing.Process):
+class LeonardWorkerZeroMQ(config.AzraelProcess):
     """
     Dedicated Worker to process Work Packages.
 
@@ -990,13 +982,6 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         # same ID and quit.
         assert stepsUntilQuit > 0
         self.stepsUntilQuit = stepsUntilQuit
-
-        # Create a Class-specific logger.
-        name = '.'.join([__name__, self.__class__.__name__])
-        self.logit = logging.getLogger(name)
-
-        # Record the PID of the parent.
-        self.parentPID = os.getpid()
 
         # Instantiate a Bullet engine.
         engine = azrael.bullet_api.PyBulletDynamicsWorld
@@ -1113,12 +1098,10 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         """
         Wait for Work Packages, process them, and return the results.
         """
-        try:
-            # Rename process to make it easy to find and kill them in the
-            # process table.
-            if os.getpid() != self.parentPID:
-                setproctitle.setproctitle('killme LeonardWorker')
+        # Call `run` method of `AzraelProcess` base class.
+        super().run()
 
+        try:
             # Setup ZeroMQ.
             ctx = zmq.Context()
             sock = ctx.socket(zmq.REQ)
@@ -1169,7 +1152,7 @@ class LeonardWorkerZeroMQ(multiprocessing.Process):
         print('Worker {} exited cleanly'.format(self.workerID))
 
 
-class WorkerManager(multiprocessing.Process):
+class WorkerManager(config.AzraelProcess):
     """
     Launch Worker processes and restart them as necessary.
 
@@ -1185,10 +1168,6 @@ class WorkerManager(multiprocessing.Process):
     def __init__(self, numWorkers: int, minSteps: int, maxSteps: int,
                  workerCls):
         super().__init__()
-
-        # Create logger instance for this class.
-        name = '.'.join([__name__, self.__class__.__name__])
-        self.logit = logging.getLogger(name)
 
         # Sanity checks.
         assert numWorkers > 0
@@ -1208,9 +1187,6 @@ class WorkerManager(multiprocessing.Process):
         """
         Start the initial collection of Workers and ensure they remain alive.
         """
-        # Rename the process.
-        setproctitle.setproctitle('killme ' + self.__class__.__name__)
-
         # Spawn the initial collection of Workers.
         delta = self.maxSteps - self.minSteps
         for ii in range(self.numWorkers):
@@ -1246,6 +1222,9 @@ class WorkerManager(multiprocessing.Process):
         """
         Wrapper around ``_run`` to intercept SIGTERM.
         """
+        # Call `run` method of `AzraelProcess` base class.
+        super().run()
+
         try:
             self._run()
         except KeyboardInterrupt:

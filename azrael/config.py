@@ -31,6 +31,8 @@ import sys
 import pymongo
 import logging
 import netifaces
+import setproctitle
+import multiprocessing
 
 # ---------------------------------------------------------------------------
 # Configure logging.
@@ -125,3 +127,34 @@ def getMongoClient():
     :raises: pymongo.errors.*
     """
     return pymongo.MongoClient(host=addr_database, port=port_database)
+
+
+class AzraelProcess(multiprocessing.Process):
+    """
+    Base class for processes spawned by Azrael.
+
+    This is a convenience wrapper around the multiprocessing.Process that
+    automatically sets up the logger and renames in the process table once it
+    forks.
+    """
+    def __init__(self):
+        super().__init__()
+
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
+
+        # Save the PID of the parent. This will allow the 'run' method to
+        # determine if it runs in thread or was actually forked into a new
+        # process.
+        self._parentPID = os.getpid()
+
+    def run(self):
+        # If this is a new process (instead of someone just calling this method
+        # directly) then change the name of the process in the Unix process
+        # table. This makes it easier to identify and kill the Azrael processes
+        # from the command shell.
+        if os.getpid() != self._parentPID:
+            procname = 'killme {}'.format(self.__class__.__name__)
+            setproctitle.setproctitle(procname)
+            del procname
