@@ -28,6 +28,7 @@ Global configuration parameters.
 """
 import os
 import sys
+import psutil
 import pymongo
 import logging
 import netifaces
@@ -158,3 +159,16 @@ class AzraelProcess(multiprocessing.Process):
             procname = 'Azrael: {}'.format(self.__class__.__name__)
             setproctitle.setproctitle(procname)
             del procname
+
+    def terminate(self):
+        """
+        Kill this process and *all* its descendants.
+        """
+        # Define the current process as the parent.
+        parent = psutil.Process(os.getpid())
+
+        # Iterate over all its childrent, grand-children, etc and kill them.
+        [_.kill() for _ in parent.children(recursive=True)]
+
+        # Kill this (parent) process as well.
+        super().terminate()
