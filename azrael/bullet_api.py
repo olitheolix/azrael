@@ -199,7 +199,7 @@ class PyBulletDynamicsWorld():
         body.applyForce(b_force, b_relpos)
         return RetVal(True, None, None)
 
-    def getObjectData(self, objID: int):
+    def getRigidBodyData(self, objID: int):
         """
         Return State Variables of all ``objIDs``.
 

@@ -590,7 +590,7 @@ class LeonardBullet(LeonardBase):
         # Retrieve all objects from Bullet, overwrite the state variables that
         # the user wanted to change explicitly (if any)
         for objID in self.allObjects:
-            ret = self.bullet.getObjectData(objID)
+            ret = self.bullet.getRigidBodyData(objID)
             if ret.ok:
                 self.allObjects[objID] = ret.data
 
@@ -707,7 +707,7 @@ class LeonardSweeping(LeonardBase):
 
             # Retrieve all objects from Bullet.
             for objID, sv in coll_SV.items():
-                ret = self.bullet.getObjectData(objID)
+                ret = self.bullet.getRigidBodyData(objID)
                 if ret.ok:
                     self.allObjects[objID] = ret.data
 
@@ -1083,7 +1083,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             # Retrieve the objects from Bullet again and update them in the DB.
             out = []
             for obj in worklist:
-                ret = self.bullet.getObjectData(obj.id)
+                ret = self.bullet.getRigidBodyData(obj.id)
                 sv = ret.data
                 if not ret.ok:
                     # Something went wrong. Reuse the old SV.

@@ -191,12 +191,12 @@ class TestBulletAPI:
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Request an invalid object ID.
-        ret = bullet.getObjectData(0)
+        ret = bullet.getRigidBodyData(0)
         assert not ret.ok
 
         # Send object to Bullet and request it back.
         bullet.setObjectData(0, obj_a)
-        ret = bullet.getObjectData(0)
+        ret = bullet.getRigidBodyData(0)
         assert ret.ok
         assert isEqualBD(obj_a, ret.data)
 
@@ -223,7 +223,7 @@ class TestBulletAPI:
 
         # Send object to Bullet and request it back.
         bullet.setObjectData(0, obj_a)
-        ret = bullet.getObjectData(0)
+        ret = bullet.getRigidBodyData(0)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
@@ -239,7 +239,7 @@ class TestBulletAPI:
             velocityRot=np.array([2.4, 2.6, 2.8], np.float64))
         assert obj_a is not None
         bullet.setObjectData(0, obj_a)
-        ret = bullet.getObjectData(0)
+        ret = bullet.getRigidBodyData(0)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
@@ -264,7 +264,7 @@ class TestBulletAPI:
         # The objects must not move because no forces are at play.
         bullet.setObjectData(objID, obj_a)
         bullet.compute([objID], dt, maxsteps)
-        ret = bullet.getObjectData(objID)
+        ret = bullet.getRigidBodyData(objID)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
@@ -278,13 +278,13 @@ class TestBulletAPI:
         applyForceFun(objID, force, np.zeros(3, np.float64))
 
         # Nothing must have happened because the simulation has not progressed.
-        ret = bullet.getObjectData(objID)
+        ret = bullet.getRigidBodyData(objID)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
         # Progress the simulation by another 'dt' seconds.
         bullet.compute([objID], dt, maxsteps)
-        ret = bullet.getObjectData(objID)
+        ret = bullet.getRigidBodyData(objID)
         assert ret.ok
 
         # The object must have accelerated and reached the linear velocity
@@ -318,7 +318,7 @@ class TestBulletAPI:
         # The objects must not move because no forces are at play.
         bullet.setObjectData(objID, obj_a)
         assert bullet.compute([objID], dt, maxsteps).ok
-        ret = bullet.getObjectData(objID)
+        ret = bullet.getRigidBodyData(objID)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
@@ -349,7 +349,7 @@ class TestBulletAPI:
         # The objects must not move because no forces are at play.
         bullet.setObjectData(objID, obj_a)
         bullet.compute([objID], dt, maxsteps)
-        ret = bullet.getObjectData(objID)
+        ret = bullet.getRigidBodyData(objID)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
@@ -358,13 +358,13 @@ class TestBulletAPI:
         bullet.applyForceAndTorque(objID, force, torque)
 
         # Nothing must have happened because the simulation has not progressed.
-        ret = bullet.getObjectData(objID)
+        ret = bullet.getRigidBodyData(objID)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
         # Progress the simulation for another second.
         bullet.compute([objID], dt, maxsteps)
-        ret = bullet.getObjectData(objID)
+        ret = bullet.getRigidBodyData(objID)
         assert ret.ok
         velLin, velRot = ret.data.velocityLin, ret.data.velocityRot
 
@@ -403,18 +403,18 @@ class TestBulletAPI:
         bullet = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Request an invalid object ID.
-        ret = bullet.getObjectData(0)
+        ret = bullet.getRigidBodyData(0)
         assert not ret.ok
 
         # Send object to Bullet and request it back.
         bullet.setObjectData(0, obj_a)
-        ret = bullet.getObjectData(0)
+        ret = bullet.getRigidBodyData(0)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
 
         # Delete the object. The attempt to request it afterwards must fail.
         assert bullet.removeRigidBody([0]).ok
-        assert not bullet.getObjectData(0).ok
+        assert not bullet.getRigidBodyData(0).ok
 
     def test_modify_mass(self):
         """
@@ -460,9 +460,9 @@ class TestBulletAPI:
 
         # The lighter sphere must have moved pretty exactly twice as far in
         # y-direction.
-        ret_a = bullet.getObjectData(objID_a)
+        ret_a = bullet.getRigidBodyData(objID_a)
         assert ret_a.ok
-        ret_b = bullet.getObjectData(objID_b)
+        ret_b = bullet.getRigidBodyData(objID_b)
         assert ret_b.ok
         assert abs(ret_a.data.position[1] - 2 * ret_b.data.position[1]) < 1E-5
 
@@ -502,8 +502,8 @@ class TestBulletAPI:
         bullet.compute([objID_a, objID_b], 1.0, 60)
 
         # Request the object back and inspect the collision shapes.
-        ret_a = bullet.getObjectData(objID_a)
-        ret_b = bullet.getObjectData(objID_b)
+        ret_a = bullet.getRigidBodyData(objID_a)
+        ret_b = bullet.getRigidBodyData(objID_b)
         assert ret_a.ok and ret_b.ok
         assert ret_a.data.cshapes[0].name.upper() == 'CSFOO'
         assert ret_b.data.cshapes[0].name.upper() == 'CSBAR'
@@ -515,7 +515,7 @@ class TestBulletAPI:
         # Enlarge the second object so that the spheres do not overlap.
         obj_b = obj_b._replace(scale=2.5)
         bullet.setObjectData(objID_b, obj_b)
-        ret = bullet.getObjectData(objID_b)
+        ret = bullet.getRigidBodyData(objID_b)
         assert ret.ok
         tmp_cs = bullet.rigidBodies[objID_b].getCollisionShape()
         assert tmp_cs.getChildShape(0).getRadius() == 2.5 * radius
@@ -559,10 +559,10 @@ class TestBulletAPI:
         bullet.compute([objID_a, objID_b], 1.0, 60)
 
         # Verify the collision shapes are as expected.
-        ret = bullet.getObjectData(objID_a)
+        ret = bullet.getRigidBodyData(objID_a)
         assert ret.ok
         assert ret.data.cshapes[0].name.upper() == 'CSSPHERE'
-        ret = bullet.getObjectData(objID_b)
+        ret = bullet.getRigidBodyData(objID_b)
         assert ret.ok
         assert ret.data.cshapes[0].name.upper() == 'CSSPHERE'
 
@@ -576,10 +576,10 @@ class TestBulletAPI:
         bullet.compute([objID_a, objID_b], 1.0, 60)
 
         # Verify the collision shapes have been updated to boxes.
-        ret = bullet.getObjectData(objID_a)
+        ret = bullet.getRigidBodyData(objID_a)
         assert ret.ok
         assert ret.data.cshapes[0].name.upper() == 'CSBOX'
-        ret = bullet.getObjectData(objID_b)
+        ret = bullet.getRigidBodyData(objID_b)
         assert ret.ok
         assert ret.data.cshapes[0].name.upper() == 'CSBOX'
 
@@ -614,8 +614,8 @@ class TestBulletAPI:
 
         # Step the simulation. Nothing must happen.
         bullet.compute([id_a, id_b], 1.0, 60)
-        ret_a = bullet.getObjectData(id_a)
-        ret_b = bullet.getObjectData(id_b)
+        ret_a = bullet.getRigidBodyData(id_a)
+        ret_b = bullet.getRigidBodyData(id_b)
         assert ret_a.ok and ret_b.ok
         assert np.allclose(ret_a.data.position, pos_a)
         assert np.allclose(ret_b.data.position, pos_b)
@@ -626,8 +626,8 @@ class TestBulletAPI:
         # Step the simulation. Both objects must have moved (almost) exactly
         # the same amount "delta".
         bullet.compute([id_a, id_b], 1.0, 60)
-        ret_a = bullet.getObjectData(id_a)
-        ret_b = bullet.getObjectData(id_b)
+        ret_a = bullet.getRigidBodyData(id_a)
+        ret_b = bullet.getRigidBodyData(id_b)
         assert ret_a.ok and ret_b.ok
         delta_a = np.array(ret_a.data.position) - np.array(pos_a)
         delta_b = np.array(ret_b.data.position) - np.array(pos_b)
@@ -644,8 +644,8 @@ class TestBulletAPI:
         bullet.setObjectData(id_a, obj_a)
         bullet.setObjectData(id_b, obj_b)
         bullet.compute([id_a, id_b], 1.0, 60)
-        ret_a = bullet.getObjectData(id_a)
-        ret_b = bullet.getObjectData(id_b)
+        ret_a = bullet.getRigidBodyData(id_a)
+        ret_b = bullet.getRigidBodyData(id_b)
         assert ret_a.ok and ret_b.ok
         assert np.allclose(ret_a.data.position, pos_a)
         assert np.allclose(ret_b.data.position, pos_b)
@@ -655,8 +655,8 @@ class TestBulletAPI:
         # constraint anymore.
         bullet.applyForceAndTorque(id_a, (-10, 0, 0), (0, 0, 0))
         bullet.compute([id_a, id_b], 1.0, 60)
-        ret_a = bullet.getObjectData(id_a)
-        ret_b = bullet.getObjectData(id_b)
+        ret_a = bullet.getRigidBodyData(id_a)
+        ret_b = bullet.getRigidBodyData(id_b)
         assert ret_a.ok and ret_b.ok
         assert not np.allclose(ret_a.data.position, pos_a)
         assert np.allclose(ret_b.data.position, pos_b)
@@ -700,8 +700,8 @@ class TestBulletAPI:
         # Step the simulation. Nothing must happen because no forces or
         # constraints act upon the objects.
         sim.compute([id_a, id_b], 1.0, 60)
-        ret_a = sim.getObjectData(id_a)
-        ret_b = sim.getObjectData(id_b)
+        ret_a = sim.getRigidBodyData(id_a)
+        ret_b = sim.getRigidBodyData(id_b)
         assert ret_a.ok and ret_b.ok
         assert np.allclose(ret_a.data.position, pos_a)
         assert np.allclose(ret_b.data.position, pos_b)
@@ -712,8 +712,8 @@ class TestBulletAPI:
 
         # Step the simulation --> the objects must move closer together.
         sim.compute([id_a, id_b], 1.0, 60)
-        ret_a = sim.getObjectData(id_a)
-        ret_b = sim.getObjectData(id_b)
+        ret_a = sim.getRigidBodyData(id_a)
+        ret_b = sim.getRigidBodyData(id_b)
         assert ret_a.ok and ret_b.ok
         assert ret_a.data.position[0] > pos_a[0]
         assert ret_b.data.position[0] < pos_b[0]
