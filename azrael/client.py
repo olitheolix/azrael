@@ -610,7 +610,7 @@ class Client():
         Return unpacked SV data.
 
         This is a convenience function only to avoid code duplication in
-        ``get{All}StateVariables``.
+        ``get{All}BodyStates``.
 
         The returned dictionary has the format:
           {objID_1: {'frag': [FragState(), ...], 'sv': RigidBodyState()},

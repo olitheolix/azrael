@@ -1094,7 +1094,7 @@ class Clerk(config.AzraelProcess):
 
     def _packSVData(self, SVs: dict):
         """
-        Compile the data structure returned by ``get{All}StateVariables``.
+        Compile the data structure returned by ``get{All}BodyStates``.
 
         This is a convenience function to remove code duplication.
 
