@@ -62,7 +62,7 @@ class TestClerk:
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
         frag = [MetaFragment('NoName', 'raw', createFragRaw())]
-        t1 = Template('_templateNone', [getCSEmpty()], frag, [], [])
+        t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
         ret = self.clerk.addTemplates([t1, t2, t3])
@@ -83,7 +83,7 @@ class TestClerk:
         assert not clerk.getTemplates(['blah']).ok
 
         # Clerk has a few default objects. This one has no collision shape...
-        name_1 = '_templateNone'
+        name_1 = '_templateEmpty'
         ret = clerk.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
         assert isEqualCS(ret.data[name_1]['cshape'], [getCSEmpty()])
@@ -310,7 +310,7 @@ class TestClerk:
 
         # Parameters and constants for this test.
         id_0, id_1 = 1, 2
-        templateID_0 = '_templateNone'
+        templateID_0 = '_templateEmpty'
         templateID_1 = '_templateCube'
         sv = bullet_data.MotionState()
 
@@ -353,7 +353,7 @@ class TestClerk:
 
         # All parameters are now valid. This must spawn an object with ID=1
         # because this is the first ID in an otherwise pristine system.
-        templateID = '_templateNone'
+        templateID = '_templateEmpty'
         ret = clerk.spawn([(templateID, sv_1)])
         assert (ret.ok, ret.data) == (True, (1, ))
 
@@ -408,7 +408,7 @@ class TestClerk:
         # net effect is that the spawn command must succeed but not spawn any
         # objects.
         sv_1 = bullet_data.MotionState(imass=1)
-        ret = clerk.spawn([('_templateNone', sv_1)])
+        ret = clerk.spawn([('_templateEmpty', sv_1)])
         assert ret == (True, None, tuple())
 
     def test_delete(self):
@@ -433,7 +433,7 @@ class TestClerk:
 
         # Spawn two default objects.
         sv = bullet_data.MotionState()
-        templateID = '_templateNone'
+        templateID = '_templateEmpty'
         ret = clerk.spawn([(templateID, sv), (templateID, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
 
@@ -472,7 +472,7 @@ class TestClerk:
         MS = bullet_data.MotionState
         sv_1 = MS(position=np.arange(3), velocityLin=[2, 4, 6])
         sv_2 = MS(position=[2, 4, 6], velocityLin=[6, 8, 10])
-        templateID = '_templateNone'
+        templateID = '_templateEmpty'
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -524,7 +524,7 @@ class TestClerk:
         MS = bullet_data.MotionState
         sv_1 = MS(position=np.arange(3), velocityLin=[2, 4, 6])
         sv_2 = MS(position=[2, 4, 6], velocityLin=[6, 8, 10])
-        templateID = '_templateNone'
+        templateID = '_templateEmpty'
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -571,7 +571,7 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Spawn a new object. It must have ID=1.
-        templateID = '_templateNone'
+        templateID = '_templateEmpty'
         ret = clerk.spawn([(templateID, sv)])
         assert (ret.ok, ret.data) == (True, (id_1, ))
 
@@ -628,7 +628,7 @@ class TestClerk:
 
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
-        templateID_1 = '_templateNone'
+        templateID_1 = '_templateEmpty'
         sv = bullet_data.MotionState()
 
         # Instantiate a Clerk.
@@ -1040,7 +1040,7 @@ class TestClerk:
 
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
-        templateID = '_templateNone'
+        templateID = '_templateEmpty'
         sv = bullet_data.MotionState()
 
         # Instantiate a Clerk.

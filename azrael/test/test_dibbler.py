@@ -101,7 +101,7 @@ class TestDibbler:
 
         # Define a template for this test.
         frag = [MetaFragment('NoNameRaw', 'raw', createFragRaw())]
-        t_raw = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
+        t_raw = Template('_templateEmpty', [0, 1, 1, 1], frag, [], [])
 
         # Add the first template and verify that the database now contains
         # exactly two files (a meta file, and the actual fragment data).
@@ -119,7 +119,7 @@ class TestDibbler:
 
         # Define a template for this test.
         frag = [MetaFragment('NoNameDae', 'dae', createFragDae())]
-        t_dae = Template('_templateNone', [0, 1, 1, 1], frag, [], [])
+        t_dae = Template('_templateEmpty', [0, 1, 1, 1], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
         assert dibbler.getNumFiles() == (True, None, 0)

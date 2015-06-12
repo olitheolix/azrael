@@ -97,7 +97,7 @@ class TestClerk:
         # their collision shapes are: none, sphere, cube.
         clerk = azrael.clerk.Clerk()
         frag = [MetaFragment('NoName', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
-        t1 = Template('_templateNone', [getCSEmpty()], frag, [], [])
+        t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
         ret = clerk.addTemplates([t1, t2, t3])
@@ -125,7 +125,7 @@ class TestClerk:
 
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
-        templateID_0 = '_templateNone'
+        templateID_0 = '_templateEmpty'
         templateID_1 = '_templateCube'
 
         # Spawn a new object. Its ID must be 1.
@@ -157,7 +157,7 @@ class TestClerk:
         assert not client.getTemplates(['blah']).ok
 
         # Clerk has default objects. This one has an empty collision shape...
-        name_1 = '_templateNone'
+        name_1 = '_templateEmpty'
         ret = client.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
         assert isEqualCS(ret.data[name_1].cs, [getCSEmpty()])
@@ -264,7 +264,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Constants and parameters for this test.
-        objID, templateID = 1, '_templateNone'
+        objID, templateID = 1, '_templateEmpty'
 
         # Spawn a new object from templateID. The new object must have objID=1.
         new_obj = {'template': templateID,
@@ -303,7 +303,7 @@ class TestClerk:
         client = self.clients[client_type]
 
         # Constants and parameters for this test.
-        templateID, objID_1 = '_templateNone', 1
+        templateID, objID_1 = '_templateEmpty', 1
 
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
@@ -356,7 +356,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Constants and parameters for this test.
-        templateID = '_templateNone'
+        templateID = '_templateEmpty'
         objID = 1
 
         # Spawn one of the default templates.
@@ -401,7 +401,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Constants and parameters for this test.
-        templateID, objID_1 = '_templateNone', 1
+        templateID, objID_1 = '_templateEmpty', 1
 
         # So far no objects have been spawned.
         ret = client.getAllObjectIDs()
