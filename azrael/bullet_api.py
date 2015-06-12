@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 """
-Provide various classes that abstract away the fact that we are using Bullet.
+Provide classes to create-, modify- and query dynamic simulations. The classes
+abstract away the particular physics engine (currently Bullet) used underneath.
 
 This module is the *one and only* module that actually imports the Bullet
-engine. This will make it possible (and easier) to swap out Bullet for another
-engine, should the need arise.
+engine (ie the wrapper called `azBullet`). This will make it easier to swap out
+Bullet for another engine at some point, should the need arise.
 """
 import sys
 import logging
