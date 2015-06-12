@@ -102,7 +102,7 @@ class Clerk(config.AzraelProcess):
                 protocol.FromClerk_GetStateVariable_Encode),
             'get_all_statevars': (
                 protocol.ToClerk_GetAllStateVariables_Decode,
-                self.getAllStateVariables,
+                self.getAllBodyStates,
                 protocol.FromClerk_GetAllStateVariables_Encode),
             'set_statevar': (
                 protocol.ToClerk_SetStateVector_Decode,
@@ -1164,7 +1164,7 @@ class Clerk(config.AzraelProcess):
         return self._packSVData(ret.data)
 
     @typecheck
-    def getAllStateVariables(self, dummy=None):
+    def getAllBodyStates(self, dummy=None):
         """
         Return all State Variables in a dictionary.
 
@@ -1180,7 +1180,7 @@ class Clerk(config.AzraelProcess):
         """
         with util.Timeit('leoAPI.getSV') as timeit:
             # Get the State Variables.
-            ret = leoAPI.getAllStateVariables()
+            ret = leoAPI.getAllBodyStates()
             if not ret.ok:
                 return ret
         return self._packSVData(ret.data)

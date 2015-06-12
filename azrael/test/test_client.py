@@ -310,7 +310,7 @@ class TestClerk:
 
         # Query the state variable for a non existing object.
         objID_tmp = 100
-        assert client.getAllStateVariables() == (True, None, {})
+        assert client.getAllBodyStates() == (True, None, {})
 
         ok, _, sv = client.getBodyStates(objID_tmp)
         assert (ok, sv) == (True, {objID_tmp: None})
@@ -329,8 +329,8 @@ class TestClerk:
         assert ret.ok and (len(ret.data) == 1)
         assert ret.data == {objID_1: None}
 
-        # getAllStateVariables must return an empty dictionary.
-        ret = client.getAllStateVariables()
+        # getAllBodyStates must return an empty dictionary.
+        ret = client.getAllBodyStates()
         assert ret.ok and (ret.data == {})
 
         # Run one Leonard step. This will pick up the newly spawned object and
@@ -340,7 +340,7 @@ class TestClerk:
         assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
         assert ret.data[objID_1] is not None
 
-        ret = client.getAllStateVariables()
+        ret = client.getAllBodyStates()
         assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
         assert ret.data[objID_1] is not None
 

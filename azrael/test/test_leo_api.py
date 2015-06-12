@@ -85,7 +85,7 @@ class TestClerk:
         assert isEqualBD(ret.data[id_0], data)
 
         # Verify that the system contains exactly one object.
-        ret = leoAPI.getAllStateVariables()
+        ret = leoAPI.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 1)
 
         # Remove object id_0.
@@ -94,7 +94,7 @@ class TestClerk:
 
         # Object must not exist anymore in the simulation.
         assert leoAPI.getBodyStates([id_0]) == (True, None, {id_0: None})
-        ret = leoAPI.getAllStateVariables()
+        ret = leoAPI.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 0)
 
     def test_add_get_multiple(self):
@@ -141,7 +141,7 @@ class TestClerk:
         assert isEqualBD(ret.data[id_1], data_1)
 
         # Query all objects at once.
-        ret = leoAPI.getAllStateVariables()
+        ret = leoAPI.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert isEqualBD(ret.data[id_0], data_0)
         assert isEqualBD(ret.data[id_1], data_1)

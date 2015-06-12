@@ -512,9 +512,9 @@ class TestClerk:
         assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
         assert isEqualBD(ret.data[objID_2]['sv'], sv_2)
 
-    def test_getAllStateVariables(self):
+    def test_getAllBodyStates(self):
         """
-        Test the 'getAllStateVariables' command in the Clerk.
+        Test the 'getAllBodyStates' command in the Clerk.
         """
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
@@ -530,7 +530,7 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Retrieve all SVs --> there must be none.
-        ret = clerk.getAllStateVariables()
+        ret = clerk.getAllBodyStates()
         assert (ret.ok, ret.data) == (True, {})
 
         # Spawn a new object and verify its ID.
@@ -539,7 +539,7 @@ class TestClerk:
 
         # Retrieve all SVs --> there must now be exactly one.
         leo.processCommandsAndSync()
-        ret = clerk.getAllStateVariables()
+        ret = clerk.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 1)
         assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
 
@@ -549,7 +549,7 @@ class TestClerk:
 
         # Retrieve all SVs --> there must now be exactly two.
         leo.processCommandsAndSync()
-        ret = clerk.getAllStateVariables()
+        ret = clerk.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
         assert isEqualBD(ret.data[objID_2]['sv'], sv_2)
@@ -1450,9 +1450,9 @@ class TestClerk:
         ret_frags = ret.data[objID]['frag']
         assert len(ret_frags) == len(frags)
 
-        # Same as before, but this time use 'getAllStateVariables' instead of
+        # Same as before, but this time use 'getAllBodyStates' instead of
         # 'getBodyStates'.
-        ret = clerk.getAllStateVariables()
+        ret = clerk.getAllBodyStates()
         assert ret.ok
         ret_frags = ret.data[objID]['frag']
         assert len(ret_frags) == len(frags)

@@ -363,7 +363,7 @@ def _updateRigidBodyStateTuple(orig: _RigidBodyState,
     return _RigidBodyState(**dict_orig)
 
 
-def getAllStateVariables():
+def getAllBodyStates():
     """
     Return a dictionary of {objID: SV} all objects in the simulation.
 

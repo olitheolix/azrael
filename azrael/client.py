@@ -666,7 +666,7 @@ class Client():
         return self._unpackSVData(ret.data)
 
     @typecheck
-    def getAllStateVariables(self):
+    def getAllBodyStates(self):
         """
         Return the State Variables for all objects in the simulation.
 
