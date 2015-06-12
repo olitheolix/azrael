@@ -106,7 +106,7 @@ class RigidBodyStateOverride(_RigidBodyState):
     """
     Create a ``_RigidBodyState`` named tuple.
 
-    The only difference between this class and ``bullet_data.RigidBodyState`` is
+    The only difference between this class and ``rb_state.RigidBodyState`` is
     that this class permits *None* values.
     """
     @typecheck

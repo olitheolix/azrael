@@ -47,7 +47,7 @@ import azrael.dibbler as dibbler
 import azrael.database as database
 import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
-import azrael.bullet_data as bullet_data
+import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, Template, CollShapeMeta
@@ -461,7 +461,7 @@ class Clerk(config.AzraelProcess):
 
             # Create the state variables that encode the just determined
             # position and speed.
-            sv = bullet_data.RigidBodyState(
+            sv = rb_state.RigidBodyState(
                 position=pos, velocityLin=velocityLin,
                 orientation=sv_parent.orientation)
 
@@ -804,7 +804,7 @@ class Clerk(config.AzraelProcess):
                 assert len(ii) == 2
                 templateID, sv = ii
                 assert isinstance(templateID, str)
-                assert isinstance(sv, bullet_data._RigidBodyState)
+                assert isinstance(sv, rb_state._RigidBodyState)
                 del templateID, sv
         except AssertionError:
             return RetVal(False, '<spawn> received invalid arguments', None)
@@ -1036,7 +1036,7 @@ class Clerk(config.AzraelProcess):
 
     @typecheck
     def setStateVariable(self, objID: int,
-                         data: bullet_data.RigidBodyStateOverride):
+                         data: rb_state.RigidBodyStateOverride):
         """
         Set the State Variables of ``objID`` to ``data``.
 

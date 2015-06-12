@@ -40,7 +40,7 @@ import azrael.protocol as protocol
 
 from azrael.types import typecheck, RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
-from azrael.bullet_data import RigidBodyStateOverride, _RigidBodyState
+from azrael.rb_state import RigidBodyStateOverride, _RigidBodyState
 
 
 class Client():

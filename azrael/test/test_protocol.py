@@ -25,7 +25,7 @@ import azrael.parts as parts
 import azrael.config as config
 import azrael.protocol as protocol
 import azrael.physics_interface as physAPI
-import azrael.bullet_data as bullet_data
+import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.test.test_bullet_api import isEqualBD
@@ -153,8 +153,8 @@ def test_GetStateVariable():
     """
     Test codec for RigidBodyState tuple.
     """
-    objs = [{'frag': {}, 'sv': bullet_data.RigidBodyState()},
-            {'frag': {}, 'sv': bullet_data.RigidBodyState()}]
+    objs = [{'frag': {}, 'sv': rb_state.RigidBodyState()},
+            {'frag': {}, 'sv': rb_state.RigidBodyState()}]
     objIDs = [1, 2]
 
     # ----------------------------------------------------------------------
@@ -190,7 +190,7 @@ def test_GetStateVariable():
 
     # Verify.
     dec_sv = dec_sv.data
-    dec_sv = {int(_): bullet_data._RigidBodyState(**dec_sv[_]['sv'])
+    dec_sv = {int(_): rb_state._RigidBodyState(**dec_sv[_]['sv'])
               for _ in dec_sv}
     assert isEqualBD(dec_sv[1], objs[0]['sv'])
     assert isEqualBD(dec_sv[2], objs[1]['sv'])

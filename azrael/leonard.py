@@ -33,7 +33,7 @@ import azrael.vectorgrid
 import azrael.bullet_api
 import azrael.util as util
 import azrael.config as config
-import azrael.bullet_data as bullet_data
+import azrael.rb_state as rb_state
 import azrael.physics_interface as physAPI
 
 from IPython import embed as ipshell
@@ -41,8 +41,8 @@ from azrael.types import _RigidBodyState
 from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Convenience.
-RigidBodyState = bullet_data.RigidBodyState
-RigidBodyStateOverride = bullet_data.RigidBodyStateOverride
+RigidBodyState = rb_state.RigidBodyState
+RigidBodyStateOverride = rb_state.RigidBodyStateOverride
 
 
 @typecheck

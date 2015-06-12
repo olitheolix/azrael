@@ -23,7 +23,7 @@ import numpy as np
 import azrael.database
 import azrael.leonard as leonard
 import azrael.physics_interface as physAPI
-import azrael.bullet_data as bullet_data
+import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
@@ -31,8 +31,8 @@ from azrael.test.test_bullet_api import isEqualBD
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 
-RigidBodyState = bullet_data.RigidBodyState
-RigidBodyStateOverride = bullet_data.RigidBodyStateOverride
+RigidBodyState = rb_state.RigidBodyState
+RigidBodyStateOverride = rb_state.RigidBodyStateOverride
 
 
 class TestClerk:
@@ -351,8 +351,8 @@ class TestClerk:
         ``RigidBodyState`` function defines what constitutes as "valid".
         """
         # Convenience.
-        RigidBodyState = bullet_data.RigidBodyState
-        RigidBodyStateOverride = bullet_data.RigidBodyStateOverride
+        RigidBodyState = rb_state.RigidBodyState
+        RigidBodyStateOverride = rb_state.RigidBodyStateOverride
 
         # Valid RigidBodyState and RigidBodyStateOverride calls.
         assert RigidBodyState() is not None

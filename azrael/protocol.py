@@ -43,7 +43,7 @@ should make it possible to write clients in other languages.
 import base64
 import azrael.util
 import azrael.igor
-import azrael.bullet_data as bullet_data
+import azrael.rb_state as rb_state
 import azrael.physics_interface as physics_interface
 
 import numpy as np
@@ -247,8 +247,8 @@ def ToClerk_SetStateVector_Decode(payload: dict):
 
     # Convert the state variable into a RigidBodyStateOverride instance.
     sv = payload['sv']
-    tmp = dict(zip(bullet_data.RigidBodyStateOverride._fields, sv))
-    sv = bullet_data.RigidBodyStateOverride(**tmp)
+    tmp = dict(zip(rb_state.RigidBodyStateOverride._fields, sv))
+    sv = rb_state.RigidBodyStateOverride(**tmp)
 
     return True, (objID, sv)
 
@@ -435,8 +435,8 @@ def ToClerk_Spawn_Encode(objectInfos: (tuple, list)):
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
     # Convenience.
-    RigidBodyState = bullet_data.RigidBodyState
-    RigidBodyStateOverride = bullet_data.RigidBodyStateOverride
+    RigidBodyState = rb_state.RigidBodyState
+    RigidBodyStateOverride = rb_state.RigidBodyStateOverride
     _updateRigidBodyStateTuple = physics_interface._updateRigidBodyStateTuple
 
     out = []
