@@ -736,8 +736,9 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Worker terminate automatically after a certain number of processed
         # Work Packages. The precise number is a constructor argument and the
         # following two variables simply specify the range. The final number
-        # will be chosen randomly from this interval (different for every Worke
-        # instance to avoid the situation where all die simultaneously).
+        # will be chosen randomly from this interval (different for every
+        # Worker instance to minimise the probability that all terminate
+        # simultaneously).
         self.minSteps, self.maxSteps = (500, 700)
 
         # Initialise worker manager handle.
@@ -768,7 +769,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
             self.ctx.destroy()
 
     def setup(self):
-        # Start the Worker manager which, in turn, will spawn the workers.
+        # Start the WorkerManager which, in turn, will spawn the workers.
         self.workermanager = WorkerManager(
             self.numWorkers, self.minSteps,
             self.maxSteps, LeonardWorkerZeroMQ)
