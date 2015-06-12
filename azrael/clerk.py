@@ -96,15 +96,15 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_Remove_Decode,
                 self.removeObject,
                 protocol.FromClerk_Remove_Encode),
-            'get_statevar': (
+            'get_body_states': (
                 protocol.ToClerk_GetBodyState_Decode,
                 self.getBodyStates,
                 protocol.FromClerk_GetBodyState_Encode),
-            'get_all_statevars': (
+            'get_all_body_states': (
                 protocol.ToClerk_GetAllBodyStates_Decode,
                 self.getAllBodyStates,
                 protocol.FromClerk_GetAllBodyStates_Encode),
-            'set_statevar': (
+            'set_body_states': (
                 protocol.ToClerk_SetBodyState_Decode,
                 self.setBodyState,
                 protocol.FromClerk_SetBodyState_Encode),

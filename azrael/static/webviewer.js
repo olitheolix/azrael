@@ -224,7 +224,7 @@ function getTemplateID(objID) {
 }
 
 function getStateVariable(objID) {
-    var cmd = {'cmd': 'get_statevar', 'payload': {'objIDs': objID}}
+    var cmd = {'cmd': 'get_body_states', 'payload': {'objIDs': objID}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
@@ -235,7 +235,7 @@ function getStateVariable(objID) {
 
 
 function getAllStateVariables() {
-    var cmd = {'cmd': 'get_all_statevars', 'payload': {}}
+    var cmd = {'cmd': 'get_all_body_states', 'payload': {}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)

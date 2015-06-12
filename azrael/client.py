@@ -99,13 +99,13 @@ class Client():
             'add_templates': (
                 protocol.ToClerk_AddTemplates_Encode,
                 protocol.FromClerk_AddTemplates_Decode),
-            'get_statevar': (
+            'get_body_states': (
                 protocol.ToClerk_GetBodyState_Encode,
                 protocol.FromClerk_GetBodyState_Decode),
-            'get_all_statevars': (
+            'get_all_body_states': (
                 protocol.ToClerk_GetAllBodyStates_Encode,
                 protocol.FromClerk_GetAllBodyStates_Decode),
-            'set_statevar': (
+            'set_body_states': (
                 protocol.ToClerk_SetBodyState_Encode,
                 protocol.FromClerk_SetBodyState_Decode),
             'set_force': (
@@ -660,7 +660,7 @@ class Client():
             assert objID >= 0
 
         # Pass on the request to Clerk.
-        ret = self.serialiseAndSend('get_statevar', objIDs)
+        ret = self.serialiseAndSend('get_body_states', objIDs)
         if not ret.ok:
             return ret
         return self._unpackSVData(ret.data)
@@ -674,7 +674,7 @@ class Client():
         :rtype: dict
         """
         # Pass on the request to Clerk.
-        ret = self.serialiseAndSend('get_all_statevars')
+        ret = self.serialiseAndSend('get_all_body_states')
         if not ret.ok:
             return ret
         return self._unpackSVData(ret.data)
@@ -693,7 +693,7 @@ class Client():
         :return: Success
         """
         new_SV = tuple(new_SV)
-        return self.serialiseAndSend('set_statevar', objID, new_SV)
+        return self.serialiseAndSend('set_body_states', objID, new_SV)
 
     @typecheck
     def setForce(self, objID: int, force: (tuple, list, np.ndarray)):

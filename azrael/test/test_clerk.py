@@ -459,9 +459,9 @@ class TestClerk:
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
-    def test_get_statevar(self):
+    def test_getBodyStates(self):
         """
-        Test the 'get_statevar' command in the Clerk.
+        Test the 'getBodyStates' command in the Clerk.
         """
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
