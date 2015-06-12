@@ -34,7 +34,7 @@ import azrael.bullet_api
 import azrael.util as util
 import azrael.config as config
 import azrael.rb_state as rb_state
-import azrael.physics_interface as physAPI
+import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
 from azrael.types import _RigidBodyState
@@ -382,7 +382,7 @@ class LeonardBase(config.AzraelProcess):
         :return bool: Success.
         """
         # Fetch (and de-queue) all pending commands.
-        ret = physAPI.dequeueCommands()
+        ret = leoAPI.dequeueCommands()
         if not ret.ok:
             msg = 'Cannot fetch commands'
             self.logit.error(msg)
@@ -413,7 +413,7 @@ class LeonardBase(config.AzraelProcess):
                 self.allAABBs[objID] = float(doc['AABB'])
 
         # Update State Vectors.
-        fun = physAPI._updateRigidBodyStateTuple
+        fun = leoAPI._updateRigidBodyStateTuple
         for doc in cmds['modify']:
             objID, sv_new = doc['objID'], doc['sv']
             if objID in self.allObjects:

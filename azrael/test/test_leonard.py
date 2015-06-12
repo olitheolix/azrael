@@ -7,7 +7,7 @@ import azrael.vectorgrid
 
 import numpy as np
 import azrael.rb_state as rb_state
-import azrael.physics_interface as physAPI
+import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
 from azrael.test.test_bullet_api import isEqualBD
@@ -147,16 +147,16 @@ class TestLeonardAllEngines:
         del p, vl, vr
 
         # Spawn a new object. It must have ID=1.
-        assert physAPI.addCmdSpawn([(id_1, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_1, sv, aabb)]).ok
 
         # Update the object's State Vector.
-        assert physAPI.addCmdModifyStateVariable(id_1, data).ok
+        assert leoAPI.addCmdModifyStateVariable(id_1, data).ok
 
         # Sync the commands to Leonard.
         leo.processCommandsAndSync()
 
         # Verify that the attributes were correctly updated.
-        ret = physAPI.getStateVariables([id_1])
+        ret = leoAPI.getStateVariables([id_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
         sv = ret.data[id_1]
         assert np.array_equal(sv.position, data.position)
@@ -180,11 +180,11 @@ class TestLeonardAllEngines:
 
         # Spawn an object.
         objID, aabb = 1, 1
-        assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
 
         # Verify the SV data.
         leo.processCommandsAndSync()
-        ret = physAPI.getStateVariables([objID])
+        ret = leoAPI.getStateVariables([objID])
         assert ret.ok
         assert ret.data[objID].imass == 2
         assert ret.data[objID].scale == 3
@@ -195,11 +195,11 @@ class TestLeonardAllEngines:
         # Update the object's SV data.
         sv_new = rb_state.RigidBodyStateOverride(
             imass=4, scale=5, cshapes=cshape_box)
-        assert physAPI.addCmdModifyStateVariable(objID, sv_new).ok
+        assert leoAPI.addCmdModifyStateVariable(objID, sv_new).ok
 
         # Verify the SV data.
         leo.processCommandsAndSync()
-        ret = physAPI.getStateVariables([objID])
+        ret = leoAPI.getStateVariables([objID])
         assert (ret.ok, len(ret.data)) == (True, 1)
         sv = ret.data[objID]
         assert (sv.imass == 4) and (sv.scale == 5)
@@ -221,22 +221,22 @@ class TestLeonardAllEngines:
         sv = rb_state.RigidBodyState()
 
         # Spawn an object.
-        assert physAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leonard.step(1.0, 60)
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
         # Give the object a velocity.
         sv = rb_state.RigidBodyStateOverride(velocityLin=np.array([1, 0, 0]))
-        assert physAPI.addCmdModifyStateVariable(id_0, sv).ok
+        assert leoAPI.addCmdModifyStateVariable(id_0, sv).ok
 
         # Advance the simulation by another second and verify the objects have
         # moved accordingly.
         leonard.step(1.0, 60)
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         assert 0.9 <= ret.data[id_0].position[0] < 1.1
         assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
@@ -257,14 +257,14 @@ class TestLeonardAllEngines:
 
         # Create two objects.
         tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
-        assert physAPI.addCmdSpawn(tmp).ok
+        assert leoAPI.addCmdSpawn(tmp).ok
 
         # Advance the simulation by 1s and query the states of both objects.
         leonard.step(1.0, 60)
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         pos_0 = ret.data[id_0].position
-        ret = physAPI.getStateVariables([id_1])
+        ret = leoAPI.getStateVariables([id_1])
         assert ret.ok
         pos_1 = ret.data[id_1].position
 
@@ -302,7 +302,7 @@ class TestLeonardAllEngines:
         # Add all objects to the SV DB.
         aabb = 1
         for objID, sv in zip(all_id, SVs):
-            assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+            assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
         del SVs
 
         # Retrieve all SVs as Leonard does.
@@ -370,11 +370,11 @@ class TestLeonardAllEngines:
         sv = rb_state.RigidBodyState()
 
         # Spawn one object.
-        assert physAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leonard.step(1.0, 60)
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
@@ -389,7 +389,7 @@ class TestLeonardAllEngines:
 
         # Step the simulation and verify the object remained where it was.
         leonard.step(1.0, 60)
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
@@ -401,7 +401,7 @@ class TestLeonardAllEngines:
         # Step the simulation and verify the object moved accordingly.
         leonard.step(1.0, 60)
 
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         assert 0.4 <= ret.data[id_0].position[0] < 0.6
         assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
@@ -454,7 +454,7 @@ class TestLeonardOther:
 
         # Create two objects.
         tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
-        assert physAPI.addCmdSpawn(tmp).ok
+        assert leoAPI.addCmdSpawn(tmp).ok
 
         # Advance the simulation by 1s, but use many small time steps. This
         # ensures that the Workers will restart themselves frequently.
@@ -462,10 +462,10 @@ class TestLeonardOther:
             leonard.step(1.0 / 60, 1)
 
         # Query the states of both objects.
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         pos_0 = ret.data[id_0].position
-        ret = physAPI.getStateVariables([id_1])
+        ret = leoAPI.getStateVariables([id_1])
         assert ret.ok
         pos_1 = ret.data[id_1].position
 
@@ -598,7 +598,7 @@ class TestLeonardOther:
 
         # Add two new objects to Leonard.
         tmp = [(id_1, sv_1, aabb), (id_2, sv_2, aabb)]
-        assert physAPI.addCmdSpawn(tmp).ok
+        assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
         # Create a Work Package with two objects. The WPID must be 1.
@@ -639,7 +639,7 @@ class TestLeonardOther:
 
         # Spawn new objects.
         tmp = [(id_1, data_1, aabb), (id_2, data_2, aabb)]
-        assert physAPI.addCmdSpawn(tmp).ok
+        assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
         # Create a Work Package and verify its content.
@@ -673,7 +673,7 @@ class TestLeonardOther:
 
         # Spawn two objects.
         tmp = [(id_1, sv_1, aabb), (id_2, sv_2, aabb)]
-        assert physAPI.addCmdSpawn(tmp).ok
+        assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
         # Verify the local cache (forces and torques must default to zero).
@@ -685,7 +685,7 @@ class TestLeonardOther:
         del tmp
 
         # Remove first object.
-        assert physAPI.addCmdRemoveObject(id_1).ok
+        assert leoAPI.addCmdRemoveObject(id_1).ok
         leo.processCommandsAndSync()
         assert id_1 not in leo.allObjects
         assert id_1 not in leo.allForces
@@ -694,20 +694,20 @@ class TestLeonardOther:
         pos = [10, 11.5, 12]
         sv_3 = rb_state.RigidBodyStateOverride(position=pos)
         assert leo.allObjects[id_2].position == [0, 0, 0]
-        assert physAPI.addCmdModifyStateVariable(id_2, sv_3).ok
+        assert leoAPI.addCmdModifyStateVariable(id_2, sv_3).ok
         leo.processCommandsAndSync()
         assert leo.allObjects[id_2].position == pos
 
         # Apply a direct force and torque to id_2.
         force, torque = [1, 2, 3], [4, 5, 6]
-        assert physAPI.addCmdDirectForce(id_2, force, torque).ok
+        assert leoAPI.addCmdDirectForce(id_2, force, torque).ok
         leo.processCommandsAndSync()
         assert leo.allForces[id_2].forceDirect == force
         assert leo.allForces[id_2].torqueDirect == torque
 
         # Specify a new force- and torque value due to booster activity.
         force, torque = [1, 2, 3], [4, 5, 6]
-        assert physAPI.addCmdBoosterForce(id_2, force, torque).ok
+        assert leoAPI.addCmdBoosterForce(id_2, force, torque).ok
         leo.processCommandsAndSync()
         assert leo.allForces[id_2].forceBoost == force
         assert leo.allForces[id_2].torqueBoost == torque
@@ -726,7 +726,7 @@ class TestLeonardOther:
         objID, aabb = 1, 1
 
         # Spawn object.
-        assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
         leo.processCommandsAndSync()
 
         # Initial force and torque must be zero.
@@ -736,7 +736,7 @@ class TestLeonardOther:
         del tmp
 
         # Change the direct force and verify that Leonard does not reset it.
-        assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
+        assert leoAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
         for ii in range(10):
             leo.processCommandsAndSync()
             tmp = leo.allForces[objID]
@@ -747,7 +747,7 @@ class TestLeonardOther:
 
         # Change the booster force and verify that Leonard does not change
         # it (or the direct force specified earlier)
-        assert physAPI.addCmdBoosterForce(objID, [-1, -2, -3], [-4, -5, -6]).ok
+        assert leoAPI.addCmdBoosterForce(objID, [-1, -2, -3], [-4, -5, -6]).ok
         for ii in range(10):
             leo.processCommandsAndSync()
             tmp = leo.allForces[objID]
@@ -757,7 +757,7 @@ class TestLeonardOther:
             assert tmp.torqueBoost == [-4, -5, -6]
 
         # Change the direct forces again.
-        assert physAPI.addCmdDirectForce(objID, [3, 2, 1], [6, 5, 4]).ok
+        assert leoAPI.addCmdDirectForce(objID, [3, 2, 1], [6, 5, 4]).ok
         for ii in range(10):
             leo.processCommandsAndSync()
             tmp = leo.allForces[objID]
@@ -767,7 +767,7 @@ class TestLeonardOther:
             assert tmp.torqueBoost == [-4, -5, -6]
 
         # Change the booster forces again.
-        assert physAPI.addCmdBoosterForce(objID, [-3, -2, -1], [-6, -5, -4]).ok
+        assert leoAPI.addCmdBoosterForce(objID, [-3, -2, -1], [-6, -5, -4]).ok
         for ii in range(10):
             leo.processCommandsAndSync()
             tmp = leo.allForces[objID]
@@ -789,7 +789,7 @@ class TestLeonardOther:
         orient = np.array([0, 0, 0, 1])
         sv = rb_state.RigidBodyState(imass=1, orientation=orient)
         objID, aabb = 1, 1
-        assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
         leo.processCommandsAndSync()
         del sv, aabb
 
@@ -797,24 +797,24 @@ class TestLeonardOther:
         assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
 
         # Change the direct force.
-        assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
+        assert leoAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
         leo.processCommandsAndSync()
         assert leo.totalForceAndTorque(objID) == ([1, 2, 3], [4, 5, 6])
 
         # Change the direct force.
-        assert physAPI.addCmdDirectForce(objID, [1, 2, 30], [4, 5, 60]).ok
+        assert leoAPI.addCmdDirectForce(objID, [1, 2, 30], [4, 5, 60]).ok
         leo.processCommandsAndSync()
         assert leo.totalForceAndTorque(objID) == ([1, 2, 30], [4, 5, 60])
 
         # Reset the direct force and change the booster force.
-        assert physAPI.addCmdDirectForce(objID, [0, 0, 0], [0, 0, 0]).ok
-        assert physAPI.addCmdBoosterForce(objID, [-1, -2, -3], [-4, -5, -6]).ok
+        assert leoAPI.addCmdDirectForce(objID, [0, 0, 0], [0, 0, 0]).ok
+        assert leoAPI.addCmdBoosterForce(objID, [-1, -2, -3], [-4, -5, -6]).ok
         leo.processCommandsAndSync()
         assert leo.totalForceAndTorque(objID) == ([-1, -2, -3], [-4, -5, -6])
 
         # Direct- and booste forces must perfectly balance each other.
-        assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
-        assert physAPI.addCmdBoosterForce(objID, [-1, -2, -3], [-4, -5, -6]).ok
+        assert leoAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
+        assert leoAPI.addCmdBoosterForce(objID, [-1, -2, -3], [-4, -5, -6]).ok
         leo.processCommandsAndSync()
         assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
 
@@ -832,7 +832,7 @@ class TestLeonardOther:
         orient = np.array([1, 0, 0, 0])
         sv = rb_state.RigidBodyState(imass=1, orientation=orient)
         objID, aabb = 1, 1
-        assert physAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
         leo.processCommandsAndSync()
         del sv, aabb
 
@@ -840,7 +840,7 @@ class TestLeonardOther:
         assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
 
         # Add booster force in z-direction.
-        assert physAPI.addCmdBoosterForce(objID, [1, 2, 3], [-1, -2, -3]).ok
+        assert leoAPI.addCmdBoosterForce(objID, [1, 2, 3], [-1, -2, -3]).ok
         leo.processCommandsAndSync()
 
         # The net forces in must have their signs flipped in the y/z
@@ -849,8 +849,8 @@ class TestLeonardOther:
         assert leo.totalForceAndTorque(objID) == ([1, -2, -3], [-1, 2, 3])
 
         # The object's rotation must not effect the direct force and torque.
-        assert physAPI.addCmdBoosterForce(objID, [0, 0, 0], [0, 0, 0]).ok
-        assert physAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
+        assert leoAPI.addCmdBoosterForce(objID, [0, 0, 0], [0, 0, 0]).ok
+        assert leoAPI.addCmdDirectForce(objID, [1, 2, 3], [4, 5, 6]).ok
         leo.processCommandsAndSync()
         assert leo.totalForceAndTorque(objID) == ([1, 2, 3], [4, 5, 6])
 
@@ -956,11 +956,11 @@ class TestLeonardOther:
         self.igor.addConstraints([con])
 
         # Spawn both objects.
-        assert physAPI.addCmdSpawn([(id_a, sv_a, aabb), (id_b, sv_b, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_a, sv_a, aabb), (id_b, sv_b, aabb)]).ok
         leo.processCommandsAndSync()
 
         # Apply a force to the left sphere only.
-        assert physAPI.addCmdDirectForce(id_a, [-10, 0, 0], [0, 0, 0]).ok
+        assert leoAPI.addCmdDirectForce(id_a, [-10, 0, 0], [0, 0, 0]).ok
         leo.processCommandsAndSync()
 
         # Both object must have moved the same distance 'delta' because they
@@ -979,7 +979,7 @@ class TestLeonardOther:
         # right object and verify that the left continues to move left and the
         # right does not.
         assert self.igor.deleteConstraints([con]) == (True, None, 1)
-        assert physAPI.addCmdDirectForce(id_b, [10, 0, 0], [0, 0, 0]).ok
+        assert leoAPI.addCmdDirectForce(id_b, [10, 0, 0], [0, 0, 0]).ok
         leo.processCommandsAndSync()
         leo.step(1.0, 60)
 

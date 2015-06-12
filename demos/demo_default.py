@@ -49,7 +49,7 @@ import azrael.startup
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
-import azrael.physics_interface as physAPI
+import azrael.leo_api as leoAPI
 del p
 
 from IPython import embed as ipshell
@@ -59,7 +59,7 @@ from azrael.types import CollShapeBox
 
 
 # Convenience.
-RigidBodyStateOverride = physAPI.RigidBodyStateOverride
+RigidBodyStateOverride = leoAPI.RigidBodyStateOverride
 
 
 def parseCommandLine():
@@ -537,7 +537,7 @@ class ResetSim(multiprocessing.Process):
             # Forcefully reset the position and velocity of every object. Do
             # this several times since network latency may result in some
             # objects being reset sooner than others.
-            RigidBodyStateOverride = azrael.physics_interface.RigidBodyStateOverride
+            RigidBodyStateOverride = azrael.leo_api.RigidBodyStateOverride
             for ii in range(5):
                 for objID, SV in allowed_objIDs.items():
                     tmp = RigidBodyStateOverride(

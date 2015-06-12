@@ -43,8 +43,8 @@ import azrael.client
 import azrael.parts as parts
 import azrael.util as util
 import azrael.config as config
+import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
-import azrael.physics_interface as physAPI
 
 from azrael.types import Template, MetaFragment, FragRaw, FragState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
@@ -54,7 +54,7 @@ from azrael.types import Constraint6DofSpring2
 from IPython import embed as ipshell
 
 # Convenience.
-RigidBodyStateOverride = physAPI.RigidBodyStateOverride
+RigidBodyStateOverride = leoAPI.RigidBodyStateOverride
 
 
 def parseCommandLine():

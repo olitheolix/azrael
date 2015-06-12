@@ -22,7 +22,7 @@ import numpy as np
 
 import azrael.database
 import azrael.leonard as leonard
-import azrael.physics_interface as physAPI
+import azrael.leo_api as leoAPI
 import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
@@ -61,40 +61,40 @@ class TestClerk:
         id_0, id_1, aabb = 0, 1, 0
 
         # The number of SV entries must now be zero.
-        assert physAPI.getNumObjects() == 0
+        assert leoAPI.getNumObjects() == 0
 
         # Query an object. Since none exists yet this must fail.
-        assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
+        assert leoAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
         data = RigidBodyState(cshapes=[getCSSphere('cssphere')])
 
         # Add the object to the DB with ID=0.
-        assert physAPI.addCmdSpawn([(id_0, data, aabb)])
+        assert leoAPI.addCmdSpawn([(id_0, data, aabb)])
         leo.processCommandsAndSync()
 
         # Query the object. This must return the SV data directly.
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         assert isEqualBD(ret.data[id_0], data)
 
         # Query the same object but supply it as a list. This must return a
         # list with one element which is the exact same object as before.
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         assert isEqualBD(ret.data[id_0], data)
 
         # Verify that the system contains exactly one object.
-        ret = physAPI.getAllStateVariables()
+        ret = leoAPI.getAllStateVariables()
         assert (ret.ok, len(ret.data)) == (True, 1)
 
         # Remove object id_0.
-        assert physAPI.addCmdRemoveObject(id_0).ok
+        assert leoAPI.addCmdRemoveObject(id_0).ok
         leo.processCommandsAndSync()
 
         # Object must not exist anymore in the simulation.
-        assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
-        ret = physAPI.getAllStateVariables()
+        assert leoAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
+        ret = leoAPI.getAllStateVariables()
         assert (ret.ok, len(ret.data)) == (True, 0)
 
     def test_add_get_multiple(self):
@@ -108,8 +108,8 @@ class TestClerk:
         id_0, id_1, aabb = 0, 1, 0
 
         # The number of SV entries must now be zero.
-        assert physAPI.getNumObjects() == 0
-        assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
+        assert leoAPI.getNumObjects() == 0
+        assert leoAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
         data_0 = RigidBodyState(position=[0, 0, 0])
@@ -117,31 +117,31 @@ class TestClerk:
 
         # Add the objects to the DB.
         tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
-        assert physAPI.addCmdSpawn(tmp)
+        assert leoAPI.addCmdSpawn(tmp)
         leo.processCommandsAndSync()
 
         # Query the objects individually.
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         assert isEqualBD(ret.data[id_0], data_0)
-        ret = physAPI.getStateVariables([id_1])
+        ret = leoAPI.getStateVariables([id_1])
         assert ret.ok
         assert isEqualBD(ret.data[id_1], data_1)
 
         # Manually query multiple objects.
-        ret = physAPI.getStateVariables([id_0, id_1])
+        ret = leoAPI.getStateVariables([id_0, id_1])
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert isEqualBD(ret.data[id_0], data_0)
         assert isEqualBD(ret.data[id_1], data_1)
 
         # Repeat, but change the order of the objects.
-        ret = physAPI.getStateVariables([id_1, id_0])
+        ret = leoAPI.getStateVariables([id_1, id_0])
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert isEqualBD(ret.data[id_0], data_0)
         assert isEqualBD(ret.data[id_1], data_1)
 
         # Query all objects at once.
-        ret = physAPI.getAllStateVariables()
+        ret = leoAPI.getAllStateVariables()
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert isEqualBD(ret.data[id_0], data_0)
         assert isEqualBD(ret.data[id_1], data_1)
@@ -157,8 +157,8 @@ class TestClerk:
         id_0, aabb = 0, 0
 
         # The number of SV entries must now be zero.
-        assert physAPI.getNumObjects() == 0
-        assert physAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
+        assert leoAPI.getNumObjects() == 0
+        assert leoAPI.getStateVariables([id_0]) == (True, None, {id_0: None})
 
         # Create two State Vectors.
         data_0 = RigidBodyState(imass=1)
@@ -166,15 +166,15 @@ class TestClerk:
         data_2 = RigidBodyState(imass=3)
 
         # The command queue for spawning objects must be empty.
-        ret = physAPI.dequeueCommands()
+        ret = leoAPI.dequeueCommands()
         assert ret.ok and (ret.data['spawn'] == [])
 
         # Spawn the first object, then attempt to spawn another with the same
         # objID *before* Leonard gets around to add even the first one --> this
         # must fail and not add anything.
-        assert physAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
-        assert not physAPI.addCmdSpawn([(id_0, data_1, aabb)]).ok
-        ret = physAPI.dequeueCommands()
+        assert leoAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
+        assert not leoAPI.addCmdSpawn([(id_0, data_1, aabb)]).ok
+        ret = leoAPI.dequeueCommands()
         spawn = ret.data['spawn']
         assert ret.ok and (len(spawn) == 1) and (spawn[0]['objID'] == id_0)
 
@@ -187,17 +187,17 @@ class TestClerk:
         # now spawn a new object with the same id_0 but a different State
         # Vectors, let  Leonard process the queue, and then verify that it did
         # not add/modify the object with id_0.
-        assert physAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
         leo.processCommandsAndSync()
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok and isEqualBD(ret.data[id_0], data_0)
 
         # Spawn a new object with same id_0 but different State Vector data_2.
-        assert physAPI.addCmdSpawn([(id_0, data_2, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, data_2, aabb)]).ok
         leo.processCommandsAndSync()
 
         # The State Vector for id_0 must still be data_0.
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok and isEqualBD(ret.data[id_0], data_0)
 
     def test_commandQueue(self):
@@ -214,7 +214,7 @@ class TestClerk:
         aabb = 1
 
         # The command queue must be empty for every category.
-        ret = physAPI.dequeueCommands()
+        ret = leoAPI.dequeueCommands()
         assert ret.ok
         assert ret.data['spawn'] == []
         assert ret.data['remove'] == []
@@ -224,10 +224,10 @@ class TestClerk:
 
         # Spawn two objects with id_0 and id_1.
         tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
-        assert physAPI.addCmdSpawn(tmp).ok
+        assert leoAPI.addCmdSpawn(tmp).ok
 
         # Verify that the spawn commands were added.
-        ret = physAPI.dequeueCommands()
+        ret = leoAPI.dequeueCommands()
         assert ret.ok
         assert ret.data['spawn'][0]['objID'] == id_0
         assert ret.data['spawn'][1]['objID'] == id_1
@@ -238,7 +238,7 @@ class TestClerk:
 
         # De-queuing the commands once more must not return any results because
         # they have already been removed.
-        ret = physAPI.dequeueCommands()
+        ret = leoAPI.dequeueCommands()
         assert ret.ok
         assert ret.data['spawn'] == []
         assert ret.data['remove'] == []
@@ -248,8 +248,8 @@ class TestClerk:
 
         # Modify State Variable for id_0.
         newSV = RigidBodyStateOverride(imass=10, position=[3, 4, 5])
-        assert physAPI.addCmdModifyStateVariable(id_0, newSV).ok
-        ret = physAPI.dequeueCommands()
+        assert leoAPI.addCmdModifyStateVariable(id_0, newSV).ok
+        ret = leoAPI.dequeueCommands()
         modify = ret.data['modify']
         assert ret.ok and len(modify) == 1
         assert modify[0]['objID'] == id_0
@@ -258,8 +258,8 @@ class TestClerk:
 
         # Set the direct force and torque for id_1.
         force, torque = [1, 2, 3], [4, 5, 6]
-        assert physAPI.addCmdDirectForce(id_1, force, torque).ok
-        ret = physAPI.dequeueCommands()
+        assert leoAPI.addCmdDirectForce(id_1, force, torque).ok
+        ret = leoAPI.dequeueCommands()
         fat = ret.data['direct_force']
         assert ret.ok
         assert len(fat) == 1
@@ -269,8 +269,8 @@ class TestClerk:
 
         # Set the booster force and torque for id_0.
         force, torque = [1, 2, 3], [4, 5, 6]
-        assert physAPI.addCmdBoosterForce(id_0, force, torque).ok
-        ret = physAPI.dequeueCommands()
+        assert leoAPI.addCmdBoosterForce(id_0, force, torque).ok
+        ret = leoAPI.dequeueCommands()
         fat = ret.data['booster_force']
         assert ret.ok
         assert len(fat) == 1
@@ -279,8 +279,8 @@ class TestClerk:
         assert fat[0]['torque'] == torque
 
         # Remove an object.
-        assert physAPI.addCmdRemoveObject(id_0).ok
-        ret = physAPI.dequeueCommands()
+        assert leoAPI.addCmdRemoveObject(id_0).ok
+        ret = leoAPI.dequeueCommands()
         assert ret.ok and ret.data['remove'][0]['objID'] == id_0
 
         # Add commands for two objects (it is perfectly ok to add commands for
@@ -288,14 +288,14 @@ class TestClerk:
         # will skip commands for non-existing IDs automatically).
         force, torque = [7, 8, 9], [10, 11.5, 12.5]
         for objID in (id_0, id_1):
-            assert physAPI.addCmdSpawn([(objID, data_0, aabb)]).ok
-            assert physAPI.addCmdModifyStateVariable(objID, data_1).ok
-            assert physAPI.addCmdRemoveObject(objID).ok
-            assert physAPI.addCmdDirectForce(objID, force, torque).ok
-            assert physAPI.addCmdBoosterForce(objID, force, torque).ok
+            assert leoAPI.addCmdSpawn([(objID, data_0, aabb)]).ok
+            assert leoAPI.addCmdModifyStateVariable(objID, data_1).ok
+            assert leoAPI.addCmdRemoveObject(objID).ok
+            assert leoAPI.addCmdDirectForce(objID, force, torque).ok
+            assert leoAPI.addCmdBoosterForce(objID, force, torque).ok
 
         # De-queue all commands.
-        ret = physAPI.dequeueCommands()
+        ret = leoAPI.dequeueCommands()
         assert ret.ok
         assert len(ret.data['spawn']) == 2
         assert len(ret.data['remove']) == 2
@@ -328,14 +328,14 @@ class TestClerk:
         btdata = RigidBodyState()
 
         # Add the object to the DB with ID=0.
-        assert physAPI.addCmdSpawn([(id_0, btdata, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, btdata, aabb)]).ok
         leo.processCommandsAndSync()
 
         # Modify the State Vector for id_0.
-        assert physAPI.addCmdModifyStateVariable(id_0, data).ok
+        assert leoAPI.addCmdModifyStateVariable(id_0, data).ok
         leo.processCommandsAndSync()
 
-        ret = physAPI.getStateVariables([id_0])
+        ret = leoAPI.getStateVariables([id_0])
         assert ret.ok
         ret = ret.data[id_0]
         assert ret.imass == data.imass
@@ -411,12 +411,12 @@ class TestClerk:
 
         # Add the two objects to the simulation.
         tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
-        assert physAPI.addCmdSpawn(tmp).ok
+        assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
         # Update the direct force and torque of the second object only.
         force, torque = [1, 2, 3], [4, 5, 6]
-        assert physAPI.addCmdDirectForce(id_1, force, torque)
+        assert leoAPI.addCmdDirectForce(id_1, force, torque)
         leo.processCommandsAndSync()
 
         # Only the force an torque of the second object must have changed.
@@ -427,7 +427,7 @@ class TestClerk:
 
         # Update the booster force and torque of the first object only.
         force, torque = [1, 2, 3], [4, 5, 6]
-        assert physAPI.addCmdBoosterForce(id_1, force, torque)
+        assert leoAPI.addCmdBoosterForce(id_1, force, torque)
         leo.processCommandsAndSync()
 
         # Only the booster- force an torque of the second object must have
@@ -465,26 +465,26 @@ class TestClerk:
         data = RigidBodyState()
 
         # Attempt to add an object with a negative AABB value. This must fail.
-        assert not physAPI.addCmdSpawn([(id_0, data, -1.5)]).ok
+        assert not leoAPI.addCmdSpawn([(id_0, data, -1.5)]).ok
 
         # Add two new objects to the DB.
         tmp = [(id_0, data, aabb_1), (id_1, data, aabb_2)]
-        assert physAPI.addCmdSpawn(tmp).ok
+        assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
         # Query the AABB of the first.
-        ret = physAPI.getAABB([id_0])
+        ret = leoAPI.getAABB([id_0])
         assert np.array_equal(ret.data, [1.5])
 
         # Query the AABB of the second.
-        ret = physAPI.getAABB([id_1])
+        ret = leoAPI.getAABB([id_1])
         assert np.array_equal(ret.data, [2.5])
 
         # Query the AABB of both simultaneously.
-        ret = physAPI.getAABB([id_0, id_1])
+        ret = leoAPI.getAABB([id_0, id_1])
         assert np.array_equal(ret.data, [1.5, 2.5])
 
         # Query the AABB of a non-existing ID.
-        ret = physAPI.getAABB([id_0, id_3])
+        ret = leoAPI.getAABB([id_0, id_3])
         assert ret.ok
         assert np.array_equal(ret.data, [1.5, None])

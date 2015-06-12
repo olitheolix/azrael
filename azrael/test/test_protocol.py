@@ -23,8 +23,8 @@ import numpy as np
 
 import azrael.parts as parts
 import azrael.config as config
+import azrael.leo_api as leoAPI
 import azrael.protocol as protocol
-import azrael.physics_interface as physAPI
 import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell

@@ -44,7 +44,7 @@ import base64
 import azrael.util
 import azrael.igor
 import azrael.rb_state as rb_state
-import azrael.physics_interface as physics_interface
+import azrael.leo_api as leo_api
 
 import numpy as np
 import azrael.parts as parts
@@ -437,7 +437,7 @@ def ToClerk_Spawn_Decode(payload: dict):
     # Convenience.
     RigidBodyState = rb_state.RigidBodyState
     RigidBodyStateOverride = rb_state.RigidBodyStateOverride
-    _updateRigidBodyStateTuple = physics_interface._updateRigidBodyStateTuple
+    _updateRigidBodyStateTuple = leo_api._updateRigidBodyStateTuple
 
     out = []
     for data in payload['objInfos']:

@@ -288,10 +288,10 @@ def getStateVariables(objIDs: (list, tuple)):
 
     # Retrieve the state variables.
     out = {_: None for _ in objIDs}
-    with util.Timeit('physAPI.1_getSV') as timeit:
+    with util.Timeit('leoAPI.1_getSV') as timeit:
         tmp = list(database.dbHandles['SV'].find({'objID': {'$in': objIDs}}))
 
-    with util.Timeit('physAPI.2_getSV') as timeit:
+    with util.Timeit('leoAPI.2_getSV') as timeit:
         for doc in tmp:
             out[doc['objID']] = _RigidBodyState(*doc['sv'])
     return RetVal(True, None, out)

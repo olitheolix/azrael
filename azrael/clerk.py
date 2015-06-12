@@ -43,10 +43,10 @@ import azrael.database
 import azrael.util as util
 import azrael.parts as parts
 import azrael.config as config
+import azrael.leo_api as leoAPI
 import azrael.dibbler as dibbler
 import azrael.database as database
 import azrael.protocol as protocol
-import azrael.physics_interface as physAPI
 import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
@@ -440,7 +440,7 @@ class Clerk(config.AzraelProcess):
 
         # Apply the net- force and torque exerted by the boostes.
         force, torque = ret.data
-        physAPI.addCmdBoosterForce(objID, force, torque)
+        leoAPI.addCmdBoosterForce(objID, force, torque)
         del ret, force, torque
 
         # Let the factories spawn the objects.
@@ -911,7 +911,7 @@ class Clerk(config.AzraelProcess):
                 objs.append((objID, sv, t['aabb']))
 
             # Queue the spawn commands so that Leonard can pick them up.
-            ret = physAPI.addCmdSpawn(objs)
+            ret = leoAPI.addCmdSpawn(objs)
             if not ret.ok:
                 return ret
             self.logit.debug('Spawned {} new objects'.format(len(objs)))
@@ -926,7 +926,7 @@ class Clerk(config.AzraelProcess):
         :param int objID: ID of object to remove.
         :return: Success
         """
-        ret = physAPI.addCmdRemoveObject(objID)
+        ret = leoAPI.addCmdRemoveObject(objID)
         database.dbHandles['ObjInstances'].remove({'objID': objID}, mult=True)
         if ret.ok:
             self.dibbler.deleteInstance(str(objID))
@@ -1032,7 +1032,7 @@ class Clerk(config.AzraelProcess):
         """
         torque = np.cross(np.array(rpos, np.float64),
                           np.array(force, np.float64)).tolist()
-        return physAPI.addCmdDirectForce(objID, force, torque)
+        return leoAPI.addCmdDirectForce(objID, force, torque)
 
     @typecheck
     def setStateVariable(self, objID: int,
@@ -1040,7 +1040,7 @@ class Clerk(config.AzraelProcess):
         """
         Set the State Variables of ``objID`` to ``data``.
 
-        For a detailed description see ``physAPI.addCmdModifyStateVariable``
+        For a detailed description see ``leoAPI.addCmdModifyStateVariable``
         since this method is only a wrapper for it.
 
         :param int objID: object ID
@@ -1052,7 +1052,7 @@ class Clerk(config.AzraelProcess):
         if not ret.ok:
             return ret
 
-        ret = physAPI.addCmdModifyStateVariable(objID, data)
+        ret = leoAPI.addCmdModifyStateVariable(objID, data)
         if ret.ok:
             return RetVal(True, None, None)
         else:
@@ -1086,7 +1086,7 @@ class Clerk(config.AzraelProcess):
         :return: list of objIDs
         :rtype: list(int)
         """
-        ret = physAPI.getAllObjectIDs()
+        ret = leoAPI.getAllObjectIDs()
         if not ret.ok:
             return RetVal(False, ret.data, None)
         else:
@@ -1156,9 +1156,9 @@ class Clerk(config.AzraelProcess):
         :return: see :ref:``_packSVData``.
         :rtype: dict
         """
-        with util.Timeit('physAPI.getSV') as timeit:
+        with util.Timeit('leoAPI.getSV') as timeit:
             # Get the State Variables.
-            ret = physAPI.getStateVariables(objIDs)
+            ret = leoAPI.getStateVariables(objIDs)
             if not ret.ok:
                 return RetVal(False, 'One or more IDs do not exist', None)
         return self._packSVData(ret.data)
@@ -1178,9 +1178,9 @@ class Clerk(config.AzraelProcess):
         :return: see :ref:``_packSVData``.
         :rtype: dict
         """
-        with util.Timeit('physAPI.getSV') as timeit:
+        with util.Timeit('leoAPI.getSV') as timeit:
             # Get the State Variables.
-            ret = physAPI.getAllStateVariables()
+            ret = leoAPI.getAllStateVariables()
             if not ret.ok:
                 return ret
         return self._packSVData(ret.data)

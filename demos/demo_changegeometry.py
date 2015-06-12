@@ -37,14 +37,14 @@ import model_import
 import azrael.client
 import azrael.util as util
 import azrael.config as config
+import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
-import azrael.physics_interface as physAPI
 
 from IPython import embed as ipshell
 from azrael.types import MetaFragment, FragRaw, FragState
 
 # Convenience.
-RigidBodyStateOverride = physAPI.RigidBodyStateOverride
+RigidBodyStateOverride = leoAPI.RigidBodyStateOverride
 
 
 def parseCommandLine():
