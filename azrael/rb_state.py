@@ -16,13 +16,10 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Define the State Variables structure and its cencoding.
+Wrapper around `RigidBodyState` structure.
 
-The state variables are encapsulated by the named tuple ``RigidBodyState``. This
-module contains the necessary conversions to/from binary, as well as a
-conversion to NumPy. The NumPy conversion was necessary for the Cython
-wrapper to Bullet. This has become redundant and will be cleaned up at some
-point.
+This structure encapsulates all the data associated with the Rigid Body portion
+of the object.
 """
 
 import sys
@@ -87,7 +84,7 @@ def RigidBodyState(scale: (int, float)=1,
     except (AssertionError, TypeError) as err:
         return None
 
-    # Build the actual named tuple.
+    # Build- and return the actual named tuple.
     return _RigidBodyState(
         scale=scale,
         imass=imass,
