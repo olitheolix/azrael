@@ -413,7 +413,7 @@ class TestBulletAPI:
         assert isEqualBD(ret.data, obj_a)
 
         # Delete the object. The attempt to request it afterwards must fail.
-        assert bullet.removeObject([0]).ok
+        assert bullet.removeRigidBody([0]).ok
         assert not bullet.getObjectData(0).ok
 
     def test_modify_mass(self):

@@ -79,7 +79,7 @@ class PyBulletDynamicsWorld():
         # Dictionary of all bodies.
         self.rigidBodies = {}
 
-    def removeObject(self, objIDs: (list, tuple)):
+    def removeRigidBody(self, objIDs: (list, tuple)):
         """
         Remove ``objIDs`` from Bullet and return the number of removed objects.
 
