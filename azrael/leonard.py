@@ -563,7 +563,7 @@ class LeonardBullet(LeonardBase):
         # Iterate over all objects and update them.
         for objID, sv in self.allObjects.items():
             # Pass the SV data from the DB to Bullet.
-            self.bullet.setObjectData(objID, sv)
+            self.bullet.setRigidBodyData(objID, sv)
 
             # Compute direct- and booster forces on object.
             force, torque = self.totalForceAndTorque(objID)
@@ -673,7 +673,7 @@ class LeonardSweeping(LeonardBase):
             constr = []
             for objID, sv in coll_SV.items():
                 # Pass the SV data from the DB to Bullet.
-                self.bullet.setObjectData(objID, sv)
+                self.bullet.setRigidBodyData(objID, sv)
 
                 # Compute direct- and booster forces on object.
                 force, torque = self.totalForceAndTorque(objID)
@@ -1037,7 +1037,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
 
         # Convenience.
         applyForceAndTorque = self.bullet.applyForceAndTorque
-        setObjectData = self.bullet.setObjectData
+        setRigidBodyData = self.bullet.setRigidBodyData
 
         # Add every object to the Bullet engine and set the force/torque.
         with util.Timeit('Worker:1.1.0  applyforce') as timeit:
@@ -1056,7 +1056,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             with util.Timeit('Worker:1.1.1   updateGeo') as timeit:
                 for obj in worklist:
                     # Update the object in Bullet and apply the force/torque.
-                    setObjectData(obj.id, obj.sv)
+                    setRigidBodyData(obj.id, obj.sv)
 
             with util.Timeit('Worker:1.1.1   updateForce') as timeit:
                 for obj in worklist:

@@ -248,7 +248,7 @@ class PyBulletDynamicsWorld():
         return RetVal(True, None, out)
 
     @typecheck
-    def setObjectData(self, objID: int, obj: _RigidBodyState):
+    def setRigidBodyData(self, objID: int, obj: _RigidBodyState):
         """
         Update State Variables of ``objID`` to ``obj``.
 

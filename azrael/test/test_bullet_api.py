@@ -195,7 +195,7 @@ class TestBulletAPI:
         assert not ret.ok
 
         # Send object to Bullet and request it back.
-        sim.setObjectData(0, obj_a)
+        sim.setRigidBodyData(0, obj_a)
         ret = sim.getRigidBodyData(0)
         assert ret.ok
         assert isEqualBD(obj_a, ret.data)
@@ -222,7 +222,7 @@ class TestBulletAPI:
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Send object to Bullet and request it back.
-        sim.setObjectData(0, obj_a)
+        sim.setRigidBodyData(0, obj_a)
         ret = sim.getRigidBodyData(0)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
@@ -238,7 +238,7 @@ class TestBulletAPI:
             velocityLin=np.array([2.8, 2.0, 2.2], np.float64),
             velocityRot=np.array([2.4, 2.6, 2.8], np.float64))
         assert obj_a is not None
-        sim.setObjectData(0, obj_a)
+        sim.setRigidBodyData(0, obj_a)
         ret = sim.getRigidBodyData(0)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
@@ -262,7 +262,7 @@ class TestBulletAPI:
 
         # Send object to Bullet and progress the simulation by one second.
         # The objects must not move because no forces are at play.
-        sim.setObjectData(objID, obj_a)
+        sim.setRigidBodyData(objID, obj_a)
         sim.compute([objID], dt, maxsteps)
         ret = sim.getRigidBodyData(objID)
         assert ret.ok
@@ -316,7 +316,7 @@ class TestBulletAPI:
 
         # Send object to Bullet and progress the simulation by one second.
         # The objects must not move because no forces are at play.
-        sim.setObjectData(objID, obj_a)
+        sim.setRigidBodyData(objID, obj_a)
         assert sim.compute([objID], dt, maxsteps).ok
         ret = sim.getRigidBodyData(objID)
         assert ret.ok
@@ -347,7 +347,7 @@ class TestBulletAPI:
 
         # Send object to Bullet and progress the simulation by one second.
         # The objects must not move because no forces are at play.
-        sim.setObjectData(objID, obj_a)
+        sim.setRigidBodyData(objID, obj_a)
         sim.compute([objID], dt, maxsteps)
         ret = sim.getRigidBodyData(objID)
         assert ret.ok
@@ -407,7 +407,7 @@ class TestBulletAPI:
         assert not ret.ok
 
         # Send object to Bullet and request it back.
-        sim.setObjectData(0, obj_a)
+        sim.setRigidBodyData(0, obj_a)
         ret = sim.getRigidBodyData(0)
         assert ret.ok
         assert isEqualBD(ret.data, obj_a)
@@ -440,15 +440,15 @@ class TestBulletAPI:
 
         # Send object to Bullet and progress the simulation by one second.
         # The objects must not move because no forces are at play.
-        sim.setObjectData(objID_a, obj_a)
-        sim.setObjectData(objID_b, obj_b)
+        sim.setRigidBodyData(objID_a, obj_a)
+        sim.setRigidBodyData(objID_b, obj_b)
 
         # Progress the simulation for one second. Nothing must happen.
         sim.compute([objID_a, objID_b], 1.0, 60)
 
         # Update the mass of the second object.
         obj_b = obj_b._replace(imass=0.5 * obj_b.imass)
-        sim.setObjectData(objID_b, obj_b)
+        sim.setRigidBodyData(objID_b, obj_b)
 
         # Apply the same central force that pulls both spheres forward
         # (y-axis).
@@ -497,8 +497,8 @@ class TestBulletAPI:
         # Send objects to Bullet and progress the simulation. The sole point of
         # progressing the simulation is to make sure Bullet actually accesses
         # the objects; we do not actually care if/how the objects moved.
-        sim.setObjectData(objID_a, obj_a)
-        sim.setObjectData(objID_b, obj_b)
+        sim.setRigidBodyData(objID_a, obj_a)
+        sim.setRigidBodyData(objID_b, obj_b)
         sim.compute([objID_a, objID_b], 1.0, 60)
 
         # Request the object back and inspect the collision shapes.
@@ -514,7 +514,7 @@ class TestBulletAPI:
 
         # Enlarge the second object so that the spheres do not overlap.
         obj_b = obj_b._replace(scale=2.5)
-        sim.setObjectData(objID_b, obj_b)
+        sim.setRigidBodyData(objID_b, obj_b)
         ret = sim.getRigidBodyData(objID_b)
         assert ret.ok
         tmp_cs = sim.rigidBodies[objID_b].getCollisionShape()
@@ -554,8 +554,8 @@ class TestBulletAPI:
         # Send objects to Bullet and progress the simulation. The sole point of
         # progressing the simulation is to make sure Bullet actually accesses
         # the objects; we do not actually care if/how the objects moved.
-        sim.setObjectData(objID_a, obj_a)
-        sim.setObjectData(objID_b, obj_b)
+        sim.setRigidBodyData(objID_a, obj_a)
+        sim.setRigidBodyData(objID_b, obj_b)
         sim.compute([objID_a, objID_b], 1.0, 60)
 
         # Verify the collision shapes are as expected.
@@ -571,8 +571,8 @@ class TestBulletAPI:
         # (eg a segfault).
         obj_a = rb_state.RigidBodyState(position=pos_a, cshapes=cshape_box)
         obj_b = rb_state.RigidBodyState(position=pos_b, cshapes=cshape_box)
-        sim.setObjectData(objID_a, obj_a)
-        sim.setObjectData(objID_b, obj_b)
+        sim.setRigidBodyData(objID_a, obj_a)
+        sim.setRigidBodyData(objID_b, obj_b)
         sim.compute([objID_a, objID_b], 1.0, 60)
 
         # Verify the collision shapes have been updated to boxes.
@@ -599,8 +599,8 @@ class TestBulletAPI:
         obj_b = rb_state.RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
 
         # Load the objects into the physics engine.
-        sim.setObjectData(id_a, obj_a)
-        sim.setObjectData(id_b, obj_b)
+        sim.setRigidBodyData(id_a, obj_a)
+        sim.setRigidBodyData(id_b, obj_b)
 
         # Compile the constraint.
         pivot_a, pivot_b = pos_b, pos_a
@@ -641,8 +641,8 @@ class TestBulletAPI:
 
         # Overwrite the objects with the default data (ie put them back into
         # the original position and set their velocity to zero).
-        sim.setObjectData(id_a, obj_a)
-        sim.setObjectData(id_b, obj_b)
+        sim.setRigidBodyData(id_a, obj_a)
+        sim.setRigidBodyData(id_b, obj_b)
         sim.compute([id_a, id_b], 1.0, 60)
         ret_a = sim.getRigidBodyData(id_a)
         ret_b = sim.getRigidBodyData(id_b)
@@ -678,8 +678,8 @@ class TestBulletAPI:
         obj_b = rb_state.RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
 
         # Load the objects into the physics engine.
-        sim.setObjectData(id_a, obj_a)
-        sim.setObjectData(id_b, obj_b)
+        sim.setRigidBodyData(id_a, obj_a)
+        sim.setRigidBodyData(id_b, obj_b)
 
         # Compile the 6DOF constraint.
         c = Constraint6DofSpring2(
@@ -748,14 +748,14 @@ class TestBulletAPI:
         assert not sim.setConstraints([constraints]).ok
 
         # Add one sphere to the world.
-        sim.setObjectData(id_a, obj_a)
+        sim.setRigidBodyData(id_a, obj_a)
 
         # Load the constraints into the physics engine.
         assert not sim.setConstraints(constraints).ok
 
         # Load the second sphere and apply the constraint. This time it must
         # have worked.
-        sim.setObjectData(id_b, obj_b)
+        sim.setRigidBodyData(id_b, obj_b)
         assert sim.setConstraints(constraints).ok
 
         # Clear all constraints
