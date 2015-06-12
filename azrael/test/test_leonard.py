@@ -150,7 +150,7 @@ class TestLeonardAllEngines:
         assert leoAPI.addCmdSpawn([(id_1, sv, aabb)]).ok
 
         # Update the object's State Vector.
-        assert leoAPI.addCmdModifyStateVariable(id_1, data).ok
+        assert leoAPI.addCmdModifyBodyState(id_1, data).ok
 
         # Sync the commands to Leonard.
         leo.processCommandsAndSync()
@@ -195,7 +195,7 @@ class TestLeonardAllEngines:
         # Update the object's SV data.
         sv_new = rb_state.RigidBodyStateOverride(
             imass=4, scale=5, cshapes=cshape_box)
-        assert leoAPI.addCmdModifyStateVariable(objID, sv_new).ok
+        assert leoAPI.addCmdModifyBodyState(objID, sv_new).ok
 
         # Verify the SV data.
         leo.processCommandsAndSync()
@@ -231,7 +231,7 @@ class TestLeonardAllEngines:
 
         # Give the object a velocity.
         sv = rb_state.RigidBodyStateOverride(velocityLin=np.array([1, 0, 0]))
-        assert leoAPI.addCmdModifyStateVariable(id_0, sv).ok
+        assert leoAPI.addCmdModifyBodyState(id_0, sv).ok
 
         # Advance the simulation by another second and verify the objects have
         # moved accordingly.
@@ -694,7 +694,7 @@ class TestLeonardOther:
         pos = [10, 11.5, 12]
         sv_3 = rb_state.RigidBodyStateOverride(position=pos)
         assert leo.allObjects[id_2].position == [0, 0, 0]
-        assert leoAPI.addCmdModifyStateVariable(id_2, sv_3).ok
+        assert leoAPI.addCmdModifyBodyState(id_2, sv_3).ok
         leo.processCommandsAndSync()
         assert leo.allObjects[id_2].position == pos
 

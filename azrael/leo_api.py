@@ -156,7 +156,7 @@ def addCmdRemoveObject(objID: int):
 
 
 @typecheck
-def addCmdModifyStateVariable(objID: int, data: RigidBodyStateOverride):
+def addCmdModifyBodyState(objID: int, data: RigidBodyStateOverride):
     """
     Queue request to Override State Variables of ``objID`` with ``data``.
 

@@ -1040,7 +1040,7 @@ class Clerk(config.AzraelProcess):
         """
         Set the State Variables of ``objID`` to ``data``.
 
-        For a detailed description see ``leoAPI.addCmdModifyStateVariable``
+        For a detailed description see ``leoAPI.addCmdModifyBodyState``
         since this method is only a wrapper for it.
 
         :param int objID: object ID
@@ -1052,7 +1052,7 @@ class Clerk(config.AzraelProcess):
         if not ret.ok:
             return ret
 
-        ret = leoAPI.addCmdModifyStateVariable(objID, data)
+        ret = leoAPI.addCmdModifyBodyState(objID, data)
         if ret.ok:
             return RetVal(True, None, None)
         else:

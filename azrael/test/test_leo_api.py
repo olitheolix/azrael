@@ -248,7 +248,7 @@ class TestClerk:
 
         # Modify State Variable for id_0.
         newSV = RigidBodyStateOverride(imass=10, position=[3, 4, 5])
-        assert leoAPI.addCmdModifyStateVariable(id_0, newSV).ok
+        assert leoAPI.addCmdModifyBodyState(id_0, newSV).ok
         ret = leoAPI.dequeueCommands()
         modify = ret.data['modify']
         assert ret.ok and len(modify) == 1
@@ -289,7 +289,7 @@ class TestClerk:
         force, torque = [7, 8, 9], [10, 11.5, 12.5]
         for objID in (id_0, id_1):
             assert leoAPI.addCmdSpawn([(objID, data_0, aabb)]).ok
-            assert leoAPI.addCmdModifyStateVariable(objID, data_1).ok
+            assert leoAPI.addCmdModifyBodyState(objID, data_1).ok
             assert leoAPI.addCmdRemoveObject(objID).ok
             assert leoAPI.addCmdDirectForce(objID, force, torque).ok
             assert leoAPI.addCmdBoosterForce(objID, force, torque).ok
@@ -332,7 +332,7 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Modify the State Vector for id_0.
-        assert leoAPI.addCmdModifyStateVariable(id_0, data).ok
+        assert leoAPI.addCmdModifyBodyState(id_0, data).ok
         leo.processCommandsAndSync()
 
         ret = leoAPI.getBodyStates([id_0])
@@ -437,7 +437,7 @@ class TestClerk:
         assert np.array_equal(leo.allForces[id_1].forceDirect, force)
         assert np.array_equal(leo.allForces[id_1].torqueDirect, torque)
 
-    def test_StateVariable_tuple(self):
+    def test_RigidBodyState_tuple(self):
         """
         Test the ``RigidBodyState`` class, most notably the __eq__ method.
         """
