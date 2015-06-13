@@ -382,6 +382,8 @@ class Client():
                     frags[idx] = self._encodeRawFragment(frag)
                 elif frag.type == 'dae':
                     frags[idx] = self._encodeDaeFragment(frag)
+                elif frag.type == '_none_':
+                    frags[idx] = frag._replace(data=None)
                 else:
                     assert False
         except AssertionError:

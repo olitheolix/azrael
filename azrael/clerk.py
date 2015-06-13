@@ -1000,11 +1000,19 @@ class Clerk(config.AzraelProcess):
                 msg = 'Invalid fragment name <{}>'.format(frag.id)
                 return RetVal(False, msg, None)
 
+        # Convenience.
+        update = database.dbHandles['ObjInstances'].update
+
         # Update the fragment geometry in Dibbler.
         for frag in fragments:
             ret = self.dibbler.updateFragments(str(objID), fragments)
             if not ret.ok:
                 return ret
+
+            # If the fragment type is '_none_' then remove it altogether.
+            if frag.type == '_none_':
+                update({'objID': objID},
+                       {'$unset': {'fragState.{}'.format(frag.id): True}})
 
         # Update the fragment's meta data in the DB.
         new_frags = [frag._replace(data=None) for frag in fragments]
