@@ -100,7 +100,7 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 0)
 
         # Define a template for this test.
-        frag = [MetaFragment('NoNameRaw', 'raw', createFragRaw())]
+        frag = [MetaFragment('raw', 'NoNameRaw', createFragRaw())]
         t_raw = Template('_templateEmpty', [0, 1, 1, 1], frag, [], [])
 
         # Add the first template and verify that the database now contains
@@ -118,7 +118,7 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define a template for this test.
-        frag = [MetaFragment('NoNameDae', 'dae', createFragDae())]
+        frag = [MetaFragment('dae', 'NoNameDae', createFragDae())]
         t_dae = Template('_templateEmpty', [0, 1, 1, 1], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
@@ -148,8 +148,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = MetaFragment('fragname_raw', 'raw', createFragRaw())
-        frag_dae = MetaFragment('fragname_dae', 'dae', createFragDae())
+        frag_raw = MetaFragment('raw', 'fragname_raw', createFragRaw())
+        frag_dae = MetaFragment('dae', 'fragname_dae', createFragDae())
         t_raw = Template('t_name_raw', [0, 1, 1, 1], [frag_raw], [], [])
         t_dae = Template('t_name_dae', [0, 1, 1, 1], [frag_dae], [], [])
 
@@ -190,11 +190,11 @@ class TestDibbler:
         # The original template has two fragments, and we will update one of
         # them.
         frags_orig = [
-            MetaFragment('fname_1', 'raw', createFragRaw()),
-            MetaFragment('fname_2', 'dae', createFragDae())
+            MetaFragment('raw', 'fname_1', createFragRaw()),
+            MetaFragment('dae', 'fname_2', createFragDae())
         ]
         frags_new = [
-            MetaFragment('fname_1', 'dae', createFragDae()),
+            MetaFragment('dae', 'fname_1', createFragDae()),
         ]
         t1 = Template('t1', [1, 2, 3, 4], frags_orig, [], [])
 
@@ -251,13 +251,13 @@ class TestDibbler:
         # The original template has three fragments. Then we will leave the
         # first intact, remove the second, and modify the third.
         frags_orig = [
-            MetaFragment('fname_1', 'raw', createFragRaw()),
-            MetaFragment('fname_2', 'dae', createFragDae()),
-            MetaFragment('fname_3', 'raw', createFragRaw())
+            MetaFragment('raw', 'fname_1', createFragRaw()),
+            MetaFragment('dae', 'fname_2', createFragDae()),
+            MetaFragment('raw', 'fname_3', createFragRaw())
         ]
         frags_new = [
-            MetaFragment('fname_2', '_none_', None),
-            MetaFragment('fname_3', 'dae', createFragDae())
+            MetaFragment('_none_', 'fname_2', None),
+            MetaFragment('dae', 'fname_3', createFragDae())
         ]
         t1 = Template('t1', [1, 2, 3, 4], frags_orig, [], [])
 
@@ -297,8 +297,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = [MetaFragment('frag_raw', 'raw', createFragRaw())]
-        frag_dae = [MetaFragment('frag_dae', 'dae', createFragDae())]
+        frag_raw = [MetaFragment('raw', 'frag_raw', createFragRaw())]
+        frag_dae = [MetaFragment('dae', 'frag_dae', createFragDae())]
         t11 = Template('name11', [0, 1, 1, 1], frag_raw, [], [])
         t1 = Template('name1', [0, 1, 1, 1], frag_dae, [], [])
 
@@ -362,8 +362,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = [MetaFragment('frag_raw', 'raw', createFragRaw())]
-        frag_dae = [MetaFragment('frag_dae', 'dae', createFragDae())]
+        frag_raw = [MetaFragment('raw', 'frag_raw', createFragRaw())]
+        frag_dae = [MetaFragment('dae', 'frag_dae', createFragDae())]
         t_raw = Template('temp_raw', [0, 1, 1, 1], frag_raw, [], [])
         t_dae = Template('temp_dae', [0, 1, 1, 1], frag_dae, [], [])
 

@@ -536,7 +536,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     frag = urllib.request.urlopen(url).readall()
                     frag = json.loads(frag.decode('utf8'))
                     frag = FragRaw(**frag)
-                    frag = MetaFragment(frag_name, 'raw', frag)
+                    frag = MetaFragment('raw', frag_name, frag)
                 elif frag_data['type'] == 'dae':
                     url = base_url + frag_data['url'] + '/' + frag_name
                     frag = urllib.request.urlopen(url).readall()
@@ -557,7 +557,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     uv = np.array(uv, np.float32)
                     rgb = np.array(rgb, np.uint8)
                     frag = FragRaw(vert, uv, rgb)
-                    frag = MetaFragment(frag_name, 'raw', frag)
+                    frag = MetaFragment('raw', frag_name, frag)
                 else:
                     continue
                 self.upload2GPU(objID, frag)
@@ -583,7 +583,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'
-        frags = [MetaFragment('frag_1', 'raw', FragRaw(buf_vert, uv, rgb))]
+        frags = [MetaFragment('raw', 'frag_1', FragRaw(buf_vert, uv, rgb))]
         temp = Template(t_projectile, [cs], frags, [], [])
         ret = self.client.addTemplates([temp])
         del frags, temp

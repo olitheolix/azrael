@@ -96,7 +96,7 @@ class TestClerk:
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
         clerk = azrael.clerk.Clerk()
-        frag = [MetaFragment('NoName', 'raw', FragRaw(vert=[], uv=[], rgb=[]))]
+        frag = [MetaFragment('raw', 'NoName', FragRaw(vert=[], uv=[], rgb=[]))]
         t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
@@ -183,7 +183,7 @@ class TestClerk:
         assert isEqualCS(ret.data[name_3].cshapes, [getCSBox()])
 
         # Add a new object template.
-        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -216,7 +216,7 @@ class TestClerk:
         assert client.getGeometries([1]) == (True, None, {1: None})
 
         # Define a new template, add it to Azrael, and spawn it.
-        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t2', [getCSBox()], frags, [b0, b1], [f0])
         assert client.addTemplates([temp]).ok
         ret = client.spawn([{'template': temp.name, 'position': np.zeros(3)}])
@@ -484,7 +484,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn an instance.
-        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert client.addTemplates([temp]).ok
         new_obj = {'template': temp.name,
@@ -556,7 +556,7 @@ class TestClerk:
         objID = 1
 
         # Add a new template and spawn it.
-        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -593,7 +593,7 @@ class TestClerk:
         assert FragRaw(**tmp) == frags[0].data
 
         # Change the fragment geometries.
-        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        frags = [MetaFragment('raw', 'bar', createFragRaw())]
         assert client.updateFragments(objID, frags).ok
 
         ret = client.getGeometries([objID])
@@ -625,7 +625,7 @@ class TestClerk:
         f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
-        frags = [MetaFragment('f_dae', 'dae', f_dae)]
+        frags = [MetaFragment('dae', 'f_dae', f_dae)]
 
         # Add a new template and spawn it.
         temp = Template('t1', [getCSSphere()], frags, [], [])
@@ -651,7 +651,7 @@ class TestClerk:
         assert ret.data[objID]['f_dae']['type'] == 'dae'
 
         # Change the fragment geometries.
-        frags = [MetaFragment('f_dae', 'raw', createFragRaw())]
+        frags = [MetaFragment('raw', 'f_dae', createFragRaw())]
         assert client.updateFragments(objID, frags).ok
 
         # Ensure it now has type 'raw'.
@@ -665,7 +665,7 @@ class TestClerk:
 
         # Change the fragment geometries.
         lastChanged = ret.data[objID]['sv'].lastChanged
-        frags = [MetaFragment('f_dae', 'dae', f_dae)]
+        frags = [MetaFragment('dae', 'f_dae', f_dae)]
         assert client.updateFragments(objID, frags).ok
 
         # Ensure it now has type 'dae' again.
@@ -692,7 +692,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Add a new template and spawn it.
-        frags = [MetaFragment('bar', 'raw', createFragRaw())]
+        frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -730,7 +730,7 @@ class TestClerk:
         f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
-        frags = [MetaFragment('f_dae', 'dae', f_dae)]
+        frags = [MetaFragment('dae', 'f_dae', f_dae)]
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.

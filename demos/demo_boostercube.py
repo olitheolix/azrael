@@ -130,10 +130,10 @@ def spawnBoosterSphere(scale, fname):
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'
     cs = np.array([3, 1, 1, 1], np.float64)
-    frags = [MetaFragment('frag_1', 'raw', frag_cube),
-             MetaFragment('b_x', 'raw', frag_flame),
-             MetaFragment('b_y', 'raw', frag_flame),
-             MetaFragment('b_z', 'raw', frag_flame),
+    frags = [MetaFragment('raw', 'frag_1', frag_cube),
+             MetaFragment('raw', 'b_x', frag_flame),
+             MetaFragment('raw', 'b_y', frag_flame),
+             MetaFragment('raw', 'b_z', frag_flame),
              ]
     temp = Template(tID, cs, frags, [b0, b1, b2], [])
     assert client.addTemplates([temp]).ok

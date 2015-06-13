@@ -42,9 +42,9 @@ Template = namedtuple('Template', 'name cshapes fragments boosters factories')
 FragState = namedtuple('FragState', 'name scale position orientation')
 
 # Fragments.
+MetaFragment = namedtuple('MetaFragment', 'type name data')
 FragRaw = namedtuple('FragRaw', 'vert uv rgb')
 FragDae = namedtuple('FragDae', 'dae rgb')
-MetaFragment = namedtuple('MetaFragment', 'name type data')
 
 # Work package related.
 WPData = namedtuple('WPData', 'id sv force torque')
@@ -54,9 +54,9 @@ Forces = namedtuple('Forces',
 
 # Motion state of an object.
 _RigidBodyState = namedtuple('_RigidBodyState',
-                          'scale imass restitution orientation '
-                          'position velocityLin velocityRot cshapes '
-                          'axesLockLin axesLockRot lastChanged')
+                             'scale imass restitution orientation '
+                             'position velocityLin velocityRot cshapes '
+                             'axesLockLin axesLockRot lastChanged')
 
 # fixme: rename 'name' to 'id'
 CollShapeMeta = namedtuple('CollShapeMeta', 'type name pos rot cshape')

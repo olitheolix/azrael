@@ -669,6 +669,11 @@ class Clerk(config.AzraelProcess):
                 if not ret.ok:
                     return ret
 
+                # The fragment geometry was stored in Dibbler; we only need the
+                # meta data here (mostly to avoid data duplication) which is
+                # why we delete the 'data' attribute.
+                frags = [frag._replace(data=None) for frag in tt.fragments]
+
                 # Compile the Mongo document for the new template.
                 data = {
                     'url': config.url_templates + '/' + tt.name,
@@ -677,8 +682,8 @@ class Clerk(config.AzraelProcess):
                     'aabb': float(ret.data['aabb']),
                     'boosters': tt.boosters,
                     'factories': tt.factories,
-                    'fragments': [MetaFragment(_.name, _.type, None)
-                                  for _ in tt.fragments]}
+                    'fragments': frags}
+                del frags
 
                 # Add the template to the database.
                 query = {'templateID': tt.name}
@@ -995,14 +1000,14 @@ class Clerk(config.AzraelProcess):
                 msg = 'Invalid fragment name <{}>'.format(frag.name)
                 return RetVal(False, msg, None)
 
-        # Update the fragments in Dibbler.
+        # Update the fragment geometry in Dibbler.
         for frag in fragments:
             ret = self.dibbler.updateFragments(str(objID), fragments)
             if not ret.ok:
                 return ret
 
-        # Update the fragment meta data in the DB.
-        new_frags = [MetaFragment(_.name, _.type, None) for _ in fragments]
+        # Update the fragment's meta data in the DB.
+        new_frags = [frag._replace(data=None) for frag in fragments]
 
         # Update the 'lastChanged' flag in the database. All clients
         # automatically receive this flag with their state variables.

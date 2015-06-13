@@ -323,7 +323,7 @@ class Client():
         raw = FragRaw(**newval)
 
         # Return a JSON compatible version of the MetaFragment ``frag``.
-        return MetaFragment(frag.name, 'raw', raw)
+        return MetaFragment(type='raw', name=frag.name, data=raw)
 
     def _encodeDaeFragment(self, frag):
         """
@@ -360,7 +360,7 @@ class Client():
             rgb[rr] = base64.b64encode(f.rgb[rr]).decode('utf8')
 
         # Return a JSON compatible version of the MetaFragment ``frag``.
-        return MetaFragment(frag.name, 'dae', FragDae(dae, rgb))
+        return MetaFragment(type='dae', name=frag.name, data=FragDae(dae, rgb))
 
     @typecheck
     def updateFragments(self, objID: int, frags: list):
