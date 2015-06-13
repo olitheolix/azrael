@@ -79,7 +79,7 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     # Verify.
     assert dec.ok
     dec = dec.data[template_name]
-    assert np.array_equal(dec.cs, cs)
+    assert np.array_equal(dec.cshapes, cs)
     assert len(dec.boosters) == 2
     assert len(dec.factories) == 1
 

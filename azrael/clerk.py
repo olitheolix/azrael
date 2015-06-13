@@ -648,7 +648,7 @@ class Clerk(config.AzraelProcess):
                 del tmp
 
                 # Ensure all collision shapes are valid.
-                ret = self._verifyCollisionShapes(tt.cs)
+                ret = self._verifyCollisionShapes(tt.cshapes)
                 if not ret.ok:
                     return RetVal(False, ret.msg, None)
 
@@ -673,7 +673,7 @@ class Clerk(config.AzraelProcess):
                 data = {
                     'url': config.url_templates + '/' + tt.name,
                     'name': tt.name,
-                    'cshapes': tt.cs,
+                    'cshapes': tt.cshapes,
                     'aabb': float(ret.data['aabb']),
                     'boosters': tt.boosters,
                     'factories': tt.factories,

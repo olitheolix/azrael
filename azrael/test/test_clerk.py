@@ -601,7 +601,7 @@ class TestClerk:
 
         # Define a new template with two boosters and add it to Azrael.
         template = Template('t1',
-                            cs=[getCSSphere()],
+                            cshapes=[getCSSphere()],
                             fragments=frags,
                             boosters=[booster],
                             factories=[])

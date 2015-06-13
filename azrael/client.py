@@ -570,7 +570,7 @@ class Client():
                 # Sanity checks.
                 assert isinstance(temp, Template)
                 assert isinstance(temp.name, str)
-                assert isinstance(temp.cs, (tuple, list, np.ndarray))
+                assert isinstance(temp.cshapes, (tuple, list, np.ndarray))
                 assert isinstance(temp.fragments, (tuple, list))
 
                 # Check and Base64 encode each individual fragment.
@@ -594,7 +594,7 @@ class Client():
                     assert isinstance(f, parts.Factory)
 
                 # fixme: verify the Collision Shape is valid.
-                cs = list(temp.cs)
+                cs = list(temp.cshapes)
 
                 # Replace the original entry with a new one where CS is
                 # definitively a list.

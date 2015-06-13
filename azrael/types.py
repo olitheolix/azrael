@@ -38,7 +38,7 @@ from collections import namedtuple
 RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Template dataset.
-Template = namedtuple('Template', 'name cs fragments boosters factories')
+Template = namedtuple('Template', 'name cshapes fragments boosters factories')
 FragState = namedtuple('FragState', 'name scale position orientation')
 
 # Fragments.

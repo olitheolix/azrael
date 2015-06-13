@@ -160,27 +160,27 @@ class TestClerk:
         name_1 = '_templateEmpty'
         ret = client.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
-        assert isEqualCS(ret.data[name_1].cs, [getCSEmpty()])
+        assert isEqualCS(ret.data[name_1].cshapes, [getCSEmpty()])
 
         # ... this one is a sphere...
         name_2 = '_templateSphere'
         ret = client.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
-        assert isEqualCS(ret.data[name_2].cs, [getCSSphere()])
+        assert isEqualCS(ret.data[name_2].cshapes, [getCSSphere()])
 
         # ... and this one is a cube.
         name_3 = '_templateCube'
         ret = client.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
-        assert isEqualCS(ret.data[name_3].cs, [getCSBox()])
+        assert isEqualCS(ret.data[name_3].cshapes, [getCSBox()])
 
         # Retrieve all three again but with a single call.
         ret = client.getTemplates([name_1, name_2, name_3])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3))
-        assert isEqualCS(ret.data[name_1].cs, [getCSEmpty()])
-        assert isEqualCS(ret.data[name_2].cs, [getCSSphere()])
-        assert isEqualCS(ret.data[name_3].cs, [getCSBox()])
+        assert isEqualCS(ret.data[name_1].cshapes, [getCSEmpty()])
+        assert isEqualCS(ret.data[name_2].cshapes, [getCSSphere()])
+        assert isEqualCS(ret.data[name_3].cshapes, [getCSBox()])
 
         # Add a new object template.
         frags = [MetaFragment('bar', 'raw', createFragRaw())]
@@ -190,7 +190,7 @@ class TestClerk:
         # Fetch the just added template again.
         ret = client.getTemplates([temp.name])
         assert ret.ok and (len(ret.data) == 1)
-        assert isEqualCS(ret.data[temp.name].cs, [getCSSphere()])
+        assert isEqualCS(ret.data[temp.name].cshapes, [getCSSphere()])
         assert len(ret.data[temp.name].boosters) == 0
         assert len(ret.data[temp.name].factories) == 0
 
@@ -233,7 +233,7 @@ class TestClerk:
         ret = client.getTemplates([temp.name])
         assert ret.ok and (len(ret.data) == 1)
         t_data = ret.data[temp.name]
-        assert isEqualCS(t_data.cs, [getCSBox()])
+        assert isEqualCS(t_data.cshapes, [getCSBox()])
         assert len(t_data.boosters) == 2
         assert len(t_data.factories) == 1
 
