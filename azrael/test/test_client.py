@@ -188,14 +188,14 @@ class TestClerk:
         assert client.addTemplates([temp]).ok
 
         # Fetch the just added template again.
-        ret = client.getTemplates([temp.name])
+        ret = client.getTemplates([temp.id])
         assert ret.ok and (len(ret.data) == 1)
-        assert isEqualCS(ret.data[temp.name].cshapes, [getCSSphere()])
-        assert len(ret.data[temp.name].boosters) == 0
-        assert len(ret.data[temp.name].factories) == 0
+        assert isEqualCS(ret.data[temp.id].cshapes, [getCSSphere()])
+        assert len(ret.data[temp.id].boosters) == 0
+        assert len(ret.data[temp.id].factories) == 0
 
         # Fetch the geometry from the Web server and verify it is correct.
-        ret = client.getTemplateGeometry(ret.data[temp.name])
+        ret = client.getTemplateGeometry(ret.data[temp.id])
         assert ret.ok
         assert ret.data['bar'] == frags[0].data
         del temp, ret
@@ -219,7 +219,7 @@ class TestClerk:
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t2', [getCSBox()], frags, [b0, b1], [f0])
         assert client.addTemplates([temp]).ok
-        ret = client.spawn([{'template': temp.name, 'position': np.zeros(3)}])
+        ret = client.spawn([{'template': temp.id, 'position': np.zeros(3)}])
         assert ret.ok and len(ret.data) == 1
         objID = ret.data[0]
 
@@ -230,15 +230,15 @@ class TestClerk:
 
         # Retrieve the entire template and verify the CS and geometry, and
         # number of boosters/factories.
-        ret = client.getTemplates([temp.name])
+        ret = client.getTemplates([temp.id])
         assert ret.ok and (len(ret.data) == 1)
-        t_data = ret.data[temp.name]
+        t_data = ret.data[temp.id]
         assert isEqualCS(t_data.cshapes, [getCSBox()])
         assert len(t_data.boosters) == 2
         assert len(t_data.factories) == 1
 
         # Fetch the geometry from the Web server and verify it is correct.
-        ret = client.getTemplateGeometry(ret.data[temp.name])
+        ret = client.getTemplateGeometry(ret.data[temp.id])
         assert ret.ok
         assert ret.data['bar'] == frags[0].data
 
@@ -487,7 +487,7 @@ class TestClerk:
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert client.addTemplates([temp]).ok
-        new_obj = {'template': temp.name,
+        new_obj = {'template': temp.id,
                    'position': pos_parent,
                    'velocityLin': vel_parent,
                    'orientation': orient_parent}
@@ -560,7 +560,7 @@ class TestClerk:
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
-        new_obj = {'template': temp.name,
+        new_obj = {'template': temp.id,
                    'position': np.ones(3),
                    'velocityLin': -np.ones(3)}
         ret = client.spawn([new_obj])
@@ -631,7 +631,7 @@ class TestClerk:
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
-        new_obj = {'template': temp.name,
+        new_obj = {'template': temp.id,
                    'position': np.ones(3),
                    'velocityLin': -np.ones(3)}
         ret = client.spawn([new_obj])
@@ -696,7 +696,7 @@ class TestClerk:
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
-        new_obj = {'template': temp.name,
+        new_obj = {'template': temp.id,
                    'position': np.ones(3),
                    'velocityLin': -np.ones(3)}
         ret = client.spawn([new_obj])
@@ -738,7 +738,7 @@ class TestClerk:
         assert client.addTemplates([temp]).ok
 
         # Spawn the template.
-        ret = client.spawn([{'template': temp.name, 'position': np.zeros(3)}])
+        ret = client.spawn([{'template': temp.id, 'position': np.zeros(3)}])
         assert ret.ok
         objID = ret.data[0]
 

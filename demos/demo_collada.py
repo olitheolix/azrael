@@ -118,7 +118,7 @@ def spawnColladaModel(scale, fname):
          'orientation': orient,
          'axesLockLin': [1, 1, 1],
          'axesLockRot': [1, 1, 1],
-         'template': temp.name}
+         'template': temp.id}
     ret = client.spawn([d])
     objID = ret.data[0]
     print('done (ID=<{}>)'.format(objID))

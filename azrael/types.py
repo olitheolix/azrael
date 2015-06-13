@@ -38,11 +38,11 @@ from collections import namedtuple
 RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Template dataset.
-Template = namedtuple('Template', 'name cshapes fragments boosters factories')
-FragState = namedtuple('FragState', 'name scale position orientation')
+Template = namedtuple('Template', 'id cshapes fragments boosters factories')
+FragState = namedtuple('FragState', 'id scale position orientation')
 
 # Fragments.
-MetaFragment = namedtuple('MetaFragment', 'type name data')
+MetaFragment = namedtuple('MetaFragment', 'type id data')
 FragRaw = namedtuple('FragRaw', 'vert uv rgb')
 FragDae = namedtuple('FragDae', 'dae rgb')
 
@@ -59,7 +59,7 @@ _RigidBodyState = namedtuple('_RigidBodyState',
                              'axesLockLin axesLockRot lastChanged')
 
 # fixme: rename 'name' to 'id'
-CollShapeMeta = namedtuple('CollShapeMeta', 'type name pos rot cshape')
+CollShapeMeta = namedtuple('CollShapeMeta', 'type id pos rot cshape')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')

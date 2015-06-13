@@ -90,18 +90,18 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             assert False
 
         # Verify that the meta file contains the correct fragment names.
-        expected_fragment_names = {_.name: _.type for _ in template}
+        expected_fragment_names = {_.id: _.type for _ in template}
         assert ret['fragments'] == expected_fragment_names
 
         # Download- and verify each template.
         for tt in template:
             if tt.type == 'raw':
-                tmp_url = url + '/{name}/'.format(name=tt.name)
+                tmp_url = url + '/{name}/'.format(name=tt.id)
                 assert self.downloadFragRaw(tmp_url) == tt.data
             elif tt.type == 'dae':
-                tmp_url = url + '/{name}/'.format(name=tt.name)
+                tmp_url = url + '/{name}/'.format(name=tt.id)
                 texture_names = list(tt.data.rgb.keys())
-                ret = self.downloadFragDae(tmp_url, tt.name, texture_names)
+                ret = self.downloadFragDae(tmp_url, tt.id, texture_names)
                 assert ret == tt.data
             else:
                 assert False

@@ -505,8 +505,8 @@ class TestBulletAPI:
         ret_a = sim.getRigidBodyData(objID_a)
         ret_b = sim.getRigidBodyData(objID_b)
         assert ret_a.ok and ret_b.ok
-        assert ret_a.data.cshapes[0].name.upper() == 'CSFOO'
-        assert ret_b.data.cshapes[0].name.upper() == 'CSBAR'
+        assert ret_a.data.cshapes[0].id.upper() == 'CSFOO'
+        assert ret_b.data.cshapes[0].id.upper() == 'CSBAR'
         tmp_cs = sim.rigidBodies[objID_a].getCollisionShape()
         assert tmp_cs.getChildShape(0).getRadius() == radius
         tmp_cs = sim.rigidBodies[objID_b].getCollisionShape()
@@ -561,10 +561,10 @@ class TestBulletAPI:
         # Verify the collision shapes are as expected.
         ret = sim.getRigidBodyData(objID_a)
         assert ret.ok
-        assert ret.data.cshapes[0].name.upper() == 'CSSPHERE'
+        assert ret.data.cshapes[0].id.upper() == 'CSSPHERE'
         ret = sim.getRigidBodyData(objID_b)
         assert ret.ok
-        assert ret.data.cshapes[0].name.upper() == 'CSSPHERE'
+        assert ret.data.cshapes[0].id.upper() == 'CSSPHERE'
 
         # Change both collision shape to unit cubes. Then step the simulation
         # again to ensure Bullet accesses each object and nothing bad happens
@@ -578,10 +578,10 @@ class TestBulletAPI:
         # Verify the collision shapes have been updated to boxes.
         ret = sim.getRigidBodyData(objID_a)
         assert ret.ok
-        assert ret.data.cshapes[0].name.upper() == 'CSBOX'
+        assert ret.data.cshapes[0].id.upper() == 'CSBOX'
         ret = sim.getRigidBodyData(objID_b)
         assert ret.ok
-        assert ret.data.cshapes[0].name.upper() == 'CSBOX'
+        assert ret.data.cshapes[0].id.upper() == 'CSBOX'
 
     def test_specify_P2P_constraint(self):
         """

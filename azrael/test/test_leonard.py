@@ -188,8 +188,8 @@ class TestLeonardAllEngines:
         assert ret.ok
         assert ret.data[objID].imass == 2
         assert ret.data[objID].scale == 3
-        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).name
-        assert tmp == cshape_sphere[0].name
+        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).id
+        assert tmp == cshape_sphere[0].id
         del tmp
 
         # Update the object's SV data.
@@ -203,8 +203,8 @@ class TestLeonardAllEngines:
         assert (ret.ok, len(ret.data)) == (True, 1)
         sv = ret.data[objID]
         assert (sv.imass == 4) and (sv.scale == 5)
-        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).name
-        assert tmp == cshape_box[0].name
+        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).id
+        assert tmp == cshape_box[0].id
         del tmp
 
     @pytest.mark.parametrize('clsLeonard', allEngines)

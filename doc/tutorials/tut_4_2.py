@@ -73,7 +73,7 @@ def main():
     # their (x, y, z) position in space.
     spawn_param = [
         {'position': [0, 0, 0],
-         'template': template.name}
+         'template': template.id}
     ]
     ret = client.spawn(spawn_param)
     objID = ret.data[0]

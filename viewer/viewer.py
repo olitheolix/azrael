@@ -473,9 +473,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                                gl.GL_NEAREST)
 
         # Assign the texture buffer.
-        self.numVertices[objID][frag.name] = numVertices
-        self.textureBuffer[objID][frag.name] = textureBuffer
-        self.vertex_array_object[objID][frag.name] = VAO
+        self.numVertices[objID][frag.id] = numVertices
+        self.textureBuffer[objID][frag.id] = textureBuffer
+        self.vertex_array_object[objID][frag.id] = VAO
 
     def loadGeometry(self):
         # Backup the latest state variables because we will download new ones
@@ -771,9 +771,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         frags = [FragState(*_) for _ in self.newSVs[objID]['frag']]
         for frag in frags:
             # Convenience.
-            textureHandle = self.textureBuffer[objID][frag.name]
-            VAO = self.vertex_array_object[objID][frag.name]
-            numVertices = self.numVertices[objID][frag.name]
+            textureHandle = self.textureBuffer[objID][frag.id]
+            VAO = self.vertex_array_object[objID][frag.id]
+            numVertices = self.numVertices[objID][frag.id]
 
             # Activate the shader depending on whether or not we have a texture
             # for the current object.

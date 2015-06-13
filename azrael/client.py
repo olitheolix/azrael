@@ -323,7 +323,7 @@ class Client():
         raw = FragRaw(**newval)
 
         # Return a JSON compatible version of the MetaFragment ``frag``.
-        return MetaFragment(type='raw', name=frag.name, data=raw)
+        return MetaFragment(type='raw', id=frag.id, data=raw)
 
     def _encodeDaeFragment(self, frag):
         """
@@ -360,7 +360,7 @@ class Client():
             rgb[rr] = base64.b64encode(f.rgb[rr]).decode('utf8')
 
         # Return a JSON compatible version of the MetaFragment ``frag``.
-        return MetaFragment(type='dae', name=frag.name, data=FragDae(dae, rgb))
+        return MetaFragment(type='dae', id=frag.id, data=FragDae(dae, rgb))
 
     @typecheck
     def updateFragments(self, objID: int, frags: list):
@@ -375,7 +375,7 @@ class Client():
             for idx, frag in enumerate(frags):
                 # Check the Fragment header.
                 assert isinstance(frag, MetaFragment)
-                assert isinstance(frag.name, str)
+                assert isinstance(frag.id, str)
 
                 # Check and encode the content of each individual fragment.
                 if frag.type == 'raw':
@@ -544,12 +544,12 @@ class Client():
         out = {}
         for frag in template.fragments:
             frag = MetaFragment(*frag)
-            url = base_url + '/' + frag.name + '/model.json'
+            url = base_url + '/' + frag.id + '/model.json'
             data = urllib.request.urlopen(url).readall()
             out = json.loads(data.decode('utf8'))
 
             # Wrap the fragments into their dedicated tuple type.
-            out[frag.name] = FragRaw(**out)
+            out[frag.id] = FragRaw(**out)
         return RetVal(True, None, out)
 
     @typecheck
@@ -569,7 +569,7 @@ class Client():
             for idx, temp in enumerate(templates):
                 # Sanity checks.
                 assert isinstance(temp, Template)
-                assert isinstance(temp.name, str)
+                assert isinstance(temp.id, str)
                 assert isinstance(temp.cshapes, (tuple, list, np.ndarray))
                 assert isinstance(temp.fragments, (tuple, list))
 
@@ -599,7 +599,7 @@ class Client():
                 # Replace the original entry with a new one where CS is
                 # definitively a list.
                 templates[idx] = Template(
-                    temp.name, cs, frags, temp.boosters, temp.factories)
+                    temp.id, cs, frags, temp.boosters, temp.factories)
         except AssertionError as err:
             return RetVal(False, 'Data type error', None)
         return self.serialiseAndSend('add_templates', templates)

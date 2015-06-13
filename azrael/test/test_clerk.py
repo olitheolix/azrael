@@ -171,21 +171,21 @@ class TestClerk:
         assert mock_dibbler.addTemplate.call_count == 4
 
         # Retrieve the just created object and verify the collision shape.
-        ret = clerk.getTemplates([temp.name])
+        ret = clerk.getTemplates([temp.id])
         assert ret.ok
-        assert isEqualCS(ret.data[temp.name]['cshapes'], [cs])
+        assert isEqualCS(ret.data[temp.id]['cshapes'], [cs])
 
         # The template must also feature two boosters and one factory.
-        assert len(ret.data[temp.name]['boosters']) == 2
-        assert len(ret.data[temp.name]['factories']) == 1
+        assert len(ret.data[temp.id]['boosters']) == 2
+        assert len(ret.data[temp.id]['factories']) == 1
 
         # Explicitly verify the booster- and factory units. The easisest
         # (albeit not most readable) way to do the comparison is to convert the
         # unit descriptions (which are named tuples) to byte strings and
         # compare those.
         Booster, Factory = parts.Booster, parts.Factory
-        out_boosters = [Booster(*_) for _ in ret.data[temp.name]['boosters']]
-        out_factories = [Factory(*_) for _ in ret.data[temp.name]['factories']]
+        out_boosters = [Booster(*_) for _ in ret.data[temp.id]['boosters']]
+        out_factories = [Factory(*_) for _ in ret.data[temp.id]['factories']]
         assert b0 in out_boosters
         assert b1 in out_boosters
         assert f0 in out_factories
@@ -193,8 +193,8 @@ class TestClerk:
         # Request the same templates multiple times in a single call. This must
         # return a dictionary with as many keys as there are unique template
         # IDs.
-        ret = clerk.getTemplates([temp.name, temp.name, temp.name])
-        assert ret.ok and (len(ret.data) == 1) and (temp.name in ret.data)
+        ret = clerk.getTemplates([temp.id, temp.id, temp.id])
+        assert ret.ok and (len(ret.data) == 1) and (temp.id in ret.data)
 
     def test_add_get_template_multi_url(self):
         """
@@ -275,11 +275,11 @@ class TestClerk:
         frags = [MetaFragment('raw', 'bar', FragRaw(vert, uv, rgb))]
         t1 = Template('t1', [cs], frags, [], [])
         assert clerk.addTemplates([t1]).ok
-        ret = clerk.getTemplates([t1.name])
+        ret = clerk.getTemplates([t1.id])
         assert ret.ok
 
         # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-        assert (ret.data[t1.name]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
+        assert (ret.data[t1.id]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
 
         # Repeat the experiment with a larger mesh.
         vert = [0, 0, 0,
@@ -294,11 +294,11 @@ class TestClerk:
         frags = [MetaFragment('raw', 'bar', FragRaw(vert, uv, rgb))]
         t2 = Template('t2', [cs], frags, [], [])
         assert clerk.addTemplates([t2]).ok
-        ret = clerk.getTemplates([t2.name])
+        ret = clerk.getTemplates([t2.id])
         assert ret.ok
 
         # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-        assert (ret.data[t2.name]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
+        assert (ret.data[t2.id]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
 
     def test_get_object_template_id(self):
         """
@@ -608,7 +608,7 @@ class TestClerk:
         assert clerk.addTemplates([template]).ok
 
         # Spawn an instance of the template and get the object ID.
-        ret = clerk.spawn([(template.name, rb_state.RigidBodyState())])
+        ret = clerk.spawn([(template.id, rb_state.RigidBodyState())])
         assert ret.ok
         objID = ret.data[0]
 
@@ -677,7 +677,7 @@ class TestClerk:
         temp = Template('t1', [getCSSphere()], frags, [b0], [f0])
         assert clerk.addTemplates([temp]).ok
         sv = rb_state.RigidBodyState()
-        ret = clerk.spawn([(temp.name, sv)])
+        ret = clerk.spawn([(temp.id, sv)])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
         leo.processCommandsAndSync()
 
@@ -734,7 +734,7 @@ class TestClerk:
         assert clerk.addTemplates([temp]).ok
 
         # Spawn an instance of the template.
-        ret = clerk.spawn([(temp.name, sv)])
+        ret = clerk.spawn([(temp.id, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del ret, temp
@@ -807,7 +807,7 @@ class TestClerk:
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.name, sv)])
+        ret = clerk.spawn([(temp.id, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del ret, temp, f0, f1, sv
@@ -880,7 +880,7 @@ class TestClerk:
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.name, sv)])
+        ret = clerk.spawn([(temp.id, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del temp, ret, f0, f1, sv
@@ -981,7 +981,7 @@ class TestClerk:
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.name, sv)])
+        ret = clerk.spawn([(temp.id, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del b0, b1, f0, f1, temp
@@ -1091,13 +1091,13 @@ class TestClerk:
         # upload worked.
         temp = Template('foo', [getCSSphere()], frags, [], [])
         assert clerk.addTemplates([temp]).ok
-        assert clerk.getTemplates([temp.name]).ok
+        assert clerk.getTemplates([temp.id]).ok
 
         # Attempt to query the geometry of a non-existing object.
         assert clerk.getGeometries([123]) == (True, None, {123: None})
 
         # Spawn two objects from the previously added template.
-        ret = clerk.spawn([(temp.name, sv1), (temp.name, sv2)])
+        ret = clerk.spawn([(temp.id, sv1), (temp.id, sv2)])
         assert ret.ok
         objID_1, objID_2 = ret.data
 
@@ -1154,7 +1154,7 @@ class TestClerk:
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
-        ret = clerk.spawn([(temp.name, sv), (temp.name, sv)])
+        ret = clerk.spawn([(temp.id, sv), (temp.id, sv)])
         assert ret.ok and (len(ret.data) == 2)
         objID0, objID1 = ret.data
 
@@ -1208,7 +1208,7 @@ class TestClerk:
 
         # Add the template and spawn two instances.
         assert clerk.addTemplates([t1]).ok
-        ret = clerk.spawn([(t1.name, sv), (t1.name, sv)])
+        ret = clerk.spawn([(t1.id, sv), (t1.id, sv)])
         assert ret.ok
         objID_1, objID_2 = ret.data
 
@@ -1284,7 +1284,7 @@ class TestClerk:
         # Add the template to Azrael, spawn two instances, and make sure
         # Leonard picks it up so that the object becomes available.
         assert clerk.addTemplates([t1]).ok
-        _, _, (objID_1, objID_2) = clerk.spawn([(t1.name, sv), (t1.name, sv)])
+        _, _, (objID_1, objID_2) = clerk.spawn([(t1.id, sv), (t1.id, sv)])
         leo.processCommandsAndSync()
 
         def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
@@ -1421,7 +1421,7 @@ class TestClerk:
             # Convert the [FragState(), FragState()] list into a
             # {name_1: FragState, name_2: FragState, ...} dictionary. This is
             # purely for convenience below.
-            _frags = {_.name: _ for _ in _frags}
+            _frags = {_.id: _ for _ in _frags}
             assert (name_1 in _frags) and (name_2 in _frags)
 
             # Verify the fragments have the expected values.
@@ -1438,7 +1438,7 @@ class TestClerk:
 
         t1 = Template('t1', cs, frags, boosters=[], factories=[])
         assert clerk.addTemplates([t1]).ok
-        ret = clerk.spawn([(t1.name, sv)])
+        ret = clerk.spawn([(t1.id, sv)])
         assert ret.ok
         objID = ret.data[0]
         leo.processCommandsAndSync()
