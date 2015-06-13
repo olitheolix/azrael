@@ -358,7 +358,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (1, ))
 
         # Geometry for this object must now exist.
-        assert clerk.getGeometries([1]).data[1] is not None
+        assert clerk.getFragmentGeometries([1]).data[1] is not None
 
         # Spawn two more objects with a single call.
         name_2 = '_templateSphere'
@@ -367,7 +367,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (2, 3))
 
         # Geometry for last two object must now exist as well.
-        ret = clerk.getGeometries([2, 3])
+        ret = clerk.getFragmentGeometries([2, 3])
         assert ret.data[2] is not None
         assert ret.data[3] is not None
 
@@ -376,7 +376,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (4, 5))
 
         # Geometry for last two object must now exist as well.
-        ret = clerk.getGeometries([4, 5])
+        ret = clerk.getFragmentGeometries([4, 5])
         assert ret.data[4] is not None
         assert ret.data[5] is not None
 
@@ -1068,9 +1068,9 @@ class TestClerk:
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
-    def test_getGeometries(self):
+    def test_getFragmentGeometries(self):
         """
-        Spawn two objects and query their geometries.
+        Spawn two objects and query their fragment geometries.
         """
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -1094,7 +1094,7 @@ class TestClerk:
         assert clerk.getTemplates([temp.id]).ok
 
         # Attempt to query the geometry of a non-existing object.
-        assert clerk.getGeometries([123]) == (True, None, {123: None})
+        assert clerk.getFragmentGeometries([123]) == (True, None, {123: None})
 
         # Spawn two objects from the previously added template.
         ret = clerk.spawn([(temp.id, sv1), (temp.id, sv2)])
@@ -1115,21 +1115,21 @@ class TestClerk:
             return True
 
         # Query and verify the geometry of the first instance.
-        ret = clerk.getGeometries([objID_1])
+        ret = clerk.getFragmentGeometries([objID_1])
         assert ret.ok and _verify(ret.data, objID_1)
 
         # Query and verify the geometry of the second instance.
-        ret = clerk.getGeometries([objID_2])
+        ret = clerk.getFragmentGeometries([objID_2])
         assert ret.ok and _verify(ret.data, objID_2)
 
         # Query both instances at once and verify them.
-        ret = clerk.getGeometries([objID_1, objID_2])
+        ret = clerk.getFragmentGeometries([objID_1, objID_2])
         assert ret.ok and _verify(ret.data, objID_1)
         assert ret.ok and _verify(ret.data, objID_2)
 
         # Delete first and query again.
         assert clerk.removeObject(objID_1).ok
-        ret = clerk.getGeometries([objID_1, objID_2])
+        ret = clerk.getFragmentGeometries([objID_1, objID_2])
         assert ret.ok
         assert ret.data[objID_1] is None
         assert _verify(ret.data, objID_2)
@@ -1169,7 +1169,7 @@ class TestClerk:
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
-        assert clerk.updateFragmentGeometries(objID0, frags).ok
+        assert clerk.setFragmentGeometries(objID0, frags).ok
 
         # Verify that the new 'lastChanged' flag is now different.
         ret = clerk.getBodyStates([objID0])
@@ -1259,7 +1259,7 @@ class TestClerk:
         cmd_0 = parts.CmdBooster(partID='0', force=1)
         assert not clerk.updateBoosterForces(1000, [cmd_0]).ok
 
-    def test_updateFragmentState(self):
+    def test_setFragmentStates(self):
         """
         Create a new template with one fragment and create two instances. Then
         query and update the fragment states.
@@ -1270,7 +1270,7 @@ class TestClerk:
 
         # Attempt to update the fragment state of non-existing objects.
         newStates = {2: [FragState('1', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
-        ret = clerk.updateFragmentStates(newStates)
+        ret = clerk.setFragmentStates(newStates)
         assert not ret.ok
 
         # Convenience.
@@ -1312,7 +1312,7 @@ class TestClerk:
 
         # Update and verify the fragment states of the second object.
         newStates = {objID_2: [FragState('foo', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
-        assert clerk.updateFragmentStates(newStates).ok
+        assert clerk.setFragmentStates(newStates).ok
         checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
                        2.2, [1, 2, 3], [1, 0, 0, 0])
 
@@ -1321,7 +1321,7 @@ class TestClerk:
             objID_1: [FragState('foo', 3.3, [1, 2, 4], [2, 0, 0, 0])],
             objID_2: [FragState('foo', 4.4, [1, 2, 5], [0, 3, 0, 0])]
         }
-        assert clerk.updateFragmentStates(newStates).ok
+        assert clerk.setFragmentStates(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        4.4, [1, 2, 5], [0, 3, 0, 0])
 
@@ -1333,7 +1333,7 @@ class TestClerk:
             1000000: [FragState('foo', 5, [5, 5, 5], [5, 5, 5, 5])],
             objID_2: [FragState('foo', 5, [5, 5, 5], [5, 5, 5, 5])]
         }
-        assert not clerk.updateFragmentStates(newStates).ok
+        assert not clerk.setFragmentStates(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        5.0, [5, 5, 5], [5, 5, 5, 5])
 
@@ -1341,7 +1341,7 @@ class TestClerk:
         newStates = {
             objID_2: [FragState('blah', 6, [6, 6, 6], [6, 6, 6, 6])]
         }
-        assert not clerk.updateFragmentStates(newStates).ok
+        assert not clerk.setFragmentStates(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        5.0, [5, 5, 5], [5, 5, 5, 5])
 
@@ -1352,15 +1352,15 @@ class TestClerk:
             objID_2: [FragState('foo', 7, [7, 7, 7], [7, 7, 7, 7]),
                       FragState('blah', 8, [8, 8, 8], [8, 8, 8, 8])]
         }
-        assert not clerk.updateFragmentStates(newStates).ok
+        assert not clerk.setFragmentStates(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        5.0, [5, 5, 5], [5, 5, 5, 5])
 
         # Update the fragments twice with the exact same data. This trigger a
         # bug at one point but is fixed now.
         newStates = {objID_2: [FragState('foo', 9, [9, 9, 9], [9, 9, 9, 9])]}
-        assert clerk.updateFragmentStates(newStates).ok
-        assert clerk.updateFragmentStates(newStates).ok
+        assert clerk.setFragmentStates(newStates).ok
+        assert clerk.setFragmentStates(newStates).ok
 
     def test_isNameValid(self):
         """
@@ -1468,13 +1468,13 @@ class TestClerk:
                 FragState('10', 7, [7, 7, 7], [7, 7, 7, 7]),
                 FragState('test', 8, [8, 8, 8], [8, 8, 8, 8])]
         }
-        assert clerk.updateFragmentStates(newStates).ok
+        assert clerk.setFragmentStates(newStates).ok
         checkFragState(objID,
                        '10', 7, [7, 7, 7], [7, 7, 7, 7],
                        'test', 8, [8, 8, 8], [8, 8, 8, 8])
 
         # Query the fragment _geometries_.
-        ret = clerk.getGeometries([objID])
+        ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
         data = ret.data[objID]
         del ret
@@ -1516,8 +1516,8 @@ class TestClerk:
         f_raw = createFragRaw()
         frags = [MetaFragment('raw', '10', f_raw),
                  MetaFragment('dae', 'test', f_dae)]
-        assert clerk.updateFragmentGeometries(objID, frags).ok
-        ret = clerk.getGeometries([objID])
+        assert clerk.setFragmentGeometries(objID, frags).ok
+        ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
         data = ret.data[objID]
         del ret

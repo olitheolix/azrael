@@ -524,7 +524,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Download the latest geometry for this object.
-            ret = self.client.getGeometries([objID])
+            ret = self.client.getFragmentGeometries([objID])
             if not ret.ok:
                 continue
 

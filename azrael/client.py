@@ -78,12 +78,12 @@ class Client():
             'ping_clerk': (
                 protocol.ToClerk_Ping_Encode,
                 protocol.FromClerk_Ping_Decode),
-            'get_geometries': (
-                protocol.ToClerk_GetGeometries_Encode,
-                protocol.FromClerk_GetGeometries_Decode),
-            'set_geometry': (
-                protocol.ToClerk_SetGeometry_Encode,
-                protocol.FromClerk_SetGeometry_Decode),
+            'get_fragment_geometries': (
+                protocol.ToClerk_GetFragmentGeometries_Encode,
+                protocol.FromClerk_GetFragmentGeometries_Decode),
+            'set_fragment_geometries': (
+                protocol.ToClerk_SetFragmentGeometry_Encode,
+                protocol.FromClerk_SetFragmentGeometry_Decode),
             'spawn': (
                 protocol.ToClerk_Spawn_Encode,
                 protocol.FromClerk_Spawn_Decode),
@@ -105,7 +105,7 @@ class Client():
             'get_all_body_states': (
                 protocol.ToClerk_GetAllBodyStates_Encode,
                 protocol.FromClerk_GetAllBodyStates_Decode),
-            'set_body_states': (
+            'set_body_state': (
                 protocol.ToClerk_SetBodyState_Encode,
                 protocol.FromClerk_SetBodyState_Decode),
             'set_force': (
@@ -117,9 +117,9 @@ class Client():
             'control_parts': (
                 protocol.ToClerk_ControlParts_Encode,
                 protocol.FromClerk_ControlParts_Decode),
-            'update_fragment_states': (
-                protocol.ToClerk_UpdateFragmentStates_Encode,
-                protocol.FromClerk_UpdateFragmentStates_Decode),
+            'set_fragment_states': (
+                protocol.ToClerk_SetFragmentStates_Encode,
+                protocol.FromClerk_SetFragmentStates_Decode),
             'add_constraints': (
                 protocol.ToClerk_AddConstraints_Encode,
                 protocol.FromClerk_AddConstraints_Decode),
@@ -276,7 +276,7 @@ class Client():
         return self.serialiseAndSend('ping_clerk', None)
 
     @typecheck
-    def getGeometries(self, objIDs: list):
+    def getFragmentGeometries(self, objIDs: list):
         """
         Return links to the models for the objects in ``objIDs``.
 
@@ -290,7 +290,7 @@ class Client():
         :return: links to model data for all ``objIDs``.
         :rtype: dict
         """
-        return self.serialiseAndSend('get_geometries', objIDs)
+        return self.serialiseAndSend('get_fragment_geometries', objIDs)
 
     def _encodeRawFragment(self, frag):
         """
@@ -363,7 +363,7 @@ class Client():
         return MetaFragment(type='dae', id=frag.id, data=FragDae(dae, rgb))
 
     @typecheck
-    def updateFragments(self, objID: int, frags: list):
+    def setFragmentGeometries(self, objID: int, frags: list):
         """
         Change the geometry parameters of ``objID``.
 
@@ -389,7 +389,7 @@ class Client():
         except AssertionError:
             return RetVal(False, 'Invalid fragment data types', None)
 
-        return self.serialiseAndSend('set_geometry', objID, frags)
+        return self.serialiseAndSend('set_fragment_geometries', objID, frags)
 
     @typecheck
     def spawn(self, new_objects: (tuple, list)):
@@ -517,7 +517,7 @@ class Client():
         """
         Return the template data for all  ``templateIDs`` in a dictionary.
 
-        Use ``getGeometries`` to just query the geometry.
+        Use ``getFragmentGeometries`` to query just the geometry.
 
         :param bytes templateID: return the description of this template.
         :return: (cs, geo, boosters, factories)
@@ -695,7 +695,7 @@ class Client():
         :return: Success
         """
         new = tuple(new)
-        return self.serialiseAndSend('set_body_states', objID, new)
+        return self.serialiseAndSend('set_body_state', objID, new)
 
     @typecheck
     def setForce(self, objID: int, force: (tuple, list, np.ndarray)):
@@ -725,7 +725,7 @@ class Client():
         """
         return self.serialiseAndSend('get_all_objids')
 
-    def updateFragmentStates(self, fragStates: dict):
+    def setFragmentStates(self, fragStates: dict):
         """
         Modify the fragment states specified in ``fragStates``.
 
@@ -741,7 +741,7 @@ class Client():
         :return: Success
         :rtype:
         """
-        return self.serialiseAndSend('update_fragment_states', fragStates)
+        return self.serialiseAndSend('set_fragment_states', fragStates)
 
     @typecheck
     def addConstraints(self, constraints: (tuple, list)):

@@ -213,7 +213,7 @@ class TestClient:
             templateID='_templateCube', exit_speed=[0.1, 0.5])
 
         # Attempt to query the geometry of a non-existing object.
-        assert client.getGeometries([1]) == (True, None, {1: None})
+        assert client.getFragmentGeometries([1]) == (True, None, {1: None})
 
         # Define a new template, add it to Azrael, and spawn it.
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
@@ -224,7 +224,7 @@ class TestClient:
         objID = ret.data[0]
 
         # Retrieve the geometry of the new object and verify it is correct.
-        ret = client.getGeometries([objID])
+        ret = client.getFragmentGeometries([objID])
         assert ret.ok
         assert ret.data[objID]['bar']['type'] == 'raw'
 
@@ -542,7 +542,7 @@ class TestClient:
         assert np.array_equal(leo_torque, tot_torque)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_updateFragments_raw(self, client_type):
+    def test_setFragmentGeometries_raw(self, client_type):
         """
         Spawn a new object and modify its geometry at runtime.
         """
@@ -574,7 +574,7 @@ class TestClient:
         lastChanged = ret.data[objID]['sv'].lastChanged
 
         # Fetch-, modify-, update- and verify the geometry.
-        ret = client.getGeometries([objID])
+        ret = client.getFragmentGeometries([objID])
         assert ret.ok
         assert ret.data[objID]['bar']['type'] == 'raw'
 
@@ -594,9 +594,9 @@ class TestClient:
 
         # Change the fragment geometries.
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
-        assert client.updateFragments(objID, frags).ok
+        assert client.setFragmentGeometries(objID, frags).ok
 
-        ret = client.getGeometries([objID])
+        ret = client.getFragmentGeometries([objID])
         assert ret.ok
         assert ret.data[objID]['bar']['type'] == 'raw'
 
@@ -611,7 +611,7 @@ class TestClient:
         assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_updateFragments_dae(self, client_type):
+    def test_setFragmentGeometries_dae(self, client_type):
         """
         Spawn a new object and modify its geometry at runtime.
         """
@@ -646,16 +646,16 @@ class TestClient:
         lastChanged = ret.data[objID]['sv'].lastChanged
 
         # Fetch-, modify-, update- and verify the geometry.
-        ret = client.getGeometries([objID])
+        ret = client.getFragmentGeometries([objID])
         assert ret.ok
         assert ret.data[objID]['f_dae']['type'] == 'dae'
 
         # Change the fragment geometries.
         frags = [MetaFragment('raw', 'f_dae', createFragRaw())]
-        assert client.updateFragments(objID, frags).ok
+        assert client.setFragmentGeometries(objID, frags).ok
 
         # Ensure it now has type 'raw'.
-        ret = client.getGeometries([objID])
+        ret = client.getFragmentGeometries([objID])
         assert ret.ok
         assert ret.data[objID]['f_dae']['type'] == 'raw'
 
@@ -666,10 +666,10 @@ class TestClient:
         # Change the fragment geometries.
         lastChanged = ret.data[objID]['sv'].lastChanged
         frags = [MetaFragment('dae', 'f_dae', f_dae)]
-        assert client.updateFragments(objID, frags).ok
+        assert client.setFragmentGeometries(objID, frags).ok
 
         # Ensure it now has type 'dae' again.
-        ret = client.getGeometries([objID])
+        ret = client.getFragmentGeometries([objID])
         assert ret.ok
         assert ret.data[objID]['f_dae']['type'] == 'dae'
 
@@ -678,7 +678,7 @@ class TestClient:
         assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_updateFragmentStates(self, client_type):
+    def test_setFragmentStates(self, client_type):
         """
         Query and modify fragment states.
         """
@@ -714,7 +714,7 @@ class TestClient:
         # Modify and update the fragment states in Azrael, then query and
         # verify it worked.
         newStates = {objID: [FragState('bar', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
-        assert client.updateFragmentStates(newStates).ok
+        assert client.setFragmentStates(newStates).ok
         ret = client.getBodyStates(objID)
         assert ret.ok
         assert ret.data[objID]['frag'] == newStates[objID]
@@ -752,7 +752,7 @@ class TestClient:
 
         # Query the fragment geometries and Body State to very that both report
         # three fragments.
-        ret = client.getGeometries([objID])
+        ret = client.getFragmentGeometries([objID])
         assert ret.ok and len(ret.data[objID]) == 3
         ret = client.getBodyStates(objID)
         assert ret.ok and len(ret.data[objID]['frag']) == 3
@@ -764,10 +764,10 @@ class TestClient:
             MetaFragment('_none_', 'fname_2', None),
             MetaFragment('dae', 'fname_3', createFragDae())
         ]
-        assert client.updateFragments(objID, frags_new).ok
+        assert client.setFragmentGeometries(objID, frags_new).ok
 
         # After the last update there must now only be two fragments.
-        ret = client.getGeometries([objID])
+        ret = client.getFragmentGeometries([objID])
         assert ret.ok and len(ret.data[objID]) == 2
         ret = client.getBodyStates(objID)
         assert ret.ok and len(ret.data[objID]['frag']) == 2
@@ -798,7 +798,7 @@ class TestClient:
         objID = ret.data[0]
 
         # Query and the geometry.
-        ret = client.getGeometries([objID])
+        ret = client.getFragmentGeometries([objID])
         assert ret.ok
 
         # Verify it has the correct type ('dae') and address.

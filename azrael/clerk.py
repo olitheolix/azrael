@@ -104,18 +104,18 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_GetAllBodyStates_Decode,
                 self.getAllBodyStates,
                 protocol.FromClerk_GetAllBodyStates_Encode),
-            'set_body_states': (
+            'set_body_state': (
                 protocol.ToClerk_SetBodyState_Decode,
                 self.setBodyState,
                 protocol.FromClerk_SetBodyState_Encode),
-            'get_geometries': (
-                protocol.ToClerk_GetGeometries_Decode,
-                self.getGeometries,
-                protocol.FromClerk_GetGeometries_Encode),
-            'set_geometry': (
-                protocol.ToClerk_SetGeometry_Decode,
-                self.updateFragmentGeometries,
-                protocol.FromClerk_SetGeometry_Encode),
+            'get_fragment_geometries': (
+                protocol.ToClerk_GetFragmentGeometries_Decode,
+                self.getFragmentGeometries,
+                protocol.FromClerk_GetFragmentGeometries_Encode),
+            'set_fragment_geometries': (
+                protocol.ToClerk_SetFragmentGeometry_Decode,
+                self.setFragmentGeometries,
+                protocol.FromClerk_SetFragmentGeometry_Encode),
             'set_force': (
                 protocol.ToClerk_SetForce_Decode,
                 self.setForce,
@@ -140,10 +140,10 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_ControlParts_Decode,
                 self.controlParts,
                 protocol.FromClerk_ControlParts_Encode),
-            'update_fragment_states': (
-                protocol.ToClerk_UpdateFragmentStates_Decode,
-                self.updateFragmentStates,
-                protocol.FromClerk_UpdateFragmentStates_Encode),
+            'set_fragment_states': (
+                protocol.ToClerk_SetFragmentStates_Decode,
+                self.setFragmentStates,
+                protocol.FromClerk_SetFragmentStates_Encode),
             'add_constraints': (
                 protocol.ToClerk_AddConstraints_Decode,
                 self.addConstraints,
@@ -940,7 +940,7 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, ret.msg, None)
 
     @typecheck
-    def getGeometries(self, objIDs: list):
+    def getFragmentGeometries(self, objIDs: list):
         """
         Return information about the fragments of each object in ``objIDs``.
 
@@ -984,7 +984,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def updateFragmentGeometries(self, objID: int, fragments: list):
+    def setFragmentGeometries(self, objID: int, fragments: list):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
@@ -1049,7 +1049,7 @@ class Clerk(config.AzraelProcess):
 
     @typecheck
     def setBodyState(self, objID: int,
-                         data: rb_state.RigidBodyStateOverride):
+                     data: rb_state.RigidBodyStateOverride):
         """
         Set the State Variables of ``objID`` to ``data``.
 
@@ -1199,7 +1199,7 @@ class Clerk(config.AzraelProcess):
         return self._packSVData(ret.data)
 
     @typecheck
-    def updateFragmentStates(self, fragData: dict):
+    def setFragmentStates(self, fragData: dict):
         """
         Update the fragments states (pos, vel, etc) of one or more objects.
 

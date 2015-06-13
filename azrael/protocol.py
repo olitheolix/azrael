@@ -231,7 +231,7 @@ def FromClerk_GetAllObjectIDs_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# SetBodyState
+# SetBodyStates
 # ---------------------------------------------------------------------------
 
 
@@ -294,17 +294,17 @@ def FromClerk_SetForce_Decode(dummyarg):
 
 
 # ---------------------------------------------------------------------------
-# GetGeometries
+# GetFragmentGeometries
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_GetGeometries_Encode(objIDs: list):
+def ToClerk_GetFragmentGeometries_Encode(objIDs: list):
     return RetVal(True, None, {'objIDs': objIDs})
 
 
 @typecheck
-def ToClerk_GetGeometries_Decode(payload: dict):
+def ToClerk_GetFragmentGeometries_Decode(payload: dict):
     objIDs = payload['objIDs']
     if not isinstance(objIDs, list):
         return False, 'Expected <list> but got <{}>'.format(type(objIDs))
@@ -312,33 +312,33 @@ def ToClerk_GetGeometries_Decode(payload: dict):
     try:
         objIDs = [int(_) for _ in objIDs]
     except TypeError:
-        return False, 'Expected integers in ToClerk_GetGeometries_Decode'
+        return False, 'Expected integers in ToClerk_GetFragmentGeometries_Decode'
     return True, (objIDs, )
 
 
 @typecheck
-def FromClerk_GetGeometries_Encode(geo):
+def FromClerk_GetFragmentGeometries_Encode(geo):
     return True, geo
 
 
 @typecheck
-def FromClerk_GetGeometries_Decode(payload: dict):
+def FromClerk_GetFragmentGeometries_Decode(payload: dict):
     payload = {int(k): v for (k, v) in payload.items()}
     return RetVal(True, None, payload)
 
 
 # ---------------------------------------------------------------------------
-# SetGeometry
+# SetFragmentGeometry
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_SetGeometry_Encode(objID: int, frags: list):
+def ToClerk_SetFragmentGeometry_Encode(objID: int, frags: list):
     return RetVal(True, None, {'objID': objID, 'frags': frags})
 
 
 @typecheck
-def ToClerk_SetGeometry_Decode(payload: dict):
+def ToClerk_SetFragmentGeometry_Decode(payload: dict):
     # Wrap the fragments into their dedicated tuple.
     frags = []
     b64d = base64.b64decode
@@ -354,12 +354,12 @@ def ToClerk_SetGeometry_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_SetGeometry_Encode(dummyarg):
+def FromClerk_SetFragmentGeometry_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_SetGeometry_Decode(dummyarg):
+def FromClerk_SetFragmentGeometry_Decode(dummyarg):
     return RetVal(True, None, None)
 
 
@@ -523,19 +523,19 @@ def FromClerk_ControlParts_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# updateFragmentStates
+# SetFragmentStates
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_UpdateFragmentStates_Encode(fragData: dict):
+def ToClerk_SetFragmentStates_Encode(fragData: dict):
     # fragData = {objID_1: [FragState, FragState, ...],
     #             objID_2: [FragState, FragState, ...],}
     return RetVal(True, None, fragData)
 
 
 @typecheck
-def ToClerk_UpdateFragmentStates_Decode(payload: dict):
+def ToClerk_SetFragmentStates_Decode(payload: dict):
     out = {}
     for objID, frag_states in payload.items():
         out[int(objID)] = [FragState(*_) for _ in frag_states]
@@ -543,12 +543,12 @@ def ToClerk_UpdateFragmentStates_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_UpdateFragmentStates_Encode(dummyarg):
+def FromClerk_SetFragmentStates_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_UpdateFragmentStates_Decode(dummyarg):
+def FromClerk_SetFragmentStates_Decode(dummyarg):
     return RetVal(True, None, None)
 
 

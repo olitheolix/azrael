@@ -161,7 +161,7 @@ def spawnBoosterSphere(scale, fname):
             FragState('b_z', 0, [0, 0, 0], [0, 0, 0, 1]),
         ]
     }
-    assert client.updateFragmentStates(newStates).ok
+    assert client.setFragmentStates(newStates).ok
     return objID
 
 

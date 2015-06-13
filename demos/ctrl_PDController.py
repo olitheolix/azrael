@@ -171,7 +171,7 @@ def main(objID, ref_pos):
         assert client.controlParts(objID, forceCmds, []).ok
 
         # Send the updated fragment- sizes and position to Azrael.
-        assert client.updateFragmentStates({objID: fragStates}).ok
+        assert client.setFragmentStates({objID: fragStates}).ok
 
         # Dump some info.
         print('Pos={0:+.2f}, {1:+.2f}, {2:+.2f}  '

@@ -415,7 +415,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Make 'frag_2' invisible by setting its scale to zero.
     for objID in ret.data:
-        client.updateFragmentStates({objID: [
+        client.setFragmentStates({objID: [
             FragState('frag_2', 0, [0, 0, 0], [0, 0, 0, 1])]})
 
 

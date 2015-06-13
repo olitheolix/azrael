@@ -150,7 +150,7 @@ class SetGeometry(multiprocessing.Process):
         print('\n-- {} objects --\n'.format(len(objIDs)))
 
         # Query and backup all models currently in the scene.
-        geo_meta = client.getGeometries(objIDs).data
+        geo_meta = client.getFragmentGeometries(objIDs).data
         base_url = 'http://{}:{}'.format(
             azrael.config.addr_clacks, azrael.config.port_clacks)
         geo_orig = {}
@@ -210,7 +210,7 @@ class SetGeometry(multiprocessing.Process):
                 newStates = {
                     objID: [FragState('frag_2', 1, [x, 0, 0], [0, 0, 0, 1])]
                 }
-                client.updateFragmentStates(newStates)
+                client.setFragmentStates(newStates)
 
             # Print status for user.
             print('Scale={:.1f}'.format(scale))

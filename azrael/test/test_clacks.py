@@ -227,7 +227,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_new)
 
         # Update the fragments.
-        clerk.updateFragmentGeometries(objID=1, fragments=frags_new)
+        clerk.setFragmentGeometries(objID=1, fragments=frags_new)
 
         # Verify that the instance now has the new fragments, but not the old
         # ones anymore.
