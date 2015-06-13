@@ -899,7 +899,7 @@ class TestLeonardOther:
         self.igor.reset()
         s = [[1], [2]]
         checkEqual(s, s)
-        assert igor.addConstraints([ConstraintMeta('p2p', 1, 2, '', p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', '', 1, 2, p2p)]).ok
         checkEqual(s, [[1, 2]])
         self.igor.reset()
         checkEqual(s, s)
@@ -908,22 +908,22 @@ class TestLeonardOther:
         self.igor.reset()
         s = [[1], [2]]
         checkEqual(s, s)
-        assert igor.addConstraints([ConstraintMeta('p2p', 1, 3, '', p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', '', 1, 3, p2p)]).ok
         checkEqual(s, s)
 
         # Three disjoint sets and the constraint links two of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
         checkEqual(s, s)
-        assert igor.addConstraints([ConstraintMeta('p2p', 1, 6, '', p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', '', 1, 6, p2p)]).ok
         checkEqual(s, [[1, 2, 3, 6], [4, 5]])
 
         # Three disjoint sets and two constraint link both of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
         checkEqual(s, s)
-        assert igor.addConstraints([ConstraintMeta('p2p', 1, 6, '', p2p)]).ok
-        assert igor.addConstraints([ConstraintMeta('p2p', 3, 4, '', p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', '', 1, 6, p2p)]).ok
+        assert igor.addConstraints([ConstraintMeta('p2p', '', 3, 4, p2p)]).ok
         checkEqual(s, [[1, 2, 3, 6, 4, 5]])
 
     @pytest.mark.parametrize('clsLeonard', [
@@ -952,7 +952,7 @@ class TestLeonardOther:
 
         # Specify the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
-        con = ConstraintMeta('p2p', id_a, id_b, '', p2p)
+        con = ConstraintMeta('p2p', '', id_a, id_b, p2p)
         self.igor.addConstraints([con])
 
         # Spawn both objects.

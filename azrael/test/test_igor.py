@@ -49,7 +49,7 @@ def getP2P(rb_a, rb_b, constraint_id):
     """
     pivot_a, pivot_b = [0, 0, -1], [0, 0, 1]
     p2p = ConstraintP2P(pivot_a, pivot_b)
-    return ConstraintMeta('p2p', rb_a, rb_b, constraint_id, p2p)
+    return ConstraintMeta('p2p', constraint_id, rb_a, rb_b, p2p)
 
 
 def get6DofSpring2(rb_a, rb_b, constraint_id):
@@ -70,7 +70,7 @@ def get6DofSpring2(rb_a, rb_b, constraint_id):
         rotLimitHi=[0.1, 0.2, 0.3],
         bounce=[1, 1.5, 2],
         enableSpring=[True, False, False, False, False, False])
-    con = ConstraintMeta('6DOFSPRING2', rb_a, rb_b, constraint_id, dof)
+    con = ConstraintMeta('6DOFSPRING2', constraint_id, rb_a, rb_b, dof)
     return con
 
 
@@ -164,17 +164,17 @@ class TestClerk:
     @pytest.mark.parametrize('getCon', _AllConstraintGetters)
     def test_add_unique_bug1(self, getCon):
         """
-        Add two constraints that are identical except for the 'tag'.
+        Add two constraints that are identical except for their 'id'.
 
-        In the original implementation this was handled incorrectly because the
-        'tag' was not considered when adding constraints. This made it
-        impossible to add more than once constraint of each type (eg more than
-        one Point2Point constraint between objects).
+        In the original implementation this was handled incorrectly
+        because the 'id' was not considered when adding constraints.
+        This made it impossible to add more than once constraint of each
+        type (eg more than one Point2Point constraint between objects).
         """
         # Convenience.
         igor = self.igor
 
-        # Two constraints that only differ in the 'tag' attribute.
+        # Two constraints that only differ in their 'id' attribute.
         c1 = getCon(1, 2, 'foo')
         c2 = getCon(1, 2, 'bar')
 

@@ -58,14 +58,14 @@ _RigidBodyState = namedtuple('_RigidBodyState',
                              'position velocityLin velocityRot cshapes '
                              'axesLockLin axesLockRot lastChanged')
 
-# fixme: rename 'name' to 'id'
+# Collision shapes.
 CollShapeMeta = namedtuple('CollShapeMeta', 'type id pos rot cshape')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
 
-# fixme: rename 'tag' to 'id' and align fields like in CollShapeMeta.
-ConstraintMeta = namedtuple('ConstraintMeta', 'type rb_a rb_b tag data')
+# Constraints.
+ConstraintMeta = namedtuple('ConstraintMeta', 'type id rb_a rb_b data')
 ConstraintP2P = namedtuple('ConstraintP2P', 'pivot_a pivot_b')
 Constraint6DofSpring2 = namedtuple(
     'Constraint6DofSpring2', 'frameInA frameInB stiffness damping equilibrium '

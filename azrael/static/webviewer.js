@@ -179,7 +179,7 @@ function getGeometry(objIDs) {
 
 function addTemplate(templateID, cs, vertices) {
     var cmd = {'cmd': 'add_template', 'data':
-               {'name': templateID, 'cs': cs, 'vert': vertices,
+               {'id': templateID, 'cs': cs, 'vert': vertices,
                 'UV': [], 'RGB': [], 'boosters': [], 'factories': []}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
@@ -193,7 +193,7 @@ function spawn(templateID, pos, vel, orient, scale, imass) {
     var sv = StateVariable(pos, vel, orient, scale, imass)
     sv.cshapes = [4, 1, 1, 1]
 
-    var payload = {'name': null, 'templateID': templateID, 'sv': sv}
+    var payload = {'id': null, 'templateID': templateID, 'sv': sv}
     var cmd = {'cmd': 'spawn', 'payload': payload}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
@@ -290,7 +290,7 @@ function updateObjectGeometries(objID, allSVs, obj_cache) {
     // the array every time.
     var fragData = {};
     for (var ii in allSVs[objID]['frag']) {
-        var fragname = allSVs[objID]['frag'][ii]['name'];
+        var fragname = allSVs[objID]['frag'][ii]['id'];
         fragData[fragname] = allSVs[objID]['frag'][ii];
     }
 

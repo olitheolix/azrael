@@ -407,9 +407,9 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         bounce=[1, 1.5, 2],
         enableSpring=[True, False, False, False, False, False])
     constraints = [
-        ConstraintMeta('p2p', ids[0], ids[1], '', p2p_0),
-        ConstraintMeta('p2p', ids[1], ids[2], '', p2p_1),
-        ConstraintMeta('6DOFSPRING2', ids[2], ids[3], '', dof),
+        ConstraintMeta('p2p', '', ids[0], ids[1], p2p_0),
+        ConstraintMeta('p2p', '', ids[1], ids[2], p2p_1),
+        ConstraintMeta('6DOFSPRING2', '', ids[2], ids[3], dof),
     ]
     assert client.addConstraints(constraints) == (True, None, 3)
 

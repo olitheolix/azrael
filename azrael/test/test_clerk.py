@@ -1591,8 +1591,8 @@ class TestClerk:
             rotLimitHi=[0.1, 0.2, 0.3],
             bounce=[1, 1.5, 2],
             enableSpring=[True, False, False, False, False, False])
-        con_1 = ConstraintMeta('p2p', id_1, id_2, '', p2p_12)
-        con_2 = ConstraintMeta('6DOFSPRING2', id_2, id_3, '', dof_23)
+        con_1 = ConstraintMeta('p2p', '', id_1, id_2, p2p_12)
+        con_2 = ConstraintMeta('6DOFSPRING2', '', id_2, id_3, dof_23)
 
         # Verify that no constraints are currently active.
         assert clerk.getAllConstraints() == (True, None, tuple())
@@ -1655,7 +1655,7 @@ class TestClerk:
 
         # Define the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
-        constraints = [ConstraintMeta('p2p', id_a, id_b, '', p2p)]
+        constraints = [ConstraintMeta('p2p', '', id_a, id_b, p2p)]
         assert clerk.addConstraints(constraints) == (True, None, 1)
 
         # Apply a force that will pull the left object further to the left.
