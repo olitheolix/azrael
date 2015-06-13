@@ -42,8 +42,8 @@ def isEqualBD(bd1: _RigidBodyState, bd2: _RigidBodyState):
                 for csm_a, csm_b in zip(a, b):
                     tmp_a = CollShapeMeta(*csm_a)
                     tmp_b = CollShapeMeta(*csm_b)
-                    tmp_a = tmp_a._replace(cs=list(tmp_a.cs))
-                    tmp_b = tmp_b._replace(cs=list(tmp_b.cs))
+                    tmp_a = tmp_a._replace(cshape=list(tmp_a.cshape))
+                    tmp_b = tmp_b._replace(cshape=list(tmp_b.cshape))
                     tmp_a = tmp_a._replace(pos=list(tmp_a.pos))
                     tmp_b = tmp_b._replace(pos=list(tmp_b.pos))
                     tmp_a = tmp_a._replace(rot=list(tmp_a.rot))
@@ -158,7 +158,7 @@ class TestBulletAPI:
         # Replace the CollShape named tuple with just a list.
         p, q = (0, 0, 0), (0, 0, 0, 1)
         cshape_1 = getCSSphere('csfoo', pos, rot, radius=2)
-        cshape_2 = cshape_1._replace(cs=list(cshape_1.cs))
+        cshape_2 = cshape_1._replace(cshape=list(cshape_1.cshape))
         cshape_2 = list(cshape_2)
         obj_a1 = obj_a._replace(cshapes=[cshape_1])
         obj_a2 = obj_a._replace(cshapes=[cshape_2])

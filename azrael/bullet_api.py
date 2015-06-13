@@ -452,9 +452,12 @@ class PyBulletDynamicsWorld():
             # a named tuple.
             cs = CollShapeMeta(*cs)
 
+            # Scale the collision shape geometry (works for spheres and boxes,
+            # but probably not for anything else).
+            csgeo = [(rbState.scale * _) for _ in cs.cshape]
+
             # Determine which CollisionShape to instantiate.
             csname = cs.type.upper()
-            csgeo = [rbState.scale * _ for _ in cs.cs]
             if csname == 'SPHERE':
                 child = azBullet.SphereShape(*csgeo)
             elif csname == 'BOX':

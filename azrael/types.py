@@ -59,7 +59,7 @@ _RigidBodyState = namedtuple('_RigidBodyState',
                           'axesLockLin axesLockRot lastChanged')
 
 # fixme: rename 'name' to 'id'
-CollShapeMeta = namedtuple('CollShapeMeta', 'type name pos rot cs')
+CollShapeMeta = namedtuple('CollShapeMeta', 'type name pos rot cshape')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')

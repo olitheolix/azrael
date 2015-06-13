@@ -46,7 +46,7 @@ def animateMotion(out_a, out_b):
     plt.show()
 
 
-def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
+def getRB(pos=Vec3(0, 0, 0), cshape=SphereShape(1)):
     """
     Return a Rigid Body plus auxiliary information (do *not* delete; see
     note below).
@@ -61,7 +61,7 @@ def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
     mass = 1
 
     # Build construction info and instantiate the rigid body.
-    ci = RigidBodyConstructionInfo(mass, ms, cs)
+    ci = RigidBodyConstructionInfo(mass, ms, cshape)
     return RigidBody(ci)
 
 
@@ -70,8 +70,8 @@ def main():
     pos_a = Vec3(-10, 0, 0)
     pos_b = Vec3(10, 0, 0)
     r = 0.001
-    rb_a = getRB(pos=pos_a, cs=SphereShape(r))
-    rb_b = getRB(pos=pos_b, cs=SphereShape(r))
+    rb_a = getRB(pos=pos_a, cshape=SphereShape(r))
+    rb_b = getRB(pos=pos_b, cshape=SphereShape(r))
     del r
 
     # Create the constraint between the two bodies. The constraint applies

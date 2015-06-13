@@ -31,7 +31,7 @@ from azBullet import Generic6DofConstraint
 from azBullet import Generic6DofSpringConstraint, Generic6DofSpring2Constraint
 
 
-def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
+def getRB(pos=Vec3(0, 0, 0), cshape=SphereShape(1)):
     """
     Return a Rigid Body plus auxiliary information (do *not* delete; see
     note below).
@@ -46,7 +46,7 @@ def getRB(pos=Vec3(0, 0, 0), cs=SphereShape(1)):
     mass = 1
 
     # Build construction info and instantiate the rigid body.
-    ci = RigidBodyConstructionInfo(mass, ms, cs)
+    ci = RigidBodyConstructionInfo(mass, ms, cshape)
     return RigidBody(ci)
 
 
@@ -718,8 +718,8 @@ class TestConstraints:
         cs_b = BoxShape(Vec3(1, 2, 3))
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a = getRB(pos=pos_a, cs=cs_a)
-        rb_b = getRB(pos=pos_b, cs=cs_b)
+        rb_a = getRB(pos=pos_a, cshape=cs_a)
+        rb_b = getRB(pos=pos_b, cshape=cs_b)
 
         # Connect the two rigid bodies at their left/right boundary.
         pivot_a, pivot_b = pos_b, pos_a
@@ -759,8 +759,8 @@ class TestConstraints:
         # Create two rigid bodies side by side (they *do* touch, but just).
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
-        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+        rb_a = getRB(pos=pos_a, cshape=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cshape=BoxShape(Vec3(1, 2, 3)))
 
         # Connect the two rigid bodies at their left/right boundary.
         pivot_a, pivot_b = pos_b, pos_a
@@ -816,8 +816,8 @@ class TestConstraints:
         cs_b = BoxShape(Vec3(1, 2, 3))
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a = getRB(pos=pos_a, cs=cs_a)
-        rb_b = getRB(pos=pos_b, cs=cs_b)
+        rb_a = getRB(pos=pos_a, cshape=cs_a)
+        rb_b = getRB(pos=pos_b, cshape=cs_b)
 
         # Create the 6DOF constraint between the two bodies.
         frameInA = Transform()
@@ -866,8 +866,8 @@ class TestConstraints:
         # Create two rigid bodies side by side (they *do* touch, but just).
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
-        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+        rb_a = getRB(pos=pos_a, cshape=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cshape=BoxShape(Vec3(1, 2, 3)))
 
         # Create the constraint between the two bodies.
         frameInA = Transform()
@@ -925,8 +925,8 @@ class TestConstraints:
         # Create two rigid bodies side by side (they *do* touch, but just).
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
-        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+        rb_a = getRB(pos=pos_a, cshape=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cshape=BoxShape(Vec3(1, 2, 3)))
 
         # Create the constraint between the two bodies. The constraint applies
         # at (0, 0, 0) in world coordinates.
@@ -1004,8 +1004,8 @@ class TestConstraints:
         # Create two rigid bodies side by side (they *do* touch, but just).
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
-        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
+        rb_a = getRB(pos=pos_a, cshape=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cshape=BoxShape(Vec3(1, 2, 3)))
 
         # Create the constraint between the two bodies. The constraint applies
         # at (0, 0, 0) in world coordinates.
@@ -1087,10 +1087,10 @@ class TestConstraints:
         pos_b = Vec3(-1, 0, 0)
         pos_c = Vec3(1, 0, 0)
         pos_d = Vec3(3, 0, 0)
-        rb_a = getRB(pos=pos_a, cs=SphereShape(1))
-        rb_b = getRB(pos=pos_b, cs=BoxShape(Vec3(1, 2, 3)))
-        rb_c = getRB(pos=pos_c, cs=SphereShape(1))
-        rb_d = getRB(pos=pos_d, cs=BoxShape(Vec3(1, 2, 3)))
+        rb_a = getRB(pos=pos_a, cshape=SphereShape(1))
+        rb_b = getRB(pos=pos_b, cshape=BoxShape(Vec3(1, 2, 3)))
+        rb_c = getRB(pos=pos_c, cshape=SphereShape(1))
+        rb_d = getRB(pos=pos_d, cshape=BoxShape(Vec3(1, 2, 3)))
 
         # Connect the two rigid bodies at their left/right boundary.
         pivot_a, pivot_b, pivot_c, pivot_d = pos_a, pos_b, pos_c, pos_d
