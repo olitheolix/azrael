@@ -248,18 +248,21 @@ class TestDibbler:
         """
         dibbler = self.dibbler
 
-        # The original template has three fragments. Then we will leave the
-        # first intact, remove the second, and modify the third.
+        # The original template has the following three fragments:
         frags_orig = [
             MetaFragment('raw', 'fname_1', createFragRaw()),
             MetaFragment('dae', 'fname_2', createFragDae()),
             MetaFragment('raw', 'fname_3', createFragRaw())
         ]
+        t1 = Template('t1', [1, 2, 3, 4], frags_orig, [], [])
+
+        # The fragment update will use the following data. It translates to
+        # keeping the first intact, removing the second, and modifying the
+        # fragment type for the third one.
         frags_new = [
             MetaFragment('_none_', 'fname_2', None),
             MetaFragment('dae', 'fname_3', createFragDae())
         ]
-        t1 = Template('t1', [1, 2, 3, 4], frags_orig, [], [])
 
         # Add the template, spawn one instance, and verify all fragments.
         assert dibbler.addTemplate(t1).ok
