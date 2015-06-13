@@ -680,20 +680,20 @@ class Client():
         return self._unpackSVData(ret.data)
 
     @typecheck
-    def setBodyState(self, objID: int, new_SV: RigidBodyStateOverride):
+    def setBodyState(self, objID: int, new: RigidBodyStateOverride):
         """
-        Overwrite the the State Variables of ``objID`` with ``new_SV``.
+        Overwrite the the State Variables of ``objID`` with ``new``.
 
         This method tells Leonard to manually set attributes like position and
         speed, irrespective of what the physics engine computes. The attributes
         will only be applied once.
 
         :param int objID: the object to move.
-        :param RigidBodyStateOverride new_SV: the object attributes to set.
+        :param RigidBodyStateOverride new: the object attributes to set.
         :return: Success
         """
-        new_SV = tuple(new_SV)
-        return self.serialiseAndSend('set_body_states', objID, new_SV)
+        new = tuple(new)
+        return self.serialiseAndSend('set_body_states', objID, new)
 
     @typecheck
     def setForce(self, objID: int, force: (tuple, list, np.ndarray)):

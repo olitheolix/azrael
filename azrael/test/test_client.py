@@ -366,7 +366,7 @@ class TestClerk:
         ret = client.spawn([new_obj])
         assert ret.ok and (ret.data == (objID, ))
 
-        # Verify that the State Vector is correct.
+        # Verify that the Body State is correct.
         leo.processCommandsAndSync()
         ok, _, ret_sv = client.getBodyStates(objID)
         ret_sv = ret_sv[objID]['sv']

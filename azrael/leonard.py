@@ -114,7 +114,7 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     """
     Return potential collision sets among all objects in ``SVs``.
 
-    :param dict SVs: Dictionary of State Vectors.
+    :param dict SVs: Dictionary of Body States.
     :param dict AABBs: Dictionary of AABBs.
     :return: each list contains a unique set of overlapping objects.
     :rtype: list of lists
@@ -412,7 +412,7 @@ class LeonardBase(config.AzraelProcess):
                 self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
                 self.allAABBs[objID] = float(doc['AABB'])
 
-        # Update State Vectors.
+        # Update Body States.
         fun = leoAPI._updateRigidBodyStateTuple
         for doc in cmds['modify']:
             objID, sv_new = doc['objID'], doc['sv']
@@ -444,7 +444,7 @@ class LeonardBase(config.AzraelProcess):
 
     def syncObjects(self, writeconcern: bool):
         """
-        Copy all local SVs to DB.
+        Sync the local BodyStates to the DB.
 
         The ``writeconcern`` flag is mostly for performance tuning. If set to
         *False* then the sync will not wait for an acknowledgement from the
@@ -456,8 +456,8 @@ class LeonardBase(config.AzraelProcess):
         if len(self.allObjects) == 0:
             return
 
-        # Update (or insert if not exist) all objects. Use a Bulk operator to
-        # speed up the query.
+        # Update (or insert non-existing) bodies. Use a MongoDB Bulk operator
+        # for the update to improve the performance.
         bulk = self._DB_SV.initialize_unordered_bulk_op()
         for objID, sv in self.allObjects.items():
             query = {'objID': objID}
@@ -587,8 +587,8 @@ class LeonardBullet(LeonardBase):
             # Remove all constraints.
             self.bullet.clearAllConstraints()
 
-        # Retrieve all objects from Bullet, overwrite the state variables that
-        # the user wanted to change explicitly (if any)
+        # Retrieve all objects from Bullet and overwrite the state variables
+        # that the user explicilty wanted to change (if any).
         for objID in self.allObjects:
             ret = self.bullet.getRigidBodyData(objID)
             if ret.ok:
@@ -928,8 +928,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         if len(objIDs) == 0:
             return RetVal(False, 'Work package is empty', None)
 
-        # Compile the State Vectors and forces for all objects into a list of
-        # ``WPData`` named tuples.
+        # Compile the Body States and forces into a list of ``WPData`` tuples.
         try:
             wpdata = []
             for objID in objIDs:
@@ -937,7 +936,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 force, torque = self.totalForceAndTorque(objID)
                 wpdata.append(WPData(objID, sv, force, torque))
         except KeyError as err:
-            return RetVal(False, 'Cannot form WP', None)
+            return RetVal(False, 'Cannot compile WP', None)
 
         # Query all constraints.
         constraints = self.igor.getConstraints(objIDs).data
@@ -963,7 +962,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         :param list wpdata: Content of Work Packge as returned by Workers.
         """
         # Reset force and torque for all objects in the WP, and overwrite
-        # the old State Vector with the new one from the processed WP.
+        # the old Body States with the new one from the processed WP.
         for (objID, sv) in wpdata:
             self.allObjects[objID] = _RigidBodyState(*sv)
 
