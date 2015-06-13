@@ -112,7 +112,7 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_GetGeometries_Decode,
                 self.getGeometries,
                 protocol.FromClerk_GetGeometries_Encode),
-            'update_fragments': (
+            'set_geometry': (
                 protocol.ToClerk_SetGeometry_Decode,
                 self.updateFragments,
                 protocol.FromClerk_SetGeometry_Encode),

@@ -81,7 +81,7 @@ class Client():
             'get_geometries': (
                 protocol.ToClerk_GetGeometries_Encode,
                 protocol.FromClerk_GetGeometries_Decode),
-            'update_fragments': (
+            'set_geometry': (
                 protocol.ToClerk_SetGeometry_Encode,
                 protocol.FromClerk_SetGeometry_Decode),
             'spawn': (
@@ -387,7 +387,7 @@ class Client():
         except AssertionError:
             return RetVal(False, 'Invalid fragment data types', None)
 
-        return self.serialiseAndSend('update_fragments', objID, frags)
+        return self.serialiseAndSend('set_geometry', objID, frags)
 
     @typecheck
     def spawn(self, new_objects: (tuple, list)):
