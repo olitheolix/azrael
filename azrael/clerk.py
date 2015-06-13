@@ -556,7 +556,7 @@ class Clerk(config.AzraelProcess):
         if not isinstance(name, str):
             return False
 
-        # Must contain at least one character and no more than 32 characters.
+        # Must contain at least one character and no more than 32.
         if not (0 < len(name) <= 32):
             return False
 
@@ -1203,14 +1203,14 @@ class Clerk(config.AzraelProcess):
           }
 
         where each ``state_k`` entry is a :ref:``util.FragState`` tuple. Those
-        tuplse contain the actual state information like scale, position, and
+        tuples contain the actual state information like scale, position, and
         orientation.
 
-        This methos will updat all existing objects and silently skip
+        This method will update all existing objects and silently skip
         non-existing ones. However, the fragments for any particular object
-        will be updated all at once, or not at all. This means that if one or
-        more fragment IDs are invalid then none of the fragments in that object
-        will be updated, not even those with a valid ID.
+        will either be updated all at once, or not at all. This means that if
+        one or more fragment IDs are invalid then none of the fragments in the
+        respective object will be updated, not even those with a valid ID.
 
         :param dict fragData: new fragment data for each object.
         :return: success.
@@ -1267,13 +1267,13 @@ class Clerk(config.AzraelProcess):
             # Issue the update command to Mongo.
             ret = update(query, {'$set': newvals})
 
-            # Exactly one document was updated if everything went well. Note
-            # that we must check 'n', not 'nModified'. The difference is that
-            # 'n' tells us how many documents Mongo has touched, whereas
-            # 'nModified' refers to the number of documents that now have
-            # different data. This distinction is important if the old- and new
-            # fragment values are identical, because then 'n=1' whereas
-            # 'nModified=0'.
+            # Exactly one document will have been updated if everything went
+            # well. Note that we must check 'n' instead of 'nModified'. The
+            # difference is that 'n' tells us how many documents Mongo has
+            # touched whereas 'nModified' refers to the number of documents
+            # that are now different data. This distinction is important if
+            # the old- and new fragment values are identical, because then
+            # 'n=1' whereas 'nModified=0'.
             if ret['n'] != 1:
                 ok = False
                 msg = 'Could not update the fragment states for objID <{}>'

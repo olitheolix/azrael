@@ -703,14 +703,16 @@ class TestClient:
         assert ret.ok and ret.data == (objID, )
         del temp, new_obj, ret
 
-        # Query the SV and verify the fragment state for 'bar'.
+        # Query the Body State to get the Fragment States. Then verify the
+        # Fragment State named 'bar'.
         leo.processCommandsAndSync()
         ret = client.getBodyStates(objID)
         ref = [FragState('bar', 1, [0, 0, 0], [0, 0, 0, 1])]
         assert ret.ok
         assert ret.data[objID]['frag'] == ref
 
-        # Modify the fragment states, then verify them.
+        # Modify and update the fragment states in Azrael, then query and
+        # verify it worked.
         newStates = {objID: [FragState('bar', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
         assert client.updateFragmentStates(newStates).ok
         ret = client.getBodyStates(objID)
