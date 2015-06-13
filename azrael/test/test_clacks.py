@@ -15,6 +15,20 @@ from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 
 
 class TestClacks(tornado.testing.AsyncHTTPTestCase):
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
     def get_app(self):
         # Dibbler instance is necessary because this test suite contains
         # several integration tests between Dibbler and Clacks.

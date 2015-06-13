@@ -35,7 +35,7 @@ RigidBodyState = rb_state.RigidBodyState
 RigidBodyStateOverride = rb_state.RigidBodyStateOverride
 
 
-class TestClerk:
+class TestLeonardAPI:
     @classmethod
     def setup_class(cls):
         pass

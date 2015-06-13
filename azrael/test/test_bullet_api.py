@@ -88,6 +88,12 @@ class TestBulletAPI:
     def teardown_class(cls):
         pass
 
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
     def test_isEqualBD(self):
         """
         Verify that the auxiliary `isEqualBD` function works as expected.

@@ -51,7 +51,7 @@ from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 
 
-class TestClerk:
+class TestClient:
     @classmethod
     def setup_class(cls):
         # Kill all lingering Azrael processes.
