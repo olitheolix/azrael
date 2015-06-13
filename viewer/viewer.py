@@ -351,8 +351,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if objID not in self.oldSVs:
             return False
 
-        cs_old = self.newSVs[objID]['sv'].lastChanged
-        cs_new = self.oldSVs[objID]['sv'].lastChanged
+        cs_old = self.newSVs[objID]['sv'].version
+        cs_new = self.oldSVs[objID]['sv'].version
         return (cs_old != cs_new)
 
     def upload2GPU(self, objID, frag):

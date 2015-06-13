@@ -1137,7 +1137,7 @@ class TestClerk:
     def test_instanceDB_checksum(self):
         """
         Spawn two objects, modify their geometries, and verify that the
-        'lastChanged' flag changes accordingly.
+        'version' flag changes accordingly.
         """
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -1164,22 +1164,22 @@ class TestClerk:
         # Query the State Vectors for both objects.
         ret = clerk.getBodyStates([objID0, objID1])
         assert ret.ok and (set((objID0, objID1)) == set(ret.data.keys()))
-        ref_lastChanged = ret.data[objID0]['sv'].lastChanged
+        ref_version = ret.data[objID0]['sv'].version
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
         assert clerk.setFragmentGeometries(objID0, frags).ok
 
-        # Verify that the new 'lastChanged' flag is now different.
+        # Verify that the new 'version' flag is now different.
         ret = clerk.getBodyStates([objID0])
         assert ret.ok
-        assert ref_lastChanged != ret.data[objID0]['sv'].lastChanged
+        assert ref_version != ret.data[objID0]['sv'].version
 
-        # Verify further that the lastChanged attribute of objID1 is unchanged.
+        # Verify further that the version attribute of objID1 is unchanged.
         ret = clerk.getBodyStates([objID1])
         assert ret.ok
-        assert ref_lastChanged == ret.data[objID1]['sv'].lastChanged
+        assert ref_version == ret.data[objID1]['sv'].version
 
     def test_updateBoosterValues(self):
         """

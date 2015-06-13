@@ -48,7 +48,7 @@ def RigidBodyState(scale: (int, float)=1,
                 cshapes: (tuple, list)=[_CSDefault],
                 axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
                 axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
-                lastChanged: int=0):
+                version: int=0):
     """
     Return a ``_RigidBodyState`` object.
 
@@ -68,7 +68,7 @@ def RigidBodyState(scale: (int, float)=1,
         assert len(axesLockLin) == len(axesLockRot) == 3
         assert len(orientation) == 4
         assert len(position) == len(velocityLin) == len(velocityRot) == 3
-        assert lastChanged >= 0
+        assert version >= 0
         cshapes = [CollShapeMeta(*_) for _ in cshapes]
         for cs in cshapes:
             assert isinstance(cs.type, str)
@@ -96,7 +96,7 @@ def RigidBodyState(scale: (int, float)=1,
         cshapes=cshapes,
         axesLockLin=axesLockLin,
         axesLockRot=axesLockRot,
-        lastChanged=lastChanged)
+        version=version)
 
 
 class RigidBodyStateOverride(_RigidBodyState):

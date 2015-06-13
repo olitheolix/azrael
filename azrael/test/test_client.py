@@ -567,11 +567,11 @@ class TestClient:
         assert ret.ok and ret.data == (objID, )
         del temp, new_obj, ret
 
-        # Query the SV to obtain the 'lastChanged' value.
+        # Query the SV to obtain the 'version' value.
         leo.processCommandsAndSync()
         ret = client.getBodyStates(objID)
         assert ret.ok
-        lastChanged = ret.data[objID]['sv'].lastChanged
+        version = ret.data[objID]['sv'].version
 
         # Fetch-, modify-, update- and verify the geometry.
         ret = client.getFragmentGeometries([objID])
@@ -606,9 +606,9 @@ class TestClient:
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == frags[0].data
 
-        # Ensure 'lastChanged' is different as well.
+        # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
-        assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
+        assert ret.ok and (ret.data[objID]['sv'].version != version)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_setFragmentGeometries_dae(self, client_type):
@@ -639,11 +639,11 @@ class TestClient:
         assert ret.ok and ret.data == (objID, )
         del temp, new_obj, ret
 
-        # Query the SV to obtain the 'lastChanged' value.
+        # Query the SV to obtain the 'version' value.
         leo.processCommandsAndSync()
         ret = client.getBodyStates(objID)
         assert ret.ok
-        lastChanged = ret.data[objID]['sv'].lastChanged
+        version = ret.data[objID]['sv'].version
 
         # Fetch-, modify-, update- and verify the geometry.
         ret = client.getFragmentGeometries([objID])
@@ -659,12 +659,12 @@ class TestClient:
         assert ret.ok
         assert ret.data[objID]['f_dae']['type'] == 'raw'
 
-        # Ensure 'lastChanged' is different as well.
+        # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
-        assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
+        assert ret.ok and (ret.data[objID]['sv'].version != version)
 
         # Change the fragment geometries.
-        lastChanged = ret.data[objID]['sv'].lastChanged
+        version = ret.data[objID]['sv'].version
         frags = [MetaFragment('dae', 'f_dae', f_dae)]
         assert client.setFragmentGeometries(objID, frags).ok
 
@@ -673,9 +673,9 @@ class TestClient:
         assert ret.ok
         assert ret.data[objID]['f_dae']['type'] == 'dae'
 
-        # Ensure 'lastChanged' is different as well.
+        # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
-        assert ret.ok and (ret.data[objID]['sv'].lastChanged != lastChanged)
+        assert ret.ok and (ret.data[objID]['sv'].version != version)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_setFragmentStates(self, client_type):

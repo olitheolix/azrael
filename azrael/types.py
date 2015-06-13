@@ -56,7 +56,7 @@ Forces = namedtuple('Forces',
 _RigidBodyState = namedtuple('_RigidBodyState',
                              'scale imass restitution orientation '
                              'position velocityLin velocityRot cshapes '
-                             'axesLockLin axesLockRot lastChanged')
+                             'axesLockLin axesLockRot version')
 
 # Collision shapes.
 CollShapeMeta = namedtuple('CollShapeMeta', 'type id pos rot cshape')

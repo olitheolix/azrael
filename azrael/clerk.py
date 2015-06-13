@@ -847,7 +847,7 @@ class Clerk(config.AzraelProcess):
                 # it with the values that describe the template instance.
                 doc = dict(templates[name])
                 doc['objID'] = objID
-                doc['lastChanged'] = 0
+                doc['version'] = 0
                 doc['templateID'] = name
 
                 # Copy the template files to the instance collection.
@@ -1017,11 +1017,11 @@ class Clerk(config.AzraelProcess):
         # Update the fragment's meta data in the DB.
         new_frags = [frag._replace(data=None) for frag in fragments]
 
-        # Update the 'lastChanged' flag in the database. All clients
+        # Update the 'version' flag in the database. All clients
         # automatically receive this flag with their state variables.
         db = database.dbHandles['ObjInstances']
         ret = db.update({'objID': objID},
-                        {'$inc': {'lastChanged': 1},
+                        {'$inc': {'version': 1},
                          '$set': {'fragments': new_frags}
                          })
 
@@ -1123,16 +1123,16 @@ class Clerk(config.AzraelProcess):
         # Convenience: extract all objIDs from ``SVs``.
         objIDs = list(SVs.keys())
 
-        # Query the lastChanged values for all objects.
+        # Query the version values for all objects.
         docs = database.dbHandles['ObjInstances'].find(
             {'objID': {'$in': objIDs}},
-            {'lastChanged': 1, 'objID': 1, 'fragState': 1})
+            {'version': 1, 'objID': 1, 'fragState': 1})
         docs = list(docs)
 
         # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into two
         # dictionaries like {objID1: foo, objID2: bar, ...}. This is purely for
         # readability and convenience a few lines below.
-        lastChanged = {_['objID']: _['lastChanged'] for _ in docs}
+        version = {_['objID']: _['version'] for _ in docs}
         fragState = {_['objID']: _['fragState'].values() for _ in docs}
 
         # Wrap the fragment states into their dedicated tuple type.
@@ -1141,7 +1141,7 @@ class Clerk(config.AzraelProcess):
 
         # Add SV and fragment data for all objects. If we the objects do not
         # exist then set the data to *None*.  During that proces also update
-        # the 'lastChanged' (this flag indicates geometry changes to the
+        # the 'version' (this flag indicates geometry changes to the
         # client).
         out = {}
         for objID in objIDs:
@@ -1149,10 +1149,10 @@ class Clerk(config.AzraelProcess):
                 out[objID] = None
                 continue
 
-            # Update the 'lastChanged' field to the latest value.
+            # Update the 'version' field to the latest value.
             out[objID] = {
                 'frag': fragState[objID],
-                'sv': SVs[objID]._replace(lastChanged=lastChanged[objID])
+                'sv': SVs[objID]._replace(version=version[objID])
             }
         return RetVal(True, None, out)
 
