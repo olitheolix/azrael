@@ -1169,7 +1169,7 @@ class TestClerk:
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
         frags = [MetaFragment('raw', 'bar', createFragRaw())]
-        assert clerk.updateFragments(objID0, frags).ok
+        assert clerk.updateFragmentGeometries(objID0, frags).ok
 
         # Verify that the new 'lastChanged' flag is now different.
         ret = clerk.getBodyStates([objID0])
@@ -1516,7 +1516,7 @@ class TestClerk:
         f_raw = createFragRaw()
         frags = [MetaFragment('raw', '10', f_raw),
                  MetaFragment('dae', 'test', f_dae)]
-        assert clerk.updateFragments(objID, frags).ok
+        assert clerk.updateFragmentGeometries(objID, frags).ok
         ret = clerk.getGeometries([objID])
         assert ret.ok
         data = ret.data[objID]

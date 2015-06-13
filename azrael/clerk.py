@@ -114,7 +114,7 @@ class Clerk(config.AzraelProcess):
                 protocol.FromClerk_GetGeometries_Encode),
             'set_geometry': (
                 protocol.ToClerk_SetGeometry_Decode,
-                self.updateFragments,
+                self.updateFragmentGeometries,
                 protocol.FromClerk_SetGeometry_Encode),
             'set_force': (
                 protocol.ToClerk_SetForce_Decode,
@@ -984,7 +984,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def updateFragments(self, objID: int, fragments: list):
+    def updateFragmentGeometries(self, objID: int, fragments: list):
         """
         Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
 
@@ -1201,9 +1201,11 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def updateFragmentStates(self, fragData: dict):
         """
-        Update one or more fragments in one or more objects.
+        Update the fragments states (pos, vel, etc) of one or more objects.
 
-        The ``fragData`` dictionary has the following structure::
+        This method can update one- or more fragment states in one- or
+        more objects simultaneously. The updates are specified with the
+        following structure::
 
           fragData = {
             objID_1: [state_1, state_2, ...],
@@ -1213,6 +1215,10 @@ class Clerk(config.AzraelProcess):
         where each ``state_k`` entry is a :ref:``util.FragState`` tuple. Those
         tuples contain the actual state information like scale, position, and
         orientation.
+
+        This method will not touch any fragments that were not explicitly
+        specified. This means that it is possible to update only a subset of
+        the fragments for any given object.
 
         This method will update all existing objects and silently skip
         non-existing ones. However, the fragments for any particular object
