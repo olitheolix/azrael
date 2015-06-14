@@ -95,7 +95,7 @@ cdef class BulletBase:
         cdef btVector3 tmp = self.dynamicsWorld.getGravity()
         return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
 
-    def getCollisionPairs(self):
+    def azGetCollisionPairs(self):
         self.dynamicsWorld.performDiscreteCollisionDetection()
         cdef btDispatcher *dispatcher = self.dynamicsWorld.getDispatcher()
         cdef int numManifolds = dispatcher.getNumManifolds()
