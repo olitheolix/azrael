@@ -96,50 +96,63 @@ cdef class BulletBase:
         return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
 
     def azGetCollisionPairs(self):
+        # Run Broadphase.
         self.dynamicsWorld.performDiscreteCollisionDetection()
+
+        # Convenience.
         cdef btDispatcher *dispatcher = self.dynamicsWorld.getDispatcher()
-        cdef int numManifolds = dispatcher.getNumManifolds()
-        cdef int numContacts = 0
-        cdef btManifoldPoint pt
-        cdef btVector3 ptA, ptB
 
+        # Allocate auxiliary variables needed later on.
+        cdef btVector3 vec
+        cdef btManifoldPoint ptr_mp
         cdef btPersistentManifold* contactManifold
-        cdef btCollisionObject* obA
-        cdef btCollisionObject* obB
-        cdef void *upt_a
-        cdef void *upt_b
 
-        ret = []
-        print('Checking {} manifolds'.format(numManifolds))
-        for ii in range(numManifolds):
+        # Initialise the dictionary that will hold the pair cache information,
+        # ie body IDs and their contact points (if any).
+        pairData = {}
+
+        # Auxiliary Python objects to gain access to the 'azGetBodyID'
+        # convenience methods.
+        obA, obB = CollisionObject(), CollisionObject()
+
+        for ii in range(dispatcher.getNumManifolds()):
             contactManifold = dispatcher.getManifoldByIndexInternal(ii)
 
             # Get the two objects.
-            obA = <btCollisionObject*>(contactManifold.getBody0())
-            obB = <btCollisionObject*>(contactManifold.getBody1())
+            obA.ptr_CollisionObject = <btCollisionObject*>(contactManifold.getBody0())
+            obB.ptr_CollisionObject = <btCollisionObject*>(contactManifold.getBody1())
 
-            # Extract Azrael's object ID from the user pointer. Albeit somewhat
-            # unclean because it does not use a dedicated method, this still
-            # seemed more reasonable than constructing...
-            upt_a = obA.getUserPointer()
-            upt_b = obB.getUserPointer()
-            if (upt_a != NULL) and (upt_b != NULL):
-                ret.append(((<int*>upt_a)[0], (<int*>upt_b)[0]))
+            # Query the bodyIDs of both objects. Skip the rest of this loop if
+            # one (or both) objects have no ID.
+            bodyIDs = obA.azGetBodyID(), obB.azGetBodyID()
+            if None in bodyIDs:
+                continue
 
-            numContacts = contactManifold.getNumContacts()
-            for jj in range(numContacts):
-                print('  Found {} contacts'.format(numContacts))
-                pt = contactManifold.getContactPoint(jj)
-                ptA = pt.getPositionWorldOnA()
-                ptB = pt.getPositionWorldOnB()
-                print('  VecA: ', <double>ptA.x(), <double>ptA.y(), <double>ptA.z())
-                print('  VecB: ', <double>ptB.x(), <double>ptB.y(), <double>ptB.z())
-                print('  Distance: ', <double>pt.getDistance())
+            # Add the current body pair to the dictionary. So far this only
+            # means that the objects are close, even though they may not be
+            # touching.
+            pairData[bodyIDs] = []
 
-                if <double>pt.getDistance() < 0:
-                     pass
-#                    btVector3& normalOnB = pt.m_normalWorldOnB
-        return ret
+            # Compile a list of all contacts.
+            for jj in range(contactManifold.getNumContacts()):
+                # Query the contact point structure.
+                ptr_mp = contactManifold.getContactPoint(jj)
+
+                # Extract the contact point of both objects.
+                vec = ptr_mp.getPositionWorldOnA()
+                c_a = Vec3(<double>vec.x(), <double>vec.y(), <double>vec.z())
+
+                vec = ptr_mp.getPositionWorldOnB()
+                c_b = Vec3(<double>vec.x(), <double>vec.y(), <double>vec.z())
+
+                # Add the contact point locations to our pairData dictionary.
+                pairData[bodyIDs].append((c_a, c_b))
+
+        # Explicitly set the internal pointers to NULL as the destructor of obA
+        # and obA would otherwise deallocate the user pointers.
+        obA.ptr_CollisionObject = NULL
+        obB.ptr_CollisionObject = NULL
+        return pairData
 
     def addRigidBody(self, RigidBody body):
         self.dynamicsWorld.addRigidBody(body.ptr_RigidBody)

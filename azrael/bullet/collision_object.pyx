@@ -8,8 +8,10 @@ cdef class CollisionObject:
         self._ref_ms = self._ref_cs = None
 
     def __dealloc__(self):
-        if self.ptr_CollisionObject.getUserPointer() != NULL:
-            free(self.ptr_CollisionObject.getUserPointer())
+        if self.ptr_CollisionObject != NULL:
+            if self.ptr_CollisionObject.getUserPointer() != NULL:
+                free(self.ptr_CollisionObject.getUserPointer())
+                self.ptr_CollisionObject.setUserPointer(NULL)
 
     def getCollisionShape(self):
         cdef btCollisionShape *tmp = self.ptr_CollisionObject.getCollisionShape()
