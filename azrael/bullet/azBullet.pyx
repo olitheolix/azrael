@@ -53,6 +53,7 @@ cdef class BulletBase:
     cdef btDbvtBroadphase *pairCache
     cdef btSequentialImpulseConstraintSolver *solver
     cdef btDiscreteDynamicsWorld *dynamicsWorld
+    cdef BroadphasePaircacheBuilder *cb_broadphase
     cdef list _list_constraints
 
     def __cinit__(self):
@@ -94,6 +95,23 @@ cdef class BulletBase:
     def getGravity(self):
         cdef btVector3 tmp = self.dynamicsWorld.getGravity()
         return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
+
+    def installBroadphaseCallback(self):
+        # fixme: docu; rename function; user must select in ctor if they want
+        # broadphase only (ie. remove this explicit method call).
+        self.cb_broadphase = new BroadphasePaircacheBuilder()
+        self.dynamicsWorld.getPairCache().setOverlapFilterCallback(
+            <btOverlapFilterCallback*?>self.cb_broadphase)
+
+    def azResetPairCache(self):
+        # Clear the pair cache that has built up in the Broadphase callback.
+        self.cb_broadphase.azResetPairCache()
+
+    def azReturnPairCache(self):
+        # fixme: docu, actually return a result
+        # Run Broadphase.
+        cdef vector[int] *blah = self.cb_broadphase.azGetPairCache()
+        print([int(blah[0][_]) for _ in range(len(blah[0]))])
 
     def azGetCollisionPairs(self):
         # Run Broadphase.

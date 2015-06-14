@@ -1,6 +1,15 @@
 from basic cimport *
 from rigid_body cimport *
 from typed_constraint cimport *
+from libcpp.vector cimport vector
+
+
+cdef extern from "broadphase_paircache_builder.cpp":
+    cdef cppclass BroadphasePaircacheBuilder:
+        BroadphasePaircacheBuilder()
+        void azResetPairCache()
+        vector[int] *azGetPairCache()
+
 
 cdef extern from "btBulletDynamicsCommon.h":
     cdef cppclass btDefaultCollisionConfiguration:
@@ -36,6 +45,17 @@ cdef extern from "btBulletDynamicsCommon.h":
         int	getNumManifolds()
         btPersistentManifold *getManifoldByIndexInternal(int index)
 
+    cdef cppclass btBroadphaseProxy:
+        btBroadphaseProxy()
+
+    cdef cppclass btOverlapFilterCallback:
+        btOverlapFilterCallback()
+        bint needBroadphaseCollision(btBroadphaseProxy *proxy0, btBroadphaseProxy *proxy1)
+
+    cdef cppclass btOverlappingPairCache:
+        btOverlappingPairCache()
+        void setOverlapFilterCallback(btOverlapFilterCallback *callback)
+
     cdef cppclass btDiscreteDynamicsWorld:
         btDiscreteDynamicsWorld(
                 btCollisionDispatcher *dispatcher,
@@ -54,3 +74,4 @@ cdef extern from "btBulletDynamicsCommon.h":
         btTypedConstraint *getConstraint(int index)
         btDispatcher *getDispatcher()
         void performDiscreteCollisionDetection()
+        btOverlappingPairCache *getPairCache()
