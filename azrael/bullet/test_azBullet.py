@@ -371,6 +371,15 @@ class TestRigidBody:
         assert body.getInvMass() == 1 / mass
         assert body.getInvInertiaDiagLocal() == Vec3(0.1, 1, 0.001)
 
+    def test_set_get_gravity(self):
+        # Create a simulation.
+        sim = azBullet.BulletBase()
+
+        # Set- and get gravity values.
+        for ii in range(5):
+            sim.setGravity(ii, -ii, 2 * ii)
+            assert sim.getGravity() == (ii, -ii, 2 * ii)
+
     def test_activation(self):
         """
         Create two bodies and make one active forever and the other the
@@ -387,7 +396,7 @@ class TestRigidBody:
         body1.forceActivationState(4)
         body2.forceActivationState(5)
 
-        # Creat a simulation and specify gravity.
+        # Create a simulation and specify gravity.
         sim = azBullet.BulletBase()
         sim.setGravity(0, -10, 0)
 
