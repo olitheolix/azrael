@@ -12,6 +12,7 @@ cdef extern from "btBulletDynamicsCommon.h":
         bint operator==(btScalar)
 
     cdef cppclass btVector3:
+        btVector3()
         btVector3(double, double, double)
         btVector3(btScalar, btScalar, btScalar)
         bint operator==(btVector3)
