@@ -154,8 +154,11 @@ cdef class BulletBase:
         obB.ptr_CollisionObject = NULL
         return pairData
 
-    def addRigidBody(self, RigidBody body):
-        self.dynamicsWorld.addRigidBody(body.ptr_RigidBody)
+    def addRigidBody(self, RigidBody body, short group=-1, short mask=-1):
+        if (group < 0) or (mask < 0):
+            self.dynamicsWorld.addRigidBody(body.ptr_RigidBody)
+        else:
+            self.dynamicsWorld.addRigidBody(body.ptr_RigidBody, group, mask)
 
     def addConstraint(self, TypedConstraint constraint):
         # Return immediately if the constraint has already been added.

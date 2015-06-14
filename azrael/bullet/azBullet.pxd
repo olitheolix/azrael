@@ -45,6 +45,7 @@ cdef extern from "btBulletDynamicsCommon.h":
         void setGravity(const btVector3 &v)
         btVector3 getGravity()
         void addRigidBody(btRigidBody *body)
+        void addRigidBody(btRigidBody *body, short group, short mask)
         int stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
         void removeRigidBody(btRigidBody *body)
         void addConstraint(btTypedConstraint *constraint, bint disable)
