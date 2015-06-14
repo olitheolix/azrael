@@ -18,6 +18,24 @@ cdef extern from "btBulletDynamicsCommon.h":
     cdef cppclass btSequentialImpulseConstraintSolver:
         btSequentialImpulseConstraintSolver()
 
+    cdef cppclass btManifoldPoint:
+        btManifoldPoint()
+        btScalar getDistance()
+        btVector3 &getPositionWorldOnA()
+        btVector3 &getPositionWorldOnB()
+
+    cdef cppclass btPersistentManifold:
+        btPersistentManifold()
+        btCollisionObject *getBody0()
+        btCollisionObject *getBody1()
+        int getNumContacts()
+        btManifoldPoint &getContactPoint(int index)
+
+    cdef cppclass btDispatcher:
+        btDispatcher()
+        int	getNumManifolds()
+        btPersistentManifold *getManifoldByIndexInternal(int index)
+
     cdef cppclass btDiscreteDynamicsWorld:
         btDiscreteDynamicsWorld(
                 btCollisionDispatcher *dispatcher,
@@ -33,3 +51,5 @@ cdef extern from "btBulletDynamicsCommon.h":
         void removeConstraint(btTypedConstraint *constraint)
         int getNumConstraints()
         btTypedConstraint *getConstraint(int index)
+        btDispatcher *getDispatcher()
+        void performDiscreteCollisionDetection()

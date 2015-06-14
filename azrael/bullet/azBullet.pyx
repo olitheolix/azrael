@@ -88,6 +88,39 @@ cdef class BulletBase:
         del r
         return (x, y, z)
 
+    def getCollisionPairs(self):
+        self.dynamicsWorld.performDiscreteCollisionDetection()
+        cdef btDispatcher *dispatcher = self.dynamicsWorld.getDispatcher()
+        cdef int numManifolds = dispatcher.getNumManifolds()
+        cdef int numContacts = 0
+        cdef btManifoldPoint pt
+        cdef btVector3 ptA, ptB
+
+        cdef btPersistentManifold* contactManifold
+        cdef btCollisionObject* obA
+        cdef btCollisionObject* obB
+
+        print('Checking {} manifolds'.format(numManifolds))
+        for ii in range(numManifolds):
+            contactManifold = dispatcher.getManifoldByIndexInternal(ii)
+
+            obA = <btCollisionObject*>(contactManifold.getBody0())
+            obB = <btCollisionObject*>(contactManifold.getBody1())
+
+            numContacts = contactManifold.getNumContacts()
+            for jj in range(numContacts):
+                print('  Found {} contacts'.format(numContacts))
+                pt = contactManifold.getContactPoint(jj)
+                ptA = pt.getPositionWorldOnA()
+                ptB = pt.getPositionWorldOnB()
+                print('  VecA: ', <double>ptA.x(), <double>ptA.y(), <double>ptA.z())
+                print('  VecB: ', <double>ptB.x(), <double>ptB.y(), <double>ptB.z())
+                print('  Distance: ', <double>pt.getDistance())
+
+                if <double>pt.getDistance() < 0:
+                     pass
+#                    btVector3& normalOnB = pt.m_normalWorldOnB
+
     def addRigidBody(self, RigidBody body):
         self.dynamicsWorld.addRigidBody(body.ptr_RigidBody)
 
