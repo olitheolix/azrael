@@ -79,14 +79,8 @@ cdef class BulletBase:
         self.dynamicsWorld.setGravity(btVector3(x, y, z))
 
     def getGravity(self):
-        cdef btVector3 *r
-        r = new btVector3(0, 0, 0)
-        r[0] = self.dynamicsWorld.getGravity()
-        x = <double>(r[0].x())
-        y = <double>(r[0].y())
-        z = <double>(r[0].z())
-        del r
-        return (x, y, z)
+        cdef btVector3 tmp = self.dynamicsWorld.getGravity()
+        return (<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
 
     def getCollisionPairs(self):
         self.dynamicsWorld.performDiscreteCollisionDetection()
