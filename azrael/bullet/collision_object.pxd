@@ -6,3 +6,7 @@ cdef extern from "btBulletDynamicsCommon.h":
         btCollisionObject()
         btCollisionShape *getCollisionShape()
         void setCollisionShape(btCollisionShape *collisionShape)
+
+        # {get,set}UserPointer
+        void *getUserPointer()
+        void setUserPointer(void *userPointer)
