@@ -106,13 +106,25 @@ cdef class BulletBase:
         cdef btPersistentManifold* contactManifold
         cdef btCollisionObject* obA
         cdef btCollisionObject* obB
+        cdef void *upt_a
+        cdef void *upt_b
 
+        ret = []
         print('Checking {} manifolds'.format(numManifolds))
         for ii in range(numManifolds):
             contactManifold = dispatcher.getManifoldByIndexInternal(ii)
 
+            # Get the two objects.
             obA = <btCollisionObject*>(contactManifold.getBody0())
             obB = <btCollisionObject*>(contactManifold.getBody1())
+
+            # Extract Azrael's object ID from the user pointer. Albeit somewhat
+            # unclean because it does not use a dedicated method, this still
+            # seemed more reasonable than constructing...
+            upt_a = obA.getUserPointer()
+            upt_b = obB.getUserPointer()
+            if (upt_a != NULL) and (upt_b != NULL):
+                ret.append(((<int*>upt_a)[0], (<int*>upt_b)[0]))
 
             numContacts = contactManifold.getNumContacts()
             for jj in range(numContacts):
@@ -127,6 +139,7 @@ cdef class BulletBase:
                 if <double>pt.getDistance() < 0:
                      pass
 #                    btVector3& normalOnB = pt.m_normalWorldOnB
+        return ret
 
     def addRigidBody(self, RigidBody body):
         self.dynamicsWorld.addRigidBody(body.ptr_RigidBody)
