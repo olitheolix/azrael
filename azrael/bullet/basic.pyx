@@ -18,6 +18,7 @@ cdef class Scalar:
     def __repr__(self):
         return str(<double>self.ptr_btScalar[0])
 
+
 cdef class Vec3:
     cdef btVector3 *ptr_Vector3
 
@@ -33,19 +34,24 @@ cdef class Vec3:
             self.ptr_Vector3 = NULL
 
     def __neg__(self):
-        ret = Vec3()
-        ret.ptr_Vector3[0] = -self.ptr_Vector3[0]
-        return ret
+        cdef btVector3 tmp = -self.ptr_Vector3[0]
+        return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
 
     def __add__(Vec3 self, Vec3 v):
-        ret = Vec3()
-        ret.ptr_Vector3[0] = self.ptr_Vector3[0] + v.ptr_Vector3[0]
-        return ret
+        cdef btVector3 tmp = self.ptr_Vector3[0] + v.ptr_Vector3[0]
+        return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
 
     def __sub__(Vec3 self, Vec3 v):
-        ret = Vec3()
-        ret.ptr_Vector3[0] = self.ptr_Vector3[0] - v.ptr_Vector3[0]
-        return ret
+        cdef btVector3 tmp = self.ptr_Vector3[0] - v.ptr_Vector3[0]
+        return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
+
+    def __mul__(Vec3 self, double v):
+        cdef btVector3 tmp = self.ptr_Vector3[0] * btScalar(v)
+        return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
+
+    def __truediv__(Vec3 self, double v):
+        cdef btVector3 tmp = self.ptr_Vector3[0] / btScalar(v)
+        return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
 
     def __richcmp__(Vec3 x, Vec3 y, int op):
         if op == Py_EQ:

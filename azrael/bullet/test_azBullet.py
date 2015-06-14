@@ -76,17 +76,23 @@ class TestVector3:
         assert v2 == Vec3(2, -2.5, 3000.1234)
 
     def test_arithmetic(self):
-        v1 = Vec3(1, 2, 3)
+        v1 = Vec3(1, 2, 4)
         v2 = Vec3(.5, .6, .7)
 
         # Addition.
-        assert v1 + v2 == Vec3(1.5, 2.6, 3.7)
+        assert v1 + v2 == Vec3(1.5, 2.6, 4.7)
 
         # Subtraction.
-        assert v1 - v2 == Vec3(0.5, 1.4, 2.3)
+        assert v1 - v2 == Vec3(0.5, 1.4, 3.3)
 
         # Negation.
-        assert -v1 == Vec3(-1, -2, -3)
+        assert -v1 == Vec3(-1, -2, -4)
+
+        # Multiplication (only right-multiplication is supported).
+        assert v1 * 2 == Vec3(2, 4, 8)
+
+        # Division.
+        assert v1 / 2 == Vec3(0.5, 1, 2)
 
 
 class TestQuaternion:

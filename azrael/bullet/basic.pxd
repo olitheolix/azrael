@@ -21,6 +21,8 @@ cdef extern from "btBulletDynamicsCommon.h":
         btVector3 operator+()
         btVector3 operator+(btVector3)
         btVector3 operator-(btVector3)
+        btVector3 &operator*(btScalar &s)
+        btVector3 &operator/(btScalar &s)
 
         const btScalar &x()
         const btScalar &y()
