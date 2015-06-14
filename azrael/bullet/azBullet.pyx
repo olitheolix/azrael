@@ -56,16 +56,29 @@ cdef class BulletBase:
     cdef list _list_constraints
 
     def __cinit__(self):
+        # Allocate the auxiliary classes to create a btDiscreteDynamicsWorld.
         self.collisionConfiguration = new btDefaultCollisionConfiguration()
+        assert self.collisionConfiguration != NULL
+
         self.dispatcher = new btCollisionDispatcher(self.collisionConfiguration)
+        assert self.dispatcher != NULL
+
         self.pairCache = new btDbvtBroadphase()
+        assert self.pairCache != NULL
+
         self.solver = new btSequentialImpulseConstraintSolver()
+        assert self.solver != NULL
+
+        # Create the simulation.
         self.dynamicsWorld = new btDiscreteDynamicsWorld(
             self.dispatcher,
             # Downcast to the base class.
             <btBroadphaseInterface*>self.pairCache,
             self.solver,
             self.collisionConfiguration)
+        assert self.dynamicsWorld != NULL
+
+        # Container to keep track of all constraints.
         self._list_constraints = []
 
     def __dealloc__(self):

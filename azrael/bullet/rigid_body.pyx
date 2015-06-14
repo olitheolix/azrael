@@ -15,6 +15,7 @@ cdef class RigidBodyConstructionInfo:
             ms.ptr_MotionState,
             cs.ptr_CollisionShape,
             inert.ptr_Vector3[0])
+        assert self.ptr_RigidBodyConstructionInfo != NULL
 
         # Keep a handle to the MotionState and CollisionShape to ensure they
         # stay alive until this object destructs. Otherwise it would be well
@@ -199,6 +200,7 @@ cdef class RigidBody(CollisionObject):
 
     def __init__(self, RigidBodyConstructionInfo ci, int bodyID=0):
         self.ptr_RigidBody = new btRigidBody(ci.ptr_RigidBodyConstructionInfo[0])
+        assert self.ptr_RigidBody != NULL
         self._ref_cs = ci._ref_cs
         self._ref_ms = ci._ref_ms
 
