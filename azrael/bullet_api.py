@@ -75,7 +75,7 @@ class PyBulletDynamicsWorld():
         self.dynamicsWorld = azBullet.BulletBase()
 
         # Disable gravity.
-        self.dynamicsWorld.setGravity(0, 0, 0)
+        self.dynamicsWorld.setGravity(Vec3(0, 0, 0))
 
         # Dictionary of all bodies.
         self.rigidBodies = {}

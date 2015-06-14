@@ -75,12 +75,12 @@ cdef class BulletBase:
         del self.dispatcher
         del self.collisionConfiguration
 
-    def setGravity(self, double x, double y, double z):
-        self.dynamicsWorld.setGravity(btVector3(x, y, z))
+    def setGravity(self, Vec3 v):
+        self.dynamicsWorld.setGravity(v.ptr_Vector3[0])
 
     def getGravity(self):
         cdef btVector3 tmp = self.dynamicsWorld.getGravity()
-        return (<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
+        return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
 
     def getCollisionPairs(self):
         self.dynamicsWorld.performDiscreteCollisionDetection()

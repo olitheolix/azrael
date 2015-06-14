@@ -377,8 +377,9 @@ class TestRigidBody:
 
         # Set- and get gravity values.
         for ii in range(5):
-            sim.setGravity(ii, -ii, 2 * ii)
-            assert sim.getGravity() == (ii, -ii, 2 * ii)
+            gravity = Vec3(ii, -ii, 2 * ii)
+            sim.setGravity(gravity)
+            assert sim.getGravity() == gravity
 
     def test_activation(self):
         """
@@ -398,7 +399,7 @@ class TestRigidBody:
 
         # Create a simulation and specify gravity.
         sim = azBullet.BulletBase()
-        sim.setGravity(0, -10, 0)
+        sim.setGravity(Vec3(0, -10, 0))
 
         # Add the bodies.
         sim.addRigidBody(body1)
@@ -798,7 +799,7 @@ class TestConstraints:
 
         # Add both rigid bodies into a simulation.
         bb = BulletBase()
-        bb.setGravity(0, 0, 0)
+        bb.setGravity(Vec3(0, 0, 0))
         bb.addRigidBody(rb_a)
         bb.addRigidBody(rb_b)
 
@@ -909,7 +910,7 @@ class TestConstraints:
 
         # Add both rigid bodies into a simulation.
         bb = BulletBase()
-        bb.setGravity(0, 0, 0)
+        bb.setGravity(Vec3(0, 0, 0))
         bb.addRigidBody(rb_a)
         bb.addRigidBody(rb_b)
 
@@ -976,7 +977,7 @@ class TestConstraints:
 
         # Add both rigid bodies and the constraint to the Bullet simulation.
         bb = BulletBase()
-        bb.setGravity(0, 0, 0)
+        bb.setGravity(Vec3(0, 0, 0))
         bb.addRigidBody(rb_a)
         bb.addRigidBody(rb_b)
         bb.addConstraint(dof)
@@ -1055,7 +1056,7 @@ class TestConstraints:
 
         # Add both rigid bodies and the constraint to the Bullet simulation.
         bb = BulletBase()
-        bb.setGravity(0, 0, 0)
+        bb.setGravity(Vec3(0, 0, 0))
         bb.addRigidBody(rb_a)
         bb.addRigidBody(rb_b)
         bb.addConstraint(dof)

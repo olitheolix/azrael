@@ -106,7 +106,7 @@ def main():
 
     # Add both rigid bodies and the constraint to the Bullet simulation.
     bb = azBullet.BulletBase()
-    bb.setGravity(0, 0, 0)
+    bb.setGravity(Vec3(0, 0, 0))
     bb.addRigidBody(rb_a)
     bb.addRigidBody(rb_b)
     rb_a.forceActivationState(4)
