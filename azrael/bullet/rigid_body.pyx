@@ -1,3 +1,5 @@
+from libc.stdlib cimport malloc, free
+
 cdef class RigidBodyConstructionInfo:
     cdef MotionState _ref_ms
     cdef CollisionShape _ref_cs
@@ -195,7 +197,7 @@ cdef class RigidBody(CollisionObject):
     def __cinit__(self):
         self.ptr_RigidBody = NULL
 
-    def __init__(self, RigidBodyConstructionInfo ci):
+    def __init__(self, RigidBodyConstructionInfo ci, int bodyID=0):
         self.ptr_RigidBody = new btRigidBody(ci.ptr_RigidBodyConstructionInfo[0])
         self._ref_cs = ci._ref_cs
         self._ref_ms = ci._ref_ms
@@ -203,9 +205,26 @@ cdef class RigidBody(CollisionObject):
         # Assign the base pointers.
         self.ptr_CollisionObject = <btCollisionObject*?>self.ptr_RigidBody
 
+        # Store the body ID in Azrael. This comes in handy when matching
+        # objects returned by Bullet with the particular RigidBody object in
+        # Python.
+        cdef int *tmp = <int*>malloc(sizeof(int))
+        self.ptr_RigidBody.setUserPointer(<void*>tmp)
+        self.azSetBodyID(bodyID)
+
     def __dealloc__(self):
         if self.ptr_RigidBody != NULL:
+            if self.ptr_RigidBody.getUserPointer() != NULL:
+               free(self.ptr_RigidBody.getUserPointer())
             del self.ptr_RigidBody
+
+    def azSetBodyID(self, int bodyID):
+        cdef int *tmp = <int*>self.ptr_RigidBody.getUserPointer()
+        tmp[0] = bodyID
+
+    def azGetBodyID(self):
+        cdef int *tmp = <int*>self.ptr_RigidBody.getUserPointer()
+        return (tmp[0])
 
     def setRestitution(self, double r):
         self.ptr_RigidBody.setRestitution(btScalar(r))

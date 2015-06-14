@@ -130,6 +130,21 @@ class TestRigidBody:
     def teardown_class(cls):
         pass
 
+    def test_set_get_BodyID(self):
+        """
+        Set- and get the bodyID.
+        """
+        # Get RigidBody object.
+        body = getRB()
+
+        # The default ID is zero.
+        assert body.azGetBodyID() == 0
+
+        # Assign- and query the bodyID several times.
+        for ii in range(5):
+            body.azSetBodyID(ii)
+            assert body.azGetBodyID() == ii
+
     def test_restitution(self):
         """
         Specify and query "Restitution".

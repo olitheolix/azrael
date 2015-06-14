@@ -37,7 +37,11 @@ cdef extern from "btBulletDynamicsCommon.h":
     cdef cppclass btRigidBody:
         btRigidBody (btRigidBodyConstructionInfo &constructionInfo)
 
-        # getMotionState
+        # {get,set}UserPointer
+        void *getUserPointer()
+        void setUserPointer(void *userPointer)
+
+        # {get,set}MotionState
         btMotionState *getMotionState()
         void setMotionState(btMotionState*)
 
