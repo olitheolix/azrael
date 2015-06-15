@@ -1259,7 +1259,8 @@ class TestBroadphase:
 
         # Create a simulation, install the Broadphase Pair Cache Builder, and
         # add bodies A, B, D. The first two are touching, the last one is
-        # considerably away from the others.
+        # considerably away from the others. The bodies are arranged like this:
+        # "AB D"
         sim = BulletBase()
         sim.installBroadphaseCallback()
         sim.addRigidBody(rb_a)
@@ -1274,21 +1275,22 @@ class TestBroadphase:
 
         # Move the middle body towards the right.  Step the simulation again
         # (this will re-populate the broadphase cache) and verify that the
-        # broadphase now returns the two objects on the right.
+        # broadphase now returns the two objects on the right: "A  BD"
         moveBody(rb_b, pos_c)
         sim.azResetPairCache()
         sim.stepSimulation(1, 1)
         assert sim.azReturnPairCache() == set([(2, 4)])
 
         # Move the middle body towards the far right so that none of the bodies
-        # overlap.
+        # overlap: "A D        B"
         moveBody(rb_b, Vec3(30, 0, 0))
         sim.azResetPairCache()
         sim.stepSimulation(1, 1)
         assert sim.azReturnPairCache() == set([])
 
         # Move the middle body back to its original position and insert the
-        # fourth body. Now all bodies touch their immediate neighbours.
+        # fourth body. Now all bodies touch their immediate neighbours:
+        # "ABCD"
         moveBody(rb_b, pos_b)
         sim.addRigidBody(rb_c)
         sim.azResetPairCache()
