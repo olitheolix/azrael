@@ -59,6 +59,12 @@ class TestVector3:
     def teardown_class(cls):
         pass
 
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
     def test_comparison(self):
         v1 = Vec3(1, -2.5, 3000.1234)
         v2 = Vec3(2, -2.5, 3000.1234)
@@ -104,6 +110,12 @@ class TestQuaternion:
     def teardown_class(cls):
         pass
 
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
     def test_comparison(self):
         q1 = Quaternion(0, 0, 0, 1)
         q2 = Quaternion(0, 0, 1, 0)
@@ -128,6 +140,12 @@ class TestRigidBody:
 
     @classmethod
     def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
         pass
 
     def test_set_get_BodyID(self):
@@ -530,6 +548,12 @@ class TestCollisionShapes:
     def teardown_class(cls):
         pass
 
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
     def test_BasicShapes(self):
         """
         Create the basic shapes and verify their names. Furthermore, verify
@@ -622,6 +646,12 @@ class TestTransform:
     def teardown_class(cls):
         pass
 
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
     def test_transform(self):
         """
         Test the Transform class.
@@ -661,6 +691,12 @@ class TestMotionState:
 
     @classmethod
     def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
         pass
 
     def test_motionstate(self):
@@ -728,6 +764,12 @@ class TestConstraints:
 
     @classmethod
     def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
         pass
 
     def test_typedObject(self):
