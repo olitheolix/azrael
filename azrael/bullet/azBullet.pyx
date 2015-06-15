@@ -226,6 +226,10 @@ cdef class BulletBase:
         consistent simulation as described in
         http://www.bulletphysics.org/mediawiki-1.5.8/index.php?title=Stepping_The_World
         """
+        # Sanity check.
+        if maxSubSteps < 1:
+            maxSubSteps = 1
+
         cdef double fixedTimeStep = (timeStep / maxSubSteps)
         self.dynamicsWorld.stepSimulation(
             btScalar(timeStep), maxSubSteps, btScalar(fixedTimeStep))
