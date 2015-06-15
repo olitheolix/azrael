@@ -31,7 +31,7 @@ from azBullet import Generic6DofConstraint
 from azBullet import Generic6DofSpringConstraint, Generic6DofSpring2Constraint
 
 
-def getRB(pos=Vec3(0, 0, 0), cshape=SphereShape(1)):
+def getRB(pos=Vec3(0, 0, 0), cshape=SphereShape(1), bodyID=0):
     """
     Return a Rigid Body plus auxiliary information (do *not* delete; see
     note below).
@@ -47,7 +47,11 @@ def getRB(pos=Vec3(0, 0, 0), cshape=SphereShape(1)):
 
     # Build construction info and instantiate the rigid body.
     ci = RigidBodyConstructionInfo(mass, ms, cshape)
-    return RigidBody(ci)
+    rb = RigidBody(ci, bodyID)
+
+    # Ensure the body remains activated.
+    rb.forceActivationState(4)
+    return rb
 
 
 class TestVector3:
@@ -1218,3 +1222,141 @@ class TestConstraints:
 
             # Remove non-existing constraint.
             bb.removeConstraint(p2p_none)
+
+
+class TestBroadphase:
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
+    def test_broadphase_collection(self):
+        def moveBody(rb, pos):
+            trans = Transform()
+            trans.setOrigin(pos)
+            ms = DefaultMotionState()
+            ms.setWorldTransform(trans)
+            rb_b.setMotionState(ms)
+
+        # Create two rigid bodies side by side (they *do* touch, but just).
+        pos_a = Vec3(-3, 0, 0)
+        pos_b = Vec3(-1, 0, 0)
+        pos_c = Vec3(1, 0, 0)
+        pos_d = Vec3(3, 0, 0)
+        rb_a = getRB(pos=pos_a, cshape=SphereShape(1), bodyID=1)
+        rb_b = getRB(pos=pos_b, cshape=SphereShape(1), bodyID=2)
+        rb_c = getRB(pos=pos_c, cshape=SphereShape(1), bodyID=3)
+        rb_d = getRB(pos=pos_d, cshape=SphereShape(1), bodyID=4)
+
+        # Create a simulation, install the Broadphase Pair Cache Builder, and
+        # add bodies A, B, D. The first two are touching, the last one is
+        # considerably away from the others.
+        sim = BulletBase()
+        sim.installBroadphaseCallback()
+        sim.addRigidBody(rb_a)
+        sim.addRigidBody(rb_b)
+        sim.addRigidBody(rb_d)
+
+        # Step the simulation and fetch the collision pairs.
+        sim.azResetPairCache()
+        assert sim.azReturnPairCache() == set([])
+        sim.stepSimulation(1, 1)
+        assert sim.azReturnPairCache() == set([(1, 2)])
+
+        # Move the middle body towards the right.  Step the simulation again
+        # (this will re-populate the broadphase cache) and verify that the
+        # broadphase now returns the two objects on the right.
+        moveBody(rb_b, pos_c)
+        sim.azResetPairCache()
+        sim.stepSimulation(1, 1)
+        assert sim.azReturnPairCache() == set([(2, 4)])
+
+        # Move the middle body towards the far right so that none of the bodies
+        # overlap.
+        moveBody(rb_b, Vec3(30, 0, 0))
+        sim.azResetPairCache()
+        sim.stepSimulation(1, 1)
+        assert sim.azReturnPairCache() == set([])
+
+        # Move the middle body back to its original position and insert the
+        # fourth body. Now all bodies touch their immediate neighbours.
+        moveBody(rb_b, pos_b)
+        sim.addRigidBody(rb_c)
+        sim.azResetPairCache()
+        sim.stepSimulation(1, 1)
+        assert sim.azReturnPairCache() == set([(1, 2), (2, 3), (3, 4)])
+
+    def test_broadphase_no_collision(self):
+        """
+        When the pair cache broadphase solve is active then objects must not
+        collide. To test this, create a dynamic sphere above a static ground
+        plane. Add both to a simulation with gravity, run the simulation, and
+        verify that the sphere falls right through the ground plane.
+        """
+        def runSimulation(sim):
+            # Create the collision shapes for the ball and ground.
+            cs_ball = SphereShape(1)
+            cs_ground = StaticPlaneShape(Vec3(0, 1, 0), 1)
+
+            # Create a Rigid Body for the static (ie mass=0) Ground.
+            q0 = Quaternion(0, 0, 0, 1)
+            ms = DefaultMotionState(Transform(q0, Vec3(0, -1, 0)))
+            ci = RigidBodyConstructionInfo(0, ms, cs_ground)
+            rb_ground = RigidBody(ci, bodyID=1)
+            del ms, ci
+
+            # Create a Rigid body for the dynamic (ie mass > 0) Ball.
+            ms = DefaultMotionState(Transform(q0, Vec3(0, 5, 0)))
+            inertia = cs_ball.calculateLocalInertia(1)
+            ci = RigidBodyConstructionInfo(1, ms, cs_ball, inertia)
+            rb_ball = RigidBody(ci, bodyID=2)
+            del ms, inertia, ci
+
+            # Ensure that Bullet never deactivates the objects.
+            rb_ground.forceActivationState(4)
+            rb_ball.forceActivationState(4)
+
+            # Add both bodies to the simulation.
+            sim.addRigidBody(rb_ground)
+            sim.addRigidBody(rb_ball)
+
+            # Sanity check: the ball must be at position y=5
+            pos = rb_ball.getMotionState().getWorldTransform().getOrigin().topy()
+            assert pos[1] == 5
+
+            # Step the simulation long enough for the ball to fall down and come to
+            # rest on the plane.
+            for ii in range(10):
+                sim.stepSimulation(1, 100)
+
+            # Verify that the y-position of the ball is such that the ball rests on
+            # the plane.
+            pos = rb_ball.getMotionState().getWorldTransform().getOrigin().topy()
+            return pos
+
+        # Run the simulation and verify that the ball has come to rest on the
+        # plane.
+        sim = azBullet.BulletBase()
+        sim.setGravity(Vec3(0, -10, 0))
+        pos = runSimulation(sim)
+        assert 0.99 < pos[1] < 1.01
+        del sim, pos
+
+        # Repeat the experiement. However, this time we will install the pair
+        # cache broadphase callback which has the side effect that all
+        # collisions are disabled and the ball must thus fall straight through
+        # the plane.
+        sim = azBullet.BulletBase()
+        sim.setGravity(Vec3(0, -10, 0))
+        sim.installBroadphaseCallback()
+        pos = runSimulation(sim)
+        assert pos[1] < -100

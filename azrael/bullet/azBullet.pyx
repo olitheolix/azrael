@@ -82,6 +82,9 @@ cdef class BulletBase:
         # Container to keep track of all constraints.
         self._list_constraints = []
 
+        # No gravity by default.
+        self.setGravity(Vec3(0, 0, 0))
+
     def __dealloc__(self):
         del self.dynamicsWorld
         del self.solver
@@ -108,10 +111,12 @@ cdef class BulletBase:
         self.cb_broadphase.azResetPairCache()
 
     def azReturnPairCache(self):
-        # fixme: docu, actually return a result
-        # Run Broadphase.
-        cdef vector[int] *blah = self.cb_broadphase.azGetPairCache()
-        print([int(blah[0][_]) for _ in range(len(blah[0]))])
+        # Return latest set of broadphase collision pairs.
+        cdef vector[int] *ptr_coll_pairs = self.cb_broadphase.azGetPairCache()
+        ret = [int(ptr_coll_pairs[0][_]) for _ in range(len(ptr_coll_pairs[0]))]
+        if len(ret) % 2 != 0:
+            return []
+        return set(zip(ret[0::2], ret[1::2]))
 
     def azGetCollisionPairs(self):
         # Run Broadphase.
