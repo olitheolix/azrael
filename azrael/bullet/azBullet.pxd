@@ -62,6 +62,7 @@ cdef extern from "btBulletDynamicsCommon.h":
                 btBroadphaseInterface *pairCache,
                 btSequentialImpulseConstraintSolver *constraintSolver,
                 btDefaultCollisionConfiguration *collisionConfiguration)
+        void updateAabbs()
         void setGravity(const btVector3 &v)
         btVector3 getGravity()
         void addRigidBody(btRigidBody *body)

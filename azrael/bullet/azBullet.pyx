@@ -118,6 +118,12 @@ cdef class BulletBase:
             return []
         return set(zip(ret[0::2], ret[1::2]))
 
+    def updateAabbs(self):
+        self.dynamicsWorld.updateAabbs()
+
+    def performDiscreteCollisionDetection(self):
+        self.dynamicsWorld.performDiscreteCollisionDetection()
+
     def azGetCollisionPairs(self):
         # Run Broadphase.
         self.dynamicsWorld.performDiscreteCollisionDetection()
