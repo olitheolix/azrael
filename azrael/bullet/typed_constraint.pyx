@@ -56,6 +56,9 @@ cdef class TypedConstraint(TypedObject):
     def __dealloc__(self):
         pass
 
+    def __repr__(self):
+        return 'Unknown TypedConstraint'
+
     def getRigidBodyA(self):
         return self._ref_rbA
 
@@ -98,6 +101,11 @@ cdef class Point2PointConstraint(TypedConstraint):
             self.ptr_Point2PointConstraint = NULL
             self.ptr_TypedObject = NULL
             self.ptr_TypedConstraint = NULL
+
+    def __repr__(self):
+        s = 'Point2PointConstraint: {} - {}'
+        s = s.format(self._ref_rbA.azGetBodyID(), self._ref_rbB.azGetBodyID())
+        return s
 
     def setPivotA(self, Vec3 pivotA):
         self.ptr_Point2PointConstraint.setPivotA(pivotA.ptr_Vector3[0])
@@ -150,6 +158,11 @@ cdef class Generic6DofConstraint(TypedConstraint):
             self.ptr_TypedObject = NULL
             self.ptr_TypedConstraint = NULL
 
+    def __repr__(self):
+        s = 'Generic6DofConstraint: {} - {}'
+        s = s.format(self._ref_rbA.azGetBodyID(), self._ref_rbB.azGetBodyID())
+        return s
+
     def setLinearLowerLimit(self, Vec3 lim):
         self.ptr_Generic6DofConstraint.setLinearLowerLimit(lim.ptr_Vector3[0])
 
@@ -181,6 +194,7 @@ cdef class Generic6DofConstraint(TypedConstraint):
         ret = Vec3()
         self.ptr_Generic6DofConstraint.getAngularUpperLimit(ret.ptr_Vector3[0])
         return ret
+
 
 cdef class Generic6DofSpringConstraint(Generic6DofConstraint):
     cdef btGeneric6DofSpringConstraint *ptr_Generic6DofSpringConstraint
@@ -217,6 +231,11 @@ cdef class Generic6DofSpringConstraint(Generic6DofConstraint):
             self.ptr_Generic6DofConstraint = NULL
             self.ptr_TypedObject = NULL
             self.ptr_TypedConstraint = NULL
+
+    def __repr__(self):
+        s = 'Generic6DofSpringConstraint: {} - {}'
+        s = s.format(self._ref_rbA.azGetBodyID(), self._ref_rbB.azGetBodyID())
+        return s
 
     def enableSpring(self, int index, bint onOff):
         if not (0 <= index < 6):
@@ -272,6 +291,11 @@ cdef class Generic6DofSpring2Constraint(Generic6DofConstraint):
             self.ptr_Generic6DofConstraint = NULL
             self.ptr_TypedObject = NULL
             self.ptr_TypedConstraint = NULL
+
+    def __repr__(self):
+        s = 'Generic6DofSpring2Constraint: {} - {}'
+        s = s.format(self._ref_rbA.azGetBodyID(), self._ref_rbB.azGetBodyID())
+        return s
 
     def enableSpring(self, int index, bint onOff):
         if not (0 <= index < 6):
