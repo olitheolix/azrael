@@ -202,16 +202,14 @@ class PyBulletDynamicsWorld():
 
     def getRigidBodyData(self, bodyID: int):
         """
-        Return State Variables of all ``bodyIDs``.
+        Return Body State of ``bodyID``.
 
-        This method aborts immediately if one or more bodies in ``bodyIDs`` do
-        not exists.
+        This method aborts immediately if ``bodyID`` does not exists.
 
-        :param list bodyIDs: the IDs of all bodies to retrieve.
-        :return: list of ``_RigidBodyState`` instances.
-        :rtype: list
+        :param int bodyID: the ID of body for which to return the state.
+        :return: ``_RigidBodyState`` instances.
         """
-        # Abort immediately if one or more bodies don't exist.
+        # Abort immediately if the ID is unknown.
         if bodyID not in self.rigidBodies:
             msg = 'Cannot find body with ID <{}>'.format(bodyID)
             return RetVal(False, msg, None)

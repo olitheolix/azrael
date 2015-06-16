@@ -112,7 +112,7 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
 @typecheck
 def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     """
-    Return potential collision sets among all objects in ``SVs``.
+    Return broadphase collision sets for the objects in ``SVs``.
 
     :param dict SVs: Dictionary of Body States.
     :param dict AABBs: Dictionary of AABBs.
