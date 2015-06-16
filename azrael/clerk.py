@@ -788,8 +788,8 @@ class Clerk(config.AzraelProcess):
         The ``newObjects`` must have the following format:
         newObjects = [(template_name_1, sv_1), (template_name_2, sv_2), ...]
 
-        where ``template_name_k`` is a string and ``sv_k`` is a ``RigidBodyState``
-        instance.
+        where ``template_name_k`` is a string and ``sv_k`` is a
+        ``RigidBodyState`` instance.
 
         The new object will get ``sv_k`` as the initial state vector. However,
         the provided collision shape will be ignored and *always* replaced with

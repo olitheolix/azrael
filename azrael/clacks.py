@@ -230,7 +230,7 @@ class ClacksServer(config.AzraelProcess):
     def run(self):
         # Call `run` method of `AzraelProcess` base class.
         super().run()
-        
+
         # Not sure if this really does anything but it certainly does not hurt.
         self.daemon = True
         time.sleep(0.02)

@@ -333,7 +333,7 @@ def getAABB(objIDs: (list, tuple)):
 
 @typecheck
 def _updateRigidBodyStateTuple(orig: _RigidBodyState,
-                            new: rb_state.RigidBodyStateOverride):
+                               new: rb_state.RigidBodyStateOverride):
     """
     Overwrite fields in ``orig`` with content of ``new``.
 

@@ -437,8 +437,9 @@ class TestBulletAPI:
         cshapes = [getCSSphere('foo')]
 
         # Create two identical spheres, one left, one right (x-axis).
-        obj_a = rb_state.RigidBodyState(position=pos_a, cshapes=cshapes, imass=1)
-        obj_b = rb_state.RigidBodyState(position=pos_b, cshapes=cshapes, imass=1)
+        RigidBodyState = rb_state.RigidBodyState
+        obj_a = RigidBodyState(position=pos_a, cshapes=cshapes, imass=1)
+        obj_b = RigidBodyState(position=pos_b, cshapes=cshapes, imass=1)
         del pos_a, pos_b, cshapes
 
         # Instantiate Bullet engine.
@@ -601,8 +602,9 @@ class TestBulletAPI:
         id_a, id_b = 10, 20
         pos_a = (-1, 0, 0)
         pos_b = (1, 0, 0)
-        obj_a = rb_state.RigidBodyState(position=pos_a, cshapes=[getCSSphere()])
-        obj_b = rb_state.RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
+        RigidBodyState = rb_state.RigidBodyState
+        obj_a = RigidBodyState(position=pos_a, cshapes=[getCSSphere()])
+        obj_b = RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
 
         # Load the objects into the physics engine.
         sim.setRigidBodyData(id_a, obj_a)
@@ -680,8 +682,9 @@ class TestBulletAPI:
         id_a, id_b = 10, 20
         pos_a = (-5, 0, 0)
         pos_b = (5, 0, 0)
-        obj_a = rb_state.RigidBodyState(position=pos_a, cshapes=[getCSSphere()])
-        obj_b = rb_state.RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
+        RigidBodyState = rb_state.RigidBodyState
+        obj_a = RigidBodyState(position=pos_a, cshapes=[getCSSphere()])
+        obj_b = RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
 
         # Load the objects into the physics engine.
         sim.setRigidBodyData(id_a, obj_a)

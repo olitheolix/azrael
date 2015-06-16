@@ -1245,7 +1245,7 @@ class TestBroadphase:
             trans.setOrigin(pos)
             ms = DefaultMotionState()
             ms.setWorldTransform(trans)
-            rb_b.setMotionState(ms)
+            rb.setMotionState(ms)
 
         # Create two rigid bodies side by side (they *do* touch, but just).
         pos_a = Vec3(-3, 0, 0)
@@ -1332,18 +1332,19 @@ class TestBroadphase:
             sim.addRigidBody(rb_ball)
 
             # Sanity check: the ball must be at position y=5
-            pos = rb_ball.getMotionState().getWorldTransform().getOrigin().topy()
+            pos = rb_ball.getMotionState().getWorldTransform().getOrigin()
+            pos = pos.topy()
             assert pos[1] == 5
 
-            # Step the simulation long enough for the ball to fall down and come to
-            # rest on the plane.
+            # Step the simulation long enough for the ball to fall down and
+            # come to rest on the plane.
             for ii in range(10):
                 sim.stepSimulation(1, 100)
 
-            # Verify that the y-position of the ball is such that the ball rests on
-            # the plane.
-            pos = rb_ball.getMotionState().getWorldTransform().getOrigin().topy()
-            return pos
+            # Verify that the y-position of the ball is such that the ball
+            # rests on the plane.
+            pos = rb_ball.getMotionState().getWorldTransform().getOrigin()
+            return pos.topy()
 
         # Run the simulation and verify that the ball has come to rest on the
         # plane.
@@ -1362,3 +1363,78 @@ class TestBroadphase:
         sim.installBroadphaseCallback()
         pos = runSimulation(sim)
         assert pos[1] < -100
+
+
+class TestContactGeneration:
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
+    def test_getLatestContacts(self):
+        def moveBody(rb, pos):
+            trans = Transform()
+            trans.setOrigin(pos)
+            ms = DefaultMotionState()
+            ms.setWorldTransform(trans)
+            rb.setMotionState(ms)
+
+        # Create two rigid bodies side by side (they *do* touch, but just).
+        pos_a = Vec3(-3, 0, 0)
+        pos_b = Vec3(-1, 0, 0)
+        pos_c = Vec3(1, 0, 0)
+        pos_d = Vec3(3, 0, 0)
+        rb_a = getRB(pos=pos_a, cshape=SphereShape(1), bodyID=1)
+        rb_b = getRB(pos=pos_b, cshape=SphereShape(1), bodyID=2)
+        rb_c = getRB(pos=pos_c, cshape=SphereShape(1), bodyID=3)
+        rb_d = getRB(pos=pos_d, cshape=SphereShape(1), bodyID=4)
+
+        # Create a simulation and add three objects. The relative positions of
+        # the objects is like this: "AB D", ie A & B are just touching, but D
+        # is by itself.
+        sim = BulletBase()
+        sim.addRigidBody(rb_a)
+        sim.addRigidBody(rb_b)
+        sim.addRigidBody(rb_d)
+
+        # Step the simulation and fetch the collision pairs.
+        sim.stepSimulation(1, 1)
+        ret = sim.azGetLastContacts()
+        assert set(ret.keys()) == set([(1, 2)])
+
+        # Move the middle body B towards the right so that touches D: "A  BD".
+        moveBody(rb_a, pos_a)
+        moveBody(rb_b, pos_c)
+        moveBody(rb_d, pos_d)
+        sim.stepSimulation(1, 1)
+        ret = sim.azGetLastContacts()
+        assert set(ret.keys()) == set([(2, 4)])
+
+        # Move the B towards the far right so that it does not touch D at all:
+        # "A  B    D".
+        moveBody(rb_a, pos_a)
+        moveBody(rb_b, Vec3(30, 0, 0))
+        moveBody(rb_d, pos_d)
+        sim.stepSimulation(1, 1)
+        assert sim.azGetLastContacts() == {}
+
+        # Move the middle body back to its original position and insert the
+        # fourth body. Now all bodies touch their immediate neighbours:
+        # "ABCD"
+        sim.addRigidBody(rb_c)
+        moveBody(rb_a, pos_a)
+        moveBody(rb_b, pos_b)
+        moveBody(rb_c, pos_c)
+        moveBody(rb_d, pos_d)
+        sim.stepSimulation(1, 1)
+        ret = sim.azGetLastContacts()
+        assert set(ret.keys()) == set([(1, 2), (2, 3), (3, 4)])

@@ -244,8 +244,8 @@ class PyBulletDynamicsWorld():
         # that will eventually be returned to the caller.
         csname = body.getCollisionShape().getChildShape(0).getName()
         out = _RigidBodyState(scale, body.getInvMass(),
-                           body.getRestitution(), rot, pos, vLin, vRot,
-                           cshapes, axesLockLin, axesLockRot, 0)
+                              body.getRestitution(), rot, pos, vLin, vRot,
+                              cshapes, axesLockLin, axesLockRot, 0)
         return RetVal(True, None, out)
 
     @typecheck
@@ -284,8 +284,9 @@ class PyBulletDynamicsWorld():
         if (old.scale != rbState.scale) or \
            not (np.array_equal(old.cshapes, rbState.cshapes)):
             # Create a new collision shape.
-            mass, inertia, cshapes = self.compileCollisionShape(bodyID, rbState).data
-            del mass, inertia
+            tmp = self.compileCollisionShape(bodyID, rbState)
+            mass, inertia, cshapes = tmp.data
+            del mass, inertia, tmp
 
             # Replace the existing collision shape with the new one.
             body.setCollisionShape(cshapes)
@@ -424,7 +425,7 @@ class PyBulletDynamicsWorld():
         fixme: find out how to combine mass/inertia of multi body bodies.
 
         :param int bodyID: body ID.
-        :param _RigidBodyState rbState: Azrael's meta data that describes the body.
+        :param _RigidBodyState rbState: meta data to describe the body.
         :return: compound shape with all the individual shapes.
         :rtype: ``CompoundShape``
         """

@@ -30,7 +30,8 @@ fallRigidBodyState = DefaultMotionState(
     Transform(Quaternion(0, 0, 0, 1), Vec3(0, 20, 0)))
 mass = 1
 fallInertia = ballShape.calculateLocalInertia(mass)
-ci = RigidBodyConstructionInfo(mass, fallRigidBodyState, ballShape, fallInertia)
+ci = RigidBodyConstructionInfo(
+    mass, fallRigidBodyState, ballShape, fallInertia)
 fallRigidBody = RigidBody(ci)
 fallRigidBody.setRestitution(0.5)
 sim.addRigidBody(fallRigidBody)

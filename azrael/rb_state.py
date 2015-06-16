@@ -30,8 +30,8 @@ from IPython import embed as ipshell
 from azrael.types import typecheck, _RigidBodyState
 from azrael.types import CollShapeMeta, CollShapeEmpty
 
-# Default argument for RigidBodyState below (purely for visual appeal, not because
-# anyone would/should use it).
+# Default argument for RigidBodyState below (purely for visual appeal, not
+# because anyone would/should use it).
 _CSDefault = CollShapeMeta(
     'Empty', '', (0, 0, 0), (0, 0, 0, 1), CollShapeEmpty()
 )
@@ -39,16 +39,16 @@ _CSDefault = CollShapeMeta(
 
 @typecheck
 def RigidBodyState(scale: (int, float)=1,
-                imass: (int, float)=1,
-                restitution: (int, float)=0.9,
-                orientation: (tuple, list, np.ndarray)=[0, 0, 0, 1],
-                position: (tuple, list, np.ndarray)=[0, 0, 0],
-                velocityLin: (tuple, list, np.ndarray)=[0, 0, 0],
-                velocityRot: (tuple, list, np.ndarray)=[0, 0, 0],
-                cshapes: (tuple, list)=[_CSDefault],
-                axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
-                axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
-                version: int=0):
+                   imass: (int, float)=1,
+                   restitution: (int, float)=0.9,
+                   orientation: (tuple, list, np.ndarray)=[0, 0, 0, 1],
+                   position: (tuple, list, np.ndarray)=[0, 0, 0],
+                   velocityLin: (tuple, list, np.ndarray)=[0, 0, 0],
+                   velocityRot: (tuple, list, np.ndarray)=[0, 0, 0],
+                   cshapes: (tuple, list)=[_CSDefault],
+                   axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
+                   axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
+                   version: int=0):
     """
     Return a ``_RigidBodyState`` object.
 
@@ -141,8 +141,8 @@ class RigidBodyStateOverride(_RigidBodyState):
 
         # Overwrite those keys for which we actually have a value. Note that we
         # will not use the valued supplied to this function directly but use
-        # the ones from the temporary RigidBodyState object because this ensures
-        # the data types were correctly converted (mosty lists to NumPy
+        # the ones from the temporary RigidBodyState object because this
+        # ensures the data types were correctly converted (mosty lists to NumPy
         # arrays).
         for key in kwargs:
             kwargs_all[key] = getattr(sv, key)

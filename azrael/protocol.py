@@ -312,7 +312,8 @@ def ToClerk_GetFragmentGeometries_Decode(payload: dict):
     try:
         objIDs = [int(_) for _ in objIDs]
     except TypeError:
-        return False, 'Expected integers in ToClerk_GetFragmentGeometries_Decode'
+        return (False,
+                'Expected integers in ToClerk_GetFragmentGeometries_Decode')
     return True, (objIDs, )
 
 

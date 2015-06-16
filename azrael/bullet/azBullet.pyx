@@ -124,10 +124,7 @@ cdef class BulletBase:
     def performDiscreteCollisionDetection(self):
         self.dynamicsWorld.performDiscreteCollisionDetection()
 
-    def azGetCollisionPairs(self):
-        # Run Broadphase.
-        self.dynamicsWorld.performDiscreteCollisionDetection()
-
+    def azGetLastContacts(self):
         # Convenience.
         cdef btDispatcher *dispatcher = self.dynamicsWorld.getDispatcher()
 
@@ -142,25 +139,35 @@ cdef class BulletBase:
 
         # Auxiliary Python objects to gain access to the 'azGetBodyID'
         # convenience methods.
-        obA, obB = CollisionObject(), CollisionObject()
+        rb_a, rb_b = CollisionObject(), CollisionObject()
 
         for ii in range(dispatcher.getNumManifolds()):
             contactManifold = dispatcher.getManifoldByIndexInternal(ii)
 
+            # Skip the current pair of bodies because they are only close but
+            # do not touch each other.
+            if contactManifold.getNumContacts() == 0:
+                continue
+
             # Get the two objects.
-            obA.ptr_CollisionObject = <btCollisionObject*>(contactManifold.getBody0())
-            obB.ptr_CollisionObject = <btCollisionObject*>(contactManifold.getBody1())
+            rb_a.ptr_CollisionObject = <btCollisionObject*>(contactManifold.getBody0())
+            rb_b.ptr_CollisionObject = <btCollisionObject*>(contactManifold.getBody1())
 
             # Query the bodyIDs of both objects. Skip the rest of this loop if
             # one (or both) objects have no ID.
-            bodyIDs = obA.azGetBodyID(), obB.azGetBodyID()
+            bodyIDs = rb_a.azGetBodyID(), rb_b.azGetBodyID()
             if None in bodyIDs:
                 continue
 
-            # Add the current body pair to the dictionary. So far this only
-            # means that the objects are close, even though they may not be
-            # touching.
-            pairData[bodyIDs] = []
+            # Sort the bodyIDs because they will be used as the key in the
+            # dictionary below and contacts for (1, 2) should be stored under
+            # the same key as contacts for (2, 1).
+            bodyIDs = tuple(sorted(bodyIDs))
+
+            # Add the current body pair to the dictionary. So far this
+            # means the objects are close...
+            if bodyIDs not in pairData:
+                pairData[bodyIDs] = []
 
             # Compile a list of all contacts.
             for jj in range(contactManifold.getNumContacts()):
@@ -177,10 +184,11 @@ cdef class BulletBase:
                 # Add the contact point locations to our pairData dictionary.
                 pairData[bodyIDs].append((c_a, c_b))
 
-        # Explicitly set the internal pointers to NULL as the destructor of obA
-        # and obA would otherwise deallocate the user pointers.
-        obA.ptr_CollisionObject = NULL
-        obB.ptr_CollisionObject = NULL
+        # Explicitly set the internal pointers to NULL as the destructor of rb_a
+        # and rb_a would otherwise deallocate the user pointers where the
+        # bodyID is stored.
+        rb_a.ptr_CollisionObject = NULL
+        rb_b.ptr_CollisionObject = NULL
         return pairData
 
     def addRigidBody(self, RigidBody body, short group=-1, short mask=-1):
