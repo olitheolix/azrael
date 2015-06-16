@@ -3,6 +3,7 @@ cdef extern from "btBulletDynamicsCommon.h":
         btScalar(double s)
 
     cdef cppclass btQuaternion:
+        btQuaternion()
         btQuaternion(double x, double y, double z, double w)
 
         const btScalar &x()
