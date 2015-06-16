@@ -217,6 +217,26 @@ cdef class RigidBody(CollisionObject):
             del self.ptr_RigidBody
             self.ptr_RigidBody = NULL
 
+    def __repr__(self):
+        # Fetch the position and rotation of this rigid body.
+        cdef btTransform t
+        self.ptr_RigidBody.getMotionState().getWorldTransform(t)
+        cdef btVector3 pos = t.getOrigin()
+        cdef btQuaternion rot = t.getRotation()
+
+        # Convert the position and rotation to a string.
+        p = '({:.2f}, {:.2f}, {:.2f})'
+        p = p.format(<double>pos.x(), <double>pos.y(), <double>pos.z())
+        r = '({:.2f}, {:.2f}, {:.2f}, {:.2f})'
+        r = r.format(<double>rot.x(), <double>rot.y(), <double>rot.z(), <double>rot.w())
+
+        # Compile the string to describe this rigid body.
+        s = ('Ridid Body: \n'
+             '  Position: {} \n'
+             '  Rotation: {} \n'
+             '  Collision Shape: {}')
+        return s.format(p, r, repr(self._ref_cs))
+
     def setRestitution(self, double r):
         self.ptr_RigidBody.setRestitution(btScalar(r))
 
