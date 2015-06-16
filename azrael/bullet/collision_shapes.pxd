@@ -35,6 +35,8 @@ cdef extern from "btBulletDynamicsCommon.h":
 
     cdef cppclass btStaticPlaneShape:
         btStaticPlaneShape(btVector3 &v, btScalar plane_const)
+        const btVector3 &getPlaneNormal()
+        const btScalar &getPlaneConstant()
 
     cdef cppclass btCompoundShape:
        btCompoundShape(bint enableDynamicAabbTree)

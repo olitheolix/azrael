@@ -8,6 +8,9 @@ cdef class CollisionShape:
     def __cinit__(self):
         self.ptr_CollisionShape = NULL
 
+    def __repr__(self):
+        return 'Unknown Generic'
+
     def setLocalScaling(self, Vec3 scaling):
         self.ptr_CollisionShape.setLocalScaling(scaling.ptr_Vector3[0])
 
@@ -32,6 +35,9 @@ cdef class ConcaveShape(CollisionShape):
     def __cinit__(self):
         self.ptr_ConcaveShape = NULL
 
+    def __repr__(self):
+        return 'Unknown Concave'
+
 
 cdef class StaticPlaneShape(ConcaveShape):
     cdef btStaticPlaneShape *ptr_StaticPlaneShape
@@ -51,6 +57,19 @@ cdef class StaticPlaneShape(ConcaveShape):
         if self.ptr_StaticPlaneShape != NULL:
             del self.ptr_StaticPlaneShape
 
+    def __repr__(self):
+        s = ('Static Plane:\n'
+             '  Normal: {:.2f}, {:.2f}, {:.2f}\n'
+             '  Thickness: {:.2f}')
+        cdef btVector3 v = self.ptr_StaticPlaneShape.getPlaneNormal()
+        cdef double f = <double>self.ptr_StaticPlaneShape.getPlaneConstant()
+        s = s.format(
+            <double>v.x(),
+            <double>v.y(),
+            <double>v.z(),
+            <double>f)
+        return s
+
 
 cdef class EmptyShape(ConcaveShape):
     cdef btEmptyShape *ptr_EmptyShape
@@ -69,6 +88,9 @@ cdef class EmptyShape(ConcaveShape):
         if self.ptr_EmptyShape != NULL:
             del self.ptr_EmptyShape
 
+    def __repr__(self):
+        return 'Empty'
+
 
 cdef class ConvexShape(CollisionShape):
     cdef btConvexShape *ptr_ConvexShape
@@ -76,12 +98,18 @@ cdef class ConvexShape(CollisionShape):
     def __cinit__(self):
         self.ptr_ConvexShape = NULL
 
+    def __repr__(self):
+        return 'Unknown Convex'
+
 
 cdef class ConvexInternalShape(ConvexShape):
     cdef btConvexInternalShape *ptr_ConvexInternalShape
 
     def __cinit__(self):
         self.ptr_ConvexInternalShape = NULL
+
+    def __repr__(self):
+        return 'Unknown ConvexInternal'
 
 
 cdef class SphereShape(ConvexInternalShape):
@@ -105,12 +133,20 @@ cdef class SphereShape(ConvexInternalShape):
     def getRadius(self):
         return <double> self.ptr_SphereShape.getRadius()
 
+    def __repr__(self):
+        s = 'Sphere:\n  Radius: {:.2f}'
+        s = s.format(<double>self.ptr_SphereShape.getRadius())
+        return s
+
 
 cdef class PolyhedralConvexShape(ConvexInternalShape):
     cdef btPolyhedralConvexShape *ptr_PolyhedralConvexShape
 
     def __cinit__(self):
         self.ptr_PolyhedralConvexShape = NULL
+
+    def __repr__(self):
+        return 'Unknown PolyhedralConvex'
 
 
 cdef class BoxShape(PolyhedralConvexShape):
@@ -131,6 +167,12 @@ cdef class BoxShape(PolyhedralConvexShape):
     def __dealloc__(self):
         if self.ptr_BoxShape != NULL:
             del self.ptr_BoxShape
+
+    def __repr__(self):
+        cdef btVector3 v = self.ptr_BoxShape.getHalfExtentsWithMargin()
+        s = 'BoxShape:\n Half Widths: {:.2f}, {:.2f}, {:.2f}'
+        s = s.format(<double>v.x(), <double>v.y(), <double>v.z())
+        return s
 
     def getHalfExtentsWithMargin(self):
         v = Vec3(0, 0, 0)
@@ -164,6 +206,15 @@ cdef class CompoundShape(CollisionShape):
     def __iter__(self):
         # Return the iterator over all collision shapes.
         return (_.cshape for _ in self._list_cs)
+
+    def __repr__(self):
+        n = self.getNumChildShapes()
+        if n == 0:
+            return 'Compound (No children)'
+        elif n == 1:
+            return 'Compound (1 child)'
+        else:
+            return 'Compound ({} children)'.format(n)
 
     def addChildShape(self, Transform localTransform, CollisionShape shape):
         self._list_cs.append(ChildElement(localTransform, shape))
