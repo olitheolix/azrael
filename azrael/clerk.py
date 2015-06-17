@@ -51,7 +51,7 @@ import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, Template, CollShapeMeta
-from azrael.types import FragState, FragDae, FragRaw, MetaFragment
+from azrael.types import FragState, MetaFragment
 
 
 class Clerk(config.AzraelProcess):
@@ -573,7 +573,7 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def _verifyCollisionShapes(self, cshapes: (tuple, list)):
         """
-        Return *True* if ``cshapes`` contains only valid Collision Shapes.
+        Return *True* if all Collision shapes in ``cshapes`` are valid.
 
         fixme: incomplete; untested; good enough for now until its merit is
         clear.

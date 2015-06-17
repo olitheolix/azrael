@@ -88,7 +88,7 @@ def addCmdSpawn(objData: (tuple, list)):
     cycle. However, it is impossible to determine when exactly.
 
     :param int objID: object ID to insert.
-    :param bytes sv: encoded state variable data.
+    :param _RigidBodyState sv: encoded state variable data.
     :param float aabb: size of AABB.
     :return: success.
     """

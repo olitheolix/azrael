@@ -719,7 +719,6 @@ class Client():
         """
         Return all object IDs currently in the simulation.
 
-        :param bytes dummy: irrelevant
         :return: list of object IDs (integers)
         :rtype: list of int
         """
