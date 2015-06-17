@@ -20,6 +20,7 @@ This module does not contain any tests but utility functions often used in
 other tests.
 """
 import os
+import base64
 import numpy as np
 from azrael.types import FragDae, FragRaw, CollShapeMeta
 
@@ -29,6 +30,10 @@ def createFragDae():
     dae_file = open(b + '/cube.dae', 'rb').read()
     dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
     dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
+
+    dae_file = base64.b64encode(dae_file).decode('utf8')
+    dae_rgb1 = base64.b64encode(dae_rgb1).decode('utf8')
+    dae_rgb2 = base64.b64encode(dae_rgb2).decode('utf8')
     frag = FragDae(dae=dae_file,
                    rgb={'rgb1.png': dae_rgb1,
                         'rgb2.jpg': dae_rgb2})

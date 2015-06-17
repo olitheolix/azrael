@@ -20,6 +20,7 @@ Test the Clerk module.
 """
 import json
 import time
+import base64
 import pytest
 import urllib.request
 
@@ -1500,17 +1501,17 @@ class TestClerk:
         # original Collada file ('cube.dae').
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
-        assert tmp == f_dae.dae
+        assert tmp == base64.b64decode(f_dae.dae)
 
         # Download and verify the first texture.
         url = base_url + data['test']['url'] + '/rgb1.png'
         tmp = _download(url)
-        assert tmp == f_dae.rgb['rgb1.png']
+        assert tmp == base64.b64decode(f_dae.rgb['rgb1.png'])
 
         # Download and verify the second texture.
         url = base_url + data['test']['url'] + '/rgb2.jpg'
         tmp = _download(url)
-        assert tmp == f_dae.rgb['rgb2.jpg']
+        assert tmp == base64.b64decode(f_dae.rgb['rgb2.jpg'])
 
         # Change the fragment geometries.
         f_raw = createFragRaw()
@@ -1533,17 +1534,17 @@ class TestClerk:
         # original Collada file ('cube.dae').
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
-        assert tmp == f_dae.dae
+        assert tmp == base64.b64decode(f_dae.dae)
 
         # Download and verify the first texture.
         url = base_url + data['test']['url'] + '/rgb1.png'
         tmp = _download(url)
-        assert tmp == f_dae.rgb['rgb1.png']
+        assert tmp == base64.b64decode(f_dae.rgb['rgb1.png'])
 
         # Download and verify the second texture.
         url = base_url + data['test']['url'] + '/rgb2.jpg'
         tmp = _download(url)
-        assert tmp == f_dae.rgb['rgb2.jpg']
+        assert tmp == base64.b64decode(f_dae.rgb['rgb2.jpg'])
 
         clacks.terminate()
         clacks.join()

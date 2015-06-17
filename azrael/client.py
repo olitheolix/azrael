@@ -294,6 +294,7 @@ class Client():
 
     def _encodeRawFragment(self, frag):
         """
+        fixme: this method has to go
         Return encoded Raw fragment if ``frag`` is valid.
 
         The returned tuple is a ``MetaFragment`` that can be JSON encoded
@@ -327,6 +328,7 @@ class Client():
 
     def _encodeDaeFragment(self, frag):
         """
+        fixme: this method has to go
         Return encoded Collada fragment if ``frag`` is valid.
 
         The returned tuple is a ``MetaFragment`` that can be JSON encoded
@@ -342,25 +344,18 @@ class Client():
         # that the Collada file is a byte stream and the textures are a
         # dictionary.
         f = FragDae(*frag.data)
-        assert isinstance(f.dae, bytes)
+        assert isinstance(f.dae, str)
         assert isinstance(f.rgb, dict)
 
-        # Base64 encode the DAE file.
-        dae = base64.b64encode(f.dae).decode('utf8')
-
         # Encode each texture as Base64.
-        rgb = {}
         for rr in f.rgb:
             # The key must be string (denotes the file name of the
             # texture), whereas the texture itself must be a byte string.
             assert isinstance(rr, str)
-            assert isinstance(f.rgb[rr], bytes)
-
-            # Base64 encode the texture.
-            rgb[rr] = base64.b64encode(f.rgb[rr]).decode('utf8')
+            assert isinstance(f.rgb[rr], str)
 
         # Return a JSON compatible version of the MetaFragment ``frag``.
-        return MetaFragment(type='dae', id=frag.id, data=FragDae(dae, rgb))
+        return MetaFragment(type='dae', id=frag.id, data=f)
 
     @typecheck
     def setFragmentGeometries(self, objID: int, frags: list):

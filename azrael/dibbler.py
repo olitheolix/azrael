@@ -39,6 +39,7 @@ create as many instances as necessary.
 """
 import os
 import json
+import base64
 import gridfs
 
 import numpy as np
@@ -131,9 +132,13 @@ class Dibbler:
         # Sanity checks.
         try:
             data = FragDae(*model.data)
-            assert isinstance(data.dae, bytes)
-            for v in data.rgb.values():
-                assert isinstance(v, bytes)
+            assert isinstance(data.dae, str)
+            data = data._replace(dae=base64.b64decode(data.dae.encode('utf8')))
+            rgb = {}
+            for k, v in data.rgb.items():
+                assert isinstance(v, str)
+                rgb[k] = base64.b64decode(v.encode('utf8'))
+            data = data._replace(rgb=rgb)
         except KeyError:
             msg = 'Invalid data types for Collada fragments'
             return RetVal(False, msg, None)
