@@ -47,6 +47,8 @@ class TestDibbler:
 
     def verifyDae(self, url: str, mf: MetaFragment):
         """
+        fixme: this has to become part of the 'FragDae.__eq__' method.
+        
         Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
 
         :param str url: the URL where the Collada fragment is supposed to be.
@@ -58,17 +60,18 @@ class TestDibbler:
         name = mf.id
         frag = mf.data
 
+        import base64
         # Fetch- and verify the file.
         ret = self.dibbler.getFile(url + '/{name}/{name}'.format(name=name))
         assert ret.ok
-        assert ret.data == frag.dae
+        assert ret.data == base64.b64decode(frag.dae)
 
         ret = self.dibbler.getFile(url + '/{}/rgb1.png'.format(name))
         assert ret.ok
-        assert ret.data == frag.rgb['rgb1.png']
+        assert ret.data == base64.b64decode(frag.rgb['rgb1.png'])
         ret = self.dibbler.getFile(url + '/{}/rgb2.jpg'.format(name))
         assert ret.ok
-        assert ret.data == frag.rgb['rgb2.jpg']
+        assert ret.data == base64.b64decode(frag.rgb['rgb2.jpg'])
 
     def verifyRaw(self, url: str, mf: MetaFragment):
         """

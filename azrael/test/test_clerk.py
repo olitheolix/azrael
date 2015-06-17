@@ -1499,6 +1499,7 @@ class TestClerk:
         # Download and verify the dae file. Note that the file name itself
         # matches the name of the fragment (ie. 'test'), *not* the name of the
         # original Collada file ('cube.dae').
+        # fixme: use FragDAE.__eq__ method for thi
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
         assert tmp == base64.b64decode(f_dae.dae)
@@ -1532,6 +1533,7 @@ class TestClerk:
         # Download and verify the dae file. Note that the file name itself
         # matches the name of the fragment (ie. 'test'), *not* the name of the
         # original Collada file ('cube.dae').
+        # fixme: use FragDAE.__eq__ method for thi
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
         assert tmp == base64.b64decode(f_dae.dae)
