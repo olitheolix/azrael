@@ -1,5 +1,6 @@
 import json
 import pytest
+import base64
 import tornado.web
 import azrael.clerk
 import azrael.clacks
@@ -75,12 +76,13 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         """
         # Download the Collada file itself.
         dae = self.fetch(url + dae, method='GET').body
+        dae = base64.b64encode(dae).decode('utf8')
 
         # Download all the textures.
         rgb = {}
         for texture in textures:
             tmp = self.fetch(url + texture, method='GET').body
-            rgb[texture] = tmp
+            rgb[texture] = base64.b64encode(tmp).decode('utf8')
         return FragDae(dae=dae, rgb=rgb)
 
     def verifyTemplate(self, url, template):
@@ -108,6 +110,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         assert ret['fragments'] == expected_fragment_names
 
         # Download- and verify each template.
+        # fixme: must use __eq__ method of Frag{Raw,Dae}
         for tt in template:
             if tt.type == 'raw':
                 tmp_url = url + '/{name}/'.format(name=tt.id)
