@@ -160,6 +160,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
         """
         Decode the Collada fragment data ``mf``.
         """
+        return mf._replace(data=FragDae(*mf.data))
         fd = FragDae(*mf.data)
         dae = b64d(fd.dae.encode('utf8'))
         rgb = {k: b64d(v.encode('utf8')) for (k, v) in fd.rgb.items()}
@@ -346,10 +347,10 @@ def ToClerk_SetFragmentGeometry_Decode(payload: dict):
     for frag in payload['frags']:
         mf = MetaFragment(*frag)
         if mf.type == 'dae':
-            fd = FragDae(*mf.data)
-            dae = b64d(fd.dae.encode('utf8'))
-            rgb = {k: b64d(v.encode('utf8')) for (k, v) in fd.rgb.items()}
-            mf = mf._replace(data=FragDae(dae, rgb))
+            # fixme: mf.data should be a dictionary; use **kwargs to construct
+            # the tuple; must be encoded as such in the ToClerk_..._Encode
+            # function defined above.
+            mf = mf._replace(data=FragDae(*mf.data))
         frags.append(mf)
     return True, (payload['objID'], frags)
 
