@@ -42,7 +42,7 @@ def createFragDae():
 
 def createFragRaw():
     vert = np.random.randint(0, 100, 9).tolist()
-    uv = np.random.randint(0, 100, 2).tolist()
+    uv = np.random.randint(0, 100, 6).tolist()
     rgb = np.random.randint(0, 100, 3).tolist()
     return FragRaw(vert, uv, rgb)
 

@@ -33,7 +33,7 @@ Usage example::
 import inspect
 import functools
 import numpy as np
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 # Uniform return value signature.
 RetVal = namedtuple('RetVal', 'ok msg data')
@@ -44,7 +44,7 @@ FragState = namedtuple('FragState', 'id scale position orientation')
 
 # Fragments.
 MetaFragment = namedtuple('MetaFragment', 'type id data')
-FragRaw = namedtuple('FragRaw', 'vert uv rgb')
+_FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 
 # Work package related.
@@ -196,6 +196,46 @@ def typecheck(func_handle):
             checkType(var_name, var_val, annot)
         return func_handle(*args, **kwds)
     return wrapper
+
+
+class FragRaw(_FragRaw):
+    """
+    :param [float] vert: vertex data
+    :param [float] uv: UV map coordinates
+    :param [uint8]: RGB texture values.
+    :return _FragRaw: compiled Raw fragment.
+    """
+    @typecheck
+    def __new__(cls, vert, uv, rgb):
+        try:
+            assert isinstance(vert, (tuple, list, np.array))
+            assert isinstance(uv, (tuple, list, np.array))
+            assert isinstance(rgb, (tuple, list, np.array))
+
+            vert = np.array(vert, np.float64)
+            uv = np.array(uv, np.float64)
+            rgb = np.array(rgb, np.uint8)
+            assert vert.ndim == 1
+            assert uv.ndim == 1
+            assert rgb.ndim == 1
+            vert = tuple(vert.tolist())
+            uv = tuple(uv.tolist())
+            rgb = tuple(rgb.tolist())
+            # The number of vertices must be an integer multiple of 9 to
+            # constitute a valid triangle mesh (every triangle has three
+            # edges and every edge requires an (x, y, z) triplet to
+            # describe its position).
+            assert len(vert) % 9 == 0
+            assert len(uv) % 2 == 0
+            assert len(rgb) % 3 == 0
+            assert len(vert) % 3 == len(uv) % 2
+        except (TypeError, AssertionError):
+            raise TypeError
+
+        return super().__new__(cls, vert, uv, rgb)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
 
 
 class FragDae(_FragDae):

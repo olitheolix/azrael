@@ -53,6 +53,7 @@ from azrael.types import FragDae, FragRaw, MetaFragment
 @typecheck
 def isGeometrySane(frag: FragRaw):
     """
+    fixme: remove this method.
     Return *True* if the geometry is consistent.
 
     :param Fragment frag: a geometry Fragment
@@ -173,9 +174,6 @@ class Dibbler:
         # Sanity checks.
         try:
             data = FragRaw(*model.data)
-            assert isinstance(data.vert, list)
-            assert isinstance(data.uv, list)
-            assert isinstance(data.rgb, list)
         except (AssertionError, TypeError):
             msg = 'Invalid data types for Raw fragments'
             return RetVal(False, msg, None)

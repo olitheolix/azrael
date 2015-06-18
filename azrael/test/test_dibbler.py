@@ -92,15 +92,17 @@ class TestDibbler:
         """
         # Convenience.
         name = mf.id
-        frag = mf.data
+        ref = mf.data
 
-        # Fetch- and verify the file.
+        # Fetch- the data for the Raw fragment.
         ret = self.dibbler.getFile('{}/{}/model.json'.format(url, name))
         assert ret.ok
         ret = json.loads(ret.data.decode('utf8'))
-        assert ret['uv'] == frag.uv
-        assert ret['rgb'] == frag.rgb
-        assert ret['vert'] == frag.vert
+
+        # Construct a pristine FragRaw from the downloaded data and compare it
+        # the provided reference.
+        download = FragRaw(ret['vert'], ret['uv'], ret['rgb'])
+        assert ref == download
 
     def test_addRawTemplate(self):
         """
@@ -117,6 +119,7 @@ class TestDibbler:
         # Add the first template and verify that the database now contains
         # exactly two files (a meta file, and the actual fragment data).
         ret = dibbler.addTemplate(t_raw)
+        assert ret.ok
         assert dibbler.getNumFiles() == (True, None, 2)
 
         # Fetch- and verify the model.
