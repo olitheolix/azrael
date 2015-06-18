@@ -280,16 +280,19 @@ class Client():
         """
         Return links to the models for the objects in ``objIDs``.
 
-         {objID_1: {'type': 'raw', 'url': 'http:...'},
-          objID_2: {'type': 'dae', 'url': 'http:...'},
-          objID_3: None,
-          ...
+        {objID_1:
+            {name_1: {'type': 'raw', 'url': 'http:...'},
+             name_2: {'type': 'raw', 'url': 'http:...'},...
+            }
+         objID_2: {name_1: {'type': 'dae', 'url': 'http:...'},...
         }
 
         :param int objIDs: list of objIDs to query.
         :return: links to model data for all ``objIDs``.
         :rtype: dict
         """
+        # fixme: iterate over the inner dictionaries to construct
+        # `MetaFragments`. fix/simplify the tests as well
         return self.serialiseAndSend('get_fragment_geometries', objIDs)
 
     def _encodeRawFragment(self, frag):

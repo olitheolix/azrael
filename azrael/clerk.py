@@ -972,8 +972,11 @@ class Clerk(config.AzraelProcess):
 
         # Determine the fragment- type (eg. 'raw' or 'dae') and URL and put it
         # into the output dictionary. This will create a dictionary of the form
-        # {objID_1: {'type': 'raw', 'url': 'http:...'},
-        #  objID_2: {'type': 'dae', 'url': 'http:...'},...
+        # {objID_1:
+        #     {name_1: {'type': 'raw', 'url': 'http:...'},
+        #      name_2: {'type': 'raw', 'url': 'http:...'},...
+        #     }
+        #  objID_2: {name_1: {'type': 'dae', 'url': 'http:...'},...
         # }
         pj = os.path.join
         for doc in docs:

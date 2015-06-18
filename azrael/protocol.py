@@ -325,6 +325,8 @@ def FromClerk_GetFragmentGeometries_Encode(geo):
 
 @typecheck
 def FromClerk_GetFragmentGeometries_Decode(payload: dict):
+    # Convert the objIDs to integers, but leave the dictionary otherwise
+    # intact.
     payload = {int(k): v for (k, v) in payload.items()}
     return RetVal(True, None, payload)
 
