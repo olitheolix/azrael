@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 import json
+import base64
 import pytest
 import azrael.dibbler
 
@@ -58,20 +59,27 @@ class TestDibbler:
         """
         # Convenience.
         name = mf.id
-        frag = mf.data
+        ref = mf.data
 
-        import base64
-        # Fetch- and verify the file.
-        ret = self.dibbler.getFile(url + '/{name}/{name}'.format(name=name))
-        assert ret.ok
-        assert ret.data == base64.b64decode(frag.dae)
+        # Fetch- the components of the Collada file.
+        r_dae = self.dibbler.getFile(url + '/{name}/{name}'.format(name=name))
+        r_rgb1 = self.dibbler.getFile(url + '/{}/rgb1.png'.format(name))
+        r_rgb2 = self.dibbler.getFile(url + '/{}/rgb2.jpg'.format(name))
 
-        ret = self.dibbler.getFile(url + '/{}/rgb1.png'.format(name))
-        assert ret.ok
-        assert ret.data == base64.b64decode(frag.rgb['rgb1.png'])
-        ret = self.dibbler.getFile(url + '/{}/rgb2.jpg'.format(name))
-        assert ret.ok
-        assert ret.data == base64.b64decode(frag.rgb['rgb2.jpg'])
+        # Verify Dibbler could retrieve all components.
+        assert r_dae.ok
+        assert r_rgb1.ok
+        assert r_rgb2.ok
+
+        # Base64 encode the downloaded components and put them into a pristine
+        # 'FragDae' instance.
+        dae = base64.b64encode(r_dae.data).decode('utf8')
+        rgb1 = base64.b64encode(r_rgb1.data).decode('utf8')
+        rgb2 = base64.b64encode(r_rgb2.data).decode('utf8')
+        downloaded = FragDae(dae, {'rgb1.png': rgb1, 'rgb2.jpg': rgb2})
+
+        # Ensure the downloaded data matches the reference data.
+        assert ref == downloaded
 
     def verifyRaw(self, url: str, mf: MetaFragment):
         """
