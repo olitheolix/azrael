@@ -188,8 +188,8 @@ class TestLeonardAllEngines:
         assert ret.ok
         assert ret.data[objID].imass == 2
         assert ret.data[objID].scale == 3
-        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).id
-        assert tmp == cshape_sphere[0].id
+        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).aid
+        assert tmp == cshape_sphere[0].aid
         del tmp
 
         # Update the object's SV data.
@@ -203,8 +203,8 @@ class TestLeonardAllEngines:
         assert (ret.ok, len(ret.data)) == (True, 1)
         sv = ret.data[objID]
         assert (sv.imass == 4) and (sv.scale == 5)
-        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).id
-        assert tmp == cshape_box[0].id
+        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).aid
+        assert tmp == cshape_box[0].aid
         del tmp
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
@@ -618,7 +618,7 @@ class TestLeonardOther:
         meta = WPMeta(*ret.data['wpmeta'])
         assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
         assert (ret.ok, len(data)) == (True, 2)
-        assert (data[0].id, data[1].id) == (id_1, id_2)
+        assert (data[0].aid, data[1].aid) == (id_1, id_2)
         assert isEqualBD(data[0].sv, sv_1)
         assert isEqualBD(data[1].sv, sv_2)
         assert np.array_equal(data[0].force, [0, 0, 0])

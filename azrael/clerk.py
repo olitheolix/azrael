@@ -581,7 +581,7 @@ class Clerk(config.AzraelProcess):
         try:
             for cs in cshapes:
                 cs = CollShapeMeta(*cs)
-                assert isinstance(cs.id, str)
+                assert isinstance(cs.aid, str)
                 assert isinstance(cs.type, str)
                 assert isinstance(cs.pos, (tuple, list))
                 assert isinstance(cs.rot, (tuple, list))
@@ -634,14 +634,14 @@ class Clerk(config.AzraelProcess):
                 # Sanity check:
                 if not isinstance(tt.fragments, list):
                     return RetVal(False, 'Fragments must be in a list', None)
-                if not self._isNameValid(tt.id):
+                if not self._isNameValid(tt.aid):
                     return RetVal(False, 'Invalid template name', None)
 
                 # Ensure all fragments have the correct type and their names
                 # are both valid and unique.
                 tmp = [_ for _ in tt.fragments if isinstance(_, MetaFragment)]
-                tmp = [_ for _ in tmp if self._isNameValid(_.id)]
-                tmp = set([_.id for _ in tmp])
+                tmp = [_ for _ in tmp if self._isNameValid(_.aid)]
+                tmp = set([_.aid for _ in tmp])
                 if len(set(tmp)) < len(tt.fragments):
                     msg = 'One or more fragment names are invalid',
                     return RetVal(False, msg, None)
@@ -676,8 +676,8 @@ class Clerk(config.AzraelProcess):
 
                 # Compile the Mongo document for the new template.
                 data = {
-                    'url': config.url_templates + '/' + tt.id,
-                    'id': tt.id,
+                    'url': config.url_templates + '/' + tt.aid,
+                    'aid': tt.aid,
                     'cshapes': tt.cshapes,
                     'aabb': float(ret.data['aabb']),
                     'boosters': tt.boosters,
@@ -686,7 +686,7 @@ class Clerk(config.AzraelProcess):
                 del frags
 
                 # Add the template to the database.
-                query = {'templateID': tt.id}
+                query = {'templateID': tt.aid}
                 bulk.find(query).upsert().update({'$setOnInsert': data})
 
         with util.Timeit('clerk.addTemplates_db') as timeit:
@@ -871,8 +871,8 @@ class Clerk(config.AzraelProcess):
                 doc['fragState'] = {}
                 for f in doc['fragments']:
                     f = MetaFragment(*f)
-                    doc['fragState'][f.id] = FragState(
-                        id=f.id,
+                    doc['fragState'][f.aid] = FragState(
+                        aid=f.aid,
                         scale=1,
                         position=[0, 0, 0],
                         orientation=[0, 0, 0, 1])
@@ -982,7 +982,7 @@ class Clerk(config.AzraelProcess):
         for doc in docs:
             u = doc['url']
             f = [MetaFragment(*_) for _ in doc['fragments']]
-            obj = {_.id: {'type': _.type, 'url': pj(u, _.id)} for _ in f}
+            obj = {_.aid: {'type': _.type, 'url': pj(u, _.aid)} for _ in f}
             out[doc['objID']] = obj
         return RetVal(True, None, out)
 
@@ -999,8 +999,8 @@ class Clerk(config.AzraelProcess):
         """
         # Sanity check the names of all fragments.
         for frag in fragments:
-            if not self._isNameValid(frag.id):
-                msg = 'Invalid fragment name <{}>'.format(frag.id)
+            if not self._isNameValid(frag.aid):
+                msg = 'Invalid fragment name <{}>'.format(frag.aid)
                 return RetVal(False, msg, None)
 
         # Convenience.
@@ -1015,7 +1015,7 @@ class Clerk(config.AzraelProcess):
             # If the fragment type is '_none_' then remove it altogether.
             if frag.type == '_none_':
                 update({'objID': objID},
-                       {'$unset': {'fragState.{}'.format(frag.id): True}})
+                       {'$unset': {'fragState.{}'.format(frag.aid): True}})
 
         # Update the fragment's meta data in the DB.
         new_frags = [frag._replace(data=None) for frag in fragments]
@@ -1246,7 +1246,7 @@ class Clerk(config.AzraelProcess):
                 # fragment data must be a list with three entries.
                 for fragState in fragStates:
                     assert isinstance(fragState, FragState)
-                    assert isinstance(fragState.id, str)
+                    assert isinstance(fragState.aid, str)
 
                     # Verify the content of the ``FragState`` data:
                     # scale (float), position (3-element vector), and
@@ -1272,14 +1272,14 @@ class Clerk(config.AzraelProcess):
             #    'fragState.2': {'$exists': 1},
             #    ...}
             frag_name = 'fragState.{}'
-            query = {frag_name.format(_.id): {'$exists': 1} for _ in frag}
+            query = {frag_name.format(_.aid): {'$exists': 1} for _ in frag}
             query['objID'] = objID
 
             # Overwrite the specified partIDs. This will produce a dictionary
             # like this:
             #   {'fragState.1': (FragState-tuple),
             #    'fragState.2': (FragState-tuple)}
-            newvals = {frag_name.format(_.id): _ for _ in frag}
+            newvals = {frag_name.format(_.aid): _ for _ in frag}
 
             # Issue the update command to Mongo.
             ret = update(query, {'$set': newvals})

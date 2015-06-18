@@ -146,7 +146,7 @@ class Dibbler:
             return RetVal(False, msg, None)
 
         # Save the dae file to "location/model_name/model_name".
-        self.fs.put(dae, filename=os.path.join(location, model.id))
+        self.fs.put(dae, filename=os.path.join(location, model.aid))
 
         # Save the textures. These are stored as dictionaries with the texture
         # file name as key and the data as a binary stream, eg,
@@ -180,7 +180,7 @@ class Dibbler:
 
         if not isGeometrySane(data):
             msg = 'Invalid geometry for template <{}>'
-            return RetVal(False, msg.format(model.id), None)
+            return RetVal(False, msg.format(model.aid), None)
 
         # Save the fragments as JSON data to eg "templates/mymodel/model.json".
         self.fs.put(json.dumps(data._asdict()).encode('utf8'),
@@ -267,7 +267,7 @@ class Dibbler:
         frag_names = {}
         for frag in fragments:
             # Fragment directory, eg .../instances/mymodel/frag1
-            frag_dir = os.path.join(location, frag.id)
+            frag_dir = os.path.join(location, frag.aid)
 
             ftype = frag.type.lower()
             # Delete the current fragments and save the new ones.
@@ -294,7 +294,7 @@ class Dibbler:
             # Update the 'meta.json': it contains a dictionary with all
             # fragment names and their type, for instance:
             # {'foo': 'raw', 'bar': # 'dae', ...}
-            frag_names[frag.id] = frag.type
+            frag_names[frag.aid] = frag.type
             self.fs.put(json.dumps({'fragments': frag_names}).encode('utf8'),
                         filename=os.path.join(location, 'meta.json'))
 
@@ -369,7 +369,7 @@ class Dibbler:
         :param Template model: the model (eg Collad or Raw) to store.
         :return: success
         """
-        location = self.getTemplateDir(model.id)
+        location = self.getTemplateDir(model.aid)
         ret = self.saveModel(location, model.fragments)
         if not ret.ok:
             return ret

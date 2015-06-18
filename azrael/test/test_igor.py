@@ -164,17 +164,17 @@ class TestClerk:
     @pytest.mark.parametrize('getCon', _AllConstraintGetters)
     def test_add_unique_bug1(self, getCon):
         """
-        Add two constraints that are identical except for their 'id'.
+        Add two constraints that are identical except for their 'aid'.
 
         In the original implementation this was handled incorrectly
-        because the 'id' was not considered when adding constraints.
+        because the 'aid' was not considered when adding constraints.
         This made it impossible to add more than once constraint of each
         type (eg more than one Point2Point constraint between objects).
         """
         # Convenience.
         igor = self.igor
 
-        # Two constraints that only differ in their 'id' attribute.
+        # Two constraints that only differ in their 'aid' attribute.
         c1 = getCon(1, 2, 'foo')
         c2 = getCon(1, 2, 'bar')
 

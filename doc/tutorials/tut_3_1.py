@@ -62,9 +62,9 @@ def main():
     # their (x, y, z) position in space.
     spawn_param = [
         {'position': [0, 0, 0],
-         'template': template.id},
+         'template': template.aid},
         {'position': [3, 0, 0],
-         'template': template.id},
+         'template': template.aid},
     ]
     ret = client.spawn(spawn_param)
     print('Spawned {} object(s). IDs: {}'.format(len(ret.data), ret.data))

@@ -464,12 +464,12 @@ class Client():
         out = {}
         for frag in template.fragments:
             frag = MetaFragment(*frag)
-            url = base_url + '/' + frag.id + '/model.json'
+            url = base_url + '/' + frag.aid + '/model.json'
             data = urllib.request.urlopen(url).readall()
             out = json.loads(data.decode('utf8'))
 
             # Wrap the fragments into their dedicated tuple type.
-            out[frag.id] = FragRaw(**out)
+            out[frag.aid] = FragRaw(**out)
         return RetVal(True, None, out)
 
     @typecheck
@@ -489,7 +489,7 @@ class Client():
             for idx, temp in enumerate(templates):
                 # Sanity checks.
                 assert isinstance(temp, Template)
-                assert isinstance(temp.id, str)
+                assert isinstance(temp.aid, str)
                 assert isinstance(temp.cshapes, (tuple, list, np.ndarray))
                 assert isinstance(temp.fragments, (tuple, list))
 
@@ -514,7 +514,7 @@ class Client():
                 # Replace the original entry with a new one where CS is
                 # definitively a list.
                 templates[idx] = Template(
-                    temp.id, cs, frags, temp.boosters, temp.factories)
+                    temp.aid, cs, frags, temp.boosters, temp.factories)
         except AssertionError as err:
             return RetVal(False, 'Data type error', None)
         return self.serialiseAndSend('add_templates', templates)

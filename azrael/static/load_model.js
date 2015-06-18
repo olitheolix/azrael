@@ -21,16 +21,16 @@ onmessage = function (e) {
         for (var frag_name in obj) {
             url = e.data.baseURL + obj[frag_name]['url']
             switch (obj[frag_name].type) {
-            case 'raw':
+            case 'RAW':
                 // All raw fragments are stored in a JSON file on the
                 // server called 'model.json'. Download it.
                 xmlhttp.open("GET", url + '/model.json', false);
                 xmlhttp.send();
                 model = JSON.parse(xmlhttp.responseText);
-                model['type'] = 'raw';
+                model['type'] = 'RAW';
                 break;
-            case 'dae':
-                model = {'type': 'dae', 'url': url + '/' + frag_name};
+            case 'DAE':
+                model = {'type': 'DAE', 'url': url + '/' + frag_name};
                 break;
             default:
                 model = {'type': null};

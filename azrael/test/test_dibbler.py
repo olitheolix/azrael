@@ -58,7 +58,7 @@ class TestDibbler:
         :raises: AssertionError if the fragment does not match.
         """
         # Convenience.
-        name = mf.id
+        name = mf.aid
         ref = mf.data
 
         # Fetch- the components of the Collada file.
@@ -91,7 +91,7 @@ class TestDibbler:
         :raises: AssertionError if the fragment does not match.
         """
         # Convenience.
-        name = mf.id
+        name = mf.aid
         ref = mf.data
 
         # Fetch- the data for the Raw fragment.
@@ -175,9 +175,9 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 2 + 4)
 
         # Spawn some instances.
-        ret_1 = dibbler.spawnTemplate(t_raw.id, '1')
-        ret_2 = dibbler.spawnTemplate(t_raw.id, '2')
-        ret_3 = dibbler.spawnTemplate(t_dae.id, '3')
+        ret_1 = dibbler.spawnTemplate(t_raw.aid, '1')
+        ret_2 = dibbler.spawnTemplate(t_raw.aid, '2')
+        ret_3 = dibbler.spawnTemplate(t_dae.aid, '3')
         assert ret_1.ok and ret_2.ok and ret_3.ok
 
         # Dibbler must now hold the original 6 files plus an additional 8 files
@@ -214,8 +214,8 @@ class TestDibbler:
 
         # Add the template and spawn two instances.
         assert dibbler.addTemplate(t1).ok
-        ret_11 = dibbler.spawnTemplate(t1.id, '11')
-        ret_2 = dibbler.spawnTemplate(t1.id, '2')
+        ret_11 = dibbler.spawnTemplate(t1.aid, '11')
+        ret_2 = dibbler.spawnTemplate(t1.aid, '2')
         assert ret_11.ok and ret_2.ok
 
         self.verifyRaw(ret_11.data['url'], frags_orig[0])
@@ -280,7 +280,7 @@ class TestDibbler:
 
         # Add the template, spawn one instance, and verify all fragments.
         assert dibbler.addTemplate(t1).ok
-        ret = dibbler.spawnTemplate(t1.id, '1')
+        ret = dibbler.spawnTemplate(t1.aid, '1')
         assert ret.ok
         self.verifyRaw(ret.data['url'], frags_orig[0])
         self.verifyDae(ret.data['url'], frags_orig[1])

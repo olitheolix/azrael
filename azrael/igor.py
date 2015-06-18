@@ -142,7 +142,7 @@ class Igor:
             # Insert the constraints into MongoDB. The constraint query must
             # match both objects IDs, the type, and the constraint ID.
             tmp = {'rb_a': rb_a, 'rb_b': rb_b,
-                   'type': con.type, 'id': con.id}
+                   'type': con.type, 'aid': con.aid}
             queries.append((tmp, con._asdict()))
 
         # Return immediately if the list of constraints to add is empty.
@@ -216,7 +216,7 @@ class Igor:
                 assert isinstance(constr.rb_a, int)
                 assert isinstance(constr.rb_b, int)
                 assert isinstance(constr.type, str)
-                assert isinstance(constr.id, str)
+                assert isinstance(constr.aid, str)
             except AssertionError:
                 continue
 
@@ -224,7 +224,7 @@ class Igor:
             tmp = {'rb_a': constr.rb_a,
                    'rb_b': constr.rb_b,
                    'type': constr.type,
-                   'id': constr.id}
+                   'aid': constr.aid}
             queries.append(tmp)
 
         # Return immediately if the list of constraints to add is empty.

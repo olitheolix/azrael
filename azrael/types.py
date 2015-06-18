@@ -39,16 +39,16 @@ from collections import namedtuple, OrderedDict
 RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Template dataset.
-_Template = namedtuple('_Template', 'id cshapes fragments boosters factories')
-FragState = namedtuple('FragState', 'id scale position orientation')
+_Template = namedtuple('_Template', 'aid cshapes fragments boosters factories')
+FragState = namedtuple('FragState', 'aid scale position orientation')
 
 # Fragments.
-_MetaFragment = namedtuple('_MetaFragment', 'type id data')
+_MetaFragment = namedtuple('_MetaFragment', 'type aid data')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 
 # Work package related.
-WPData = namedtuple('WPData', 'id sv force torque')
+WPData = namedtuple('WPData', 'aid sv force torque')
 WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
 Forces = namedtuple('Forces',
                     'forceDirect forceBoost torqueDirect torqueBoost')
@@ -60,13 +60,13 @@ _RigidBodyState = namedtuple('_RigidBodyState',
                              'axesLockLin axesLockRot version')
 
 # Collision shapes.
-CollShapeMeta = namedtuple('CollShapeMeta', 'type id pos rot cshape')
+CollShapeMeta = namedtuple('CollShapeMeta', 'type aid pos rot cshape')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
 
 # Constraints.
-ConstraintMeta = namedtuple('ConstraintMeta', 'type id rb_a rb_b data')
+ConstraintMeta = namedtuple('ConstraintMeta', 'type aid rb_a rb_b data')
 ConstraintP2P = namedtuple('ConstraintP2P', 'pivot_a pivot_b')
 Constraint6DofSpring2 = namedtuple(
     'Constraint6DofSpring2', 'frameInA frameInB stiffness damping equilibrium '
@@ -208,9 +208,9 @@ class FragRaw(_FragRaw):
     @typecheck
     def __new__(cls, vert, uv, rgb):
         try:
-            assert isinstance(vert, (tuple, list, np.array))
-            assert isinstance(uv, (tuple, list, np.array))
-            assert isinstance(rgb, (tuple, list, np.array))
+            assert isinstance(vert, (tuple, list, np.ndarray))
+            assert isinstance(uv, (tuple, list, np.ndarray))
+            assert isinstance(rgb, (tuple, list, np.ndarray))
 
             vert = np.array(vert, np.float64)
             uv = np.array(uv, np.float64)
@@ -263,15 +263,15 @@ class FragDae(_FragDae):
 class MetaFragment(_MetaFragment):
     """
     :param str type: fragment type (eg 'raw', or 'dae')
-    :param dict id: fragment name
+    :param dict aid: fragment name
     :param data: one of the fragment types (eg. `FragRaw` or `FragDae`).
     :return _MetaFragment: a valid meta fragment instance.
     """
     @typecheck
-    def __new__(cls, ftype: str, fid: str, data):
+    def __new__(cls, ftype: str, aid: str, data):
         try:
             assert isinstance(ftype, str)
-            assert isinstance(fid, str)
+            assert isinstance(aid, str)
             if data is None:
                 frag = None
             else:
@@ -286,7 +286,7 @@ class MetaFragment(_MetaFragment):
         except (TypeError, AssertionError):
             raise TypeError
 
-        return super().__new__(cls, ftype, fid, frag)
+        return super().__new__(cls, ftype, aid, frag)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
@@ -297,11 +297,11 @@ class Template(_Template):
     fixme: docu
     fixme: parameters
 
-    :param dict tid: template name
+    :param dict aid: template name
     :return _Template: a valid meta fragment instance.
     """
     @typecheck
-    def __new__(cls, id: str,
+    def __new__(cls, aid: str,
                 cshapes: (tuple, list),
                 fragments: (tuple, list),
                 boosters: (tuple, list),
@@ -311,7 +311,7 @@ class Template(_Template):
         except (TypeError, AssertionError):
             raise TypeError
 
-        return super().__new__(cls, id, cshapes, frags, boosters, factories)
+        return super().__new__(cls, aid, cshapes, frags, boosters, factories)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))

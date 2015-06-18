@@ -473,9 +473,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                                gl.GL_NEAREST)
 
         # Assign the texture buffer.
-        self.numVertices[objID][frag.id] = numVertices
-        self.textureBuffer[objID][frag.id] = textureBuffer
-        self.vertex_array_object[objID][frag.id] = VAO
+        self.numVertices[objID][frag.aid] = numVertices
+        self.textureBuffer[objID][frag.aid] = textureBuffer
+        self.vertex_array_object[objID][frag.aid] = VAO
 
     def loadGeometry(self):
         # Backup the latest state variables because we will download new ones
@@ -531,13 +531,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # Fetch fragment model from Azrael and pass it to the GPU.
             base_url = 'http://{}:{}'.format(self.ip, config.port_clacks)
             for frag_name, frag_data in ret.data[objID].items():
-                if frag_data['type'] == 'raw':
+                if frag_data['type'] == 'RAW':
                     url = base_url + frag_data['url'] + '/model.json'
                     frag = urllib.request.urlopen(url).readall()
                     frag = json.loads(frag.decode('utf8'))
                     frag = FragRaw(**frag)
-                    frag = MetaFragment('raw', frag_name, frag)
-                elif frag_data['type'] == 'dae':
+                    frag = MetaFragment('RAW', frag_name, frag)
+                elif frag_data['type'] == 'DAE':
                     url = base_url + frag_data['url'] + '/' + frag_name
                     frag = urllib.request.urlopen(url).readall()
                     with tempfile.TemporaryDirectory() as tmpdir:
@@ -557,7 +557,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     uv = np.array(uv, np.float32)
                     rgb = np.array(rgb, np.uint8)
                     frag = FragRaw(vert, uv, rgb)
-                    frag = MetaFragment('raw', frag_name, frag)
+                    frag = MetaFragment('RAW', frag_name, frag)
                 else:
                     continue
                 self.upload2GPU(objID, frag)
@@ -583,7 +583,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'
-        frags = [MetaFragment('raw', 'frag_1', FragRaw(buf_vert, uv, rgb))]
+        frags = [MetaFragment('RAW', 'frag_1', FragRaw(buf_vert, uv, rgb))]
         temp = Template(t_projectile, [cs], frags, [], [])
         ret = self.client.addTemplates([temp])
         del frags, temp
@@ -771,9 +771,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         frags = [FragState(*_) for _ in self.newSVs[objID]['frag']]
         for frag in frags:
             # Convenience.
-            textureHandle = self.textureBuffer[objID][frag.id]
-            VAO = self.vertex_array_object[objID][frag.id]
-            numVertices = self.numVertices[objID][frag.id]
+            textureHandle = self.textureBuffer[objID][frag.aid]
+            VAO = self.vertex_array_object[objID][frag.aid]
+            numVertices = self.numVertices[objID][frag.aid]
 
             # Activate the shader depending on whether or not we have a texture
             # for the current object.

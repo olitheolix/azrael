@@ -186,7 +186,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
                     frags.append(mf)
 
             try:
-                tmp = Template(id=data['id'], cshapes=data['cshapes'],
+                tmp = Template(aid=data['aid'], cshapes=data['cshapes'],
                                fragments=frags, boosters=boosters,
                                factories=factories)
                 templates.append(tmp)

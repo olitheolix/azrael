@@ -72,7 +72,7 @@ def RigidBodyState(scale: (int, float)=1,
         cshapes = [CollShapeMeta(*_) for _ in cshapes]
         for cs in cshapes:
             assert isinstance(cs.type, str)
-            assert isinstance(cs.id, str)
+            assert isinstance(cs.aid, str)
             assert isinstance(cs.pos, (tuple, list, np.ndarray))
             assert isinstance(cs.rot, (tuple, list, np.ndarray))
             assert len(np.array(cs.pos)) == 3

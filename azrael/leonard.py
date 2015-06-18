@@ -1042,7 +1042,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         with util.Timeit('Worker:1.1.0  applyforce') as timeit:
             with util.Timeit('Worker:1.1.1   grid') as timeit:
                 # Fetch the forces for all object positions.
-                idPos = {_.id: _.sv.position for _ in worklist}
+                idPos = {_.aid: _.sv.position for _ in worklist}
                 ret = self.getGridForces(idPos)
                 if not ret.ok:
                     self.logit.info(ret.msg)
@@ -1055,13 +1055,13 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             with util.Timeit('Worker:1.1.1   updateGeo') as timeit:
                 for obj in worklist:
                     # Update the object in Bullet and apply the force/torque.
-                    setRigidBodyData(obj.id, obj.sv)
+                    setRigidBodyData(obj.aid, obj.sv)
 
             with util.Timeit('Worker:1.1.1   updateForce') as timeit:
                 for obj in worklist:
                     # Add the force defined on the 'force' grid.
-                    force = obj.force + gridForces[obj.id]
-                    applyForceAndTorque(obj.id, force, obj.torque)
+                    force = obj.force + gridForces[obj.aid]
+                    applyForceAndTorque(obj.aid, force, obj.torque)
 
         # Apply all constraints. Log any errors but ignore them otherwise as
         # they are harmless (simply means no constraints were applied).
@@ -1072,7 +1072,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
         with util.Timeit('Worker:1.2.0  compute') as timeit:
-            IDs = [_.id for _ in worklist]
+            IDs = [_.aid for _ in worklist]
             self.bullet.compute(IDs, meta.dt, meta.maxsteps)
 
             # Remove all constraints.
@@ -1082,13 +1082,13 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             # Retrieve the objects from Bullet again and update them in the DB.
             out = []
             for obj in worklist:
-                ret = self.bullet.getRigidBodyData(obj.id)
+                ret = self.bullet.getRigidBodyData(obj.aid)
                 sv = ret.data
                 if not ret.ok:
                     # Something went wrong. Reuse the old SV.
                     sv = obj.sv
                     self.logit.error('Unable to get all objects from Bullet')
-                out.append((obj.id, sv))
+                out.append((obj.aid, sv))
 
         # Return the updated WP data.
         return {'wpid': meta.wpid, 'wpdata': out}

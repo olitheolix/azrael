@@ -179,7 +179,7 @@ function getGeometry(objIDs) {
 
 function addTemplate(templateID, cs, vertices) {
     var cmd = {'cmd': 'add_template', 'data':
-               {'id': templateID, 'cs': cs, 'vert': vertices,
+               {'aid': templateID, 'cs': cs, 'vert': vertices,
                 'UV': [], 'RGB': [], 'boosters': [], 'factories': []}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
@@ -290,7 +290,7 @@ function updateObjectGeometries(objID, allSVs, obj_cache) {
     // the array every time.
     var fragData = {};
     for (var ii in allSVs[objID]['frag']) {
-        var fragname = allSVs[objID]['frag'][ii]['id'];
+        var fragname = allSVs[objID]['frag'][ii]['aid'];
         fragData[fragname] = allSVs[objID]['frag'][ii];
     }
 
@@ -460,14 +460,14 @@ function* mycoroutine(connection) {
                 var d = e.data[objID][frag_name];
                 var scale = allSVs[objID]['sv'].scale;
                 switch (d.type) {
-                case 'raw':
+                case 'RAW':
                     var geo = compileMesh(objID, d.vert, d.uv, d.rgb, scale);
 
                     // Add the fragment to the local object cache and scene.
                     obj_cache[objID][frag_name] = geo;
                     scene.add(geo);
                     break;
-                case 'dae':
+                case 'DAE':
                     console.log('Loading dae from <' + d.url + '>');
                     loader.load(
                         d.url,

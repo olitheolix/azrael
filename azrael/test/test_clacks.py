@@ -109,19 +109,19 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             assert False
 
         # Verify that the meta file contains the correct fragment names.
-        expected_fragment_names = {_.id: _.type for _ in fragments}
+        expected_fragment_names = {_.aid: _.type for _ in fragments}
         assert ret['fragments'] == expected_fragment_names
 
         # Download- and verify each fragment.
         for frag in fragments:
             ftype = frag.type.upper()
             if ftype == 'RAW':
-                tmp_url = url + '/{name}/'.format(name=frag.id)
+                tmp_url = url + '/{name}/'.format(name=frag.aid)
                 assert self.downloadFragRaw(tmp_url) == frag.data
             elif ftype == 'DAE':
-                tmp_url = url + '/{name}/'.format(name=frag.id)
+                tmp_url = url + '/{name}/'.format(name=frag.aid)
                 texture_names = list(frag.data.rgb.keys())
-                ret = self.downloadFragDae(tmp_url, frag.id, texture_names)
+                ret = self.downloadFragDae(tmp_url, frag.aid, texture_names)
                 assert ret == frag.data
             else:
                 assert False
