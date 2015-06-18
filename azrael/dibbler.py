@@ -129,27 +129,28 @@ class Dibbler:
         :param MetaFragment model: the Collada model itself.
         :return: success
         """
-        # Sanity checks.
+        # Convenience.
+        b64dec = base64.b64decode
+
+        # Verify the data is valid and undo the Base64 encoding.
         try:
-            data = FragDae(*model.data)
-            assert isinstance(data.dae, str)
-            data = data._replace(dae=base64.b64decode(data.dae.encode('utf8')))
-            rgb = {}
-            for k, v in data.rgb.items():
-                assert isinstance(v, str)
-                rgb[k] = base64.b64decode(v.encode('utf8'))
-            data = data._replace(rgb=rgb)
-        except KeyError:
-            msg = 'Invalid data types for Collada fragments'
+            # Sanity check: construct the Collada fragment.
+            tmp = FragDae(*model.data)
+
+            # Undo the Base64 encoding ('dae' and 'rgb' will be Bytes).
+            dae = b64dec(tmp.dae.encode('utf8'))
+            rgb = {k: b64dec(v.encode('utf8')) for k, v in tmp.rgb.items()}
+        except TypeError:
+            msg = 'Could not save Collada fragments'
             return RetVal(False, msg, None)
 
         # Save the dae file to "location/model_name/model_name".
-        self.fs.put(data.dae, filename=os.path.join(location, model.id))
+        self.fs.put(dae, filename=os.path.join(location, model.id))
 
         # Save the textures. These are stored as dictionaries with the texture
         # file name as key and the data as a binary stream, eg,
         # {'house.jpg': b'abc', 'tree.png': b'def', ...}
-        for name, rgb in data.rgb.items():
+        for name, rgb in rgb.items():
             self.fs.put(rgb, filename=os.path.join(location, name))
 
         return RetVal(True, None, 1.0)
