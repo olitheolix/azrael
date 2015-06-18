@@ -207,7 +207,10 @@ class FragDae(_FragDae):
     @typecheck
     def __new__(cls, dae: str, rgb: dict):
         try:
-            pass
+            assert isinstance(dae, str)
+            for k, v in rgb.items():
+                assert isinstance(k, str)
+                assert isinstance(v, str)
         except AssertionError:
             raise TypeError
 
