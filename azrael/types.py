@@ -32,6 +32,7 @@ Usage example::
 """
 import inspect
 import functools
+import numpy as np
 from collections import namedtuple
 
 # Uniform return value signature.
@@ -44,7 +45,7 @@ FragState = namedtuple('FragState', 'id scale position orientation')
 # Fragments.
 MetaFragment = namedtuple('MetaFragment', 'type id data')
 FragRaw = namedtuple('FragRaw', 'vert uv rgb')
-FragDae = namedtuple('FragDae', 'dae rgb')
+_FragDae = namedtuple('_FragDae', 'dae rgb')
 
 # Work package related.
 WPData = namedtuple('WPData', 'id sv force torque')
@@ -195,3 +196,19 @@ def typecheck(func_handle):
             checkType(var_name, var_val, annot)
         return func_handle(*args, **kwds)
     return wrapper
+
+
+class FragDae(_FragDae):
+    """
+    :param str dae: Collada file
+    :param dict rgb: dictionary of texture files.
+    :return _FragDae: compiled Collada fragment description.
+    """
+    @typecheck
+    def __new__(cls, dae: str, rgb: dict):
+        try:
+            pass
+        except AssertionError:
+            raise TypeError
+
+        return super().__new__(cls, dae, rgb)

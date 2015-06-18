@@ -214,11 +214,6 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
     b64_dae_rgb2 = b64e(dae_rgb2).decode('utf8')
 
     # Compile the Collada fragment with the Base64 encoded data.
-    f_dae = FragDae(dae=dae_file,
-                    rgb={'rgb1.png': dae_rgb1,
-                         'rgb2.jpg': dae_rgb2})
-
-    # Same, but all entries are Base64 encoded.
     f_dae = FragDae(dae=b64_dae_file,
                     rgb={'rgb1.png': b64_dae_rgb1,
                          'rgb2.jpg': b64_dae_rgb2})
