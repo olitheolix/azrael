@@ -76,13 +76,17 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         """
         # Download the Collada file itself.
         dae = self.fetch(url + dae, method='GET').body
-        dae = base64.b64encode(dae).decode('utf8')
 
         # Download all the textures.
         rgb = {}
         for texture in textures:
-            tmp = self.fetch(url + texture, method='GET').body
-            rgb[texture] = base64.b64encode(tmp).decode('utf8')
+            rgb[texture] = self.fetch(url + texture, method='GET').body
+
+        # Convert the fields to Base64 encode strings and construct a new
+        # FragDae instance.
+        b64enc = base64.b64encode
+        dae = b64enc(dae).decode('utf8')
+        rgb = {k: b64enc(v).decode('utf8') for (k, v) in rgb.items()}
         return FragDae(dae=dae, rgb=rgb)
 
     def verifyTemplate(self, url, template):
