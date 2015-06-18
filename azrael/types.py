@@ -39,7 +39,7 @@ from collections import namedtuple, OrderedDict
 RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Template dataset.
-Template = namedtuple('Template', 'id cshapes fragments boosters factories')
+_Template = namedtuple('_Template', 'id cshapes fragments boosters factories')
 FragState = namedtuple('FragState', 'id scale position orientation')
 
 # Fragments.
@@ -287,6 +287,31 @@ class MetaFragment(_MetaFragment):
             raise TypeError
 
         return super().__new__(cls, ftype, fid, frag)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
+class Template(_Template):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict tid: template name
+    :return _Template: a valid meta fragment instance.
+    """
+    @typecheck
+    def __new__(cls, id: str,
+                cshapes: (tuple, list),
+                fragments: (tuple, list),
+                boosters: (tuple, list),
+                factories: (tuple, list)):
+        try:
+            frags = [MetaFragment(*_) for _ in fragments]
+        except (TypeError, AssertionError):
+            raise TypeError
+
+        return super().__new__(cls, id, cshapes, frags, boosters, factories)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))

@@ -1365,7 +1365,10 @@ class TestClerk:
 
     def test_isNameValid(self):
         """
-        Test _isValid function.
+        Test _isNameValid function.
+
+        fixme: move this test into test_types.Template
+        fixme: move the associated functionality from Clerk to types.Template
         """
         # Create a Clerk instance and a shortcut to the test method.
         clerk = azrael.clerk.Clerk()
