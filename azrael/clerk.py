@@ -980,8 +980,8 @@ class Clerk(config.AzraelProcess):
         # }
         pj = os.path.join
         for doc in docs:
-            f = [MetaFragment(*_) for _ in doc['fragments']]
             u = doc['url']
+            f = [MetaFragment(*_) for _ in doc['fragments']]
             obj = {_.id: {'type': _.type, 'url': pj(u, _.id)} for _ in f}
             out[doc['objID']] = obj
         return RetVal(True, None, out)

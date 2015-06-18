@@ -291,74 +291,7 @@ class Client():
         :return: links to model data for all ``objIDs``.
         :rtype: dict
         """
-        # fixme: iterate over the inner dictionaries to construct
-        # `MetaFragments`. fix/simplify the tests as well
         return self.serialiseAndSend('get_fragment_geometries', objIDs)
-
-    def _encodeRawFragment(self, frag):
-        """
-        fixme: this method has to go
-        Return encoded Raw fragment if ``frag`` is valid.
-
-        The returned tuple is a ``MetaFragment`` that can be JSON encoded
-        without any further transformations.
-
-        This is an auxiliary method only. It raises an ``AssertionError`` as
-        soon as it encounters an unexpected data type in ``frag``.
-
-        :param tuple frag: data for Collada fragment.
-        :return: encoded data in ``MetaFragment`` tuple.
-        """
-        # Wrap the Raw fragment into its dedicated tuple.
-        f = FragRaw(*frag.data)
-
-        # Sanity checks.
-        assert isinstance(f, FragRaw)
-        assert isinstance(f.vert, (tuple, list, np.ndarray))
-        assert isinstance(f.uv, (tuple, list, np.ndarray))
-        assert isinstance(f.rgb, (tuple, list, np.ndarray))
-
-        # Convert all vertices, UV maps, and textures to Python lists.
-        newval = {}
-        for attr in ('vert', 'uv', 'rgb'):
-            newval[attr] = np.array(getattr(f, attr)).tolist()
-
-        # Compile a new Raw fragment with the sanitised data.
-        raw = FragRaw(**newval)
-
-        # Return a JSON compatible version of the MetaFragment ``frag``.
-        return MetaFragment(type='raw', id=frag.id, data=raw)
-
-    def _encodeDaeFragment(self, frag):
-        """
-        fixme: this method has to go
-        Return encoded Collada fragment if ``frag`` is valid.
-
-        The returned tuple is a ``MetaFragment`` that can be JSON encoded
-        without any further transformations.
-
-        This is an auxiliary method only. It raises an ``AssertionError`` as
-        soon as it encounters an unexpected data type in ``frag``.
-
-        :param tuple frag: data for Raw fragment.
-        :return: encoded data in ``MetaFragment`` tuple.
-        """
-        # Wrap the data into a Named tuple for Collada models and verify
-        # that the Collada file is a byte stream and the textures are a
-        # dictionary.
-        f = FragDae(*frag.data)
-        assert isinstance(f.dae, str)
-        assert isinstance(f.rgb, dict)
-
-        # Encode each texture as Base64.
-        for rr in f.rgb:
-            # The key must be string (denotes the file name of the
-            # texture), whereas the texture itself must be a byte string.
-            assert isinstance(rr, str)
-            assert isinstance(f.rgb[rr], str)
-
-        # Return a JSON compatible version of the MetaFragment ``frag``.
-        return MetaFragment(type='dae', id=frag.id, data=f)
 
     @typecheck
     def setFragmentGeometries(self, objID: int, frags: list):
