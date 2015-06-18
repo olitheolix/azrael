@@ -66,7 +66,7 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     cs = [1, 2, 3, 4]
     data = {'cshapes': cs, 'boosters': [b0, b1], 'factories': [f0],
             'aabb': 1.0, 'url': 'http://somewhere',
-            'fragments': MetaFragment('foo', 'raw', None)}
+            'fragments': MetaFragment('foo', 'RAW', None)}
     templates = {template_name: data}
     ok, enc = protocol.FromClerk_GetTemplates_Encode(templates)
 
@@ -219,7 +219,7 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
                          'rgb2.jpg': b64_dae_rgb2})
 
     # Compile a valid Template structure.
-    frags = [MetaFragment('dae', 'f_dae', f_dae)]
+    frags = [MetaFragment('DAE', 'f_dae', f_dae)]
     temp = Template('foo', [4, 1, 1, 1], frags, [], [])
 
     # ----------------------------------------------------------------------
@@ -236,10 +236,10 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
     ok, dec = protocol.ToClerk_AddTemplates_Decode(enc)
 
     # Extract the data from the first fragment of the first template.
-    dec_frag = dec[0][0].fragments[0].data
+    dec_mf = dec[0][0].fragments[0]
 
     # Compare with the Fragment before it was Base64 encoded.
-    assert dec_frag == f_dae
+    assert dec_mf == frags[0]
 
     print('Test passed')
 

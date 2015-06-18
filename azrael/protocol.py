@@ -158,6 +158,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
 
     def _decodeDae(mf):
         """
+        fixme: contains unreachable code (see body).
         Decode the Collada fragment data ``mf``.
         """
         return mf._replace(data=FragDae(*mf.data))
@@ -178,7 +179,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
             # Wrap each fragment model into its dedicated tuple type.
             frags = []
             for mf in meta_frags:
-                if mf.type == 'dae':
+                if mf.type.upper() == 'DAE':
                     # Collada format.
                     frags.append(_decodeDae(mf))
                 else:

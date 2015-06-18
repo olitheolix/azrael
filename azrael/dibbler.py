@@ -269,19 +269,20 @@ class Dibbler:
             # Fragment directory, eg .../instances/mymodel/frag1
             frag_dir = os.path.join(location, frag.id)
 
+            ftype = frag.type.lower()
             # Delete the current fragments and save the new ones.
-            if frag.type == 'raw':
+            if ftype == 'raw':
                 self._deleteSubLocation(frag_dir)
                 ret = self.saveModelRaw(frag_dir, frag)
-            elif frag.type == 'dae':
+            elif ftype == 'dae':
                 self._deleteSubLocation(frag_dir)
                 ret = self.saveModelDae(frag_dir, frag)
-            elif frag.type == '_none_':
+            elif ftype == '_none_':
                 # Dummy fragment that tells us to remove it.
                 ret = RetVal(False, None, None)
             else:
                 # Unknown model format.
-                msg = 'Unknown type <{}>'.format(frag.type)
+                msg = 'Unknown type <{}>'.format(ftype)
                 ret = RetVal(False, msg, None)
 
             # Delete the fragment directory if something went wrong and proceed

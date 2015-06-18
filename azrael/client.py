@@ -370,21 +370,8 @@ class Client():
         :return: Success
         """
         try:
-            for idx, frag in enumerate(frags):
-                # Check the Fragment header.
-                assert isinstance(frag, MetaFragment)
-                assert isinstance(frag.id, str)
-
-                # Check and encode the content of each individual fragment.
-                if frag.type == 'raw':
-                    frags[idx] = self._encodeRawFragment(frag)
-                elif frag.type == 'dae':
-                    frags[idx] = self._encodeDaeFragment(frag)
-                elif frag.type == '_none_':
-                    frags[idx] = frag._replace(data=None)
-                else:
-                    assert False
-        except AssertionError:
+            frags = [MetaFragment(*_) for _ in frags]
+        except TypeError:
             return RetVal(False, 'Invalid fragment data types', None)
 
         return self.serialiseAndSend('set_fragment_geometries', objID, frags)
@@ -578,12 +565,7 @@ class Client():
                 for frag in temp.fragments:
                     # Check the Fragment header.
                     assert isinstance(frag, MetaFragment)
-
-                    # Check and encode the fragment itself.
-                    if frag.type == 'raw':
-                        frags.append(self._encodeRawFragment(frag))
-                    elif frag.type == 'dae':
-                        frags.append(self._encodeDaeFragment(frag))
+                    frags.append(MetaFragment(*frag))
 
                 # Sanity checks for boosters and factories.
                 assert isinstance(temp.boosters, list)

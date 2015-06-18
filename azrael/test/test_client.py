@@ -96,7 +96,7 @@ class TestClient:
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
         clerk = azrael.clerk.Clerk()
-        frag = [MetaFragment('raw', 'NoName', FragRaw(vert=[], uv=[], rgb=[]))]
+        frag = [MetaFragment('RAW', 'NoName', FragRaw(vert=[], uv=[], rgb=[]))]
         t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
@@ -183,7 +183,7 @@ class TestClient:
         assert isEqualCS(ret.data[name_3].cshapes, [getCSBox()])
 
         # Add a new object template.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -216,7 +216,7 @@ class TestClient:
         assert client.getFragmentGeometries([1]) == (True, None, {1: None})
 
         # Define a new template, add it to Azrael, and spawn it.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t2', [getCSBox()], frags, [b0, b1], [f0])
         assert client.addTemplates([temp]).ok
         ret = client.spawn([{'template': temp.id, 'position': np.zeros(3)}])
@@ -226,7 +226,7 @@ class TestClient:
         # Retrieve the geometry of the new object and verify it is correct.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['bar']['type'] == 'raw'
+        assert ret.data[objID]['bar']['type'] == 'RAW'
 
         # Retrieve the entire template and verify the CS and geometry, and
         # number of boosters/factories.
@@ -484,7 +484,7 @@ class TestClient:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn an instance.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert client.addTemplates([temp]).ok
         new_obj = {'template': temp.id,
@@ -556,7 +556,7 @@ class TestClient:
         objID = 1
 
         # Add a new template and spawn it.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -576,7 +576,7 @@ class TestClient:
         # Fetch-, modify-, update- and verify the geometry.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['bar']['type'] == 'raw'
+        assert ret.data[objID]['bar']['type'] == 'RAW'
 
         # Download the fragment.
         base_url = 'http://{ip}:{port}'.format(
@@ -593,12 +593,12 @@ class TestClient:
         assert FragRaw(**tmp) == frags[0].data
 
         # Change the fragment geometries.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         assert client.setFragmentGeometries(objID, frags).ok
 
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['bar']['type'] == 'raw'
+        assert ret.data[objID]['bar']['type'] == 'RAW'
 
         # Download the fragment.
         url = base_url + ret.data[objID]['bar']['url'] + '/model.json'
@@ -625,7 +625,7 @@ class TestClient:
         f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
-        frags = [MetaFragment('dae', 'f_dae', f_dae)]
+        frags = [MetaFragment('DAE', 'f_dae', f_dae)]
 
         # Add a new template and spawn it.
         temp = Template('t1', [getCSSphere()], frags, [], [])
@@ -648,16 +648,16 @@ class TestClient:
         # Fetch-, modify-, update- and verify the geometry.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['f_dae']['type'] == 'dae'
+        assert ret.data[objID]['f_dae']['type'] == 'DAE'
 
         # Change the fragment geometries.
-        frags = [MetaFragment('raw', 'f_dae', createFragRaw())]
+        frags = [MetaFragment('RAW', 'f_dae', createFragRaw())]
         assert client.setFragmentGeometries(objID, frags).ok
 
-        # Ensure it now has type 'raw'.
+        # Ensure it now has type 'RAW'.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['f_dae']['type'] == 'raw'
+        assert ret.data[objID]['f_dae']['type'] == 'RAW'
 
         # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
@@ -665,13 +665,13 @@ class TestClient:
 
         # Change the fragment geometries.
         version = ret.data[objID]['sv'].version
-        frags = [MetaFragment('dae', 'f_dae', f_dae)]
+        frags = [MetaFragment('DAE', 'f_dae', f_dae)]
         assert client.setFragmentGeometries(objID, frags).ok
 
-        # Ensure it now has type 'dae' again.
+        # Ensure it now has type 'DAE' again.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['f_dae']['type'] == 'dae'
+        assert ret.data[objID]['f_dae']['type'] == 'DAE'
 
         # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
@@ -692,7 +692,7 @@ class TestClient:
         leo = getLeonard()
 
         # Add a new template and spawn it.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -736,9 +736,9 @@ class TestClient:
 
         # The original template has the following three fragments:
         frags_orig = [
-            MetaFragment('raw', 'fname_1', createFragRaw()),
-            MetaFragment('dae', 'fname_2', createFragDae()),
-            MetaFragment('raw', 'fname_3', createFragRaw())
+            MetaFragment('RAW', 'fname_1', createFragRaw()),
+            MetaFragment('DAE', 'fname_2', createFragDae()),
+            MetaFragment('RAW', 'fname_3', createFragRaw())
         ]
         t1 = Template('t1', [getCSSphere()], frags_orig, [], [])
 
@@ -762,7 +762,7 @@ class TestClient:
         # fragment type for the third one.
         frags_new = [
             MetaFragment('_none_', 'fname_2', None),
-            MetaFragment('dae', 'fname_3', createFragDae())
+            MetaFragment('DAE', 'fname_3', createFragDae())
         ]
         assert client.setFragmentGeometries(objID, frags_new).ok
 
@@ -785,7 +785,7 @@ class TestClient:
         f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
-        frags = [MetaFragment('dae', 'f_dae', f_dae)]
+        frags = [MetaFragment('DAE', 'f_dae', f_dae)]
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
@@ -801,9 +801,9 @@ class TestClient:
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
 
-        # Verify it has the correct type ('dae') and address.
+        # Verify it has the correct type ('DAE') and address.
         ret = ret.data[objID]
-        assert ret['f_dae']['type'] == 'dae'
+        assert ret['f_dae']['type'] == 'DAE'
         assert ret['f_dae']['url'] == (
             config.url_instances + '/' + str(objID) + '/f_dae')
 

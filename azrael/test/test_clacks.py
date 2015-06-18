@@ -89,17 +89,16 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         rgb = {k: b64enc(v).decode('utf8') for (k, v) in rgb.items()}
         return FragDae(dae=dae, rgb=rgb)
 
-    def verifyTemplate(self, url, template):
+    def verifyTemplate(self, url, fragments):
         """
-        Raise an error if ``template`` is not available at ``url``.
+        Raise an error if the ``fragments`` are not available at ``url``.
 
-        This method will automatically adapt to the model type and verify
-        associated texture (if any) as well.
+        This method will automatically adapts to the fragment type and verifies
+        the associated textures (if any).
 
         :param str url: base location of template
-        :param Template template: the template (can contain multiple
-                                  fragments).
-        :raises: AssertionError if not all fragments in ``template`` match
+        :param list[MetaFragment] fragments: reference fragments
+        :raises: AssertionError if not all fragments in ``fragments`` match
                  those available at ``url``.
         """
         # Fetch- and decode the meta file.
@@ -110,20 +109,20 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             assert False
 
         # Verify that the meta file contains the correct fragment names.
-        expected_fragment_names = {_.id: _.type for _ in template}
+        expected_fragment_names = {_.id: _.type for _ in fragments}
         assert ret['fragments'] == expected_fragment_names
 
-        # Download- and verify each template.
-        # fixme: must use __eq__ method of Frag{Raw,Dae}
-        for tt in template:
-            if tt.type == 'raw':
-                tmp_url = url + '/{name}/'.format(name=tt.id)
-                assert self.downloadFragRaw(tmp_url) == tt.data
-            elif tt.type == 'dae':
-                tmp_url = url + '/{name}/'.format(name=tt.id)
-                texture_names = list(tt.data.rgb.keys())
-                ret = self.downloadFragDae(tmp_url, tt.id, texture_names)
-                assert ret == tt.data
+        # Download- and verify each fragment.
+        for frag in fragments:
+            ftype = frag.type.upper()
+            if ftype == 'RAW':
+                tmp_url = url + '/{name}/'.format(name=frag.id)
+                assert self.downloadFragRaw(tmp_url) == frag.data
+            elif ftype == 'DAE':
+                tmp_url = url + '/{name}/'.format(name=frag.id)
+                texture_names = list(frag.data.rgb.keys())
+                ret = self.downloadFragDae(tmp_url, frag.id, texture_names)
+                assert ret == frag.data
             else:
                 assert False
 

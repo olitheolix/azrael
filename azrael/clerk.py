@@ -669,9 +669,9 @@ class Clerk(config.AzraelProcess):
                 if not ret.ok:
                     return ret
 
-                # The fragment geometry was stored in Dibbler; we only need the
-                # meta data here (mostly to avoid data duplication) which is
-                # why we delete the 'data' attribute.
+                # We already stored the geometry in Dibbler; here we only add
+                # the meta data (mostly to avoid data duplication) which is why
+                # we delete the 'data' attribute.
                 frags = [frag._replace(data=None) for frag in tt.fragments]
 
                 # Compile the Mongo document for the new template.
@@ -703,11 +703,11 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def getTemplates(self, templateIDs: list):
         """
-        Return the raw data for all ``templateIDs`` as a dictionary.
+        Return the meta data for all ``templateIDs`` as a dictionary.
 
-        This method will return either all templates or none. However, if the
-        same template is specified multiple times in ``templateIDs`` then it
-        will only return unique names.
+        This method will return either return the templates for all specified
+        `templateIDs`, or none. Furthermore, it will return each template only
+        once, even if it was specified multiple times in `templateIDs`.
 
         For instance, ``getTemplates([name_1, name_2, name_1])`` is
         tantamount to calling ``getTemplates([name_1, name_2])``.

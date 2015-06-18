@@ -43,7 +43,7 @@ Template = namedtuple('Template', 'id cshapes fragments boosters factories')
 FragState = namedtuple('FragState', 'id scale position orientation')
 
 # Fragments.
-MetaFragment = namedtuple('MetaFragment', 'type id data')
+_MetaFragment = namedtuple('_MetaFragment', 'type id data')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 
@@ -255,3 +255,38 @@ class FragDae(_FragDae):
             raise TypeError
 
         return super().__new__(cls, dae, rgb)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
+class MetaFragment(_MetaFragment):
+    """
+    :param str type: fragment type (eg 'raw', or 'dae')
+    :param dict id: fragment name
+    :param data: one of the fragment types (eg. `FragRaw` or `FragDae`).
+    :return _MetaFragment: a valid meta fragment instance.
+    """
+    @typecheck
+    def __new__(cls, ftype: str, fid: str, data):
+        try:
+            assert isinstance(ftype, str)
+            assert isinstance(fid, str)
+            if data is None:
+                frag = None
+            else:
+                assert ftype.lower() in ('dae', 'raw')
+                ftype = ftype.upper()
+                if ftype == 'RAW':
+                    frag = FragRaw(*data)
+                elif ftype == 'DAE':
+                    frag = FragDae(*data)
+                else:
+                    assert False
+        except (TypeError, AssertionError):
+            raise TypeError
+
+        return super().__new__(cls, ftype, fid, frag)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))

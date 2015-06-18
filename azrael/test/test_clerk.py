@@ -239,13 +239,13 @@ class TestClerk:
         ret = clerk.getTemplates([name_1])
         assert ret.ok
         url_template = config.url_templates
-        assert MetaFragment(*(ret.data[name_1]['fragments'][0])).type == 'raw'
+        assert MetaFragment(*(ret.data[name_1]['fragments'][0])).type == 'RAW'
         assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
 
         # Fetch the second template.
         ret = clerk.getTemplates([name_2])
         assert ret.ok
-        assert MetaFragment(*(ret.data[name_2]['fragments'][0])).type == 'raw'
+        assert MetaFragment(*(ret.data[name_2]['fragments'][0])).type == 'RAW'
         assert ret.data[name_2]['url'] == config.url_templates + '/' + name_2
 
         # Fetch both templates at once.
@@ -273,7 +273,7 @@ class TestClerk:
         max_sidelen = max(8, 5, 6)
 
         # Add- and fetch the template.
-        frags = [MetaFragment('raw', 'bar', FragRaw(vert, uv, rgb))]
+        frags = [MetaFragment('RAW', 'bar', FragRaw(vert, uv, rgb))]
         t1 = Template('t1', [cs], frags, [], [])
         assert clerk.addTemplates([t1]).ok
         ret = clerk.getTemplates([t1.id])
@@ -292,7 +292,7 @@ class TestClerk:
         max_sidelen = max(8, 14, 8)
 
         # Add template and retrieve it again.
-        frags = [MetaFragment('raw', 'bar', FragRaw(vert, uv, rgb))]
+        frags = [MetaFragment('RAW', 'bar', FragRaw(vert, uv, rgb))]
         t2 = Template('t2', [cs], frags, [], [])
         assert clerk.addTemplates([t2]).ok
         ret = clerk.getTemplates([t2.id])
@@ -598,7 +598,7 @@ class TestClerk:
         booster = parts.Booster(
             partID='0', pos=v, direction=v, minval=0, maxval=1, force=0)
 
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
 
         # Define a new template with two boosters and add it to Azrael.
         template = Template('t1',
@@ -674,7 +674,7 @@ class TestClerk:
             templateID='_templateCube', exit_speed=[0, 1])
 
         # Define a new template, add it to Azrael, and spawn an instance.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0], [f0])
         assert clerk.addTemplates([temp]).ok
         sv = rb_state.RigidBodyState()
@@ -730,7 +730,7 @@ class TestClerk:
                            minval=0, maxval=0.5, force=0)
 
         # Define a new template with two boosters and add it to Azrael.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [])
         assert clerk.addTemplates([temp]).ok
 
@@ -805,7 +805,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.id, sv)])
@@ -878,7 +878,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.id, sv)])
@@ -979,7 +979,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.id, sv)])
@@ -1085,8 +1085,8 @@ class TestClerk:
         f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
-        frags = [MetaFragment('raw', 'f_raw', f_raw),
-                 MetaFragment('dae', 'f_dae', f_dae)]
+        frags = [MetaFragment('RAW', 'f_raw', f_raw),
+                 MetaFragment('DAE', 'f_dae', f_dae)]
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
@@ -1106,12 +1106,12 @@ class TestClerk:
             _ret = _ret[_objID]
             _objID = str(_objID)
 
-            # The object must have two fragments, an 'f_raw' with type 'raw'
-            # and an 'f_dae' with type 'dae'.
+            # The object must have two fragments, an 'f_raw' with type 'RAW'
+            # and an 'f_dae' with type 'DAE'.
             _url_inst = config.url_instances + '/'
-            assert _ret['f_raw']['type'] == 'raw'
+            assert _ret['f_raw']['type'] == 'RAW'
             assert _ret['f_raw']['url'] == _url_inst + _objID + '/f_raw'
-            assert _ret['f_dae']['type'] == 'dae'
+            assert _ret['f_dae']['type'] == 'DAE'
             assert _ret['f_dae']['url'] == _url_inst + _objID + '/f_dae'
             return True
 
@@ -1150,7 +1150,7 @@ class TestClerk:
         sv = rb_state.RigidBodyState()
 
         # Add a valid template and verify it now exists in Azrael.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         temp = Template('foo', [getCSSphere()], frags, [], [])
         assert clerk.addTemplates([temp]).ok
 
@@ -1169,7 +1169,7 @@ class TestClerk:
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
-        frags = [MetaFragment('raw', 'bar', createFragRaw())]
+        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
         assert clerk.setFragmentGeometries(objID0, frags).ok
 
         # Verify that the new 'version' flag is now different.
@@ -1204,7 +1204,7 @@ class TestClerk:
                            minval=-1, maxval=1, force=0)
 
         # Define a template with one fragment.
-        frags = [MetaFragment('raw', 'foo', createFragRaw())]
+        frags = [MetaFragment('RAW', 'foo', createFragRaw())]
         t1 = Template('t1', [getCSSphere()], frags, [b0, b1], [])
 
         # Add the template and spawn two instances.
@@ -1278,7 +1278,7 @@ class TestClerk:
         sv = rb_state.RigidBodyState()
 
         # Define a new template with one fragment.
-        frags = [MetaFragment('raw', 'foo', createFragRaw())]
+        frags = [MetaFragment('RAW', 'foo', createFragRaw())]
         t1 = Template('t1', [getCSSphere()], fragments=frags,
                       boosters=[], factories=[])
 
@@ -1434,8 +1434,8 @@ class TestClerk:
         f_raw = createFragRaw()
         f_dae = createFragDae()
 
-        frags = [MetaFragment('raw', '10', f_raw),
-                 MetaFragment('dae', 'test', f_dae)]
+        frags = [MetaFragment('RAW', '10', f_raw),
+                 MetaFragment('DAE', 'test', f_dae)]
 
         t1 = Template('t1', cs, frags, boosters=[], factories=[])
         assert clerk.addTemplates([t1]).ok
@@ -1488,7 +1488,7 @@ class TestClerk:
                     time.sleep(0.1)
             assert False
 
-        # Download the 'raw' file and verify its content is correct.
+        # Download the 'RAW' file and verify its content is correct.
         base_url = 'http://{}:{}'.format(
             azrael.config.addr_clacks, azrael.config.port_clacks)
         url = base_url + data['10']['url'] + '/model.json'
@@ -1516,15 +1516,15 @@ class TestClerk:
 
         # Change the fragment geometries.
         f_raw = createFragRaw()
-        frags = [MetaFragment('raw', '10', f_raw),
-                 MetaFragment('dae', 'test', f_dae)]
+        frags = [MetaFragment('RAW', '10', f_raw),
+                 MetaFragment('DAE', 'test', f_dae)]
         assert clerk.setFragmentGeometries(objID, frags).ok
         ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
         data = ret.data[objID]
         del ret
 
-        # Download the 'raw' file and verify its content is correct.
+        # Download the 'RAW' file and verify its content is correct.
         url = base_url + data['10']['url'] + '/model.json'
         tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
