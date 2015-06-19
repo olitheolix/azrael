@@ -174,7 +174,8 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     return RetVal(True, None, out)
 
 
-def mergeConstraintSets(constraintPairs: tuple, collSets: (tuple, list)):
+def mergeConstraintSets(constraintPairs: tuple,
+                        collSets: (tuple, list)):
     """
     Merge all the sets in ``collSets`` that contain any of the
     ``constraintPairs``.
@@ -183,9 +184,10 @@ def mergeConstraintSets(constraintPairs: tuple, collSets: (tuple, list)):
     connected via a constraint. Typically, this function takes the output of
     ``computeCollisionSets`` as the ``collSets`` argument.
 
-    :param list constraintPairs: list of 2-tuples eg [(1, 2), (1, 5), ...].
-    :param list collSets: a set/list of sets/lists.
-    :return: list of collision sets.
+    :param list[vec2] constraintPairs: list of 2-tuples eg [(1, 2), (1, 5), ...].
+    :param list[set] collSets: list of collision sets
+    :return: the new list of collision sets.
+    :rtype: list[set]
     """
     # Merge the collision sets that are linked via constraints.
     for (a, b) in constraintPairs:
@@ -204,7 +206,8 @@ def mergeConstraintSets(constraintPairs: tuple, collSets: (tuple, list)):
         s_b = s_b[0] if len(s_b) == 1 else []
 
         # Merge the collision sets.
-        collSets.append(list(s_a) + list(s_b))
+        new_set = set(s_a).union(s_b)
+        collSets.append(new_set)
     return RetVal(True, None, collSets)
 
 

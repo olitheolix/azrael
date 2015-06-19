@@ -680,18 +680,22 @@ class TestLeonardOther:
         Create a few disjoint sets, specify some constraints, and verify that
         they are merged correctly.
         """
-        def checkEqual(_src, _dst):
-            # Fetch all unique constraint pairs.
+        def _verify(_coll_sets, _correct_answer):
+            # Fetch all unique object pairs connected by a constraint.
             assert self.igor.updateLocalCache().ok
             ret = self.igor.uniquePairs()
             assert ret.ok
-            ret = azrael.leonard.mergeConstraintSets(ret.data, _src)
+
+            # Merge all the sets `_coll_sets` that are connected by at least
+            # one constraint.
+            ret = azrael.leonard.mergeConstraintSets(ret.data, _coll_sets)
             assert ret.ok
-            _ret = [set(tuple(_)) for _ in ret.data]
-            _dst = [set(tuple(_)) for _ in _dst]
-            assert len(_ret) == len(_dst)
-            for _ in _ret:
-                assert _ in _dst
+            computed = ret.data
+
+            # Compare the computed- with the expected output.
+            computed = [sorted(tuple(_)) for _ in computed]
+            correct = [sorted(tuple(_)) for _ in _correct_answer]
+            assert sorted(computed) == sorted(correct)
 
         # Convenience.
         igor = self.igor
@@ -703,7 +707,7 @@ class TestLeonardOther:
         ret = self.igor.uniquePairs()
         assert ret.ok
         assert mergeConstraintSets(ret.data, []) == (True, None, [])
-        checkEqual([], [])
+        _verify([], [])
 
         # Set with only one subset.
         self.igor.reset()
@@ -719,33 +723,33 @@ class TestLeonardOther:
         p2p = ConstraintP2P((0, 0, 0), (0, 0, 0))
         self.igor.reset()
         s = [[1], [2]]
-        checkEqual(s, s)
+        _verify(s, s)
         assert igor.addConstraints([ConstraintMeta('p2p', '', 1, 2, p2p)]).ok
-        checkEqual(s, [[1, 2]])
+        _verify(s, [[1, 2]])
         self.igor.reset()
-        checkEqual(s, s)
+        _verify(s, s)
 
         # Two disjoint sets but the constraint does not link them.
         self.igor.reset()
         s = [[1], [2]]
-        checkEqual(s, s)
+        _verify(s, s)
         assert igor.addConstraints([ConstraintMeta('p2p', '', 1, 3, p2p)]).ok
-        checkEqual(s, s)
+        _verify(s, s)
 
         # Three disjoint sets and the constraint links two of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
-        checkEqual(s, s)
+        _verify(s, s)
         assert igor.addConstraints([ConstraintMeta('p2p', '', 1, 6, p2p)]).ok
-        checkEqual(s, [[1, 2, 3, 6], [4, 5]])
+        _verify(s, [[1, 2, 3, 6], [4, 5]])
 
         # Three disjoint sets and two constraint link both of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
-        checkEqual(s, s)
+        _verify(s, s)
         assert igor.addConstraints([ConstraintMeta('p2p', '', 1, 6, p2p)]).ok
         assert igor.addConstraints([ConstraintMeta('p2p', '', 3, 4, p2p)]).ok
-        checkEqual(s, [[1, 2, 3, 6, 4, 5]])
+        _verify(s, [[1, 2, 3, 6, 4, 5]])
 
     @pytest.mark.parametrize('clsLeonard', [
         azrael.leonard.LeonardBullet,
@@ -965,9 +969,6 @@ class TestBroadphase:
             # Determine the list of broadphase collision sets.
             ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
             assert ret.ok
-
-            print(expected_objIDs)
-            print(ret)
 
             # Convert the reference data to a sorted list of sets.
             expected_objIDs = sorted([sorted(tuple(_)) for _ in expected_objIDs])
