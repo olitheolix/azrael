@@ -143,9 +143,9 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
             continue
         sv, aabb = SVs[objID], AABBs[objID]
         pos = sv.position
-        x0, x1 = pos[0] - aabb, pos[0] + aabb
-        y0, y1 = pos[1] - aabb, pos[1] + aabb
-        z0, z1 = pos[2] - aabb, pos[2] + aabb
+        x0, x1 = pos[0] - aabb[0], pos[0] + aabb[0]
+        y0, y1 = pos[1] - aabb[1], pos[1] + aabb[1]
+        z0, z1 = pos[2] - aabb[2], pos[2] + aabb[2]
 
         data.append({'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]})
     del SVs, AABBs
