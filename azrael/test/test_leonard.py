@@ -928,12 +928,16 @@ class TestBroadphase:
         assert sorted(res) == sorted([set([0, 2]), set([1])])
 
     @pytest.mark.parametrize('dim', [0, 1, 2])
-    def test_computeCollisionSetsAABB(self, dim):
+    def test_computeCollisionSetsAABB_viaLeonard(self, dim):
         """
-        Create a sequence of 10 test objects. Their positions only
-        differ in the ``dim`` dimension.
+        Create a sequence of 10 test objects and sync them to Leonard. Their
+        positions only differ in the ``dim`` dimension.
 
         Then use subsets of these 10 objects to test basic collision detection.
+
+        This uses the Azrael toolchain to create objects and sync them the
+        Leonard. This ensures the data propagates coorectly from the
+        interfaces, via Leonard, to the broadphase algorithm.
         """
         # Get a Leonard instance.
         leo = getLeonard(azrael.leonard.LeonardBase)
@@ -1006,3 +1010,87 @@ class TestBroadphase:
 
         # All objects must form one connected set.
         ccsWrapper(list(range(10)), [list(range(10))])
+
+    @pytest.mark.parametrize('dim', [0, 1, 2])
+    def test_computeCollisionSetsAABB_basic(self, dim):
+        """
+        Create three bodies. Then alter their AABBs to create various
+        combinations of overlap.
+        """
+        # Get a Leonard instance.
+        leo = getLeonard(azrael.leonard.LeonardBase)
+
+        def testCCS(pos, AABBs, expected_objIDs):
+            """
+            Compute broadphase results for bodies  at ``pos`` with ``AABBs``
+            verify that the ``expected_objIDs`` sets were produced.
+            """
+            # Compile the set of bodies- and their AABBs for this test run.
+            assert len(pos) == len(aabbs)
+            RBS = rb_state.RigidBodyState
+            bodies = [RBS(position=_) for _ in pos]
+
+            # Convert to dictionaries: the key is the bodyID in Azrael; here it
+            # is a simple enumeration.
+            bodies = {idx: val for (idx, val) in enumerate(bodies)}
+            AABBs = {idx: val for (idx, val) in enumerate(AABBs)}
+
+            # Determine the list of broadphase collision sets.
+            ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
+            assert ret.ok
+
+            print(expected_objIDs)
+            print(ret)
+
+            # Convert the reference data to a sorted list of sets.
+            expected_objIDs = sorted([sorted(tuple(_)) for _ in expected_objIDs])
+            computed_objIDs = sorted([sorted(tuple(_)) for _ in ret.data])
+
+            # Return the equality of the two list of lists.
+            assert expected_objIDs == computed_objIDs
+            del RBS, bodies, AABBs, ret, expected_objIDs, computed_objIDs
+
+        # First overlaps with second, second with third, but first not with
+        # third. This must result in a single broadphase set containing all
+        # three bodies.
+        pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
+        aabbs = [(0.9, 0.9, 0.9), (0.9, 0.9, 0.9), (0.9, 0.9, 0.9)]
+        correct_answer = ([0, 1, 2], )
+        testCCS(pos, aabbs, correct_answer)
+
+        # Move the middle object away: three independent objects.
+        pos = [(0, 0, 0), (1, 10, 1), (2, 2, 2)]
+        aabbs = [(0.9, 0.9, 0.9), (0.9, 0.9, 0.9), (0.9, 0.9, 0.9)]
+        correct_answer = ([0], [1], [2])
+        testCCS(pos, aabbs, correct_answer)
+
+        # Move the middle object back but make it so small in 'y' direction
+        # that it does not intersect with the other two: three independent
+        # objects.
+        pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
+        aabbs = [(0.9, 0.9, 0.9), (0.05, 0.05, 0.05), (0.9, 0.9, 0.9)]
+        correct_answer = ([0], [1], [2])
+        testCCS(pos, aabbs, correct_answer)
+
+        # Second and third overlap, but first is by itself.
+        pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
+        aabbs = ([0.1, 0.1, 0.1], [0.1, 0.1, 0.1], [1, 1, 1])
+        correct_answer = ([0], [1, 2])
+        testCCS(pos, aabbs, correct_answer)
+
+        # Objects overlap in 'x' and 'z', but not 'y': three independent
+        # objects.
+        pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
+        aabbs = ([1, 0.4, 1], [1, 0.4, 1], [1, 0.4, 1])
+        correct_answer = ([0], [1], [2])
+        testCCS(pos, aabbs, correct_answer)
+
+        # Middle object has no size, but the first/third objects are large
+        # enough to touch each other: First/third must be connected, middle one
+        # must be by itself.
+        pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
+        aabbs = ([1.01, 1.01, 1.01], [0, 0, 0], [1.01, 1.01, 1.01])
+        correct_answer = ([0, 2], [1])
+        testCCS(pos, aabbs, correct_answer)
+
+        assert False
