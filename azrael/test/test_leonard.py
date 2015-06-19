@@ -844,48 +844,49 @@ class TestBroadphase:
 
         # Convenience variables.
         sweeping = azrael.leonard.sweeping
-        labels = np.arange(2)
 
         # Two orthogonal objects.
-        aabbs = [{'x': [4, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
-                 {'x': [1, 2], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, labels, 'x').data
+        aabbs = [{'id': 0, 'x': [4, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
+                 {'id': 1, 'x': [1, 2], 'y': [3.5, 4], 'z': [5, 6.5]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([1]), set([0])])
 
-        # Repeat the test but use a different set of labels.
-        res = sweeping(aabbs, np.array([3, 10], np.int64), 'x').data
+        # Repeat the test but use a different set of ID labels.
+        aabbs = [{'id': 3, 'x': [4, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
+                 {'id': 10, 'x': [1, 2], 'y': [3.5, 4], 'z': [5, 6.5]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([10]), set([3])])
 
         # One object inside the other.
-        aabbs = [{'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]},
-                 {'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, labels, 'x').data
+        aabbs = [{'id': 0, 'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]},
+                 {'id': 1, 'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([1, 0])])
 
         # Partially overlapping to the right of the first object.
-        aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
-                 {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, labels, 'x').data
+        aabbs = [{'id': 0, 'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
+                 {'id': 1, 'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([1, 0])])
 
         # Partially overlapping to the left of the first object.
-        aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
-                 {'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, labels, 'x').data
+        aabbs = [{'id': 0, 'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
+                 {'id': 1, 'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([1, 0])])
 
         # Test Sweeping in the 'y' and 'z' dimension as well.
-        aabbs = [{'x': [1, 5], 'y': [1, 5], 'z': [1, 5]},
-                 {'x': [2, 4], 'y': [2, 4], 'z': [2, 4]}]
-        assert sweeping(aabbs, labels, 'x') == sweeping(aabbs, labels, 'y')
-        assert sweeping(aabbs, labels, 'x') == sweeping(aabbs, labels, 'z')
+        aabbs = [{'id': 0, 'x': [1, 5], 'y': [1, 5], 'z': [1, 5]},
+                 {'id': 1, 'x': [2, 4], 'y': [2, 4], 'z': [2, 4]}]
+        assert sweeping(aabbs, 'x') == sweeping(aabbs, 'y')
+        assert sweeping(aabbs, 'x') == sweeping(aabbs, 'z')
 
         # Pass no object to the Sweeping algorithm.
-        assert sweeping([], np.array([], np.int64), 'x').data == []
+        assert sweeping([], 'x').data == []
 
         # Pass only a single object to the Sweeping algorithm.
-        aabbs = [{'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, np.array([0], np.int64), 'x').data
+        aabbs = [{'id': 0, 'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([0])])
 
     def test_sweeping_3objects(self):
@@ -899,117 +900,43 @@ class TestBroadphase:
 
         # Convenience variable.
         sweeping = azrael.leonard.sweeping
-        labels = np.arange(3)
 
         # Three non-overlapping objects.
-        aabbs = [{'x': [1, 2]}, {'x': [3, 4]}, {'x': [5, 6]}]
-        res = sweeping(aabbs, labels, 'x').data
+        aabbs = [{'id': 0, 'x': [1, 2]},
+                 {'id': 1, 'x': [3, 4]},
+                 {'id': 2, 'x': [5, 6]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([0]), set([1]), set([2])])
 
         # First and second overlap.
-        aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [5, 6]}]
-        res = sweeping(aabbs, labels, 'x').data
+        aabbs = [{'id': 0, 'x': [1, 2]},
+                 {'id': 1, 'x': [1.5, 4]},
+                 {'id': 2, 'x': [5, 6]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([0, 1]), set([2])])
 
-        # Repeat test with different labels.
-        res = sweeping(aabbs, np.array([2, 4, 10], np.int64), 'x').data
+        # Repeat test with different set of ID labels.
+        aabbs = [{'id': 2, 'x': [1, 2]},
+                 {'id': 4, 'x': [1.5, 4]},
+                 {'id': 10, 'x': [5, 6]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([2, 4]), set([10])])
 
         # First overlaps with second, second overlaps with third, but third
         # does not overlap with first. The algorithm must nevertheless return
         # all three in a single set.
-        aabbs = [{'x': [1, 2]}, {'x': [1.5, 4]}, {'x': [3, 6]}]
-        res = sweeping(aabbs, labels, 'x').data
+        aabbs = [{'id': 0, 'x': [1, 2]},
+                 {'id': 1, 'x': [1.5, 4]},
+                 {'id': 2, 'x': [3, 6]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([0, 1, 2])])
 
         # First and third overlap.
-        aabbs = [{'x': [1, 2]}, {'x': [10, 11]}, {'x': [0, 1.5]}]
-        res = sweeping(aabbs, labels, 'x').data
+        aabbs = [{'id': 0, 'x': [1, 2]},
+                 {'id': 1, 'x': [10, 11]},
+                 {'id': 2, 'x': [0, 1.5]}]
+        res = sweeping(aabbs, 'x').data
         assert sorted(res) == sorted([set([0, 2]), set([1])])
-
-    @pytest.mark.parametrize('dim', [0, 1, 2])
-    def test_computeCollisionSetsAABB_viaLeonard(self, dim):
-        """
-        Create a sequence of 10 test objects and sync them to Leonard. Their
-        positions only differ in the ``dim`` dimension.
-
-        Then use subsets of these 10 objects to test basic collision detection.
-
-        This uses the Azrael toolchain to create objects and sync them the
-        Leonard. This ensures the data propagates coorectly from the
-        interfaces, via Leonard, to the broadphase algorithm.
-        """
-        # Get a Leonard instance.
-        leo = getLeonard(azrael.leonard.LeonardBase)
-
-        # Create the IDs for the test bodies.
-        all_IDs = range(10)
-
-        RBS = rb_state.RigidBodyState
-        if dim == 0:
-            states = [RBS(position=[_, 0, 0]) for _ in range(10)]
-        elif dim == 1:
-            states = [RBS(position=[0, _, 0]) for _ in range(10)]
-        elif dim == 2:
-            states = [RBS(position=[0, 0, _]) for _ in range(10)]
-        else:
-            print('Invalid dimension for this test')
-            assert False
-
-        # Add all objects to the Body State DB and sync with Leonard.
-        aabb = 1
-        for objID, bs in zip(all_IDs, states):
-            assert leoAPI.addCmdSpawn([(objID, bs, aabb)]).ok
-        del states
-        leo.processCommandsAndSync()
-
-        # Sanity check: the number of test IDs must match the number of objects
-        # in Leonard.
-        assert len(all_IDs) == len(leo.allObjects)
-
-        def ccsWrapper(test_objIDs, expected_objIDs):
-            """
-            Assert that all ``test_objIDs`` are ``expected_objIDs``.
-
-            This is a convenience wrapper to facilitate readable tests.
-
-            This wrapper converts the human readable entries in
-            ``IDs_hr`` into the internally used binary format. It then
-            passes this new list, along with the corresponding body
-            states, to the collision detection algorithm. Finally, it
-            converts the returned list of object sets back into human
-            readable list of object sets and compares them for equality.
-            """
-            # Compile the set of bodies- and their AABBs for this test run.
-            bodies = {_: leo.allObjects[_] for _ in test_objIDs}
-            AABBs = {_: leo.allAABBs[_] for _ in test_objIDs}
-
-            # Determine the list of broadphase collision sets.
-            ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
-            assert ret.ok
-
-            # Convert the reference data to a sorted list of sets.
-            expected_objIDs = sorted([set(_) for _ in expected_objIDs])
-            computed_objIDs = sorted([set(_) for _ in ret.data])
-
-            # Return the equality of the two list of lists.
-            assert expected_objIDs == computed_objIDs
-
-        # Two non-overlapping objects.
-        ccsWrapper([0, 9], [[0], [9]])
-
-        # Two overlapping objects.
-        ccsWrapper([0, 1], [[0, 1]])
-
-        # Three sets.
-        ccsWrapper([0, 1, 5, 8, 9], [[0, 1], [5], [8, 9]])
-
-        # Same test, but objects are passed in a different sequence. This must
-        # not alter the test outcome.
-        ccsWrapper([0, 5, 1, 9, 8], [[0, 1], [5], [8, 9]])
-
-        # All objects must form one connected set.
-        ccsWrapper(list(range(10)), [list(range(10))])
 
     @pytest.mark.parametrize('dim', [0, 1, 2])
     def test_computeCollisionSetsAABB_basic(self, dim):

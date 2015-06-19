@@ -46,7 +46,7 @@ RigidBodyStateOverride = rb_state.RigidBodyStateOverride
 
 
 @typecheck
-def sweeping(data: list, labels: np.ndarray, dim: str):
+def sweeping(data: list, dim: str):
     """
     Return sets of overlapping AABBs in the dimension ``dim``.
 
@@ -56,46 +56,39 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
     Sweeping is straightforward: sort all start/stop positions and determine
     the overlapping sets.
 
-    The returned sets do not contain the ``data`` elements but their
-    corresponding ``labels`` to be more memory efficient.
-
     The `data` is a list of dictionaries that denotes the half widths of the
     AABBs in the respective direction:
-      data = [{'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
-              {'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
+      data = [{'id': 1, 'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
+              {'id': 2, 'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
               ...]
-    The elements denote the AABB of the corresponding `label` at the same
-    index. The dictionary keys 'x', 'y', and 'z' are (more or less) hard coded,
+    The dictionary keys 'x', 'y', and 'z' are (more or less) hard coded,
     and `dim` must refer to one of them (eg dim = 'y' to find the sets that
     overlap in the 'y' dimension).
 
     :param list[dict] data: list of dictionaries containing the AABB boundaries
        for 'x', 'y', and 'z'.
-    :param np.int64 labels: integer array to label the elements in data.
     :param str dim: the axis to check (must be one of ['x', 'y', 'z'])
-    :return: list of sets. Each set contains elements from ``labels``.
+    :return: list of sets. Each set contains IDs from ``data`` dictionar.
     :rtype: list of sets
     """
-    assert len(labels) == len(data)
-
     # Convenience.
     N = 2 * len(data)
 
     # Pre-allocate arrays for start/stop position, objID, and an
     # increment/decrement array used for convenient processing afterwards.
     arr_pos = np.zeros(N, np.float64)
-    arr_lab = np.zeros(N, np.int64)
+    arr_ids = np.zeros(N, np.int64)
     arr_inc = np.zeros(N, np.int8)
 
     # Fill the arrays.
     for ii in range(len(data)):
         arr_pos[2 * ii: 2 * ii + 2] = np.array(data[ii][dim])
-        arr_lab[2 * ii: 2 * ii + 2] = labels[ii]
+        arr_ids[2 * ii: 2 * ii + 2] = data[ii]['id']
         arr_inc[2 * ii: 2 * ii + 2] = [+1, -1]
 
     # Sort all three arrays according to the start/stop positions.
     idx = np.argsort(arr_pos)
-    arr_lab = arr_lab[idx]
+    arr_ids = arr_ids[idx]
     arr_inc = arr_inc[idx]
 
     # Output array.
@@ -104,7 +97,7 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
     # Sweep over the sorted data and compile the list of object sets.
     sumVal = 0
     setObjs = set()
-    for (inc, objID) in zip(arr_inc, arr_lab):
+    for (inc, objID) in zip(arr_inc, arr_ids):
         # Update the index variable and add the current object to the set.
         sumVal += inc
         setObjs.add(objID)
@@ -138,44 +131,46 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     # must contain the min/max spatial extent in x/y/z direction.
     data = []
     IDs = list(SVs.keys())
+    ignored = []
     for objID in IDs:
         if (SVs[objID] is None) or (AABBs[objID] is None):
             continue
         sv, aabb = SVs[objID], AABBs[objID]
+
+        # If at least one of the half lenghts is zero then skip this body
+        # because it cannot touch other bodies. In the return value these
+        # bodies will be treated as standalone sets.
+        if (aabb[0] == 0) or (aabb[1] == 0) or (aabb[2] == 0):
+            ignored.append([objID])
+            continue
+
         pos = sv.position
         x0, x1 = pos[0] - aabb[0], pos[0] + aabb[0]
         y0, y1 = pos[1] - aabb[1], pos[1] + aabb[1]
         z0, z1 = pos[2] - aabb[2], pos[2] + aabb[2]
 
-        data.append({'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]})
+        data.append({'id': objID, 'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]})
     del SVs, AABBs
 
-    # Enumerate the objects.
-    labels = np.arange(len(IDs))
-
     # Determine the sets of objects that overlap 'x' direction.
-    stage_0 = sweeping(data, labels, 'x').data
+    stage_0 = sweeping(data, 'x').data
 
     # Iterate over all the just found sets. For each, determine the sets that
     # overlap in the 'y' dimension.
     stage_1 = []
     for subset in stage_0:
-        tmpData = [data[_] for _ in subset]
-        tmpLabels = np.array(tuple(subset), np.int64)
-        stage_1.extend(sweeping(tmpData, tmpLabels, 'y').data)
+        tmpData = [_ for _ in data if _['id'] in subset]
+        stage_1.extend(sweeping(tmpData, 'y').data)
 
     # Iterate over all the sets that overlap in 'x' and 'y' dimension. For
     # each, determine which also overalp in the 'z' dimension.
     stage_2 = []
     for subset in stage_1:
-        tmpData = [data[_] for _ in subset]
-        tmpLabels = np.array(tuple(subset), np.int64)
-        stage_2.extend(sweeping(tmpData, tmpLabels, 'z').data)
+        tmpData = [_ for _ in data if _['id'] in subset]
+        stage_2.extend(sweeping(tmpData, 'z').data)
 
-    # Convert the labels back to object IDs.
-    out = [[IDs[objID] for objID in objIDs] for objIDs in stage_2]
-
-    # Return the sets.
+    # Add the ignored objects and return the result.
+    out = stage_2 + ignored
     return RetVal(True, None, out)
 
 
