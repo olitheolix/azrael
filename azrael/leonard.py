@@ -59,7 +59,18 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
     The returned sets do not contain the ``data`` elements but their
     corresponding ``labels`` to be more memory efficient.
 
-    :param list data: list of dictionaries which must contain ['aabb']
+    The `data` is a list of dictionaries that denotes the half widths of the
+    AABBs in the respective direction:
+      data = [{'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
+              {'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
+              ...]
+    The elements denote the AABB of the corresponding `label` at the same
+    index. The dictionary keys 'x', 'y', and 'z' are (more or less) hard coded,
+    and `dim` must refer to one of them (eg dim = 'y' to find the sets that
+    overlap in the 'y' dimension).
+
+    :param list[dict] data: list of dictionaries containing the AABB boundaries
+       for 'x', 'y', and 'z'.
     :param np.int64 labels: integer array to label the elements in data.
     :param str dim: the axis to check (must be one of ['x', 'y', 'z'])
     :return: list of sets. Each set contains elements from ``labels``.

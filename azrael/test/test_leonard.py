@@ -938,29 +938,30 @@ class TestBroadphase:
         # Get a Leonard instance.
         leo = getLeonard(azrael.leonard.LeonardBase)
 
-        # Create several objects for this test.
-        all_id = list(range(10))
+        # Create the IDs for the test bodies.
+        all_IDs = range(10)
 
-        MS = rb_state.RigidBodyState
+        RBS = rb_state.RigidBodyState
         if dim == 0:
-            SVs = [MS(position=[_, 0, 0]) for _ in range(10)]
+            states = [RBS(position=[_, 0, 0]) for _ in range(10)]
         elif dim == 1:
-            SVs = [MS(position=[0, _, 0]) for _ in range(10)]
+            states = [RBS(position=[0, _, 0]) for _ in range(10)]
         elif dim == 2:
-            SVs = [MS(position=[0, 0, _]) for _ in range(10)]
+            states = [RBS(position=[0, 0, _]) for _ in range(10)]
         else:
             print('Invalid dimension for this test')
             assert False
 
-        # Add all objects to the SV DB.
+        # Add all objects to the Body State DB and sync with Leonard.
         aabb = 1
-        for objID, sv in zip(all_id, SVs):
-            assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
-        del SVs
-
-        # Retrieve all SVs as Leonard does.
+        for objID, bs in zip(all_IDs, states):
+            assert leoAPI.addCmdSpawn([(objID, bs, aabb)]).ok
+        del states
         leo.processCommandsAndSync()
-        assert len(all_id) == len(leo.allObjects)
+
+        # Sanity check: the number of test IDs must match the number of objects
+        # in Leonard.
+        assert len(all_IDs) == len(leo.allObjects)
 
         def ccsWrapper(test_objIDs, expected_objIDs):
             """
@@ -969,26 +970,26 @@ class TestBroadphase:
             This is a convenience wrapper to facilitate readable tests.
 
             This wrapper converts the human readable entries in
-            ``IDs_hr``  into the internally used binary format. It then
-            passes this new list, along with the corresponding SVs, to
-            the collision detection algorithm.  Finally, it converts the
-            returned list of object sets back into human readable list
-            of object sets and compares them for equality.
+            ``IDs_hr`` into the internally used binary format. It then
+            passes this new list, along with the corresponding body
+            states, to the collision detection algorithm. Finally, it
+            converts the returned list of object sets back into human
+            readable list of object sets and compares them for equality.
             """
-            # Compile the set of SVs for curIDs.
-            SVs = {_: leo.allObjects[_] for _ in test_objIDs}
+            # Compile the set of bodies- and their AABBs for this test run.
+            bodies = {_: leo.allObjects[_] for _ in test_objIDs}
             AABBs = {_: leo.allAABBs[_] for _ in test_objIDs}
 
-            # Determine the list of potential collision sets.
-            ret = azrael.leonard.computeCollisionSetsAABB(SVs, AABBs)
+            # Determine the list of broadphase collision sets.
+            ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
             assert ret.ok
 
             # Convert the reference data to a sorted list of sets.
             expected_objIDs = sorted([set(_) for _ in expected_objIDs])
-            res = sorted([set(_) for _ in ret.data])
+            computed_objIDs = sorted([set(_) for _ in ret.data])
 
             # Return the equality of the two list of lists.
-            assert expected_objIDs == res
+            assert expected_objIDs == computed_objIDs
 
         # Two non-overlapping objects.
         ccsWrapper([0, 9], [[0], [9]])
