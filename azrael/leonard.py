@@ -104,7 +104,7 @@ def sweeping(data: list, labels: np.ndarray, dim: str):
             out.append(setObjs)
             setObjs = set()
 
-        # Safety check: this must never happen.
+        # Safety check: sumVal can never be negative.
         assert sumVal >= 0
     return RetVal(True, None, out)
 
@@ -142,17 +142,19 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     # Enumerate the objects.
     labels = np.arange(len(IDs))
 
-    # Determine the overlapping objects in 'x' direction.
+    # Determine the sets of objects that overlap 'x' direction.
     stage_0 = sweeping(data, labels, 'x').data
 
-    # Determine which of the objects that overlap in 'x' also overlap in 'y'.
+    # Iterate over all the just found sets. For each, determine the sets that
+    # overlap in the 'y' dimension.
     stage_1 = []
     for subset in stage_0:
         tmpData = [data[_] for _ in subset]
         tmpLabels = np.array(tuple(subset), np.int64)
         stage_1.extend(sweeping(tmpData, tmpLabels, 'y').data)
 
-    # Now determine the objects that overlap in all three dimensions.
+    # Iterate over all the sets that overlap in 'x' and 'y' dimension. For
+    # each, determine which also overalp in the 'z' dimension.
     stage_2 = []
     for subset in stage_1:
         tmpData = [data[_] for _ in subset]
