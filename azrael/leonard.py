@@ -100,7 +100,7 @@ def sweeping(data: list, dim: str):
     for (inc, objID) in zip(arr_inc, arr_ids):
         # Update the index variable and add the current object to the set.
         sumVal += inc
-        setObjs.add(objID)
+        setObjs.add(int(objID))
 
         # A new set of overlapping AABBs is complete whenever `sumVal`
         # reaches zero.
@@ -198,17 +198,19 @@ def mergeConstraintSets(constraintPairs: tuple, collSets: (tuple, list)):
         assert 0 <= len(s_a) < 2
         assert 0 <= len(s_b) < 2
 
-        # Remove the list from the list comprehension.
+        # Unpack the list returned by the list comprehension (it contains zero
+        # or one element).
         s_a = s_a[0] if len(s_a) == 1 else []
         s_b = s_b[0] if len(s_b) == 1 else []
 
         # Merge the collision sets.
-        collSets.append(s_a + s_b)
+        collSets.append(list(s_a) + list(s_b))
     return RetVal(True, None, collSets)
 
 
-def getFinalCollisionSets(
-        constraintPairs: list, allObjects: list, allAABBs: list):
+def getFinalCollisionSets(constraintPairs: list,
+                          allObjects: list,
+                          allAABBs: list):
     """
     Return the collision sets.
 
@@ -418,7 +420,7 @@ class LeonardBase(config.AzraelProcess):
                 sv_old = doc['sv']
                 self.allObjects[objID] = _RigidBodyState(*sv_old)
                 self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
-                self.allAABBs[objID] = float(doc['AABB'])
+                self.allAABBs[objID] = doc['AABB']
 
         # Update Body States.
         fun = leoAPI._updateRigidBodyStateTuple

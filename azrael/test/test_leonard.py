@@ -134,7 +134,7 @@ class TestLeonardAllEngines:
         leo = getLeonard(clsLeonard)
 
         # Parameters and constants for this test.
-        id_0, id_1, aabb = 0, 1, 1.0
+        id_0, id_1, aabb = 0, 1, (1.0, 1.0, 1.0)
         sv = rb_state.RigidBodyState()
         templateID = '_templateSphere'.encode('utf8')
 
@@ -179,7 +179,7 @@ class TestLeonardAllEngines:
         templateID = '_templateSphere'.encode('utf8')
 
         # Spawn an object.
-        objID, aabb = 1, 1
+        objID, aabb = 1, (1, 1, 1)
         assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
 
         # Verify the SV data.
@@ -217,7 +217,7 @@ class TestLeonardAllEngines:
         leonard = getLeonard(clsLeonard)
 
         # Constants and parameters for this test.
-        id_0, aabb = 0, 1
+        id_0, aabb = 0, (1, 1, 1)
         sv = rb_state.RigidBodyState()
 
         # Spawn an object.
@@ -250,7 +250,7 @@ class TestLeonardAllEngines:
         leonard = getLeonard(clsLeonard)
 
         # Constants and parameters for this test.
-        id_0, id_1, aabb = 0, 1, 1
+        id_0, id_1, aabb = 0, 1, (1, 1, 1)
         MS = rb_state.RigidBodyState
         sv_0 = MS(position=[0, 0, 0], velocityLin=[1, 0, 0])
         sv_1 = MS(position=[0, 10, 0], velocityLin=[0, -1, 0])
@@ -287,7 +287,7 @@ class TestLeonardAllEngines:
         leonard = getLeonard(clsLeonard)
 
         # Constants and parameters for this test.
-        id_0, aabb = 0, 1
+        id_0, aabb = 0, (1, 1, 1)
         sv = rb_state.RigidBodyState()
 
         # Spawn one object.
@@ -363,7 +363,7 @@ class TestLeonardOther:
         assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
         # Constants and parameters for this test.
-        aabb = 1
+        aabb = (1, 1, 1)
         id_0, id_1 = 0, 1
         cshapes = [getCSSphere(radius=1)]
 
@@ -405,7 +405,7 @@ class TestLeonardOther:
 
         # Constants.
         id_1, id_2 = 1, 2
-        aabb, dt, maxsteps = 1, 2, 3
+        aabb, dt, maxsteps = (1, 1, 1), 2, 3
 
         # Invalid call: list of IDs must not be empty.
         assert not leo.createWorkPackage([], dt, maxsteps).ok
@@ -456,7 +456,7 @@ class TestLeonardOther:
         WPData = azrael.leonard.WPData
         data_1 = rb_state.RigidBodyState(imass=1)
         data_2 = rb_state.RigidBodyState(imass=2)
-        id_1, id_2, aabb = 1, 2, 1
+        id_1, id_2, aabb = 1, 2, (1, 1, 1)
 
         # Spawn new objects.
         tmp = [(id_1, data_1, aabb), (id_2, data_2, aabb)]
@@ -487,7 +487,7 @@ class TestLeonardOther:
         # Convenience.
         sv_1 = rb_state.RigidBodyState(imass=1)
         sv_2 = rb_state.RigidBodyState(imass=2)
-        id_1, id_2, aabb = 1, 2, 1
+        id_1, id_2, aabb = 1, 2, (1, 1, 1)
 
         # Cache must be empty.
         assert len(leo.allObjects) == len(leo.allForces) == 0
@@ -544,7 +544,7 @@ class TestLeonardOther:
 
         # Convenience.
         sv = rb_state.RigidBodyState(imass=1)
-        objID, aabb = 1, 1
+        objID, aabb = 1, (1, 1, 1)
 
         # Spawn object.
         assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
@@ -609,7 +609,7 @@ class TestLeonardOther:
         # Spawn one object.
         orient = np.array([0, 0, 0, 1])
         sv = rb_state.RigidBodyState(imass=1, orientation=orient)
-        objID, aabb = 1, 1
+        objID, aabb = 1, (1, 1, 1)
         assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
         leo.processCommandsAndSync()
         del sv, aabb
@@ -652,7 +652,7 @@ class TestLeonardOther:
         # Spawn one object rotated 180 degress around x-axis.
         orient = np.array([1, 0, 0, 0])
         sv = rb_state.RigidBodyState(imass=1, orientation=orient)
-        objID, aabb = 1, 1
+        objID, aabb = 1, (1, 1, 1)
         assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
         leo.processCommandsAndSync()
         del sv, aabb
@@ -760,7 +760,7 @@ class TestLeonardOther:
         leo = getLeonard(clsLeonard)
 
         # Convenience.
-        id_a, id_b, aabb = 1, 2, 1
+        id_a, id_b, aabb = 1, 2, (1, 1, 1)
         pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
         cs = CollShapeMeta(
             'sphere', '', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1)
@@ -1020,4 +1020,86 @@ class TestBroadphase:
         correct_answer = ([0, 2], [1])
         testCCS(pos, aabbs, correct_answer)
 
-        assert False
+    @pytest.mark.parametrize('dim', [0, 1, 2])
+    def test_computeCollisionSetsAABB_viaLeonard(self, dim):
+        """
+        Create a sequence of 10 test objects and sync them to Leonard. Their
+        positions only differ in the ``dim`` dimension.
+
+        Then use subsets of these 10 objects to test basic collision detection.
+
+        This uses the Azrael toolchain to create objects and sync them the
+        Leonard. This ensures the data propagates coorectly from the
+        interfaces, via Leonard, to the broadphase algorithm.
+        """
+        # Get a Leonard instance.
+        leo = getLeonard(azrael.leonard.LeonardBase)
+
+        # Create the IDs for the test bodies.
+        all_IDs = range(10)
+
+        RBS = rb_state.RigidBodyState
+        if dim == 0:
+            states = [RBS(position=[_, 0, 0]) for _ in range(10)]
+        elif dim == 1:
+            states = [RBS(position=[0, _, 0]) for _ in range(10)]
+        elif dim == 2:
+            states = [RBS(position=[0, 0, _]) for _ in range(10)]
+        else:
+            print('Invalid dimension for this test')
+            assert False
+
+        # Add all objects to the Body State DB and sync with Leonard.
+        aabb = (1, 1, 1)
+        for objID, bs in zip(all_IDs, states):
+            assert leoAPI.addCmdSpawn([(objID, bs, aabb)]).ok
+        del states
+        leo.processCommandsAndSync()
+
+        # Sanity check: the number of test IDs must match the number of objects
+        # in Leonard.
+        assert len(all_IDs) == len(leo.allObjects)
+
+        def ccsWrapper(test_objIDs, expected_objIDs):
+            """
+            Assert that all ``test_objIDs`` are ``expected_objIDs``.
+
+            This is a convenience wrapper to facilitate readable tests.
+
+            This wrapper converts the human readable entries in
+            ``IDs_hr`` into the internally used binary format. It then
+            passes this new list, along with the corresponding body
+            states, to the collision detection algorithm. Finally, it
+            converts the returned list of object sets back into human
+            readable list of object sets and compares them for equality.
+            """
+            # Compile the set of bodies- and their AABBs for this test run.
+            bodies = {_: leo.allObjects[_] for _ in test_objIDs}
+            AABBs = {_: leo.allAABBs[_] for _ in test_objIDs}
+
+            # Determine the list of broadphase collision sets.
+            ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
+            assert ret.ok
+
+            # Convert the reference data to a sorted list of sets.
+            expected_objIDs = sorted([set(_) for _ in expected_objIDs])
+            computed_objIDs = sorted([set(_) for _ in ret.data])
+
+            # Return the equality of the two list of lists.
+            assert expected_objIDs == computed_objIDs
+
+        # Two non-overlapping objects.
+        ccsWrapper([0, 9], [[0], [9]])
+
+        # Two overlapping objects.
+        ccsWrapper([0, 1], [[0, 1]])
+
+        # Three sets.
+        ccsWrapper([0, 1, 5, 8, 9], [[0, 1], [5], [8, 9]])
+
+        # Same test, but objects are passed in a different sequence. This must
+        # not alter the test outcome.
+        ccsWrapper([0, 5, 1, 9, 8], [[0, 1], [5], [8, 9]])
+
+        # All objects must form one connected set.
+        ccsWrapper(list(range(10)), [list(range(10))])
