@@ -156,7 +156,7 @@ class TestClerk:
 
         # Define a new object with two boosters and one factory unit.
         # The 'boosters' and 'factories' arguments are a list of named
-        # tuples. Their first argument is the unit ID (Azrael does not assign
+        # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any IDs).
         b0 = parts.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=0.5, force=0)

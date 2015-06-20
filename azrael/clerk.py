@@ -31,7 +31,6 @@ import os
 import sys
 import zmq
 import json
-import cytoolz
 import logging
 import traceback
 import subprocess
