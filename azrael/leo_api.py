@@ -318,11 +318,11 @@ def getAABB(objIDs: (list, tuple)):
             logit.warning(msg)
             return RetVal(False, msg, None)
 
-    # Retrieve the state variables.
+    # Retrieve the objects states.
     out = list(database.dbHandles['SV'].find({'objID': {'$in': objIDs}}))
 
     # Put all AABBs into a dictionary to simplify sorting afterwards.
-    out = {_['objID']: np.array(_['AABB'], np.float64) for _ in out}
+    out = {_['objID']: _['AABB'] for _ in out}
 
     # Compile the AABB values into a list ordered by ``objIDs``. Insert a None
     # element if a particular objID has no AABB (probably means the object was

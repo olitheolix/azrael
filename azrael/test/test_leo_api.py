@@ -17,7 +17,6 @@
 
 import sys
 import pytest
-import cytoolz
 import numpy as np
 
 import azrael.database
@@ -58,7 +57,8 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Create an object ID for the test.
-        id_0, id_1, aabb = 0, 1, 0
+        id_0, id_1 = 0, 1
+        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # The number of SV entries must now be zero.
         assert leoAPI.getNumObjects() == 0
@@ -105,7 +105,8 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Create two object IDs for this test.
-        id_0, id_1, aabb = 0, 1, 0
+        id_0, id_1 = 0, 1
+        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # The number of SV entries must now be zero.
         assert leoAPI.getNumObjects() == 0
@@ -154,7 +155,8 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Convenience.
-        id_0, aabb = 0, 0
+        id_0 = 0
+        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # The number of SV entries must now be zero.
         assert leoAPI.getNumObjects() == 0
@@ -211,7 +213,7 @@ class TestLeonardAPI:
         data_0 = RigidBodyState()
         data_1 = RigidBodyStateOverride(imass=2, scale=3)
         id_0, id_1 = 0, 1
-        aabb = 1
+        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # The command queue must be empty for every category.
         ret = leoAPI.dequeueCommands()
@@ -322,7 +324,8 @@ class TestLeonardAPI:
         del p, vl, vr, o
 
         # Create an object ID for the test.
-        id_0, aabb = 0, 0
+        id_0 = 0
+        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # Create an object and serialise it.
         btdata = RigidBodyState()
@@ -403,7 +406,8 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Create two object IDs for this test.
-        id_0, id_1, aabb = 0, 1, 0
+        id_0, id_1 = 0, 1
+        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # Create two objects and serialise them.
         data_0 = RigidBodyState(position=[0, 0, 0])
@@ -461,11 +465,9 @@ class TestLeonardAPI:
         # Create two object IDs and a RigidBodyState instances for this test.
         id_0, id_1 = 0, 1
         id_2, id_3 = 2, 3
-        aabb_1, aabb_2 = 1.5, 2.5
+        aabb_1 = [[0, 0, 0, 1, 1, 1]]
+        aabb_2 = [[0, 0, 0, 2.5, 2.5, 2.5]]
         data = RigidBodyState()
-
-        # Attempt to add an object with a negative AABB value. This must fail.
-        assert not leoAPI.addCmdSpawn([(id_0, data, -1.5)]).ok
 
         # Add two new objects to the DB.
         tmp = [(id_0, data, aabb_1), (id_1, data, aabb_2)]
@@ -474,17 +476,17 @@ class TestLeonardAPI:
 
         # Query the AABB of the first.
         ret = leoAPI.getAABB([id_0])
-        assert np.array_equal(ret.data, [1.5])
+        assert ret.data == [aabb_1]
 
         # Query the AABB of the second.
         ret = leoAPI.getAABB([id_1])
-        assert np.array_equal(ret.data, [2.5])
+        assert ret.data == [aabb_2]
 
         # Query the AABB of both simultaneously.
         ret = leoAPI.getAABB([id_0, id_1])
-        assert np.array_equal(ret.data, [1.5, 2.5])
+        assert ret.data == [aabb_1, aabb_2]
 
         # Query the AABB of a non-existing ID.
         ret = leoAPI.getAABB([id_0, id_3])
         assert ret.ok
-        assert np.array_equal(ret.data, [1.5, None])
+        assert ret.data ==  [aabb_1, None]
