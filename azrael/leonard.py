@@ -174,7 +174,7 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     # object provided to this function.
     for objID in SVs.keys():
         # Convenience: position of body.
-        rbpos = SVs[objID].position
+        pos_rb = SVs[objID].position
 
         # Create an empty data structure (will be populated below).
         data[objID] = {'x': [], 'y': [], 'z': []}
@@ -197,23 +197,27 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
         # the body theyt are attached to, and compile the AABB boundaries.
         # Note: the AABBs are not re-computed here. The assumption is that the
         # AABB is large enough to contain their body at any rotation.
-        for aabb in AABBs[objID]:
-            # Convenience: extract the positions and half lengths.
-            px, py, pz, hx, hy, hz = aabb
-            if (hx == 0) or (hy == 0) or (hz == 0):
+        for aabb in aabbs:
+            # Convenience: unpack the AABB positions and half lengths.
+            pos_aabb, half_lengths = aabb[:3], aabb[3:]
+
+            # Skip the current AABB if at least on of its half lengths is zero.
+            if 0 in half_lengths:
                 continue
 
-            # Compute the min/max values in all three dimensions.
-            x0, x1 = rbpos[0] + px - hx, rbpos[0] + px + hx
-            y0, y1 = rbpos[1] + py - hy, rbpos[1] + py + hy
-            z0, z1 = rbpos[2] + pz - hz, rbpos[2] + pz + hz
+            # Compute the AABB position in world coordinates.
+            pos = pos_rb + pos_aabb
+
+            # Compute the min/max value of the AABB value in world coordinates.
+            pmin = pos - half_lengths
+            pmax = pos + half_lengths
 
             # Store the result for this AABB.
-            data[objID]['x'].append([x0, x1])
-            data[objID]['y'].append([y0, y1])
-            data[objID]['z'].append([z0, z1])
+            data[objID]['x'].append([pmin[0], pmax[0]])
+            data[objID]['y'].append([pmin[1], pmax[1]])
+            data[objID]['z'].append([pmin[2], pmax[2]])
 
-        # If no AABB was construed (ie all AABBs contained at least one half
+        # If no AABB was constructed (ie all AABBs contained at least one half
         # length that was zero) then merely add the object to the 'ignore'
         # list. It will thus, by definition, not collide with anything.
         if len(data[objID]['x']) == 0:
