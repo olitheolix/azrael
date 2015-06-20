@@ -24,6 +24,7 @@ import zmq
 import time
 import signal
 import pickle
+import networkx
 import itertools
 import numpy as np
 
@@ -46,7 +47,7 @@ RigidBodyStateOverride = rb_state.RigidBodyStateOverride
 
 
 @typecheck
-def sweeping(data: list, dim: str):
+def sweeping(data: dict, dim: str):
     """
     Return sets of overlapping AABBs in the dimension ``dim``.
 
@@ -61,18 +62,34 @@ def sweeping(data: list, dim: str):
       data = [{'id': 1, 'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
               {'id': 2, 'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
               ...]
+      data = {ID_0: {'x': [[xmin_0, xmax_0], [xmin_1, xmax_1], ...],
+                     'y': [[ymin_0, ymax_0], [ymin_1, ymax_1], ...],
+                     'z': [[zmin_0, zmax_0], [zmin_1, zmax_1], ...]},
+              ID_1: {'x': [[xmin_0, xmax_0], ...],
+                     'y': [[ymin_0, ymax_0], ...],
+                     'z': [[zmin_0, zmax_0], ...],},
+              ...}
+                  
     The dictionary keys 'x', 'y', and 'z' are (more or less) hard coded,
     and `dim` must refer to one of them (eg dim = 'y' to find the sets that
     overlap in the 'y' dimension).
 
-    :param list[dict] data: list of dictionaries containing the AABB boundaries
-       for 'x', 'y', and 'z'.
+    :param dict{dict} data: dictionary of AABBs in 'x', 'y', 'z' dimension for
+       each body.
     :param str dim: the axis to check (must be one of ['x', 'y', 'z'])
-    :return: list of sets. Each set contains IDs from ``data`` dictionar.
-    :rtype: list of sets
+    :return: list of bodyID lists (eg [[1], [2, 3, 4]])
+    :rtype: list[list]
     """
-    # Convenience.
-    N = 2 * len(data)
+    # Determine how many (xmin, xmax) tuples there will be to sort.
+    N = 0
+    try:
+        for v in data.values():
+            # Sanity check.
+            assert np.array(v[dim], np.float64).ndim == 2
+            N += len(v[dim])
+    except (ValueError, TypeError):
+        return RetVal(False, 'Invalid Sweeping inputs', None)
+    N *= 2
 
     # Pre-allocate arrays for start/stop position, objID, and an
     # increment/decrement array used for convenient processing afterwards.
@@ -81,20 +98,22 @@ def sweeping(data: list, dim: str):
     arr_inc = np.zeros(N, np.int8)
 
     # Fill the arrays.
-    for ii in range(len(data)):
-        arr_pos[2 * ii: 2 * ii + 2] = np.array(data[ii][dim])
-        arr_ids[2 * ii: 2 * ii + 2] = data[ii]['id']
-        arr_inc[2 * ii: 2 * ii + 2] = [+1, -1]
+    start = 0
+    for k, v in data.items():
+        for min_max_tuple in v[dim]:
+            stop = start + 2
+            arr_pos[start:stop] = min_max_tuple
+            arr_ids[start:stop] = k
+            arr_inc[start:stop] = [+1, -1]
+            start += 2
 
     # Sort all three arrays according to the start/stop positions.
     idx = np.argsort(arr_pos)
     arr_ids = arr_ids[idx]
     arr_inc = arr_inc[idx]
 
-    # Output array.
-    out = []
-
     # Sweep over the sorted data and compile the list of object sets.
+    out = []
     sumVal = 0
     setObjs = set()
     for (inc, objID) in zip(arr_inc, arr_ids):
@@ -110,7 +129,18 @@ def sweeping(data: list, dim: str):
 
         # Safety check: sumVal can never be negative.
         assert sumVal >= 0
-    return RetVal(True, None, out)
+
+    # Find all connected graphs.
+    g = networkx.Graph()
+    for cs in out:
+        if len(cs) == 0:
+            continue
+        elif len(cs) == 1:
+            g.add_node(cs.pop())
+        else:
+            g.add_path(cs)
+    result = list(networkx.connected_components(g))
+    return RetVal(True, None, result)
 
 
 @typecheck

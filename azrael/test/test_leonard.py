@@ -831,6 +831,71 @@ class TestBroadphase:
     def teardown_method(self, method):
         pass
 
+    def verifySweeping(self, aabbsIn, correct_answer):
+        # Create the AABB dictionaries. For this test, the data in all
+        # three dimensions is identical.
+        aabbs = {}
+        for k, v in aabbsIn.items():
+            aabbs[k] = {'x': v, 'y': v, 'z': v}
+
+        # Turn ``correct_answer`` into a well ordered list of lists to make
+        # the comparison with the actual result easier (see loop below).
+        correct_answer = sorted([tuple(set(_)) for _ in correct_answer])
+
+        # Run the sweeping algorithm for every dimension and verify the
+        # outputs match the expected 'correct_answer'.
+        for dim in ('x', 'y', 'z'):
+            # Run sweeping algorithm and inspect its return value.
+            ret = azrael.leonard.sweeping(aabbs, dim)
+            assert ret.ok
+            computed = ret.data
+
+            # Turn the output into a well ordered list of lists and compare
+            # it to the expected answer.
+            computed = sorted([tuple(set(_)) for _ in computed])
+            assert computed == correct_answer
+
+    def test_sweeping_2objects_multi_aabb(self):
+        """
+        Use objects that use more than one AABB to describe its collision set.
+        """
+        # Define a force grid (not used in this test but prevent a plethora
+        # of meaningleass warning messages).
+        vg = azrael.vectorgrid
+        assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
+
+        # Convenience variables.
+        _verify = self.verifySweeping
+
+        # Two orthogonal objects; the first has two AABBs, the second only one.
+        _verify({0: [[4, 5], [6, 7]], 1: [[0, 1]]},
+                correct_answer=[[0], [1]])
+
+        # Self intersecting object: the two objects do not touch, but the AABBs
+        # of the first do. This must result in to independent objects.
+        _verify({0: [[4, 5], [4, 5]], 1: [[0, 1]]},
+                correct_answer=[[0], [1]])
+
+        # Two objects; the first has two AABS the second only one. The second
+        # object touches the first AABB of the first object.
+        _verify({0: [[4, 5], [6, 7]], 1: [[3, 5]]},
+                correct_answer=[[0, 1]])
+
+        # Two identical objects with two AABBs (each). This must produce one
+        # set.
+        _verify({0: [[4, 5], [6, 7]], 1: [[4, 5], [6, 7]]},
+                correct_answer=[[0, 1]])
+
+        # Three objects with one-, two-, and one AABB. The first touches the
+        # left AABB of the middle object in 'x', whereas the third touches the
+        # right AABB of the middle object in the 'y' dimensions.
+        _verify({0: [[3, 5]], 1: [[4, 5], [7, 8]], 2: [[7, 9]]},
+                correct_answer=[[0, 1, 2]])
+
+        # Same as above, but the third object does not touch.
+        _verify({0: [[3, 5]], 1: [[4, 5], [7, 8]], 2: [[70, 90]]},
+                correct_answer=[[0, 1], [2]])
+
     def test_sweeping_2objects(self):
         """
         Ensure the Sweeping algorithm finds the correct sets.
@@ -841,57 +906,40 @@ class TestBroadphase:
         The input dictionary each contains the AABB coordinates. The output
         list contains the set of overlapping AABBs.
         """
-        # Define a force grid (not used in this test but prevent a plethora
-        # of meaningleass warning messages).
+        # Define a force grid (not used in this test but prevents a plethora
+        # of meaningless warning messages).
         vg = azrael.vectorgrid
         assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
         # Convenience variables.
-        sweeping = azrael.leonard.sweeping
+        _verify = self.verifySweeping
 
         # Two orthogonal objects.
-        aabbs = [{'id': 0, 'x': [4, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
-                 {'id': 1, 'x': [1, 2], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([1]), set([0])])
+        _verify({0: [[4, 5]], 1: [[1, 2]]},
+                correct_answer=[[0], [1]])
 
         # Repeat the test but use a different set of ID labels.
-        aabbs = [{'id': 3, 'x': [4, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
-                 {'id': 10, 'x': [1, 2], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([10]), set([3])])
+        _verify({3: [[4, 5]], 10: [[1, 2]]},
+                correct_answer=[[3], [10]])
 
         # One object inside the other.
-        aabbs = [{'id': 0, 'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]},
-                 {'id': 1, 'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([1, 0])])
+        _verify({0: [[2, 4]], 1: [[0, 1]]},
+                correct_answer=[[0], [1]])
 
         # Partially overlapping to the right of the first object.
-        aabbs = [{'id': 0, 'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
-                 {'id': 1, 'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([1, 0])])
+        _verify({0: [[1, 5]], 1: [[2, 4]]},
+                correct_answer=[[0, 1]])
 
         # Partially overlapping to the left of the first object.
-        aabbs = [{'id': 0, 'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]},
-                 {'id': 1, 'x': [2, 4], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([1, 0])])
-
-        # Test Sweeping in the 'y' and 'z' dimension as well.
-        aabbs = [{'id': 0, 'x': [1, 5], 'y': [1, 5], 'z': [1, 5]},
-                 {'id': 1, 'x': [2, 4], 'y': [2, 4], 'z': [2, 4]}]
-        assert sweeping(aabbs, 'x') == sweeping(aabbs, 'y')
-        assert sweeping(aabbs, 'x') == sweeping(aabbs, 'z')
+        _verify({0: [[1, 5]], 1: [[0, 2]]},
+                correct_answer=[[0, 1]])
 
         # Pass no object to the Sweeping algorithm.
-        assert sweeping([], 'x').data == []
+        assert azrael.leonard.sweeping({}, 'x').data == []
 
         # Pass only a single object to the Sweeping algorithm.
-        aabbs = [{'id': 0, 'x': [1, 5], 'y': [3.5, 4], 'z': [5, 6.5]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([0])])
+        _verify({0: [[1, 5]]},
+                correct_answer=[[0]])
 
     def test_sweeping_3objects(self):
         """
@@ -904,43 +952,29 @@ class TestBroadphase:
 
         # Convenience variable.
         sweeping = azrael.leonard.sweeping
+        _verify = self.verifySweeping
 
         # Three non-overlapping objects.
-        aabbs = [{'id': 0, 'x': [1, 2]},
-                 {'id': 1, 'x': [3, 4]},
-                 {'id': 2, 'x': [5, 6]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([0]), set([1]), set([2])])
+        _verify({0: [[1, 2]], 1: [[3, 4]], 2: [[5, 6]]},
+                correct_answer=[[0], [1], [2]])
 
         # First and second overlap.
-        aabbs = [{'id': 0, 'x': [1, 2]},
-                 {'id': 1, 'x': [1.5, 4]},
-                 {'id': 2, 'x': [5, 6]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([0, 1]), set([2])])
+        _verify({0: [[1, 2]], 1: [[1.5, 4]], 2: [[5, 6]]},
+                correct_answer=[[0, 1], [2]])
 
         # Repeat test with different set of ID labels.
-        aabbs = [{'id': 2, 'x': [1, 2]},
-                 {'id': 4, 'x': [1.5, 4]},
-                 {'id': 10, 'x': [5, 6]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([2, 4]), set([10])])
+        _verify({2: [[1, 2]], 4: [[1.5, 4]], 10: [[5, 6]]},
+                correct_answer=[[2, 4], [10]])
 
         # First overlaps with second, second overlaps with third, but third
         # does not overlap with first. The algorithm must nevertheless return
         # all three in a single set.
-        aabbs = [{'id': 0, 'x': [1, 2]},
-                 {'id': 1, 'x': [1.5, 4]},
-                 {'id': 2, 'x': [3, 6]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([0, 1, 2])])
+        _verify({0: [[1, 2]], 1: [[1.5, 4]], 2: [[3, 6]]},
+                correct_answer=[[0, 1, 2]])
 
         # First and third overlap.
-        aabbs = [{'id': 0, 'x': [1, 2]},
-                 {'id': 1, 'x': [10, 11]},
-                 {'id': 2, 'x': [0, 1.5]}]
-        res = sweeping(aabbs, 'x').data
-        assert sorted(res) == sorted([set([0, 2]), set([1])])
+        _verify({0: [[1, 2]], 1: [[10, 11]], 2: [[0, 1.5]]},
+                correct_answer=[[0, 2], [1]])
 
     @pytest.mark.parametrize('dim', [0, 1, 2])
     def test_computeCollisionSetsAABB_basic(self, dim):
