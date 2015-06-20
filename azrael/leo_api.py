@@ -89,17 +89,20 @@ def addCmdSpawn(objData: (tuple, list)):
 
     :param int objID: object ID to insert.
     :param _RigidBodyState sv: encoded state variable data.
-    :param vec3 aabb: half widths of AABBs.
+    :param list[vec6] aabbs: list of AABB positions (relative to body position)
+                             and their respective half widths.
     :return: success.
     """
-    for objID, sv, aabb in objData:
+    for objID, sv, aabbs in objData:
         try:
             assert isinstance(objID, int)
             assert isinstance(sv, _RigidBodyState)
-            assert isinstance(aabb, (tuple, list))
-            assert len(aabb) == 3
-            for tmp in aabb:
-                assert isinstance(tmp, (int, float))
+            assert isinstance(aabbs, (tuple, list))
+            for aabb in aabbs:
+                assert isinstance(aabb, (tuple, list))
+                assert len(aabb) == 6
+                for tmp in aabb:
+                    assert isinstance(tmp, (int, float))
         except AssertionError:
             msg = '<addCmdQueue> received invalid argument type'
             return RetVal(False, msg, None)
@@ -113,9 +116,9 @@ def addCmdSpawn(objData: (tuple, list)):
     # Meta data for spawn command.
     db = database.dbHandles['Commands']
     bulk = db.initialize_unordered_bulk_op()
-    for objID, sv, aabb in objData:
+    for objID, sv, aabbs in objData:
         query = {'cmd': 'spawn', 'objID': objID}
-        data = {'sv': sv, 'AABB': aabb}
+        data = {'sv': sv, 'AABB': aabbs}
 
         # Insert this document unless a document with matching query already
         # exists.
