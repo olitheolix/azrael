@@ -6,12 +6,13 @@ import azrael.database
 import azrael.vectorgrid
 
 import numpy as np
-import azrael.rb_state as rb_state
+import unittest.mock as mock
 import azrael.leo_api as leoAPI
+import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.test.test_bullet_api import isEqualBD
-from azrael.types import CollShapeBox, CollShapeSphere
+from azrael.types import CollShapeBox, CollShapeSphere, RetVal
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.types import ConstraintMeta, ConstraintP2P
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
@@ -976,6 +977,95 @@ class TestBroadphase:
         _verify({0: [[1, 2]], 1: [[10, 11]], 2: [[0, 1.5]]},
                 correct_answer=[[0, 2], [1]])
 
+    def test_computeCollisionSetsAABB_mocksweeping(self):
+        """
+        Create three bodies. Then alter their AABBs to create various
+        combinations of overlap.
+        """
+        # Convenience.
+        RBS = rb_state.RigidBodyState
+
+        # Get a Leonard instance.
+        leo = getLeonard(azrael.leonard.LeonardBase)
+        mock_sweeping = mock.create_autospec(azrael.leonard.sweeping)
+        azrael.leonard.sweeping = mock_sweeping
+        mock_sweeping.return_value = RetVal(True, None, [])
+
+        def testCCS(pos, AABBs, expected_objIDs):
+            """
+            Compute broadphase results for bodies  at ``pos`` with ``AABBs``
+            verify that the ``expected_objIDs`` sets were produced.
+            """
+            # Compile the set of bodies- and their AABBs for this test run.
+            assert len(pos) == len(aabbs)
+            bodies = [RBS(position=_) for _ in pos]
+
+            # Convert to dictionaries: the key is the bodyID in Azrael; here it
+            # is a simple enumeration.
+            bodies = {idx: val for (idx, val) in enumerate(bodies)}
+            AABBs = {idx: val for (idx, val) in enumerate(AABBs)}
+
+            # Determine the list of broadphase collision sets.
+            ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
+            assert ret.ok
+            mock_sweeping.assert_called_with([])
+
+        # Single body with no AABBs.
+        bodies = {5: RBS(position=(0, 0, 0))}
+        aabbs = {5: []}
+        correct = {5: {'x': [], 'y': [], 'z': []}}
+        azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
+        mock_sweeping.assert_called_with(correct, 'x')
+
+        # Single body with one AABB.
+        bodies = {5: RBS(position=(0, 0, 0))}
+        aabbs = {5: [(0, 0, 0, 1, 2, 3)]}
+        correct = {5: {'x': [[-1, 1]],
+                       'y': [[-2, 2]],
+                       'z': [[-3, 3]]}}
+        azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
+        mock_sweeping.assert_called_with(correct, 'x')
+
+        # Single body with two AABBs.
+        bodies = {5: RBS(position=(0, 0, 0))}
+        aabbs = {5: [(0, 0, 0, 1, 1, 1),
+                     (2, 3, 4, 2, 4, 8)]}
+        correct = {5: {'x': [[-1, 1], [0, 4]],
+                       'y': [[-1, 1], [-1, 7]],
+                       'z': [[-1, 1], [-4, 12]]}}
+        azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
+        mock_sweeping.assert_called_with(correct, 'x')
+
+        # Single body at an offset with two AABBs.
+        bodies = {5: RBS(position=(0, 1, 2))}
+        aabbs = {5: [(0, 0, 0, 1, 1, 1),
+                     (2, 3, 4, 2, 4, 8)]}
+        correct = {5: {'x': [[-1, 1], [0, 4]],
+                       'y': [[0, 2], [0, 8]],
+                       'z': [[1, 3], [-2, 14]]}}
+        azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
+        mock_sweeping.assert_called_with(correct, 'x')
+
+        # Three bodies with 0, 1, and 2 AABBs, respectively.
+        bodies = {6: RBS(position=(0, 0, 0)),
+                  7: RBS(position=(0, 0, 0)),
+                  8: RBS(position=(0, 0, 0))}
+        aabbs = {6: [],
+                 7: [(0, 0, 0, 1, 1, 1)],
+                 8: [(0, 0, 0, 1, 1, 1),
+                     (2, 3, 4, 2, 4, 8)]}
+        correct = {6: {'x': [],
+                       'y': [],
+                       'z': []},
+                   7: {'x': [[-1, 1]],
+                       'y': [[-1, 1]],
+                       'z': [[-1, 1]]},
+                   8: {'x': [[-1, 1], [0, 4]],
+                       'y': [[-1, 1], [-1, 7]],
+                       'z': [[-1, 1], [-4, 12]]}}
+        azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
+        mock_sweeping.assert_called_with(correct, 'x')
+
     @pytest.mark.parametrize('dim', [0, 1, 2])
     def test_computeCollisionSetsAABB_basic(self, dim):
         """
@@ -985,15 +1075,24 @@ class TestBroadphase:
         # Get a Leonard instance.
         leo = getLeonard(azrael.leonard.LeonardBase)
 
+        # Convenience.
+        RBS = rb_state.RigidBodyState
+
         def testCCS(pos, AABBs, expected_objIDs):
             """
             Compute broadphase results for bodies  at ``pos`` with ``AABBs``
             verify that the ``expected_objIDs`` sets were produced.
+
+            This function assumes that every body has exactly one AABB and with
+            no relative offset to the body's position.
             """
             # Compile the set of bodies- and their AABBs for this test run.
             assert len(pos) == len(aabbs)
-            RBS = rb_state.RigidBodyState
             bodies = [RBS(position=_) for _ in pos]
+
+            # By assumption of this function, every object has exactly one AABB
+            # centered at zero.
+            AABBs = [[(0, 0, 0, _[0], _[1], _[2])] for _ in AABBs]
 
             # Convert to dictionaries: the key is the bodyID in Azrael; here it
             # is a simple enumeration.
@@ -1010,7 +1109,7 @@ class TestBroadphase:
 
             # Return the equality of the two list of lists.
             assert expected_objIDs == computed_objIDs
-            del RBS, bodies, AABBs, ret, expected_objIDs, computed_objIDs
+            del bodies, AABBs, ret, expected_objIDs, computed_objIDs
 
         # First overlaps with second, second with third, but first not with
         # third. This must result in a single broadphase set containing all

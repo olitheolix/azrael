@@ -84,6 +84,9 @@ def sweeping(data: dict, dim: str):
     N = 0
     try:
         for v in data.values():
+            if len(v[dim]) == 0:
+                continue
+
             # Sanity check.
             assert np.array(v[dim], np.float64).ndim == 2
             N += len(v[dim])
@@ -159,27 +162,40 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
 
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
     # must contain the min/max spatial extent in x/y/z direction.
-    data = []
+    data = {}
     IDs = list(SVs.keys())
     ignored = []
+
     for objID in IDs:
         if (SVs[objID] is None) or (AABBs[objID] is None):
             continue
-        sv, aabb = SVs[objID], AABBs[objID]
+        rbpos = SVs[objID].position
 
-        # If at least one of the half lenghts is zero then skip this body
-        # because it cannot touch other bodies. In the return value these
-        # bodies will be treated as standalone sets.
-        if (aabb[0] == 0) or (aabb[1] == 0) or (aabb[2] == 0):
+        data[objID] = {'x': [], 'y': [], 'z': []}
+        if len(AABBs[objID]) == 0:
             ignored.append([objID])
             continue
 
-        pos = sv.position
-        x0, x1 = pos[0] - aabb[0], pos[0] + aabb[0]
-        y0, y1 = pos[1] - aabb[1], pos[1] + aabb[1]
-        z0, z1 = pos[2] - aabb[2], pos[2] + aabb[2]
+        aabbs = np.array(AABBs[objID], np.float64)
+        assert aabbs.ndim == 2
+        assert aabbs.shape[1] % 6 == 0
+        num_aabbs = aabbs.shape[1] // 6
+        
+        for aabb in AABBs[objID]:
+            px, py, pz, hx, hy, hz = aabb
+            if (hx == 0) or (hy == 0) or (hz == 0):
+                continue
 
-        data.append({'id': objID, 'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]})
+            x0, x1 = rbpos[0] + px - hx, rbpos[0] + px + hx
+            y0, y1 = rbpos[1] + py - hy, rbpos[1] + py + hy
+            z0, z1 = rbpos[2] + pz - hz, rbpos[2] + pz + hz
+            data[objID]['x'].append([x0, x1])
+            data[objID]['y'].append([y0, y1])
+            data[objID]['z'].append([z0, z1])
+
+        if len(data[objID]['x']) == 0:
+            ignored.append([objID])
+            continue
     del SVs, AABBs
 
     # Determine the sets of objects that overlap 'x' direction.
@@ -189,14 +205,14 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     # overlap in the 'y' dimension.
     stage_1 = []
     for subset in stage_0:
-        tmpData = [_ for _ in data if _['id'] in subset]
+        tmpData = {k: data[k] for k in subset}
         stage_1.extend(sweeping(tmpData, 'y').data)
 
     # Iterate over all the sets that overlap in 'x' and 'y' dimension. For
     # each, determine which also overalp in the 'z' dimension.
     stage_2 = []
     for subset in stage_1:
-        tmpData = [_ for _ in data if _['id'] in subset]
+        tmpData = {k: data[k] for k in subset}
         stage_2.extend(sweeping(tmpData, 'z').data)
 
     # Add the ignored objects and return the result.
