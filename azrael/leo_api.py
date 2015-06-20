@@ -113,6 +113,9 @@ def addCmdSpawn(objData: (tuple, list)):
             logit.warning(msg)
             return RetVal(False, msg, None)
 
+    # fixme: compute the new AABBs for the collision shapes here (ignore the
+    # old ones).
+
     # Meta data for spawn command.
     db = database.dbHandles['Commands']
     bulk = db.initialize_unordered_bulk_op()
@@ -160,13 +163,13 @@ def addCmdRemoveObject(objID: int):
 @typecheck
 def addCmdModifyBodyState(objID: int, data: RigidBodyStateOverride):
     """
-    Queue request to Override State Variables of ``objID`` with ``data``.
+    Queue request to override the Body State of ``objID`` with ``data``.
 
     Leonard will process the queue (and thus this command) once per physics
     cycle. However, it is impossible to determine when exactly.
 
     :param int objID: object to update.
-    :param RigidBodyStateOverride pos: new object attributes.
+    :param RigidBodyStateOverride data: new object attributes.
     :return bool: Success
     """
     # Sanity check.
@@ -194,6 +197,11 @@ def addCmdModifyBodyState(objID: int, data: RigidBodyStateOverride):
     for idx, val in enumerate(data):
         if isinstance(val, np.ndarray):
             data[idx] = val.tolist()
+
+    # fixme:
+    #   * compute the new AABBs if there are new collision shapes.
+    #   * Add them to the DB.
+    #   * make sure that leonard assigns them (current it does not).
 
     # Save the new SVs to the DB (overwrite existing ones).
     db = database.dbHandles['Commands']

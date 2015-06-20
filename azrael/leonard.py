@@ -59,9 +59,6 @@ def sweeping(data: dict, dim: str):
 
     The `data` is a list of dictionaries that denotes the half widths of the
     AABBs in the respective direction:
-      data = [{'id': 1, 'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
-              {'id': 2, 'x': [x0, x1], 'y': [y0, y1], 'z': [z0, z1]},
-              ...]
       data = {ID_0: {'x': [[xmin_0, xmax_0], [xmin_1, xmax_1], ...],
                      'y': [[ymin_0, ymax_0], [ymin_1, ymax_1], ...],
                      'z': [[zmin_0, zmax_0], [zmin_1, zmax_1], ...]},
@@ -87,7 +84,9 @@ def sweeping(data: dict, dim: str):
             if len(v[dim]) == 0:
                 continue
 
-            # Sanity check.
+            # Sanity check: the AABB data must correspond to a matrix (this
+            # check is pretty much redundant because the sanity checks must
+            # happen in the calling function for performance reasons).
             assert np.array(v[dim], np.float64).ndim == 2
             N += len(v[dim])
     except (ValueError, TypeError):
@@ -133,7 +132,12 @@ def sweeping(data: dict, dim: str):
         # Safety check: sumVal can never be negative.
         assert sumVal >= 0
 
-    # Find all connected graphs.
+    # Find all connected graphs. This will ensure that each body is in exactly
+    # only collision set only, whereas right now this is not necessarily the
+    # case. The reason for this is that a body may have multiple AABBs, and not
+    # all of them may touch with the same group of objects. Therefore,
+    # amalgamate those sets (ie find all connected sets with the NetworkX
+    # library).
     g = networkx.Graph()
     for cs in out:
         if len(cs) == 0:
@@ -156,45 +160,64 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     :return: each list contains a unique set of overlapping objects.
     :rtype: list of lists
     """
-    # Sanity check.
+    # Sanity check: SV and AABB must contain the same object IDs.
     if set(SVs.keys()) != set(AABBs.keys()):
         return RetVal(False, 'SVs and AABBs are inconsisten', None)
 
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
-    # must contain the min/max spatial extent in x/y/z direction.
+    # must contain the position of the AABB (object local coordinates), as well
+    # as the min/max spatial extent in x/y/z direction.
     data = {}
-    IDs = list(SVs.keys())
     ignored = []
 
-    for objID in IDs:
-        if (SVs[objID] is None) or (AABBs[objID] is None):
-            continue
+    # Compile the necessary information for the Sweeping algorithm for each
+    # object provided to this function.
+    for objID in SVs.keys():
+        # Convenience: position of body.
         rbpos = SVs[objID].position
 
+        # Create an empty data structure (will be populated below).
         data[objID] = {'x': [], 'y': [], 'z': []}
+
+        # If the object has no AABBs then add it to the 'ignore' list (this
+        # means it will be an object that does not collide with anything).
         if len(AABBs[objID]) == 0:
-            ignored.append([objID])
+            ignored.append(objID)
             continue
 
+        # Sanity check: the AABBs must be tantamount to a matrix (ie a list of
+        # lists). Since every AABB is described a position and 3 half lengths,
+        # the number of columns in the matrix must be an integer multiple of 6.
         aabbs = np.array(AABBs[objID], np.float64)
         assert aabbs.ndim == 2
         assert aabbs.shape[1] % 6 == 0
         num_aabbs = aabbs.shape[1] // 6
         
+        # Iterate over all AABBs, rotate- and translate them in accordance with
+        # the body theyt are attached to, and compile the AABB boundaries.
+        # Note: the AABBs are not re-computed here. The assumption is that the
+        # AABB is large enough to contain their body at any rotation.
         for aabb in AABBs[objID]:
+            # Convenience: extract the positions and half lengths.
             px, py, pz, hx, hy, hz = aabb
             if (hx == 0) or (hy == 0) or (hz == 0):
                 continue
 
+            # Compute the min/max values in all three dimensions.
             x0, x1 = rbpos[0] + px - hx, rbpos[0] + px + hx
             y0, y1 = rbpos[1] + py - hy, rbpos[1] + py + hy
             z0, z1 = rbpos[2] + pz - hz, rbpos[2] + pz + hz
+
+            # Store the result for this AABB.
             data[objID]['x'].append([x0, x1])
             data[objID]['y'].append([y0, y1])
             data[objID]['z'].append([z0, z1])
 
+        # If no AABB was construed (ie all AABBs contained at least one half
+        # length that was zero) then merely add the object to the 'ignore'
+        # list. It will thus, by definition, not collide with anything.
         if len(data[objID]['x']) == 0:
-            ignored.append([objID])
+            ignored.append(objID)
             continue
     del SVs, AABBs
 
@@ -215,8 +238,10 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
         tmpData = {k: data[k] for k in subset}
         stage_2.extend(sweeping(tmpData, 'z').data)
 
-    # Add the ignored objects and return the result.
-    out = stage_2 + ignored
+    # Add the ignored objects which, by definition, do not collide with
+    # anything. In other words, each ignored body creates a dedicated collision
+    # set with itself as the only member.
+    out = stage_2 + [[_] for _ in ignored]
     return RetVal(True, None, out)
 
 
@@ -465,11 +490,14 @@ class LeonardBase(config.AzraelProcess):
             if objID in self.allObjects:
                 msg = 'Cannot spawn object since objID={} already exists'
                 self.logit.warning(msg.format(objID))
-            else:
-                sv_old = doc['sv']
-                self.allObjects[objID] = _RigidBodyState(*sv_old)
-                self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
-                self.allAABBs[objID] = doc['AABB']
+                continue
+
+            # Add the body and its AABB to Leonard's cache. Furthermore, add
+            # (and initialise) the entry for the forces on this body.
+            sv_old = doc['sv']
+            self.allObjects[objID] = _RigidBodyState(*sv_old)
+            self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
+            self.allAABBs[objID] = doc['AABB']
 
         # Update Body States.
         fun = leoAPI._updateRigidBodyStateTuple
@@ -480,6 +508,9 @@ class LeonardBase(config.AzraelProcess):
                 sv_old = self.allObjects[objID]
                 sv_old = RigidBodyState(*sv_old)
                 self.allObjects[objID] = fun(sv_old, sv_new)
+
+                # fixme: assign new AABBs here
+                #self.allAABBs[objID] = new_aabbs
 
         # Update direct force- and torque values.
         for doc in cmds['direct_force']:
