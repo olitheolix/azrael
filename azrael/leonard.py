@@ -167,7 +167,7 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
     # must contain the position of the AABB (object local coordinates), as well
     # as the min/max spatial extent in x/y/z direction.
-    data = {}
+    sweep_data = {}
     ignored = []
 
     # Compile the necessary information for the Sweeping algorithm for each
@@ -180,7 +180,7 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
         quat = util.Quaternion(rot[3], rot[:3])
 
         # Create an empty data structure (will be populated below).
-        data[objID] = {'x': [], 'y': [], 'z': []}
+        sweep_data[objID] = {'x': [], 'y': [], 'z': []}
 
         # If the object has no AABBs then add it to the 'ignore' list (this
         # means it will be an object that does not collide with anything).
@@ -219,34 +219,34 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
             pmax = pos + half_lengths
 
             # Store the result for this AABB.
-            data[objID]['x'].append([pmin[0], pmax[0]])
-            data[objID]['y'].append([pmin[1], pmax[1]])
-            data[objID]['z'].append([pmin[2], pmax[2]])
+            sweep_data[objID]['x'].append([pmin[0], pmax[0]])
+            sweep_data[objID]['y'].append([pmin[1], pmax[1]])
+            sweep_data[objID]['z'].append([pmin[2], pmax[2]])
 
         # If no AABB was constructed (ie all AABBs contained at least one half
         # length that was zero) then merely add the object to the 'ignore'
         # list. It will thus, by definition, not collide with anything.
-        if len(data[objID]['x']) == 0:
+        if len(sweep_data[objID]['x']) == 0:
             ignored.append(objID)
             continue
     del SVs, AABBs
 
     # Determine the sets of objects that overlap 'x' direction.
-    stage_0 = sweeping(data, 'x').data
+    stage_0 = sweeping(sweep_data, 'x').data
 
     # Iterate over all the just found sets. For each, determine the sets that
     # overlap in the 'y' dimension.
     stage_1 = []
     for subset in stage_0:
-        tmpData = {k: data[k] for k in subset}
-        stage_1.extend(sweeping(tmpData, 'y').data)
+        res = sweeping({k: sweep_data[k] for k in subset}, 'y')
+        stage_1.extend(res.data)
 
     # Iterate over all the sets that overlap in 'x' and 'y' dimension. For
     # each, determine which also overalp in the 'z' dimension.
     stage_2 = []
     for subset in stage_1:
-        tmpData = {k: data[k] for k in subset}
-        stage_2.extend(sweeping(tmpData, 'z').data)
+        res = sweeping({k: sweep_data[k] for k in subset}, 'z')
+        stage_2.extend(res.data)
 
     # Add the ignored objects which, by definition, do not collide with
     # anything. In other words, each ignored body creates a dedicated collision

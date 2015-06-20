@@ -1236,8 +1236,8 @@ class TestBroadphase:
         _verify(body_a, pos, rot=(0, 0, 0, 1), scale=1, intersect=False)
         _verify(body_a, pos, rot=(0, 1, 0, 0), scale=1, intersect=True)
 
-        # Place the dummy out of reach from the dummy. However, increase the
-        # size of the dummy so that the objects are now touching again.
+        # Place the dummy out of reach from the probe. However, double the
+        # size of the probe wich makes the objects overlap.
         pos = (-4, 0, 0)
         rot = (0, 0, 0, 1)
         body_a_scaled = body_a._replace(scale=3)
