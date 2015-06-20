@@ -173,8 +173,11 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     # Compile the necessary information for the Sweeping algorithm for each
     # object provided to this function.
     for objID in SVs.keys():
-        # Convenience: position of body.
+        # Convenience: unpack the body parameters needed here.
         pos_rb = SVs[objID].position
+        scale = SVs[objID].scale
+        rot = SVs[objID].orientation
+        quat = util.Quaternion(rot[3], rot[:3])
 
         # Create an empty data structure (will be populated below).
         data[objID] = {'x': [], 'y': [], 'z': []}
@@ -198,15 +201,18 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
         # Note: the AABBs are not re-computed here. The assumption is that the
         # AABB is large enough to contain their body at any rotation.
         for aabb in aabbs:
-            # Convenience: unpack the AABB positions and half lengths.
+            # Convenience: unpack the AABB positions and half lengths. Apply
+            # the 'scale' to the half lengths.
             pos_aabb, half_lengths = aabb[:3], aabb[3:]
+            half_lengths *= scale
 
             # Skip the current AABB if at least on of its half lengths is zero.
             if 0 in half_lengths:
                 continue
 
-            # Compute the AABB position in world coordinates.
-            pos = pos_rb + pos_aabb
+            # Compute the AABB position in world coordinates. This takes into
+            # account the position-, orientation, and scale of the body.
+            pos = pos_rb + scale * (quat * pos_aabb)
 
             # Compute the min/max value of the AABB value in world coordinates.
             pmin = pos - half_lengths

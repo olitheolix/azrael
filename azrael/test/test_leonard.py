@@ -1078,8 +1078,7 @@ class TestBroadphase:
         azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
         mock_sweeping.assert_called_with(correct, 'x')
 
-    @pytest.mark.parametrize('dim', [0, 1, 2])
-    def test_computeCollisionSetsAABB_basic(self, dim):
+    def test_computeCollisionSetsAABB_basic(self):
         """
         Create three bodies. Then alter their AABBs to create various
         combinations of overlap.
@@ -1165,6 +1164,85 @@ class TestBroadphase:
         aabbs = ([1.01, 1.01, 1.01], [0, 0, 0], [1.01, 1.01, 1.01])
         correct_answer = ([0, 2], [1])
         testCCS(pos, aabbs, correct_answer)
+
+    def test_computeCollisionSetsAABB_rotate_scale(self):
+        """
+        Test broadphase when body has a different scale and/or is rotated.
+
+        Create two bodies with one AABB each. The AABB of the first body is
+        a centered unit cube used for testing. The second body has an AABB with
+        an offset. Use different scales and orientations to verify it is
+        correctly taken into account during the broadphase.
+        """
+        # Get a Leonard instance.
+        leo = getLeonard(azrael.leonard.LeonardBase)
+
+        # Convenience.
+        RBS = rb_state.RigidBodyState
+
+        # Create the test body at the center. It is a centered unit cube.
+        box = CollShapeBox(1, 1, 1)
+        cs_a = CollShapeMeta('box', '1', (0, 0, 0), (0, 0, 0, 1), box)
+        body_a = RBS(position=(0, 0, 0), cshapes=[cs_a])
+        del cs_a
+
+        def _verify(rba, pos, rot, scale, intersect: bool):
+            # Collision shape offset of second object is hard coded for this
+            # test.
+            cs_ofs = (1, 0, 0)
+
+            # Create the second body. Its collision shape is again a unit cube
+            # but at position `cs_ofs` instead of at the center.
+            cs_b = CollShapeMeta('box', '1', cs_ofs, (0, 0, 0, 1), box)
+            body_b = RBS(position=pos, scale=scale, orientation=rot,
+                         cshapes=[cs_b])
+
+            # Compile the input dictionaries for broadphase algorithm.
+            bodies = {1: rba, 2: body_b}
+            aabbs = {1: [[0, 0, 0, 1, 1, 1]],
+                     2: [[cs_ofs[0], cs_ofs[1], cs_ofs[2], 1, 1, 1]]}
+
+            # Determine the list of broadphase collision sets.
+            ret = azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
+            assert ret.ok
+            coll_sets = ret.data
+
+            # If the bodies intersect there must be exactly one collision set
+            # with two entries, otherwise it is the other way around.
+            if intersect:
+                assert len(coll_sets) == 1
+                assert len(coll_sets[0]) == 2
+            else:
+                assert len(coll_sets) == 2
+                assert len(coll_sets[0]) == len(coll_sets[1]) == 1
+
+        # Test object intersects (just) to the right of probe.
+        pos = (0.99, 0, 0)
+        rot = (0, 0, 0, 1)
+        scale = 1
+        _verify(body_a, pos, rot, scale, intersect=True)
+
+        # Test object does (just) not intersect with probe.
+        pos = (1.01, 0, 0)
+        rot = (0, 0, 0, 1)
+        scale = 1
+        _verify(body_a, pos, rot, scale, intersect=False)
+
+        # Dummy is rotated 180 degrees around y axis. This causes the AABBs to
+        # intersect again.
+        pos = (2, 0, 0)
+        rot = (0, 0, 0, 1)
+        scale = 1
+        _verify(body_a, pos, rot=(0, 0, 0, 1), scale=1, intersect=False)
+        _verify(body_a, pos, rot=(0, 1, 0, 0), scale=1, intersect=True)
+
+        # Place the dummy out of reach from the dummy. However, increase the
+        # size of the dummy so that the objects are now touching again.
+        pos = (-4, 0, 0)
+        rot = (0, 0, 0, 1)
+        body_a_scaled = body_a._replace(scale=3)
+        _verify(body_a, pos, rot, scale=1, intersect=False)
+        _verify(body_a_scaled, pos, rot, scale=1, intersect=True)
 
     @pytest.mark.parametrize('dim', [0, 1, 2])
     def test_computeCollisionSetsAABB_viaLeonard(self, dim):
