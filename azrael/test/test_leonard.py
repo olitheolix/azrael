@@ -215,7 +215,7 @@ class TestLeonardAllEngines:
         Leonard moves it accordingly.
         """
         # Get a Leonard instance.
-        leonard = getLeonard(clsLeonard)
+        leo = getLeonard(clsLeonard)
 
         # Constants and parameters for this test.
         id_0 = 0
@@ -225,7 +225,7 @@ class TestLeonardAllEngines:
         assert leoAPI.addCmdSpawn([(id_0, sv)]).ok
 
         # Advance the simulation by 1s and verify that nothing has moved.
-        leonard.step(1.0, 60)
+        leo.step(1.0, 60)
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
@@ -236,7 +236,7 @@ class TestLeonardAllEngines:
 
         # Advance the simulation by another second and verify the objects have
         # moved accordingly.
-        leonard.step(1.0, 60)
+        leo.step(1.0, 60)
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert 0.9 <= ret.data[id_0].position[0] < 1.1
@@ -248,7 +248,7 @@ class TestLeonardAllEngines:
         Same as previous test but with two objects.
         """
         # Get a Leonard instance.
-        leonard = getLeonard(clsLeonard)
+        leo = getLeonard(clsLeonard)
 
         # Constants and parameters for this test.
         id_0, id_1 = 0, 1
@@ -261,7 +261,7 @@ class TestLeonardAllEngines:
         assert leoAPI.addCmdSpawn(tmp).ok
 
         # Advance the simulation by 1s and query the states of both objects.
-        leonard.step(1.0, 60)
+        leo.step(1.0, 60)
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         pos_0 = ret.data[id_0].position
@@ -285,7 +285,7 @@ class TestLeonardAllEngines:
         vg = azrael.vectorgrid
 
         # Get a Leonard instance.
-        leonard = getLeonard(clsLeonard)
+        leo = getLeonard(clsLeonard)
 
         # Constants and parameters for this test.
         id_0 = 0
@@ -295,7 +295,7 @@ class TestLeonardAllEngines:
         assert leoAPI.addCmdSpawn([(id_0, sv)]).ok
 
         # Advance the simulation by 1s and verify that nothing has moved.
-        leonard.step(1.0, 60)
+        leo.step(1.0, 60)
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
@@ -310,7 +310,7 @@ class TestLeonardAllEngines:
         assert vg.setValues('force', [(pos, value)]).ok
 
         # Step the simulation and verify the object remained where it was.
-        leonard.step(1.0, 60)
+        leo.step(1.0, 60)
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
@@ -321,7 +321,7 @@ class TestLeonardAllEngines:
         assert vg.setValues('force', [(pos, value)]).ok
 
         # Step the simulation and verify the object moved accordingly.
-        leonard.step(1.0, 60)
+        leo.step(1.0, 60)
 
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
@@ -989,8 +989,7 @@ class TestBroadphase:
         # Convenience.
         RBS = rb_state.RigidBodyState
 
-        # Get a Leonard instance.
-        leo = getLeonard(azrael.leonard.LeonardBase)
+        # Install a mock for the sweeping algorithm.
         azrael.leonard.sweeping = mock_sweeping
         mock_sweeping.return_value = RetVal(True, None, [])
 
@@ -1074,9 +1073,6 @@ class TestBroadphase:
         Create three bodies. Then alter their AABBs to create various
         combinations of overlap.
         """
-        # Get a Leonard instance.
-        leo = getLeonard(azrael.leonard.LeonardBase)
-
         # Convenience.
         RBS = rb_state.RigidBodyState
 
@@ -1165,9 +1161,6 @@ class TestBroadphase:
         an offset. Use different scales and orientations to verify it is
         correctly taken into account during the broadphase.
         """
-        # Get a Leonard instance.
-        leo = getLeonard(azrael.leonard.LeonardBase)
-
         # Convenience.
         RBS = rb_state.RigidBodyState
 
