@@ -46,7 +46,11 @@ def computeAABBs(cshapes: (tuple, list)):
     This function returns an error as soon as it encounters an unknown
     collision shape.
 
-    ..note:: The bounding boxes are large enough to accomodate all possible
+    if``cshapes`` contains a plane then it must be the only collision shape
+    (ie len(cshapes) == 1). Furthermore, planes must have default values for
+    position and orientation.
+
+    ..note:: The bounding boxes are large enough to accommodate all possible
              orientations of the collision shape. This makes them larger than
              necessary yet avoids recomputing them whenever the orientation of
              the body changes.
@@ -60,10 +64,24 @@ def computeAABBs(cshapes: (tuple, list)):
     # Compute the AABBs for each shape.
     aabbs = []
     try:
-        for cs in cshapes:
-            # Verify that the collision shape is sane.
-            cs = CollShapeMeta(*cs)
+        # Wrap the inputs into CollShapeMeta structures.
+        cshapes = [CollShapeMeta(*_) for _ in cshapes]
+        if 'PLANE' in [_.type.upper() for _ in cshapes]:
+            if len(cshapes) > 1:
+                msg = 'Plane must be the only collision shape'
+                return RetVal(False, msg, None)
 
+            # Planes must have defaule values for position and orientation, or
+            # Azrael considers them invalid.
+            pos, rot = tuple(cshapes[0].pos), tuple(cshapes[0].rot)
+            if (pos == (0, 0, 0)) and (rot == (0, 0, 0, 1)):
+                aabbs.append((0, 0, 0, 0, 0, 0))
+                return RetVal(True, None, aabbs)
+            else:
+                msg = 'Planes must have default position and orientation'
+                return RetVal(False, msg, None)
+
+        for cs in cshapes:
             # Move the origin of the collision shape according to its rotation.
             quat = util.Quaternion(cs.rot[3], cs.rot[:3])
             pos = tuple(quat * cs.pos)

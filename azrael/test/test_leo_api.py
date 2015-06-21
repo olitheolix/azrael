@@ -27,7 +27,7 @@ import azrael.rb_state as rb_state
 from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
 from azrael.test.test_bullet_api import isEqualBD
-from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
+from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere, getCSPlane
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere, CollShapeBox
 
 RigidBodyState = rb_state.RigidBodyState
@@ -582,3 +582,38 @@ class TestLeonardAPI:
 
         # Pass in invalid arguments. This must return with an error.
         assert not computeAABBs([(1, 2)]).ok
+
+    def test_computeAABBS_StaticPlane(self):
+        """
+        Static planes are permissible collision shapes for a body if
+        that is indeed the only collision shape for that body.
+        Conversely, it is not allowed for a body to have multiple
+        collision shapes if one of them is a StaticPlane.
+        """
+        computeAABBs = azrael.leo_api.computeAABBs
+
+        # One or more spheres are permissible.
+        cs = [getCSSphere()]
+        assert computeAABBs(cs).ok
+
+        # A single plane is permissible.
+        cs = [getCSPlane()]
+        assert computeAABBs(cs).ok
+
+        # A plane in conjunction with any other object is not allowed...
+        cs = [getCSPlane(), getCSSphere()]
+        assert not computeAABBs(cs).ok
+
+        # not even with another plane.
+        cs = [getCSPlane(), getCSSphere()]
+        assert not computeAABBs(cs).ok
+
+        # The position and orientation of a plane is defined via the normal
+        # vector and its offset. The position/orientation fields in the
+        # CollShapeMeta structure are thus redundant and *must* be set to
+        # defaults to avoid unintended side effects.
+        cs = [getCSPlane(pos=(0, 1, 2))]
+        assert not computeAABBs(cs).ok
+
+        cs = [getCSPlane(rot=(1, 0, 0, 0))]
+        assert not computeAABBs(cs).ok
