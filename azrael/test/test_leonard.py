@@ -681,6 +681,10 @@ class TestLeonardOther:
         they are merged correctly.
         """
         def _verify(_coll_sets, _correct_answer):
+            """
+            Assert that the ``_coll_sets`` are reduced to ``_correct_answer``
+            by the `mergeConstraintSets` algorithm.
+            """
             # Fetch all unique object pairs connected by a constraint.
             assert self.igor.updateLocalCache().ok
             ret = self.igor.uniquePairs()
@@ -1174,22 +1178,27 @@ class TestBroadphase:
         del cs_a
 
         def _verify(rba, pos, rot, scale, intersect: bool):
-            # Collision shape offset of second object is hard coded for this
-            # test.
+            """
+            Assert that body ``rba`` and a new body (specified by ``pos``,
+            ``rot``, and ``scale``) ``intersect``.
+
+            This is a convenience function to facilitate more readable tests.
+            """
+            # Hard code collision shape offset for second object.
             cs_ofs = (1, 0, 0)
 
-            # Create the second body. Its collision shape is again a unit cube
-            # but at position `cs_ofs` instead of at the center.
+            # Create the second body. Its collision shape is a unit cube
+            # at position `cs_ofs`.
             cs_b = CollShapeMeta('box', '1', cs_ofs, (0, 0, 0, 1), box)
             body_b = RBS(position=pos, scale=scale, orientation=rot,
                          cshapes=[cs_b])
 
-            # Compile the input dictionaries for broadphase algorithm.
+            # Compile the input dictionaries for the broadphase algorithm.
             bodies = {1: rba, 2: body_b}
             aabbs = {1: [[0, 0, 0, 1, 1, 1]],
                      2: [[cs_ofs[0], cs_ofs[1], cs_ofs[2], 1, 1, 1]]}
 
-            # Determine the list of broadphase collision sets.
+            # Compute the broadphase collision sets.
             ret = azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
             assert ret.ok
             coll_sets = ret.data
@@ -1247,7 +1256,7 @@ class TestBroadphase:
         leo = getLeonard(azrael.leonard.LeonardBase)
 
         # Create the IDs for the test bodies.
-        all_IDs = range(10)
+        num_bodies = 10
 
         # Create several rigid bodies with a spherical collision shape.
         RBS = rb_state.RigidBodyState
@@ -1263,27 +1272,21 @@ class TestBroadphase:
             assert False
 
         # Add all objects to the Body State DB and sync with Leonard.
-        for objID, bs in zip(all_IDs, states):
+        for objID, bs in enumerate(states):
             assert leoAPI.addCmdSpawn([(objID, bs)]).ok
         del states
         leo.processCommandsAndSync()
 
         # Sanity check: the number of test IDs must match the number of objects
         # in Leonard.
-        assert len(all_IDs) == len(leo.allObjects)
+        assert len(leo.allObjects) == num_bodies
 
         def ccsWrapper(test_objIDs, expected_objIDs):
             """
-            Assert that all ``test_objIDs`` are ``expected_objIDs``.
+            Assert that ``test_objIDs`` form the ``expected_objIDs`` collision
+            sets.
 
             This is a convenience wrapper to facilitate readable tests.
-
-            This wrapper converts the human readable entries in
-            ``IDs_hr`` into the internally used binary format. It then
-            passes this new list, along with the corresponding body
-            states, to the collision detection algorithm. Finally, it
-            converts the returned list of object sets back into human
-            readable list of object sets and compares them for equality.
             """
             # Compile the set of bodies- and their AABBs for this test run.
             bodies = {_: leo.allObjects[_] for _ in test_objIDs}
