@@ -170,18 +170,18 @@ def addCmdSpawn(objData: (tuple, list)):
             logit.warning(msg)
             return RetVal(False, msg, None)
 
-    # fixme: compute the new AABBs for the collision shapes here (ignore the
-    # old ones).
-
     # Meta data for spawn command.
     db = database.dbHandles['Commands']
     bulk = db.initialize_unordered_bulk_op()
     for objID, sv, aabbs in objData:
-        query = {'cmd': 'spawn', 'objID': objID}
-        data = {'sv': sv, 'AABB': aabbs}
+        # Compile the AABBs. Return immediately if an error occurs.
+        aabbs = computeAABBs(sv.cshapes)
+        if not aabbs.ok:
+            return RetVal(False, 'Could not compile all AABBs', None)
 
-        # Insert this document unless a document with matching query already
-        # exists.
+        # Insert this document unless one already matches the query.
+        query = {'cmd': 'spawn', 'objID': objID}
+        data = {'sv': sv, 'AABB': aabbs.data}
         bulk.find(query).upsert().update({'$setOnInsert': data})
 
     ret = bulk.execute()

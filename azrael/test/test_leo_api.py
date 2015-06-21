@@ -225,7 +225,7 @@ class TestLeonardAPI:
         assert ret.data['booster_force'] == []
 
         # Spawn two objects with id_0 and id_1.
-        tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
+        tmp = [(id_0, data_0, aabb), (id_1, data_0, aabb)]
         assert leoAPI.addCmdSpawn(tmp).ok
 
         # Verify that the spawn commands were added.
@@ -464,13 +464,13 @@ class TestLeonardAPI:
 
         # Create two object IDs and a RigidBodyState instances for this test.
         id_0, id_1 = 0, 1
-        id_2, id_3 = 2, 3
         aabb_1 = [[0, 0, 0, 1, 1, 1]]
-        aabb_2 = [[0, 0, 0, 2.5, 2.5, 2.5]]
-        data = RigidBodyState()
+        aabb_2 = [[0, 0, 0, 2, 2, 2]]
+        data_a = RigidBodyState(cshapes=[getCSSphere(radius=1)])
+        data_b = RigidBodyState(cshapes=[getCSSphere(radius=2)])
 
         # Add two new objects to the DB.
-        tmp = [(id_0, data, aabb_1), (id_1, data, aabb_2)]
+        tmp = [(id_0, data_a, aabb_1), (id_1, data_b, aabb_2)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
@@ -487,7 +487,7 @@ class TestLeonardAPI:
         assert ret.data == [aabb_1, aabb_2]
 
         # Query the AABB of a non-existing ID.
-        ret = leoAPI.getAABB([id_0, id_3])
+        ret = leoAPI.getAABB([id_0, 3])
         assert ret.ok
         assert ret.data ==  [aabb_1, None]
 
