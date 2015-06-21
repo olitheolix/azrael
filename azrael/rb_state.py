@@ -101,7 +101,7 @@ def RigidBodyState(scale: (int, float)=1,
 
 class RigidBodyStateOverride(_RigidBodyState):
     """
-    Create a ``_RigidBodyState`` named tuple.
+    Create a ``_RigidBodyState`` tuple.
 
     The only difference between this class and ``rb_state.RigidBodyState`` is
     that this class permits *None* values.
@@ -135,15 +135,13 @@ class RigidBodyStateOverride(_RigidBodyState):
         if sv is None:
             return None
 
-        # Create keyword arguments for all fields and populate them all
-        # with *None*.
+        # Create keyword arguments for all fields and set them to *None*.
         kwargs_all = {f: None for f in _RigidBodyState._fields}
 
         # Overwrite those keys for which we actually have a value. Note that we
-        # will not use the valued supplied to this function directly but use
+        # will not use the values supplied to this function directly but use
         # the ones from the temporary RigidBodyState object because this
-        # ensures the data types were correctly converted (mosty lists to NumPy
-        # arrays).
+        # one already sanitised the inputs.
         for key in kwargs:
             kwargs_all[key] = getattr(sv, key)
 

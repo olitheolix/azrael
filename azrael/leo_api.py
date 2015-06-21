@@ -144,6 +144,8 @@ def addCmdSpawn(objData: (tuple, list)):
     Leonard will process the queue (and thus this command) once per physics
     cycle. However, it is impossible to determine when exactly.
 
+    fixme: objData must not contain the AABBs anymore.
+
     :param int objID: object ID to insert.
     :param _RigidBodyState sv: encoded state variable data.
     :param list[vec6] aabbs: list of AABB positions (relative to body position)
@@ -218,15 +220,15 @@ def addCmdRemoveObject(objID: int):
 
 
 @typecheck
-def addCmdModifyBodyState(objID: int, data: RigidBodyStateOverride):
+def addCmdModifyBodyState(objID: int, body: RigidBodyStateOverride):
     """
-    Queue request to override the Body State of ``objID`` with ``data``.
+    Queue request to override the Body State of ``objID`` with ``body``.
 
     Leonard will process the queue (and thus this command) once per physics
     cycle. However, it is impossible to determine when exactly.
 
     :param int objID: object to update.
-    :param RigidBodyStateOverride data: new object attributes.
+    :param RigidBodyStateOverride body: new object attributes.
     :return bool: Success
     """
     # Sanity check.
@@ -235,36 +237,40 @@ def addCmdModifyBodyState(objID: int, data: RigidBodyStateOverride):
         logit.warning(msg)
         return RetVal(False, msg, None)
 
-    # Do nothing if data is None.
-    if data is None:
+    # Do nothing if body is None.
+    if body is None:
         return RetVal(True, None, None)
 
-    # Make sure that ``data`` is really valid by constructing a new
+    # Make sure that ``body`` is really valid by constructing a new
     # RigidBodyStateOverride instance from it.
-    data = RigidBodyStateOverride(*data)
-    if data is None:
+    body = RigidBodyStateOverride(*body)
+    if body is None:
         return RetVal(False, 'Invalid override data', None)
 
-    # All fields in ``data`` (a RigidBodyStateOverride instance) are, by
+    # Recompute the AABBs if new collision shapes were provided.
+    aabbs = None
+    if body.cshapes is not None:
+        ret = computeAABBs(body.cshapes)
+        if ret.ok:
+            aabbs = ret.data
+
+    # All fields in ``body`` (a RigidBodyStateOverride instance) are, by
     # definition, one of {None, int, float, np.ndarray}. The following code
     # merely converts the  NumPy arrays to normal lists so that Mongo can store
     # them. For example, RigidBodyStateOverride(None, 2, array([1,2,3]), ...)
     # would become [None, 2, [1,2,3], ...].
-    data = list(data)
-    for idx, val in enumerate(data):
+    # fixme: there should not be any numpy arrays in there
+    body = list(body)
+    for idx, val in enumerate(body):
         if isinstance(val, np.ndarray):
-            data[idx] = val.tolist()
+            body[idx] = val.tolist()
 
-    # fixme:
-    #   * compute the new AABBs if there are new collision shapes.
-    #   * Add them to the DB.
-    #   * make sure that leonard assigns them (current it does not).
-
-    # Save the new SVs to the DB (overwrite existing ones).
+    # Save the new body state and AABBs to the DB. This will overwrite already
+    # pending update commands for the same object - tough luck.
     db = database.dbHandles['Commands']
     query = {'cmd': 'modify', 'objID': objID}
-    data = {'sv': data}
-    db.update(query, {'$setOnInsert': data},  upsert=True)
+    db_data = {'sv': body, 'aabb': aabbs}
+    db.update(query, {'$setOnInsert': db_data},  upsert=True)
 
     # This function was successful if exactly one document was updated.
     return RetVal(True, None, None)

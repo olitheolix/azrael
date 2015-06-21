@@ -512,15 +512,18 @@ class LeonardBase(config.AzraelProcess):
         # Update Body States.
         fun = leoAPI._updateRigidBodyStateTuple
         for doc in cmds['modify']:
-            objID, sv_new = doc['objID'], doc['sv']
+            objID, sv_new, aabbs_new = doc['objID'], doc['sv'], doc['aabb']
             if objID in self.allObjects:
                 sv_new = RigidBodyStateOverride(*sv_new)
                 sv_old = self.allObjects[objID]
                 sv_old = RigidBodyState(*sv_old)
                 self.allObjects[objID] = fun(sv_old, sv_new)
 
-                # fixme: assign new AABBs here
-                #self.allAABBs[objID] = new_aabbs
+                # Assign the new AABB if it is not None (note: a value of
+                # *None* explicitly denotes that there is not AABB update,
+                # whereas the AABBs for eg an empty shape would be []).
+                if aabbs_new is not None:
+                    self.allAABBs[objID] = aabbs_new
 
         # Update direct force- and torque values.
         for doc in cmds['direct_force']:
