@@ -28,7 +28,7 @@ from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
 from azrael.test.test_bullet_api import isEqualBD
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
-from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere, CollShapeBox
 
 RigidBodyState = rb_state.RigidBodyState
 RigidBodyStateOverride = rb_state.RigidBodyStateOverride
@@ -490,3 +490,81 @@ class TestLeonardAPI:
         ret = leoAPI.getAABB([id_0, id_3])
         assert ret.ok
         assert ret.data ==  [aabb_1, None]
+
+    def test_compute_AABB(self):
+        """
+        Create some collision shapes and verify that 'computeAABBs' returns the
+        correct results.
+        """
+        # Convenience.
+        computeAABBs = azrael.leo_api.computeAABBs
+
+        # Empty set of Collision shapes.
+        assert computeAABBs([]) == (True, None, [])
+
+        # Cubes with different side lengths. The algorithm must always pick
+        # the largest side length times sqrt(3)
+        for size in (0, 0.5, 1, 2):
+            # The three side lengths used for the cubes.
+            s1, s2, s3 = size, 2 * size, 3 * size
+
+            # The AABB dimensions are must always be the largest side lengths
+            # time sqrt(3) to accommodate all rotations. However, Azreal adds
+            # some slack and uses sqrt(3.1).
+            v = s3 * np.sqrt(3.1)
+            correct = (1, 2, 3, v, v, v)
+            pos = correct[:3]
+
+            cs = getCSBox(dim=(s1, s2, s3), pos=pos)
+            assert computeAABBs([cs]) == (True, None, [correct])
+
+            cs = getCSBox(dim=(s2, s3, s1), pos=pos)
+            assert computeAABBs([cs]) == (True, None, [correct])
+
+            cs = getCSBox(dim=(s3, s1, s2), pos=pos)
+            assert computeAABBs([cs]) == (True, None, [correct])
+
+        # The AABB for a sphere must always exactly bound the sphere.
+        for radius in (0, 0.5, 1, 2):
+            correct = (0, 0, 0, radius, radius, radius)
+            cs = getCSSphere(radius=radius)
+            assert computeAABBs([cs]) == (True, None, [correct])
+
+        # Sphere at origin but with a rotation: must remain at origin.
+        pos, rot = (0, 0, 0), (np.sqrt(2), 0, 0, np.sqrt(2))
+        correct = [(0, 0, 0, 1, 1, 1)]
+        cs = getCSSphere(radius=1, pos=pos, rot=rot)
+        assert computeAABBs([cs]) == (True, None, correct)
+
+        # Sphere at y=1 and rotated 180degrees around x-axis. This must result
+        # in a sphere at y=-1.
+        pos, rot = (0, 1, 0), (1, 0, 0, 0)
+        correct = [(0, -1, 0, 1, 1, 1)]
+        cs = getCSSphere(radius=1, pos=pos, rot=rot)
+        assert computeAABBs([cs]) == (True, None, correct)
+
+        # Sphere at y=1 and rotated 90degrees around x-axis. This must move the
+        # sphere onto the z-axis, ie to position (x, y, z) = (0, 0, 1).
+        pos = (0, 1, 0)
+        rot = (1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2))
+        correct = [(0, 0, 1, 1, 1, 1)]
+        cs = getCSSphere(radius=1, pos=pos, rot=rot)
+        ret = computeAABBs([cs])
+        assert ret.ok
+        assert np.allclose(ret.data, correct)
+
+        # Use an empty shape. This must not return any AABB.
+        cs = getCSEmpty()
+        assert computeAABBs([cs]) == (True, None, [])
+        
+        # Pass in multiple collision shapes, namely [box, empty, sphere]. This
+        # must return 2 collision shapes because the empty one is skipped.
+        cs = [getCSSphere(), getCSEmpty(), getCSBox()]
+        correct = [
+            (0, 0, 0, 1, 1, 1),
+            (0, 0, 0, np.sqrt(3.1), np.sqrt(3.1), np.sqrt(3.1))
+        ]
+        assert computeAABBs(cs) == (True, None, correct)
+
+        # Pass in invalid arguments. This must return with an error.
+        assert not computeAABBs([(1, 2)]).ok

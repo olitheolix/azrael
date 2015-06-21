@@ -30,12 +30,69 @@ import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _RigidBodyState
+from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere, CollShapeBox
 
 # Convenience.
 RigidBodyStateOverride = rb_state.RigidBodyStateOverride
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
+
+
+def computeAABBs(cshapes: (tuple, list)):
+    """
+    Return a list of AABBs for each element in ``cshapes``.
+
+    This function returns an error as soon as it encounters an unknown
+    collision shape.
+
+    ..note:: The bounding boxes are large enough to accomodate all possible
+             orientations of the collision shape. This makes them larger than
+             necessary yet avoids recomputing them whenever the orientation of
+             the body changes.
+
+    :param list[CollShapeMeta] cshapes: collision shapes
+    :return: list of AABBs for the ``cshapes``.
+    """
+    # Convenience.
+    s3 = np.sqrt(3.1)
+
+    # Compute the AABBs for each shape.
+    aabbs = []
+    try:
+        for cs in cshapes:
+            # Verify that the collision shape is sane.
+            cs = CollShapeMeta(*cs)
+
+            # Move the origin of the collision shape according to its rotation.
+            quat = util.Quaternion(cs.rot[3], cs.rot[:3])
+            pos = tuple(quat * cs.pos)
+
+            # Determine the AABBs based on the collision shape type.
+            ctype = cs.type.upper()
+            if ctype == 'SPHERE':
+                # All AABBs half lengths have the same length (equal to radius).
+                r = CollShapeSphere(*cs.cshape).radius
+                aabbs.append(pos + (r, r, r))
+            elif ctype == 'BOX':
+                # All AABBs half lengths are equal. The value equals the largest
+                # extent times sqrt(3) to accommodate all possible orientations.
+                tmp = s3 * max(CollShapeBox(*cs.cshape))
+                aabbs.append(pos + (tmp, tmp, tmp))
+            elif ctype == 'EMPTY':
+                # Empty shapes do not have an AABB.
+                continue
+            else:
+                # Error.
+                msg = 'Unknown collision shape <{}>'.format(ctype)
+                return RetVal(False, msg, None)
+    except TypeError:
+        # Error: probably because 'CollShapeMeta' or one of its sub-shapes,
+        # could not be constructed.
+        msg = 'Encountered invalid collision shape data'
+        return RetVal(False, msg, None)
+
+    return RetVal(True, None, aabbs)
 
 
 def getNumObjects():
@@ -93,6 +150,7 @@ def addCmdSpawn(objData: (tuple, list)):
                              and their respective half widths.
     :return: success.
     """
+    # Sanity checks all the provided bodies.
     for objID, sv, aabbs in objData:
         try:
             assert isinstance(objID, int)
@@ -107,7 +165,6 @@ def addCmdSpawn(objData: (tuple, list)):
             msg = '<addCmdQueue> received invalid argument type'
             return RetVal(False, msg, None)
 
-        # Sanity checks.
         if objID < 0:
             msg = 'Object ID is negative'
             logit.warning(msg)
