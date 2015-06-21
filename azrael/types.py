@@ -64,6 +64,7 @@ CollShapeMeta = namedtuple('CollShapeMeta', 'type aid pos rot cshape')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
+CollShapePlane = namedtuple('CollShapePlane', 'normal ofs')
 
 # Constraints.
 ConstraintMeta = namedtuple('ConstraintMeta', 'type aid rb_a rb_b data')

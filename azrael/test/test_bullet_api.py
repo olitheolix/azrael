@@ -23,7 +23,7 @@ import numpy as np
 from IPython import embed as ipshell
 from azrael.types import _RigidBodyState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox
+from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 
 
@@ -77,6 +77,14 @@ def getCSSphere(name='cssphere', pos=[0, 0, 0], rot=[0, 0, 0, 1], radius=1):
     Convenience function to construct a Sphere shape.
     """
     return CollShapeMeta('sphere', name, pos, rot, CollShapeSphere(radius))
+
+
+def getCSPlane(name='csplane', pos=[0, 0, 0], rot=[0, 0, 0, 1],
+               normal=[0, 0, 1], ofs=0):
+    """
+    Convenience function to construct a Plane in the x/y dimension.
+    """
+    return CollShapeMeta('plane', name, pos, rot, CollShapePlane(normal, ofs))
 
 
 class TestBulletAPI:
