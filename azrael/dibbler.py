@@ -185,22 +185,7 @@ class Dibbler:
         # Save the fragments as JSON data to eg "templates/mymodel/model.json".
         self.fs.put(json.dumps(data._asdict()).encode('utf8'),
                     filename=os.path.join(location, 'model.json'))
-
-        # Determine the largest possible side length of the
-        # AABB. To find it, just determine the largest spatial
-        # extent in any axis direction. That is the side length of
-        # the AABB cube. Then multiply it with sqrt(3) to ensure
-        # that any rotation angle of the object is covered. The
-        # slightly larger value of sqrt(3.1) adds some slack.
-        aabb = 0
-        if len(data.vert) > 0:
-            len_x = max(data.vert[0::3]) - min(data.vert[0::3])
-            len_y = max(data.vert[1::3]) - min(data.vert[1::3])
-            len_z = max(data.vert[2::3]) - min(data.vert[2::3])
-            tmp = np.sqrt(3.1) * max(len_x, len_y, len_z)
-            aabb = np.amax((aabb, tmp))
-
-        return RetVal(True, None, aabb)
+        return RetVal(True, None, None)
 
     @typecheck
     def _deleteSubLocation(self, url: str):
@@ -263,7 +248,6 @@ class Dibbler:
                 return RetVal(False, 'Model does not exist', None)
 
         # Store all fragment models for this template.
-        aabb = -1
         frag_names = {}
         for frag in fragments:
             # Fragment directory, eg .../instances/mymodel/frag1
@@ -298,15 +282,7 @@ class Dibbler:
             self.fs.put(json.dumps({'fragments': frag_names}).encode('utf8'),
                         filename=os.path.join(location, 'meta.json'))
 
-            # Find the largest AABB.
-            aabb = float(np.amax((ret.data, aabb)))
-
-        # Sanity check: if the AABB was negative then not a single fragment was
-        # valid. This is an error.
-        if aabb < 0:
-            msg = 'Model contains no valid fragments'
-            return RetVal(False, msg, None)
-        return RetVal(True, None, aabb)
+        return RetVal(True, None, None)
 
     @typecheck
     def getTemplateDir(self, template_name: str):
@@ -374,7 +350,7 @@ class Dibbler:
         if not ret.ok:
             return ret
         else:
-            return RetVal(True, None, {'aabb': ret.data, 'url': location})
+            return RetVal(True, None, {'url': location})
 
     @typecheck
     def spawnTemplate(self, name: str, objID: str):
