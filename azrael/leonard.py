@@ -293,7 +293,7 @@ def mergeConstraintSets(constraintPairs: tuple,
 
 
 def getFinalCollisionSets(constraintPairs: list,
-                          allObjects: list,
+                          allBodies: list,
                           allAABBs: list):
     """
     Return the collision sets.
@@ -305,12 +305,12 @@ def getFinalCollisionSets(constraintPairs: list,
               Possibly it should not be a standalone function.
 
     :param list constraintPairs: list of 2-tuples eg [(1, 2), (1, 5), ...].
-    :param list allObjects: Leonard's object cache.
+    :param list allBodies: Leonard's object cache.
     :param list allAABBs: Leonard's AABB cache.
     :return: list of non-overlapping collision sets.
     """
     # Broadphase based on AABB only.
-    ret = computeCollisionSetsAABB(allObjects, allAABBs)
+    ret = computeCollisionSetsAABB(allBodies, allAABBs)
     if not ret.ok:
         msg = 'ComputeCollisionSetsAABB returned an error'
         self.logit.error(msg)
@@ -344,7 +344,7 @@ class LeonardBase(config.AzraelProcess):
         # Create an Igor instance.
         self.igor = azrael.igor.Igor()
 
-        self.allObjects = {}
+        self.allBodies = {}
         self.allAABBs = {}
         self.allForces = {}
 
@@ -403,7 +403,7 @@ class LeonardBase(config.AzraelProcess):
         :rtype: (list, list)
         """
         # Convenience.
-        sv = self.allObjects[objID]
+        sv = self.allBodies[objID]
         f = self.allForces[objID]
 
         # Construct the Quaternion of the object based on its orientation.
@@ -438,7 +438,7 @@ class LeonardBase(config.AzraelProcess):
         self.processCommandQueue()
 
         # Fetch the forces for all object positions.
-        idPos = {k: v.position for (k, v) in self.allObjects.items()}
+        idPos = {k: v.position for (k, v) in self.allBodies.items()}
         ret = self.getGridForces(idPos)
         if not ret.ok:
             self.logit.info(ret.msg)
@@ -449,7 +449,7 @@ class LeonardBase(config.AzraelProcess):
         del ret, idPos
 
         # Iterate over all objects and update their SV information in Bullet.
-        for objID, sv in self.allObjects.items():
+        for objID, sv in self.allBodies.items():
             # Compute direct- and booster forces on object.
             force, torque = self.totalForceAndTorque(objID)
 
@@ -462,7 +462,7 @@ class LeonardBase(config.AzraelProcess):
             sv.velocityLin[:] = vel.tolist()
             sv.position[:] = (pos + dt * vel).tolist()
 
-            self.allObjects[objID] = sv
+            self.allBodies[objID] = sv
 
         # Synchronise the local object cache back to the database.
         self.syncObjects(writeconcern=False)
@@ -488,16 +488,16 @@ class LeonardBase(config.AzraelProcess):
         # Remove objects.
         for doc in cmds['remove']:
             objID = doc['objID']
-            if objID in self.allObjects:
+            if objID in self.allBodies:
                 self._DB_SV.remove({'objID': objID})
-                del self.allObjects[objID]
+                del self.allBodies[objID]
                 del self.allForces[objID]
                 del self.allAABBs[objID]
 
         # Spawn objects.
         for doc in cmds['spawn']:
             objID = doc['objID']
-            if objID in self.allObjects:
+            if objID in self.allBodies:
                 msg = 'Cannot spawn object since objID={} already exists'
                 self.logit.warning(msg.format(objID))
                 continue
@@ -505,7 +505,7 @@ class LeonardBase(config.AzraelProcess):
             # Add the body and its AABB to Leonard's cache. Furthermore, add
             # (and initialise) the entry for the forces on this body.
             sv_old = doc['sv']
-            self.allObjects[objID] = _RigidBodyState(*sv_old)
+            self.allBodies[objID] = _RigidBodyState(*sv_old)
             self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
             self.allAABBs[objID] = doc['AABBs']
 
@@ -513,11 +513,11 @@ class LeonardBase(config.AzraelProcess):
         fun = leoAPI._updateRigidBodyStateTuple
         for doc in cmds['modify']:
             objID, sv_new, aabbs_new = doc['objID'], doc['sv'], doc['AABBs']
-            if objID in self.allObjects:
+            if objID in self.allBodies:
                 sv_new = RigidBodyStateOverride(*sv_new)
-                sv_old = self.allObjects[objID]
+                sv_old = self.allBodies[objID]
                 sv_old = RigidBodyState(*sv_old)
-                self.allObjects[objID] = fun(sv_old, sv_new)
+                self.allBodies[objID] = fun(sv_old, sv_new)
 
                 # Assign the new AABB if it is not None (note: a value of
                 # *None* explicitly denotes that there is not AABB update,
@@ -556,13 +556,13 @@ class LeonardBase(config.AzraelProcess):
         :param bool writeconcern: disable write concern when set to *False*.
         """
         # Return immediately if we have no objects to begin with.
-        if len(self.allObjects) == 0:
+        if len(self.allBodies) == 0:
             return
 
         # Update (or insert non-existing) bodies. Use a MongoDB Bulk operator
         # for the update to improve the performance.
         bulk = self._DB_SV.initialize_unordered_bulk_op()
-        for objID, sv in self.allObjects.items():
+        for objID, sv in self.allBodies.items():
             query = {'objID': objID}
             data = {'objID': objID, 'sv': sv, 'AABBs': self.allAABBs[objID]}
             bulk.find(query).upsert().update({'$set': data})
@@ -653,7 +653,7 @@ class LeonardBullet(LeonardBase):
         allConstraints = self.igor.getAllConstraints().data
 
         # Fetch the forces for all object positions.
-        idPos = {k: v.position for (k, v) in self.allObjects.items()}
+        idPos = {k: v.position for (k, v) in self.allBodies.items()}
         ret = self.getGridForces(idPos)
         if not ret.ok:
             self.logit.info(ret.msg)
@@ -664,7 +664,7 @@ class LeonardBullet(LeonardBase):
         del ret, idPos
 
         # Iterate over all objects and update them.
-        for objID, sv in self.allObjects.items():
+        for objID, sv in self.allBodies.items():
             # Pass the SV data from the DB to Bullet.
             self.bullet.setRigidBodyData(objID, sv)
 
@@ -685,17 +685,17 @@ class LeonardBullet(LeonardBase):
 
         # Advance the simulation by one time step.
         with util.Timeit('compute') as timeit:
-            self.bullet.compute(list(self.allObjects.keys()), dt, maxsteps)
+            self.bullet.compute(list(self.allBodies.keys()), dt, maxsteps)
 
             # Remove all constraints.
             self.bullet.clearAllConstraints()
 
         # Retrieve all objects from Bullet and overwrite the state variables
         # that the user explicilty wanted to change (if any).
-        for objID in self.allObjects:
+        for objID in self.allBodies:
             ret = self.bullet.getRigidBodyData(objID)
             if ret.ok:
-                self.allObjects[objID] = ret.data
+                self.allBodies[objID] = ret.data
 
         # Synchronise the local object cache back to the database.
         self.syncObjects(writeconcern=False)
@@ -744,7 +744,7 @@ class LeonardSweeping(LeonardBase):
             uniquePairs = ret.data
 
             ret = getFinalCollisionSets(
-                uniquePairs, self.allObjects, self.allAABBs)
+                uniquePairs, self.allBodies, self.allAABBs)
             if not ret.ok:
                 return
             collSets = ret.data
@@ -759,7 +759,7 @@ class LeonardSweeping(LeonardBase):
         # Process all subsets individually.
         for subset in collSets:
             # Compile the subset dictionary for the current collision set.
-            coll_SV = {_: self.allObjects[_] for _ in subset}
+            coll_SV = {_: self.allBodies[_] for _ in subset}
 
             # Fetch the forces for all object positions.
             idPos = {k: v.position for (k, v) in coll_SV.items()}
@@ -812,7 +812,7 @@ class LeonardSweeping(LeonardBase):
             for objID, sv in coll_SV.items():
                 ret = self.bullet.getRigidBodyData(objID)
                 if ret.ok:
-                    self.allObjects[objID] = ret.data
+                    self.allBodies[objID] = ret.data
 
         # Synchronise the local object cache back to the database.
         self.syncObjects(writeconcern=False)
@@ -927,7 +927,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
             uniquePairs = ret.data
 
             ret = getFinalCollisionSets(
-                uniquePairs, self.allObjects, self.allAABBs)
+                uniquePairs, self.allBodies, self.allAABBs)
             if not ret.ok:
                 return
             collSets = ret.data
@@ -1035,7 +1035,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         try:
             wpdata = []
             for objID in objIDs:
-                sv = self.allObjects[objID]
+                sv = self.allBodies[objID]
                 force, torque = self.totalForceAndTorque(objID)
                 wpdata.append(WPData(objID, sv, force, torque))
         except KeyError as err:
@@ -1067,7 +1067,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Reset force and torque for all objects in the WP, and overwrite
         # the old Body States with the new one from the processed WP.
         for (objID, sv) in wpdata:
-            self.allObjects[objID] = _RigidBodyState(*sv)
+            self.allBodies[objID] = _RigidBodyState(*sv)
 
 
 class LeonardWorkerZeroMQ(config.AzraelProcess):

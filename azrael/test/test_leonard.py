@@ -471,9 +471,9 @@ class TestLeonardOther:
         newWP = [(id_1, data_3)]
 
         # Check the State Vector for objID=id_1 before and after the update.
-        assert isEqualBD(leo.allObjects[id_1], data_1)
+        assert isEqualBD(leo.allBodies[id_1], data_1)
         leo.updateLocalCache(newWP)
-        assert isEqualBD(leo.allObjects[id_1], data_3)
+        assert isEqualBD(leo.allBodies[id_1], data_3)
 
     def test_processCommandQueue(self):
         """
@@ -490,7 +490,7 @@ class TestLeonardOther:
         id_1, id_2 = 1, 2
 
         # Cache must be empty.
-        assert len(leo.allObjects) == len(leo.allForces) == 0
+        assert len(leo.allBodies) == len(leo.allForces) == 0
 
         # Spawn two objects.
         tmp = [(id_1, sv_1), (id_2, sv_2)]
@@ -498,8 +498,8 @@ class TestLeonardOther:
         leo.processCommandsAndSync()
 
         # Verify the local cache (forces and torques must default to zero).
-        assert isEqualBD(leo.allObjects[id_1], sv_1)
-        assert isEqualBD(leo.allObjects[id_2], sv_2)
+        assert isEqualBD(leo.allBodies[id_1], sv_1)
+        assert isEqualBD(leo.allBodies[id_2], sv_2)
         tmp = leo.allForces[id_1]
         assert tmp.forceDirect == tmp.torqueDirect == [0, 0, 0]
         assert tmp.forceBoost == tmp.torqueBoost == [0, 0, 0]
@@ -508,16 +508,16 @@ class TestLeonardOther:
         # Remove first object.
         assert leoAPI.addCmdRemoveObject(id_1).ok
         leo.processCommandsAndSync()
-        assert id_1 not in leo.allObjects
+        assert id_1 not in leo.allBodies
         assert id_1 not in leo.allForces
 
         # Change the State Vector of id_2.
         pos = [10, 11.5, 12]
         sv_3 = rb_state.RigidBodyStateOverride(position=pos)
-        assert leo.allObjects[id_2].position == [0, 0, 0]
+        assert leo.allBodies[id_2].position == [0, 0, 0]
         assert leoAPI.addCmdModifyBodyState(id_2, sv_3).ok
         leo.processCommandsAndSync()
-        assert leo.allObjects[id_2].position == pos
+        assert leo.allBodies[id_2].position == pos
 
         # Apply a direct force and torque to id_2.
         force, torque = [1, 2, 3], [4, 5, 6]
@@ -795,7 +795,7 @@ class TestLeonardOther:
         # Both object must have moved the same distance 'delta' because they
         # are linked. Their distance must not have changed.
         leo.step(1.0, 60)
-        allObjs = leo.allObjects
+        allObjs = leo.allBodies
         delta_a = allObjs[id_a].position - np.array(pos_a)
         delta_b = allObjs[id_b].position - np.array(pos_b)
         assert delta_a[0] < pos_a[0]
@@ -1279,7 +1279,7 @@ class TestBroadphase:
 
         # Sanity check: the number of test IDs must match the number of objects
         # in Leonard.
-        assert len(leo.allObjects) == num_bodies
+        assert len(leo.allBodies) == num_bodies
 
         def ccsWrapper(test_objIDs, expected_objIDs):
             """
@@ -1289,7 +1289,7 @@ class TestBroadphase:
             This is a convenience wrapper to facilitate readable tests.
             """
             # Compile the set of bodies- and their AABBs for this test run.
-            bodies = {_: leo.allObjects[_] for _ in test_objIDs}
+            bodies = {_: leo.allBodies[_] for _ in test_objIDs}
             AABBs = {_: leo.allAABBs[_] for _ in test_objIDs}
 
             # Determine the list of broadphase collision sets.
