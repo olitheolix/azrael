@@ -151,32 +151,43 @@ def sweeping(data: dict, dim: str):
 
 
 @typecheck
-def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
+def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
     """
-    Return broadphase collision sets for the objects in ``SVs``.
+    Return broadphase collision sets for all ``bodies``.
 
-    :param dict SVs: Dictionary of Body States.
-    :param dict AABBs: Dictionary of AABBs.
+    Bodies with empty AABBs, or AABBs where at least one half length is zero do
+    not collide with anything.
+
+    ..note:: *Every* static body will be added to *every* collision set. This
+             will improved in the future when it becomes a bottle neck.
+
+    :param dict[RigidBodyStates] bodies: the bodies to check.
+    :param dict[AABBs]: dictionary of AABBs.
     :return: each list contains a unique set of overlapping objects.
     :rtype: list of lists
     """
     # Sanity check: SV and AABB must contain the same object IDs.
-    if set(SVs.keys()) != set(AABBs.keys()):
-        return RetVal(False, 'SVs and AABBs are inconsisten', None)
+    if bodies.keys() != AABBs.keys():
+        return RetVal(False, 'Bodies and AABBs are inconsistent', None)
 
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
     # must contain the position of the AABB (object local coordinates), as well
     # as the min/max spatial extent in x/y/z direction.
     sweep_data = {}
-    ignored = []
+    bodies_ignored = []
+    bodies_static = []
 
     # Compile the necessary information for the Sweeping algorithm for each
     # object provided to this function.
-    for objID in SVs.keys():
+    for objID in bodies:
+        if bodies[objID].imass == 0:
+            bodies_static.append(objID)
+            continue
+
         # Convenience: unpack the body parameters needed here.
-        pos_rb = SVs[objID].position
-        scale = SVs[objID].scale
-        rot = SVs[objID].orientation
+        pos_rb = bodies[objID].position
+        scale = bodies[objID].scale
+        rot = bodies[objID].orientation
         quat = util.Quaternion(rot[3], rot[:3])
 
         # Create an empty data structure (will be populated below).
@@ -185,7 +196,7 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
         # If the object has no AABBs then add it to the 'ignore' list (this
         # means it will be an object that does not collide with anything).
         if len(AABBs[objID]) == 0:
-            ignored.append(objID)
+            bodies_ignored.append(objID)
             continue
 
         # Sanity check: the AABBs must be tantamount to a matrix (ie a list of
@@ -227,9 +238,9 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
         # length that was zero) then merely add the object to the 'ignore'
         # list. It will thus, by definition, not collide with anything.
         if len(sweep_data[objID]['x']) == 0:
-            ignored.append(objID)
+            bodies_ignored.append(objID)
             continue
-    del SVs, AABBs
+    del bodies, AABBs
 
     # Determine the sets of objects that overlap 'x' direction.
     stage_0 = sweeping(sweep_data, 'x').data
@@ -251,8 +262,17 @@ def computeCollisionSetsAABB(SVs: dict, AABBs: dict):
     # Add the ignored objects which, by definition, do not collide with
     # anything. In other words, each ignored body creates a dedicated collision
     # set with itself as the only member.
-    out = stage_2 + [[_] for _ in ignored]
-    return RetVal(True, None, out)
+    coll_sets = stage_2 + [[_] for _ in bodies_ignored]
+
+    # Append every static body to every collision set. This may not be very
+    # efficient for large scale simulations but has not affect on smaller
+    # simulations. The main advantage is that Azrael can now support static
+    # bodies with infinite extent, most notably 'Plane' shapes without
+    # the extra logic that the sweeping algorithm would otherwise require to
+    # deal with such infinite objects.
+    out = [_.extend(bodies_static) for _ in coll_sets]
+
+    return RetVal(True, None, coll_sets)
 
 
 def mergeConstraintSets(constraintPairs: tuple,

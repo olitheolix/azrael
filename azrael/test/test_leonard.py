@@ -1311,3 +1311,62 @@ class TestBroadphase:
 
         # All objects must form one connected set.
         ccsWrapper(list(range(10)), [list(range(10))])
+
+    def test_computeCollisionSetsAABB_static(self):
+        """
+        Static bodies (ie every body with mass=0) must be added to every
+        collision set.
+        """
+        # Convenience.
+        RBS = rb_state.RigidBodyState
+
+        def testCCS(pos, AABBs, imasses, expected_objIDs):
+            """
+            Compute broadphase results for bodies at ``pos`` with ``masses``
+            and ``AABBs``, and verify that the ``expected_objIDs`` sets were
+            produced.
+
+            This function assumes that every body has exactly one AABB and with
+            no relative offset to the body's position.
+            """
+            # Compile the set of bodies- and their AABBs for this test run.
+            assert len(pos) == len(aabbs) == len(imasses)
+            bodies = [RBS(position=p, imass=m) for (p, m) in zip(pos, imasses)]
+
+            # By assumption, this function, every object has exactly one AABB
+            # centered at zero.
+            AABBs = [[(0, 0, 0, _[0], _[1], _[2])] for _ in AABBs]
+
+            # Convert to dictionaries: the key is the bodyID in Azrael; here it
+            # is a simple enumeration.
+            bodies = {idx: val for (idx, val) in enumerate(bodies)}
+            AABBs = {idx: val for (idx, val) in enumerate(AABBs)}
+
+            # Determine the list of broadphase collision sets.
+            ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
+            assert ret.ok
+
+            # Convert the reference data to a sorted list of sets.
+            expected_objIDs = sorted([sorted(tuple(_)) for _ in expected_objIDs])
+            computed_objIDs = sorted([sorted(tuple(_)) for _ in ret.data])
+
+            # Return the equality of the two list of lists.
+            assert expected_objIDs == computed_objIDs
+            del bodies, AABBs, ret, expected_objIDs, computed_objIDs
+
+        # Three dynamics bodies: First overlaps with second, second with third,
+        # but first not with third. This must result in a single broadphase set
+        # containing all three bodies.
+        pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
+        aabbs = [(0.9, 0.9, 0.9), (0.9, 0.9, 0.9), (0.9, 0.9, 0.9)]
+        imasses = [1, 1, 1]
+        correct_answer = ([0, 1, 2], )
+        testCCS(pos, aabbs, imasses, correct_answer)
+
+        # Same test, but this time the middle body is static (ie imass=0). This
+        # must result in two collision sets, each containing the static body.
+        pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
+        aabbs = [(0.9, 0.9, 0.9), (0.9, 0.9, 0.9), (0.9, 0.9, 0.9)]
+        imasses = [1, 0, 1]
+        correct_answer = ([0, 1], [1, 2])
+        testCCS(pos, aabbs, imasses, correct_answer)
