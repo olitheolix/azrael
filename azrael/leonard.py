@@ -507,12 +507,12 @@ class LeonardBase(config.AzraelProcess):
             sv_old = doc['sv']
             self.allObjects[objID] = _RigidBodyState(*sv_old)
             self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
-            self.allAABBs[objID] = doc['AABB']
+            self.allAABBs[objID] = doc['AABBs']
 
         # Update Body States.
         fun = leoAPI._updateRigidBodyStateTuple
         for doc in cmds['modify']:
-            objID, sv_new, aabbs_new = doc['objID'], doc['sv'], doc['aabb']
+            objID, sv_new, aabbs_new = doc['objID'], doc['sv'], doc['AABBs']
             if objID in self.allObjects:
                 sv_new = RigidBodyStateOverride(*sv_new)
                 sv_old = self.allObjects[objID]
@@ -564,7 +564,7 @@ class LeonardBase(config.AzraelProcess):
         bulk = self._DB_SV.initialize_unordered_bulk_op()
         for objID, sv in self.allObjects.items():
             query = {'objID': objID}
-            data = {'objID': objID, 'sv': sv, 'AABB': self.allAABBs[objID]}
+            data = {'objID': objID, 'sv': sv, 'AABBs': self.allAABBs[objID]}
             bulk.find(query).upsert().update({'$set': data})
 
         if writeconcern:

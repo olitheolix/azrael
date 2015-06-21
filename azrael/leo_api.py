@@ -173,7 +173,7 @@ def addCmdSpawn(objData: (tuple, list)):
 
         # Insert this document unless one already matches the query.
         query = {'cmd': 'spawn', 'objID': objID}
-        data = {'sv': sv, 'AABB': aabbs.data}
+        data = {'sv': sv, 'AABBs': aabbs.data}
         bulk.find(query).upsert().update({'$setOnInsert': data})
 
     ret = bulk.execute()
@@ -259,7 +259,7 @@ def addCmdModifyBodyState(objID: int, body: RigidBodyStateOverride):
     # pending update commands for the same object - tough luck.
     db = database.dbHandles['Commands']
     query = {'cmd': 'modify', 'objID': objID}
-    db_data = {'sv': body, 'aabb': aabbs}
+    db_data = {'sv': body, 'AABBs': aabbs}
     db.update(query, {'$setOnInsert': db_data},  upsert=True)
 
     # This function was successful if exactly one document was updated.
@@ -383,7 +383,7 @@ def getAABB(objIDs: (list, tuple)):
     out = list(database.dbHandles['SV'].find({'objID': {'$in': objIDs}}))
 
     # Put all AABBs into a dictionary to simplify sorting afterwards.
-    out = {_['objID']: _['AABB'] for _ in out}
+    out = {_['objID']: _['AABBs'] for _ in out}
 
     # Compile the AABB values into a list ordered by ``objIDs``. Insert a None
     # element if a particular objID has no AABB (probably means the object was

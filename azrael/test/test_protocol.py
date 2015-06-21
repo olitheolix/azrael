@@ -65,7 +65,7 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     # Encode source data.
     cs = [1, 2, 3, 4]
     data = {'cshapes': cs, 'boosters': [b0, b1], 'factories': [f0],
-            'aabb': 1.0, 'url': 'http://somewhere',
+            'url': 'http://somewhere',
             'fragments': MetaFragment('foo', 'RAW', None)}
     templates = {template_name: data}
     ok, enc = protocol.FromClerk_GetTemplates_Encode(templates)
