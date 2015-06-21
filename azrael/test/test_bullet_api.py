@@ -791,3 +791,46 @@ class TestBulletAPI:
             ConstraintMeta('p2p', '', id_a, id_b, P2P(pivot_a, pivot_b)),
         ]
         assert not sim.setConstraints(constraints).ok
+
+    def test_box_on_plane(self):
+        """
+        Create a simulation with gravity. Place a box above a plane and verify
+        that after a long time the box will have come to rest on the infinitely
+        large plane.
+        """
+        # Instantiate Bullet engine and activate gravity.
+        sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
+        sim.setGravity((0, 0, -10))
+
+        # Create a box above a static plane. The ground plane is at z=-1.
+        cs_plane = getCSPlane(normal=(0, 0, 1), ofs=-1)
+        cs_box = getCSBox()
+        b_plane = rb_state.RigidBodyState(imass=0, cshapes=[cs_plane])
+        b_box = rb_state.RigidBodyState(position=(0, 0, 5), cshapes=[cs_box])
+        assert b_box is not None
+        assert b_plane is not None
+
+        # Add the objects to the simulation and verify their positions.
+        sim.createRigidBody(1, b_plane)
+        sim.createRigidBody(2, b_box)
+        ret_plane = sim.getRigidBodyData(1)
+        ret_box = sim.getRigidBodyData(2)
+        assert ret_plane.ok == ret_box.ok == True
+        assert ret_plane.data.position[2] == 0
+        assert ret_box.data.position[2] == 5
+
+        # Step the simulation often enough for the box to fall down and come to
+        # rest on the surface.
+        dt, maxsteps = 1.0, 60
+        for ii in range(10):
+            sim.compute([1, 2], dt, maxsteps)
+
+        # Verify that the plane has not moved (because it is static) and that
+        # the box has come to rest atop. The position of the box rigid body
+        # must be approximately zero, because the plane is at position z=-1,
+        # and the half length of the box is 1 Meters.
+        ret_plane = sim.getRigidBodyData(1)
+        ret_box = sim.getRigidBodyData(2)
+        assert ret_plane.ok == ret_box.ok == True
+        assert ret_plane.data.position[2] == 0
+        assert abs(ret_box.data.position[2]) < 1E-5

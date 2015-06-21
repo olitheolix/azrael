@@ -77,7 +77,7 @@ def RigidBodyState(scale: (int, float)=1,
             assert isinstance(cs.rot, (tuple, list, np.ndarray))
             assert len(np.array(cs.pos)) == 3
             assert len(np.array(cs.rot)) == 4
-            assert cs.type.lower() in ('empty', 'sphere', 'box')
+            assert cs.type.lower() in ('empty', 'sphere', 'box', 'plane')
 
             # fixme: do I need additional sanity checks for the various
             # Collision shapes, or is the protocol module going to handle it?

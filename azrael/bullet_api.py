@@ -34,7 +34,7 @@ import azrael.rb_state as rb_state
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _RigidBodyState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox
+from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 
 # Convenience.
@@ -306,21 +306,25 @@ class PyBulletDynamicsWorld():
         # Update the mass but leave the inertia intact. This is somewhat
         # awkward to implement because Bullet returns the inverse values yet
         # expects the non-inverted ones in 'set_mass_props'.
-        m = rbState.imass
-        x, y, z = body.getInvInertiaDiagLocal().topy()
-        if (m < 1E-10) or (x < 1E-10) or (y < 1E-10) or (z < 1E-10):
-            # Use safe values if either the inertia or the mass is too small
-            # for inversion.
-            m = x = y = z = 1
+        if rbState.imass == 0:
+            # Static body: mass and inertia are zero anyway.
+            body.setMassProps(0, Vec3(0, 0, 0))
         else:
-            # Inverse mass and inertia.
-            x = 1 / x
-            y = 1 / y
-            z = 1 / z
-            m = 1 / m
+            m = rbState.imass
+            x, y, z = body.getInvInertiaDiagLocal().topy()
+            if (m < 1E-10) or (x < 1E-10) or (y < 1E-10) or (z < 1E-10):
+                # Use safe values if either the inertia or the mass is too small
+                # for inversion.
+                m = x = y = z = 1
+            else:
+                # Inverse mass and inertia.
+                x = 1 / x
+                y = 1 / y
+                z = 1 / z
+                m = 1 / m
 
-        # Apply the new mass and inertia.
-        body.setMassProps(m, Vec3(x, y, z))
+            # Apply the new mass and inertia.
+            body.setMassProps(m, Vec3(x, y, z))
 
         # Overwrite the old RigidBodyState instance with the latest version.
         body.azrael = (bodyID, rbState)
@@ -457,6 +461,7 @@ class PyBulletDynamicsWorld():
             rbState_mass = 0
 
         # Create the collision shapes one by one.
+        scale = rbState.scale
         for cs in rbState.cshapes:
             # Convert the input data to a CollShapeMeta tuple. This is
             # necessary if the data passed to us here comes straight from the
@@ -464,32 +469,39 @@ class PyBulletDynamicsWorld():
             # a named tuple.
             cs = CollShapeMeta(*cs)
 
-            # Scale the collision shape geometry (works for spheres and boxes,
-            # but probably not for anything else).
-            csgeo = [(rbState.scale * _) for _ in cs.cshape]
-
-            # Determine which CollisionShape to instantiate.
-            csname = cs.type.upper()
-            if csname == 'SPHERE':
-                child = azBullet.SphereShape(*csgeo)
-            elif csname == 'BOX':
-                child = azBullet.BoxShape(Vec3(*csgeo))
-            elif csname == 'EMPTY':
+            # Determine which CollisionShape to instantiate, scale it
+            # accordingly, and apply create it in Bullet.
+            cstype = cs.type.upper()
+            if cstype == 'SPHERE':
+                sphere = CollShapeSphere(*cs.cshape)
+                child = azBullet.SphereShape(scale * sphere.radius)
+            elif cstype == 'BOX':
+                box = CollShapeBox(*cs.cshape)
+                hl = Vec3(scale * box.x, scale * box.y, scale * box.z)
+                child = azBullet.BoxShape(hl)
+            elif cstype == 'EMPTY':
                 child = azBullet.EmptyShape()
+            elif cstype == 'PLANE':
+                # Planes are always static.
+                rbState_mass = 0
+                plane = CollShapePlane(*cs.cshape)
+                normal = Vec3(*plane.normal)
+                child = azBullet.StaticPlaneShape(normal, plane.ofs)
             else:
                 child = azBullet.EmptyShape()
-                msg = 'Unrecognised collision shape <{}>'.format(csname)
+                msg = 'Unrecognised collision shape <{}>'.format(cstype)
                 self.logit.warning(msg)
 
             # Let Bullet compute the local inertia of the body.
             inertia = child.calculateLocalInertia(rbState_mass)
 
-            # Compute inertia magnitude and warn about unreasonable values.
-            tmp = np.array(inertia.topy())
-            if not (1E-5 < np.sqrt(np.dot(tmp, tmp)) < 100):
-                msg = 'Inertia = ({:.1E}, {:.1E}, {:.1E})'
-                self.logit.warning(msg.format(*inertia.topy()))
-            del tmp
+            # Warn about unreasonable inertia values.
+            if rbState_mass > 0:
+                tmp = np.array(inertia.topy())
+                if not (1E-5 < np.sqrt(np.dot(tmp, tmp)) < 100):
+                    msg = 'Inertia = ({:.1E}, {:.1E}, {:.1E})'
+                    self.logit.warning(msg.format(*inertia.topy()))
+                del tmp
 
             # Add the collision shape at the respective position and
             # orientation relative to the parent.
@@ -520,7 +532,7 @@ class PyBulletDynamicsWorld():
         # Create a motion state for the initial orientation and position.
         ms = azBullet.DefaultMotionState(azBullet.Transform(rot, pos))
 
-        # Instantiate the actual rigid body body.
+        # Instantiate the actual rigid body.
         ci = azBullet.RigidBodyConstructionInfo(mass, ms, cshapes, inertia)
         body = PyRigidBody(ci)
 
