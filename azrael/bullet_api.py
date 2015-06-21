@@ -80,6 +80,19 @@ class PyBulletDynamicsWorld():
         # Dictionary of all bodies.
         self.rigidBodies = {}
 
+    def setGravity(self, gravity: (tuple, list)):
+        """
+        Set the ``gravity`` in the simulation.
+        """
+        try:
+            gravity = np.array(gravity, np.float64)
+            assert gravity.ndim == 1
+            assert len(gravity) == 3
+        except (TypeError, ValueError, AssertionError):
+            return RetVal(False, 'Invalid type', None)
+        self.dynamicsWorld.setGravity(Vec3(*gravity))
+        return RetVal(True, None, None)
+
     def removeRigidBody(self, bodyIDs: (list, tuple)):
         """
         Remove ``bodyIDs`` from Bullet and return the number of removed bodies.
