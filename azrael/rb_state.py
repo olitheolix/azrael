@@ -104,13 +104,14 @@ class RigidBodyStateOverride(_RigidBodyState):
     Create a ``_RigidBodyState`` tuple.
 
     The only difference between this class and ``rb_state.RigidBodyState`` is
-    that this class permits *None* values.
+    that this one permits *None* values for any of its arguments, whereas the
+    other one does not.
     """
     @typecheck
     def __new__(cls, *args, **kwargs):
         """
-        This method merely uses a default value of *None* for every unspecified
-        field in the named tuple.
+        Same as ``RigidBodyState` except that every unspecified value is *None*
+        instead of a numeric default.
         """
         # Convert all positional- and keyword arguments that are not None to a
         # dictionary of keyword arguments. Step 1: convert the positional
