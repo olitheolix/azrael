@@ -244,17 +244,6 @@ def addCmdModifyBodyState(objID: int, body: RigidBodyStateOverride):
         if ret.ok:
             aabbs = ret.data
 
-    # All fields in ``body`` (a RigidBodyStateOverride instance) are, by
-    # definition, one of {None, int, float, np.ndarray}. The following code
-    # merely converts the  NumPy arrays to normal lists so that Mongo can store
-    # them. For example, RigidBodyStateOverride(None, 2, array([1,2,3]), ...)
-    # would become [None, 2, [1,2,3], ...].
-    # fixme: there should not be any numpy arrays in there
-    body = list(body)
-    for idx, val in enumerate(body):
-        if isinstance(val, np.ndarray):
-            body[idx] = val.tolist()
-
     # Save the new body state and AABBs to the DB. This will overwrite already
     # pending update commands for the same object - tough luck.
     db = database.dbHandles['Commands']
