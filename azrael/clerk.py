@@ -678,7 +678,6 @@ class Clerk(config.AzraelProcess):
                     'url': config.url_templates + '/' + tt.aid,
                     'aid': tt.aid,
                     'cshapes': tt.cshapes,
-                    'aabb': float(ret.data['aabb']),
                     'boosters': tt.boosters,
                     'factories': tt.factories,
                     'fragments': frags}
@@ -716,10 +715,10 @@ class Clerk(config.AzraelProcess):
           ret = {template_names[0]: {
                    fragment_name[0]: {
                       'cshapes': X, 'vert': X, 'uv': X, 'rgb': X,
-                      'boosters': X, 'factories': X, 'aabb': X},
+                      'boosters': X, 'factories': X},
                    fragment_name[1]: {
                       'cshapes': X, 'vert': X, 'uv': X, 'rgb': X,
-                      'boosters': X, 'factories': X, 'aabb': X}},
+                      'boosters': X, 'factories': X}},
                  template_names[1]: {}, }.
 
         :param list(str) templateIDs: template IDs
@@ -764,7 +763,7 @@ class Clerk(config.AzraelProcess):
 
         :param int objID: objID
         :return: Dictionary with keys 'cshapes', 'vert', 'uv', 'rgb',
-                 'boosters', 'factories', and 'aabb'.
+                 'boosters', 'factories'.
         :rtype: dict
         :raises: None
         """
@@ -912,7 +911,7 @@ class Clerk(config.AzraelProcess):
                 sv.cshapes[:] = t['cshapes']
 
                 # Add the object description to the list.
-                objs.append((objID, sv, t['aabb']))
+                objs.append((objID, sv))
 
             # Queue the spawn commands so that Leonard can pick them up.
             ret = leoAPI.addCmdSpawn(objs)

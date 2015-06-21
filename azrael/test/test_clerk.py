@@ -146,7 +146,7 @@ class TestClerk:
         assert mock_dibbler.addTemplate.call_count == 1
 
         # Add template when 'saveModel' succeeds.
-        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1})
+        mock_dibbler.addTemplate.return_value = RetVal(True, None, None)
         assert clerk.addTemplates([temp]).ok
         assert mock_dibbler.addTemplate.call_count == 2
 
@@ -209,7 +209,7 @@ class TestClerk:
         # always succeeds.
         mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
         clerk.dibbler = mock_dibbler
-        mock_dibbler.addTemplate.return_value = RetVal(True, None, {'aabb': 1})
+        mock_dibbler.addTemplate.return_value = RetVal(True, None, None)
 
         # The mock must not have been called so far.
         assert mock_dibbler.addTemplate.call_count == 0
@@ -253,53 +253,6 @@ class TestClerk:
         assert ret.ok and (len(ret.data) == 2)
         assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
         assert ret.data[name_2]['url'] == '{}/'.format(url_template) + name_2
-
-    def test_add_get_template_AABB(self):
-        """
-        Similarly to test_add_get_template but focuses exclusively on the AABB.
-        """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
-
-        # Convenience.
-        cs = getCSSphere()
-        uv = rgb = []
-
-        # Manually specify the vertices and its spatial extent in the
-        # 'max_sidelen' variable beneath.
-        vert = [-4, 0, 0,
-                1, 2, 3,
-                4, 5, 6]
-        max_sidelen = max(8, 5, 6)
-
-        # Add- and fetch the template.
-        frags = [MetaFragment('RAW', 'bar', FragRaw(vert, uv, rgb))]
-        t1 = Template('t1', [cs], frags, [], [])
-        assert clerk.addTemplates([t1]).ok
-        ret = clerk.getTemplates([t1.aid])
-        assert ret.ok
-
-        # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-        assert (ret.data[t1.aid]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
-
-        # Repeat the experiment with a larger mesh.
-        vert = [0, 0, 0,
-                1, 2, 3,
-                4, 5, 6,
-                8, 2, 7,
-                -5, -9, 8,
-                3, 2, 3]
-        max_sidelen = max(8, 14, 8)
-
-        # Add template and retrieve it again.
-        frags = [MetaFragment('RAW', 'bar', FragRaw(vert, uv, rgb))]
-        t2 = Template('t2', [cs], frags, [], [])
-        assert clerk.addTemplates([t2]).ok
-        ret = clerk.getTemplates([t2.aid])
-        assert ret.ok
-
-        # The largest AABB side length must be roughly "sqrt(3) * max_sidelen".
-        assert (ret.data[t2.aid]['aabb'] - np.sqrt(3.1) * max_sidelen) < 1E-10
 
     def test_get_object_template_id(self):
         """
