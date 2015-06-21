@@ -24,6 +24,7 @@ import zmq
 import time
 import signal
 import pickle
+import logging
 import networkx
 import itertools
 import numpy as np
@@ -44,6 +45,9 @@ from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 # Convenience.
 RigidBodyState = rb_state.RigidBodyState
 RigidBodyStateOverride = rb_state.RigidBodyStateOverride
+
+# Create module logger.
+logit = logging.getLogger('azrael.' + __name__)
 
 
 @typecheck
@@ -333,8 +337,19 @@ def getFinalCollisionSets(constraintPairs: list,
     ret = computeCollisionSetsAABB(allBodies, allAABBs)
     if not ret.ok:
         msg = 'ComputeCollisionSetsAABB returned an error'
-        self.logit.error(msg)
+        logit.error(msg)
         return RetVal(False, msg, None)
+
+    # Sanity checks: constraints must not be attached to static objects. This
+    # is currently a shortcoming due to the broadphase implementation where all
+    # static bodies are added to every collision set. Therefore, if only a
+    # single constraint connects to a static body the 'mergeConstraintSets'
+    # function will automatically merge *all* collision sets. This is currently
+    # a known (but acceptable) shortcoming of the current broadphase algorithm.
+    for (a, b) in constraintPairs:
+        if (allBodies[a].imass == 0) or (allBodies[b].imass == 0):
+            msg = 'Constraint attached to rigid body {}-{}'.format(a, b)
+            logit.error(msg)
 
     # Merge all collision sets that have objects which are connected by a
     # constraint.
@@ -342,7 +357,7 @@ def getFinalCollisionSets(constraintPairs: list,
     ret = mergeConstraintSets(constraintPairs, collSets)
     if not ret.ok:
         msg = 'mergeConstraintSets returned an error'
-        self.logit.error(msg)
+        logit.error(msg)
         return RetVal(False, msg, None)
     return ret
 
