@@ -834,3 +834,57 @@ class TestBulletAPI:
         assert ret_plane.ok == ret_box.ok == True
         assert ret_plane.data.position[2] == 0
         assert abs(ret_box.data.position[2]) < 1E-5
+
+    def test_cshape_with_offset(self):
+        """
+        Same as above except that the collision shape has a different position
+        relative to the rigid body.
+
+        This test is to establish that the relative positions of the collision
+        shapes are correctly passed to Bullet and taken into account in a
+        simulation.
+
+        Setup: place a box above a plane and verify that after a long time the
+        box will have come to rest on the infinitely large plane.
+        """
+        # Instantiate Bullet engine and activate gravity.
+        sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
+        sim.setGravity((0, 0, -10))
+
+        # Create a box above a static plane. The ground plane is at z=-1. The
+        # rigid body for the box is initially at z = 5, however, the collision
+        # shape for that rigid body is actually z = 5 + ofs_z.
+        ofs_z = 10
+        cs_plane = getCSPlane(normal=(0, 0, 1), ofs=-1)
+        cs_box = getCSBox(pos=(0, 0, ofs_z))
+        b_plane = rb_state.RigidBodyState(imass=0, cshapes=[cs_plane])
+        b_box = rb_state.RigidBodyState(position=(0, 0, 5), cshapes=[cs_box])
+        assert b_box is not None
+        assert b_plane is not None
+
+        # Add the objects to the simulation and verify their positions.
+        sim.createRigidBody(1, b_plane)
+        sim.createRigidBody(2, b_box)
+        ret_plane = sim.getRigidBodyData(1)
+        ret_box = sim.getRigidBodyData(2)
+        assert ret_plane.ok == ret_box.ok == True
+        assert ret_plane.data.position[2] == 0
+        assert ret_box.data.position[2] == 5
+
+        # Step the simulation often enough for the box to fall down and come to
+        # rest on the surface.
+        dt, maxsteps = 1.0, 60
+        for ii in range(10):
+            sim.compute([1, 2], dt, maxsteps)
+
+        # Verify that the plane has not moved (because it is static). If the
+        # position of the box' collision shape were at the origin of the body,
+        # then the body's position should be approximately zero. However, since
+        # the collisions shape is at 'ofs_z' higher, the final resting position
+        # of the body must be 'ofs_z' lower, ie rb_position + ofs_z must now be
+        # approximately zero.
+        ret_plane = sim.getRigidBodyData(1)
+        ret_box = sim.getRigidBodyData(2)
+        assert ret_plane.ok == ret_box.ok == True
+        assert ret_plane.data.position[2] == 0
+        assert abs(ret_box.data.position[2] + ofs_z) < 1E-3
