@@ -58,7 +58,6 @@ class TestLeonardAPI:
 
         # Create an object ID for the test.
         id_0, id_1 = 0, 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # The number of SV entries must now be zero.
         assert leoAPI.getNumObjects() == 0
@@ -70,7 +69,7 @@ class TestLeonardAPI:
         data = RigidBodyState(cshapes=[getCSSphere('cssphere')])
 
         # Add the object to the DB with ID=0.
-        assert leoAPI.addCmdSpawn([(id_0, data, aabb)])
+        assert leoAPI.addCmdSpawn([(id_0, data)])
         leo.processCommandsAndSync()
 
         # Query the object. This must return the SV data directly.
@@ -106,7 +105,6 @@ class TestLeonardAPI:
 
         # Create two object IDs for this test.
         id_0, id_1 = 0, 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # The number of SV entries must now be zero.
         assert leoAPI.getNumObjects() == 0
@@ -117,7 +115,7 @@ class TestLeonardAPI:
         data_1 = RigidBodyState(position=[10, 10, 10])
 
         # Add the objects to the DB.
-        tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
+        tmp = [(id_0, data_0), (id_1, data_1)]
         assert leoAPI.addCmdSpawn(tmp)
         leo.processCommandsAndSync()
 
@@ -156,7 +154,6 @@ class TestLeonardAPI:
 
         # Convenience.
         id_0 = 0
-        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # The number of SV entries must now be zero.
         assert leoAPI.getNumObjects() == 0
@@ -174,8 +171,8 @@ class TestLeonardAPI:
         # Spawn the first object, then attempt to spawn another with the same
         # objID *before* Leonard gets around to add even the first one --> this
         # must fail and not add anything.
-        assert leoAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
-        assert not leoAPI.addCmdSpawn([(id_0, data_1, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, data_0)]).ok
+        assert not leoAPI.addCmdSpawn([(id_0, data_1)]).ok
         ret = leoAPI.dequeueCommands()
         spawn = ret.data['spawn']
         assert ret.ok and (len(spawn) == 1) and (spawn[0]['objID'] == id_0)
@@ -189,13 +186,13 @@ class TestLeonardAPI:
         # now spawn a new object with the same id_0 but a different State
         # Vectors, let  Leonard process the queue, and then verify that it did
         # not add/modify the object with id_0.
-        assert leoAPI.addCmdSpawn([(id_0, data_0, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, data_0)]).ok
         leo.processCommandsAndSync()
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok and isEqualBD(ret.data[id_0], data_0)
 
         # Spawn a new object with same id_0 but different State Vector data_2.
-        assert leoAPI.addCmdSpawn([(id_0, data_2, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, data_2)]).ok
         leo.processCommandsAndSync()
 
         # The State Vector for id_0 must still be data_0.
@@ -213,7 +210,6 @@ class TestLeonardAPI:
         data_0 = RigidBodyState()
         data_1 = RigidBodyStateOverride(imass=2, scale=3)
         id_0, id_1 = 0, 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # The command queue must be empty for every category.
         ret = leoAPI.dequeueCommands()
@@ -225,7 +221,7 @@ class TestLeonardAPI:
         assert ret.data['booster_force'] == []
 
         # Spawn two objects with id_0 and id_1.
-        tmp = [(id_0, data_0, aabb), (id_1, data_0, aabb)]
+        tmp = [(id_0, data_0), (id_1, data_0)]
         assert leoAPI.addCmdSpawn(tmp).ok
 
         # Verify that the spawn commands were added.
@@ -290,7 +286,7 @@ class TestLeonardAPI:
         # will skip commands for non-existing IDs automatically).
         force, torque = [7, 8, 9], [10, 11.5, 12.5]
         for objID in (id_0, id_1):
-            assert leoAPI.addCmdSpawn([(objID, data_0, aabb)]).ok
+            assert leoAPI.addCmdSpawn([(objID, data_0)]).ok
             assert leoAPI.addCmdModifyBodyState(objID, data_1).ok
             assert leoAPI.addCmdRemoveObject(objID).ok
             assert leoAPI.addCmdDirectForce(objID, force, torque).ok
@@ -325,11 +321,10 @@ class TestLeonardAPI:
 
         # Create a test body.
         id_0 = 0
-        aabb = [(0, 0, 0, 1, 1, 1)]
         body = RigidBodyState()
 
         # Add the object to the DB with ID=0.
-        assert leoAPI.addCmdSpawn([(id_0, body, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, body)]).ok
         leo.processCommandsAndSync()
 
         # Modify the State Vector for id_0.
@@ -427,14 +422,13 @@ class TestLeonardAPI:
 
         # Create two object IDs for this test.
         id_0, id_1 = 0, 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # Create two objects and serialise them.
         data_0 = RigidBodyState(position=[0, 0, 0])
         data_1 = RigidBodyState(position=[10, 10, 10])
 
         # Add the two objects to the simulation.
-        tmp = [(id_0, data_0, aabb), (id_1, data_1, aabb)]
+        tmp = [(id_0, data_0), (id_1, data_1)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
@@ -490,7 +484,7 @@ class TestLeonardAPI:
         data_b = RigidBodyState(cshapes=[getCSSphere(radius=2)])
 
         # Add two new objects to the DB.
-        tmp = [(id_0, data_a, aabb_1), (id_1, data_b, aabb_2)]
+        tmp = [(id_0, data_a), (id_1, data_b)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 

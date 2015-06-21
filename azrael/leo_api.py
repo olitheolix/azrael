@@ -136,7 +136,7 @@ def addCmdSpawn(objData: (tuple, list)):
     """
     Enqueue a new object described by ``objData`` for Leonard to spawn.
 
-    The ``objData`` tuple comprises (objID, sv, aabb).
+    The ``objData`` tuple comprises (objID, sv).
 
     Returns **False** if ``objID`` already exists, is scheduled to spawn, or if
     any of the parameters are invalid.
@@ -144,25 +144,15 @@ def addCmdSpawn(objData: (tuple, list)):
     Leonard will process the queue (and thus this command) once per physics
     cycle. However, it is impossible to determine when exactly.
 
-    fixme: objData must not contain the AABBs anymore.
-
     :param int objID: object ID to insert.
     :param _RigidBodyState sv: encoded state variable data.
-    :param list[vec6] aabbs: list of AABB positions (relative to body position)
-                             and their respective half widths.
     :return: success.
     """
     # Sanity checks all the provided bodies.
-    for objID, sv, aabbs in objData:
+    for objID, sv in objData:
         try:
             assert isinstance(objID, int)
             assert isinstance(sv, _RigidBodyState)
-            assert isinstance(aabbs, (tuple, list))
-            for aabb in aabbs:
-                assert isinstance(aabb, (tuple, list))
-                assert len(aabb) == 6
-                for tmp in aabb:
-                    assert isinstance(tmp, (int, float))
         except AssertionError:
             msg = '<addCmdQueue> received invalid argument type'
             return RetVal(False, msg, None)
@@ -175,7 +165,7 @@ def addCmdSpawn(objData: (tuple, list)):
     # Meta data for spawn command.
     db = database.dbHandles['Commands']
     bulk = db.initialize_unordered_bulk_op()
-    for objID, sv, aabbs in objData:
+    for objID, sv in objData:
         # Compile the AABBs. Return immediately if an error occurs.
         aabbs = computeAABBs(sv.cshapes)
         if not aabbs.ok:
