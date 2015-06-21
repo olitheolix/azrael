@@ -136,7 +136,6 @@ class TestLeonardAllEngines:
 
         # Parameters and constants for this test.
         id_0, id_1 = 0, 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
         sv = rb_state.RigidBodyState()
         templateID = '_templateSphere'.encode('utf8')
 
@@ -149,7 +148,7 @@ class TestLeonardAllEngines:
         del p, vl, vr
 
         # Spawn a new object. It must have ID=1.
-        assert leoAPI.addCmdSpawn([(id_1, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_1, sv)]).ok
 
         # Update the object's State Vector.
         assert leoAPI.addCmdModifyBodyState(id_1, data).ok
@@ -169,7 +168,7 @@ class TestLeonardAllEngines:
     def test_setBodyState_advanced(self, clsLeonard):
         """
         Similar to test_setBodyState_basic but modify the collision shape
-        information as well, namely mass and the collision shape itself.
+        information as well, namely their mass- and type.
         """
         # Get a Leonard instance.
         leo = getLeonard(clsLeonard)
@@ -182,8 +181,7 @@ class TestLeonardAllEngines:
 
         # Spawn an object.
         objID = 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
-        assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(objID, sv)]).ok
 
         # Verify the SV data.
         leo.processCommandsAndSync()
@@ -221,11 +219,10 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0 = 0
-        aabb = [(0, 0, 0, 1, 1, 1)]
         sv = rb_state.RigidBodyState()
 
         # Spawn an object.
-        assert leoAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, sv)]).ok
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leonard.step(1.0, 60)
@@ -255,13 +252,12 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0, id_1 = 0, 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
         MS = rb_state.RigidBodyState
         sv_0 = MS(position=[0, 0, 0], velocityLin=[1, 0, 0])
         sv_1 = MS(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
         # Create two objects.
-        tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
+        tmp = [(id_0, sv_0), (id_1, sv_1)]
         assert leoAPI.addCmdSpawn(tmp).ok
 
         # Advance the simulation by 1s and query the states of both objects.
@@ -293,11 +289,10 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0 = 0
-        aabb = [(0, 0, 0, 1, 1, 1)]
         sv = rb_state.RigidBodyState()
 
         # Spawn one object.
-        assert leoAPI.addCmdSpawn([(id_0, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, sv)]).ok
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leonard.step(1.0, 60)
@@ -369,7 +364,6 @@ class TestLeonardOther:
         assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
         # Constants and parameters for this test.
-        aabb = [(0, 0, 0, 1, 1, 1)]
         id_0, id_1 = 0, 1
         cshapes = [getCSSphere(radius=1)]
 
@@ -380,7 +374,7 @@ class TestLeonardOther:
             position=[0, 10, 0], velocityLin=[0, -1, 0], cshapes=cshapes)
 
         # Create two objects.
-        tmp = [(id_0, sv_0, aabb), (id_1, sv_1, aabb)]
+        tmp = [(id_0, sv_0), (id_1, sv_1)]
         assert leoAPI.addCmdSpawn(tmp).ok
 
         # Advance the simulation by 1s, but use many small time steps. This
@@ -412,7 +406,6 @@ class TestLeonardOther:
         # Constants.
         id_1, id_2 = 1, 2
         dt, maxsteps = 2, 3
-        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # Invalid call: list of IDs must not be empty.
         assert not leo.createWorkPackage([], dt, maxsteps).ok
@@ -425,7 +418,7 @@ class TestLeonardOther:
         sv_2 = rb_state.RigidBodyState(imass=2)
 
         # Add two new objects to Leonard.
-        tmp = [(id_1, sv_1, aabb), (id_2, sv_2, aabb)]
+        tmp = [(id_1, sv_1), (id_2, sv_2)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
@@ -464,10 +457,9 @@ class TestLeonardOther:
         data_1 = rb_state.RigidBodyState(imass=1)
         data_2 = rb_state.RigidBodyState(imass=2)
         id_1, id_2 = 1, 2
-        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # Spawn new objects.
-        tmp = [(id_1, data_1, aabb), (id_2, data_2, aabb)]
+        tmp = [(id_1, data_1), (id_2, data_2)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
@@ -496,13 +488,12 @@ class TestLeonardOther:
         sv_1 = rb_state.RigidBodyState(imass=1)
         sv_2 = rb_state.RigidBodyState(imass=2)
         id_1, id_2 = 1, 2
-        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # Cache must be empty.
         assert len(leo.allObjects) == len(leo.allForces) == 0
 
         # Spawn two objects.
-        tmp = [(id_1, sv_1, aabb), (id_2, sv_2, aabb)]
+        tmp = [(id_1, sv_1), (id_2, sv_2)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
@@ -554,10 +545,9 @@ class TestLeonardOther:
         # Convenience.
         sv = rb_state.RigidBodyState(imass=1)
         objID = 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
 
         # Spawn object.
-        assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
 
         # Initial force and torque must be zero.
@@ -620,10 +610,9 @@ class TestLeonardOther:
         orient = np.array([0, 0, 0, 1])
         sv = rb_state.RigidBodyState(imass=1, orientation=orient)
         objID = 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
-        assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
-        del sv, aabb
+        del sv
 
         # Initial force and torque must be zero.
         assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
@@ -664,10 +653,9 @@ class TestLeonardOther:
         orient = np.array([1, 0, 0, 0])
         sv = rb_state.RigidBodyState(imass=1, orientation=orient)
         objID = 1
-        aabb = [(0, 0, 0, 1, 1, 1)]
-        assert leoAPI.addCmdSpawn([(objID, sv, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
-        del sv, aabb
+        del sv
 
         # Initial force and torque must be zero.
         assert leo.totalForceAndTorque(objID) == ([0, 0, 0], [0, 0, 0])
@@ -777,7 +765,6 @@ class TestLeonardOther:
 
         # Convenience.
         id_a, id_b = 1, 2
-        aabb = [(0, 0, 0, 1, 1, 1)]
         pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
         cs = CollShapeMeta(
             'sphere', '', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1)
@@ -794,7 +781,7 @@ class TestLeonardOther:
         self.igor.addConstraints([con])
 
         # Spawn both objects.
-        assert leoAPI.addCmdSpawn([(id_a, sv_a, aabb), (id_b, sv_b, aabb)]).ok
+        assert leoAPI.addCmdSpawn([(id_a, sv_a), (id_b, sv_b)]).ok
         leo.processCommandsAndSync()
 
         # Apply a force to the left sphere only.
@@ -1262,21 +1249,22 @@ class TestBroadphase:
         # Create the IDs for the test bodies.
         all_IDs = range(10)
 
+        # Create several rigid bodies with a spherical collision shape.
         RBS = rb_state.RigidBodyState
+        cs = [getCSSphere(radius=1)]
         if dim == 0:
-            states = [RBS(position=[_, 0, 0]) for _ in range(10)]
+            states = [RBS(position=[_, 0, 0], cshapes=cs) for _ in range(10)]
         elif dim == 1:
-            states = [RBS(position=[0, _, 0]) for _ in range(10)]
+            states = [RBS(position=[0, _, 0], cshapes=cs) for _ in range(10)]
         elif dim == 2:
-            states = [RBS(position=[0, 0, _]) for _ in range(10)]
+            states = [RBS(position=[0, 0, _], cshapes=cs) for _ in range(10)]
         else:
             print('Invalid dimension for this test')
             assert False
 
         # Add all objects to the Body State DB and sync with Leonard.
-        aabb = [(0, 0, 0, 1, 1, 1)]
         for objID, bs in zip(all_IDs, states):
-            assert leoAPI.addCmdSpawn([(objID, bs, aabb)]).ok
+            assert leoAPI.addCmdSpawn([(objID, bs)]).ok
         del states
         leo.processCommandsAndSync()
 
