@@ -671,7 +671,7 @@ class Clerk(config.AzraelProcess):
                 # We already stored the geometry in Dibbler; here we only add
                 # the meta data (mostly to avoid data duplication) which is why
                 # we delete the 'data' attribute.
-                frags = [frag._replace(data=None) for frag in tt.fragments]
+                frags = [frag._replace(fragdata=None) for frag in tt.fragments]
 
                 # Compile the Mongo document for the new template.
                 data = {
@@ -980,7 +980,7 @@ class Clerk(config.AzraelProcess):
         for doc in docs:
             u = doc['url']
             f = [MetaFragment(*_) for _ in doc['fragments']]
-            obj = {_.aid: {'type': _.type, 'url': pj(u, _.aid)} for _ in f}
+            obj = {_.aid: {'type': _.fragtype, 'url': pj(u, _.aid)} for _ in f}
             out[doc['objID']] = obj
         return RetVal(True, None, out)
 
@@ -1011,12 +1011,12 @@ class Clerk(config.AzraelProcess):
                 return ret
 
             # If the fragment type is '_none_' then remove it altogether.
-            if frag.type == '_none_':
+            if frag.fragtype == '_none_':
                 update({'objID': objID},
                        {'$unset': {'fragState.{}'.format(frag.aid): True}})
 
         # Update the fragment's meta data in the DB.
-        new_frags = [frag._replace(data=None) for frag in fragments]
+        new_frags = [frag._replace(fragdata=None) for frag in fragments]
 
         # Update the 'version' flag in the database. All clients
         # automatically receive this flag with their state variables.

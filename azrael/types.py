@@ -43,7 +43,7 @@ _Template = namedtuple('_Template', 'aid cshapes fragments boosters factories')
 FragState = namedtuple('FragState', 'aid scale position orientation')
 
 # Fragments.
-_MetaFragment = namedtuple('_MetaFragment', 'type aid data')
+_MetaFragment = namedtuple('_MetaFragment', 'aid fragtype fragdata')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 
@@ -68,7 +68,7 @@ CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
 CollShapePlane = namedtuple('CollShapePlane', 'normal ofs')
 
 # Constraints.
-ConstraintMeta = namedtuple('ConstraintMeta', 'type aid rb_a rb_b data')
+ConstraintMeta = namedtuple('ConstraintMeta', 'aid contype rb_a rb_b condata')
 ConstraintP2P = namedtuple('ConstraintP2P', 'pivot_a pivot_b')
 Constraint6DofSpring2 = namedtuple(
     'Constraint6DofSpring2', 'frameInA frameInB stiffness damping equilibrium '
@@ -270,10 +270,10 @@ class MetaFragment(_MetaFragment):
     :return _MetaFragment: a valid meta fragment instance.
     """
     @typecheck
-    def __new__(cls, ftype: str, aid: str, data):
+    def __new__(cls, aid: str, ftype: str, data):
         try:
-            assert isinstance(ftype, str)
             assert isinstance(aid, str)
+            assert isinstance(ftype, str)
             if data is None:
                 frag = None
             else:
@@ -288,7 +288,7 @@ class MetaFragment(_MetaFragment):
         except (TypeError, AssertionError):
             raise TypeError
 
-        return super().__new__(cls, ftype, aid, frag)
+        return super().__new__(cls, aid, ftype, frag)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))

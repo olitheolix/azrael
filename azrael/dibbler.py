@@ -136,7 +136,7 @@ class Dibbler:
         # Verify the data is valid and undo the Base64 encoding.
         try:
             # Sanity check: construct the Collada fragment.
-            tmp = FragDae(*model.data)
+            tmp = FragDae(*model.fragdata)
 
             # Undo the Base64 encoding ('dae' and 'rgb' will be Bytes).
             dae = b64dec(tmp.dae.encode('utf8'))
@@ -173,7 +173,7 @@ class Dibbler:
         """
         # Sanity checks.
         try:
-            data = FragRaw(*model.data)
+            data = FragRaw(*model.fragdata)
         except (AssertionError, TypeError):
             msg = 'Invalid data types for Raw fragments'
             return RetVal(False, msg, None)
@@ -253,7 +253,7 @@ class Dibbler:
             # Fragment directory, eg .../instances/mymodel/frag1
             frag_dir = os.path.join(location, frag.aid)
 
-            ftype = frag.type.lower()
+            ftype = frag.fragtype.lower()
             # Delete the current fragments and save the new ones.
             if ftype == 'raw':
                 self._deleteSubLocation(frag_dir)
@@ -278,7 +278,7 @@ class Dibbler:
             # Update the 'meta.json': it contains a dictionary with all
             # fragment names and their type, for instance:
             # {'foo': 'raw', 'bar': # 'dae', ...}
-            frag_names[frag.aid] = frag.type
+            frag_names[frag.aid] = frag.fragtype
             self.fs.put(json.dumps({'fragments': frag_names}).encode('utf8'),
                         filename=os.path.join(location, 'meta.json'))
 

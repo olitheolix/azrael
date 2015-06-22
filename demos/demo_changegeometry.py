@@ -162,7 +162,7 @@ class SetGeometry(multiprocessing.Process):
                 tmp = urllib.request.urlopen(url).readall()
                 tmp = json.loads(tmp.decode('utf8'))
                 tmp = FragRaw(**tmp)
-                frags[frag_name] = MetaFragment('raw', frag_name, tmp)
+                frags[frag_name] = MetaFragment(frag_name, 'raw', tmp)
                 del url, tmp
             geo_orig[objID] = frags
             del frags, objID
@@ -174,7 +174,7 @@ class SetGeometry(multiprocessing.Process):
         sphere = FragRaw(sphere_vert, sphere_uv, sphere_rgb)
         geo_spheres = {}
         for objID in objIDs:
-            tmp = {_: MetaFragment('raw', _, sphere) for _ in geo_orig[objID]}
+            tmp = {_: MetaFragment(_, 'raw', sphere) for _ in geo_orig[objID]}
             geo_spheres[objID] = tmp
             del tmp
         del sphere_vert, sphere_uv, sphere_rgb, sphere

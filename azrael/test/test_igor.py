@@ -34,8 +34,8 @@ def isEqualConstraint(ca, cb):
         cb = ConstraintMeta(**cb)
         assert ca.rb_a == cb.rb_a
         assert ca.rb_b == cb.rb_b
-        assert ca.type == cb.type
-        assert list(ca.data) == list(cb.data)
+        assert ca.contype == cb.contype
+        assert list(ca.condata) == list(cb.condata)
     except (KeyError, TypeError, AssertionError):
         return False
     return True
@@ -49,7 +49,7 @@ def getP2P(rb_a, rb_b, constraint_id):
     """
     pivot_a, pivot_b = [0, 0, -1], [0, 0, 1]
     p2p = ConstraintP2P(pivot_a, pivot_b)
-    return ConstraintMeta('p2p', constraint_id, rb_a, rb_b, p2p)
+    return ConstraintMeta(constraint_id, 'p2p', rb_a, rb_b, p2p)
 
 
 def get6DofSpring2(rb_a, rb_b, constraint_id):
@@ -70,7 +70,7 @@ def get6DofSpring2(rb_a, rb_b, constraint_id):
         rotLimitHi=[0.1, 0.2, 0.3],
         bounce=[1, 1.5, 2],
         enableSpring=[True, False, False, False, False, False])
-    con = ConstraintMeta('6DOFSPRING2', constraint_id, rb_a, rb_b, dof)
+    con = ConstraintMeta(constraint_id, '6DOFSPRING2', rb_a, rb_b, dof)
     return con
 
 
@@ -156,7 +156,7 @@ class TestClerk:
 
         # Reset igor and add two constraints, of which only one has a valid
         # 'type'. The 'addConstraints' must only add the valid one.
-        c6 = c6._replace(type='foo')
+        c6 = c6._replace(contype='foo')
         assert igor.reset().ok
         assert igor.addConstraints([c1, c6]) == (True, None, 1)
         assert igor.updateLocalCache() == (True, None, 1)

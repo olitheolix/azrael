@@ -103,7 +103,7 @@ def spawnColladaModel(scale, fname):
     del b
 
     # Put both fragments into a valid list of MetaFragments.
-    frags = [MetaFragment('dae', 'f_dae', f_dae)]
+    frags = [MetaFragment('f_dae', 'dae', f_dae)]
 
     temp = Template('Collada', [4, 1, 1, 1], frags, [], [])
     assert client.addTemplates([temp]).ok

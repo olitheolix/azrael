@@ -161,11 +161,11 @@ def ToClerk_AddTemplates_Decode(payload: dict):
         fixme: contains unreachable code (see body).
         Decode the Collada fragment data ``mf``.
         """
-        return mf._replace(data=FragDae(*mf.data))
-        fd = FragDae(*mf.data)
+        return mf._replace(fragdata=FragDae(*mf.fragdata))
+        fd = FragDae(*mf.fragdata)
         dae = b64d(fd.dae.encode('utf8'))
         rgb = {k: b64d(v.encode('utf8')) for (k, v) in fd.rgb.items()}
-        return mf._replace(data=FragDae(dae, rgb))
+        return mf._replace(fragdata=FragDae(dae, rgb))
 
     with azrael.util.Timeit('clerk.decode') as timeit:
         for data in payload['data']:
@@ -179,7 +179,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
             # Wrap each fragment model into its dedicated tuple type.
             frags = []
             for mf in meta_frags:
-                if mf.type.upper() == 'DAE':
+                if mf.fragtype.upper() == 'DAE':
                     # Collada format.
                     frags.append(_decodeDae(mf))
                 else:
@@ -349,11 +349,11 @@ def ToClerk_SetFragmentGeometry_Decode(payload: dict):
     b64d = base64.b64decode
     for frag in payload['frags']:
         mf = MetaFragment(*frag)
-        if mf.type == 'dae':
+        if mf.fragtype == 'dae':
             # fixme: mf.data should be a dictionary; use **kwargs to construct
             # the tuple; must be encoded as such in the ToClerk_..._Encode
             # function defined above.
-            mf = mf._replace(data=FragDae(*mf.data))
+            mf = mf._replace(fragdata=FragDae(*mf.fragdata))
         frags.append(mf)
     return True, (payload['objID'], frags)
 
@@ -566,8 +566,8 @@ def FromClerk_SetFragmentStates_Decode(dummyarg):
 def ToClerk_AddConstraints_Encode(constraints: (tuple, list)):
     out = []
     for con in constraints:
-        data = con.data._asdict()
-        meta = con._replace(data=None)._asdict()
+        data = con.condata._asdict()
+        meta = con._replace(condata=None)._asdict()
         out.append({'m': meta, 'd': data})
     return RetVal(True, None, {'constraints': out})
 
@@ -585,11 +585,11 @@ def ToClerk_AddConstraints_Decode(payload: dict):
 
         # Look up the correct named tuple for the specified constraint and use
         # it to wrap the data.
-        fun = kc[meta.type.upper()]
-        data = fun(**data)
+        fun = kc[meta.contype.upper()]
+        condata = fun(**data)
 
         # Add the constructed constraint to the list.
-        out.append(meta._replace(data=data))
+        out.append(meta._replace(condata=condata))
     return True, (out, )
 
 
@@ -647,8 +647,8 @@ def ToClerk_GetConstraints_Decode(payload: dict):
 def FromClerk_GetConstraints_Encode(constraints):
     out = []
     for con in constraints:
-        data = con.data._asdict()
-        meta = con._replace(data=None)._asdict()
+        data = con.condata._asdict()
+        meta = con._replace(condata=None)._asdict()
         out.append({'m': meta, 'd': data})
     return True, {'constraints': out}
 
@@ -666,11 +666,11 @@ def FromClerk_GetConstraints_Decode(payload):
 
         # Look up the correct named tuple for the specified constraint and use
         # it to wrap the data.
-        fun = kc[meta.type.upper()]
-        data = fun(**data)
+        fun = kc[meta.contype.upper()]
+        condata = fun(**data)
 
         # Add the constructed constraint to the list.
-        out.append(meta._replace(data=data))
+        out.append(meta._replace(condata=condata))
     return RetVal(True, None, out)
 
 
@@ -693,8 +693,8 @@ def ToClerk_GetAllConstraints_Decode(payload):
 def FromClerk_GetAllConstraints_Encode(constraints: (tuple, list)):
     out = []
     for con in constraints:
-        data = con.data._asdict()
-        meta = con._replace(data=None)._asdict()
+        data = con.condata._asdict()
+        meta = con._replace(condata=None)._asdict()
         out.append({'m': meta, 'd': data})
     return True, {'constraints': out}
 
@@ -712,9 +712,9 @@ def FromClerk_GetAllConstraints_Decode(payload: dict):
 
         # Look up the correct named tuple for the specified constraint and use
         # it to wrap the data.
-        fun = kc[meta.type.upper()]
-        data = fun(**data)
+        fun = kc[meta.contype.upper()]
+        condata = fun(**data)
 
         # Add the constructed constraint to the list.
-        out.append(meta._replace(data=data))
+        out.append(meta._replace(condata=condata))
     return RetVal(True, None, out)

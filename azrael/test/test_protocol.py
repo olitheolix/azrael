@@ -219,7 +219,7 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
                          'rgb2.jpg': b64_dae_rgb2})
 
     # Compile a valid Template structure.
-    frags = [MetaFragment('DAE', 'f_dae', f_dae)]
+    frags = [MetaFragment('f_dae', 'DAE', f_dae)]
     temp = Template('foo', [4, 1, 1, 1], frags, [], [])
 
     # ----------------------------------------------------------------------

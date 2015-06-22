@@ -357,15 +357,15 @@ class PyBulletDynamicsWorld():
             # Construct the specified constraint type. Raise an error if the
             # constraint could not be constructed (eg the constraint name is
             # unknown).
-            if c.type.upper() == 'P2P':
-                tmp = ConstraintP2P(*c.data)
+            if c.contype.upper() == 'P2P':
+                tmp = ConstraintP2P(*c.condata)
                 out = azBullet.Point2PointConstraint(
                     rb_a, rb_b,
                     Vec3(*tmp.pivot_a),
                     Vec3(*tmp.pivot_b)
                 )
-            elif c.type.upper() == '6DOFSPRING2':
-                t = Constraint6DofSpring2(*c.data)
+            elif c.contype.upper() == '6DOFSPRING2':
+                t = Constraint6DofSpring2(*c.condata)
                 fa, fb = t.frameInA, t.frameInB
                 frameInA = Transform(Quaternion(*fa[3:]), Vec3(*fa[:3]))
                 frameInB = Transform(Quaternion(*fb[3:]), Vec3(*fb[:3]))

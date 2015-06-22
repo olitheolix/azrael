@@ -62,7 +62,7 @@ class TestClerk:
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        frag = [MetaFragment('raw', 'NoName', createFragRaw())]
+        frag = [MetaFragment('NoName', 'raw', createFragRaw())]
         t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
@@ -144,7 +144,7 @@ class TestClerk:
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Compile a template structure.
-        frags = [MetaFragment('raw', 'foo', createFragRaw())]
+        frags = [MetaFragment('foo', 'raw', createFragRaw())]
         temp = Template('bar', [cs], frags, [], [])
 
         # Add template when 'saveModel' fails.
@@ -229,8 +229,8 @@ class TestClerk:
         name_1, name_2 = 't1', 't2'
 
         # Define templates.
-        frags_1 = [MetaFragment('raw', 'foo', createFragRaw())]
-        frags_2 = [MetaFragment('raw', 'foo', createFragRaw())]
+        frags_1 = [MetaFragment('foo', 'raw', createFragRaw())]
+        frags_2 = [MetaFragment('foo', 'raw', createFragRaw())]
         t1 = Template(name_1, [getCSSphere()], frags_1, [], [])
         t2 = Template(name_2, [getCSSphere()], frags_2, [], [])
 
@@ -247,13 +247,13 @@ class TestClerk:
         ret = clerk.getTemplates([name_1])
         assert ret.ok
         url_template = config.url_templates
-        assert MetaFragment(*(ret.data[name_1]['fragments'][0])).type == 'RAW'
+        assert MetaFragment(*(ret.data[name_1]['fragments'][0])).fragtype == 'RAW'
         assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
 
         # Fetch the second template.
         ret = clerk.getTemplates([name_2])
         assert ret.ok
-        assert MetaFragment(*(ret.data[name_2]['fragments'][0])).type == 'RAW'
+        assert MetaFragment(*(ret.data[name_2]['fragments'][0])).fragtype == 'RAW'
         assert ret.data[name_2]['url'] == config.url_templates + '/' + name_2
 
         # Fetch both templates at once.
@@ -559,7 +559,7 @@ class TestClerk:
         booster = parts.Booster(
             partID='0', pos=v, direction=v, minval=0, maxval=1, force=0)
 
-        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
+        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
 
         # Define a new template with two boosters and add it to Azrael.
         template = Template('t1',
@@ -635,7 +635,7 @@ class TestClerk:
             templateID='_templateCube', exit_speed=[0, 1])
 
         # Define a new template, add it to Azrael, and spawn an instance.
-        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
+        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0], [f0])
         assert clerk.addTemplates([temp]).ok
         sv = rb_state.RigidBodyState()
@@ -691,7 +691,7 @@ class TestClerk:
                            minval=0, maxval=0.5, force=0)
 
         # Define a new template with two boosters and add it to Azrael.
-        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
+        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [])
         assert clerk.addTemplates([temp]).ok
 
@@ -766,7 +766,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
-        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
+        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
@@ -839,7 +839,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
-        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
+        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
@@ -940,7 +940,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
-        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
+        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
@@ -1046,8 +1046,8 @@ class TestClerk:
         f_dae = createFragDae()
 
         # Put both fragments into a valid list of MetaFragments.
-        frags = [MetaFragment('RAW', 'f_raw', f_raw),
-                 MetaFragment('DAE', 'f_dae', f_dae)]
+        frags = [MetaFragment('f_raw', 'RAW', f_raw),
+                 MetaFragment('f_dae', 'DAE', f_dae)]
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
@@ -1111,7 +1111,7 @@ class TestClerk:
         sv = rb_state.RigidBodyState()
 
         # Add a valid template and verify it now exists in Azrael.
-        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
+        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
         temp = Template('foo', [getCSSphere()], frags, [], [])
         assert clerk.addTemplates([temp]).ok
 
@@ -1130,7 +1130,7 @@ class TestClerk:
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
-        frags = [MetaFragment('RAW', 'bar', createFragRaw())]
+        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
         assert clerk.setFragmentGeometries(objID0, frags).ok
 
         # Verify that the new 'version' flag is now different.
@@ -1165,7 +1165,7 @@ class TestClerk:
                            minval=-1, maxval=1, force=0)
 
         # Define a template with one fragment.
-        frags = [MetaFragment('RAW', 'foo', createFragRaw())]
+        frags = [MetaFragment('foo', 'RAW', createFragRaw())]
         t1 = Template('t1', [getCSSphere()], frags, [b0, b1], [])
 
         # Add the template and spawn two instances.
@@ -1239,7 +1239,7 @@ class TestClerk:
         sv = rb_state.RigidBodyState()
 
         # Define a new template with one fragment.
-        frags = [MetaFragment('RAW', 'foo', createFragRaw())]
+        frags = [MetaFragment('foo', 'RAW', createFragRaw())]
         t1 = Template('t1', [getCSSphere()], fragments=frags,
                       boosters=[], factories=[])
 
@@ -1398,8 +1398,8 @@ class TestClerk:
         f_raw = createFragRaw()
         f_dae = createFragDae()
 
-        frags = [MetaFragment('RAW', '10', f_raw),
-                 MetaFragment('DAE', 'test', f_dae)]
+        frags = [MetaFragment('10', 'RAW', f_raw),
+                 MetaFragment('test', 'DAE', f_dae)]
 
         t1 = Template('t1', cs, frags, boosters=[], factories=[])
         assert clerk.addTemplates([t1]).ok
@@ -1480,8 +1480,8 @@ class TestClerk:
 
         # Change the fragment geometries.
         f_raw = createFragRaw()
-        frags = [MetaFragment('RAW', '10', f_raw),
-                 MetaFragment('DAE', 'test', f_dae)]
+        frags = [MetaFragment('10', 'RAW', f_raw),
+                 MetaFragment('test', 'DAE', f_dae)]
         assert clerk.setFragmentGeometries(objID, frags).ok
         ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
@@ -1558,8 +1558,8 @@ class TestClerk:
             rotLimitHi=[0.1, 0.2, 0.3],
             bounce=[1, 1.5, 2],
             enableSpring=[True, False, False, False, False, False])
-        con_1 = ConstraintMeta('p2p', '', id_1, id_2, p2p_12)
-        con_2 = ConstraintMeta('6DOFSPRING2', '', id_2, id_3, dof_23)
+        con_1 = ConstraintMeta('', 'p2p', id_1, id_2, p2p_12)
+        con_2 = ConstraintMeta('', '6DOFSPRING2', id_2, id_3, dof_23)
 
         # Verify that no constraints are currently active.
         assert clerk.getAllConstraints() == (True, None, tuple())
@@ -1622,7 +1622,7 @@ class TestClerk:
 
         # Define the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
-        constraints = [ConstraintMeta('p2p', '', id_a, id_b, p2p)]
+        constraints = [ConstraintMeta('', 'p2p', id_a, id_b, p2p)]
         assert clerk.addConstraints(constraints) == (True, None, 1)
 
         # Apply a force that will pull the left object further to the left.
