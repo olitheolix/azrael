@@ -913,7 +913,7 @@ class Clerk(config.AzraelProcess):
                 # Add the object description to the list.
                 objs.append((objID, sv))
 
-            # Queue the spawn commands so that Leonard can pick them up.
+            # Queue the spawn commands. Leonard will fetch them at its leisure.
             ret = leoAPI.addCmdSpawn(objs)
             if not ret.ok:
                 return ret

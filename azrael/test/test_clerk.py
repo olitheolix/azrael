@@ -42,7 +42,7 @@ from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
-from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
+from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere, getCSPlane
 
 
 class TestClerk:
@@ -66,7 +66,8 @@ class TestClerk:
         t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
-        ret = self.clerk.addTemplates([t1, t2, t3])
+        t4 = Template('_templatePlane', [getCSPlane()], frag, [], [])
+        ret = self.clerk.addTemplates([t1, t2, t3, t4])
         assert ret.ok
 
     def teardown_method(self, method):
@@ -83,31 +84,38 @@ class TestClerk:
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
 
-        # Clerk has a few default objects. This one has no collision shape...
+        # Clerk has a few default objects. This one has no collision shape,...
         name_1 = '_templateEmpty'
         ret = clerk.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
         assert isEqualCS(ret.data[name_1]['cshapes'], [getCSEmpty()])
 
-        # ... this one is a sphere...
+        # ... this one is a sphere,...
         name_2 = '_templateSphere'
         ret = clerk.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
         assert isEqualCS(ret.data[name_2]['cshapes'], [getCSSphere()])
 
-        # ... and this one is a cube.
+        # ... this one is a cube,...
         name_3 = '_templateCube'
         ret = clerk.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
         assert isEqualCS(ret.data[name_3]['cshapes'], [getCSBox()])
 
+        # ... and this one is a static plane.
+        name_4 = '_templatePlane'
+        ret = clerk.getTemplates([name_4])
+        assert ret.ok and (len(ret.data) == 1) and (name_4 in ret.data)
+        assert isEqualCS(ret.data[name_4]['cshapes'], [getCSPlane()])
+
         # Retrieve all three again but with a single call.
-        ret = clerk.getTemplates([name_1, name_2, name_3])
+        ret = clerk.getTemplates([name_1, name_2, name_3, name_4])
         assert ret.ok
-        assert set(ret.data.keys()) == set((name_1, name_2, name_3))
+        assert set(ret.data.keys()) == set((name_1, name_2, name_3, name_4))
         assert isEqualCS(ret.data[name_1]['cshapes'], [getCSEmpty()])
         assert isEqualCS(ret.data[name_2]['cshapes'], [getCSSphere()])
         assert isEqualCS(ret.data[name_3]['cshapes'], [getCSBox()])
+        assert isEqualCS(ret.data[name_4]['cshapes'], [getCSPlane()])
 
     def test_add_get_template_single(self):
         """
@@ -1605,7 +1613,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (id_a, id_b))
 
         # Verify that both objects were spawned (simply query their template
-        # original template to establish that they now actually exist).
+        # ID to establish that).
         leo.processCommandsAndSync()
         ret_a = clerk.getTemplateID(id_a)
         ret_b = clerk.getTemplateID(id_b)
