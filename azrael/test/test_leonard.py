@@ -771,7 +771,7 @@ class TestLeonardOther:
         id_a, id_b = 1, 2
         pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
         cs = CollShapeMeta(
-            'sphere', '', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1)
+            '', 'sphere', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1)
         )
         distance = abs(pos_a[0] - pos_b[0])
         assert distance >= 4
@@ -1166,7 +1166,7 @@ class TestBroadphase:
 
         # Create the test body at the center. It is a centered unit cube.
         box = CollShapeBox(1, 1, 1)
-        cs_a = CollShapeMeta('box', '1', (0, 0, 0), (0, 0, 0, 1), box)
+        cs_a = CollShapeMeta('1', 'box', (0, 0, 0), (0, 0, 0, 1), box)
         body_a = RBS(position=(0, 0, 0), cshapes=[cs_a])
         del cs_a
 
@@ -1182,7 +1182,7 @@ class TestBroadphase:
 
             # Create the second body. Its collision shape is a unit cube
             # at position `cs_ofs`.
-            cs_b = CollShapeMeta('box', '1', cs_ofs, (0, 0, 0, 1), box)
+            cs_b = CollShapeMeta('1', 'box', cs_ofs, (0, 0, 0, 1), box)
             body_b = RBS(position=pos, scale=scale, orientation=rot,
                          cshapes=[cs_b])
 

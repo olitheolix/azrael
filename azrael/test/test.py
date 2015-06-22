@@ -54,7 +54,7 @@ def isEqualCS(la, lb):
     for a, b in zip(la, lb):
         a = CollShapeMeta(*a)
         b = CollShapeMeta(*b)
-        assert list(a.cshape) == list(b.cshape)
+        assert list(a.csdata) == list(b.csdata)
         for f in a._fields:
             assert list(getattr(a, f)) == list(getattr(b, f))
     return True

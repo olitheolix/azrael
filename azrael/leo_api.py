@@ -66,14 +66,14 @@ def computeAABBs(cshapes: (tuple, list)):
     try:
         # Wrap the inputs into CollShapeMeta structures.
         cshapes = [CollShapeMeta(*_) for _ in cshapes]
-        if 'PLANE' in [_.type.upper() for _ in cshapes]:
+        if 'PLANE' in [_.cstype.upper() for _ in cshapes]:
             if len(cshapes) > 1:
                 msg = 'Plane must be the only collision shape'
                 return RetVal(False, msg, None)
 
             # Planes must have defaule values for position and orientation, or
             # Azrael considers them invalid.
-            pos, rot = tuple(cshapes[0].pos), tuple(cshapes[0].rot)
+            pos, rot = tuple(cshapes[0].position), tuple(cshapes[0].rotation)
             if (pos == (0, 0, 0)) and (rot == (0, 0, 0, 1)):
                 aabbs.append((0, 0, 0, 0, 0, 0))
                 return RetVal(True, None, aabbs)
@@ -83,19 +83,19 @@ def computeAABBs(cshapes: (tuple, list)):
 
         for cs in cshapes:
             # Move the origin of the collision shape according to its rotation.
-            quat = util.Quaternion(cs.rot[3], cs.rot[:3])
-            pos = tuple(quat * cs.pos)
+            quat = util.Quaternion(cs.rotation[3], cs.rotation[:3])
+            pos = tuple(quat * cs.position)
 
             # Determine the AABBs based on the collision shape type.
-            ctype = cs.type.upper()
+            ctype = cs.cstype.upper()
             if ctype == 'SPHERE':
                 # All AABBs half lengths have the same length (equal to radius).
-                r = CollShapeSphere(*cs.cshape).radius
+                r = CollShapeSphere(*cs.csdata).radius
                 aabbs.append(pos + (r, r, r))
             elif ctype == 'BOX':
                 # All AABBs half lengths are equal. The value equals the largest
                 # extent times sqrt(3) to accommodate all possible orientations.
-                tmp = s3 * max(CollShapeBox(*cs.cshape))
+                tmp = s3 * max(CollShapeBox(*cs.csdata))
                 aabbs.append(pos + (tmp, tmp, tmp))
             elif ctype == 'EMPTY':
                 # Empty shapes do not have an AABB.

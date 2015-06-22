@@ -208,7 +208,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Convenience.
     cs = CollShapeBox(1, 1, 1)
-    cs = CollShapeMeta('box', '', (0, 0, 0), (0, 0, 0, 1), cs)
+    cs = CollShapeMeta('', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
     uv = np.array([], np.float64)
     rgb = np.array([], np.uint8)
 

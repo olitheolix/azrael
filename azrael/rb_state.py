@@ -32,9 +32,11 @@ from azrael.types import CollShapeMeta, CollShapeEmpty
 
 # Default argument for RigidBodyState below (purely for visual appeal, not
 # because anyone would/should use it).
-_CSDefault = CollShapeMeta(
-    'Empty', '', (0, 0, 0), (0, 0, 0, 1), CollShapeEmpty()
-)
+_CSDefault = CollShapeMeta(aid='',
+                           cstype='Empty',
+                           position=(0, 0, 0),
+                           rotation=(0, 0, 0, 1),
+                           csdata=CollShapeEmpty())
 
 
 @typecheck
@@ -71,13 +73,13 @@ def RigidBodyState(scale: (int, float)=1,
         assert version >= 0
         cshapes = [CollShapeMeta(*_) for _ in cshapes]
         for cs in cshapes:
-            assert isinstance(cs.type, str)
+            assert isinstance(cs.cstype, str)
             assert isinstance(cs.aid, str)
-            assert isinstance(cs.pos, (tuple, list, np.ndarray))
-            assert isinstance(cs.rot, (tuple, list, np.ndarray))
-            assert len(np.array(cs.pos)) == 3
-            assert len(np.array(cs.rot)) == 4
-            assert cs.type.lower() in ('empty', 'sphere', 'box', 'plane')
+            assert isinstance(cs.position, (tuple, list, np.ndarray))
+            assert isinstance(cs.rotation, (tuple, list, np.ndarray))
+            assert len(np.array(cs.position)) == 3
+            assert len(np.array(cs.rotation)) == 4
+            assert cs.cstype.upper() in ('EMPTY', 'SPHERE', 'BOX', 'PLANE')
 
             # fixme: do I need additional sanity checks for the various
             # Collision shapes, or is the protocol module going to handle it?

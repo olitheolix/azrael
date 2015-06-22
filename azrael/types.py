@@ -60,8 +60,8 @@ _RigidBodyState = namedtuple('_RigidBodyState',
                              'axesLockLin axesLockRot version')
 
 # Collision shapes.
-# fixme: cshape --> csdata, type --> cstype
-CollShapeMeta = namedtuple('CollShapeMeta', 'type aid pos rot cshape')
+CollShapeMeta = namedtuple('CollShapeMeta',
+                           'aid cstype position rotation csdata')
 CollShapeBox = namedtuple('CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')

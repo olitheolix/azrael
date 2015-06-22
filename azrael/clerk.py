@@ -581,15 +581,15 @@ class Clerk(config.AzraelProcess):
             for cs in cshapes:
                 cs = CollShapeMeta(*cs)
                 assert isinstance(cs.aid, str)
-                assert isinstance(cs.type, str)
-                assert isinstance(cs.pos, (tuple, list))
-                assert isinstance(cs.rot, (tuple, list))
+                assert isinstance(cs.cstype, str)
+                assert isinstance(cs.position, (tuple, list))
+                assert isinstance(cs.rotation, (tuple, list))
 
-                assert len(cs.pos) == 3
-                assert len(cs.rot) == 4
-                for _ in cs.pos:
+                assert len(cs.position) == 3
+                assert len(cs.rotation) == 4
+                for _ in cs.position:
                     assert isinstance(_, (float, int))
-                for _ in cs.rot:
+                for _ in cs.rotation:
                     assert isinstance(_, (float, int))
             return RetVal(True, None, None)
         except (AssertionError, TypeError):

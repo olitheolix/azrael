@@ -42,12 +42,12 @@ def isEqualBD(bd1: _RigidBodyState, bd2: _RigidBodyState):
                 for csm_a, csm_b in zip(a, b):
                     tmp_a = CollShapeMeta(*csm_a)
                     tmp_b = CollShapeMeta(*csm_b)
-                    tmp_a = tmp_a._replace(cshape=list(tmp_a.cshape))
-                    tmp_b = tmp_b._replace(cshape=list(tmp_b.cshape))
-                    tmp_a = tmp_a._replace(pos=list(tmp_a.pos))
-                    tmp_b = tmp_b._replace(pos=list(tmp_b.pos))
-                    tmp_a = tmp_a._replace(rot=list(tmp_a.rot))
-                    tmp_b = tmp_b._replace(rot=list(tmp_b.rot))
+                    tmp_a = tmp_a._replace(csdata=list(tmp_a.csdata))
+                    tmp_b = tmp_b._replace(csdata=list(tmp_b.csdata))
+                    tmp_a = tmp_a._replace(position=list(tmp_a.position))
+                    tmp_b = tmp_b._replace(position=list(tmp_b.position))
+                    tmp_a = tmp_a._replace(rotation=list(tmp_a.rotation))
+                    tmp_b = tmp_b._replace(rotation=list(tmp_b.rotation))
                     tmp_a = list(tmp_a)
                     tmp_b = list(tmp_b)
                     assert tmp_a == tmp_b
@@ -58,33 +58,33 @@ def isEqualBD(bd1: _RigidBodyState, bd2: _RigidBodyState):
     return True
 
 
-def getCSEmpty(name='csempty', pos=[0, 0, 0], rot=[0, 0, 0, 1]):
+def getCSEmpty(aid='csempty', pos=[0, 0, 0], rot=[0, 0, 0, 1]):
     """
     Convenience function to construct an Empty shape.
     """
-    return CollShapeMeta('empty', name, pos, rot, CollShapeEmpty())
+    return CollShapeMeta(aid, 'empty', pos, rot, CollShapeEmpty())
 
 
-def getCSBox(name='csbox', pos=[0, 0, 0], rot=[0, 0, 0, 1], dim=[1, 1, 1]):
+def getCSBox(aid='csbox', pos=[0, 0, 0], rot=[0, 0, 0, 1], dim=[1, 1, 1]):
     """
     Convenience function to construct a Box shape.
     """
-    return CollShapeMeta('box', name, pos, rot, CollShapeBox(*dim))
+    return CollShapeMeta(aid, 'box', pos, rot, CollShapeBox(*dim))
 
 
-def getCSSphere(name='cssphere', pos=[0, 0, 0], rot=[0, 0, 0, 1], radius=1):
+def getCSSphere(aid='cssphere', pos=[0, 0, 0], rot=[0, 0, 0, 1], radius=1):
     """
     Convenience function to construct a Sphere shape.
     """
-    return CollShapeMeta('sphere', name, pos, rot, CollShapeSphere(radius))
+    return CollShapeMeta(aid, 'sphere', pos, rot, CollShapeSphere(radius))
 
 
-def getCSPlane(name='csplane', pos=[0, 0, 0], rot=[0, 0, 0, 1],
+def getCSPlane(aid='csplane', pos=[0, 0, 0], rot=[0, 0, 0, 1],
                normal=[0, 0, 1], ofs=0):
     """
     Convenience function to construct a Plane in the x/y dimension.
     """
-    return CollShapeMeta('plane', name, pos, rot, CollShapePlane(normal, ofs))
+    return CollShapeMeta(aid, 'plane', pos, rot, CollShapePlane(normal, ofs))
 
 
 class TestBulletAPI:
@@ -172,7 +172,7 @@ class TestBulletAPI:
         # Replace the CollShape named tuple with just a list.
         p, q = (0, 0, 0), (0, 0, 0, 1)
         cshape_1 = getCSSphere('csfoo', pos, rot, radius=2)
-        cshape_2 = cshape_1._replace(cshape=list(cshape_1.cshape))
+        cshape_2 = cshape_1._replace(csdata=list(cshape_1.csdata))
         cshape_2 = list(cshape_2)
         obj_a1 = obj_a._replace(cshapes=[cshape_1])
         obj_a2 = obj_a._replace(cshapes=[cshape_2])

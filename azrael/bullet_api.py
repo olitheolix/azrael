@@ -471,12 +471,12 @@ class PyBulletDynamicsWorld():
 
             # Determine which CollisionShape to instantiate, scale it
             # accordingly, and apply create it in Bullet.
-            cstype = cs.type.upper()
+            cstype = cs.cstype.upper()
             if cstype == 'SPHERE':
-                sphere = CollShapeSphere(*cs.cshape)
+                sphere = CollShapeSphere(*cs.csdata)
                 child = azBullet.SphereShape(scale * sphere.radius)
             elif cstype == 'BOX':
-                box = CollShapeBox(*cs.cshape)
+                box = CollShapeBox(*cs.csdata)
                 hl = Vec3(scale * box.x, scale * box.y, scale * box.z)
                 child = azBullet.BoxShape(hl)
             elif cstype == 'EMPTY':
@@ -484,7 +484,7 @@ class PyBulletDynamicsWorld():
             elif cstype == 'PLANE':
                 # Planes are always static.
                 rbState_mass = 0
-                plane = CollShapePlane(*cs.cshape)
+                plane = CollShapePlane(*cs.csdata)
                 normal = Vec3(*plane.normal)
                 child = azBullet.StaticPlaneShape(normal, plane.ofs)
             else:
@@ -505,7 +505,7 @@ class PyBulletDynamicsWorld():
 
             # Add the collision shape at the respective position and
             # orientation relative to the parent.
-            t = azBullet.Transform(Quaternion(*cs.rot), Vec3(*cs.pos))
+            t = azBullet.Transform(Quaternion(*cs.rotation), Vec3(*cs.position))
             compound.addChildShape(t, child)
             tot_mass += rbState_mass
             tot_inertia += inertia

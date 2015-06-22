@@ -577,7 +577,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Geometry.
         buf_vert = getGeometriesCube()
         cs = CollShapeBox(1, 1, 1)
-        cs = CollShapeMeta('box', 'player', (0, 0, 0), (0, 0, 0, 1), cs)
+        cs = CollShapeMeta('player', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
         uv = np.array([], np.float64)
         rgb = np.array([], np.uint8)
 
@@ -881,7 +881,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         pos = self.camera.position
         cs = CollShapeBox(1, 1, 1)
-        cs = CollShapeMeta('box', 'player', (0, 0, 0), (0, 0, 0, 1), cs)
+        cs = CollShapeMeta('player', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
         attr = leoAPI.RigidBodyStateOverride(position=pos, cshapes=[cs])
         assert self.client.setBodyState(self.player_id, attr).ok
         del cs
