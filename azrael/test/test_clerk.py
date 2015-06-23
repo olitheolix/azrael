@@ -610,17 +610,11 @@ class TestClerk:
         leo.processCommandsAndSync()
         assert not clerk.controlParts(objID_1, [cmd_b], []).ok
 
-        # Must fail: objects has no factory.
+        # Must fail: object has no factory.
         assert not clerk.controlParts(objID_1, [], [cmd_f]).ok
 
-        # Must fail: objects still has neither a booster nor a factory.
+        # Must fail: object still has neither a booster nor a factory.
         assert not clerk.controlParts(objID_1, [cmd_b], [cmd_f]).ok
-
-        # Must fail: Factory where Booster is expected and vice versa.
-        assert not clerk.controlParts(objID_1, [cmd_f], [cmd_b]).ok
-
-        # Must fail: Booster command among Factory commands.
-        assert not clerk.controlParts(objID_1, [], [cmd_f, cmd_b]).ok
 
         # ---------------------------------------------------------------------
         # Create a template with one booster and one factory. Then send
@@ -649,9 +643,6 @@ class TestClerk:
 
         # Valid: Clerk must accept these commands.
         assert clerk.controlParts(objID_2, [cmd_b], [cmd_f]).ok
-
-        # Invalid: Booster where Factory is expected and vice versa.
-        assert not clerk.controlParts(objID_2, [cmd_f], [cmd_b]).ok
 
         # Invalid: every part can only receive one command per call.
         assert not clerk.controlParts(objID_2, [cmd_b, cmd_b], []).ok

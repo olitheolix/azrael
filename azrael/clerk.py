@@ -393,29 +393,30 @@ class Clerk(config.AzraelProcess):
         parent_orient = sv_parent.orientation
         quat = util.Quaternion(parent_orient[3], parent_orient[:3])
 
-        # Verify that all Booster commands have the correct type and specify
-        # a valid Booster ID.
+        # Sanity check the commands.
+        try:
+            cmd_boosters = [types.CmdBooster(*_) for _ in cmd_boosters]
+            cmd_factories = [types.CmdFactory(*_) for _ in cmd_factories]
+        except TypeError:
+            msg = 'Invalid booster- or factory command'
+            self.logit.warning(msg)
+            return RetVal(False, msg, None)
+
+        # Verify that the commands are valid and specify existing Boosters.
         for cmd in cmd_boosters:
-            if not isinstance(cmd, types.CmdBooster):
-                msg = 'Invalid Booster type'
-                self.logit.warning(msg)
-                return RetVal(False, msg, None)
+            # Verify the referenced booster exists.
             if cmd.partID not in booster_t:
-                msg = 'Object <{}> has no Booster ID <{}>'
+                msg = 'Object <{}> has no Booster with AID <{}>'
                 msg = msg.format(objID, cmd.partID)
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
         del booster_t
 
-        # Verify that all Factory commands have the correct type and specify
-        # a valid Factory ID.
+        # Verify that the commands are valid and specify existing Factories.
         for cmd in cmd_factories:
-            if not isinstance(cmd, types.CmdFactory):
-                msg = 'Invalid Factory type'
-                self.logit.warning(msg)
-                return RetVal(False, msg, None)
+            # Verify the referenced factory exists.
             if cmd.partID not in factory_t:
-                msg = 'Object <{}> has no Factory ID <{}>'
+                msg = 'Object <{}> has no Factory with AID <{}>'
                 msg = msg.format(objID, cmd.partID)
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
