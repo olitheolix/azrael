@@ -838,13 +838,6 @@ class Clerk(config.AzraelProcess):
             database.dbHandles['ObjInstances'].insert(dbDocs)
 
         with util.Timeit('spawn:3 addCmds') as timeit:
-            # Sanity check: collision shapes.
-            for name, sv, objID in zip(t_names, SVs, objIDs):
-                cs = templates[name]['cshapes']
-                ret = self._verifyCollisionShapes(cs)
-                if not ret.ok:
-                    return ret
-
             # Compile the list of spawn commands that will be sent to Leonard.
             objs = []
             for name, sv, objID in zip(t_names, SVs, objIDs):
