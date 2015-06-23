@@ -40,7 +40,7 @@ RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Template dataset.
 _Template = namedtuple('_Template', 'aid cshapes fragments boosters factories')
-FragState = namedtuple('FragState', 'aid scale position orientation')
+_FragState = namedtuple('FragState', 'aid scale position orientation')
 
 # Fragments.
 _MetaFragment = namedtuple('_MetaFragment', 'aid fragtype fragdata')
@@ -317,3 +317,34 @@ class Template(_Template):
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
+
+
+class FragState(_FragState):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict aid: fragment name
+    :return _FragState: a valid meta fragment instance.
+    """
+    @typecheck
+    def __new__(cls, aid: str,
+                scale: (int, float),
+                position: (tuple, list),
+                orientation: (tuple, list)):
+        try:
+            p = np.array(position, np.float64)
+            o = np.array(orientation, np.float64)
+            assert p.ndim == o.ndim == 1
+            assert len(p) == 3
+            assert len(o) == 4
+            assert scale >= 0
+        except (TypeError, AssertionError):
+            raise TypeError
+
+        return super().__new__(cls, aid, scale, position, orientation)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
