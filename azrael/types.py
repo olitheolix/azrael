@@ -30,10 +30,14 @@ Usage example::
         pass
 
 """
+import logging
 import inspect
 import functools
 import numpy as np
 from collections import namedtuple, OrderedDict
+
+# Create module logger.
+logit = logging.getLogger('azrael.' + __name__)
 
 # Uniform return value signature.
 RetVal = namedtuple('RetVal', 'ok msg data')
@@ -232,6 +236,8 @@ class FragRaw(_FragRaw):
             assert len(rgb) % 3 == 0
             assert len(vert) % 3 == len(uv) % 2
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
 
         return super().__new__(cls, vert, uv, rgb)
@@ -254,6 +260,8 @@ class FragDae(_FragDae):
                 assert isinstance(k, str)
                 assert isinstance(v, str)
         except AssertionError:
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
 
         return super().__new__(cls, dae, rgb)
@@ -286,6 +294,8 @@ class MetaFragment(_MetaFragment):
                 else:
                     assert False
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
 
         return super().__new__(cls, aid, ftype, frag)
@@ -346,6 +356,8 @@ class Template(_Template):
             # Compile- and sanity check all geometry fragments.
             frags = [MetaFragment(*_) for _ in fragments]
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
 
         return super().__new__(cls, aid, cshapes, frags, boosters, factories)
@@ -379,6 +391,8 @@ class FragState(_FragState):
             p = p.tolist()
             o = o.tolist()
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
 
         return super().__new__(cls, aid, scale, p, o)
@@ -422,6 +436,8 @@ class CollShapeMeta(_CollShapeMeta):
             else:
                 assert False
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
 
         return super().__new__(cls, aid, cstype, tuple(p), tuple(r), csdata)
@@ -459,6 +475,8 @@ class CollShapeBox(_CollShapeBox):
         try:
             assert (x >= 0) and (y >= 0) and (z >= 0)
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
         return super().__new__(cls, x, y, z)
 
@@ -479,6 +497,8 @@ class CollShapeSphere(_CollShapeSphere):
         try:
             assert radius >= 0
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
         return super().__new__(cls, radius)
 
@@ -502,6 +522,8 @@ class CollShapePlane(_CollShapePlane):
             assert len(normal) == 3
             normal = normal.tolist()
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
         return super().__new__(cls, normal, ofs)
 
@@ -566,6 +588,8 @@ class Booster(_Booster):
             pos = pos.tolist()
             direction = direction.tolist()
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
 
         return super().__new__(cls, partID, pos, direction,
@@ -693,6 +717,8 @@ class Factory(_Factory):
             direction = direction.tolist()
             exit_speed = exit_speed.tolist()
         except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
             raise TypeError
 
         # Return a valid Factory instance based on the arguments.
