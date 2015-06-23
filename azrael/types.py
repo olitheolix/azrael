@@ -79,6 +79,23 @@ _Constraint6DofSpring2 = namedtuple(
                              'linLimitLo linLimitHi rotLimitLo rotLimitHi '
                              'bounce enableSpring')
 
+def toVec(num_el, v):
+    """
+    Verify that ``v`` is a vector with ``num_el`` entries.
+
+    :param int num_el: positive integer
+    :param v: an iterable (eg tuple, list, NumPy array).
+    :return: v as tuple
+    """
+    assert num_el > 0
+    try:
+        v = np.array(v, np.float64)
+        assert v.ndim == 1
+        assert len(v) == num_el
+    except (TypeError, AssertionError):
+        assert False
+    return tuple(v)
+    
 
 def typecheck(func_handle):
     """
@@ -612,17 +629,17 @@ class Constraint6DofSpring2(_Constraint6DofSpring2):
                 enableSpring: (tuple, list)):
 
         try:
-            frameInA = tuple(frameInA)
-            frameInB = tuple(frameInB)
-            stiffness = tuple(stiffness)
-            damping = tuple(damping)
-            equilibrium = tuple(equilibrium)
-            linLimitLo = tuple(linLimitLo)
-            linLimitHi = tuple(linLimitHi)
-            rotLimitLo = tuple(rotLimitLo)
-            rotLimitHi = tuple(rotLimitHi)
-            bounce = tuple(bounce)
-            enableSpring = tuple(enableSpring)
+            frameInA = toVec(7, frameInA)
+            frameInB = toVec(7, frameInB)
+            stiffness = toVec(6, stiffness)
+            damping = toVec(6, damping)
+            equilibrium = toVec(6, equilibrium)
+            linLimitLo = toVec(3, linLimitLo)
+            linLimitHi = toVec(3, linLimitHi)
+            rotLimitLo = toVec(3, rotLimitLo)
+            rotLimitHi = toVec(3, rotLimitHi)
+            bounce = toVec(3, bounce)
+            enableSpring = toVec(6, enableSpring)
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
@@ -664,8 +681,8 @@ class Booster(_Booster):
        in the direction of the force.
 
     :param str partID: Booster ID (arbitrary)
-    :param ndarray pos: position vector (3-elements)
-    :param ndarray direction: force direction (3-elements)
+    :param vec3 pos: position vector (3-elements)
+    :param vec3 direction: force direction (3-elements)
     :param float minval: minimum force this Booster can generate.
     :param float maxval: maximum force this Booster can generate.
     :param float force: force value this booster currently exerts on object.
@@ -676,24 +693,15 @@ class Booster(_Booster):
                 direction: (list, np.ndarray), minval: (int, float),
                 maxval: (int, float), force: (int, float)):
         try:
+            # Verify the inputs.
             assert isAIDStringValid(partID)
+            pos = toVec(3, pos)
+            direction = toVec(3, direction)
 
-            # Position must be a 3-element vector.
-            pos = np.array(pos, np.float64)
-            assert len(pos) == 3
-
-            # Direction must be a 3-element vector.
-            direction = np.array(direction, np.float64)
-            assert len(direction) == 3
-
-            # Normalise the direction vector or raise an error if invalid.
+            # Normalise the direction vector. Raise an error if it is invalid.
             assert np.dot(direction, direction) > 1E-5
             direction = direction / np.sqrt(np.dot(direction, direction))
-
-            # Only store native Python types to make them compatible with
-            # MongoDB.
-            pos = pos.tolist()
-            direction = direction.tolist()
+            direction = tuple(direction)
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
@@ -701,7 +709,6 @@ class Booster(_Booster):
 
         return super().__new__(cls, partID, pos, direction,
                                minval, maxval, force)
-
 
     def __eq__(self, ref):
         # Sanity check.
@@ -793,36 +800,23 @@ class Factory(_Factory):
            which new objects will be spawned).
 
         :param str partID: factory ID (arbitrary).
-        :param ndarray pos: position vector (3-elements).
-        :param ndarray direction: exit direction of new objects (3-elements).
+        :param vec3 pos: position vector (3-elements).
+        :param vec3 direction: exit direction of new objects (3-elements).
         :param str templateID: name of template spawned by this factory.
-        :param ndarray exit_speed: [min, max] exit speed of spawned object.
+        :param vec2 exit_speed: [min, max] exit speed of spawned object.
         :return Factory: compiled factory description.
         """
         try:
+            # Verify the inputs.
             assert isAIDStringValid(partID)
+            pos = toVec(3, pos)
+            direction = toVec(3, direction)
+            exit_speed = toVec(2, exit_speed)
 
-
-            # Position must be a 3-element vector.
-            pos = np.array(pos, np.float64)
-            assert len(pos) == 3
-
-            # Direction must be a 3-element vector.
-            direction = np.array(direction, np.float64)
-            assert len(direction) == 3
-
-            # Normalise the direction vector or raise an error if invalid.
+            # Normalise the direction vector. Raise an error if it is invalid.
             assert np.dot(direction, direction) > 1E-5
             direction = direction / np.sqrt(np.dot(direction, direction))
-
-            # This defines exit speed range of the spawned object.
-            exit_speed = np.array(exit_speed, np.float64)
-            assert len(exit_speed) == 2
-
-            # Only store native Python types to make them compatible with MongoDB.
-            pos = pos.tolist()
-            direction = direction.tolist()
-            exit_speed = exit_speed.tolist()
+            direction = tuple(direction)
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
