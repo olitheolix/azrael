@@ -272,7 +272,7 @@ class MetaFragment(_MetaFragment):
     @typecheck
     def __new__(cls, aid: str, ftype: str, data):
         try:
-            assert isinstance(aid, str)
+            assert isAIDStringValid(aid)
             assert isinstance(ftype, str)
             if data is None:
                 frag = None
@@ -298,9 +298,8 @@ def isAIDStringValid(aid):
     """
     Return *True* if ``aid`` is a valid ID name in Azrael.
 
-    The ``aid`` is valid when it is a non-empty string, between one and 32
-    characters long, and contains only alphanumeric characters (ie
-    [a-zA-Z0-9]) and '_'.
+    The ``aid`` must be a string with at most 32 characters drawn from
+    [a-zA-Z0-9] and '_'.
 
     :param str aid: the AID string to validate.
     :return: *True* if ``aid`` is valid, *False* otherwise.
@@ -310,7 +309,7 @@ def isAIDStringValid(aid):
         return False
 
     # Must contain at least one character and no more than 32.
-    if not (0 < len(aid) <= 32):
+    if not (0 <= len(aid) <= 32):
         return False
 
     # Compile the set of admissible characters.
@@ -369,6 +368,8 @@ class FragState(_FragState):
                 position: (tuple, list),
                 orientation: (tuple, list)):
         try:
+            assert isAIDStringValid(aid)
+
             p = np.array(position, np.float64)
             o = np.array(orientation, np.float64)
             assert p.ndim == o.ndim == 1
@@ -401,6 +402,8 @@ class CollShapeMeta(_CollShapeMeta):
                 rotation: (tuple, list, np.ndarray),
                 csdata):
         try:
+            assert isAIDStringValid(aid)
+
             p = np.array(position, np.float64)
             r = np.array(rotation, np.float64)
             assert p.ndim == r.ndim == 1
@@ -544,6 +547,8 @@ class Booster(_Booster):
                 direction: (list, np.ndarray), minval: (int, float),
                 maxval: (int, float), force: (int, float)):
         try:
+            assert isAIDStringValid(partID)
+
             # Position must be a 3-element vector.
             pos = np.array(pos, np.float64)
             assert len(pos) == 3
@@ -563,10 +568,9 @@ class Booster(_Booster):
         except (TypeError, AssertionError):
             raise TypeError
 
-        self = super().__new__(cls, partID, pos, direction,
+        return super().__new__(cls, partID, pos, direction,
                                minval, maxval, force)
 
-        return self
 
     def __eq__(self, ref):
         # Sanity check.
@@ -601,9 +605,9 @@ class CmdBooster(_CmdBooster):
     """
     @typecheck
     def __new__(cls, partID: str, force: (int, float, np.float64)):
+        assert isAIDStringValid(partID)
         force = float(force)
-        self = super().__new__(cls, partID, force)
-        return self
+        return super().__new__(cls, partID, force)
 
     def __eq__(self, ref):
         # Sanity check.
@@ -665,6 +669,9 @@ class Factory(_Factory):
         :return Factory: compiled factory description.
         """
         try:
+            assert isAIDStringValid(partID)
+
+
             # Position must be a 3-element vector.
             pos = np.array(pos, np.float64)
             assert len(pos) == 3
@@ -689,9 +696,8 @@ class Factory(_Factory):
             raise TypeError
 
         # Return a valid Factory instance based on the arguments.
-        self = super().__new__(
+        return super().__new__(
             cls, partID, pos, direction, templateID, exit_speed)
-        return self
 
     def __eq__(self, ref):
         if not isinstance(ref, type(self)):
@@ -720,9 +726,9 @@ class CmdFactory(_CmdFactory):
     """
     @typecheck
     def __new__(cls, partID: str, exit_speed: (int, float, np.float64)):
+        assert isAIDStringValid(partID)
         exit_speed = float(exit_speed)
-        self = super().__new__(cls, partID, exit_speed)
-        return self
+        return super().__new__(cls, partID, exit_speed)
 
     def __eq__(self, ref):
         # Sanity check.
