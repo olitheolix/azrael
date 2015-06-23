@@ -114,7 +114,7 @@ class TestDibbler:
 
         # Define a template for this test.
         frag = [MetaFragment('NoNameRaw', 'raw', createFragRaw())]
-        t_raw = Template('_templateEmpty', [0, 1, 1, 1], frag, [], [])
+        t_raw = Template('_templateEmpty', [], frag, [], [])
 
         # Add the first template and verify that the database now contains
         # exactly two files (a meta file, and the actual fragment data).
@@ -133,7 +133,7 @@ class TestDibbler:
 
         # Define a template for this test.
         frag = [MetaFragment('NoNameDae', 'dae', createFragDae())]
-        t_dae = Template('_templateEmpty', [0, 1, 1, 1], frag, [], [])
+        t_dae = Template('_templateEmpty', [], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
         assert dibbler.getNumFiles() == (True, None, 0)
@@ -164,8 +164,8 @@ class TestDibbler:
         # Define two templates.
         frag_raw = MetaFragment('fragname_raw', 'raw', createFragRaw())
         frag_dae = MetaFragment('fragname_dae', 'dae', createFragDae())
-        t_raw = Template('t_name_raw', [0, 1, 1, 1], [frag_raw], [], [])
-        t_dae = Template('t_name_dae', [0, 1, 1, 1], [frag_dae], [], [])
+        t_raw = Template('t_name_raw', [], [frag_raw], [], [])
+        t_dae = Template('t_name_dae', [], [frag_dae], [], [])
 
         # Add the templates and verify there are 6 files in the DB now. The
         # first template has two files (1 meta.json plus 1 for the raw data)
@@ -210,7 +210,7 @@ class TestDibbler:
         frags_new = [
             MetaFragment('fname_1', 'dae', createFragDae()),
         ]
-        t1 = Template('t1', [1, 2, 3, 4], frags_orig, [], [])
+        t1 = Template('t1', [], frags_orig, [], [])
 
         # Add the template and spawn two instances.
         assert dibbler.addTemplate(t1).ok
@@ -268,7 +268,7 @@ class TestDibbler:
             MetaFragment('fname_2', 'dae', createFragDae()),
             MetaFragment('fname_3', 'raw', createFragRaw())
         ]
-        t1 = Template('t1', [1, 2, 3, 4], frags_orig, [], [])
+        t1 = Template('t1', [], frags_orig, [], [])
 
         # The fragment update will use the following data. It translates to
         # keeping the first intact, removing the second, and modifying the
@@ -316,8 +316,8 @@ class TestDibbler:
         # Define two templates.
         frag_raw = [MetaFragment('frag_raw', 'raw', createFragRaw())]
         frag_dae = [MetaFragment('frag_dae', 'dae', createFragDae())]
-        t11 = Template('name11', [0, 1, 1, 1], frag_raw, [], [])
-        t1 = Template('name1', [0, 1, 1, 1], frag_dae, [], [])
+        t11 = Template('name11', [], frag_raw, [], [])
+        t1 = Template('name1', [], frag_dae, [], [])
 
         # Verify that Dibbler is pristine.
         assert dibbler.getNumFiles() == (True, None, 0)
@@ -381,8 +381,8 @@ class TestDibbler:
         # Define two templates.
         frag_raw = [MetaFragment('frag_raw', 'raw', createFragRaw())]
         frag_dae = [MetaFragment('frag_dae', 'dae', createFragDae())]
-        t_raw = Template('temp_raw', [0, 1, 1, 1], frag_raw, [], [])
-        t_dae = Template('temp_dae', [0, 1, 1, 1], frag_dae, [], [])
+        t_raw = Template('temp_raw', [], frag_raw, [], [])
+        t_dae = Template('temp_dae', [], frag_dae, [], [])
 
         # Verify that Dibbler is empty.
         assert dibbler.getNumFiles() == (True, None, 0)

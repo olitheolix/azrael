@@ -294,6 +294,36 @@ class MetaFragment(_MetaFragment):
         return OrderedDict(zip(self._fields, self))
 
 
+def isAIDStringValid(aid):
+    """
+    Return *True* if ``aid`` is a valid ID name in Azrael.
+
+    The ``aid`` is valid when it is a non-empty string, between one and 32
+    characters long, and contains only alphanumeric characters (ie
+    [a-zA-Z0-9]) and '_'.
+
+    :param str aid: the AID string to validate.
+    :return: *True* if ``aid`` is valid, *False* otherwise.
+    """
+    # Aid must be a string.
+    if not isinstance(aid, str):
+        return False
+
+    # Must contain at least one character and no more than 32.
+    if not (0 < len(aid) <= 32):
+        return False
+
+    # Compile the set of admissible characters.
+    ref = 'abcdefghijklmnopqrstuvwxyz'
+    ref += ref.upper()
+    ref += '0123456789_'
+    ref = set(ref)
+
+    # Return true if ``aid`` only consists of characters from the just
+    # defined reference set.
+    return set(aid).issubset(ref)
+
+
 class Template(_Template):
     """
     fixme: docu
@@ -309,6 +339,12 @@ class Template(_Template):
                 boosters: (tuple, list),
                 factories: (tuple, list)):
         try:
+            assert isAIDStringValid(aid)
+
+            # Compile- and sanity check all collision shapes.
+            cshapes = [CollShapeMeta(*_) for _ in cshapes]
+
+            # Compile- and sanity check all geometry fragments.
             frags = [MetaFragment(*_) for _ in fragments]
         except (TypeError, AssertionError):
             raise TypeError

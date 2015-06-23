@@ -63,7 +63,7 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     # Clerk --> Client.
     # ----------------------------------------------------------------------
     # Encode source data.
-    cs = [1, 2, 3, 4]
+    cs = []
     data = {'cshapes': cs, 'boosters': [b0, b1], 'factories': [f0],
             'url': 'http://somewhere',
             'fragments': MetaFragment('foo', 'RAW', None)}
@@ -220,7 +220,7 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
 
     # Compile a valid Template structure.
     frags = [MetaFragment('f_dae', 'DAE', f_dae)]
-    temp = Template('foo', [4, 1, 1, 1], frags, [], [])
+    temp = Template('foo', [], frags, [], [])
 
     # ----------------------------------------------------------------------
     # Client --> Clerk.
