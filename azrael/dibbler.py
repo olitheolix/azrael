@@ -413,9 +413,10 @@ class Dibbler:
         :return: see :func:`saveModel`
         """
         try:
-            for _ in frags:
-                assert isinstance(_, MetaFragment)
-            # 'objID', albeit a string, it must correspond to a valid integer.
+            # Sanity check the fragments.
+            frags = [MetaFragment(*_) for _ in frags]
+
+            # 'objID', albeit a string, must correspond to a valid integer.
             int(objID)
         except (TypeError, ValueError):
             msg = 'Invalid parameters in updateFragments command'
