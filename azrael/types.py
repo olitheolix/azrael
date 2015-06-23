@@ -63,9 +63,9 @@ _RigidBodyState = namedtuple('_RigidBodyState',
 _CollShapeMeta = namedtuple('_CollShapeMeta',
                             'aid cstype position rotation csdata')
 _CollShapeBox = namedtuple('_CollShapeBox', 'x y z')
-CollShapeEmpty = namedtuple('CollShapeEmpty', '')
-CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
-CollShapePlane = namedtuple('CollShapePlane', 'normal ofs')
+_CollShapeEmpty = namedtuple('_CollShapeEmpty', '')
+_CollShapeSphere = namedtuple('_CollShapeSphere', 'radius')
+_CollShapePlane = namedtuple('_CollShapePlane', 'normal ofs')
 
 # Constraints.
 ConstraintMeta = namedtuple('ConstraintMeta', 'aid contype rb_a rb_b condata')
@@ -339,10 +339,12 @@ class FragState(_FragState):
             assert len(p) == 3
             assert len(o) == 4
             assert scale >= 0
+            p = p.tolist()
+            o = o.tolist()
         except (TypeError, AssertionError):
             raise TypeError
 
-        return super().__new__(cls, aid, scale, position, orientation)
+        return super().__new__(cls, aid, scale, p, o)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
@@ -359,8 +361,8 @@ class CollShapeMeta(_CollShapeMeta):
     @typecheck
     def __new__(cls, aid: str,
                 cstype: str,
-                position: (tuple, list),
-                rotation: (tuple, list),
+                position: (tuple, list, np.ndarray),
+                rotation: (tuple, list, np.ndarray),
                 csdata):
         try:
             p = np.array(position, np.float64)
@@ -368,10 +370,91 @@ class CollShapeMeta(_CollShapeMeta):
             assert p.ndim == r.ndim == 1
             assert len(p) == 3
             assert len(r) == 4
+            p = p.tolist()
+            r = r.tolist()
         except (TypeError, AssertionError):
             raise TypeError
 
-        return super().__new__(cls, aid, cstype, position, rotation, csdata)
+        return super().__new__(cls, aid, cstype, p, r, csdata)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
+class CollShapeEmpty(_CollShapeEmpty):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict aid: fragment name
+    :return _CollShapeEmpty: a valid 'Empty' collision shape.
+    """
+    @typecheck
+    def __new__(cls):
+        return super().__new__(cls)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
+class CollShapeBox(_CollShapeBox):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict aid: fragment name
+    :return _CollShapeBox: a valid 'Box' collision shape.
+    """
+    @typecheck
+    def __new__(cls, x: (int, float), y: (int, float), z: (int, float)):
+        try:
+            assert (x >= 0) and (y >= 0) and (z >= 0)
+        except (TypeError, AssertionError):
+            raise TypeError
+        return super().__new__(cls, x, y, z)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
+class CollShapeSphere(_CollShapeSphere):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict aid: fragment name
+    :return _CollShapeSphere: a valid 'Sphere' collision shape.
+    """
+    @typecheck
+    def __new__(cls, radius: (int, float)):
+        try:
+            assert radius >= 0
+        except (TypeError, AssertionError):
+            raise TypeError
+        return super().__new__(cls, radius)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
+class CollShapePlane(_CollShapePlane):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict aid: fragment name
+    :return _CollShapePlane: a valid 'Plane' collision shape.
+    """
+    @typecheck
+    def __new__(cls, normal: (tuple, list), ofs: (int, float)):
+        try:
+            normal = np.array(normal, np.float64)
+            assert normal.ndim == 1
+            assert len(normal) == 3
+            normal = normal.tolist()
+        except (TypeError, AssertionError):
+            raise TypeError
+        return super().__new__(cls, normal, ofs)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
