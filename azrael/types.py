@@ -72,10 +72,10 @@ _CollShapeSphere = namedtuple('_CollShapeSphere', 'radius')
 _CollShapePlane = namedtuple('_CollShapePlane', 'normal ofs')
 
 # Constraints.
-ConstraintMeta = namedtuple('ConstraintMeta', 'aid contype rb_a rb_b condata')
-ConstraintP2P = namedtuple('ConstraintP2P', 'pivot_a pivot_b')
-Constraint6DofSpring2 = namedtuple(
-    'Constraint6DofSpring2', 'frameInA frameInB stiffness damping equilibrium '
+_ConstraintMeta = namedtuple('_ConstraintMeta', 'aid contype rb_a rb_b condata')
+_ConstraintP2P = namedtuple('_ConstraintP2P', 'pivot_a pivot_b')
+_Constraint6DofSpring2 = namedtuple(
+    '_Constraint6DofSpring2', 'frameInA frameInB stiffness damping equilibrium '
                              'linLimitLo linLimitHi rotLimitLo rotLimitHi '
                              'bounce enableSpring')
 
@@ -531,6 +531,87 @@ class CollShapePlane(_CollShapePlane):
         return OrderedDict(zip(self._fields, self))
 
 
+class ConstraintMeta(_ConstraintMeta):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict aid: fragment name
+    :return _ConstraintMeta: a valid 'Plane' collision shape.
+    """
+    @typecheck
+    def __new__(cls, aid: str, contype: str, rb_a,
+                rb_b, condata):
+        try:
+            pass
+        except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
+            raise TypeError
+        return super().__new__(cls, aid, contype, rb_a, rb_b, condata)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
+class ConstraintP2P(_ConstraintP2P):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict aid: fragment name
+    :return _ConstraintP2P: a valid 'Plane' collision shape.
+    """
+    @typecheck
+    def __new__(cls, pivot_a: (tuple, list), pivot_b: (tuple, list)):
+        try:
+            pass
+        except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
+            raise TypeError
+        return super().__new__(cls, pivot_a, pivot_b)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
+class Constraint6DofSpring2(_Constraint6DofSpring2):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict aid: fragment name
+    :return _Constraint6DofSpring2: a valid 'Plane' collision shape.
+    """
+    @typecheck
+    def __new__(cls, frameInA, frameInB,
+                stiffness: (tuple, list),
+                damping: (tuple, list),
+                equilibrium,
+                linLimitLo: (tuple, list, np.ndarray),
+                linLimitHi: (tuple, list, np.ndarray),
+                rotLimitLo: (tuple, list, np.ndarray),
+                rotLimitHi: (tuple, list, np.ndarray),
+                bounce: (tuple, list, np.ndarray),
+                enableSpring: (tuple, list)):
+        try:
+            pass
+        except (TypeError, AssertionError):
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
+            raise TypeError
+        return super().__new__(cls, frameInA, frameInB, stiffness,
+                               damping, equilibrium,
+                               linLimitLo, linLimitHi,
+                               rotLimitLo, rotLimitHi,
+                               bounce, enableSpring)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
+
+
 # -----------------------------------------------------------------------------
 # Booster
 #
@@ -774,3 +855,5 @@ class CmdFactory(_CmdFactory):
 
     def __ne__(self, ref):
         return not self.__eq__(ref)
+
+
