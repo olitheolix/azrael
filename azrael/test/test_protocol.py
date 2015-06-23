@@ -198,6 +198,82 @@ def test_GetBodyState():
     print('Test passed')
 
 
+def test_add_get_constraint():
+    """
+    Add- and get constraints.
+    """
+    # Define the constraints.
+    p2p = types.ConstraintP2P(pivot_a=(0, 1, 2), pivot_b=(3, 4, 5))
+    p2p = types.ConstraintMeta('conid', 'p2p', 1, 2, p2p)
+    dof = types.Constraint6DofSpring2(
+        frameInA=[0, 0, 0, 0, 0, 0, 1],
+        frameInB=[0, 0, 0, 0, 0, 0, 1],
+        stiffness=[1, 2, 3, 4, 5.5, 6],
+        damping=[2, 3.5, 4, 5, 6.5, 7],
+        equilibrium=[-1, -1, -1, 0, 0, 0],
+        linLimitLo=[-10.5, -10.5, -10.5],
+        linLimitHi=[10.5, 10.5, 10.5],
+        rotLimitLo=[-0.1, -0.2, -0.3],
+        rotLimitHi=[0.1, 0.2, 0.3],
+        bounce=[1, 1.5, 2],
+        enableSpring=[True, False, False, False, False, False])
+    dof = types.ConstraintMeta('conid', '6dofspring2', 1, 2, dof)
+
+    # ----------------------------------------------------------------------
+    # Client --> Clerk.
+    # ----------------------------------------------------------------------
+    for con in (p2p, dof):
+        # Encode source data.
+        ret = protocol.ToClerk_AddConstraints_Encode([con])
+        assert ret.ok
+
+        # Convert output to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps(ret.data))
+
+        # Decode the data.
+        ok, (dec_con, ) = protocol.ToClerk_AddConstraints_Decode(enc)
+        assert (ok, len(dec_con)) == (True, 1)
+
+        # Verify.
+        assert dec_con[0] == con
+
+    # ----------------------------------------------------------------------
+    # Clerk --> Client
+    # ----------------------------------------------------------------------
+    for con in (p2p, dof):
+        # Encode source data.
+        ok, enc = protocol.FromClerk_GetConstraints_Encode([con])
+        assert ok
+
+        # Convert output to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps(enc))
+
+        # Decode the data.
+        dec_con = protocol.FromClerk_GetConstraints_Decode(enc)
+        assert (dec_con.ok, len(dec_con.data)) == (True, 1)
+
+        # Verify.
+        assert dec_con.data[0] == con
+
+    # ----------------------------------------------------------------------
+    # Clerk --> Client
+    # ----------------------------------------------------------------------
+    for con in (p2p, dof):
+        # Encode source data.
+        ok, enc = protocol.FromClerk_GetConstraints_Encode([con])
+        assert ok
+
+        # Convert output to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps(enc))
+
+        # Decode the data.
+        dec_con = protocol.FromClerk_GetConstraints_Decode(enc)
+        assert (dec_con.ok, len(dec_con.data)) == (True, 1)
+
+        # Verify.
+        assert dec_con.data[0] == con
+
+
 def test_addTemplate_collada(clientType='ZeroMQ'):
     """
     Test addTemplate codec with Collada data.

@@ -540,18 +540,30 @@ class ConstraintMeta(_ConstraintMeta):
     :return _ConstraintMeta: a valid 'Plane' collision shape.
     """
     @typecheck
-    def __new__(cls, aid: str, contype: str, rb_a,
-                rb_b, condata):
+    def __new__(cls, aid: str, contype: str, rb_a, rb_b, condata):
         try:
-            pass
-        except (TypeError, AssertionError):
+            assert isAIDStringValid(aid)
+            if contype.upper() == 'P2P':
+                if isinstance(condata, dict):
+                    condata = ConstraintP2P(**condata)
+                else:
+                    condata = ConstraintP2P(*condata)
+            elif contype.upper() == '6DOFSPRING2':
+                if isinstance(condata, dict):
+                    condata = Constraint6DofSpring2(**condata)
+                else:
+                    condata = Constraint6DofSpring2(*condata)
+            else:
+                assert False
+        except (TypeError, AssertionError) as err:
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
         return super().__new__(cls, aid, contype, rb_a, rb_b, condata)
 
     def _asdict(self):
-        return OrderedDict(zip(self._fields, self))
+        tmp = self._replace(condata=self.condata._asdict())
+        return OrderedDict(zip(self._fields, tmp))
 
 
 class ConstraintP2P(_ConstraintP2P):
@@ -565,7 +577,8 @@ class ConstraintP2P(_ConstraintP2P):
     @typecheck
     def __new__(cls, pivot_a: (tuple, list), pivot_b: (tuple, list)):
         try:
-            pass
+            pivot_a = tuple(pivot_a)
+            pivot_b = tuple(pivot_b)
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
@@ -585,18 +598,31 @@ class Constraint6DofSpring2(_Constraint6DofSpring2):
     :return _Constraint6DofSpring2: a valid 'Plane' collision shape.
     """
     @typecheck
-    def __new__(cls, frameInA, frameInB,
+    def __new__(cls,
+                frameInA: (tuple, list),
+                frameInB: (tuple, list),
                 stiffness: (tuple, list),
                 damping: (tuple, list),
-                equilibrium,
+                equilibrium: (tuple, list),
                 linLimitLo: (tuple, list, np.ndarray),
                 linLimitHi: (tuple, list, np.ndarray),
                 rotLimitLo: (tuple, list, np.ndarray),
                 rotLimitHi: (tuple, list, np.ndarray),
                 bounce: (tuple, list, np.ndarray),
                 enableSpring: (tuple, list)):
+
         try:
-            pass
+            frameInA = tuple(frameInA)
+            frameInB = tuple(frameInB)
+            stiffness = tuple(stiffness)
+            damping = tuple(damping)
+            equilibrium = tuple(equilibrium)
+            linLimitLo = tuple(linLimitLo)
+            linLimitHi = tuple(linLimitHi)
+            rotLimitLo = tuple(rotLimitLo)
+            rotLimitHi = tuple(rotLimitHi)
+            bounce = tuple(bounce)
+            enableSpring = tuple(enableSpring)
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)

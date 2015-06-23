@@ -74,23 +74,13 @@ class Igor:
 
         # Build an iterator that returns the constraints from the data base and
         # wraps them into ConstraintMeta tuples.
-        constraints = (CM(**_) for _ in cursor)
+        constraints = (CM(*_['con']) for _ in cursor)
 
-        # Iterate over all constraints and substitute the 'condata' attribute
-        # with the correct named tuple for the respective constraint. This will
-        # build a dictionary where the keys are ConstraintMeta tuple with a
-        # value of *None* for the data field, and the value is the same
-        # `ConstraintMeta` data but with a valid 'condata' attribute.
+        # Iterate over all constraints and  build a dictionary. The keys are
+        # `ConstraintMeta` tuples with a value of *None* for the data field.
+        # The values contain the same `ConstraintMeta` data but with a valid
+        # 'condata' attribute.
         for con in constraints:
-            try:
-                NT = _Known_Constraints[con.contype.upper()]
-                con = con._replace(condata=NT(**con.condata))
-            except KeyError:
-                # Skip over unknown constraints.
-                msg = 'Ignoring unknown constraint {}'.format(con.contype)
-                self.logit.info(msg)
-                continue
-
             # Replace the 'condata' field in the constraint. This will become
             # the key for the self._cache dictionary.
             key = con._replace(condata=None)
@@ -132,18 +122,18 @@ class Igor:
 
             # Sort the body IDs. This will simplify the logic to fetch- and
             # process constraints.
+            # fixme: rename rb_a to eg bodyID_a
             rb_a, rb_b = sorted((rb_a, rb_b))
             con = con._replace(rb_a=rb_a, rb_b=rb_b)
 
-            # Convert content of the 'condata' field into a dictionary to store
-            # it in MongoDB without loosing the attribute names.
-            con = con._replace(condata=con.condata._asdict())
-
             # Insert the constraints into MongoDB. The constraint query must
-            # match both objects IDs, the type, and the constraint ID.
+            # match both object IDs, as well as their type and constraint ID.
             tmp = {'rb_a': rb_a, 'rb_b': rb_b,
                    'contype': con.contype, 'aid': con.aid}
-            queries.append((tmp, con._asdict()))
+            # fixme: nicer names
+            tmp2 = dict(tmp)
+            tmp2['con'] = con
+            queries.append((tmp, tmp2))
 
         # Return immediately if the list of constraints to add is empty.
         if len(queries) == 0:
