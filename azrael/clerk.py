@@ -1150,24 +1150,7 @@ class Clerk(config.AzraelProcess):
             # All objIDs must be integers and all values must be dictionaries.
             for objID, fragStates in fragData.items():
                 assert isinstance(objID, int)
-                assert isinstance(fragStates, (list, tuple))
-
-                # Each fragmentID must be a stringified integer, and all
-                # fragment data must be a list with three entries.
-                for fragState in fragStates:
-                    assert isinstance(fragState, FragState)
-                    assert isinstance(fragState.aid, str)
-
-                    # Verify the content of the ``FragState`` data:
-                    # scale (float), position (3-element vector), and
-                    # orientation (4-element vector).
-                    assert isinstance(fragState.scale, (int, float))
-                    assert len(fragState.position) == 3
-                    assert len(fragState.orientation) == 4
-                    for _ in fragState.position:
-                        assert isinstance(_, (int, float))
-                    for _ in fragState.orientation:
-                        assert isinstance(_, (int, float))
+                fragData[objID] = [FragState(*_) for _ in fragStates]
         except (TypeError, AssertionError):
             return RetVal(False, 'Invalid data format', None)
 
