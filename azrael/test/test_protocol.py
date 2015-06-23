@@ -21,7 +21,7 @@ import base64
 import pytest
 import numpy as np
 
-import azrael.parts as parts
+import azrael.types as types
 import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.protocol as protocol
@@ -38,11 +38,11 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     """
     # Test parameters and constants.
     template_name = 'mytemplate'
-    b0 = parts.Booster(partID='0', pos=np.zeros(3), direction=[0, 0, 1],
+    b0 = types.Booster(partID='0', pos=np.zeros(3), direction=[0, 0, 1],
                        minval=0, maxval=0.5, force=0)
-    b1 = parts.Booster(partID='1', pos=np.zeros(3), direction=[1, 1, 0],
+    b1 = types.Booster(partID='1', pos=np.zeros(3), direction=[1, 1, 0],
                        minval=0, maxval=0.6, force=0)
-    f0 = parts.Factory(
+    f0 = types.Factory(
         partID='0', pos=np.zeros(3), direction=[0, 0, 1],
         templateID='_templateCube', exit_speed=[0.1, 0.5])
 
@@ -91,11 +91,11 @@ def test_send_command():
     Test controlParts codec.
     """
     # Define the commands.
-    cmd_0 = parts.CmdBooster(partID='0', force=0.2)
-    cmd_1 = parts.CmdBooster(partID='1', force=0.4)
-    cmd_2 = parts.CmdFactory(partID='0', exit_speed=0)
-    cmd_3 = parts.CmdFactory(partID='2', exit_speed=0.4)
-    cmd_4 = parts.CmdFactory(partID='3', exit_speed=4)
+    cmd_0 = types.CmdBooster(partID='0', force=0.2)
+    cmd_1 = types.CmdBooster(partID='1', force=0.4)
+    cmd_2 = types.CmdFactory(partID='0', exit_speed=0)
+    cmd_3 = types.CmdFactory(partID='2', exit_speed=0.4)
+    cmd_4 = types.CmdFactory(partID='3', exit_speed=4)
     objID = 1
 
     # ----------------------------------------------------------------------

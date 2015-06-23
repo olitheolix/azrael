@@ -36,7 +36,6 @@ import demo_default as demolib
 import model_import
 import azrael.client
 import azrael.util as util
-import azrael.parts as parts
 import azrael.config as config
 
 from IPython import embed as ipshell
@@ -106,11 +105,11 @@ def spawnBoosterSphere(scale, fname):
     dir_z = np.array([0, 0, 1])
     pos_center = np.zeros(3)
 
-    b0 = parts.Booster(partID='b_x', pos=pos_center, direction=dir_x,
+    b0 = types.Booster(partID='b_x', pos=pos_center, direction=dir_x,
                        minval=0, maxval=10.0, force=0)
-    b1 = parts.Booster(partID='b_y', pos=pos_center, direction=dir_y,
+    b1 = types.Booster(partID='b_y', pos=pos_center, direction=dir_y,
                        minval=0, maxval=10.0, force=0)
-    b2 = parts.Booster(partID='b_z', pos=pos_center, direction=dir_z,
+    b2 = types.Booster(partID='b_z', pos=pos_center, direction=dir_z,
                        minval=0, maxval=10.0, force=0)
     del dir_x, dir_y, dir_z, pos_center
 

@@ -31,7 +31,6 @@ import numpy as np
 
 import azrael.client
 import azrael.util as util
-import azrael.parts as parts
 import azrael.config as config
 
 
@@ -49,32 +48,32 @@ def startController(objID):
     toggle_interval = 4.0
 
     # Fire the booster asymmetrically to get the object spinning.
-    cmd_0 = parts.CmdBooster(partID='0', force=1.0)
-    cmd_1 = parts.CmdBooster(partID='1', force=0.9)
+    cmd_0 = types.CmdBooster(partID='0', force=1.0)
+    cmd_1 = types.CmdBooster(partID='1', force=0.9)
     client.controlParts(objID, [cmd_0, cmd_1], [])
     time.sleep(0.1)
 
     # Turn off the boosters and prevent further angular acceleration.
-    cmd_0 = parts.CmdBooster(partID='0', force=0)
-    cmd_1 = parts.CmdBooster(partID='1', force=0)
+    cmd_0 = types.CmdBooster(partID='0', force=0)
+    cmd_1 = types.CmdBooster(partID='1', force=0)
     client.controlParts(objID, [cmd_0, cmd_1], [])
     time.sleep(toggle_interval)
 
     # Define the commands to spawn objects from factory.
-    cmd_2 = parts.CmdFactory(partID='0', exit_speed=0.1)
-    cmd_3 = parts.CmdFactory(partID='1', exit_speed=0.9)
+    cmd_2 = types.CmdFactory(partID='0', exit_speed=0.1)
+    cmd_3 = types.CmdFactory(partID='1', exit_speed=0.9)
 
     # Periodically apply a boost and spawn objects.
     while True:
         # Turn the boosters on (symmetrically).
-        cmd_0 = parts.CmdBooster(partID='0', force=5)
-        cmd_1 = parts.CmdBooster(partID='1', force=5)
+        cmd_0 = types.CmdBooster(partID='0', force=5)
+        cmd_1 = types.CmdBooster(partID='1', force=5)
         client.controlParts(objID, [cmd_0, cmd_1], [])
         time.sleep(1)
 
         # Turn the boosters off.
-        cmd_0 = parts.CmdBooster(partID='0', force=0)
-        cmd_1 = parts.CmdBooster(partID='1', force=0)
+        cmd_0 = types.CmdBooster(partID='0', force=0)
+        cmd_1 = types.CmdBooster(partID='1', force=0)
         client.controlParts(objID, [cmd_0, cmd_1], [])
         time.sleep(toggle_interval)
 

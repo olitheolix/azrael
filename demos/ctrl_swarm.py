@@ -35,7 +35,6 @@ sys.path.insert(0, p)
 del p
 
 import azrael.client
-import azrael.parts as parts
 import azrael.config as config
 
 
@@ -56,30 +55,30 @@ class ControllerCubeLeft(multiprocessing.Process):
         # Edit here to change the force of boosters.
         # ---------------------------------------------------------------------
         # Turn both boosters on after 2s.
-        left = parts.CmdBooster(self.left, force=0.1)
-        right = parts.CmdBooster(self.right, force=0.1)
+        left = types.CmdBooster(self.left, force=0.1)
+        right = types.CmdBooster(self.right, force=0.1)
         client.controlParts(self.objID, [right, left], [])
         print('{0:02d}: Manoeuvre 1'.format(self.objID))
         time.sleep(2)
 
         # Fire the booster asymmetrically to make the cube turn.
-        left = parts.CmdBooster(self.left, force=0)
-        right = parts.CmdBooster(self.right, force=1)
+        left = types.CmdBooster(self.left, force=0)
+        right = types.CmdBooster(self.right, force=1)
         client.controlParts(self.objID, [right, left], [])
         print('{0:02d}: Manoeuvre 2'.format(self.objID))
         time.sleep(2)
 
         # Reverse the force settings to stop the spinning.
-        left = parts.CmdBooster(self.left, force=1)
-        right = parts.CmdBooster(self.right, force=0)
+        left = types.CmdBooster(self.left, force=1)
+        right = types.CmdBooster(self.right, force=0)
         client.controlParts(self.objID, [right, left], [])
         print('{0:02d}: Manoeuvre 3'.format(self.objID))
         time.sleep(2)
 
         # Use the same force on both boosters to just move forward without
         # inducing any more spinning.
-        left = parts.CmdBooster(self.left, force=0.1)
-        right = parts.CmdBooster(self.right, force=0.1)
+        left = types.CmdBooster(self.left, force=0.1)
+        right = types.CmdBooster(self.right, force=0.1)
         client.controlParts(self.objID, [right, left], [])
         time.sleep(4)
 

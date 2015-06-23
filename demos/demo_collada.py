@@ -36,7 +36,6 @@ import demo_default as demolib
 import model_import
 import azrael.client
 import azrael.util as util
-import azrael.parts as parts
 import azrael.config as config
 
 from IPython import embed as ipshell

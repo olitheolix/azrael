@@ -33,7 +33,6 @@ import numpy as np
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
 import azrael.client
-import azrael.parts as parts
 from azrael.types import FragState
 del p
 
@@ -116,7 +115,7 @@ def compileCommands(force):
     for dim, frag_name in enumerate(('b_x', 'b_y', 'b_z')):
         # Force value for booster with ID `dim` (these were defined in
         # ``demo_lockedsphere``.
-        cmds.append(parts.CmdBooster(partID=frag_name, force=force[dim]))
+        cmds.append(types.CmdBooster(partID=frag_name, force=force[dim]))
 
         # Scale the flame according to the booster force.
         scale = 3 * abs(force[dim])

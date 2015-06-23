@@ -40,7 +40,7 @@ import numpy as np
 import azrael.igor
 import azrael.database
 import azrael.util as util
-import azrael.parts as parts
+import azrael.types as types
 import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.dibbler as dibbler
@@ -349,11 +349,11 @@ class Clerk(config.AzraelProcess):
 
         Boosters can be activated with a scalar force that will apply according
         to their orientation. The commands themselves must be
-        ``parts.CmdBooster`` instances.
+        ``types.CmdBooster`` instances.
 
         Factories can spawn objects. Their command syntax is defined in the
         ``parts`` module. The commands themselves must be
-        ``parts.CmdFactory`` instances.
+        ``types.CmdFactory`` instances.
 
         :param int objID: object ID.
         :param list cmd_booster: booster commands.
@@ -369,9 +369,9 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, ret.msg, None)
 
         # Compile a list of all parts defined in the template.
-        booster_t = [parts.Booster(*_) for _ in ret.data['boosters']]
+        booster_t = [types.Booster(*_) for _ in ret.data['boosters']]
         booster_t = {_.partID: _ for _ in booster_t}
-        factory_t = [parts.Factory(*_) for _ in ret.data['factories']]
+        factory_t = [types.Factory(*_) for _ in ret.data['factories']]
         factory_t = {_.partID: _ for _ in factory_t}
 
         # Fetch the SV for objID (we need this to determine the orientation of
@@ -396,7 +396,7 @@ class Clerk(config.AzraelProcess):
         # Verify that all Booster commands have the correct type and specify
         # a valid Booster ID.
         for cmd in cmd_boosters:
-            if not isinstance(cmd, parts.CmdBooster):
+            if not isinstance(cmd, types.CmdBooster):
                 msg = 'Invalid Booster type'
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
@@ -410,7 +410,7 @@ class Clerk(config.AzraelProcess):
         # Verify that all Factory commands have the correct type and specify
         # a valid Factory ID.
         for cmd in cmd_factories:
-            if not isinstance(cmd, parts.CmdFactory):
+            if not isinstance(cmd, types.CmdFactory):
                 msg = 'Invalid Factory type'
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
@@ -504,7 +504,7 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
 
         # Put the Booster entries from the database into Booster tuples.
-        boosters = [parts.Booster(*_) for _ in doc['boosters']]
+        boosters = [types.Booster(*_) for _ in doc['boosters']]
         boosters = {_.partID: _ for _ in boosters}
 
         # Tally up the forces exerted by all Boosters on the object.

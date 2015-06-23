@@ -1,6 +1,5 @@
 import time
 import numpy as np
-import azrael.parts
 import azrael.startup
 from azrael.types import Template, Fragment
 
@@ -40,7 +39,7 @@ def createTemplate():
     cs = [4, 1, 1, 1]
 
     # Define a booster
-    myBooster = azrael.parts.Booster(
+    myBooster = azrael.types.Booster(
         partID='0',                       # Booster has this ID,
         pos=[0, 0, 0],                    # is located here,
         direction=[1, 0, 0],              # and points into this direction.

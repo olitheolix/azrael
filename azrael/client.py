@@ -34,7 +34,7 @@ import urllib.request
 
 import numpy as np
 
-import azrael.parts as parts
+import azrael.types as types
 import azrael.config as config
 import azrael.protocol as protocol
 
@@ -391,11 +391,11 @@ class Client():
         Issue control commands to object parts.
 
         Boosters expect a scalar force which will apply according to their
-        orientation. The commands themselves must be ``parts.CmdBooster``
+        orientation. The commands themselves must be ``types.CmdBooster``
         instances.
 
         Factories can spawn objects. Their command syntax is defined in the
-        ``parts`` module. The commands themselves must be ``parts.CmdFactory``
+        ``parts`` module. The commands themselves must be ``types.CmdFactory``
         instances.
 
         :param int objID: object ID.
@@ -406,9 +406,9 @@ class Client():
         """
         # Sanity checks.
         for cmd in cmd_boosters:
-            assert isinstance(cmd, parts.CmdBooster)
+            assert isinstance(cmd, types.CmdBooster)
         for cmd in cmd_factories:
-            assert isinstance(cmd, parts.CmdFactory)
+            assert isinstance(cmd, types.CmdFactory)
 
         # Every object can have at most 256 parts.
         assert len(cmd_boosters) < 256
@@ -504,9 +504,9 @@ class Client():
                 assert isinstance(temp.boosters, list)
                 assert isinstance(temp.factories, list)
                 for b in temp.boosters:
-                    assert isinstance(b, parts.Booster)
+                    assert isinstance(b, types.Booster)
                 for f in temp.factories:
-                    assert isinstance(f, parts.Factory)
+                    assert isinstance(f, types.Factory)
 
                 # fixme: verify the Collision Shape is valid.
                 cs = list(temp.cshapes)

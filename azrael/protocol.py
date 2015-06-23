@@ -43,11 +43,11 @@ should make it possible to write clients in other languages.
 import base64
 import azrael.util
 import azrael.igor
+import azrael.types as types
 import azrael.rb_state as rb_state
 import azrael.leo_api as leo_api
 
 import numpy as np
-import azrael.parts as parts
 
 from collections import namedtuple
 from azrael.types import typecheck, RetVal, Template
@@ -170,8 +170,8 @@ def ToClerk_AddTemplates_Decode(payload: dict):
     with azrael.util.Timeit('clerk.decode') as timeit:
         for data in payload['data']:
             # Wrap the Booster/Factory data into their dedicated tuples type.
-            boosters = [parts.Booster(*_) for _ in data['boosters']]
-            factories = [parts.Factory(*_) for _ in data['factories']]
+            boosters = [types.Booster(*_) for _ in data['boosters']]
+            factories = [types.Factory(*_) for _ in data['factories']]
 
             # Wrap the Meta fragments into its dedicated tuple type.
             meta_frags = [MetaFragment(*_) for _ in data['fragments']]
@@ -511,8 +511,8 @@ def ToClerk_ControlParts_Encode(objID: int, cmds_b: list, cmds_f: list):
 @typecheck
 def ToClerk_ControlParts_Decode(payload: dict):
     objID = payload['objID']
-    cmds_b = [parts.CmdBooster(*_) for _ in payload['cmd_boosters']]
-    cmds_f = [parts.CmdFactory(*_) for _ in payload['cmd_factories']]
+    cmds_b = [types.CmdBooster(*_) for _ in payload['cmd_boosters']]
+    cmds_f = [types.CmdFactory(*_) for _ in payload['cmd_factories']]
 
     return True, (objID, cmds_b, cmds_f)
 
