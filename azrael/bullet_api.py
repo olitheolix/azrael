@@ -313,8 +313,8 @@ class PyBulletDynamicsWorld():
             m = rbState.imass
             x, y, z = body.getInvInertiaDiagLocal().topy()
             if (m < 1E-10) or (x < 1E-10) or (y < 1E-10) or (z < 1E-10):
-                # Use safe values if either the inertia or the mass is too small
-                # for inversion.
+                # Use safe values if either the inertia or the mass is too
+                # small for inversion.
                 m = x = y = z = 1
             else:
                 # Inverse mass and inertia.
@@ -506,7 +506,8 @@ class PyBulletDynamicsWorld():
 
             # Add the collision shape at the respective position and
             # orientation relative to the parent.
-            t = azBullet.Transform(Quaternion(*cs.rotation), Vec3(*cs.position))
+            t = azBullet.Transform(Quaternion(*cs.rotation),
+                                   Vec3(*cs.position))
             compound.addChildShape(t, child)
             tot_mass += rbState_mass
             tot_inertia += inertia

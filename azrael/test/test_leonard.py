@@ -1102,11 +1102,11 @@ class TestBroadphase:
             assert ret.ok
 
             # Convert the reference data to a sorted list of sets.
-            expected_objIDs = sorted([sorted(tuple(_)) for _ in expected_objIDs])
-            computed_objIDs = sorted([sorted(tuple(_)) for _ in ret.data])
+            expected_objIDs = [sorted(tuple(_)) for _ in expected_objIDs]
+            computed_objIDs = [sorted(tuple(_)) for _ in ret.data]
 
             # Return the equality of the two list of lists.
-            assert expected_objIDs == computed_objIDs
+            assert sorted(expected_objIDs) == sorted(computed_objIDs)
             del bodies, AABBs, ret, expected_objIDs, computed_objIDs
 
         # First overlaps with second, second with third, but first not with
@@ -1347,11 +1347,11 @@ class TestBroadphase:
             assert ret.ok
 
             # Convert the reference data to a sorted list of sets.
-            expected_objIDs = sorted([sorted(tuple(_)) for _ in expected_objIDs])
-            computed_objIDs = sorted([sorted(tuple(_)) for _ in ret.data])
+            expected_objIDs = [sorted(tuple(_)) for _ in expected_objIDs]
+            computed_objIDs = [sorted(tuple(_)) for _ in ret.data]
 
             # Return the equality of the two list of lists.
-            assert expected_objIDs == computed_objIDs
+            assert sorted(expected_objIDs) == sorted(computed_objIDs)
             del bodies, AABBs, ret, expected_objIDs, computed_objIDs
 
         # Three dynamics bodies: First overlaps with second, second with third,

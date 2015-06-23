@@ -41,7 +41,8 @@ from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
-from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere, getCSPlane
+from azrael.test.test_bullet_api import getCSEmpty, getCSBox
+from azrael.test.test_bullet_api import getCSSphere, getCSPlane
 
 
 class TestClerk:
@@ -245,15 +246,19 @@ class TestClerk:
         # geometries are stored.
         ret = clerk.getTemplates([name_1])
         assert ret.ok
+        frag = ret.data[name_1]['fragments'][0]
         url_template = config.url_templates
-        assert MetaFragment(*(ret.data[name_1]['fragments'][0])).fragtype == 'RAW'
+        assert MetaFragment(*frag).fragtype == 'RAW'
         assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
+        del ret, frag
 
         # Fetch the second template.
         ret = clerk.getTemplates([name_2])
         assert ret.ok
-        assert MetaFragment(*(ret.data[name_2]['fragments'][0])).fragtype == 'RAW'
+        frag = ret.data[name_2]['fragments'][0]
+        assert MetaFragment(*frag).fragtype == 'RAW'
         assert ret.data[name_2]['url'] == config.url_templates + '/' + name_2
+        del ret, frag
 
         # Fetch both templates at once.
         ret = clerk.getTemplates([name_1, name_2])
@@ -813,8 +818,7 @@ class TestClerk:
         pos_1 = np.array([-1, -1, 0], np.float64)
 
         # State variables for parent object.
-        sv = types.RigidBodyState(position=pos_parent,
-                                     velocityLin=vel_parent)
+        sv = types.RigidBodyState(position=pos_parent, velocityLin=vel_parent)
 
         # ---------------------------------------------------------------------
         # Create a template with two factories and spawn it.
@@ -908,8 +912,8 @@ class TestClerk:
         # of all forces (boosters) and exit speeds (factory spawned objects)
         # must be inverted.
         sv = types.RigidBodyState(position=pos_parent,
-                                     velocityLin=vel_parent,
-                                     orientation=orient_parent)
+                                  velocityLin=vel_parent,
+                                  orientation=orient_parent)
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 

@@ -30,7 +30,8 @@ import azrael.database as database
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _RigidBodyState
-from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere, CollShapeBox
+from azrael.types import CollShapeMeta, CollShapeEmpty
+from azrael.types import CollShapeSphere, CollShapeBox
 
 # Convenience.
 RigidBodyStateOverride = types.RigidBodyStateOverride
@@ -89,12 +90,13 @@ def computeAABBs(cshapes: (tuple, list)):
             # Determine the AABBs based on the collision shape type.
             ctype = cs.cstype.upper()
             if ctype == 'SPHERE':
-                # All AABBs half lengths have the same length (equal to radius).
+                # All half lengths have the same length (equal to radius).
                 r = CollShapeSphere(*cs.csdata).radius
                 aabbs.append(pos + (r, r, r))
             elif ctype == 'BOX':
-                # All AABBs half lengths are equal. The value equals the largest
-                # extent times sqrt(3) to accommodate all possible orientations.
+                # All AABBs half lengths are equal. The value equals the
+                # largest extent times sqrt(3) to accommodate all possible
+                # orientations.
                 tmp = s3 * max(CollShapeBox(*cs.csdata))
                 aabbs.append(pos + (tmp, tmp, tmp))
             elif ctype == 'EMPTY':

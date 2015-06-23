@@ -72,12 +72,14 @@ _CollShapeSphere = namedtuple('_CollShapeSphere', 'radius')
 _CollShapePlane = namedtuple('_CollShapePlane', 'normal ofs')
 
 # Constraints.
-_ConstraintMeta = namedtuple('_ConstraintMeta', 'aid contype rb_a rb_b condata')
+_ConstraintMeta = namedtuple('_ConstraintMeta',
+                             'aid contype rb_a rb_b condata')
 _ConstraintP2P = namedtuple('_ConstraintP2P', 'pivot_a pivot_b')
 _Constraint6DofSpring2 = namedtuple(
-    '_Constraint6DofSpring2', 'frameInA frameInB stiffness damping equilibrium '
-                             'linLimitLo linLimitHi rotLimitLo rotLimitHi '
-                             'bounce enableSpring')
+    '_Constraint6DofSpring2', 'frameInA frameInB stiffness damping '
+                              'equilibrium linLimitLo linLimitHi '
+                              'rotLimitLo rotLimitHi bounce enableSpring')
+
 
 def toVec(num_el, v):
     """
@@ -95,7 +97,7 @@ def toVec(num_el, v):
     except (TypeError, AssertionError):
         assert False
     return tuple(v)
-    
+
 
 def typecheck(func_handle):
     """
@@ -649,7 +651,6 @@ class Constraint6DofSpring2(_Constraint6DofSpring2):
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
-
 
 
 # -----------------------------------------------------------------------------

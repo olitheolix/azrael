@@ -26,9 +26,10 @@ import azrael.leonard as leonard
 
 from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
-from azrael.test.test_bullet_api import isEqualBD
-from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere, getCSPlane
-from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere, CollShapeBox
+from azrael.test.test_bullet_api import isEqualBD, getCSEmpty, getCSBox
+from azrael.test.test_bullet_api import getCSSphere, getCSPlane
+from azrael.types import CollShapeMeta, CollShapeEmpty
+from azrael.types import CollShapeSphere, CollShapeBox
 
 RigidBodyState = types.RigidBodyState
 RigidBodyStateOverride = types.RigidBodyStateOverride
@@ -503,7 +504,7 @@ class TestLeonardAPI:
         # Query the AABB of a non-existing ID.
         ret = leoAPI.getAABB([id_0, 3])
         assert ret.ok
-        assert ret.data ==  [aabb_1, None]
+        assert ret.data == [aabb_1, None]
 
     def test_compute_AABB(self):
         """
@@ -570,7 +571,7 @@ class TestLeonardAPI:
         # Use an empty shape. This must not return any AABB.
         cs = getCSEmpty()
         assert computeAABBs([cs]) == (True, None, [])
-        
+
         # Pass in multiple collision shapes, namely [box, empty, sphere]. This
         # must return 2 collision shapes because the empty one is skipped.
         cs = [getCSSphere(), getCSEmpty(), getCSBox()]

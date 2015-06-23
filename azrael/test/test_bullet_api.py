@@ -802,7 +802,7 @@ class TestBulletAPI:
         sim.createRigidBody(2, b_box)
         ret_plane = sim.getRigidBodyData(1)
         ret_box = sim.getRigidBodyData(2)
-        assert ret_plane.ok == ret_box.ok == True
+        assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert ret_box.data.position[2] == 5
 
@@ -818,7 +818,7 @@ class TestBulletAPI:
         # and the half length of the box is 1 Meters.
         ret_plane = sim.getRigidBodyData(1)
         ret_box = sim.getRigidBodyData(2)
-        assert ret_plane.ok == ret_box.ok == True
+        assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert abs(ret_box.data.position[2]) < 1E-5
 
@@ -854,7 +854,7 @@ class TestBulletAPI:
         sim.createRigidBody(2, b_box)
         ret_plane = sim.getRigidBodyData(1)
         ret_box = sim.getRigidBodyData(2)
-        assert ret_plane.ok == ret_box.ok == True
+        assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert ret_box.data.position[2] == 5
 
@@ -872,6 +872,6 @@ class TestBulletAPI:
         # approximately zero.
         ret_plane = sim.getRigidBodyData(1)
         ret_box = sim.getRigidBodyData(2)
-        assert ret_plane.ok == ret_box.ok == True
+        assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert abs(ret_box.data.position[2] + ofs_z) < 1E-3

@@ -70,7 +70,7 @@ def sweeping(data: dict, dim: str):
                      'y': [[ymin_0, ymax_0], ...],
                      'z': [[zmin_0, zmax_0], ...],},
               ...}
-                  
+
     The dictionary keys 'x', 'y', and 'z' are (more or less) hard coded,
     and `dim` must refer to one of them (eg dim = 'y' to find the sets that
     overlap in the 'y' dimension).
@@ -210,7 +210,7 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
         assert aabbs.ndim == 2
         assert aabbs.shape[1] % 6 == 0
         num_aabbs = aabbs.shape[1] // 6
-        
+
         # Iterate over all AABBs, rotate- and translate them in accordance with
         # the body theyt are attached to, and compile the AABB boundaries.
         # Note: the AABBs are not re-computed here. The assumption is that the
@@ -289,7 +289,7 @@ def mergeConstraintSets(constraintPairs: tuple,
     connected via a constraint. Typically, this function takes the output of
     ``computeCollisionSets`` as the ``collSets`` argument.
 
-    :param list[vec2] constraintPairs: list of 2-tuples eg [(1, 2), (1, 5), ...].
+    :param list[vec2] constraintPairs: eg [(1, 2), (1, 5), ...].
     :param list[set] collSets: list of collision sets
     :return: the new list of collision sets.
     :rtype: list[set]

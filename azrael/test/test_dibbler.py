@@ -49,7 +49,7 @@ class TestDibbler:
     def verifyDae(self, url: str, mf: MetaFragment):
         """
         fixme: this has to become part of the 'FragDae.__eq__' method.
-        
+
         Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
 
         :param str url: the URL where the Collada fragment is supposed to be.
