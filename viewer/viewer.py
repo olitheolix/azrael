@@ -364,16 +364,16 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         # This is to mask a bug in Clacks: newly spawned objects can
         # become active before their geometry hits the DB.
-        if len(frag.data.vert) == 0:
+        if len(frag.fragdata.vert) == 0:
             return
 
         # fixme: getGeometries must provide this (what about getGeometries?).
-        width = height = int(np.sqrt(len(frag.data.rgb) // 3))
+        width = height = int(np.sqrt(len(frag.fragdata.rgb) // 3))
 
         # GPU needs float32 values for vertices and UV, and uint8 for RGB.
-        buf_vert = np.array(frag.data.vert).astype(np.float32)
-        buf_uv = np.array(frag.data.uv).astype(np.float32)
-        buf_rgb = np.array(frag.data.rgb).astype(np.uint8)
+        buf_vert = np.array(frag.fragdata.vert).astype(np.float32)
+        buf_uv = np.array(frag.fragdata.uv).astype(np.float32)
+        buf_rgb = np.array(frag.fragdata.rgb).astype(np.uint8)
 
         # Sanity checks.
         assert (len(buf_vert) % 9) == 0
