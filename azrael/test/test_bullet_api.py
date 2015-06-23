@@ -778,20 +778,6 @@ class TestBulletAPI:
         # Clear all constraints
         assert sim.clearAllConstraints().ok
 
-        # Compile a P2P constraint with an invalid pivot.
-        pivot_a, pivot_b = (0, 0, 0), (1, 1, 1, 1, 1)
-        constraints = [
-            ConstraintMeta('', 'p2p', id_a, id_b, P2P(pivot_a, pivot_b)),
-        ]
-        assert not sim.setConstraints(constraints).ok
-
-        # Another invalid pivot.
-        pivot_a, pivot_b = (0, 0, 0), (1, 1, 's')
-        constraints = [
-            ConstraintMeta('', 'p2p', id_a, id_b, P2P(pivot_a, pivot_b)),
-        ]
-        assert not sim.setConstraints(constraints).ok
-
     def test_box_on_plane(self):
         """
         Create a simulation with gravity. Place a box above a plane and verify
