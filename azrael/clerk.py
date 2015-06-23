@@ -974,11 +974,10 @@ class Clerk(config.AzraelProcess):
         :param list fragments: the new fragments for ``objID``.
         :return: Success
         """
-        # Sanity check the names of all fragments.
-        for frag in fragments:
-            if not self._isNameValid(frag.aid):
-                msg = 'Invalid fragment name <{}>'.format(frag.aid)
-                return RetVal(False, msg, None)
+        try:
+            fragments = [MetaFragment(*_) for _ in fragments]
+        except TypeError:
+            return RetVal(False, 'Received invalid fragment data', None)
 
         # Convenience.
         update = database.dbHandles['ObjInstances'].update
