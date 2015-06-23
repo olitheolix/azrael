@@ -540,33 +540,6 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def _verifyCollisionShapes(self, cshapes: (tuple, list)):
-        """
-        Return *True* if all Collision shapes in ``cshapes`` are valid.
-
-        fixme: incomplete; untested; good enough for now until its merit is
-        clear.
-        """
-        try:
-            for cs in cshapes:
-                cs = CollShapeMeta(*cs)
-                assert isinstance(cs.aid, str)
-                assert isinstance(cs.cstype, str)
-                assert isinstance(cs.position, (tuple, list))
-                assert isinstance(cs.rotation, (tuple, list))
-
-                assert len(cs.position) == 3
-                assert len(cs.rotation) == 4
-                for _ in cs.position:
-                    assert isinstance(_, (float, int))
-                for _ in cs.rotation:
-                    assert isinstance(_, (float, int))
-            return RetVal(True, None, None)
-        except (AssertionError, TypeError):
-            msg = 'Invalid Collision shape'
-            return RetVal(False, msg, None)
-
-    @typecheck
     def addTemplates(self, templates: list):
         """
         Add all ``templates`` to the system so that they can be spawned.
@@ -1002,11 +975,6 @@ class Clerk(config.AzraelProcess):
         :param RigidBodyStateOverride data: new object attributes.
         :return: Success
         """
-        # Sanity check.
-        ret = self._verifyCollisionShapes(data.cshapes)
-        if not ret.ok:
-            return ret
-
         ret = leoAPI.addCmdModifyBodyState(objID, data)
         if ret.ok:
             return RetVal(True, None, None)
