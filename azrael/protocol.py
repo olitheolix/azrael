@@ -156,20 +156,9 @@ def ToClerk_AddTemplates_Decode(payload: dict):
     templates = []
     b64d = base64.b64decode
 
-    def _decodeDae(mf):
-        """
-        fixme: contains unreachable code (see body).
-        Decode the Collada fragment data ``mf``.
-        """
-        return mf._replace(fragdata=FragDae(*mf.fragdata))
-        fd = FragDae(*mf.fragdata)
-        dae = b64d(fd.dae.encode('utf8'))
-        rgb = {k: b64d(v.encode('utf8')) for (k, v) in fd.rgb.items()}
-        return mf._replace(fragdata=FragDae(dae, rgb))
-
     with azrael.util.Timeit('clerk.decode') as timeit:
         for data in payload['data']:
-            # Wrap the Booster/Factory data into their dedicated tuples type.
+            # Wrap the Booster/Factory data into their dedicated tuple types.
             boosters = [types.Booster(*_) for _ in data['boosters']]
             factories = [types.Factory(*_) for _ in data['factories']]
 
@@ -181,7 +170,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
             for mf in meta_frags:
                 if mf.fragtype.upper() == 'DAE':
                     # Collada format.
-                    frags.append(_decodeDae(mf))
+                    frags.append(mf._replace(fragdata=FragDae(*mf.fragdata)))
                 else:
                     frags.append(mf)
 
