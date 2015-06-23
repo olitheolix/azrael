@@ -486,35 +486,7 @@ class Client():
         # Return an error unless all templates pass the sanity checks.
         try:
             # Sanity check each template.
-            for idx, temp in enumerate(templates):
-                # Sanity checks.
-                assert isinstance(temp, Template)
-                assert isinstance(temp.aid, str)
-                assert isinstance(temp.cshapes, (tuple, list, np.ndarray))
-                assert isinstance(temp.fragments, (tuple, list))
-
-                # Check and Base64 encode each individual fragment.
-                frags = []
-                for frag in temp.fragments:
-                    # Check the Fragment header.
-                    assert isinstance(frag, MetaFragment)
-                    frags.append(MetaFragment(*frag))
-
-                # Sanity checks for boosters and factories.
-                assert isinstance(temp.boosters, list)
-                assert isinstance(temp.factories, list)
-                for b in temp.boosters:
-                    assert isinstance(b, types.Booster)
-                for f in temp.factories:
-                    assert isinstance(f, types.Factory)
-
-                # fixme: verify the Collision Shape is valid.
-                cs = list(temp.cshapes)
-
-                # Replace the original entry with a new one where CS is
-                # definitively a list.
-                templates[idx] = Template(
-                    temp.aid, cs, frags, temp.boosters, temp.factories)
+            templates = [Template(*_) for _ in templates]
         except AssertionError as err:
             return RetVal(False, 'Data type error', None)
         return self.serialiseAndSend('add_templates', templates)
