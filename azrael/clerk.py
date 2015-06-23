@@ -619,10 +619,11 @@ class Clerk(config.AzraelProcess):
             return RetVal(True, None, None)
 
         with util.Timeit('clerk.addTemplates') as timeit:
-            # Sanity checks.
-            tmp = [_ for _ in templates if not isinstance(_, Template)]
-            if len(tmp) > 0:
-                return RetVal(False, 'Invalid arguments', None)
+            # Verify that all templates contain valid data.
+            try:
+                templates = [Template(*_) for _ in templates]
+            except TypeError:
+                return RetVal(False, 'Invalid template data', None)
 
             # The templates will be inserted with a single bulk operation.
             db = database.dbHandles['Templates']
@@ -630,35 +631,13 @@ class Clerk(config.AzraelProcess):
 
             # Add each template to the bulk.
             for tt in templates:
-                # Sanity check:
-                if not isinstance(tt.fragments, list):
-                    return RetVal(False, 'Fragments must be in a list', None)
-                if not self._isNameValid(tt.aid):
-                    return RetVal(False, 'Invalid template name', None)
+                # Convenience.
+                frags = tt.fragments
 
-                # Ensure all fragments have the correct type and their names
-                # are both valid and unique.
-                tmp = [_ for _ in tt.fragments if isinstance(_, MetaFragment)]
-                tmp = [_ for _ in tmp if self._isNameValid(_.aid)]
-                tmp = set([_.aid for _ in tmp])
-                if len(set(tmp)) < len(tt.fragments):
-                    msg = 'One or more fragment names are invalid',
-                    return RetVal(False, msg, None)
-                del tmp
-
-                # Ensure all collision shapes are valid.
-                ret = self._verifyCollisionShapes(tt.cshapes)
-                if not ret.ok:
-                    return RetVal(False, ret.msg, None)
-
-                # Ensure all Boosters and Factories have a sane partID.
-                try:
-                    for booster in tt.boosters:
-                        assert self._isNameValid(booster.partID)
-                    for factory in tt.factories:
-                        assert self._isNameValid(factory.partID)
-                except AssertionError:
-                    msg = 'One or more Booster/Factory names are invalid'
+                # Ensure the AIDs of all fragments are unique.
+                if len(set([_.aid for _ in frags])) < len(frags):
+                    msg = 'Not all fragment IDs in template <{}> are unique'
+                    msg = msg.format(tt.aid)
                     return RetVal(False, msg, None)
 
                 # Ask Dibbler to add the template. Abort immediately if Dibbler
@@ -671,7 +650,7 @@ class Clerk(config.AzraelProcess):
                 # We already stored the geometry in Dibbler; here we only add
                 # the meta data (mostly to avoid data duplication) which is why
                 # we delete the 'data' attribute.
-                frags = [frag._replace(fragdata=None) for frag in tt.fragments]
+                frags = [frag._replace(fragdata=None) for frag in frags]
 
                 # Compile the Mongo document for the new template.
                 data = {

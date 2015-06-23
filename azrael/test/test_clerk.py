@@ -140,7 +140,7 @@ class TestClerk:
 
         # Wrong argument .
         ret = clerk.addTemplates([1])
-        assert (ret.ok, ret.msg) == (False, 'Invalid arguments')
+        assert (ret.ok, ret.msg) == (False, 'Invalid template data')
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Compile a template structure.
