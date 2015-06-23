@@ -60,9 +60,9 @@ _RigidBodyState = namedtuple('_RigidBodyState',
                              'axesLockLin axesLockRot version')
 
 # Collision shapes.
-CollShapeMeta = namedtuple('CollShapeMeta',
-                           'aid cstype position rotation csdata')
-CollShapeBox = namedtuple('CollShapeBox', 'x y z')
+_CollShapeMeta = namedtuple('_CollShapeMeta',
+                            'aid cstype position rotation csdata')
+_CollShapeBox = namedtuple('_CollShapeBox', 'x y z')
 CollShapeEmpty = namedtuple('CollShapeEmpty', '')
 CollShapeSphere = namedtuple('CollShapeSphere', 'radius')
 CollShapePlane = namedtuple('CollShapePlane', 'normal ofs')
@@ -348,3 +348,30 @@ class FragState(_FragState):
         return OrderedDict(zip(self._fields, self))
 
 
+class CollShapeMeta(_CollShapeMeta):
+    """
+    fixme: docu
+    fixme: parameters
+
+    :param dict aid: fragment name
+    :return _CollShapeMeta: a valid meta fragment instance.
+    """
+    @typecheck
+    def __new__(cls, aid: str,
+                cstype: str,
+                position: (tuple, list),
+                rotation: (tuple, list),
+                csdata):
+        try:
+            p = np.array(position, np.float64)
+            r = np.array(rotation, np.float64)
+            assert p.ndim == r.ndim == 1
+            assert len(p) == 3
+            assert len(r) == 4
+        except (TypeError, AssertionError):
+            raise TypeError
+
+        return super().__new__(cls, aid, cstype, position, rotation, csdata)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
