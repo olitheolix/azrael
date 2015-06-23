@@ -71,18 +71,9 @@ def RigidBodyState(scale: (int, float)=1,
         assert len(orientation) == 4
         assert len(position) == len(velocityLin) == len(velocityRot) == 3
         assert version >= 0
-        cshapes = [CollShapeMeta(*_) for _ in cshapes]
-        for cs in cshapes:
-            assert isinstance(cs.cstype, str)
-            assert isinstance(cs.aid, str)
-            assert isinstance(cs.position, (tuple, list, np.ndarray))
-            assert isinstance(cs.rotation, (tuple, list, np.ndarray))
-            assert len(np.array(cs.position)) == 3
-            assert len(np.array(cs.rotation)) == 4
-            assert cs.cstype.upper() in ('EMPTY', 'SPHERE', 'BOX', 'PLANE')
 
-            # fixme: do I need additional sanity checks for the various
-            # Collision shapes, or is the protocol module going to handle it?
+        # Create- and sanity check the collision shapes.
+        cshapes = [CollShapeMeta(*_) for _ in cshapes]
     except (AssertionError, TypeError) as err:
         return None
 
