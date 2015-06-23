@@ -6,8 +6,8 @@ import azrael.clerk
 import azrael.clacks
 import azrael.wsclient
 import tornado.testing
+import azrael.types as types
 import azrael.config as config
-import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, MetaFragment
@@ -191,7 +191,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             self.verifyTemplate('{}/{}'.format(url_inst, 1), t1.fragments)
 
         # Spawn the first template (it will must get objID=1).
-        sv_1 = rb_state.RigidBodyState(imass=1)
+        sv_1 = types.RigidBodyState(imass=1)
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
         self.verifyTemplate('{}/{}'.format(url_inst, 1), t1.fragments)
@@ -222,7 +222,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
         self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
-        sv_1 = rb_state.RigidBodyState(imass=1)
+        sv_1 = types.RigidBodyState(imass=1)
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
 
@@ -256,7 +256,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
         self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
-        sv_1 = rb_state.RigidBodyState(imass=1)
+        sv_1 = types.RigidBodyState(imass=1)
         ret = clerk.spawn([('t1', sv_1)])
         assert ret.data == (1, )
 

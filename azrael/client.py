@@ -40,7 +40,6 @@ import azrael.protocol as protocol
 
 from azrael.types import typecheck, RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw, MetaFragment
-from azrael.rb_state import RigidBodyStateOverride, _RigidBodyState
 
 
 class Client():
@@ -524,7 +523,7 @@ class Client():
 
             # Fill in the SV and fragment state data.
             out[objID] = {'frag': [FragState(**_) for _ in v['frag']],
-                          'sv': _RigidBodyState(**v['sv'])}
+                          'sv': types._RigidBodyState(**v['sv'])}
         return RetVal(True, None, out)
 
     @typecheck
@@ -567,7 +566,7 @@ class Client():
         return self._unpackSVData(ret.data)
 
     @typecheck
-    def setBodyState(self, objID: int, new: RigidBodyStateOverride):
+    def setBodyState(self, objID: int, new: types.RigidBodyStateOverride):
         """
         Overwrite the the State Variables of ``objID`` with ``new``.
 

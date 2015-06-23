@@ -33,7 +33,6 @@ import azrael.client
 import azrael.dibbler
 import azrael.types as types
 import azrael.config as config
-import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.test.test_bullet_api import isEqualBD
@@ -274,7 +273,7 @@ class TestClerk:
         id_0, id_1 = 1, 2
         templateID_0 = '_templateEmpty'
         templateID_1 = '_templateCube'
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -303,9 +302,9 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Default object.
-        sv_1 = rb_state.RigidBodyState(imass=1)
-        sv_2 = rb_state.RigidBodyState(imass=2)
-        sv_3 = rb_state.RigidBodyState(imass=3)
+        sv_1 = types.RigidBodyState(imass=1)
+        sv_2 = types.RigidBodyState(imass=2)
+        sv_3 = types.RigidBodyState(imass=3)
 
         # Invalid templateID.
         templateID = 'blah'
@@ -369,7 +368,7 @@ class TestClerk:
         # because Dibbler cannot find the model data Clerk will skip it. The
         # net effect is that the spawn command must succeed but not spawn any
         # objects.
-        sv_1 = rb_state.RigidBodyState(imass=1)
+        sv_1 = types.RigidBodyState(imass=1)
         ret = clerk.spawn([('_templateEmpty', sv_1)])
         assert ret == (True, None, tuple())
 
@@ -394,7 +393,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, [])
 
         # Spawn two default objects.
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
         templateID = '_templateEmpty'
         ret = clerk.spawn([(templateID, sv), (templateID, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
@@ -431,7 +430,7 @@ class TestClerk:
         # Test parameters and constants.
         objID_1 = 1
         objID_2 = 2
-        MS = rb_state.RigidBodyState
+        MS = types.RigidBodyState
         sv_1 = MS(position=np.arange(3), velocityLin=[2, 4, 6])
         sv_2 = MS(position=[2, 4, 6], velocityLin=[6, 8, 10])
         templateID = '_templateEmpty'
@@ -483,7 +482,7 @@ class TestClerk:
 
         # Test parameters and constants.
         objID_1, objID_2 = 1, 2
-        MS = rb_state.RigidBodyState
+        MS = types.RigidBodyState
         sv_1 = MS(position=np.arange(3), velocityLin=[2, 4, 6])
         sv_2 = MS(position=[2, 4, 6], velocityLin=[6, 8, 10])
         templateID = '_templateEmpty'
@@ -525,7 +524,7 @@ class TestClerk:
 
         # Parameters and constants for this test.
         id_1 = 1
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
         force = np.array([1, 2, 3], np.float64).tolist()
         relpos = np.array([4, 5, 6], np.float64).tolist()
 
@@ -570,7 +569,7 @@ class TestClerk:
         assert clerk.addTemplates([template]).ok
 
         # Spawn an instance of the template and get the object ID.
-        ret = clerk.spawn([(template.aid, rb_state.RigidBodyState())])
+        ret = clerk.spawn([(template.aid, types.RigidBodyState())])
         assert ret.ok
         objID = ret.data[0]
 
@@ -591,7 +590,7 @@ class TestClerk:
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
         templateID_1 = '_templateEmpty'
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -632,7 +631,7 @@ class TestClerk:
         frags = [MetaFragment('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0], [f0])
         assert clerk.addTemplates([temp]).ok
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
         leo.processCommandsAndSync()
@@ -668,7 +667,7 @@ class TestClerk:
         # ---------------------------------------------------------------------
 
         # Constants for the new template object.
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
 
         dir_0 = np.array([1, 0, 0], np.float64)
         dir_1 = np.array([0, 1, 0], np.float64)
@@ -740,7 +739,7 @@ class TestClerk:
 
         # Constants for the new template object.
         objID_1 = 1
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
         dir_0 = np.array([1, 0, 0], np.float64)
         dir_1 = np.array([0, 1, 0], np.float64)
         pos_0 = np.array([1, 1, -1], np.float64)
@@ -814,7 +813,7 @@ class TestClerk:
         pos_1 = np.array([-1, -1, 0], np.float64)
 
         # State variables for parent object.
-        sv = rb_state.RigidBodyState(position=pos_parent,
+        sv = types.RigidBodyState(position=pos_parent,
                                      velocityLin=vel_parent)
 
         # ---------------------------------------------------------------------
@@ -908,7 +907,7 @@ class TestClerk:
         # and is rotate 180 degrees around the x-axis. This means the x-values
         # of all forces (boosters) and exit speeds (factory spawned objects)
         # must be inverted.
-        sv = rb_state.RigidBodyState(position=pos_parent,
+        sv = types.RigidBodyState(position=pos_parent,
                                      velocityLin=vel_parent,
                                      orientation=orient_parent)
         # Instantiate a Clerk.
@@ -994,7 +993,7 @@ class TestClerk:
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
         templateID = '_templateEmpty'
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -1029,8 +1028,8 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Raw object: specify vertices, UV, and texture (RGB) values directly.
-        sv1 = rb_state.RigidBodyState(position=[1, 2, 3])
-        sv2 = rb_state.RigidBodyState(position=[4, 5, 6])
+        sv1 = types.RigidBodyState(position=[1, 2, 3])
+        sv2 = types.RigidBodyState(position=[4, 5, 6])
         f_raw = createFragRaw()
 
         # Get Collada fragment.
@@ -1099,7 +1098,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Convenience.
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
 
         # Add a valid template and verify it now exists in Azrael.
         frags = [MetaFragment('bar', 'RAW', createFragRaw())]
@@ -1148,7 +1147,7 @@ class TestClerk:
         # z-direction.
         # ---------------------------------------------------------------------
         # Convenience.
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
 
         b0 = types.Booster(partID='0', pos=[-1, 0, 0], direction=[0, 0, 1],
                            minval=-1, maxval=1, force=0)
@@ -1227,7 +1226,7 @@ class TestClerk:
         assert not ret.ok
 
         # Convenience.
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
 
         # Define a new template with one fragment.
         frags = [MetaFragment('foo', 'RAW', createFragRaw())]
@@ -1329,7 +1328,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Convenience.
-        sv = rb_state.RigidBodyState()
+        sv = types.RigidBodyState()
         cs = [getCSSphere()]
         vert_1 = list(range(0, 9))
         vert_2 = list(range(9, 18))
@@ -1496,9 +1495,9 @@ class TestClerk:
 
         # Define three collision shapes.
         pos_1, pos_2, pos_3 = [-2, 0, 0], [2, 0, 0], [6, 0, 0]
-        sv_1 = rb_state.RigidBodyState(position=pos_1)
-        sv_2 = rb_state.RigidBodyState(position=pos_2)
-        sv_3 = rb_state.RigidBodyState(position=pos_3)
+        sv_1 = types.RigidBodyState(position=pos_1)
+        sv_2 = types.RigidBodyState(position=pos_2)
+        sv_3 = types.RigidBodyState(position=pos_3)
 
         # Spawn the two bodies with a constraint among them.
         tID = '_templateSphere'
@@ -1569,8 +1568,8 @@ class TestClerk:
         # sphere is a unit sphere this ensures that the spheres do not touch
         # each other, but have a gap of 2 Meters between them.
         pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
-        sv_a = rb_state.RigidBodyState(position=pos_a)
-        sv_b = rb_state.RigidBodyState(position=pos_b)
+        sv_a = types.RigidBodyState(position=pos_a)
+        sv_b = types.RigidBodyState(position=pos_b)
 
         # Spawn the two bodies with a constraint among them.
         templates = [(templateID, sv_a), (templateID, sv_b)]

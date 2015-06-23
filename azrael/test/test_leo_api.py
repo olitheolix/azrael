@@ -20,9 +20,9 @@ import pytest
 import numpy as np
 
 import azrael.database
-import azrael.leonard as leonard
+import azrael.types as types
 import azrael.leo_api as leoAPI
-import azrael.rb_state as rb_state
+import azrael.leonard as leonard
 
 from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
@@ -30,8 +30,8 @@ from azrael.test.test_bullet_api import isEqualBD
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere, getCSPlane
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere, CollShapeBox
 
-RigidBodyState = rb_state.RigidBodyState
-RigidBodyStateOverride = rb_state.RigidBodyStateOverride
+RigidBodyState = types.RigidBodyState
+RigidBodyStateOverride = types.RigidBodyStateOverride
 
 
 class TestLeonardAPI:
@@ -369,8 +369,8 @@ class TestLeonardAPI:
         ``RigidBodyState`` function defines what constitutes as "valid".
         """
         # Convenience.
-        RigidBodyState = rb_state.RigidBodyState
-        RigidBodyStateOverride = rb_state.RigidBodyStateOverride
+        RigidBodyState = types.RigidBodyState
+        RigidBodyStateOverride = types.RigidBodyStateOverride
 
         # Valid RigidBodyState and RigidBodyStateOverride calls.
         assert RigidBodyState() is not None

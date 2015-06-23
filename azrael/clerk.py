@@ -46,7 +46,6 @@ import azrael.leo_api as leoAPI
 import azrael.dibbler as dibbler
 import azrael.database as database
 import azrael.protocol as protocol
-import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, Template, CollShapeMeta
@@ -461,7 +460,7 @@ class Clerk(config.AzraelProcess):
 
             # Create the state variables that encode the just determined
             # position and speed.
-            sv = rb_state.RigidBodyState(
+            sv = types.RigidBodyState(
                 position=pos, velocityLin=velocityLin,
                 orientation=sv_parent.orientation)
 
@@ -733,7 +732,7 @@ class Clerk(config.AzraelProcess):
                 assert len(ii) == 2
                 templateID, sv = ii
                 assert isinstance(templateID, str)
-                assert isinstance(sv, rb_state._RigidBodyState)
+                assert isinstance(sv, types._RigidBodyState)
                 del templateID, sv
         except AssertionError:
             return RetVal(False, '<spawn> received invalid arguments', None)
@@ -968,7 +967,7 @@ class Clerk(config.AzraelProcess):
 
     @typecheck
     def setBodyState(self, objID: int,
-                     data: rb_state.RigidBodyStateOverride):
+                     data: types.RigidBodyStateOverride):
         """
         Set the State Variables of ``objID`` to ``data``.
 

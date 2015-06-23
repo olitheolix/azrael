@@ -44,7 +44,6 @@ import base64
 import azrael.util
 import azrael.igor
 import azrael.types as types
-import azrael.rb_state as rb_state
 import azrael.leo_api as leo_api
 
 import numpy as np
@@ -238,8 +237,8 @@ def ToClerk_SetBodyState_Decode(payload: dict):
 
     # Convert the state variable into a RigidBodyStateOverride instance.
     sv = payload['sv']
-    tmp = dict(zip(rb_state.RigidBodyStateOverride._fields, sv))
-    sv = rb_state.RigidBodyStateOverride(**tmp)
+    tmp = dict(zip(types.RigidBodyStateOverride._fields, sv))
+    sv = types.RigidBodyStateOverride(**tmp)
 
     return True, (objID, sv)
 
@@ -429,8 +428,8 @@ def ToClerk_Spawn_Encode(objectInfos: (tuple, list)):
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
     # Convenience.
-    RigidBodyState = rb_state.RigidBodyState
-    RigidBodyStateOverride = rb_state.RigidBodyStateOverride
+    RigidBodyState = types.RigidBodyState
+    RigidBodyStateOverride = types.RigidBodyStateOverride
     _updateRigidBodyStateTuple = leo_api._updateRigidBodyStateTuple
 
     out = []

@@ -34,8 +34,8 @@ import azrael.database
 import azrael.vectorgrid
 import azrael.bullet_api
 import azrael.util as util
+import azrael.types as types
 import azrael.config as config
-import azrael.rb_state as rb_state
 import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
@@ -43,8 +43,8 @@ from azrael.types import _RigidBodyState
 from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Convenience.
-RigidBodyState = rb_state.RigidBodyState
-RigidBodyStateOverride = rb_state.RigidBodyStateOverride
+RigidBodyState = types.RigidBodyState
+RigidBodyStateOverride = types.RigidBodyStateOverride
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)

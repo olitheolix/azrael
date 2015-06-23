@@ -24,16 +24,16 @@ import sys
 import logging
 import numpy as np
 import azrael.util as util
+import azrael.types as types
 import azrael.config as config
 import azrael.database as database
-import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _RigidBodyState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere, CollShapeBox
 
 # Convenience.
-RigidBodyStateOverride = rb_state.RigidBodyStateOverride
+RigidBodyStateOverride = types.RigidBodyStateOverride
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
@@ -403,7 +403,7 @@ def getAABB(objIDs: (list, tuple)):
 
 @typecheck
 def _updateRigidBodyStateTuple(orig: _RigidBodyState,
-                               new: rb_state.RigidBodyStateOverride):
+                               new: types.RigidBodyStateOverride):
     """
     Overwrite fields in ``orig`` with content of ``new``.
 

@@ -28,8 +28,8 @@ import azrael.util
 import azrael.bullet.azBullet as azBullet
 
 import numpy as np
+import azrael.types as types
 import azrael.config as config
-import azrael.rb_state as rb_state
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _RigidBodyState
@@ -43,7 +43,7 @@ Quaternion = azBullet.Quaternion
 Transform = azBullet.Transform
 
 # Convenience.
-RigidBodyState = rb_state.RigidBodyState
+RigidBodyState = types.RigidBodyState
 
 
 class PyRigidBody(azBullet.RigidBody):
