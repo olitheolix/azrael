@@ -646,13 +646,15 @@ class Clerk(config.AzraelProcess):
         :param list(str) templateIDs: template IDs
         :return dict: raw template data (the templateID is the key).
         """
-        # Sanity check
-        tmp = [_ for _ in templateIDs if not isinstance(_, str)]
-        if len(tmp) > 0:
+        # Sanity check: all template IDs must be strings.
+        try:
+            for tid in templateIDs:
+                assert isinstance(tid, str)
+        except AssertionError:
             return RetVal(False, 'All template IDs must be strings', None)
 
-        # Remove all duplicates from templateIDs.
-        templateIDs = list(set(list(templateIDs)))
+        # Remove all duplicates from the list of templateIDs.
+        templateIDs = tuple(set(templateIDs))
 
         # Retrieve the template. Return immediately if one does not exist.
         db = database.dbHandles['Templates']
@@ -723,6 +725,7 @@ class Clerk(config.AzraelProcess):
         :rtype: tuple of int
         """
         # Sanity checks.
+        # fixme: newObjects should be a dictionar: {templateID_0: sv_0, ...}.
         try:
             assert len(newObjects) > 0
             for ii in newObjects:
