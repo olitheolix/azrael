@@ -370,12 +370,22 @@ class CollShapeMeta(_CollShapeMeta):
             assert p.ndim == r.ndim == 1
             assert len(p) == 3
             assert len(r) == 4
-            p = p.tolist()
-            r = r.tolist()
+
+            cstype = cstype.upper()
+            if cstype == 'SPHERE':
+                csdata = CollShapeSphere(*csdata)
+            elif cstype == 'BOX':
+                csdata = CollShapeBox(*csdata)
+            elif cstype == 'EMPTY':
+                csdata = CollShapeEmpty(*csdata)
+            elif cstype == 'PLANE':
+                csdata = CollShapePlane(*csdata)
+            else:
+                assert False
         except (TypeError, AssertionError):
             raise TypeError
 
-        return super().__new__(cls, aid, cstype, p, r, csdata)
+        return super().__new__(cls, aid, cstype, tuple(p), tuple(r), csdata)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
