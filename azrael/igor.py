@@ -25,12 +25,6 @@ from IPython import embed as ipshell
 from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
 from azrael.types import Constraint6DofSpring2
 
-# List of known constraints and the associated named tuple.
-_Known_Constraints = {
-    'P2P': ConstraintP2P,
-    '6DOFSPRING2': Constraint6DofSpring2,
-}
-
 
 class Igor:
     """
@@ -95,7 +89,7 @@ class Igor:
         Add all ``constraints`` to the database.
 
         All entries in ``constraints`` must be ``ConstraintMeta`` instances,
-        and their `data` attribute must be a valid ``Consraint***`` instance.
+        and their `data` attribute must be a valid ``Constraint***`` instance.
 
         This method will skip over all constraints with an invalid/unknown
         type.
@@ -110,7 +104,9 @@ class Igor:
         queries = []
         for con in constraints:
             # Skip all constraints with an unknown type.
-            if con.contype.upper() not in _Known_Constraints:
+            try:
+                con = ConstraintMeta(*con)
+            except TypeError:
                 continue
 
             # Convenience.
