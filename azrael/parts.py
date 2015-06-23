@@ -62,21 +62,26 @@ class Booster(_Booster):
     def __new__(cls, partID: str, pos: (list, np.ndarray),
                 direction: (list, np.ndarray), minval: (int, float),
                 maxval: (int, float), force: (int, float)):
-        # Position must be a 3-element vector.
-        pos = np.array(pos, np.float64)
-        assert len(pos) == 3
+        try:
+            # Position must be a 3-element vector.
+            pos = np.array(pos, np.float64)
+            assert len(pos) == 3
 
-        # Direction must be a 3-element vector.
-        direction = np.array(direction, np.float64)
-        assert len(direction) == 3
+            # Direction must be a 3-element vector.
+            direction = np.array(direction, np.float64)
+            assert len(direction) == 3
 
-        # Normalise the direction vector or raise an error if invalid.
-        assert np.dot(direction, direction) > 1E-5
-        direction = direction / np.sqrt(np.dot(direction, direction))
+            # Normalise the direction vector or raise an error if invalid.
+            assert np.dot(direction, direction) > 1E-5
+            direction = direction / np.sqrt(np.dot(direction, direction))
 
-        # Only store native Python types to make them compatible with MongoDB.
-        pos = pos.tolist()
-        direction = direction.tolist()
+            # Only store native Python types to make them compatible with
+            # MongoDB.
+            pos = pos.tolist()
+            direction = direction.tolist()
+        except (TypeError, AssertionError):
+            raise TypeError
+
         self = super().__new__(cls, partID, pos, direction,
                                minval, maxval, force)
 
@@ -178,26 +183,29 @@ class Factory(_Factory):
         :param ndarray exit_speed: [min, max] exit speed of spawned object.
         :return Factory: compiled factory description.
         """
-        # Position must be a 3-element vector.
-        pos = np.array(pos, np.float64)
-        assert len(pos) == 3
+        try:
+            # Position must be a 3-element vector.
+            pos = np.array(pos, np.float64)
+            assert len(pos) == 3
 
-        # Direction must be a 3-element vector.
-        direction = np.array(direction, np.float64)
-        assert len(direction) == 3
+            # Direction must be a 3-element vector.
+            direction = np.array(direction, np.float64)
+            assert len(direction) == 3
 
-        # Normalise the direction vector or raise an error if invalid.
-        assert np.dot(direction, direction) > 1E-5
-        direction = direction / np.sqrt(np.dot(direction, direction))
+            # Normalise the direction vector or raise an error if invalid.
+            assert np.dot(direction, direction) > 1E-5
+            direction = direction / np.sqrt(np.dot(direction, direction))
 
-        # This defines exit speed range of the spawned object.
-        exit_speed = np.array(exit_speed, np.float64)
-        assert len(exit_speed) == 2
+            # This defines exit speed range of the spawned object.
+            exit_speed = np.array(exit_speed, np.float64)
+            assert len(exit_speed) == 2
 
-        # Only store native Python types to make them compatible with MongoDB.
-        pos = pos.tolist()
-        direction = direction.tolist()
-        exit_speed = exit_speed.tolist()
+            # Only store native Python types to make them compatible with MongoDB.
+            pos = pos.tolist()
+            direction = direction.tolist()
+            exit_speed = exit_speed.tolist()
+        except (TypeError, AssertionError):
+            raise TypeError
 
         # Return a valid Factory instance based on the arguments.
         self = super().__new__(
