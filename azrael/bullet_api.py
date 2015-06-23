@@ -395,6 +395,7 @@ class PyBulletDynamicsWorld():
 
         # Compile a list of all Bullet constraints.
         try:
+            constraints = [ConstraintMeta(*_) for _ in constraints]
             out = [_buildConstraint(_) for _ in constraints]
         except (TypeError, AttributeError, KeyError, AssertionError):
             return RetVal(False, 'Could not compile all Constraints.', None)

@@ -594,8 +594,8 @@ class ConstraintP2P(_ConstraintP2P):
     @typecheck
     def __new__(cls, pivot_a: (tuple, list), pivot_b: (tuple, list)):
         try:
-            pivot_a = tuple(pivot_a)
-            pivot_b = tuple(pivot_b)
+            pivot_a = toVec(3, pivot_a)
+            pivot_b = toVec(3, pivot_b)
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
