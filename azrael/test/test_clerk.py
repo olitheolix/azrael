@@ -1324,32 +1324,6 @@ class TestClerk:
         assert clerk.setFragmentStates(newStates).ok
         assert clerk.setFragmentStates(newStates).ok
 
-    def test_isNameValid(self):
-        """
-        Test _isNameValid function.
-
-        fixme: move this test into test_types.Template
-        fixme: move the associated functionality from Clerk to types.Template
-        """
-        # Create a Clerk instance and a shortcut to the test method.
-        clerk = azrael.clerk.Clerk()
-        inv = clerk._isNameValid
-
-        # Thest valid names.
-        assert inv('a')
-        assert inv('a1')
-        assert inv('a_')
-        assert inv('_a')
-        assert inv('1')
-        assert inv('1a')
-        assert inv('a' * 32)
-
-        # Test invalid names.
-        assert not inv('')
-        assert not inv('.')
-        assert not inv('a.b')
-        assert not inv('a' * 33)
-
     def test_fragments_end2end(self):
         """
         Integration test: create a live system, add a template with two

@@ -540,36 +540,6 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def _isNameValid(self, name):
-        """
-        Return *True* if ``name`` is a valid template name.
-
-        The template ``name`` is valid when it is a non-empty string, at most
-        32 characters long, and contains only alphanumeric characters (ie
-        [a-zA-Z0-9]) and '_'.
-
-        :param str name: name to validate.
-        :return: *True* if ``name`` is valid, *False* otherwise.
-        """
-        # Template name must be a string.
-        if not isinstance(name, str):
-            return False
-
-        # Must contain at least one character and no more than 32.
-        if not (0 < len(name) <= 32):
-            return False
-
-        # Compile the set of admissible characters.
-        ref = 'abcdefghijklmnopqrstuvwxyz'
-        ref += ref.upper()
-        ref += '0123456789_'
-        ref = set(ref)
-
-        # Return true if ``name`` only consists of characters from the just
-        # defined reference set.
-        return set(name).issubset(ref)
-
-    @typecheck
     def _verifyCollisionShapes(self, cshapes: (tuple, list)):
         """
         Return *True* if all Collision shapes in ``cshapes`` are valid.
