@@ -397,22 +397,18 @@ class FragState(_FragState):
                 position: (tuple, list),
                 orientation: (tuple, list)):
         try:
+            # Verify the inputs.
             assert isAIDStringValid(aid)
-
-            p = np.array(position, np.float64)
-            o = np.array(orientation, np.float64)
-            assert p.ndim == o.ndim == 1
-            assert len(p) == 3
-            assert len(o) == 4
             assert scale >= 0
-            p = p.tolist()
-            o = o.tolist()
+            position = toVec(3, position)
+            orientation = toVec(4, orientation)
+
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
 
-        return super().__new__(cls, aid, scale, p, o)
+        return super().__new__(cls, aid, scale, position, orientation)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
@@ -433,13 +429,10 @@ class CollShapeMeta(_CollShapeMeta):
                 rotation: (tuple, list, np.ndarray),
                 csdata):
         try:
+            # Verify the inputs.
             assert isAIDStringValid(aid)
-
-            p = np.array(position, np.float64)
-            r = np.array(rotation, np.float64)
-            assert p.ndim == r.ndim == 1
-            assert len(p) == 3
-            assert len(r) == 4
+            position = toVec(3, position)
+            rotation = toVec(4, rotation)
 
             cstype = cstype.upper()
             if cstype == 'SPHERE':
@@ -457,7 +450,7 @@ class CollShapeMeta(_CollShapeMeta):
             logit.warning(msg)
             raise TypeError
 
-        return super().__new__(cls, aid, cstype, tuple(p), tuple(r), csdata)
+        return super().__new__(cls, aid, cstype, position, rotation, csdata)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
@@ -534,10 +527,8 @@ class CollShapePlane(_CollShapePlane):
     @typecheck
     def __new__(cls, normal: (tuple, list), ofs: (int, float)):
         try:
-            normal = np.array(normal, np.float64)
-            assert normal.ndim == 1
-            assert len(normal) == 3
-            normal = normal.tolist()
+            # Verify the inputs.
+            normal = toVec(3, normal)
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
@@ -559,7 +550,9 @@ class ConstraintMeta(_ConstraintMeta):
     @typecheck
     def __new__(cls, aid: str, contype: str, rb_a, rb_b, condata):
         try:
+            # Verify the inputs.
             assert isAIDStringValid(aid)
+
             if contype.upper() == 'P2P':
                 if isinstance(condata, dict):
                     condata = ConstraintP2P(**condata)
@@ -594,6 +587,7 @@ class ConstraintP2P(_ConstraintP2P):
     @typecheck
     def __new__(cls, pivot_a: (tuple, list), pivot_b: (tuple, list)):
         try:
+            # Verify the inputs.
             pivot_a = toVec(3, pivot_a)
             pivot_b = toVec(3, pivot_b)
         except (TypeError, AssertionError):
@@ -629,6 +623,7 @@ class Constraint6DofSpring2(_Constraint6DofSpring2):
                 enableSpring: (tuple, list)):
 
         try:
+            # Verify the inputs.
             frameInA = toVec(7, frameInA)
             frameInB = toVec(7, frameInB)
             stiffness = toVec(6, stiffness)
@@ -743,9 +738,10 @@ class CmdBooster(_CmdBooster):
     """
     @typecheck
     def __new__(cls, partID: str, force: (int, float, np.float64)):
+        # Verify the inputs.
         assert isAIDStringValid(partID)
-        force = float(force)
-        return super().__new__(cls, partID, force)
+
+        return super().__new__(cls, partID, float(force))
 
     def __eq__(self, ref):
         # Sanity check.
