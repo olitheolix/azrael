@@ -548,10 +548,12 @@ class ConstraintMeta(_ConstraintMeta):
     :return _ConstraintMeta: a valid 'Plane' collision shape.
     """
     @typecheck
-    def __new__(cls, aid: str, contype: str, rb_a, rb_b, condata):
+    def __new__(cls, aid: str, contype: str, rb_a: int, rb_b: int,
+                condata: (tuple, list, dict)):
         try:
             # Verify the inputs.
             assert isAIDStringValid(aid)
+            assert (rb_a >= 0) and (rb_b >= 0)
 
             if contype.upper() == 'P2P':
                 if isinstance(condata, dict):
