@@ -768,14 +768,11 @@ class TestLeonardOther:
         # Convenience.
         id_a, id_b = 1, 2
         pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
-        cs = CollShapeMeta(
-            '', 'sphere', (0, 0, 0), (0, 0, 0, 1), CollShapeSphere(1)
-        )
         distance = abs(pos_a[0] - pos_b[0])
         assert distance >= 4
 
-        sv_a = types.RigidBodyState(position=pos_a, cshapes=[cs])
-        sv_b = types.RigidBodyState(position=pos_b, cshapes=[cs])
+        sv_a = types.RigidBodyState(position=pos_a, cshapes=[getCSSphere()])
+        sv_b = types.RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
 
         # Specify the constraints.
         p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
@@ -1163,10 +1160,7 @@ class TestBroadphase:
         RBS = types.RigidBodyState
 
         # Create the test body at the center. It is a centered unit cube.
-        box = CollShapeBox(1, 1, 1)
-        cs_a = CollShapeMeta('1', 'box', (0, 0, 0), (0, 0, 0, 1), box)
-        body_a = RBS(position=(0, 0, 0), cshapes=[cs_a])
-        del cs_a
+        body_a = RBS(position=(0, 0, 0), cshapes=[getCSBox()])
 
         def _verify(rba, pos, rot, scale, intersect: bool):
             """
@@ -1180,9 +1174,8 @@ class TestBroadphase:
 
             # Create the second body. Its collision shape is a unit cube
             # at position `cs_ofs`.
-            cs_b = CollShapeMeta('1', 'box', cs_ofs, (0, 0, 0, 1), box)
             body_b = RBS(position=pos, scale=scale, orientation=rot,
-                         cshapes=[cs_b])
+                         cshapes=[getCSBox()])
 
             # Compile the input dictionaries for the broadphase algorithm.
             bodies = {1: rba, 2: body_b}
