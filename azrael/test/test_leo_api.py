@@ -311,14 +311,12 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Test constants.
-        p = np.array([1, 2, 5])
-        vl = np.array([8, 9, 10.5])
-        vr = 1 + vl
-        o = np.array([11, 12.5, 13, 13.5])
         body_new = RigidBodyStateOverride(
-            imass=2, scale=3, position=p, velocityLin=vl,
-            velocityRot=vr, orientation=o)
-        del p, vl, vr, o
+            imass=2, scale=3,
+            position=(1, 2, 5),
+            velocityLin=(8, 9, 10.5),
+            velocityRot=(9, 10, 11.5),
+            orientation=(11, 12.5, 13, 13.5))
 
         # Create a test body.
         id_0 = 0

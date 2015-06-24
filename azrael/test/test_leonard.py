@@ -607,8 +607,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Spawn one object.
-        orient = np.array([0, 0, 0, 1])
-        sv = types.RigidBodyState(imass=1, orientation=orient)
+        sv = types.RigidBodyState(imass=1, orientation=(0, 0, 0, 1))
         objID = 1
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
@@ -650,8 +649,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Spawn one object rotated 180 degress around x-axis.
-        orient = np.array([1, 0, 0, 0])
-        sv = types.RigidBodyState(imass=1, orientation=orient)
+        sv = types.RigidBodyState(imass=1, orientation=(1, 0, 0, 0))
         objID = 1
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()

@@ -103,7 +103,7 @@ class TestBulletAPI:
     def teardown_method(self, method):
         pass
 
-    def test_isEqualBD(self):
+    def xtest_isEqualBD(self):
         """
         Verify that the auxiliary `isEqualBD` function works as expected.
         """
@@ -196,10 +196,10 @@ class TestBulletAPI:
             imass=4.5,
             cshapes=cshapes,
             restitution=5.5,
-            orientation=np.array([0, 1, 0, 0], np.float64),
-            position=np.array([0.2, 0.4, 0.6], np.float64),
-            velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
-            velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
+            orientation=(0, 1, 0, 0),
+            position=(0.2, 0.4, 0.6),
+            velocityLin=(0.8, 1.0, 1.2),
+            velocityRot=(1.4, 1.6, 1.8))
         assert obj_a is not None
 
         # Instantiate Bullet engine.
@@ -227,10 +227,10 @@ class TestBulletAPI:
             imass=4.5,
             cshapes=cshapes,
             restitution=5.5,
-            orientation=np.array([0, 1, 0, 0], np.float64),
-            position=np.array([0.2, 0.4, 0.6], np.float64),
-            velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
-            velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
+            orientation=(0, 1, 0, 0),
+            position=(0.2, 0.4, 0.6),
+            velocityLin=(0.8, 1.0, 1.2),
+            velocityRot=(1.4, 1.6, 1.8))
         assert obj_a is not None
 
         # Instantiate Bullet engine.
@@ -248,10 +248,10 @@ class TestBulletAPI:
             imass=7.5,
             cshapes=cshapes,
             restitution=8.5,
-            orientation=np.array([0, 0, 1, 0], np.float64),
-            position=np.array([1.2, 1.4, 1.6], np.float64),
-            velocityLin=np.array([2.8, 2.0, 2.2], np.float64),
-            velocityRot=np.array([2.4, 2.6, 2.8], np.float64))
+            orientation=(0, 0, 1, 0),
+            position=(1.2, 1.4, 1.6),
+            velocityLin=(2.8, 2.0, 2.2),
+            velocityRot=(2.4, 2.6, 2.8))
         assert obj_a is not None
         sim.setRigidBodyData(0, obj_a)
         ret = sim.getRigidBodyData(0)
