@@ -44,10 +44,9 @@ import azrael.database as database
 from IPython import embed as ipshell
 from azrael.types import RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
-from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
-from azrael.test.test import getFragRaw, getFragDae, isEqualCS
-from azrael.test.test_leonard import getLeonard, killAzrael
+from azrael.test.test import getFragRaw, getFragDae, isEqualCS, getP2P, get6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
+from azrael.test.test_leonard import getLeonard, killAzrael
 
 
 class TestClient:
@@ -835,21 +834,8 @@ class TestClient:
         assert client.spawn(objs) == (True, None, (id_1, id_2, id_3))
 
         # Define the constraints.
-        p2p_12 = ConstraintP2P(pivot_a=pos_2, pivot_b=pos_1)
-        dof_23 = Constraint6DofSpring2(
-            frameInA=[0, 0, 0, 0, 0, 0, 1],
-            frameInB=[0, 0, 0, 0, 0, 0, 1],
-            stiffness=[1, 2, 3, 4, 5.5, 6],
-            damping=[2, 3.5, 4, 5, 6.5, 7],
-            equilibrium=[-1, -1, -1, 0, 0, 0],
-            linLimitLo=[-10.5, -10.5, -10.5],
-            linLimitHi=[10.5, 10.5, 10.5],
-            rotLimitLo=[-0.1, -0.2, -0.3],
-            rotLimitHi=[0.1, 0.2, 0.3],
-            bounce=[1, 1.5, 2],
-            enableSpring=[True, False, False, False, False, False])
-        con_1 = ConstraintMeta('', 'p2p', id_1, id_2, p2p_12)
-        con_2 = ConstraintMeta('', '6DOFSPRING2', id_2, id_3, dof_23)
+        con_1 = getP2P(rb_a=id_1, rb_b=id_2, pivot_a=pos_2, pivot_b=pos_1)
+        con_2 = get6DofSpring2(rb_a=id_2, rb_b=id_3)
 
         # Verify that no constraints are currently active.
         assert client.getAllConstraints() == (True, None, [])
@@ -902,10 +888,9 @@ class TestClient:
         # original template to establish that they now actually exist).
         leo.processCommandsAndSync()
 
-        # Define the constraints.
-        p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
-        constraints = [ConstraintMeta('', 'p2p', id_1, id_2, p2p)]
-        assert client.addConstraints(constraints) == (True, None, 1)
+        # Define- and add the constraints.
+        con = [getP2P(rb_a=id_1, rb_b=id_2, pivot_a=pos_b, pivot_b=pos_a)]
+        assert client.addConstraints(con) == (True, None, 1)
 
         # Apply a force that will pull the left object further to the left.
         # However, both objects must move the same distance in the same
