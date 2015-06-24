@@ -26,7 +26,7 @@ import azrael.leonard as leonard
 
 from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
-from azrael.test.test import isEqualBD, getCSEmpty, getCSBox
+from azrael.test.test import getCSEmpty, getCSBox
 from azrael.test.test import getCSSphere, getCSPlane
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.types import CollShapeSphere, CollShapeBox
@@ -123,28 +123,28 @@ class TestLeonardAPI:
         # Query the objects individually.
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
-        assert isEqualBD(ret.data[id_0], body_0)
+        assert RigidBodyState(*ret.data[id_0]) == body_0
         ret = leoAPI.getBodyStates([id_1])
         assert ret.ok
-        assert isEqualBD(ret.data[id_1], body_1)
+        assert RigidBodyState(*ret.data[id_1]) == body_1
 
         # Manually query multiple objects.
         ret = leoAPI.getBodyStates([id_0, id_1])
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert isEqualBD(ret.data[id_0], body_0)
-        assert isEqualBD(ret.data[id_1], body_1)
+        assert RigidBodyState(*ret.data[id_0]) == body_0
+        assert RigidBodyState(*ret.data[id_1]) == body_1
 
         # Repeat, but change the order of the objects.
         ret = leoAPI.getBodyStates([id_1, id_0])
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert isEqualBD(ret.data[id_0], body_0)
-        assert isEqualBD(ret.data[id_1], body_1)
+        assert RigidBodyState(*ret.data[id_0]) == body_0
+        assert RigidBodyState(*ret.data[id_1]) == body_1
 
         # Query all objects at once.
         ret = leoAPI.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert isEqualBD(ret.data[id_0], body_0)
-        assert isEqualBD(ret.data[id_1], body_1)
+        assert RigidBodyState(*ret.data[id_0]) == body_0
+        assert RigidBodyState(*ret.data[id_1]) == body_1
 
     def test_add_same(self):
         """
@@ -190,7 +190,8 @@ class TestLeonardAPI:
         assert leoAPI.addCmdSpawn([(id_0, body_0)]).ok
         leo.processCommandsAndSync()
         ret = leoAPI.getBodyStates([id_0])
-        assert ret.ok and isEqualBD(ret.data[id_0], body_0)
+        assert ret.ok
+        assert RigidBodyState(*ret.data[id_0]) == body_0
 
         # Spawn a new object with same id_0 but different state data.
         assert leoAPI.addCmdSpawn([(id_0, body_2)]).ok
@@ -198,7 +199,8 @@ class TestLeonardAPI:
 
         # The state vector for id_0 must still be body_0.
         ret = leoAPI.getBodyStates([id_0])
-        assert ret.ok and isEqualBD(ret.data[id_0], body_0)
+        assert ret.ok
+        assert RigidBodyState(*ret.data[id_0]) == body_0
 
     def test_commandQueue(self):
         """
@@ -461,12 +463,12 @@ class TestLeonardAPI:
         # Compare two identical objects.
         sv1 = RigidBodyState()
         sv2 = RigidBodyState()
-        assert isEqualBD(sv1, sv2)
+        assert sv1 == sv2
 
         # Compare two different objects.
         sv1 = RigidBodyState()
         sv2 = RigidBodyState(position=[1, 2, 3])
-        assert not isEqualBD(sv1, sv2)
+        assert sv1 != sv2
 
     def test_set_get_AABB(self):
         """
