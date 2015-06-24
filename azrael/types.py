@@ -44,7 +44,7 @@ RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Template dataset.
 _Template = namedtuple('_Template', 'aid cshapes fragments boosters factories')
-_FragState = namedtuple('FragState', 'aid scale position orientation')
+_FragState = namedtuple('_FragState', 'aid scale position orientation')
 
 # Fragments.
 _FragmentMeta = namedtuple('_FragmentMeta', 'aid fragtype fragdata')
