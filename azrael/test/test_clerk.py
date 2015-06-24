@@ -35,12 +35,11 @@ import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.test.test import isEqualBD
+from azrael.test.test import isEqualBD, getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, isEqualCS
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
-from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox
 from azrael.test.test import getCSSphere, getCSPlane
 
@@ -1513,21 +1512,8 @@ class TestClerk:
 
         # Link the three objects. The first two with a Point2Point constraint
         # and the second two with a 6DofSpring2 constraint.
-        p2p_12 = ConstraintP2P(pivot_a=pos_2, pivot_b=pos_1)
-        dof_23 = Constraint6DofSpring2(
-            frameInA=[0, 0, 0, 0, 0, 0, 1],
-            frameInB=[0, 0, 0, 0, 0, 0, 1],
-            stiffness=[1, 2, 3, 4, 5.5, 6],
-            damping=[2, 3.5, 4, 5, 6.5, 7],
-            equilibrium=[-1, -1, -1, 0, 0, 0],
-            linLimitLo=[-10.5, -10.5, -10.5],
-            linLimitHi=[10.5, 10.5, 10.5],
-            rotLimitLo=[-0.1, -0.2, -0.3],
-            rotLimitHi=[0.1, 0.2, 0.3],
-            bounce=[1, 1.5, 2],
-            enableSpring=[True, False, False, False, False, False])
-        con_1 = ConstraintMeta('', 'p2p', id_1, id_2, p2p_12)
-        con_2 = ConstraintMeta('', '6DOFSPRING2', id_2, id_3, dof_23)
+        con_1 = getP2P(rb_a=id_1, rb_b=id_2, pivot_a=pos_2, pivot_b=pos_1)
+        con_2 = get6DofSpring2(rb_a=id_2, rb_b=id_3)
 
         # Verify that no constraints are currently active.
         assert clerk.getAllConstraints() == (True, None, tuple())
@@ -1589,9 +1575,8 @@ class TestClerk:
         assert ret_a.data == ret_b.data == templateID
 
         # Define the constraints.
-        p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
-        constraints = [ConstraintMeta('', 'p2p', id_a, id_b, p2p)]
-        assert clerk.addConstraints(constraints) == (True, None, 1)
+        con = [getP2P(rb_a=id_a, rb_b=id_b, pivot_a=pos_b, pivot_b=pos_a)]
+        assert clerk.addConstraints(con) == (True, None, 1)
 
         # Apply a force that will pull the left object further to the left.
         # However, both objects must move the same distance in the same
