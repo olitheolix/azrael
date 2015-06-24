@@ -11,10 +11,9 @@ import unittest.mock as mock
 import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
-from azrael.test.test import isEqualBD
+from azrael.test.test import isEqualBD, getP2P
 from azrael.types import CollShapeBox, CollShapeSphere, RetVal
 from azrael.types import CollShapeMeta, CollShapeEmpty
-from azrael.types import ConstraintMeta, ConstraintP2P
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 
 
@@ -722,11 +721,11 @@ class TestLeonardOther:
         del tmp
 
         # Two disjoint sets.
-        p2p = ConstraintP2P((0, 0, 0), (0, 0, 0))
         self.igor.reset()
         s = [[1], [2]]
         _verify(s, s)
-        assert igor.addConstraints([ConstraintMeta('', 'p2p', 1, 2, p2p)]).ok
+        
+        assert igor.addConstraints([getP2P()]).ok
         _verify(s, [[1, 2]])
         self.igor.reset()
         _verify(s, s)
@@ -735,22 +734,22 @@ class TestLeonardOther:
         self.igor.reset()
         s = [[1], [2]]
         _verify(s, s)
-        assert igor.addConstraints([ConstraintMeta('', 'p2p', 1, 3, p2p)]).ok
+        assert igor.addConstraints([getP2P(rb_a=1, rb_b=3)]).ok
         _verify(s, s)
 
         # Three disjoint sets and the constraint links two of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
         _verify(s, s)
-        assert igor.addConstraints([ConstraintMeta('', 'p2p', 1, 6, p2p)]).ok
+        assert igor.addConstraints([getP2P(rb_a=1, rb_b=6)]).ok
         _verify(s, [[1, 2, 3, 6], [4, 5]])
 
         # Three disjoint sets and two constraint link both of them.
         self.igor.reset()
         s = [[1, 2, 3], [4, 5], [6]]
         _verify(s, s)
-        assert igor.addConstraints([ConstraintMeta('', 'p2p', 1, 6, p2p)]).ok
-        assert igor.addConstraints([ConstraintMeta('', 'p2p', 3, 4, p2p)]).ok
+        assert igor.addConstraints([getP2P(rb_a=1, rb_b=6)]).ok
+        assert igor.addConstraints([getP2P(rb_a=3, rb_b=4)]).ok
         _verify(s, [[1, 2, 3, 6, 4, 5]])
 
     @pytest.mark.parametrize('clsLeonard', [
@@ -775,8 +774,7 @@ class TestLeonardOther:
         sv_b = types.RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
 
         # Specify the constraints.
-        p2p = ConstraintP2P(pivot_a=pos_b, pivot_b=pos_a)
-        con = ConstraintMeta('', 'p2p', id_a, id_b, p2p)
+        con = getP2P(rb_a=id_a, rb_b=id_b, pivot_a=pos_b, pivot_b=pos_a)
         self.igor.addConstraints([con])
 
         # Spawn both objects.

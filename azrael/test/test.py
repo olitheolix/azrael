@@ -82,11 +82,11 @@ def getFragRaw():
     return FragRaw(vert, uv, rgb)
 
 
-def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2):
+def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2,
+           pivot_a=(0, 0, -1), pivot_b=(0, 0, 1)):
     """
     Return a Point2Point constraint for bodies ``rb_a`` and ``rb_b`.
     """
-    pivot_a, pivot_b = (0, 0, -1), (0, 0, 1)
     p2p = ConstraintP2P(pivot_a, pivot_b)
     return ConstraintMeta(aid, 'p2p', rb_a, rb_b, p2p)
 
