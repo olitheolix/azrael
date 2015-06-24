@@ -83,20 +83,53 @@ _Constraint6DofSpring2 = namedtuple(
 
 def toVec(num_el, v):
     """
-    Verify that ``v`` is a vector with ``num_el`` entries.
+    Verify that ``v`` is a ``num_el`` vector and return it as a tuple.
+
+    The length check is skipped if if ``num_el`` is set to zero.
 
     :param int num_el: positive integer
     :param v: an iterable (eg tuple, list, NumPy array).
     :return: v as tuple
+    :raises: TypeError if the input does not compile to the data type.
     """
-    assert num_el > 0
+    assert num_el >= 0
     try:
         v = np.array(v, np.float64)
         assert v.ndim == 1
-        assert len(v) == num_el
+        if num_el > 0:
+            assert len(v) == num_el
     except (TypeError, AssertionError):
         assert False
     return tuple(v)
+
+
+def isAIDStringValid(aid):
+    """
+    Return *True* if ``aid`` is a valid ID name in Azrael.
+
+    The ``aid`` must be a string with at most 32 characters drawn from
+    [a-zA-Z0-9] and '_'.
+
+    :param str aid: the AID string to validate.
+    :return: *True* if ``aid`` is valid, *False* otherwise.
+    """
+    # Aid must be a string.
+    if not isinstance(aid, str):
+        return False
+
+    # Must contain at least one character and no more than 32.
+    if not (0 <= len(aid) <= 32):
+        return False
+
+    # Compile the set of admissible characters.
+    ref = 'abcdefghijklmnopqrstuvwxyz'
+    ref += ref.upper()
+    ref += '0123456789_'
+    ref = set(ref)
+
+    # Return true if ``aid`` only consists of characters from the just
+    # defined reference set.
+    return set(aid).issubset(ref)
 
 
 def typecheck(func_handle):
@@ -225,27 +258,31 @@ def typecheck(func_handle):
 
 class FragRaw(_FragRaw):
     """
+    A raw geometry fragment.
+
+    Raw fragments are consists of a list of vertices, UV coordinates, and RGB
+    values. They are useful for debugging since it is easy to specify
+    triangles and build simple shapes like cubes.
+
     :param [float] vert: vertex data
     :param [float] uv: UV map coordinates
     :param [uint8]: RGB texture values.
-    :return _FragRaw: compiled Raw fragment.
+    :return: compiled ``_FragRaw`` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, vert, uv, rgb):
         try:
-            assert isinstance(vert, (tuple, list, np.ndarray))
-            assert isinstance(uv, (tuple, list, np.ndarray))
-            assert isinstance(rgb, (tuple, list, np.ndarray))
+            # Sanity check.
+            vert = toVec(0, vert)
+            uv = toVec(0, uv)
+            rgb = toVec(0, rgb)
 
-            vert = np.array(vert, np.float64)
-            uv = np.array(uv, np.float64)
-            rgb = np.array(rgb, np.uint8)
-            assert vert.ndim == 1
-            assert uv.ndim == 1
-            assert rgb.ndim == 1
-            vert = tuple(vert.tolist())
-            uv = tuple(uv.tolist())
-            rgb = tuple(rgb.tolist())
+            # RGB values must be integers in [0, 255]
+            if len(rgb) > 0:
+                assert (np.amin(rgb) >= 0) and (np.amax(rgb) < 256)
+                rgb = tuple(np.array(rgb, np.uint8).tolist())
+
             # The number of vertices must be an integer multiple of 9 to
             # constitute a valid triangle mesh (every triangle has three
             # edges and every edge requires an (x, y, z) triplet to
@@ -259,6 +296,7 @@ class FragRaw(_FragRaw):
             logit.warning(msg)
             raise TypeError
 
+        # Return constructed data type.
         return super().__new__(cls, vert, uv, rgb)
 
     def _asdict(self):
@@ -267,14 +305,21 @@ class FragRaw(_FragRaw):
 
 class FragDae(_FragDae):
     """
+    Return a valid description for a Collada file and its textures.
+
+    The RGB dictionary denotes the texture images. The keys are file names (eg.
+    'foo.png') whereas the associated values are the Base64 encoded images
+    themselves.
+
     :param str dae: Collada file
     :param dict rgb: dictionary of texture files.
-    :return _FragDae: compiled Collada fragment description.
+    :return: compiled ``_FragDae`` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, dae: str, rgb: dict):
         try:
-            assert isinstance(dae, str)
+            # Verify the RGB dictionary.
             for k, v in rgb.items():
                 assert isinstance(k, str)
                 assert isinstance(v, str)
@@ -283,6 +328,7 @@ class FragDae(_FragDae):
             logit.warning(msg)
             raise TypeError
 
+        # Return constructed data type.
         return super().__new__(cls, dae, rgb)
 
     def _asdict(self):
@@ -291,25 +337,41 @@ class FragDae(_FragDae):
 
 class MetaFragment(_MetaFragment):
     """
-    :param str type: fragment type (eg 'raw', or 'dae')
+    Return a valid description for any of Azrael's supported data formats.
+
+    Meta Fragments hold meta data about *one* geometry fragment, for instance
+    its type and ID.
+
+    The fragment data itself is available under the `fragdata` attribute. It
+    must be either *None* or one of the other supported `Frag*` instances.
+
+    A `fragtype` of *None* is unusual but sometimes necessary internally
+    because the data about the fragment does not reside in the same database as
+    the actual geometry. However, when `fragtype` is *None* then the `fragdata`
+    argument is ignored altogether.
+
     :param dict aid: fragment name
-    :param data: one of the fragment types (eg. `FragRaw` or `FragDae`).
-    :return _MetaFragment: a valid meta fragment instance.
+    :param str fragtype: fragment type (eg 'raw', or 'dae', or None)
+    :param fragdata: one of the fragment types (eg. `FragRaw` or `FragDae`).
+    :return: compiled  ``_MetaFragment`` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
-    def __new__(cls, aid: str, ftype: str, data):
+    def __new__(cls, aid: str, fragtype: str, fragdata):
         try:
+            # AID must be valid.
             assert isAIDStringValid(aid)
-            assert isinstance(ftype, str)
-            if data is None:
+
+            # Verify that `fragtype` is valid and construct the respective data
+            # type for the ``fragdata`` attribute.
+            if fragdata is None:
                 frag = None
             else:
-                assert ftype.lower() in ('dae', 'raw')
-                ftype = ftype.upper()
-                if ftype == 'RAW':
-                    frag = FragRaw(*data)
-                elif ftype == 'DAE':
-                    frag = FragDae(*data)
+                fragtype = fragtype.upper()
+                if fragtype == 'RAW':
+                    frag = FragRaw(*fragdata)
+                elif fragtype == 'DAE':
+                    frag = FragDae(*fragdata)
                 else:
                     assert False
         except (TypeError, AssertionError):
@@ -317,48 +379,30 @@ class MetaFragment(_MetaFragment):
             logit.warning(msg)
             raise TypeError
 
-        return super().__new__(cls, aid, ftype, frag)
+        # Return constructed data type.
+        return super().__new__(cls, aid, fragtype, frag)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
 
 
-def isAIDStringValid(aid):
-    """
-    Return *True* if ``aid`` is a valid ID name in Azrael.
-
-    The ``aid`` must be a string with at most 32 characters drawn from
-    [a-zA-Z0-9] and '_'.
-
-    :param str aid: the AID string to validate.
-    :return: *True* if ``aid`` is valid, *False* otherwise.
-    """
-    # Aid must be a string.
-    if not isinstance(aid, str):
-        return False
-
-    # Must contain at least one character and no more than 32.
-    if not (0 <= len(aid) <= 32):
-        return False
-
-    # Compile the set of admissible characters.
-    ref = 'abcdefghijklmnopqrstuvwxyz'
-    ref += ref.upper()
-    ref += '0123456789_'
-    ref = set(ref)
-
-    # Return true if ``aid`` only consists of characters from the just
-    # defined reference set.
-    return set(aid).issubset(ref)
-
-
 class Template(_Template):
     """
-    fixme: docu
-    fixme: parameters
+    Return a valid object templates.
 
-    :param dict aid: template name
-    :return _Template: a valid meta fragment instance.
+    Object templates encapsulate all the information known about the object.
+    Azrael uses this information to spawn the object and make it available to
+    the various other components like physics.
+
+    Almost all of the inital template values can be modified at run time.
+
+    :param str aid: template name
+    :param list[CollShapeMeta] cshape: collision shapes
+    :param list[MetaFragment] fragments: geometry fragments.
+    :param list[Booster] boosters: booster data
+    :param list[Factory] factories: factory data
+    :return: compiled ``_Template`` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, aid: str,
@@ -367,6 +411,7 @@ class Template(_Template):
                 boosters: (tuple, list),
                 factories: (tuple, list)):
         try:
+            # Sanity check the AID.
             assert isAIDStringValid(aid)
 
             # Compile- and sanity check all collision shapes.
@@ -379,6 +424,7 @@ class Template(_Template):
             logit.warning(msg)
             raise TypeError
 
+        # Return constructed data type.
         return super().__new__(cls, aid, cshapes, frags, boosters, factories)
 
     def _asdict(self):
@@ -387,11 +433,18 @@ class Template(_Template):
 
 class FragState(_FragState):
     """
-    fixme: docu
-    fixme: parameters
+    Return a valid data set to describe the state of a particular fragment.
 
-    :param dict aid: fragment name
-    :return _FragState: a valid meta fragment instance.
+    Fragment states contain the scale, position, and orientation of a graphical
+    object.
+
+    ..note:: Fragment states and collision shapes are independent data sets.
+             Changing parameters like position for one has no impact whatsoever
+             on the other.
+
+    :param str aid: Fragment ID.
+    :return: compiled ``_FragState`` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, aid: str,
@@ -410,6 +463,7 @@ class FragState(_FragState):
             logit.warning(msg)
             raise TypeError
 
+        # Return constructed data type.
         return super().__new__(cls, aid, scale, position, orientation)
 
     def _asdict(self):
@@ -418,11 +472,14 @@ class FragState(_FragState):
 
 class CollShapeMeta(_CollShapeMeta):
     """
-    fixme: docu
-    fixme: parameters
+    Return description of a collision shape and its meta data.
 
-    :param dict aid: fragment name
-    :return _CollShapeMeta: a valid meta fragment instance.
+    :param str aid: Collision shape ID.
+    :param vec3 position: position of collision shape in world coordinates.
+    :param vec4 rotation: orientation of collision shape in world coordinates.
+    :param csdate: instance of a collision shape (eg. ``CollShapeSphere``).
+    :return: compiled  `_CollShapeMeta` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, aid: str,
@@ -431,11 +488,12 @@ class CollShapeMeta(_CollShapeMeta):
                 rotation: (tuple, list, np.ndarray),
                 csdata):
         try:
-            # Verify the inputs.
+            # Verify the meta data for the collision shape.
             assert isAIDStringValid(aid)
             position = toVec(3, position)
             rotation = toVec(4, rotation)
 
+            # Compile the collision shape data.
             cstype = cstype.upper()
             if cstype == 'SPHERE':
                 csdata = CollShapeSphere(*csdata)
@@ -452,6 +510,7 @@ class CollShapeMeta(_CollShapeMeta):
             logit.warning(msg)
             raise TypeError
 
+        # Return constructed data type.
         return super().__new__(cls, aid, cstype, position, rotation, csdata)
 
     def _asdict(self):
@@ -460,11 +519,12 @@ class CollShapeMeta(_CollShapeMeta):
 
 class CollShapeEmpty(_CollShapeEmpty):
     """
-    fixme: docu
-    fixme: parameters
+    Return the description for an Empty collision shape.
 
-    :param dict aid: fragment name
-    :return _CollShapeEmpty: a valid 'Empty' collision shape.
+    Empty collision shapes do not collide with anything - sometimes useful.
+
+    :return: compiled `_CollShapeEmpty` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls):
@@ -476,11 +536,16 @@ class CollShapeEmpty(_CollShapeEmpty):
 
 class CollShapeBox(_CollShapeBox):
     """
-    fixme: docu
-    fixme: parameters
+    Return the description for a Box shape.
 
-    :param dict aid: fragment name
-    :return _CollShapeBox: a valid 'Box' collision shape.
+    The box size is specified in terms of half lengths. For instance, x=2 means
+    the box extends from x=-2 to x=+2.
+
+    :param float x: half length in x-direction.
+    :param float y: half length in y-direction.
+    :param float z: half length in z-direction.
+    :return: compiled `_CollShapeBox`.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, x: (int, float), y: (int, float), z: (int, float)):
@@ -490,6 +555,8 @@ class CollShapeBox(_CollShapeBox):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
+
+        # Return constructed data type.
         return super().__new__(cls, x, y, z)
 
     def _asdict(self):
@@ -498,11 +565,11 @@ class CollShapeBox(_CollShapeBox):
 
 class CollShapeSphere(_CollShapeSphere):
     """
-    fixme: docu
-    fixme: parameters
+    Return the description for a Sphere shape.
 
-    :param dict aid: fragment name
-    :return _CollShapeSphere: a valid 'Sphere' collision shape.
+    :param float radius: radius of sphere (must be non-negative).
+    :return: compiled `_CollShapeSphere`.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, radius: (int, float)):
@@ -512,6 +579,8 @@ class CollShapeSphere(_CollShapeSphere):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
+
+        # Return constructed data type.
         return super().__new__(cls, radius)
 
     def _asdict(self):
@@ -520,11 +589,16 @@ class CollShapeSphere(_CollShapeSphere):
 
 class CollShapePlane(_CollShapePlane):
     """
-    fixme: docu
-    fixme: parameters
+    Return the description for a Plane shape.
 
-    :param dict aid: fragment name
-    :return _CollShapePlane: a valid 'Plane' collision shape.
+    Planes are an infinitely large flat surface. Its orientation is uniquely
+    described by the normal vector on that sphere plus an offset along this
+    normal.
+
+    :param vec3 normal: plane normal.
+    :param float ofs: plane offset in direction of normal.
+    :return: compiled  `_CollShapePlane` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, normal: (tuple, list), ofs: (int, float)):
@@ -535,6 +609,8 @@ class CollShapePlane(_CollShapePlane):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
+
+        # Return constructed data type.
         return super().__new__(cls, normal, ofs)
 
     def _asdict(self):
@@ -543,11 +619,17 @@ class CollShapePlane(_CollShapePlane):
 
 class ConstraintMeta(_ConstraintMeta):
     """
-    fixme: docu
-    fixme: parameters
+    Return definition of a constraint plus its meta information.
 
-    :param dict aid: fragment name
-    :return _ConstraintMeta: a valid 'Plane' collision shape.
+    Every constraint connects two rigid body objects.
+
+    :param str aid: Constraint ID.
+    :param str contype: constraint type (eg. 'P2P').
+    :param int rb_a: First rigid body this constraint is connected to.
+    :param int rb_b: Second rigid body this constraint is connected to.
+    :param condata: specific information about the constraint.
+    :return: Compiled `_ConstraintMeta` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, aid: str, contype: str, rb_a: int, rb_b: int,
@@ -573,6 +655,8 @@ class ConstraintMeta(_ConstraintMeta):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
+
+        # Return constructed data type.
         return super().__new__(cls, aid, contype, rb_a, rb_b, condata)
 
     def _asdict(self):
@@ -582,11 +666,15 @@ class ConstraintMeta(_ConstraintMeta):
 
 class ConstraintP2P(_ConstraintP2P):
     """
-    fixme: docu
-    fixme: parameters
+    Return the description of a Point2Point constraint.
 
-    :param dict aid: fragment name
-    :return _ConstraintP2P: a valid 'Plane' collision shape.
+    This type of constraint connects two bodies at a fixed (pivot) point
+    relative to each others positions.
+
+    :param vec3 pivot_a: Pivot position relative to the first body.
+    :param vec3 pivot_b: Pivot position relative to the second body.
+    :return: compiled `_ConstraintP2P` instance.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls, pivot_a: (tuple, list), pivot_b: (tuple, list)):
@@ -598,6 +686,8 @@ class ConstraintP2P(_ConstraintP2P):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
+
+        # Return constructed data type.
         return super().__new__(cls, pivot_a, pivot_b)
 
     def _asdict(self):
@@ -606,11 +696,30 @@ class ConstraintP2P(_ConstraintP2P):
 
 class Constraint6DofSpring2(_Constraint6DofSpring2):
     """
-    fixme: docu
-    fixme: parameters
+    Return the description of a Point2Point constraint.
 
-    :param dict aid: fragment name
-    :return _Constraint6DofSpring2: a valid 'Plane' collision shape.
+    This type of constraint connects two bodies at a fixed (pivot) point
+    relative to each others positions.
+
+    The parameters below suffice to constructe Bullet's
+    `Generic6DofSpring2Constraint`. I do not understand all of the parameters
+    myself.
+
+    :param vec7 frameInA: Rotation- and position relative to first body.
+    :param vec7 frameInB: Rotation- and position relative to second body.
+    :param vec6 stiffness: linear- and angular stiffness.
+    :param vec6 damping: linear- and angular damping.
+    :param vec6 equilibrium: equilibrium position at which the constraint does
+                             not produce any forces.
+    :param vec3 linLimitLo: lower limit for translation.
+    :param vec3 linLimitHi: upper limit for translation.
+    :param vec3 rotLimitLo: lower limit for rotation.
+    :param vec3 rotLimitHi: upper limit for rotation.
+    :param vec3 bounce: bouncing factor.
+    :param list[bool] enableSpring: six Booleans to specify whether the
+                                    linear/angular spring is active.
+    :return: compiled `_Constraint6DofSpring2`.
+    :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
     def __new__(cls,
@@ -643,6 +752,8 @@ class Constraint6DofSpring2(_Constraint6DofSpring2):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
+
+        # Return constructed data type.
         return super().__new__(cls, frameInA, frameInB, stiffness,
                                damping, equilibrium,
                                linLimitLo, linLimitHi,
@@ -705,6 +816,7 @@ class Booster(_Booster):
             logit.warning(msg)
             raise TypeError
 
+        # Return constructed data type.
         return super().__new__(cls, partID, pos, direction,
                                minval, maxval, force)
 
@@ -744,6 +856,7 @@ class CmdBooster(_CmdBooster):
         # Verify the inputs.
         assert isAIDStringValid(partID)
 
+        # Return constructed data type.
         return super().__new__(cls, partID, float(force))
 
     def __eq__(self, ref):
@@ -854,6 +967,8 @@ class CmdFactory(_CmdFactory):
     def __new__(cls, partID: str, exit_speed: (int, float, np.float64)):
         assert isAIDStringValid(partID)
         exit_speed = float(exit_speed)
+
+        # Return constructed data type.
         return super().__new__(cls, partID, exit_speed)
 
     def __eq__(self, ref):
@@ -878,11 +993,11 @@ class CmdFactory(_CmdFactory):
 
 # Default argument for RigidBodyState below (purely for visual appeal, not
 # because anyone would/should use it).
-_CSDefault = CollShapeMeta(aid='',
-                           cstype='Empty',
-                           position=(0, 0, 0),
-                           rotation=(0, 0, 0, 1),
-                           csdata=CollShapeEmpty())
+_CSDefault_ = CollShapeMeta(aid='',
+                            cstype='Empty',
+                            position=(0, 0, 0),
+                            rotation=(0, 0, 0, 1),
+                            csdata=CollShapeEmpty())
 
 
 @typecheck
@@ -893,7 +1008,7 @@ def RigidBodyState(scale: (int, float)=1,
                    position: (tuple, list, np.ndarray)=[0, 0, 0],
                    velocityLin: (tuple, list, np.ndarray)=[0, 0, 0],
                    velocityRot: (tuple, list, np.ndarray)=[0, 0, 0],
-                   cshapes: (tuple, list)=[_CSDefault],
+                   cshapes: (tuple, list)=[_CSDefault_],
                    axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
                    axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
                    version: int=0):
