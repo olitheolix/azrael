@@ -51,7 +51,7 @@ import numpy as np
 from collections import namedtuple
 from azrael.types import typecheck, RetVal, Template
 from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
-from azrael.types import FragState, FragDae, FragRaw, MetaFragment
+from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
 
 from IPython import embed as ipshell
 
@@ -162,7 +162,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
             factories = [types.Factory(*_) for _ in data['factories']]
 
             # Wrap the Meta fragments into its dedicated tuple type.
-            meta_frags = [MetaFragment(*_) for _ in data['fragments']]
+            meta_frags = [FragmentMeta(*_) for _ in data['fragments']]
 
             # Wrap each fragment model into its dedicated tuple type.
             frags = []
@@ -336,7 +336,7 @@ def ToClerk_SetFragmentGeometry_Decode(payload: dict):
     frags = []
     b64d = base64.b64decode
     for frag in payload['frags']:
-        mf = MetaFragment(*frag)
+        mf = FragmentMeta(*frag)
         if mf.fragtype == 'dae':
             # fixme: mf.data should be a dictionary; use **kwargs to construct
             # the tuple; must be encoded as such in the ToClerk_..._Encode

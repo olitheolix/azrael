@@ -22,7 +22,7 @@ import azrael.dibbler
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, RetVal, FragDae, FragRaw, MetaFragment
+from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
 from azrael.test.test import createFragRaw, createFragDae
 
 
@@ -46,14 +46,14 @@ class TestDibbler:
         self.dibbler.reset()
         assert self.dibbler.getNumFiles() == (True, None, 0)
 
-    def verifyDae(self, url: str, mf: MetaFragment):
+    def verifyDae(self, url: str, mf: FragmentMeta):
         """
         fixme: this has to become part of the 'FragDae.__eq__' method.
 
         Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
 
         :param str url: the URL where the Collada fragment is supposed to be.
-        :param MetaFragment mf: the fragment to compare it with.
+        :param FragmentMeta mf: the fragment to compare it with.
         :return: None
         :raises: AssertionError if the fragment does not match.
         """
@@ -81,12 +81,12 @@ class TestDibbler:
         # Ensure the downloaded data matches the reference data.
         assert ref == downloaded
 
-    def verifyRaw(self, url: str, mf: MetaFragment):
+    def verifyRaw(self, url: str, mf: FragmentMeta):
         """
         Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
 
         :param str url: the URL where the Collada fragment is supposed to be.
-        :param MetaFragment mf: the fragment to compare it with.
+        :param FragmentMeta mf: the fragment to compare it with.
         :return: None
         :raises: AssertionError if the fragment does not match.
         """
@@ -113,7 +113,7 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 0)
 
         # Define a template for this test.
-        frag = [MetaFragment('NoNameRaw', 'raw', createFragRaw())]
+        frag = [FragmentMeta('NoNameRaw', 'raw', createFragRaw())]
         t_raw = Template('_templateEmpty', [], frag, [], [])
 
         # Add the first template and verify that the database now contains
@@ -132,7 +132,7 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define a template for this test.
-        frag = [MetaFragment('NoNameDae', 'dae', createFragDae())]
+        frag = [FragmentMeta('NoNameDae', 'dae', createFragDae())]
         t_dae = Template('_templateEmpty', [], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
@@ -162,8 +162,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = MetaFragment('fragname_raw', 'raw', createFragRaw())
-        frag_dae = MetaFragment('fragname_dae', 'dae', createFragDae())
+        frag_raw = FragmentMeta('fragname_raw', 'raw', createFragRaw())
+        frag_dae = FragmentMeta('fragname_dae', 'dae', createFragDae())
         t_raw = Template('t_name_raw', [], [frag_raw], [], [])
         t_dae = Template('t_name_dae', [], [frag_dae], [], [])
 
@@ -204,11 +204,11 @@ class TestDibbler:
         # The original template has two fragments, and we will update one of
         # them.
         frags_orig = [
-            MetaFragment('fname_1', 'raw', createFragRaw()),
-            MetaFragment('fname_2', 'dae', createFragDae())
+            FragmentMeta('fname_1', 'raw', createFragRaw()),
+            FragmentMeta('fname_2', 'dae', createFragDae())
         ]
         frags_new = [
-            MetaFragment('fname_1', 'dae', createFragDae()),
+            FragmentMeta('fname_1', 'dae', createFragDae()),
         ]
         t1 = Template('t1', [], frags_orig, [], [])
 
@@ -264,9 +264,9 @@ class TestDibbler:
 
         # The original template has the following three fragments:
         frags_orig = [
-            MetaFragment('fname_1', 'raw', createFragRaw()),
-            MetaFragment('fname_2', 'dae', createFragDae()),
-            MetaFragment('fname_3', 'raw', createFragRaw())
+            FragmentMeta('fname_1', 'raw', createFragRaw()),
+            FragmentMeta('fname_2', 'dae', createFragDae()),
+            FragmentMeta('fname_3', 'raw', createFragRaw())
         ]
         t1 = Template('t1', [], frags_orig, [], [])
 
@@ -274,8 +274,8 @@ class TestDibbler:
         # keeping the first intact, removing the second, and modifying the
         # fragment type for the third one.
         frags_new = [
-            MetaFragment('fname_2', '_none_', None),
-            MetaFragment('fname_3', 'dae', createFragDae())
+            FragmentMeta('fname_2', '_none_', None),
+            FragmentMeta('fname_3', 'dae', createFragDae())
         ]
 
         # Add the template, spawn one instance, and verify all fragments.
@@ -314,8 +314,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = [MetaFragment('frag_raw', 'raw', createFragRaw())]
-        frag_dae = [MetaFragment('frag_dae', 'dae', createFragDae())]
+        frag_raw = [FragmentMeta('frag_raw', 'raw', createFragRaw())]
+        frag_dae = [FragmentMeta('frag_dae', 'dae', createFragDae())]
         t11 = Template('name11', [], frag_raw, [], [])
         t1 = Template('name1', [], frag_dae, [], [])
 
@@ -379,8 +379,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = [MetaFragment('frag_raw', 'raw', createFragRaw())]
-        frag_dae = [MetaFragment('frag_dae', 'dae', createFragDae())]
+        frag_raw = [FragmentMeta('frag_raw', 'raw', createFragRaw())]
+        frag_dae = [FragmentMeta('frag_dae', 'dae', createFragDae())]
         t_raw = Template('temp_raw', [], frag_raw, [], [])
         t_dae = Template('temp_dae', [], frag_dae, [], [])
 

@@ -43,7 +43,7 @@ import azrael.database as database
 
 from IPython import embed as ipshell
 from azrael.types import RetVal, Template
-from azrael.types import FragState, FragDae, FragRaw, MetaFragment
+from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.test.test import createFragRaw, createFragDae, isEqualCS
 from azrael.test.test_leonard import getLeonard, killAzrael
@@ -95,7 +95,7 @@ class TestClient:
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
         clerk = azrael.clerk.Clerk()
-        frag = [MetaFragment('NoName', 'RAW', FragRaw(vert=[], uv=[], rgb=[]))]
+        frag = [FragmentMeta('NoName', 'RAW', FragRaw(vert=[], uv=[], rgb=[]))]
         t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
@@ -182,7 +182,7 @@ class TestClient:
         assert isEqualCS(ret.data[name_3].cshapes, [getCSBox()])
 
         # Add a new object template.
-        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -215,7 +215,7 @@ class TestClient:
         assert client.getFragmentGeometries([1]) == (True, None, {1: None})
 
         # Define a new template, add it to Azrael, and spawn it.
-        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
         temp = Template('t2', [getCSBox()], frags, [b0, b1], [f0])
         assert client.addTemplates([temp]).ok
         ret = client.spawn([{'template': temp.aid, 'position': np.zeros(3)}])
@@ -483,7 +483,7 @@ class TestClient:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn an instance.
-        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert client.addTemplates([temp]).ok
         new_obj = {'template': temp.aid,
@@ -555,7 +555,7 @@ class TestClient:
         objID = 1
 
         # Add a new template and spawn it.
-        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -592,7 +592,7 @@ class TestClient:
         assert FragRaw(**tmp) == frags[0].fragdata
 
         # Change the fragment geometries.
-        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
         assert client.setFragmentGeometries(objID, frags).ok
 
         ret = client.getFragmentGeometries([objID])
@@ -623,8 +623,8 @@ class TestClient:
         # Get a Collada fragment.
         f_dae = createFragDae()
 
-        # Put both fragments into a valid list of MetaFragments.
-        frags = [MetaFragment('f_dae', 'DAE', f_dae)]
+        # Put both fragments into a valid list of FragmentMetas.
+        frags = [FragmentMeta('f_dae', 'DAE', f_dae)]
 
         # Add a new template and spawn it.
         temp = Template('t1', [getCSSphere()], frags, [], [])
@@ -650,7 +650,7 @@ class TestClient:
         assert ret.data[objID]['f_dae']['type'] == 'DAE'
 
         # Change the fragment geometries.
-        frags = [MetaFragment('f_dae', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('f_dae', 'RAW', createFragRaw())]
         assert client.setFragmentGeometries(objID, frags).ok
 
         # Ensure it now has type 'RAW'.
@@ -664,7 +664,7 @@ class TestClient:
 
         # Change the fragment geometries.
         version = ret.data[objID]['sv'].version
-        frags = [MetaFragment('f_dae', 'DAE', f_dae)]
+        frags = [FragmentMeta('f_dae', 'DAE', f_dae)]
         assert client.setFragmentGeometries(objID, frags).ok
 
         # Ensure it now has type 'DAE' again.
@@ -691,7 +691,7 @@ class TestClient:
         leo = getLeonard()
 
         # Add a new template and spawn it.
-        frags = [MetaFragment('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -735,9 +735,9 @@ class TestClient:
 
         # The original template has the following three fragments:
         frags_orig = [
-            MetaFragment('fname_1', 'RAW', createFragRaw()),
-            MetaFragment('fname_2', 'DAE', createFragDae()),
-            MetaFragment('fname_3', 'RAW', createFragRaw())
+            FragmentMeta('fname_1', 'RAW', createFragRaw()),
+            FragmentMeta('fname_2', 'DAE', createFragDae()),
+            FragmentMeta('fname_3', 'RAW', createFragRaw())
         ]
         t1 = Template('t1', [getCSSphere()], frags_orig, [], [])
 
@@ -760,8 +760,8 @@ class TestClient:
         # keeping the first intact, removing the second, and modifying the
         # fragment type for the third one.
         frags_new = [
-            MetaFragment('fname_2', '_none_', None),
-            MetaFragment('fname_3', 'DAE', createFragDae())
+            FragmentMeta('fname_2', '_none_', None),
+            FragmentMeta('fname_3', 'DAE', createFragDae())
         ]
         assert client.setFragmentGeometries(objID, frags_new).ok
 
@@ -783,8 +783,8 @@ class TestClient:
         # Get a Collada fragment.
         f_dae = createFragDae()
 
-        # Put both fragments into a valid list of MetaFragments.
-        frags = [MetaFragment('f_dae', 'DAE', f_dae)]
+        # Put both fragments into a valid list of FragmentMetas.
+        frags = [FragmentMeta('f_dae', 'DAE', f_dae)]
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.

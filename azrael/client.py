@@ -39,7 +39,7 @@ import azrael.config as config
 import azrael.protocol as protocol
 
 from azrael.types import typecheck, RetVal, Template
-from azrael.types import FragState, FragDae, FragRaw, MetaFragment
+from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
 
 
 class Client():
@@ -302,7 +302,7 @@ class Client():
         :return: Success
         """
         try:
-            frags = [MetaFragment(*_) for _ in frags]
+            frags = [FragmentMeta(*_) for _ in frags]
         except TypeError:
             return RetVal(False, 'Invalid fragment data types', None)
 
@@ -462,7 +462,7 @@ class Client():
         # Fetch the geometry from the web server and decode it.
         out = {}
         for frag in template.fragments:
-            frag = MetaFragment(*frag)
+            frag = FragmentMeta(*frag)
             url = base_url + '/' + frag.aid + '/model.json'
             data = urllib.request.urlopen(url).readall()
             out = json.loads(data.decode('utf8'))

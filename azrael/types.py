@@ -47,7 +47,7 @@ _Template = namedtuple('_Template', 'aid cshapes fragments boosters factories')
 _FragState = namedtuple('FragState', 'aid scale position orientation')
 
 # Fragments.
-_MetaFragment = namedtuple('_MetaFragment', 'aid fragtype fragdata')
+_FragmentMeta = namedtuple('_FragmentMeta', 'aid fragtype fragdata')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 
@@ -341,7 +341,7 @@ class FragDae(_FragDae):
         return OrderedDict(zip(self._fields, self))
 
 
-class MetaFragment(_MetaFragment):
+class FragmentMeta(_FragmentMeta):
     """
     Return a valid description for any of Azrael's supported data formats.
 
@@ -359,7 +359,7 @@ class MetaFragment(_MetaFragment):
     :param dict aid: fragment name
     :param str fragtype: fragment type (eg 'raw', or 'dae', or None)
     :param fragdata: one of the fragment types (eg. `FragRaw` or `FragDae`).
-    :return: compiled  ``_MetaFragment`` instance.
+    :return: compiled  ``_FragmentMeta`` instance.
     :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
@@ -404,7 +404,7 @@ class Template(_Template):
 
     :param str aid: template name
     :param list[CollShapeMeta] cshape: collision shapes
-    :param list[MetaFragment] fragments: geometry fragments.
+    :param list[FragmentMeta] fragments: geometry fragments.
     :param list[Booster] boosters: booster data
     :param list[Factory] factories: factory data
     :return: compiled ``_Template`` instance.
@@ -424,7 +424,7 @@ class Template(_Template):
             cshapes = [CollShapeMeta(*_) for _ in cshapes]
 
             # Compile- and sanity check all geometry fragments.
-            frags = [MetaFragment(*_) for _ in fragments]
+            frags = [FragmentMeta(*_) for _ in fragments]
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)

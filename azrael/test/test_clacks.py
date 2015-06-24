@@ -10,7 +10,7 @@ import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, RetVal, FragDae, FragRaw, MetaFragment
+from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
 from azrael.test.test import createFragRaw, createFragDae
 from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
 
@@ -97,7 +97,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         the associated textures (if any).
 
         :param str url: base location of template
-        :param list[MetaFragment] fragments: reference fragments
+        :param list[FragmentMeta] fragments: reference fragments
         :raises: AssertionError if not all fragments in ``fragments`` match
                  those available at ``url``.
         """
@@ -135,12 +135,12 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         clerk = azrael.clerk.Clerk()
 
         # Create two Templates with one Raw fragment each.
-        frags_t1 = [MetaFragment('foo1', 'raw', createFragRaw()),
-                    MetaFragment('bar2', 'dae', createFragDae()),
-                    MetaFragment('bar3', 'dae', createFragDae())]
-        frags_t2 = [MetaFragment('foo4', 'raw', createFragRaw()),
-                    MetaFragment('foo5', 'raw', createFragRaw()),
-                    MetaFragment('bar6', 'dae', createFragDae())]
+        frags_t1 = [FragmentMeta('foo1', 'raw', createFragRaw()),
+                    FragmentMeta('bar2', 'dae', createFragDae()),
+                    FragmentMeta('bar3', 'dae', createFragDae())]
+        frags_t2 = [FragmentMeta('foo4', 'raw', createFragRaw()),
+                    FragmentMeta('foo5', 'raw', createFragRaw()),
+                    FragmentMeta('bar6', 'dae', createFragDae())]
         t1 = Template('t1', [getCSSphere()], frags_t1, [], [])
         t2 = Template('t2', [getCSBox()], frags_t2, [], [])
         del frags_t1, frags_t2
@@ -169,12 +169,12 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         clerk = azrael.clerk.Clerk()
 
         # Create two Templates with one Raw fragment each.
-        frags_t1 = [MetaFragment('raw1', 'raw', createFragRaw()),
-                    MetaFragment('dae2', 'dae', createFragDae()),
-                    MetaFragment('dae3', 'dae', createFragDae())]
-        frags_t2 = [MetaFragment('raw4', 'raw', createFragRaw()),
-                    MetaFragment('raw5', 'raw', createFragRaw()),
-                    MetaFragment('dae6', 'dae', createFragDae())]
+        frags_t1 = [FragmentMeta('raw1', 'raw', createFragRaw()),
+                    FragmentMeta('dae2', 'dae', createFragDae()),
+                    FragmentMeta('dae3', 'dae', createFragDae())]
+        frags_t2 = [FragmentMeta('raw4', 'raw', createFragRaw()),
+                    FragmentMeta('raw5', 'raw', createFragRaw()),
+                    FragmentMeta('dae6', 'dae', createFragDae())]
         t1 = Template('t1', [getCSSphere()], frags_t1, [], [])
         t2 = Template('t2', [getCSBox()], frags_t2, [], [])
         del frags_t1, frags_t2
@@ -211,12 +211,12 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         clerk = azrael.clerk.Clerk()
 
         # Create two Templates with one Raw fragment each.
-        frags_old = [MetaFragment('name1', 'raw', createFragRaw()),
-                     MetaFragment('name2', 'dae', createFragDae()),
-                     MetaFragment('name3', 'dae', createFragDae())]
-        frags_new = [MetaFragment('name1', 'dae', createFragDae()),
-                     MetaFragment('name2', 'dae', createFragDae()),
-                     MetaFragment('name3', 'raw', createFragRaw())]
+        frags_old = [FragmentMeta('name1', 'raw', createFragRaw()),
+                     FragmentMeta('name2', 'dae', createFragDae()),
+                     FragmentMeta('name3', 'dae', createFragDae())]
+        frags_new = [FragmentMeta('name1', 'dae', createFragDae()),
+                     FragmentMeta('name2', 'dae', createFragDae()),
+                     FragmentMeta('name3', 'raw', createFragRaw())]
         t1 = Template('t1', [getCSSphere()], frags_old, [], [])
 
         # Add-, spawn-, and verify the template.
@@ -250,7 +250,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         clerk = azrael.clerk.Clerk()
 
         # Create two Templates with one Raw fragment each.
-        frags = [MetaFragment('name1', 'raw', createFragRaw())]
+        frags = [FragmentMeta('name1', 'raw', createFragRaw())]
         t1 = Template('t1', [getCSSphere()], frags, [], [])
 
         # Add-, spawn-, and verify the template.

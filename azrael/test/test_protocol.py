@@ -28,7 +28,7 @@ import azrael.protocol as protocol
 
 from IPython import embed as ipshell
 from azrael.test.test_bullet_api import isEqualBD
-from azrael.types import FragState, FragDae, FragRaw, MetaFragment, Template
+from azrael.types import FragState, FragDae, FragRaw, FragmentMeta, Template
 
 
 def test_encoding_get_template(clientType='ZeroMQ'):
@@ -65,7 +65,7 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     cs = []
     data = {'cshapes': cs, 'boosters': [b0, b1], 'factories': [f0],
             'url': 'http://somewhere',
-            'fragments': MetaFragment('foo', 'RAW', None)}
+            'fragments': FragmentMeta('foo', 'RAW', None)}
     templates = {template_name: data}
     ok, enc = protocol.FromClerk_GetTemplates_Encode(templates)
 
@@ -294,7 +294,7 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
                          'rgb2.jpg': b64_dae_rgb2})
 
     # Compile a valid Template structure.
-    frags = [MetaFragment('f_dae', 'DAE', f_dae)]
+    frags = [FragmentMeta('f_dae', 'DAE', f_dae)]
     temp = Template('foo', [], frags, [], [])
 
     # ----------------------------------------------------------------------

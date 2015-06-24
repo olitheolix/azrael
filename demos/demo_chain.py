@@ -45,7 +45,7 @@ import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
 
-from azrael.types import Template, MetaFragment, FragRaw, FragState
+from azrael.types import Template, FragmentMeta, FragRaw, FragState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, ConstraintMeta, ConstraintP2P
 from azrael.types import Constraint6DofSpring2
@@ -243,8 +243,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # # ----------------------------------------------------------------------
     # tID_1 = 'Product1'
     # tID_2 = 'Product2'
-    # frags_1 = [MetaFragment('frag_1', 'raw', FragRaw(0.75 * vert, uv, rgb))]
-    # frags_2 = [MetaFragment('frag_1', 'raw', FragRaw(0.24 * vert, uv, rgb))]
+    # frags_1 = [FragmentMeta('frag_1', 'raw', FragRaw(0.75 * vert, uv, rgb))]
+    # frags_2 = [FragmentMeta('frag_1', 'raw', FragRaw(0.24 * vert, uv, rgb))]
     # t1 = Template(tID_1, [cs], frags_1, [], [])
     # t2 = Template(tID_2, [cs], frags_2, [], [])
     # assert client.addTemplates([t1, t2]).ok
@@ -270,7 +270,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # # Add the template.
     # tID_3 = 'BoosterCube'
-    # frags = [MetaFragment('frag_1', 'raw', FragRaw(vert, uv, rgb))]
+    # frags = [FragmentMeta('frag_1', 'raw', FragRaw(vert, uv, rgb))]
     # t3 = Template(tID_3, [cs], frags, [b0, b1], [f0, f1])
     # assert client.addTemplates([t3]).ok
     # del frags, t3
@@ -298,8 +298,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        frags = [MetaFragment('frag_1', 'raw', FragRaw(vert, curUV, rgb)),
-                 MetaFragment('frag_2', 'raw', FragRaw(vert, curUV, rgb))]
+        frags = [FragmentMeta('frag_1', 'raw', FragRaw(vert, curUV, rgb)),
+                 FragmentMeta('frag_2', 'raw', FragRaw(vert, curUV, rgb))]
         tmp = Template(tID, [cs], frags, [b0, b1], [])
         templates.append(tmp)
 

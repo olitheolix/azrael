@@ -39,7 +39,7 @@ import azrael.util as util
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, MetaFragment, FragDae, FragState
+from azrael.types import Template, FragmentMeta, FragDae, FragState
 
 
 def parseCommandLine():
@@ -101,8 +101,8 @@ def spawnColladaModel(scale, fname):
                          'rgb2.jpg': dae_rgb2})
     del b
 
-    # Put both fragments into a valid list of MetaFragments.
-    frags = [MetaFragment('f_dae', 'dae', f_dae)]
+    # Put both fragments into a valid list of FragmentMetas.
+    frags = [FragmentMeta('f_dae', 'dae', f_dae)]
 
     temp = Template('Collada', [4, 1, 1, 1], frags, [], [])
     assert client.addTemplates([temp]).ok

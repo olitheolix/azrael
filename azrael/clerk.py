@@ -49,7 +49,7 @@ import azrael.protocol as protocol
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, Template, CollShapeMeta
-from azrael.types import FragState, MetaFragment
+from azrael.types import FragState, FragmentMeta
 
 
 class Clerk(config.AzraelProcess):
@@ -793,7 +793,7 @@ class Clerk(config.AzraelProcess):
                 # Then compile a neutral initial state for each.
                 doc['fragState'] = {}
                 for f in doc['fragments']:
-                    f = MetaFragment(*f)
+                    f = FragmentMeta(*f)
                     doc['fragState'][f.aid] = FragState(
                         aid=f.aid,
                         scale=1,
@@ -897,7 +897,7 @@ class Clerk(config.AzraelProcess):
         pj = os.path.join
         for doc in docs:
             u = doc['url']
-            f = [MetaFragment(*_) for _ in doc['fragments']]
+            f = [FragmentMeta(*_) for _ in doc['fragments']]
             obj = {_.aid: {'type': _.fragtype, 'url': pj(u, _.aid)} for _ in f}
             out[doc['objID']] = obj
         return RetVal(True, None, out)
@@ -914,7 +914,7 @@ class Clerk(config.AzraelProcess):
         :return: Success
         """
         try:
-            fragments = [MetaFragment(*_) for _ in fragments]
+            fragments = [FragmentMeta(*_) for _ in fragments]
         except TypeError:
             return RetVal(False, 'Received invalid fragment data', None)
 
