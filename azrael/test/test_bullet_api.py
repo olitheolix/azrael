@@ -25,9 +25,8 @@ from IPython import embed as ipshell
 from azrael.types import _RigidBodyState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
-from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
-from azrael.test.test import isEqualBD
+from azrael.test.test import getP2P, get6DofSpring2, isEqualBD
 
 
 class TestBulletAPI:
@@ -563,13 +562,10 @@ class TestBulletAPI:
 
         # Compile the constraint.
         pivot_a, pivot_b = pos_b, pos_a
-        constraints = [
-            ConstraintMeta('', 'p2p', id_a, id_b,
-                           ConstraintP2P(pivot_a, pivot_b)),
-        ]
+        con = [getP2P(rb_a=id_a, rb_b=id_b, pivot_a=pivot_a, pivot_b=pivot_b)]
 
         # Load the constraints into the physics engine.
-        assert sim.setConstraints(constraints).ok
+        assert sim.setConstraints(con).ok
 
         # Step the simulation. Nothing must happen.
         sim.compute([id_a, id_b], 1.0, 60)
@@ -642,20 +638,7 @@ class TestBulletAPI:
         sim.setRigidBodyData(id_b, obj_b)
 
         # Compile the 6DOF constraint.
-        c = Constraint6DofSpring2(
-            frameInA=(0, 0, 0, 0, 0, 0, 1),
-            frameInB=(0, 0, 0, 0, 0, 0, 1),
-            stiffness=(1, 2, 3, 4, 5.5, 6),
-            damping=(2, 3.5, 4, 5, 6.5, 7),
-            equilibrium=(-1, -1, -1, 0, 0, 0),
-            linLimitLo=(-10.5, -10.5, -10.5),
-            linLimitHi=(10.5, 10.5, 10.5),
-            rotLimitLo=(-0.1, -0.2, -0.3),
-            rotLimitHi=(0.1, 0.2, 0.3),
-            bounce=(1, 1.5, 2),
-            enableSpring=(True, False, False, False, False, False))
-        constraints = [ConstraintMeta('', '6DofSpring2', id_a, id_b, c)]
-        del c
+        constraints = [get6DofSpring2(rb_a=id_a, rb_b=id_b)]
 
         # Step the simulation. Nothing must happen because no forces or
         # constraints act upon the objects.
@@ -699,24 +682,21 @@ class TestBulletAPI:
 
         # Compile the constraint.
         pivot_a, pivot_b = (0, 0, 0), (1, 1, 1)
-        P2P = ConstraintP2P
-        constraints = [
-            ConstraintMeta('', 'p2p', id_a, id_b, P2P(pivot_a, pivot_b)),
-        ]
+        con = [getP2P(rb_a=id_a, rb_b=id_b, pivot_a=pivot_a, pivot_b=pivot_b)]
 
         # Constraint is valid but the objects do not exist.
-        assert not sim.setConstraints([constraints]).ok
+        assert not sim.setConstraints([con]).ok
 
         # Add one sphere to the world.
         sim.setRigidBodyData(id_a, obj_a)
 
         # Load the constraints into the physics engine.
-        assert not sim.setConstraints(constraints).ok
+        assert not sim.setConstraints(con).ok
 
         # Load the second sphere and apply the constraint. This time it must
         # have worked.
         sim.setRigidBodyData(id_b, obj_b)
-        assert sim.setConstraints(constraints).ok
+        assert sim.setConstraints(con).ok
 
         # Clear all constraints
         assert sim.clearAllConstraints().ok
