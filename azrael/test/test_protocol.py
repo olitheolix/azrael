@@ -27,7 +27,7 @@ import azrael.leo_api as leoAPI
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
-from azrael.test.test import isEqualBD
+from azrael.test.test import isEqualBD, getP2P, get6DofSpring2
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta, Template
 
 
@@ -202,21 +202,8 @@ def test_add_get_constraint():
     Add- and get constraints.
     """
     # Define the constraints.
-    p2p = types.ConstraintP2P(pivot_a=(0, 1, 2), pivot_b=(3, 4, 5))
-    p2p = types.ConstraintMeta('conid', 'p2p', 1, 2, p2p)
-    dof = types.Constraint6DofSpring2(
-        frameInA=[0, 0, 0, 0, 0, 0, 1],
-        frameInB=[0, 0, 0, 0, 0, 0, 1],
-        stiffness=[1, 2, 3, 4, 5.5, 6],
-        damping=[2, 3.5, 4, 5, 6.5, 7],
-        equilibrium=[-1, -1, -1, 0, 0, 0],
-        linLimitLo=[-10.5, -10.5, -10.5],
-        linLimitHi=[10.5, 10.5, 10.5],
-        rotLimitLo=[-0.1, -0.2, -0.3],
-        rotLimitHi=[0.1, 0.2, 0.3],
-        bounce=[1, 1.5, 2],
-        enableSpring=[True, False, False, False, False, False])
-    dof = types.ConstraintMeta('conid', '6dofspring2', 1, 2, dof)
+    p2p = getP2P(rb_a=1, rb_b=2, pivot_a=(0, 1, 2), pivot_b=(3, 4, 5))
+    dof = get6DofSpring2(rb_a=1, rb_b=2)
 
     # ----------------------------------------------------------------------
     # Client --> Clerk.
