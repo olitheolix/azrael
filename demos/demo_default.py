@@ -47,6 +47,7 @@ import model_import
 import azrael.client
 import azrael.startup
 import azrael.util as util
+import azrael.types as types
 import azrael.config as config
 import azrael.leo_api as leoAPI
 del p
