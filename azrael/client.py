@@ -491,37 +491,6 @@ class Client():
         return self.serialiseAndSend('add_templates', templates)
 
     @typecheck
-    def _unpackSVData(self, raw: dict):
-        """
-        Return unpacked SV data.
-
-        This is a convenience function only to avoid code duplication in
-        ``get{All}BodyStates``.
-
-        The returned dictionary has the format:
-          {objID_1: {'frag': [FragState(), ...], 'sv': RigidBodyState()},
-           objID_2: {'frag': [FragState(), ...], 'sv': RigidBodyState()},
-           ...
-        }
-
-        :param dict raw: output from protocol module.
-        :return: unpacked SV data.
-        """
-        # Iterate over all objects.
-        out = {}
-        for objID, v in raw.items():
-            # Add a None value if there is no data (typically happens if one
-            # or more of the objects for which SV data was requested did not
-            # exist).
-            if v is None:
-                out[objID] = None
-                continue
-
-            # Fill in the SV and fragment state data.
-            out[objID] = v
-        return RetVal(True, None, raw)
-
-    @typecheck
     def getBodyStates(self, objIDs: (list, tuple, int)):
         """
         Return the State Variables for all ``objIDs`` in a dictionary.
@@ -541,10 +510,7 @@ class Client():
             assert objID >= 0
 
         # Pass on the request to Clerk.
-        ret = self.serialiseAndSend('get_body_states', objIDs)
-        if not ret.ok:
-            return ret
-        return self._unpackSVData(ret.data)
+        return self.serialiseAndSend('get_body_states', objIDs)
 
     @typecheck
     def getAllBodyStates(self):
@@ -555,10 +521,7 @@ class Client():
         :rtype: dict
         """
         # Pass on the request to Clerk.
-        ret = self.serialiseAndSend('get_all_body_states')
-        if not ret.ok:
-            return ret
-        return self._unpackSVData(ret.data)
+        return self.serialiseAndSend('get_all_body_states')
 
     @typecheck
     def setBodyState(self, objID: int, new: types.RigidBodyStateOverride):
