@@ -25,6 +25,7 @@ import unittest.mock as mock
 from IPython import embed as ipshell
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.test.test_leonard import killAzrael
+from azrael.test.test import getP2P, get6DofSpring2
 
 
 def isEqualConstraint(ca, cb):
@@ -39,39 +40,6 @@ def isEqualConstraint(ca, cb):
     except (KeyError, TypeError, AssertionError):
         return False
     return True
-
-
-def getP2P(rb_a, rb_b, constraint_id):
-    """
-    Return a Point2Point constraint for bodies ``rb_a`` and ``rb_b`.
-
-    This is a convenience method only.
-    """
-    pivot_a, pivot_b = [0, 0, -1], [0, 0, 1]
-    p2p = ConstraintP2P(pivot_a, pivot_b)
-    return ConstraintMeta(constraint_id, 'p2p', rb_a, rb_b, p2p)
-
-
-def get6DofSpring2(rb_a, rb_b, constraint_id):
-    """
-    Return a 6DofSpring2 constraint for bodies ``rb_a`` and ``rb_b`.
-
-    This is a convenience method only.
-    """
-    dof = Constraint6DofSpring2(
-        frameInA=[0, 0, 0, 0, 0, 0, 1],
-        frameInB=[0, 0, 0, 0, 0, 0, 1],
-        stiffness=[1, 2, 3, 4, 5.5, 6],
-        damping=[2, 3.5, 4, 5, 6.5, 7],
-        equilibrium=[-1, -1, -1, 0, 0, 0],
-        linLimitLo=[-10.5, -10.5, -10.5],
-        linLimitHi=[10.5, 10.5, 10.5],
-        rotLimitLo=[-0.1, -0.2, -0.3],
-        rotLimitHi=[0.1, 0.2, 0.3],
-        bounce=[1, 1.5, 2],
-        enableSpring=[True, False, False, False, False, False])
-    con = ConstraintMeta(constraint_id, '6DOFSPRING2', rb_a, rb_b, dof)
-    return con
 
 
 # List of all constraint getter functions. This variables is only useful for
@@ -116,12 +84,12 @@ class TestClerk:
         igor.reset()
 
         # Create the constraints for this test.
-        c1 = getCon(1, 2, 'foo')
-        c2 = getCon(2, 3, 'foo')
-        c3 = getCon(3, 4, 'foo')
-        c4 = getCon(4, 5, 'foo')
-        c5 = getCon(5, 6, 'foo')
-        c6 = getCon(6, 7, 'foo')
+        c1 = getCon('foo', 1, 2)
+        c2 = getCon('foo', 2, 3)
+        c3 = getCon('foo', 3, 4)
+        c4 = getCon('foo', 4, 5)
+        c5 = getCon('foo', 5, 6)
+        c6 = getCon('foo', 6, 7)
 
         # There must not be any objects to download.
         assert igor.updateLocalCache() == (True, None, 0)
@@ -175,8 +143,8 @@ class TestClerk:
         igor = self.igor
 
         # Two constraints that only differ in their 'aid' attribute.
-        c1 = getCon(1, 2, 'foo')
-        c2 = getCon(1, 2, 'bar')
+        c1 = getCon('foo', 1, 2)
+        c2 = getCon('bar', 1, 2)
 
         # Attempt to add the first constraint twice. Igor must detect this and
         # only add it once.
@@ -202,10 +170,10 @@ class TestClerk:
         igor = self.igor
 
         # Create the constraints for this test.
-        c1 = getCon(1, 2, 'foo')
-        c2 = getCon(2, 3, 'foo')
-        c3 = getCon(3, 4, 'foo')
-        c4 = getCon(4, 5, 'foo')
+        c1 = getCon('foo', 1, 2)
+        c2 = getCon('foo', 2, 3)
+        c3 = getCon('foo', 3, 4)
+        c4 = getCon('foo', 4, 5)
 
         # The list of constraints must be empty after a reset.
         assert igor.reset() == (True, None, None)
@@ -235,10 +203,10 @@ class TestClerk:
         igor = self.igor
 
         # Create the constraints for this test.
-        c1 = getCon(1, 2, 'foo')
-        c2 = getCon(2, 3, 'foo')
-        c3 = getCon(3, 4, 'foo')
-        c4 = getCon(4, 5, 'foo')
+        c1 = getCon('foo', 1, 2)
+        c2 = getCon('foo', 2, 3)
+        c3 = getCon('foo', 3, 4)
+        c4 = getCon('foo', 4, 5)
 
         # Attempt to delete a non-existing constraint. This must neither return
         # an error not delete anything.
@@ -276,9 +244,9 @@ class TestClerk:
         igor = self.igor
 
         # Create the constraints for this test.
-        c1 = getCon(1, 2, 'foo')
-        c2 = getCon(2, 3, 'foo')
-        c3 = getCon(3, 4, 'foo')
+        c1 = getCon('foo', 1, 2)
+        c2 = getCon('foo', 2, 3)
+        c3 = getCon('foo', 3, 4)
 
         # There must not be any pairs after a reset.
         assert igor.reset() == (True, None, None)
@@ -315,9 +283,9 @@ class TestClerk:
         igor = self.igor
 
         # Create the constraints for this test.
-        c1 = getCon(1, 2, 'foo')
-        c2 = getCon(2, 3, 'foo')
-        c3 = getCon(3, 4, 'foo')
+        c1 = getCon('foo', 1, 2)
+        c2 = getCon('foo', 2, 3)
+        c3 = getCon('foo', 3, 4)
 
         # Query the constraints for bodies that do not feature in any
         # constraints.

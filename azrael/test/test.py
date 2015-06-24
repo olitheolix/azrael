@@ -27,7 +27,7 @@ from azrael.types import FragmentMeta, FragDae, FragRaw
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import RigidBodyState, RigidBodyStateOverride
-
+from azrael.types import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
 from azrael.types import _RigidBodyState
 
 
@@ -80,6 +80,38 @@ def getFragRaw():
     uv = np.random.randint(0, 100, 6).tolist()
     rgb = np.random.randint(0, 100, 3).tolist()
     return FragRaw(vert, uv, rgb)
+
+
+def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2):
+    """
+    Return a Point2Point constraint for bodies ``rb_a`` and ``rb_b`.
+
+    This is a convenience method only.
+    """
+    pivot_a, pivot_b = [0, 0, -1], [0, 0, 1]
+    p2p = ConstraintP2P(pivot_a, pivot_b)
+    return ConstraintMeta(aid, 'p2p', rb_a, rb_b, p2p)
+
+
+def get6DofSpring2(aid='constraint_6dof', rb_a=1, rb_b=2):
+    """
+    Return a 6DofSpring2 constraint for bodies ``rb_a`` and ``rb_b`.
+
+    This is a convenience method only.
+    """
+    dof = Constraint6DofSpring2(
+        frameInA=[0, 0, 0, 0, 0, 0, 1],
+        frameInB=[0, 0, 0, 0, 0, 0, 1],
+        stiffness=[1, 2, 3, 4, 5.5, 6],
+        damping=[2, 3.5, 4, 5, 6.5, 7],
+        equilibrium=[-1, -1, -1, 0, 0, 0],
+        linLimitLo=[-10.5, -10.5, -10.5],
+        linLimitHi=[10.5, 10.5, 10.5],
+        rotLimitLo=[-0.1, -0.2, -0.3],
+        rotLimitHi=[0.1, 0.2, 0.3],
+        bounce=[1, 1.5, 2],
+        enableSpring=[True, False, False, False, False, False])
+    return ConstraintMeta(aid, '6DOFSPRING2', rb_a, rb_b, dof)
 
 
 def isEqualCS(la, lb):
