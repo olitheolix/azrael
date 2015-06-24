@@ -1,21 +1,24 @@
 import pytest
 import subprocess
 import azrael.igor
+import azrael.types
 import azrael.leonard
 import azrael.database
 import azrael.vectorgrid
 
 import numpy as np
-import azrael.types as types
 import unittest.mock as mock
 import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
-from azrael.test.test import isEqualBD, getP2P
 from azrael.types import CollShapeBox, CollShapeSphere, RetVal
 from azrael.types import CollShapeMeta, CollShapeEmpty
-from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
+from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getP2P
 
+
+# Convenience shortcuts.
+RBS = azrael.types.RigidBodyState
+RBSO = azrael.types.RigidBodyStateOverride
 
 # List all available engines. This simplifies the parameterisation of those
 # tests that must pass for all engines.
@@ -135,14 +138,14 @@ class TestLeonardAllEngines:
 
         # Parameters and constants for this test.
         id_0, id_1 = 0, 1
-        sv = types.RigidBodyState()
+        sv = RBS()
         templateID = '_templateSphere'.encode('utf8')
 
         # State Vector.
         p = np.array([1, 2, 5])
         vl = np.array([8, 9, 10.5])
         vr = vl + 1
-        data = types.RigidBodyStateOverride(
+        data = RBSO(
             position=p, velocityLin=vl, velocityRot=vr)
         del p, vl, vr
 
@@ -175,7 +178,7 @@ class TestLeonardAllEngines:
         # Parameters and constants for this test.
         cshape_box = [getCSBox('csbox')]
         cshape_sphere = [getCSSphere('cssphere')]
-        sv = types.RigidBodyState(imass=2, scale=3, cshapes=cshape_sphere)
+        sv = RBS(imass=2, scale=3, cshapes=cshape_sphere)
         templateID = '_templateSphere'.encode('utf8')
 
         # Spawn an object.
@@ -193,7 +196,7 @@ class TestLeonardAllEngines:
         del tmp
 
         # Update the object's SV data.
-        sv_new = types.RigidBodyStateOverride(
+        sv_new = RBSO(
             imass=4, scale=5, cshapes=cshape_box)
         assert leoAPI.addCmdModifyBodyState(objID, sv_new).ok
 
@@ -218,7 +221,7 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0 = 0
-        sv = types.RigidBodyState()
+        sv = RBS()
 
         # Spawn an object.
         assert leoAPI.addCmdSpawn([(id_0, sv)]).ok
@@ -230,7 +233,7 @@ class TestLeonardAllEngines:
         assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
 
         # Give the object a velocity.
-        sv = types.RigidBodyStateOverride(velocityLin=np.array([1, 0, 0]))
+        sv = RBSO(velocityLin=np.array([1, 0, 0]))
         assert leoAPI.addCmdModifyBodyState(id_0, sv).ok
 
         # Advance the simulation by another second and verify the objects have
@@ -251,9 +254,8 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0, id_1 = 0, 1
-        MS = types.RigidBodyState
-        sv_0 = MS(position=[0, 0, 0], velocityLin=[1, 0, 0])
-        sv_1 = MS(position=[0, 10, 0], velocityLin=[0, -1, 0])
+        sv_0 = RBS(position=[0, 0, 0], velocityLin=[1, 0, 0])
+        sv_1 = RBS(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
         # Create two objects.
         tmp = [(id_0, sv_0), (id_1, sv_1)]
@@ -288,7 +290,7 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0 = 0
-        sv = types.RigidBodyState()
+        sv = RBS()
 
         # Spawn one object.
         assert leoAPI.addCmdSpawn([(id_0, sv)]).ok
@@ -367,9 +369,9 @@ class TestLeonardOther:
         cshapes = [getCSSphere(radius=1)]
 
         # Two State Vectors for this test.
-        sv_0 = types.RigidBodyState(
+        sv_0 = RBS(
             position=[0, 0, 0], velocityLin=[1, 0, 0], cshapes=cshapes)
-        sv_1 = types.RigidBodyState(
+        sv_1 = RBS(
             position=[0, 10, 0], velocityLin=[0, -1, 0], cshapes=cshapes)
 
         # Create two objects.
@@ -413,8 +415,8 @@ class TestLeonardOther:
         assert not leo.createWorkPackage([10], dt, maxsteps).ok
 
         # Test data.
-        sv_1 = types.RigidBodyState(imass=1)
-        sv_2 = types.RigidBodyState(imass=2)
+        sv_1 = RBS(imass=1)
+        sv_2 = RBS(imass=2)
 
         # Add two new objects to Leonard.
         tmp = [(id_1, sv_1), (id_2, sv_2)]
@@ -439,8 +441,8 @@ class TestLeonardOther:
         assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
         assert (ret.ok, len(data)) == (True, 2)
         assert (data[0].aid, data[1].aid) == (id_1, id_2)
-        assert isEqualBD(data[0].sv, sv_1)
-        assert isEqualBD(data[1].sv, sv_2)
+        assert RBS(*data[0].sv) == sv_1
+        assert RBS(*data[1].sv) == sv_2
         assert np.array_equal(data[0].force, [0, 0, 0])
         assert np.array_equal(data[1].force, [0, 0, 0])
 
@@ -453,12 +455,12 @@ class TestLeonardOther:
 
         # Convenience.
         WPData = azrael.leonard.WPData
-        data_1 = types.RigidBodyState(imass=1)
-        data_2 = types.RigidBodyState(imass=2)
+        body_1 = RBS(imass=1)
+        body_2 = RBS(imass=2)
         id_1, id_2 = 1, 2
 
         # Spawn new objects.
-        tmp = [(id_1, data_1), (id_2, data_2)]
+        tmp = [(id_1, body_1), (id_2, body_2)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
@@ -466,13 +468,13 @@ class TestLeonardOther:
         ret = leo.createWorkPackage([id_1, id_2], dt=3, maxsteps=4)
 
         # Create a new State Vector to replace the old one.
-        data_3 = types.RigidBodyState(imass=4, position=[1, 2, 3])
-        newWP = [(id_1, data_3)]
+        body_3 = RBS(imass=4, position=[1, 2, 3])
+        newWP = [(id_1, body_3)]
 
         # Check the State Vector for objID=id_1 before and after the update.
-        assert isEqualBD(leo.allBodies[id_1], data_1)
+        assert RBS(*leo.allBodies[id_1]) == body_1
         leo.updateLocalCache(newWP)
-        assert isEqualBD(leo.allBodies[id_1], data_3)
+        assert RBS(*leo.allBodies[id_1]) == body_3
 
     def test_processCommandQueue(self):
         """
@@ -484,8 +486,8 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Convenience.
-        sv_1 = types.RigidBodyState(imass=1)
-        sv_2 = types.RigidBodyState(imass=2)
+        sv_1 = RBS(imass=1)
+        sv_2 = RBS(imass=2)
         id_1, id_2 = 1, 2
 
         # Cache must be empty.
@@ -497,8 +499,8 @@ class TestLeonardOther:
         leo.processCommandsAndSync()
 
         # Verify the local cache (forces and torques must default to zero).
-        assert isEqualBD(leo.allBodies[id_1], sv_1)
-        assert isEqualBD(leo.allBodies[id_2], sv_2)
+        assert RBS(*leo.allBodies[id_1]) == sv_1
+        assert RBS(*leo.allBodies[id_2]) == sv_2
         tmp = leo.allForces[id_1]
         assert tmp.forceDirect == tmp.torqueDirect == [0, 0, 0]
         assert tmp.forceBoost == tmp.torqueBoost == [0, 0, 0]
@@ -512,7 +514,7 @@ class TestLeonardOther:
 
         # Change the State Vector of id_2.
         pos = (10, 11.5, 12)
-        sv_3 = types.RigidBodyStateOverride(position=pos)
+        sv_3 = RBSO(position=pos)
         assert leo.allBodies[id_2].position == [0, 0, 0]
         assert leoAPI.addCmdModifyBodyState(id_2, sv_3).ok
         leo.processCommandsAndSync()
@@ -542,7 +544,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Convenience.
-        sv = types.RigidBodyState(imass=1)
+        sv = RBS(imass=1)
         objID = 1
 
         # Spawn object.
@@ -606,7 +608,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Spawn one object.
-        sv = types.RigidBodyState(imass=1, orientation=(0, 0, 0, 1))
+        sv = RBS(imass=1, orientation=(0, 0, 0, 1))
         objID = 1
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
@@ -648,7 +650,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Spawn one object rotated 180 degress around x-axis.
-        sv = types.RigidBodyState(imass=1, orientation=(1, 0, 0, 0))
+        sv = RBS(imass=1, orientation=(1, 0, 0, 0))
         objID = 1
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
@@ -770,8 +772,8 @@ class TestLeonardOther:
         distance = abs(pos_a[0] - pos_b[0])
         assert distance >= 4
 
-        sv_a = types.RigidBodyState(position=pos_a, cshapes=[getCSSphere()])
-        sv_b = types.RigidBodyState(position=pos_b, cshapes=[getCSSphere()])
+        sv_a = RBS(position=pos_a, cshapes=[getCSSphere()])
+        sv_b = RBS(position=pos_b, cshapes=[getCSSphere()])
 
         # Specify the constraints.
         con = getP2P(rb_a=id_a, rb_b=id_b, pivot_a=pos_b, pivot_b=pos_a)
@@ -979,9 +981,6 @@ class TestBroadphase:
         Create three bodies. Then alter their AABBs to create various
         combinations of overlap.
         """
-        # Convenience.
-        RBS = types.RigidBodyState
-
         # Install a mock for the sweeping algorithm.
         azrael.leonard.sweeping = mock_sweeping
         mock_sweeping.return_value = RetVal(True, None, [])
@@ -1066,9 +1065,6 @@ class TestBroadphase:
         Create three bodies. Then alter their AABBs to create various
         combinations of overlap.
         """
-        # Convenience.
-        RBS = types.RigidBodyState
-
         def testCCS(pos, AABBs, expected_objIDs):
             """
             Compute broadphase results for bodies  at ``pos`` with ``AABBs``
@@ -1154,9 +1150,6 @@ class TestBroadphase:
         an offset. Use different scales and orientations to verify it is
         correctly taken into account during the broadphase.
         """
-        # Convenience.
-        RBS = types.RigidBodyState
-
         # Create the test body at the center. It is a centered unit cube.
         body_a = RBS(position=(0, 0, 0), cshapes=[getCSBox()])
 
@@ -1241,7 +1234,6 @@ class TestBroadphase:
         num_bodies = 10
 
         # Create several rigid bodies with a spherical collision shape.
-        RBS = types.RigidBodyState
         cs = [getCSSphere(radius=1)]
         if dim == 0:
             states = [RBS(position=[_, 0, 0], cshapes=cs) for _ in range(10)]
@@ -1306,9 +1298,6 @@ class TestBroadphase:
         Static bodies (ie every body with mass=0) must be added to every
         collision set.
         """
-        # Convenience.
-        RBS = types.RigidBodyState
-
         def testCCS(pos, AABBs, imasses, expected_objIDs):
             """
             Compute broadphase results for bodies at ``pos`` with ``masses``

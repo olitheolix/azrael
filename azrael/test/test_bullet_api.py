@@ -26,7 +26,7 @@ from azrael.types import _RigidBodyState
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
-from azrael.test.test import getP2P, get6DofSpring2, isEqualBD
+from azrael.test.test import getP2P, get6DofSpring2
 
 
 class TestBulletAPI:
@@ -43,83 +43,6 @@ class TestBulletAPI:
 
     def teardown_method(self, method):
         pass
-
-    def xtest_isEqualBD(self):
-        """
-        Verify that the auxiliary `isEqualBD` function works as expected.
-        """
-        # Define a set of collision shapes.
-        pos = (0, 1, 2)
-        rot = (0, 0, 0, 1)
-        cshapes = [getCSEmpty('1', pos, rot), getCSSphere('2', pos, rot)]
-
-        # Create an object and serialise it.
-        obj_a = types.RigidBodyState(
-            scale=3.5,
-            imass=4.5,
-            cshapes=cshapes,
-            restitution=5.5,
-            orientation=np.array([0, 1, 0, 0], np.float64),
-            position=np.array([0.2, 0.4, 0.6], np.float64),
-            velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
-            velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
-        assert obj_a is not None
-
-        obj_b = types.RigidBodyState(
-            scale=3.5,
-            imass=4.5,
-            restitution=5.5,
-            orientation=np.array([0, 1, 0, 0], np.float64),
-            position=np.array([0.2, 0.4, 0.6], np.float64),
-            velocityLin=np.array([0.8, 1.0, 1.2], np.float64),
-            velocityRot=np.array([1.4, 1.6, 1.8], np.float64))
-        assert obj_b is not None
-
-        # Swap out the Collision shape.
-        obj_c = obj_a._replace(cshapes=[getCSBox('2', pos, rot)])
-
-        # Verify that the original objects are all identical to themselves but
-        # distinct from each other.
-        assert obj_a is not None
-        assert obj_b is not None
-        assert obj_c is not None
-        assert isEqualBD(obj_a, obj_a)
-        assert isEqualBD(obj_b, obj_b)
-        assert isEqualBD(obj_c, obj_c)
-        assert not isEqualBD(obj_a, obj_b)
-        assert not isEqualBD(obj_a, obj_c)
-        assert not isEqualBD(obj_b, obj_c)
-
-        # Replace a scalar value and verify that 'isEqualBD' picks it up.
-        assert isEqualBD(obj_a, obj_a._replace(scale=3.5))
-        assert not isEqualBD(obj_a, obj_a._replace(scale=1))
-
-        # Replace a vector value with various combinations of being a tuple,
-        # list, or NumPy array.
-        pos_old = np.array([0.2, 0.4, 0.6])
-        pos_new = 2 * pos_old
-        assert isEqualBD(obj_a, obj_a._replace(position=tuple(pos_old)))
-        assert isEqualBD(obj_a, obj_a._replace(position=list(pos_old)))
-        assert isEqualBD(obj_a, obj_a._replace(position=pos_old))
-        assert not isEqualBD(obj_a, obj_a._replace(position=tuple(pos_new)))
-        assert not isEqualBD(obj_a, obj_a._replace(position=list(pos_new)))
-        assert not isEqualBD(obj_a, obj_a._replace(position=pos_new))
-
-        # Try to replace a 3-vector with a 4-vector.
-        pos_old = np.array([0.2, 0.4, 0.6])
-        pos_new = np.array([0.2, 0.4, 0.6, 0.8])
-        assert isEqualBD(obj_a, obj_a._replace(position=pos_old))
-        assert not isEqualBD(obj_a, obj_a._replace(position=pos_new))
-
-        # Replace the CollShape named tuple with just a list.
-        p, q = (0, 0, 0), (0, 0, 0, 1)
-        cshape_1 = getCSSphere('csfoo', pos, rot, radius=2)
-        cshape_2 = cshape_1._replace(csdata=list(cshape_1.csdata))
-        cshape_2 = list(cshape_2)
-        obj_a1 = obj_a._replace(cshapes=[cshape_1])
-        obj_a2 = obj_a._replace(cshapes=[cshape_2])
-
-        assert isEqualBD(obj_a1, obj_a2)
 
     def test_getset_object(self):
         """
@@ -153,8 +76,7 @@ class TestBulletAPI:
         # Send object to Bullet and request it back.
         sim.setRigidBodyData(0, obj_a)
         ret = sim.getRigidBodyData(0)
-        assert ret.ok
-        assert isEqualBD(obj_a, ret.data)
+        assert (ret.ok, ret.data) == (True, obj_a)
 
     def test_update_object(self):
         """
@@ -180,8 +102,7 @@ class TestBulletAPI:
         # Send object to Bullet and request it back.
         sim.setRigidBodyData(0, obj_a)
         ret = sim.getRigidBodyData(0)
-        assert ret.ok
-        assert isEqualBD(ret.data, obj_a)
+        assert (ret.ok, ret.data) == (True, obj_a)
 
         # Update the object.
         obj_a = types.RigidBodyState(
@@ -196,8 +117,7 @@ class TestBulletAPI:
         assert obj_a is not None
         sim.setRigidBodyData(0, obj_a)
         ret = sim.getRigidBodyData(0)
-        assert ret.ok
-        assert isEqualBD(ret.data, obj_a)
+        assert (ret.ok, ret.data) == (True, obj_a)
 
     @pytest.mark.parametrize('forceFun', ['applyForce', 'applyForceAndTorque'])
     def test_apply_force(self, forceFun):
@@ -221,8 +141,7 @@ class TestBulletAPI:
         sim.setRigidBodyData(objID, obj_a)
         sim.compute([objID], dt, maxsteps)
         ret = sim.getRigidBodyData(objID)
-        assert ret.ok
-        assert isEqualBD(ret.data, obj_a)
+        assert (ret.ok, ret.data) == (True, obj_a)
 
         # Now apply a central force of one Newton in z-direction.
         if forceFun == 'applyForce':
@@ -235,8 +154,7 @@ class TestBulletAPI:
 
         # Nothing must have happened because the simulation has not progressed.
         ret = sim.getRigidBodyData(objID)
-        assert ret.ok
-        assert isEqualBD(ret.data, obj_a)
+        assert (ret.ok, ret.data) == (True, obj_a)
 
         # Progress the simulation by another 'dt' seconds.
         sim.compute([objID], dt, maxsteps)
@@ -275,8 +193,7 @@ class TestBulletAPI:
         sim.setRigidBodyData(objID, obj_a)
         assert sim.compute([objID], dt, maxsteps).ok
         ret = sim.getRigidBodyData(objID)
-        assert ret.ok
-        assert isEqualBD(ret.data, obj_a)
+        assert (ret.ok, ret.data) == (True, obj_a)
 
         # Call 'compute' again with one (in)valid object.
         assert not sim.compute([objID, 100], dt, maxsteps).ok
@@ -306,8 +223,7 @@ class TestBulletAPI:
         sim.setRigidBodyData(objID, obj_a)
         sim.compute([objID], dt, maxsteps)
         ret = sim.getRigidBodyData(objID)
-        assert ret.ok
-        assert isEqualBD(ret.data, obj_a)
+        assert (ret.ok, ret.data) == (True, obj_a)
 
         # Now apply a central force of one Newton in z-direction and a torque
         # of two NewtonMeters.
@@ -315,8 +231,7 @@ class TestBulletAPI:
 
         # Nothing must have happened because the simulation has not progressed.
         ret = sim.getRigidBodyData(objID)
-        assert ret.ok
-        assert isEqualBD(ret.data, obj_a)
+        assert (ret.ok, ret.data) == (True, obj_a)
 
         # Progress the simulation for another second.
         sim.compute([objID], dt, maxsteps)
@@ -365,8 +280,7 @@ class TestBulletAPI:
         # Send object to Bullet and request it back.
         sim.setRigidBodyData(0, obj_a)
         ret = sim.getRigidBodyData(0)
-        assert ret.ok
-        assert isEqualBD(ret.data, obj_a)
+        assert (ret.ok, ret.data) == (True, obj_a)
 
         # Delete the object. The attempt to request it afterwards must fail.
         assert sim.removeRigidBody([0]).ok
