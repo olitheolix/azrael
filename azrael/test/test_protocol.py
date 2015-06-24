@@ -189,8 +189,7 @@ def test_GetBodyState():
 
     # Verify.
     dec_sv = dec_sv.data
-    dec_sv = {int(_): types.RigidBodyState(**dec_sv[_]['sv'])
-              for _ in dec_sv}
+    dec_sv = {k: dec_sv[k]['sv'] for k in dec_sv}
     assert dec_sv[1] == objs[0]['sv']
     assert dec_sv[2] == objs[1]['sv']
 

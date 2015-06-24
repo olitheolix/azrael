@@ -510,10 +510,6 @@ class Client():
         # Iterate over all objects.
         out = {}
         for objID, v in raw.items():
-            # Convert the object ID to an integer because JSON will convert all
-            # dictionary keys to strings.
-            objID = int(objID)
-
             # Add a None value if there is no data (typically happens if one
             # or more of the objects for which SV data was requested did not
             # exist).
@@ -522,9 +518,8 @@ class Client():
                 continue
 
             # Fill in the SV and fragment state data.
-            out[objID] = {'frag': [FragState(**_) for _ in v['frag']],
-                          'sv': types._RigidBodyState(**v['sv'])}
-        return RetVal(True, None, out)
+            out[objID] = v
+        return RetVal(True, None, raw)
 
     @typecheck
     def getBodyStates(self, objIDs: (list, tuple, int)):

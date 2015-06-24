@@ -392,7 +392,17 @@ def FromClerk_GetBodyState_Encode(data: dict):
 
 @typecheck
 def FromClerk_GetBodyState_Decode(payload: dict):
-    return RetVal(True, None, payload['data'])
+    data = {}
+    for objID, v in payload['data'].items():
+        objID = int(objID)
+        if v is None:
+            data[objID] = None
+            continue
+
+        data[objID] = {}
+        data[objID]['frag'] = [FragState(**_) for _ in v['frag']]
+        data[objID]['sv'] = types.RigidBodyState(**v['sv'])
+    return RetVal(True, None, data)
 
 
 # ---------------------------------------------------------------------------
