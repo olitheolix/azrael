@@ -252,7 +252,7 @@ class TestLeonardAPI:
         modify = ret.data['modify']
         assert ret.ok and len(modify) == 1
         assert modify[0]['objID'] == id_0
-        assert tuple(modify[0]['sv']) == tuple(newSV)
+        assert RigidBodyStateOverride(*modify[0]['sv']) == newSV
         del newSV
 
         # Set the direct force and torque for id_1.
@@ -399,11 +399,11 @@ class TestLeonardAPI:
         # must remain unaffected but the lists must become NumPy arrays.
         ret = RigidBodyState(imass=3, position=[1, 2, 3])
         assert isinstance(ret.imass, int)
-        assert isinstance(ret.position, list)
+        assert isinstance(ret.position, tuple)
 
         ret = RigidBodyStateOverride(imass=3, position=[1, 2, 3])
         assert isinstance(ret.imass, int)
-        assert isinstance(ret.position, list)
+        assert isinstance(ret.position, tuple)
 
         # Invalid calls.
         assert RigidBodyState(position=[1, 2]) is None

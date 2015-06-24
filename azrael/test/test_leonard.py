@@ -512,7 +512,7 @@ class TestLeonardOther:
         assert id_1 not in leo.allForces
 
         # Change the State Vector of id_2.
-        pos = [10, 11.5, 12]
+        pos = (10, 11.5, 12)
         sv_3 = types.RigidBodyStateOverride(position=pos)
         assert leo.allBodies[id_2].position == [0, 0, 0]
         assert leoAPI.addCmdModifyBodyState(id_2, sv_3).ok

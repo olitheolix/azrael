@@ -1004,13 +1004,13 @@ _CSDefault_ = CollShapeMeta(aid='',
 def RigidBodyState(scale: (int, float)=1,
                    imass: (int, float)=1,
                    restitution: (int, float)=0.9,
-                   orientation: (tuple, list, np.ndarray)=[0, 0, 0, 1],
-                   position: (tuple, list, np.ndarray)=[0, 0, 0],
-                   velocityLin: (tuple, list, np.ndarray)=[0, 0, 0],
-                   velocityRot: (tuple, list, np.ndarray)=[0, 0, 0],
+                   orientation: (tuple, list, np.ndarray)=(0, 0, 0, 1),
+                   position: (tuple, list, np.ndarray)=(0, 0, 0),
+                   velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
+                   velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
                    cshapes: (tuple, list)=[_CSDefault_],
-                   axesLockLin: (tuple, list, np.ndarray)=[1, 1, 1],
-                   axesLockRot: (tuple, list, np.ndarray)=[1, 1, 1],
+                   axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
+                   axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                    version: int=0):
     """
     Return a ``_RigidBodyState`` object.
@@ -1018,19 +1018,14 @@ def RigidBodyState(scale: (int, float)=1,
     Without any arguments this function will return a valid ``RigidBodyState``
     specimen with sensible defaults.
     """
-    # Convert arguments to NumPy types where necessary.
-    position = np.array(position, np.float64).tolist()
-    orientation = np.array(orientation, np.float64).tolist()
-    velocityLin = np.array(velocityLin, np.float64).tolist()
-    velocityRot = np.array(velocityRot, np.float64).tolist()
-    axesLockLin = np.array(axesLockLin, np.float64).tolist()
-    axesLockRot = np.array(axesLockRot, np.float64).tolist()
-
-    # Sanity checks.
     try:
-        assert len(axesLockLin) == len(axesLockRot) == 3
-        assert len(orientation) == 4
-        assert len(position) == len(velocityLin) == len(velocityRot) == 3
+        # Sanity checks inputs.
+        axesLockLin = toVec(3, axesLockLin)
+        axesLockRot = toVec(3, axesLockRot)
+        orientation = toVec(4, orientation)
+        position = toVec(3, position)
+        velocityLin = toVec(3, velocityLin)
+        velocityRot = toVec(3, velocityRot)
         assert version >= 0
 
         # Create- and sanity check the collision shapes.
@@ -1038,7 +1033,7 @@ def RigidBodyState(scale: (int, float)=1,
     except (AssertionError, TypeError) as err:
         return None
 
-    # Build- and return the actual named tuple.
+    # Build- and return the compiled RigidBodyState tuple.
     return _RigidBodyState(
         scale=scale,
         imass=imass,

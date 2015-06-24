@@ -494,10 +494,9 @@ class LeonardBase(config.AzraelProcess):
             # Update velocity and position.
             vel = np.array(sv.velocityLin, np.float64) + 0.5 * force
             pos = np.array(sv.position, np.float64)
-            sv.velocityLin[:] = vel.tolist()
-            sv.position[:] = (pos + dt * vel).tolist()
-
-            self.allBodies[objID] = sv
+            pos += dt * vel
+            vel, pos = tuple(vel), tuple(pos)
+            self.allBodies[objID] = sv._replace(position=pos, velocityLin=vel)
 
         # Synchronise the local object cache back to the database.
         self.syncObjects(writeconcern=False)

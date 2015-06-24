@@ -137,6 +137,8 @@ def dequeueCommands():
     # Query all pending commands and delete them from the queue.
     docs = list(db.find())
     ret = db.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
+    for doc in docs:
+        del doc['_id']
 
     # Split the commands into categories.
     spawn = [_ for _ in docs if _['cmd'] == 'spawn']
