@@ -23,8 +23,10 @@ from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
+from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
+from azrael.test.test import getP2P, get6DofSpring2
 
 
 class TestDibbler:
@@ -81,3 +83,10 @@ class TestDibbler:
         cs_b = CollShapePlane(normal=(1, 2, 3), ofs=-1)
         assert cs_a == cs_b
         assert self.isJsonCompatible(cs_a, CollShapePlane)
+
+    def test_ConstraintMeta(self):
+        for Getter in (getP2P, get6DofSpring2):
+            con_a = Getter()
+            con_b = Getter()
+            assert con_a == con_b
+            assert self.isJsonCompatible(con_a, ConstraintMeta)
