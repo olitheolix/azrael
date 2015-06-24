@@ -1034,7 +1034,7 @@ class Clerk(config.AzraelProcess):
             corresponding value a ``RigidBodyState`` instance.
         """
         # Convenience: extract all objIDs from ``SVs``.
-        objIDs = list(SVs.keys())
+        objIDs = tuple(SVs.keys())
 
         # Query the version values for all objects.
         docs = database.dbHandles['ObjInstances'].find(
@@ -1062,7 +1062,7 @@ class Clerk(config.AzraelProcess):
                 out[objID] = None
                 continue
 
-            # Update the 'version' field to the latest value.
+            # Update the 'version' field.
             out[objID] = {
                 'frag': fragState[objID],
                 'sv': SVs[objID]._replace(version=version[objID])

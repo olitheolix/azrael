@@ -22,7 +22,7 @@ import azrael.config as config
 from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox, CollShapePlane
+from azrael.types import CollShapeBox, CollShapePlane, FragState
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane

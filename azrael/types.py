@@ -39,15 +39,15 @@ from collections import namedtuple, OrderedDict
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
 
-# Uniform return value signature.
+# Return value signature for (almost) all functions in Azrael.
 RetVal = namedtuple('RetVal', 'ok msg data')
 
-# Template dataset.
+# Object Template.
 _Template = namedtuple('_Template', 'aid cshapes fragments boosters factories')
-_FragState = namedtuple('_FragState', 'aid scale position orientation')
 
 # Fragments.
 _FragmentMeta = namedtuple('_FragmentMeta', 'aid fragtype fragdata')
+_FragState = namedtuple('_FragState', 'aid scale position orientation')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 
