@@ -26,8 +26,8 @@ import azrael.leonard as leonard
 
 from IPython import embed as ipshell
 from azrael.test.test_leonard import getLeonard
-from azrael.test.test_bullet_api import isEqualBD, getCSEmpty, getCSBox
-from azrael.test.test_bullet_api import getCSSphere, getCSPlane
+from azrael.test.test import isEqualBD, getCSEmpty, getCSBox
+from azrael.test.test import getCSSphere, getCSPlane
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.types import CollShapeSphere, CollShapeBox
 

@@ -23,7 +23,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
-from azrael.test.test import createFragRaw, createFragDae
+from azrael.test.test import getFragRaw, getFragDae
 
 
 class TestDibbler:
@@ -113,7 +113,7 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 0)
 
         # Define a template for this test.
-        frag = [FragmentMeta('NoNameRaw', 'raw', createFragRaw())]
+        frag = [FragmentMeta('NoNameRaw', 'raw', getFragRaw())]
         t_raw = Template('_templateEmpty', [], frag, [], [])
 
         # Add the first template and verify that the database now contains
@@ -132,7 +132,7 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define a template for this test.
-        frag = [FragmentMeta('NoNameDae', 'dae', createFragDae())]
+        frag = [FragmentMeta('NoNameDae', 'dae', getFragDae())]
         t_dae = Template('_templateEmpty', [], frag, [], [])
 
         # Create a Dibbler instance and flush all data.
@@ -162,8 +162,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = FragmentMeta('fragname_raw', 'raw', createFragRaw())
-        frag_dae = FragmentMeta('fragname_dae', 'dae', createFragDae())
+        frag_raw = FragmentMeta('fragname_raw', 'raw', getFragRaw())
+        frag_dae = FragmentMeta('fragname_dae', 'dae', getFragDae())
         t_raw = Template('t_name_raw', [], [frag_raw], [], [])
         t_dae = Template('t_name_dae', [], [frag_dae], [], [])
 
@@ -204,11 +204,11 @@ class TestDibbler:
         # The original template has two fragments, and we will update one of
         # them.
         frags_orig = [
-            FragmentMeta('fname_1', 'raw', createFragRaw()),
-            FragmentMeta('fname_2', 'dae', createFragDae())
+            FragmentMeta('fname_1', 'raw', getFragRaw()),
+            FragmentMeta('fname_2', 'dae', getFragDae())
         ]
         frags_new = [
-            FragmentMeta('fname_1', 'dae', createFragDae()),
+            FragmentMeta('fname_1', 'dae', getFragDae()),
         ]
         t1 = Template('t1', [], frags_orig, [], [])
 
@@ -264,9 +264,9 @@ class TestDibbler:
 
         # The original template has the following three fragments:
         frags_orig = [
-            FragmentMeta('fname_1', 'raw', createFragRaw()),
-            FragmentMeta('fname_2', 'dae', createFragDae()),
-            FragmentMeta('fname_3', 'raw', createFragRaw())
+            FragmentMeta('fname_1', 'raw', getFragRaw()),
+            FragmentMeta('fname_2', 'dae', getFragDae()),
+            FragmentMeta('fname_3', 'raw', getFragRaw())
         ]
         t1 = Template('t1', [], frags_orig, [], [])
 
@@ -275,7 +275,7 @@ class TestDibbler:
         # fragment type for the third one.
         frags_new = [
             FragmentMeta('fname_2', '_none_', None),
-            FragmentMeta('fname_3', 'dae', createFragDae())
+            FragmentMeta('fname_3', 'dae', getFragDae())
         ]
 
         # Add the template, spawn one instance, and verify all fragments.
@@ -314,8 +314,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = [FragmentMeta('frag_raw', 'raw', createFragRaw())]
-        frag_dae = [FragmentMeta('frag_dae', 'dae', createFragDae())]
+        frag_raw = [FragmentMeta('frag_raw', 'raw', getFragRaw())]
+        frag_dae = [FragmentMeta('frag_dae', 'dae', getFragDae())]
         t11 = Template('name11', [], frag_raw, [], [])
         t1 = Template('name1', [], frag_dae, [], [])
 
@@ -379,8 +379,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = [FragmentMeta('frag_raw', 'raw', createFragRaw())]
-        frag_dae = [FragmentMeta('frag_dae', 'dae', createFragDae())]
+        frag_raw = [FragmentMeta('frag_raw', 'raw', getFragRaw())]
+        frag_dae = [FragmentMeta('frag_dae', 'dae', getFragDae())]
         t_raw = Template('temp_raw', [], frag_raw, [], [])
         t_dae = Template('temp_dae', [], frag_dae, [], [])
 

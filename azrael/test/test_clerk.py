@@ -35,14 +35,14 @@ import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.test.test_bullet_api import isEqualBD
-from azrael.test.test import createFragRaw, createFragDae, isEqualCS
+from azrael.test.test import isEqualBD
+from azrael.test.test import getFragRaw, getFragDae, isEqualCS
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
-from azrael.test.test_bullet_api import getCSEmpty, getCSBox
-from azrael.test.test_bullet_api import getCSSphere, getCSPlane
+from azrael.test.test import getCSEmpty, getCSBox
+from azrael.test.test import getCSSphere, getCSPlane
 
 
 class TestClerk:
@@ -62,7 +62,7 @@ class TestClerk:
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        frag = [FragmentMeta('NoName', 'raw', createFragRaw())]
+        frag = [FragmentMeta('NoName', 'raw', getFragRaw())]
         t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
@@ -144,7 +144,7 @@ class TestClerk:
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Compile a template structure.
-        frags = [FragmentMeta('foo', 'raw', createFragRaw())]
+        frags = [FragmentMeta('foo', 'raw', getFragRaw())]
         temp = Template('bar', [cs], frags, [], [])
 
         # Add template when 'saveModel' fails.
@@ -229,8 +229,8 @@ class TestClerk:
         name_1, name_2 = 't1', 't2'
 
         # Define templates.
-        frags_1 = [FragmentMeta('foo', 'raw', createFragRaw())]
-        frags_2 = [FragmentMeta('foo', 'raw', createFragRaw())]
+        frags_1 = [FragmentMeta('foo', 'raw', getFragRaw())]
+        frags_2 = [FragmentMeta('foo', 'raw', getFragRaw())]
         t1 = Template(name_1, [getCSSphere()], frags_1, [], [])
         t2 = Template(name_2, [getCSSphere()], frags_2, [], [])
 
@@ -563,7 +563,7 @@ class TestClerk:
             partID='0', pos=(1, 0, 0), direction=(1, 0, 0),
             minval=0, maxval=1, force=0)
 
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
 
         # Define a new template with two boosters and add it to Azrael.
         template = Template('t1',
@@ -633,7 +633,7 @@ class TestClerk:
             templateID='_templateCube', exit_speed=(0, 1))
 
         # Define a new template, add it to Azrael, and spawn an instance.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0], [f0])
         assert clerk.addTemplates([temp]).ok
         sv = types.RigidBodyState()
@@ -686,7 +686,7 @@ class TestClerk:
                            minval=0, maxval=0.5, force=0)
 
         # Define a new template with two boosters and add it to Azrael.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [])
         assert clerk.addTemplates([temp]).ok
 
@@ -761,7 +761,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
@@ -833,7 +833,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
@@ -934,7 +934,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
@@ -1034,10 +1034,10 @@ class TestClerk:
         # Raw object: specify vertices, UV, and texture (RGB) values directly.
         sv1 = types.RigidBodyState(position=[1, 2, 3])
         sv2 = types.RigidBodyState(position=[4, 5, 6])
-        f_raw = createFragRaw()
+        f_raw = getFragRaw()
 
         # Get Collada fragment.
-        f_dae = createFragDae()
+        f_dae = getFragDae()
 
         # Put both fragments into a valid list of FragmentMetas.
         frags = [FragmentMeta('f_raw', 'RAW', f_raw),
@@ -1105,7 +1105,7 @@ class TestClerk:
         sv = types.RigidBodyState()
 
         # Add a valid template and verify it now exists in Azrael.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('foo', [getCSSphere()], frags, [], [])
         assert clerk.addTemplates([temp]).ok
 
@@ -1124,7 +1124,7 @@ class TestClerk:
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         assert clerk.setFragmentGeometries(objID0, frags).ok
 
         # Verify that the new 'version' flag is now different.
@@ -1159,7 +1159,7 @@ class TestClerk:
                            minval=-1, maxval=1, force=0)
 
         # Define a template with one fragment.
-        frags = [FragmentMeta('foo', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('foo', 'RAW', getFragRaw())]
         t1 = Template('t1', [getCSSphere()], frags, [b0, b1], [])
 
         # Add the template and spawn two instances.
@@ -1233,7 +1233,7 @@ class TestClerk:
         sv = types.RigidBodyState()
 
         # Define a new template with one fragment.
-        frags = [FragmentMeta('foo', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('foo', 'RAW', getFragRaw())]
         t1 = Template('t1', [getCSSphere()], fragments=frags,
                       boosters=[], factories=[])
 
@@ -1363,8 +1363,8 @@ class TestClerk:
             del ret, _frags
 
         # Create a raw Fragment.
-        f_raw = createFragRaw()
-        f_dae = createFragDae()
+        f_raw = getFragRaw()
+        f_dae = getFragDae()
 
         frags = [FragmentMeta('10', 'RAW', f_raw),
                  FragmentMeta('test', 'DAE', f_dae)]
@@ -1447,7 +1447,7 @@ class TestClerk:
         assert tmp == base64.b64decode(f_dae.rgb['rgb2.jpg'])
 
         # Change the fragment geometries.
-        f_raw = createFragRaw()
+        f_raw = getFragRaw()
         frags = [FragmentMeta('10', 'RAW', f_raw),
                  FragmentMeta('test', 'DAE', f_dae)]
         assert clerk.setFragmentGeometries(objID, frags).ok

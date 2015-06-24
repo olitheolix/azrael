@@ -11,11 +11,11 @@ import unittest.mock as mock
 import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
-from azrael.test.test_bullet_api import isEqualBD
+from azrael.test.test import isEqualBD
 from azrael.types import CollShapeBox, CollShapeSphere, RetVal
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.types import ConstraintMeta, ConstraintP2P
-from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
+from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 
 
 # List all available engines. This simplifies the parameterisation of those

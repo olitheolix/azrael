@@ -27,7 +27,7 @@ import azrael.leo_api as leoAPI
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
-from azrael.test.test_bullet_api import isEqualBD
+from azrael.test.test import isEqualBD
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta, Template
 
 

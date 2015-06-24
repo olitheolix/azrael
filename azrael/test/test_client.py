@@ -45,9 +45,9 @@ from IPython import embed as ipshell
 from azrael.types import RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
-from azrael.test.test import createFragRaw, createFragDae, isEqualCS
+from azrael.test.test import getFragRaw, getFragDae, isEqualCS
 from azrael.test.test_leonard import getLeonard, killAzrael
-from azrael.test.test_bullet_api import getCSEmpty, getCSBox, getCSSphere
+from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 
 
 class TestClient:
@@ -182,7 +182,7 @@ class TestClient:
         assert isEqualCS(ret.data[name_3].cshapes, [getCSBox()])
 
         # Add a new object template.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -215,7 +215,7 @@ class TestClient:
         assert client.getFragmentGeometries([1]) == (True, None, {1: None})
 
         # Define a new template, add it to Azrael, and spawn it.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t2', [getCSBox()], frags, [b0, b1], [f0])
         assert client.addTemplates([temp]).ok
         ret = client.spawn([{'template': temp.aid, 'position': np.zeros(3)}])
@@ -483,7 +483,7 @@ class TestClient:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn an instance.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
         assert client.addTemplates([temp]).ok
         new_obj = {'template': temp.aid,
@@ -555,7 +555,7 @@ class TestClient:
         objID = 1
 
         # Add a new template and spawn it.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -592,7 +592,7 @@ class TestClient:
         assert FragRaw(**tmp) == frags[0].fragdata
 
         # Change the fragment geometries.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         assert client.setFragmentGeometries(objID, frags).ok
 
         ret = client.getFragmentGeometries([objID])
@@ -621,7 +621,7 @@ class TestClient:
         leo = getLeonard()
 
         # Get a Collada fragment.
-        f_dae = createFragDae()
+        f_dae = getFragDae()
 
         # Put both fragments into a valid list of FragmentMetas.
         frags = [FragmentMeta('f_dae', 'DAE', f_dae)]
@@ -650,7 +650,7 @@ class TestClient:
         assert ret.data[objID]['f_dae']['type'] == 'DAE'
 
         # Change the fragment geometries.
-        frags = [FragmentMeta('f_dae', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('f_dae', 'RAW', getFragRaw())]
         assert client.setFragmentGeometries(objID, frags).ok
 
         # Ensure it now has type 'RAW'.
@@ -691,7 +691,7 @@ class TestClient:
         leo = getLeonard()
 
         # Add a new template and spawn it.
-        frags = [FragmentMeta('bar', 'RAW', createFragRaw())]
+        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
         temp = Template('t1', [getCSSphere()], frags, [], [])
         assert client.addTemplates([temp]).ok
 
@@ -735,9 +735,9 @@ class TestClient:
 
         # The original template has the following three fragments:
         frags_orig = [
-            FragmentMeta('fname_1', 'RAW', createFragRaw()),
-            FragmentMeta('fname_2', 'DAE', createFragDae()),
-            FragmentMeta('fname_3', 'RAW', createFragRaw())
+            FragmentMeta('fname_1', 'RAW', getFragRaw()),
+            FragmentMeta('fname_2', 'DAE', getFragDae()),
+            FragmentMeta('fname_3', 'RAW', getFragRaw())
         ]
         t1 = Template('t1', [getCSSphere()], frags_orig, [], [])
 
@@ -761,7 +761,7 @@ class TestClient:
         # fragment type for the third one.
         frags_new = [
             FragmentMeta('fname_2', '_none_', None),
-            FragmentMeta('fname_3', 'DAE', createFragDae())
+            FragmentMeta('fname_3', 'DAE', getFragDae())
         ]
         assert client.setFragmentGeometries(objID, frags_new).ok
 
@@ -781,7 +781,7 @@ class TestClient:
         client = self.clients[client_type]
 
         # Get a Collada fragment.
-        f_dae = createFragDae()
+        f_dae = getFragDae()
 
         # Put both fragments into a valid list of FragmentMetas.
         frags = [FragmentMeta('f_dae', 'DAE', f_dae)]

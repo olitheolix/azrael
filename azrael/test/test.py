@@ -22,10 +22,45 @@ other tests.
 import os
 import base64
 import numpy as np
-from azrael.types import FragDae, FragRaw, CollShapeMeta
+
+from azrael.types import FragmentMeta, FragDae, FragRaw
+from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.types import CollShapeBox, CollShapePlane
+from azrael.types import RigidBodyState, RigidBodyStateOverride
+
+from azrael.types import _RigidBodyState
 
 
-def createFragDae():
+def getCSEmpty(aid='csempty', pos=[0, 0, 0], rot=[0, 0, 0, 1]):
+    """
+    Convenience function to construct an Empty shape.
+    """
+    return CollShapeMeta(aid, 'empty', pos, rot, CollShapeEmpty())
+
+
+def getCSBox(aid='csbox', pos=[0, 0, 0], rot=[0, 0, 0, 1], dim=[1, 1, 1]):
+    """
+    Convenience function to construct a Box shape.
+    """
+    return CollShapeMeta(aid, 'box', pos, rot, CollShapeBox(*dim))
+
+
+def getCSSphere(aid='cssphere', pos=[0, 0, 0], rot=[0, 0, 0, 1], radius=1):
+    """
+    Convenience function to construct a Sphere shape.
+    """
+    return CollShapeMeta(aid, 'sphere', pos, rot, CollShapeSphere(radius))
+
+
+def getCSPlane(aid='csplane', pos=[0, 0, 0], rot=[0, 0, 0, 1],
+               normal=[0, 0, 1], ofs=0):
+    """
+    Convenience function to construct a Plane in the x/y dimension.
+    """
+    return CollShapeMeta(aid, 'plane', pos, rot, CollShapePlane(normal, ofs))
+
+
+def getFragDae():
     b = os.path.dirname(__file__)
     dae_file = open(b + '/cube.dae', 'rb').read()
     dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
@@ -40,7 +75,7 @@ def createFragDae():
     return frag
 
 
-def createFragRaw():
+def getFragRaw():
     vert = np.random.randint(0, 100, 9).tolist()
     uv = np.random.randint(0, 100, 6).tolist()
     rgb = np.random.randint(0, 100, 3).tolist()
@@ -57,4 +92,35 @@ def isEqualCS(la, lb):
         assert list(a.csdata) == list(b.csdata)
         for f in a._fields:
             assert list(getattr(a, f)) == list(getattr(b, f))
+    return True
+
+
+def isEqualBD(bd1: _RigidBodyState, bd2: _RigidBodyState):
+    """
+    Return *True* if the content of ``bd1`` is (roughly) equal to ``bd2``.
+
+    This is a convenience function only.
+    """
+    for f in _RigidBodyState._fields:
+        a, b = getattr(bd1, f), getattr(bd2, f)
+        try:
+            if f == 'cshapes':
+                assert isinstance(bd1, (tuple, list))
+                assert isinstance(bd2, (tuple, list))
+                for csm_a, csm_b in zip(a, b):
+                    tmp_a = CollShapeMeta(*csm_a)
+                    tmp_b = CollShapeMeta(*csm_b)
+                    tmp_a = tmp_a._replace(csdata=list(tmp_a.csdata))
+                    tmp_b = tmp_b._replace(csdata=list(tmp_b.csdata))
+                    tmp_a = tmp_a._replace(position=list(tmp_a.position))
+                    tmp_b = tmp_b._replace(position=list(tmp_b.position))
+                    tmp_a = tmp_a._replace(rotation=list(tmp_a.rotation))
+                    tmp_b = tmp_b._replace(rotation=list(tmp_b.rotation))
+                    tmp_a = list(tmp_a)
+                    tmp_b = list(tmp_b)
+                    assert tmp_a == tmp_b
+            else:
+                assert np.allclose(a, b, atol=1E-9)
+        except (AssertionError, ValueError):
+            return False
     return True
