@@ -80,6 +80,12 @@ _Constraint6DofSpring2 = namedtuple(
                               'equilibrium linLimitLo linLimitHi '
                               'rotLimitLo rotLimitHi bounce enableSpring')
 
+# Boosters, Factories, and commands they can receive.
+_Booster = namedtuple('Booster', 'partID pos direction maxval minval force ')
+_Factory = namedtuple('Factory', 'partID pos direction templateID exit_speed')
+_CmdBooster = namedtuple('CmdBooster', 'partID force_mag')
+_CmdFactory = namedtuple('CmdFactory', 'partID exit_speed')
+
 
 def toVec(num_el, v):
     """
@@ -764,23 +770,14 @@ class Constraint6DofSpring2(_Constraint6DofSpring2):
         return OrderedDict(zip(self._fields, self))
 
 
-# -----------------------------------------------------------------------------
-# Booster
-#
-# Boosters exert a force on an object. Boosters have an ID (user can specify
-# it), a position relative to the object's centre of mass, a force direction
-# relative to the object's overall orientation, and a maximum force. Note that
-# the force is a scalar not a vector.
-# -----------------------------------------------------------------------------
-
-# Define named tuples to describe a Booster and the commands it can receive.
-_Booster = namedtuple('Booster', 'partID pos direction maxval minval force ')
-_CmdBooster = namedtuple('CmdBooster', 'partID force_mag')
-
-
 class Booster(_Booster):
     """
     Return a ``Booster`` instance.
+
+    Boosters exert a force on an object. Boosters have an ID (user can
+    specify it), a position relative to the object's centre of mass, a
+    force direction relative to the object's overall orientation, and a
+    maximum force. Note that the force is a scalar not a vector.
 
     The unit is located at ``pos`` relative to the parent's centre of mass. The
     Booster points into ``direction``.
@@ -880,44 +877,35 @@ class CmdBooster(_CmdBooster):
         return not self.__eq__(ref)
 
 
-# -----------------------------------------------------------------------------
-# Factory
-#
-# Factories can spawn objects. Like Boosters, they have a custom ID, position,
-# direction (both relative to the object). Furthermore, they can only spawn a
-# particular template. The newly spawned object can exit with the specified
-# speed along the factory direction.
-# -----------------------------------------------------------------------------
-
-# Define named tuples to describe a Factory and the commands it can receive.
-_Factory = namedtuple('Factory', 'partID pos direction templateID exit_speed')
-_CmdFactory = namedtuple('CmdFactory', 'partID exit_speed')
-
-
 class Factory(_Factory):
+    """
+    Return a ``Factory`` instance.
+
+    Factories can spawn objects. Like Boosters, they have a custom ID,
+    position, direction (both relative to the object). Furthermore, they
+    can only spawn a particular template. The newly spawned object can
+    exit with the specified speed along the factory direction.
+
+    The unit is located at ``pos`` relative to the parent's centre of
+    mass. The initial velocity of the spawned objects is constrained by the
+    ``exit_speed`` variable.
+
+    .. note::
+       ``direction`` is *not* a Quaternion but merely a unit vector that
+       points in the nozzle direction of the factory (it the direction in
+       which new objects will be spawned).
+
+    :param str partID: factory ID (arbitrary).
+    :param vec3 pos: position vector (3-elements).
+    :param vec3 direction: exit direction of new objects (3-elements).
+    :param str templateID: name of template spawned by this factory.
+    :param vec2 exit_speed: [min, max] exit speed of spawned object.
+    :return Factory: compiled factory description.
+    """
     @typecheck
     def __new__(cls, partID: str, pos: (tuple, list, np.ndarray),
                 direction: (tuple, list, np.ndarray), templateID: str,
                 exit_speed: (tuple, list, np.ndarray)):
-        """
-        Return a ``Factory`` instance.
-
-        The unit is located at ``pos`` relative to the parent's centre of
-        mass. The initial velocity of the spawned objects is constrained by the
-        ``exit_speed`` variable.
-
-        .. note::
-           ``direction`` is *not* a Quaternion but merely a unit vector that
-           points in the nozzle direction of the factory (it the direction in
-           which new objects will be spawned).
-
-        :param str partID: factory ID (arbitrary).
-        :param vec3 pos: position vector (3-elements).
-        :param vec3 direction: exit direction of new objects (3-elements).
-        :param str templateID: name of template spawned by this factory.
-        :param vec2 exit_speed: [min, max] exit speed of spawned object.
-        :return Factory: compiled factory description.
-        """
         try:
             # Verify the inputs.
             assert isAIDStringValid(partID)
