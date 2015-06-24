@@ -436,8 +436,8 @@ class TestClerk:
         objID_1 = 1
         objID_2 = 2
         MS = types.RigidBodyState
-        sv_1 = MS(position=np.arange(3), velocityLin=[2, 4, 6])
-        sv_2 = MS(position=[2, 4, 6], velocityLin=[6, 8, 10])
+        sv_1 = MS(position=(0, 1, 2), velocityLin=(2, 4, 6))
+        sv_2 = MS(position=(2, 4, 6), velocityLin=(6, 8, 10))
         templateID = '_templateEmpty'
 
         # Instantiate a Clerk.
@@ -488,8 +488,8 @@ class TestClerk:
         # Test parameters and constants.
         objID_1, objID_2 = 1, 2
         MS = types.RigidBodyState
-        sv_1 = MS(position=np.arange(3), velocityLin=[2, 4, 6])
-        sv_2 = MS(position=[2, 4, 6], velocityLin=[6, 8, 10])
+        sv_1 = MS(position=(0, 1, 2), velocityLin=(2, 4, 6))
+        sv_2 = MS(position=(2, 4, 6), velocityLin=(6, 8, 10))
         templateID = '_templateEmpty'
 
         # Instantiate a Clerk.
@@ -559,9 +559,9 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Define a boosters.
-        v = np.array([1, 0, 0], np.float64)
         booster = types.Booster(
-            partID='0', pos=v, direction=v, minval=0, maxval=1, force=0)
+            partID='0', pos=(1, 0, 0), direction=(1, 0, 0),
+            minval=0, maxval=1, force=0)
 
         frags = [MetaFragment('bar', 'RAW', createFragRaw())]
 
@@ -626,11 +626,11 @@ class TestClerk:
         # ---------------------------------------------------------------------
 
         # Define the Booster and Factory parts.
-        b0 = types.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
+        b0 = types.Booster(partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
                            minval=0, maxval=0.5, force=0)
         f0 = types.Factory(
-            partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
-            templateID='_templateCube', exit_speed=[0, 1])
+            partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
+            templateID='_templateCube', exit_speed=(0, 1))
 
         # Define a new template, add it to Azrael, and spawn an instance.
         frags = [MetaFragment('bar', 'RAW', createFragRaw())]

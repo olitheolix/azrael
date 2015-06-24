@@ -341,8 +341,8 @@ class Clerk(config.AzraelProcess):
     # These methods service Client requests.
     # ----------------------------------------------------------------------
     @typecheck
-    def controlParts(self, objID: int, cmd_boosters: (list, tuple),
-                     cmd_factories: (list, tuple)):
+    def controlParts(self, objID: int, cmd_boosters: (tuple, list),
+                     cmd_factories: (tuple, list)):
         """
         Issue commands to individual parts of the ``objID``.
 

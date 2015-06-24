@@ -798,8 +798,8 @@ class Booster(_Booster):
     :return Booster: compiled booster description.
     """
     @typecheck
-    def __new__(cls, partID: str, pos: (list, np.ndarray),
-                direction: (list, np.ndarray), minval: (int, float),
+    def __new__(cls, partID: str, pos: (tuple, list, np.ndarray),
+                direction: (tuple, list, np.ndarray), minval: (int, float),
                 maxval: (int, float), force: (int, float)):
         try:
             # Verify the inputs.
@@ -896,9 +896,9 @@ _CmdFactory = namedtuple('CmdFactory', 'partID exit_speed')
 
 class Factory(_Factory):
     @typecheck
-    def __new__(cls, partID: str, pos: (list, np.ndarray),
-                direction: (list, np.ndarray), templateID: str,
-                exit_speed: (list, np.ndarray)):
+    def __new__(cls, partID: str, pos: (tuple, list, np.ndarray),
+                direction: (tuple, list, np.ndarray), templateID: str,
+                exit_speed: (tuple, list, np.ndarray)):
         """
         Return a ``Factory`` instance.
 
