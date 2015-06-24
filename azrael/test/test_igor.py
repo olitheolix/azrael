@@ -23,23 +23,8 @@ import azrael.igor
 
 import unittest.mock as mock
 from IPython import embed as ipshell
-from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.test.test_leonard import killAzrael
 from azrael.test.test import getP2P, get6DofSpring2
-
-
-def isEqualConstraint(ca, cb):
-    try:
-        assert len(ca) == len(cb)
-        ca = ConstraintMeta(**ca)
-        cb = ConstraintMeta(**cb)
-        assert ca.rb_a == cb.rb_a
-        assert ca.rb_b == cb.rb_b
-        assert ca.contype == cb.contype
-        assert list(ca.condata) == list(cb.condata)
-    except (KeyError, TypeError, AssertionError):
-        return False
-    return True
 
 
 # List of all constraint getter functions. This variables is only useful for
