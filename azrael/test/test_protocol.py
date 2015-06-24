@@ -27,7 +27,7 @@ import azrael.leo_api as leoAPI
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
-from azrael.test.test import isEqualBD, getP2P, get6DofSpring2
+from azrael.test.test import getP2P, get6DofSpring2
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta, Template
 
 
@@ -189,10 +189,10 @@ def test_GetBodyState():
 
     # Verify.
     dec_sv = dec_sv.data
-    dec_sv = {int(_): types._RigidBodyState(**dec_sv[_]['sv'])
+    dec_sv = {int(_): types.RigidBodyState(**dec_sv[_]['sv'])
               for _ in dec_sv}
-    assert isEqualBD(dec_sv[1], objs[0]['sv'])
-    assert isEqualBD(dec_sv[2], objs[1]['sv'])
+    assert dec_sv[1] == objs[0]['sv']
+    assert dec_sv[2] == objs[1]['sv']
 
     print('Test passed')
 
