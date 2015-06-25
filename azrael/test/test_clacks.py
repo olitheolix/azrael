@@ -134,13 +134,14 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         azrael.database.init()
         clerk = azrael.clerk.Clerk()
 
-        # Create two Templates with one Raw fragment each.
-        frags_t1 = [FragmentMeta('foo1', 'raw', getFragRaw()),
-                    FragmentMeta('bar2', 'dae', getFragDae()),
-                    FragmentMeta('bar3', 'dae', getFragDae())]
-        frags_t2 = [FragmentMeta('foo4', 'raw', getFragRaw()),
-                    FragmentMeta('foo5', 'raw', getFragRaw()),
-                    FragmentMeta('bar6', 'dae', getFragDae())]
+        # Create two Templates. The first has only one Raw- and two
+        # Collada geometries, the other has it the other way around.
+        frags_t1 = [getFragRaw('foo1'),
+                    getFragDae('bar2'),
+                    getFragDae('bar3')]
+        frags_t2 = [getFragRaw('foo4'),
+                    getFragRaw('foo5'),
+                    getFragDae('bar6')]
         t1 = Template('t1', [getCSSphere()], frags_t1, [], [])
         t2 = Template('t2', [getCSBox()], frags_t2, [], [])
         del frags_t1, frags_t2
@@ -168,13 +169,14 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         azrael.database.init()
         clerk = azrael.clerk.Clerk()
 
-        # Create two Templates with one Raw fragment each.
-        frags_t1 = [FragmentMeta('raw1', 'raw', getFragRaw()),
-                    FragmentMeta('dae2', 'dae', getFragDae()),
-                    FragmentMeta('dae3', 'dae', getFragDae())]
-        frags_t2 = [FragmentMeta('raw4', 'raw', getFragRaw()),
-                    FragmentMeta('raw5', 'raw', getFragRaw()),
-                    FragmentMeta('dae6', 'dae', getFragDae())]
+        # Create two Templates. The first has only one Raw- and two
+        # Collada geometries, the other has it the other way around.
+        frags_t1 = [getFragRaw('raw1'),
+                    getFragDae('dae2'),
+                    getFragDae('dae3')]
+        frags_t2 = [getFragRaw('raw4'),
+                    getFragRaw('raw5'),
+                    getFragDae('dae6')]
         t1 = Template('t1', [getCSSphere()], frags_t1, [], [])
         t2 = Template('t2', [getCSBox()], frags_t2, [], [])
         del frags_t1, frags_t2
@@ -210,13 +212,14 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         azrael.database.init()
         clerk = azrael.clerk.Clerk()
 
-        # Create two Templates with one Raw fragment each.
-        frags_old = [FragmentMeta('name1', 'raw', getFragRaw()),
-                     FragmentMeta('name2', 'dae', getFragDae()),
-                     FragmentMeta('name3', 'dae', getFragDae())]
-        frags_new = [FragmentMeta('name1', 'dae', getFragDae()),
-                     FragmentMeta('name2', 'dae', getFragDae()),
-                     FragmentMeta('name3', 'raw', getFragRaw())]
+        # Create two Templates. The first has only one Raw- and two
+        # Collada geometries, the other has it the other way around.
+        frags_old = [getFragRaw('name1'),
+                     getFragDae('name2'),
+                     getFragDae('name3')]
+        frags_new = [getFragDae('name1'),
+                     getFragDae('name2'),
+                     getFragRaw('name3')]
         t1 = Template('t1', [getCSSphere()], frags_old, [], [])
 
         # Add-, spawn-, and verify the template.
@@ -249,8 +252,8 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         azrael.database.init()
         clerk = azrael.clerk.Clerk()
 
-        # Create two Templates with one Raw fragment each.
-        frags = [FragmentMeta('name1', 'raw', getFragRaw())]
+        # Create a Template.
+        frags = [getFragRaw('name1')]
         t1 = Template('t1', [getCSSphere()], frags, [], [])
 
         # Add-, spawn-, and verify the template.
