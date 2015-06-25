@@ -573,20 +573,20 @@ class Clerk(config.AzraelProcess):
             bulk = db.initialize_unordered_bulk_op()
 
             # Add each template to the bulk.
-            for tt in templates:
+            for template in templates:
                 # Convenience.
-                frags = tt.fragments
+                frags = template.fragments
 
                 # Ensure the AIDs of all fragments are unique.
                 if len(set([_.aid for _ in frags])) < len(frags):
                     msg = 'Not all fragment IDs in template <{}> are unique'
-                    msg = msg.format(tt.aid)
+                    msg = msg.format(template.aid)
                     return RetVal(False, msg, None)
 
                 # Ask Dibbler to add the template. Abort immediately if Dibbler
-                # came back with an error (should be impossible, but just to
+                # comes back with an error (should be impossible, but just to
                 # be sure).
-                ret = self.dibbler.addTemplate(tt)
+                ret = self.dibbler.addTemplate(template)
                 if not ret.ok:
                     return ret
 
@@ -597,16 +597,16 @@ class Clerk(config.AzraelProcess):
 
                 # Compile the Mongo document for the new template.
                 data = {
-                    'url': config.url_templates + '/' + tt.aid,
-                    'aid': tt.aid,
-                    'cshapes': tt.cshapes,
-                    'boosters': tt.boosters,
-                    'factories': tt.factories,
+                    'url': config.url_templates + '/' + template.aid,
+                    'aid': template.aid,
+                    'cshapes': template.cshapes,
+                    'boosters': template.boosters,
+                    'factories': template.factories,
                     'fragments': frags}
                 del frags
 
                 # Add the template to the database.
-                query = {'templateID': tt.aid}
+                query = {'templateID': template.aid}
                 bulk.find(query).upsert().update({'$setOnInsert': data})
 
         with util.Timeit('clerk.addTemplates_db') as timeit:
