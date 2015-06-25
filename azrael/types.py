@@ -396,10 +396,13 @@ class FragmentMeta(_FragmentMeta):
         return super().__new__(cls, aid, fragtype, frag)
 
     def _asdict(self):
-        if self.fragtype.upper() == '_NONE':
+        if self.fragtype.upper() == '_NONE_':
             return OrderedDict(zip(self._fields, self))
         else:
-            tmp = self._replace(fragdata=self.fragdata._asdict())
+            if self.fragdata is None:
+                tmp = self
+            else:
+                tmp = self._replace(fragdata=self.fragdata._asdict())
             return OrderedDict(zip(self._fields, tmp))
 
 
@@ -432,20 +435,43 @@ class Template(_Template):
             assert isAIDStringValid(aid)
 
             # Compile- and sanity check all collision shapes.
-            cshapes = [CollShapeMeta(*_) for _ in cshapes]
+            cshapes = [CollShapeMeta(**_) if isinstance(_, dict)
+                       else CollShapeMeta(*_) for _ in cshapes]
 
             # Compile- and sanity check all geometry fragments.
-            frags = [FragmentMeta(*_) for _ in fragments]
-        except (TypeError, AssertionError):
+            fragments = [FragmentMeta(**_) if isinstance(_, dict)
+                         else FragmentMeta(*_)
+                         for _ in fragments]
+
+            # Compile- and sanity check all boosters.
+            boosters = [Booster(**_) if isinstance(_, dict)
+                         else Booster(*_)
+                        for _ in boosters]
+
+            # Compile- and sanity check all factories.
+            factories = [Factory(**_) if isinstance(_, dict)
+                         else Factory(*_)
+                         for _ in factories]
+        except (TypeError, AssertionError) as err:
+            raise err
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, aid, cshapes, frags, boosters, factories)
+        return super().__new__(cls, aid, cshapes, fragments, boosters, factories)
 
     def _asdict(self):
-        return OrderedDict(zip(self._fields, self))
+        cshapes = [_._asdict() for _ in self.cshapes]
+        fragments = [_._asdict() for _ in self.fragments]
+        boosters = [_._asdict() for _ in self.boosters]
+        factories = [_._asdict() for _ in self.factories]
+        tmp = self._replace(cshapes=cshapes,
+                            fragments=fragments,
+                            boosters=boosters,
+                            factories=factories)
+
+        return OrderedDict(zip(self._fields, tmp))
 
 
 class FragState(_FragState):
@@ -513,13 +539,25 @@ class CollShapeMeta(_CollShapeMeta):
             # Compile the collision shape data.
             cstype = cstype.upper()
             if cstype == 'SPHERE':
-                csdata = CollShapeSphere(*csdata)
+                if isinstance(csdata, dict):
+                    csdata = CollShapeSphere(**csdata)
+                else:
+                    csdata = CollShapeSphere(*csdata)
             elif cstype == 'BOX':
-                csdata = CollShapeBox(*csdata)
+                if isinstance(csdata, dict):
+                    csdata = CollShapeBox(**csdata)
+                else:
+                    csdata = CollShapeBox(*csdata)
             elif cstype == 'EMPTY':
-                csdata = CollShapeEmpty(*csdata)
+                if isinstance(csdata, dict):
+                    csdata = CollShapeEmpty(**csdata)
+                else:
+                    csdata = CollShapeEmpty(*csdata)
             elif cstype == 'PLANE':
-                csdata = CollShapePlane(*csdata)
+                if isinstance(csdata, dict):
+                    csdata = CollShapePlane(**csdata)
+                else:
+                    csdata = CollShapePlane(*csdata)
             else:
                 assert False
         except (TypeError, AssertionError):
@@ -531,7 +569,9 @@ class CollShapeMeta(_CollShapeMeta):
         return super().__new__(cls, aid, cstype, position, rotation, csdata)
 
     def _asdict(self):
-        return OrderedDict(zip(self._fields, self))
+        csdata = self.csdata._asdict()
+        tmp = self._replace(csdata=csdata)
+        return OrderedDict(zip(self._fields, tmp))
 
 
 class CollShapeEmpty(_CollShapeEmpty):
@@ -848,6 +888,9 @@ class Booster(_Booster):
     def __ne__(self, ref):
         return not self.__eq__(ref)
 
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
 
 class CmdBooster(_CmdBooster):
     """
@@ -950,6 +993,9 @@ class Factory(_Factory):
                 if a != b:
                     return False
         return True
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
 
 
 class CmdFactory(_CmdFactory):
