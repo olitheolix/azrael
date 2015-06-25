@@ -60,7 +60,29 @@ def getCSPlane(aid='csplane', pos=[0, 0, 0], rot=[0, 0, 0, 1],
     return CollShapeMeta(aid, 'plane', pos, rot, CollShapePlane(normal, ofs))
 
 
-def getFragDae():
+def getFragNone(aid='frag_none'):
+    """
+    Convenience function to construct an empty geometry element.
+    """
+    return FragmentMeta(aid=aid, fragtype='_none_', fragdata=None)
+
+
+def getFragRaw(aid='frag_raw'):
+    """
+    Convenience function to construct a valid Raw geometry.
+    """
+    vert = np.random.randint(0, 100, 9).tolist()
+    uv = np.random.randint(0, 100, 6).tolist()
+    rgb = np.random.randint(0, 100, 3).tolist()
+
+    geo = FragRaw(vert, uv, rgb)
+    return FragmentMeta(aid=aid, fragtype='RAW', fragdata=geo)
+
+
+def getFragDae(aid='frag_dae'):
+    """
+    Convenience function to construct a valid Collada geometry.
+    """
     b = os.path.dirname(__file__)
     dae_file = open(b + '/cube.dae', 'rb').read()
     dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
@@ -69,17 +91,11 @@ def getFragDae():
     dae_file = base64.b64encode(dae_file).decode('utf8')
     dae_rgb1 = base64.b64encode(dae_rgb1).decode('utf8')
     dae_rgb2 = base64.b64encode(dae_rgb2).decode('utf8')
-    frag = FragDae(dae=dae_file,
+    geo = FragDae(dae=dae_file,
                    rgb={'rgb1.png': dae_rgb1,
                         'rgb2.jpg': dae_rgb2})
-    return frag
 
-
-def getFragRaw():
-    vert = np.random.randint(0, 100, 9).tolist()
-    uv = np.random.randint(0, 100, 6).tolist()
-    rgb = np.random.randint(0, 100, 3).tolist()
-    return FragRaw(vert, uv, rgb)
+    return FragmentMeta(aid=aid, fragtype='DAE', fragdata=geo)
 
 
 def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2,
