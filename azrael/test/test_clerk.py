@@ -61,7 +61,7 @@ class TestClerk:
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, cube.
-        frag = [FragmentMeta('NoName', 'raw', getFragRaw())]
+        frag = [getFragRaw('NoName')]
         t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
         t3 = Template('_templateCube', [getCSBox()], frag, [], [])
@@ -143,7 +143,7 @@ class TestClerk:
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Compile a template structure.
-        frags = [FragmentMeta('foo', 'raw', getFragRaw())]
+        frags = [getFragRaw('foo')]
         temp = Template('bar', [cs], frags, [], [])
 
         # Add template when 'saveModel' fails.
@@ -228,8 +228,8 @@ class TestClerk:
         name_1, name_2 = 't1', 't2'
 
         # Define templates.
-        frags_1 = [FragmentMeta('foo', 'raw', getFragRaw())]
-        frags_2 = [FragmentMeta('foo', 'raw', getFragRaw())]
+        frags_1 = [getFragRaw('foo')]
+        frags_2 = [getFragRaw('foo')]
         t1 = Template(name_1, [getCSSphere()], frags_1, [], [])
         t2 = Template(name_2, [getCSSphere()], frags_2, [], [])
 
@@ -562,12 +562,10 @@ class TestClerk:
             partID='0', pos=(1, 0, 0), direction=(1, 0, 0),
             minval=0, maxval=1, force=0)
 
-        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
-
         # Define a new template with two boosters and add it to Azrael.
         template = Template('t1',
                             cshapes=[getCSSphere()],
-                            fragments=frags,
+                            fragments=[getFragRaw('bar')],
                             boosters=[booster],
                             factories=[])
         assert clerk.addTemplates([template]).ok
@@ -632,8 +630,7 @@ class TestClerk:
             templateID='_templateCube', exit_speed=(0, 1))
 
         # Define a new template, add it to Azrael, and spawn an instance.
-        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
-        temp = Template('t1', [getCSSphere()], frags, [b0], [f0])
+        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [b0], [f0])
         assert clerk.addTemplates([temp]).ok
         sv = types.RigidBodyState()
         ret = clerk.spawn([(temp.aid, sv)])
@@ -685,8 +682,8 @@ class TestClerk:
                            minval=0, maxval=0.5, force=0)
 
         # Define a new template with two boosters and add it to Azrael.
-        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
-        temp = Template('t1', [getCSSphere()], frags, [b0, b1], [])
+        temp = Template('t1', [getCSSphere()],
+                        [getFragRaw('bar')], [b0, b1], [])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn an instance of the template.
@@ -760,8 +757,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
-        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
-        temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
+        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -832,8 +828,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
-        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
-        temp = Template('t1', [getCSSphere()], frags, [], [f0, f1])
+        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -933,8 +928,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
-        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
-        temp = Template('t1', [getCSSphere()], frags, [b0, b1], [f0, f1])
+        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [b0, b1], [f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -1039,8 +1033,7 @@ class TestClerk:
         f_dae = getFragDae()
 
         # Put both fragments into a valid list of FragmentMetas.
-        frags = [FragmentMeta('f_raw', 'RAW', f_raw),
-                 FragmentMeta('f_dae', 'DAE', f_dae)]
+        frags = [getFragRaw('f_raw'), getFragDae('f_dae')]
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
@@ -1104,8 +1097,7 @@ class TestClerk:
         sv = types.RigidBodyState()
 
         # Add a valid template and verify it now exists in Azrael.
-        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
-        temp = Template('foo', [getCSSphere()], frags, [], [])
+        temp = Template('foo', [getCSSphere()], [getFragRaw('bar')], [], [])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
@@ -1123,8 +1115,7 @@ class TestClerk:
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
-        frags = [FragmentMeta('bar', 'RAW', getFragRaw())]
-        assert clerk.setFragmentGeometries(objID0, frags).ok
+        assert clerk.setFragmentGeometries(objID0, [getFragRaw('bar')]).ok
 
         # Verify that the new 'version' flag is now different.
         ret = clerk.getBodyStates([objID0])
@@ -1158,8 +1149,7 @@ class TestClerk:
                            minval=-1, maxval=1, force=0)
 
         # Define a template with one fragment.
-        frags = [FragmentMeta('foo', 'RAW', getFragRaw())]
-        t1 = Template('t1', [getCSSphere()], frags, [b0, b1], [])
+        t1 = Template('t1', [getCSSphere()], [getFragRaw('foo')], [b0, b1], [])
 
         # Add the template and spawn two instances.
         assert clerk.addTemplates([t1]).ok
@@ -1232,8 +1222,7 @@ class TestClerk:
         sv = types.RigidBodyState()
 
         # Define a new template with one fragment.
-        frags = [FragmentMeta('foo', 'RAW', getFragRaw())]
-        t1 = Template('t1', [getCSSphere()], fragments=frags,
+        t1 = Template('t1', [getCSSphere()], fragments=[getFragRaw('foo')],
                       boosters=[], factories=[])
 
         # Add the template to Azrael, spawn two instances, and make sure
@@ -1361,12 +1350,10 @@ class TestClerk:
             assert _frags[name_2] == FragState(name_2, scale_2, pos_2, rot_2)
             del ret, _frags
 
-        # Create a raw Fragment.
-        f_raw = getFragRaw()
-        f_dae = getFragDae()
-
-        frags = [FragmentMeta('10', 'RAW', f_raw),
-                 FragmentMeta('test', 'DAE', f_dae)]
+        # Create two fragments.
+        f_raw = getFragRaw('10')
+        f_dae = getFragDae('test')
+        frags = [f_raw, f_dae]
 
         t1 = Template('t1', cs, frags, boosters=[], factories=[])
         assert clerk.addTemplates([t1]).ok
@@ -1425,7 +1412,7 @@ class TestClerk:
         url = base_url + data['10']['url'] + '/model.json'
         tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
-        assert FragRaw(**tmp) == f_raw
+        assert FragRaw(**tmp) == f_raw.fragdata
 
         # Download and verify the dae file. Note that the file name itself
         # matches the name of the fragment (ie. 'test'), *not* the name of the
@@ -1433,23 +1420,21 @@ class TestClerk:
         # fixme: use FragDAE.__eq__ method for thi
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.dae)
+        assert tmp == base64.b64decode(f_dae.fragdata.dae)
 
         # Download and verify the first texture.
         url = base_url + data['test']['url'] + '/rgb1.png'
         tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.rgb['rgb1.png'])
+        assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb1.png'])
 
         # Download and verify the second texture.
         url = base_url + data['test']['url'] + '/rgb2.jpg'
         tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.rgb['rgb2.jpg'])
+        assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb2.jpg'])
 
         # Change the fragment geometries.
-        f_raw = getFragRaw()
-        frags = [FragmentMeta('10', 'RAW', f_raw),
-                 FragmentMeta('test', 'DAE', f_dae)]
-        assert clerk.setFragmentGeometries(objID, frags).ok
+        f_raw = getFragRaw('10')
+        assert clerk.setFragmentGeometries(objID, [f_raw, f_dae]).ok
         ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
         data = ret.data[objID]
@@ -1459,7 +1444,7 @@ class TestClerk:
         url = base_url + data['10']['url'] + '/model.json'
         tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
-        assert FragRaw(**tmp) == f_raw
+        assert FragRaw(**tmp) == f_raw.fragdata
 
         # Download and verify the dae file. Note that the file name itself
         # matches the name of the fragment (ie. 'test'), *not* the name of the
@@ -1467,17 +1452,17 @@ class TestClerk:
         # fixme: use FragDAE.__eq__ method for thi
         url = base_url + data['test']['url'] + '/test'
         tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.dae)
+        assert tmp == base64.b64decode(f_dae.fragdata.dae)
 
         # Download and verify the first texture.
         url = base_url + data['test']['url'] + '/rgb1.png'
         tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.rgb['rgb1.png'])
+        assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb1.png'])
 
         # Download and verify the second texture.
         url = base_url + data['test']['url'] + '/rgb2.jpg'
         tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.rgb['rgb2.jpg'])
+        assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb2.jpg'])
 
         clacks.terminate()
         clacks.join()
