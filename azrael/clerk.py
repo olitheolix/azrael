@@ -928,7 +928,7 @@ class Clerk(config.AzraelProcess):
                 return ret
 
             # If the fragment type is '_none_' then remove it altogether.
-            if frag.fragtype == '_none_':
+            if frag.fragtype.upper() == '_NONE_':
                 update({'objID': objID},
                        {'$unset': {'fragState.{}'.format(frag.aid): True}})
 
