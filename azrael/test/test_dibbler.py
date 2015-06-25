@@ -23,7 +23,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
-from azrael.test.test import getFragRaw, getFragDae
+from azrael.test.test import getFragRaw, getFragDae, getFragNone
 
 
 class TestDibbler:
@@ -113,8 +113,8 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 0)
 
         # Define a template for this test.
-        frag = [FragmentMeta('NoNameRaw', 'raw', getFragRaw())]
-        t_raw = Template('_templateEmpty', [], frag, [], [])
+        frag = getFragRaw()
+        t_raw = Template('_templateEmpty', [], [frag], [], [])
 
         # Add the first template and verify that the database now contains
         # exactly two files (a meta file, and the actual fragment data).
@@ -123,7 +123,7 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 2)
 
         # Fetch- and verify the model.
-        self.verifyRaw(ret.data['url'], frag[0])
+        self.verifyRaw(ret.data['url'], frag)
 
     def test_addDaeTemplate(self):
         """
@@ -132,8 +132,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define a template for this test.
-        frag = [FragmentMeta('NoNameDae', 'dae', getFragDae())]
-        t_dae = Template('_templateEmpty', [], frag, [], [])
+        frag = getFragDae()
+        t_dae = Template('_templateEmpty', [], [frag], [], [])
 
         # Create a Dibbler instance and flush all data.
         assert dibbler.getNumFiles() == (True, None, 0)
@@ -144,7 +144,7 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 4)
 
         # Fetch- and verify the model.
-        self.verifyDae(ret.data['url'], frag[0])
+        self.verifyDae(ret.data['url'], frag)
 
     def test_invalid(self):
         """
@@ -162,8 +162,8 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = FragmentMeta('fragname_raw', 'raw', getFragRaw())
-        frag_dae = FragmentMeta('fragname_dae', 'dae', getFragDae())
+        frag_raw = getFragRaw()
+        frag_dae = getFragDae()
         t_raw = Template('t_name_raw', [], [frag_raw], [], [])
         t_dae = Template('t_name_dae', [], [frag_dae], [], [])
 
@@ -203,13 +203,8 @@ class TestDibbler:
 
         # The original template has two fragments, and we will update one of
         # them.
-        frags_orig = [
-            FragmentMeta('fname_1', 'raw', getFragRaw()),
-            FragmentMeta('fname_2', 'dae', getFragDae())
-        ]
-        frags_new = [
-            FragmentMeta('fname_1', 'dae', getFragDae()),
-        ]
+        frags_orig = [getFragRaw('fname_1'), getFragDae('fname_2')]
+        frags_new = [getFragDae('fname_1')]
         t1 = Template('t1', [], frags_orig, [], [])
 
         # Add the template and spawn two instances.
@@ -264,9 +259,9 @@ class TestDibbler:
 
         # The original template has the following three fragments:
         frags_orig = [
-            FragmentMeta('fname_1', 'raw', getFragRaw()),
-            FragmentMeta('fname_2', 'dae', getFragDae()),
-            FragmentMeta('fname_3', 'raw', getFragRaw())
+            getFragRaw('fname_1'),
+            getFragDae('fname_2'),
+            getFragRaw('fname_3')
         ]
         t1 = Template('t1', [], frags_orig, [], [])
 
@@ -274,8 +269,8 @@ class TestDibbler:
         # keeping the first intact, removing the second, and modifying the
         # fragment type for the third one.
         frags_new = [
-            FragmentMeta('fname_2', '_none_', None),
-            FragmentMeta('fname_3', 'dae', getFragDae())
+            getFragNone('fname_2'),
+            getFragDae('fname_3'),
         ]
 
         # Add the template, spawn one instance, and verify all fragments.
@@ -314,10 +309,10 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = [FragmentMeta('frag_raw', 'raw', getFragRaw())]
-        frag_dae = [FragmentMeta('frag_dae', 'dae', getFragDae())]
-        t11 = Template('name11', [], frag_raw, [], [])
-        t1 = Template('name1', [], frag_dae, [], [])
+        frag_raw = getFragRaw()
+        frag_dae = getFragDae()
+        t11 = Template('name11', [], [frag_raw], [], [])
+        t1 = Template('name1', [], [frag_dae], [], [])
 
         # Verify that Dibbler is pristine.
         assert dibbler.getNumFiles() == (True, None, 0)
@@ -325,13 +320,13 @@ class TestDibbler:
         # Add- and verify the Raw template.
         ret = dibbler.addTemplate(t11)
         assert dibbler.getNumFiles() == (True, None, 2)
-        self.verifyRaw(ret.data['url'], frag_raw[0])
+        self.verifyRaw(ret.data['url'], frag_raw)
 
         # Remove the Raw template and ensure it does not exist anymore.
         assert dibbler.deleteTemplate('name11').ok
         assert dibbler.getNumFiles() == (True, None, 0)
         with pytest.raises(AssertionError):
-            self.verifyRaw(ret.data['url'], frag_raw[0])
+            self.verifyRaw(ret.data['url'], frag_raw)
 
         # Attempt to remove the Raw template once more. Dibbler must not delte
         # any files, albeit the call itself must succeed.
@@ -343,15 +338,15 @@ class TestDibbler:
         ret_raw = dibbler.addTemplate(t11)
         ret_dae = dibbler.addTemplate(t1)
         assert dibbler.getNumFiles() == (True, None, 6)
-        self.verifyRaw(ret_raw.data['url'], frag_raw[0])
-        self.verifyDae(ret_dae.data['url'], frag_dae[0])
+        self.verifyRaw(ret_raw.data['url'], frag_raw)
+        self.verifyDae(ret_dae.data['url'], frag_dae)
 
         # Remove the Collada template whose name is a substring of the first.
         assert dibbler.deleteTemplate('name1') == (True, None, 4)
         assert dibbler.getNumFiles() == (True, None, 2)
-        self.verifyRaw(ret_raw.data['url'], frag_raw[0])
+        self.verifyRaw(ret_raw.data['url'], frag_raw)
         with pytest.raises(AssertionError):
-            self.verifyRaw(ret_dae.data['url'], frag_dae[0])
+            self.verifyRaw(ret_dae.data['url'], frag_dae)
 
         # Remove the Collada template again. No files must be deleted this
         # time.
@@ -368,9 +363,9 @@ class TestDibbler:
         assert dibbler.deleteTemplate('name11') == (True, None, 2)
         assert dibbler.getNumFiles() == (True, None, 0)
         with pytest.raises(AssertionError):
-            self.verifyRaw(ret_raw.data['url'], frag_raw[0])
+            self.verifyRaw(ret_raw.data['url'], frag_raw)
         with pytest.raises(AssertionError):
-            self.verifyRaw(ret_dae.data['url'], frag_dae[0])
+            self.verifyRaw(ret_dae.data['url'], frag_dae)
 
     def test_deleteInstance(self):
         """
@@ -379,10 +374,10 @@ class TestDibbler:
         dibbler = self.dibbler
 
         # Define two templates.
-        frag_raw = [FragmentMeta('frag_raw', 'raw', getFragRaw())]
-        frag_dae = [FragmentMeta('frag_dae', 'dae', getFragDae())]
-        t_raw = Template('temp_raw', [], frag_raw, [], [])
-        t_dae = Template('temp_dae', [], frag_dae, [], [])
+        frag_raw = getFragRaw()
+        frag_dae = getFragDae()
+        t_raw = Template('temp_raw', [], [frag_raw], [], [])
+        t_dae = Template('temp_dae', [], [frag_dae], [], [])
 
         # Verify that Dibbler is empty.
         assert dibbler.getNumFiles() == (True, None, 0)
@@ -392,18 +387,18 @@ class TestDibbler:
         # (meta.json plus 1 dae file plus 2 textures).
         ret = dibbler.addTemplate(t_raw)
         assert dibbler.getNumFiles() == (True, None, 2)
-        self.verifyRaw(ret.data['url'], frag_raw[0])
+        self.verifyRaw(ret.data['url'], frag_raw)
         ret = dibbler.addTemplate(t_dae)
         assert dibbler.getNumFiles() == (True, None, 2 + 4)
-        self.verifyDae(ret.data['url'], frag_dae[0])
+        self.verifyDae(ret.data['url'], frag_dae)
 
         # Spawn some instances.
         assert dibbler.spawnTemplate('temp_raw', '1').ok
         assert dibbler.spawnTemplate('temp_dae', '2').ok
         assert dibbler.spawnTemplate('temp_raw', '3').ok
-        self.verifyRaw('{}/1'.format(config.url_instances), frag_raw[0])
-        self.verifyDae('{}/2'.format(config.url_instances), frag_dae[0])
-        self.verifyRaw('{}/3'.format(config.url_instances), frag_raw[0])
+        self.verifyRaw('{}/1'.format(config.url_instances), frag_raw)
+        self.verifyDae('{}/2'.format(config.url_instances), frag_dae)
+        self.verifyRaw('{}/3'.format(config.url_instances), frag_raw)
         base_cnt = (2 + 4) + 2 * 2 + 1 * 4
         assert dibbler.getNumFiles() == (True, None, base_cnt)
 
@@ -418,9 +413,9 @@ class TestDibbler:
         base_cnt -= 2
         assert dibbler.getNumFiles() == (True, None, base_cnt)
         with pytest.raises(AssertionError):
-            self.verifyRaw('{}/1'.format(config.url_instances), frag_raw[0])
-        self.verifyDae('{}/2'.format(config.url_instances), frag_dae[0])
-        self.verifyRaw('{}/3'.format(config.url_instances), frag_raw[0])
+            self.verifyRaw('{}/1'.format(config.url_instances), frag_raw)
+        self.verifyDae('{}/2'.format(config.url_instances), frag_dae)
+        self.verifyRaw('{}/3'.format(config.url_instances), frag_raw)
 
         # Remove the same instance again. This must succeed but Dibbler must
         # not remove any files.
@@ -432,18 +427,18 @@ class TestDibbler:
         base_cnt -= 4
         assert dibbler.getNumFiles() == (True, None, base_cnt)
         with pytest.raises(AssertionError):
-            self.verifyRaw('{}/1'.format(config.url_instances), frag_raw[0])
+            self.verifyRaw('{}/1'.format(config.url_instances), frag_raw)
         with pytest.raises(AssertionError):
-            self.verifyDae('{}/2'.format(config.url_instances), frag_dae[0])
-        self.verifyRaw('{}/3'.format(config.url_instances), frag_raw[0])
+            self.verifyDae('{}/2'.format(config.url_instances), frag_dae)
+        self.verifyRaw('{}/3'.format(config.url_instances), frag_raw)
 
         # Remove the second Raw instance.
         assert dibbler.deleteInstance('3') == (True, None, 2)
         base_cnt -= 2
         assert dibbler.getNumFiles() == (True, None, base_cnt)
         with pytest.raises(AssertionError):
-            self.verifyRaw('{}/1'.format(config.url_instances), frag_raw[0])
+            self.verifyRaw('{}/1'.format(config.url_instances), frag_raw)
         with pytest.raises(AssertionError):
-            self.verifyDae('{}/2'.format(config.url_instances), frag_dae[0])
+            self.verifyDae('{}/2'.format(config.url_instances), frag_dae)
         with pytest.raises(AssertionError):
-            self.verifyRaw('{}/3'.format(config.url_instances), frag_raw[0])
+            self.verifyRaw('{}/3'.format(config.url_instances), frag_raw)
