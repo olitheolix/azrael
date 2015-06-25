@@ -24,7 +24,7 @@ from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane, FragState
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
-from azrael.test.test import getFragRaw, getFragDae
+from azrael.test.test import getFragRaw, getFragDae, getFragNone
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
 from azrael.test.test import getP2P, get6DofSpring2
 
@@ -90,3 +90,8 @@ class TestDibbler:
             con_b = Getter()
             assert con_a == con_b
             assert self.isJsonCompatible(con_a, ConstraintMeta)
+
+    def test_FragmentMeta(self):
+        for Getter in (getFragRaw, getFragDae, getFragNone):
+            frag_a = Getter()
+            assert self.isJsonCompatible(frag_a, FragmentMeta)
