@@ -116,10 +116,11 @@ class Dibbler:
         The "directory" structure will contain the Collada file named after the
         model (without the .dae extension), plus any texture files. For
         instance:
-          location/model_name/model_name
-          location/model_name/pic1.png
-          location/model_name/pic2.jpg
-          location/model_name/blah.jpg
+
+        * location/model_name/model_name
+        * location/model_name/pic1.png
+        * location/model_name/pic2.jpg
+        * location/model_name/blah.jpg
 
         .. note:: ``location`` will usually look like a path and file name (eg.
                   '/instances/1/') but as far as the storage is
@@ -226,10 +227,10 @@ class Dibbler:
 
         For instance, if location='/foo' the the "directory" structure in the
         model databae will look like this:
-           /foo/meta.json
-           /foo/frag_name_1/...
-           /foo/frag_name_2/...
-           ...
+
+        * /foo/meta.json
+        * /foo/frag_name_1/...
+        * /foo/frag_name_2/...
 
         The "meta.json" file contains a dictionary with the fragment names
         (keys) and their types (values), eg. {'foo': 'raw', 'bar': 'dae'}.

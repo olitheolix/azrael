@@ -860,13 +860,13 @@ class Clerk(config.AzraelProcess):
         """
         Return information about the fragments of each object in ``objIDs``.
 
-        This method returns a dictionary of the form
+        This method returns a dictionary of the form::
 
-         {objID_1: {'type': 'raw', 'url': 'http:...'},
-          objID_2: {'type': 'dae', 'url': 'http:...'},
-          objID_3: None,
-          ...
-        }
+            {objID_1: {'type': 'raw', 'url': 'http:...'},
+             objID_2: {'type': 'dae', 'url': 'http:...'},
+             objID_3: None,
+             ...
+            }
 
         Every element in ``objIDs`` will be a key in the returned dictionary.
         However, the corresponding value will be *None* if the object does not

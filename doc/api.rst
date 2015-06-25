@@ -1,15 +1,16 @@
 Azrael package
 ==============
 
-Subpackages
------------
-
-.. toctree::
-
-    azrael.bullet
-
 Submodules
 ----------
+
+azrael.bullet_api module
+------------------------
+
+.. automodule:: azrael.bullet_api
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 azrael.clacks module
 --------------------
@@ -51,26 +52,34 @@ azrael.database module
     :undoc-members:
     :show-inheritance:
 
+azrael.dibbler module
+----------------------
+
+.. automodule:: azrael.dibbler
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+azrael.igor module
+----------------------
+
+.. automodule:: azrael.igor
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+azrael.leo_api module
+---------------------
+
+.. automodule:: azrael.leo_api
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 azrael.leonard module
 ---------------------
 
 .. automodule:: azrael.leonard
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-azrael.parts module
--------------------
-
-.. automodule:: azrael.parts
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-azrael.physics_interface module
--------------------------------
-
-.. automodule:: azrael.physics_interface
     :members:
     :undoc-members:
     :show-inheritance:
@@ -82,6 +91,15 @@ azrael.protocol module
     :members:
     :undoc-members:
     :show-inheritance:
+
+azrael.types module
+-------------------------------
+
+.. automodule:: azrael.types
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 azrael.util module
 ------------------

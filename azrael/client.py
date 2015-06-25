@@ -279,16 +279,19 @@ class Client():
         """
         Return links to the models for the objects in ``objIDs``.
 
-        {objID_1:
-            {name_1: {'type': 'raw', 'url': 'http:...'},
-             name_2: {'type': 'raw', 'url': 'http:...'},...
+        Example::
+
+            {objID_1:
+                {name_1: {'type': 'raw', 'url': 'http:...'},
+                 name_2: {'type': 'raw', 'url': 'http:...'},
+                }
+             objID_2: {name_1: {'type': 'dae', 'url': 'http://somewhere'}},
             }
-         objID_2: {name_1: {'type': 'dae', 'url': 'http:...'},...
-        }
 
         :param int objIDs: list of objIDs to query.
         :return: links to model data for all ``objIDs``.
         :rtype: dict
+
         """
         return self.serialiseAndSend('get_fragment_geometries', objIDs)
 

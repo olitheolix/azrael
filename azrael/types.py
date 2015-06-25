@@ -170,9 +170,7 @@ def typecheck(func_handle):
     .. note:: the check is skipped if the value (either passed or by
               default) is **None**.
 
-    |Raises|
-
-    * **TypeError** if at least one argument has an invalid type.
+    Raises **TypeError** if at least one argument has an invalid type.
     """
     def checkType(var_name, var_val, annot):
         # Retrieve the annotation for this variable and determine

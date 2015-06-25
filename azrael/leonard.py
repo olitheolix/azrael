@@ -62,14 +62,15 @@ def sweeping(data: dict, dim: str):
     the overlapping sets.
 
     The `data` is a list of dictionaries that denotes the half widths of the
-    AABBs in the respective direction:
-      data = {ID_0: {'x': [[xmin_0, xmax_0], [xmin_1, xmax_1], ...],
-                     'y': [[ymin_0, ymax_0], [ymin_1, ymax_1], ...],
-                     'z': [[zmin_0, zmax_0], [zmin_1, zmax_1], ...]},
-              ID_1: {'x': [[xmin_0, xmax_0], ...],
-                     'y': [[ymin_0, ymax_0], ...],
-                     'z': [[zmin_0, zmax_0], ...],},
-              ...}
+    AABBs in the respective direction::
+
+        data = {ID_0: {'x': [[xmin_0, xmax_0], [xmin_1, xmax_1], ...],
+                       'y': [[ymin_0, ymax_0], [ymin_1, ymax_1], ...],
+                       'z': [[zmin_0, zmax_0], [zmin_1, zmax_1], ...]},
+                ID_1: {'x': [[xmin_0, xmax_0], ...],
+                       'y': [[ymin_0, ymax_0], ...],
+                       'z': [[zmin_0, zmax_0], ...],},
+                ...}
 
     The dictionary keys 'x', 'y', and 'z' are (more or less) hard coded,
     and `dim` must refer to one of them (eg dim = 'y' to find the sets that
