@@ -23,7 +23,7 @@ import os
 import base64
 import numpy as np
 
-from azrael.types import FragmentMeta, FragDae, FragRaw
+from azrael.types import FragmentMeta, FragDae, FragRaw, FragNone
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import RigidBodyState, RigidBodyStateOverride
@@ -64,7 +64,7 @@ def getFragNone(aid='frag_none'):
     """
     Convenience function to construct an empty geometry element.
     """
-    return FragmentMeta(aid=aid, fragtype='_none_', fragdata=None)
+    return FragmentMeta(aid=aid, fragtype='_none_', fragdata=FragNone())
 
 
 def getFragRaw(aid='frag_raw'):

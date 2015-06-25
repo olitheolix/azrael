@@ -47,9 +47,10 @@ _Template = namedtuple('_Template', 'aid cshapes fragments boosters factories')
 
 # Fragments.
 _FragmentMeta = namedtuple('_FragmentMeta', 'aid fragtype fragdata')
-_FragState = namedtuple('_FragState', 'aid scale position orientation')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
+FragNone = namedtuple('FragNone', '')
+_FragState = namedtuple('_FragState', 'aid scale position orientation')
 
 # Work package related.
 WPData = namedtuple('WPData', 'aid sv force torque')
@@ -373,9 +374,17 @@ class FragmentMeta(_FragmentMeta):
             else:
                 fragtype = fragtype.upper()
                 if fragtype == 'RAW':
-                    frag = FragRaw(*fragdata)
+                    if isinstance(fragdata, dict):
+                        frag = FragRaw(**fragdata)
+                    else:
+                        frag = FragRaw(*fragdata)
                 elif fragtype == 'DAE':
-                    frag = FragDae(*fragdata)
+                    if isinstance(fragdata, dict):
+                        frag = FragDae(**fragdata)
+                    else:
+                        frag = FragDae(*fragdata)
+                elif fragtype == '_NONE_':
+                    frag = FragNone()
                 else:
                     assert False
         except (TypeError, AssertionError):
@@ -387,7 +396,11 @@ class FragmentMeta(_FragmentMeta):
         return super().__new__(cls, aid, fragtype, frag)
 
     def _asdict(self):
-        return OrderedDict(zip(self._fields, self))
+        if self.fragtype.upper() == '_NONE':
+            return OrderedDict(zip(self._fields, self))
+        else:
+            tmp = self._replace(fragdata=self.fragdata._asdict())
+            return OrderedDict(zip(self._fields, tmp))
 
 
 class Template(_Template):
