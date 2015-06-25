@@ -28,6 +28,7 @@ import azrael.protocol as protocol
 
 from IPython import embed as ipshell
 from azrael.test.test import getP2P, get6DofSpring2
+from azrael.test.test import getFragRaw, getFragDae, getFragNone
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta, Template
 
 
@@ -65,7 +66,7 @@ def test_encoding_get_template(clientType='ZeroMQ'):
     cs = []
     data = {'cshapes': cs, 'boosters': [b0, b1], 'factories': [f0],
             'url': 'http://somewhere',
-            'fragments': FragmentMeta('foo', 'RAW', None)}
+            'fragments': getFragRaw()}
     templates = {template_name: data}
     ok, enc = protocol.FromClerk_GetTemplates_Encode(templates)
 
@@ -280,7 +281,7 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
                          'rgb2.jpg': b64_dae_rgb2})
 
     # Compile a valid Template structure.
-    frags = [FragmentMeta('f_dae', 'DAE', f_dae)]
+    frags = [getFragRaw(), getFragDae(), getFragNone()]
     temp = Template('foo', [], frags, [], [])
 
     # ----------------------------------------------------------------------
@@ -297,10 +298,10 @@ def test_addTemplate_collada(clientType='ZeroMQ'):
     ok, dec = protocol.ToClerk_AddTemplates_Decode(enc)
 
     # Extract the data from the first fragment of the first template.
-    dec_mf = dec[0][0].fragments[0]
+    dec_mf = dec[0][0].fragments
 
     # Compare with the Fragment before it was Base64 encoded.
-    assert dec_mf == frags[0]
+    assert dec_mf == frags
 
     print('Test passed')
 

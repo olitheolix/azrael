@@ -51,7 +51,7 @@ import numpy as np
 from collections import namedtuple
 from azrael.types import typecheck, RetVal, Template
 from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
-from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
+from azrael.types import FragState, FragDae, FragRaw, FragmentMeta, FragNone
 
 from IPython import embed as ipshell
 
@@ -170,6 +170,8 @@ def ToClerk_AddTemplates_Decode(payload: dict):
                 if mf.fragtype.upper() == 'DAE':
                     # Collada format.
                     frags.append(mf._replace(fragdata=FragDae(*mf.fragdata)))
+                elif mf.fragtype.upper() == '_NONE_':
+                    frags.append(mf._replace(fragdata=FragNone()))
                 else:
                     frags.append(mf)
 
