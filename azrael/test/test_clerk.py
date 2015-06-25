@@ -87,41 +87,36 @@ class TestClerk:
         name_1 = '_templateEmpty'
         ret = clerk.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
-        tmp_cs = [CollShapeMeta(*_) for _ in ret.data[name_1]['cshapes']]
-        assert tmp_cs == [getCSEmpty()]
+        assert ret.data[name_1]['template'].cshapes == [getCSEmpty()]
 
         # ... this one is a sphere,...
         name_2 = '_templateSphere'
         ret = clerk.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
-        tmp_cs = [CollShapeMeta(*_) for _ in ret.data[name_2]['cshapes']]
-        assert tmp_cs == [getCSSphere()]
+        assert ret.data[name_2]['template'].cshapes == [getCSSphere()]
 
         # ... this one is a cube,...
         name_3 = '_templateCube'
         ret = clerk.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
-        tmp_cs = [CollShapeMeta(*_) for _ in ret.data[name_3]['cshapes']]
-        assert tmp_cs == [getCSBox()]
+        assert ret.data[name_3]['template'].cshapes == [getCSBox()]
 
         # ... and this one is a static plane.
         name_4 = '_templatePlane'
         ret = clerk.getTemplates([name_4])
         assert ret.ok and (len(ret.data) == 1) and (name_4 in ret.data)
-        tmp_cs = [CollShapeMeta(*_) for _ in ret.data[name_4]['cshapes']]
-        assert tmp_cs == [getCSPlane()]
+        assert ret.data[name_4]['template'].cshapes == [getCSPlane()]
 
         # Retrieve all three again but with a single call.
         ret = clerk.getTemplates([name_1, name_2, name_3, name_4])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3, name_4))
 
-        CSM = CollShapeMeta
         d = ret.data
-        assert [getCSEmpty()] == [CSM(*_) for _ in d[name_1]['cshapes']]
-        assert [getCSSphere()] == [CSM(*_) for _ in d[name_2]['cshapes']]
-        assert [getCSBox()] == [CSM(*_) for _ in d[name_3]['cshapes']]
-        assert [getCSPlane()] == [CSM(*_) for _ in d[name_4]['cshapes']]
+        assert d[name_1]['template'].cshapes == [getCSEmpty()]
+        assert d[name_2]['template'].cshapes == [getCSSphere()]
+        assert d[name_3]['template'].cshapes == [getCSBox()]
+        assert d[name_4]['template'].cshapes == [getCSPlane()]
 
     def test_add_get_template_single(self):
         """
@@ -188,22 +183,19 @@ class TestClerk:
         # Retrieve the just created object and verify the collision shape.
         ret = clerk.getTemplates([temp.aid])
         assert ret.ok
-        assert CollShapeMeta(*ret.data[temp.aid]['cshapes'][0]) == cs
+        assert ret.data[temp.aid]['template'].cshapes == [cs]
 
         # The template must also feature two boosters and one factory.
-        assert len(ret.data[temp.aid]['boosters']) == 2
-        assert len(ret.data[temp.aid]['factories']) == 1
+        assert len(ret.data[temp.aid]['template'].boosters) == 2
+        assert len(ret.data[temp.aid]['template'].factories) == 1
 
         # Explicitly verify the booster- and factory units. The easisest
         # (albeit not most readable) way to do the comparison is to convert the
         # unit descriptions (which are named tuples) to byte strings and
         # compare those.
-        Booster, Factory = types.Booster, types.Factory
-        out_boosters = [Booster(*_) for _ in ret.data[temp.aid]['boosters']]
-        out_factories = [Factory(*_) for _ in ret.data[temp.aid]['factories']]
-        assert b0 in out_boosters
-        assert b1 in out_boosters
-        assert f0 in out_factories
+        assert b0 in ret.data[temp.aid]['template'].boosters
+        assert b1 in ret.data[temp.aid]['template'].boosters
+        assert f0 in ret.data[temp.aid]['template'].factories
 
         # Request the same templates multiple times in a single call. This must
         # return a dictionary with as many keys as there are unique template
@@ -234,17 +226,17 @@ class TestClerk:
             azrael.config.port_clacks)
         name_1, name_2 = 't1', 't2'
 
-        # Define templates.
-        frags_1 = [getFragRaw('foo')]
-        frags_2 = [getFragRaw('foo')]
-        t1 = Template(name_1, [getCSSphere()], frags_1, [], [])
-        t2 = Template(name_2, [getCSSphere()], frags_2, [], [])
+        # Define two valid templates.
+        frag_1 = getFragRaw('foo')
+        frag_2 = getFragRaw('bar')
+        t1 = Template(name_1, [getCSSphere()], [frag_1], [], [])
+        t2 = Template(name_2, [getCSSphere()], [frag_2], [], [])
 
-        # Add two valid templates. This must succeed.
+        # Uploading the templates must succeed.
         assert clerk.addTemplates([t1, t2]).ok
         assert mock_dibbler.addTemplate.call_count == 2
 
-        # Attempt to add the same templates again. This must fail.
+        # Attempt to upload the same templates again. This must fail.
         assert not clerk.addTemplates([t1, t2]).ok
         assert mock_dibbler.addTemplate.call_count == 4
 
@@ -252,17 +244,18 @@ class TestClerk:
         # geometries are stored.
         ret = clerk.getTemplates([name_1])
         assert ret.ok
-        frag = ret.data[name_1]['fragments'][0]
+        frag = ret.data[name_1]['template'].fragments[0]
+
         url_template = config.url_templates
-        assert FragmentMeta(*frag).fragtype == 'RAW'
+        assert (frag.aid, frag.fragtype) == (frag_1.aid, frag_1.fragtype)
         assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
         del ret, frag
 
         # Fetch the second template.
         ret = clerk.getTemplates([name_2])
         assert ret.ok
-        frag = ret.data[name_2]['fragments'][0]
-        assert FragmentMeta(*frag).fragtype == 'RAW'
+        frag = ret.data[name_2]['template'].fragments[0]
+        assert (frag.aid, frag.fragtype) == (frag_2.aid, frag_2.fragtype)
         assert ret.data[name_2]['url'] == config.url_templates + '/' + name_2
         del ret, frag
 

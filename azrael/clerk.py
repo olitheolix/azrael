@@ -49,7 +49,7 @@ import azrael.protocol as protocol
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, Template, CollShapeMeta
-from azrael.types import FragState, FragmentMeta
+from azrael.types import FragState, FragmentMeta, _FragmentMeta
 
 
 class Clerk(config.AzraelProcess):
@@ -368,9 +368,12 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, ret.msg, None)
 
         # Compile a list of all parts defined in the template.
-        booster_t = [types.Booster(*_) for _ in ret.data['boosters']]
+        # fixme2
+#        booster_t = [types.Booster(**_) for _ in ret.data['template'].boosters]
+        booster_t = ret.data['template'].boosters
         booster_t = {_.partID: _ for _ in booster_t}
-        factory_t = [types.Factory(*_) for _ in ret.data['factories']]
+#        factory_t = [types.Factory(**_) for _ in ret.data['template']['factories']]
+        factory_t = ret.data['template'].factories
         factory_t = {_.partID: _ for _ in factory_t}
 
         # Fetch the SV for objID (we need this to determine the orientation of
@@ -498,13 +501,14 @@ class Clerk(config.AzraelProcess):
         # Query the instnace template for ``objID``. Return with an error if it
         # does not exist.
         query = {'objID': objID}
-        doc = db.find_one(query, {'boosters': 1})
+        # fixme2
+        doc = db.find_one(query, {'template.boosters': 1})
         if doc is None:
             msg = 'Object <{}> does not exist'.format(objID)
             return RetVal(False, msg, None)
 
         # Put the Booster entries from the database into Booster tuples.
-        boosters = [types.Booster(*_) for _ in doc['boosters']]
+        boosters = [types.Booster(**_) for _ in doc['template']['boosters']]
         boosters = {_.partID: _ for _ in boosters}
 
         # Tally up the forces exerted by all Boosters on the object.
@@ -532,8 +536,10 @@ class Clerk(config.AzraelProcess):
         # Update the new Booster values in the instance DB. To this end convert
         # the dictionary back to a list because Mongo does not like it if
         # dictionary keys are integers.
+        # fixme2
         boosters = list(boosters.values())
-        db.update(query, {'$set': {'boosters': boosters}})
+        boosters = [_._asdict() for _ in boosters]
+        db.update(query, {'$set': {'template.boosters': boosters}})
 
         # Return the final force and torque as a tuple of tuples.
         out = (force.tolist(), torque.tolist())
@@ -593,16 +599,17 @@ class Clerk(config.AzraelProcess):
                 # We already stored the geometry in Dibbler; here we only add
                 # the meta data (mostly to avoid data duplication) which is why
                 # we delete the 'data' attribute.
-                frags = [frag._replace(fragdata=None) for frag in frags]
+                # fixme2
+                frags = [_._replace(fragdata=None) for _ in template.fragments]
+                template = template._replace(fragments=frags)
+
+                # Fragment URL.
+                url_frag = config.url_templates + '/' + template.aid
 
                 # Compile the Mongo document for the new template.
-                data = {
-                    'url': config.url_templates + '/' + template.aid,
-                    'aid': template.aid,
-                    'cshapes': template.cshapes,
-                    'boosters': template.boosters,
-                    'factories': template.factories,
-                    'fragments': frags}
+                data = {'url': url_frag,
+                        'template': template,
+                        'templateID': template.aid}
                 del frags
 
                 # Add the template to the database.
@@ -664,6 +671,10 @@ class Clerk(config.AzraelProcess):
             self.logit.info(msg)
             return RetVal(False, msg, None)
 
+        # fixme2: these two lines are new; document them.
+        for idx, doc in enumerate(docs):
+            docs[idx]['template'] = Template(*docs[idx]['template'])
+
         # Compile a dictionary of all the templates.
         docs = {_['templateID']: _ for _ in docs}
 
@@ -699,7 +710,8 @@ class Clerk(config.AzraelProcess):
             self.logit.info(msg)
             return RetVal(False, msg, None)
 
-        # Load geometry data and add it to template.
+        # fixme2: this line is new
+        doc['template'] = Template(**doc['template'])
         return RetVal(True, None, doc)
 
     @typecheck
@@ -768,7 +780,8 @@ class Clerk(config.AzraelProcess):
 
                 # Make a copy of the current template dictionary and populate
                 # it with the values that describe the template instance.
-                doc = dict(templates[name])
+                # fixme2: docu string above
+                doc = {'template': templates[name]['template']._asdict()}
                 doc['objID'] = objID
                 doc['version'] = 0
                 doc['templateID'] = name
@@ -791,14 +804,14 @@ class Clerk(config.AzraelProcess):
 
                 # Parse the geometry data to determine all fragment names.
                 # Then compile a neutral initial state for each.
+                # fixme2: the 'aid' lookup is really ugly.
                 doc['fragState'] = {}
-                for f in doc['fragments']:
-                    f = FragmentMeta(*f)
-                    doc['fragState'][f.aid] = FragState(
-                        aid=f.aid,
+                for f in doc['template']['fragments']:
+                    doc['fragState'][f['aid']] = FragState(
+                        aid=f['aid'],
                         scale=1,
-                        position=[0, 0, 0],
-                        orientation=[0, 0, 0, 1])
+                        position=(0, 0, 0),
+                        orientation=(0, 0, 0, 1))
 
                 # Add the new template document.
                 dbDocs.append(doc)
@@ -816,6 +829,7 @@ class Clerk(config.AzraelProcess):
         with util.Timeit('spawn:3 addCmds') as timeit:
             # Compile the list of spawn commands that will be sent to Leonard.
             objs = []
+            # fixme2: the names here are ugly; can I improve it?
             for name, sv, objID in zip(t_names, SVs, objIDs):
                 # Convenience.
                 t = templates[name]
@@ -826,7 +840,7 @@ class Clerk(config.AzraelProcess):
                 # things may happen (eg a space-ship collision shape in the
                 # template database with a simple sphere collision shape when
                 # it is spawned).
-                sv.cshapes[:] = t['cshapes']
+                sv.cshapes[:] = t['template'].cshapes
 
                 # Add the object description to the list.
                 objs.append((objID, sv))
@@ -897,7 +911,11 @@ class Clerk(config.AzraelProcess):
         pj = os.path.join
         for doc in docs:
             u = doc['url']
-            f = [FragmentMeta(*_) for _ in doc['fragments']]
+
+            # Fixme2: is it a good idea to use _FragmentMeta instead of FragmentMeta?
+#            f = [FragmentMeta(*_) for _ in doc['fragments']]
+            f = [_FragmentMeta(_['aid'], _['fragtype'], None)
+                 for _ in doc['template']['fragments']]
             obj = {_.aid: {'type': _.fragtype, 'url': pj(u, _.aid)} for _ in f}
             out[doc['objID']] = obj
         return RetVal(True, None, out)
