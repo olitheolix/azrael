@@ -24,6 +24,7 @@ from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane, FragState
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
+from azrael.types import RigidBodyState
 from azrael.test.test import getFragRaw, getFragDae, getFragNone
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
 from azrael.test.test import getP2P, get6DofSpring2
@@ -95,3 +96,10 @@ class TestDibbler:
         for Getter in (getFragRaw, getFragDae, getFragNone):
             frag_a = Getter()
             assert self.isJsonCompatible(frag_a, FragmentMeta)
+
+    def test_RigidBodyState(self):
+        body_a = RigidBodyState()
+        body_b = RigidBodyState()
+        assert body_a == body_b
+
+        assert self.isJsonCompatible(body_a, RigidBodyState)
