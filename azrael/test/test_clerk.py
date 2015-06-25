@@ -36,7 +36,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.test.test import isEqualBD, getP2P, get6DofSpring2
-from azrael.test.test import getFragRaw, getFragDae, isEqualCS
+from azrael.test.test import getFragRaw, getFragDae
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
@@ -87,34 +87,41 @@ class TestClerk:
         name_1 = '_templateEmpty'
         ret = clerk.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
-        assert isEqualCS(ret.data[name_1]['cshapes'], [getCSEmpty()])
+        tmp_cs = [CollShapeMeta(*_) for _ in ret.data[name_1]['cshapes']]
+        assert tmp_cs == [getCSEmpty()]
 
         # ... this one is a sphere,...
         name_2 = '_templateSphere'
         ret = clerk.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
-        assert isEqualCS(ret.data[name_2]['cshapes'], [getCSSphere()])
+        tmp_cs = [CollShapeMeta(*_) for _ in ret.data[name_2]['cshapes']]
+        assert tmp_cs == [getCSSphere()]
 
         # ... this one is a cube,...
         name_3 = '_templateCube'
         ret = clerk.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
-        assert isEqualCS(ret.data[name_3]['cshapes'], [getCSBox()])
+        tmp_cs = [CollShapeMeta(*_) for _ in ret.data[name_3]['cshapes']]
+        assert tmp_cs == [getCSBox()]
 
         # ... and this one is a static plane.
         name_4 = '_templatePlane'
         ret = clerk.getTemplates([name_4])
         assert ret.ok and (len(ret.data) == 1) and (name_4 in ret.data)
-        assert isEqualCS(ret.data[name_4]['cshapes'], [getCSPlane()])
+        tmp_cs = [CollShapeMeta(*_) for _ in ret.data[name_4]['cshapes']]
+        assert tmp_cs == [getCSPlane()]
 
         # Retrieve all three again but with a single call.
         ret = clerk.getTemplates([name_1, name_2, name_3, name_4])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3, name_4))
-        assert isEqualCS(ret.data[name_1]['cshapes'], [getCSEmpty()])
-        assert isEqualCS(ret.data[name_2]['cshapes'], [getCSSphere()])
-        assert isEqualCS(ret.data[name_3]['cshapes'], [getCSBox()])
-        assert isEqualCS(ret.data[name_4]['cshapes'], [getCSPlane()])
+
+        CSM = CollShapeMeta
+        d = ret.data
+        assert [getCSEmpty()] == [CSM(*_) for _ in d[name_1]['cshapes']]
+        assert [getCSSphere()] == [CSM(*_) for _ in d[name_2]['cshapes']]
+        assert [getCSBox()] == [CSM(*_) for _ in d[name_3]['cshapes']]
+        assert [getCSPlane()] == [CSM(*_) for _ in d[name_4]['cshapes']]
 
     def test_add_get_template_single(self):
         """
@@ -181,7 +188,7 @@ class TestClerk:
         # Retrieve the just created object and verify the collision shape.
         ret = clerk.getTemplates([temp.aid])
         assert ret.ok
-        assert isEqualCS(ret.data[temp.aid]['cshapes'], [cs])
+        assert CollShapeMeta(*ret.data[temp.aid]['cshapes'][0]) == cs
 
         # The template must also feature two boosters and one factory.
         assert len(ret.data[temp.aid]['boosters']) == 2
