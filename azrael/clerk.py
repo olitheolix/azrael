@@ -1091,6 +1091,99 @@ class Clerk(config.AzraelProcess):
         else:
             return RetVal(False, 'Could not update all fragments', None)
 
+    def _packSVData(self, SVs: dict):
+        """
+        Compile the data structure returned by ``get{All}BodyStates``.
+
+        This is a convenience function to remove code duplication.
+
+        The returned dictionary has the following form:
+
+          {objID_1: {'frag': [FragState(), ...], 'sv': _RigidBodyState()},
+           objID_2: {'frag': [FragState(), ...], 'sv': _RigidBodyState()},
+           ...}
+
+        :param dict SVs: SV dictionary. Each key is an object ID and the
+            corresponding value a ``RigidBodyState`` instance.
+        """
+        # Convenience: extract all objIDs from ``SVs``.
+        objIDs = tuple(SVs.keys())
+
+        # Query the version values for all objects.
+        docs = database.dbHandles['ObjInstances'].find(
+            {'objID': {'$in': objIDs}},
+            {'version': 1, 'objID': 1, 'fragState': 1})
+        docs = list(docs)
+
+        # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into two
+        # dictionaries like {objID1: foo, objID2: bar, ...}. This is purely for
+        # readability and convenience a few lines below.
+        version = {_['objID']: _['version'] for _ in docs}
+        fragState = {_['objID']: _['fragState'].values() for _ in docs}
+
+        # Wrap the fragment states into their dedicated tuple type.
+        fragState = {k: [FragState(*_) for _ in v]
+                     for (k, v) in fragState.items()}
+
+        # Add SV and fragment data for all objects. If the objects do not
+        # exist then set the data to *None*.  During that proces also update
+        # the 'version' (this flag indicates geometry changes to the
+        # client).
+        out = {}
+        for objID in objIDs:
+            if (SVs[objID] is None) or (objID not in fragState):
+                out[objID] = None
+                continue
+
+            # Update the 'version' field.
+            out[objID] = {
+                'frag': fragState[objID],
+                'sv': SVs[objID]._replace(version=version[objID])
+            }
+        return RetVal(True, None, out)
+
+    @typecheck
+    def getBodyStates(self, objIDs: (list, tuple)):
+        """
+        Return the state variables for all ``objIDs`` in a dictionary.
+
+        The dictionary keys will be the elements of ``objIDs`` and the
+        associated  values are ``RigidBodyState`` instances, or *None*
+        if the corresponding objID did not exist.
+
+        :param list[int] objIDs: list of objects to query.
+        :return: see :ref:``_packSVData``.
+        :rtype: dict
+        """
+        with util.Timeit('leoAPI.getSV') as timeit:
+            # Get the State Variables.
+            ret = leoAPI.getBodyStates(objIDs)
+            if not ret.ok:
+                return RetVal(False, 'One or more IDs do not exist', None)
+        return self._packSVData(ret.data)
+
+    @typecheck
+    def getAllBodyStates(self, dummy=None):
+        """
+        Return all State Variables in a dictionary.
+
+        The dictionary will have the objIDs and state-variables as keys and
+        values, respectively.
+
+        .. note::
+           The ``dummy`` argument is a placeholder because the ``runCommand``
+           function assumes that every method takes at least one argument.
+
+        :return: see :ref:``_packSVData``.
+        :rtype: dict
+        """
+        with util.Timeit('leoAPI.getSV') as timeit:
+            # Get the State Variables.
+            ret = leoAPI.getAllBodyStates()
+            if not ret.ok:
+                return ret
+        return self._packSVData(ret.data)
+
     @typecheck
     def setForce(self, objID: int, force: (tuple, list), rpos: (tuple, list)):
         """
@@ -1161,99 +1254,6 @@ class Clerk(config.AzraelProcess):
             return RetVal(True, None, ret.data)
         else:
             return RetVal(False, ret.data, None)
-
-    def _packSVData(self, SVs: dict):
-        """
-        Compile the data structure returned by ``get{All}BodyStates``.
-
-        This is a convenience function to remove code duplication.
-
-        The returned dictionary has the following form:
-
-          {objID_1: {'frag': [FragState(), ...], 'sv': _RigidBodyState()},
-           objID_2: {'frag': [FragState(), ...], 'sv': _RigidBodyState()},
-           ...}
-
-        :param dict SVs: SV dictionary. Each key is an object ID and the
-            corresponding value a ``RigidBodyState`` instance.
-        """
-        # Convenience: extract all objIDs from ``SVs``.
-        objIDs = tuple(SVs.keys())
-
-        # Query the version values for all objects.
-        docs = database.dbHandles['ObjInstances'].find(
-            {'objID': {'$in': objIDs}},
-            {'version': 1, 'objID': 1, 'fragState': 1})
-        docs = list(docs)
-
-        # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into two
-        # dictionaries like {objID1: foo, objID2: bar, ...}. This is purely for
-        # readability and convenience a few lines below.
-        version = {_['objID']: _['version'] for _ in docs}
-        fragState = {_['objID']: _['fragState'].values() for _ in docs}
-
-        # Wrap the fragment states into their dedicated tuple type.
-        fragState = {k: [FragState(*_) for _ in v]
-                     for (k, v) in fragState.items()}
-
-        # Add SV and fragment data for all objects. If we the objects do not
-        # exist then set the data to *None*.  During that proces also update
-        # the 'version' (this flag indicates geometry changes to the
-        # client).
-        out = {}
-        for objID in objIDs:
-            if (SVs[objID] is None) or (objID not in fragState):
-                out[objID] = None
-                continue
-
-            # Update the 'version' field.
-            out[objID] = {
-                'frag': fragState[objID],
-                'sv': SVs[objID]._replace(version=version[objID])
-            }
-        return RetVal(True, None, out)
-
-    @typecheck
-    def getBodyStates(self, objIDs: (list, tuple)):
-        """
-        Return the state variables for all ``objIDs`` in a dictionary.
-
-        The dictionary keys will be the elements of ``objIDs`` and the
-        associated  values are ``RigidBodyState`` instances, or *None*
-        if the corresponding objID did not exist.
-
-        :param list[int] objIDs: list of objects to query.
-        :return: see :ref:``_packSVData``.
-        :rtype: dict
-        """
-        with util.Timeit('leoAPI.getSV') as timeit:
-            # Get the State Variables.
-            ret = leoAPI.getBodyStates(objIDs)
-            if not ret.ok:
-                return RetVal(False, 'One or more IDs do not exist', None)
-        return self._packSVData(ret.data)
-
-    @typecheck
-    def getAllBodyStates(self, dummy=None):
-        """
-        Return all State Variables in a dictionary.
-
-        The dictionary will have the objIDs and state-variables as keys and
-        values, respectively.
-
-        .. note::
-           The ``dummy`` argument is a placeholder because the ``runCommand``
-           function assumes that every method takes at least one argument.
-
-        :return: see :ref:``_packSVData``.
-        :rtype: dict
-        """
-        with util.Timeit('leoAPI.getSV') as timeit:
-            # Get the State Variables.
-            ret = leoAPI.getAllBodyStates()
-            if not ret.ok:
-                return ret
-        return self._packSVData(ret.data)
 
     @typecheck
     def addConstraints(self, constraints: (tuple, list)):
