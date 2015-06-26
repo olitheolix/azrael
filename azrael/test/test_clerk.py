@@ -167,13 +167,13 @@ class TestClerk:
         # The 'boosters' and 'factories' arguments are a list of named
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any IDs).
-        b0 = types.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
+        b0 = types.Booster(partID='0', pos=(0, 1, 2), direction=(0, 0, 1),
                            minval=0, maxval=0.5, force=0)
-        b1 = types.Booster(partID='1', pos=[0, 0, 0], direction=[0, 0, 1],
-                           minval=0, maxval=0.5, force=0)
+        b1 = types.Booster(partID='1', pos=(6, 7, 8), direction=(0, 1, 0),
+                           minval=1, maxval=1.5, force=0)
         f0 = types.Factory(
-            partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
-            templateID='_templateCube', exit_speed=[0.1, 0.5])
+            partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
+            templateID='_templateCube', exit_speed=(0.1, 0.5))
 
         # Add the new template.
         temp = Template('t3', [cs], frags, [b0, b1], [f0])
@@ -189,7 +189,7 @@ class TestClerk:
         assert len(ret.data[temp.aid]['template'].boosters) == 2
         assert len(ret.data[temp.aid]['template'].factories) == 1
 
-        # Explicitly verify the booster- and factory units. The easisest
+        # Explicitly verify the booster- and factory units. The easiest
         # (albeit not most readable) way to do the comparison is to convert the
         # unit descriptions (which are named tuples) to byte strings and
         # compare those.
