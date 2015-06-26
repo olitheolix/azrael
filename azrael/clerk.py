@@ -360,212 +360,6 @@ class Clerk(config.AzraelProcess):
     # These methods service Client requests.
     # ----------------------------------------------------------------------
     @typecheck
-    def controlParts(self, objID: int, cmd_boosters: (tuple, list),
-                     cmd_factories: (tuple, list)):
-        """
-        Issue commands to individual parts of the ``objID``.
-
-        Boosters can be activated with a scalar force. The force automatically
-        applies in the direction of the booster (taking the orientation of the
-        parent into account).
-
-        The commands themselves must be ``types.CmdBooster`` instances.
-
-        Factories can spawn objects. The commands must be ``types.CmdFactory``
-        instances.
-
-        :param int objID: object ID.
-        :param list cmd_booster: booster commands.
-        :param list cmd_factory: factory commands.
-        :return: **True** if no error occurred.
-        :rtype: bool
-        :raises: None
-        """
-        # Fetch the instance data for ``objID``.
-        ret = self.getObjectInstance(objID)
-        if not ret.ok:
-            self.logit.warning(ret.msg)
-            return RetVal(False, ret.msg, None)
-
-        # Compile a list of all parts defined in the template.
-        # fixme2
-#        booster_t = [types.Booster(**_) for _ in ret.data['template'].boosters]
-        booster_t = ret.data['template'].boosters
-        booster_t = {_.partID: _ for _ in booster_t}
-#        factory_t = [types.Factory(**_) for _ in ret.data['template']['factories']]
-        factory_t = ret.data['template'].factories
-        factory_t = {_.partID: _ for _ in factory_t}
-
-        # Fetch the SV for objID (we need this to determine the orientation of
-        # the base object to which the parts are attached).
-        sv_parent = self.getBodyStates([objID])
-        if not sv_parent.ok:
-            msg = 'Could not retrieve SV for objID={}'.format(objID)
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
-
-        # Return with an error if the requested objID does not exist.
-        if sv_parent.data[objID] is None:
-            msg = 'objID={} does not exits'.format(objID)
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
-
-        # Extract the parent's orientation from svdata.
-        sv_parent = sv_parent.data[objID]['sv']
-        parent_orient = sv_parent.orientation
-        quat = util.Quaternion(parent_orient[3], parent_orient[:3])
-
-        # Sanity check the commands.
-        try:
-            cmd_boosters = [types.CmdBooster(*_) for _ in cmd_boosters]
-            cmd_factories = [types.CmdFactory(*_) for _ in cmd_factories]
-        except TypeError:
-            msg = 'Invalid booster- or factory command'
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
-
-        # Verify that the commands are valid and specify existing Boosters.
-        for cmd in cmd_boosters:
-            # Verify the referenced booster exists.
-            if cmd.partID not in booster_t:
-                msg = 'Object <{}> has no Booster with AID <{}>'
-                msg = msg.format(objID, cmd.partID)
-                self.logit.warning(msg)
-                return RetVal(False, msg, None)
-        del booster_t
-
-        # Verify that the commands are valid and specify existing Factories.
-        for cmd in cmd_factories:
-            # Verify the referenced factory exists.
-            if cmd.partID not in factory_t:
-                msg = 'Object <{}> has no Factory with AID <{}>'
-                msg = msg.format(objID, cmd.partID)
-                self.logit.warning(msg)
-                return RetVal(False, msg, None)
-
-        # Ensure all boosters/factories receive at most one command each.
-        partIDs = [_.partID for _ in cmd_boosters]
-        if len(set(partIDs)) != len(partIDs):
-            msg = 'Same booster received multiple commands'
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
-        partIDs = [_.partID for _ in cmd_factories]
-        if len(set(partIDs)) != len(partIDs):
-            msg = 'Same factory received multiple commands'
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
-        del partIDs
-
-        ret = self.updateBoosterForces(objID, cmd_boosters)
-        if not ret.ok:
-            return ret
-
-        # Apply the net- force and torque exerted by the boostes.
-        force, torque = ret.data
-        leoAPI.addCmdBoosterForce(objID, force, torque)
-        del ret, force, torque
-
-        # Let the factories spawn the objects.
-        objIDs = []
-        for cmd in cmd_factories:
-            # Template for this very factory.
-            this = factory_t[cmd.partID]
-
-            # Position (in world coordinates) where the new object will be
-            # spawned.
-            pos = quat * this.pos + sv_parent.position
-
-            # Rotate the exit velocity according to the parent's orientation.
-            velocityLin = cmd.exit_speed * (quat * this.direction)
-
-            # Add the parent's velocity to the exit velocity.
-            velocityLin += sv_parent.velocityLin
-
-            # Create the state variables that encode the just determined
-            # position and speed.
-            sv = types.RigidBodyState(
-                position=pos, velocityLin=velocityLin,
-                orientation=sv_parent.orientation)
-
-            # Spawn the actual object that this factory can create. Retain
-            # the objID as it will be returned to the caller.
-            ret = self.spawn([(this.templateID, sv)])
-            if ret.ok:
-                objIDs.append(ret.data[0])
-            else:
-                self.logit.info('Factory could not spawn objects')
-
-        # Success. Return the IDs of all spawned objects.
-        return RetVal(True, None, objIDs)
-
-    @typecheck
-    def updateBoosterForces(self, objID: int, cmds: list):
-        """
-        Return forces and update the Booster values in the instance DB.
-
-        A typical return value looks like this::
-
-          {1: ([1, 0, 0], [0, 2, 0]), 2: ([1, 2, 3], [4, 5, 6]), ...}
-
-        :param int objID: object ID
-        :param list cmds: list of Booster commands.
-        :return: dictionary with objID as key and force/torque as values.
-        :rtype: dict
-        """
-        # Convenience.
-        db = database.dbHandles['ObjInstances']
-
-        # Put the new force values into a dictionary for convenience later on.
-        cmds = {_.partID: _.force_mag for _ in cmds}
-
-        # Query the instnace template for ``objID``. Return with an error if it
-        # does not exist.
-        query = {'objID': objID}
-        # fixme2
-        doc = db.find_one(query, {'template.boosters': 1})
-        if doc is None:
-            msg = 'Object <{}> does not exist'.format(objID)
-            return RetVal(False, msg, None)
-
-        # Put the Booster entries from the database into Booster tuples.
-        boosters = [types.Booster(**_) for _ in doc['template']['boosters']]
-        boosters = {_.partID: _ for _ in boosters}
-
-        # Tally up the forces exerted by all Boosters on the object.
-        force, torque = np.zeros(3), np.zeros(3)
-        for partID, booster in boosters.items():
-            # Update the Booster value if the user specified a new one.
-            if partID in cmds:
-                boosters[partID] = booster._replace(force=cmds[partID])
-                booster = boosters[partID]
-                del cmds[partID]
-
-            # Convenience.
-            b_pos = np.array(booster.pos)
-            b_dir = np.array(booster.direction)
-
-            # Update the central force and torque.
-            force += booster.force * b_dir
-            torque += booster.force * np.cross(b_pos, b_dir)
-
-        # If we have not consumed all commands then at least one partID did not
-        # exist --> return with an error in that case.
-        if len(cmds) > 0:
-            return RetVal(False, 'Some Booster partIDs were invalid', None)
-
-        # Update the new Booster values in the instance DB. To this end convert
-        # the dictionary back to a list because Mongo does not like it if
-        # dictionary keys are integers.
-        # fixme2
-        boosters = list(boosters.values())
-        boosters = [_._asdict() for _ in boosters]
-        db.update(query, {'$set': {'template.boosters': boosters}})
-
-        # Return the final force and torque as a tuple of tuples.
-        out = (force.tolist(), torque.tolist())
-        return RetVal(True, None, out)
-
-    @typecheck
     def addTemplates(self, templates: list):
         """
         Add all ``templates`` to the system so that they can be spawned.
@@ -872,6 +666,212 @@ class Clerk(config.AzraelProcess):
             self.logit.debug('Spawned {} new objects'.format(len(objs)))
 
         return RetVal(True, None, objIDs)
+
+    @typecheck
+    def controlParts(self, objID: int, cmd_boosters: (tuple, list),
+                     cmd_factories: (tuple, list)):
+        """
+        Issue commands to individual parts of the ``objID``.
+
+        Boosters can be activated with a scalar force. The force automatically
+        applies in the direction of the booster (taking the orientation of the
+        parent into account).
+
+        The commands themselves must be ``types.CmdBooster`` instances.
+
+        Factories can spawn objects. The commands must be ``types.CmdFactory``
+        instances.
+
+        :param int objID: object ID.
+        :param list cmd_booster: booster commands.
+        :param list cmd_factory: factory commands.
+        :return: **True** if no error occurred.
+        :rtype: bool
+        :raises: None
+        """
+        # Fetch the instance data for ``objID``.
+        ret = self.getObjectInstance(objID)
+        if not ret.ok:
+            self.logit.warning(ret.msg)
+            return RetVal(False, ret.msg, None)
+
+        # Compile a list of all parts defined in the template.
+        # fixme2
+#        booster_t = [types.Booster(**_) for _ in ret.data['template'].boosters]
+        booster_t = ret.data['template'].boosters
+        booster_t = {_.partID: _ for _ in booster_t}
+#        factory_t = [types.Factory(**_) for _ in ret.data['template']['factories']]
+        factory_t = ret.data['template'].factories
+        factory_t = {_.partID: _ for _ in factory_t}
+
+        # Fetch the SV for objID (we need this to determine the orientation of
+        # the base object to which the parts are attached).
+        sv_parent = self.getBodyStates([objID])
+        if not sv_parent.ok:
+            msg = 'Could not retrieve SV for objID={}'.format(objID)
+            self.logit.warning(msg)
+            return RetVal(False, msg, None)
+
+        # Return with an error if the requested objID does not exist.
+        if sv_parent.data[objID] is None:
+            msg = 'objID={} does not exits'.format(objID)
+            self.logit.warning(msg)
+            return RetVal(False, msg, None)
+
+        # Extract the parent's orientation from svdata.
+        sv_parent = sv_parent.data[objID]['sv']
+        parent_orient = sv_parent.orientation
+        quat = util.Quaternion(parent_orient[3], parent_orient[:3])
+
+        # Sanity check the commands.
+        try:
+            cmd_boosters = [types.CmdBooster(*_) for _ in cmd_boosters]
+            cmd_factories = [types.CmdFactory(*_) for _ in cmd_factories]
+        except TypeError:
+            msg = 'Invalid booster- or factory command'
+            self.logit.warning(msg)
+            return RetVal(False, msg, None)
+
+        # Verify that the commands are valid and specify existing Boosters.
+        for cmd in cmd_boosters:
+            # Verify the referenced booster exists.
+            if cmd.partID not in booster_t:
+                msg = 'Object <{}> has no Booster with AID <{}>'
+                msg = msg.format(objID, cmd.partID)
+                self.logit.warning(msg)
+                return RetVal(False, msg, None)
+        del booster_t
+
+        # Verify that the commands are valid and specify existing Factories.
+        for cmd in cmd_factories:
+            # Verify the referenced factory exists.
+            if cmd.partID not in factory_t:
+                msg = 'Object <{}> has no Factory with AID <{}>'
+                msg = msg.format(objID, cmd.partID)
+                self.logit.warning(msg)
+                return RetVal(False, msg, None)
+
+        # Ensure all boosters/factories receive at most one command each.
+        partIDs = [_.partID for _ in cmd_boosters]
+        if len(set(partIDs)) != len(partIDs):
+            msg = 'Same booster received multiple commands'
+            self.logit.warning(msg)
+            return RetVal(False, msg, None)
+        partIDs = [_.partID for _ in cmd_factories]
+        if len(set(partIDs)) != len(partIDs):
+            msg = 'Same factory received multiple commands'
+            self.logit.warning(msg)
+            return RetVal(False, msg, None)
+        del partIDs
+
+        ret = self.updateBoosterForces(objID, cmd_boosters)
+        if not ret.ok:
+            return ret
+
+        # Apply the net- force and torque exerted by the boostes.
+        force, torque = ret.data
+        leoAPI.addCmdBoosterForce(objID, force, torque)
+        del ret, force, torque
+
+        # Let the factories spawn the objects.
+        objIDs = []
+        for cmd in cmd_factories:
+            # Template for this very factory.
+            this = factory_t[cmd.partID]
+
+            # Position (in world coordinates) where the new object will be
+            # spawned.
+            pos = quat * this.pos + sv_parent.position
+
+            # Rotate the exit velocity according to the parent's orientation.
+            velocityLin = cmd.exit_speed * (quat * this.direction)
+
+            # Add the parent's velocity to the exit velocity.
+            velocityLin += sv_parent.velocityLin
+
+            # Create the state variables that encode the just determined
+            # position and speed.
+            sv = types.RigidBodyState(
+                position=pos, velocityLin=velocityLin,
+                orientation=sv_parent.orientation)
+
+            # Spawn the actual object that this factory can create. Retain
+            # the objID as it will be returned to the caller.
+            ret = self.spawn([(this.templateID, sv)])
+            if ret.ok:
+                objIDs.append(ret.data[0])
+            else:
+                self.logit.info('Factory could not spawn objects')
+
+        # Success. Return the IDs of all spawned objects.
+        return RetVal(True, None, objIDs)
+
+    @typecheck
+    def updateBoosterForces(self, objID: int, cmds: list):
+        """
+        Return forces and update the Booster values in the instance DB.
+
+        A typical return value looks like this::
+
+          {1: ([1, 0, 0], [0, 2, 0]), 2: ([1, 2, 3], [4, 5, 6]), ...}
+
+        :param int objID: object ID
+        :param list cmds: list of Booster commands.
+        :return: dictionary with objID as key and force/torque as values.
+        :rtype: dict
+        """
+        # Convenience.
+        db = database.dbHandles['ObjInstances']
+
+        # Put the new force values into a dictionary for convenience later on.
+        cmds = {_.partID: _.force_mag for _ in cmds}
+
+        # Query the instnace template for ``objID``. Return with an error if it
+        # does not exist.
+        query = {'objID': objID}
+        # fixme2
+        doc = db.find_one(query, {'template.boosters': 1})
+        if doc is None:
+            msg = 'Object <{}> does not exist'.format(objID)
+            return RetVal(False, msg, None)
+
+        # Put the Booster entries from the database into Booster tuples.
+        boosters = [types.Booster(**_) for _ in doc['template']['boosters']]
+        boosters = {_.partID: _ for _ in boosters}
+
+        # Tally up the forces exerted by all Boosters on the object.
+        force, torque = np.zeros(3), np.zeros(3)
+        for partID, booster in boosters.items():
+            # Update the Booster value if the user specified a new one.
+            if partID in cmds:
+                boosters[partID] = booster._replace(force=cmds[partID])
+                booster = boosters[partID]
+                del cmds[partID]
+
+            # Convenience.
+            b_pos = np.array(booster.pos)
+            b_dir = np.array(booster.direction)
+
+            # Update the central force and torque.
+            force += booster.force * b_dir
+            torque += booster.force * np.cross(b_pos, b_dir)
+
+        # If we have not consumed all commands then at least one partID did not
+        # exist --> return with an error in that case.
+        if len(cmds) > 0:
+            return RetVal(False, 'Some Booster partIDs were invalid', None)
+
+        # Update the new Booster values in the instance DB. To this end convert
+        # the dictionary back to a list because Mongo does not like it if
+        # dictionary keys are integers.
+        # fixme2
+        boosters = list(boosters.values())
+        boosters = [_._asdict() for _ in boosters]
+        db.update(query, {'$set': {'template.boosters': boosters}})
+
+        # Return the final force and torque as a tuple of tuples.
+        out = (force.tolist(), torque.tolist())
+        return RetVal(True, None, out)
 
     @typecheck
     def removeObject(self, objID: int):
