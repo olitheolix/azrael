@@ -81,10 +81,10 @@ class Clerk(config.AzraelProcess):
     def __init__(self):
         super().__init__()
 
-        # Create a Dibbler instance to gain access to the model database.
+        # Dibbler is the interface to the geometry database.
         self.dibbler = dibbler.Dibbler()
 
-        # Igor instance.
+        # Dibbler is the interface to the constraints database.
         self.igor = azrael.igor.Igor()
 
         # Specify the decoding-processing-encoding triplet functions for
@@ -238,8 +238,9 @@ class Clerk(config.AzraelProcess):
         self.logit.info('Listening on <{}>'.format(addr))
         del addr
 
-        # Wait for socket activity.
+        # Digest loop.
         while True:
+            # Wait for socket activity.
             sock = dict(poller.poll())
             if self.sock_cmd not in sock:
                 continue
@@ -248,17 +249,19 @@ class Clerk(config.AzraelProcess):
             data = self.sock_cmd.recv_multipart()
             assert len(data) == 3
             self.last_addr, empty, msg = data[0], data[1], data[2]
-            assert empty == b''
+            if empty != b'':
+                self.logit.error('Expected empty frame')
+                continue
             del data, empty
 
-            # Decode the data.
+            # The payload must be a valid JSON string.
             try:
                 msg = json.loads(msg.decode('utf8'))
             except (ValueError, TypeError) as err:
                 self.returnErr(self.last_addr, 'JSON decoding error in Clerk')
                 continue
 
-            # Sanity check: every message must contain at least a command byte.
+            # Sanity check: every message must contain at least a command word.
             if not (('cmd' in msg) and ('payload' in msg)):
                 self.returnErr(self.last_addr, 'Invalid command format')
                 continue
@@ -269,33 +272,39 @@ class Clerk(config.AzraelProcess):
             # The command word determines the action...
             if cmd in self.codec:
                 # Look up the decode-process-encode functions for the current
-                # command.
-                enc, proc, dec = self.codec[cmd]
+                # command word. The 'decode' part will interpret the JSON
+                # string we just received, the 'process' part is a handle to a
+                # method in this very Clerk instance, and 'encode' will convert
+                # the values to a valid JSON string that will be returned to
+                # the Client.
+                dec, proc, enc = self.codec[cmd]
 
                 # Run the Clerk function. The try/except is to intercept any
                 # errors and prevent Clerk from dying.
                 try:
-                    self.runCommand(enc, proc, dec)
+                    self.runCommand(dec, proc, enc)
                 except Exception:
+                    # Basic error message.
                     msg = 'Client data for <{}> raised an error in Clerk'
                     msg = msg.format(cmd)
 
-                    # Get stack trace as string.
+                    # Get the Python stack trace as string (this will be added
+                    # to the log for reference).
                     buf = io.StringIO()
                     traceback.print_exc(file=buf)
                     buf.seek(0)
                     msg_st = [' -> ' + _ for _ in buf.readlines()]
                     msg_st = msg + '\n' + ''.join(msg_st)
 
-                    # Log the error message with stack trace, but return only
-                    # the error message.
+                    # Log the error message with stack trace. However, only
+                    # the basic error message to the client.
                     self.logit.error(msg_st)
                     self.returnErr(self.last_addr, msg, addToLog=False)
                     del msg, buf, msg_st
             else:
-                # Unknown command.
-                self.returnErr(self.last_addr,
-                               'Invalid command <{}>'.format(cmd))
+                # Unknown command word.
+                self.returnErr(
+                    self.last_addr,'Invalid command <{}>'.format(cmd))
 
     @typecheck
     def returnOk(self, addr, data: dict, msg: str=''):
@@ -304,8 +313,8 @@ class Clerk(config.AzraelProcess):
 
         This is a convenience method to enhance readability.
 
-        :param addr: ZeroMQ address as returned by the router socket.
-        :param dict data: arbitrary data to pass back to client.
+        :param addr: ZeroMQ address as returned by the ROUTER socket.
+        :param dict data: the payload to send back to the client.
         :param str msg: text message to pass along.
         :return: None
         """
@@ -324,9 +333,9 @@ class Clerk(config.AzraelProcess):
 
         This is a convenience method to enhance readability.
 
-        :param addr: ZeroMQ address as returned by the router socket.
-        :param bool addToLog: logs a Warning with ``msg`` if *True*
-        :param str msg: error message.
+        :param addr: ZeroMQ address as returned by the ROUTER socket.
+        :param bool addToLog: logs a 'Warning' with ``msg`` if *True*
+        :param str msg: the error message to send back.
         :return: None
         """
         # Convert the message to a byte string (if it is not already).
@@ -341,7 +350,7 @@ class Clerk(config.AzraelProcess):
         """
         Return a 'pong'.
 
-        :return: simple string to acknowledge the ping.
+        :return: the string 'pong' to acknowledge the ping.
         :rtype: str
         :raises: None
         """
@@ -356,13 +365,14 @@ class Clerk(config.AzraelProcess):
         """
         Issue commands to individual parts of the ``objID``.
 
-        Boosters can be activated with a scalar force that will apply according
-        to their orientation. The commands themselves must be
-        ``types.CmdBooster`` instances.
+        Boosters can be activated with a scalar force. The force automatically
+        applies in the direction of the booster (taking the orientation of the
+        parent into account).
 
-        Factories can spawn objects. Their command syntax is defined in the
-        ``parts`` module. The commands themselves must be
-        ``types.CmdFactory`` instances.
+        The commands themselves must be ``types.CmdBooster`` instances.
+
+        Factories can spawn objects. The commands must be ``types.CmdFactory``
+        instances.
 
         :param int objID: object ID.
         :param list cmd_booster: booster commands.
