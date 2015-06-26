@@ -144,8 +144,6 @@ def ToClerk_GetTemplates_Encode(templateIDs: list):
 
 @typecheck
 def ToClerk_GetTemplates_Decode(payload: dict):
-    if 'templateIDs' not in payload:
-        return False, 'Corrupt payload'
     return True, (payload['templateIDs'], )
 
 
@@ -267,15 +265,9 @@ def ToClerk_GetFragmentGeometries_Encode(objIDs: list):
 
 @typecheck
 def ToClerk_GetFragmentGeometries_Decode(payload: dict):
-    objIDs = payload['objIDs']
-    if not isinstance(objIDs, list):
-        return False, 'Expected <list> but got <{}>'.format(type(objIDs))
-
-    try:
-        objIDs = [int(_) for _ in objIDs]
-    except TypeError:
-        return (False,
-                'Expected integers in ToClerk_GetFragmentGeometries_Decode')
+    # Convert all objIDs to integers (JSON always converts integers in hash
+    # maps to strings, which is why this conversion is necessary).
+    objIDs = [int(_) for _ in payload['objIDs']]
     return True, (objIDs, )
 
 
@@ -286,8 +278,8 @@ def FromClerk_GetFragmentGeometries_Encode(geo):
 
 @typecheck
 def FromClerk_GetFragmentGeometries_Decode(payload: dict):
-    # Convert the objIDs to integers, but leave the dictionary otherwise
-    # intact.
+    # Convert all objIDs to integers (JSON always converts integers in hash
+    # maps to strings, which is why this conversion is necessary).
     payload = {int(k): v for (k, v) in payload.items()}
     return RetVal(True, None, payload)
 
