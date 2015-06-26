@@ -95,9 +95,11 @@ class TestClerk:
         assert ok is ok
         assert dec == payload
 
-    def test_encoding_get_template(self):
+    def getTemplate(self):
         """
-        Test codec for {add,get}Template functions.
+        Return a valid template with non-trivial data.
+
+        This is a convenience method only.
         """
         # Collada format: a .dae file plus a list of textures in jpg or png format.
         dae_file = b'abc'
@@ -117,36 +119,29 @@ class TestClerk:
 
         # Compile a valid Template structure.
         frags = [getFragRaw(), getFragDae(), getFragNone()]
-        temp = Template('foo', [], frags, [], [])
+        return Template('foo', [], frags, [], [])
 
-        # ----------------------------------------------------------------------
+    def test_GetTemplate(self):
+        """
+        Test codec for {add,get}Template functions.
+        """
+        # Get a valid template.
+        template = self.getTemplate()
+
         # Client --> Clerk.
-        # ----------------------------------------------------------------------
-        # Encode source data.
-        ret = protocol.ToClerk_GetTemplates_Encode([temp.aid])
+        payload = [template.aid]
+        enc = protocol.ToClerk_GetTemplates_Encode
+        dec = protocol.ToClerk_GetTemplates_Decode
+        self.verifyToClerk(enc, dec, payload)
 
-        # Convert output to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(ret.data))
-
-        # Decode the data.
-        ok, dec = protocol.ToClerk_GetTemplates_Decode(enc)
-        assert dec[0] == [temp.aid]
-
-        # ----------------------------------------------------------------------
         # Clerk --> Client.
-        # ----------------------------------------------------------------------
-        payload = {temp.aid: {'url': 'http://somewhere', 'template': temp}}
-        ok, enc = protocol.FromClerk_GetTemplates_Encode(payload)
-
-        # Convert output to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(enc))
-
-        # Decode the data.
-        dec = protocol.FromClerk_GetTemplates_Decode(enc)
-
-        # Verify.
-        assert dec.ok
-        assert dec.data == payload
+        payload = {template.aid: {
+            'url': 'http://somewhere',
+            'template': template}
+        }
+        enc = protocol.FromClerk_GetTemplates_Encode
+        dec = protocol.FromClerk_GetTemplates_Decode
+        self.verifyFromClerk(enc, dec, payload)
 
     def test_send_command(self):
         """
