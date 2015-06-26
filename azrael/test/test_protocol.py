@@ -47,6 +47,54 @@ class TestClerk:
     def teardown_method(self, method):
         pass
 
+    def verifyToClerk(self, encode, decode, payload):
+        """
+        Verify the ``encoder``/``decoder`` pair with ``payload``.
+
+        This method encodes the payload with ``encoder``, converts the result
+        to- and from JSON to simulate the wire transmission, passes the result
+        to the ``decoder`` and verifies that the result matches the original
+        ``payload``.
+
+        This method is for the Client --> Clerk direction.
+        """
+        # Encode source data.
+        ok, msg, enc = encode(payload)
+        assert ok
+
+        # Convert output to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps(enc))
+
+        # Decode the data.
+        ok, dec = decode(enc)
+        assert ok is True
+        assert dec == (payload, )
+
+    def verifyFromClerk(self, encoder, decoder, payload):
+        """
+        Verify the ``encoder``/``decoder`` pair with ``payload``.
+
+        This method encodes the payload with ``encoder``, converts the result
+        to- and from JSON to simulate the wire transmission, passes the result
+        to the ``decoder`` and verifies that the result matches the original
+        ``payload``.
+
+        This method is for the Clerk --> Client direction. The only difference
+        to ``verifyToClerk`` is the return value signature of the
+        encoder/decoder.
+        """
+        # Encode source data.
+        ok, enc = encoder(payload)
+        assert ok
+
+        # Convert output to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps(enc))
+
+        # Decode the data.
+        ok, msg, dec = decoder(enc)
+        assert ok is ok
+        assert dec == payload
+
     def test_encoding_get_template(self):
         """
         Test codec for {add,get}Template functions.
@@ -296,44 +344,19 @@ class TestClerk:
         """
         Test getFragmentGeometries.
         """
-        # ----------------------------------------------------------------------
         # Client --> Clerk
-        # ----------------------------------------------------------------------
         payload = [1, 2, 3]
-        # Encode source data.
-        ok, msg, enc = protocol.ToClerk_GetFragmentGeometries_Encode(payload)
-        assert ok
+        enc = protocol.ToClerk_GetFragmentGeometries_Encode
+        dec = protocol.ToClerk_GetFragmentGeometries_Decode
+        self.verifyToClerk(enc, dec, payload)
 
-        # Convert output to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(enc))
-
-        # Decode the data.
-        ok, dec = protocol.ToClerk_GetFragmentGeometries_Decode(enc)
-        assert ok
-
-        # Verify.
-        assert dec == (payload, )
-
-        # ----------------------------------------------------------------------
         # Clerk --> Client
-        # ----------------------------------------------------------------------
         payload = {
             1: {'foo1': {'type': 'raw', 'url': 'http://foo1'},
                 'bar1': {'type': 'dae', 'url': 'http://bar1'}},
             5: {'foo2': {'type': 'raw', 'url': 'http://foo2'},
                 'bar2': {'type': 'dae', 'url': 'http://bar2'}}
         }
-
-        # Encode source data.
-        ok, enc = protocol.FromClerk_GetFragmentGeometries_Encode(payload)
-        assert ok
-
-        # Convert output to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(enc))
-
-        # Decode the data.
-        ok, msg, dec = protocol.FromClerk_GetFragmentGeometries_Decode(enc)
-        assert ok
-
-        # Verify.
-        assert dec == payload
+        enc = protocol.FromClerk_GetFragmentGeometries_Encode
+        dec = protocol.FromClerk_GetFragmentGeometries_Decode
+        self.verifyFromClerk(enc, dec, payload)
