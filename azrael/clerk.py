@@ -662,10 +662,8 @@ class Clerk(config.AzraelProcess):
         applies in the direction of the booster (taking the orientation of the
         parent into account).
 
-        The commands themselves must be ``types.CmdBooster`` instances.
-
-        Factories can spawn objects. The commands must be ``types.CmdFactory``
-        instances.
+        The commands for Boosters and Factories must be instances of
+        ``CmdBooster`` or ``CmdFactory``, respectively.
 
         :param int objID: object ID.
         :param list cmd_booster: booster commands.
@@ -683,22 +681,23 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
 
         # Compile the instance information (it is a `Template` data structure).
-        instance = Template(**doc['template'])
+        try:
+            instance = Template(**doc['template'])
+        except TypeError:
+            msg = 'Inconsistent Template data'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
 
-        # Compile a list of all parts defined in the template.
-        # fixme2
-#        booster_t = [types.Booster(**_) for _ in ret.data['template'].boosters]
-        booster_t = instance.boosters
-        booster_t = {_.partID: _ for _ in booster_t}
-#        factory_t = [types.Factory(**_) for _ in ret.data['template']['factories']]
-        factory_t = instance.factories
-        factory_t = {_.partID: _ for _ in factory_t}
+        # Compile a list of all Boosters and Factories defined for the object.
+        boosters = {_.partID: _ for _ in instance.boosters}
+        factories = {_.partID: _ for _ in instance.factories}
+        del instance
 
         # Fetch the SV for objID (we need this to determine the orientation of
         # the base object to which the parts are attached).
         sv_parent = self.getBodyStates([objID])
         if not sv_parent.ok:
-            msg = 'Could not retrieve SV for objID={}'.format(objID)
+            msg = 'Could not retrieve body state for objID={}'.format(objID)
             self.logit.warning(msg)
             return RetVal(False, msg, None)
 
@@ -708,12 +707,12 @@ class Clerk(config.AzraelProcess):
             self.logit.warning(msg)
             return RetVal(False, msg, None)
 
-        # Extract the parent's orientation from svdata.
+        # Extract the parent's orientation from its rigid body state.
         sv_parent = sv_parent.data[objID]['sv']
         parent_orient = sv_parent.orientation
         quat = util.Quaternion(parent_orient[3], parent_orient[:3])
 
-        # Sanity check the commands.
+        # Sanity check the Booster- and Factory commands.
         try:
             cmd_boosters = [types.CmdBooster(*_) for _ in cmd_boosters]
             cmd_factories = [types.CmdFactory(*_) for _ in cmd_factories]
@@ -722,20 +721,20 @@ class Clerk(config.AzraelProcess):
             self.logit.warning(msg)
             return RetVal(False, msg, None)
 
-        # Verify that the commands are valid and specify existing Boosters.
+        # Verify that the Booster commands reference existing Boosters.
         for cmd in cmd_boosters:
             # Verify the referenced booster exists.
-            if cmd.partID not in booster_t:
+            if cmd.partID not in boosters:
                 msg = 'Object <{}> has no Booster with AID <{}>'
                 msg = msg.format(objID, cmd.partID)
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
-        del booster_t
+        del boosters
 
-        # Verify that the commands are valid and specify existing Factories.
+        # Verify that the Factory commands reference existing Factories.
         for cmd in cmd_factories:
             # Verify the referenced factory exists.
-            if cmd.partID not in factory_t:
+            if cmd.partID not in factories:
                 msg = 'Object <{}> has no Factory with AID <{}>'
                 msg = msg.format(objID, cmd.partID)
                 self.logit.warning(msg)
@@ -754,33 +753,35 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
         del partIDs
 
+        # Update the booster forces in the database. This will only update the
+        # values for record keeping, but Leonard will never look at them (it
+        # does not even know that data exists). Instead, we need to queue a
+        # command with Leonard and tell it to apply the correct force and
+        # torque that those booster generate.
         ret = self.updateBoosterForces(objID, cmd_boosters)
         if not ret.ok:
             return ret
-
-        # Apply the net- force and torque exerted by the boostes.
         force, torque = ret.data
         leoAPI.addCmdBoosterForce(objID, force, torque)
         del ret, force, torque
 
-        # Let the factories spawn the objects.
+        # Factories will spawn their objects.
         objIDs = []
         for cmd in cmd_factories:
             # Template for this very factory.
-            this = factory_t[cmd.partID]
+            this = factories[cmd.partID]
 
             # Position (in world coordinates) where the new object will be
             # spawned.
             pos = quat * this.pos + sv_parent.position
 
-            # Rotate the exit velocity according to the parent's orientation.
+            # Align the exit velocity vector with the parent's orientation.
             velocityLin = cmd.exit_speed * (quat * this.direction)
 
             # Add the parent's velocity to the exit velocity.
             velocityLin += sv_parent.velocityLin
 
-            # Create the state variables that encode the just determined
-            # position and speed.
+            # Create the state variables with the just determined values.
             sv = types.RigidBodyState(
                 position=pos, velocityLin=velocityLin,
                 orientation=sv_parent.orientation)
