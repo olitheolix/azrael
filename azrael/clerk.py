@@ -507,37 +507,6 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def getObjectInstance(self, objID: int):
-        """
-        Return the instance data for ``objID``.
-
-        This function is almost identical to ``getTemplates`` except that it
-        queries the `Instance` database, not the `Template` database (the data
-        structure are identical in both databases).
-
-        Internally, this method calls ``_unpackTemplateData`` to unpack the
-        data. The output of that method will then be returned verbatim by this
-        method (see ``_unpackTemplateData`` for details on that output).
-
-        :param int objID: objID
-        :return: Dictionary with keys 'cshapes', 'vert', 'uv', 'rgb',
-                 'boosters', 'factories'.
-        :rtype: dict
-        :raises: None
-        """
-        # Retrieve the instance template. Return immediately if no such
-        # template exists.
-        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
-        if doc is None:
-            msg = 'Could not find instance data for objID <{}>'.format(objID)
-            self.logit.info(msg)
-            return RetVal(False, msg, None)
-
-        # fixme2: this line is new
-        doc['template'] = Template(**doc['template'])
-        return RetVal(True, None, doc)
-
-    @typecheck
     def spawn(self, newObjects: (tuple, list)):
         """
         Spawn all ``newObjects`` and return their object IDs in a tuple.
@@ -675,6 +644,37 @@ class Clerk(config.AzraelProcess):
             self.logit.debug('Spawned {} new objects'.format(len(objs)))
 
         return RetVal(True, None, objIDs)
+
+    @typecheck
+    def getObjectInstance(self, objID: int):
+        """
+        Return the instance data for ``objID``.
+
+        This function is almost identical to ``getTemplates`` except that it
+        queries the `Instance` database, not the `Template` database (the data
+        structure are identical in both databases).
+
+        Internally, this method calls ``_unpackTemplateData`` to unpack the
+        data. The output of that method will then be returned verbatim by this
+        method (see ``_unpackTemplateData`` for details on that output).
+
+        :param int objID: objID
+        :return: Dictionary with keys 'cshapes', 'vert', 'uv', 'rgb',
+                 'boosters', 'factories'.
+        :rtype: dict
+        :raises: None
+        """
+        # Retrieve the instance template. Return immediately if no such
+        # template exists.
+        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
+        if doc is None:
+            msg = 'Could not find instance data for objID <{}>'.format(objID)
+            self.logit.info(msg)
+            return RetVal(False, msg, None)
+
+        # fixme2: this line is new
+        doc['template'] = Template(**doc['template'])
+        return RetVal(True, None, doc)
 
     @typecheck
     def controlParts(self, objID: int, cmd_boosters: (tuple, list),
