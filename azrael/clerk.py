@@ -653,31 +653,6 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, objIDs)
 
     @typecheck
-    def getObjectInstance(self, objID: int):
-        """
-        Return the instance data for ``objID``.
-
-        This function is almost identical to ``getTemplates`` except that it
-        queries the `Instance` database instead of the `Template` database.
-
-        :param int objID: objID
-        :return: a `Template` instance.
-        :rtype: Template
-        :raises: None
-        """
-        # Fetch the instance data and return immediately if it does not exist.
-        db = database.dbHandles['ObjInstances']
-        doc = db.find_one({'objID': objID}, {'template': True, '_id': False})
-        if doc is None:
-            msg = 'Could not find instance data for objID <{}>'.format(objID)
-            self.logit.info(msg)
-            return RetVal(False, msg, None)
-
-        # Compile the template information.
-        out = Template(**doc['template'])
-        return RetVal(True, None, out)
-
-    @typecheck
     def controlParts(self, objID: int, cmd_boosters: (tuple, list),
                      cmd_factories: (tuple, list)):
         """
@@ -699,21 +674,25 @@ class Clerk(config.AzraelProcess):
         :rtype: bool
         :raises: None
         """
-        # Fetch the instance data for ``objID``.
-        ret = self.getObjectInstance(objID)
-        if not ret.ok:
-            self.logit.warning(ret.msg)
-            return RetVal(False, ret.msg, None)
+        # Fetch the instance data and return immediately if it does not exist.
+        db = database.dbHandles['ObjInstances']
+        doc = db.find_one({'objID': objID}, {'template': True, '_id': False})
+        if doc is None:
+            msg = 'Could not find instance data for objID <{}>'.format(objID)
+            self.logit.info(msg)
+            return RetVal(False, msg, None)
+
+        # Compile the instance information (it is a `Template` data structure).
+        instance = Template(**doc['template'])
 
         # Compile a list of all parts defined in the template.
         # fixme2
 #        booster_t = [types.Booster(**_) for _ in ret.data['template'].boosters]
-        booster_t = ret.data.boosters
+        booster_t = instance.boosters
         booster_t = {_.partID: _ for _ in booster_t}
 #        factory_t = [types.Factory(**_) for _ in ret.data['template']['factories']]
-        factory_t = ret.data.factories
+        factory_t = instance.factories
         factory_t = {_.partID: _ for _ in factory_t}
-        del ret
 
         # Fetch the SV for objID (we need this to determine the orientation of
         # the base object to which the parts are attached).
