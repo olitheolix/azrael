@@ -82,7 +82,7 @@ _Constraint6DofSpring2 = namedtuple(
                               'rotLimitLo rotLimitHi bounce enableSpring')
 
 # Boosters, Factories, and commands they can receive.
-_Booster = namedtuple('Booster', 'partID pos direction maxval minval force ')
+_Booster = namedtuple('Booster', 'partID pos direction minval maxval force ')
 _Factory = namedtuple('Factory', 'partID pos direction templateID exit_speed')
 _CmdBooster = namedtuple('CmdBooster', 'partID force_mag')
 _CmdFactory = namedtuple('CmdFactory', 'partID exit_speed')
