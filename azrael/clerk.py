@@ -658,30 +658,24 @@ class Clerk(config.AzraelProcess):
         Return the instance data for ``objID``.
 
         This function is almost identical to ``getTemplates`` except that it
-        queries the `Instance` database, not the `Template` database (the data
-        structure are identical in both databases).
-
-        Internally, this method calls ``_unpackTemplateData`` to unpack the
-        data. The output of that method will then be returned verbatim by this
-        method (see ``_unpackTemplateData`` for details on that output).
+        queries the `Instance` database instead of the `Template` database.
 
         :param int objID: objID
-        :return: Dictionary with keys 'cshapes', 'vert', 'uv', 'rgb',
-                 'boosters', 'factories'.
-        :rtype: dict
+        :return: a `Template` instance.
+        :rtype: Template
         :raises: None
         """
-        # Retrieve the instance template. Return immediately if no such
-        # template exists.
-        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
+        # Fetch the instance data and return immediately if it does not exist.
+        db = database.dbHandles['ObjInstances']
+        doc = db.find_one({'objID': objID}, {'template': True, '_id': False})
         if doc is None:
             msg = 'Could not find instance data for objID <{}>'.format(objID)
             self.logit.info(msg)
             return RetVal(False, msg, None)
 
-        # fixme2: this line is new
-        doc['template'] = Template(**doc['template'])
-        return RetVal(True, None, doc)
+        # Compile the template information.
+        out = Template(**doc['template'])
+        return RetVal(True, None, out)
 
     @typecheck
     def controlParts(self, objID: int, cmd_boosters: (tuple, list),
@@ -714,11 +708,12 @@ class Clerk(config.AzraelProcess):
         # Compile a list of all parts defined in the template.
         # fixme2
 #        booster_t = [types.Booster(**_) for _ in ret.data['template'].boosters]
-        booster_t = ret.data['template'].boosters
+        booster_t = ret.data.boosters
         booster_t = {_.partID: _ for _ in booster_t}
 #        factory_t = [types.Factory(**_) for _ in ret.data['template']['factories']]
-        factory_t = ret.data['template'].factories
+        factory_t = ret.data.factories
         factory_t = {_.partID: _ for _ in factory_t}
+        del ret
 
         # Fetch the SV for objID (we need this to determine the orientation of
         # the base object to which the parts are attached).
