@@ -314,7 +314,7 @@ class TestClerk:
         templateID = 'blah'
         ret = clerk.spawn([(templateID, sv_1)])
         assert not ret.ok
-        assert ret.msg.startswith('Not all template IDs were valid')
+        assert ret.msg.startswith('Could not find all templates')
 
         # All parameters are now valid. This must spawn an object with ID=1
         # because this is the first ID in an otherwise pristine system.

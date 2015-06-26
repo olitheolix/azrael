@@ -450,25 +450,26 @@ class Clerk(config.AzraelProcess):
         """
         Return the meta data for all ``templateIDs`` as a dictionary.
 
-        This method will return either return the templates for all specified
-        `templateIDs`, or none. Furthermore, it will return each template only
-        once, even if it was specified multiple times in `templateIDs`.
+        This method will either return all the templates specified in
+        `templateIDs` or none.
 
-        For instance, ``getTemplates([name_1, name_2, name_1])`` is
-        tantamount to calling ``getTemplates([name_1, name_2])``.
+        Each template will only be returned once, no matter how many times it
+        was specified in `templateIDs`. For instance, these two calls will both
+        return the same two templates::
+            getTemplates([name_1, name_2, name_1])
+            getTemplates([name_1, name_2])
 
-        The return value has the following structure::
+        This method returns a dictionary with the `templateIDs` as keys::
 
-          ret = {template_names[0]: {
-                   fragment_name[0]: {
-                      'cshapes': X, 'vert': X, 'uv': X, 'rgb': X,
-                      'boosters': X, 'factories': X},
-                   fragment_name[1]: {
-                      'cshapes': X, 'vert': X, 'uv': X, 'rgb': X,
-                      'boosters': X, 'factories': X}},
-                 template_names[1]: {}, }.
+          ret = {templateIDs[0]: {'template': Template(),
+                                  'url': URL for geometries},
+                 templateIDs[1]: {...}, }.
 
-        :param list(str) templateIDs: template IDs
+        ..note:: The template data only contains meta information about the
+            geometry. The geometry itself is available at the URL specified in
+            the return value.
+
+        :param list[str] templateIDs: template IDs
         :return dict: raw template data (the templateID is the key).
         """
         # Sanity check: all template IDs must be strings.
@@ -481,27 +482,29 @@ class Clerk(config.AzraelProcess):
         # Remove all duplicates from the list of templateIDs.
         templateIDs = tuple(set(templateIDs))
 
-        # Fetch all requested templates and return immediately if one or more
-        # do not exist.
+        # Fetch all requested templates and place them into a dictonary where
+        # the template ID is the key. Use a projection operator to suppress
+        # Mongo's "_id" field.
         db = database.dbHandles['Templates']
-        docs = list(db.find({'templateID': {'$in': templateIDs}}))
-        if len(docs) < len(templateIDs):
-            msg = 'Not all template IDs were valid'
+        cursor = db.find({'templateID': {'$in': templateIDs}}, {'_id': False})
+
+        # Compile the output dictionary and compile the `Template` instances.
+        out = {}
+        for doc in cursor:
+            out[doc['templateID']] = {
+                'url': doc['url'],
+                'template': Template(**doc['template']),
+            }
+
+        # Return immediately if we received fewer templates than requested
+        # (simply means that not all requested template names were valid).
+        if len(out) < len(templateIDs):
+            msg = 'Could not find all templates'
             self.logit.info(msg)
             return RetVal(False, msg, None)
 
-        # fixme2: these two lines are new; document them; compile a dictionary
-        # directly; wrap in try/except for TypeError; mention the ** operator.
-        for idx, doc in enumerate(docs):
-            docs[idx]['template'] = Template(**docs[idx]['template'])
-
-        # Compile a dictionary of all the templates.
-        docs = {_['templateID']: _ for _ in docs}
-
-        # Delete the '_id' field.
-        for name in docs:
-            del docs[name]['_id']
-        return RetVal(True, None, docs)
+        # Return the templates.
+        return RetVal(True, None, out)
 
     @typecheck
     def getObjectInstance(self, objID: int):
