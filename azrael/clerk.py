@@ -807,14 +807,18 @@ class Clerk(config.AzraelProcess):
         """
         Return forces and update the Booster values in the instance DB.
 
-        A typical return value looks like this::
+        This method returns the torque and linear force that each booster would
+        apply at object's center. A typical return value for boosters with IDs
+        'for' and 'bar' would like this::
 
-          {1: ([1, 0, 0], [0, 2, 0]), 2: ([1, 2, 3], [4, 5, 6]), ...}
+            {'foo': ([1, 0, 0], [0, 2, 0]),
+             'bar': ([1, 2, 3], [4, 5, 6]),
+             ...}
 
         :param int objID: object ID
         :param list cmds: list of Booster commands.
-        :return: dictionary with objID as key and force/torque as values.
-        :rtype: dict
+        :return: (linear force, torque) that the Booster apply to the object.
+        :rtype: tuple
         """
         # Convenience.
         db = database.dbHandles['ObjInstances']
@@ -822,23 +826,30 @@ class Clerk(config.AzraelProcess):
         # Put the new force values into a dictionary for convenience later on.
         cmds = {_.partID: _.force_mag for _ in cmds}
 
-        # Query the instnace template for ``objID``. Return with an error if it
-        # does not exist.
+        # Query the object's booster information.
         query = {'objID': objID}
-        # fixme2
         doc = db.find_one(query, {'template.boosters': 1})
         if doc is None:
             msg = 'Object <{}> does not exist'.format(objID)
             return RetVal(False, msg, None)
+        instance = doc['template']
+        del doc
 
         # Put the Booster entries from the database into Booster tuples.
-        boosters = [types.Booster(**_) for _ in doc['template']['boosters']]
-        boosters = {_.partID: _ for _ in boosters}
+        try:
+            boosters = [types.Booster(**_) for _ in instance['boosters']]
+            boosters = {_.partID: _ for _ in boosters}
+        except TypeError:
+            msg = 'Inconsistent Template data'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
 
         # Tally up the forces exerted by all Boosters on the object.
         force, torque = np.zeros(3), np.zeros(3)
         for partID, booster in boosters.items():
-            # Update the Booster value if the user specified a new one.
+            # Update the Booster value if the user specified a new one. Then
+            # remove the command (irrelevant for this loop but necessary for
+            # the sanity check that follows after the loop).
             if partID in cmds:
                 boosters[partID] = booster._replace(force=cmds[partID])
                 booster = boosters[partID]
@@ -857,15 +868,13 @@ class Clerk(config.AzraelProcess):
         if len(cmds) > 0:
             return RetVal(False, 'Some Booster partIDs were invalid', None)
 
-        # Update the new Booster values in the instance DB. To this end convert
-        # the dictionary back to a list because Mongo does not like it if
-        # dictionary keys are integers.
-        # fixme2
-        boosters = list(boosters.values())
-        boosters = [_._asdict() for _ in boosters]
+        # Update the new Booster values (and only the Booster values) in the
+        # instance database. To this end convert them back to dictionaries and
+        # issue the update.
+        boosters = [_._asdict() for _ in boosters.values()]
         db.update(query, {'$set': {'template.boosters': boosters}})
 
-        # Return the final force and torque as a tuple of tuples.
+        # Return the final force- and torque as a tuple of 2-tuples.
         out = (force.tolist(), torque.tolist())
         return RetVal(True, None, out)
 
