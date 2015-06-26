@@ -955,7 +955,7 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def setFragmentGeometries(self, objID: int, fragments: list):
         """
-        Update the ``vert``, ``uv`` and ``rgb`` data for ``objID``.
+        Update the geometries of ``objID``.
 
         Return with an error if ``objID`` does not exist.
 
@@ -963,13 +963,14 @@ class Clerk(config.AzraelProcess):
         :param list fragments: the new fragments for ``objID``.
         :return: Success
         """
+        # Compile- and sanity check the fragments.
         try:
             fragments = [FragmentMeta(*_) for _ in fragments]
         except TypeError:
             return RetVal(False, 'Received invalid fragment data', None)
 
         # Convenience.
-        update = database.dbHandles['ObjInstances'].update
+        db_update = database.dbHandles['ObjInstances'].update
 
         # Update the fragment geometry in Dibbler.
         for frag in fragments:
@@ -977,12 +978,15 @@ class Clerk(config.AzraelProcess):
             if not ret.ok:
                 return ret
 
-            # If the fragment type is '_none_' then remove it altogether.
+            # If the fragment type is '_NONE_' then remove it altogether.
             if frag.fragtype.upper() == '_NONE_':
-                update({'objID': objID},
-                       {'$unset': {'fragState.{}'.format(frag.aid): True}})
+                db_update({'objID': objID},
+                          {'$unset': {'fragState.{}'.format(frag.aid): True}})
 
-        # Update the fragment's meta data in the DB.
+        # To update the fragment's meta data in the DB we first need to remove
+        # the actual geometry data from the fragments because the instance DB
+        # only stored meta information (Dibbler contains the actual
+        # geometries).
         new_frags = [frag._replace(fragdata=None) for frag in fragments]
 
         # Update the 'version' flag in the database. All clients
