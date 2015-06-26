@@ -362,18 +362,18 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def addTemplates(self, templates: list):
         """
-        Add all ``templates`` to the system so that they can be spawned.
+        Add all ``templates`` to Azrael so that they can be spawned.
 
-        This method returns with an error if a template could not be added.
+        This method will abort immediately if it encounters an invalid. In that
+        case no template will be added.
 
-        ..note:: due to the primitive way the model files are stored
-                 in the file system it is possible that model files were
-                 written to disk yet Azrael does not know about them.
+        The elements in ``templates`` must be ``Template`` instances.
 
-        The elements in ``templates`` are instances of
-        :ref:``azrael.util.Template``.
+        This function will also return with an error if a template with the
+        same  name already exists. However, it will still add all the other
+        templates that have unique names.
 
-        :param list templates: list of Template definitions.
+        :param list[Template]: the templates to add.
         :return: success
         :raises: None
         """
@@ -392,7 +392,10 @@ class Clerk(config.AzraelProcess):
             db = database.dbHandles['Templates']
             bulk = db.initialize_unordered_bulk_op()
 
-            # Add each template to the bulk.
+            # Add each template to the bulk. Dibbler handles the (possibly)
+            # large geometry data, whereas the template database itself
+            # contains only meta information (eg the type of geometry, but not
+            # geometry itself).
             for template in templates:
                 # Convenience.
                 frags = template.fragments
@@ -403,24 +406,23 @@ class Clerk(config.AzraelProcess):
                     msg = msg.format(template.aid)
                     return RetVal(False, msg, None)
 
-                # Ask Dibbler to add the template. Abort immediately if Dibbler
-                # comes back with an error (should be impossible, but just to
-                # be sure).
+                # Dibbler administrates the geometry data. Abort immediately if
+                # it returns an error (should be impossible, but just to be
+                # sure).
                 ret = self.dibbler.addTemplate(template)
                 if not ret.ok:
                     return ret
 
-                # We already stored the geometry in Dibbler; here we only add
-                # the meta data (mostly to avoid data duplication) which is why
-                # we delete the 'data' attribute.
-                # fixme2
-                frags = [_._replace(fragdata=None) for _ in template.fragments]
+                # Only retain the meta data for the geometries to save space
+                # and avoid data duplication (Dibbler handles the actual
+                # geometry data).
+                frags = [_._replace(fragdata=None) for _ in frags]
                 template = template._replace(fragments=frags)
 
-                # Fragment URL.
+                # Compile the URL where the geometry is stored.
                 url_frag = config.url_templates + '/' + template.aid
 
-                # Compile the Mongo document for the new template.
+                # Compile the template data that will go into the database.
                 data = {'url': url_frag,
                         'template': template,
                         'templateID': template.aid}
@@ -431,6 +433,7 @@ class Clerk(config.AzraelProcess):
                 bulk.find(query).upsert().update({'$setOnInsert': data})
 
         with util.Timeit('clerk.addTemplates_db') as timeit:
+            # Run the database query.
             ret = bulk.execute()
 
         if ret['nMatched'] > 0:
@@ -477,7 +480,8 @@ class Clerk(config.AzraelProcess):
         # Remove all duplicates from the list of templateIDs.
         templateIDs = tuple(set(templateIDs))
 
-        # Retrieve the template. Return immediately if one does not exist.
+        # Fetch all requested templates and return immediately if one or more
+        # do not exist.
         db = database.dbHandles['Templates']
         docs = list(db.find({'templateID': {'$in': templateIDs}}))
         if len(docs) < len(templateIDs):
