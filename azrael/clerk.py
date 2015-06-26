@@ -611,6 +611,7 @@ class Clerk(config.AzraelProcess):
                                scale=1,
                                position=(0, 0, 0),
                                orientation=(0, 0, 0, 1))
+                fragStates = {_.aid: fs._replace(aid=_.aid) for _ in frags}
 
                 # Serialise the template and add additiona meta information
                 # that is specific to this instance, for instance the 'objID'
@@ -621,7 +622,7 @@ class Clerk(config.AzraelProcess):
                     'version': 0,
                     'templateID': templateID,
                     'template': template._asdict(),
-                    'fragState': {_.aid: fs._replace(aid=_.aid) for _ in frags},
+                    'fragState': {k: v._asdict() for (k, v) in fragStates.items()},
                 }
 
                 # Overwrite the user supplied collision shape with the one
@@ -1048,7 +1049,7 @@ class Clerk(config.AzraelProcess):
 
         # Update the fragments. Process one object at a time.
         ok = True
-        for objID, frag in fragData.items():
+        for objID, fragstate in fragData.items():
             # Convenience: string that represents the Mongo key for the
             # respective fragment name.
             key = 'fragState.{}'
@@ -1060,7 +1061,7 @@ class Clerk(config.AzraelProcess):
             #    'fragState.1': {'$exists': 1},
             #    'fragState.2': {'$exists': 1},
             #    ...}
-            query_find = {key.format(_.aid): {'$exists': 1} for _ in frag}
+            query_find = {key.format(_.aid): {'$exists': 1} for _ in fragstate}
             query_find['objID'] = objID
 
             # Exactly the same query, except that instead of checking existince
@@ -1068,7 +1069,7 @@ class Clerk(config.AzraelProcess):
             # and has the following structure:
             #   {'fragState.1': FragState,
             #    'fragState.2': FragState}
-            query_update = {key.format(_.aid): _ for _ in frag}
+            query_update = {key.format(_.aid): _._asdict() for _ in fragstate}
 
             # Issue the update command to Mongo.
             ret = db_update(query_find, {'$set': query_update})
@@ -1119,11 +1120,11 @@ class Clerk(config.AzraelProcess):
         # dictionaries like {objID1: foo, objID2: bar, ...}. This is purely for
         # readability and convenience a few lines below.
         version = {_['objID']: _['version'] for _ in docs}
-        fragState = {_['objID']: _['fragState'].values() for _ in docs}
+        fragStates = {_['objID']: _['fragState'].values() for _ in docs}
 
         # Wrap the fragment states into their dedicated tuple type.
-        fragState = {k: [FragState(*_) for _ in v]
-                     for (k, v) in fragState.items()}
+        fragStates = {k: [FragState(**_) for _ in v]
+                     for (k, v) in fragStates.items()}
 
         # Add SV and fragment data for all objects. If the objects do not
         # exist then set the data to *None*.  During that proces also update
@@ -1131,13 +1132,13 @@ class Clerk(config.AzraelProcess):
         # client).
         out = {}
         for objID in objIDs:
-            if (SVs[objID] is None) or (objID not in fragState):
+            if (SVs[objID] is None) or (objID not in fragStates):
                 out[objID] = None
                 continue
 
             # Update the 'version' field.
             out[objID] = {
-                'frag': fragState[objID],
+                'frag': fragStates[objID],
                 'sv': SVs[objID]._replace(version=version[objID])
             }
         return RetVal(True, None, out)
