@@ -1009,15 +1009,15 @@ class Clerk(config.AzraelProcess):
         Update the fragments states (pos, vel, etc) of one or more objects.
 
         This method can update one- or more fragment states in one- or
-        more objects simultaneously. The updates are specified with the
-        following structure::
+        more objects simultaneously. The updates are specified in ``fragData``
+        as follows::
 
           fragData = {
             objID_1: [state_1, state_2, ...],
             objID_2: [state_3, state_4, ...]
           }
 
-        where each ``state_k`` entry is a :ref:``util.FragState`` tuple. Those
+        where each ``state_k`` entry is a :ref:``FragState`` tuple. Those
         tuples contain the actual state information like scale, position, and
         orientation.
 
@@ -1031,11 +1031,11 @@ class Clerk(config.AzraelProcess):
         one or more fragment IDs are invalid then none of the fragments in the
         respective object will be updated, not even those with a valid ID.
 
-        :param dict fragData: new fragment data for each object.
+        :param dict[list[FragData]] fragData: the new fragment states
         :return: success.
         """
         # Convenience.
-        update = database.dbHandles['ObjInstances'].update
+        db_update = database.dbHandles['ObjInstances'].update
 
         # Sanity checks.
         try:
@@ -1049,31 +1049,35 @@ class Clerk(config.AzraelProcess):
         # Update the fragments. Process one object at a time.
         ok = True
         for objID, frag in fragData.items():
-            # Compile the mongo query to find the correct object and ensure
+            # Convenience: string that represents the Mongo key for the
+            # respective fragment name.
+            key = 'fragState.{}'
+
+            # Compile the MongoDB query to find the correct object and ensure
             # that every fragment indeed exists. The final query will have the
             # following structure:
             #   {'objID': 2,
             #    'fragState.1': {'$exists': 1},
             #    'fragState.2': {'$exists': 1},
             #    ...}
-            frag_name = 'fragState.{}'
-            query = {frag_name.format(_.aid): {'$exists': 1} for _ in frag}
-            query['objID'] = objID
+            query_find = {key.format(_.aid): {'$exists': 1} for _ in frag}
+            query_find['objID'] = objID
 
-            # Overwrite the specified partIDs. This will produce a dictionary
-            # like this:
-            #   {'fragState.1': (FragState-tuple),
-            #    'fragState.2': (FragState-tuple)}
-            newvals = {frag_name.format(_.aid): _ for _ in frag}
+            # Exactly the same query, except that instead of checking existince
+            # we specify the FragState values. This will be the update query
+            # and has the following structure:
+            #   {'fragState.1': FragState,
+            #    'fragState.2': FragState}
+            query_update = {key.format(_.aid): _ for _ in frag}
 
             # Issue the update command to Mongo.
-            ret = update(query, {'$set': newvals})
+            ret = db_update(query_find, {'$set': query_update})
 
             # Exactly one document will have been updated if everything went
             # well. Note that we must check 'n' instead of 'nModified'. The
             # difference is that 'n' tells us how many documents Mongo has
             # touched whereas 'nModified' refers to the number of documents
-            # that are now different data. This distinction is important if
+            # that are now *different*. This distinction is important if
             # the old- and new fragment values are identical, because then
             # 'n=1' whereas 'nModified=0'.
             if ret['n'] != 1:
