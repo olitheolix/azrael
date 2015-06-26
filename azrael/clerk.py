@@ -490,11 +490,16 @@ class Clerk(config.AzraelProcess):
 
         # Compile the output dictionary and compile the `Template` instances.
         out = {}
-        for doc in cursor:
-            out[doc['templateID']] = {
-                'url': doc['url'],
-                'template': Template(**doc['template']),
-            }
+        try:
+            for doc in cursor:
+                out[doc['templateID']] = {
+                    'url': doc['url'],
+                    'template': Template(**doc['template']),
+                }
+        except TypeError:
+            msg = 'Inconsistent Template data'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
 
         # Return immediately if we received fewer templates than requested
         # (simply means that not all requested template names were valid).
