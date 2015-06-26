@@ -46,9 +46,6 @@ import azrael.igor
 import azrael.types as types
 import azrael.leo_api as leo_api
 
-import numpy as np
-
-from collections import namedtuple
 from azrael.types import typecheck, RetVal, Template
 from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta, FragNone
@@ -106,6 +103,37 @@ def FromClerk_GetTemplateID_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
+# AddTemplates
+# ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_AddTemplates_Encode(templates: list):
+    out = [tt._asdict() for tt in templates]
+    return RetVal(True, None, {'data': out})
+
+
+@typecheck
+def ToClerk_AddTemplates_Decode(payload: dict):
+    templates = []
+
+    with azrael.util.Timeit('clerk.decode') as timeit:
+        templates = [Template(**_) for _ in payload['data']]
+
+    # Return decoded quantities.
+    return True, (templates, )
+
+
+@typecheck
+def FromClerk_AddTemplates_Encode(dummyarg):
+    return True, {}
+
+
+@typecheck
+def FromClerk_AddTemplates_Decode(dummyarg):
+    return RetVal(True, None, None)
+
+
+# ---------------------------------------------------------------------------
 # GetTemplates
 # ---------------------------------------------------------------------------
 
@@ -123,78 +151,20 @@ def ToClerk_GetTemplates_Decode(payload: dict):
 
 @typecheck
 def FromClerk_GetTemplates_Encode(templates):
-    return True, templates
+    out = {}
+    for objID, data in templates.items():
+        out[objID] = {'url': data['url'],
+                      'template': data['template']._asdict()}
+    return True, out
 
 
 @typecheck
 def FromClerk_GetTemplates_Decode(payload: dict):
     out = {}
-    for name, data in payload.items():
-        # Return the complete information in a named tuple.
-        nt = namedtuple('Template',
-                        'cshapes boosters factories url fragments')
-        ret = nt(data['cshapes'],
-                 data['boosters'], data['factories'],
-                 data['url'], data['fragments'])
-        out[name] = ret
+    for objID, data in payload.items():
+        out[objID] = {'url': data['url'],
+                      'template': Template(**data['template'])}
     return RetVal(True, None, out)
-
-
-# ---------------------------------------------------------------------------
-# AddTemplates
-# ---------------------------------------------------------------------------
-
-@typecheck
-def ToClerk_AddTemplates_Encode(templates: list):
-    out = [tt._asdict() for tt in templates]
-    return RetVal(True, None, {'data': out})
-
-
-@typecheck
-def ToClerk_AddTemplates_Decode(payload: dict):
-    templates = []
-    b64d = base64.b64decode
-
-    with azrael.util.Timeit('clerk.decode') as timeit:
-        for data in payload['data']:
-            # Wrap the Booster/Factory data into their dedicated tuple types.
-            boosters = [types.Booster(*_) for _ in data['boosters']]
-            factories = [types.Factory(*_) for _ in data['factories']]
-
-            # Wrap the Meta fragments into its dedicated tuple type.
-            meta_frags = [FragmentMeta(*_) for _ in data['fragments']]
-
-            # Wrap each fragment model into its dedicated tuple type.
-            frags = []
-            for mf in meta_frags:
-                if mf.fragtype.upper() == 'DAE':
-                    # Collada format.
-                    frags.append(mf._replace(fragdata=FragDae(*mf.fragdata)))
-                elif mf.fragtype.upper() == '_NONE_':
-                    frags.append(mf._replace(fragdata=FragNone()))
-                else:
-                    frags.append(mf)
-
-            try:
-                tmp = Template(aid=data['aid'], cshapes=data['cshapes'],
-                               fragments=frags, boosters=boosters,
-                               factories=factories)
-                templates.append(tmp)
-            except KeyError:
-                return False, 'Template payload is corrupt'
-
-    # Return decoded quantities.
-    return True, (templates, )
-
-
-@typecheck
-def FromClerk_AddTemplates_Encode(dummyarg):
-    return True, {}
-
-
-@typecheck
-def FromClerk_AddTemplates_Decode(dummyarg):
-    return RetVal(True, None, None)
 
 
 # ---------------------------------------------------------------------------
