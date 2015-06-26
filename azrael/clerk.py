@@ -422,9 +422,10 @@ class Clerk(config.AzraelProcess):
                 # Compile the URL where the geometry is stored.
                 url_frag = config.url_templates + '/' + template.aid
 
-                # Compile the template data that will go into the database.
+                # Compile the template data that will go into the database. The
+                # template will be stored as an explicit dictionary.
                 data = {'url': url_frag,
-                        'template': template,
+                        'template': template._asdict(),
                         'templateID': template.aid}
                 del frags
 
@@ -489,9 +490,10 @@ class Clerk(config.AzraelProcess):
             self.logit.info(msg)
             return RetVal(False, msg, None)
 
-        # fixme2: these two lines are new; document them.
+        # fixme2: these two lines are new; document them; compile a dictionary
+        # directly; wrap in try/except for TypeError; mention the ** operator.
         for idx, doc in enumerate(docs):
-            docs[idx]['template'] = Template(*docs[idx]['template'])
+            docs[idx]['template'] = Template(**docs[idx]['template'])
 
         # Compile a dictionary of all the templates.
         docs = {_['templateID']: _ for _ in docs}
