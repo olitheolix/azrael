@@ -143,13 +143,13 @@ class TestClerk:
         dec = protocol.FromClerk_GetTemplates_Decode
         self.verifyFromClerk(enc, dec, payload)
 
-    def test_send_command(self):
+    def test_ControlCommand(self):
         """
         Test controlParts codec.
         """
         # Define the commands.
-        cmd_0 = types.CmdBooster(partID='0', force=0.2)
-        cmd_1 = types.CmdBooster(partID='1', force=0.4)
+        cmd_0 = types.CmdBooster(partID='0', force_mag=0.2)
+        cmd_1 = types.CmdBooster(partID='1', force_mag=0.4)
         cmd_2 = types.CmdFactory(partID='0', exit_speed=0)
         cmd_3 = types.CmdFactory(partID='2', exit_speed=0.4)
         cmd_4 = types.CmdFactory(partID='3', exit_speed=4)
@@ -164,24 +164,18 @@ class TestClerk:
         dec_fun = protocol.ToClerk_ControlParts_Decode
 
         # Encode the booster- and factory commands.
-        ret = enc_fun(objID, [cmd_0, cmd_1], [cmd_2, cmd_3, cmd_4])
+        boosters, factories = [cmd_0, cmd_1], [cmd_2, cmd_3, cmd_4]
+        ret = enc_fun(objID, boosters, factories)
         assert ret.ok
 
         # Convert output to JSON and back (simulates the wire transmission).
         enc = json.loads(json.dumps(ret.data))
 
         # Decode the data and verify the correct number of commands was returned.
-        ok, (dec_objID, dec_booster, dec_factory) = dec_fun(enc)
+        ok, (dec_objID, dec_boosters, dec_factories) = dec_fun(enc)
         assert (ok, dec_objID) == (True, objID)
-        assert len(dec_booster) == 2
-        assert len(dec_factory) == 3
-
-        # Use getattr to automatically test all attributes.
-        assert dec_booster[0] == cmd_0
-        assert dec_booster[1] == cmd_1
-        assert dec_factory[0] == cmd_2
-        assert dec_factory[1] == cmd_3
-        assert dec_factory[2] == cmd_4
+        assert dec_boosters == boosters
+        assert dec_factories == factories
 
         # ----------------------------------------------------------------------
         # Clerk --> Client
