@@ -434,9 +434,9 @@ class TestClerk:
         # Test parameters and constants.
         objID_1 = 1
         objID_2 = 2
-        MS = types.RigidBodyState
-        sv_1 = MS(position=(0, 1, 2), velocityLin=(2, 4, 6))
-        sv_2 = MS(position=(2, 4, 6), velocityLin=(6, 8, 10))
+        RBS = types.RigidBodyState
+        sv_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
+        sv_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
         templateID = '_templateEmpty'
 
         # Instantiate a Clerk.
@@ -486,9 +486,9 @@ class TestClerk:
 
         # Test parameters and constants.
         objID_1, objID_2 = 1, 2
-        MS = types.RigidBodyState
-        sv_1 = MS(position=(0, 1, 2), velocityLin=(2, 4, 6))
-        sv_2 = MS(position=(2, 4, 6), velocityLin=(6, 8, 10))
+        RBS = types.RigidBodyState
+        sv_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
+        sv_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
         templateID = '_templateEmpty'
 
         # Instantiate a Clerk.
