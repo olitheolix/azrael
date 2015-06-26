@@ -911,6 +911,9 @@ class Clerk(config.AzraelProcess):
         However, the corresponding value will be *None* if the object does not
         exist in Azrael.
 
+        ..note:: This method does not actually return any geometries, only URLs
+            from where they can be downloaded.
+
         :param list objIDs: return geometry information for all of them.
         :return: meta information about all fragment for each object.
         :rtype: dict
@@ -926,23 +929,27 @@ class Clerk(config.AzraelProcess):
         out = {_: None for _ in objIDs}
 
         # Determine the fragment- type (eg. 'raw' or 'dae') and URL and put it
-        # into the output dictionary. This will create a dictionary of the form
-        # {objID_1:
-        #     {name_1: {'type': 'raw', 'url': 'http:...'},
-        #      name_2: {'type': 'raw', 'url': 'http:...'},...
-        #     }
-        #  objID_2: {name_1: {'type': 'dae', 'url': 'http:...'},...
-        # }
-        pj = os.path.join
-        for doc in docs:
-            u = doc['url']
+        # into the output dictionary.
+        pjoin = os.path.join
+        try:
+            # Create a dedicated dictionary for each object.
+            for doc in docs:
+                # Unpack and compile geometry data for the current object.
+                frags = doc['template']['fragments']
+                frags = [FragmentMeta(**_) for _ in frags]
 
-            # Fixme2: is it a good idea to use _FragmentMeta instead of FragmentMeta?
-#            f = [FragmentMeta(*_) for _ in doc['fragments']]
-            f = [_FragmentMeta(_['aid'], _['fragtype'], None)
-                 for _ in doc['template']['fragments']]
-            obj = {_.aid: {'type': _.fragtype, 'url': pj(u, _.aid)} for _ in f}
-            out[doc['objID']] = obj
+                # Compile the dictionary with all the geometries that comprise
+                # the current object, including where to download the geometry
+                # data itself (we only provide the meta information).
+                out[doc['objID']] = {
+                    _.aid: {
+                        'type': _.fragtype,
+                        'url': pjoin(doc['url'], _.aid)
+                    } for _ in frags}
+        except TypeError:
+            msg = 'Inconsistent Fragment data'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
         return RetVal(True, None, out)
 
     @typecheck
