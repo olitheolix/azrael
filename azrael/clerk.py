@@ -16,14 +16,24 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Azrael's API.
+Primary gateway into Azrael.
 
-Use ``Client`` to connect to ``Clerk``. There can be arbitrarily many ``Clerk``
-and ``Client`` instances connected to each other.
+``Clerk`` is a stateless class that arbitrates between clients on the network
+and the various Azrael services. It also acts as a prudent sanity checker that
+will verify all incoming data. In turn, the other Azrael services mostly forgoe
+sanity checks for performance reasons.
 
-This module implement ZeroMQ version of the ``Clerk``. For a Websocket version
-(eg. JavaScript developers) use ``Clacks`` from `clacks.py` (their feature set
-is identical).
+``Clerk`` is meant to run as an independent process. Its stateless design
+implies that there can be many ``Clerk`` processes (eg behind an NginX
+server) running simultaneously. Furthermore, not all ``Clerk`` processes need
+to run on the same machine since Azrael's collective memory is contained
+entirely within a database -- ``Clerk`` has no state.
+
+``Clerk`` uses ZeroMQ sockets for the communication with clients. ZeroMQ has
+bindings for virtually every language except JavaScript, which is why
+``Clacks`` implements a web server bridge. In both cases the data exchange is
+plain JSON; no Python specific data types are used to keep the interface
+language agnostic.
 
 """
 import io
