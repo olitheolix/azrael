@@ -1092,11 +1092,18 @@ class Clerk(config.AzraelProcess):
         else:
             return RetVal(False, 'Could not update all fragments', None)
 
-    def _packSVData(self, SVs: dict):
+    def _packSVData(self, bodyStates: dict):
         """
         Compile the data structure returned by ``get{All}BodyStates``.
 
-        This is a convenience function to remove code duplication.
+        This is a convenience function to remove code duplication in
+        ``getBodyStates`` and ``getAllBodyStates``.
+
+        The input to this function is the output from ``leoAPI.getBodyStates``
+        or ``leoAPI.getAllBodyStates``, which both return a dictionary. The
+        keys in that dictionary denote objIDs and the values contain the
+        rigid body state. This method adds the fragment states to that data
+        structure.
 
         The returned dictionary has the following form:
 
@@ -1104,17 +1111,18 @@ class Clerk(config.AzraelProcess):
            objID_2: {'frag': [FragState(), ...], 'sv': _RigidBodyState()},
            ...}
 
-        :param dict SVs: SV dictionary. Each key is an object ID and the
+        :param dict bodyStates: Each key is an object ID and the
             corresponding value a ``RigidBodyState`` instance.
         """
-        # Convenience: extract all objIDs from ``SVs``.
-        objIDs = tuple(SVs.keys())
+        # Convenience: extract all objIDs from ``bodyStates``.
+        objIDs = tuple(bodyStates.keys())
 
         # Query the version values for all objects.
-        docs = database.dbHandles['ObjInstances'].find(
+        db = database.dbHandles['ObjInstances']
+        cursor = db.find(
             {'objID': {'$in': objIDs}},
             {'version': 1, 'objID': 1, 'fragState': 1})
-        docs = list(docs)
+        docs = list(cursor)
 
         # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into two
         # dictionaries like {objID1: foo, objID2: bar, ...}. This is purely for
@@ -1126,20 +1134,28 @@ class Clerk(config.AzraelProcess):
         fragStates = {k: [FragState(**_) for _ in v]
                      for (k, v) in fragStates.items()}
 
-        # Add SV and fragment data for all objects. If the objects do not
+        # Add body state and fragment data for all objects. If the objects do not
         # exist then set the data to *None*.  During that proces also update
         # the 'version' (this flag indicates geometry changes to the
         # client).
         out = {}
         for objID in objIDs:
-            if (SVs[objID] is None) or (objID not in fragStates):
+            # Skip to the next object if no body state is available for it.
+            # This usually means the user asked leoAPi for a body that it does
+            # not know about.
+            if bodyStates[objID] is None:
                 out[objID] = None
                 continue
 
-            # Update the 'version' field.
+            # Skip to the next object if it does not have any geometry states
+            # (eg it consists only of a collision shape).
+            if objID not in fragStates:
+                out[objID] = None
+                continue
+
             out[objID] = {
                 'frag': fragStates[objID],
-                'sv': SVs[objID]._replace(version=version[objID])
+                'sv': bodyStates[objID]._replace(version=version[objID])
             }
         return RetVal(True, None, out)
 
