@@ -1006,7 +1006,7 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def setForce(self, objID: int, force: (tuple, list), rpos: (tuple, list)):
         """
-        Apply ``force`` to ``objID``.
+        Apply ``force`` to ``objID`` at position ``rpos``.
 
         The force will be applied at ``rpos`` relative to the center of mass.
 
@@ -1015,6 +1015,8 @@ class Clerk(config.AzraelProcess):
         :param int objID: object ID
         :return: Sucess
         """
+        # Compute the torque and then queue a command for Leonard to apply the
+        # specified force- and torque values to this object.
         torque = np.cross(np.array(rpos, np.float64),
                           np.array(force, np.float64)).tolist()
         return leoAPI.addCmdDirectForce(objID, force, torque)
@@ -1023,7 +1025,7 @@ class Clerk(config.AzraelProcess):
     def setBodyState(self, objID: int,
                      data: types.RigidBodyStateOverride):
         """
-        Set the State Variables of ``objID`` to ``data``.
+        Set the state variables of ``objID`` to ``data``.
 
         For a detailed description see ``leoAPI.addCmdModifyBodyState``
         since this method is only a wrapper for it.
@@ -1067,10 +1069,10 @@ class Clerk(config.AzraelProcess):
         :rtype: list(int)
         """
         ret = leoAPI.getAllObjectIDs()
-        if not ret.ok:
-            return RetVal(False, ret.data, None)
-        else:
+        if ret.ok:
             return RetVal(True, None, ret.data)
+        else:
+            return RetVal(False, ret.data, None)
 
     def _packSVData(self, SVs: dict):
         """
@@ -1126,13 +1128,13 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def getBodyStates(self, objIDs: (list, tuple)):
         """
-        Return the State Variables for all ``objIDs`` in a dictionary.
+        Return the state variables for all ``objIDs`` in a dictionary.
 
-        The dictionary keys will be the elements of ``objIDs``, whereas the
-        values are ``RigidBodyState`` instances, or *None* if the corresponding
-        objID did not exist.
+        The dictionary keys will be the elements of ``objIDs`` and the
+        associated  values are ``RigidBodyState`` instances, or *None*
+        if the corresponding objID did not exist.
 
-        :param list(int) objIDs: list of objects for which to return the SV.
+        :param list[int] objIDs: list of objects to query.
         :return: see :ref:``_packSVData``.
         :rtype: dict
         """
@@ -1148,7 +1150,7 @@ class Clerk(config.AzraelProcess):
         """
         Return all State Variables in a dictionary.
 
-        The dictionary will have the objIDs and State Variables as keys and
+        The dictionary will have the objIDs and state-variables as keys and
         values, respectively.
 
         .. note::
@@ -1252,11 +1254,11 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def addConstraints(self, constraints: (tuple, list)):
         """
-        Return the number of ``constraints`` actually added to the simulation.
+        Add ``constraints`` to the physics simulation.
 
         See ``Igor.addConstraints`` for details.
 
-        :param list constraints: list of constraints to add.
+        :param list[ConsraintMeta] constraints: the constraints to add.
         :return: number of newly added constraints (see ``Igor.addConstraints``
                  for details).
         """
@@ -1290,7 +1292,7 @@ class Clerk(config.AzraelProcess):
 
         See ``Igor.deleteConstraints`` for details.
 
-        :param list constraints: list of `ConstraintMeta` tuples.
+        :param list[ConstraintMeta] constraints: the constraints to remove.
         :return: number of deleted entries.
         """
         return self.igor.deleteConstraints(constraints)
