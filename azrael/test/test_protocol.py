@@ -249,24 +249,6 @@ class TestClerk:
             # Verify.
             assert dec_con.data[0] == con
 
-        # ----------------------------------------------------------------------
-        # Clerk --> Client
-        # ----------------------------------------------------------------------
-        for con in (p2p, dof):
-            # Encode source data.
-            ok, enc = protocol.FromClerk_GetConstraints_Encode([con])
-            assert ok
-
-            # Convert output to JSON and back (simulates the wire transmission).
-            enc = json.loads(json.dumps(enc))
-
-            # Decode the data.
-            dec_con = protocol.FromClerk_GetConstraints_Decode(enc)
-            assert (dec_con.ok, len(dec_con.data)) == (True, 1)
-
-            # Verify.
-            assert dec_con.data[0] == con
-
     def test_addTemplate(self):
         """
         Test addTemplate codec with Collada data.
@@ -309,3 +291,49 @@ class TestClerk:
 
         # Compare with the Fragment before it was Base64 encoded.
         assert dec_mf == frags
+
+    def test_getFragmentGeometries(self):
+        """
+        Test getFragmentGeometries.
+        """
+        # ----------------------------------------------------------------------
+        # Client --> Clerk
+        # ----------------------------------------------------------------------
+        payload = [1, 2, 3]
+        # Encode source data.
+        ok, msg, enc = protocol.ToClerk_GetFragmentGeometries_Encode(payload)
+        assert ok
+
+        # Convert output to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps(enc))
+
+        # Decode the data.
+        ok, dec = protocol.ToClerk_GetFragmentGeometries_Decode(enc)
+        assert ok
+
+        # Verify.
+        assert dec == (payload, )
+
+        # ----------------------------------------------------------------------
+        # Clerk --> Client
+        # ----------------------------------------------------------------------
+        payload = {
+            1: {'foo1': {'type': 'raw', 'url': 'http://foo1'},
+                'bar1': {'type': 'dae', 'url': 'http://bar1'}},
+            5: {'foo2': {'type': 'raw', 'url': 'http://foo2'},
+                'bar2': {'type': 'dae', 'url': 'http://bar2'}}
+        }
+
+        # Encode source data.
+        ok, enc = protocol.FromClerk_GetFragmentGeometries_Encode(payload)
+        assert ok
+
+        # Convert output to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps(enc))
+
+        # Decode the data.
+        ok, msg, dec = protocol.FromClerk_GetFragmentGeometries_Decode(enc)
+        assert ok
+
+        # Verify.
+        assert dec == payload

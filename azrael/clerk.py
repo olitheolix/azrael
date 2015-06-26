@@ -925,8 +925,8 @@ class Clerk(config.AzraelProcess):
         docs = list(db.find({'objID': {'$in': objIDs}}))
 
         # Initialise the output dictionary with a None value for every
-        # requested object. The loop below will overwrite these values for all
-        # those objects that actually exist.
+        # requested object. The loop below will overwrite these values for the
+        # objects we actually found in the database.
         out = {_: None for _ in objIDs}
 
         # Determine the fragment- type (eg. 'raw' or 'dae') and URL and put it
