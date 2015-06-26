@@ -903,12 +903,12 @@ class CmdBooster(_CmdBooster):
     :return Booster: compiled description of booster command.
     """
     @typecheck
-    def __new__(cls, partID: str, force: (int, float, np.float64)):
+    def __new__(cls, partID: str, force_mag: (int, float, np.float64)):
         # Verify the inputs.
         assert isAIDStringValid(partID)
 
         # Return constructed data type.
-        return super().__new__(cls, partID, float(force))
+        return super().__new__(cls, partID, float(force_mag))
 
     def __eq__(self, ref):
         # Sanity check.
@@ -929,6 +929,9 @@ class CmdBooster(_CmdBooster):
 
     def __ne__(self, ref):
         return not self.__eq__(ref)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
 
 
 class Factory(_Factory):
@@ -1034,6 +1037,9 @@ class CmdFactory(_CmdFactory):
 
     def __ne__(self, ref):
         return not self.__eq__(ref)
+
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
 
 
 # Default argument for RigidBodyState below (purely for visual appeal, not
