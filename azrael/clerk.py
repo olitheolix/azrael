@@ -509,42 +509,52 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def spawn(self, newObjects: (tuple, list)):
         """
-        Spawn all ``newObjects`` and return their object IDs in a tuple.
+        Spawn all ``newObjects`` and return their IDs in a tuple.
 
-        The ``newObjects`` must have the following format:
-        newObjects = [(template_name_1, sv_1), (template_name_2, sv_2), ...]
+        The ``newObjects`` must be a list of (templateID, state) tuples with types
+        `(str, RigidBodyState)`, respectively.
 
-        where ``template_name_k`` is a string and ``sv_k`` is a
-        ``RigidBodyState`` instance.
+        The new object will we spawned from the templateID and given the
+        initial state described by `state` (eg position and orientation).
 
-        The new object will get ``sv_k`` as the initial state vector. However,
-        the provided collision shape will be ignored and *always* replaced with
-        the collision shape specified in the template ``template_name_k``.
+        The collision shapes provided by `state` are ignored and the
+        new object will always have the collision shapes specified in the
+        template. However, the collision shapes can be altered at run time via
+        the ``setBodyState`` function.
 
-        This method will return with an error (without spawning a single
-        object) if one or more argument are invalid.
+        This method will either spawn all objects, or return with an error
+        without spawning a single one.
 
-        :param list/tuple newObjects: list of template names and SVs.
+        ..note:: ``newObjects`` cannot be a dictionary because the client
+            may want to spawn the same template ID (which would be
+            the keys) several times with different initial states,
+            for instance to create a chain of spheres. It is
+            possible to store the initial states in a list but then
+            there is still the problem for the client to uniquely
+            map every templateID and initials state to a particular
+            object ID.
+
+        :param list/tuple newObjects: list of template names and initial body
+            states.
         :return: IDs of spawned objects
         :rtype: tuple of int
         """
         # Sanity checks.
-        # fixme: newObjects should be a dictionar: {templateID_0: sv_0, ...}.
         try:
             assert len(newObjects) > 0
             for ii in newObjects:
                 assert len(ii) == 2
-                templateID, sv = ii
+                templateID, state = ii
                 assert isinstance(templateID, str)
-                assert isinstance(sv, types._RigidBodyState)
-                del templateID, sv
+                assert isinstance(state, types._RigidBodyState)
+                del templateID, state
         except AssertionError:
             return RetVal(False, '<spawn> received invalid arguments', None)
 
         # Convenience: convert the list of tuples into a plain list, ie
-        # [(t1, sv1), (t2, sv2), ...]  -->  [t1, t2, ...] and [sv1, sv2, ...].
+        # [(t1, s1), (t2, s2), ...]  -->  [t1, t2, ...] and [s1, s2, ...].
         t_names = [_[0] for _ in newObjects]
-        SVs = [_[1] for _ in newObjects]
+        initStates = [_[1] for _ in newObjects]
 
         with util.Timeit('spawn:1 getTemplates') as timeit:
             # Fetch the raw templates for all ``t_names``.
@@ -555,62 +565,74 @@ class Clerk(config.AzraelProcess):
             templates = ret.data
 
         # Request unique IDs for the objects to spawn.
-        ret = azrael.database.getUniqueObjectIDs(len(t_names))
+        ret = azrael.database.getUniqueObjectIDs(len(newObjects))
         if not ret.ok:
             self.logit.error(ret.msg)
             return ret
         objIDs = ret.data
 
-        with util.Timeit('spawn:2 createSVs') as timeit:
+        with util.Timeit('spawn:2 createStates') as timeit:
             # Make a copy of every template and endow it with the meta
             # information for an instantiated object. Then add it to the list
             # of objects to spawn.
             dbDocs = []
-            for idx, name in enumerate(t_names):
+            bodyStates = {}
+            for templateID, state, objID in zip(t_names, initStates, objIDs):
                 # Convenience.
-                objID = objIDs[idx]
+                template = templates[templateID]['template']
+                frags = template.fragments
 
-                # Make a copy of the current template dictionary and populate
-                # it with the values that describe the template instance.
-                # fixme2: docu string above
-                doc = {'template': templates[name]['template']._asdict()}
-                doc['objID'] = objID
-                doc['version'] = 0
-                doc['templateID'] = name
-
-                # Copy the template files to the instance collection.
-                ret = self.dibbler.spawnTemplate(name, str(objID))
+                # Tell Dibbler to duplicate the template data into the instance
+                # location.
+                ret = self.dibbler.spawnTemplate(templateID, str(objID))
                 if not ret.ok:
-                    # Skip this 'spawn' command because Dibbler and Clerk are
-                    # out of sync; Clerk has found the template but Dibbler
-                    # has not --> should not happen!
+                    # Dibbler and Clerk are out of sync because Clerk found
+                    # a template that Dibbler does not know about. This really
+                    # should not happen, so skip this object and do not spawn
+                    # it.
                     msg = 'Dibbler and Clerk are out of sync for template {}.'
-                    msg = msg.format(name)
-                    msg += ' Dibbler returned with this error: <{}>'
+                    msg = msg.format(templateID)
+                    msg += ' Dibbler returned this error: <{}>'
                     msg = msg.format(ret.msg)
-                    self.logit.warning(msg)
+                    self.logit.error(msg)
                     continue
                 else:
-                    # URL where the instance data is available.
-                    doc['url'] = ret.data['url']
+                    # URL where the instance geometry is available.
+                    geo_url = ret.data['url']
 
-                # Parse the geometry data to determine all fragment names.
-                # Then compile a neutral initial state for each.
-                # fixme2: the 'aid' lookup is really ugly.
-                doc['fragState'] = {}
-                for f in doc['template']['fragments']:
-                    doc['fragState'][f['aid']] = FragState(
-                        aid=f['aid'],
-                        scale=1,
-                        position=(0, 0, 0),
-                        orientation=(0, 0, 0, 1))
+                # Give all geometries a neutral initial state in terms of
+                # scale, position, and orientation.
+                fs = FragState(aid='',
+                               scale=1,
+                               position=(0, 0, 0),
+                               orientation=(0, 0, 0, 1))
+
+                # Serialise the template and add additiona meta information
+                # that is specific to this instance, for instance the 'objID'
+                # and 'version'.
+                doc = {
+                    'objID': objID,
+                    'url': geo_url,
+                    'version': 0,
+                    'templateID': templateID,
+                    'template': template._asdict(),
+                    'fragState': {_.aid: fs._replace(aid=_.aid) for _ in frags},
+                }
+
+                # Overwrite the user supplied collision shape with the one
+                # specified in the template. This is to enforce geometric
+                # consistency with the template data as otherwise strange
+                # things may happen (eg a space-ship collision shape in the
+                # template database with a simple sphere collision shape when
+                # it is spawned).
+                state.cshapes[:] = template.cshapes
+                bodyStates[objID] = state
 
                 # Add the new template document.
                 dbDocs.append(doc)
-                del idx, name, objID, doc
+                del templateID, objID, doc, fs
 
-            # Return if no objects were spawned (eg the templates did not
-            # exist).
+            # Return immediately if there are no objects to spaw.
             if len(dbDocs) == 0:
                 return RetVal(True, None, tuple())
 
@@ -620,22 +642,7 @@ class Clerk(config.AzraelProcess):
 
         with util.Timeit('spawn:3 addCmds') as timeit:
             # Compile the list of spawn commands that will be sent to Leonard.
-            objs = []
-            # fixme2: the names here are ugly; can I improve it?
-            for name, sv, objID in zip(t_names, SVs, objIDs):
-                # Convenience.
-                t = templates[name]
-
-                # Overwrite the user supplied collision shape with the one
-                # specified in the template. This is to enforce geometric
-                # consistency with the template data as otherwise strange
-                # things may happen (eg a space-ship collision shape in the
-                # template database with a simple sphere collision shape when
-                # it is spawned).
-                sv.cshapes[:] = t['template'].cshapes
-
-                # Add the object description to the list.
-                objs.append((objID, sv))
+            objs = tuple(bodyStates.items())
 
             # Queue the spawn commands. Leonard will fetch them at its leisure.
             ret = leoAPI.addCmdSpawn(objs)
