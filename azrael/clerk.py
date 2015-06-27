@@ -1145,6 +1145,9 @@ class Clerk(config.AzraelProcess):
         # exist then set the data to *None*.  During that proces also update
         # the 'version' (this flag indicates geometry changes to the
         # client).
+        # fixme: the loop below should always return a dict of dictionary
+        # instead of skipping the object altoghether in either of the two IF
+        # statements..
         out = {}
         for objID in objIDs:
             # Skip to the next object if no body state is available for it.
