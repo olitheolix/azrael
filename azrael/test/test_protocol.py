@@ -338,3 +338,16 @@ class TestClerk:
         enc = protocol.FromClerk_GetFragmentGeometries_Encode
         dec = protocol.FromClerk_GetFragmentGeometries_Decode
         self.verifyFromClerk(enc, dec, payload)
+
+    def test_setFragmentGeometry(self):
+        """
+        Test setFragmentGeometry.
+        """
+        # Client --> Clerk
+        payload = [getFragRaw(), getFragDae(), getFragNone()]
+        enc = protocol.ToClerk_SetFragmentGeometry_Encode
+        dec = protocol.ToClerk_SetFragmentGeometry_Decode
+        self.verifyToClerk(enc, dec, payload)
+
+        # Clerk --> Client
+        pass
