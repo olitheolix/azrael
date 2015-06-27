@@ -344,10 +344,12 @@ class TestClerk:
         Test setFragmentGeometry.
         """
         # Client --> Clerk
-        payload = [getFragRaw(), getFragDae(), getFragNone()]
+        objID = 1
+        frags = [getFragRaw(), getFragDae(), getFragNone()]
+        payload = (objID, frags)
         enc = protocol.ToClerk_SetFragmentGeometry_Encode
         dec = protocol.ToClerk_SetFragmentGeometry_Decode
-        self.verifyToClerk(enc, dec, payload)
+        self.verifyToClerk(enc, dec, *payload)
 
         # Clerk --> Client
         pass
