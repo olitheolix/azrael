@@ -208,9 +208,9 @@ class TestClient:
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any).
         b0 = types.Booster(partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
-                           minval=0, maxval=0.5, force=0)
+                           minval=0, maxval=0.5, force_mag=0)
         b1 = types.Booster(partID='1', pos=(0, 0, 0), direction=(0, 0, 1),
-                           minval=0, maxval=0.5, force=0)
+                           minval=0, maxval=0.5, force_mag=0)
         f0 = types.Factory(
             partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
             templateID='_templateCube', exit_speed=(0.1, 0.5))
@@ -467,9 +467,9 @@ class TestClient:
 
         # Define the parts.
         b0 = types.Booster(partID='0', pos=pos_0, direction=dir_0,
-                           minval=0, maxval=0.5, force=0)
+                           minval=0, maxval=0.5, force_mag=0)
         b1 = types.Booster(partID='1', pos=pos_1, direction=dir_1,
-                           minval=0, maxval=1.0, force=0)
+                           minval=0, maxval=1.0, force_mag=0)
         f0 = types.Factory(
             partID='0', pos=pos_0, direction=dir_0,
             templateID='_templateCube', exit_speed=[0.1, 0.5])
@@ -498,8 +498,8 @@ class TestClient:
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
         forcemag_0, forcemag_1 = 0.2, 0.4
-        cmd_0 = types.CmdBooster(partID='0', force=forcemag_0)
-        cmd_1 = types.CmdBooster(partID='1', force=forcemag_1)
+        cmd_0 = types.CmdBooster(partID='0', force_mag=forcemag_0)
+        cmd_1 = types.CmdBooster(partID='1', force_mag=forcemag_1)
         cmd_2 = types.CmdFactory(partID='0', exit_speed=exit_speed_0)
         cmd_3 = types.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
