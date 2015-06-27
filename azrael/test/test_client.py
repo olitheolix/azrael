@@ -640,10 +640,10 @@ class TestClient:
         assert ret.ok
         assert ret.data[objID]['f_dae']['type'] == 'DAE'
 
-        # Change the fragment geometries.
+        # Change the geometry for fragment 'f_dae' to a RAW type.
         assert client.setFragmentGeometries(objID, [getFragRaw('f_dae')]).ok
 
-        # Ensure it now has type 'RAW'.
+        # Ensure the fragment is now indeed of type 'RAW'.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
         assert ret.data[objID]['f_dae']['type'] == 'RAW'
@@ -652,7 +652,7 @@ class TestClient:
         ret = client.getBodyStates(objID)
         assert ret.ok and (ret.data[objID]['sv'].version != version)
 
-        # Change the fragment geometries.
+        # Change the fragment geometry once more.
         version = ret.data[objID]['sv'].version
         assert client.setFragmentGeometries(objID, [getFragDae('f_dae')]).ok
 
