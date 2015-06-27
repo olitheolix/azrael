@@ -213,11 +213,17 @@ class TestClerk:
             'foo': FragState('foo', 1, (0, 1, 2), (0, 0, 0, 1)),
             'bar': FragState('bar', 2, (3, 4, 5), (1, 0, 0, 0))
         }
+
+        # The payload contains fragment- and body state data for each object.
+        # The payload used here covers all cases where both, only one of the
+        # two, or neither are defined.
         payload = {
             1: {'frag': frag_states, 'sv': types.RigidBodyState()},
-            2: {'frag': frag_states, 'sv': types.RigidBodyState()}
+            2: {'frag': {}, 'sv': types.RigidBodyState()},
+            3: {'frag': frag_states, 'sv': None},
+            4: {'frag': {}, 'sv': None},
         }
-        del fragStates
+        del frag_states
 
         enc = protocol.FromClerk_GetBodyState_Encode
         dec = protocol.FromClerk_GetBodyState_Decode

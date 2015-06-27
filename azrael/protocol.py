@@ -340,7 +340,10 @@ def FromClerk_GetBodyState_Encode(payload: dict):
     out = {}
     for objID, data in payload.items():
         # Convert the constituent elements to dictionaries.
-        sv = data['sv']._asdict()
+        if data['sv'] is None:
+            sv = None
+        else:
+            sv = data['sv']._asdict()
         frag = {k: v._asdict() for (k, v) in data['frag'].items()}
 
         # Replace the original 'sv' and 'frag' entries with the new ones.
@@ -353,7 +356,10 @@ def FromClerk_GetBodyState_Decode(payload: dict):
     out = {}
     for objID, data in payload['data'].items():
         # Compile the proper data types from the dictionaries.
-        sv = types.RigidBodyState(**data['sv'])
+        if data['sv'] is None:
+            sv = None
+        else:
+            sv = types.RigidBodyState(**data['sv'])
         frag = {k: types.FragState(**v) for (k, v) in data['frag'].items()}
 
         # Replace the original 'sv' and 'frag' entries with the new ones.
