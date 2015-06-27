@@ -737,16 +737,15 @@ class TestClient:
         assert client.spawn([new_obj]) == (True, None, (objID, ))
         leo.processCommandsAndSync()
 
-        # Query the fragment geometries and Body State to very that both report
-        # three fragments.
+        # Query the fragment geometries and Body State to verify that both
+        # report three fragments.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok and len(ret.data[objID]) == 3
         ret = client.getBodyStates(objID)
         assert ret.ok and len(ret.data[objID]['frag']) == 3
 
-        # The fragment update will use the following data. It translates to
-        # keeping the first intact, removing the second, and modifying the
-        # fragment type for the third one.
+        # Update the fragments as follows: keep the first intact, remove the
+        # second, and modify the third one.
         frags_new = [getFragNone('fname_2'), getFragDae('fname_3')]
         assert client.setFragmentGeometries(objID, frags_new).ok
 
