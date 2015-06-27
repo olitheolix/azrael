@@ -21,7 +21,9 @@ other tests.
 """
 import os
 import base64
+import subprocess
 import numpy as np
+import azrael.leonard
 
 from azrael.types import FragmentMeta, FragDae, FragRaw, FragNone
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
@@ -29,6 +31,29 @@ from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import RigidBodyState, RigidBodyStateOverride
 from azrael.types import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
 from azrael.types import _RigidBodyState
+
+
+def killAzrael():
+    subprocess.call(['pkill', 'Azreal:'])
+
+    # Delete all grids used in this test.
+    assert azrael.vectorgrid.deleteAllGrids().ok
+
+    azrael.database.init()
+
+
+def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
+    """
+    Return a ``LeonardCls`` instance.
+
+    This is a convenience function to reduce code duplication in tests.
+
+    :param cls LeonardCls: Leonard class to instantiate.
+    """
+    # Return a Leonard instance.
+    leo = LeonardCls()
+    leo.setup()
+    return leo
 
 
 def getCSEmpty(aid='csempty', pos=[0, 0, 0], rot=[0, 0, 0, 1]):

@@ -1,5 +1,4 @@
 import pytest
-import subprocess
 import azrael.igor
 import azrael.types
 import azrael.leonard
@@ -14,6 +13,7 @@ from IPython import embed as ipshell
 from azrael.types import CollShapeBox, CollShapeSphere, RetVal
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getP2P
+from azrael.test.test import killAzrael, getLeonard
 
 
 # Convenience shortcuts.
@@ -27,29 +27,6 @@ allEngines = [
     azrael.leonard.LeonardBullet,
     azrael.leonard.LeonardSweeping,
     azrael.leonard.LeonardDistributedZeroMQ]
-
-
-def killAzrael():
-    subprocess.call(['pkill', 'Azreal:'])
-
-    # Delete all grids used in this test.
-    assert azrael.vectorgrid.deleteAllGrids().ok
-
-    azrael.database.init()
-
-
-def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
-    """
-    Return a ``LeonardCls`` instance.
-
-    This is a convenience function to reduce code duplication in tests.
-
-    :param cls LeonardCls: Leonard class to instantiate.
-    """
-    # Return a Leonard instance.
-    leo = LeonardCls()
-    leo.setup()
-    return leo
 
 
 class TestLeonardAllEngines:

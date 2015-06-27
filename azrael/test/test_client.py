@@ -45,9 +45,8 @@ from IPython import embed as ipshell
 from azrael.types import RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw
 from azrael.test.test import getFragRaw, getFragDae, getFragNone
-from azrael.test.test import getP2P, get6DofSpring2
+from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
-from azrael.test.test_leonard import getLeonard, killAzrael
 
 
 class TestClient:

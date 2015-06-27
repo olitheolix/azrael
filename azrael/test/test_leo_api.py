@@ -25,7 +25,7 @@ import azrael.leo_api as leoAPI
 import azrael.leonard as leonard
 
 from IPython import embed as ipshell
-from azrael.test.test_leonard import getLeonard
+from azrael.test.test import getLeonard
 from azrael.test.test import getCSEmpty, getCSBox
 from azrael.test.test import getCSSphere, getCSPlane
 from azrael.types import CollShapeMeta, CollShapeEmpty

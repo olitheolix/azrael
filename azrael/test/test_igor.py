@@ -23,8 +23,7 @@ import azrael.igor
 
 import unittest.mock as mock
 from IPython import embed as ipshell
-from azrael.test.test_leonard import killAzrael
-from azrael.test.test import getP2P, get6DofSpring2
+from azrael.test.test import killAzrael, getP2P, get6DofSpring2
 
 
 # List of all constraint getter functions. This variables is only useful for
