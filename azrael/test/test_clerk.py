@@ -36,7 +36,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.test.test import isEqualBD, getP2P, get6DofSpring2
-from azrael.test.test import getFragRaw, getFragDae
+from azrael.test.test import getFragRaw, getFragDae, getFragNone
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
@@ -1362,7 +1362,7 @@ class TestClerk:
         objID = ret.data[0]
         leo.processCommandsAndSync()
 
-        # Query the SV for the object and verify it has as many FragmentState
+        # Query the state and verify it has as many FragmentState
         # vectors as it has fragments.
         ret = clerk.getBodyStates([objID])
         assert ret.ok
@@ -1577,6 +1577,48 @@ class TestClerk:
         delta_b = np.array(pos_b2) - np.array(pos_b)
         assert delta_a[0] < pos_a[0]
         assert np.allclose(delta_a, delta_b)
+
+    def test_remove_fragments(self):
+        """
+        Remove a fragment.
+        """
+        # Reset the SV database and instantiate a Leonard and a Clerk.
+        leo = getLeonard(azrael.leonard.LeonardBullet)
+        clerk = azrael.clerk.Clerk()
+
+        # The original template has the following three fragments:
+        frags_orig = [
+            getFragRaw('fname_1'),
+            getFragDae('fname_2'),
+            getFragRaw('fname_3')
+        ]
+        t1 = Template('t1', [getCSSphere()], frags_orig, [], [])
+
+        # Add a new template, spawn it, and record the object ID.
+        assert clerk.addTemplates([t1]).ok
+        body = types.RigidBodyState()
+        ret = clerk.spawn([('t1', body)])
+        assert ret.ok
+        objID = ret.data[0]
+        leo.processCommandsAndSync()
+
+        # Query the fragment geometries and Body State to verify that both
+        # report three fragments.
+        ret = clerk.getFragmentGeometries([objID])
+        assert ret.ok and len(ret.data[objID]) == 3
+        ret = clerk.getBodyStates([objID])
+        assert ret.ok and len(ret.data[objID]['frag']) == 3
+
+        # Update the fragments as follows: keep the first intact, remove the
+        # second, and modify the third one.
+        frags_new = [getFragNone('fname_2'), getFragDae('fname_3')]
+        assert clerk.setFragmentGeometries(objID, frags_new).ok
+
+        # After the last update only two fragments must remain.
+        ret = clerk.getFragmentGeometries([objID])
+        assert ret.ok and len(ret.data[objID]) == 2
+        ret = clerk.getBodyStates([objID])
+        assert ret.ok and len(ret.data[objID]['frag']) == 2
 
 
 def test_invalid():

@@ -971,7 +971,7 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, 'Received invalid fragment data', None)
 
         # Convenience.
-        db_update = database.dbHandles['ObjInstances'].update
+        db = database.dbHandles['ObjInstances']
 
         # Update the fragment geometry in Dibbler.
         for frag in fragments:
@@ -981,21 +981,61 @@ class Clerk(config.AzraelProcess):
 
             # If the fragment type is '_NONE_' then remove it altogether.
             if frag.fragtype.upper() == '_NONE_':
-                db_update({'objID': objID},
+                db.update({'objID': objID},
                           {'$unset': {'fragState.{}'.format(frag.aid): True}})
 
         # To update the fragment's meta data in the DB we first need to remove
         # the actual geometry data from the fragments because the instance DB
-        # only stored meta information (Dibbler contains the actual
+        # only stores meta information (Dibbler contains the actual
         # geometries).
         new_frags = [frag._replace(fragdata=None) for frag in fragments]
 
+        # ------------------------------------------------------------------
+        # Here we update/remove the specified fragments. This would be a
+        # simple (atomic) MongoDB update if the object Template would store
+        # its fragments in a dictionary. Alas, it stores it in a list. We
+        # therefore need to fetch the entire template, parse its fragment
+        # list to remove/update them as specified, and then write them back.
+        # This is a design error and must be rectified. ie. Template must
+        # store its fragments (and CShapes, for that matter) in
+        # dictionaries.
+        # ------------------------------------------------------------------
+
+        # Compile the set of all fragments AIDs that should be either removed
+        # or modified.
+        aid_del = [_.aid for _ in new_frags if _.fragtype.upper() == '_NONE_']
+        aid_mod = [_.aid for _ in new_frags if _.fragtype.upper() != '_NONE_']
+        aid_del = set(aid_del)
+        aid_mod = set(aid_mod)
+
+        # Compile a list of fragments that should be modified but not removed.
+        frag_mod = [_ for _ in new_frags if _.aid in aid_mod]
+
+        # Retrieve the original template for the current objID.
+        old_template = db.find_one({'objID': objID})
+        if old_template is None:
+            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
+
+        # Compile its list of fragments.
+        old_frags = old_template['template']['fragments']
+        old_frags = [FragmentMeta(**_) for _ in old_frags]
+
+        # Remove all those fragments from the template that the user has asked
+        # us to update/delete.
+        frags = [_ for _ in old_frags if _.aid not in aid_del.union(aid_mod)]
+
+        # Add all those fragments the user wanted modifed (but not removed).
+        frags.extend(frag_mod)
+
+        # Convert the updated list of fragments to dictionaries so that they
+        # can be saved in the database.
+        frags = [_._asdict() for _ in frags]
+
         # Update the 'version' flag in the database. All clients
         # automatically receive this flag with their state variables.
-        db = database.dbHandles['ObjInstances']
         ret = db.update({'objID': objID},
                         {'$inc': {'version': 1},
-                         '$set': {'fragments': new_frags}
+                         '$set': {'template.fragments': frags}
                          })
 
         # Return the success status of the database update.
