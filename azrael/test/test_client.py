@@ -45,7 +45,7 @@ from IPython import embed as ipshell
 from azrael.types import RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw
 from azrael.test.test import getFragRaw, getFragDae, getFragNone
-from azrael.test.test import isEqualCS, getP2P, get6DofSpring2
+from azrael.test.test import getP2P, get6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 from azrael.test.test_leonard import getLeonard, killAzrael
 
@@ -381,7 +381,7 @@ class TestClient:
         assert ret_sv.imass == new_sv.imass
         assert ret_sv.scale == new_sv.scale
         assert np.array_equal(ret_sv.position, new_sv.position)
-        assert isEqualCS(ret_sv.cshapes, [getCSSphere()])
+        assert ret_sv.cshapes == [getCSSphere()]
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_getAllObjectIDs(self, client_type):
