@@ -347,7 +347,6 @@ def FromClerk_GetBodyState_Encode(payload: dict):
             sv = None
         else:
             sv = data['sv']._asdict()
-        print(data)
         frag = [_._asdict() for _ in data['frag']]
 
         # Replace the original 'sv' and 'frag' entries with the new ones.
