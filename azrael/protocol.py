@@ -40,7 +40,6 @@ agnostic encodings of strings, JSON objects, or C-arrays (via NumPy). This
 should make it possible to write clients in other languages.
 """
 
-import base64
 import azrael.util
 import azrael.igor
 import azrael.types as types
@@ -291,21 +290,19 @@ def FromClerk_GetFragmentGeometries_Decode(payload: dict):
 
 @typecheck
 def ToClerk_SetFragmentGeometry_Encode(objID: int, frags: list):
-    return RetVal(True, None, {'objID': objID, 'frags': frags})
+    out = {
+        'objID': objID,
+        'frags': [_._asdict() for _ in frags],
+    }
+    return RetVal(True, None, out)
 
 
 @typecheck
 def ToClerk_SetFragmentGeometry_Decode(payload: dict):
     # Wrap the fragments into their dedicated tuple.
     frags = []
-    b64d = base64.b64decode
     for frag in payload['frags']:
-        mf = FragmentMeta(*frag)
-        if mf.fragtype == 'dae':
-            # fixme: mf.data should be a dictionary; use **kwargs to construct
-            # the tuple; must be encoded as such in the ToClerk_..._Encode
-            # function defined above.
-            mf = mf._replace(fragdata=FragDae(*mf.fragdata))
+        mf = FragmentMeta(**frag)
         frags.append(mf)
     return True, (payload['objID'], frags)
 
