@@ -35,7 +35,7 @@ import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.test.test import isEqualBD, getP2P, get6DofSpring2
+from azrael.test.test import getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone
 from azrael.test.test_leonard import getLeonard, killAzrael
 from azrael.types import Template, RetVal, CollShapeMeta
@@ -458,7 +458,7 @@ class TestClerk:
         # Retrieve the SV for the existing ID=1.
         ret = clerk.getBodyStates([objID_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
-        assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
+        assert RBS(*ret.data[objID_1]['sv']) == sv_1
 
         # Spawn a second object.
         ret = clerk.spawn([(templateID, sv_2)])
@@ -469,13 +469,13 @@ class TestClerk:
         for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
             ret = clerk.getBodyStates([objID])
             assert (ret.ok, len(ret.data)) == (True, 1)
-            assert isEqualBD(ret.data[objID]['sv'], ref_sv)
+            assert RBS(*ret.data[objID]['sv']) == ref_sv
 
         # Retrieve the state variables for both objects at once.
         ret = clerk.getBodyStates([objID_1, objID_2])
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
-        assert isEqualBD(ret.data[objID_2]['sv'], sv_2)
+        assert RBS(*ret.data[objID_1]['sv']) == sv_1
+        assert RBS(*ret.data[objID_2]['sv']) == sv_2
 
     def test_getAllBodyStates(self):
         """
@@ -506,7 +506,7 @@ class TestClerk:
         leo.processCommandsAndSync()
         ret = clerk.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 1)
-        assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
+        assert RBS(*ret.data[objID_1]['sv']) == sv_1
 
         # Spawn a second object and verify its ID.
         ret = clerk.spawn([(templateID, sv_2)])
@@ -516,8 +516,8 @@ class TestClerk:
         leo.processCommandsAndSync()
         ret = clerk.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert isEqualBD(ret.data[objID_1]['sv'], sv_1)
-        assert isEqualBD(ret.data[objID_2]['sv'], sv_2)
+        assert RBS(*ret.data[objID_1]['sv']) == sv_1
+        assert RBS(*ret.data[objID_2]['sv']) == sv_2
 
     def test_set_force(self):
         """
