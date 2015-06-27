@@ -576,7 +576,7 @@ class TestClerk:
         objID = ret.data[0]
 
         # Create a Booster command.
-        cmd = types.CmdBooster(partID='0', force=2)
+        cmd = types.CmdBooster(partID='0', force_mag=2)
 
         # Send the command to Clerk. With the bug present this triggered a
         # stack trace, whereas now it must simply return with cleared ok flag.
@@ -603,7 +603,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Create commands for a Booster and a Factory.
-        cmd_b = types.CmdBooster(partID='0', force=0.2)
+        cmd_b = types.CmdBooster(partID='0', force_mag=0.2)
         cmd_f = types.CmdFactory(partID='0', exit_speed=0.5)
 
         # Call 'controlParts'. This must fail because the template for objID_1
@@ -638,7 +638,7 @@ class TestClerk:
         leo.processCommandsAndSync()
 
         # Tell each factory to spawn an object.
-        cmd_b = types.CmdBooster(partID='0', force=0.5)
+        cmd_b = types.CmdBooster(partID='0', force_mag=0.5)
         cmd_f = types.CmdFactory(partID='0', exit_speed=0.5)
 
         # Valid: Clerk must accept these commands.
@@ -698,8 +698,8 @@ class TestClerk:
 
         # Create the commands to activate both boosters with a different force.
         forcemag_0, forcemag_1 = 0.2, 0.4
-        cmd_0 = types.CmdBooster(partID='0', force=forcemag_0)
-        cmd_1 = types.CmdBooster(partID='1', force=forcemag_1)
+        cmd_0 = types.CmdBooster(partID='0', force_mag=forcemag_0)
+        cmd_1 = types.CmdBooster(partID='1', force_mag=forcemag_1)
 
         # Send booster commands to Clerk.
         assert clerk.controlParts(objID_1, [cmd_0, cmd_1], []).ok
@@ -943,8 +943,8 @@ class TestClerk:
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
         forcemag_0, forcemag_1 = 0.2, 0.4
-        cmd_0 = types.CmdBooster(partID='0', force=forcemag_0)
-        cmd_1 = types.CmdBooster(partID='1', force=forcemag_1)
+        cmd_0 = types.CmdBooster(partID='0', force_mag=forcemag_0)
+        cmd_1 = types.CmdBooster(partID='1', force_mag=forcemag_1)
         cmd_2 = types.CmdFactory(partID='0', exit_speed=exit_speed_0)
         cmd_3 = types.CmdFactory(partID='1', exit_speed=exit_speed_1)
 
@@ -1162,8 +1162,8 @@ class TestClerk:
         # object in z-direction, which means a force purely in z-direction and
         # no torque.
         # ---------------------------------------------------------------------
-        cmd_0 = types.CmdBooster(partID='0', force=1)
-        cmd_1 = types.CmdBooster(partID='1', force=1)
+        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
+        cmd_1 = types.CmdBooster(partID='1', force_mag=1)
         ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
         assert ret.ok
         assert ret.data == ([0, 0, 2], [0, 0, 0])
@@ -1173,8 +1173,8 @@ class TestClerk:
         # one upwards and the right one downwards. This must result in a zero
         # net force but non-zero torque.
         # ---------------------------------------------------------------------
-        cmd_0 = types.CmdBooster(partID='0', force=1)
-        cmd_1 = types.CmdBooster(partID='1', force=-1)
+        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
+        cmd_1 = types.CmdBooster(partID='1', force_mag=-1)
         ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
         assert ret.ok
         assert ret.data == ([0, 0, 0], [0, 2, 0])
@@ -1184,13 +1184,13 @@ class TestClerk:
         # correctly distinguishes between objects.
         # ---------------------------------------------------------------------
         # Turn off left Booster of first object (right booster remains active).
-        cmd_0 = types.CmdBooster(partID='0', force=0)
+        cmd_0 = types.CmdBooster(partID='0', force_mag=0)
         ret = clerk.updateBoosterForces(objID_1, [cmd_0])
         assert ret.ok
         assert ret.data == ([0, 0, -1], [0, 1, 0])
 
         # Turn on left Booster of the second object.
-        cmd_0 = types.CmdBooster(partID='0', force=1)
+        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
         ret = clerk.updateBoosterForces(objID_2, [cmd_0])
         assert ret.ok
         assert ret.data == ([0, 0, +1], [0, 1, 0])
@@ -1198,10 +1198,10 @@ class TestClerk:
         # ---------------------------------------------------------------------
         # Attempt to update a non-existing Booster or a non-existing object.
         # ---------------------------------------------------------------------
-        cmd_0 = types.CmdBooster(partID='10', force=1)
+        cmd_0 = types.CmdBooster(partID='10', force_mag=1)
         assert not clerk.updateBoosterForces(objID_2, [cmd_0]).ok
 
-        cmd_0 = types.CmdBooster(partID='0', force=1)
+        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
         assert not clerk.updateBoosterForces(1000, [cmd_0]).ok
 
     def test_setFragmentStates(self):
