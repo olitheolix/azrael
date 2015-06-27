@@ -336,37 +336,29 @@ def ToClerk_GetBodyState_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_GetBodyState_Encode(data: dict):
-    # For each objID compile a dictionary with the SV and fragment data in a JS
-    # friendly hashmap format.
-    for k, v in data.items():
-        if v is None:
-            data[k] = None
-            continue
+def FromClerk_GetBodyState_Encode(payload: dict):
+    out = {}
+    for objID, data in payload.items():
+        # Convert the constituent elements to dictionaries.
+        sv = data['sv']._asdict()
+        frag = {k: v._asdict() for (k, v) in data['frag'].items()}
 
-        # Convert the list of ``FragState`` tuples into a list of dictionaries.
-        # This will make it easier in JS to extract specific values instead of
-        # using magic array index numbers.
-        frags = [_._asdict() for _ in v['frag']]
-
-        # Add the converted tuples to the output dictionary.
-        data[k] = {'frag': frags, 'sv': v['sv']._asdict()}
-    return True, {'data': data}
+        # Replace the original 'sv' and 'frag' entries with the new ones.
+        out[objID] = {'sv': sv, 'frag': frag}
+    return True, {'data': out}
 
 
 @typecheck
 def FromClerk_GetBodyState_Decode(payload: dict):
-    data = {}
-    for objID, v in payload['data'].items():
-        objID = int(objID)
-        if v is None:
-            data[objID] = None
-            continue
+    out = {}
+    for objID, data in payload['data'].items():
+        # Compile the proper data types from the dictionaries.
+        sv = types.RigidBodyState(**data['sv'])
+        frag = {k: types.FragState(**v) for (k, v) in data['frag'].items()}
 
-        data[objID] = {}
-        data[objID]['frag'] = [FragState(**_) for _ in v['frag']]
-        data[objID]['sv'] = types.RigidBodyState(**v['sv'])
-    return RetVal(True, None, data)
+        # Replace the original 'sv' and 'frag' entries with the new ones.
+        out[int(objID)] = {'sv': sv, 'frag': frag}
+    return RetVal(True, None, out)
 
 
 # ---------------------------------------------------------------------------

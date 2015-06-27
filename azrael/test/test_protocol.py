@@ -201,8 +201,15 @@ class TestClerk:
         """
         Test codec for RigidBodyState tuple.
         """
-        objs = [{'frag': {}, 'sv': types.RigidBodyState()},
-                {'frag': {}, 'sv': types.RigidBodyState()}]
+        fragStates = {
+            'foo': FragState('foo', 1, (0, 1, 2), (0, 0, 0, 1)),
+            'bar': FragState('bar', 2, (3, 4, 5), (1, 0, 0, 0))
+        }
+
+        payload = {
+            1: {'frag': fragStates, 'sv': types.RigidBodyState()},
+            2: {'frag': fragStates, 'sv': types.RigidBodyState()}
+        }
         objIDs = [1, 2]
 
         # ----------------------------------------------------------------------
@@ -226,8 +233,7 @@ class TestClerk:
         # Clerk --> Client.
         # ----------------------------------------------------------------------
         # Encode source data.
-        data = dict(zip(objIDs, objs))
-        ok, enc = protocol.FromClerk_GetBodyState_Encode(data)
+        ok, enc = protocol.FromClerk_GetBodyState_Encode(payload)
 
         # Convert output to JSON and back (simulates the wire transmission).
         enc = json.loads(json.dumps(enc))
@@ -238,9 +244,6 @@ class TestClerk:
 
         # Verify.
         dec_sv = dec_sv.data
-        dec_sv = {k: dec_sv[k]['sv'] for k in dec_sv}
-        assert dec_sv[1] == objs[0]['sv']
-        assert dec_sv[2] == objs[1]['sv']
 
     def test_add_get_constraint(self):
         """

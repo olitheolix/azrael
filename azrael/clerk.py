@@ -1105,11 +1105,18 @@ class Clerk(config.AzraelProcess):
         rigid body state. This method adds the fragment states to that data
         structure.
 
-        The returned dictionary has the following form:
+        The returned dictionary has the following form::
 
-          {objID_1: {'frag': [FragState(), ...], 'sv': _RigidBodyState()},
-           objID_2: {'frag': [FragState(), ...], 'sv': _RigidBodyState()},
-           ...}
+        {
+            objID_1: {
+                'frag': [FragState(), ...],
+                'sv': _RigidBodyState()
+            },
+            objID_2: {
+                'frag': [FragState(), ...],
+                'sv': _RigidBodyState()
+            },
+        }
 
         :param dict bodyStates: Each key is an object ID and the
             corresponding value a ``RigidBodyState`` instance.
