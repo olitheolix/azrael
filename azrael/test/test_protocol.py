@@ -47,7 +47,7 @@ class TestClerk:
     def teardown_method(self, method):
         pass
 
-    def verifyToClerk(self, encode, decode, payload):
+    def verifyToClerk(self, encode, decode, *payload):
         """
         Verify the ``encoder``/``decoder`` pair with ``payload``.
 
@@ -59,7 +59,7 @@ class TestClerk:
         This method is for the Client --> Clerk direction.
         """
         # Encode source data.
-        ok, msg, enc = encode(payload)
+        ok, msg, enc = encode(*payload)
         assert ok
 
         # Convert output to JSON and back (simulates the wire transmission).
@@ -68,7 +68,7 @@ class TestClerk:
         # Decode the data.
         ok, dec = decode(enc)
         assert ok is True
-        assert dec == (payload, )
+        assert dec == payload
 
     def verifyFromClerk(self, encoder, decoder, payload):
         """
