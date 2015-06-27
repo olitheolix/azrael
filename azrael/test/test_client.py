@@ -93,12 +93,12 @@ class TestClient:
         self.dibbler.reset()
 
         # Insert default objects. None of them has an actual geometry but
-        # their collision shapes are: none, sphere, cube.
+        # their collision shapes are: none, sphere, box.
         clerk = azrael.clerk.Clerk()
         frag = getFragRaw('NoName')
         t1 = Template('_templateEmpty', [getCSEmpty()], [frag], [], [])
         t2 = Template('_templateSphere', [getCSSphere()], [frag], [], [])
-        t3 = Template('_templateCube', [getCSBox()], [frag], [], [])
+        t3 = Template('_templateBox', [getCSBox()], [frag], [], [])
         ret = clerk.addTemplates([t1, t2, t3])
         assert ret.ok
 
@@ -125,7 +125,7 @@ class TestClient:
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
         templateID_0 = '_templateEmpty'
-        templateID_1 = '_templateCube'
+        templateID_1 = '_templateBox'
 
         # Spawn a new object. Its ID must be 1.
         new_objs = [{'template': templateID_0, 'position': np.zeros(3)},
@@ -167,8 +167,8 @@ class TestClient:
         assert ret.ok and (len(ret.data) == 1)
         assert ret.data[name_2]['template'].cshapes == [getCSSphere()]
 
-        # ... and this one is a cube.
-        name_3 = '_templateCube'
+        # ... and this one is a box.
+        name_3 = '_templateBox'
         ret = client.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1)
         assert ret.data[name_3]['template'].cshapes == [getCSBox()]
@@ -213,7 +213,7 @@ class TestClient:
                            minval=0, maxval=0.5, force=0)
         f0 = types.Factory(
             partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
-            templateID='_templateCube', exit_speed=(0.1, 0.5))
+            templateID='_templateBox', exit_speed=(0.1, 0.5))
 
         # Attempt to query the geometry of a non-existing object.
         assert client.getFragmentGeometries([1]) == (True, None, {1: None})
@@ -472,7 +472,7 @@ class TestClient:
                            minval=0, maxval=1.0, force=0)
         f0 = types.Factory(
             partID='0', pos=pos_0, direction=dir_0,
-            templateID='_templateCube', exit_speed=[0.1, 0.5])
+            templateID='_templateBox', exit_speed=[0.1, 0.5])
         f1 = types.Factory(
             partID='1', pos=pos_1, direction=dir_1,
             templateID='_templateSphere', exit_speed=[1, 5])

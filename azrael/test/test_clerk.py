@@ -60,11 +60,11 @@ class TestClerk:
         azrael.database.init()
 
         # Insert default objects. None of them has an actual geometry but
-        # their collision shapes are: none, sphere, cube.
+        # their collision shapes are: none, sphere, box.
         frag = [getFragRaw('NoName')]
         t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
         t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
-        t3 = Template('_templateCube', [getCSBox()], frag, [], [])
+        t3 = Template('_templateBox', [getCSBox()], frag, [], [])
         t4 = Template('_templatePlane', [getCSPlane()], frag, [], [])
         ret = self.clerk.addTemplates([t1, t2, t3, t4])
         assert ret.ok
@@ -95,8 +95,8 @@ class TestClerk:
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
         assert ret.data[name_2]['template'].cshapes == [getCSSphere()]
 
-        # ... this one is a cube,...
-        name_3 = '_templateCube'
+        # ... this one is a box,...
+        name_3 = '_templateBox'
         ret = clerk.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
         assert ret.data[name_3]['template'].cshapes == [getCSBox()]
@@ -173,7 +173,7 @@ class TestClerk:
                            minval=1, maxval=1.5, force=0)
         f0 = types.Factory(
             partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
-            templateID='_templateCube', exit_speed=(0.1, 0.5))
+            templateID='_templateBox', exit_speed=(0.1, 0.5))
 
         # Add the new template.
         temp = Template('t3', [cs], frags, [b0, b1], [f0])
@@ -276,7 +276,7 @@ class TestClerk:
         # Parameters and constants for this test.
         id_0, id_1 = 1, 2
         templateID_0 = '_templateEmpty'
-        templateID_1 = '_templateCube'
+        templateID_1 = '_templateBox'
         sv = types.RigidBodyState()
 
         # Instantiate a Clerk.
@@ -327,7 +327,7 @@ class TestClerk:
 
         # Spawn two more objects with a single call.
         name_2 = '_templateSphere'
-        name_3 = '_templateCube'
+        name_3 = '_templateBox'
         ret = clerk.spawn([(name_2, sv_2), (name_3, sv_3)])
         assert (ret.ok, ret.data) == (True, (2, 3))
 
@@ -627,7 +627,7 @@ class TestClerk:
                            minval=0, maxval=0.5, force=0)
         f0 = types.Factory(
             partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
-            templateID='_templateCube', exit_speed=(0, 1))
+            templateID='_templateBox', exit_speed=(0, 1))
 
         # Define a new template, add it to Azrael, and spawn an instance.
         temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [b0], [f0])
@@ -751,7 +751,7 @@ class TestClerk:
         # manually.
         f0 = types.Factory(
             partID='0', pos=pos_0, direction=dir_0,
-            templateID='_templateCube', exit_speed=[0.1, 0.5])
+            templateID='_templateBox', exit_speed=[0.1, 0.5])
         f1 = types.Factory(
             partID='1', pos=pos_1, direction=dir_1,
             templateID='_templateSphere', exit_speed=[1, 5])
@@ -822,7 +822,7 @@ class TestClerk:
         # Define factory parts.
         f0 = types.Factory(
             partID='0', pos=pos_0, direction=dir_0,
-            templateID='_templateCube', exit_speed=[0.1, 0.5])
+            templateID='_templateBox', exit_speed=[0.1, 0.5])
         f1 = types.Factory(
             partID='1', pos=pos_1, direction=dir_1,
             templateID='_templateSphere', exit_speed=[1, 5])
@@ -922,7 +922,7 @@ class TestClerk:
                            minval=0, maxval=1.0, force=0)
         f0 = types.Factory(
             partID='0', pos=pos_0, direction=dir_0,
-            templateID='_templateCube', exit_speed=[0.1, 0.5])
+            templateID='_templateBox', exit_speed=[0.1, 0.5])
         f1 = types.Factory(
             partID='1', pos=pos_1, direction=dir_1,
             templateID='_templateSphere', exit_speed=[1, 5])
