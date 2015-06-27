@@ -339,12 +339,19 @@ def ToClerk_GetBodyState_Decode(payload: dict):
 def FromClerk_GetBodyState_Encode(payload: dict):
     out = {}
     for objID, data in payload.items():
+        if data is None:
+            # fixme: this case should not be possible once Clerk.getBodyState
+            # was fixed up.
+            out[objID] = None
+            continue
+
         # Convert the constituent elements to dictionaries.
         if data['sv'] is None:
             sv = None
         else:
             sv = data['sv']._asdict()
-        frag = {k: v._asdict() for (k, v) in data['frag'].items()}
+        print(data)
+        frag = [_._asdict() for _ in data['frag']]
 
         # Replace the original 'sv' and 'frag' entries with the new ones.
         out[objID] = {'sv': sv, 'frag': frag}
@@ -355,12 +362,18 @@ def FromClerk_GetBodyState_Encode(payload: dict):
 def FromClerk_GetBodyState_Decode(payload: dict):
     out = {}
     for objID, data in payload['data'].items():
+        if data is None:
+            # fixme: this case should not be possible once Clerk.getBodyState
+            # was fixed up.
+            out[int(objID)] = None
+            continue
+
         # Compile the proper data types from the dictionaries.
         if data['sv'] is None:
             sv = None
         else:
             sv = types.RigidBodyState(**data['sv'])
-        frag = {k: types.FragState(**v) for (k, v) in data['frag'].items()}
+        frag = [types.FragState(**_) for _ in data['frag']]
 
         # Replace the original 'sv' and 'frag' entries with the new ones.
         out[int(objID)] = {'sv': sv, 'frag': frag}
