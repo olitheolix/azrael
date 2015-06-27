@@ -199,51 +199,29 @@ class TestClerk:
 
     def test_GetBodyState(self):
         """
-        Test codec for RigidBodyState tuple.
+        Test codec for GetBodyState.
         """
-        fragStates = {
+        # Client --> Clerk.
+        # The payload are object IDs.
+        payload = [1, 2, 5]
+        enc = protocol.ToClerk_GetBodyState_Encode
+        dec = protocol.ToClerk_GetBodyState_Decode
+        self.verifyToClerk(enc, dec, payload)
+
+        # Clerk --> Client.
+        frag_states = {
             'foo': FragState('foo', 1, (0, 1, 2), (0, 0, 0, 1)),
             'bar': FragState('bar', 2, (3, 4, 5), (1, 0, 0, 0))
         }
-
         payload = {
-            1: {'frag': fragStates, 'sv': types.RigidBodyState()},
-            2: {'frag': fragStates, 'sv': types.RigidBodyState()}
+            1: {'frag': frag_states, 'sv': types.RigidBodyState()},
+            2: {'frag': frag_states, 'sv': types.RigidBodyState()}
         }
-        objIDs = [1, 2]
+        del fragStates
 
-        # ----------------------------------------------------------------------
-        # Client --> Clerk.
-        # ----------------------------------------------------------------------
-        # Encode source data.
-        ret = protocol.ToClerk_GetBodyState_Encode(objIDs)
-        assert ret.ok
-
-        # Convert output to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(ret.data))
-
-        # Decode the data.
-        ok, (dec_ids, ) = protocol.ToClerk_GetBodyState_Decode(enc)
-        assert (ok, len(dec_ids)) == (True, 2)
-
-        # Verify.
-        assert dec_ids == objIDs
-
-        # ----------------------------------------------------------------------
-        # Clerk --> Client.
-        # ----------------------------------------------------------------------
-        # Encode source data.
-        ok, enc = protocol.FromClerk_GetBodyState_Encode(payload)
-
-        # Convert output to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(enc))
-
-        # Decode the data.
-        dec_sv = protocol.FromClerk_GetBodyState_Decode(enc)
-        assert (dec_sv.ok, len(dec_sv.data)) == (True, 2)
-
-        # Verify.
-        dec_sv = dec_sv.data
+        enc = protocol.FromClerk_GetBodyState_Encode
+        dec = protocol.FromClerk_GetBodyState_Decode
+        self.verifyFromClerk(enc, dec, payload)
 
     def test_add_get_constraint(self):
         """
