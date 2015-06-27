@@ -868,26 +868,6 @@ class Booster(_Booster):
         return super().__new__(cls, partID, pos, direction,
                                minval, maxval, force)
 
-    def __eq__(self, ref):
-        # Sanity check.
-        if not isinstance(ref, type(self)):
-            return False
-
-        # Test if all fields are essentially identical. All fields except
-        # partID must be numeric arrays (Python lists or NumPy arrays).
-        for f in self._fields:
-            a, b = getattr(self, f), getattr(ref, f)
-            if isinstance(a, (tuple, list, np.ndarray)):
-                if not np.allclose(a, b, atol=1E-9):
-                    return False
-            else:
-                if a != b:
-                    return False
-        return True
-
-    def __ne__(self, ref):
-        return not self.__eq__(ref)
-
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
 
@@ -909,26 +889,6 @@ class CmdBooster(_CmdBooster):
 
         # Return constructed data type.
         return super().__new__(cls, partID, float(force_mag))
-
-    def __eq__(self, ref):
-        # Sanity check.
-        if not isinstance(ref, type(self)):
-            return False
-
-        # Test if all fields are essentially identical. All fields except
-        # partID must be numeric arrays (Python lists or NumPy arrays).
-        for f in self._fields:
-            a, b = getattr(self, f), getattr(ref, f)
-            if isinstance(a, (tuple, list, np.ndarray)):
-                if not np.allclose(a, b, atol=1E-9):
-                    return False
-            else:
-                if a != b:
-                    return False
-        return True
-
-    def __ne__(self, ref):
-        return not self.__eq__(ref)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
@@ -983,20 +943,6 @@ class Factory(_Factory):
         return super().__new__(
             cls, partID, pos, direction, templateID, exit_speed)
 
-    def __eq__(self, ref):
-        if not isinstance(ref, type(self)):
-            return False
-
-        for f in self._fields:
-            a, b = getattr(self, f), getattr(ref, f)
-            if isinstance(a, (tuple, list, np.ndarray)):
-                if not np.allclose(a, b, 1E-9):
-                    return False
-            else:
-                if a != b:
-                    return False
-        return True
-
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
 
@@ -1018,25 +964,6 @@ class CmdFactory(_CmdFactory):
 
         # Return constructed data type.
         return super().__new__(cls, partID, exit_speed)
-
-    def __eq__(self, ref):
-        # Sanity check.
-        if not isinstance(ref, type(self)):
-            return False
-
-        # Test if all fields are essentially identical.
-        for f in self._fields:
-            a, b = getattr(self, f), getattr(ref, f)
-            if isinstance(a, (tuple, list, np.ndarray)):
-                if not np.allclose(a, b, 1E-9):
-                    return False
-            else:
-                if a != b:
-                    return False
-        return True
-
-    def __ne__(self, ref):
-        return not self.__eq__(ref)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
