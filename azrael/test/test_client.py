@@ -303,12 +303,12 @@ class TestClient:
         leo = getLeonard()
 
         # Query the state variable for a non existing object.
-        objID_tmp = 100
+        objID = 100
         assert client.getAllBodyStates() == (True, None, {})
 
-        ok, _, sv = client.getBodyStates(objID_tmp)
-        assert (ok, sv) == (True, {objID_tmp: None})
-        del objID_tmp
+        ret = client.getBodyStates(objID)
+        assert ret == (True, None, {objID: None})
+        del objID
 
         # Instruct Clerk to spawn a new object. Its objID must be '1'.
         new_obj = {'template': templateID,
@@ -328,7 +328,7 @@ class TestClient:
         assert ret.ok and (ret.data == {})
 
         # Run one Leonard step. This will pick up the newly spawned object and
-        # SV queries must now return valid data.
+        # state queries must now return valid data for it.
         leo.processCommandsAndSync()
         ret = client.getBodyStates(objID_1)
         assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
