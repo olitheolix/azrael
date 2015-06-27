@@ -1179,15 +1179,16 @@ class Clerk(config.AzraelProcess):
 
         # Wrap the fragment states into their dedicated tuple type.
         fragStates = {k: [FragState(**_) for _ in v]
-                     for (k, v) in fragStates.items()}
+                      for (k, v) in fragStates.items()}
 
         # Add body state and fragment data for all objects. If the objects do not
-        # exist then set the data to *None*.  During that proces also update
+        # exist then set the data to *None*. During that process also update
         # the 'version' (this flag indicates geometry changes to the
         # client).
-        # fixme: the loop below should always return a dict of dictionary
+        #
+        # fixme: the loop below should always return a dict of dictionaries
         # instead of skipping the object altoghether in either of the two IF
-        # statements..
+        # statements.
         out = {}
         for objID in objIDs:
             # Skip to the next object if no body state is available for it.
