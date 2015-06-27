@@ -447,7 +447,9 @@ class Client():
     @typecheck
     def getTemplateGeometry(self, template):
         """
-        Return the ``template`` geometry.
+        fixme: expect an URL string and a `template` instance.
+
+        Return the geometry ``template`` geometry.
 
         The return value is a dictionary. The keys are the fragment names and
         the values are ``Fragment`` instances:
@@ -460,11 +462,11 @@ class Client():
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
-            ip=self.ip, port=config.port_clacks, url=template.url)
+            ip=self.ip, port=config.port_clacks, url=template['url'])
 
         # Fetch the geometry from the web server and decode it.
         out = {}
-        for frag in template.fragments:
+        for frag in template['template'].fragments:
             frag = FragmentMeta(*frag)
             url = base_url + '/' + frag.aid + '/model.json'
             data = urllib.request.urlopen(url).readall()

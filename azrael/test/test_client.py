@@ -158,63 +158,68 @@ class TestClient:
         # Clerk has default objects. This one has an empty collision shape...
         name_1 = '_templateEmpty'
         ret = client.getTemplates([name_1])
-        assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
-        assert isEqualCS(ret.data[name_1].cshapes, [getCSEmpty()])
+        assert ret.ok and (len(ret.data) == 1)
+        assert ret.data[name_1]['template'].cshapes == [getCSEmpty()]
 
         # ... this one is a sphere...
         name_2 = '_templateSphere'
         ret = client.getTemplates([name_2])
-        assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
-        assert isEqualCS(ret.data[name_2].cshapes, [getCSSphere()])
+        assert ret.ok and (len(ret.data) == 1)
+        assert ret.data[name_2]['template'].cshapes == [getCSSphere()]
 
         # ... and this one is a cube.
         name_3 = '_templateCube'
         ret = client.getTemplates([name_3])
-        assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
-        assert isEqualCS(ret.data[name_3].cshapes, [getCSBox()])
+        assert ret.ok and (len(ret.data) == 1)
+        assert ret.data[name_3]['template'].cshapes == [getCSBox()]
 
         # Retrieve all three again but with a single call.
         ret = client.getTemplates([name_1, name_2, name_3])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3))
-        assert isEqualCS(ret.data[name_1].cshapes, [getCSEmpty()])
-        assert isEqualCS(ret.data[name_2].cshapes, [getCSSphere()])
-        assert isEqualCS(ret.data[name_3].cshapes, [getCSBox()])
+        assert ret.data[name_2]['template'].cshapes == [getCSSphere()]
+        assert ret.data[name_3]['template'].cshapes == [getCSBox()]
+        assert ret.data[name_1]['template'].cshapes == [getCSEmpty()]
 
         # Add a new object template.
         frag = getFragRaw('bar')
-        temp = Template('t1', [getCSSphere()], [frag], [], [])
-        assert client.addTemplates([temp]).ok
+        temp_name = 't1'
+        temp_orig = Template(temp_name, [getCSSphere()], [frag], [], [])
+        assert client.addTemplates([temp_orig]).ok
 
-        # Fetch the just added template again.
-        ret = client.getTemplates([temp.aid])
+        # Fetch the just added template again and verify its content (skip the
+        # geometry because it contains only meta information and will be
+        # checked afterwards).
+        ret = client.getTemplates([temp_name])
         assert ret.ok and (len(ret.data) == 1)
-        assert isEqualCS(ret.data[temp.aid].cshapes, [getCSSphere()])
-        assert len(ret.data[temp.aid].boosters) == 0
-        assert len(ret.data[temp.aid].factories) == 0
+        temp_out = ret.data[temp_name]['template']
+        assert temp_out.boosters == temp_orig.boosters
+        assert temp_out.factories == temp_orig.factories
+        assert temp_out.cshapes == temp_orig.cshapes
 
-        # Fetch the geometry from the Web server and verify it is correct.
-        ret = client.getTemplateGeometry(ret.data[temp.aid])
+        # Fetch the geometry from the web server and verify it.
+        ret = client.getTemplateGeometry(ret.data[temp_name])
         assert ret.ok
         assert ret.data['bar'] == frag.fragdata
-        del temp, ret
+        del ret, temp_out, temp_orig, frag
 
         # Define a new object with two boosters and one factory unit.
         # The 'boosters' and 'factories' arguments are a list of named
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any).
-        b0 = types.Booster(partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
+        b0 = types.Booster(partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
                            minval=0, maxval=0.5, force=0)
-        b1 = types.Booster(partID='1', pos=[0, 0, 0], direction=[0, 0, 1],
+        b1 = types.Booster(partID='1', pos=(0, 0, 0), direction=(0, 0, 1),
                            minval=0, maxval=0.5, force=0)
         f0 = types.Factory(
-            partID='0', pos=[0, 0, 0], direction=[0, 0, 1],
-            templateID='_templateCube', exit_speed=[0.1, 0.5])
+            partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
+            templateID='_templateCube', exit_speed=(0.1, 0.5))
 
         # Attempt to query the geometry of a non-existing object.
         assert client.getFragmentGeometries([1]) == (True, None, {1: None})
 
-        # Define a new template, add it to Azrael, and spawn it.
+        # Define a new template, add it to Azrael, spawn it, and record its
+        # object ID.
         frag = getFragRaw('bar')
         temp = Template('t2', [getCSBox()], [frag], [b0, b1], [f0])
         assert client.addTemplates([temp]).ok
@@ -222,7 +227,7 @@ class TestClient:
         assert ret.ok and len(ret.data) == 1
         objID = ret.data[0]
 
-        # Retrieve the geometry of the new object and verify it is correct.
+        # Retrieve- and verify the geometry of the just spawned object.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
         assert ret.data[objID]['bar']['type'] == 'RAW'
@@ -231,25 +236,15 @@ class TestClient:
         # number of boosters/factories.
         ret = client.getTemplates([temp.aid])
         assert ret.ok and (len(ret.data) == 1)
-        t_data = ret.data[temp.aid]
-        assert isEqualCS(t_data.cshapes, [getCSBox()])
-        assert len(t_data.boosters) == 2
-        assert len(t_data.factories) == 1
+        t_data = ret.data[temp.aid]['template']
+        assert t_data.cshapes == [getCSBox()]
+        assert t_data.boosters == temp.boosters
+        assert t_data.factories == temp.factories
 
         # Fetch the geometry from the Web server and verify it is correct.
         ret = client.getTemplateGeometry(ret.data[temp.aid])
         assert ret.ok
         assert ret.data['bar'] == frag.fragdata
-
-        # Explicitly verify the booster- and factory units. The easiest (albeit
-        # not most readable) way to do the comparison is to convert the unit
-        # descriptions (which are named tuples) to byte strings and compare
-        # those.
-        out_boosters = [types.Booster(*_) for _ in t_data.boosters]
-        out_factories = [types.Factory(*_) for _ in t_data.factories]
-        assert b0 in out_boosters
-        assert b1 in out_boosters
-        assert f0 in out_factories
 
     @pytest.mark.parametrize('client_type', ['ZeroMQ', 'Websocket'])
     def test_spawn_and_delete_one_object(self, client_type):
