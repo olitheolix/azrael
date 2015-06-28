@@ -136,7 +136,7 @@ class TestClerk:
 
         # Clerk --> Client.
         payload = {template.aid: {
-            'url': 'http://somewhere',
+            'url_frag': 'http://somewhere',
             'template': template}
         }
         enc = protocol.FromClerk_GetTemplates_Encode
@@ -330,10 +330,10 @@ class TestClerk:
 
         # Clerk --> Client
         payload = {
-            1: {'foo1': {'type': 'raw', 'url': 'http://foo1'},
-                'bar1': {'type': 'dae', 'url': 'http://bar1'}},
-            5: {'foo2': {'type': 'raw', 'url': 'http://foo2'},
-                'bar2': {'type': 'dae', 'url': 'http://bar2'}}
+            1: {'foo1': {'type': 'raw', 'url_frag': 'http://foo1'},
+                'bar1': {'type': 'dae', 'url_frag': 'http://bar1'}},
+            5: {'foo2': {'type': 'raw', 'url_frag': 'http://foo2'},
+                'bar2': {'type': 'dae', 'url_frag': 'http://bar2'}}
         }
         enc = protocol.FromClerk_GetFragmentGeometries_Encode
         dec = protocol.FromClerk_GetFragmentGeometries_Decode

@@ -532,13 +532,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             base_url = 'http://{}:{}'.format(self.ip, config.port_clacks)
             for frag_name, frag_data in ret.data[objID].items():
                 if frag_data['type'] == 'RAW':
-                    url = base_url + frag_data['url'] + '/model.json'
+                    url = base_url + frag_data['url_frag'] + '/model.json'
                     frag = urllib.request.urlopen(url).readall()
                     frag = json.loads(frag.decode('utf8'))
                     frag = FragRaw(**frag)
                     frag = FragMeta(frag_name, 'RAW', frag)
                 elif frag_data['type'] == 'DAE':
-                    url = base_url + frag_data['url'] + '/' + frag_name
+                    url = base_url + frag_data['url_frag'] + '/' + frag_name
                     frag = urllib.request.urlopen(url).readall()
                     with tempfile.TemporaryDirectory() as tmpdir:
                         open('model.dae', 'wb').write(frag)

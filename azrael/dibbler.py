@@ -351,7 +351,7 @@ class Dibbler:
         if not ret.ok:
             return ret
         else:
-            return RetVal(True, None, {'url': location})
+            return RetVal(True, None, {'url_frag': location})
 
     @typecheck
     def spawnTemplate(self, name: str, objID: str):
@@ -397,7 +397,7 @@ class Dibbler:
         else:
             # Found at least one template file to copy.
             url = config.url_instances + '/{}'.format(objID)
-            return RetVal(True, None, {'url': url})
+            return RetVal(True, None, {'url_frag': url})
 
     @typecheck
     def updateFragments(self, objID: str, frags: (tuple, list)):

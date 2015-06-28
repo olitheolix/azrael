@@ -573,7 +573,7 @@ class TestClient:
         # Download the fragment.
         base_url = 'http://{ip}:{port}'.format(
             ip=config.addr_clacks, port=config.port_clacks)
-        url = base_url + ret.data[objID]['bar']['url'] + '/model.json'
+        url = base_url + ret.data[objID]['bar']['url_frag'] + '/model.json'
         for ii in range(10):
             assert ii < 8
             try:
@@ -593,7 +593,7 @@ class TestClient:
         assert ret.data[objID]['bar']['type'] == 'RAW'
 
         # Download the fragment.
-        url = base_url + ret.data[objID]['bar']['url'] + '/model.json'
+        url = base_url + ret.data[objID]['bar']['url_frag'] + '/model.json'
         tmp = urllib.request.urlopen(url).readall()
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == frag.fragdata
@@ -779,7 +779,7 @@ class TestClient:
         # Verify it has the correct type ('DAE') and address.
         ret = ret.data[objID]
         assert ret['f_dae']['type'] == 'DAE'
-        assert ret['f_dae']['url'] == (
+        assert ret['f_dae']['url_frag'] == (
             config.url_instances + '/' + str(objID) + '/f_dae')
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])

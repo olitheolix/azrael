@@ -468,7 +468,7 @@ function* mycoroutine(connection) {
                     scene.add(geo);
                     break;
                 case 'DAE':
-                    console.log('Loading dae from <' + d.url + '>');
+                    console.log('Loading dae from <' + d.url_frag + '>');
                     loader.load(
                         d.url,
                         // Function when resource is loaded

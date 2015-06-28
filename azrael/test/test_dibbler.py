@@ -123,7 +123,7 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 2)
 
         # Fetch- and verify the model.
-        self.verifyRaw(ret.data['url'], frag)
+        self.verifyRaw(ret.data['url_frag'], frag)
 
     def test_addDaeTemplate(self):
         """
@@ -144,7 +144,7 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, 4)
 
         # Fetch- and verify the model.
-        self.verifyDae(ret.data['url'], frag)
+        self.verifyDae(ret.data['url_frag'], frag)
 
     def test_invalid(self):
         """
@@ -186,9 +186,9 @@ class TestDibbler:
         assert dibbler.getNumFiles() == (True, None, (2 + 4) + (2 * 2 + 1 * 4))
 
         # Verify that all files are correct.
-        self.verifyRaw(ret_1.data['url'], frag_raw)
-        self.verifyRaw(ret_2.data['url'], frag_raw)
-        self.verifyDae(ret_3.data['url'], frag_dae)
+        self.verifyRaw(ret_1.data['url_frag'], frag_raw)
+        self.verifyRaw(ret_2.data['url_frag'], frag_raw)
+        self.verifyDae(ret_3.data['url_frag'], frag_dae)
 
         # Attempt to spawn a non-existing template. This must fail and the
         # number of files in Dibbler must not change.
@@ -213,10 +213,10 @@ class TestDibbler:
         ret_2 = dibbler.spawnTemplate(t1.aid, '2')
         assert ret_11.ok and ret_2.ok
 
-        self.verifyRaw(ret_11.data['url'], frags_orig[0])
-        self.verifyDae(ret_11.data['url'], frags_orig[1])
-        self.verifyRaw(ret_2.data['url'], frags_orig[0])
-        self.verifyDae(ret_2.data['url'], frags_orig[1])
+        self.verifyRaw(ret_11.data['url_frag'], frags_orig[0])
+        self.verifyDae(ret_11.data['url_frag'], frags_orig[1])
+        self.verifyRaw(ret_2.data['url_frag'], frags_orig[0])
+        self.verifyDae(ret_2.data['url_frag'], frags_orig[1])
 
         # Attempt to change the fragment of a non-existing object.
         ret = dibbler.updateFragments('20', frags_new)
@@ -234,20 +234,20 @@ class TestDibbler:
 
         # The previous attempts to modify fragments of non-existing objectst
         # must not have modified the fragments.
-        self.verifyRaw(ret_11.data['url'], frags_orig[0])
-        self.verifyDae(ret_11.data['url'], frags_orig[1])
-        self.verifyRaw(ret_2.data['url'], frags_orig[0])
-        self.verifyDae(ret_2.data['url'], frags_orig[1])
+        self.verifyRaw(ret_11.data['url_frag'], frags_orig[0])
+        self.verifyDae(ret_11.data['url_frag'], frags_orig[1])
+        self.verifyRaw(ret_2.data['url_frag'], frags_orig[0])
+        self.verifyDae(ret_2.data['url_frag'], frags_orig[1])
 
         # Change the first fragments of the first object.
         ret = dibbler.updateFragments('11', frags_new)
         assert ret.ok
 
         # Verify that only the first fragment of the '11' object has changed.
-        self.verifyDae(ret_11.data['url'], frags_new[0])
-        self.verifyDae(ret_11.data['url'], frags_orig[1])
-        self.verifyRaw(ret_2.data['url'], frags_orig[0])
-        self.verifyDae(ret_2.data['url'], frags_orig[1])
+        self.verifyDae(ret_11.data['url_frag'], frags_new[0])
+        self.verifyDae(ret_11.data['url_frag'], frags_orig[1])
+        self.verifyRaw(ret_2.data['url_frag'], frags_orig[0])
+        self.verifyDae(ret_2.data['url_frag'], frags_orig[1])
 
     def test_updateFragments_partial(self):
         """
@@ -277,9 +277,9 @@ class TestDibbler:
         assert dibbler.addTemplate(t1).ok
         ret = dibbler.spawnTemplate(t1.aid, '1')
         assert ret.ok
-        self.verifyRaw(ret.data['url'], frags_orig[0])
-        self.verifyDae(ret.data['url'], frags_orig[1])
-        self.verifyRaw(ret.data['url'], frags_orig[2])
+        self.verifyRaw(ret.data['url_frag'], frags_orig[0])
+        self.verifyDae(ret.data['url_frag'], frags_orig[1])
+        self.verifyRaw(ret.data['url_frag'], frags_orig[2])
 
         # Record the current number of files in Dibbler. There must be one
         # 'meta.json', two raw files (one each), 3 Collada files (dae + 2
@@ -297,10 +297,10 @@ class TestDibbler:
 
         # Verify that the first fragment is still intact, the second does not
         # exist anymore, and the third was updated.
-        self.verifyRaw(ret.data['url'], frags_orig[0])
+        self.verifyRaw(ret.data['url_frag'], frags_orig[0])
         with pytest.raises(AssertionError):
-            self.verifyDae(ret.data['url'], frags_orig[1])
-        self.verifyDae(ret.data['url'], frags_new[1])
+            self.verifyDae(ret.data['url_frag'], frags_orig[1])
+        self.verifyDae(ret.data['url_frag'], frags_new[1])
 
     def test_deleteTemplate(self):
         """
@@ -320,13 +320,13 @@ class TestDibbler:
         # Add- and verify the Raw template.
         ret = dibbler.addTemplate(t11)
         assert dibbler.getNumFiles() == (True, None, 2)
-        self.verifyRaw(ret.data['url'], frag_raw)
+        self.verifyRaw(ret.data['url_frag'], frag_raw)
 
         # Remove the Raw template and ensure it does not exist anymore.
         assert dibbler.deleteTemplate('name11').ok
         assert dibbler.getNumFiles() == (True, None, 0)
         with pytest.raises(AssertionError):
-            self.verifyRaw(ret.data['url'], frag_raw)
+            self.verifyRaw(ret.data['url_frag'], frag_raw)
 
         # Attempt to remove the Raw template once more. Dibbler must not delte
         # any files, albeit the call itself must succeed.
@@ -338,15 +338,15 @@ class TestDibbler:
         ret_raw = dibbler.addTemplate(t11)
         ret_dae = dibbler.addTemplate(t1)
         assert dibbler.getNumFiles() == (True, None, 6)
-        self.verifyRaw(ret_raw.data['url'], frag_raw)
-        self.verifyDae(ret_dae.data['url'], frag_dae)
+        self.verifyRaw(ret_raw.data['url_frag'], frag_raw)
+        self.verifyDae(ret_dae.data['url_frag'], frag_dae)
 
         # Remove the Collada template whose name is a substring of the first.
         assert dibbler.deleteTemplate('name1') == (True, None, 4)
         assert dibbler.getNumFiles() == (True, None, 2)
-        self.verifyRaw(ret_raw.data['url'], frag_raw)
+        self.verifyRaw(ret_raw.data['url_frag'], frag_raw)
         with pytest.raises(AssertionError):
-            self.verifyRaw(ret_dae.data['url'], frag_dae)
+            self.verifyRaw(ret_dae.data['url_frag'], frag_dae)
 
         # Remove the Collada template again. No files must be deleted this
         # time.
@@ -363,9 +363,9 @@ class TestDibbler:
         assert dibbler.deleteTemplate('name11') == (True, None, 2)
         assert dibbler.getNumFiles() == (True, None, 0)
         with pytest.raises(AssertionError):
-            self.verifyRaw(ret_raw.data['url'], frag_raw)
+            self.verifyRaw(ret_raw.data['url_frag'], frag_raw)
         with pytest.raises(AssertionError):
-            self.verifyRaw(ret_dae.data['url'], frag_dae)
+            self.verifyRaw(ret_dae.data['url_frag'], frag_dae)
 
     def test_deleteInstance(self):
         """
@@ -387,10 +387,10 @@ class TestDibbler:
         # (meta.json plus 1 dae file plus 2 textures).
         ret = dibbler.addTemplate(t_raw)
         assert dibbler.getNumFiles() == (True, None, 2)
-        self.verifyRaw(ret.data['url'], frag_raw)
+        self.verifyRaw(ret.data['url_frag'], frag_raw)
         ret = dibbler.addTemplate(t_dae)
         assert dibbler.getNumFiles() == (True, None, 2 + 4)
-        self.verifyDae(ret.data['url'], frag_dae)
+        self.verifyDae(ret.data['url_frag'], frag_dae)
 
         # Spawn some instances.
         assert dibbler.spawnTemplate('temp_raw', '1').ok

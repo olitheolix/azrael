@@ -150,7 +150,7 @@ def ToClerk_GetTemplates_Decode(payload: dict):
 def FromClerk_GetTemplates_Encode(templates):
     out = {}
     for objID, data in templates.items():
-        out[objID] = {'url': data['url'],
+        out[objID] = {'url_frag': data['url_frag'],
                       'template': data['template']._asdict()}
     return True, out
 
@@ -159,7 +159,7 @@ def FromClerk_GetTemplates_Encode(templates):
 def FromClerk_GetTemplates_Decode(payload: dict):
     out = {}
     for objID, data in payload.items():
-        out[objID] = {'url': data['url'],
+        out[objID] = {'url_frag': data['url_frag'],
                       'template': Template(**data['template'])}
     return RetVal(True, None, out)
 

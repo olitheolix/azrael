@@ -157,7 +157,7 @@ class SetGeometry(multiprocessing.Process):
         for objID in objIDs:
             frags = {}
             for frag_name in geo_meta[objID]:
-                url = base_url + geo_meta[objID][frag_name]['url']
+                url = base_url + geo_meta[objID][frag_name]['url_frag']
                 url += '/model.json'
                 tmp = urllib.request.urlopen(url).readall()
                 tmp = json.loads(tmp.decode('utf8'))

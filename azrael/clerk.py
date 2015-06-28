@@ -424,7 +424,7 @@ class Clerk(config.AzraelProcess):
 
                 # Compile the template data that will go into the database. The
                 # template will be stored as an explicit dictionary.
-                data = {'url': url_frag,
+                data = {'url_frag': url_frag,
                         'template': template._asdict(),
                         'templateID': template.aid}
                 del frags
@@ -462,7 +462,7 @@ class Clerk(config.AzraelProcess):
         This method returns a dictionary with the `templateIDs` as keys::
 
           ret = {templateIDs[0]: {'template': Template(),
-                                  'url': URL for geometries},
+                                  'url_frag': URL for geometries},
                  templateIDs[1]: {...}, }.
 
         ..note:: The template data only contains meta information about the
@@ -493,7 +493,7 @@ class Clerk(config.AzraelProcess):
         try:
             for doc in cursor:
                 out[doc['templateID']] = {
-                    'url': doc['url'],
+                    'url_frag': doc['url_frag'],
                     'template': Template(**doc['template']),
                 }
         except TypeError:
@@ -603,7 +603,7 @@ class Clerk(config.AzraelProcess):
                     continue
                 else:
                     # URL where the instance geometry is available.
-                    geo_url = ret.data['url']
+                    geo_url = ret.data['url_frag']
 
                 # Give all geometries a neutral initial state in terms of
                 # scale, position, and orientation.
@@ -618,7 +618,7 @@ class Clerk(config.AzraelProcess):
                 # and 'version'.
                 doc = {
                     'objID': objID,
-                    'url': geo_url,
+                    'url_frag': geo_url,
                     'version': 0,
                     'templateID': templateID,
                     'template': template._asdict(),
@@ -902,8 +902,8 @@ class Clerk(config.AzraelProcess):
 
         This method returns a dictionary of the form::
 
-            {objID_1: {'type': 'raw', 'url': 'http:...'},
-             objID_2: {'type': 'dae', 'url': 'http:...'},
+            {objID_1: {'type': 'raw', 'url_frag': 'http:...'},
+             objID_2: {'type': 'dae', 'url_frag': 'http:...'},
              objID_3: None,
              ...
             }
@@ -945,7 +945,7 @@ class Clerk(config.AzraelProcess):
                 out[doc['objID']] = {
                     _.aid: {
                         'type': _.fragtype,
-                        'url': pjoin(doc['url'], _.aid)
+                        'url_frag': pjoin(doc['url_frag'], _.aid)
                     } for _ in frags}
         except TypeError:
             msg = 'Inconsistent Fragment data'

@@ -282,10 +282,10 @@ class Client():
         Example::
 
             {objID_1:
-                {name_1: {'type': 'raw', 'url': 'http:...'},
-                 name_2: {'type': 'raw', 'url': 'http:...'},
+                {name_1: {'type': 'raw', 'url_frag': 'http:...'},
+                 name_2: {'type': 'raw', 'url_frag': 'http:...'},
                 }
-             objID_2: {name_1: {'type': 'dae', 'url': 'http://somewhere'}},
+             objID_2: {name_1: {'type': 'dae', 'url_frag': 'http://somewhere'}},
             }
 
         :param int objIDs: list of objIDs to query.
@@ -462,7 +462,7 @@ class Client():
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
-            ip=self.ip, port=config.port_clacks, url=template['url'])
+            ip=self.ip, port=config.port_clacks, url=template['url_frag'])
 
         # Fetch the geometry from the web server and decode it.
         out = {}

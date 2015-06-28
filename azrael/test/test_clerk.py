@@ -247,7 +247,7 @@ class TestClerk:
 
         url_template = config.url_templates
         assert (frag.aid, frag.fragtype) == (frag_1.aid, frag_1.fragtype)
-        assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
+        assert ret.data[name_1]['url_frag'] == '{}/'.format(url_template) + name_1
         del ret, frag
 
         # Fetch the second template.
@@ -255,14 +255,14 @@ class TestClerk:
         assert ret.ok
         frag = ret.data[name_2]['template'].fragments[0]
         assert (frag.aid, frag.fragtype) == (frag_2.aid, frag_2.fragtype)
-        assert ret.data[name_2]['url'] == config.url_templates + '/' + name_2
+        assert ret.data[name_2]['url_frag'] == config.url_templates + '/' + name_2
         del ret, frag
 
         # Fetch both templates at once.
         ret = clerk.getTemplates([name_1, name_2])
         assert ret.ok and (len(ret.data) == 2)
-        assert ret.data[name_1]['url'] == '{}/'.format(url_template) + name_1
-        assert ret.data[name_2]['url'] == '{}/'.format(url_template) + name_2
+        assert ret.data[name_1]['url_frag'] == '{}/'.format(url_template) + name_1
+        assert ret.data[name_2]['url_frag'] == '{}/'.format(url_template) + name_2
 
     def test_get_object_template_id(self):
         """
@@ -1056,9 +1056,9 @@ class TestClerk:
             # and an 'f_dae' with type 'DAE'.
             _url_inst = config.url_instances + '/'
             assert _ret['f_raw']['type'] == 'RAW'
-            assert _ret['f_raw']['url'] == _url_inst + _objID + '/f_raw'
+            assert _ret['f_raw']['url_frag'] == _url_inst + _objID + '/f_raw'
             assert _ret['f_dae']['type'] == 'DAE'
-            assert _ret['f_dae']['url'] == _url_inst + _objID + '/f_dae'
+            assert _ret['f_dae']['url_frag'] == _url_inst + _objID + '/f_dae'
             return True
 
         # Query and verify the geometry of the first instance.
@@ -1408,7 +1408,7 @@ class TestClerk:
         # Download the 'RAW' file and verify its content is correct.
         base_url = 'http://{}:{}'.format(
             azrael.config.addr_clacks, azrael.config.port_clacks)
-        url = base_url + data['10']['url'] + '/model.json'
+        url = base_url + data['10']['url_frag'] + '/model.json'
         tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == f_raw.fragdata
@@ -1417,17 +1417,17 @@ class TestClerk:
         # matches the name of the fragment (ie. 'test'), *not* the name of the
         # original Collada file ('cube.dae').
         # fixme: use FragDAE.__eq__ method for thi
-        url = base_url + data['test']['url'] + '/test'
+        url = base_url + data['test']['url_frag'] + '/test'
         tmp = _download(url)
         assert tmp == base64.b64decode(f_dae.fragdata.dae)
 
         # Download and verify the first texture.
-        url = base_url + data['test']['url'] + '/rgb1.png'
+        url = base_url + data['test']['url_frag'] + '/rgb1.png'
         tmp = _download(url)
         assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb1.png'])
 
         # Download and verify the second texture.
-        url = base_url + data['test']['url'] + '/rgb2.jpg'
+        url = base_url + data['test']['url_frag'] + '/rgb2.jpg'
         tmp = _download(url)
         assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb2.jpg'])
 
@@ -1440,7 +1440,7 @@ class TestClerk:
         del ret
 
         # Download the 'RAW' file and verify its content is correct.
-        url = base_url + data['10']['url'] + '/model.json'
+        url = base_url + data['10']['url_frag'] + '/model.json'
         tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == f_raw.fragdata
@@ -1449,17 +1449,17 @@ class TestClerk:
         # matches the name of the fragment (ie. 'test'), *not* the name of the
         # original Collada file ('cube.dae').
         # fixme: use FragDAE.__eq__ method for thi
-        url = base_url + data['test']['url'] + '/test'
+        url = base_url + data['test']['url_frag'] + '/test'
         tmp = _download(url)
         assert tmp == base64.b64decode(f_dae.fragdata.dae)
 
         # Download and verify the first texture.
-        url = base_url + data['test']['url'] + '/rgb1.png'
+        url = base_url + data['test']['url_frag'] + '/rgb1.png'
         tmp = _download(url)
         assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb1.png'])
 
         # Download and verify the second texture.
-        url = base_url + data['test']['url'] + '/rgb2.jpg'
+        url = base_url + data['test']['url_frag'] + '/rgb2.jpg'
         tmp = _download(url)
         assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb2.jpg'])
 

@@ -19,7 +19,7 @@ onmessage = function (e) {
         // Iterate over all fragments, download them, and add them to
         // the just defined `out` object.
         for (var frag_name in obj) {
-            url = e.data.baseURL + obj[frag_name]['url']
+            url = e.data.baseURL + obj[frag_name]['url_frag']
             switch (obj[frag_name].type) {
             case 'RAW':
                 // All raw fragments are stored in a JSON file on the
