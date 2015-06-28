@@ -94,8 +94,22 @@ class TestDibbler:
 
     def test_FragmentMeta(self):
         for Getter in (getFragRaw, getFragDae, getFragNone):
+            # Get a proper FragmentMeta, and a stunted one where the 'fragdata'
+            # field is None. This case often happens internally in Azrael
+            # because the meta data is stored in a separate database.
             frag_a = Getter()
+            frag_b = frag_a._replace(fragdata=None)
             assert self.isJsonCompatible(frag_a, FragmentMeta)
+            assert self.isJsonCompatible(frag_b, FragmentMeta)
+
+        # Verify that 'FragmentMeta._asdict' also converts the 'fragdata' field
+        # to dictionaries.
+        frag_t = getFragRaw()
+        frag_d = frag_t._asdict()
+        assert isinstance(frag_d, dict)
+        tmp = frag_t.fragdata._asdict()
+        assert isinstance(tmp, dict)
+        assert tmp == frag_d['fragdata']
 
     def test_RigidBodyState(self):
         body_a = RigidBodyState()
