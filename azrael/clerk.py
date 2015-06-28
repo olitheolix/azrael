@@ -304,7 +304,7 @@ class Clerk(config.AzraelProcess):
             else:
                 # Unknown command word.
                 self.returnErr(
-                    self.last_addr,'Invalid command <{}>'.format(cmd))
+                    self.last_addr, 'Invalid command <{}>'.format(cmd))
 
     @typecheck
     def returnOk(self, addr, data: dict, msg: str=''):
@@ -516,8 +516,8 @@ class Clerk(config.AzraelProcess):
         """
         Spawn all ``newObjects`` and return their IDs in a tuple.
 
-        The ``newObjects`` must be a list of (templateID, state) tuples with types
-        `(str, RigidBodyState)`, respectively.
+        The ``newObjects`` must be a list of (templateID, state) tuples with
+        types `(str, RigidBodyState)`, respectively.
 
         The new object will we spawned from the templateID and given the
         initial state described by `state` (eg position and orientation).
@@ -1181,9 +1181,9 @@ class Clerk(config.AzraelProcess):
         fragStates = {k: [FragState(**_) for _ in v]
                       for (k, v) in fragStates.items()}
 
-        # Add body state and fragment data for all objects. If the objects do not
-        # exist then set the data to *None*. During that process also update
-        # the 'version' (this flag indicates geometry changes to the
+        # Add body state and fragment data for all objects. If the objects do
+        # not exist then set the data to *None*. During that process also
+        # update the 'version' (this flag indicates geometry changes to the
         # client).
         #
         # fixme: the loop below should always return a dict of dictionaries

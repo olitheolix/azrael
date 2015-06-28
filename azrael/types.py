@@ -435,22 +435,23 @@ class Template(_Template):
             assert isAIDStringValid(aid)
 
             # Compile- and sanity check all collision shapes.
-            cshapes = [CollShapeMeta(**_) if isinstance(_, dict)
-                       else CollShapeMeta(*_) for _ in cshapes]
+            cshapes = [CollShapeMeta(**_)
+                       if isinstance(_, dict) else CollShapeMeta(*_)
+                       for _ in cshapes]
 
             # Compile- and sanity check all geometry fragments.
-            fragments = [FragMeta(**_) if isinstance(_, dict)
-                         else FragMeta(*_)
+            fragments = [FragMeta(**_)
+                         if isinstance(_, dict) else FragMeta(*_)
                          for _ in fragments]
 
             # Compile- and sanity check all boosters.
-            boosters = [Booster(**_) if isinstance(_, dict)
-                         else Booster(*_)
+            boosters = [Booster(**_)
+                        if isinstance(_, dict) else Booster(*_)
                         for _ in boosters]
 
             # Compile- and sanity check all factories.
-            factories = [Factory(**_) if isinstance(_, dict)
-                         else Factory(*_)
+            factories = [Factory(**_)
+                         if isinstance(_, dict) else Factory(*_)
                          for _ in factories]
         except (TypeError, AssertionError) as err:
             raise err
@@ -459,7 +460,8 @@ class Template(_Template):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, aid, cshapes, fragments, boosters, factories)
+        return super().__new__(
+            cls, aid, cshapes, fragments, boosters, factories)
 
     def _asdict(self):
         cshapes = [_._asdict() for _ in self.cshapes]

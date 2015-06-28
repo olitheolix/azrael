@@ -703,7 +703,7 @@ class TestLeonardOther:
         self.igor.reset()
         s = [[1], [2]]
         _verify(s, s)
-        
+
         assert igor.addConstraints([getP2P()]).ok
         _verify(s, [[1, 2]])
         self.igor.reset()

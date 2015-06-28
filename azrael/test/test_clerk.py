@@ -756,7 +756,11 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
-        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [], [f0, f1])
+        temp = Template('t1',
+                        cshapes=[getCSSphere()],
+                        fragments=[getFragRaw('bar')],
+                        boosters=[],
+                        factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -827,7 +831,11 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
-        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [], [f0, f1])
+        temp = Template('t1',
+                        cshapes=[getCSSphere()],
+                        fragments=[getFragRaw('bar')],
+                        boosters=[],
+                        factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -927,7 +935,11 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
-        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [b0, b1], [f0, f1])
+        temp = Template('t1',
+                        cshapes=[getCSSphere()],
+                        fragments=[getFragRaw('bar')],
+                        boosters=[b0, b1],
+                        factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))

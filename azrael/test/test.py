@@ -117,8 +117,8 @@ def getFragDae(aid='frag_dae'):
     dae_rgb1 = base64.b64encode(dae_rgb1).decode('utf8')
     dae_rgb2 = base64.b64encode(dae_rgb2).decode('utf8')
     geo = FragDae(dae=dae_file,
-                   rgb={'rgb1.png': dae_rgb1,
-                        'rgb2.jpg': dae_rgb2})
+                  rgb={'rgb1.png': dae_rgb1,
+                       'rgb2.jpg': dae_rgb2})
 
     return FragMeta(aid=aid, fragtype='DAE', fragdata=geo)
 

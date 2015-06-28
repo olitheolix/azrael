@@ -54,7 +54,7 @@ class TestDibbler:
         assert dt_a == DataType(*json.loads(json.dumps(dt_a)))
         assert dt_a == DataType(**json.loads(json.dumps(dt_a._asdict())))
         return True
-        
+
     def test_CollShapeMeta(self):
         for Getter in (getCSEmpty, getCSSphere, getCSBox, getCSPlane):
             cs_a = Getter()

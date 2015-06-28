@@ -285,7 +285,9 @@ class Client():
                 {name_1: {'fragtype': 'raw', 'url_frag': 'http:...'},
                  name_2: {'fragtype': 'raw', 'url_frag': 'http:...'},
                 }
-             objID_2: {name_1: {'fragtype': 'dae', 'url_frag': 'http://somewhere'}},
+             objID_2:
+                {name_1: {'fragtype': 'dae', 'url_frag': 'http:...'}},
+                {name_2: {'fragtype': 'dae', 'url_frag': 'http:...'}},
             }
 
         :param int objIDs: list of objIDs to query.

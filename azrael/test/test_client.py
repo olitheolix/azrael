@@ -477,7 +477,11 @@ class TestClient:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn an instance.
-        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [b0, b1], [f0, f1])
+        temp = Template('t1',
+                        cshapes=[getCSSphere()],
+                        fragments=[getFragRaw('bar')],
+                        boosters=[b0, b1],
+                        factories=[f0, f1])
         assert client.addTemplates([temp]).ok
         new_obj = {'template': temp.aid,
                    'position': pos_parent,

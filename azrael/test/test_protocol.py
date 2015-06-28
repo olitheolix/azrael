@@ -87,7 +87,7 @@ class TestClerk:
         ok, enc = encoder(payload)
         assert ok
 
-        # Convert output to JSON and back (simulates the wire transmission).
+        # Convert to JSON and back (simulates the wire transmission).
         enc = json.loads(json.dumps(enc))
 
         # Decode the data.
@@ -101,7 +101,7 @@ class TestClerk:
 
         This is a convenience method only.
         """
-        # Collada format: a .dae file plus a list of textures in jpg or png format.
+        # Collada format: a .dae file plus a list of jpg/png textures.
         dae_file = b'abc'
         dae_rgb1 = b'def'
         dae_rgb2 = b'ghj'
@@ -168,10 +168,10 @@ class TestClerk:
         ret = enc_fun(objID, boosters, factories)
         assert ret.ok
 
-        # Convert output to JSON and back (simulates the wire transmission).
+        # Convert to JSON and back (simulates the wire transmission).
         enc = json.loads(json.dumps(ret.data))
 
-        # Decode the data and verify the correct number of commands was returned.
+        # Decode- and verify the data.
         ok, (dec_objID, dec_boosters, dec_factories) = dec_fun(enc)
         assert (ok, dec_objID) == (True, objID)
         assert dec_boosters == boosters
@@ -248,7 +248,7 @@ class TestClerk:
             ret = protocol.ToClerk_AddConstraints_Encode([con])
             assert ret.ok
 
-            # Convert output to JSON and back (simulates the wire transmission).
+            # Convert to JSON and back (simulates the wire transmission).
             enc = json.loads(json.dumps(ret.data))
 
             # Decode the data.
@@ -266,7 +266,7 @@ class TestClerk:
             ok, enc = protocol.FromClerk_GetConstraints_Encode([con])
             assert ok
 
-            # Convert output to JSON and back (simulates the wire transmission).
+            # Convert to JSON and back (simulates the wire transmission).
             enc = json.loads(json.dumps(enc))
 
             # Decode the data.
@@ -280,7 +280,7 @@ class TestClerk:
         """
         Test addTemplate codec with Collada data.
         """
-        # Collada format: a .dae file plus a list of textures in jpg or png format.
+        # Collada format: a .dae file plus a list of png/jpg textures.
         dae_file = b'abc'
         dae_rgb1 = b'def'
         dae_rgb2 = b'ghj'
