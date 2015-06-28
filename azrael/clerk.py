@@ -1186,9 +1186,10 @@ class Clerk(config.AzraelProcess):
         # update the 'version' (this flag indicates geometry changes to the
         # client).
         #
-        # fixme: the loop below should always return a dict of dictionaries
-        # instead of skipping the object altoghether in either of the two IF
-        # statements.
+        # fixme_getstate: the loop below should always return a dict of
+        #                 dictionaries instead of skipping the object
+        #                 altoghether in either of the two IF statements.
+        #                 See other fixme_getstate tags.
         out = {}
         for objID in objIDs:
             # Skip to the next object if no body state is available for it.
