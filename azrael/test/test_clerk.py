@@ -1629,6 +1629,66 @@ class TestClerk:
         ret = clerk.getBodyStates([objID])
         assert ret.ok and len(ret.data[objID]['frag']) == 2
 
+    # def test_stunted_objects(self):
+    #     """
+    #     I define a "stunted" object is one that lacks either collision shapes,
+    #     or fragments, or both. Usually, objects have both, but there are
+    #     nevertheless cases where such "stunted" objects are useful, for
+    #     instance to initiate a collision without drawing an object, or have an
+    #     object with a visual geometry that cannot collide with anything.
+
+    #     This test creates the three test cases and verifies that
+    #     `Clerk.getBodyStates' handles them correctly.
+    #     """
+    #     # Reset the SV database and instantiate a Leonard and a Clerk.
+    #     leo = getLeonard(azrael.leonard.LeonardBullet)
+    #     clerk = azrael.clerk.Clerk()
+
+    #     # Create templates for all possible "stunted" objects.
+    #     t_cs = Template('t_cs', [getCSSphere()], [], [], [])
+    #     t_frag = Template('t_frag', [], [getFragRaw()], [], [])
+    #     t_none = Template('t_none', [], [], [], [])
+
+    #     # Add the templates to Azrael and verify it accepted them.
+    #     assert clerk.addTemplates([t_cs, t_frag, t_none]).ok
+
+    #     # Spawn an instance of each.
+    #     body = types.RigidBodyState(cshapes=[])
+    #     ret = clerk.spawn([('t_cs', body), ('t_frag', body), ('t_none', body)])
+    #     assert ret.ok
+    #     id_cs, id_frag, id_none = ret.data
+
+    #     # Verify that Leonard does not complain about the two obects that have
+    #     # no collision shape.
+    #     leo.processCommandsAndSync()
+
+    #     # Modify the position of all three objects.
+    #     RBSO = types.RigidBodyStateOverride
+    #     new_bs_cs = RBSO(position=(0, 1, 2))
+    #     new_bs_frag = RBSO(position=(3, 4, 5))
+    #     new_bs_none = RBSO(position=(6, 7, 8))
+
+    #     assert clerk.setBodyState(id_cs, new_bs_cs).ok
+    #     assert clerk.setBodyState(id_frag, new_bs_frag).ok
+    #     assert clerk.setBodyState(id_none, new_bs_none).ok
+    #     leo.processCommandsAndSync()
+
+    #     # Verify all objects have the new positions.
+    #     ret = clerk.getBodyStates([id_cs, id_frag, id_none])
+    #     assert ret.ok
+
+    #     r = ret.data
+    #     assert len(r[id_frag]['frag']) == 1
+    #     assert tuple(r[id_frag]['rbs'].position) == new_bs_frag.position
+    #     assert r[id_cs]['frag'] == []
+    #     assert r[id_cs]['rbs'].position == new_bs_cs.position
+    #     assert r[id_none]['frag'] == []
+    #     assert r[id_none]['rbs'].position == new_bs_cs.position
+
+    #     # Attempt to update a fragment in an object that has none.
+    #     pass
+
+    #     assert False
 
 def test_invalid():
     """
