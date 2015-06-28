@@ -54,21 +54,15 @@ class Igor:
 
         :return: Number of unique constraints in local cache after operation.
         """
-        # Create a Mongo cursor that retrieves all constraints (minus the _id
-        # field).
-        prj = {'_id': False}
-        cursor = self.db.find({}, prj)
-
-        # Flush the cache.
+        # Flush the cache and create a convenience handle.
         self._cache = {}
-
-        # Convenience.
         cache = self._cache
-        CM = ConstraintMeta
 
-        # Build an iterator that returns the constraints from the data base and
-        # wraps them into ConstraintMeta tuples.
-        constraints = (CM(*_['con']) for _ in cursor)
+        # Create a Mongo cursor to retrieve all constraints.
+        cursor = self.db.find({}, {'_id': False})
+
+        # Iterate over the cursor and compile the ConstraintMeta types.
+        constraints = (ConstraintMeta(**_) for _ in cursor)
 
         # Iterate over all constraints and  build a dictionary. The keys are
         # `ConstraintMeta` tuples with a value of *None* for the data field.
@@ -99,9 +93,9 @@ class Igor:
         :param list constraints: a list of ``ConstraintMeta`` instances.
         :return: number of newly added constraints.
         """
-        queries = []
+        constraints_sane = []
         for con in constraints:
-            # Skip all constraints with an unknown type.
+            # Compile- and sanity check all constraints.
             try:
                 con = ConstraintMeta(*con)
             except TypeError:
@@ -116,30 +110,25 @@ class Igor:
 
             # Sort the body IDs. This will simplify the logic to fetch- and
             # process constraints.
-            # fixme: rename rb_a to eg bodyID_a
             rb_a, rb_b = sorted((rb_a, rb_b))
             con = con._replace(rb_a=rb_a, rb_b=rb_b)
 
-            # To update the constraint data we need to find the particular
-            # constraint and then overwrite it with the new values. To
-            # facilitate this, create a list of (query, new_value) tuples,
-            # where the `query` components denotes the MongodB query to
-            # uniquely find the constraints, and `new_value` is the new
-            # constraint (ie the exact same as `query` plus the 'con' field).
-            db_query = {'rb_a': rb_a, 'rb_b': rb_b,
-                        'contype': con.contype, 'aid': con.aid}
-            db_value = dict(db_query)
-            db_value['con'] = con
-
-            queries.append((db_query, db_value))
+            # Add it to the list of constraints to update in the database.
+            constraints_sane.append(con)
 
         # Return immediately if the list of constraints to add is empty.
-        if len(queries) == 0:
+        if len(constraints_sane) == 0:
             return RetVal(True, None, 0)
 
         # Compile the bulk query and execute it.
         bulk = self.db.initialize_unordered_bulk_op()
-        for query, value in queries:
+        for con in constraints_sane:
+            # We will search for the entire meta information (ie everything
+            # except the parameters of the constraint itself stored in
+            # 'condata') and then overwrite the constraint as a whole.
+            value = con._asdict()
+            query = con._asdict()
+            del query['condata']
             bulk.find(query).upsert().update({'$setOnInsert': value})
         ret = bulk.execute()
 
@@ -196,32 +185,22 @@ class Igor:
         :param list constraints: list of `ConstraintMeta` tuples.
         :return: number of deleted entries.
         """
-        queries = []
-        for constr in constraints:
-            # Sanity checks.
-            try:
-                assert isinstance(constr.rb_a, int)
-                assert isinstance(constr.rb_b, int)
-                assert isinstance(constr.contype, str)
-                assert isinstance(constr.aid, str)
-            except AssertionError:
-                continue
-
-            # Create the query for the current constraint.
-            tmp = {'rb_a': constr.rb_a,
-                   'rb_b': constr.rb_b,
-                   'contype': constr.contype,
-                   'aid': constr.aid}
-            queries.append(tmp)
+        # Compile- and sanity check the input.
+        constraints = [ConstraintMeta(*_) for _ in constraints]
 
         # Return immediately if the list of constraints to add is empty.
-        if len(queries) == 0:
+        if len(constraints) == 0:
             return RetVal(True, None, 0)
 
-        # Compile the bulk query and execute it.
+        # Compile the bulk query with all the constraints to remove.
         bulk = self.db.initialize_unordered_bulk_op()
-        for q in queries:
-            bulk.find(q).remove()
+        for con in constraints:
+            # The constraint must match all the meta data, but not
+            # (necessarily) the parameters of the constraint itself, which is
+            # why the 'condata' field is removed.
+            query = con._asdict()
+            del query['condata']
+            bulk.find(query).remove()
         ret = bulk.execute()
 
         # Return the number of newly created constraints.
