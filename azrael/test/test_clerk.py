@@ -1055,9 +1055,9 @@ class TestClerk:
             # The object must have two fragments, an 'f_raw' with type 'RAW'
             # and an 'f_dae' with type 'DAE'.
             _url_inst = config.url_instances + '/'
-            assert _ret['f_raw']['type'] == 'RAW'
+            assert _ret['f_raw']['fragtype'] == 'RAW'
             assert _ret['f_raw']['url_frag'] == _url_inst + _objID + '/f_raw'
-            assert _ret['f_dae']['type'] == 'DAE'
+            assert _ret['f_dae']['fragtype'] == 'DAE'
             assert _ret['f_dae']['url_frag'] == _url_inst + _objID + '/f_dae'
             return True
 

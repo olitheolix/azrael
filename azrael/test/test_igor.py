@@ -107,7 +107,7 @@ class TestClerk:
         assert sorted(igor.getAllConstraints().data) == ref
 
         # Reset igor and add two constraints, of which only one has a valid
-        # 'type'. The 'addConstraints' must only add the valid one.
+        # 'contype'. The 'addConstraints' must only add the valid one.
         c6 = c6._replace(contype='foo')
         assert igor.reset().ok
         assert igor.addConstraints([c1, c6]) == (True, None, 1)

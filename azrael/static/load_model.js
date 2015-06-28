@@ -20,7 +20,7 @@ onmessage = function (e) {
         // the just defined `out` object.
         for (var frag_name in obj) {
             url = e.data.baseURL + obj[frag_name]['url_frag']
-            switch (obj[frag_name].type) {
+            switch (obj[frag_name].fragtype) {
             case 'RAW':
                 // All raw fragments are stored in a JSON file on the
                 // server called 'model.json'. Download it.

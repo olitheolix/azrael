@@ -902,8 +902,8 @@ class Clerk(config.AzraelProcess):
 
         This method returns a dictionary of the form::
 
-            {objID_1: {'type': 'raw', 'url_frag': 'http:...'},
-             objID_2: {'type': 'dae', 'url_frag': 'http:...'},
+            {objID_1: {'fragtype': 'raw', 'url_frag': 'http:...'},
+             objID_2: {'fragtype': 'dae', 'url_frag': 'http:...'},
              objID_3: None,
              ...
             }
@@ -944,7 +944,7 @@ class Clerk(config.AzraelProcess):
                 # data itself (we only provide the meta information).
                 out[doc['objID']] = {
                     _.aid: {
-                        'type': _.fragtype,
+                        'fragtype': _.fragtype,
                         'url_frag': pjoin(doc['url_frag'], _.aid)
                     } for _ in frags}
         except TypeError:

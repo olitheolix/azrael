@@ -330,10 +330,10 @@ class TestClerk:
 
         # Clerk --> Client
         payload = {
-            1: {'foo1': {'type': 'raw', 'url_frag': 'http://foo1'},
-                'bar1': {'type': 'dae', 'url_frag': 'http://bar1'}},
-            5: {'foo2': {'type': 'raw', 'url_frag': 'http://foo2'},
-                'bar2': {'type': 'dae', 'url_frag': 'http://bar2'}}
+            1: {'foo1': {'fragtype': 'raw', 'url_frag': 'http://foo1'},
+                'bar1': {'fragtype': 'dae', 'url_frag': 'http://bar1'}},
+            5: {'foo2': {'fragtype': 'raw', 'url_frag': 'http://foo2'},
+                'bar2': {'fragtype': 'dae', 'url_frag': 'http://bar2'}}
         }
         enc = protocol.FromClerk_GetFragmentGeometries_Encode
         dec = protocol.FromClerk_GetFragmentGeometries_Decode

@@ -229,7 +229,7 @@ class TestClient:
         # Retrieve- and verify the geometry of the just spawned object.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['bar']['type'] == 'RAW'
+        assert ret.data[objID]['bar']['fragtype'] == 'RAW'
 
         # Retrieve the entire template and verify the CS and geometry, and
         # number of boosters/factories.
@@ -568,7 +568,7 @@ class TestClient:
         # Fetch-, modify-, update- and verify the geometry.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['bar']['type'] == 'RAW'
+        assert ret.data[objID]['bar']['fragtype'] == 'RAW'
 
         # Download the fragment.
         base_url = 'http://{ip}:{port}'.format(
@@ -590,7 +590,7 @@ class TestClient:
 
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['bar']['type'] == 'RAW'
+        assert ret.data[objID]['bar']['fragtype'] == 'RAW'
 
         # Download the fragment.
         url = base_url + ret.data[objID]['bar']['url_frag'] + '/model.json'
@@ -637,7 +637,7 @@ class TestClient:
         # Fetch-, modify-, update- and verify the geometry.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['f_dae']['type'] == 'DAE'
+        assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
 
         # Change the geometry for fragment 'f_dae' to a RAW type.
         assert client.setFragmentGeometries(objID, [getFragRaw('f_dae')]).ok
@@ -645,7 +645,7 @@ class TestClient:
         # Ensure the fragment is now indeed of type 'RAW'.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['f_dae']['type'] == 'RAW'
+        assert ret.data[objID]['f_dae']['fragtype'] == 'RAW'
 
         # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
@@ -658,7 +658,7 @@ class TestClient:
         # Ensure it now has type 'DAE' again.
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
-        assert ret.data[objID]['f_dae']['type'] == 'DAE'
+        assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
 
         # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
@@ -778,7 +778,7 @@ class TestClient:
 
         # Verify it has the correct type ('DAE') and address.
         ret = ret.data[objID]
-        assert ret['f_dae']['type'] == 'DAE'
+        assert ret['f_dae']['fragtype'] == 'DAE'
         assert ret['f_dae']['url_frag'] == (
             config.url_instances + '/' + str(objID) + '/f_dae')
 
