@@ -124,7 +124,8 @@ def sweeping(data: dict, dim: str):
     sumVal = 0
     setObjs = set()
     for (inc, objID) in zip(arr_inc, arr_ids):
-        # Update the index variable and add the current object to the set.
+        # Update the index variable and add the current object to the set (need
+        # to convert it from NumPy int to Python int first).
         sumVal += inc
         setObjs.add(int(objID))
 
