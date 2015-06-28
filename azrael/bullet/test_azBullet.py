@@ -1192,8 +1192,8 @@ class TestConstraints:
         assert bb.getConstraint(1) == None
         assert list(bb.iterateConstraints()) == [p2p_ab]
 
-        # Add the first constraint a second time. This must suceed but the
-        # constraint must not have been added again.
+        # Add the first constraint a second time. The function call must suceed
+        # but the constraint must not have been added again.
         bb.addConstraint(p2p_ab)
         assert bb.getNumConstraints() == 1
         assert bb.getConstraint(0) == p2p_ab

@@ -96,8 +96,6 @@ class Igor:
 
         It will return the number of constraints
 
-        fixme: add sanity checks.
-
         :param list constraints: a list of ``ConstraintMeta`` instances.
         :return: number of newly added constraints.
         """
