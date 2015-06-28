@@ -41,7 +41,7 @@ import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
 
 from IPython import embed as ipshell
-from azrael.types import FragmentMeta, FragRaw, FragState
+from azrael.types import FragMeta, FragRaw, FragState
 
 # Convenience.
 RigidBodyStateOverride = leoAPI.RigidBodyStateOverride
@@ -162,7 +162,7 @@ class SetGeometry(multiprocessing.Process):
                 tmp = urllib.request.urlopen(url).readall()
                 tmp = json.loads(tmp.decode('utf8'))
                 tmp = FragRaw(**tmp)
-                frags[frag_name] = FragmentMeta(frag_name, 'raw', tmp)
+                frags[frag_name] = FragMeta(frag_name, 'raw', tmp)
                 del url, tmp
             geo_orig[objID] = frags
             del frags, objID
@@ -174,7 +174,7 @@ class SetGeometry(multiprocessing.Process):
         sphere = FragRaw(sphere_vert, sphere_uv, sphere_rgb)
         geo_spheres = {}
         for objID in objIDs:
-            tmp = {_: FragmentMeta(_, 'raw', sphere) for _ in geo_orig[objID]}
+            tmp = {_: FragMeta(_, 'raw', sphere) for _ in geo_orig[objID]}
             geo_spheres[objID] = tmp
             del tmp
         del sphere_vert, sphere_uv, sphere_rgb, sphere

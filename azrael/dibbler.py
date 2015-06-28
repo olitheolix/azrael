@@ -47,7 +47,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, Template, RetVal
-from azrael.types import FragDae, FragRaw, FragmentMeta
+from azrael.types import FragDae, FragRaw, FragMeta
 
 
 @typecheck
@@ -106,7 +106,7 @@ class Dibbler:
         return RetVal(True, None, len(self.fs.list()))
 
     @typecheck
-    def saveModelDae(self, location: str, model: FragmentMeta):
+    def saveModelDae(self, location: str, model: FragMeta):
         """
         Save the Collada ``model`` to ``location``.
 
@@ -128,7 +128,7 @@ class Dibbler:
                   this ``model``.
 
         :param str location: location where to store the ``model``.
-        :param FragmentMeta model: the Collada model itself.
+        :param FragMeta model: the Collada model itself.
         :return: success
         """
         # Convenience.
@@ -158,7 +158,7 @@ class Dibbler:
         return RetVal(True, None, 1.0)
 
     @typecheck
-    def saveModelRaw(self, location: str, model: FragmentMeta):
+    def saveModelRaw(self, location: str, model: FragMeta):
         """
         Save the Raw ``model`` to ``location``.
 
@@ -169,7 +169,7 @@ class Dibbler:
           location/model_name/model.json
 
         :param str location: directory where to store ``model``.
-        :param FragmentMeta model: the Raw model itself.
+        :param FragMeta model: the Raw model itself.
         :return: success
         """
         # Sanity checks.
@@ -237,7 +237,7 @@ class Dibbler:
 
         :param str location: the common location prefix used for all
                              ``fragments``.
-        :param list fragments: list of ``FragmentMeta`` instances.
+        :param list fragments: list of ``FragMeta`` instances.
         :param bool update: if *True* then the ``location`` prefix must already
                              exist.
         :return: success.
@@ -410,12 +410,12 @@ class Dibbler:
         accordingly.
 
         :param str objID: the object for which to update the ``fragments``.
-        :param list frags: list of new ``FragmentMeta`` instances.
+        :param list frags: list of new ``FragMeta`` instances.
         :return: see :func:`saveModel`
         """
         try:
             # Sanity check the fragments.
-            frags = [FragmentMeta(*_) for _ in frags]
+            frags = [FragMeta(*_) for _ in frags]
 
             # 'objID', albeit a string, must correspond to a valid integer.
             int(objID)

@@ -38,7 +38,7 @@ from IPython import embed as ipshell
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone
 from azrael.types import Template, RetVal, CollShapeMeta
-from azrael.types import FragState, FragDae, FragRaw, FragmentMeta
+from azrael.types import FragState, FragDae, FragRaw, FragMeta
 from azrael.test.test import getCSEmpty, getCSBox
 from azrael.test.test import getCSSphere, getCSPlane
 
@@ -1031,7 +1031,7 @@ class TestClerk:
         # Get Collada fragment.
         f_dae = getFragDae()
 
-        # Put both fragments into a valid list of FragmentMetas.
+        # Put both fragments into a valid list of FragMetas.
         frags = [getFragRaw('f_raw'), getFragDae('f_dae')]
 
         # Add a valid template with the just specified fragments and verify the

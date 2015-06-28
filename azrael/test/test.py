@@ -25,7 +25,7 @@ import subprocess
 import numpy as np
 import azrael.leonard
 
-from azrael.types import FragmentMeta, FragDae, FragRaw, FragNone
+from azrael.types import FragMeta, FragDae, FragRaw, FragNone
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import RigidBodyState, RigidBodyStateOverride
@@ -89,7 +89,7 @@ def getFragNone(aid='frag_none'):
     """
     Convenience function to construct an empty geometry element.
     """
-    return FragmentMeta(aid=aid, fragtype='_none_', fragdata=FragNone())
+    return FragMeta(aid=aid, fragtype='_none_', fragdata=FragNone())
 
 
 def getFragRaw(aid='frag_raw'):
@@ -101,7 +101,7 @@ def getFragRaw(aid='frag_raw'):
     rgb = np.random.randint(0, 100, 3).tolist()
 
     geo = FragRaw(vert, uv, rgb)
-    return FragmentMeta(aid=aid, fragtype='RAW', fragdata=geo)
+    return FragMeta(aid=aid, fragtype='RAW', fragdata=geo)
 
 
 def getFragDae(aid='frag_dae'):
@@ -120,7 +120,7 @@ def getFragDae(aid='frag_dae'):
                    rgb={'rgb1.png': dae_rgb1,
                         'rgb2.jpg': dae_rgb2})
 
-    return FragmentMeta(aid=aid, fragtype='DAE', fragdata=geo)
+    return FragMeta(aid=aid, fragtype='DAE', fragdata=geo)
 
 
 def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2,

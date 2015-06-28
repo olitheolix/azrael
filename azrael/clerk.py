@@ -59,7 +59,7 @@ import azrael.protocol as protocol
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, Template, CollShapeMeta
-from azrael.types import FragState, FragmentMeta, _FragmentMeta
+from azrael.types import FragState, FragMeta, _FragMeta
 
 
 class Clerk(config.AzraelProcess):
@@ -937,7 +937,7 @@ class Clerk(config.AzraelProcess):
             for doc in docs:
                 # Unpack and compile geometry data for the current object.
                 frags = doc['template']['fragments']
-                frags = [FragmentMeta(**_) for _ in frags]
+                frags = [FragMeta(**_) for _ in frags]
 
                 # Compile the dictionary with all the geometries that comprise
                 # the current object, including where to download the geometry
@@ -966,7 +966,7 @@ class Clerk(config.AzraelProcess):
         """
         # Compile- and sanity check the fragments.
         try:
-            fragments = [FragmentMeta(*_) for _ in fragments]
+            fragments = [FragMeta(*_) for _ in fragments]
         except TypeError:
             return RetVal(False, 'Received invalid fragment data', None)
 
@@ -1018,7 +1018,7 @@ class Clerk(config.AzraelProcess):
 
         # Compile its list of fragments.
         old_frags = old_template['template']['fragments']
-        old_frags = [FragmentMeta(**_) for _ in old_frags]
+        old_frags = [FragMeta(**_) for _ in old_frags]
 
         # Remove all those fragments from the template that the user has asked
         # us to update/delete.

@@ -10,7 +10,7 @@ import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
+from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
 from azrael.test.test import getFragRaw, getFragDae
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 
@@ -97,7 +97,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         the associated textures (if any).
 
         :param str url: base location of template
-        :param list[FragmentMeta] fragments: reference fragments
+        :param list[FragMeta] fragments: reference fragments
         :raises: AssertionError if not all fragments in ``fragments`` match
                  those available at ``url``.
         """

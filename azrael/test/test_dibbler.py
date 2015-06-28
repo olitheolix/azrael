@@ -22,7 +22,7 @@ import azrael.dibbler
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
+from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
 from azrael.test.test import getFragRaw, getFragDae, getFragNone
 
 
@@ -46,14 +46,14 @@ class TestDibbler:
         self.dibbler.reset()
         assert self.dibbler.getNumFiles() == (True, None, 0)
 
-    def verifyDae(self, url: str, mf: FragmentMeta):
+    def verifyDae(self, url: str, mf: FragMeta):
         """
         fixme: this has to become part of the 'FragDae.__eq__' method.
 
         Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
 
         :param str url: the URL where the Collada fragment is supposed to be.
-        :param FragmentMeta mf: the fragment to compare it with.
+        :param FragMeta mf: the fragment to compare it with.
         :return: None
         :raises: AssertionError if the fragment does not match.
         """
@@ -81,12 +81,12 @@ class TestDibbler:
         # Ensure the downloaded data matches the reference data.
         assert ref == downloaded
 
-    def verifyRaw(self, url: str, mf: FragmentMeta):
+    def verifyRaw(self, url: str, mf: FragMeta):
         """
         Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
 
         :param str url: the URL where the Collada fragment is supposed to be.
-        :param FragmentMeta mf: the fragment to compare it with.
+        :param FragMeta mf: the fragment to compare it with.
         :return: None
         :raises: AssertionError if the fragment does not match.
         """

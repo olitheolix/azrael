@@ -47,7 +47,7 @@ import azrael.leo_api as leo_api
 
 from azrael.types import typecheck, RetVal, Template
 from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
-from azrael.types import FragState, FragDae, FragRaw, FragmentMeta, FragNone
+from azrael.types import FragState, FragDae, FragRaw, FragMeta, FragNone
 
 from IPython import embed as ipshell
 
@@ -302,7 +302,7 @@ def ToClerk_SetFragmentGeometry_Decode(payload: dict):
     # Wrap the fragments into their dedicated tuple.
     frags = []
     for frag in payload['frags']:
-        mf = FragmentMeta(**frag)
+        mf = FragMeta(**frag)
         frags.append(mf)
     return True, (payload['objID'], frags)
 

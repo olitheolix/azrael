@@ -20,7 +20,7 @@ import pytest
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, RetVal, FragDae, FragRaw, FragmentMeta
+from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
 from azrael.types import Booster, Factory
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane, FragState
@@ -93,7 +93,7 @@ class TestDibbler:
             assert con_a == con_b
             assert self.isJsonCompatible(con_a, ConstraintMeta)
 
-        # Verify that 'FragmentMeta._asdict' also converts the 'fragdata' field
+        # Verify that 'FragMeta._asdict' also converts the 'fragdata' field
         # to dictionaries.
         con_t = getP2P()
         con_d = con_t._asdict()
@@ -102,17 +102,17 @@ class TestDibbler:
         assert isinstance(tmp, dict)
         assert tmp == con_d['condata']
 
-    def test_FragmentMeta(self):
+    def test_FragMeta(self):
         for Getter in (getFragRaw, getFragDae, getFragNone):
-            # Get a proper FragmentMeta, and a stunted one where the 'fragdata'
+            # Get a proper FragMeta, and a stunted one where the 'fragdata'
             # field is None. This case often happens internally in Azrael
             # because the meta data is stored in a separate database.
             frag_a = Getter()
             frag_b = frag_a._replace(fragdata=None)
-            assert self.isJsonCompatible(frag_a, FragmentMeta)
-            assert self.isJsonCompatible(frag_b, FragmentMeta)
+            assert self.isJsonCompatible(frag_a, FragMeta)
+            assert self.isJsonCompatible(frag_b, FragMeta)
 
-        # Verify that 'FragmentMeta._asdict' also converts the 'fragdata' field
+        # Verify that 'FragMeta._asdict' also converts the 'fragdata' field
         # to dictionaries.
         frag_t = getFragRaw()
         frag_d = frag_t._asdict()

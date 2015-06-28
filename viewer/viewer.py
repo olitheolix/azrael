@@ -48,7 +48,7 @@ import azrael.config as config
 import azrael.leo_api as leoAPI
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from azrael.types import Template, FragmentMeta, FragRaw, FragState
+from azrael.types import Template, FragMeta, FragRaw, FragState
 from azrael.types import CollShapeMeta, CollShapeBox
 
 
@@ -536,7 +536,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     frag = urllib.request.urlopen(url).readall()
                     frag = json.loads(frag.decode('utf8'))
                     frag = FragRaw(**frag)
-                    frag = FragmentMeta(frag_name, 'RAW', frag)
+                    frag = FragMeta(frag_name, 'RAW', frag)
                 elif frag_data['type'] == 'DAE':
                     url = base_url + frag_data['url'] + '/' + frag_name
                     frag = urllib.request.urlopen(url).readall()
@@ -557,7 +557,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     uv = np.array(uv, np.float32)
                     rgb = np.array(rgb, np.uint8)
                     frag = FragRaw(vert, uv, rgb)
-                    frag = FragmentMeta(frag_name, 'RAW', frag)
+                    frag = FragMeta(frag_name, 'RAW', frag)
                 else:
                     continue
                 self.upload2GPU(objID, frag)
@@ -583,7 +583,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'
-        frags = [FragmentMeta('frag_1', 'RAW', FragRaw(buf_vert, uv, rgb))]
+        frags = [FragMeta('frag_1', 'RAW', FragRaw(buf_vert, uv, rgb))]
         temp = Template(t_projectile, [cs], frags, [], [])
         ret = self.client.addTemplates([temp])
         del frags, temp
