@@ -362,7 +362,7 @@ class TestClient:
         # Verify that the Body State is correct.
         leo.processCommandsAndSync()
         ok, _, ret_sv = client.getBodyStates(objID)
-        ret_sv = ret_sv[objID]['sv']
+        ret_sv = ret_sv[objID]['rbs']
         assert isinstance(ret_sv, types._RigidBodyState)
         assert np.array_equal(ret_sv.position, new_obj['position'])
         assert np.array_equal(ret_sv.velocityLin, new_obj['velocityLin'])
@@ -375,7 +375,7 @@ class TestClient:
         # Verify that the new attributes came into effect.
         leo.processCommandsAndSync()
         ok, _, ret_sv = client.getBodyStates(objID)
-        ret_sv = ret_sv[objID]['sv']
+        ret_sv = ret_sv[objID]['rbs']
         assert isinstance(ret_sv, types._RigidBodyState)
         assert ret_sv.imass == new_sv.imass
         assert ret_sv.scale == new_sv.scale
@@ -515,7 +515,7 @@ class TestClient:
         assert (ok, len(ret_SVs)) == (True, 2)
 
         # Verify the position and velocity of the spawned objects is correct.
-        sv_2, sv_3 = [ret_SVs[_]['sv'] for _ in spawnIDs]
+        sv_2, sv_3 = [ret_SVs[_]['rbs'] for _ in spawnIDs]
         ac = np.allclose
         assert ac(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
         assert ac(sv_2.position, pos_0_out + pos_parent)
@@ -563,7 +563,7 @@ class TestClient:
         leo.processCommandsAndSync()
         ret = client.getBodyStates(objID)
         assert ret.ok
-        version = ret.data[objID]['sv'].version
+        version = ret.data[objID]['rbs'].version
 
         # Fetch-, modify-, update- and verify the geometry.
         ret = client.getFragmentGeometries([objID])
@@ -600,7 +600,7 @@ class TestClient:
 
         # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
-        assert ret.ok and (ret.data[objID]['sv'].version != version)
+        assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_setFragmentGeometries_dae(self, client_type):
@@ -632,7 +632,7 @@ class TestClient:
         leo.processCommandsAndSync()
         ret = client.getBodyStates(objID)
         assert ret.ok
-        version = ret.data[objID]['sv'].version
+        version = ret.data[objID]['rbs'].version
 
         # Fetch-, modify-, update- and verify the geometry.
         ret = client.getFragmentGeometries([objID])
@@ -649,10 +649,10 @@ class TestClient:
 
         # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
-        assert ret.ok and (ret.data[objID]['sv'].version != version)
+        assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
         # Change the fragment geometry once more.
-        version = ret.data[objID]['sv'].version
+        version = ret.data[objID]['rbs'].version
         assert client.setFragmentGeometries(objID, [getFragDae('f_dae')]).ok
 
         # Ensure it now has type 'DAE' again.
@@ -662,7 +662,7 @@ class TestClient:
 
         # Ensure 'version' is different as well.
         ret = client.getBodyStates(objID)
-        assert ret.ok and (ret.data[objID]['sv'].version != version)
+        assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_setFragmentStates(self, client_type):
@@ -877,8 +877,8 @@ class TestClient:
         leo.step(1.0, 60)
         ret = client.getBodyStates([id_1, id_2])
         assert ret.ok
-        pos_a2 = ret.data[id_1]['sv'].position
-        pos_b2 = ret.data[id_2]['sv'].position
+        pos_a2 = ret.data[id_1]['rbs'].position
+        pos_b2 = ret.data[id_2]['rbs'].position
         delta_a = np.array(pos_a2) - np.array(pos_a)
         delta_b = np.array(pos_b2) - np.array(pos_b)
         assert delta_a[0] < pos_a[0]

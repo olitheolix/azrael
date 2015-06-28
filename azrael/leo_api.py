@@ -121,7 +121,7 @@ def getNumObjects():
 
     :returns int: number of objects in simulation.
     """
-    return database.dbHandles['SV'].count()
+    return database.dbHandles['RBS'].count()
 
 
 @typecheck
@@ -195,7 +195,7 @@ def addCmdSpawn(objData: (tuple, list)):
 
         # Insert this document unless one already matches the query.
         query = {'cmd': 'spawn', 'objID': objID}
-        data = {'sv': sv, 'AABBs': aabbs.data}
+        data = {'rbs': sv, 'AABBs': aabbs.data}
         bulk.find(query).upsert().update({'$setOnInsert': data})
 
     ret = bulk.execute()
@@ -270,7 +270,7 @@ def addCmdModifyBodyState(objID: int, body: RigidBodyStateOverride):
     # pending update commands for the same object - tough luck.
     db = database.dbHandles['Commands']
     query = {'cmd': 'modify', 'objID': objID}
-    db_data = {'sv': body, 'AABBs': aabbs}
+    db_data = {'rbs': body, 'AABBs': aabbs}
     db.update(query, {'$setOnInsert': db_data},  upsert=True)
 
     # This function was successful if exactly one document was updated.
@@ -363,11 +363,11 @@ def getBodyStates(objIDs: (list, tuple)):
     # Retrieve the state variables.
     out = {_: None for _ in objIDs}
     with util.Timeit('leoAPI.1_getSV') as timeit:
-        tmp = list(database.dbHandles['SV'].find({'objID': {'$in': objIDs}}))
+        tmp = list(database.dbHandles['RBS'].find({'objID': {'$in': objIDs}}))
 
     with util.Timeit('leoAPI.2_getSV') as timeit:
         for doc in tmp:
-            out[doc['objID']] = _RigidBodyState(*doc['sv'])
+            out[doc['objID']] = _RigidBodyState(*doc['rbs'])
     return RetVal(True, None, out)
 
 
@@ -391,7 +391,7 @@ def getAABB(objIDs: (list, tuple)):
             return RetVal(False, msg, None)
 
     # Retrieve the objects states.
-    out = list(database.dbHandles['SV'].find({'objID': {'$in': objIDs}}))
+    out = list(database.dbHandles['RBS'].find({'objID': {'$in': objIDs}}))
 
     # Put all AABBs into a dictionary to simplify sorting afterwards.
     out = {_['objID']: _['AABBs'] for _ in out}
@@ -449,8 +449,8 @@ def getAllBodyStates():
     """
     # Compile all object IDs and state variables into a dictionary.
     out = {}
-    for doc in database.dbHandles['SV'].find():
-        key, value = doc['objID'], _RigidBodyState(*doc['sv'])
+    for doc in database.dbHandles['RBS'].find():
+        key, value = doc['objID'], _RigidBodyState(*doc['rbs'])
         out[key] = value
     return RetVal(True, None, out)
 
@@ -463,5 +463,5 @@ def getAllObjectIDs():
     :rtype: list
     """
     # Compile and return the list of all object IDs.
-    out = [_['objID'] for _ in database.dbHandles['SV'].find()]
+    out = [_['objID'] for _ in database.dbHandles['RBS'].find()]
     return RetVal(True, None, out)

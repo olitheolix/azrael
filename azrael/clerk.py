@@ -714,7 +714,7 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
 
         # Extract the parent's orientation from its rigid body state.
-        sv_parent = sv_parent.data[objID]['sv']
+        sv_parent = sv_parent.data[objID]['rbs']
         parent_orient = sv_parent.orientation
         quat = util.Quaternion(parent_orient[3], parent_orient[:3])
 
@@ -1150,11 +1150,11 @@ class Clerk(config.AzraelProcess):
         {
             objID_1: {
                 'frag': [FragState(), ...],
-                'sv': _RigidBodyState()
+                'rbs': _RigidBodyState()
             },
             objID_2: {
                 'frag': [FragState(), ...],
-                'sv': _RigidBodyState()
+                'rbs': _RigidBodyState()
             },
         }
 
@@ -1206,7 +1206,7 @@ class Clerk(config.AzraelProcess):
 
             out[objID] = {
                 'frag': fragStates[objID],
-                'sv': bodyStates[objID]._replace(version=version[objID])
+                'rbs': bodyStates[objID]._replace(version=version[objID])
             }
         return RetVal(True, None, out)
 

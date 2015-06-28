@@ -514,7 +514,7 @@ class ResetSim(multiprocessing.Process):
         assert ret.ok
         ret = client.getBodyStates(ret.data)
         assert ret.ok
-        allowed_objIDs = {k: v['sv'] for k, v in ret.data.items()
+        allowed_objIDs = {k: v['rbs'] for k, v in ret.data.items()
                           if v is not None}
         print('Took simulation snapshot for reset: ({} objects)'
               .format(len(allowed_objIDs)))

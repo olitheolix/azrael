@@ -196,7 +196,7 @@ def FromClerk_GetAllObjectIDs_Decode(payload: dict):
 
 @typecheck
 def ToClerk_SetBodyState_Encode(objID: int, sv: tuple):
-    return RetVal(True, None, {'objID': objID, 'sv': sv})
+    return RetVal(True, None, {'objID': objID, 'rbs': sv})
 
 
 @typecheck
@@ -205,7 +205,7 @@ def ToClerk_SetBodyState_Decode(payload: dict):
     objID = payload['objID']
 
     # Convert the state variable into a RigidBodyStateOverride instance.
-    sv = payload['sv']
+    sv = payload['rbs']
     tmp = dict(zip(types.RigidBodyStateOverride._fields, sv))
     sv = types.RigidBodyStateOverride(**tmp)
 
@@ -343,14 +343,14 @@ def FromClerk_GetBodyState_Encode(payload: dict):
             continue
 
         # Convert the constituent elements to dictionaries.
-        if data['sv'] is None:
+        if data['rbs'] is None:
             sv = None
         else:
-            sv = data['sv']._asdict()
+            sv = data['rbs']._asdict()
         frag = [_._asdict() for _ in data['frag']]
 
-        # Replace the original 'sv' and 'frag' entries with the new ones.
-        out[objID] = {'sv': sv, 'frag': frag}
+        # Replace the original 'rbs' and 'frag' entries with the new ones.
+        out[objID] = {'rbs': sv, 'frag': frag}
     return True, {'data': out}
 
 
@@ -365,14 +365,14 @@ def FromClerk_GetBodyState_Decode(payload: dict):
             continue
 
         # Compile the proper data types from the dictionaries.
-        if data['sv'] is None:
+        if data['rbs'] is None:
             sv = None
         else:
-            sv = types.RigidBodyState(**data['sv'])
+            sv = types.RigidBodyState(**data['rbs'])
         frag = [types.FragState(**_) for _ in data['frag']]
 
-        # Replace the original 'sv' and 'frag' entries with the new ones.
-        out[int(objID)] = {'sv': sv, 'frag': frag}
+        # Replace the original 'rbs' and 'frag' entries with the new ones.
+        out[int(objID)] = {'rbs': sv, 'frag': frag}
     return RetVal(True, None, out)
 
 

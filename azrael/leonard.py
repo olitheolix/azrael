@@ -375,7 +375,7 @@ class LeonardBase(config.AzraelProcess):
         super().__init__()
 
         # Create the DB handles.
-        self._DB_SV = azrael.database.dbHandles['SV']
+        self._DB_SV = azrael.database.dbHandles['RBS']
 
         # Create an Igor instance.
         self.igor = azrael.igor.Igor()
@@ -539,7 +539,7 @@ class LeonardBase(config.AzraelProcess):
 
             # Add the body and its AABB to Leonard's cache. Furthermore, add
             # (and initialise) the entry for the forces on this body.
-            sv_old = doc['sv']
+            sv_old = doc['rbs']
             self.allBodies[objID] = _RigidBodyState(*sv_old)
             self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
             self.allAABBs[objID] = doc['AABBs']
@@ -547,7 +547,7 @@ class LeonardBase(config.AzraelProcess):
         # Update Body States.
         fun = leoAPI._updateRigidBodyStateTuple
         for doc in cmds['modify']:
-            objID, sv_new, aabbs_new = doc['objID'], doc['sv'], doc['AABBs']
+            objID, sv_new, aabbs_new = doc['objID'], doc['rbs'], doc['AABBs']
             if objID in self.allBodies:
                 sv_new = RigidBodyStateOverride(*sv_new)
                 sv_old = self.allBodies[objID]
@@ -599,7 +599,7 @@ class LeonardBase(config.AzraelProcess):
         bulk = self._DB_SV.initialize_unordered_bulk_op()
         for objID, sv in self.allBodies.items():
             query = {'objID': objID}
-            data = {'objID': objID, 'sv': sv, 'AABBs': self.allAABBs[objID]}
+            data = {'objID': objID, 'rbs': sv, 'AABBs': self.allAABBs[objID]}
             bulk.find(query).upsert().update({'$set': data})
 
         if writeconcern:

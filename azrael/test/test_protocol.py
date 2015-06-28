@@ -218,10 +218,10 @@ class TestClerk:
         # The payload used here covers all cases where both, only one of the
         # two, or neither are defined.
         payload = {
-            1: {'frag': frag_states, 'sv': types.RigidBodyState()},
-            2: {'frag': [], 'sv': types.RigidBodyState()},
-            3: {'frag': frag_states, 'sv': None},
-            4: {'frag': [], 'sv': None},
+            1: {'frag': frag_states, 'rbs': types.RigidBodyState()},
+            2: {'frag': [], 'rbs': types.RigidBodyState()},
+            3: {'frag': frag_states, 'rbs': None},
+            4: {'frag': [], 'rbs': None},
             # fixme: this case should not be possible.
             5: None,
         }

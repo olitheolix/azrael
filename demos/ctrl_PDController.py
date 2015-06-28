@@ -157,7 +157,7 @@ def main(objID, ref_pos):
         # Query the sphere's position.
         ret = client.getBodyStates([objID])
         assert ret.ok
-        pos = ret.data[objID]['sv'].position
+        pos = ret.data[objID]['rbs'].position
 
         # Call the controller with the current- and desired position.
         force, err = PD.update(pos, ref_pos)

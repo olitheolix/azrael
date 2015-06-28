@@ -228,7 +228,7 @@ function getStateVariable(objID) {
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'sv': parsed.payload.data}
+        return {'ok': parsed.ok, 'rbs': parsed.payload.data}
     };
     return [cmd, dec]
 }
@@ -282,7 +282,7 @@ function arrayEqual(arr1, arr2) {
 //   finV = P + R * S * V
 function updateObjectGeometries(objID, allSVs, obj_cache) {
     // Convenience.
-    var sv = allSVs[objID]['sv']
+    var sv = allSVs[objID]['rbs']
 
     // Compile a hash map for all fragments with the
     // fragment-name as the key. We will need this below to
@@ -458,7 +458,7 @@ function* mycoroutine(connection) {
             obj_cache[objID] = {};
             for (var frag_name in e.data[objID]) {
                 var d = e.data[objID][frag_name];
-                var scale = allSVs[objID]['sv'].scale;
+                var scale = allSVs[objID]['rbs'].scale;
                 switch (d.type) {
                 case 'RAW':
                     var geo = compileMesh(objID, d.vert, d.uv, d.rgb, scale);
@@ -521,7 +521,7 @@ function* mycoroutine(connection) {
             // whenever we asked Azrael for info about objects that do
             // not exist (anymore). Consequently, remove them from the
             // local cache as well.
-            if (allSVs[objID]['sv'] == null) {
+            if (allSVs[objID]['rbs'] == null) {
                 if (objID in obj_cache) {
                     for (var fragname in obj_cache[objID]) {
                         scene.remove(obj_cache[objID][fragname]);
@@ -536,8 +536,8 @@ function* mycoroutine(connection) {
             // code further down below will then think the object has
             // never existed and download it from scratch.
             if (old_SVs[objID] != undefined) {
-                if (allSVs[objID]['sv'].version !=
-                    old_SVs[objID]['sv'].version) {
+                if (allSVs[objID]['rbs'].version !=
+                    old_SVs[objID]['rbs'].version) {
                     for (var fragname in obj_cache[objID]) {
                         scene.remove(obj_cache[objID][fragname]);
                     }

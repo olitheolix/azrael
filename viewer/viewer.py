@@ -351,8 +351,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if objID not in self.oldSVs:
             return False
 
-        cs_old = self.newSVs[objID]['sv'].version
-        cs_new = self.oldSVs[objID]['sv'].version
+        cs_old = self.newSVs[objID]['rbs'].version
+        cs_new = self.oldSVs[objID]['rbs'].version
         return (cs_old != cs_new)
 
     def upload2GPU(self, objID, frag):
@@ -727,7 +727,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     continue
 
                 # Compute the model matrix for the overall object.
-                matModelObj = self.buildModelMatrix(self.newSVs[objID]['sv'])
+                matModelObj = self.buildModelMatrix(self.newSVs[objID]['rbs'])
 
                 # Update each fragment in the scene based on the position,
                 # orientation, and scale of the overall object.
