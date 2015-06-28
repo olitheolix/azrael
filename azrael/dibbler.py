@@ -50,29 +50,6 @@ from azrael.types import typecheck, Template, RetVal
 from azrael.types import FragDae, FragRaw, FragMeta
 
 
-@typecheck
-def isGeometrySane(frag: FragRaw):
-    """
-    fixme: remove this method.
-    Return *True* if the geometry is consistent.
-
-    :param Fragment frag: a geometry Fragment
-    :return: Sucess
-    :rtype: bool
-    """
-    # The number of vertices must be an integer multiple of 9 to
-    # constitute a valid triangle mesh (every triangle has three
-    # edges and every edge requires an (x, y, z) triplet to
-    # describe its position).
-    try:
-        assert len(frag.vert) % 9 == 0
-        assert len(frag.uv) % 2 == 0
-        assert len(frag.rgb) % 3 == 0
-    except AssertionError:
-        return False
-    return True
-
-
 class Dibbler:
     """
     Stateless storage backend for Azrael's models.
@@ -178,10 +155,6 @@ class Dibbler:
         except (AssertionError, TypeError):
             msg = 'Invalid data types for Raw fragments'
             return RetVal(False, msg, None)
-
-        if not isGeometrySane(data):
-            msg = 'Invalid geometry for template <{}>'
-            return RetVal(False, msg.format(model.aid), None)
 
         # Save the fragments as JSON data to eg "templates/mymodel/model.json".
         self.fs.put(json.dumps(data._asdict()).encode('utf8'),
