@@ -300,7 +300,7 @@ class Dibbler:
         return os.path.join(config.url_templates, template_name)
 
     @typecheck
-    def getInstanceDir(self, objID: str):
+    def getInstanceDir(self, objID: int):
         """
         Return the location of the object with ``objID``.
 
@@ -308,10 +308,10 @@ class Dibbler:
         does is prefix ``template_name`` with the ``config.url_instances``
         value.
 
-        :param str objID: object ID (eg. 8)
+        :param int objID: object ID (eg. 8)
         :return: location string (eg /instances/8/').
         """
-        return os.path.join(config.url_instances, objID)
+        return os.path.join(config.url_instances, str(objID))
 
     @typecheck
     def getFile(self, location: str):
@@ -354,22 +354,15 @@ class Dibbler:
             return RetVal(True, None, {'url_frag': location})
 
     @typecheck
-    def spawnTemplate(self, name: str, objID: str):
+    def spawnTemplate(self, name: str, objID: int):
         """
         .. note:: It is the caller's responsibility to ensure that ``objID`` is
                   unique. Dibbler will happily overwrite existing data.
 
         :param str name: the name of the template to spawn.
-        :param str objID: the object ID
+        :param int objID: the object ID
         :return: #file copied.
         """
-        try:
-            # 'objID', albeit a string, must correspond a valid integer.
-            int(objID)
-        except (TypeError, ValueError):
-            msg = 'Invalid parameters in spawn command'
-            return RetVal(False, msg, None)
-
         # Copy the model from the template- to the instance directory.
         src = self.getTemplateDir(name)
         dst = self.getInstanceDir(objID)
@@ -400,7 +393,7 @@ class Dibbler:
             return RetVal(True, None, {'url_frag': url})
 
     @typecheck
-    def updateFragments(self, objID: str, frags: (tuple, list)):
+    def updateFragments(self, objID: int, frags: (tuple, list)):
         """
         Overwrite all ``frags`` for ``objID``.
 
@@ -409,16 +402,13 @@ class Dibbler:
         delete the respective fragment and update the `meta.json` file
         accordingly.
 
-        :param str objID: the object for which to update the ``fragments``.
+        :param int objID: the object for which to update the ``fragments``.
         :param list frags: list of new ``FragMeta`` instances.
         :return: see :func:`saveModel`
         """
         try:
             # Sanity check the fragments.
             frags = [FragMeta(*_) for _ in frags]
-
-            # 'objID', albeit a string, must correspond to a valid integer.
-            int(objID)
         except (TypeError, ValueError):
             msg = 'Invalid parameters in updateFragments command'
             return RetVal(False, msg, None)
@@ -442,15 +432,15 @@ class Dibbler:
         return self._deleteSubLocation(location)
 
     @typecheck
-    def deleteInstance(self, objID: str):
+    def deleteInstance(self, objID: int):
         """
         Delete the all files belonging to the instance with ``objID``.
 
         This function always succeeds but returns the number of actually
         deleted files.
 
-        :param str objID: ID of object delete.
-        :return: #files deleted.
+        :param int objID: ID of object delete.
+        :return: number of files deleted.
         """
         location = self.getInstanceDir(objID)
         return self._deleteSubLocation(location)

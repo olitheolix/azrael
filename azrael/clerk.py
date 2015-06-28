@@ -589,7 +589,7 @@ class Clerk(config.AzraelProcess):
 
                 # Tell Dibbler to duplicate the template data into the instance
                 # location.
-                ret = self.dibbler.spawnTemplate(templateID, str(objID))
+                ret = self.dibbler.spawnTemplate(templateID, objID)
                 if not ret.ok:
                     # Dibbler and Clerk are out of sync because Clerk found
                     # a template that Dibbler does not know about. This really
@@ -890,7 +890,7 @@ class Clerk(config.AzraelProcess):
         ret = leoAPI.addCmdRemoveObject(objID)
         database.dbHandles['ObjInstances'].remove({'objID': objID}, mult=True)
         if ret.ok:
-            self.dibbler.deleteInstance(str(objID))
+            self.dibbler.deleteInstance(objID)
             return RetVal(True, None, None)
         else:
             return RetVal(False, ret.msg, None)
@@ -975,7 +975,7 @@ class Clerk(config.AzraelProcess):
 
         # Update the fragment geometry in Dibbler.
         for frag in fragments:
-            ret = self.dibbler.updateFragments(str(objID), fragments)
+            ret = self.dibbler.updateFragments(objID, fragments)
             if not ret.ok:
                 return ret
 
