@@ -545,22 +545,28 @@ class Client():
         return self.serialiseAndSend('set_body_state', objID, new)
 
     @typecheck
-    def setForce(self, objID: int, force: (tuple, list, np.ndarray)):
+    def setForce(self, objID: int, force: (tuple, list, np.ndarray),
+                 position: (tuple, list, np.ndarray)=(0, 0, 0)):
         """
-        Apply ``force`` to ``objID``.
+        Apply ``force`` to ``objID`` at ``position``.
 
-        The ``force`` applies always at the centre of mass.
+        The ``position`` is relative to the object's center of mass.
 
         :param int objID: apply ``force`` to this object
-        :param ndarray force: the actual force vector (3 elements).
+        :param vec3 force: the actual force vector (3 elements).
+        :param vec3 position: position of the force relative to body.
         :return: Success
         """
-        force = tuple(np.array(force).tolist())
-        assert len(force) == 3
+        # Sanity check force and position (both must be 3-vectors).
+        for var in (force, position):
+            tmp = np.array(var, np.float64)
+            assert tmp.ndim == 1
+            assert len(tmp) == 3
 
-        # fixme: position should be an optional parameter.
-        pos = (0, 0, 0)
-        return self.serialiseAndSend('set_force', objID, force, pos)
+        force = tuple(force)
+        position = tuple(position)
+
+        return self.serialiseAndSend('set_force', objID, force, position)
 
     def getAllObjectIDs(self):
         """
