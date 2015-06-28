@@ -371,6 +371,24 @@ def getBodyStates(objIDs: (list, tuple)):
     return RetVal(True, None, out)
 
 
+def getAllBodyStates():
+    """
+    Return a dictionary of {objID: SV} all objects in the simulation.
+
+    The keys and values of the returned dictionary correspond to the object ID
+    and their associated State Vectors, respectively.
+
+    :return: dictionary of state variables with object IDs as keys.
+    :rtype: dict
+    """
+    # Compile all object IDs and state variables into a dictionary.
+    out = {}
+    for doc in database.dbHandles['RBS'].find():
+        key, value = doc['objID'], _RigidBodyState(*doc['rbs'])
+        out[key] = value
+    return RetVal(True, None, out)
+
+
 @typecheck
 def getAABB(objIDs: (list, tuple)):
     """
@@ -435,24 +453,6 @@ def _updateRigidBodyStateTuple(orig: _RigidBodyState,
 
     # Convert the dictionary back to a _RigidBodyState instance and return it.
     return _RigidBodyState(**dict_orig)
-
-
-def getAllBodyStates():
-    """
-    Return a dictionary of {objID: SV} all objects in the simulation.
-
-    The keys and values of the returned dictionary correspond to the object ID
-    and their associated State Vectors, respectively.
-
-    :return: dictionary of state variables with object IDs as keys.
-    :rtype: dict
-    """
-    # Compile all object IDs and state variables into a dictionary.
-    out = {}
-    for doc in database.dbHandles['RBS'].find():
-        key, value = doc['objID'], _RigidBodyState(*doc['rbs'])
-        out[key] = value
-    return RetVal(True, None, out)
 
 
 def getAllObjectIDs():
