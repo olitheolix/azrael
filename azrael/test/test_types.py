@@ -93,6 +93,15 @@ class TestDibbler:
             assert con_a == con_b
             assert self.isJsonCompatible(con_a, ConstraintMeta)
 
+        # Verify that 'FragmentMeta._asdict' also converts the 'fragdata' field
+        # to dictionaries.
+        con_t = getP2P()
+        con_d = con_t._asdict()
+        assert isinstance(con_d, dict)
+        tmp = con_t.condata._asdict()
+        assert isinstance(tmp, dict)
+        assert tmp == con_d['condata']
+
     def test_FragmentMeta(self):
         for Getter in (getFragRaw, getFragDae, getFragNone):
             # Get a proper FragmentMeta, and a stunted one where the 'fragdata'
