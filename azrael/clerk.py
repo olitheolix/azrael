@@ -1132,7 +1132,7 @@ class Clerk(config.AzraelProcess):
         else:
             return RetVal(False, 'Could not update all fragments', None)
 
-    def _packSVData(self, bodyStates: dict):
+    def _packBodyState(self, bodyStates: dict):
         """
         Compile the data structure returned by ``get{All}BodyStates``.
 
@@ -1220,7 +1220,7 @@ class Clerk(config.AzraelProcess):
         if the corresponding objID did not exist.
 
         :param list[int] objIDs: list of objects to query.
-        :return: see :ref:``_packSVData``.
+        :return: see :ref:``_packBodyState``.
         :rtype: dict
         """
         with util.Timeit('leoAPI.getSV') as timeit:
@@ -1228,7 +1228,7 @@ class Clerk(config.AzraelProcess):
             ret = leoAPI.getBodyStates(objIDs)
             if not ret.ok:
                 return RetVal(False, 'One or more IDs do not exist', None)
-        return self._packSVData(ret.data)
+        return self._packBodyState(ret.data)
 
     @typecheck
     def getAllBodyStates(self, dummy=None):
@@ -1242,7 +1242,7 @@ class Clerk(config.AzraelProcess):
            The ``dummy`` argument is a placeholder because the ``runCommand``
            function assumes that every method takes at least one argument.
 
-        :return: see :ref:``_packSVData``.
+        :return: see :ref:``_packBodyState``.
         :rtype: dict
         """
         with util.Timeit('leoAPI.getSV') as timeit:
@@ -1250,7 +1250,7 @@ class Clerk(config.AzraelProcess):
             ret = leoAPI.getAllBodyStates()
             if not ret.ok:
                 return ret
-        return self._packSVData(ret.data)
+        return self._packBodyState(ret.data)
 
     @typecheck
     def setForce(self, objID: int, force: (tuple, list), rpos: (tuple, list)):
