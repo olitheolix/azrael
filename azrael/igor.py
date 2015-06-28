@@ -89,7 +89,7 @@ class Igor:
         Add all ``constraints`` to the database.
 
         All entries in ``constraints`` must be ``ConstraintMeta`` instances,
-        and their `data` attribute must be a valid ``Constraint***`` instance.
+        and their `data` attribute must be a valid ``Constraint*`` instance.
 
         This method will skip over all constraints with an invalid/unknown
         type.
@@ -120,14 +120,18 @@ class Igor:
             rb_a, rb_b = sorted((rb_a, rb_b))
             con = con._replace(rb_a=rb_a, rb_b=rb_b)
 
-            # Insert the constraints into MongoDB. The constraint query must
-            # match both object IDs, as well as their type and constraint ID.
-            tmp = {'rb_a': rb_a, 'rb_b': rb_b,
-                   'contype': con.contype, 'aid': con.aid}
-            # fixme: nicer names
-            tmp2 = dict(tmp)
-            tmp2['con'] = con
-            queries.append((tmp, tmp2))
+            # To update the constraint data we need to find the particular
+            # constraint and then overwrite it with the new values. To
+            # facilitate this, create a list of (query, new_value) tuples,
+            # where the `query` components denotes the MongodB query to
+            # uniquely find the constraints, and `new_value` is the new
+            # constraint (ie the exact same as `query` plus the 'con' field).
+            db_query = {'rb_a': rb_a, 'rb_b': rb_b,
+                        'contype': con.contype, 'aid': con.aid}
+            db_value = dict(db_query)
+            db_value['con'] = con
+
+            queries.append((db_query, db_value))
 
         # Return immediately if the list of constraints to add is empty.
         if len(queries) == 0:
@@ -135,8 +139,8 @@ class Igor:
 
         # Compile the bulk query and execute it.
         bulk = self.db.initialize_unordered_bulk_op()
-        for q, c in queries:
-            bulk.find(q).upsert().update({'$setOnInsert': c})
+        for query, value in queries:
+            bulk.find(query).upsert().update({'$setOnInsert': value})
         ret = bulk.execute()
 
         # Return the number of newly created constraints.
