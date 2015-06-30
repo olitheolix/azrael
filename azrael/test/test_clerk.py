@@ -39,10 +39,12 @@ from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, FragMeta
-from azrael.test.test import getCSEmpty, getCSBox
-from azrael.test.test import getCSSphere, getCSPlane
+from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
+from azrael.test.test import getCSPlane, getTemplate
 
 
+# fixme; use self.clerk throughout the tests instead of creating a new one
+# every time
 class TestClerk:
     @classmethod
     def setup_class(cls):
@@ -61,10 +63,10 @@ class TestClerk:
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
         frag = [getFragRaw('NoName')]
-        t1 = Template('_templateEmpty', [getCSEmpty()], frag, [], [])
-        t2 = Template('_templateSphere', [getCSSphere()], frag, [], [])
-        t3 = Template('_templateBox', [getCSBox()], frag, [], [])
-        t4 = Template('_templatePlane', [getCSPlane()], frag, [], [])
+        t1 = getTemplate('_templateEmpty', [getCSEmpty()], frag)
+        t2 = getTemplate('_templateSphere', [getCSSphere()], frag)
+        t3 = getTemplate('_templateBox', [getCSBox()], frag)
+        t4 = getTemplate('_templatePlane', [getCSPlane()], frag)
         ret = self.clerk.addTemplates([t1, t2, t3, t4])
         assert ret.ok
 
@@ -74,7 +76,7 @@ class TestClerk:
 
     def test_get_default_templates(self):
         """
-        Query the defautl templates in Azrael.
+        Query the default templates in Azrael.
         """
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -145,7 +147,7 @@ class TestClerk:
 
         # Compile a template structure.
         frags = [getFragRaw('foo')]
-        temp = Template('bar', [cs], frags, [], [])
+        temp = getTemplate('bar', cshapes=[cs], fragments=frags)
 
         # Add template when 'saveModel' fails.
         mock_dibbler.addTemplate.return_value = RetVal(False, 't_error', None)
@@ -175,7 +177,11 @@ class TestClerk:
             templateID='_templateBox', exit_speed=(0.1, 0.5))
 
         # Add the new template.
-        temp = Template('t3', [cs], frags, [b0, b1], [f0])
+        temp = getTemplate('t3',
+                           cshapes=[cs],
+                           fragments=frags,
+                           boosters=[b0, b1],
+                           factories=[f0])
         assert clerk.addTemplates([temp]).ok
         assert mock_dibbler.addTemplate.call_count == 4
 
@@ -228,8 +234,8 @@ class TestClerk:
         # Define two valid templates.
         frag_1 = getFragRaw('foo')
         frag_2 = getFragRaw('bar')
-        t1 = Template(name_1, [getCSSphere()], [frag_1], [], [])
-        t2 = Template(name_2, [getCSSphere()], [frag_2], [], [])
+        t1 = getTemplate(name_1, cshapes=[getCSSphere()], fragments=[frag_1])
+        t2 = getTemplate(name_2, cshapes=[getCSSphere()], fragments=[frag_2])
 
         # Uploading the templates must succeed.
         assert clerk.addTemplates([t1, t2]).ok
@@ -562,11 +568,11 @@ class TestClerk:
             minval=0, maxval=1, force=0)
 
         # Define a new template with two boosters and add it to Azrael.
-        template = Template('t1',
-                            cshapes=[getCSSphere()],
-                            fragments=[getFragRaw('bar')],
-                            boosters=[booster],
-                            factories=[])
+        template = getTemplate('t1',
+                               cshapes=[getCSSphere()],
+                               fragments=[getFragRaw('bar')],
+                               boosters=[booster],
+                               factories=[])
         assert clerk.addTemplates([template]).ok
 
         # Spawn an instance of the template and get the object ID.
@@ -629,7 +635,11 @@ class TestClerk:
             templateID='_templateBox', exit_speed=(0, 1))
 
         # Define a new template, add it to Azrael, and spawn an instance.
-        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [b0], [f0])
+        temp = getTemplate('t1',
+                           cshapes=[getCSSphere()],
+                           fragments=[getFragRaw('bar')],
+                           boosters=[b0],
+                           factories=[f0])
         assert clerk.addTemplates([temp]).ok
         sv = types.RigidBodyState()
         ret = clerk.spawn([(temp.aid, sv)])
@@ -681,8 +691,10 @@ class TestClerk:
                            minval=0, maxval=0.5, force=0)
 
         # Define a new template with two boosters and add it to Azrael.
-        temp = Template('t1', [getCSSphere()],
-                        [getFragRaw('bar')], [b0, b1], [])
+        temp = getTemplate('t1',
+                           cshapes=[getCSSphere()],
+                           fragments=[getFragRaw('bar')],
+                           boosters=[b0, b1])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn an instance of the template.
@@ -756,11 +768,10 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
-        temp = Template('t1',
-                        cshapes=[getCSSphere()],
-                        fragments=[getFragRaw('bar')],
-                        boosters=[],
-                        factories=[f0, f1])
+        temp = getTemplate('t1',
+                           cshapes=[getCSSphere()],
+                           fragments=[getFragRaw('bar')],
+                           factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -831,11 +842,10 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
-        temp = Template('t1',
-                        cshapes=[getCSSphere()],
-                        fragments=[getFragRaw('bar')],
-                        boosters=[],
-                        factories=[f0, f1])
+        temp = getTemplate('t1',
+                           cshapes=[getCSSphere()],
+                           fragments=[getFragRaw('bar')],
+                           factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -935,11 +945,11 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
-        temp = Template('t1',
-                        cshapes=[getCSSphere()],
-                        fragments=[getFragRaw('bar')],
-                        boosters=[b0, b1],
-                        factories=[f0, f1])
+        temp = getTemplate('t1',
+                           cshapes=[getCSSphere()],
+                           fragments=[getFragRaw('bar')],
+                           boosters=[b0, b1],
+                           factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([(temp.aid, sv)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -1048,7 +1058,7 @@ class TestClerk:
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
-        temp = Template('foo', [getCSSphere()], frags, [], [])
+        temp = getTemplate('foo', cshapes=[getCSSphere()], fragments=frags)
         assert clerk.addTemplates([temp]).ok
         assert clerk.getTemplates([temp.aid]).ok
 
@@ -1108,7 +1118,9 @@ class TestClerk:
         sv = types.RigidBodyState()
 
         # Add a valid template and verify it now exists in Azrael.
-        temp = Template('foo', [getCSSphere()], [getFragRaw('bar')], [], [])
+        temp = getTemplate('foo',
+                           cshapes=[getCSSphere()],
+                           fragments=[getFragRaw('bar')])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
@@ -1160,7 +1172,10 @@ class TestClerk:
                            minval=-1, maxval=1, force=0)
 
         # Define a template with one fragment.
-        t1 = Template('t1', [getCSSphere()], [getFragRaw('foo')], [b0, b1], [])
+        t1 = getTemplate('t1',
+                         cshapes=[getCSSphere()],
+                         fragments=[getFragRaw('foo')],
+                         boosters=[b0, b1])
 
         # Add the template and spawn two instances.
         assert clerk.addTemplates([t1]).ok
@@ -1233,8 +1248,9 @@ class TestClerk:
         sv = types.RigidBodyState()
 
         # Define a new template with one fragment.
-        t1 = Template('t1', [getCSSphere()], fragments=[getFragRaw('foo')],
-                      boosters=[], factories=[])
+        t1 = getTemplate('t1',
+                         cshapes=[getCSSphere()],
+                         fragments=[getFragRaw('foo')])
 
         # Add the template to Azrael, spawn two instances, and make sure
         # Leonard picks it up so that the object becomes available.
@@ -1366,7 +1382,7 @@ class TestClerk:
         f_dae = getFragDae('test')
         frags = [f_raw, f_dae]
 
-        t1 = Template('t1', cs, frags, boosters=[], factories=[])
+        t1 = getTemplate('t1', cshapes=cs, fragments=frags)
         assert clerk.addTemplates([t1]).ok
         ret = clerk.spawn([(t1.aid, sv)])
         assert ret.ok
@@ -1601,7 +1617,7 @@ class TestClerk:
             getFragDae('fname_2'),
             getFragRaw('fname_3')
         ]
-        t1 = Template('t1', [getCSSphere()], frags_orig, [], [])
+        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags_orig)
 
         # Add a new template, spawn it, and record the object ID.
         assert clerk.addTemplates([t1]).ok
@@ -1645,9 +1661,9 @@ class TestClerk:
     #     clerk = azrael.clerk.Clerk()
 
     #     # Create templates for all possible "stunted" objects.
-    #     t_cs = Template('t_cs', [getCSSphere()], [], [], [])
-    #     t_frag = Template('t_frag', [], [getFragRaw()], [], [])
-    #     t_none = Template('t_none', [], [], [], [])
+    #     t_cs = getTemplate('t_cs', cshapes=[getCSSphere()])
+    #     t_frag = getTemplate('t_frag', fragments=[getFragRaw()])
+    #     t_none = getTemplate('t_none')
 
     #     # Add the templates to Azrael and verify it accepted them.
     #     assert clerk.addTemplates([t_cs, t_frag, t_none]).ok

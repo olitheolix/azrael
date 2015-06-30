@@ -23,7 +23,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
-from azrael.test.test import getFragRaw, getFragDae, getFragNone
+from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 
 
 class TestDibbler:
@@ -112,7 +112,7 @@ class TestDibbler:
 
         # Define a template for this test.
         frag = getFragRaw()
-        t_raw = Template('_templateEmpty', [], [frag], [], [])
+        t_raw = getTemplate('_templateEmpty', cshapes=[], fragments=[frag])
 
         # Add the first template and verify that the database now contains
         # exactly two files (a meta file, and the actual fragment data).
@@ -131,7 +131,7 @@ class TestDibbler:
 
         # Define a template for this test.
         frag = getFragDae()
-        t_dae = Template('_templateEmpty', [], [frag], [], [])
+        t_dae = getTemplate('_templateEmpty', cshapes=[], fragments=[frag])
 
         # Create a Dibbler instance and flush all data.
         assert dibbler.getNumFiles() == (True, None, 0)
@@ -162,8 +162,8 @@ class TestDibbler:
         # Define two templates.
         frag_raw = getFragRaw()
         frag_dae = getFragDae()
-        t_raw = Template('t_name_raw', [], [frag_raw], [], [])
-        t_dae = Template('t_name_dae', [], [frag_dae], [], [])
+        t_raw = getTemplate('t_name_raw', cshapes=[], fragments=[frag_raw])
+        t_dae = getTemplate('t_name_dae', cshapes=[], fragments=[frag_dae])
 
         # Add the templates and verify there are 6 files in the DB now. The
         # first template has two files (1 meta.json plus 1 for the raw data)
@@ -203,7 +203,7 @@ class TestDibbler:
         # them.
         frags_orig = [getFragRaw('fname_1'), getFragDae('fname_2')]
         frags_new = [getFragDae('fname_1')]
-        t1 = Template('t1', [], frags_orig, [], [])
+        t1 = getTemplate('t1', cshapes=[], fragments=frags_orig)
 
         # Add the template and spawn two instances.
         assert dibbler.addTemplate(t1).ok
@@ -261,7 +261,7 @@ class TestDibbler:
             getFragDae('fname_2'),
             getFragRaw('fname_3')
         ]
-        t1 = Template('t1', [], frags_orig, [], [])
+        t1 = getTemplate('t1', cshapes=[], fragments=frags_orig)
 
         # The fragment update will use the following data. It translates to
         # keeping the first intact, removing the second, and modifying the
@@ -309,8 +309,8 @@ class TestDibbler:
         # Define two templates.
         frag_raw = getFragRaw()
         frag_dae = getFragDae()
-        t11 = Template('name11', [], [frag_raw], [], [])
-        t1 = Template('name1', [], [frag_dae], [], [])
+        t11 = getTemplate('name11', cshapes=[], fragments=[frag_raw])
+        t1 = getTemplate('name1', cshapes=[], fragments=[frag_dae])
 
         # Verify that Dibbler is pristine.
         assert dibbler.getNumFiles() == (True, None, 0)
@@ -374,8 +374,8 @@ class TestDibbler:
         # Define two templates.
         frag_raw = getFragRaw()
         frag_dae = getFragDae()
-        t_raw = Template('temp_raw', [], [frag_raw], [], [])
-        t_dae = Template('temp_dae', [], [frag_dae], [], [])
+        t_raw = getTemplate('temp_raw', cshapes=[], fragments=[frag_raw])
+        t_dae = getTemplate('temp_dae', cshapes=[], fragments=[frag_dae])
 
         # Verify that Dibbler is empty.
         assert dibbler.getNumFiles() == (True, None, 0)

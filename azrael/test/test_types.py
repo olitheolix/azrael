@@ -26,7 +26,7 @@ from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane, FragState
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.types import RigidBodyState
-from azrael.test.test import getFragRaw, getFragDae, getFragNone
+from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
 from azrael.test.test import getP2P, get6DofSpring2
 
@@ -147,11 +147,11 @@ class TestDibbler:
                      templateID='_templateBox', exit_speed=(0, 1))
 
         # Define a new template with two boosters and add it to Azrael.
-        temp_t = Template('t1',
-                          cshapes=[getCSSphere(), getCSEmpty()],
-                          fragments=[getFragRaw(), getFragDae()],
-                          boosters=[b0, b1],
-                          factories=[f0, f1])
+        temp_t = getTemplate('t1',
+                             cshapes=[getCSSphere(), getCSEmpty()],
+                             fragments=[getFragRaw(), getFragDae()],
+                             boosters=[b0, b1],
+                             factories=[f0, f1])
 
         # Verify that it is JSON compatible.
         assert self.isJsonCompatible(temp_t, Template)

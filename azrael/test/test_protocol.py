@@ -27,7 +27,7 @@ import azrael.leo_api as leoAPI
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
-from azrael.test.test import getP2P, get6DofSpring2
+from azrael.test.test import getP2P, get6DofSpring2, getTemplate
 from azrael.test.test import getFragRaw, getFragDae, getFragNone
 from azrael.types import FragState, FragDae, FragRaw, FragMeta, Template
 
@@ -119,7 +119,7 @@ class TestClerk:
 
         # Compile a valid Template structure.
         frags = [getFragRaw(), getFragDae(), getFragNone()]
-        return Template('foo', [], frags, [], [])
+        return getTemplate('foo', cshapes=[], fragments=frags)
 
     def test_GetTemplate(self):
         """
@@ -298,7 +298,7 @@ class TestClerk:
 
         # Compile a valid Template structure.
         frags = [getFragRaw(), getFragDae(), getFragNone()]
-        temp = Template('foo', [], frags, [], [])
+        temp = getTemplate('foo', cshapes=[], fragments=frags)
 
         # ----------------------------------------------------------------------
         # Client --> Clerk.

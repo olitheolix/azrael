@@ -11,7 +11,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
-from azrael.test.test import getFragRaw, getFragDae
+from azrael.test.test import getFragRaw, getFragDae, getTemplate
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 
 
@@ -142,8 +142,8 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_t2 = [getFragRaw('foo4'),
                     getFragRaw('foo5'),
                     getFragDae('bar6')]
-        t1 = Template('t1', [getCSSphere()], frags_t1, [], [])
-        t2 = Template('t2', [getCSBox()], frags_t2, [], [])
+        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags_t1)
+        t2 = getTemplate('t2', cshapes=[getCSBox()], fragments=frags_t2)
         del frags_t1, frags_t2
 
         # Add the first template.
@@ -177,8 +177,8 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_t2 = [getFragRaw('raw4'),
                     getFragRaw('raw5'),
                     getFragDae('dae6')]
-        t1 = Template('t1', [getCSSphere()], frags_t1, [], [])
-        t2 = Template('t2', [getCSBox()], frags_t2, [], [])
+        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags_t1)
+        t2 = getTemplate('t2', cshapes=[getCSBox()], fragments=frags_t2)
         del frags_t1, frags_t2
 
         # Add both templates and verify they are available.
@@ -220,7 +220,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_new = [getFragDae('name1'),
                      getFragDae('name2'),
                      getFragRaw('name3')]
-        t1 = Template('t1', [getCSSphere()], frags_old, [], [])
+        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags_old)
 
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
@@ -254,7 +254,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Create a Template.
         frags = [getFragRaw('name1')]
-        t1 = Template('t1', [getCSSphere()], frags, [], [])
+        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags)
 
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok

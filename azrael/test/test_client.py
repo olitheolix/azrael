@@ -44,7 +44,7 @@ import azrael.database as database
 from IPython import embed as ipshell
 from azrael.types import RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw
-from azrael.test.test import getFragRaw, getFragDae, getFragNone
+from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 
@@ -95,9 +95,9 @@ class TestClient:
         # their collision shapes are: none, sphere, box.
         clerk = azrael.clerk.Clerk()
         frag = getFragRaw('NoName')
-        t1 = Template('_templateEmpty', [getCSEmpty()], [frag], [], [])
-        t2 = Template('_templateSphere', [getCSSphere()], [frag], [], [])
-        t3 = Template('_templateBox', [getCSBox()], [frag], [], [])
+        t1 = getTemplate('_templateEmpty', cshapes=[getCSEmpty()], fragments=[frag])
+        t2 = getTemplate('_templateSphere', cshapes=[getCSSphere()], fragments=[frag])
+        t3 = getTemplate('_templateBox', cshapes=[getCSBox()], fragments=[frag])
         ret = clerk.addTemplates([t1, t2, t3])
         assert ret.ok
 
@@ -183,7 +183,7 @@ class TestClient:
         # Add a new object template.
         frag = getFragRaw('bar')
         temp_name = 't1'
-        temp_orig = Template(temp_name, [getCSSphere()], [frag], [], [])
+        temp_orig = getTemplate(temp_name, cshapes=[getCSSphere()], fragments=[frag])
         assert client.addTemplates([temp_orig]).ok
 
         # Fetch the just added template again and verify its content (skip the
@@ -220,7 +220,11 @@ class TestClient:
         # Define a new template, add it to Azrael, spawn it, and record its
         # object ID.
         frag = getFragRaw('bar')
-        temp = Template('t2', [getCSBox()], [frag], [b0, b1], [f0])
+        temp = getTemplate('t2',
+                        cshapes=[getCSBox()],
+                        fragments=[frag],
+                        boosters=[b0, b1],
+                        factories=[f0])
         assert client.addTemplates([temp]).ok
         ret = client.spawn([{'template': temp.aid, 'position': np.zeros(3)}])
         assert ret.ok and len(ret.data) == 1
@@ -477,11 +481,11 @@ class TestClient:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn an instance.
-        temp = Template('t1',
-                        cshapes=[getCSSphere()],
-                        fragments=[getFragRaw('bar')],
-                        boosters=[b0, b1],
-                        factories=[f0, f1])
+        temp = getTemplate('t1',
+                           cshapes=[getCSSphere()],
+                           fragments=[getFragRaw('bar')],
+                           boosters=[b0, b1],
+                           factories=[f0, f1])
         assert client.addTemplates([temp]).ok
         new_obj = {'template': temp.aid,
                    'position': pos_parent,
@@ -553,7 +557,7 @@ class TestClient:
 
         # Add a new template and spawn it.
         frag = getFragRaw('bar')
-        temp = Template('t1', [getCSSphere()], [frag], [], [])
+        temp = getTemplate('t1', cshapes=[getCSSphere()], fragments=[frag])
         assert client.addTemplates([temp]).ok
 
         new_obj = {'template': temp.aid,
@@ -621,7 +625,7 @@ class TestClient:
         f_dae = getFragDae('f_dae')
 
         # Add a new template and spawn it.
-        temp = Template('t1', [getCSSphere()], [f_dae], [], [])
+        temp = getTemplate('t1', cshapes=[getCSSphere()], fragments=[f_dae])
         assert client.addTemplates([temp]).ok
 
         new_obj = {'template': temp.aid,
@@ -683,7 +687,7 @@ class TestClient:
         leo = getLeonard()
 
         # Add a new template and spawn it.
-        temp = Template('t1', [getCSSphere()], [getFragRaw('bar')], [], [])
+        temp = getTemplate('t1', cshapes=[getCSSphere()], fragments=[getFragRaw('bar')])
         assert client.addTemplates([temp]).ok
 
         new_obj = {'template': temp.aid,
@@ -730,7 +734,7 @@ class TestClient:
             getFragDae('fname_2'),
             getFragRaw('fname_3')
         ]
-        t1 = Template('t1', [getCSSphere()], frags_orig, [], [])
+        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags_orig)
 
         # Add a new template and spawn it.
         assert client.addTemplates([t1]).ok
@@ -768,7 +772,7 @@ class TestClient:
         client = self.clients[client_type]
 
         # Add a valid template with Collada data and verify the upload worked.
-        temp = Template('foo', [getCSSphere()], [getFragDae('f_dae')], [], [])
+        temp = getTemplate('foo', cshapes=[getCSSphere()], fragments=[getFragDae('f_dae')])
         assert client.addTemplates([temp]).ok
 
         # Spawn the template.

@@ -25,7 +25,7 @@ import subprocess
 import numpy as np
 import azrael.leonard
 
-from azrael.types import FragMeta, FragDae, FragRaw, FragNone
+from azrael.types import FragMeta, FragDae, FragRaw, FragNone, Template
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import RigidBodyState, RigidBodyStateOverride
@@ -149,3 +149,11 @@ def get6DofSpring2(aid='constraint_6dofspring2', rb_a=1, rb_b=2):
         bounce=(1, 1.5, 2),
         enableSpring=(True, False, False, False, False, False))
     return ConstraintMeta(aid, '6DOFSPRING2', rb_a, rb_b, dof)
+
+
+def getTemplate(name='template',
+                cshapes=[getCSSphere()],
+                fragments=[],
+                boosters=[],
+                factories=[]):
+    return Template(name, cshapes, fragments, boosters, factories)
