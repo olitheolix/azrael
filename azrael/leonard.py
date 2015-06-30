@@ -556,7 +556,7 @@ class LeonardBase(config.AzraelProcess):
                 self.allBodies[objID] = fun(sv_old, sv_new)
 
                 # Assign the new AABB if it is not None (note: a value of
-                # *None* explicitly denotes that there is not AABB update,
+                # *None* explicitly means that there is no AABB update,
                 # whereas the AABBs for eg an empty shape would be []).
                 if aabbs_new is not None:
                     self.allAABBs[objID] = aabbs_new
