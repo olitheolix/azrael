@@ -146,9 +146,12 @@ class TestDibbler:
         f1 = Factory(partID='1', pos=(3, 4, 5), direction=(0, 1, 0),
                      templateID='_templateBox', exit_speed=(0, 1))
 
+        rbs = getRigidBody(position=(1, 2, 3))
+
         # Define a new template with two boosters and add it to Azrael.
         temp_t = getTemplate('t1',
                              cshapes=[getCSSphere(), getCSEmpty()],
+                             rbs=rbs,
                              fragments=[getFragRaw(), getFragDae()],
                              boosters=[b0, b1],
                              factories=[f0, f1])
@@ -163,7 +166,9 @@ class TestDibbler:
         fragments_d = [_._asdict() for _ in temp_t.fragments]
         boosters_d = [_._asdict() for _ in temp_t.boosters]
         factories_d = [_._asdict() for _ in temp_t.factories]
+        rbs_d = rbs._asdict()
         assert temp_d['cshapes'] == cshapes_d
         assert temp_d['fragments'] == fragments_d
         assert temp_d['boosters'] == boosters_d
         assert temp_d['factories'] == factories_d
+        assert temp_d['rbs'] == rbs_d

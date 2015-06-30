@@ -151,14 +151,6 @@ def get6DofSpring2(aid='constraint_6dofspring2', rb_a=1, rb_b=2):
     return ConstraintMeta(aid, '6DOFSPRING2', rb_a, rb_b, dof)
 
 
-def getTemplate(name='template',
-                cshapes=[getCSSphere()],
-                fragments=[],
-                boosters=[],
-                factories=[]):
-    return Template(name, cshapes, fragments, boosters, factories)
-
-
 # Default argument for RigidBodyState below (purely for visual appeal, not
 # because anyone would/should use it).
 _CSDefault_ = CollShapeMeta(aid='',
@@ -181,3 +173,11 @@ def getRigidBody(scale: (int, float)=1,
     return RigidBodyState(scale, imass, restitution, orientation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,
                           axesLockRot, version)
+
+def getTemplate(name='template',
+                cshapes=[getCSSphere()],
+                rbs=getRigidBody(),
+                fragments=[],
+                boosters=[],
+                factories=[]):
+    return Template(name, cshapes, rbs, fragments, boosters, factories)

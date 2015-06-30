@@ -43,7 +43,7 @@ logit = logging.getLogger('azrael.' + __name__)
 RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Object Template.
-_Template = namedtuple('_Template', 'aid cshapes fragments boosters factories')
+_Template = namedtuple('_Template', 'aid cshapes rbs fragments boosters factories')
 
 # Fragments.
 _FragMeta = namedtuple('_FragMeta', 'aid fragtype fragdata')
@@ -404,76 +404,6 @@ class FragMeta(_FragMeta):
             else:
                 tmp = self._replace(fragdata=self.fragdata._asdict())
             return OrderedDict(zip(self._fields, tmp))
-
-
-class Template(_Template):
-    """
-    Return a valid object templates.
-
-    Object templates encapsulate all the information known about the object.
-    Azrael uses this information to spawn the object and make it available to
-    the various other components like physics.
-
-    Almost all of the inital template values can be modified at run time.
-
-    :param str aid: template name
-    :param list[CollShapeMeta] cshape: collision shapes
-    :param list[FragMeta] fragments: geometry fragments.
-    :param list[Booster] boosters: booster data
-    :param list[Factory] factories: factory data
-    :return: compiled ``_Template`` instance.
-    :raises: TypeError if the input does not compile to the data type.
-    """
-    @typecheck
-    def __new__(cls, aid: str,
-                cshapes: (tuple, list),
-                fragments: (tuple, list),
-                boosters: (tuple, list),
-                factories: (tuple, list)):
-        try:
-            # Sanity check the AID.
-            assert isAIDStringValid(aid)
-
-            # Compile- and sanity check all collision shapes.
-            cshapes = [CollShapeMeta(**_)
-                       if isinstance(_, dict) else CollShapeMeta(*_)
-                       for _ in cshapes]
-
-            # Compile- and sanity check all geometry fragments.
-            fragments = [FragMeta(**_)
-                         if isinstance(_, dict) else FragMeta(*_)
-                         for _ in fragments]
-
-            # Compile- and sanity check all boosters.
-            boosters = [Booster(**_)
-                        if isinstance(_, dict) else Booster(*_)
-                        for _ in boosters]
-
-            # Compile- and sanity check all factories.
-            factories = [Factory(**_)
-                         if isinstance(_, dict) else Factory(*_)
-                         for _ in factories]
-        except (TypeError, AssertionError) as err:
-            raise err
-            msg = 'Cannot construct <{}>'.format(cls.__name__)
-            logit.warning(msg)
-            raise TypeError
-
-        # Return constructed data type.
-        return super().__new__(
-            cls, aid, cshapes, fragments, boosters, factories)
-
-    def _asdict(self):
-        cshapes = [_._asdict() for _ in self.cshapes]
-        fragments = [_._asdict() for _ in self.fragments]
-        boosters = [_._asdict() for _ in self.boosters]
-        factories = [_._asdict() for _ in self.factories]
-        tmp = self._replace(cshapes=cshapes,
-                            fragments=fragments,
-                            boosters=boosters,
-                            factories=factories)
-
-        return OrderedDict(zip(self._fields, tmp))
 
 
 class FragState(_FragState):
@@ -1093,3 +1023,82 @@ class RigidBodyStateOverride(_RigidBodyState):
 
         # Create the ``_RigidBodyState`` named tuple.
         return super().__new__(cls, **kwargs_all)
+
+
+class Template(_Template):
+    """
+    Return a valid object templates.
+
+    Object templates encapsulate all the information known about the object.
+    Azrael uses this information to spawn the object and make it available to
+    the various other components like physics.
+
+    Almost all of the inital template values can be modified at run time.
+
+    :param str aid: template name
+    :param list[CollShapeMeta] cshape: collision shapes
+    :param list[FragMeta] fragments: geometry fragments.
+    :param list[Booster] boosters: booster data
+    :param list[Factory] factories: factory data
+    :return: compiled ``_Template`` instance.
+    :raises: TypeError if the input does not compile to the data type.
+    """
+    @typecheck
+    def __new__(cls, aid: str,
+                cshapes: (tuple, list),
+                rbs: (tuple, list, dict),
+                fragments: (tuple, list),
+                boosters: (tuple, list),
+                factories: (tuple, list)):
+        try:
+            # Sanity check the AID.
+            assert isAIDStringValid(aid)
+
+            # Compile- and sanity check all collision shapes.
+            cshapes = [CollShapeMeta(**_)
+                       if isinstance(_, dict) else CollShapeMeta(*_)
+                       for _ in cshapes]
+
+            # Compile- and sanity check all geometry fragments.
+            fragments = [FragMeta(**_)
+                         if isinstance(_, dict) else FragMeta(*_)
+                         for _ in fragments]
+
+            # Compile- and sanity check all boosters.
+            boosters = [Booster(**_)
+                        if isinstance(_, dict) else Booster(*_)
+                        for _ in boosters]
+
+            # Compile- and sanity check all factories.
+            factories = [Factory(**_)
+                         if isinstance(_, dict) else Factory(*_)
+                         for _ in factories]
+
+            # Compile the RBS data.
+            if isinstance(rbs, dict):
+                rbs = RigidBodyState(**rbs)
+            else:
+                rbs = RigidBodyState(*rbs)
+        except (TypeError, AssertionError) as err:
+            raise err
+            msg = 'Cannot construct <{}>'.format(cls.__name__)
+            logit.warning(msg)
+            raise TypeError
+
+        # Return constructed data type.
+        return super().__new__(
+            cls, aid, cshapes, rbs, fragments, boosters, factories)
+
+    def _asdict(self):
+        cshapes = [_._asdict() for _ in self.cshapes]
+        fragments = [_._asdict() for _ in self.fragments]
+        boosters = [_._asdict() for _ in self.boosters]
+        factories = [_._asdict() for _ in self.factories]
+        rbs = self.rbs._asdict()
+        tmp = _Template(aid=self.aid,
+                        cshapes=cshapes,
+                        rbs=rbs,
+                        fragments=fragments,
+                        boosters=boosters,
+                        factories=factories)
+        return OrderedDict(zip(tmp._fields, tmp))

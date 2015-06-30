@@ -63,10 +63,10 @@ class TestClerk:
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
         frag = [getFragRaw('NoName')]
-        t1 = getTemplate('_templateEmpty', [getCSEmpty()], frag)
-        t2 = getTemplate('_templateSphere', [getCSSphere()], frag)
-        t3 = getTemplate('_templateBox', [getCSBox()], frag)
-        t4 = getTemplate('_templatePlane', [getCSPlane()], frag)
+        t1 = getTemplate('_templateEmpty', cshapes=[getCSEmpty()], fragments=frag)
+        t2 = getTemplate('_templateSphere', cshapes=[getCSSphere()], fragments=frag)
+        t3 = getTemplate('_templateBox', cshapes=[getCSBox()], fragments=frag)
+        t4 = getTemplate('_templatePlane', cshapes=[getCSPlane()], fragments=frag)
         ret = self.clerk.addTemplates([t1, t2, t3, t4])
         assert ret.ok
 
@@ -286,7 +286,7 @@ class TestClerk:
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
-        # Spawn two object. They must have id_0 and id_1, respectively.
+        # Spawn two objects. Their IDs must be id_0 and id_1, respectively.
         ret = clerk.spawn([(templateID_0, getRigidBody()),
                            (templateID_1, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (id_0, id_1))
