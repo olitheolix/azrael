@@ -28,7 +28,7 @@ import azrael.protocol as protocol
 
 from IPython import embed as ipshell
 from azrael.test.test import getP2P, get6DofSpring2, getTemplate
-from azrael.test.test import getFragRaw, getFragDae, getFragNone
+from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
 from azrael.types import FragState, FragDae, FragRaw, FragMeta, Template
 
 
@@ -218,8 +218,8 @@ class TestClerk:
         # The payload used here covers all cases where both, only one of the
         # two, or neither are defined.
         payload = {
-            1: {'frag': frag_states, 'rbs': types.RigidBodyState()},
-            2: {'frag': [], 'rbs': types.RigidBodyState()},
+            1: {'frag': frag_states, 'rbs': getRigidBody()},
+            2: {'frag': [], 'rbs': getRigidBody()},
             3: {'frag': frag_states, 'rbs': None},
             4: {'frag': [], 'rbs': None},
             # fixme: this case should be impossible once _packBodyState was

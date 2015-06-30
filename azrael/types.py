@@ -973,6 +973,7 @@ class CmdFactory(_CmdFactory):
 
 # Default argument for RigidBodyState below (purely for visual appeal, not
 # because anyone would/should use it).
+# fixme: remove once RigidBodyState does not accept defaults anymore
 _CSDefault_ = CollShapeMeta(aid='',
                             cstype='Empty',
                             position=(0, 0, 0),
@@ -1059,10 +1060,10 @@ class RigidBodyStateOverride(_RigidBodyState):
 
         # Create a RigidBodyState instance. Return an error if this fails.
         try:
-            sv = RigidBodyState(**kwargs)
+            body = RigidBodyState(**kwargs)
         except TypeError:
-            sv = None
-        if sv is None:
+            body = None
+        if body is None:
             return None
 
         # Create keyword arguments for all fields and set them to *None*.
@@ -1073,7 +1074,7 @@ class RigidBodyStateOverride(_RigidBodyState):
         # the ones from the temporary RigidBodyState object because this
         # one already sanitised the inputs.
         for key in kwargs:
-            kwargs_all[key] = getattr(sv, key)
+            kwargs_all[key] = getattr(body, key)
 
         # Create the ``_RigidBodyState`` named tuple.
         return super().__new__(cls, **kwargs_all)

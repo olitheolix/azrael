@@ -418,12 +418,12 @@ def ToClerk_Spawn_Decode(payload: dict):
         templateID = data['template']
         del data['template']
 
-        sv = RigidBodyStateOverride(**data)
-        if sv is None:
+        body = RigidBodyStateOverride(**data)
+        if body is None:
             return False, 'Invalid State Variable data'
-        sv = _updateRigidBodyStateTuple(RigidBodyState(), sv)
+        body = _updateRigidBodyStateTuple(RigidBodyState(), body)
 
-        out.append((templateID, sv))
+        out.append((templateID, body))
     return True, (out, )
 
 

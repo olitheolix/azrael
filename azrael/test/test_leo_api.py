@@ -27,11 +27,10 @@ import azrael.leonard as leonard
 from IPython import embed as ipshell
 from azrael.test.test import getLeonard
 from azrael.test.test import getCSEmpty, getCSBox
-from azrael.test.test import getCSSphere, getCSPlane
+from azrael.test.test import getCSSphere, getCSPlane, getRigidBody
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.types import CollShapeSphere, CollShapeBox
 
-RigidBodyState = types.RigidBodyState
 RigidBodyStateOverride = types.RigidBodyStateOverride
 
 
@@ -67,7 +66,7 @@ class TestLeonardAPI:
         assert leoAPI.getBodyStates([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
-        body = RigidBodyState(cshapes=[getCSSphere('cssphere')])
+        body = getRigidBody(cshapes=[getCSSphere('cssphere')])
 
         # Add the object to the DB with ID=0.
         assert leoAPI.addCmdSpawn([(id_0, body)])
@@ -76,13 +75,13 @@ class TestLeonardAPI:
         # Query the object. This must return the SV data directly.
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
-        assert RigidBodyState(*ret.data[id_0]) == body
+        assert getRigidBody(*ret.data[id_0]) == body
 
         # Query the same object but supply it as a list. This must return a
         # list with one element which is the exact same object as before.
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
-        assert RigidBodyState(*ret.data[id_0]) == body
+        assert getRigidBody(*ret.data[id_0]) == body
 
         # Verify that the system contains exactly one object.
         ret = leoAPI.getAllBodyStates()
@@ -112,8 +111,8 @@ class TestLeonardAPI:
         assert leoAPI.getBodyStates([id_0]) == (True, None, {id_0: None})
 
         # Create an object and serialise it.
-        body_0 = RigidBodyState(position=[0, 0, 0])
-        body_1 = RigidBodyState(position=[10, 10, 10])
+        body_0 = getRigidBody(position=[0, 0, 0])
+        body_1 = getRigidBody(position=[10, 10, 10])
 
         # Add the objects to the DB.
         tmp = [(id_0, body_0), (id_1, body_1)]
@@ -123,28 +122,28 @@ class TestLeonardAPI:
         # Query the objects individually.
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
-        assert RigidBodyState(*ret.data[id_0]) == body_0
+        assert getRigidBody(*ret.data[id_0]) == body_0
         ret = leoAPI.getBodyStates([id_1])
         assert ret.ok
-        assert RigidBodyState(*ret.data[id_1]) == body_1
+        assert getRigidBody(*ret.data[id_1]) == body_1
 
         # Manually query multiple objects.
         ret = leoAPI.getBodyStates([id_0, id_1])
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert RigidBodyState(*ret.data[id_0]) == body_0
-        assert RigidBodyState(*ret.data[id_1]) == body_1
+        assert getRigidBody(*ret.data[id_0]) == body_0
+        assert getRigidBody(*ret.data[id_1]) == body_1
 
         # Repeat, but change the order of the objects.
         ret = leoAPI.getBodyStates([id_1, id_0])
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert RigidBodyState(*ret.data[id_0]) == body_0
-        assert RigidBodyState(*ret.data[id_1]) == body_1
+        assert getRigidBody(*ret.data[id_0]) == body_0
+        assert getRigidBody(*ret.data[id_1]) == body_1
 
         # Query all objects at once.
         ret = leoAPI.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert RigidBodyState(*ret.data[id_0]) == body_0
-        assert RigidBodyState(*ret.data[id_1]) == body_1
+        assert getRigidBody(*ret.data[id_0]) == body_0
+        assert getRigidBody(*ret.data[id_1]) == body_1
 
     def test_add_same(self):
         """
@@ -161,9 +160,9 @@ class TestLeonardAPI:
         assert leoAPI.getBodyStates([id_0]) == (True, None, {id_0: None})
 
         # Create three bodies.
-        body_0 = RigidBodyState(imass=1)
-        body_1 = RigidBodyState(imass=2)
-        body_2 = RigidBodyState(imass=3)
+        body_0 = getRigidBody(imass=1)
+        body_1 = getRigidBody(imass=2)
+        body_2 = getRigidBody(imass=3)
 
         # The command queue for spawning objects must be empty.
         ret = leoAPI.dequeueCommands()
@@ -191,7 +190,7 @@ class TestLeonardAPI:
         leo.processCommandsAndSync()
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
-        assert RigidBodyState(*ret.data[id_0]) == body_0
+        assert getRigidBody(*ret.data[id_0]) == body_0
 
         # Spawn a new object with same id_0 but different state data.
         assert leoAPI.addCmdSpawn([(id_0, body_2)]).ok
@@ -200,7 +199,7 @@ class TestLeonardAPI:
         # The state vector for id_0 must still be body_0.
         ret = leoAPI.getBodyStates([id_0])
         assert ret.ok
-        assert RigidBodyState(*ret.data[id_0]) == body_0
+        assert getRigidBody(*ret.data[id_0]) == body_0
 
     def test_commandQueue(self):
         """
@@ -210,7 +209,7 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Convenience.
-        body_0 = RigidBodyState()
+        body_0 = getRigidBody()
         body_1 = RigidBodyStateOverride(imass=2, scale=3)
         id_0, id_1 = 0, 1
 
@@ -322,7 +321,7 @@ class TestLeonardAPI:
 
         # Create a test body.
         id_0 = 0
-        body = RigidBodyState()
+        body = getRigidBody()
 
         # Add the object to the DB with ID=0.
         assert leoAPI.addCmdSpawn([(id_0, body)]).ok
@@ -369,15 +368,11 @@ class TestLeonardAPI:
         ``RigidBodyStateOverride`` must only accept valid input where the
         ``RigidBodyState`` function defines what constitutes as "valid".
         """
-        # Convenience.
-        RigidBodyState = types.RigidBodyState
-        RigidBodyStateOverride = types.RigidBodyStateOverride
-
         # Valid RigidBodyState and RigidBodyStateOverride calls.
-        assert RigidBodyState() is not None
+        assert getRigidBody() is not None
         assert RigidBodyStateOverride() is not None
 
-        assert RigidBodyState(position=[1, 2, 3]) is not None
+        assert getRigidBody(position=[1, 2, 3]) is not None
         assert RigidBodyStateOverride(position=[1, 2, 3]) is not None
 
         # Pass positional arguments with None values.
@@ -397,7 +392,7 @@ class TestLeonardAPI:
 
         # Pass Python- scalars and lists instead of NumPy types. The scalars
         # must remain unaffected but the lists must become NumPy arrays.
-        ret = RigidBodyState(imass=3, position=[1, 2, 3])
+        ret = getRigidBody(imass=3, position=[1, 2, 3])
         assert isinstance(ret.imass, int)
         assert isinstance(ret.position, tuple)
 
@@ -406,9 +401,9 @@ class TestLeonardAPI:
         assert isinstance(ret.position, tuple)
 
         # Invalid calls.
-        assert RigidBodyState(position=[1, 2]) is None
+        assert getRigidBody(position=[1, 2]) is None
         assert RigidBodyStateOverride(position=[1, 2]) is None
-        assert RigidBodyState(position=np.array([1, 2])) is None
+        assert getRigidBody(position=np.array([1, 2])) is None
         assert RigidBodyStateOverride(position=np.array([1, 2])) is None
 
         assert RigidBodyStateOverride(position=1) is None
@@ -425,8 +420,8 @@ class TestLeonardAPI:
         id_0, id_1 = 0, 1
 
         # Create two objects and serialise them.
-        body_0 = RigidBodyState(position=[0, 0, 0])
-        body_1 = RigidBodyState(position=[10, 10, 10])
+        body_0 = getRigidBody(position=[0, 0, 0])
+        body_1 = getRigidBody(position=[10, 10, 10])
 
         # Add the two objects to the simulation.
         tmp = [(id_0, body_0), (id_1, body_1)]
@@ -461,13 +456,13 @@ class TestLeonardAPI:
         Test the ``RigidBodyState`` class, most notably the __eq__ method.
         """
         # Compare two identical objects.
-        sv1 = RigidBodyState()
-        sv2 = RigidBodyState()
+        sv1 = getRigidBody()
+        sv2 = getRigidBody()
         assert sv1 == sv2
 
         # Compare two different objects.
-        sv1 = RigidBodyState()
-        sv2 = RigidBodyState(position=[1, 2, 3])
+        sv1 = getRigidBody()
+        sv2 = getRigidBody(position=[1, 2, 3])
         assert sv1 != sv2
 
     def test_set_get_AABB(self):
@@ -481,8 +476,8 @@ class TestLeonardAPI:
         id_0, id_1 = 0, 1
         aabb_1 = [[0, 0, 0, 1, 1, 1]]
         aabb_2 = [[0, 0, 0, 2, 2, 2]]
-        body_a = RigidBodyState(cshapes=[getCSSphere(radius=1)])
-        body_b = RigidBodyState(cshapes=[getCSSphere(radius=2)])
+        body_a = getRigidBody(cshapes=[getCSSphere(radius=1)])
+        body_b = getRigidBody(cshapes=[getCSSphere(radius=2)])
 
         # Add two new objects to the DB.
         tmp = [(id_0, body_a), (id_1, body_b)]

@@ -157,3 +157,28 @@ def getTemplate(name='template',
                 boosters=[],
                 factories=[]):
     return Template(name, cshapes, fragments, boosters, factories)
+
+
+# Default argument for RigidBodyState below (purely for visual appeal, not
+# because anyone would/should use it).
+_CSDefault_ = CollShapeMeta(aid='',
+                            cstype='Empty',
+                            position=(0, 0, 0),
+                            rotation=(0, 0, 0, 1),
+                            csdata=CollShapeEmpty())
+
+def getRigidBody(scale: (int, float)=1,
+                 imass: (int, float)=1,
+                 restitution: (int, float)=0.9,
+                 orientation: (tuple, list)=(0, 0, 0, 1),
+                 position: (tuple, list, np.ndarray)=(0, 0, 0),
+                 velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
+                 velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
+                 cshapes: (tuple, list)=[_CSDefault_],
+                 axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
+                 axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
+                 version: int=0):
+    return RigidBodyState(scale, imass, restitution, orientation, position,
+                          velocityLin, velocityRot, cshapes, axesLockLin,
+                          axesLockRot, version)
+                 

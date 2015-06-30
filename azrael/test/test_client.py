@@ -46,7 +46,7 @@ from azrael.types import RetVal, Template
 from azrael.types import FragState, FragDae, FragRaw
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
-from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
+from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getRigidBody
 
 
 class TestClient:
@@ -459,7 +459,7 @@ class TestClient:
         # 180 degrees around the x-axis. This means the x-values of all forces
         # (boosters) and exit speeds of factory spawned objects must be
         # inverted.
-        sv = types.RigidBodyState(
+        sv = getRigidBody(
             position=pos_parent,
             velocityLin=vel_parent,
             orientation=orient_parent)

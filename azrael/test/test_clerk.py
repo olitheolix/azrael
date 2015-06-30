@@ -36,7 +36,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
-from azrael.test.test import getFragRaw, getFragDae, getFragNone
+from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
 from azrael.types import Template, RetVal, CollShapeMeta
 from azrael.types import FragState, FragDae, FragRaw, FragMeta
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
@@ -282,13 +282,13 @@ class TestClerk:
         id_0, id_1 = 1, 2
         templateID_0 = '_templateEmpty'
         templateID_1 = '_templateBox'
-        sv = types.RigidBodyState()
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
         # Spawn two object. They must have id_0 and id_1, respectively.
-        ret = clerk.spawn([(templateID_0, sv), (templateID_1, sv)])
+        ret = clerk.spawn([(templateID_0, getRigidBody()),
+                           (templateID_1, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (id_0, id_1))
 
         # Retrieve template of first object.
@@ -311,20 +311,20 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Default object.
-        sv_1 = types.RigidBodyState(imass=1)
-        sv_2 = types.RigidBodyState(imass=2)
-        sv_3 = types.RigidBodyState(imass=3)
+        body_1 = getRigidBody(imass=1)
+        body_2 = getRigidBody(imass=2)
+        body_3 = getRigidBody(imass=3)
 
         # Invalid templateID.
         templateID = 'blah'
-        ret = clerk.spawn([(templateID, sv_1)])
+        ret = clerk.spawn([(templateID, body_1)])
         assert not ret.ok
         assert ret.msg.startswith('Could not find all templates')
 
         # All parameters are now valid. This must spawn an object with ID=1
         # because this is the first ID in an otherwise pristine system.
         templateID = '_templateEmpty'
-        ret = clerk.spawn([(templateID, sv_1)])
+        ret = clerk.spawn([(templateID, body_1)])
         assert (ret.ok, ret.data) == (True, (1, ))
 
         # Geometry for this object must now exist.
@@ -333,7 +333,7 @@ class TestClerk:
         # Spawn two more objects with a single call.
         name_2 = '_templateSphere'
         name_3 = '_templateBox'
-        ret = clerk.spawn([(name_2, sv_2), (name_3, sv_3)])
+        ret = clerk.spawn([(name_2, body_2), (name_3, body_3)])
         assert (ret.ok, ret.data) == (True, (2, 3))
 
         # Geometry for last two object must now exist as well.
@@ -342,7 +342,7 @@ class TestClerk:
         assert ret.data[3] is not None
 
         # Spawn two identical objects with a single call.
-        ret = clerk.spawn([(name_2, sv_2), (name_2, sv_2)])
+        ret = clerk.spawn([(name_2, body_2), (name_2, body_2)])
         assert (ret.ok, ret.data) == (True, (4, 5))
 
         # Geometry for last two object must now exist as well.
@@ -357,7 +357,7 @@ class TestClerk:
         assert not clerk.spawn([name_2]).ok
 
         # Invalid: one template does not exist.
-        assert not clerk.spawn([(name_2, sv_2), (b'blah', sv_3)]).ok
+        assert not clerk.spawn([(name_2, body_2), (b'blah', body_3)]).ok
 
     def test_spawn_DibblerClerkSyncProblem(self):
         """
@@ -377,8 +377,7 @@ class TestClerk:
         # because Dibbler cannot find the model data Clerk will skip it. The
         # net effect is that the spawn command must succeed but not spawn any
         # objects.
-        sv_1 = types.RigidBodyState(imass=1)
-        ret = clerk.spawn([('_templateEmpty', sv_1)])
+        ret = clerk.spawn([('_templateEmpty', getRigidBody(imass=1))])
         assert ret == (True, None, tuple())
 
     def test_delete(self):
@@ -402,9 +401,8 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, [])
 
         # Spawn two default objects.
-        sv = types.RigidBodyState()
         templateID = '_templateEmpty'
-        ret = clerk.spawn([(templateID, sv), (templateID, sv)])
+        ret = clerk.spawn([(templateID, getRigidBody()), (templateID, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
 
         # Two objects must now exist.
@@ -439,9 +437,9 @@ class TestClerk:
         # Test parameters and constants.
         objID_1 = 1
         objID_2 = 2
-        RBS = types.RigidBodyState
-        sv_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
-        sv_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
+        RBS = getRigidBody
+        body_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
+        body_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
         templateID = '_templateEmpty'
 
         # Instantiate a Clerk.
@@ -452,7 +450,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, {10: None})
 
         # Spawn a new object. It must have ID=1.
-        ret = clerk.spawn([(templateID, sv_1)])
+        ret = clerk.spawn([(templateID, body_1)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Retrieve the SV for a non-existing ID --> must fail.
@@ -463,15 +461,15 @@ class TestClerk:
         # Retrieve the SV for the existing ID=1.
         ret = clerk.getBodyStates([objID_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
-        assert RBS(*ret.data[objID_1]['rbs']) == sv_1
+        assert RBS(*ret.data[objID_1]['rbs']) == body_1
 
         # Spawn a second object.
-        ret = clerk.spawn([(templateID, sv_2)])
+        ret = clerk.spawn([(templateID, body_2)])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # Retrieve the state variables for both objects individually.
         leo.processCommandsAndSync()
-        for objID, ref_sv in zip([objID_1, objID_2], [sv_1, sv_2]):
+        for objID, ref_sv in zip([objID_1, objID_2], [body_1, body_2]):
             ret = clerk.getBodyStates([objID])
             assert (ret.ok, len(ret.data)) == (True, 1)
             assert RBS(*ret.data[objID]['rbs']) == ref_sv
@@ -479,8 +477,8 @@ class TestClerk:
         # Retrieve the state variables for both objects at once.
         ret = clerk.getBodyStates([objID_1, objID_2])
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert RBS(*ret.data[objID_1]['rbs']) == sv_1
-        assert RBS(*ret.data[objID_2]['rbs']) == sv_2
+        assert RBS(*ret.data[objID_1]['rbs']) == body_1
+        assert RBS(*ret.data[objID_2]['rbs']) == body_2
 
     def test_getAllBodyStates(self):
         """
@@ -491,9 +489,9 @@ class TestClerk:
 
         # Test parameters and constants.
         objID_1, objID_2 = 1, 2
-        RBS = types.RigidBodyState
-        sv_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
-        sv_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
+        RBS = getRigidBody
+        body_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
+        body_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
         templateID = '_templateEmpty'
 
         # Instantiate a Clerk.
@@ -504,25 +502,25 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, {})
 
         # Spawn a new object and verify its ID.
-        ret = clerk.spawn([(templateID, sv_1)])
+        ret = clerk.spawn([(templateID, body_1)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Retrieve all SVs --> there must now be exactly one.
         leo.processCommandsAndSync()
         ret = clerk.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 1)
-        assert RBS(*ret.data[objID_1]['rbs']) == sv_1
+        assert RBS(*ret.data[objID_1]['rbs']) == body_1
 
         # Spawn a second object and verify its ID.
-        ret = clerk.spawn([(templateID, sv_2)])
+        ret = clerk.spawn([(templateID, body_2)])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # Retrieve all SVs --> there must now be exactly two.
         leo.processCommandsAndSync()
         ret = clerk.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 2)
-        assert RBS(*ret.data[objID_1]['rbs']) == sv_1
-        assert RBS(*ret.data[objID_2]['rbs']) == sv_2
+        assert RBS(*ret.data[objID_1]['rbs']) == body_1
+        assert RBS(*ret.data[objID_2]['rbs']) == body_2
 
     def test_set_force(self):
         """
@@ -533,7 +531,6 @@ class TestClerk:
 
         # Parameters and constants for this test.
         id_1 = 1
-        sv = types.RigidBodyState()
         force = np.array([1, 2, 3], np.float64).tolist()
         relpos = np.array([4, 5, 6], np.float64).tolist()
 
@@ -542,7 +539,7 @@ class TestClerk:
 
         # Spawn a new object. It must have ID=1.
         templateID = '_templateEmpty'
-        ret = clerk.spawn([(templateID, sv)])
+        ret = clerk.spawn([(templateID, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (id_1, ))
 
         # Apply the force.
@@ -576,7 +573,7 @@ class TestClerk:
         assert clerk.addTemplates([template]).ok
 
         # Spawn an instance of the template and get the object ID.
-        ret = clerk.spawn([(template.aid, types.RigidBodyState())])
+        ret = clerk.spawn([(template.aid, getRigidBody())])
         assert ret.ok
         objID = ret.data[0]
 
@@ -597,14 +594,13 @@ class TestClerk:
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
         templateID_1 = '_templateEmpty'
-        sv = types.RigidBodyState()
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
         # Create a fake object. We will not need the actual object but other
         # commands used here depend on one to exist.
-        ret = clerk.spawn([(templateID_1, sv)])
+        ret = clerk.spawn([(templateID_1, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Create commands for a Booster and a Factory.
@@ -641,8 +637,7 @@ class TestClerk:
                            boosters=[b0],
                            factories=[f0])
         assert clerk.addTemplates([temp]).ok
-        sv = types.RigidBodyState()
-        ret = clerk.spawn([(temp.aid, sv)])
+        ret = clerk.spawn([(temp.aid, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
         leo.processCommandsAndSync()
 
@@ -677,8 +672,6 @@ class TestClerk:
         # ---------------------------------------------------------------------
 
         # Constants for the new template object.
-        sv = types.RigidBodyState()
-
         dir_0 = np.array([1, 0, 0], np.float64)
         dir_1 = np.array([0, 1, 0], np.float64)
         pos_0 = np.array([1, 1, -1], np.float64)
@@ -698,7 +691,7 @@ class TestClerk:
         assert clerk.addTemplates([temp]).ok
 
         # Spawn an instance of the template.
-        ret = clerk.spawn([(temp.aid, sv)])
+        ret = clerk.spawn([(temp.aid, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del ret, temp
@@ -751,7 +744,6 @@ class TestClerk:
 
         # Constants for the new template object.
         objID_1 = 1
-        sv = types.RigidBodyState()
         dir_0 = np.array([1, 0, 0], np.float64)
         dir_1 = np.array([0, 1, 0], np.float64)
         pos_0 = np.array([1, 1, -1], np.float64)
@@ -773,10 +765,10 @@ class TestClerk:
                            fragments=[getFragRaw('bar')],
                            factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.aid, sv)])
+        ret = clerk.spawn([(temp.aid, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
-        del ret, temp, f0, f1, sv
+        del ret, temp, f0, f1
 
         # ---------------------------------------------------------------------
         # Instruct factories to create an object with a specific exit velocity.
@@ -799,13 +791,13 @@ class TestClerk:
 
         # Ensure the position, velocity, and orientation of the spawned objects
         # are correct.
-        sv_2, sv_3 = [ret.data[_]['rbs'] for _ in spawnedIDs]
-        assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0)
-        assert np.allclose(sv_2.position, pos_0)
-        assert np.allclose(sv_2.orientation, [0, 0, 0, 1])
-        assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1)
-        assert np.allclose(sv_3.position, pos_1)
-        assert np.allclose(sv_3.orientation, [0, 0, 0, 1])
+        body_2, body_3 = [ret.data[_]['rbs'] for _ in spawnedIDs]
+        assert np.allclose(body_2.velocityLin, exit_speed_0 * dir_0)
+        assert np.allclose(body_2.position, pos_0)
+        assert np.allclose(body_2.orientation, [0, 0, 0, 1])
+        assert np.allclose(body_3.velocityLin, exit_speed_1 * dir_1)
+        assert np.allclose(body_3.position, pos_1)
+        assert np.allclose(body_3.orientation, [0, 0, 0, 1])
 
     def test_controlParts_Factories_moving(self):
         """
@@ -827,7 +819,7 @@ class TestClerk:
         pos_1 = np.array([-1, -1, 0], np.float64)
 
         # State variables for parent object.
-        sv = types.RigidBodyState(position=pos_parent, velocityLin=vel_parent)
+        body = getRigidBody(position=pos_parent, velocityLin=vel_parent)
 
         # ---------------------------------------------------------------------
         # Create a template with two factories and spawn it.
@@ -847,10 +839,10 @@ class TestClerk:
                            fragments=[getFragRaw('bar')],
                            factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.aid, sv)])
+        ret = clerk.spawn([(temp.aid, body)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
-        del temp, ret, f0, f1, sv
+        del temp, ret, f0, f1, body
 
         # ---------------------------------------------------------------------
         # Instruct factories to create an object with a specific exit velocity.
@@ -874,13 +866,13 @@ class TestClerk:
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Ensure the position/velocity/orientation are correct.
-        sv_2, sv_3 = ret.data[objID_2]['rbs'], ret.data[objID_3]['rbs']
-        assert np.allclose(sv_2.velocityLin, exit_speed_0 * dir_0 + vel_parent)
-        assert np.allclose(sv_2.position, pos_0 + pos_parent)
-        assert np.allclose(sv_2.orientation, [0, 0, 0, 1])
-        assert np.allclose(sv_3.velocityLin, exit_speed_1 * dir_1 + vel_parent)
-        assert np.allclose(sv_3.position, pos_1 + pos_parent)
-        assert np.allclose(sv_3.orientation, [0, 0, 0, 1])
+        body_2, body_3 = ret.data[objID_2]['rbs'], ret.data[objID_3]['rbs']
+        assert np.allclose(body_2.velocityLin, exit_speed_0 * dir_0 + vel_parent)
+        assert np.allclose(body_2.position, pos_0 + pos_parent)
+        assert np.allclose(body_2.orientation, [0, 0, 0, 1])
+        assert np.allclose(body_3.velocityLin, exit_speed_1 * dir_1 + vel_parent)
+        assert np.allclose(body_3.position, pos_1 + pos_parent)
+        assert np.allclose(body_3.orientation, [0, 0, 0, 1])
 
     def test_controlParts_Boosters_and_Factories_move_and_rotated(self):
         """
@@ -922,7 +914,7 @@ class TestClerk:
         # and is rotate 180 degrees around the x-axis. This means the x-values
         # of all forces (boosters) and exit speeds (factory spawned objects)
         # must be inverted.
-        sv = types.RigidBodyState(position=pos_parent,
+        body = getRigidBody(position=pos_parent,
                                   velocityLin=vel_parent,
                                   orientation=orient_parent)
         # Instantiate a Clerk.
@@ -951,7 +943,7 @@ class TestClerk:
                            boosters=[b0, b1],
                            factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.aid, sv)])
+        ret = clerk.spawn([(temp.aid, body)])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del b0, b1, f0, f1, temp
@@ -981,14 +973,14 @@ class TestClerk:
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Verify the positions and velocities are correct.
-        sv_2, sv_3 = ret.data[objID_2]['rbs'], ret.data[objID_3]['rbs']
+        body_2, body_3 = ret.data[objID_2]['rbs'], ret.data[objID_3]['rbs']
         AC = np.allclose
-        assert AC(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
-        assert AC(sv_2.position, pos_0_out + pos_parent)
-        assert AC(sv_2.orientation, orient_parent)
-        assert AC(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
-        assert AC(sv_3.position, pos_1_out + pos_parent)
-        assert AC(sv_3.orientation, orient_parent)
+        assert AC(body_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
+        assert AC(body_2.position, pos_0_out + pos_parent)
+        assert AC(body_2.orientation, orient_parent)
+        assert AC(body_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
+        assert AC(body_3.position, pos_1_out + pos_parent)
+        assert AC(body_3.orientation, orient_parent)
 
         # Manually compute the total force and torque exerted by the boosters.
         forcevec_0, forcevec_1 = forcemag_0 * dir_0_out, forcemag_1 * dir_1_out
@@ -1011,7 +1003,6 @@ class TestClerk:
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
         templateID = '_templateEmpty'
-        sv = types.RigidBodyState()
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -1021,7 +1012,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, [])
 
         # Spawn a new object.
-        ret = clerk.spawn([(templateID, sv)])
+        ret = clerk.spawn([(templateID, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # The object list must now contain the ID of the just spawned object.
@@ -1030,7 +1021,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, [objID_1])
 
         # Spawn another object.
-        ret = clerk.spawn([(templateID, sv)])
+        ret = clerk.spawn([(templateID, getRigidBody())])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # The object list must now contain the ID of both spawned objects.
@@ -1046,8 +1037,8 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Raw object: specify vertices, UV, and texture (RGB) values directly.
-        sv1 = types.RigidBodyState(position=[1, 2, 3])
-        sv2 = types.RigidBodyState(position=[4, 5, 6])
+        body_1 = getRigidBody(position=[1, 2, 3])
+        body_2 = getRigidBody(position=[4, 5, 6])
         f_raw = getFragRaw()
 
         # Get Collada fragment.
@@ -1066,7 +1057,7 @@ class TestClerk:
         assert clerk.getFragmentGeometries([123]) == (True, None, {123: None})
 
         # Spawn two objects from the previously added template.
-        ret = clerk.spawn([(temp.aid, sv1), (temp.aid, sv2)])
+        ret = clerk.spawn([(temp.aid, body_1), (temp.aid, body_2)])
         assert ret.ok
         objID_1, objID_2 = ret.data
 
@@ -1114,9 +1105,6 @@ class TestClerk:
         # Reset the SV database and instantiate a Leonard.
         leo = getLeonard()
 
-        # Convenience.
-        sv = types.RigidBodyState()
-
         # Add a valid template and verify it now exists in Azrael.
         temp = getTemplate('foo',
                            cshapes=[getCSSphere()],
@@ -1124,7 +1112,7 @@ class TestClerk:
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
-        ret = clerk.spawn([(temp.aid, sv), (temp.aid, sv)])
+        ret = clerk.spawn([(temp.aid, getRigidBody()), (temp.aid, getRigidBody())])
         assert ret.ok and (len(ret.data) == 2)
         objID0, objID1 = ret.data
 
@@ -1163,9 +1151,6 @@ class TestClerk:
         # to the left/right of the object and point both in the positive
         # z-direction.
         # ---------------------------------------------------------------------
-        # Convenience.
-        sv = types.RigidBodyState()
-
         b0 = types.Booster(partID='0', pos=[-1, 0, 0], direction=[0, 0, 1],
                            minval=-1, maxval=1, force=0)
         b1 = types.Booster(partID='1', pos=[+1, 0, 0], direction=[0, 0, 1],
@@ -1179,7 +1164,7 @@ class TestClerk:
 
         # Add the template and spawn two instances.
         assert clerk.addTemplates([t1]).ok
-        ret = clerk.spawn([(t1.aid, sv), (t1.aid, sv)])
+        ret = clerk.spawn([(t1.aid, getRigidBody()), (t1.aid, getRigidBody())])
         assert ret.ok
         objID_1, objID_2 = ret.data
 
@@ -1244,9 +1229,6 @@ class TestClerk:
         ret = clerk.setFragmentStates(newStates)
         assert not ret.ok
 
-        # Convenience.
-        sv = types.RigidBodyState()
-
         # Define a new template with one fragment.
         t1 = getTemplate('t1',
                          cshapes=[getCSSphere()],
@@ -1255,7 +1237,8 @@ class TestClerk:
         # Add the template to Azrael, spawn two instances, and make sure
         # Leonard picks it up so that the object becomes available.
         assert clerk.addTemplates([t1]).ok
-        _, _, (objID_1, objID_2) = clerk.spawn([(t1.aid, sv), (t1.aid, sv)])
+        _, _, (objID_1, objID_2) = clerk.spawn([(t1.aid, getRigidBody()),
+                                                (t1.aid, getRigidBody())])
         leo.processCommandsAndSync()
 
         def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
@@ -1347,7 +1330,6 @@ class TestClerk:
         leo = getLeonard()
 
         # Convenience.
-        sv = types.RigidBodyState()
         cs = [getCSSphere()]
         vert_1 = list(range(0, 9))
         vert_2 = list(range(9, 18))
@@ -1384,7 +1366,7 @@ class TestClerk:
 
         t1 = getTemplate('t1', cshapes=cs, fragments=frags)
         assert clerk.addTemplates([t1]).ok
-        ret = clerk.spawn([(t1.aid, sv)])
+        ret = clerk.spawn([(t1.aid, getRigidBody())])
         assert ret.ok
         objID = ret.data[0]
         leo.processCommandsAndSync()
@@ -1508,14 +1490,14 @@ class TestClerk:
 
         # Define three collision shapes.
         pos_1, pos_2, pos_3 = [-2, 0, 0], [2, 0, 0], [6, 0, 0]
-        sv_1 = types.RigidBodyState(position=pos_1)
-        sv_2 = types.RigidBodyState(position=pos_2)
-        sv_3 = types.RigidBodyState(position=pos_3)
+        body_1 = getRigidBody(position=pos_1)
+        body_2 = getRigidBody(position=pos_2)
+        body_3 = getRigidBody(position=pos_3)
 
         # Spawn the two bodies with a constraint among them.
         tID = '_templateSphere'
         id_1, id_2, id_3 = 1, 2, 3
-        templates = [(tID, sv_1), (tID, sv_2), (tID, sv_3)]
+        templates = [(tID, body_1), (tID, body_2), (tID, body_3)]
         ret = clerk.spawn(templates)
         assert (ret.ok, ret.data) == (True, (id_1, id_2, id_3))
         del tID
@@ -1568,11 +1550,11 @@ class TestClerk:
         # sphere is a unit sphere this ensures that the spheres do not touch
         # each other, but have a gap of 2 Meters between them.
         pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
-        sv_a = types.RigidBodyState(position=pos_a)
-        sv_b = types.RigidBodyState(position=pos_b)
+        body_a = getRigidBody(position=pos_a)
+        body_b = getRigidBody(position=pos_b)
 
         # Spawn the two bodies with a constraint among them.
-        templates = [(templateID, sv_a), (templateID, sv_b)]
+        templates = [(templateID, body_a), (templateID, body_b)]
         ret = clerk.spawn(templates)
         assert (ret.ok, ret.data) == (True, (id_a, id_b))
 
@@ -1621,8 +1603,7 @@ class TestClerk:
 
         # Add a new template, spawn it, and record the object ID.
         assert clerk.addTemplates([t1]).ok
-        body = types.RigidBodyState()
-        ret = clerk.spawn([('t1', body)])
+        ret = clerk.spawn([('t1', getRigidBody())])
         assert ret.ok
         objID = ret.data[0]
         leo.processCommandsAndSync()
@@ -1669,7 +1650,7 @@ class TestClerk:
     #     assert clerk.addTemplates([t_cs, t_frag, t_none]).ok
 
     #     # Spawn an instance of each.
-    #     body = types.RigidBodyState(cshapes=[])
+    #     body = getRigidBody(cshapes=[])
     #     ret = clerk.spawn([('t_cs', body), ('t_frag', body), ('t_none', body)])
     #     assert ret.ok
     #     id_cs, id_frag, id_none = ret.data
@@ -1679,7 +1660,7 @@ class TestClerk:
     #     leo.processCommandsAndSync()
 
     #     # Modify the position of all three objects.
-    #     RBSO = types.RigidBodyStateOverride
+    #     RBSO = getRigidBodyOverride
     #     new_bs_cs = RBSO(position=(0, 1, 2))
     #     new_bs_frag = RBSO(position=(3, 4, 5))
     #     new_bs_none = RBSO(position=(6, 7, 8))

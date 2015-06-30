@@ -788,13 +788,13 @@ class Clerk(config.AzraelProcess):
             velocityLin += sv_parent.velocityLin
 
             # Create the state variables with the just determined values.
-            sv = types.RigidBodyState(
+            body = types.RigidBodyState(
                 position=pos, velocityLin=velocityLin,
                 orientation=sv_parent.orientation)
 
             # Spawn the actual object that this factory can create. Retain
             # the objID as it will be returned to the caller.
-            ret = self.spawn([(this.templateID, sv)])
+            ret = self.spawn([(this.templateID, body)])
             if ret.ok:
                 objIDs.append(ret.data[0])
             else:
@@ -1150,11 +1150,11 @@ class Clerk(config.AzraelProcess):
         {
             objID_1: {
                 'frag': [FragState(), ...],
-                'rbs': _RigidBodyState()
+                'rbs': _RigidBodyState(...),
             },
             objID_2: {
                 'frag': [FragState(), ...],
-                'rbs': _RigidBodyState()
+                'rbs': _RigidBodyState(...),
             },
         }
 
