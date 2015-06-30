@@ -982,17 +982,17 @@ _CSDefault_ = CollShapeMeta(aid='',
 
 
 @typecheck
-def RigidBodyState(scale: (int, float)=1,
-                   imass: (int, float)=1,
-                   restitution: (int, float)=0.9,
-                   orientation: (tuple, list)=(0, 0, 0, 1),
-                   position: (tuple, list, np.ndarray)=(0, 0, 0),
-                   velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
-                   velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
-                   cshapes: (tuple, list)=[_CSDefault_],
-                   axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
-                   axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
-                   version: int=0):
+def RigidBodyState(scale: (int, float),
+                   imass: (int, float),
+                   restitution: (int, float),
+                   orientation: (tuple, list),
+                   position: (tuple, list, np.ndarray),
+                   velocityLin: (tuple, list, np.ndarray),
+                   velocityRot: (tuple, list, np.ndarray),
+                   cshapes: (tuple, list),
+                   axesLockLin: (tuple, list, np.ndarray),
+                   axesLockRot: (tuple, list, np.ndarray),
+                   version: int):
     """
     Return a ``_RigidBodyState`` object.
 
@@ -1029,6 +1029,21 @@ def RigidBodyState(scale: (int, float)=1,
         version=version)
 
 
+def DefaultRigidBody(scale=1,
+                 imass=1,
+                 restitution=0.9,
+                 orientation=(0, 0, 0, 1),
+                 position=(0, 0, 0),
+                 velocityLin=(0, 0, 0),
+                 velocityRot=(0, 0, 0),
+                 cshapes=[_CSDefault_],
+                 axesLockLin=(1, 1, 1),
+                 axesLockRot=(1, 1, 1),
+                 version=0):
+    return RigidBodyState(scale, imass, restitution, orientation, position,
+                          velocityLin, velocityRot, cshapes, axesLockLin,
+                          axesLockRot, version)
+
 class RigidBodyStateOverride(_RigidBodyState):
     """
     Create a ``_RigidBodyState`` tuple.
@@ -1060,7 +1075,7 @@ class RigidBodyStateOverride(_RigidBodyState):
 
         # Create a RigidBodyState instance. Return an error if this fails.
         try:
-            body = RigidBodyState(**kwargs)
+            body = DefaultRigidBody(**kwargs)
         except TypeError:
             body = None
         if body is None:

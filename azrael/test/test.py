@@ -181,4 +181,3 @@ def getRigidBody(scale: (int, float)=1,
     return RigidBodyState(scale, imass, restitution, orientation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,
                           axesLockRot, version)
-                 

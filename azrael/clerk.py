@@ -58,7 +58,7 @@ import azrael.database as database
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, Template, CollShapeMeta
+from azrael.types import typecheck, RetVal, Template, CollShapeMeta, CollShapeEmpty
 from azrael.types import FragState, FragMeta, _FragMeta
 
 
@@ -788,9 +788,10 @@ class Clerk(config.AzraelProcess):
             velocityLin += sv_parent.velocityLin
 
             # Create the state variables with the just determined values.
-            body = types.RigidBodyState(
-                position=pos, velocityLin=velocityLin,
-                orientation=sv_parent.orientation)
+            body = types.DefaultRigidBody(
+                orientation=sv_parent.orientation,
+                position=pos,
+                velocityLin=velocityLin)
 
             # Spawn the actual object that this factory can create. Retain
             # the objID as it will be returned to the caller.

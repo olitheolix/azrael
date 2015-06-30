@@ -413,6 +413,8 @@ def ToClerk_Spawn_Decode(payload: dict):
     RigidBodyStateOverride = types.RigidBodyStateOverride
     _updateRigidBodyStateTuple = leo_api._updateRigidBodyStateTuple
 
+    default_body = types.DefaultRigidBody()
+
     out = []
     for data in payload['objInfos']:
         templateID = data['template']
@@ -421,7 +423,7 @@ def ToClerk_Spawn_Decode(payload: dict):
         body = RigidBodyStateOverride(**data)
         if body is None:
             return False, 'Invalid State Variable data'
-        body = _updateRigidBodyStateTuple(RigidBodyState(), body)
+        body = _updateRigidBodyStateTuple(default_body, body)
 
         out.append((templateID, body))
     return True, (out, )

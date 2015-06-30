@@ -13,11 +13,10 @@ from IPython import embed as ipshell
 from azrael.types import CollShapeBox, CollShapeSphere, RetVal
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getP2P
-from azrael.test.test import killAzrael, getLeonard
+from azrael.test.test import killAzrael, getLeonard, getRigidBody
 
 
 # Convenience shortcuts.
-RBS = azrael.types.RigidBodyState
 RBSO = azrael.types.RigidBodyStateOverride
 
 # List all available engines. This simplifies the parameterisation of those
@@ -115,7 +114,6 @@ class TestLeonardAllEngines:
 
         # Parameters and constants for this test.
         id_0, id_1 = 0, 1
-        sv = RBS()
         templateID = '_templateSphere'.encode('utf8')
 
         # State Vector.
@@ -127,7 +125,7 @@ class TestLeonardAllEngines:
         del p, vl, vr
 
         # Spawn a new object. It must have ID=1.
-        assert leoAPI.addCmdSpawn([(id_1, sv)]).ok
+        assert leoAPI.addCmdSpawn([(id_1, getRigidBody())]).ok
 
         # Update the object's State Vector.
         assert leoAPI.addCmdModifyBodyState(id_1, data).ok
@@ -138,10 +136,10 @@ class TestLeonardAllEngines:
         # Verify that the attributes were correctly updated.
         ret = leoAPI.getBodyStates([id_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
-        sv = ret.data[id_1]
-        assert np.array_equal(sv.position, data.position)
-        assert np.array_equal(sv.velocityLin, data.velocityLin)
-        assert np.array_equal(sv.velocityRot, data.velocityRot)
+        body = ret.data[id_1]
+        assert np.array_equal(body.position, data.position)
+        assert np.array_equal(body.velocityLin, data.velocityLin)
+        assert np.array_equal(body.velocityRot, data.velocityRot)
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_setBodyState_advanced(self, clsLeonard):
@@ -155,12 +153,12 @@ class TestLeonardAllEngines:
         # Parameters and constants for this test.
         cshape_box = [getCSBox('csbox')]
         cshape_sphere = [getCSSphere('cssphere')]
-        sv = RBS(imass=2, scale=3, cshapes=cshape_sphere)
+        body = getRigidBody(imass=2, scale=3, cshapes=cshape_sphere)
         templateID = '_templateSphere'.encode('utf8')
 
         # Spawn an object.
         objID = 1
-        assert leoAPI.addCmdSpawn([(objID, sv)]).ok
+        assert leoAPI.addCmdSpawn([(objID, body)]).ok
 
         # Verify the SV data.
         leo.processCommandsAndSync()
@@ -198,10 +196,9 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0 = 0
-        sv = RBS()
 
         # Spawn an object.
-        assert leoAPI.addCmdSpawn([(id_0, sv)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, getRigidBody())]).ok
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leo.step(1.0, 60)
@@ -231,11 +228,11 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0, id_1 = 0, 1
-        sv_0 = RBS(position=[0, 0, 0], velocityLin=[1, 0, 0])
-        sv_1 = RBS(position=[0, 10, 0], velocityLin=[0, -1, 0])
+        body_0 = getRigidBody(position=[0, 0, 0], velocityLin=[1, 0, 0])
+        body_1 = getRigidBody(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
         # Create two objects.
-        tmp = [(id_0, sv_0), (id_1, sv_1)]
+        tmp = [(id_0, body_0), (id_1, body_1)]
         assert leoAPI.addCmdSpawn(tmp).ok
 
         # Advance the simulation by 1s and query the states of both objects.
@@ -267,10 +264,9 @@ class TestLeonardAllEngines:
 
         # Constants and parameters for this test.
         id_0 = 0
-        sv = RBS()
 
         # Spawn one object.
-        assert leoAPI.addCmdSpawn([(id_0, sv)]).ok
+        assert leoAPI.addCmdSpawn([(id_0, getRigidBody())]).ok
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leo.step(1.0, 60)
@@ -346,13 +342,13 @@ class TestLeonardOther:
         cshapes = [getCSSphere(radius=1)]
 
         # Two State Vectors for this test.
-        sv_0 = RBS(
+        body_0 = getRigidBody(
             position=[0, 0, 0], velocityLin=[1, 0, 0], cshapes=cshapes)
-        sv_1 = RBS(
+        body_1 = getRigidBody(
             position=[0, 10, 0], velocityLin=[0, -1, 0], cshapes=cshapes)
 
         # Create two objects.
-        tmp = [(id_0, sv_0), (id_1, sv_1)]
+        tmp = [(id_0, body_0), (id_1, body_1)]
         assert leoAPI.addCmdSpawn(tmp).ok
 
         # Advance the simulation by 1s, but use many small time steps. This
@@ -392,11 +388,11 @@ class TestLeonardOther:
         assert not leo.createWorkPackage([10], dt, maxsteps).ok
 
         # Test data.
-        sv_1 = RBS(imass=1)
-        sv_2 = RBS(imass=2)
+        body_1 = getRigidBody(imass=1)
+        body_2 = getRigidBody(imass=2)
 
         # Add two new objects to Leonard.
-        tmp = [(id_1, sv_1), (id_2, sv_2)]
+        tmp = [(id_1, body_1), (id_2, body_2)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
@@ -418,8 +414,8 @@ class TestLeonardOther:
         assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
         assert (ret.ok, len(data)) == (True, 2)
         assert (data[0].aid, data[1].aid) == (id_1, id_2)
-        assert RBS(*data[0].sv) == sv_1
-        assert RBS(*data[1].sv) == sv_2
+        assert getRigidBody(*data[0].sv) == body_1
+        assert getRigidBody(*data[1].sv) == body_2
         assert np.array_equal(data[0].force, [0, 0, 0])
         assert np.array_equal(data[1].force, [0, 0, 0])
 
@@ -432,8 +428,8 @@ class TestLeonardOther:
 
         # Convenience.
         WPData = azrael.leonard.WPData
-        body_1 = RBS(imass=1)
-        body_2 = RBS(imass=2)
+        body_1 = getRigidBody(imass=1)
+        body_2 = getRigidBody(imass=2)
         id_1, id_2 = 1, 2
 
         # Spawn new objects.
@@ -445,13 +441,13 @@ class TestLeonardOther:
         ret = leo.createWorkPackage([id_1, id_2], dt=3, maxsteps=4)
 
         # Create a new State Vector to replace the old one.
-        body_3 = RBS(imass=4, position=[1, 2, 3])
+        body_3 = getRigidBody(imass=4, position=[1, 2, 3])
         newWP = [(id_1, body_3)]
 
         # Check the State Vector for objID=id_1 before and after the update.
-        assert RBS(*leo.allBodies[id_1]) == body_1
+        assert getRigidBody(*leo.allBodies[id_1]) == body_1
         leo.updateLocalCache(newWP)
-        assert RBS(*leo.allBodies[id_1]) == body_3
+        assert getRigidBody(*leo.allBodies[id_1]) == body_3
 
     def test_processCommandQueue(self):
         """
@@ -463,21 +459,21 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Convenience.
-        sv_1 = RBS(imass=1)
-        sv_2 = RBS(imass=2)
+        body_1 = getRigidBody(imass=1)
+        body_2 = getRigidBody(imass=2)
         id_1, id_2 = 1, 2
 
         # Cache must be empty.
         assert len(leo.allBodies) == len(leo.allForces) == 0
 
         # Spawn two objects.
-        tmp = [(id_1, sv_1), (id_2, sv_2)]
+        tmp = [(id_1, body_1), (id_2, body_2)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
         # Verify the local cache (forces and torques must default to zero).
-        assert RBS(*leo.allBodies[id_1]) == sv_1
-        assert RBS(*leo.allBodies[id_2]) == sv_2
+        assert getRigidBody(*leo.allBodies[id_1]) == body_1
+        assert getRigidBody(*leo.allBodies[id_2]) == body_2
         tmp = leo.allForces[id_1]
         assert tmp.forceDirect == tmp.torqueDirect == [0, 0, 0]
         assert tmp.forceBoost == tmp.torqueBoost == [0, 0, 0]
@@ -491,9 +487,9 @@ class TestLeonardOther:
 
         # Change the State Vector of id_2.
         pos = (10, 11.5, 12)
-        sv_3 = RBSO(position=pos)
+        body_3 = RBSO(position=pos)
         assert leo.allBodies[id_2].position == [0, 0, 0]
-        assert leoAPI.addCmdModifyBodyState(id_2, sv_3).ok
+        assert leoAPI.addCmdModifyBodyState(id_2, body_3).ok
         leo.processCommandsAndSync()
         assert leo.allBodies[id_2].position == pos
 
@@ -521,7 +517,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Convenience.
-        sv = RBS(imass=1)
+        sv = getRigidBody(imass=1)
         objID = 1
 
         # Spawn object.
@@ -585,7 +581,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Spawn one object.
-        sv = RBS(imass=1, orientation=(0, 0, 0, 1))
+        sv = getRigidBody(imass=1, orientation=(0, 0, 0, 1))
         objID = 1
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
@@ -627,7 +623,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Spawn one object rotated 180 degress around x-axis.
-        sv = RBS(imass=1, orientation=(1, 0, 0, 0))
+        sv = getRigidBody(imass=1, orientation=(1, 0, 0, 0))
         objID = 1
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
@@ -749,15 +745,15 @@ class TestLeonardOther:
         distance = abs(pos_a[0] - pos_b[0])
         assert distance >= 4
 
-        sv_a = RBS(position=pos_a, cshapes=[getCSSphere()])
-        sv_b = RBS(position=pos_b, cshapes=[getCSSphere()])
+        body_a = getRigidBody(position=pos_a, cshapes=[getCSSphere()])
+        body_b = getRigidBody(position=pos_b, cshapes=[getCSSphere()])
 
         # Specify the constraints.
         con = getP2P(rb_a=id_a, rb_b=id_b, pivot_a=pos_b, pivot_b=pos_a)
         self.igor.addConstraints([con])
 
         # Spawn both objects.
-        assert leoAPI.addCmdSpawn([(id_a, sv_a), (id_b, sv_b)]).ok
+        assert leoAPI.addCmdSpawn([(id_a, body_a), (id_b, body_b)]).ok
         leo.processCommandsAndSync()
 
         # Apply a force to the left sphere only.
@@ -969,7 +965,7 @@ class TestBroadphase:
             """
             # Compile the set of bodies- and their AABBs for this test run.
             assert len(pos) == len(aabbs)
-            bodies = [RBS(position=_) for _ in pos]
+            bodies = [getRigidBody(position=_) for _ in pos]
 
             # Convert to dictionaries: the key is the bodyID in Azrael; here it
             # is a simple enumeration.
@@ -982,14 +978,14 @@ class TestBroadphase:
             mock_sweeping.assert_called_with([])
 
         # Single body with no AABBs.
-        bodies = {5: RBS(position=(0, 0, 0))}
+        bodies = {5: getRigidBody(position=(0, 0, 0))}
         aabbs = {5: []}
         correct = {5: {'x': [], 'y': [], 'z': []}}
         azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
         mock_sweeping.assert_called_with(correct, 'x')
 
         # Single body with one AABB.
-        bodies = {5: RBS(position=(0, 0, 0))}
+        bodies = {5: getRigidBody(position=(0, 0, 0))}
         aabbs = {5: [(0, 0, 0, 1, 2, 3)]}
         correct = {5: {'x': [[-1, 1]],
                        'y': [[-2, 2]],
@@ -998,7 +994,7 @@ class TestBroadphase:
         mock_sweeping.assert_called_with(correct, 'x')
 
         # Single body with two AABBs.
-        bodies = {5: RBS(position=(0, 0, 0))}
+        bodies = {5: getRigidBody(position=(0, 0, 0))}
         aabbs = {5: [(0, 0, 0, 1, 1, 1),
                      (2, 3, 4, 2, 4, 8)]}
         correct = {5: {'x': [[-1, 1], [0, 4]],
@@ -1008,7 +1004,7 @@ class TestBroadphase:
         mock_sweeping.assert_called_with(correct, 'x')
 
         # Single body at an offset with two AABBs.
-        bodies = {5: RBS(position=(0, 1, 2))}
+        bodies = {5: getRigidBody(position=(0, 1, 2))}
         aabbs = {5: [(0, 0, 0, 1, 1, 1),
                      (2, 3, 4, 2, 4, 8)]}
         correct = {5: {'x': [[-1, 1], [0, 4]],
@@ -1018,9 +1014,9 @@ class TestBroadphase:
         mock_sweeping.assert_called_with(correct, 'x')
 
         # Three bodies with 0, 1, and 2 AABBs, respectively.
-        bodies = {6: RBS(position=(0, 0, 0)),
-                  7: RBS(position=(0, 0, 0)),
-                  8: RBS(position=(0, 0, 0))}
+        bodies = {6: getRigidBody(position=(0, 0, 0)),
+                  7: getRigidBody(position=(0, 0, 0)),
+                  8: getRigidBody(position=(0, 0, 0))}
         aabbs = {6: [],
                  7: [(0, 0, 0, 1, 1, 1)],
                  8: [(0, 0, 0, 1, 1, 1),
@@ -1052,7 +1048,7 @@ class TestBroadphase:
             """
             # Compile the set of bodies- and their AABBs for this test run.
             assert len(pos) == len(aabbs)
-            bodies = [RBS(position=_) for _ in pos]
+            bodies = [getRigidBody(position=_) for _ in pos]
 
             # By assumption, this function, every object has exactly one AABB
             # centered at zero.
@@ -1128,7 +1124,7 @@ class TestBroadphase:
         correctly taken into account during the broadphase.
         """
         # Create the test body at the center. It is a centered unit cube.
-        body_a = RBS(position=(0, 0, 0), cshapes=[getCSBox()])
+        body_a = getRigidBody(position=(0, 0, 0), cshapes=[getCSBox()])
 
         def _verify(rba, pos, rot, scale, intersect: bool):
             """
@@ -1142,7 +1138,7 @@ class TestBroadphase:
 
             # Create the second body. Its collision shape is a unit cube
             # at position `cs_ofs`.
-            body_b = RBS(position=pos, scale=scale, orientation=rot,
+            body_b = getRigidBody(position=pos, scale=scale, orientation=rot,
                          cshapes=[getCSBox()])
 
             # Compile the input dictionaries for the broadphase algorithm.
@@ -1213,11 +1209,11 @@ class TestBroadphase:
         # Create several rigid bodies with a spherical collision shape.
         cs = [getCSSphere(radius=1)]
         if dim == 0:
-            states = [RBS(position=[_, 0, 0], cshapes=cs) for _ in range(10)]
+            states = [getRigidBody(position=[_, 0, 0], cshapes=cs) for _ in range(10)]
         elif dim == 1:
-            states = [RBS(position=[0, _, 0], cshapes=cs) for _ in range(10)]
+            states = [getRigidBody(position=[0, _, 0], cshapes=cs) for _ in range(10)]
         elif dim == 2:
-            states = [RBS(position=[0, 0, _], cshapes=cs) for _ in range(10)]
+            states = [getRigidBody(position=[0, 0, _], cshapes=cs) for _ in range(10)]
         else:
             print('Invalid dimension for this test')
             assert False
@@ -1286,7 +1282,7 @@ class TestBroadphase:
             """
             # Compile the set of bodies- and their AABBs for this test run.
             assert len(pos) == len(aabbs) == len(imasses)
-            bodies = [RBS(position=p, imass=m) for (p, m) in zip(pos, imasses)]
+            bodies = [getRigidBody(position=p, imass=m) for (p, m) in zip(pos, imasses)]
 
             # By assumption, this function, every object has exactly one AABB
             # centered at zero.
