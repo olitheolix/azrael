@@ -547,19 +547,16 @@ class Clerk(config.AzraelProcess):
         # Sanity checks.
         try:
             assert len(newObjects) > 0
-            for ii in newObjects:
-                assert len(ii) == 2
-                templateID, state = ii
-                assert isinstance(templateID, str)
-                assert isinstance(state, types._RigidBodyState)
-                del templateID, state
+            for tmp in newObjects:
+                assert isinstance(tmp, dict)
+                assert 'templateID' in tmp
         except AssertionError:
             return RetVal(False, '<spawn> received invalid arguments', None)
 
         # Convenience: convert the list of tuples into a plain list, ie
         # [(t1, s1), (t2, s2), ...]  -->  [t1, t2, ...] and [s1, s2, ...].
-        t_names = [_[0] for _ in newObjects]
-        initStates = [_[1] for _ in newObjects]
+        t_names = [_['templateID'] for _ in newObjects]
+#        initStates = [_[1] for _ in newObjects]
 
         with util.Timeit('spawn:1 getTemplates') as timeit:
             # Fetch the raw templates for all ``t_names``.
@@ -582,10 +579,21 @@ class Clerk(config.AzraelProcess):
             # of objects to spawn.
             dbDocs = []
             bodyStates = {}
-            for templateID, state, objID in zip(t_names, initStates, objIDs):
+            for newObj, objID in zip(newObjects, objIDs):
                 # Convenience.
+                # fixme: explain that 'templates' is a dictionary with keys
+                # like 'template' and 'templateID' (anything else), and that
+                # the entries under 'template' are Template instances?
+                templateID = newObj['templateID']
                 template = templates[templateID]['template']
                 frags = template.fragments
+
+                # fixme: explain, protect with try/except or sanity check
+                # earlier on (probably a better idea).
+                body = template.rbs
+                if 'rbs' in newObj:
+                    body = body._replace(**newObj['rbs'])
+                template = template._replace(rbs=body)
 
                 # Tell Dibbler to duplicate the template data into the instance
                 # location.
@@ -613,7 +621,7 @@ class Clerk(config.AzraelProcess):
                                orientation=(0, 0, 0, 1))
                 fragStates = {_.aid: fs._replace(aid=_.aid) for _ in frags}
 
-                # Serialise the template and add additiona meta information
+                # Serialise the template and add additional meta information
                 # that is specific to this instance, for instance the 'objID'
                 # and 'version'.
                 doc = {
@@ -631,8 +639,8 @@ class Clerk(config.AzraelProcess):
                 # things may happen (eg a space-ship collision shape in the
                 # template database with a simple sphere collision shape when
                 # it is spawned).
-                state.cshapes[:] = template.cshapes
-                bodyStates[objID] = state
+#                state.cshapes[:] = template.cshapes
+                bodyStates[objID] = template.rbs
 
                 # Add the new template document.
                 dbDocs.append(doc)
@@ -787,15 +795,19 @@ class Clerk(config.AzraelProcess):
             # Add the parent's velocity to the exit velocity.
             velocityLin += sv_parent.velocityLin
 
-            # Create the state variables with the just determined values.
-            body = types.DefaultRigidBody(
-                orientation=sv_parent.orientation,
-                position=pos,
-                velocityLin=velocityLin)
+            # fixme: docu
+            init = {
+                'templateID': this.templateID,
+                'rbs': {
+                    'position': tuple(pos),
+                    'velocityLin': tuple(velocityLin),
+                    'orientation': tuple(sv_parent.orientation),
+                }
+            }
 
             # Spawn the actual object that this factory can create. Retain
             # the objID as it will be returned to the caller.
-            ret = self.spawn([(this.templateID, body)])
+            ret = self.spawn([init])
             if ret.ok:
                 objIDs.append(ret.data[0])
             else:

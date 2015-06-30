@@ -74,6 +74,71 @@ class TestClerk:
         self.dibbler.reset()
         azrael.database.init()
 
+    def xtest_spawn_master(self):
+        """
+        Spawn the same template several times at different positions and query
+        the master record for them.
+        """
+        # Reset the SV database and instantiate a Leonard.
+        leo = getLeonard()
+        clerk = azrael.clerk.Clerk()
+
+        id_a, id_b = 1, 2
+        pos_a, rot_a = (0, 1, 2), (0, 1, 0, 0)
+        pos_b, rot_b = (3, 4, 5), (1, 0, 0, 0)
+        body = getRigidBody(position=pos_a,
+                            orientation=rot_a,
+                            cshapes=[getCSSphere()])
+
+        # Create- and add a new template.
+        templateID = 't1'
+        t1 = getTemplate(templateID,
+                         rbs=body,
+                         fragments=[getFragRaw()])
+        assert clerk.addTemplates([t1]).ok
+
+        # Spawn a new object. It must have ID=1.
+        init_a = {'templateID': templateID}
+        init_b = {'templateID': templateID,
+                  'rbs': {'position': pos_b, 'orientation': rot_b}}
+        assert clerk.spawn([init_a, init_b]) == (True, None, (id_a, id_b))
+
+
+        leo.processCommandsAndSync()
+        leo.step(1.0, 60)
+        ret = clerk.getBodyStates([id_a, id_b])
+        print(ret.data[id_a]['rbs'].position)
+        print(ret.data[id_a]['rbs'].orientation)
+        print(ret.data[id_b]['rbs'].position)
+        print(ret.data[id_b]['rbs'].orientation)
+        assert False
+
+        # Verify that body_a is in the inital position and body_b is in the new
+        # position.
+        ret = clerk.getMasterData([id_a, id_b],
+                                  ('rbs.position', 'rbs.orientation'))
+        assert tuple(ret.data[id_a]['rbs']['position']) == pos_a
+        assert tuple(ret.data[id_a]['rbs']['orientation']) == rot_a
+        assert tuple(ret.data[id_b]['rbs']['position']) == pos_b
+        assert tuple(ret.data[id_b]['rbs']['orientation']) == rot_b
+
+        # Apply the force.
+        force, relpos = [0, 0, 10], [0, 0, 0]
+        assert clerk.setForce(id_a, force, relpos).ok
+        leo.processCommandsAndSync()
+        leo.step(1.0, 60)
+
+        # Verify that body_a has moved and body_b is still in the same position
+        # as before.
+        ret = clerk.getMasterData([id_a, id_b],
+                                  ('rbs.position', 'rbs.orientation'))
+        assert tuple(ret.data[id_a]['rbs']['position'])[2] > pos_a[2]
+        assert tuple(ret.data[id_a]['rbs']['orientation']) == rot_a
+        assert tuple(ret.data[id_b]['rbs']['position']) == pos_b
+        assert tuple(ret.data[id_b]['rbs']['orientation']) == rot_b
+
+        assert False
+
     def test_get_default_templates(self):
         """
         Query the default templates in Azrael.
@@ -270,39 +335,6 @@ class TestClerk:
         assert ret.data[name_1]['url_frag'] == '{}/'.format(url_template) + name_1
         assert ret.data[name_2]['url_frag'] == '{}/'.format(url_template) + name_2
 
-    def test_get_object_template_id(self):
-        """
-        Spawn two objects from different templates. Then query the template ID
-        based on the object ID.
-        """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
-        # Parameters and constants for this test.
-        id_0, id_1 = 1, 2
-        templateID_0 = '_templateEmpty'
-        templateID_1 = '_templateBox'
-
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
-
-        # Spawn two objects. Their IDs must be id_0 and id_1, respectively.
-        ret = clerk.spawn([(templateID_0, getRigidBody()),
-                           (templateID_1, getRigidBody())])
-        assert (ret.ok, ret.data) == (True, (id_0, id_1))
-
-        # Retrieve template of first object.
-        leo.processCommandsAndSync()
-        ret = clerk.getTemplateID(id_0)
-        assert (ret.ok, ret.data) == (True, templateID_0)
-
-        # Retrieve template of second object.
-        ret = clerk.getTemplateID(id_1)
-        assert (ret.ok, ret.data) == (True, templateID_1)
-
-        # Attempt to retrieve a non-existing object.
-        assert not clerk.getTemplateID(100).ok
-
     def test_spawn(self):
         """
         Test the 'spawn' command in the Clerk.
@@ -316,15 +348,15 @@ class TestClerk:
         body_3 = getRigidBody(imass=3)
 
         # Invalid templateID.
-        templateID = 'blah'
-        ret = clerk.spawn([(templateID, body_1)])
+        init_invalid = {'templateID': 'blah', 'rbs': {'imass': 1}}
+        ret = clerk.spawn([init_invalid])
         assert not ret.ok
         assert ret.msg.startswith('Could not find all templates')
 
         # All parameters are now valid. This must spawn an object with ID=1
         # because this is the first ID in an otherwise pristine system.
-        templateID = '_templateEmpty'
-        ret = clerk.spawn([(templateID, body_1)])
+        init_1 = {'templateID': '_templateEmpty', 'rbs': {'imass': 1}}
+        ret = clerk.spawn([init_1])
         assert (ret.ok, ret.data) == (True, (1, ))
 
         # Geometry for this object must now exist.
@@ -333,7 +365,9 @@ class TestClerk:
         # Spawn two more objects with a single call.
         name_2 = '_templateSphere'
         name_3 = '_templateBox'
-        ret = clerk.spawn([(name_2, body_2), (name_3, body_3)])
+        init_2 = {'templateID': name_2, 'rbs': {'imass': 2}}
+        init_3 = {'templateID': name_3, 'rbs': {'imass': 3}}
+        ret = clerk.spawn([init_2, init_3])
         assert (ret.ok, ret.data) == (True, (2, 3))
 
         # Geometry for last two object must now exist as well.
@@ -342,7 +376,7 @@ class TestClerk:
         assert ret.data[3] is not None
 
         # Spawn two identical objects with a single call.
-        ret = clerk.spawn([(name_2, body_2), (name_2, body_2)])
+        ret = clerk.spawn([init_2, init_3])
         assert (ret.ok, ret.data) == (True, (4, 5))
 
         # Geometry for last two object must now exist as well.
@@ -357,7 +391,39 @@ class TestClerk:
         assert not clerk.spawn([name_2]).ok
 
         # Invalid: one template does not exist.
-        assert not clerk.spawn([(name_2, body_2), (b'blah', body_3)]).ok
+        assert not clerk.spawn([init_invalid, init_2]).ok
+
+    def test_get_object_template_id(self):
+        """
+        Spawn two objects from different templates. Then query the template ID
+        based on the object ID.
+        """
+        # Reset the SV database and instantiate a Leonard.
+        leo = getLeonard()
+
+        # Parameters and constants for this test.
+        id_0, id_1 = 1, 2
+        tID_0 = '_templateEmpty'
+        tID_1 = '_templateBox'
+
+        # Instantiate a Clerk.
+        clerk = azrael.clerk.Clerk()
+
+        # Spawn two objects. Their IDs must be id_0 and id_1, respectively.
+        ret = clerk.spawn([{'templateID': tID_0}, {'templateID': tID_1}])
+        assert (ret.ok, ret.data) == (True, (id_0, id_1))
+
+        # Retrieve template of first object.
+        leo.processCommandsAndSync()
+        ret = clerk.getTemplateID(id_0)
+        assert (ret.ok, ret.data) == (True, tID_0)
+
+        # Retrieve template of second object.
+        ret = clerk.getTemplateID(id_1)
+        assert (ret.ok, ret.data) == (True, tID_1)
+
+        # Attempt to retrieve a non-existing object.
+        assert not clerk.getTemplateID(100).ok
 
     def test_spawn_DibblerClerkSyncProblem(self):
         """
@@ -377,7 +443,9 @@ class TestClerk:
         # because Dibbler cannot find the model data Clerk will skip it. The
         # net effect is that the spawn command must succeed but not spawn any
         # objects.
-        ret = clerk.spawn([('_templateEmpty', getRigidBody(imass=1))])
+        init = {'templateID': '_templateEmpty',
+                'rbs': {'imass': 1}}
+        ret = clerk.spawn([init])
         assert ret == (True, None, tuple())
 
     def test_delete(self):
@@ -402,7 +470,8 @@ class TestClerk:
 
         # Spawn two default objects.
         templateID = '_templateEmpty'
-        ret = clerk.spawn([(templateID, getRigidBody()), (templateID, getRigidBody())])
+        init = {'templateID': templateID}
+        ret = clerk.spawn([init, init])
         assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
 
         # Two objects must now exist.
@@ -450,7 +519,21 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, {10: None})
 
         # Spawn a new object. It must have ID=1.
-        ret = clerk.spawn([(templateID, body_1)])
+        init_1 = {
+            'templateID': templateID,
+            'rbs': {
+                'position': body_1.position,
+                'velocityLin': body_1.velocityLin
+            }
+        }
+        init_2 = {
+            'templateID': templateID,
+            'rbs': {
+                'position': body_2.position,
+                'velocityLin': body_2.velocityLin
+            }
+        }
+        ret = clerk.spawn([init_1])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Retrieve the SV for a non-existing ID --> must fail.
@@ -464,7 +547,7 @@ class TestClerk:
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
 
         # Spawn a second object.
-        ret = clerk.spawn([(templateID, body_2)])
+        ret = clerk.spawn([init_2])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # Retrieve the state variables for both objects individually.
@@ -502,7 +585,22 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, {})
 
         # Spawn a new object and verify its ID.
-        ret = clerk.spawn([(templateID, body_1)])
+        init_1 = {
+            'templateID': templateID,
+            'rbs': {
+                'position': body_1.position,
+                'velocityLin': body_1.velocityLin
+            }
+        }
+        init_2 = {
+            'templateID': templateID,
+            'rbs': {
+                'position': body_2.position,
+                'velocityLin': body_2.velocityLin
+            }
+        }
+
+        ret = clerk.spawn([init_1])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Retrieve all SVs --> there must now be exactly one.
@@ -512,7 +610,7 @@ class TestClerk:
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
 
         # Spawn a second object and verify its ID.
-        ret = clerk.spawn([(templateID, body_2)])
+        ret = clerk.spawn([init_2])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # Retrieve all SVs --> there must now be exactly two.
@@ -539,7 +637,7 @@ class TestClerk:
 
         # Spawn a new object. It must have ID=1.
         templateID = '_templateEmpty'
-        ret = clerk.spawn([(templateID, getRigidBody())])
+        ret = clerk.spawn([{'templateID': templateID}])
         assert (ret.ok, ret.data) == (True, (id_1, ))
 
         # Apply the force.
@@ -573,7 +671,7 @@ class TestClerk:
         assert clerk.addTemplates([template]).ok
 
         # Spawn an instance of the template and get the object ID.
-        ret = clerk.spawn([(template.aid, getRigidBody())])
+        ret = clerk.spawn([{'templateID': template.aid}])
         assert ret.ok
         objID = ret.data[0]
 
@@ -600,7 +698,7 @@ class TestClerk:
 
         # Create a fake object. We will not need the actual object but other
         # commands used here depend on one to exist.
-        ret = clerk.spawn([(templateID_1, getRigidBody())])
+        ret = clerk.spawn([{'templateID': templateID_1}])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Create commands for a Booster and a Factory.
@@ -637,7 +735,7 @@ class TestClerk:
                            boosters=[b0],
                            factories=[f0])
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.aid, getRigidBody())])
+        ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
         leo.processCommandsAndSync()
 
@@ -691,7 +789,7 @@ class TestClerk:
         assert clerk.addTemplates([temp]).ok
 
         # Spawn an instance of the template.
-        ret = clerk.spawn([(temp.aid, getRigidBody())])
+        ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del ret, temp
@@ -765,7 +863,7 @@ class TestClerk:
                            fragments=[getFragRaw('bar')],
                            factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.aid, getRigidBody())])
+        ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del ret, temp, f0, f1
@@ -838,8 +936,16 @@ class TestClerk:
                            cshapes=[getCSSphere()],
                            fragments=[getFragRaw('bar')],
                            factories=[f0, f1])
+        init = {
+            'templateID': temp.aid,
+            'rbs': {
+                'position': body.position,
+                'velocityLin': body.velocityLin
+            }
+        }
+
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.aid, body)])
+        ret = clerk.spawn([init])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del temp, ret, f0, f1, body
@@ -915,8 +1021,8 @@ class TestClerk:
         # of all forces (boosters) and exit speeds (factory spawned objects)
         # must be inverted.
         body = getRigidBody(position=pos_parent,
-                                  velocityLin=vel_parent,
-                                  orientation=orient_parent)
+                            velocityLin=vel_parent,
+                            orientation=orient_parent)
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
@@ -943,7 +1049,16 @@ class TestClerk:
                            boosters=[b0, b1],
                            factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
-        ret = clerk.spawn([(temp.aid, body)])
+
+        init = {
+            'templateID': temp.aid,
+            'rbs': {
+                'position': body.position,
+                'orientation': body.orientation,
+                'velocityLin': body.velocityLin
+            }
+        }
+        ret = clerk.spawn([init])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
         leo.processCommandsAndSync()
         del b0, b1, f0, f1, temp
@@ -1012,7 +1127,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, [])
 
         # Spawn a new object.
-        ret = clerk.spawn([(templateID, getRigidBody())])
+        ret = clerk.spawn([{'templateID': templateID}])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # The object list must now contain the ID of the just spawned object.
@@ -1021,7 +1136,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, [objID_1])
 
         # Spawn another object.
-        ret = clerk.spawn([(templateID, getRigidBody())])
+        ret = clerk.spawn([{'templateID': templateID}])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # The object list must now contain the ID of both spawned objects.
@@ -1056,8 +1171,21 @@ class TestClerk:
         # Attempt to query the geometry of a non-existing object.
         assert clerk.getFragmentGeometries([123]) == (True, None, {123: None})
 
+        init_1 = {
+            'templateID': temp.aid,
+            'rbs': {
+                'position': body_1.position,
+            }
+        }
+        init_2 = {
+            'templateID': temp.aid,
+            'rbs': {
+                'position': body_2.position,
+            }
+        }
+
         # Spawn two objects from the previously added template.
-        ret = clerk.spawn([(temp.aid, body_1), (temp.aid, body_2)])
+        ret = clerk.spawn([init_1, init_2])
         assert ret.ok
         objID_1, objID_2 = ret.data
 
@@ -1112,7 +1240,8 @@ class TestClerk:
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
-        ret = clerk.spawn([(temp.aid, getRigidBody()), (temp.aid, getRigidBody())])
+        init = {'templateID': temp.aid}
+        ret = clerk.spawn([init, init])
         assert ret.ok and (len(ret.data) == 2)
         objID0, objID1 = ret.data
 
@@ -1164,7 +1293,8 @@ class TestClerk:
 
         # Add the template and spawn two instances.
         assert clerk.addTemplates([t1]).ok
-        ret = clerk.spawn([(t1.aid, getRigidBody()), (t1.aid, getRigidBody())])
+        init = {'templateID': t1.aid}
+        ret = clerk.spawn([init, init])
         assert ret.ok
         objID_1, objID_2 = ret.data
 
@@ -1237,8 +1367,8 @@ class TestClerk:
         # Add the template to Azrael, spawn two instances, and make sure
         # Leonard picks it up so that the object becomes available.
         assert clerk.addTemplates([t1]).ok
-        _, _, (objID_1, objID_2) = clerk.spawn([(t1.aid, getRigidBody()),
-                                                (t1.aid, getRigidBody())])
+        init = {'templateID': t1.aid}
+        _, _, (objID_1, objID_2) = clerk.spawn([init, init])
         leo.processCommandsAndSync()
 
         def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
@@ -1366,7 +1496,7 @@ class TestClerk:
 
         t1 = getTemplate('t1', cshapes=cs, fragments=frags)
         assert clerk.addTemplates([t1]).ok
-        ret = clerk.spawn([(t1.aid, getRigidBody())])
+        ret = clerk.spawn([{'templateID': t1.aid}])
         assert ret.ok
         objID = ret.data[0]
         leo.processCommandsAndSync()
@@ -1498,7 +1628,25 @@ class TestClerk:
         tID = '_templateSphere'
         id_1, id_2, id_3 = 1, 2, 3
         templates = [(tID, body_1), (tID, body_2), (tID, body_3)]
-        ret = clerk.spawn(templates)
+        init_1 = {
+            'templateID': tID,
+            'rbs': {
+                'position': body_1.position,
+            }
+        }
+        init_2 = {
+            'templateID': tID,
+            'rbs': {
+                'position': body_2.position,
+            }
+        }
+        init_3 = {
+            'templateID': tID,
+            'rbs': {
+                'position': body_3.position,
+            }
+        }
+        ret = clerk.spawn([init_1, init_2, init_3])
         assert (ret.ok, ret.data) == (True, (id_1, id_2, id_3))
         del tID
 
@@ -1554,8 +1702,19 @@ class TestClerk:
         body_b = getRigidBody(position=pos_b)
 
         # Spawn the two bodies with a constraint among them.
-        templates = [(templateID, body_a), (templateID, body_b)]
-        ret = clerk.spawn(templates)
+        init_a = {
+            'templateID': templateID,
+            'rbs': {
+                'position': body_a.position,
+            }
+        }
+        init_b = {
+            'templateID': templateID,
+            'rbs': {
+                'position': body_b.position,
+            }
+        }
+        ret = clerk.spawn([init_a, init_b])
         assert (ret.ok, ret.data) == (True, (id_a, id_b))
 
         # Verify that both objects were spawned (simply query their template
@@ -1603,7 +1762,7 @@ class TestClerk:
 
         # Add a new template, spawn it, and record the object ID.
         assert clerk.addTemplates([t1]).ok
-        ret = clerk.spawn([('t1', getRigidBody())])
+        ret = clerk.spawn([{'templateID': 't1'}])
         assert ret.ok
         objID = ret.data[0]
         leo.processCommandsAndSync()
