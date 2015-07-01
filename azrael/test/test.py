@@ -167,9 +167,14 @@ def getRigidBody(scale: (int, float)=1,
                           axesLockRot, version)
 
 def getTemplate(name='template',
-                cshapes=[getCSSphere()],
+                cshapes=None,
                 rbs=getRigidBody(),
                 fragments=[],
                 boosters=[],
                 factories=[]):
-    return Template(name, cshapes, rbs, fragments, boosters, factories)
+    if cshapes is None:
+        rbs = getRigidBody(cshapes=[getCSSphere()])
+    else:
+        rbs = getRigidBody(cshapes=cshapes)
+
+    return Template(name, [], rbs, fragments, boosters, factories)
