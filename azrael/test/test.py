@@ -151,14 +151,6 @@ def get6DofSpring2(aid='constraint_6dofspring2', rb_a=1, rb_b=2):
     return ConstraintMeta(aid, '6DOFSPRING2', rb_a, rb_b, dof)
 
 
-# Default argument for RigidBodyState below (purely for visual appeal, not
-# because anyone would/should use it).
-_CSDefault_ = CollShapeMeta(aid='',
-                            cstype='Empty',
-                            position=(0, 0, 0),
-                            rotation=(0, 0, 0, 1),
-                            csdata=CollShapeEmpty())
-
 def getRigidBody(scale: (int, float)=1,
                  imass: (int, float)=1,
                  restitution: (int, float)=0.9,
@@ -166,7 +158,7 @@ def getRigidBody(scale: (int, float)=1,
                  position: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
-                 cshapes: (tuple, list)=[_CSDefault_],
+                 cshapes: (tuple, list)=[getCSEmpty()],
                  axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
                  axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
