@@ -644,40 +644,6 @@ class TestClerk:
         assert np.array_equal(tmp[0], force)
         assert np.array_equal(tmp[1], np.cross(relpos, force))
 
-    def test_controlParts_Boosters_bug_102(self):
-        """
-        ControlParts breaks when the objID does not exist. This
-        typically happens when an object receives control commands
-        _after_ it was spawned but _before_ Leonard has picked it up.
-        """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
-
-        # Define a boosters.
-        booster = types.Booster(
-            partID='0', pos=(1, 0, 0), direction=(1, 0, 0),
-            minval=0, maxval=1, force=0)
-
-        # Define a new template with two boosters and add it to Azrael.
-        template = getTemplate('t1',
-                               cshapes=[getCSSphere()],
-                               fragments=[getFragRaw('bar')],
-                               boosters=[booster],
-                               factories=[])
-        assert clerk.addTemplates([template]).ok
-
-        # Spawn an instance of the template and get the object ID.
-        ret = clerk.spawn([{'templateID': template.aid}])
-        assert ret.ok
-        objID = ret.data[0]
-
-        # Create a Booster command.
-        cmd = types.CmdBooster(partID='0', force_mag=2)
-
-        # Send the command to Clerk. With the bug present this triggered a
-        # stack trace, whereas now it must simply return with cleared ok flag.
-        assert not clerk.controlParts(objID, [cmd], []).ok
-
     def test_controlParts_invalid_commands(self):
         """
         Send invalid control commands to object.
