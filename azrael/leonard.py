@@ -583,7 +583,7 @@ class LeonardBase(config.AzraelProcess):
 
     def syncObjects(self, writeconcern: bool):
         """
-        Sync the local BodyStates to the DB.
+        Sync the local BodyStates to Leonard's DB and the master record.
 
         The ``writeconcern`` flag is mostly for performance tuning. If set to
         *False* then the sync will not wait for an acknowledgement from the
@@ -607,8 +607,7 @@ class LeonardBase(config.AzraelProcess):
         else:
             bulk.execute({'w': 0, 'j': False})
 
-        # Update (or insert non-existing) bodies. Use a MongoDB Bulk operator
-        # for the update to improve the performance.
+        # Update the RBS data in the master record.
         db = azrael.database.dbHandles['ObjInstances']
         bulk = db.initialize_unordered_bulk_op()
         for objID, body in self.allBodies.items():
