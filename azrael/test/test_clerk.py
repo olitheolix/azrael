@@ -206,7 +206,7 @@ class TestClerk:
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Convenience.
-        cs = getCSSphere()
+        body = getRigidBody(cshapes=[getCSSphere()])
 
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
@@ -218,7 +218,7 @@ class TestClerk:
 
         # Compile a template structure.
         frags = [getFragRaw('foo')]
-        temp = getTemplate('bar', rbs=getRigidBody(cshapes=[cs]), fragments=frags)
+        temp = getTemplate('bar', rbs=body, fragments=frags)
 
         # Add template when 'saveModel' fails.
         mock_dibbler.addTemplate.return_value = RetVal(False, 't_error', None)
@@ -249,7 +249,7 @@ class TestClerk:
 
         # Add the new template.
         temp = getTemplate('t3',
-                           rbs=getRigidBody(cshapes=[cs]),
+                           rbs=body,
                            fragments=frags,
                            boosters=[b0, b1],
                            factories=[f0])
@@ -263,7 +263,7 @@ class TestClerk:
         # clerk.getFragmentGeometries, which is tested elsewhere.
         ret = clerk.getTemplates([temp.aid])
         assert ret.ok
-        assert ret.data[temp.aid]['template'].rbs == temp.rbs
+        assert ret.data[temp.aid]['template'].rbs == body
         assert ret.data[temp.aid]['template'].boosters == temp.boosters
         assert ret.data[temp.aid]['template'].factories == temp.factories
 
@@ -299,8 +299,8 @@ class TestClerk:
         # Define two valid templates.
         frag_1 = getFragRaw('foo')
         frag_2 = getFragRaw('bar')
-        t1 = getTemplate(name_1, rbs=getRigidBody(cshapes=[getCSSphere()]), fragments=[frag_1])
-        t2 = getTemplate(name_2, rbs=getRigidBody(cshapes=[getCSSphere()]), fragments=[frag_2])
+        t1 = getTemplate(name_1, fragments=[frag_1])
+        t2 = getTemplate(name_2, fragments=[frag_2])
 
         # Uploading the templates must succeed.
         assert clerk.addTemplates([t1, t2]).ok
@@ -696,7 +696,6 @@ class TestClerk:
 
         # Define a new template, add it to Azrael, and spawn an instance.
         temp = getTemplate('t1',
-                           rbs=getRigidBody(cshapes=[getCSSphere()]),
                            fragments=[getFragRaw('bar')],
                            boosters=[b0],
                            factories=[f0])
@@ -749,7 +748,6 @@ class TestClerk:
 
         # Define a new template with two boosters and add it to Azrael.
         temp = getTemplate('t1',
-                           rbs=getRigidBody(cshapes=[getCSSphere()]),
                            fragments=[getFragRaw('bar')],
                            boosters=[b0, b1])
         assert clerk.addTemplates([temp]).ok
@@ -825,7 +823,6 @@ class TestClerk:
 
         # Add the template to Azrael and spawn one instance.
         temp = getTemplate('t1',
-                           rbs=getRigidBody(cshapes=[getCSSphere()]),
                            fragments=[getFragRaw('bar')],
                            factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
@@ -899,7 +896,6 @@ class TestClerk:
 
         # Define a template with two factories, add it to Azrael, and spawn it.
         temp = getTemplate('t1',
-                           rbs=getRigidBody(cshapes=[getCSSphere()]),
                            fragments=[getFragRaw('bar')],
                            factories=[f0, f1])
         init = {
@@ -1010,7 +1006,6 @@ class TestClerk:
 
         # Define the template, add it to Azrael, and spawn one instance.
         temp = getTemplate('t1',
-                           rbs=getRigidBody(cshapes=[getCSSphere()]),
                            fragments=[getFragRaw('bar')],
                            boosters=[b0, b1],
                            factories=[f0, f1])
@@ -1130,7 +1125,7 @@ class TestClerk:
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
-        temp = getTemplate('foo', rbs=getRigidBody(cshapes=[getCSSphere()]), fragments=frags)
+        temp = getTemplate('foo', rbs=body_1, fragments=frags)
         assert clerk.addTemplates([temp]).ok
         assert clerk.getTemplates([temp.aid]).ok
 
@@ -1139,15 +1134,11 @@ class TestClerk:
 
         init_1 = {
             'templateID': temp.aid,
-            'rbs': {
-                'position': body_1.position,
-            }
+            'rbs': {'position': body_1.position}
         }
         init_2 = {
             'templateID': temp.aid,
-            'rbs': {
-                'position': body_2.position,
-            }
+            'rbs': {'position': body_2.position}
         }
 
         # Spawn two objects from the previously added template.
@@ -1200,9 +1191,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Add a valid template and verify it now exists in Azrael.
-        temp = getTemplate('foo',
-                           rbs=getRigidBody(cshapes=[getCSSphere()]),
-                           fragments=[getFragRaw('bar')])
+        temp = getTemplate('foo', fragments=[getFragRaw('bar')])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
@@ -1253,7 +1242,6 @@ class TestClerk:
 
         # Define a template with one fragment.
         t1 = getTemplate('t1',
-                         rbs=getRigidBody(cshapes=[getCSSphere()]),
                          fragments=[getFragRaw('foo')],
                          boosters=[b0, b1])
 
@@ -1326,9 +1314,7 @@ class TestClerk:
         assert not ret.ok
 
         # Define a new template with one fragment.
-        t1 = getTemplate('t1',
-                         rbs=getRigidBody(cshapes=[getCSSphere()]),
-                         fragments=[getFragRaw('foo')])
+        t1 = getTemplate('t1', fragments=[getFragRaw('foo')])
 
         # Add the template to Azrael, spawn two instances, and make sure
         # Leonard picks it up so that the object becomes available.
@@ -1426,7 +1412,6 @@ class TestClerk:
         leo = getLeonard()
 
         # Convenience.
-        cs = [getCSSphere()]
         vert_1 = list(range(0, 9))
         vert_2 = list(range(9, 18))
 
@@ -1460,7 +1445,7 @@ class TestClerk:
         f_dae = getFragDae('test')
         frags = [f_raw, f_dae]
 
-        t1 = getTemplate('t1', rbs=getRigidBody(cshapes=cs), fragments=frags)
+        t1 = getTemplate('t1', fragments=frags)
         assert clerk.addTemplates([t1]).ok
         ret = clerk.spawn([{'templateID': t1.aid}])
         assert ret.ok
@@ -1724,7 +1709,7 @@ class TestClerk:
             getFragDae('fname_2'),
             getFragRaw('fname_3')
         ]
-        t1 = getTemplate('t1', rbs=getRigidBody(cshapes=[getCSSphere()]), fragments=frags_orig)
+        t1 = getTemplate('t1', fragments=frags_orig)
 
         # Add a new template, spawn it, and record the object ID.
         assert clerk.addTemplates([t1]).ok
