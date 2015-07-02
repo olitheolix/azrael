@@ -598,11 +598,23 @@ class LeonardBase(config.AzraelProcess):
         # Update (or insert non-existing) bodies. Use a MongoDB Bulk operator
         # for the update to improve the performance.
         bulk = self._DB_SV.initialize_unordered_bulk_op()
-        for objID, sv in self.allBodies.items():
+        for objID, body in self.allBodies.items():
             query = {'objID': objID}
-            data = {'objID': objID, 'rbs': sv, 'AABBs': self.allAABBs[objID]}
+            data = {'objID': objID, 'rbs': body, 'AABBs': self.allAABBs[objID]}
             bulk.find(query).upsert().update({'$set': data})
+        if writeconcern:
+            bulk.execute()
+        else:
+            bulk.execute({'w': 0, 'j': False})
 
+        # Update (or insert non-existing) bodies. Use a MongoDB Bulk operator
+        # for the update to improve the performance.
+        db = azrael.database.dbHandles['ObjInstances']
+        bulk = db.initialize_unordered_bulk_op()
+        for objID, body in self.allBodies.items():
+            query = {'objID': objID}
+            data = {'objID': objID, 'template.rbs': body._asdict()}
+            bulk.find(query).upsert().update({'$set': data})
         if writeconcern:
             bulk.execute()
         else:
