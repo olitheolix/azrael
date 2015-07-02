@@ -1237,11 +1237,15 @@ class Clerk(config.AzraelProcess):
         :return: see :ref:``_packBodyState``.
         :rtype: dict
         """
+        db = database.dbHandles['ObjInstances']
+        RBS = types._RigidBodyState
         with util.Timeit('leoAPI.getSV') as timeit:
-            # Get the State Variables.
-            ret = leoAPI.getBodyStates(objIDs)
-            if not ret.ok:
-                return RetVal(False, 'One or more IDs do not exist', None)
+            out = {_: None for _ in objIDs}
+            cursor = db.find({'objID': {'$in': objIDs}},
+                             {'objID': True, 'template.rbs': True})
+            for doc in cursor:
+                out[doc['objID']] = RBS(**doc['template']['rbs'])
+            return self._packBodyState(out)
         return self._packBodyState(ret.data)
 
     @typecheck
@@ -1259,11 +1263,12 @@ class Clerk(config.AzraelProcess):
         :return: see :ref:``_packBodyState``.
         :rtype: dict
         """
+        db = database.dbHandles['ObjInstances']
+        RBS = types._RigidBodyState
         with util.Timeit('leoAPI.getSV') as timeit:
-            # Get the State Variables.
-            ret = leoAPI.getAllBodyStates()
-            if not ret.ok:
-                return ret
+            cur = db.find({}, {'objID': True, 'template.rbs': True})
+            out = {doc['objID']: RBS(**doc['template']['rbs']) for doc in cur}
+            return self._packBodyState(out)
         return self._packBodyState(ret.data)
 
     @typecheck
