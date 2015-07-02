@@ -43,7 +43,7 @@ logit = logging.getLogger('azrael.' + __name__)
 RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Object Template.
-_Template = namedtuple('_Template', 'aid cshapes rbs fragments boosters factories')
+_Template = namedtuple('_Template', 'aid rbs fragments boosters factories')
 
 # Fragments.
 _FragMeta = namedtuple('_FragMeta', 'aid fragtype fragdata')
@@ -1036,7 +1036,6 @@ class Template(_Template):
     Almost all of the inital template values can be modified at run time.
 
     :param str aid: template name
-    :param list[CollShapeMeta] cshape: collision shapes
     :param list[FragMeta] fragments: geometry fragments.
     :param list[Booster] boosters: booster data
     :param list[Factory] factories: factory data
@@ -1045,7 +1044,6 @@ class Template(_Template):
     """
     @typecheck
     def __new__(cls, aid: str,
-                cshapes: (tuple, list),
                 rbs: (tuple, list, dict),
                 fragments: (tuple, list),
                 boosters: (tuple, list),
@@ -1053,11 +1051,6 @@ class Template(_Template):
         try:
             # Sanity check the AID.
             assert isAIDStringValid(aid)
-
-            # Compile- and sanity check all collision shapes.
-            cshapes = [CollShapeMeta(**_)
-                       if isinstance(_, dict) else CollShapeMeta(*_)
-                       for _ in cshapes]
 
             # Compile- and sanity check all geometry fragments.
             fragments = [FragMeta(**_)
@@ -1087,16 +1080,14 @@ class Template(_Template):
 
         # Return constructed data type.
         return super().__new__(
-            cls, aid, cshapes, rbs, fragments, boosters, factories)
+            cls, aid, rbs, fragments, boosters, factories)
 
     def _asdict(self):
-        cshapes = [_._asdict() for _ in self.cshapes]
         fragments = [_._asdict() for _ in self.fragments]
         boosters = [_._asdict() for _ in self.boosters]
         factories = [_._asdict() for _ in self.factories]
         rbs = self.rbs._asdict()
         tmp = _Template(aid=self.aid,
-                        cshapes=cshapes,
                         rbs=rbs,
                         fragments=fragments,
                         boosters=boosters,

@@ -174,4 +174,4 @@ def getTemplate(name='template',
     if rbs is None:
         rbs = getRigidBody(cshapes=[getCSSphere()])
 
-    return Template(name, [], rbs, fragments, boosters, factories)
+    return Template(name, rbs, fragments, boosters, factories)
