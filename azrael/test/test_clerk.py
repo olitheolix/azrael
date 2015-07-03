@@ -1687,25 +1687,28 @@ class TestClerk:
         assert ret.ok and (ret.data == (objID, ))
 
         # Verify that the initial body states are correct.
-        ok, _, ret_sv = clerk.getBodyStates([objID])
-        ret_sv = ret_sv[objID]['rbs']
-        assert isinstance(ret_sv, types._RigidBodyState)
-        assert ret_sv.position == init['rbs']['position']
-        assert ret_sv.velocityLin == init['rbs']['velocityLin']
+        ok, _, ret_bs = clerk.getBodyStates([objID])
+        ret_bs = ret_bs[objID]['rbs']
+        assert isinstance(ret_bs, types._RigidBodyState)
+        assert ret_bs.position == init['rbs']['position']
+        assert ret_bs.velocityLin == init['rbs']['velocityLin']
 
-        # Create and apply a new State Vector.
-        new_sv = types.RigidBodyStateOverride(
-            position=[1, -1, 1], imass=2, scale=3, cshapes=[getCSSphere()])
-        assert clerk.setBodyState(objID, new_sv).ok
+        # Selectively update the body state of objID.
+        new_bs = {
+            'position': [1, -1, 1],
+            'imass': 2,
+            'scale': 3,
+            'cshapes': [getCSSphere()._asdict()]}
+        assert clerk.setBodyState(objID, new_bs).ok
 
         # Verify that the new attributes came into effect.
-        ok, _, ret_sv = clerk.getBodyStates([objID])
-        ret_sv = ret_sv[objID]['rbs']
-        assert isinstance(ret_sv, types._RigidBodyState)
-        assert ret_sv.imass == new_sv.imass
-        assert ret_sv.scale == new_sv.scale
-        assert ret_sv.position, new_sv.position
-        assert CollShapeMeta(**ret_sv.cshapes[0]) == getCSSphere()
+        ok, _, ret_bs = clerk.getBodyStates([objID])
+        ret_bs = ret_bs[objID]['rbs']
+        assert isinstance(ret_bs, types._RigidBodyState)
+        assert ret_bs.imass == new_bs['imass']
+        assert ret_bs.scale == new_bs['scale']
+        assert ret_bs.position, new_bs['position']
+        assert CollShapeMeta(**ret_bs.cshapes[0]) == getCSSphere()
 
 
     # def test_stunted_objects(self):

@@ -1272,32 +1272,36 @@ class Clerk(config.AzraelProcess):
         return self._packBodyState(ret.data)
 
     @typecheck
-    def setBodyState(self, objID: int,
-                     data: types.RigidBodyStateOverride):
+    def setBodyState(self, objID: int, state: dict):
         """
-        Set the state variables of ``objID`` to ``data``.
+        Set the state variables of ``objID`` to ``state``.
 
         For a detailed description see ``leoAPI.addCmdModifyBodyState``
         since this method is only a wrapper for it.
 
         :param int objID: object ID
-        :param RigidBodyStateOverride data: new object attributes.
+        :param dict state: new object attributes.
         :return: Success
         """
         db = azrael.database.dbHandles['ObjInstances']
 
-        # fixme: creating the 'body' is error prone; replace
-        # RigidBodyStateOverride with a plain dictionary and use
-        # DefaultRigidBody to verify it is sane.
-        body = {k: v for (k, v) in data._asdict().items() if v is not None}
-        if 'cshapes' in body:
-            body['cshapes'] = [_._asdict() for _ in body['cshapes']]
-        body = {'template.rbs.' + k: v for (k, v) in body.items() if v is not None}
+        # Convert the collision shapes.
+        try:
+            if 'cshapes' in state:
+                cs = [CollShapeMeta(**_) for _ in state['cshapes']]
+                state['cshapes'] = [_._asdict() for _ in cs]
+        except TypeError:
+            return RetVal(False, 'Invalid collision shape', None)
 
+        # Update the respective entries in the data base. The keys already have
+        # the correct names but must be saved under 'template.rbs'.
+        body = {'template.rbs.' + k: v for (k, v) in state.items()}
         query = {'objID': objID}
         db.update(query, {'$set': body})
 
-        ret = leoAPI.addCmdModifyBodyState(objID, data)
+        # Notify Leonard.
+        state = types.RigidBodyStateOverride(**state)
+        ret = leoAPI.addCmdModifyBodyState(objID, state)
         if ret.ok:
             return RetVal(True, None, None)
         else:
