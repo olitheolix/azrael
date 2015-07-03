@@ -902,7 +902,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         pos = self.camera.position
         cs = CollShapeBox(1, 1, 1)
         cs = CollShapeMeta('player', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
-        attr = leoAPI.RigidBodyStateOverride(position=pos, cshapes=[cs])
+        attr = {'position': pos.tolist(), 'cshapes': [cs]}
         assert self.client.setBodyState(self.player_id, attr).ok
         del cs
 

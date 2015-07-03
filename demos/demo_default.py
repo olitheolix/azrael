@@ -570,12 +570,12 @@ class ResetSim(multiprocessing.Process):
             RigidBodyStateOverride = azrael.leo_api.RigidBodyStateOverride
             for ii in range(5):
                 for objID, SV in allowed_objIDs.items():
-                    tmp = RigidBodyStateOverride(
-                        position=SV.position,
-                        velocityLin=SV.velocityLin,
-                        velocityRot=SV.velocityRot,
-                        orientation=SV.orientation)
-                    client.setBodyState(objID, tmp)
+                    tmp = {
+                        'position': SV.position,
+                        'velocityLin': SV.velocityLin,
+                        'velocityRot': SV.velocityRot,
+                        'orientation': SV.orientation}
+                    assert client.setBodyState(objID, tmp).ok
                 time.sleep(0.1)
 
 
