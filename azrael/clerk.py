@@ -539,8 +539,8 @@ class Clerk(config.AzraelProcess):
             map every templateID and initials state to a particular
             object ID.
 
-        :param list/tuple newObjects: list of template names and initial body
-            states.
+        :param list[dict] newObjects: template IDs (key) and body parameters to
+            override (value).
         :return: IDs of spawned objects
         :rtype: tuple of int
         """
