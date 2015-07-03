@@ -393,9 +393,6 @@ class TestClient:
         # Get the client for this test.
         client = self.clients[client_type]
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Constants and parameters for this test.
         templateID, objID_1 = '_templateEmpty', 1
 
@@ -404,13 +401,11 @@ class TestClient:
         assert (ret.ok, ret.data) == (True, [])
 
         # Spawn a new object.
-        new_obj = {'template': templateID,
-                   'position': np.zeros(3)}
-        ret = client.spawn([new_obj])
-        assert ret.ok and ret.data == (objID_1, )
+        init = {'templateID': templateID, 'rbs': {'position': (0, 0, 0)}}
+        ret = client.spawn([init])
+        assert ret.ok and ret.data == [objID_1]
 
         # The object list must now contain the ID of the just spawned object.
-        leo.processCommandsAndSync()
         ret = client.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID_1])
 

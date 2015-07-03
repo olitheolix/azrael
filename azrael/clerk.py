@@ -1326,7 +1326,7 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def getAllObjectIDs(self, dummy=None):
         """
-        Return all ``objIDs`` in the simulation.
+        Return the list of ``objIDs`` currently in the simulation.
 
         .. note::
            The ``dummy`` argument is a placeholder because the ``runCommand``
@@ -1336,11 +1336,8 @@ class Clerk(config.AzraelProcess):
         :return: list of objIDs
         :rtype: list(int)
         """
-        ret = leoAPI.getAllObjectIDs()
-        if ret.ok:
-            return RetVal(True, None, ret.data)
-        else:
-            return RetVal(False, ret.data, None)
+        db = database.dbHandles['ObjInstances']
+        return RetVal(True, None, db.distinct('objID'))
 
     @typecheck
     def addConstraints(self, constraints: (tuple, list)):
