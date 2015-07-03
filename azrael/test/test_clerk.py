@@ -325,6 +325,14 @@ class TestClerk:
         assert not ret.ok
         assert ret.msg.startswith('Could not find all templates')
 
+        # Valid templateID but invalid key name in rbs field.
+        init_invalid = {'templateID': '_templateSphere', 'rbs': {'blah': 1}}
+        assert not clerk.spawn([init_invalid]).ok
+
+        # Valid templateID, valid key, but invalid data.
+        init_invalid = {'templateID': '_templateSphere', 'rbs': {'position': 1}}
+        assert not clerk.spawn([init_invalid]).ok
+
         # All parameters are now valid. This must spawn an object with ID=1
         # because this is the first ID in an otherwise pristine system.
         init_1 = {'templateID': '_templateSphere', 'rbs': {'imass': 1}}

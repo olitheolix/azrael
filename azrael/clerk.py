@@ -553,13 +553,16 @@ class Clerk(config.AzraelProcess):
         """
         # Sanity checks: newObjects must be a list of dictionaries, and each
         # dictionary must contain at least a 'templateID' field that contains a
-        # string.
+        # string. If an RBS field is present it must contain a valid rigid body
+        # state.
         try:
             assert len(newObjects) > 0
             for tmp in newObjects:
                 assert isinstance(tmp, dict)
                 assert isinstance(tmp['templateID'], str)
-        except (AssertionError, KeyError):
+                if 'rbs' in tmp:
+                    types.DefaultRigidBody(**tmp['rbs'])
+        except (AssertionError, KeyError, TypeError):
             return RetVal(False, '<spawn> received invalid arguments', None)
 
         # Fetch the specified templates so that we can duplicate them in
@@ -593,8 +596,8 @@ class Clerk(config.AzraelProcess):
                 template = templates[templateID]['template']
                 frags = template.fragments
 
-                # fixme: explain, protect with try/except or sanity check
-                # earlier on (probably a better idea).
+                # Selectively overwrite the rigid body state stored in the
+                # template with the values provided by the client.
                 body = template.rbs
                 if 'rbs' in newObj:
                     body = body._replace(**newObj['rbs'])
