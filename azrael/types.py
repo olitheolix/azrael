@@ -901,16 +901,6 @@ class CmdFactory(_CmdFactory):
         return OrderedDict(zip(self._fields, self))
 
 
-# Default argument for RigidBodyState below (purely for visual appeal, not
-# because anyone would/should use it).
-# fixme: remove once RigidBodyState does not accept defaults anymore
-_CSDefault_ = CollShapeMeta(aid='',
-                            cstype='Sphere',
-                            position=(0, 0, 0),
-                            rotation=(0, 0, 0, 1),
-                            csdata=CollShapeSphere(radius=1))
-
-
 @typecheck
 def RigidBodyState(scale: (int, float),
                    imass: (int, float),
@@ -968,10 +958,22 @@ def DefaultRigidBody(scale=1,
                  position=(0, 0, 0),
                  velocityLin=(0, 0, 0),
                  velocityRot=(0, 0, 0),
-                 cshapes=[_CSDefault_],
+                 cshapes=None,
                  axesLockLin=(1, 1, 1),
                  axesLockRot=(1, 1, 1),
                  version=0):
+
+    # If cshape was explicitly 'None' then we create a default collision shape.
+    # Note that cshape=[] means the object has no collision shape, wheres
+    # cshape=None means we should create a default.
+    if cshapes is None:
+        cshapes = CollShapeMeta(aid='',
+                                cstype='Sphere',
+                                position=(0, 0, 0),
+                                rotation=(0, 0, 0, 1),
+                                csdata=CollShapeSphere(radius=1))
+        cshapes = [cshapes]
+
     return RigidBodyState(scale, imass, restitution, orientation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,
                           axesLockRot, version)
