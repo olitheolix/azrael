@@ -275,7 +275,7 @@ class TestClerk:
         Test the 'spawn' command in the Clerk.
         """
         # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        clerk = self.clerk
 
         # Default object.
         body_1 = getRigidBody(imass=1)
@@ -333,9 +333,6 @@ class TestClerk:
         Spawn two objects from different templates. Then query the template ID
         based on the object ID.
         """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Parameters and constants for this test.
         id_0, id_1 = 1, 2
         tID_0 = '_templateEmpty'
@@ -349,7 +346,6 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (id_0, id_1))
 
         # Retrieve template of first object.
-        leo.processCommandsAndSync()
         ret = clerk.getTemplateID(id_0)
         assert (ret.ok, ret.data) == (True, tID_0)
 
@@ -390,9 +386,6 @@ class TestClerk:
         Spawn an object and ensure it exists, then delete it and ensure it does
         not exist anymore.
         """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Test constants and parameters.
         objID_1, objID_2 = 1, 2
 
@@ -410,7 +403,6 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
 
         # Two objects must now exist.
-        leo.processCommandsAndSync()
         ret = clerk.getAllObjectIDs()
         assert ret.ok and (set(ret.data) == set([objID_1, objID_2]))
 
@@ -418,7 +410,6 @@ class TestClerk:
         assert clerk.removeObject(objID_1).ok
 
         # Only the second object must still exist.
-        leo.processCommandsAndSync()
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID_2])
 
@@ -427,7 +418,6 @@ class TestClerk:
 
         # Delete the second object.
         assert clerk.removeObject(objID_2).ok
-        leo.processCommandsAndSync()
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
@@ -435,9 +425,6 @@ class TestClerk:
         """
         Test the 'getBodyStates' command in the Clerk.
         """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Test parameters and constants.
         objID_1 = 1
         objID_2 = 2
@@ -471,7 +458,6 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Retrieve the SV for a non-existing ID --> must fail.
-        leo.processCommandsAndSync()
         ret = clerk.getBodyStates([10])
         assert (ret.ok, ret.data) == (True, {10: None})
 
@@ -485,7 +471,6 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # Retrieve the state variables for both objects individually.
-        leo.processCommandsAndSync()
         for objID, ref_sv in zip([objID_1, objID_2], [body_1, body_2]):
             ret = clerk.getBodyStates([objID])
             assert (ret.ok, len(ret.data)) == (True, 1)
@@ -501,9 +486,6 @@ class TestClerk:
         """
         Test the 'getAllBodyStates' command in the Clerk.
         """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Test parameters and constants.
         objID_1, objID_2 = 1, 2
         RBS = getRigidBody
@@ -538,7 +520,6 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Retrieve all SVs --> there must now be exactly one.
-        leo.processCommandsAndSync()
         ret = clerk.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 1)
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
@@ -548,7 +529,6 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # Retrieve all SVs --> there must now be exactly two.
-        leo.processCommandsAndSync()
         ret = clerk.getAllBodyStates()
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
@@ -586,9 +566,6 @@ class TestClerk:
         """
         Send invalid control commands to object.
         """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
         templateID_1 = '_templateSphere'
@@ -607,7 +584,6 @@ class TestClerk:
 
         # Call 'controlParts'. This must fail because the template for objID_1
         # has neither boosters nor factories.
-        leo.processCommandsAndSync()
         assert not clerk.controlParts(objID_1, [cmd_b], []).ok
 
         # Must fail: object has no factory.
@@ -636,7 +612,6 @@ class TestClerk:
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
-        leo.processCommandsAndSync()
 
         # Tell each factory to spawn an object.
         cmd_b = types.CmdBooster(partID='0', force_mag=0.5)
@@ -728,9 +703,6 @@ class TestClerk:
 
         The parent object does not move in the world coordinate system.
         """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
@@ -762,7 +734,6 @@ class TestClerk:
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
-        leo.processCommandsAndSync()
         del ret, temp, f0, f1
 
         # ---------------------------------------------------------------------
@@ -778,7 +749,6 @@ class TestClerk:
         # exist in the simulation. These IDs must be '2' and '3'.
         ok, _, spawnedIDs = clerk.controlParts(objID_1, [], [cmd_0, cmd_1])
         assert (ok, spawnedIDs) == (True, [2, 3])
-        leo.processCommandsAndSync()
 
         # Query the state variables of the objects spawned by the factories.
         ret = clerk.getBodyStates(spawnedIDs)
@@ -800,8 +770,6 @@ class TestClerk:
 
         In this test the parent object moves at a non-zero velocity.
         """
-        # Reset the SV database and instantiate a Leonard and Clerk.
-        leo = getLeonard()
         clerk = azrael.clerk.Clerk()
 
         # Parameters and constants for this test.
@@ -843,7 +811,6 @@ class TestClerk:
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([init])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
-        leo.processCommandsAndSync()
         del temp, ret, f0, f1, body
 
         # ---------------------------------------------------------------------
@@ -861,7 +828,6 @@ class TestClerk:
         assert ret.ok and (len(ret.data) == 2)
         spawnedIDs = ret.data
         assert spawnedIDs == [objID_2, objID_3]
-        leo.processCommandsAndSync()
 
         # Query the state variables of the objects spawned by the factories.
         ret = clerk.getBodyStates(spawnedIDs)
@@ -1007,9 +973,6 @@ class TestClerk:
         """
         Test getAllObjects.
         """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
         templateID = '_templateSphere'
@@ -1026,7 +989,6 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # The object list must now contain the ID of the just spawned object.
-        leo.processCommandsAndSync()
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID_1])
 
@@ -1035,7 +997,6 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # The object list must now contain the ID of both spawned objects.
-        leo.processCommandsAndSync()
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
@@ -1121,9 +1082,6 @@ class TestClerk:
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Add a valid template and verify it now exists in Azrael.
         temp = getTemplate('foo', fragments=[getFragRaw('bar')])
         assert clerk.addTemplates([temp]).ok
@@ -1133,9 +1091,6 @@ class TestClerk:
         ret = clerk.spawn([init, init])
         assert ret.ok and (len(ret.data) == 2)
         objID0, objID1 = ret.data
-
-        # Let Leonard pick up the new objects so that we can query them.
-        leo.processCommandsAndSync()
 
         # Query the State Vectors for both objects.
         ret = clerk.getBodyStates([objID0, objID1])
@@ -1238,8 +1193,6 @@ class TestClerk:
         Create a new template with one fragment and create two instances. Then
         query and update the fragment states.
         """
-        # Reset the SV database and instantiate a Leonard and Clerk.
-        leo = getLeonard()
         clerk = azrael.clerk.Clerk()
 
         # Attempt to update the fragment state of non-existing objects.
@@ -1255,7 +1208,6 @@ class TestClerk:
         assert clerk.addTemplates([t1]).ok
         init = {'templateID': t1.aid}
         _, _, (objID_1, objID_2) = clerk.spawn([init, init])
-        leo.processCommandsAndSync()
 
         def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
             """
@@ -1342,9 +1294,6 @@ class TestClerk:
         clacks = azrael.clacks.ClacksServer()
         clacks.start()
 
-        # Reset the SV database and instantiate a Leonard and Clerk.
-        leo = getLeonard()
-
         # Convenience.
         vert_1 = list(range(0, 9))
         vert_2 = list(range(9, 18))
@@ -1384,7 +1333,6 @@ class TestClerk:
         ret = clerk.spawn([{'templateID': t1.aid}])
         assert ret.ok
         objID = ret.data[0]
-        leo.processCommandsAndSync()
 
         # Query the state and verify it has as many FragmentState
         # vectors as it has fragments.
@@ -1496,8 +1444,6 @@ class TestClerk:
         This test only verifies that the Igor interface works. It does *not*
         verify that the objects are really linked in the actual simulation.
         """
-        # Reset the SV database and instantiate a Leonard and a Clerk.
-        leo = getLeonard(azrael.leonard.LeonardBullet)
         clerk = azrael.clerk.Clerk()
 
         # Reset the constraint database.
@@ -1633,8 +1579,6 @@ class TestClerk:
         """
         Remove a fragment.
         """
-        # Reset the SV database and instantiate a Leonard and a Clerk.
-        leo = getLeonard(azrael.leonard.LeonardBullet)
         clerk = azrael.clerk.Clerk()
 
         # The original template has the following three fragments:
@@ -1650,7 +1594,6 @@ class TestClerk:
         ret = clerk.spawn([{'templateID': 't1'}])
         assert ret.ok
         objID = ret.data[0]
-        leo.processCommandsAndSync()
 
         # Query the fragment geometries and Body State to verify that both
         # report three fragments.
