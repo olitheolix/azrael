@@ -551,34 +551,34 @@ class Clerk(config.AzraelProcess):
         :return: IDs of spawned objects
         :rtype: tuple of int
         """
-        # Sanity checks.
+        # Sanity checks: newObjects must be a list of dictionaries, and each
+        # dictionary must contain at least a 'templateID' field that contains a
+        # string.
         try:
             assert len(newObjects) > 0
             for tmp in newObjects:
                 assert isinstance(tmp, dict)
-                assert 'templateID' in tmp
-        except AssertionError:
+                assert isinstance(tmp['templateID'], str)
+        except (AssertionError, KeyError):
             return RetVal(False, '<spawn> received invalid arguments', None)
 
-        # Convenience: convert the list of tuples into a plain list, ie
-        # [(t1, s1), (t2, s2), ...]  -->  [t1, t2, ...] and [s1, s2, ...].
-        t_names = [_['templateID'] for _ in newObjects]
-#        initStates = [_[1] for _ in newObjects]
-
+        # Fetch the specified templates so that we can duplicate them in
+        # the instance database afterwards.
         with util.Timeit('spawn:1 getTemplates') as timeit:
-            # Fetch the raw templates for all ``t_names``.
+            t_names = [_['templateID'] for _ in newObjects]
             ret = self.getTemplates(t_names)
             if not ret.ok:
                 self.logit.info(ret.msg)
                 return ret
             templates = ret.data
+            del t_names, ret
 
-        # Request unique IDs for the objects to spawn.
+        # Request unique IDs for the new objects.
         ret = azrael.database.getUniqueObjectIDs(len(newObjects))
         if not ret.ok:
             self.logit.error(ret.msg)
             return ret
-        objIDs = ret.data
+        newObjectIDs = ret.data
 
         with util.Timeit('spawn:2 createStates') as timeit:
             # Make a copy of every template and endow it with the meta
@@ -586,11 +586,9 @@ class Clerk(config.AzraelProcess):
             # of objects to spawn.
             dbDocs = []
             bodyStates = {}
-            for newObj, objID in zip(newObjects, objIDs):
-                # Convenience.
-                # fixme: explain that 'templates' is a dictionary with keys
-                # like 'template' and 'templateID' (anything else), and that
-                # the entries under 'template' are Template instances?
+            for newObj, objID in zip(newObjects, newObjectIDs):
+                # Convenience: 'template' is a Template instance converted to
+                # a dictionary (see types.py for the detailed layout).
                 templateID = newObj['templateID']
                 template = templates[templateID]['template']
                 frags = template.fragments
@@ -608,8 +606,7 @@ class Clerk(config.AzraelProcess):
                 if not ret.ok:
                     # Dibbler and Clerk are out of sync because Clerk found
                     # a template that Dibbler does not know about. This really
-                    # should not happen, so skip this object and do not spawn
-                    # it.
+                    # should not happen --> do not spawn and skip.
                     msg = 'Dibbler and Clerk are out of sync for template {}.'
                     msg = msg.format(templateID)
                     msg += ' Dibbler returned this error: <{}>'
@@ -620,17 +617,21 @@ class Clerk(config.AzraelProcess):
                     # URL where the instance geometry is available.
                     geo_url = ret.data['url_frag']
 
-                # Give all geometries a neutral initial state in terms of
-                # scale, position, and orientation.
+                # Compile a dictionary with the fragment states for each
+                # fragment. Initially, the fragments are all exactly where the
+                # template specified them, which is why each entry in the
+                # dictionary denotes the same neutral position, rotation, etc.
                 fs = FragState(aid='',
                                scale=1,
                                position=(0, 0, 0),
                                orientation=(0, 0, 0, 1))
                 fragStates = {_.aid: fs._replace(aid=_.aid) for _ in frags}
 
-                # Serialise the template and add additional meta information
-                # that is specific to this instance, for instance the 'objID'
-                # and 'version'.
+                # Compile the database document. Each entry must be an explicit
+                # dictionary (eg 'template'). The document contains the
+                # original template plus additional meta information that is
+                # specific to this instance, for instance the 'objID' and
+                # 'version'.
                 doc = {
                     'objID': objID,
                     'url_frag': geo_url,
@@ -671,7 +672,7 @@ class Clerk(config.AzraelProcess):
                 return ret
             self.logit.debug('Spawned {} new objects'.format(len(objs)))
 
-        return RetVal(True, None, objIDs)
+        return RetVal(True, None, newObjectIDs)
 
     @typecheck
     def controlParts(self, objID: int, cmd_boosters: (tuple, list),
