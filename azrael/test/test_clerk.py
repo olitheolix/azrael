@@ -1710,6 +1710,14 @@ class TestClerk:
         assert ret_bs.position, new_bs['position']
         assert CollShapeMeta(**ret_bs.cshapes[0]) == getCSSphere()
 
+        # Attempt to update an unknown attribute.
+        new_bs = {
+            'blah': [1, -1, 1],
+            'imass': 2,
+            'scale': 3,
+            'cshapes': [getCSSphere()._asdict()]}
+        assert not clerk.setBodyState(objID, new_bs).ok
+
 
     # def test_stunted_objects(self):
     #     """

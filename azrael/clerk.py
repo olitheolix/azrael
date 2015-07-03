@@ -1285,11 +1285,19 @@ class Clerk(config.AzraelProcess):
         """
         db = azrael.database.dbHandles['ObjInstances']
 
+        # Backup the original state because addCmdModify will need.
+        state_bak = dict(state)
+
+        try:
+            state = types.DefaultRigidBody(**state)
+        except TypeError:
+            return RetVal(False, 'Invalid body state data', None)
+        state = state._asdict()
+
         # Convert the collision shapes.
         try:
             if 'cshapes' in state:
-                cs = [CollShapeMeta(**_) for _ in state['cshapes']]
-                state['cshapes'] = [_._asdict() for _ in cs]
+                state['cshapes'] = [_._asdict() for _ in state['cshapes']]
         except TypeError:
             return RetVal(False, 'Invalid collision shape', None)
 
@@ -1300,7 +1308,7 @@ class Clerk(config.AzraelProcess):
         db.update(query, {'$set': body})
 
         # Notify Leonard.
-        state = types.RigidBodyStateOverride(**state)
+        state = types.RigidBodyStateOverride(**state_bak)
         ret = leoAPI.addCmdModifyBodyState(objID, state)
         if ret.ok:
             return RetVal(True, None, None)
