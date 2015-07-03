@@ -103,6 +103,25 @@ def parseCommandLine():
     return param
 
 
+def getRigidBody(scale: (int, float)=1,
+                 imass: (int, float)=1,
+                 restitution: (int, float)=0.9,
+                 orientation: (tuple, list)=(0, 0, 0, 1),
+                 position: (tuple, list, np.ndarray)=(0, 0, 0),
+                 velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
+                 velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
+                 cshapes: (tuple, list)=None,
+                 axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
+                 axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
+                 version: int=0):
+    if cshapes is None:
+        cshapes = [CollShapeMeta('', 'sphere', (0, 0, 0), (0, 0, 0, 1),
+                                CollShapeSphere(radius=1))]
+    return azrael.types.RigidBodyState(scale, imass, restitution, orientation, position,
+                          velocityLin, velocityRot, cshapes, axesLockLin,
+                          axesLockRot, version)
+
+
 def loadBoosterCubeBlender():
     """
     Load the Booster Sphere model from "boostercube.dae".
@@ -252,7 +271,9 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
         FragMeta('b_left', 'raw', FragRaw(vert_b, z, z)),
         FragMeta('b_right', 'raw',  FragRaw(vert_b, z, z)),
     ]
-    temp = Template(tID, [cs], frags, [b0, b1, b2, b3], [])
+
+    body = getRigidBody()
+    temp = Template(tID, body, frags, [b0, b1, b2, b3], [])
     assert client.addTemplates([temp]).ok
     del cs, frags, temp, z
     print('done')
@@ -260,14 +281,17 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     # Spawn the template near the center.
     print('  Spawning object... ', end='', flush=True)
     pos, orient = [0, 0, -10], [0, 1, 0, 0]
-    d = {'scale': scale,
-         'imass': 0.1,
-         'position': pos,
-         'orientation': orient,
-         'axesLockLin': [1, 1, 1],
-         'axesLockRot': [1, 1, 1],
-         'template': tID}
-    ret = client.spawn([d])
+    new_obj = {
+        'templateID': tID,
+        'rbs': {
+            'scale': scale,
+            'imass': 0.1,
+            'position': pos,
+            'orientation': orient,
+            'axesLockLin': [1, 1, 1],
+            'axesLockRot': [1, 1, 1]}
+    }
+    ret = client.spawn([new_obj])
     objID = ret.data[0]
     print('done (ID=<{}>)'.format(objID))
 
@@ -348,8 +372,9 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     tID_2 = 'Product2'
     frags_1 = [FragMeta('frag_1', 'raw', FragRaw(0.75 * vert, uv, rgb))]
     frags_2 = [FragMeta('frag_1', 'raw', FragRaw(0.24 * vert, uv, rgb))]
-    t1 = Template(tID_1, [cs], frags_1, [], [])
-    t2 = Template(tID_2, [cs], frags_2, [], [])
+    body = getRigidBody(cshapes=[cs])
+    t1 = Template(tID_1, body, frags_1, [], [])
+    t2 = Template(tID_2, body, frags_2, [], [])
     assert client.addTemplates([t1, t2]).ok
     del frags_1, frags_2, t1, t2
 
@@ -374,7 +399,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # Add the template.
     tID_3 = 'BoosterCube'
     frags = [FragMeta('frag_1', 'raw', FragRaw(vert, uv, rgb))]
-    t3 = Template(tID_3, [cs], frags, [b0, b1], [f0, f1])
+    body = getRigidBody(cshapes=[cs])
+    t3 = Template(tID_3, body, frags, [b0, b1], [f0, f1])
     assert client.addTemplates([t3]).ok
     del frags, t3
 
@@ -403,7 +429,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         tID = ('BoosterCube_{}'.format(ii))
         frags = [FragMeta('frag_1', 'raw', FragRaw(vert, curUV, rgb)),
                  FragMeta('frag_2', 'raw', FragRaw(vert, curUV, rgb))]
-        tmp = Template(tID, [cs], frags, [b0, b1], [])
+        body = getRigidBody(cshapes=[cs])
+        tmp = Template(tID, body, frags, [b0, b1], [])
         templates.append(tmp)
 
         # Add the templateID to a dictionary because we will need it in the
@@ -451,8 +478,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
                 pos += np.array(center)
 
                 # Store the position and template for this cube.
-                allObjs.append({'template': tID_cube[cube_idx],
-                                'position': pos})
+                allObjs.append({'templateID': tID_cube[cube_idx],
+                                'rbs': {'position': pos.tolist()}})
                 cube_idx += 1
                 del pos
     print('{:,} objects ({:.1f}s)'.format(len(allObjs), time.time() - t0))
@@ -462,7 +489,10 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     print('Spawning {} objects: '.format(len(allObjs)), end='', flush=True)
     t0 = time.time()
     ret = client.spawn(allObjs)
-    assert ret.ok
+    if not ret.ok:
+        print('** Error:')
+        print(ret)
+        assert False
     print(' {:.1f}s'.format(time.time() - t0))
 
     # Make 'frag_2' invisible by setting its scale to zero.

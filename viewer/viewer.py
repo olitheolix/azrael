@@ -75,6 +75,25 @@ def parseCommandLine():
     return param
 
 
+def getRigidBody(scale: (int, float)=1,
+                 imass: (int, float)=1,
+                 restitution: (int, float)=0.9,
+                 orientation: (tuple, list)=(0, 0, 0, 1),
+                 position: (tuple, list, np.ndarray)=(0, 0, 0),
+                 velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
+                 velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
+                 cshapes: (tuple, list)=None,
+                 axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
+                 axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
+                 version: int=0):
+    if cshapes is None:
+        cshapes = [CollShapeMeta('', 'sphere', (0, 0, 0), (0, 0, 0, 1),
+                                CollShapeSphere(radius=1))]
+    return azrael.types.RigidBodyState(scale, imass, restitution, orientation, position,
+                          velocityLin, velocityRot, cshapes, axesLockLin,
+                          axesLockRot, version)
+
+
 def perspective(fov, ar, near, far):
     """
     Return the perspective matrix.
@@ -584,7 +603,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Create the template with name 'cube'.
         t_projectile = 'cube'
         frags = [FragMeta('frag_1', 'RAW', FragRaw(buf_vert, uv, rgb))]
-        temp = Template(t_projectile, [cs], frags, [], [])
+        body = getRigidBody(cshapes=[cs])
+        temp = Template(t_projectile, body, frags, [], [])
         ret = self.client.addTemplates([temp])
         del frags, temp
 
@@ -631,7 +651,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.camera = Camera(initPos, 90 * np.pi / 180, 0)
 
         # Spawn the player object (it has the same shape as a projectile).
-        d = {'template': self.t_projectile, 'position': initPos}
+        d = {'templateID': self.t_projectile, 'rbs': {'position': initPos}}
         ret = self.client.spawn([d])
         if not ret.ok:
             print('Cannot spawn player object (<{}>)'.format(ret.data))
@@ -989,11 +1009,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 10 * self.camera.view
 
             # Spawn the object.
-            d = {'template': self.t_projectile,
-                 'position': pos,
-                 'velocityLin': vel,
-                 'scale': 0.25,
-                 'imass': 20}
+            d = {'templateID': self.t_projectile,
+                 'rbs': {
+                    'position': pos.tolist(),
+                    'velocityLin': vel.tolist(),
+                    'scale': 0.25,
+                    'imass': 20}
+                }
             ret = self.client.spawn([d])
             if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
@@ -1003,11 +1025,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 5 * self.camera.view
 
             # Spawn the object.
-            d = {'template': self.t_projectile,
-                 'position': pos,
-                 'velocityLin': vel,
-                 'scale': 0.75,
-                 'imass': 2}
+            d = {'templateID': self.t_projectile,
+                 'rbs': {
+                     'position': pos.tolist(),
+                    'velocityLin': vel.tolist(),
+                    'scale': 0.75,
+                    'imass': 2}
+                }
             ret = self.client.spawn([d])
             if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
