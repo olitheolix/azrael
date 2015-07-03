@@ -517,27 +517,33 @@ class Clerk(config.AzraelProcess):
         """
         Spawn all ``newObjects`` and return their IDs in a tuple.
 
-        The ``newObjects`` must be a list of (templateID, state) tuples with
-        types `(str, RigidBodyState)`, respectively.
+        The ``newObjects`` variable mut be a list of dictionaries. Each
+        dictionary *must* contain an 'templateID' and *may* contain an 'rbs'
+        key. The 'templateID' specify which template should be used for the new
+        object, and the 'rbs' value, which is a dictionary itself, specifies
+        the values to override in the rigid body structure. For instance, a
+        valid `newObjects` argument would be::
 
-        The new object will we spawned from the templateID and given the
-        initial state described by `state` (eg position and orientation).
-
-        The collision shapes provided by `state` are ignored and the
-        new object will always have the collision shapes specified in the
-        template. However, the collision shapes can be altered at run time via
-        the ``setBodyState`` function.
+        newObjects = [
+            {'templateID': 'foo'},
+            {'templateID': 'foo', 'rbs': {'imass': 5}},
+            {'templateID': 'bar', 'rbs': {'position': (1, 2, 3)},
+        ]
+        
+        This will spawn three objects. The first one is a verbatim copy of
+        `foo`, the second will also be an instance of `foo` but with an `imass`
+        of 5, whereas the third object is an instance of `bar` that is spawned
+        at position (1, 2, 3).
 
         This method will either spawn all objects, or return with an error
         without spawning a single one.
 
-        ..note:: ``newObjects`` cannot be a dictionary because the client
-            may want to spawn the same template ID (which would be
-            the keys) several times with different initial states,
-            for instance to create a chain of spheres. It is
-            possible to store the initial states in a list but then
-            there is still the problem for the client to uniquely
-            map every templateID and initials state to a particular
+        ..note:: Note to myself: ``newObjects`` cannot be a dictionary because
+            the client may want to spawn the same template ID (which would be
+            the keys) several times with different initial states, for instance
+            to create a chain of spheres. It is possible to store the initial
+            states in a list but then there is still the problem for the client
+            to uniquely map every templateID and initials state to a particular
             object ID.
 
         :param list[dict] newObjects: template IDs (key) and body parameters to
