@@ -1145,7 +1145,7 @@ class Clerk(config.AzraelProcess):
         else:
             return RetVal(False, 'Could not update all fragments', None)
 
-    def _packBodyState(self, bodyStates: dict):
+    def _packBodyState(self, objIDs: list):
         """
         Compile the data structure returned by ``get{All}BodyStates``.
 
@@ -1175,53 +1175,28 @@ class Clerk(config.AzraelProcess):
             corresponding value a ``RigidBodyState`` instance.
         """
         # Convenience: extract all objIDs from ``bodyStates``.
-        objIDs = tuple(bodyStates.keys())
+        if objIDs is None:
+            query = {}
+        else:
+            query = {'objID': {'$in': objIDs}}
 
         # Query the version values for all objects.
         db = database.dbHandles['ObjInstances']
-        cursor = db.find(
-            {'objID': {'$in': objIDs}},
-            {'version': 1, 'objID': 1, 'fragState': 1})
-        docs = list(cursor)
+        cursor = db.find(query,
+                         {'version': True,
+                          'objID': True,
+                          'fragState': True,
+                          'template.rbs': True})
+        docs = {_['objID']: _ for _ in cursor}
 
-        # Convert the list of [{objID1: foo}, {objID2: bar}, ...] into two
-        # dictionaries like {objID1: foo, objID2: bar, ...}. This is purely for
-        # readability and convenience a few lines below.
-        version = {_['objID']: _['version'] for _ in docs}
-        fragStates = {_['objID']: _['fragState'].values() for _ in docs}
-
-        # Wrap the fragment states into their dedicated tuple type.
-        fragStates = {k: [FragState(**_) for _ in v]
-                      for (k, v) in fragStates.items()}
-
-        # Add body state and fragment data for all objects. If the objects do
-        # not exist then set the data to *None*. During that process also
-        # update the 'version' (this flag indicates geometry changes to the
-        # client).
-        #
-        # fixme_getstate: the loop below should always return a dict of
-        #                 dictionaries instead of skipping the object
-        #                 altoghether in either of the two IF statements.
-        #                 See other fixme_getstate tags.
         out = {}
-        for objID in objIDs:
-            # Skip to the next object if no body state is available for it.
-            # This usually means the user asked leoAPi for a body that it does
-            # not know about.
-            if bodyStates[objID] is None:
-                out[objID] = None
-                continue
+        RBS = types._RigidBodyState
+        for objID, doc in docs.items():
+            fs = [FragState(**_) for _ in doc['fragState'].values()]
+            rbs = RBS(**doc['template']['rbs'])
+            rbs = rbs._replace(version=doc['version'])
 
-            # Skip to the next object if it does not have any geometry states
-            # (eg it consists only of a collision shape).
-            if objID not in fragStates:
-                out[objID] = None
-                continue
-
-            out[objID] = {
-                'frag': fragStates[objID],
-                'rbs': bodyStates[objID]._replace(version=version[objID])
-            }
+            out[objID] = {'frag': fs, 'rbs': rbs}
         return RetVal(True, None, out)
 
     @typecheck
@@ -1237,16 +1212,14 @@ class Clerk(config.AzraelProcess):
         :return: see :ref:``_packBodyState``.
         :rtype: dict
         """
-        db = database.dbHandles['ObjInstances']
-        RBS = types._RigidBodyState
-        with util.Timeit('leoAPI.getSV') as timeit:
+        with util.Timeit('clerk.getBodyStates') as timeit:
             out = {_: None for _ in objIDs}
-            cursor = db.find({'objID': {'$in': objIDs}},
-                             {'objID': True, 'template.rbs': True})
-            for doc in cursor:
-                out[doc['objID']] = RBS(**doc['template']['rbs'])
-            return self._packBodyState(out)
-        return self._packBodyState(ret.data)
+            ret = self._packBodyState(objIDs)
+            if ret.ok:
+                out.update(ret.data)
+                return RetVal(True, None, out)
+            else:
+                return ret
 
     @typecheck
     def getAllBodyStates(self, dummy=None):
@@ -1263,13 +1236,12 @@ class Clerk(config.AzraelProcess):
         :return: see :ref:``_packBodyState``.
         :rtype: dict
         """
-        db = database.dbHandles['ObjInstances']
-        RBS = types._RigidBodyState
-        with util.Timeit('leoAPI.getSV') as timeit:
-            cur = db.find({}, {'objID': True, 'template.rbs': True})
-            out = {doc['objID']: RBS(**doc['template']['rbs']) for doc in cur}
-            return self._packBodyState(out)
-        return self._packBodyState(ret.data)
+        with util.Timeit('clerk.getAllBodyStates') as timeit:
+            ret = self._packBodyState(None)
+            if ret.ok:
+                return RetVal(True, None, ret.data)
+            else:
+                return ret
 
     @typecheck
     def setBodyState(self, objID: int, state: dict):
