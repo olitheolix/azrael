@@ -83,7 +83,7 @@ class TestClerk:
         Query the default templates in Azrael.
         """
         # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        clerk = self.clerk
 
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
@@ -129,7 +129,7 @@ class TestClerk:
         """
         Add a new object to the templateID DB and query it again.
         """
-        # Instantiate a Clerk.
+        # Convenience.
         clerk = azrael.clerk.Clerk()
 
         # Install a mock for Dibbler with an 'addTemplate' function that
@@ -213,7 +213,7 @@ class TestClerk:
         Add templates in bulk and verify that the models are availabe via the
         correct URL.
         """
-        # Instantiate a Clerk.
+        # Convenience.
         clerk = azrael.clerk.Clerk()
 
         # Install a mock for Dibbler with an 'addTemplate' function that
@@ -274,7 +274,7 @@ class TestClerk:
         """
         Test the 'spawn' command in the Clerk.
         """
-        # Instantiate a Clerk.
+        # Convenience.
         clerk = self.clerk
 
         # Default object.
@@ -338,8 +338,8 @@ class TestClerk:
         tID_0 = '_templateEmpty'
         tID_1 = '_templateBox'
 
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # Spawn two objects. Their IDs must be id_0 and id_1, respectively.
         ret = clerk.spawn([{'templateID': tID_0}, {'templateID': tID_1}])
@@ -361,7 +361,7 @@ class TestClerk:
         Try to spawn a template that Clerk finds in its template database but
         that is not in Dibbler.
         """
-        # Instantiate a Clerk.
+        # Convenience.
         clerk = azrael.clerk.Clerk()
 
         # Mock the Dibbler instance.
@@ -374,8 +374,7 @@ class TestClerk:
         # because Dibbler cannot find the model data Clerk will skip it. The
         # net effect is that the spawn command must succeed but not spawn any
         # objects.
-        init = {'templateID': '_templateEmpty',
-                'rbs': {'imass': 1}}
+        init = {'templateID': '_templateEmpty', 'rbs': {'imass': 1}}
         ret = clerk.spawn([init])
         assert ret == (True, None, tuple())
 
@@ -389,8 +388,8 @@ class TestClerk:
         # Test constants and parameters.
         objID_1, objID_2 = 1, 2
 
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # No objects must exist at this point.
         ret = clerk.getAllObjectIDs()
@@ -432,8 +431,8 @@ class TestClerk:
         body_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
         body_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
 
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # Retrieve the SV for a non-existing ID.
         ret = clerk.getBodyStates([10])
@@ -493,8 +492,8 @@ class TestClerk:
         body_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
         templateID = '_templateSphere'
 
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # Retrieve all SVs --> there must be none.
         ret = clerk.getAllBodyStates()
@@ -546,8 +545,8 @@ class TestClerk:
         force = np.array([1, 2, 3], np.float64).tolist()
         relpos = np.array([4, 5, 6], np.float64).tolist()
 
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # Spawn a new object. It must have ID=1.
         templateID = '_templateSphere'
@@ -570,8 +569,8 @@ class TestClerk:
         objID_1, objID_2 = 1, 2
         templateID_1 = '_templateSphere'
 
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # Create a fake object. We will not need the actual object but other
         # commands used here depend on one to exist.
@@ -636,8 +635,8 @@ class TestClerk:
         # Parameters and constants for this test.
         objID_1 = 1
 
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # ---------------------------------------------------------------------
         # Define an object with a booster and spawn it.
@@ -703,8 +702,8 @@ class TestClerk:
 
         The parent object does not move in the world coordinate system.
         """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # ---------------------------------------------------------------------
         # Create a template with two factories and spawn it.
@@ -770,7 +769,7 @@ class TestClerk:
 
         In this test the parent object moves at a non-zero velocity.
         """
-        clerk = azrael.clerk.Clerk()
+        clerk = self.clerk
 
         # Parameters and constants for this test.
         objID_1, objID_2, objID_3 = 1, 2, 3
@@ -802,10 +801,7 @@ class TestClerk:
                            factories=[f0, f1])
         init = {
             'templateID': temp.aid,
-            'rbs': {
-                'position': body.position,
-                'velocityLin': body.velocityLin
-            }
+            'rbs': {'position': body.position, 'velocityLin': body.velocityLin}
         }
 
         assert clerk.addTemplates([temp]).ok
@@ -885,8 +881,8 @@ class TestClerk:
         body = getRigidBody(position=pos_parent,
                             velocityLin=vel_parent,
                             orientation=orient_parent)
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # ---------------------------------------------------------------------
         # Define and spawn a template with two boosters and two factories.
@@ -977,8 +973,8 @@ class TestClerk:
         objID_1, objID_2 = 1, 2
         templateID = '_templateSphere'
 
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # So far no objects have been spawned.
         ret = clerk.getAllObjectIDs()
@@ -1004,8 +1000,8 @@ class TestClerk:
         """
         Spawn two objects and query their fragment geometries.
         """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # Raw object: specify vertices, UV, and texture (RGB) values directly.
         body_1 = getRigidBody(position=[1, 2, 3])
@@ -1079,8 +1075,8 @@ class TestClerk:
         Spawn two objects, modify their geometries, and verify that the
         'version' flag changes accordingly.
         """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # Add a valid template and verify it now exists in Azrael.
         temp = getTemplate('foo', fragments=[getFragRaw('bar')])
@@ -1116,8 +1112,8 @@ class TestClerk:
         Query and update the booster values in the instance data base.
         The query includes computing the correct force in object coordinates.
         """
-        # Instantiate a Clerk.
-        clerk = azrael.clerk.Clerk()
+        # Convenience.
+        clerk = self.clerk
 
         # ---------------------------------------------------------------------
         # Create a template with two boosters and spawn it. The Boosters are
@@ -1193,7 +1189,7 @@ class TestClerk:
         Create a new template with one fragment and create two instances. Then
         query and update the fragment states.
         """
-        clerk = azrael.clerk.Clerk()
+        clerk = self.clerk
 
         # Attempt to update the fragment state of non-existing objects.
         newStates = {2: [FragState('1', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
@@ -1290,7 +1286,7 @@ class TestClerk:
         fragments, spawn it, query it, very its geometry, alter its
         geometry, and verify again.
         """
-        clerk = azrael.clerk.Clerk()
+        clerk = self.clerk
         clacks = azrael.clacks.ClacksServer()
         clacks.start()
 
@@ -1444,7 +1440,7 @@ class TestClerk:
         This test only verifies that the Igor interface works. It does *not*
         verify that the objects are really linked in the actual simulation.
         """
-        clerk = azrael.clerk.Clerk()
+        clerk = self.clerk
 
         # Reset the constraint database.
         assert clerk.igor.reset().ok
@@ -1516,7 +1512,7 @@ class TestClerk:
         """
         # Reset the SV database and instantiate a Leonard and a Clerk.
         leo = getLeonard(azrael.leonard.LeonardBullet)
-        clerk = azrael.clerk.Clerk()
+        clerk = self.clerk
 
         # Reset the constraint database.
         assert clerk.igor.reset().ok
@@ -1579,7 +1575,7 @@ class TestClerk:
         """
         Remove a fragment.
         """
-        clerk = azrael.clerk.Clerk()
+        clerk = self.clerk
 
         # The original template has the following three fragments:
         frags_orig = [
@@ -1617,7 +1613,7 @@ class TestClerk:
         """
         Spawn an object and specify its state variables directly.
         """
-        clerk = azrael.clerk.Clerk()
+        clerk = self.clerk
 
         # Constants and parameters for this test.
         templateID = '_templateSphere'
@@ -1675,7 +1671,7 @@ class TestClerk:
     #     """
     #     # Reset the SV database and instantiate a Leonard and a Clerk.
     #     leo = getLeonard(azrael.leonard.LeonardBullet)
-    #     clerk = azrael.clerk.Clerk()
+    #     clerk = self.clerk
 
     #     # Create templates for all possible "stunted" objects.
     #     t_cs = getTemplate('t_cs', cshapes=[getCSSphere()])
