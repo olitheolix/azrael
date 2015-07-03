@@ -331,8 +331,7 @@ def FromClerk_GetBodyState_Encode(payload: dict):
     out = {}
     for objID, data in payload.items():
         if data is None:
-            # fixme_getstate: this case should not be possible once
-            # Clerk.getBodyState was fixed up.
+            # Clerk could not find this particular object.
             out[objID] = None
             continue
 
@@ -353,8 +352,7 @@ def FromClerk_GetBodyState_Decode(payload: dict):
     out = {}
     for objID, data in payload['data'].items():
         if data is None:
-            # fixme_getstate: this case should not be possible once
-            # Clerk.getBodyState was fixed up.
+            # Clerk could not find this particular object.
             out[int(objID)] = None
             continue
 
