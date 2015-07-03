@@ -220,6 +220,9 @@ class Dibbler:
                              exist.
         :return: success.
         """
+        # The 'update' flag is merely a sanity check to verify an object even
+        # exists. This is prone to a race condition but good enough for now,
+        # especially because the race condition is harmless.
         if update:
             query = {'filename': {'$regex': '^' + location + '/meta.json'}}
             ret = self.fs.find_one(query)
