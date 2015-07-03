@@ -136,7 +136,7 @@ class TestDibbler:
         assert self.isJsonCompatible(body_a, FragState)
 
     def test_Template(self):
-        # Define a boosters.
+        # Define boosters and factories.
         b0 = Booster(partID='0', pos=(0, 1, 2), direction=(1, 0, 0),
                      minval=0, maxval=1, force=0)
         b1 = Booster(partID='1', pos=(3, 4, 5), direction=(0, 1, 0),
@@ -150,7 +150,6 @@ class TestDibbler:
 
         # Define a new template with two boosters and add it to Azrael.
         temp_t = getTemplate('t1',
-                             cshapes=[getCSSphere(), getCSEmpty()],
                              rbs=rbs,
                              fragments=[getFragRaw(), getFragDae()],
                              boosters=[b0, b1],
@@ -162,12 +161,10 @@ class TestDibbler:
         # Verify that Templae._asdict() method calls the _asdict() methods for
         # all collision shapes, fragments, boosters, and factories.
         temp_d = temp_t._asdict()
-        cshapes_d = [_._asdict() for _ in temp_t.cshapes]
         fragments_d = [_._asdict() for _ in temp_t.fragments]
         boosters_d = [_._asdict() for _ in temp_t.boosters]
         factories_d = [_._asdict() for _ in temp_t.factories]
         rbs_d = rbs._asdict()
-        assert temp_d['cshapes'] == cshapes_d
         assert temp_d['fragments'] == fragments_d
         assert temp_d['boosters'] == boosters_d
         assert temp_d['factories'] == factories_d
