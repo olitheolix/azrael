@@ -364,14 +364,14 @@ class Clerk(config.AzraelProcess):
         """
         Add all ``templates`` to Azrael so that they can be spawned.
 
-        This method will abort immediately if it encounters an invalid. In that
-        case no template will be added.
-
         The elements in ``templates`` must be ``Template`` instances.
 
-        This function will also return with an error if a template with the
-        same  name already exists. However, it will still add all the other
-        templates that have unique names.
+        This method will abort immediately when it encounters an invalid
+        Template. If that happens then no templates will be added at all.
+
+        It will also return with an error if a template with the same  name
+        already exists. However, it will still add all the other templates that
+        have unique names.
 
         :param list[Template]: the templates to add.
         :return: success
@@ -392,8 +392,8 @@ class Clerk(config.AzraelProcess):
             db = database.dbHandles['Templates']
             bulk = db.initialize_unordered_bulk_op()
 
-            # Add each template to the bulk. Dibbler handles the (possibly)
-            # large geometry data, whereas the template database itself
+            # Add each template to the bulk. Dibbler handles the (possibly
+            # large) geometry data, whereas the template database itself
             # contains only meta information (eg the type of geometry, but not
             # geometry itself).
             for template in templates:
