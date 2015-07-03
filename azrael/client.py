@@ -543,7 +543,7 @@ class Client():
         will only be applied once.
 
         :param int objID: the object to move.
-        :param RigidBodyStateOverride new: the object attributes to set.
+        :param dict new: the object attributes to set.
         :return: Success
         """
         if 'cshapes' in new:
