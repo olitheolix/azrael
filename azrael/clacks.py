@@ -16,8 +16,8 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Clacks relays Websocket connections to Clerk, and serves up the files from
-Dibbler.
+Clacks serves up the files from Dibbler but can also relay Websocket
+connections to Clerk.
 
 Clacks facilitate browser access to Clerk. This is necessary since Websocket
 are supported in all (relevant) browsers, yet ZeroMQ access is still

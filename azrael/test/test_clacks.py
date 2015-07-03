@@ -142,21 +142,24 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_t2 = [getFragRaw('foo4'),
                     getFragRaw('foo5'),
                     getFragDae('bar6')]
-        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags_t1)
-        t2 = getTemplate('t2', cshapes=[getCSBox()], fragments=frags_t2)
+        body_a = getRigidBody(cshapes=[getCSSphere()])
+        body_b = getRigidBody(cshapes=[getCSBox()])
+        t1 = getTemplate('t1', rbs=body_a, fragments=frags_t1)
+        t2 = getTemplate('t2', rbs=body_b, fragments=frags_t2)
         del frags_t1, frags_t2
-
+        
         # Add the first template.
         assert clerk.addTemplates([t1]).ok
 
         # Attempt to add the template a second time. This must fail.
         assert not clerk.addTemplates([t1]).ok
 
-        # Verify the first template.
+        # Verify the first template is available for download via Clacks.
         url_template = config.url_templates
         self.verifyTemplate('{}/t1'.format(url_template), t1.fragments)
 
-        # Add the second template and verify both.
+        # Add the second template and verify both are available for download
+        # via Clacks.
         assert clerk.addTemplates([t2]).ok
         self.verifyTemplate('{}/t1'.format(url_template), t1.fragments)
         self.verifyTemplate('{}/t2'.format(url_template), t2.fragments)
@@ -169,21 +172,22 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         azrael.database.init()
         clerk = azrael.clerk.Clerk()
 
-        # Create two Templates. The first has only one Raw- and two
-        # Collada geometries, the other has it the other way around.
+        # # Create two Templates. The first has only one Raw- and two
+        # # Collada geometries, the other has it the other way around.
         frags_t1 = [getFragRaw('raw1'),
                     getFragDae('dae2'),
                     getFragDae('dae3')]
         frags_t2 = [getFragRaw('raw4'),
                     getFragRaw('raw5'),
                     getFragDae('dae6')]
-        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags_t1)
-        t2 = getTemplate('t2', cshapes=[getCSBox()], fragments=frags_t2)
+        body_t1 = getRigidBody(cshapes=[getCSSphere()])
+        body_t2 = getRigidBody(cshapes=[getCSBox()])
+        t1 = getTemplate('t1', rbs=body_t1, fragments=frags_t1)
+        t2 = getTemplate('t2', rbs=body_t2, fragments=frags_t2)
         del frags_t1, frags_t2
 
         # Add both templates and verify they are available.
-        assert clerk.addTemplates([t1]).ok
-        assert clerk.addTemplates([t2]).ok
+        assert clerk.addTemplates([t1, t2]).ok
         self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
         self.verifyTemplate('{}/t2'.format(config.url_templates), t2.fragments)
 
@@ -192,14 +196,15 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         with pytest.raises(AssertionError):
             self.verifyTemplate('{}/{}'.format(url_inst, 1), t1.fragments)
 
-        # Spawn the first template (it will must get objID=1).
-        sv_1 = getRigidBody(imass=1)
-        ret = clerk.spawn([('t1', sv_1)])
+        # Spawn the first template (it must get objID=1).
+        ret = clerk.spawn([{'templateID': 't1', 'rbs': {'imass': 1}}])
         assert ret.data == (1, )
         self.verifyTemplate('{}/{}'.format(url_inst, 1), t1.fragments)
 
-        # Spawn two more templates and very the instance models.
-        ret = clerk.spawn([('t2', sv_1), ('t1', sv_1)])
+        # Spawn two more templates and very their instance models.
+        new_objs = [{'templateID': 't2', 'rbs': {'imass': 1}},
+                    {'templateID': 't1', 'rbs': {'imass': 1}}]
+        ret = clerk.spawn(new_objs)
         assert ret.data == (2, 3)
         self.verifyTemplate('{}/{}'.format(url_inst, 2), t2.fragments)
         self.verifyTemplate('{}/{}'.format(url_inst, 3), t1.fragments)
@@ -220,13 +225,12 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_new = [getFragDae('name1'),
                      getFragDae('name2'),
                      getFragRaw('name3')]
-        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags_old)
+        t1 = getTemplate('t1', fragments=frags_old)
 
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
         self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
-        sv_1 = getRigidBody(imass=1)
-        ret = clerk.spawn([('t1', sv_1)])
+        ret = clerk.spawn([{'templateID': 't1', 'rbs': {'imass': 1}}])
         assert ret.data == (1, )
 
         # Verify that the instance has the old fragments, not the new ones.
@@ -254,13 +258,12 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Create a Template.
         frags = [getFragRaw('name1')]
-        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags)
+        t1 = getTemplate('t1', fragments=frags)
 
         # Add-, spawn-, and verify the template.
         assert clerk.addTemplates([t1]).ok
         self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
-        sv_1 = getRigidBody(imass=1)
-        ret = clerk.spawn([('t1', sv_1)])
+        ret = clerk.spawn([{'templateID': 't1', 'rbs': {'imass': 1}}])
         assert ret.data == (1, )
 
         # Verify that the instance exists.
