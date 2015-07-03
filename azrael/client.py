@@ -332,6 +332,9 @@ class Client():
         :return: object IDs
         :rtype: tuple(int)
         """
+        # Send to Clerk.
+        return self.serialiseAndSend('spawn', new_objects)
+
         # Reference dictionary with default values.
         template = {
             'scale': 1,

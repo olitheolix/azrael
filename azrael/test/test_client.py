@@ -94,10 +94,19 @@ class TestClient:
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
         clerk = azrael.clerk.Clerk()
-        frag = getFragRaw('NoName')
-        t1 = getTemplate('_templateEmpty', cshapes=[getCSEmpty()], fragments=[frag])
-        t2 = getTemplate('_templateSphere', cshapes=[getCSSphere()], fragments=[frag])
-        t3 = getTemplate('_templateBox', cshapes=[getCSBox()], fragments=[frag])
+        # frag = getFragRaw('NoName')
+        # t1 = getTemplate('_templateEmpty', cshapes=[getCSEmpty()], fragments=[frag])
+        # t2 = getTemplate('_templateSphere', cshapes=[getCSSphere()], fragments=[frag])
+        # t3 = getTemplate('_templateBox', cshapes=[getCSBox()], fragments=[frag])
+        # ret = clerk.addTemplates([t1, t2, t3])
+
+        frag = [getFragRaw('NoName')]
+        rbs_empty = getRigidBody(cshapes=[getCSEmpty()])
+        rbs_sphere = getRigidBody(cshapes=[getCSSphere()])
+        rbs_box = getRigidBody(cshapes=[getCSBox()])
+        t1 = getTemplate('_templateEmpty', rbs=rbs_empty, fragments=frag)
+        t2 = getTemplate('_templateSphere', rbs=rbs_sphere, fragments=frag)
+        t3 = getTemplate('_templateBox', rbs=rbs_box, fragments=frag)
         ret = clerk.addTemplates([t1, t2, t3])
         assert ret.ok
 
@@ -127,10 +136,12 @@ class TestClient:
         templateID_1 = '_templateBox'
 
         # Spawn a new object. Its ID must be 1.
-        new_objs = [{'template': templateID_0, 'position': np.zeros(3)},
-                    {'template': templateID_1, 'position': np.zeros(3)}]
+        new_objs = [
+            {'templateID': templateID_0, 'rbs': {'position': [0, 0, 0]}},
+            {'templateID': templateID_1, 'rbs': {'position': [0, 0, 0]}},
+        ]
         ret = client.spawn(new_objs)
-        assert ret.ok and ret.data == (objID_1, objID_2)
+        assert ret.ok and ret.data == [objID_1, objID_2]
 
         # Retrieve template of first object.
         ret = client.getTemplateID(objID_1)
@@ -158,32 +169,33 @@ class TestClient:
         name_1 = '_templateEmpty'
         ret = client.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1)
-        assert ret.data[name_1]['template'].cshapes == [getCSEmpty()]
+        assert ret.data[name_1]['template'].rbs.cshapes == [getCSEmpty()]
 
         # ... this one is a sphere...
         name_2 = '_templateSphere'
         ret = client.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1)
-        assert ret.data[name_2]['template'].cshapes == [getCSSphere()]
+        assert ret.data[name_2]['template'].rbs.cshapes == [getCSSphere()]
 
         # ... and this one is a box.
         name_3 = '_templateBox'
         ret = client.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1)
-        assert ret.data[name_3]['template'].cshapes == [getCSBox()]
+        assert ret.data[name_3]['template'].rbs.cshapes == [getCSBox()]
 
         # Retrieve all three again but with a single call.
         ret = client.getTemplates([name_1, name_2, name_3])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3))
-        assert ret.data[name_2]['template'].cshapes == [getCSSphere()]
-        assert ret.data[name_3]['template'].cshapes == [getCSBox()]
-        assert ret.data[name_1]['template'].cshapes == [getCSEmpty()]
+        assert ret.data[name_2]['template'].rbs.cshapes == [getCSSphere()]
+        assert ret.data[name_3]['template'].rbs.cshapes == [getCSBox()]
+        assert ret.data[name_1]['template'].rbs.cshapes == [getCSEmpty()]
 
         # Add a new object template.
         frag = getFragRaw('bar')
+        body = getRigidBody()
         temp_name = 't1'
-        temp_orig = getTemplate(temp_name, cshapes=[getCSSphere()], fragments=[frag])
+        temp_orig = getTemplate(temp_name, rbs=body, fragments=[frag])
         assert client.addTemplates([temp_orig]).ok
 
         # Fetch the just added template again and verify its content (skip the
@@ -194,7 +206,7 @@ class TestClient:
         temp_out = ret.data[temp_name]['template']
         assert temp_out.boosters == temp_orig.boosters
         assert temp_out.factories == temp_orig.factories
-        assert temp_out.cshapes == temp_orig.cshapes
+        assert temp_out.rbs == temp_orig.rbs
 
         # Fetch the geometry from the web server and verify it.
         ret = client.getTemplateGeometry(ret.data[temp_name])
@@ -220,13 +232,16 @@ class TestClient:
         # Define a new template, add it to Azrael, spawn it, and record its
         # object ID.
         frag = getFragRaw('bar')
+        body = getRigidBody(cshapes=[getCSBox()])
         temp = getTemplate('t2',
-                        cshapes=[getCSBox()],
+                        rbs=body,
                         fragments=[frag],
                         boosters=[b0, b1],
                         factories=[f0])
         assert client.addTemplates([temp]).ok
-        ret = client.spawn([{'template': temp.aid, 'position': np.zeros(3)}])
+        init = {'templateID': temp.aid,
+                'rbs': {'position': (0, 0, 0)}}
+        ret = client.spawn([init])
         assert ret.ok and len(ret.data) == 1
         objID = ret.data[0]
 
@@ -240,7 +255,7 @@ class TestClient:
         ret = client.getTemplates([temp.aid])
         assert ret.ok and (len(ret.data) == 1)
         t_data = ret.data[temp.aid]['template']
-        assert t_data.cshapes == [getCSBox()]
+        assert t_data.rbs == body
         assert t_data.boosters == temp.boosters
         assert t_data.factories == temp.factories
 
@@ -264,16 +279,17 @@ class TestClient:
         objID, templateID = 1, '_templateEmpty'
 
         # Spawn a new object from templateID. The new object must have objID=1.
-        new_obj = {'template': templateID,
-                   'position': np.zeros(3)}
-        ret = client.spawn([new_obj])
-        assert ret.ok and ret.data == (objID, )
+        init = {'templateID': templateID,
+                'rbs': {'position': (0, 0, 0)}}
+        ret = client.spawn([init])
+        assert ret.ok and ret.data == [objID]
         leo.processCommandsAndSync()
 
         # Attempt to spawn a non-existing template.
-        new_obj = {'template': 'blah',
-                   'position': np.zeros(3)}
-        assert not client.spawn([new_obj]).ok
+        assert not client.spawn([{'templateID': 'blah'}]).ok
+
+        # Send invalid data to 'spawn'.
+        assert not client.spawn([{'blah': 'blah'}]).ok
 
         # Exactly one object must exist at this point.
         ret = client.getAllObjectIDs()
@@ -302,74 +318,58 @@ class TestClient:
         # Constants and parameters for this test.
         templateID, objID_1 = '_templateEmpty', 1
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
-        # Query the state variable for a non existing object.
+        # Query the state variables for a non existing object.
         objID = 100
         assert client.getAllBodyStates() == (True, None, {})
-
-        ret = client.getBodyStates(objID)
-        assert ret == (True, None, {objID: None})
+        assert client.getBodyStates(objID) == (True, None, {objID: None})
         del objID
 
         # Instruct Clerk to spawn a new object. Its objID must be '1'.
-        new_obj = {'template': templateID,
-                   'position': np.zeros(3),
-                   'velocityLin': -np.ones(3)}
-        ret = client.spawn([new_obj])
-        assert ret.ok and ret.data == (objID_1, )
+        pos, vlin = (0, 1, 2), (-3, 4, -5)
+        body = getRigidBody(position=pos, velocityLin=vlin)
+        init = {
+            'templateID': templateID,
+            'rbs': {'position': body.position,
+                    'velocityLin': body.velocityLin},
+        }
+        ret = client.spawn([init])
+        assert ret.ok and ret.data == [objID_1]
 
-        # The new object has not yet been picked up by Leonard --> its state
-        # vector must thus be None.
+        # The new object has not yet been picked up by Leonard and its current
+        # state must therefore match the inital state (plus the tweaks provided
+        # to the spawn command).
         ret = client.getBodyStates(objID_1)
-        assert ret.ok and (len(ret.data) == 1)
-        assert ret.data == {objID_1: None}
+        assert ret.ok and (set(ret.data.keys()) == {1})
+        assert ret.data[objID_1]['rbs'].position == pos
+        assert ret.data[objID_1]['rbs'].velocityLin == vlin
 
-        # getAllBodyStates must return an empty dictionary.
-        ret = client.getAllBodyStates()
-        assert ret.ok and (ret.data == {})
-
-        # Run one Leonard step. This will pick up the newly spawned object and
-        # state queries must now return valid data for it.
-        leo.processCommandsAndSync()
-        ret = client.getBodyStates(objID_1)
-        assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
-        assert ret.data[objID_1] is not None
-
-        ret = client.getAllBodyStates()
-        assert ret.ok and (len(ret.data) == 1) and (objID_1 in ret.data)
-        assert ret.data[objID_1] is not None
+        # Same test but for 'getAllBodyStates'.
+        assert client.getAllBodyStates() == ret
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_setBodyState(self, client_type):
+    def xtest_setBodyState(self, client_type):
         """
         Spawn an object and specify its state variables directly.
         """
         # Get the client for this test.
         client = self.clients[client_type]
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Constants and parameters for this test.
         templateID = '_templateEmpty'
         objID = 1
 
         # Spawn one of the default templates.
-        new_obj = {'template': templateID,
-                   'position': [0, 0, 0],
-                   'velocityLin': -np.ones(3)}
-        ret = client.spawn([new_obj])
-        assert ret.ok and (ret.data == (objID, ))
+        init = {'templateID': templateID,
+                'rbs': {'position': (0, 0, 0), 'velocityLin': (-1, -2, -3)}}
+        ret = client.spawn([init])
+        assert ret.ok and (ret.data == [objID])
 
         # Verify that the Body State is correct.
-        leo.processCommandsAndSync()
         ok, _, ret_sv = client.getBodyStates(objID)
         ret_sv = ret_sv[objID]['rbs']
         assert isinstance(ret_sv, types._RigidBodyState)
-        assert np.array_equal(ret_sv.position, new_obj['position'])
-        assert np.array_equal(ret_sv.velocityLin, new_obj['velocityLin'])
+        assert ret_sv.position == init['rbs']['position']
+        assert ret_sv.velocityLin == init['rbs']['velocityLin']
 
         # Create and apply a new State Vector.
         new_sv = types.RigidBodyStateOverride(
@@ -377,7 +377,6 @@ class TestClient:
         assert client.setBodyState(objID, new_sv).ok
 
         # Verify that the new attributes came into effect.
-        leo.processCommandsAndSync()
         ok, _, ret_sv = client.getBodyStates(objID)
         ret_sv = ret_sv[objID]['rbs']
         assert isinstance(ret_sv, types._RigidBodyState)
