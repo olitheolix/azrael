@@ -1024,6 +1024,9 @@ class RigidBodyStateOverride(_RigidBodyState):
         # Create the ``_RigidBodyState`` named tuple.
         return super().__new__(cls, **kwargs_all)
 
+    def _asdict(self):
+        return OrderedDict(zip(self._fields, self))
+
 
 class Template(_Template):
     """
