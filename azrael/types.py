@@ -939,8 +939,10 @@ def RigidBodyState(scale: (int, float),
         velocityRot = toVec(3, velocityRot)
         assert version >= 0
 
-        # Create- and sanity check the collision shapes.
-        cshapes = [CollShapeMeta(*_) for _ in cshapes]
+        # Compile- and sanity check all collision shapes.
+        cshapes = [CollShapeMeta(**_) if isinstance(_, dict)
+                   else CollShapeMeta(*_)
+                   for _ in cshapes]
     except (AssertionError, TypeError) as err:
         return None
 
