@@ -21,13 +21,14 @@ import base64
 import pytest
 import numpy as np
 
+import azrael.test.test
 import azrael.types as types
 import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
-from azrael.test.test import getP2P, get6DofSpring2, getTemplate
+from azrael.test.test import getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
 from azrael.types import FragState, FragDae, FragRaw, FragMeta, Template
 
@@ -95,38 +96,46 @@ class TestClerk:
         assert ok is ok
         assert dec == payload
 
-    def getTemplate(self):
+    def getTestTemplate(self, templateID='templateID'):
         """
-        Return a valid template with non-trivial data.
+        Return a valid template with non-trivial data. The template contains
+        multiple fragments (Raw and Collada), boosters, factories, and a rigid
+        body.
 
         This is a convenience method only.
         """
-        # Collada format: a .dae file plus a list of jpg/png textures.
-        dae_file = b'abc'
-        dae_rgb1 = b'def'
-        dae_rgb2 = b'ghj'
+        # Define a new object with two boosters and one factory unit.
+        # The 'boosters' and 'factories' arguments are a list of named
+        # tuples. Their first argument is the unit ID (Azrael does not
+        # automatically assign any IDs).
+        b0 = types.Booster(partID='0', pos=(0, 1, 2), direction=(0, 0, 1),
+                           minval=0, maxval=0.5, force=0)
+        b1 = types.Booster(partID='1', pos=(6, 7, 8), direction=(0, 1, 0),
+                           minval=1, maxval=1.5, force=0)
+        f0 = types.Factory(
+            partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
+            templateID='_templateBox', exit_speed=(0.1, 0.5))
 
-        # Encode the data as Base64.
-        b64e = base64.b64encode
-        b64_dae_file = b64e(dae_file).decode('utf8')
-        b64_dae_rgb1 = b64e(dae_rgb1).decode('utf8')
-        b64_dae_rgb2 = b64e(dae_rgb2).decode('utf8')
-
-        # Compile the Collada fragment with the Base64 encoded data.
-        f_dae = FragDae(dae=b64_dae_file,
-                        rgb={'rgb1.png': b64_dae_rgb1,
-                             'rgb2.jpg': b64_dae_rgb2})
-
-        # Compile a valid Template structure.
+        # Create some fragments...
         frags = [getFragRaw(), getFragDae(), getFragNone()]
-        return getTemplate('foo', cshapes=[], fragments=frags)
+
+        # ... and a body...
+        body = getRigidBody(position=(1, 2, 3))
+
+        # ... then compile and return the template.
+        return azrael.test.test.getTemplate(
+            templateID,
+            rbs=body,
+            fragments=frags,
+            boosters=[b0, b1],
+            factories=[f0])
 
     def test_GetTemplate(self):
         """
         Test codec for {add,get}Template functions.
         """
         # Get a valid template.
-        template = self.getTemplate()
+        template = self.getTestTemplate()
 
         # Client --> Clerk.
         payload = [template.aid]
@@ -278,46 +287,15 @@ class TestClerk:
 
     def test_addTemplate(self):
         """
-        Test addTemplate codec with Collada data.
+        Test addTemplate codec a complex Template.
         """
-        # Collada format: a .dae file plus a list of png/jpg textures.
-        dae_file = b'abc'
-        dae_rgb1 = b'def'
-        dae_rgb2 = b'ghj'
-
-        # Encode the data as Base64.
-        b64e = base64.b64encode
-        b64_dae_file = b64e(dae_file).decode('utf8')
-        b64_dae_rgb1 = b64e(dae_rgb1).decode('utf8')
-        b64_dae_rgb2 = b64e(dae_rgb2).decode('utf8')
-
-        # Compile the Collada fragment with the Base64 encoded data.
-        f_dae = FragDae(dae=b64_dae_file,
-                        rgb={'rgb1.png': b64_dae_rgb1,
-                             'rgb2.jpg': b64_dae_rgb2})
-
         # Compile a valid Template structure.
-        frags = [getFragRaw(), getFragDae(), getFragNone()]
-        temp = getTemplate('foo', cshapes=[], fragments=frags)
+        payload = [self.getTestTemplate('t1'), self.getTestTemplate('t2')]
 
-        # ----------------------------------------------------------------------
-        # Client --> Clerk.
-        # ----------------------------------------------------------------------
-        # Encode source data.
-        ret = protocol.ToClerk_AddTemplates_Encode([temp])
-        assert ret.ok
-
-        # Convert output to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(ret.data))
-
-        # Decode the data.
-        ok, dec = protocol.ToClerk_AddTemplates_Decode(enc)
-
-        # Extract the data from the first fragment of the first template.
-        dec_mf = dec[0][0].fragments
-
-        # Compare with the Fragment before it was Base64 encoded.
-        assert dec_mf == frags
+        # Client --> Clerk
+        enc = protocol.ToClerk_AddTemplates_Encode
+        dec = protocol.ToClerk_AddTemplates_Decode
+        self.verifyToClerk(enc, dec, payload)
 
     def test_getFragmentGeometries(self):
         """
