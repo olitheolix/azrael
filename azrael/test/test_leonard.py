@@ -1139,7 +1139,7 @@ class TestBroadphase:
             # Create the second body. Its collision shape is a unit cube
             # at position `cs_ofs`.
             body_b = getRigidBody(position=pos, scale=scale, orientation=rot,
-                         cshapes=[getCSBox()])
+                                  cshapes=[getCSBox()])
 
             # Compile the input dictionaries for the broadphase algorithm.
             bodies = {1: rba, 2: body_b}

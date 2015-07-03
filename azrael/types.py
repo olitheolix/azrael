@@ -952,16 +952,16 @@ def RigidBodyState(scale: (int, float),
 
 
 def DefaultRigidBody(scale=1,
-                 imass=1,
-                 restitution=0.9,
-                 orientation=(0, 0, 0, 1),
-                 position=(0, 0, 0),
-                 velocityLin=(0, 0, 0),
-                 velocityRot=(0, 0, 0),
-                 cshapes=None,
-                 axesLockLin=(1, 1, 1),
-                 axesLockRot=(1, 1, 1),
-                 version=0):
+                     imass=1,
+                     restitution=0.9,
+                     orientation=(0, 0, 0, 1),
+                     position=(0, 0, 0),
+                     velocityLin=(0, 0, 0),
+                     velocityRot=(0, 0, 0),
+                     cshapes=None,
+                     axesLockLin=(1, 1, 1),
+                     axesLockRot=(1, 1, 1),
+                     version=0):
 
     # If cshape was explicitly 'None' then we create a default collision shape.
     # Note that cshape=[] means the object has no collision shape, wheres
@@ -977,6 +977,7 @@ def DefaultRigidBody(scale=1,
     return RigidBodyState(scale, imass, restitution, orientation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,
                           axesLockRot, version)
+
 
 class RigidBodyStateOverride(_RigidBodyState):
     """

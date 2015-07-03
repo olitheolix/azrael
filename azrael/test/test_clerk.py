@@ -1700,7 +1700,6 @@ class TestClerk:
             'cshapes': [getCSSphere()._asdict()]}
         assert not clerk.setBodyState(objID, new_bs).ok
 
-
     def test_stunted_objects(self):
         """
         I define a "stunted" object as one that lacks either collision shapes,

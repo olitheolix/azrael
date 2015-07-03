@@ -529,7 +529,7 @@ class Clerk(config.AzraelProcess):
             {'templateID': 'foo', 'rbs': {'imass': 5}},
             {'templateID': 'bar', 'rbs': {'position': (1, 2, 3)},
         ]
-        
+
         This will spawn three objects. The first one is a verbatim copy of
         `foo`, the second will also be an instance of `foo` but with an `imass`
         of 5, whereas the third object is an instance of `bar` that is spawned

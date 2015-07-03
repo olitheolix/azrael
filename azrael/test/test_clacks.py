@@ -147,7 +147,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         t1 = getTemplate('t1', rbs=body_a, fragments=frags_t1)
         t2 = getTemplate('t2', rbs=body_b, fragments=frags_t2)
         del frags_t1, frags_t2
-        
+
         # Add the first template.
         assert clerk.addTemplates([t1]).ok
 

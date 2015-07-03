@@ -234,10 +234,10 @@ class TestClient:
         frag = getFragRaw('bar')
         body = getRigidBody(cshapes=[getCSBox()])
         temp = getTemplate('t2',
-                        rbs=body,
-                        fragments=[frag],
-                        boosters=[b0, b1],
-                        factories=[f0])
+                           rbs=body,
+                           fragments=[frag],
+                           boosters=[b0, b1],
+                           factories=[f0])
         assert client.addTemplates([temp]).ok
         init = {'templateID': temp.aid,
                 'rbs': {'position': (0, 0, 0)}}

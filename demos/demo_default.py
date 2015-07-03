@@ -116,10 +116,11 @@ def getRigidBody(scale: (int, float)=1,
                  version: int=0):
     if cshapes is None:
         cshapes = [CollShapeMeta('', 'sphere', (0, 0, 0), (0, 0, 0, 1),
-                                CollShapeSphere(radius=1))]
-    return azrael.types.RigidBodyState(scale, imass, restitution, orientation, position,
-                          velocityLin, velocityRot, cshapes, axesLockLin,
-                          axesLockRot, version)
+                                 CollShapeSphere(radius=1))]
+    return azrael.types.RigidBodyState(scale, imass, restitution, orientation,
+                                       position, velocityLin, velocityRot,
+                                       cshapes, axesLockLin, axesLockRot,
+                                       version)
 
 
 def loadBoosterCubeBlender():

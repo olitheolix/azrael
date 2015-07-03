@@ -88,10 +88,11 @@ def getRigidBody(scale: (int, float)=1,
                  version: int=0):
     if cshapes is None:
         cshapes = [CollShapeMeta('', 'sphere', (0, 0, 0), (0, 0, 0, 1),
-                                CollShapeSphere(radius=1))]
-    return azrael.types.RigidBodyState(scale, imass, restitution, orientation, position,
-                          velocityLin, velocityRot, cshapes, axesLockLin,
-                          axesLockRot, version)
+                                 CollShapeSphere(radius=1))]
+    return azrael.types.RigidBodyState(scale, imass, restitution, orientation,
+                                       position, velocityLin, velocityRot,
+                                       cshapes, axesLockLin, axesLockRot,
+                                       version)
 
 
 def perspective(fov, ar, near, far):
@@ -1009,13 +1010,15 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 10 * self.camera.view
 
             # Spawn the object.
-            d = {'templateID': self.t_projectile,
-                 'rbs': {
+            d = {
+                'templateID': self.t_projectile,
+                'rbs': {
                     'position': pos.tolist(),
                     'velocityLin': vel.tolist(),
                     'scale': 0.25,
-                    'imass': 20}
+                    'imass': 20
                 }
+            }
             ret = self.client.spawn([d])
             if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))
@@ -1025,13 +1028,15 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             vel = 5 * self.camera.view
 
             # Spawn the object.
-            d = {'templateID': self.t_projectile,
-                 'rbs': {
-                     'position': pos.tolist(),
+            d = {
+                'templateID': self.t_projectile,
+                'rbs': {
+                    'position': pos.tolist(),
                     'velocityLin': vel.tolist(),
                     'scale': 0.75,
-                    'imass': 2}
+                    'imass': 2
                 }
+            }
             ret = self.client.spawn([d])
             if not ret.ok:
                 print('Could not spawn <{}>'.format(self.t_projectile))

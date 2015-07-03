@@ -166,6 +166,7 @@ def getRigidBody(scale: (int, float)=1,
                           velocityLin, velocityRot, cshapes, axesLockLin,
                           axesLockRot, version)
 
+
 def getTemplate(name='template',
                 rbs=None,
                 fragments=[],
