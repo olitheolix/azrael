@@ -340,45 +340,6 @@ class TestClient:
         assert client.getAllBodyStates() == ret
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def xtest_setBodyState(self, client_type):
-        """
-        Spawn an object and specify its state variables directly.
-        """
-        # Get the client for this test.
-        client = self.clients[client_type]
-
-        # Constants and parameters for this test.
-        templateID = '_templateEmpty'
-        objID = 1
-
-        # Spawn one of the default templates.
-        init = {'templateID': templateID,
-                'rbs': {'position': (0, 0, 0), 'velocityLin': (-1, -2, -3)}}
-        ret = client.spawn([init])
-        assert ret.ok and (ret.data == [objID])
-
-        # Verify that the Body State is correct.
-        ok, _, ret_sv = client.getBodyStates(objID)
-        ret_sv = ret_sv[objID]['rbs']
-        assert isinstance(ret_sv, types._RigidBodyState)
-        assert ret_sv.position == init['rbs']['position']
-        assert ret_sv.velocityLin == init['rbs']['velocityLin']
-
-        # Create and apply a new State Vector.
-        new_sv = types.RigidBodyStateOverride(
-            position=[1, -1, 1], imass=2, scale=3, cshapes=[getCSSphere()])
-        assert client.setBodyState(objID, new_sv).ok
-
-        # Verify that the new attributes came into effect.
-        ok, _, ret_sv = client.getBodyStates(objID)
-        ret_sv = ret_sv[objID]['rbs']
-        assert isinstance(ret_sv, types._RigidBodyState)
-        assert ret_sv.imass == new_sv.imass
-        assert ret_sv.scale == new_sv.scale
-        assert np.array_equal(ret_sv.position, new_sv.position)
-        assert ret_sv.cshapes == [getCSSphere()]
-
-    @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_getAllObjectIDs(self, client_type):
         """
         Ensure the getAllObjectIDs command reaches Clerk.

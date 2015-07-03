@@ -1736,6 +1736,44 @@ class TestClerk:
         ret = clerk.getBodyStates([objID])
         assert ret.ok and len(ret.data[objID]['frag']) == 2
 
+    def test_setBodyState(self):
+        """
+        Spawn an object and specify its state variables directly.
+        """
+        clerk = azrael.clerk.Clerk()
+
+        # Constants and parameters for this test.
+        templateID = '_templateEmpty'
+        objID = 1
+
+        # Spawn one of the default templates.
+        init = {'templateID': templateID,
+                'rbs': {'position': [0, 0, 0], 'velocityLin': [-1, -2, -3]}}
+        ret = clerk.spawn([init])
+        assert ret.ok and (ret.data == (objID, ))
+
+        # Verify that the initial body states are correct.
+        ok, _, ret_sv = clerk.getBodyStates([objID])
+        ret_sv = ret_sv[objID]['rbs']
+        assert isinstance(ret_sv, types._RigidBodyState)
+        assert ret_sv.position == init['rbs']['position']
+        assert ret_sv.velocityLin == init['rbs']['velocityLin']
+
+        # Create and apply a new State Vector.
+        new_sv = types.RigidBodyStateOverride(
+            position=[1, -1, 1], imass=2, scale=3, cshapes=[getCSSphere()])
+        assert clerk.setBodyState(objID, new_sv).ok
+
+        # Verify that the new attributes came into effect.
+        ok, _, ret_sv = clerk.getBodyStates([objID])
+        ret_sv = ret_sv[objID]['rbs']
+        assert isinstance(ret_sv, types._RigidBodyState)
+        assert ret_sv.imass == new_sv.imass
+        assert ret_sv.scale == new_sv.scale
+        assert ret_sv.position, new_sv.position
+        assert CollShapeMeta(**ret_sv.cshapes[0]) == getCSSphere()
+
+
     # def test_stunted_objects(self):
     #     """
     #     I define a "stunted" object is one that lacks either collision shapes,
