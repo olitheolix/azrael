@@ -413,14 +413,15 @@ class Clerk(config.AzraelProcess):
                 if not ret.ok:
                     return ret
 
+                # Dibbler must have returned the URL where the fragments are
+                # available.
+                url_frag = ret.data['url_frag']
+
                 # Only retain the meta data for the geometries to save space
                 # and avoid data duplication (Dibbler handles the actual
                 # geometry data).
                 frags = [_._replace(fragdata=None) for _ in frags]
                 template = template._replace(fragments=frags)
-
-                # Compile the URL where the geometry is stored.
-                url_frag = config.url_templates + '/' + template.aid
 
                 # Compile the template data that will go into the database. The
                 # template will be stored as an explicit dictionary.

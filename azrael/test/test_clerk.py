@@ -156,13 +156,15 @@ class TestClerk:
         temp = getTemplate('bar', rbs=body, fragments=frags)
 
         # Add template when 'saveModel' fails.
-        mock_dibbler.addTemplate.return_value = RetVal(False, 't_error', None)
+        mock_ret = RetVal(False, 't_error', {'url_frag': 'http://'})
+        mock_dibbler.addTemplate.return_value = mock_ret
         ret = clerk.addTemplates([temp])
         assert (ret.ok, ret.msg) == (False, 't_error')
         assert mock_dibbler.addTemplate.call_count == 1
 
         # Add template when 'saveModel' succeeds.
-        mock_dibbler.addTemplate.return_value = RetVal(True, None, None)
+        mock_ret = RetVal(True, None, {'url_frag': 'http://'})
+        mock_dibbler.addTemplate.return_value = mock_ret
         assert clerk.addTemplates([temp]).ok
         assert mock_dibbler.addTemplate.call_count == 2
 
@@ -208,10 +210,10 @@ class TestClerk:
         ret = clerk.getTemplates([temp.aid, temp.aid, temp.aid])
         assert ret.ok and (len(ret.data) == 1) and (temp.aid in ret.data)
 
-    def test_add_get_template_multi_url(self):
+    def test_add_get_template_multi_url_mock(self):
         """
-        Add templates in bulk and verify that the models are availabe via the
-        correct URL.
+        Add- and fetch templates in bulk. This test mocks the Dibbler instance
+        in Clerk to verify it is called correctly.
         """
         # Convenience.
         clerk = azrael.clerk.Clerk()
@@ -219,16 +221,14 @@ class TestClerk:
         # Install a mock for Dibbler with an 'addTemplate' function that
         # always succeeds.
         mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
+        mock_ret = RetVal(True, None, {'url_frag': 'http://'})
+        mock_dibbler.addTemplate.return_value = mock_ret
         clerk.dibbler = mock_dibbler
-        mock_dibbler.addTemplate.return_value = RetVal(True, None, None)
 
         # The mock must not have been called so far.
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Convenience.
-        base_url = 'http://{}:{}'.format(
-            azrael.config.addr_clacks,
-            azrael.config.port_clacks)
         name_1, name_2 = 't1', 't2'
 
         # Define two valid templates.
@@ -244,6 +244,43 @@ class TestClerk:
         # Attempt to upload the same templates again. This must fail.
         assert not clerk.addTemplates([t1, t2]).ok
         assert mock_dibbler.addTemplate.call_count == 4
+
+        # Fetch the first template.
+        ret = clerk.getTemplates([name_1])
+        assert ret.ok
+        frag = ret.data[name_1]['template'].fragments[0]
+
+        # Fetch the second template.
+        ret = clerk.getTemplates([name_2])
+        assert ret.ok
+
+        # Fetch both templates at once.
+        ret = clerk.getTemplates([name_1, name_2])
+        assert ret.ok and (len(ret.data) == 2)
+
+    def test_add_get_template_multi_url(self):
+        """
+        Same as previous tests, but this time Dibbler is not mocked. This will
+        make the templates available via an URL and this test verifies that
+        they are correct.
+        """
+        # Convenience.
+        clerk = self.clerk
+
+        # Convenience.
+        name_1, name_2 = 't1', 't2'
+
+        # Define two valid templates.
+        frag_1 = getFragRaw('foo')
+        frag_2 = getFragRaw('bar')
+        t1 = getTemplate(name_1, fragments=[frag_1])
+        t2 = getTemplate(name_2, fragments=[frag_2])
+
+        # Uploading the templates must succeed.
+        assert clerk.addTemplates([t1, t2]).ok
+
+        # Attempt to upload the same templates again. This must fail.
+        assert not clerk.addTemplates([t1, t2]).ok
 
         # Fetch the just added template in order to get the URL where its
         # geometries are stored.
