@@ -343,8 +343,6 @@ class TestClient:
     def test_getAllObjectIDs(self, client_type):
         """
         Ensure the getAllObjectIDs command reaches Clerk.
-
-        # fixme: move this test into 'test_clerk'.
         """
         # Get the client for this test.
         client = self.clients[client_type]

@@ -43,8 +43,6 @@ from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 from azrael.test.test import getCSPlane, getTemplate
 
 
-# fixme; use self.clerk throughout the tests instead of creating a new one
-# every time
 class TestClerk:
     @classmethod
     def setup_class(cls):

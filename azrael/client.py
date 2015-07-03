@@ -452,8 +452,6 @@ class Client():
     @typecheck
     def getTemplateGeometry(self, template):
         """
-        fixme: expect an URL string and a `template` instance.
-
         Return the geometry ``template`` geometry.
 
         The return value is a dictionary. The keys are the fragment names and

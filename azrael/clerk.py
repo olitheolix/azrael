@@ -801,7 +801,8 @@ class Clerk(config.AzraelProcess):
             # Add the parent's velocity to the exit velocity.
             velocityLin += sv_parent.velocityLin
 
-            # fixme: docu
+            # The body state of the new object must align with the factory unit
+            # in terms of position, orientation, and velocity.
             init = {
                 'templateID': this.templateID,
                 'rbs': {

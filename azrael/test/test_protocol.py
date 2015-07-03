@@ -231,8 +231,6 @@ class TestClerk:
             2: {'frag': [], 'rbs': getRigidBody()},
             3: {'frag': frag_states, 'rbs': None},
             4: {'frag': [], 'rbs': None},
-            # fixme: this case should be impossible once _packBodyState was
-            #        fixed.
             5: None,
         }
         del frag_states
