@@ -169,15 +169,20 @@ class Dibbler:
         This function is the equivalent of 'rm -rf url/*'. It always succeeds
         and returns the number of deleted files.
 
+        ..note:: It is well possible that file with the same file name exists
+            multiple times in MongoDB. However, the numberr of deleted files
+            only returns the number of unique file names deleted, even if it
+            may have deleted several versions of some of the files.
+
         :param str url: location (eg. '/instances/blah/')
         :return: number of deleted files
        """
         query = {'filename': {'$regex': '^{}/.*'.format(url)}}
-        cnt = 0
+        fnames = set()
         for _ in self.fs.find(query):
+            fnames.add(_.filename)
             self.fs.delete(_._id)
-            cnt += 1
-        return RetVal(True, None, cnt)
+        return RetVal(True, None, len(fnames))
 
     @typecheck
     def saveModel(self, location: str, fragments: (tuple, list),
@@ -220,6 +225,14 @@ class Dibbler:
             ret = self.fs.find_one(query)
             if ret is None:
                 return RetVal(False, 'Model does not exist', None)
+
+        # Save the meta JSON file. That file contains meta information about
+        # the fragments, most notably which fragments exist. This file we be
+        # overwritten in the loop below, but it is nevertheless important to
+        # add save it right now as well because the loop below will not execute
+        # at all if an object has no fragments (unusual, but perfectly valid).
+        self.fs.put(json.dumps({'fragments': []}).encode('utf8'),
+                    filename=os.path.join(location, 'meta.json'))
 
         # Store all fragment models for this template.
         frag_names = {}
@@ -316,7 +329,7 @@ class Dibbler:
         """
         Add the ``model`` to the template database.
 
-        :param Template model: the model (eg Collad or Raw) to store.
+        :param Template model: model geometry (eg Collada or Raw) to save.
         :return: success
         """
         location = self.getTemplateDir(model.aid)

@@ -98,9 +98,35 @@ class TestDibbler:
         ret = json.loads(ret.data.decode('utf8'))
 
         # Construct a pristine FragRaw from the downloaded data and compare it
-        # the provided reference.
+        # to the provided reference.
         download = FragRaw(ret['vert'], ret['uv'], ret['rgb'])
         assert ref == download
+
+    def test_addTemplate_with_no_fragments(self):
+        """
+        Add a template that has no fragments. This must still create a
+        'meta.json' file (but nothing else).
+        """
+        # Create a Dibbler instance and flush all data.
+        dibbler = self.dibbler
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Define a template for this test.
+        t_raw = getTemplate('_templateEmpty', fragments=[])
+
+        # Add the template and verify that the database now contains
+        # exactly one file.
+        ret = dibbler.addTemplate(t_raw)
+        assert ret.ok
+        assert dibbler.getNumFiles() == (True, None, 1)
+        url = ret.data['url_frag']
+
+        # Download the one- and only meta file and verify that it reports an
+        # empty 'fragment' list.
+        ret = self.dibbler.getFile('{}/meta.json'.format(url))
+        assert ret.ok
+        ret = json.loads(ret.data.decode('utf8'))
+        assert ret['fragments'] == []
 
     def test_addRawTemplate(self):
         """
@@ -302,7 +328,9 @@ class TestDibbler:
 
     def test_deleteTemplate(self):
         """
-        Add and remove a template.
+        Add two templates and then delete them. This functions also tests some
+        corner cases where the delete-request is a substring of another
+        template.
         """
         dibbler = self.dibbler
 
@@ -312,7 +340,7 @@ class TestDibbler:
         t11 = getTemplate('name11', fragments=[frag_raw])
         t1 = getTemplate('name1', fragments=[frag_dae])
 
-        # Verify that Dibbler is pristine.
+        # Verify that Dibbler's database is pristine.
         assert dibbler.getNumFiles() == (True, None, 0)
 
         # Add- and verify the Raw template.
@@ -326,7 +354,7 @@ class TestDibbler:
         with pytest.raises(AssertionError):
             self.verifyRaw(ret.data['url_frag'], frag_raw)
 
-        # Attempt to remove the Raw template once more. Dibbler must not delte
+        # Attempt to remove the Raw template once more. Dibbler must not delete
         # any files, albeit the call itself must succeed.
         assert dibbler.deleteTemplate('blah').ok
         assert dibbler.getNumFiles() == (True, None, 0)
