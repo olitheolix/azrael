@@ -389,6 +389,8 @@ class TestClient:
     def test_getAllObjectIDs(self, client_type):
         """
         Ensure the getAllObjectIDs command reaches Clerk.
+
+        # fixme: move this test into 'test_clerk'.
         """
         # Get the client for this test.
         client = self.clients[client_type]
@@ -476,17 +478,18 @@ class TestClient:
 
         # Define the template, add it to Azrael, and spawn an instance.
         temp = getTemplate('t1',
-                           cshapes=[getCSSphere()],
+                           rbs=getRigidBody(),
                            fragments=[getFragRaw('bar')],
                            boosters=[b0, b1],
                            factories=[f0, f1])
         assert client.addTemplates([temp]).ok
-        new_obj = {'template': temp.aid,
-                   'position': pos_parent,
-                   'velocityLin': vel_parent,
-                   'orientation': orient_parent}
+        new_obj = {'templateID': temp.aid,
+                   'rbs': {
+                       'position': pos_parent,
+                       'velocityLin': vel_parent,
+                       'orientation': orient_parent}}
         ret = client.spawn([new_obj])
-        assert ret.ok and (ret.data == (objID_1, ))
+        assert ret.ok and (ret.data == [objID_1])
         leo.processCommandsAndSync()
         del b0, b1, f0, f1, temp, new_obj
 
@@ -543,26 +546,22 @@ class TestClient:
         # Get the client for this test.
         client = self.clients[client_type]
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Convenience.
         objID = 1
 
         # Add a new template and spawn it.
         frag = getFragRaw('bar')
-        temp = getTemplate('t1', cshapes=[getCSSphere()], fragments=[frag])
+        temp = getTemplate('t1', fragments=[frag])
         assert client.addTemplates([temp]).ok
 
-        new_obj = {'template': temp.aid,
-                   'position': np.ones(3),
-                   'velocityLin': -np.ones(3)}
+        new_obj = {'templateID': temp.aid,
+                   'rbs': {'position': (1, 1, 1),
+                           'velocityLin': (-1, -1, -1)}}
         ret = client.spawn([new_obj])
-        assert ret.ok and ret.data == (objID, )
+        assert ret.ok and ret.data == [objID]
         del temp, new_obj, ret
 
         # Query the SV to obtain the 'version' value.
-        leo.processCommandsAndSync()
         ret = client.getBodyStates(objID)
         assert ret.ok
         version = ret.data[objID]['rbs'].version
@@ -619,15 +618,14 @@ class TestClient:
         f_dae = getFragDae('f_dae')
 
         # Add a new template and spawn it.
-        temp = getTemplate('t1', cshapes=[getCSSphere()], fragments=[f_dae])
+        temp = getTemplate('t1', fragments=[f_dae])
         assert client.addTemplates([temp]).ok
 
-        new_obj = {'template': temp.aid,
-                   'position': np.ones(3),
-                   'velocityLin': -np.ones(3)}
+        new_obj = {'templateID': temp.aid,
+                   'rbs': {'position': (1, 1, 1), 'velocityLin': (-1, -1, -1)}}
         ret = client.spawn([new_obj])
         objID = ret.data[0]
-        assert ret.ok and ret.data == (objID, )
+        assert ret.ok and ret.data == [objID]
         del temp, new_obj, ret
 
         # Query the SV to obtain the 'version' value.
@@ -677,23 +675,18 @@ class TestClient:
         # Convenience.
         objID = 1
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Add a new template and spawn it.
-        temp = getTemplate('t1', cshapes=[getCSSphere()], fragments=[getFragRaw('bar')])
+        temp = getTemplate('t1', fragments=[getFragRaw('bar')])
         assert client.addTemplates([temp]).ok
 
-        new_obj = {'template': temp.aid,
-                   'position': np.ones(3),
-                   'velocityLin': -np.ones(3)}
+        new_obj = {'templateID': temp.aid,
+                   'rbs': {'position': (1, 1, 1), 'velocityLin': (-1, -1, -1)}}
         ret = client.spawn([new_obj])
-        assert ret.ok and ret.data == (objID, )
+        assert ret.ok and ret.data == [objID]
         del temp, new_obj, ret
 
         # Query the Body State to get the Fragment States. Then verify the
         # Fragment State named 'bar'.
-        leo.processCommandsAndSync()
         ret = client.getBodyStates(objID)
         ref = [FragState('bar', 1, [0, 0, 0], [0, 0, 0, 1])]
         assert ret.ok
@@ -716,9 +709,6 @@ class TestClient:
         # Get the client for this test.
         client = self.clients[client_type]
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Convenience.
         objID = 1
 
@@ -728,15 +718,13 @@ class TestClient:
             getFragDae('fname_2'),
             getFragRaw('fname_3')
         ]
-        t1 = getTemplate('t1', cshapes=[getCSSphere()], fragments=frags_orig)
+        t1 = getTemplate('t1', fragments=frags_orig)
 
         # Add a new template and spawn it.
         assert client.addTemplates([t1]).ok
-        new_obj = {'template': t1.aid,
-                   'position': np.ones(3),
-                   'velocityLin': -np.ones(3)}
-        assert client.spawn([new_obj]) == (True, None, (objID, ))
-        leo.processCommandsAndSync()
+        new_obj = {'templateID': t1.aid,
+                   'rbs': {'position': (1, 1, 1), 'velocityLin': (-1, -1, -1)}}
+        assert client.spawn([new_obj]) == (True, None, [objID])
 
         # Query the fragment geometries and Body State to verify that both
         # report three fragments.
@@ -766,11 +754,11 @@ class TestClient:
         client = self.clients[client_type]
 
         # Add a valid template with Collada data and verify the upload worked.
-        temp = getTemplate('foo', cshapes=[getCSSphere()], fragments=[getFragDae('f_dae')])
+        temp = getTemplate('foo', fragments=[getFragDae('f_dae')])
         assert client.addTemplates([temp]).ok
 
         # Spawn the template.
-        ret = client.spawn([{'template': temp.aid, 'position': np.zeros(3)}])
+        ret = client.spawn([{'templateID': temp.aid}])
         assert ret.ok
         objID = ret.data[0]
 
@@ -799,18 +787,15 @@ class TestClient:
         # Get the client for this test.
         client = self.clients[client_type]
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard(azrael.leonard.LeonardBullet)
-
         # Spawn the two bodies.
         pos_1, pos_2, pos_3 = [-2, 0, 0], [2, 0, 0], [6, 0, 0]
-        objs = [
-            {'template': '_templateSphere', 'position': pos_1},
-            {'template': '_templateSphere', 'position': pos_2},
-            {'template': '_templateSphere', 'position': pos_3}
+        new_objs = [
+            {'templateID': '_templateSphere', 'rbs': {'position': pos_1}},
+            {'templateID': '_templateSphere', 'rbs': {'position': pos_2}},
+            {'templateID': '_templateSphere', 'rbs': {'position': pos_3}}
         ]
         id_1, id_2, id_3 = 1, 2, 3
-        assert client.spawn(objs) == (True, None, (id_1, id_2, id_3))
+        assert client.spawn(new_objs) == (True, None, [id_1, id_2, id_3])
 
         # Define the constraints.
         con_1 = getP2P(rb_a=id_1, rb_b=id_2, pivot_a=pos_2, pivot_b=pos_1)
@@ -858,10 +843,14 @@ class TestClient:
 
         # Spawn the two bodies.
         pos_a, pos_b = [-2, 0, 0], [2, 0, 0]
-        obj_1 = {'template': '_templateSphere', 'position': pos_a}
-        obj_2 = {'template': '_templateSphere', 'position': pos_b}
+        new_objs = [
+            {'templateID': '_templateSphere',
+             'rbs': {'position': pos_a}},
+            {'templateID': '_templateSphere',
+             'rbs': {'position': pos_b}},
+        ]
         id_1, id_2 = 1, 2
-        assert client.spawn([obj_1, obj_2]) == (True, None, (id_1, id_2))
+        assert client.spawn(new_objs) == (True, None, [id_1, id_2])
 
         # Verify that both objects were spawned (simply query their template
         # original template to establish that they now actually exist).
