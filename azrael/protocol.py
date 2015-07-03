@@ -402,31 +402,13 @@ FromClerk_GetAllBodyStates_Decode = FromClerk_GetBodyState_Decode
 
 
 @typecheck
-def ToClerk_Spawn_Encode(objectInfos: (tuple, list)):
-    return RetVal(True, None, {'objInfos': objectInfos})
+def ToClerk_Spawn_Encode(payload: (tuple, list)):
+    return RetVal(True, None, {'payload': payload})
 
 
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
-    # Convenience.
-    RigidBodyState = types.RigidBodyState
-    RigidBodyStateOverride = types.RigidBodyStateOverride
-    _updateRigidBodyStateTuple = leo_api._updateRigidBodyStateTuple
-
-    default_body = types.DefaultRigidBody()
-
-    out = []
-    for data in payload['objInfos']:
-        templateID = data['template']
-        del data['template']
-
-        body = RigidBodyStateOverride(**data)
-        if body is None:
-            return False, 'Invalid State Variable data'
-        body = _updateRigidBodyStateTuple(default_body, body)
-
-        out.append((templateID, body))
-    return True, (out, )
+    return (True, (payload['payload'], ))
 
 
 @typecheck
@@ -436,7 +418,7 @@ def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
 
 @typecheck
 def FromClerk_Spawn_Decode(payload: dict):
-    return RetVal(True, None, tuple(payload['objIDs']))
+    return RetVal(True, None, payload['objIDs'])
 
 
 # ---------------------------------------------------------------------------

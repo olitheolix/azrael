@@ -297,6 +297,27 @@ class TestClerk:
         dec = protocol.ToClerk_AddTemplates_Decode
         self.verifyToClerk(enc, dec, payload)
 
+    def test_spawn(self):
+        """
+        Spawn objects.
+        """
+        # Compile a valid Template structure.
+        payload = [
+            {'templateID': 'tid_1', 'rbs': {'position': [0, 1, 2]}},
+            {'templateID': 'tid_2', 'rbs': {'orientation': [0, 1, 0, 0]}},
+        ]
+
+        # Client --> Clerk
+        enc = protocol.ToClerk_Spawn_Encode
+        dec = protocol.ToClerk_Spawn_Decode
+        self.verifyToClerk(enc, dec, payload)
+
+        # Clerk --> Client
+        payload = [1, 20, 300]
+        enc = protocol.FromClerk_Spawn_Encode
+        dec = protocol.FromClerk_Spawn_Decode
+        self.verifyFromClerk(enc, dec, payload)
+
     def test_getFragmentGeometries(self):
         """
         Test getFragmentGeometries.
