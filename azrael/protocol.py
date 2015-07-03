@@ -195,21 +195,15 @@ def FromClerk_GetAllObjectIDs_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_SetBodyState_Encode(objID: int, sv: tuple):
-    return RetVal(True, None, {'objID': objID, 'rbs': sv})
+def ToClerk_SetBodyState_Encode(objID: int, states: dict):
+    return RetVal(True, None, {'objID': objID, 'rbs': states})
 
 
 @typecheck
 def ToClerk_SetBodyState_Decode(payload: dict):
-    # Convenience.
     objID = payload['objID']
-
-    # Convert the state variable into a RigidBodyStateOverride instance.
-    sv = payload['rbs']
-    tmp = dict(zip(types.RigidBodyStateOverride._fields, sv))
-    sv = types.RigidBodyStateOverride(**tmp)
-
-    return True, (objID, sv)
+    states = payload['rbs']
+    return True, (objID, states)
 
 
 @typecheck

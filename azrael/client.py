@@ -534,7 +534,7 @@ class Client():
         return self.serialiseAndSend('get_all_body_states')
 
     @typecheck
-    def setBodyState(self, objID: int, new: types.RigidBodyStateOverride):
+    def setBodyState(self, objID: int, new: dict):
         """
         Overwrite the the State Variables of ``objID`` with ``new``.
 
@@ -546,7 +546,9 @@ class Client():
         :param RigidBodyStateOverride new: the object attributes to set.
         :return: Success
         """
-        new = tuple(new)
+        if 'cshapes' in new:
+            new['cshapes'] = [_._asdict() for _ in new['cshapes']]
+
         return self.serialiseAndSend('set_body_state', objID, new)
 
     @typecheck
