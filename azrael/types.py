@@ -905,10 +905,10 @@ class CmdFactory(_CmdFactory):
 # because anyone would/should use it).
 # fixme: remove once RigidBodyState does not accept defaults anymore
 _CSDefault_ = CollShapeMeta(aid='',
-                            cstype='Empty',
+                            cstype='Sphere',
                             position=(0, 0, 0),
                             rotation=(0, 0, 0, 1),
-                            csdata=CollShapeEmpty())
+                            csdata=CollShapeSphere(radius=1))
 
 
 @typecheck
