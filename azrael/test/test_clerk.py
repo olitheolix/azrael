@@ -290,7 +290,7 @@ class TestClerk:
 
         # All parameters are now valid. This must spawn an object with ID=1
         # because this is the first ID in an otherwise pristine system.
-        init_1 = {'templateID': '_templateEmpty', 'rbs': {'imass': 1}}
+        init_1 = {'templateID': '_templateSphere', 'rbs': {'imass': 1}}
         ret = clerk.spawn([init_1])
         assert (ret.ok, ret.data) == (True, (1, ))
 
@@ -404,7 +404,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, [])
 
         # Spawn two default objects.
-        templateID = '_templateEmpty'
+        templateID = '_templateSphere'
         init = {'templateID': templateID}
         ret = clerk.spawn([init, init])
         assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
@@ -444,7 +444,6 @@ class TestClerk:
         RBS = getRigidBody
         body_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
         body_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
-        templateID = '_templateEmpty'
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -455,14 +454,14 @@ class TestClerk:
 
         # Spawn a new object. It must have ID=1.
         init_1 = {
-            'templateID': templateID,
+            'templateID': '_templateSphere',
             'rbs': {
                 'position': body_1.position,
                 'velocityLin': body_1.velocityLin
             }
         }
         init_2 = {
-            'templateID': templateID,
+            'templateID': '_templateSphere',
             'rbs': {
                 'position': body_2.position,
                 'velocityLin': body_2.velocityLin
@@ -510,7 +509,7 @@ class TestClerk:
         RBS = getRigidBody
         body_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
         body_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
-        templateID = '_templateEmpty'
+        templateID = '_templateSphere'
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -571,7 +570,7 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Spawn a new object. It must have ID=1.
-        templateID = '_templateEmpty'
+        templateID = '_templateSphere'
         ret = clerk.spawn([{'templateID': templateID}])
         assert (ret.ok, ret.data) == (True, (id_1, ))
 
@@ -592,7 +591,7 @@ class TestClerk:
 
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
-        templateID_1 = '_templateEmpty'
+        templateID_1 = '_templateSphere'
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -1013,7 +1012,7 @@ class TestClerk:
 
         # Parameters and constants for this test.
         objID_1, objID_2 = 1, 2
-        templateID = '_templateEmpty'
+        templateID = '_templateSphere'
 
         # Instantiate a Clerk.
         clerk = azrael.clerk.Clerk()
@@ -1678,7 +1677,7 @@ class TestClerk:
         clerk = azrael.clerk.Clerk()
 
         # Constants and parameters for this test.
-        templateID = '_templateEmpty'
+        templateID = '_templateSphere'
         objID = 1
 
         # Spawn one of the default templates.

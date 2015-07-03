@@ -314,6 +314,7 @@ class TestLeonardAPI:
         # Test constants.
         body_new = RigidBodyStateOverride(
             imass=2, scale=3,
+            cshapes=[getCSEmpty()],
             position=(1, 2, 5),
             velocityLin=(8, 9, 10.5),
             velocityRot=(9, 10, 11.5),
@@ -321,7 +322,7 @@ class TestLeonardAPI:
 
         # Create a test body.
         id_1 = 0
-        body = getRigidBody()
+        body = getRigidBody(cshapes=[getCSEmpty()])
 
         # Add the object to the DB with ID=0.
         assert leoAPI.addCmdSpawn([(id_1, body)]).ok
