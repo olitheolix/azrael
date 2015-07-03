@@ -644,13 +644,8 @@ class Clerk(config.AzraelProcess):
                     'fragState': {k: v._asdict() for (k, v) in fragStates.items()},
                 }
 
-                # Overwrite the user supplied collision shape with the one
-                # specified in the template. This is to enforce geometric
-                # consistency with the template data as otherwise strange
-                # things may happen (eg a space-ship collision shape in the
-                # template database with a simple sphere collision shape when
-                # it is spawned).
-#                state.cshapes[:] = template.cshapes
+                # Track the rigid body state separately because we will need it
+                # to send to Leonard.
                 bodyStates[objID] = template.rbs
 
                 # Add the new template document.
