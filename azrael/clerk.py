@@ -1153,16 +1153,15 @@ class Clerk(config.AzraelProcess):
 
     def _packBodyState(self, objIDs: list):
         """
-        Compile the data structure returned by ``get{All}BodyStates``.
+        Return a dictionary of body states for all ``objIDs``.
+
+        If ``objIDs`` is *None* then the states of all objects are returned.
+
+        Non-existing object IDs will be silently ignored and do not make it
+        into the returned dictionary.
 
         This is a convenience function to remove code duplication in
         ``getBodyStates`` and ``getAllBodyStates``.
-
-        The input to this function is the output from ``leoAPI.getBodyStates``
-        or ``leoAPI.getAllBodyStates``, which both return a dictionary. The
-        keys in that dictionary denote objIDs and the values contain the
-        rigid body state. This method adds the fragment states to that data
-        structure.
 
         The returned dictionary has the following form::
 
@@ -1177,16 +1176,17 @@ class Clerk(config.AzraelProcess):
             },
         }
 
-        :param dict bodyStates: Each key is an object ID and the
-            corresponding value a ``RigidBodyState`` instance.
+        :param list objIDs: the objIDs for which to compile the data.
+        :return: see example above.
         """
-        # Convenience: extract all objIDs from ``bodyStates``.
+        # Create the MongoDB query. If `objID` is None then the client wants
+        # the state for all objects.
         if objIDs is None:
             query = {}
         else:
             query = {'objID': {'$in': objIDs}}
 
-        # Query the version values for all objects.
+        # Query object states and compile them into a dictionary.
         db = database.dbHandles['ObjInstances']
         cursor = db.find(query,
                          {'version': True,
@@ -1195,13 +1195,19 @@ class Clerk(config.AzraelProcess):
                           'template.rbs': True})
         docs = {_['objID']: _ for _ in cursor}
 
+        # Complie the data from the database into a simple dictionary that
+        # contains the fragment- and body state.
         out = {}
         RBS = types._RigidBodyState
         for objID, doc in docs.items():
+            # Compile the fragment state data for each fragment.
             fs = [FragState(**_) for _ in doc['fragState'].values()]
+
+            # Compile the rigid body data and overwrite the version.
             rbs = RBS(**doc['template']['rbs'])
             rbs = rbs._replace(version=doc['version'])
 
+            # Construct the dictionary that we will return.
             out[objID] = {'frag': fs, 'rbs': rbs}
         return RetVal(True, None, out)
 
@@ -1219,9 +1225,12 @@ class Clerk(config.AzraelProcess):
         :rtype: dict
         """
         with util.Timeit('clerk.getBodyStates') as timeit:
-            out = {_: None for _ in objIDs}
             ret = self._packBodyState(objIDs)
             if ret.ok:
+                # Create a default dictionary because it is possible that the
+                # user asked us for objects that do not exist (_packBodyState
+                # will silently skip them).
+                out = {_: None for _ in objIDs}
                 out.update(ret.data)
                 return RetVal(True, None, out)
             else:
@@ -1232,8 +1241,8 @@ class Clerk(config.AzraelProcess):
         """
         Return all State Variables in a dictionary.
 
-        The dictionary will have the objIDs and state-variables as keys and
-        values, respectively.
+        The dictionary will have the object IDs and state-variables as
+        key/value pairs, respectively.
 
         .. note::
            The ``dummy`` argument is a placeholder because the ``runCommand``
