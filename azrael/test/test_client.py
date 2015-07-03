@@ -272,9 +272,6 @@ class TestClient:
         # Get the client for this test.
         client = self.clients[client_type]
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Constants and parameters for this test.
         objID, templateID = 1, '_templateEmpty'
 
@@ -283,7 +280,6 @@ class TestClient:
                 'rbs': {'position': (0, 0, 0)}}
         ret = client.spawn([init])
         assert ret.ok and ret.data == [objID]
-        leo.processCommandsAndSync()
 
         # Attempt to spawn a non-existing template.
         assert not client.spawn([{'templateID': 'blah'}]).ok
@@ -297,13 +293,11 @@ class TestClient:
 
         # Attempt to delete a non-existing object. This must silently fail.
         assert client.removeObject(100).ok
-        leo.processCommandsAndSync()
         ret = client.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID])
 
         # Delete an existing object.
         assert client.removeObject(objID).ok
-        leo.processCommandsAndSync()
         ret = client.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
@@ -335,9 +329,8 @@ class TestClient:
         ret = client.spawn([init])
         assert ret.ok and ret.data == [objID_1]
 
-        # The new object has not yet been picked up by Leonard and its current
-        # state must therefore match the inital state (plus the tweaks provided
-        # to the spawn command).
+        # The state of the new object must match the inital state (plus the
+        # tweaks provided to the spawn command).
         ret = client.getBodyStates(objID_1)
         assert ret.ok and (set(ret.data.keys()) == {1})
         assert ret.data[objID_1]['rbs'].position == pos
@@ -611,9 +604,6 @@ class TestClient:
         # Get the client for this test.
         client = self.clients[client_type]
 
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Get a Collada fragment.
         f_dae = getFragDae('f_dae')
 
@@ -628,8 +618,7 @@ class TestClient:
         assert ret.ok and ret.data == [objID]
         del temp, new_obj, ret
 
-        # Query the SV to obtain the 'version' value.
-        leo.processCommandsAndSync()
+        # Query the body states to obtain the 'version' value.
         ret = client.getBodyStates(objID)
         assert ret.ok
         version = ret.data[objID]['rbs'].version
