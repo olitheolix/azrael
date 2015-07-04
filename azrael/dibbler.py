@@ -185,8 +185,7 @@ class Dibbler:
         return RetVal(True, None, len(fnames))
 
     @typecheck
-    def saveModel(self, location: str, fragments: (tuple, list),
-                  update: bool=False):
+    def saveModel(self, location: str, fragments: dict, update: bool=False):
         """
         Save the ``model`` to ``location`` and return the success status.
 
@@ -213,6 +212,7 @@ class Dibbler:
         The "meta.json" file contains a dictionary with the fragment names
         (keys) and their types (values), eg. {'foo': 'raw', 'bar': 'dae'}.
 
+        # fixme: new fragment type
         :param str location: the common location prefix used for all
                              ``fragments``.
         :param list fragments: list of ``FragMeta`` instances.
@@ -234,12 +234,12 @@ class Dibbler:
         # overwritten in the loop below, but it is nevertheless important to
         # add save it right now as well because the loop below will not execute
         # at all if an object has no fragments (unusual, but perfectly valid).
-        self.fs.put(json.dumps({'fragments': []}).encode('utf8'),
+        self.fs.put(json.dumps({'fragments': {}}).encode('utf8'),
                     filename=os.path.join(location, 'meta.json'))
 
         # Store all fragment models for this template.
         frag_names = {}
-        for frag in fragments:
+        for name, frag in fragments.items():
             # Fragment directory, eg .../instances/mymodel/frag1
             frag_dir = os.path.join(location, frag.aid)
 
@@ -268,7 +268,7 @@ class Dibbler:
             # Update the 'meta.json': it contains a dictionary with all
             # fragment names and their type, for instance:
             # {'foo': 'raw', 'bar': # 'dae', ...}
-            frag_names[frag.aid] = frag.fragtype
+            frag_names[name] = frag.fragtype
             self.fs.put(json.dumps({'fragments': frag_names}).encode('utf8'),
                         filename=os.path.join(location, 'meta.json'))
 
@@ -348,6 +348,8 @@ class Dibbler:
         .. note:: It is the caller's responsibility to ensure that ``objID`` is
                   unique. Dibbler will happily overwrite existing data.
 
+        # fixme: objID should be the first argument for consistency
+
         :param str name: the name of the template to spawn.
         :param int objID: the object ID
         :return: #file copied.
@@ -382,7 +384,7 @@ class Dibbler:
             return RetVal(True, None, {'url_frag': url})
 
     @typecheck
-    def updateFragments(self, objID: int, frags: (tuple, list)):
+    def updateFragments(self, objID: int, frags: dict):
         """
         Overwrite all ``frags`` for ``objID``.
 
@@ -391,13 +393,14 @@ class Dibbler:
         delete the respective fragment and update the `meta.json` file
         accordingly.
 
+        # fixme: 'frags' parameter
         :param int objID: the object for which to update the ``fragments``.
         :param list frags: list of new ``FragMeta`` instances.
         :return: see :func:`saveModel`
         """
         try:
             # Sanity check the fragments.
-            frags = [FragMeta(*_) for _ in frags]
+            frags = {k: FragMeta(*v) for (k, v) in frags.items()}
         except (TypeError, ValueError):
             msg = 'Invalid parameters in updateFragments command'
             return RetVal(False, msg, None)
