@@ -614,15 +614,11 @@ class Clerk(config.AzraelProcess):
                     # URL where the instance geometry is available.
                     geo_url = ret.data['url_frag']
 
-                # Compile a dictionary with the fragment states for each
-                # fragment. Initially, the fragments are all exactly where the
-                # template specified them, which is why each entry in the
-                # dictionary denotes the same neutral position, rotation, etc.
-                fs = FragState(aid='',
-                               scale=1,
+                # Each fragment gets the same initial state.
+                fs = FragState(scale=1,
                                position=(0, 0, 0),
                                orientation=(0, 0, 0, 1))
-                fragStates = {_: fs._replace(aid=_) for _ in frags}
+                fragStates = {_: fs for _ in frags}
 
                 # Compile the database document. Each entry must be an explicit
                 # dictionary (eg 'template'). The document contains the
@@ -1028,8 +1024,8 @@ class Clerk(config.AzraelProcess):
         as follows::
 
           fragData = {
-            objID_1: [state_1, state_2, ...],
-            objID_2: [state_3, state_4, ...]
+            objID_1: {fid_1: state_1, fid_2: state_2, ...},
+            objID_2: {fid_3: state_3, fid_4: state_4, ...}
           }
 
         where each ``state_k`` entry is a :ref:``FragState`` tuple. Those
@@ -1046,7 +1042,7 @@ class Clerk(config.AzraelProcess):
         one or more fragment IDs are invalid then none of the fragments in the
         respective object will be updated, not even those with a valid ID.
 
-        :param dict[list[FragData]] fragData: the new fragment states
+        :param dict[dict[str: FragData]] fragData: the new fragment states
         :return: success.
         """
         # Convenience.
@@ -1057,11 +1053,11 @@ class Clerk(config.AzraelProcess):
             # All objIDs must be integers and all values must be dictionaries.
             for objID, fragStates in fragData.items():
                 assert isinstance(objID, int)
-                fragData[objID] = [FragState(*_) for _ in fragStates]
+                fragData[objID] = {k: FragState(*v) for (k, v) in fragStates.items()}
         except (TypeError, AssertionError):
             return RetVal(False, 'Invalid data format', None)
 
-        # Update the fragments. Process one object at a time.
+        # Update the fragments for one object at a time.
         ok = True
         for objID, fragstate in fragData.items():
             # Convenience: string that represents the Mongo key for the
@@ -1075,18 +1071,18 @@ class Clerk(config.AzraelProcess):
             #    'fragState.1': {'$exists': 1},
             #    'fragState.2': {'$exists': 1},
             #    ...}
-            query_find = {key.format(_.aid): {'$exists': 1} for _ in fragstate}
-            query_find['objID'] = objID
+            q_find = {key.format(_): {'$exists': 1} for _ in fragstate}
+            q_find['objID'] = objID
 
-            # Exactly the same query, except that instead of checking existince
+            # Exactly the same query, except that instead of checking existence
             # we specify the FragState values. This will be the update query
             # and has the following structure:
             #   {'fragState.1': FragState,
             #    'fragState.2': FragState}
-            query_update = {key.format(_.aid): _._asdict() for _ in fragstate}
+            q_update = {key.format(k): v._asdict() for (k, v) in fragstate.items()}
 
             # Issue the update command to Mongo.
-            ret = db_update(query_find, {'$set': query_update})
+            ret = db_update(q_find, {'$set': q_update})
 
             # Exactly one document will have been updated if everything went
             # well. Note that we must check 'n' instead of 'nModified'. The
@@ -1150,19 +1146,19 @@ class Clerk(config.AzraelProcess):
                           'template.rbs': True})
         docs = {_['objID']: _ for _ in cursor}
 
-        # Complie the data from the database into a simple dictionary that
+        # Compile the data from the database into a simple dictionary that
         # contains the fragment- and body state.
         out = {}
         RBS = types._RigidBodyState
         for objID, doc in docs.items():
             # Compile the fragment state data for each fragment.
-            fs = [FragState(**_) for _ in doc['fragState'].values()]
+            fs = {k: FragState(**v) for (k, v) in doc['fragState'].items()}
 
             # Compile the rigid body data and overwrite the version.
             rbs = RBS(**doc['template']['rbs'])
             rbs = rbs._replace(version=doc['version'])
 
-            # Construct the dictionary that we will return.
+            # Construct the dictionary to return.
             out[objID] = {'frag': fs, 'rbs': rbs}
         return RetVal(True, None, out)
 
