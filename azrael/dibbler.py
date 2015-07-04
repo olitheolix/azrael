@@ -212,10 +212,9 @@ class Dibbler:
         The "meta.json" file contains a dictionary with the fragment names
         (keys) and their types (values), eg. {'foo': 'raw', 'bar': 'dae'}.
 
-        # fixme: new fragment type
         :param str location: the common location prefix used for all
                              ``fragments``.
-        :param list fragments: list of ``FragMeta`` instances.
+        :param dict[str: ``FragMeta``] fragments: new fragments.
         :param bool update: if *True* then the ``location`` prefix must already
                              exist.
         :return: success.
@@ -384,30 +383,29 @@ class Dibbler:
             return RetVal(True, None, {'url_frag': url})
 
     @typecheck
-    def updateFragments(self, objID: int, frags: dict):
+    def updateFragments(self, objID: int, fragments: dict):
         """
-        Overwrite all ``frags`` for ``objID``.
+        Overwrite all ``fragments`` for ``objID``.
 
-        This function will overwrite (or add) all specified ``frags`` unless
+        This function will overwrite (or add) all specified ``fragments`` unless
         their type is *_none_*. If the type is *_none_* then this method will
         delete the respective fragment and update the `meta.json` file
         accordingly.
 
-        # fixme: 'frags' parameter
         :param int objID: the object for which to update the ``fragments``.
-        :param list frags: list of new ``FragMeta`` instances.
+        :param dict[str: ``FragMeta``] fragments: new fragments.
         :return: see :func:`saveModel`
         """
         try:
             # Sanity check the fragments.
-            frags = {k: FragMeta(*v) for (k, v) in frags.items()}
+            fragments = {k: FragMeta(*v) for (k, v) in fragments.items()}
         except (TypeError, ValueError):
-            msg = 'Invalid parameters in updateFragments command'
+            msg = 'Invalid parameters in <updateFragments> command'
             return RetVal(False, msg, None)
 
         # Overwrite all fragments for the instance with with ``objID``.
         location = self.getInstanceDir(objID)
-        return self.saveModel(location, frags, update=True)
+        return self.saveModel(location, fragments, update=True)
 
     @typecheck
     def deleteTemplate(self, location: str):

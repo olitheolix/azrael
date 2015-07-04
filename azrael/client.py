@@ -298,22 +298,20 @@ class Client():
         return self.serialiseAndSend('get_fragment_geometries', objIDs)
 
     @typecheck
-    def setFragmentGeometries(self, objID: int, frags: dict):
+    def setFragmentGeometries(self, objID: int, fragments: dict):
         """
-        Change the geometry parameters of ``objID``.
-
-        fixme: frags
+        Change the ``fragments`` of ``objID``.
 
         :param int objID: ID for which to return the geometry.
-        :param list frags: list of ``Fragment`` instances.
+        :param dict[str: ``FragMeta``] fragments: new fragments.
         :return: Success
         """
         try:
-            frags = {k: FragMeta(*v) for (k, v) in frags.items()}
+            fragments = {k: FragMeta(*v) for (k, v) in fragments.items()}
         except TypeError:
             return RetVal(False, 'Invalid fragment data types', None)
 
-        return self.serialiseAndSend('set_fragment_geometries', objID, frags)
+        return self.serialiseAndSend('set_fragment_geometries', objID, fragments)
 
     @typecheck
     def spawn(self, new_objects: (tuple, list)):
