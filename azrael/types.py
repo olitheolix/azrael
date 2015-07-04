@@ -50,7 +50,7 @@ _FragMeta = namedtuple('_FragMeta', 'fragtype fragdata')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 FragNone = namedtuple('FragNone', '')
-_FragState = namedtuple('_FragState', 'aid scale position orientation')
+_FragState = namedtuple('_FragState', 'scale position orientation')
 
 # Work package related.
 WPData = namedtuple('WPData', 'aid sv force torque')
@@ -413,18 +413,16 @@ class FragState(_FragState):
              Changing parameters like position for one has no impact whatsoever
              on the other.
 
-    :param str aid: Fragment ID.
     :return: compiled ``_FragState`` instance.
     :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
-    def __new__(cls, aid: str,
+    def __new__(cls,
                 scale: (int, float),
                 position: (tuple, list),
                 orientation: (tuple, list)):
         try:
             # Verify the inputs.
-            assert isAIDStringValid(aid)
             assert scale >= 0
             position = toVec(3, position)
             orientation = toVec(4, orientation)
@@ -435,7 +433,7 @@ class FragState(_FragState):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, aid, scale, position, orientation)
+        return super().__new__(cls, scale, position, orientation)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
