@@ -136,12 +136,12 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Create two Templates. The first has only one Raw- and two
         # Collada geometries, the other has it the other way around.
-        frags_t1 = {'foo1': getFragRaw('foo1'),
-                    'bar2': getFragDae('bar2'),
-                    'bar3': getFragDae('bar3')}
-        frags_t2 = {'foo4': getFragRaw('foo4'),
-                    'foo5': getFragRaw('foo5'),
-                    'bar6': getFragDae('bar6')}
+        frags_t1 = {'foo1': getFragRaw(),
+                    'bar2': getFragDae(),
+                    'bar3': getFragDae()}
+        frags_t2 = {'foo4': getFragRaw(),
+                    'foo5': getFragRaw(),
+                    'bar6': getFragDae()}
         body_a = getRigidBody(cshapes=[getCSSphere()])
         body_b = getRigidBody(cshapes=[getCSBox()])
         t1 = getTemplate('t1', rbs=body_a, fragments=frags_t1)
@@ -174,12 +174,12 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # # Create two Templates. The first has only one Raw- and two
         # # Collada geometries, the other has it the other way around.
-        frags_t1 = {'raw1': getFragRaw('raw1'),
-                    'dae2': getFragDae('dae2'),
-                    'dae3': getFragDae('dae3')}
-        frags_t2 = {'raw4': getFragRaw('raw4'),
-                    'raw5': getFragRaw('raw5'),
-                    'dae6': getFragDae('dae6')}
+        frags_t1 = {'raw1': getFragRaw(),
+                    'dae2': getFragDae(),
+                    'dae3': getFragDae()}
+        frags_t2 = {'raw4': getFragRaw(),
+                    'raw5': getFragRaw(),
+                    'dae6': getFragDae()}
         body_t1 = getRigidBody(cshapes=[getCSSphere()])
         body_t2 = getRigidBody(cshapes=[getCSBox()])
         t1 = getTemplate('t1', rbs=body_t1, fragments=frags_t1)
@@ -219,12 +219,12 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Create two Templates. The first has only one Raw- and two
         # Collada geometries, the other has it the other way around.
-        frags_old = {'name1': getFragRaw('name1'),
-                     'name2': getFragDae('name2'),
-                     'name3': getFragDae('name3')}
-        frags_new = {'name1': getFragDae('name1'),
-                     'name2': getFragDae('name2'),
-                     'name3': getFragRaw('name3')}
+        frags_old = {'name1': getFragRaw(),
+                     'name2': getFragDae(),
+                     'name3': getFragDae()}
+        frags_new = {'name1': getFragDae(),
+                     'name2': getFragDae(),
+                     'name3': getFragRaw()}
         t1 = getTemplate('t1', fragments=frags_old)
 
         # Add-, spawn-, and verify the template.
@@ -257,7 +257,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         clerk = azrael.clerk.Clerk()
 
         # Create a Template.
-        frags = {'name1': getFragRaw('name1')}
+        frags = {'name1': getFragRaw()}
         t1 = getTemplate('t1', fragments=frags)
 
         # Add-, spawn-, and verify the template.

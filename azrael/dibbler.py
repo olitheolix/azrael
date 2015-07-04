@@ -336,7 +336,6 @@ class Dibbler:
         :return: success
         """
         location = self.getTemplateDir(template.aid)
-        print('add: ', location, template.aid)
         ret = self.saveModel(location, template.fragments)
         if not ret.ok:
             return ret
@@ -420,8 +419,6 @@ class Dibbler:
         :return: number of (unique) files deleted.
         """
         location = self.getTemplateDir(name)
-        print('del: ', location)
-
         return self._deleteSubLocation(location)
 
     @typecheck
