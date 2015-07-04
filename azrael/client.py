@@ -591,13 +591,17 @@ class Client():
         Each key in ``fragStates`` must be an object ID and each value a
         ``FragState`` instance, eg.
 
-           {objID: [FragState('bar', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
+           {objID: {'bar': FragState(2.2, [1, 2, 3], [1, 0, 0, 0])}}
 
         :param dict fragStates: new fragment states.
         :return: Success
         :rtype:
         """
-        return self.serialiseAndSend('set_fragment_states', fragStates)
+        # Convert all fragment states to dictionaries.
+        out = {}
+        for objID, frags in fragStates.items():
+            out[objID] = {k: v._asdict() for (k, v) in frags.items()}
+        return self.serialiseAndSend('set_fragment_states', out)
 
     @typecheck
     def addConstraints(self, constraints: (tuple, list)):

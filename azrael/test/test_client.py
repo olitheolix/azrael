@@ -628,13 +628,13 @@ class TestClient:
         # Query the Body State to get the Fragment States. Then verify the
         # Fragment State named 'bar'.
         ret = client.getBodyStates(objID)
-        ref = [FragState('bar', 1, [0, 0, 0], [0, 0, 0, 1])]
+        ref = {'bar': FragState(1, [0, 0, 0], [0, 0, 0, 1])}
         assert ret.ok
         assert ret.data[objID]['frag'] == ref
 
         # Modify and update the fragment states in Azrael, then query and
         # verify it worked.
-        newStates = {objID: [FragState('bar', 2.2, [1, 2, 3], [1, 0, 0, 0])]}
+        newStates = {objID: {'bar': FragState(2.2, [1, 2, 3], [1, 0, 0, 0])}}
         assert client.setFragmentStates(newStates).ok
         ret = client.getBodyStates(objID)
         assert ret.ok
