@@ -83,7 +83,7 @@ class Dibbler:
         return RetVal(True, None, len(self.fs.list()))
 
     @typecheck
-    def saveModelDae(self, location: str, model: FragMeta):
+    def saveModelDae(self, location: str, aid: str, model: FragMeta):
         """
         Save the Collada ``model`` to ``location``.
 
@@ -124,7 +124,7 @@ class Dibbler:
             return RetVal(False, msg, None)
 
         # Save the dae file to "location/model_name/model_name".
-        self.fs.put(dae, filename=os.path.join(location, model.aid))
+        self.fs.put(dae, filename=os.path.join(location, aid))
 
         # Save the textures. These are stored as dictionaries with the texture
         # file name as key and the data as a binary stream, eg,
@@ -135,7 +135,7 @@ class Dibbler:
         return RetVal(True, None, 1.0)
 
     @typecheck
-    def saveModelRaw(self, location: str, model: FragMeta):
+    def saveModelRaw(self, location: str, aid: str, model: FragMeta):
         """
         Save the Raw ``model`` to ``location``.
 
@@ -238,18 +238,19 @@ class Dibbler:
 
         # Store all fragment models for this template.
         frag_names = {}
-        for name, frag in fragments.items():
+        for aid, frag in fragments.items():
+            # fixme: better explanation
             # Fragment directory, eg .../instances/mymodel/frag1
-            frag_dir = os.path.join(location, frag.aid)
+            frag_dir = os.path.join(location, aid)
 
             ftype = frag.fragtype.lower()
             # Delete the current fragments and save the new ones.
             if ftype == 'raw':
                 self._deleteSubLocation(frag_dir)
-                ret = self.saveModelRaw(frag_dir, frag)
+                ret = self.saveModelRaw(frag_dir, aid, frag)
             elif ftype == 'dae':
                 self._deleteSubLocation(frag_dir)
-                ret = self.saveModelDae(frag_dir, frag)
+                ret = self.saveModelDae(frag_dir, aid, frag)
             elif ftype == '_none_':
                 # Dummy fragment that tells us to remove it.
                 ret = RetVal(False, None, None)
@@ -267,7 +268,7 @@ class Dibbler:
             # Update the 'meta.json': it contains a dictionary with all
             # fragment names and their type, for instance:
             # {'foo': 'raw', 'bar': # 'dae', ...}
-            frag_names[name] = frag.fragtype
+            frag_names[aid] = frag.fragtype
             self.fs.put(json.dumps({'fragments': frag_names}).encode('utf8'),
                         filename=os.path.join(location, 'meta.json'))
 
@@ -327,15 +328,16 @@ class Dibbler:
             return RetVal(True, None, ret.read())
 
     @typecheck
-    def addTemplate(self, model: Template):
+    def addTemplate(self, template: Template):
         """
-        Add the ``model`` to the template database.
+        Add the geometry from ``template`` to the database.
 
-        :param Template model: model geometry (eg Collada or Raw) to save.
+        :param Template template: new template.
         :return: success
         """
-        location = self.getTemplateDir(model.aid)
-        ret = self.saveModel(location, model.fragments)
+        location = self.getTemplateDir(template.aid)
+        print('add: ', location, template.aid)
+        ret = self.saveModel(location, template.fragments)
         if not ret.ok:
             return ret
         else:
@@ -364,7 +366,8 @@ class Dibbler:
             # '/templates/temp_name/*' to '/instances/objID/*'.
             name = f.filename.replace(src, dst)
 
-            # Copy the last version of the file.
+            # Copy the last version of the file from the template- to the
+            # instance location.
             src_data = self.fs.get_last_version(f.filename)
             self.fs.put(src_data, filename=name)
 
@@ -402,21 +405,23 @@ class Dibbler:
             return RetVal(False, msg, None)
 
         # Overwrite all fragments for the instance with with ``objID``.
-        location = self.getInstanceDir(objID)
+        location = self.getInstanceDir(objID)        
         return self.saveModel(location, fragments, update=True)
 
     @typecheck
-    def deleteTemplate(self, location: str):
+    def deleteTemplate(self, name: str):
         """
-        Delete the all files under ``location``.
+        Delete the template ``name``.
 
         This function always succeeds but returns the number of actually
         deleted files.
 
-        :param str location: template location
-        :return: #files deleted.
+        :param str name: the name of the template to delete.
+        :return: number of (unique) files deleted.
         """
-        location = self.getTemplateDir(location)
+        location = self.getTemplateDir(name)
+        print('del: ', location)
+
         return self._deleteSubLocation(location)
 
     @typecheck
