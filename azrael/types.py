@@ -46,7 +46,7 @@ RetVal = namedtuple('RetVal', 'ok msg data')
 _Template = namedtuple('_Template', 'aid rbs fragments boosters factories')
 
 # Fragments.
-_FragMeta = namedtuple('_FragMeta', 'aid fragtype fragdata')
+_FragMeta = namedtuple('_FragMeta', 'fragtype fragdata')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 FragNone = namedtuple('FragNone', '')
@@ -355,18 +355,14 @@ class FragMeta(_FragMeta):
     the actual geometry. However, when `fragtype` is *None* then the `fragdata`
     argument is ignored altogether.
 
-    :param dict aid: fragment name
     :param str fragtype: fragment type (eg 'raw', or 'dae', or None)
     :param fragdata: one of the fragment types (eg. `FragRaw` or `FragDae`).
     :return: compiled  ``_FragMeta`` instance.
     :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
-    def __new__(cls, aid: str, fragtype: str, fragdata):
+    def __new__(cls, fragtype: str, fragdata):
         try:
-            # AID must be valid.
-            assert isAIDStringValid(aid)
-
             # Verify that `fragtype` is valid and construct the respective data
             # type for the ``fragdata`` attribute.
             if fragdata is None:
@@ -393,7 +389,7 @@ class FragMeta(_FragMeta):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, aid, fragtype, frag)
+        return super().__new__(cls, fragtype, frag)
 
     def _asdict(self):
         if self.fragtype.upper() == '_NONE_':
@@ -1059,6 +1055,10 @@ class Template(_Template):
         try:
             # Sanity check the AID.
             assert isAIDStringValid(aid)
+
+            # AID must be valid.
+            for tmp_aid in fragments:
+                assert isAIDStringValid(tmp_aid)
 
             # Compile- and sanity check all geometry fragments.
             fragments = {k: FragMeta(**v) if isinstance(v, dict) else FragMeta(*v)
