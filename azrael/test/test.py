@@ -169,7 +169,7 @@ def getRigidBody(scale: (int, float)=1,
 
 def getTemplate(name='template',
                 rbs=None,
-                fragments=[],
+                fragments={},
                 boosters=[],
                 factories=[]):
     if rbs is None:

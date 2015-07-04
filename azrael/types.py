@@ -1053,7 +1053,7 @@ class Template(_Template):
     @typecheck
     def __new__(cls, aid: str,
                 rbs: (tuple, list, dict),
-                fragments: (tuple, list),
+                fragments: dict,
                 boosters: (tuple, list),
                 factories: (tuple, list)):
         try:
@@ -1061,9 +1061,8 @@ class Template(_Template):
             assert isAIDStringValid(aid)
 
             # Compile- and sanity check all geometry fragments.
-            fragments = [FragMeta(**_)
-                         if isinstance(_, dict) else FragMeta(*_)
-                         for _ in fragments]
+            fragments = {k: FragMeta(**v) if isinstance(v, dict) else FragMeta(*v)
+                         for (k, v) in fragments.items()}
 
             # Compile- and sanity check all boosters.
             boosters = [Booster(**_)
@@ -1091,7 +1090,7 @@ class Template(_Template):
             cls, aid, rbs, fragments, boosters, factories)
 
     def _asdict(self):
-        fragments = [_._asdict() for _ in self.fragments]
+        fragments = {k: v._asdict() for (k, v) in self.fragments.items()}
         boosters = [_._asdict() for _ in self.boosters]
         factories = [_._asdict() for _ in self.factories]
         rbs = self.rbs._asdict()

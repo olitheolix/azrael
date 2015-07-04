@@ -151,17 +151,17 @@ class TestDibbler:
         # Define a new template with two boosters and add it to Azrael.
         temp_t = getTemplate('t1',
                              rbs=rbs,
-                             fragments=[getFragRaw(), getFragDae()],
+                             fragments={'1': getFragRaw(), '2': getFragDae()},
                              boosters=[b0, b1],
                              factories=[f0, f1])
 
         # Verify that it is JSON compatible.
         assert self.isJsonCompatible(temp_t, Template)
 
-        # Verify that Templae._asdict() method calls the _asdict() methods for
-        # all collision shapes, fragments, boosters, and factories.
+        # Verify that Template._asdict() method calls the _asdict() methods
+        # for all collision shapes, fragments, boosters, and factories.
         temp_d = temp_t._asdict()
-        fragments_d = [_._asdict() for _ in temp_t.fragments]
+        fragments_d = {k: v._asdict() for (k, v) in temp_t.fragments.items()}
         boosters_d = [_._asdict() for _ in temp_t.boosters]
         factories_d = [_._asdict() for _ in temp_t.factories]
         rbs_d = rbs._asdict()
