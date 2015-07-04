@@ -599,7 +599,7 @@ class Clerk(config.AzraelProcess):
 
                 # Tell Dibbler to duplicate the template data into the instance
                 # location.
-                ret = self.dibbler.spawnTemplate(templateID, objID)
+                ret = self.dibbler.spawnTemplate(objID, templateID)
                 if not ret.ok:
                     # Dibbler and Clerk are out of sync because Clerk found
                     # a template that Dibbler does not know about. This really

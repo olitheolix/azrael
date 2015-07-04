@@ -342,16 +342,14 @@ class Dibbler:
             return RetVal(True, None, {'url_frag': location})
 
     @typecheck
-    def spawnTemplate(self, name: str, objID: int):
+    def spawnTemplate(self, objID: int, name: str):
         """
         .. note:: It is the caller's responsibility to ensure that ``objID`` is
                   unique. Dibbler will happily overwrite existing data.
 
-        # fixme: objID should be the first argument for consistency
-
-        :param str name: the name of the template to spawn.
         :param int objID: the object ID
-        :return: #file copied.
+        :param str name: the name of the template to spawn.
+        :return: number of files copied.
         """
         # Copy the model from the template- to the instance directory.
         src = self.getTemplateDir(name)
