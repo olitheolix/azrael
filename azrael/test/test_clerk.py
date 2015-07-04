@@ -60,7 +60,7 @@ class TestClerk:
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
-        frag = {'NoName': getFragRaw('NoName')}
+        frag = {'NoName': getFragRaw()}
         rbs_empty = getRigidBody(cshapes=[getCSEmpty()])
         rbs_sphere = getRigidBody(cshapes=[getCSSphere()])
         rbs_box = getRigidBody(cshapes=[getCSBox()])
@@ -150,7 +150,7 @@ class TestClerk:
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Compile a template structure.
-        frags = {'foo': getFragRaw('foo')}
+        frags = {'foo': getFragRaw()}
         temp = getTemplate('bar', rbs=body, fragments=frags)
 
         # Add template when 'saveModel' fails.
@@ -230,8 +230,8 @@ class TestClerk:
         name_1, name_2 = 't1', 't2'
 
         # Define two valid templates.
-        frag_1 = {'foo': getFragRaw('foo')}
-        frag_2 = {'bar': getFragRaw('bar')}
+        frag_1 = {'foo': getFragRaw()}
+        frag_2 = {'bar': getFragRaw()}
         t1 = getTemplate(name_1, fragments=frag_1)
         t2 = getTemplate(name_2, fragments=frag_2)
 
@@ -272,8 +272,8 @@ class TestClerk:
         name_1, name_2 = 't1', 't2'
 
         # Define two valid templates.
-        frag_1 = getFragRaw('foo')
-        frag_2 = getFragRaw('bar')
+        frag_1 = getFragRaw()
+        frag_2 = getFragRaw()
         t1 = getTemplate(name_1, fragments={'foo': frag_1})
         t2 = getTemplate(name_2, fragments={'bar': frag_2})
 
@@ -290,7 +290,7 @@ class TestClerk:
         frag_ret = ret.data[name_1]['template'].fragments['foo']
 
         url_template = config.url_templates
-        assert (frag_ret.aid, frag_ret.fragtype) == (frag_1.aid, frag_1.fragtype)
+        assert frag_ret.fragtype == frag_1.fragtype
         assert ret.data[name_1]['url_frag'] == '{}/'.format(url_template) + name_1
         del ret, frag_ret
 
@@ -299,7 +299,7 @@ class TestClerk:
         assert ret.ok
         frag_ret = ret.data[name_2]['template'].fragments['bar']
 
-        assert (frag_ret.aid, frag_ret.fragtype) == (frag_2.aid, frag_2.fragtype)
+        assert frag_ret.fragtype == frag_2.fragtype
         assert ret.data[name_2]['url_frag'] == config.url_templates + '/' + name_2
         del ret, frag_ret
 
@@ -1047,7 +1047,7 @@ class TestClerk:
         f_raw = getFragRaw()
 
         # Put both fragments into a valid list of FragMetas.
-        frags = {'f_raw': getFragRaw('f_raw'), 'f_dae': getFragDae('f_dae')}
+        frags = {'f_raw': getFragRaw(), 'f_dae': getFragDae()}
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
@@ -1114,7 +1114,7 @@ class TestClerk:
         clerk = self.clerk
 
         # Add a valid template and verify it now exists in Azrael.
-        temp = getTemplate('foo', fragments={'bar': getFragRaw('bar')})
+        temp = getTemplate('foo', fragments={'bar': getFragRaw()})
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
@@ -1130,7 +1130,7 @@ class TestClerk:
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
-        assert clerk.setFragmentGeometries(objID0, {'bar': getFragRaw('bar')}).ok
+        assert clerk.setFragmentGeometries(objID0, {'bar': getFragRaw()}).ok
 
         # Verify that the new 'version' flag is now different.
         ret = clerk.getBodyStates([objID0])
@@ -1230,7 +1230,7 @@ class TestClerk:
         assert not ret.ok
 
         # Define a new template with one fragment.
-        t1 = getTemplate('t1', fragments={'foo': getFragRaw('foo')})
+        t1 = getTemplate('t1', fragments={'foo': getFragRaw()})
 
         # Add the template to Azrael, spawn two instances, and make sure
         # Leonard picks it up so that the object becomes available.
@@ -1353,8 +1353,8 @@ class TestClerk:
             del ret, _frags
 
         # Create two fragments.
-        f_raw = getFragRaw('10')
-        f_dae = getFragDae('test')
+        f_raw = getFragRaw()
+        f_dae = getFragDae()
         frags = {'10': f_raw, 'test': f_dae}
 
         t1 = getTemplate('t1', fragments=frags)
@@ -1433,7 +1433,7 @@ class TestClerk:
         assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb2.jpg'])
 
         # Change the fragment geometries.
-        f_raw = getFragRaw('10')
+        f_raw = getFragRaw()
         assert clerk.setFragmentGeometries(objID, {'10': f_raw, 'test': f_dae}).ok
         ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
@@ -1612,9 +1612,9 @@ class TestClerk:
 
         # The original template has the following three fragments:
         frags_orig = {
-            'fname_1': getFragRaw('fname_1'),
-            'fname_2': getFragDae('fname_2'),
-            'fname_3': getFragRaw('fname_3')
+            'fname_1': getFragRaw(),
+            'fname_2': getFragDae(),
+            'fname_3': getFragRaw()
         }
         t1 = getTemplate('t1', fragments=frags_orig)
 
@@ -1633,7 +1633,7 @@ class TestClerk:
 
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
-        frags_new = {'fname_2': getFragNone('fname_2'), 'fname_3': getFragDae('fname_3')}
+        frags_new = {'fname_2': getFragNone(), 'fname_3': getFragDae()}
         assert clerk.setFragmentGeometries(objID, frags_new).ok
 
         # After the last update only two fragments must remain.
