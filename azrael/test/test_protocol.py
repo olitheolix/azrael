@@ -117,7 +117,7 @@ class TestClerk:
             templateID='_templateBox', exit_speed=(0.1, 0.5))
 
         # Create some fragments...
-        frags = [getFragRaw(), getFragDae(), getFragNone()]
+        frags = {'f1': getFragRaw(), 'f2': getFragDae(), 'f3': getFragNone()}
 
         # ... and a body...
         body = getRigidBody(position=(1, 2, 3))
@@ -343,7 +343,7 @@ class TestClerk:
         """
         # Client --> Clerk
         objID = 1
-        frags = [getFragRaw(), getFragDae(), getFragNone()]
+        frags = {'f1': getFragRaw(), 'f2': getFragDae(), 'f3': getFragNone()}
         payload = (objID, frags)
         enc = protocol.ToClerk_SetFragmentGeometry_Encode
         dec = protocol.ToClerk_SetFragmentGeometry_Decode

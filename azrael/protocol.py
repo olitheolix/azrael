@@ -283,10 +283,10 @@ def FromClerk_GetFragmentGeometries_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_SetFragmentGeometry_Encode(objID: int, frags: list):
+def ToClerk_SetFragmentGeometry_Encode(objID: int, frags: dict):
     out = {
         'objID': objID,
-        'frags': [_._asdict() for _ in frags],
+        'frags': {k: v._asdict() for (k, v) in frags.items()},
     }
     return RetVal(True, None, out)
 
@@ -294,10 +294,7 @@ def ToClerk_SetFragmentGeometry_Encode(objID: int, frags: list):
 @typecheck
 def ToClerk_SetFragmentGeometry_Decode(payload: dict):
     # Wrap the fragments into their dedicated tuple.
-    frags = []
-    for frag in payload['frags']:
-        mf = FragMeta(**frag)
-        frags.append(mf)
+    frags = {k: FragMeta(**v) for (k, v) in payload['frags'].items()}
     return True, (payload['objID'], frags)
 
 
