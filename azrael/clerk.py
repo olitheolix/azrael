@@ -401,10 +401,11 @@ class Clerk(config.AzraelProcess):
                 frags = template.fragments
 
                 # Ensure the AIDs of all fragments are unique.
-                if len(set([_.aid for _ in frags])) < len(frags):
-                    msg = 'Not all fragment IDs in template <{}> are unique'
-                    msg = msg.format(template.aid)
-                    return RetVal(False, msg, None)
+                # fixme: redundant
+#$                if len(frags.keys()) < len(frags):
+#                    msg = 'Not all fragment IDs in template <{}> are unique'
+#                    msg = msg.format(template.aid)
+#                    return RetVal(False, msg, None)
 
                 # Dibbler administrates the geometry data. Abort immediately if
                 # it returns an error (should be impossible, but just to be
@@ -420,7 +421,7 @@ class Clerk(config.AzraelProcess):
                 # Only retain the meta data for the geometries to save space
                 # and avoid data duplication (Dibbler handles the actual
                 # geometry data).
-                frags = [_._replace(fragdata=None) for _ in frags]
+                frags = {k: v._replace(fragdata=None) for (k, v) in frags.items()}
                 template = template._replace(fragments=frags)
 
                 # Compile the template data that will go into the database. The
@@ -628,7 +629,7 @@ class Clerk(config.AzraelProcess):
                                scale=1,
                                position=(0, 0, 0),
                                orientation=(0, 0, 0, 1))
-                fragStates = {_.aid: fs._replace(aid=_.aid) for _ in frags}
+                fragStates = {_: fs._replace(aid=_) for _ in frags}
 
                 # Compile the database document. Each entry must be an explicit
                 # dictionary (eg 'template'). The document contains the
@@ -957,16 +958,16 @@ class Clerk(config.AzraelProcess):
             for doc in docs:
                 # Unpack and compile geometry data for the current object.
                 frags = doc['template']['fragments']
-                frags = [FragMeta(**_) for _ in frags]
+                frags = {k: FragMeta(**v) for (k, v) in frags.items()}
 
                 # Compile the dictionary with all the geometries that comprise
                 # the current object, including where to download the geometry
                 # data itself (we only provide the meta information).
                 out[doc['objID']] = {
-                    _.aid: {
-                        'fragtype': _.fragtype,
-                        'url_frag': pjoin(doc['url_frag'], _.aid)
-                    } for _ in frags}
+                    k: {
+                        'fragtype': v.fragtype,
+                        'url_frag': pjoin(doc['url_frag'], k)
+                    } for (k, v) in frags.items()}
         except TypeError:
             msg = 'Inconsistent Fragment data'
             self.logit.error(msg)
@@ -974,19 +975,20 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def setFragmentGeometries(self, objID: int, fragments: list):
+    def setFragmentGeometries(self, objID: int, fragments: dict):
         """
         Update the geometries of ``objID``.
 
         Return with an error if ``objID`` does not exist.
 
+        # fixme: 'fragment' is now a dict
         :param int objID: the object for which to update the geometry.
         :param list fragments: the new fragments for ``objID``.
         :return: Success
         """
         # Compile- and sanity check the fragments.
         try:
-            fragments = [FragMeta(*_) for _ in fragments]
+            fragments = {k: FragMeta(*v) for (k, v) in fragments.items()}
         except TypeError:
             return RetVal(False, 'Received invalid fragment data', None)
 
@@ -994,21 +996,21 @@ class Clerk(config.AzraelProcess):
         db = database.dbHandles['ObjInstances']
 
         # Update the fragment geometry in Dibbler.
-        for frag in fragments:
-            ret = self.dibbler.updateFragments(objID, fragments)
-            if not ret.ok:
-                return ret
+        ret = self.dibbler.updateFragments(objID, fragments)
+        if not ret.ok:
+            return ret
 
-            # If the fragment type is '_NONE_' then remove it altogether.
+        # Remove all '_NONE' fragments in the instance database.
+        for aid, frag in fragments.items():
             if frag.fragtype.upper() == '_NONE_':
                 db.update({'objID': objID},
-                          {'$unset': {'fragState.{}'.format(frag.aid): True}})
+                          {'$unset': {'fragState.{}'.format(aid): True}})
 
         # To update the fragment's meta data in the DB we first need to remove
         # the actual geometry data from the fragments because the instance DB
         # only stores meta information (Dibbler contains the actual
         # geometries).
-        new_frags = [frag._replace(fragdata=None) for frag in fragments]
+        new_frags = {k: v._replace(fragdata=None) for (k, v) in fragments.items()}
 
         # ------------------------------------------------------------------
         # Here we update/remove the specified fragments. This would be a
@@ -1021,36 +1023,38 @@ class Clerk(config.AzraelProcess):
         # dictionaries.
         # ------------------------------------------------------------------
 
+        # fixme: remove all this update docu
         # Compile the set of all fragments AIDs that should be either removed
         # or modified.
-        aid_del = [_.aid for _ in new_frags if _.fragtype.upper() == '_NONE_']
-        aid_mod = [_.aid for _ in new_frags if _.fragtype.upper() != '_NONE_']
-        aid_del = set(aid_del)
-        aid_mod = set(aid_mod)
+        # aid_del = [_.aid for _ in new_frags if _.fragtype.upper() == '_NONE_']
+        # aid_mod = [_.aid for _ in new_frags if _.fragtype.upper() != '_NONE_']
+        # aid_del = set(aid_del)
+        # aid_mod = set(aid_mod)
 
-        # Compile a list of fragments that should be modified but not removed.
-        frag_mod = [_ for _ in new_frags if _.aid in aid_mod]
+        # # Compile a list of fragments that should be modified but not removed.
+        # frag_mod = [_ for _ in new_frags if _.aid in aid_mod]
 
-        # Retrieve the original template for the current objID.
-        old_template = db.find_one({'objID': objID})
-        if old_template is None:
-            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
+        # # Retrieve the original template for the current objID.
+        # old_template = db.find_one({'objID': objID})
+        # if old_template is None:
+        #     return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
 
-        # Compile its list of fragments.
-        old_frags = old_template['template']['fragments']
-        old_frags = [FragMeta(**_) for _ in old_frags]
+        # # Compile its list of fragments.
+        # old_frags = old_template['template']['fragments']
+        # old_frags = [FragMeta(**_) for _ in old_frags]
 
-        # Remove all those fragments from the template that the user has asked
-        # us to update/delete.
-        frags = [_ for _ in old_frags if _.aid not in aid_del.union(aid_mod)]
+        # # Remove all those fragments from the template that the user has asked
+        # # us to update/delete.
+        # frags = [_ for _ in old_frags if _.aid not in aid_del.union(aid_mod)]
 
-        # Add all those fragments the user wanted modifed (but not removed).
-        frags.extend(frag_mod)
+        # # Add all those fragments the user wanted modifed (but not removed).
+        # frags.extend(frag_mod)
 
-        # Convert the updated list of fragments to dictionaries so that they
-        # can be saved in the database.
-        frags = [_._asdict() for _ in frags]
+        # # Convert the updated list of fragments to dictionaries so that they
+        # # can be saved in the database.
+        # frags = [_._asdict() for _ in frags]
 
+        frags = {k: v._asdict() for (k, v) in new_frags.items()}
         # Update the 'version' flag in the database. All clients
         # automatically receive this flag with their state variables.
         ret = db.update({'objID': objID},

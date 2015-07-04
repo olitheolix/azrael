@@ -60,7 +60,7 @@ class TestClerk:
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
-        frag = [getFragRaw('NoName')]
+        frag = {'NoName': getFragRaw('NoName')}
         rbs_empty = getRigidBody(cshapes=[getCSEmpty()])
         rbs_sphere = getRigidBody(cshapes=[getCSSphere()])
         rbs_box = getRigidBody(cshapes=[getCSBox()])
@@ -150,7 +150,7 @@ class TestClerk:
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Compile a template structure.
-        frags = [getFragRaw('foo')]
+        frags = {'foo': getFragRaw('foo')}
         temp = getTemplate('bar', rbs=body, fragments=frags)
 
         # Add template when 'saveModel' fails.
@@ -230,10 +230,10 @@ class TestClerk:
         name_1, name_2 = 't1', 't2'
 
         # Define two valid templates.
-        frag_1 = getFragRaw('foo')
-        frag_2 = getFragRaw('bar')
-        t1 = getTemplate(name_1, fragments=[frag_1])
-        t2 = getTemplate(name_2, fragments=[frag_2])
+        frag_1 = {'foo': getFragRaw('foo')}
+        frag_2 = {'bar': getFragRaw('bar')}
+        t1 = getTemplate(name_1, fragments=frag_1)
+        t2 = getTemplate(name_2, fragments=frag_2)
 
         # Uploading the templates must succeed.
         assert clerk.addTemplates([t1, t2]).ok
@@ -246,15 +246,18 @@ class TestClerk:
         # Fetch the first template.
         ret = clerk.getTemplates([name_1])
         assert ret.ok
-        frag = ret.data[name_1]['template'].fragments[0]
+        assert list(ret.data[name_1]['template'].fragments.keys()) == ['foo']
 
         # Fetch the second template.
         ret = clerk.getTemplates([name_2])
         assert ret.ok
+        assert list(ret.data[name_2]['template'].fragments.keys()) == ['bar']
 
         # Fetch both templates at once.
         ret = clerk.getTemplates([name_1, name_2])
         assert ret.ok and (len(ret.data) == 2)
+        assert list(ret.data[name_1]['template'].fragments.keys()) == ['foo']
+        assert list(ret.data[name_2]['template'].fragments.keys()) == ['bar']
 
     def test_add_get_template_multi_url(self):
         """
@@ -271,8 +274,8 @@ class TestClerk:
         # Define two valid templates.
         frag_1 = getFragRaw('foo')
         frag_2 = getFragRaw('bar')
-        t1 = getTemplate(name_1, fragments=[frag_1])
-        t2 = getTemplate(name_2, fragments=[frag_2])
+        t1 = getTemplate(name_1, fragments={'foo': frag_1})
+        t2 = getTemplate(name_2, fragments={'bar': frag_2})
 
         # Uploading the templates must succeed.
         assert clerk.addTemplates([t1, t2]).ok
@@ -284,20 +287,21 @@ class TestClerk:
         # geometries are stored.
         ret = clerk.getTemplates([name_1])
         assert ret.ok
-        frag = ret.data[name_1]['template'].fragments[0]
+        frag_ret = ret.data[name_1]['template'].fragments['foo']
 
         url_template = config.url_templates
-        assert (frag.aid, frag.fragtype) == (frag_1.aid, frag_1.fragtype)
+        assert (frag_ret.aid, frag_ret.fragtype) == (frag_1.aid, frag_1.fragtype)
         assert ret.data[name_1]['url_frag'] == '{}/'.format(url_template) + name_1
-        del ret, frag
+        del ret, frag_ret
 
         # Fetch the second template.
         ret = clerk.getTemplates([name_2])
         assert ret.ok
-        frag = ret.data[name_2]['template'].fragments[0]
-        assert (frag.aid, frag.fragtype) == (frag_2.aid, frag_2.fragtype)
+        frag_ret = ret.data[name_2]['template'].fragments['bar']
+
+        assert (frag_ret.aid, frag_ret.fragtype) == (frag_2.aid, frag_2.fragtype)
         assert ret.data[name_2]['url_frag'] == config.url_templates + '/' + name_2
-        del ret, frag
+        del ret, frag_ret
 
         # Fetch both templates at once.
         ret = clerk.getTemplates([name_1, name_2])
@@ -338,6 +342,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (1, ))
 
         # Geometry for this object must now exist.
+        print(clerk.getFragmentGeometries([1]))
         assert clerk.getFragmentGeometries([1]).data[1] is not None
 
         # Spawn two more objects with a single call.
@@ -648,7 +653,6 @@ class TestClerk:
 
         # Define a new template, add it to Azrael, and spawn an instance.
         temp = getTemplate('t1',
-                           fragments=[getFragRaw('bar')],
                            boosters=[b0],
                            factories=[f0])
         assert clerk.addTemplates([temp]).ok
@@ -698,9 +702,7 @@ class TestClerk:
                            minval=0, maxval=0.5, force=0)
 
         # Define a new template with two boosters and add it to Azrael.
-        temp = getTemplate('t1',
-                           fragments=[getFragRaw('bar')],
-                           boosters=[b0, b1])
+        temp = getTemplate('t1', boosters=[b0, b1])
         assert clerk.addTemplates([temp]).ok
 
         # Spawn an instance of the template.
@@ -770,9 +772,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
-        temp = getTemplate('t1',
-                           fragments=[getFragRaw('bar')],
-                           factories=[f0, f1])
+        temp = getTemplate('t1', factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -839,9 +839,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
-        temp = getTemplate('t1',
-                           fragments=[getFragRaw('bar')],
-                           factories=[f0, f1])
+        temp = getTemplate('t1', factories=[f0, f1])
         init = {
             'templateID': temp.aid,
             'rbs': {'position': body.position, 'velocityLin': body.velocityLin}
@@ -944,10 +942,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
-        temp = getTemplate('t1',
-                           fragments=[getFragRaw('bar')],
-                           boosters=[b0, b1],
-                           factories=[f0, f1])
+        temp = getTemplate('t1', boosters=[b0, b1], factories=[f0, f1])
         assert clerk.addTemplates([temp]).ok
 
         init = {
@@ -1051,11 +1046,8 @@ class TestClerk:
         body_2 = getRigidBody(position=[4, 5, 6])
         f_raw = getFragRaw()
 
-        # Get Collada fragment.
-        f_dae = getFragDae()
-
         # Put both fragments into a valid list of FragMetas.
-        frags = [getFragRaw('f_raw'), getFragDae('f_dae')]
+        frags = {'f_raw': getFragRaw('f_raw'), 'f_dae': getFragDae('f_dae')}
 
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
@@ -1122,7 +1114,7 @@ class TestClerk:
         clerk = self.clerk
 
         # Add a valid template and verify it now exists in Azrael.
-        temp = getTemplate('foo', fragments=[getFragRaw('bar')])
+        temp = getTemplate('foo', fragments={'bar': getFragRaw('bar')})
         assert clerk.addTemplates([temp]).ok
 
         # Spawn two objects from the previously defined template.
@@ -1138,7 +1130,7 @@ class TestClerk:
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
-        assert clerk.setFragmentGeometries(objID0, [getFragRaw('bar')]).ok
+        assert clerk.setFragmentGeometries(objID0, {'bar': getFragRaw('bar')}).ok
 
         # Verify that the new 'version' flag is now different.
         ret = clerk.getBodyStates([objID0])
@@ -1169,9 +1161,7 @@ class TestClerk:
                            minval=-1, maxval=1, force=0)
 
         # Define a template with one fragment.
-        t1 = getTemplate('t1',
-                         fragments=[getFragRaw('foo')],
-                         boosters=[b0, b1])
+        t1 = getTemplate('t1', boosters=[b0, b1])
 
         # Add the template and spawn two instances.
         assert clerk.addTemplates([t1]).ok
@@ -1240,7 +1230,7 @@ class TestClerk:
         assert not ret.ok
 
         # Define a new template with one fragment.
-        t1 = getTemplate('t1', fragments=[getFragRaw('foo')])
+        t1 = getTemplate('t1', fragments={'foo': getFragRaw('foo')})
 
         # Add the template to Azrael, spawn two instances, and make sure
         # Leonard picks it up so that the object becomes available.
@@ -1365,7 +1355,7 @@ class TestClerk:
         # Create two fragments.
         f_raw = getFragRaw('10')
         f_dae = getFragDae('test')
-        frags = [f_raw, f_dae]
+        frags = {'10': f_raw, 'test': f_dae}
 
         t1 = getTemplate('t1', fragments=frags)
         assert clerk.addTemplates([t1]).ok
@@ -1444,7 +1434,7 @@ class TestClerk:
 
         # Change the fragment geometries.
         f_raw = getFragRaw('10')
-        assert clerk.setFragmentGeometries(objID, [f_raw, f_dae]).ok
+        assert clerk.setFragmentGeometries(objID, {'10': f_raw, 'test': f_dae}).ok
         ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
         data = ret.data[objID]
@@ -1621,11 +1611,11 @@ class TestClerk:
         clerk = self.clerk
 
         # The original template has the following three fragments:
-        frags_orig = [
-            getFragRaw('fname_1'),
-            getFragDae('fname_2'),
-            getFragRaw('fname_3')
-        ]
+        frags_orig = {
+            'fname_1': getFragRaw('fname_1'),
+            'fname_2': getFragDae('fname_2'),
+            'fname_3': getFragRaw('fname_3')
+        }
         t1 = getTemplate('t1', fragments=frags_orig)
 
         # Add a new template, spawn it, and record the object ID.
@@ -1643,7 +1633,7 @@ class TestClerk:
 
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
-        frags_new = [getFragNone('fname_2'), getFragDae('fname_3')]
+        frags_new = {'fname_2': getFragNone('fname_2'), 'fname_3': getFragDae('fname_3')}
         assert clerk.setFragmentGeometries(objID, frags_new).ok
 
         # After the last update only two fragments must remain.
@@ -1718,9 +1708,9 @@ class TestClerk:
         # Create templates for all possible "stunted" objects.
         body_cs = getRigidBody(cshapes=[getCSSphere()])
         body_nocs = getRigidBody(cshapes=[])
-        t_cs = getTemplate('t_cs', rbs=body_cs, fragments=[])
-        t_frag = getTemplate('t_frag', rbs=body_nocs, fragments=[getFragRaw()])
-        t_none = getTemplate('t_none', rbs=body_nocs, fragments=[])
+        t_cs = getTemplate('t_cs', rbs=body_cs, fragments={})
+        t_frag = getTemplate('t_frag', rbs=body_nocs, fragments={'foo': getFragRaw()})
+        t_none = getTemplate('t_none', rbs=body_nocs, fragments={})
 
         # Add the templates to Azrael and verify it accepted them.
         assert clerk.addTemplates([t_cs, t_frag, t_none]).ok
