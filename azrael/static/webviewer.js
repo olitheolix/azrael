@@ -284,15 +284,6 @@ function updateObjectGeometries(objID, allSVs, obj_cache) {
     // Convenience.
     var sv = allSVs[objID]['rbs']
 
-    // Compile a hash map for all fragments with the
-    // fragment-name as the key. We will need this below to
-    // look up Fragments directly instead of searching through
-    // the array every time.
-    var fragData = {};
-    for (var fragname in allSVs[objID]['frag']) {
-        fragData[fragname] = allSVs[objID]['frag'][fragname];
-    }
-
     // Pre-allocate the necessary ThreeJS Vector/Quaternion objects.
     var objPos = new THREE.Vector3(),
         objRot = new THREE.Quaternion(),
@@ -306,12 +297,15 @@ function updateObjectGeometries(objID, allSVs, obj_cache) {
 
     // Assign the object- position and quaternion to JS variables.
     for (var fragname in obj_cache[objID]) {
+        // Convenience: handle to all fragments.
+        var fragData = allSVs[objID]['frag'][fragname];
+
         // Convert the Azrael data to ThreeJS types.
-        fragPos = fragPos.fromArray(fragData[fragname]['position']);
-        fragRot = fragRot.fromArray(fragData[fragname]['orientation']);
-        fragScl.x = fragData[fragname]['scale'];
-        fragScl.y = fragData[fragname]['scale'];
-        fragScl.z = fragData[fragname]['scale'];
+        fragPos = fragPos.fromArray(fragData['position']);
+        fragRot = fragRot.fromArray(fragData['orientation']);
+        fragScl.x = fragData['scale'];
+        fragScl.y = fragData['scale'];
+        fragScl.z = fragData['scale'];
         objPos = objPos.fromArray(sv.position);
         objRot = objRot.fromArray(sv.orientation);
         objScl = objScl.set(sv.scale, sv.scale, sv.scale);
