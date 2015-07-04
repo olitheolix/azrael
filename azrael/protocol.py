@@ -337,10 +337,10 @@ def FromClerk_GetBodyState_Encode(payload: dict):
             sv = None
         else:
             sv = data['rbs']._asdict()
-        frag = [_._asdict() for _ in data['frag']]
+        frags = {k: v._asdict() for (k, v) in data['frag'].items()}
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
-        out[objID] = {'rbs': sv, 'frag': frag}
+        out[objID] = {'rbs': sv, 'frag': frags}
     return True, {'data': out}
 
 
@@ -358,10 +358,10 @@ def FromClerk_GetBodyState_Decode(payload: dict):
             sv = None
         else:
             sv = types.RigidBodyState(**data['rbs'])
-        frag = [types.FragState(**_) for _ in data['frag']]
+        frags = {k: types.FragState(**v) for (k, v) in data['frag'].items()}
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
-        out[int(objID)] = {'rbs': sv, 'frag': frag}
+        out[int(objID)] = {'rbs': sv, 'frag': frags}
     return RetVal(True, None, out)
 
 
@@ -484,8 +484,8 @@ def ToClerk_SetFragmentStates_Encode(fragData: dict):
 @typecheck
 def ToClerk_SetFragmentStates_Decode(payload: dict):
     out = {}
-    for objID, frag_states in payload.items():
-        out[int(objID)] = [FragState(*_) for _ in frag_states]
+    for objID, fs in payload.items():
+        out[int(objID)] = {k: FragState(**v) for (k, v) in fs.items()}
     return True, (out, )
 
 
