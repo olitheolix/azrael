@@ -94,13 +94,8 @@ class TestClient:
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
         clerk = azrael.clerk.Clerk()
-        # frag = getFragRaw('NoName')
-        # t1 = getTemplate('_templateEmpty', cshapes=[getCSEmpty()], fragments=[frag])
-        # t2 = getTemplate('_templateSphere', cshapes=[getCSSphere()], fragments=[frag])
-        # t3 = getTemplate('_templateBox', cshapes=[getCSBox()], fragments=[frag])
-        # ret = clerk.addTemplates([t1, t2, t3])
 
-        frag = [getFragRaw('NoName')]
+        frag = {'NoName': getFragRaw('NoName')}
         rbs_empty = getRigidBody(cshapes=[getCSEmpty()])
         rbs_sphere = getRigidBody(cshapes=[getCSSphere()])
         rbs_box = getRigidBody(cshapes=[getCSBox()])
@@ -195,7 +190,7 @@ class TestClient:
         frag = getFragRaw('bar')
         body = getRigidBody()
         temp_name = 't1'
-        temp_orig = getTemplate(temp_name, rbs=body, fragments=[frag])
+        temp_orig = getTemplate(temp_name, rbs=body, fragments={'bar': frag})
         assert client.addTemplates([temp_orig]).ok
 
         # Fetch the just added template again and verify its content (skip the
@@ -235,7 +230,7 @@ class TestClient:
         body = getRigidBody(cshapes=[getCSBox()])
         temp = getTemplate('t2',
                            rbs=body,
-                           fragments=[frag],
+                           fragments={'bar': frag},
                            boosters=[b0, b1],
                            factories=[f0])
         assert client.addTemplates([temp]).ok
@@ -431,7 +426,6 @@ class TestClient:
         # Define the template, add it to Azrael, and spawn an instance.
         temp = getTemplate('t1',
                            rbs=getRigidBody(),
-                           fragments=[getFragRaw('bar')],
                            boosters=[b0, b1],
                            factories=[f0, f1])
         assert client.addTemplates([temp]).ok
@@ -503,7 +497,7 @@ class TestClient:
 
         # Add a new template and spawn it.
         frag = getFragRaw('bar')
-        temp = getTemplate('t1', fragments=[frag])
+        temp = getTemplate('t1', fragments={'bar': frag})
         assert client.addTemplates([temp]).ok
 
         new_obj = {'templateID': temp.aid,
@@ -539,7 +533,7 @@ class TestClient:
 
         # Change the fragment geometries.
         frag = getFragRaw('bar')
-        assert client.setFragmentGeometries(objID, [frag]).ok
+        assert client.setFragmentGeometries(objID, {'bar': frag}).ok
 
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
@@ -567,7 +561,7 @@ class TestClient:
         f_dae = getFragDae('f_dae')
 
         # Add a new template and spawn it.
-        temp = getTemplate('t1', fragments=[f_dae])
+        temp = getTemplate('t1', fragments={'f_dae': f_dae})
         assert client.addTemplates([temp]).ok
 
         new_obj = {'templateID': temp.aid,
@@ -588,7 +582,7 @@ class TestClient:
         assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
 
         # Change the geometry for fragment 'f_dae' to a RAW type.
-        assert client.setFragmentGeometries(objID, [getFragRaw('f_dae')]).ok
+        assert client.setFragmentGeometries(objID, {'f_dae': getFragRaw('f_dae')}).ok
 
         # Ensure the fragment is now indeed of type 'RAW'.
         ret = client.getFragmentGeometries([objID])
@@ -601,7 +595,7 @@ class TestClient:
 
         # Change the fragment geometry once more.
         version = ret.data[objID]['rbs'].version
-        assert client.setFragmentGeometries(objID, [getFragDae('f_dae')]).ok
+        assert client.setFragmentGeometries(objID, {'f_dae': getFragDae('f_dae')}).ok
 
         # Ensure it now has type 'DAE' again.
         ret = client.getFragmentGeometries([objID])
@@ -624,7 +618,7 @@ class TestClient:
         objID = 1
 
         # Add a new template and spawn it.
-        temp = getTemplate('t1', fragments=[getFragRaw('bar')])
+        temp = getTemplate('t1', fragments={'bar': getFragRaw('bar')})
         assert client.addTemplates([temp]).ok
 
         new_obj = {'templateID': temp.aid,
@@ -661,11 +655,11 @@ class TestClient:
         objID = 1
 
         # The original template has the following three fragments:
-        frags_orig = [
-            getFragRaw('fname_1'),
-            getFragDae('fname_2'),
-            getFragRaw('fname_3')
-        ]
+        frags_orig = {
+            'fname_1': getFragRaw('fname_1'),
+            'fname_2': getFragDae('fname_2'),
+            'fname_3': getFragRaw('fname_3'),
+        }
         t1 = getTemplate('t1', fragments=frags_orig)
 
         # Add a new template and spawn it.
@@ -683,7 +677,7 @@ class TestClient:
 
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
-        frags_new = [getFragNone('fname_2'), getFragDae('fname_3')]
+        frags_new = {'fname_2': getFragNone('fname_2'), 'fname_3': getFragDae('fname_3')}
         assert client.setFragmentGeometries(objID, frags_new).ok
 
         # After the last update there must now only be two fragments.
@@ -702,7 +696,7 @@ class TestClient:
         client = self.clients[client_type]
 
         # Add a valid template with Collada data and verify the upload worked.
-        temp = getTemplate('foo', fragments=[getFragDae('f_dae')])
+        temp = getTemplate('foo', fragments={'f_dae': getFragDae('f_dae')})
         assert client.addTemplates([temp]).ok
 
         # Spawn the template.

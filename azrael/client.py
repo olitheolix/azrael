@@ -298,16 +298,18 @@ class Client():
         return self.serialiseAndSend('get_fragment_geometries', objIDs)
 
     @typecheck
-    def setFragmentGeometries(self, objID: int, frags: list):
+    def setFragmentGeometries(self, objID: int, frags: dict):
         """
         Change the geometry parameters of ``objID``.
+
+        fixme: frags
 
         :param int objID: ID for which to return the geometry.
         :param list frags: list of ``Fragment`` instances.
         :return: Success
         """
         try:
-            frags = [FragMeta(*_) for _ in frags]
+            frags = {k: FragMeta(*v) for (k, v) in frags.items()}
         except TypeError:
             return RetVal(False, 'Invalid fragment data types', None)
 
@@ -469,14 +471,13 @@ class Client():
 
         # Fetch the geometry from the web server and decode it.
         out = {}
-        for frag in template['template'].fragments:
-            frag = FragMeta(*frag)
-            url = base_url + '/' + frag.aid + '/model.json'
-            data = urllib.request.urlopen(url).readall()
-            out = json.loads(data.decode('utf8'))
+        for aid, frag in template['template'].fragments.items():
+            url = base_url + '/' + aid + '/model.json'
+            geo = urllib.request.urlopen(url).readall()
+            geo = json.loads(geo.decode('utf8'))
 
             # Wrap the fragments into their dedicated tuple type.
-            out[frag.aid] = FragRaw(**out)
+            out[aid] = FragRaw(**geo)
         return RetVal(True, None, out)
 
     @typecheck
