@@ -267,11 +267,11 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     cs = CollShapeBox(1, 1, 1)
     cs = CollShapeMeta('', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
     z = np.array([])
-    frags = [
-        FragMeta('frag_1', 'raw', FragRaw(vert, uv, rgb)),
-        FragMeta('b_left', 'raw', FragRaw(vert_b, z, z)),
-        FragMeta('b_right', 'raw',  FragRaw(vert_b, z, z)),
-    ]
+    frags = {
+        'frag_1': FragMeta('raw', FragRaw(vert, uv, rgb)),
+        'b_left': FragMeta('raw', FragRaw(vert_b, z, z)),
+        'b_right': FragMeta('raw',  FragRaw(vert_b, z, z)),
+    }
 
     body = getRigidBody()
     temp = Template(tID, body, frags, [b0, b1, b2, b3], [])
@@ -297,10 +297,10 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     print('done (ID=<{}>)'.format(objID))
 
     # Disable the booster fragments by settings their scale to Zero.
-    newStates = {objID: [
-        FragState('b_left', 0, [0, 0, 0], [0, 0, 0, 1]),
-        FragState('b_right', 0, [0, 0, 0], [0, 0, 0, 1]),
-    ]}
+    newStates = {objID: {
+        'b_left': FragState(0, [0, 0, 0], [0, 0, 0, 1]),
+        'b_right': FragState(0, [0, 0, 0], [0, 0, 0, 1]),
+    }}
     assert client.setFragmentStates(newStates).ok
 
 
@@ -371,8 +371,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     tID_1 = 'Product1'
     tID_2 = 'Product2'
-    frags_1 = [FragMeta('frag_1', 'raw', FragRaw(0.75 * vert, uv, rgb))]
-    frags_2 = [FragMeta('frag_1', 'raw', FragRaw(0.24 * vert, uv, rgb))]
+    frags_1 = {'frag_1': FragMeta('raw', FragRaw(0.75 * vert, uv, rgb))}
+    frags_2 = {'frag_1': FragMeta('raw', FragRaw(0.24 * vert, uv, rgb))}
     body = getRigidBody(cshapes=[cs])
     t1 = Template(tID_1, body, frags_1, [], [])
     t2 = Template(tID_2, body, frags_2, [], [])
@@ -399,7 +399,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Add the template.
     tID_3 = 'BoosterCube'
-    frags = [FragMeta('frag_1', 'raw', FragRaw(vert, uv, rgb))]
+    frags = {'frag_1': FragMeta('raw', FragRaw(vert, uv, rgb))}
     body = getRigidBody(cshapes=[cs])
     t3 = Template(tID_3, body, frags, [b0, b1], [f0, f1])
     assert client.addTemplates([t3]).ok
@@ -428,8 +428,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        frags = [FragMeta('frag_1', 'raw', FragRaw(vert, curUV, rgb)),
-                 FragMeta('frag_2', 'raw', FragRaw(vert, curUV, rgb))]
+        frags = {'frag_1': FragMeta('raw', FragRaw(vert, curUV, rgb)),
+                 'frag_2': FragMeta('raw', FragRaw(vert, curUV, rgb))}
         body = getRigidBody(cshapes=[cs])
         tmp = Template(tID, body, frags, [b0, b1], [])
         templates.append(tmp)
@@ -498,8 +498,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Make 'frag_2' invisible by setting its scale to zero.
     for objID in ret.data:
-        client.setFragmentStates({objID: [
-            FragState('frag_2', 0, [0, 0, 0], [0, 0, 0, 1])]})
+        client.setFragmentStates({objID: {
+            'frag_2': FragState(0, [0, 0, 0], [0, 0, 0, 1])}})
 
 
 def launchQtViewer(param):

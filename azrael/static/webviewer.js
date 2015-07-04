@@ -289,9 +289,8 @@ function updateObjectGeometries(objID, allSVs, obj_cache) {
     // look up Fragments directly instead of searching through
     // the array every time.
     var fragData = {};
-    for (var ii in allSVs[objID]['frag']) {
-        var fragname = allSVs[objID]['frag'][ii]['aid'];
-        fragData[fragname] = allSVs[objID]['frag'][ii];
+    for (var fragname in allSVs[objID]['frag']) {
+        fragData[fragname] = allSVs[objID]['frag'][fragname];
     }
 
     // Pre-allocate the necessary ThreeJS Vector/Quaternion objects.
@@ -494,7 +493,7 @@ function* mycoroutine(connection) {
         worker_jobs = [];
     }
 
-    // Query the state variables of all visible objects and update
+    // Fetch the state variables for all visible objects and update
     // their position on the screen.
     while (true) {
         // Get the SV for all objects.
@@ -532,9 +531,10 @@ function* mycoroutine(connection) {
                 continue;
             }
 
-            // Remove the objects if its geometry has changed. The
-            // code further down below will then think the object has
-            // never existed and download it from scratch.
+            // Remove the object if its geometry has changed. The code
+            // further down will then think the object has never
+            // existed and will download it from scratch, thus
+            // updating the geometry to the latest value.
             if (old_SVs[objID] != undefined) {
                 if (allSVs[objID]['rbs'].version !=
                     old_SVs[objID]['rbs'].version) {
@@ -576,7 +576,7 @@ function* mycoroutine(connection) {
                 // Mark the Worker as being busy.
                 worker_idle = false;
 
-                // Send the list of objIDs for which we need the model
+                // Send the list of objIDs for which we need the model.
                 // The worker also needs to know from where to
                 // download them.
                 worker.postMessage(
@@ -588,7 +588,7 @@ function* mycoroutine(connection) {
         // Remove models that do not exist anymore.
         for (var objID in obj_cache) {
             // Yes, the keys of obj_cache are integers but objID is of
-            // type string -- I have no idea why.
+            // type string because JS does not support integer keys in hash maps.
             objID = parseInt(objID);
 
             // If the objID is in our cache but not in the simulation
