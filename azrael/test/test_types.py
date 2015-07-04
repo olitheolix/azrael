@@ -129,8 +129,8 @@ class TestDibbler:
         assert self.isJsonCompatible(body_a, RigidBodyState)
 
     def test_FragState(self):
-        body_a = FragState('blah', 2, (1, 2, 3), (0, 0, 0, 1))
-        body_b = FragState('blah', 2, (1, 2, 3), (0, 0, 0, 1))
+        body_a = FragState(2, (1, 2, 3), (0, 0, 0, 1))
+        body_b = FragState(2, (1, 2, 3), (0, 0, 0, 1))
         assert body_a == body_b
 
         assert self.isJsonCompatible(body_a, FragState)
