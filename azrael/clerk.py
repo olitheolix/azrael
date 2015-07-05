@@ -977,10 +977,42 @@ class Clerk(config.AzraelProcess):
         """
         # Compile- and sanity check the fragments.
         try:
+            # Valid default values for a FragMeta types.
+            ref_1 = {'fragtype': '_NONE_',
+                     'scale': 1,
+                     'position': (0, 0, 0),
+                     'orientation': (0, 0, 0, 1),
+                     'fragdata': types.FragNone()}
+
+            # Same as ref_1 but all values are None.
+            ref_2 = {k: None for k in ref_1}
+
+            fragments_dibbler = {}
             for objID, frags in fragments.items():
-                fragments[objID] = {k: FragMeta(*v) for (k, v) in frags.items()}
-        except TypeError:
-            return RetVal(False, 'Received invalid fragment data', None)
+                fragments_dibbler[objID] = {}
+                for fragID, fragdata in frags.items():
+                    # Create a valid FragMeta instance from the data that has
+                    # valid default values for all those keys that the Client
+                    # did not provide.
+                    # This will sanity check the input data.
+                    tmp = dict(ref_1)
+                    tmp.update(fragdata)
+                    fragments_dibbler[objID][fragID] = FragMeta(**tmp)
+
+                    # Now that we know the input data is valid we can put it
+                    # into a '_FragMeta' instance. We do *not* put it into a
+                    # 'FragMeta' type (note the missing underscore) to bypass
+                    # the sanity checks, because the object we construct here
+                    # may well have None values.
+                    tmp = dict(ref_2)
+                    tmp.update(fragdata)
+                    fragments[objID][fragID] = _FragMeta(**tmp)
+
+                    del fragID, fragdata, tmp
+                del objID, frags
+            del ref_1, ref_2
+        except TypeError as err:
+            print(err)
 
         # Convenience.
         db = database.dbHandles['ObjInstances']
@@ -988,23 +1020,34 @@ class Clerk(config.AzraelProcess):
 
         for objID, frags in fragments.items():
             # Update the fragment geometry in Dibbler.
-            ret = self.dibbler.updateFragments(objID, frags)
+            ret = self.dibbler.updateFragments(objID, fragments_dibbler[objID])
             if not ret.ok:
                 return ret
 
             # Remove all '_NONE' fragments in the instance database.
-            for aid, frag in frags.items():
-                if frag.fragtype.upper() == '_NONE_':
-                    db.update({'objID': objID},
-                              {'$unset': {'template.fragments.{}'.format(aid): True}})
+            to_remove = set()
+            for fragID, frag in frags.items():
+                # Skip this fragment if it has not type (ie Client does not
+                # want to update the fragment geometry).
+                if frag.fragtype is None:
+                    continue
 
-            # Remove all '_NONE_' type fragments from the current 'frags'
-            # dictionary.
-            frags = {k: v for (k, v) in frags.items() if v.fragtype != '_NONE_'}
+                # Skip this fragment if the client did not request for it to be
+                # removed.
+                if frag.fragtype.upper() != '_NONE_':
+                    continue
+                
+                # Remove the fragment from the instance database.
+                db.update({'objID': objID},
+                          {'$unset': {'template.fragments.{}'.format(fragID): True}})
+                to_remove.add(fragID)
+
+            # Remove all those fragments from the fragment dictionary that the
+            # client wanted removed, because we have already dealt with them.
+            frags = {k: v for (k, v) in frags.items() if k not in to_remove}
 
             # Strip the geometry data because the instance database only
-            # contains meta information about the fragments (Dibbler contains
-            # the geometry).
+            # contains meta information; Dibbler contains the geometry.
             frags = {k: v._replace(fragdata=None) for (k, v) in frags.items()}
 
             # Convert the fragments to dictionaries.
@@ -1013,12 +1056,23 @@ class Clerk(config.AzraelProcess):
             # Compile JSON hierarchy for the geometries to update without
             # touching the ones we do not want to update. This will result in a
             # dictionary like:
-            # data = {'template.fragments.foo': fragdata_foo,
-            #         'template.fragments.bar': fragdata_bar,...}
+            # 
+            #     data = {'
+            #         'template.fragments.foo.position': (1, 2, 3),
+            #         'template.fragments.bar.scale': 2,
+            #          ...
+            #     }
             data = {}
             for fragID, fragdata in frags.items():
-                key = 'template.fragments.{}'.format(fragID)
-                data[key] = fragdata
+                for field, value in fragdata.items():
+                    # Skip the field if its value is None because it means the
+                    # Client did not specify it (None values are otherwise not
+                    # allowed and would not have passed the sanity check at the
+                    # beginning of this method.
+                    if value is None:
+                        continue
+                    key = 'template.fragments.{}.{}'.format(fragID, field)
+                    data[key] = value
 
             # Update the 'version' flag in the database. All clients
             # automatically receive this flag with their state variables.

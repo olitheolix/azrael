@@ -1130,7 +1130,7 @@ class TestClerk:
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
-        cmd = {objID0: {'bar': getFragRaw()}}
+        cmd = {objID0: {'bar': getFragRaw()._asdict()}}
         assert clerk.setFragmentGeometries(cmd).ok
 
         # Verify that the new 'version' flag is now different.
@@ -1160,17 +1160,17 @@ class TestClerk:
         assert ret.ok and (len(ret.data) == 3)
         id_1, id_2, id_3 = ret.data
 
-        # Modify the 'bar' fragment of id_1 and 'foo' fragment of id_3 by
-        # swapping their types.
-        cmd = {id_1: {'foo': getFragDae()},
-               id_3: {'bar': getFragRaw()}}
+        # Modify the 'bar'- and 'foo' fragment of id_1 and of id_3,
+        # respectively, by swapping their types.
+        cmd = {id_1: {'foo': getFragDae()._asdict()},
+               id_3: {'bar': getFragRaw()._asdict()}}
         assert clerk.setFragmentGeometries(cmd).ok
 
         # Fetch the fragments.
         ret = clerk.getFragmentGeometries([id_1, id_2, id_3])
         assert ret.ok
 
-        # Verify fragment types reflect the changes.
+        # Verify that the changes reflect in the new fragment types.
         assert ret.data[id_2]['foo']['fragtype'] == 'RAW'
         assert ret.data[id_2]['bar']['fragtype'] == 'DAE'
 
@@ -1179,6 +1179,65 @@ class TestClerk:
 
         assert ret.data[id_3]['foo']['fragtype'] == 'RAW'
         assert ret.data[id_3]['bar']['fragtype'] == 'RAW'
+
+    def test_setFragmentGeometries_partial(self):
+        """
+        Spawn three objects and modify parts of the geometries only.
+        """
+        # Convenience.
+        clerk = self.clerk
+
+        # Add a valid template and verify it now exists in Azrael.
+        fraw, fdae = getFragRaw(), getFragDae()
+        temp = getTemplate('t1', fragments={'foo': fraw, 'bar': fdae})
+        assert clerk.addTemplates([temp]).ok
+
+        # Spawn two objects from the previously defined template.
+        init = {'templateID': temp.aid}
+        ret = clerk.spawn([init, init, init])
+        assert ret.ok and (len(ret.data) == 3)
+        id_1, id_2, id_3 = ret.data
+
+        # fixme: docu
+        cmd = {id_1: {'foo': {'scale': 2, 'position': (0, 1, 2)}},
+               id_3: {'bar': getFragRaw()._asdict()}}
+        assert clerk.setFragmentGeometries(cmd).ok
+
+        # Fetch the fragments.
+        ret = clerk.getFragmentGeometries([id_1, id_2, id_3])
+        assert ret.ok
+
+        # Verify that the changes reflect in the new fragment types.
+        _FragMeta = azrael.types._FragMeta
+        r1 = ret.data[id_1]
+        assert r1['foo']['scale'] == 2
+        assert r1['foo']['position'] == (0, 1, 2)
+        assert r1['foo']['orientation'] == fraw.orientation
+        assert r1['foo']['fragtype'] == fraw.fragtype
+        assert r1['bar']['scale'] == fdae.scale
+        assert r1['bar']['position'] == fdae.position
+        assert r1['bar']['orientation'] == fdae.orientation
+        assert r1['bar']['fragtype'] == fdae.fragtype
+
+        r2 = ret.data[id_2]
+        assert r2['foo']['scale'] == fraw.scale
+        assert r2['foo']['position'] == fraw.position
+        assert r2['foo']['orientation'] == fraw.orientation
+        assert r2['foo']['fragtype'] == fraw.fragtype
+        assert r2['bar']['scale'] == fdae.scale
+        assert r2['bar']['position'] == fdae.position
+        assert r2['bar']['orientation'] == fdae.orientation
+        assert r2['bar']['fragtype'] == fdae.fragtype
+                   
+        r3 = ret.data[id_3]
+        assert r3['foo']['scale'] == fraw.scale
+        assert r3['foo']['position'] == fraw.position
+        assert r3['foo']['orientation'] == fraw.orientation
+        assert r3['foo']['fragtype'] == fraw.fragtype
+        assert r3['bar']['scale'] == fdae.scale
+        assert r3['bar']['position'] == fdae.position
+        assert r3['bar']['orientation'] == fdae.orientation
+        assert r3['bar']['fragtype'] == fraw.fragtype
 
     def test_updateBoosterValues(self):
         """
@@ -1469,7 +1528,7 @@ class TestClerk:
 
         # Change the fragment geometries.
         f_raw = getFragRaw()
-        cmd = {objID: {'10': f_raw, 'test': f_dae}}
+        cmd = {objID: {'10': f_raw._asdict(), 'test': f_dae._asdict()}}
         assert clerk.setFragmentGeometries(cmd).ok
         ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
@@ -1669,7 +1728,7 @@ class TestClerk:
 
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
-        cmd = {objID: {'fname_2': getFragNone(), 'fname_3': getFragDae()}}
+        cmd = {objID: {'fname_2': getFragNone()._asdict(), 'fname_3': getFragDae()._asdict()}}
         assert clerk.setFragmentGeometries(cmd).ok
 
         # After the last update only two fragments must remain.
