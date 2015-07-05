@@ -77,10 +77,10 @@ class Client():
             'ping_clerk': (
                 protocol.ToClerk_Ping_Encode,
                 protocol.FromClerk_Ping_Decode),
-            'get_fragment_geometries': (
+            'get_fragments': (
                 protocol.ToClerk_GetFragmentGeometries_Encode,
                 protocol.FromClerk_GetFragmentGeometries_Decode),
-            'set_fragment_geometries': (
+            'set_fragments': (
                 protocol.ToClerk_SetFragmentGeometry_Encode,
                 protocol.FromClerk_SetFragmentGeometry_Decode),
             'spawn': (
@@ -295,7 +295,7 @@ class Client():
         :rtype: dict
 
         """
-        return self.serialiseAndSend('get_fragment_geometries', objIDs)
+        return self.serialiseAndSend('get_fragments', objIDs)
 
     @typecheck
     def setFragments(self, fragments: dict):
@@ -311,7 +311,7 @@ class Client():
         :param dict fragments: nested dictionary to (partially) update fragments.
         :return: Success
         """
-        return self.serialiseAndSend('set_fragment_geometries', fragments)
+        return self.serialiseAndSend('set_fragments', fragments)
 
     @typecheck
     def spawn(self, new_objects: (tuple, list)):

@@ -167,7 +167,7 @@ function getTemplate(templateID) {
 }
 
 function getGeometry(objIDs) {
-    var cmd = {'cmd': 'get_fragment_geometries', 'payload': {'objIDs': objIDs}}
+    var cmd = {'cmd': 'get_fragments', 'payload': {'objIDs': objIDs}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
