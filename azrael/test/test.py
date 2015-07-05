@@ -89,7 +89,7 @@ def getFragNone(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Convenience function to construct an empty geometry element.
     """
-    return FragMeta(fragtype='_none_', scale=scale, position=pos,
+    return FragMeta(fragtype='_del_', scale=scale, position=pos,
                     orientation=rot, fragdata=FragNone())
 
 

@@ -243,15 +243,15 @@ class Dibbler:
             # Fragment directory, eg .../instances/mymodel/frag1
             frag_dir = os.path.join(location, aid)
 
-            ftype = frag.fragtype.lower()
+            ftype = frag.fragtype.upper()
             # Delete the current fragments and save the new ones.
-            if ftype == 'raw':
+            if ftype == 'RAW':
                 self._deleteSubLocation(frag_dir)
                 ret = self.saveModelRaw(frag_dir, aid, frag)
-            elif ftype == 'dae':
+            elif ftype == 'DAE':
                 self._deleteSubLocation(frag_dir)
                 ret = self.saveModelDae(frag_dir, aid, frag)
-            elif ftype == '_none_':
+            elif ftype == '_DEL_':
                 # Dummy fragment that tells us to remove it.
                 ret = RetVal(False, None, None)
             else:
@@ -388,7 +388,7 @@ class Dibbler:
         Overwrite all ``fragments`` for ``objID``.
 
         This function will overwrite (or add) all specified ``fragments`` unless
-        their type is *_none_*. If the type is *_none_* then this method will
+        their type is *_del_*. If the type is *_del_* then this method will
         delete the respective fragment and update the `meta.json` file
         accordingly.
 

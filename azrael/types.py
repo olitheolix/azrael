@@ -387,7 +387,7 @@ class FragMeta(_FragMeta):
                         frag = FragDae(**fragdata)
                     else:
                         frag = FragDae(*fragdata)
-                elif fragtype == '_NONE_':
+                elif fragtype == '_DEL_':
                     frag = FragNone()
                 else:
                     assert False

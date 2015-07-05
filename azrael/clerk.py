@@ -978,7 +978,7 @@ class Clerk(config.AzraelProcess):
         # Compile- and sanity check the fragments.
         try:
             # Valid default values for a FragMeta types.
-            ref_1 = {'fragtype': '_NONE_',
+            ref_1 = {'fragtype': '_DEL_',
                      'scale': 1,
                      'position': (0, 0, 0),
                      'orientation': (0, 0, 0, 1),
@@ -1034,7 +1034,7 @@ class Clerk(config.AzraelProcess):
 
                 # Skip this fragment if the client did not request for it to be
                 # removed.
-                if frag.fragtype.upper() != '_NONE_':
+                if frag.fragtype.upper() != '_DEL_':
                     continue
                 
                 # Remove the fragment from the instance database.
