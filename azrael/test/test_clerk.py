@@ -1279,101 +1279,26 @@ class TestClerk:
         # did not update the geometry itself.
         assert set(args[1].keys()) == {'bar'}
 
-    def test_updateBoosterValues(self):
+    def test_setFragmentGeometries_partial_eclectic(self):
         """
-        Query and update the booster values in the instance data base.
-        The query includes computing the correct force in object coordinates.
-        """
-        # Convenience.
-        clerk = self.clerk
-
-        # ---------------------------------------------------------------------
-        # Create a template with two boosters and spawn it. The Boosters are
-        # to the left/right of the object and point both in the positive
-        # z-direction.
-        # ---------------------------------------------------------------------
-        b0 = types.Booster(partID='0', pos=[-1, 0, 0], direction=[0, 0, 1],
-                           minval=-1, maxval=1, force=0)
-        b1 = types.Booster(partID='1', pos=[+1, 0, 0], direction=[0, 0, 1],
-                           minval=-1, maxval=1, force=0)
-
-        # Define a template with one fragment.
-        t1 = getTemplate('t1', boosters=[b0, b1])
-
-        # Add the template and spawn two instances.
-        assert clerk.addTemplates([t1]).ok
-        init = {'templateID': t1.aid}
-        ret = clerk.spawn([init, init])
-        assert ret.ok
-        objID_1, objID_2 = ret.data
-
-        # ---------------------------------------------------------------------
-        # Update the Booster forces on the first object: both accelerate the
-        # object in z-direction, which means a force purely in z-direction and
-        # no torque.
-        # ---------------------------------------------------------------------
-        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
-        cmd_1 = types.CmdBooster(partID='1', force_mag=1)
-        ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
-        assert ret.ok
-        assert ret.data == ([0, 0, 2], [0, 0, 0])
-
-        # ---------------------------------------------------------------------
-        # Update the Booster forces on the first object: accelerate the left
-        # one upwards and the right one downwards. This must result in a zero
-        # net force but non-zero torque.
-        # ---------------------------------------------------------------------
-        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
-        cmd_1 = types.CmdBooster(partID='1', force_mag=-1)
-        ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
-        assert ret.ok
-        assert ret.data == ([0, 0, 0], [0, 2, 0])
-
-        # ---------------------------------------------------------------------
-        # Update the Booster forces on the second object to ensure the function
-        # correctly distinguishes between objects.
-        # ---------------------------------------------------------------------
-        # Turn off left Booster of first object (right booster remains active).
-        cmd_0 = types.CmdBooster(partID='0', force_mag=0)
-        ret = clerk.updateBoosterForces(objID_1, [cmd_0])
-        assert ret.ok
-        assert ret.data == ([0, 0, -1], [0, 1, 0])
-
-        # Turn on left Booster of the second object.
-        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
-        ret = clerk.updateBoosterForces(objID_2, [cmd_0])
-        assert ret.ok
-        assert ret.data == ([0, 0, +1], [0, 1, 0])
-
-        # ---------------------------------------------------------------------
-        # Attempt to update a non-existing Booster or a non-existing object.
-        # ---------------------------------------------------------------------
-        cmd_0 = types.CmdBooster(partID='10', force_mag=1)
-        assert not clerk.updateBoosterForces(objID_2, [cmd_0]).ok
-
-        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
-        assert not clerk.updateBoosterForces(1000, [cmd_0]).ok
-
-    def test_setFragmentStates(self):
-        """
-        Create a new template with one fragment and create two instances. Then
-        query and update the fragment states.
+        Update fragment state data only (ie not the geometry itself). This test
+        suite covers several corner cases to ensure the partial updates work
+        correctly when eg fragments or objects do not exist.
         """
         clerk = self.clerk
 
         # Attempt to update the fragment state of non-existing objects.
-        newStates = {2: {'1': FragState(2.2, [1, 2, 3], [1, 0, 0, 0])}}
-        ret = clerk.setFragmentStates(newStates)
-        assert not ret.ok
+        newStates = {2: {'1': {'scale': 2.2}}}
+        assert not clerk.setFragmentGeometries(newStates).ok
 
         # Define a new template with one fragment.
         t1 = getTemplate('t1', fragments={'foo': getFragRaw()})
 
-        # Add the template to Azrael, spawn two instances, and make sure
-        # Leonard picks it up so that the object becomes available.
+        # Add the template to Azrael and spawn two instances.
         assert clerk.addTemplates([t1]).ok
         init = {'templateID': t1.aid}
-        _, _, (objID_1, objID_2) = clerk.spawn([init, init])
+        ok, _, (objID_1, objID_2) = clerk.spawn([init, init])
+        assert ok
 
         def checkFragState(scale_1, pos_1, rot_1, scale_2, pos_2, rot_2):
             """
@@ -1386,7 +1311,7 @@ class TestClerk:
             ret = clerk.getBodyStates([objID_1, objID_2])
             assert ret.ok and (len(ret.data) == 2)
 
-            # Exract the one and only fragment of each object.
+            # Extract the one and only fragment of each object.
             _frag_1 = ret.data[objID_1]['frag']['foo']
             _frag_2 = ret.data[objID_2]['frag']['foo']
 
@@ -1394,22 +1319,31 @@ class TestClerk:
             assert _frag_1 == FragState(scale_1, pos_1, rot_1)
             assert _frag_2 == FragState(scale_2, pos_2, rot_2)
 
+        def getCmd(scale, pos, rot):
+            """
+            Return dictionary with the constituent entries.
+
+            This is a convenience function only to make this test more
+            readable.
+            """
+            return {'scale': scale, 'position': pos, 'orientation': rot}
+        
         # All fragments must initially be at the center.
         checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
                        1, [0, 0, 0], [0, 0, 0, 1])
 
         # Update and verify the fragment states of the second object.
-        newStates = {objID_2: {'foo': FragState(2.2, [1, 2, 3], [1, 0, 0, 0])}}
-        assert clerk.setFragmentStates(newStates).ok
+        newStates = {objID_2: {'foo': getCmd(2.2, [1, 2, 3], [1, 0, 0, 0])}}
+        assert clerk.setFragmentGeometries(newStates).ok
         checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
                        2.2, [1, 2, 3], [1, 0, 0, 0])
 
         # Modify the fragment states of two instances at once.
         newStates = {
-            objID_1: {'foo': FragState(3.3, [1, 2, 4], [2, 0, 0, 0])},
-            objID_2: {'foo': FragState(4.4, [1, 2, 5], [0, 3, 0, 0])}
+            objID_1: {'foo': getCmd(3.3, [1, 2, 4], [2, 0, 0, 0])},
+            objID_2: {'foo': getCmd(4.4, [1, 2, 5], [0, 3, 0, 0])}
         }
-        assert clerk.setFragmentStates(newStates).ok
+        assert clerk.setFragmentGeometries(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        4.4, [1, 2, 5], [0, 3, 0, 0])
 
@@ -1418,18 +1352,18 @@ class TestClerk:
         # is that the command returns an error yet correctly updates the
         # fragment state of the existing object.
         newStates = {
-            1000000: {'foo': FragState(5, [5, 5, 5], [5, 5, 5, 5])},
-            objID_2: {'foo': FragState(5, [5, 5, 5], [5, 5, 5, 5])}
+            1000000: {'foo': getCmd(5, [5, 5, 5], [5, 5, 5, 5])},
+            objID_2: {'foo': getCmd(5, [5, 5, 5], [5, 5, 5, 5])}
         }
-        assert not clerk.setFragmentStates(newStates).ok
+        assert not clerk.setFragmentGeometries(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        5.0, [5, 5, 5], [5, 5, 5, 5])
 
         # Attempt to update a non-existing fragment.
         newStates = {
-            objID_2: {'blah': FragState(6, [6, 6, 6], [6, 6, 6, 6])}
+            objID_2: {'blah': getCmd(6, [6, 6, 6], [6, 6, 6, 6])}
         }
-        assert not clerk.setFragmentStates(newStates).ok
+        assert not clerk.setFragmentGeometries(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        5.0, [5, 5, 5], [5, 5, 5, 5])
 
@@ -1437,18 +1371,18 @@ class TestClerk:
         # fragment IDs are valid. The expected behaviour is that none of the
         # fragments was updated.
         newStates = {
-            objID_2: {'foo': FragState(7, [7, 7, 7], [7, 7, 7, 7]),
-                      'blah': FragState(8, [8, 8, 8], [8, 8, 8, 8])}
+            objID_2: {'foo': getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
+                      'blah': getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
         }
-        assert not clerk.setFragmentStates(newStates).ok
+        assert not clerk.setFragmentGeometries(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        5.0, [5, 5, 5], [5, 5, 5, 5])
 
-        # Update the fragments twice with the exact same data. This trigger a
-        # bug at one point but is fixed now.
-        newStates = {objID_2: {'foo': FragState(9, [9, 9, 9], [9, 9, 9, 9])}}
-        assert clerk.setFragmentStates(newStates).ok
-        assert clerk.setFragmentStates(newStates).ok
+        # Update the fragments twice with the exact same data. This triggered a
+        # bug at one point that must not occur anymore.
+        newStates = {objID_2: {'foo': getCmd(9, [9, 9, 9], [9, 9, 9, 9])}}
+        assert clerk.setFragmentGeometries(newStates).ok
+        assert clerk.setFragmentGeometries(newStates).ok
 
     def test_fragments_end2end(self):
         """
@@ -1600,6 +1534,81 @@ class TestClerk:
 
         clacks.terminate()
         clacks.join()
+
+    def test_updateBoosterValues(self):
+        """
+        Query and update the booster values in the instance data base.
+        The query includes computing the correct force in object coordinates.
+        """
+        # Convenience.
+        clerk = self.clerk
+
+        # ---------------------------------------------------------------------
+        # Create a template with two boosters and spawn it. The Boosters are
+        # to the left/right of the object and point both in the positive
+        # z-direction.
+        # ---------------------------------------------------------------------
+        b0 = types.Booster(partID='0', pos=[-1, 0, 0], direction=[0, 0, 1],
+                           minval=-1, maxval=1, force=0)
+        b1 = types.Booster(partID='1', pos=[+1, 0, 0], direction=[0, 0, 1],
+                           minval=-1, maxval=1, force=0)
+
+        # Define a template with one fragment.
+        t1 = getTemplate('t1', boosters=[b0, b1])
+
+        # Add the template and spawn two instances.
+        assert clerk.addTemplates([t1]).ok
+        init = {'templateID': t1.aid}
+        ret = clerk.spawn([init, init])
+        assert ret.ok
+        objID_1, objID_2 = ret.data
+
+        # ---------------------------------------------------------------------
+        # Update the Booster forces on the first object: both accelerate the
+        # object in z-direction, which means a force purely in z-direction and
+        # no torque.
+        # ---------------------------------------------------------------------
+        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
+        cmd_1 = types.CmdBooster(partID='1', force_mag=1)
+        ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
+        assert ret.ok
+        assert ret.data == ([0, 0, 2], [0, 0, 0])
+
+        # ---------------------------------------------------------------------
+        # Update the Booster forces on the first object: accelerate the left
+        # one upwards and the right one downwards. This must result in a zero
+        # net force but non-zero torque.
+        # ---------------------------------------------------------------------
+        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
+        cmd_1 = types.CmdBooster(partID='1', force_mag=-1)
+        ret = clerk.updateBoosterForces(objID_1, [cmd_0, cmd_1])
+        assert ret.ok
+        assert ret.data == ([0, 0, 0], [0, 2, 0])
+
+        # ---------------------------------------------------------------------
+        # Update the Booster forces on the second object to ensure the function
+        # correctly distinguishes between objects.
+        # ---------------------------------------------------------------------
+        # Turn off left Booster of first object (right booster remains active).
+        cmd_0 = types.CmdBooster(partID='0', force_mag=0)
+        ret = clerk.updateBoosterForces(objID_1, [cmd_0])
+        assert ret.ok
+        assert ret.data == ([0, 0, -1], [0, 1, 0])
+
+        # Turn on left Booster of the second object.
+        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
+        ret = clerk.updateBoosterForces(objID_2, [cmd_0])
+        assert ret.ok
+        assert ret.data == ([0, 0, +1], [0, 1, 0])
+
+        # ---------------------------------------------------------------------
+        # Attempt to update a non-existing Booster or a non-existing object.
+        # ---------------------------------------------------------------------
+        cmd_0 = types.CmdBooster(partID='10', force_mag=1)
+        assert not clerk.updateBoosterForces(objID_2, [cmd_0]).ok
+
+        cmd_0 = types.CmdBooster(partID='0', force_mag=1)
+        assert not clerk.updateBoosterForces(1000, [cmd_0]).ok
 
     def test_add_get_remove_constraints(self):
         """

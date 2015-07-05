@@ -40,6 +40,7 @@ import io
 import os
 import sys
 import zmq
+import copy
 import json
 import logging
 import traceback
@@ -969,12 +970,16 @@ class Clerk(config.AzraelProcess):
         Update the fragments in the database with the new ``fragments`` data.
 
         This will update all existing objects and skip those that do not exist.
-        It will only return without if *all* fragments in *all* objects could
-        be updated.
+        It will only return without an error if *all* fragments in *all*
+        objects could be updated.
 
         :param dict[str: ``FragMeta``] fragments: new fragments.
         :return: Success
         """
+        # Presever the caller's state of ``fragments`` because we are going to
+        # modify and refactor it heavily.
+        fragments = copy.deepcopy(fragments)
+
         # Compile- and sanity check the fragments.
         try:
             # Valid default values for a FragMeta types.
@@ -1019,17 +1024,20 @@ class Clerk(config.AzraelProcess):
                 del objID, frags
             del ref_1, ref_2
         except TypeError as err:
-            print(err)
+            return RetVal(False, 'Not all fragment data sets are valid', None)
 
         # Convenience.
         db = database.dbHandles['ObjInstances']
         ok, msg = True, []
 
         for objID, frags in fragments.items():
-            # Update the fragment geometry in Dibbler.
+            # Update the fragment geometry in Dibbler. If an error occurs skip
+            # immediately to the next object.
             ret = self.dibbler.updateFragments(objID, fragments_dibbler[objID])
             if not ret.ok:
-                return ret
+                ok = False
+                msg.append(objID)
+                continue
 
             # Remove all '_NONE' fragments in the instance database.
             to_remove = set()
@@ -1070,6 +1078,7 @@ class Clerk(config.AzraelProcess):
             #          ...
             #     }
             data = {}
+            q_find = {'objID': objID}
             for fragID, fragdata in frags.items():
                 for field, value in fragdata.items():
                     # Skip the field if its value is None because it means the
@@ -1081,10 +1090,23 @@ class Clerk(config.AzraelProcess):
                     key = 'template.fragments.{}.{}'.format(fragID, field)
                     data[key] = value
 
-            # Update the 'version' flag in the database. All clients
-            # automatically receive this flag with their state variables.
-            ret = db.update({'objID': objID},
-                            {'$inc': {'version': 1}, '$set': data})
+                    # If the fragment was not fully specified then it must
+                    # already exist, as a partial update would otherwise not be
+                    # possible. The next few lines will modify the Mongo query
+                    # to enforce the existence of the fields unless *all* of
+                    # them were specified, which means Dibbler must have
+                    # processed (and accepted) it, and all other fields must
+                    # not be None.
+                    if fragID in fragments_dibbler:
+                        if None not in fragments_dibbler[objID][fragID]:
+                            q_find[key] = False
+                    else:
+                        q_find[key] = {'$exists': True}
+
+            # Update the fragments. Also update the 'version' flag to indicate
+            # a change. Clients will automatically receive this flag with their
+            # state variables.
+            ret = db.update(q_find, {'$inc': {'version': 1}, '$set': data})
 
             # If an error occured save the current objID.
             if ret['n'] != 1:
