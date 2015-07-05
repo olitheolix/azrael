@@ -75,6 +75,13 @@ def parseCommandLine():
     return param
 
 
+def getFragMeta(ftype, fdata):
+    scale = 1
+    pos = (0, 0, 0)
+    rot = (0, 0, 0, 1)
+    return FragMeta(fragtype=ftype, scale=scale, position=pos,
+                    orientation=rot, fragdata=fdata)
+
 def getRigidBody(scale: (int, float)=1,
                  imass: (int, float)=1,
                  restitution: (int, float)=0.9,
@@ -555,8 +562,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     url = base_url + frag_data['url_frag'] + '/model.json'
                     frag = urllib.request.urlopen(url).readall()
                     frag = json.loads(frag.decode('utf8'))
-                    frag = FragRaw(**frag)
-                    frag = FragMeta('RAW', frag)
+                    frag = getFragMeta('RAW', FragRaw(**frag))
                 elif frag_data['fragtype'] == 'DAE':
                     url = base_url + frag_data['url_frag'] + '/' + fragID
                     frag = urllib.request.urlopen(url).readall()
@@ -576,8 +582,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     vert = np.array(vert)
                     uv = np.array(uv, np.float32)
                     rgb = np.array(rgb, np.uint8)
-                    frag = FragRaw(vert, uv, rgb)
-                    frag = FragMeta('RAW', frag)
+                    frag = getFragMeta('RAW', FragRaw(vert, uv, rgb))
                 else:
                     continue
                 self.upload2GPU(objID, fragID, frag)
@@ -603,7 +608,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'
-        frags = {'frag_1': FragMeta('RAW', FragRaw(buf_vert, uv, rgb))}
+        frags = {'frag_1': getFragMeta('RAW', FragRaw(buf_vert, uv, rgb))}
         body = getRigidBody(cshapes=[cs])
         temp = Template(t_projectile, body, frags, [], [])
         ret = self.client.addTemplates([temp])

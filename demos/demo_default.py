@@ -103,6 +103,13 @@ def parseCommandLine():
     return param
 
 
+def getFragMeta(ftype, fdata):
+    scale = 1
+    pos = (0, 0, 0)
+    rot = (0, 0, 0, 1)
+    return FragMeta(fragtype=ftype, scale=scale, position=pos,
+                    orientation=rot, fragdata=fdata)
+
 def getRigidBody(scale: (int, float)=1,
                  imass: (int, float)=1,
                  restitution: (int, float)=0.9,
@@ -268,9 +275,9 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     cs = CollShapeMeta('', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
     z = np.array([])
     frags = {
-        'frag_1': FragMeta('raw', FragRaw(vert, uv, rgb)),
-        'b_left': FragMeta('raw', FragRaw(vert_b, z, z)),
-        'b_right': FragMeta('raw',  FragRaw(vert_b, z, z)),
+        'frag_1': getFragMeta('raw', FragRaw(vert, uv, rgb)),
+        'b_left': getFragMeta('raw', FragRaw(vert_b, z, z)),
+        'b_right': getFragMeta('raw',  FragRaw(vert_b, z, z)),
     }
 
     body = getRigidBody()
@@ -371,8 +378,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     tID_1 = 'Product1'
     tID_2 = 'Product2'
-    frags_1 = {'frag_1': FragMeta('raw', FragRaw(0.75 * vert, uv, rgb))}
-    frags_2 = {'frag_1': FragMeta('raw', FragRaw(0.24 * vert, uv, rgb))}
+    frags_1 = {'frag_1': getFragMeta('raw', FragRaw(0.75 * vert, uv, rgb))}
+    frags_2 = {'frag_1': getFragMeta('raw', FragRaw(0.24 * vert, uv, rgb))}
     body = getRigidBody(cshapes=[cs])
     t1 = Template(tID_1, body, frags_1, [], [])
     t2 = Template(tID_2, body, frags_2, [], [])
@@ -399,7 +406,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Add the template.
     tID_3 = 'BoosterCube'
-    frags = {'frag_1': FragMeta('raw', FragRaw(vert, uv, rgb))}
+    frags = {'frag_1': getFragMeta('raw', FragRaw(vert, uv, rgb))}
     body = getRigidBody(cshapes=[cs])
     t3 = Template(tID_3, body, frags, [b0, b1], [f0, f1])
     assert client.addTemplates([t3]).ok
@@ -428,8 +435,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        frags = {'frag_1': FragMeta('raw', FragRaw(vert, curUV, rgb)),
-                 'frag_2': FragMeta('raw', FragRaw(vert, curUV, rgb))}
+        frags = {'frag_1': getFragMeta('raw', FragRaw(vert, curUV, rgb)),
+                 'frag_2': getFragMeta('raw', FragRaw(vert, curUV, rgb))}
         body = getRigidBody(cshapes=[cs])
         tmp = Template(tID, body, frags, [b0, b1], [])
         templates.append(tmp)
