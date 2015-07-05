@@ -581,28 +581,6 @@ class Client():
         """
         return self.serialiseAndSend('get_all_objids')
 
-    def setFragmentStates(self, fragStates: dict):
-        """
-        Modify the fragment states specified in ``fragStates``.
-
-        Fragment states specify the size, position, and orientation of
-        individual fragment. They do not specify the geometry.
-
-        Each key in ``fragStates`` must be an object ID and each value a
-        ``FragState`` instance, eg.
-
-           {objID: {'bar': FragState(2.2, [1, 2, 3], [1, 0, 0, 0])}}
-
-        :param dict fragStates: new fragment states.
-        :return: Success
-        :rtype:
-        """
-        # Convert all fragment states to dictionaries.
-        out = {}
-        for objID, frags in fragStates.items():
-            out[objID] = {k: v._asdict() for (k, v) in frags.items()}
-        return self.serialiseAndSend('set_fragment_states', out)
-
     @typecheck
     def addConstraints(self, constraints: (tuple, list)):
         """

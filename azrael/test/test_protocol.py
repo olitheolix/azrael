@@ -336,38 +336,3 @@ class TestClerk:
         enc = protocol.FromClerk_GetFragmentGeometries_Encode
         dec = protocol.FromClerk_GetFragmentGeometries_Decode
         self.verifyFromClerk(enc, dec, payload)
-
-    def test_setFragmentStates(self):
-        """
-        Test setFragmentStates.
-        """
-        objID_1, objID_2 = 2, 5
-        fs_1 = FragState(scale=1, position=(0, 1, 2), orientation=(1, 0, 0, 0))
-        fs_2 = FragState(scale=2, position=(3, 3, 3), orientation=(0, 1, 0, 0))
-        fs_3 = FragState(scale=3, position=(4, 5, 6), orientation=(0, 0, 1, 0))
-
-        # Client is responsible for sending dictionaries, but on the Clerk side
-        # the protocol will automatically convert all fragment states to proper
-        # FragState instances.
-        payload_in = {
-            objID_1: {'foo': fs_1._asdict()},
-            objID_2: {'bar': fs_2._asdict(), 'foobar': fs_3._asdict()}
-        }
-        payload_out = {
-            objID_1: {'foo': fs_1},
-            objID_2: {'bar': fs_2, 'foobar': fs_3}
-        }
-
-        # Client --> Clerk
-        enc = protocol.ToClerk_SetFragmentStates_Encode
-        dec = protocol.ToClerk_SetFragmentStates_Decode
-        aux = enc(payload_in)
-        ok, _, aux = json.loads(json.dumps(aux))
-        assert ok
-
-        # Decode on Clerk's side.
-        ok, out = dec(aux)
-        assert ok
-
-        # Verify that the the payload is correct.
-        assert out[0] == payload_out

@@ -141,10 +141,6 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_GetFragmentGeometries_Decode,
                 self.getFragmentGeometries,
                 protocol.FromClerk_GetFragmentGeometries_Encode),
-            'set_fragment_states': (
-                protocol.ToClerk_SetFragmentStates_Decode,
-                self.setFragmentStates,
-                protocol.FromClerk_SetFragmentStates_Encode),
             'set_force': (
                 protocol.ToClerk_SetForce_Decode,
                 self.setForce,
@@ -1122,103 +1118,6 @@ class Clerk(config.AzraelProcess):
             tmp = '{' + str(set(msg)) + '}'
             msg = 'objIDs {} do not exist'.format(tmp)
             return RetVal(False, msg, None)
-
-    @typecheck
-    def setFragmentStates(self, fragData: dict):
-        """
-        Update the fragment states (pos, vel, etc) of one or more objects.
-
-        This method can update one- or more fragment states in one- or
-        more objects simultaneously. The updates are specified in ``fragData``
-        as follows::
-
-          fragData = {
-            objID_1: {fid_1: state_1, fid_2: state_2, ...},
-            objID_2: {fid_3: state_3, fid_4: state_4, ...}
-          }
-
-        where each ``state_k`` entry is a :ref:``FragState`` tuple. Those
-        tuples contain the actual state information like scale, position, and
-        orientation.
-
-        This method will not touch any fragments that were not explicitly
-        specified. This means that it is possible to update only a subset of
-        the fragments for any given object.
-
-        This method will update all existing objects and silently skip
-        non-existing ones. However, the fragments for any particular object
-        will either be updated all at once, or not at all. This means that if
-        one or more fragment IDs are invalid then none of the fragments in the
-        respective object will be updated, not even those with a valid ID.
-
-        :param dict[dict[str: FragData]] fragData: the new fragment states
-        :return: success.
-        """
-        # Convenience.
-        db_update = database.dbHandles['ObjInstances'].update
-
-        # Sanity checks.
-        try:
-            # All objIDs must be integers and all values must be dictionaries.
-            for objID, fragStates in fragData.items():
-                assert isinstance(objID, int)
-                fragData[objID] = {k: FragState(*v) for (k, v) in fragStates.items()}
-        except (TypeError, AssertionError):
-            return RetVal(False, 'Invalid data format', None)
-
-        # Update the fragments for one object at a time.
-        ok = True
-        for objID, fragstate in fragData.items():
-            # Convenience: string that represents the Mongo key for the
-            # respective fragment name.
-            key = 'template.fragments.{}'
-
-            # Compile the MongoDB query to find the correct object and ensure
-            # that every fragment indeed exists. The final query will have the
-            # following structure:
-            #   {'objID': 2,
-            #    'fragState.1': {'$exists': 1},
-            #    'fragState.2': {'$exists': 1},
-            #    ...}
-            q_find = {key.format(_): {'$exists': 1} for _ in fragstate}
-            q_find['objID'] = objID
-
-            # Exactly the same query, except that instead of checking existence
-            # we specify the FragState values. This will be the update query
-            # and has the following structure:
-            #   {'fragState.1.scale': FragState.scale,
-            #    'fragState.1.position': FragState.position,
-            #    'fragState.1.orientation': FragState.orientation,
-            #    'fragState.2.scale': FragState.scale,
-            #    'fragState.2.position': FragState.position,
-            #    'fragState.2.orientation': FragState.orientation}
-            q_update = {}
-            for fragID, frag in fragstate.items():
-                key = 'template.fragments.{}.'.format(fragID)
-                q_update[key + 'scale'] = frag.scale
-                q_update[key + 'position'] = frag.position
-                q_update[key + 'orientation'] = frag.orientation
-
-            # Issue the update command to Mongo.
-            ret = db_update(q_find, {'$set': q_update})
-
-            # Exactly one document will have been updated if everything went
-            # well. Note that we must check 'n' instead of 'nModified'. The
-            # difference is that 'n' tells us how many documents Mongo has
-            # touched whereas 'nModified' refers to the number of documents
-            # that are now *different*. This distinction is important if
-            # the old- and new fragment values are identical, because then
-            # 'n=1' whereas 'nModified=0'.
-            if ret['n'] != 1:
-                ok = False
-                msg = 'Could not update the fragment states for objID <{}>'
-                msg = msg.format(objID)
-                self.logit.warning(msg)
-
-        if ok:
-            return RetVal(True, None, None)
-        else:
-            return RetVal(False, 'Could not update all fragments', None)
 
     def _packBodyState(self, objIDs: list):
         """
