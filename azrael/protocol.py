@@ -290,10 +290,7 @@ def ToClerk_SetFragmentGeometry_Encode(payload: dict):
 @typecheck
 def ToClerk_SetFragmentGeometry_Decode(payload: dict):
     # Wrap the fragments into their dedicated tuple.
-    ret = {}
-    for objID, frags in payload.items():
-        tmp = {k: FragMeta(**v) for (k, v) in frags.items()}
-        ret[int(objID)] = tmp
+    ret = {int(k): v for (k, v) in payload.items()}
     return True, (ret, )
 
 

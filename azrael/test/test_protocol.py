@@ -337,34 +337,6 @@ class TestClerk:
         dec = protocol.FromClerk_GetFragmentGeometries_Decode
         self.verifyFromClerk(enc, dec, payload)
 
-    def test_setFragmentGeometry(self):
-        """
-        Test setFragmentGeometry.
-        """
-        fraw, fdae, fnone = getFragRaw(), getFragDae(), getFragNone()
-        payload_in = {
-            1: {'f1': fraw._asdict(), 'f2': fdae._asdict()},
-            2: {'f3': fnone._asdict()}
-        }
-        payload_out = {
-            1: {'f1': fraw, 'f2': fdae},
-            2: {'f3': fnone}
-        }
-
-        # Client --> Clerk
-        enc = protocol.ToClerk_SetFragmentGeometry_Encode
-        dec = protocol.ToClerk_SetFragmentGeometry_Decode
-        aux = enc(payload_in)
-        ok, _, aux = json.loads(json.dumps(aux))
-        assert ok
-            
-        # Decode on Clerk's side.
-        ok, out = dec(aux)
-        assert ok
-
-        # Verify that the the payload is correct.
-        assert out[0] == payload_out
-
     def test_setFragmentStates(self):
         """
         Test setFragmentStates.
