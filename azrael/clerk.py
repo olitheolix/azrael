@@ -588,7 +588,6 @@ class Clerk(config.AzraelProcess):
                 # a dictionary (see types.py for the detailed layout).
                 templateID = newObj['templateID']
                 template = templates[templateID]['template']
-                frags = template.fragments
 
                 # Selectively overwrite the rigid body state stored in the
                 # template with the values provided by the client.
@@ -614,12 +613,6 @@ class Clerk(config.AzraelProcess):
                     # URL where the instance geometry is available.
                     geo_url = ret.data['url_frag']
 
-                # Each fragment gets the same initial state.
-                fs = FragState(scale=1,
-                               position=(0, 0, 0),
-                               orientation=(0, 0, 0, 1))
-                fragStates = {_: fs for _ in frags}
-
                 # Compile the database document. Each entry must be an explicit
                 # dictionary (eg 'template'). The document contains the
                 # original template plus additional meta information that is
@@ -631,7 +624,6 @@ class Clerk(config.AzraelProcess):
                     'version': 0,
                     'templateID': templateID,
                     'template': template._asdict(),
-                    'fragState': {k: v._asdict() for (k, v) in fragStates.items()},
                 }
 
                 # Track the rigid body state separately because we will need it
@@ -640,7 +632,7 @@ class Clerk(config.AzraelProcess):
 
                 # Add the new template document.
                 dbDocs.append(doc)
-                del templateID, objID, doc, fs
+                del templateID, objID, doc
 
             # Return immediately if there are no objects to spaw.
             if len(dbDocs) == 0:
@@ -992,7 +984,7 @@ class Clerk(config.AzraelProcess):
         for aid, frag in fragments.items():
             if frag.fragtype.upper() == '_NONE_':
                 db.update({'objID': objID},
-                          {'$unset': {'fragState.{}'.format(aid): True}})
+                          {'$unset': {'template.fragments.{}'.format(aid): True}})
 
         # Strip the geometry data because instance database only contains meta
         # information about the fragments (Dibbler contains the geometry).
@@ -1017,7 +1009,7 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def setFragmentStates(self, fragData: dict):
         """
-        Update the fragments states (pos, vel, etc) of one or more objects.
+        Update the fragment states (pos, vel, etc) of one or more objects.
 
         This method can update one- or more fragment states in one- or
         more objects simultaneously. The updates are specified in ``fragData``
@@ -1062,7 +1054,7 @@ class Clerk(config.AzraelProcess):
         for objID, fragstate in fragData.items():
             # Convenience: string that represents the Mongo key for the
             # respective fragment name.
-            key = 'fragState.{}'
+            key = 'template.fragments.{}'
 
             # Compile the MongoDB query to find the correct object and ensure
             # that every fragment indeed exists. The final query will have the
@@ -1077,9 +1069,18 @@ class Clerk(config.AzraelProcess):
             # Exactly the same query, except that instead of checking existence
             # we specify the FragState values. This will be the update query
             # and has the following structure:
-            #   {'fragState.1': FragState,
-            #    'fragState.2': FragState}
-            q_update = {key.format(k): v._asdict() for (k, v) in fragstate.items()}
+            #   {'fragState.1.scale': FragState.scale,
+            #    'fragState.1.position': FragState.position,
+            #    'fragState.1.orientation': FragState.orientation,
+            #    'fragState.2.scale': FragState.scale,
+            #    'fragState.2.position': FragState.position,
+            #    'fragState.2.orientation': FragState.orientation}
+            q_update = {}
+            for fragID, frag in fragstate.items():
+                key = 'template.fragments.{}.'.format(fragID)
+                q_update[key + 'scale'] = frag.scale
+                q_update[key + 'position'] = frag.position
+                q_update[key + 'orientation'] = frag.orientation
 
             # Issue the update command to Mongo.
             ret = db_update(q_find, {'$set': q_update})
@@ -1142,7 +1143,7 @@ class Clerk(config.AzraelProcess):
         cursor = db.find(query,
                          {'version': True,
                           'objID': True,
-                          'fragState': True,
+                          'template.fragments': True,
                           'template.rbs': True})
         docs = {_['objID']: _ for _ in cursor}
 
@@ -1151,10 +1152,16 @@ class Clerk(config.AzraelProcess):
         out = {}
         RBS = types._RigidBodyState
         for objID, doc in docs.items():
-            # Compile the fragment state data for each fragment.
-            fs = {k: FragState(**v) for (k, v) in doc['fragState'].items()}
+            # Convenience: fragments of current object.
+            frags = doc['template']['fragments']
 
-            # Compile the rigid body data and overwrite the version.
+            # Compile the state data for each fragment of the current object.
+            fs = {k: FragState(scale=v['scale'],
+                               position=v['position'],
+                               orientation=v['orientation'])
+                               for (k, v) in frags.items()}
+
+            # Compile the rigid body data and update its version.
             rbs = RBS(**doc['template']['rbs'])
             rbs = rbs._replace(version=doc['version'])
 
