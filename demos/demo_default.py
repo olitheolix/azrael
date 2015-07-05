@@ -305,10 +305,10 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
 
     # Disable the booster fragments by settings their scale to Zero.
     newStates = {objID: {
-        'b_left': FragState(0, [0, 0, 0], [0, 0, 0, 1]),
-        'b_right': FragState(0, [0, 0, 0], [0, 0, 0, 1]),
+        'b_left': {'scale': 0},
+        'b_right': {'scale': 0},
     }}
-    assert client.setFragmentStates(newStates).ok
+    assert client.setFragmentGeometries(newStates).ok
 
 
 def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
@@ -505,8 +505,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Make 'frag_2' invisible by setting its scale to zero.
     for objID in ret.data:
-        client.setFragmentStates({objID: {
-            'frag_2': FragState(0, [0, 0, 0], [0, 0, 0, 1])}})
+        client.setFragmentGeometries({objID: {'frag_2': {'scale': 0}}})
 
 
 def launchQtViewer(param):
