@@ -195,7 +195,7 @@ class TestClerk:
         # factories, and boosters. Note: we cannot compare against `temp`
         # directly because the returned template does not contain the fragment
         # geometries; they have to be fetche separately via
-        # clerk.getFragmentGeometries, which is tested elsewhere.
+        # clerk.getFragments, which is tested elsewhere.
         ret = clerk.getTemplates([temp.aid])
         assert ret.ok
         assert ret.data[temp.aid]['template'].rbs == body
@@ -342,8 +342,8 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (1, ))
 
         # Geometry for this object must now exist.
-        print(clerk.getFragmentGeometries([1]))
-        assert clerk.getFragmentGeometries([1]).data[1] is not None
+        print(clerk.getFragments([1]))
+        assert clerk.getFragments([1]).data[1] is not None
 
         # Spawn two more objects with a single call.
         name_2 = '_templateSphere'
@@ -354,7 +354,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (2, 3))
 
         # Geometry for last two object must now exist as well.
-        ret = clerk.getFragmentGeometries([2, 3])
+        ret = clerk.getFragments([2, 3])
         assert ret.data[2] is not None
         assert ret.data[3] is not None
 
@@ -363,7 +363,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (4, 5))
 
         # Geometry for last two object must now exist as well.
-        ret = clerk.getFragmentGeometries([4, 5])
+        ret = clerk.getFragments([4, 5])
         assert ret.data[4] is not None
         assert ret.data[5] is not None
 
@@ -1034,7 +1034,7 @@ class TestClerk:
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
-    def test_getFragmentGeometries(self):
+    def test_getFragments(self):
         """
         Spawn two objects and query their fragment geometries.
         """
@@ -1056,7 +1056,7 @@ class TestClerk:
         assert clerk.getTemplates([temp.aid]).ok
 
         # Attempt to query the geometry of a non-existing object.
-        assert clerk.getFragmentGeometries([123]) == (True, None, {123: None})
+        assert clerk.getFragments([123]) == (True, None, {123: None})
 
         init_1 = {
             'templateID': temp.aid,
@@ -1086,21 +1086,21 @@ class TestClerk:
             return True
 
         # Query and verify the geometry of the first instance.
-        ret = clerk.getFragmentGeometries([objID_1])
+        ret = clerk.getFragments([objID_1])
         assert ret.ok and _verify(ret.data, objID_1)
 
         # Query and verify the geometry of the second instance.
-        ret = clerk.getFragmentGeometries([objID_2])
+        ret = clerk.getFragments([objID_2])
         assert ret.ok and _verify(ret.data, objID_2)
 
         # Query both instances at once and verify them.
-        ret = clerk.getFragmentGeometries([objID_1, objID_2])
+        ret = clerk.getFragments([objID_1, objID_2])
         assert ret.ok and _verify(ret.data, objID_1)
         assert ret.ok and _verify(ret.data, objID_2)
 
         # Delete first and query again.
         assert clerk.removeObject(objID_1).ok
-        ret = clerk.getFragmentGeometries([objID_1, objID_2])
+        ret = clerk.getFragments([objID_1, objID_2])
         assert ret.ok
         assert ret.data[objID_1] is None
         assert _verify(ret.data, objID_2)
@@ -1167,7 +1167,7 @@ class TestClerk:
         assert clerk.setFragments(cmd).ok
 
         # Fetch the fragments.
-        ret = clerk.getFragmentGeometries([id_1, id_2, id_3])
+        ret = clerk.getFragments([id_1, id_2, id_3])
         assert ret.ok
 
         # Verify that the changes reflect in the new fragment types.
@@ -1204,7 +1204,7 @@ class TestClerk:
         assert clerk.setFragments(cmd).ok
 
         # Fetch the fragments.
-        ret = clerk.getFragmentGeometries([id_1, id_2, id_3])
+        ret = clerk.getFragments([id_1, id_2, id_3])
         assert ret.ok
 
         # Verify that the changes reflect in the new fragment types.
@@ -1471,7 +1471,7 @@ class TestClerk:
                        'test', 8, [8, 8, 8], [8, 8, 8, 8])
 
         # Query the fragment _geometries_.
-        ret = clerk.getFragmentGeometries([objID])
+        ret = clerk.getFragments([objID])
         assert ret.ok
         data = ret.data[objID]
         del ret
@@ -1513,7 +1513,7 @@ class TestClerk:
         f_raw = getFragRaw()
         cmd = {objID: {'10': f_raw._asdict(), 'test': f_dae._asdict()}}
         assert clerk.setFragments(cmd).ok
-        ret = clerk.getFragmentGeometries([objID])
+        ret = clerk.getFragments([objID])
         assert ret.ok
         data = ret.data[objID]
         del ret
@@ -1779,7 +1779,7 @@ class TestClerk:
 
         # Query the fragment geometries and Body State to verify that both
         # report three fragments.
-        ret = clerk.getFragmentGeometries([objID])
+        ret = clerk.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 3
         ret = clerk.getBodyStates([objID])
         assert ret.ok and len(ret.data[objID]['frag']) == 3
@@ -1790,7 +1790,7 @@ class TestClerk:
         assert clerk.setFragments(cmd).ok
 
         # After the last update only two fragments must remain.
-        ret = clerk.getFragmentGeometries([objID])
+        ret = clerk.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 2
         ret = clerk.getBodyStates([objID])
         assert ret.ok and len(ret.data[objID]['frag']) == 2

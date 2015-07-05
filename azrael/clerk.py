@@ -139,7 +139,7 @@ class Clerk(config.AzraelProcess):
                 protocol.FromClerk_SetFragmentGeometry_Encode),
             'get_fragment_geometries': (
                 protocol.ToClerk_GetFragmentGeometries_Decode,
-                self.getFragmentGeometries,
+                self.getFragments,
                 protocol.FromClerk_GetFragmentGeometries_Encode),
             'set_force': (
                 protocol.ToClerk_SetForce_Decode,
@@ -895,7 +895,7 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, ret.msg, None)
 
     @typecheck
-    def getFragmentGeometries(self, objIDs: list):
+    def getFragments(self, objIDs: list):
         """
         Return information about the fragments of each object in ``objIDs``.
 

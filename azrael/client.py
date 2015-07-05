@@ -275,7 +275,7 @@ class Client():
         return self.serialiseAndSend('ping_clerk', None)
 
     @typecheck
-    def getFragmentGeometries(self, objIDs: list):
+    def getFragments(self, objIDs: list):
         """
         Return links to the models for the objects in ``objIDs``.
 
@@ -442,7 +442,7 @@ class Client():
         """
         Return the template data for all  ``templateIDs`` in a dictionary.
 
-        Use ``getFragmentGeometries`` to query just the geometry.
+        Use ``getFragments`` to query just the geometry.
 
         :param bytes templateID: return the description of this template.
         :return: (cs, geo, boosters, factories)

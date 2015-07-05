@@ -150,7 +150,7 @@ class SetGeometry(multiprocessing.Process):
         print('\n-- {} objects --\n'.format(len(objIDs)))
 
         # Query and backup all models currently in the scene.
-        geo_meta = client.getFragmentGeometries(objIDs).data
+        geo_meta = client.getFragments(objIDs).data
         base_url = 'http://{}:{}'.format(
             azrael.config.addr_clacks, azrael.config.port_clacks)
         geo_orig = {}

@@ -222,7 +222,7 @@ class TestClient:
             templateID='_templateBox', exit_speed=(0.1, 0.5))
 
         # Attempt to query the geometry of a non-existing object.
-        assert client.getFragmentGeometries([1]) == (True, None, {1: None})
+        assert client.getFragments([1]) == (True, None, {1: None})
 
         # Define a new template, add it to Azrael, spawn it, and record its
         # object ID.
@@ -240,7 +240,7 @@ class TestClient:
         objID = ret.data[0]
 
         # Retrieve- and verify the geometry of the just spawned object.
-        ret = client.getFragmentGeometries([objID])
+        ret = client.getFragments([objID])
         assert ret.ok
         assert ret.data[objID]['bar']['fragtype'] == 'RAW'
 
@@ -512,7 +512,7 @@ class TestClient:
         version = ret.data[objID]['rbs'].version
 
         # Fetch-, modify-, update- and verify the geometry.
-        ret = client.getFragmentGeometries([objID])
+        ret = client.getFragments([objID])
         assert ret.ok
         assert ret.data[objID]['bar']['fragtype'] == 'RAW'
 
@@ -534,7 +534,7 @@ class TestClient:
         cmd = {objID: {k: v._asdict() for (k, v) in frag.items()}}
         assert client.setFragments(cmd).ok
 
-        ret = client.getFragmentGeometries([objID])
+        ret = client.getFragments([objID])
         assert ret.ok
         assert ret.data[objID]['bar']['fragtype'] == 'RAW'
 
@@ -576,7 +576,7 @@ class TestClient:
         version = ret.data[objID]['rbs'].version
 
         # Fetch-, modify-, update- and verify the geometry.
-        ret = client.getFragmentGeometries([objID])
+        ret = client.getFragments([objID])
         assert ret.ok
         assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
 
@@ -584,7 +584,7 @@ class TestClient:
         assert client.setFragments({objID: {'f_dae': getFragRaw()._asdict()}}).ok
 
         # Ensure the fragment is now indeed of type 'RAW'.
-        ret = client.getFragmentGeometries([objID])
+        ret = client.getFragments([objID])
         assert ret.ok
         assert ret.data[objID]['f_dae']['fragtype'] == 'RAW'
 
@@ -597,7 +597,7 @@ class TestClient:
         assert client.setFragments({objID: {'f_dae': getFragDae()._asdict()}}).ok
 
         # Ensure it now has type 'DAE' again.
-        ret = client.getFragmentGeometries([objID])
+        ret = client.getFragments([objID])
         assert ret.ok
         assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
 
@@ -678,7 +678,7 @@ class TestClient:
 
         # Query the fragment geometries and Body State to verify that both
         # report three fragments.
-        ret = client.getFragmentGeometries([objID])
+        ret = client.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 3
         ret = client.getBodyStates(objID)
         assert ret.ok and len(ret.data[objID]['frag']) == 3
@@ -689,7 +689,7 @@ class TestClient:
         assert client.setFragments({objID: frags_new}).ok
 
         # After the last update there must now only be two fragments.
-        ret = client.getFragmentGeometries([objID])
+        ret = client.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 2
         ret = client.getBodyStates(objID)
         assert ret.ok and len(ret.data[objID]['frag']) == 2
@@ -713,7 +713,7 @@ class TestClient:
         objID = ret.data[0]
 
         # Query and the geometry.
-        ret = client.getFragmentGeometries([objID])
+        ret = client.getFragments([objID])
         assert ret.ok
 
         # Verify it has the correct type ('DAE') and address.

@@ -316,9 +316,9 @@ class TestClerk:
         dec = protocol.FromClerk_Spawn_Decode
         self.verifyFromClerk(enc, dec, payload)
 
-    def test_getFragmentGeometries(self):
+    def test_getFragments(self):
         """
-        Test getFragmentGeometries.
+        Test getFragments.
         """
         # Client --> Clerk
         payload = [1, 2, 3]
