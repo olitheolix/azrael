@@ -298,7 +298,7 @@ class Client():
         return self.serialiseAndSend('get_fragment_geometries', objIDs)
 
     @typecheck
-    def setFragmentGeometries(self, fragments: dict):
+    def setFragments(self, fragments: dict):
         """
         Change the ``fragments``.
 

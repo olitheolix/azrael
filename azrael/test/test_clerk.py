@@ -1131,7 +1131,7 @@ class TestClerk:
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
         cmd = {objID0: {'bar': getFragRaw()._asdict()}}
-        assert clerk.setFragmentGeometries(cmd).ok
+        assert clerk.setFragments(cmd).ok
 
         # Verify that the new 'version' flag is now different.
         ret = clerk.getBodyStates([objID0])
@@ -1143,7 +1143,7 @@ class TestClerk:
         assert ret.ok
         assert ref_version == ret.data[objID1]['rbs'].version
 
-    def test_setFragmentGeometries(self):
+    def test_setFragments(self):
         """
         Spawn three objects and modify the geometries of two.
         """
@@ -1164,7 +1164,7 @@ class TestClerk:
         # respectively, by swapping their types.
         cmd = {id_1: {'foo': getFragDae()._asdict()},
                id_3: {'bar': getFragRaw()._asdict()}}
-        assert clerk.setFragmentGeometries(cmd).ok
+        assert clerk.setFragments(cmd).ok
 
         # Fetch the fragments.
         ret = clerk.getFragmentGeometries([id_1, id_2, id_3])
@@ -1180,7 +1180,7 @@ class TestClerk:
         assert ret.data[id_3]['foo']['fragtype'] == 'RAW'
         assert ret.data[id_3]['bar']['fragtype'] == 'RAW'
 
-    def test_setFragmentGeometries_partial(self):
+    def test_setFragments_partial(self):
         """
         Spawn three objects and modify parts of the geometries only.
         """
@@ -1201,7 +1201,7 @@ class TestClerk:
         # Specify what to update.
         cmd = {id_1: {'foo': {'scale': 2, 'position': (0, 1, 2)}},
                id_3: {'bar': getFragRaw()._asdict()}}
-        assert clerk.setFragmentGeometries(cmd).ok
+        assert clerk.setFragments(cmd).ok
 
         # Fetch the fragments.
         ret = clerk.getFragmentGeometries([id_1, id_2, id_3])
@@ -1239,7 +1239,7 @@ class TestClerk:
         assert r3['bar']['orientation'] == fdae.orientation
         assert r3['bar']['fragtype'] == fraw.fragtype
 
-    def test_setFragmentGeometries_partial_bug(self):
+    def test_setFragments_partial_bug(self):
         """
         If the bug is present then a partial update that does not include the
         fragment geometry itself would actually delete the geometry in Dibbler.
@@ -1268,7 +1268,7 @@ class TestClerk:
         # Specify what to update.
         cmd = {id_1: {'foo': {'scale': 2, 'position': (0, 1, 2)},
                       'bar': getFragRaw()._asdict()}}
-        assert clerk.setFragmentGeometries(cmd).ok
+        assert clerk.setFragments(cmd).ok
 
         # Verify that 'dibbler.updateFragments' was called exactly once for id_0
         assert mock_dibbler.updateFragments.call_count == 1
@@ -1279,7 +1279,7 @@ class TestClerk:
         # did not update the geometry itself.
         assert set(args[1].keys()) == {'bar'}
 
-    def test_setFragmentGeometries_partial_eclectic(self):
+    def test_setFragments_partial_eclectic(self):
         """
         Update fragment state data only (ie not the geometry itself). This test
         suite covers several corner cases to ensure the partial updates work
@@ -1289,7 +1289,7 @@ class TestClerk:
 
         # Attempt to update the fragment state of non-existing objects.
         newStates = {2: {'1': {'scale': 2.2}}}
-        assert not clerk.setFragmentGeometries(newStates).ok
+        assert not clerk.setFragments(newStates).ok
 
         # Define a new template with one fragment.
         t1 = getTemplate('t1', fragments={'foo': getFragRaw()})
@@ -1334,7 +1334,7 @@ class TestClerk:
 
         # Update and verify the fragment states of the second object.
         newStates = {objID_2: {'foo': getCmd(2.2, [1, 2, 3], [1, 0, 0, 0])}}
-        assert clerk.setFragmentGeometries(newStates).ok
+        assert clerk.setFragments(newStates).ok
         checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
                        2.2, [1, 2, 3], [1, 0, 0, 0])
 
@@ -1343,7 +1343,7 @@ class TestClerk:
             objID_1: {'foo': getCmd(3.3, [1, 2, 4], [2, 0, 0, 0])},
             objID_2: {'foo': getCmd(4.4, [1, 2, 5], [0, 3, 0, 0])}
         }
-        assert clerk.setFragmentGeometries(newStates).ok
+        assert clerk.setFragments(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        4.4, [1, 2, 5], [0, 3, 0, 0])
 
@@ -1355,7 +1355,7 @@ class TestClerk:
             1000000: {'foo': getCmd(5, [5, 5, 5], [5, 5, 5, 5])},
             objID_2: {'foo': getCmd(5, [5, 5, 5], [5, 5, 5, 5])}
         }
-        assert not clerk.setFragmentGeometries(newStates).ok
+        assert not clerk.setFragments(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        5.0, [5, 5, 5], [5, 5, 5, 5])
 
@@ -1363,7 +1363,7 @@ class TestClerk:
         newStates = {
             objID_2: {'blah': getCmd(6, [6, 6, 6], [6, 6, 6, 6])}
         }
-        assert not clerk.setFragmentGeometries(newStates).ok
+        assert not clerk.setFragments(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        5.0, [5, 5, 5], [5, 5, 5, 5])
 
@@ -1374,15 +1374,15 @@ class TestClerk:
             objID_2: {'foo': getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
                       'blah': getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
         }
-        assert not clerk.setFragmentGeometries(newStates).ok
+        assert not clerk.setFragments(newStates).ok
         checkFragState(3.3, [1, 2, 4], [2, 0, 0, 0],
                        5.0, [5, 5, 5], [5, 5, 5, 5])
 
         # Update the fragments twice with the exact same data. This triggered a
         # bug at one point that must not occur anymore.
         newStates = {objID_2: {'foo': getCmd(9, [9, 9, 9], [9, 9, 9, 9])}}
-        assert clerk.setFragmentGeometries(newStates).ok
-        assert clerk.setFragmentGeometries(newStates).ok
+        assert clerk.setFragments(newStates).ok
+        assert clerk.setFragments(newStates).ok
 
     def test_fragments_end2end(self):
         """
@@ -1465,7 +1465,7 @@ class TestClerk:
                 '10': getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
                 'test': getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
         }
-        assert clerk.setFragmentGeometries(newStates).ok
+        assert clerk.setFragments(newStates).ok
         checkFragState(objID,
                        '10', 7, [7, 7, 7], [7, 7, 7, 7],
                        'test', 8, [8, 8, 8], [8, 8, 8, 8])
@@ -1512,7 +1512,7 @@ class TestClerk:
         # Change the fragment geometries.
         f_raw = getFragRaw()
         cmd = {objID: {'10': f_raw._asdict(), 'test': f_dae._asdict()}}
-        assert clerk.setFragmentGeometries(cmd).ok
+        assert clerk.setFragments(cmd).ok
         ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
         data = ret.data[objID]
@@ -1787,7 +1787,7 @@ class TestClerk:
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
         cmd = {objID: {'fname_2': getFragNone()._asdict(), 'fname_3': getFragDae()._asdict()}}
-        assert clerk.setFragmentGeometries(cmd).ok
+        assert clerk.setFragments(cmd).ok
 
         # After the last update only two fragments must remain.
         ret = clerk.getFragmentGeometries([objID])

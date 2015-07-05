@@ -484,7 +484,7 @@ class TestClient:
         assert np.array_equal(leo_torque, tot_torque)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_setFragmentGeometries_raw(self, client_type):
+    def test_setFragments_raw(self, client_type):
         """
         Spawn a new object and modify its geometry at runtime.
         """
@@ -532,7 +532,7 @@ class TestClient:
 
         # Change the fragment geometries.
         cmd = {objID: {k: v._asdict() for (k, v) in frag.items()}}
-        assert client.setFragmentGeometries(cmd).ok
+        assert client.setFragments(cmd).ok
 
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
@@ -549,7 +549,7 @@ class TestClient:
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_setFragmentGeometries_dae(self, client_type):
+    def test_setFragments_dae(self, client_type):
         """
         Spawn a new object and modify its geometry at runtime.
         """
@@ -581,7 +581,7 @@ class TestClient:
         assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
 
         # Change the geometry for fragment 'f_dae' to a RAW type.
-        assert client.setFragmentGeometries({objID: {'f_dae': getFragRaw()._asdict()}}).ok
+        assert client.setFragments({objID: {'f_dae': getFragRaw()._asdict()}}).ok
 
         # Ensure the fragment is now indeed of type 'RAW'.
         ret = client.getFragmentGeometries([objID])
@@ -594,7 +594,7 @@ class TestClient:
 
         # Change the fragment geometry once more.
         version = ret.data[objID]['rbs'].version
-        assert client.setFragmentGeometries({objID: {'f_dae': getFragDae()._asdict()}}).ok
+        assert client.setFragments({objID: {'f_dae': getFragDae()._asdict()}}).ok
 
         # Ensure it now has type 'DAE' again.
         ret = client.getFragmentGeometries([objID])
@@ -609,7 +609,7 @@ class TestClient:
     def test_update_FragmentStates(self, client_type):
         """
         Query and modify fragment states.
-        Note that fragment states are updated via 'setFragmentGeometries'.
+        Note that fragment states are updated via 'setFragments'.
         """
         # Get the client for this test.
         client = self.clients[client_type]
@@ -642,7 +642,7 @@ class TestClient:
         # verify it worked.
         newStates = {objID: {'bar': {'scale': 2.2, 'position': (1, 2, 3),
                                      'orientation': (1, 0, 0, 0)}}}
-        assert client.setFragmentGeometries(newStates).ok
+        assert client.setFragments(newStates).ok
         ret = client.getBodyStates(objID)
         assert ret.ok
         ret = ret.data[objID]['frag']['bar']
@@ -686,7 +686,7 @@ class TestClient:
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
         frags_new = {'fname_2': getFragNone()._asdict(), 'fname_3': getFragDae()._asdict()}
-        assert client.setFragmentGeometries({objID: frags_new}).ok
+        assert client.setFragments({objID: frags_new}).ok
 
         # After the last update there must now only be two fragments.
         ret = client.getFragmentGeometries([objID])

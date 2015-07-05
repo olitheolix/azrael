@@ -242,7 +242,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
         # Update the fragments.
         tmp = {k: v._asdict() for (k, v) in frags_new.items()}
-        clerk.setFragmentGeometries({objID: tmp})
+        clerk.setFragments({objID: tmp})
 
         # Verify that the instance now has the new fragments, but not the old
         # ones anymore.

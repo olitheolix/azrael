@@ -308,7 +308,7 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
         'b_left': {'scale': 0},
         'b_right': {'scale': 0},
     }}
-    assert client.setFragmentGeometries(newStates).ok
+    assert client.setFragments(newStates).ok
 
 
 def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
@@ -505,7 +505,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Make 'frag_2' invisible by setting its scale to zero.
     for objID in ret.data:
-        client.setFragmentGeometries({objID: {'frag_2': {'scale': 0}}})
+        client.setFragments({objID: {'frag_2': {'scale': 0}}})
 
 
 def launchQtViewer(param):

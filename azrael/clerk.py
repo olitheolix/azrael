@@ -135,7 +135,7 @@ class Clerk(config.AzraelProcess):
                 protocol.FromClerk_SetBodyState_Encode),
             'set_fragment_geometries': (
                 protocol.ToClerk_SetFragmentGeometry_Decode,
-                self.setFragmentGeometries,
+                self.setFragments,
                 protocol.FromClerk_SetFragmentGeometry_Encode),
             'get_fragment_geometries': (
                 protocol.ToClerk_GetFragmentGeometries_Decode,
@@ -961,7 +961,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def setFragmentGeometries(self, fragments: dict):
+    def setFragments(self, fragments: dict):
         """
         Update the fragments in the database with the new ``fragments`` data.
 
