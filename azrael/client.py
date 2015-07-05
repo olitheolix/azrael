@@ -304,22 +304,14 @@ class Client():
 
         The format of ``fragments`` is::
 
-            fragments = {objID_0: {fragID_0: fragdata_0, ...},
-                         objID_1: {fragID_0: fragdata_0, ...},}
+            fragments = {objID_0: {fragID_0: {'scale': 2}, ...},
+                         objID_1: {fragID_0: {'position': (1, 2, 3), ...},}
 
         :param int objID: ID for which to return the geometry.
-        :param dict[str: ``FragMeta``] fragments: new fragments.
+        :param dict fragments: nested dictionary to (partially) update fragments.
         :return: Success
         """
-        try:
-            payload = {}
-            for objID, frags in fragments.items():
-                tmp = {k: FragMeta(*v) for (k, v) in frags.items()}
-                payload[objID] = {k: v._asdict() for (k, v) in tmp.items()}
-        except TypeError:
-            return RetVal(False, 'Invalid fragment data types', None)
-
-        return self.serialiseAndSend('set_fragment_geometries', payload)
+        return self.serialiseAndSend('set_fragment_geometries', fragments)
 
     @typecheck
     def spawn(self, new_objects: (tuple, list)):

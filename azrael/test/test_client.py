@@ -531,7 +531,8 @@ class TestClient:
         assert FragRaw(**tmp) == frag['bar'].fragdata
 
         # Change the fragment geometries.
-        assert client.setFragmentGeometries({objID: frag}).ok
+        cmd = {objID: {k: v._asdict() for (k, v) in frag.items()}}
+        assert client.setFragmentGeometries(cmd).ok
 
         ret = client.getFragmentGeometries([objID])
         assert ret.ok
@@ -580,7 +581,7 @@ class TestClient:
         assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
 
         # Change the geometry for fragment 'f_dae' to a RAW type.
-        assert client.setFragmentGeometries({objID: {'f_dae': getFragRaw()}}).ok
+        assert client.setFragmentGeometries({objID: {'f_dae': getFragRaw()._asdict()}}).ok
 
         # Ensure the fragment is now indeed of type 'RAW'.
         ret = client.getFragmentGeometries([objID])
@@ -593,7 +594,7 @@ class TestClient:
 
         # Change the fragment geometry once more.
         version = ret.data[objID]['rbs'].version
-        assert client.setFragmentGeometries({objID: {'f_dae': getFragDae()}}).ok
+        assert client.setFragmentGeometries({objID: {'f_dae': getFragDae()._asdict()}}).ok
 
         # Ensure it now has type 'DAE' again.
         ret = client.getFragmentGeometries([objID])
@@ -675,7 +676,7 @@ class TestClient:
 
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
-        frags_new = {'fname_2': getFragNone(), 'fname_3': getFragDae()}
+        frags_new = {'fname_2': getFragNone()._asdict(), 'fname_3': getFragDae()._asdict()}
         assert client.setFragmentGeometries({objID: frags_new}).ok
 
         # After the last update there must now only be two fragments.
