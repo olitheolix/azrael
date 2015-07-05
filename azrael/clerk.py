@@ -1008,7 +1008,14 @@ class Clerk(config.AzraelProcess):
                     tmp.update(fragdata)
                     fragments[objID][fragID] = _FragMeta(**tmp)
 
-                    del fragID, fragdata, tmp
+                    # Remove this from Dibbler's fragment list if the user did
+                    # not provide a fragment type and fragment data (ie the
+                    # user does not want us to touch the geometry itself).
+                    f = fragments[objID][fragID]
+                    if None in (f.fragtype, f.fragdata):
+                        del fragments_dibbler[objID][fragID]
+
+                    del fragID, fragdata, tmp, f
                 del objID, frags
             del ref_1, ref_2
         except TypeError as err:
