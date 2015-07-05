@@ -96,6 +96,18 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_Ping_Decode,
                 self.pingClerk,
                 protocol.FromClerk_Ping_Encode),
+            'add_templates': (
+                protocol.ToClerk_AddTemplates_Decode,
+                self.addTemplates,
+                protocol.FromClerk_AddTemplates_Encode),
+            'get_templates': (
+                protocol.ToClerk_GetTemplates_Decode,
+                self.getTemplates,
+                protocol.FromClerk_GetTemplates_Encode),
+            'get_template_id': (
+                protocol.ToClerk_GetTemplateID_Decode,
+                self.getTemplateID,
+                protocol.FromClerk_GetTemplateID_Encode),
             'spawn': (
                 protocol.ToClerk_Spawn_Decode,
                 self.spawn,
@@ -104,6 +116,10 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_Remove_Decode,
                 self.removeObject,
                 protocol.FromClerk_Remove_Encode),
+            'get_all_objids': (
+                protocol.ToClerk_GetAllObjectIDs_Decode,
+                self.getAllObjectIDs,
+                protocol.FromClerk_GetAllObjectIDs_Encode),
             'get_body_states': (
                 protocol.ToClerk_GetBodyState_Decode,
                 self.getBodyStates,
@@ -116,42 +132,26 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_SetBodyState_Decode,
                 self.setBodyState,
                 protocol.FromClerk_SetBodyState_Encode),
-            'get_fragment_geometries': (
-                protocol.ToClerk_GetFragmentGeometries_Decode,
-                self.getFragmentGeometries,
-                protocol.FromClerk_GetFragmentGeometries_Encode),
             'set_fragment_geometries': (
                 protocol.ToClerk_SetFragmentGeometry_Decode,
                 self.setFragmentGeometries,
                 protocol.FromClerk_SetFragmentGeometry_Encode),
-            'set_force': (
-                protocol.ToClerk_SetForce_Decode,
-                self.setForce,
-                protocol.FromClerk_SetForce_Encode),
-            'get_templates': (
-                protocol.ToClerk_GetTemplates_Decode,
-                self.getTemplates,
-                protocol.FromClerk_GetTemplates_Encode),
-            'get_template_id': (
-                protocol.ToClerk_GetTemplateID_Decode,
-                self.getTemplateID,
-                protocol.FromClerk_GetTemplateID_Encode),
-            'add_templates': (
-                protocol.ToClerk_AddTemplates_Decode,
-                self.addTemplates,
-                protocol.FromClerk_AddTemplates_Encode),
-            'get_all_objids': (
-                protocol.ToClerk_GetAllObjectIDs_Decode,
-                self.getAllObjectIDs,
-                protocol.FromClerk_GetAllObjectIDs_Encode),
-            'control_parts': (
-                protocol.ToClerk_ControlParts_Decode,
-                self.controlParts,
-                protocol.FromClerk_ControlParts_Encode),
+            'get_fragment_geometries': (
+                protocol.ToClerk_GetFragmentGeometries_Decode,
+                self.getFragmentGeometries,
+                protocol.FromClerk_GetFragmentGeometries_Encode),
             'set_fragment_states': (
                 protocol.ToClerk_SetFragmentStates_Decode,
                 self.setFragmentStates,
                 protocol.FromClerk_SetFragmentStates_Encode),
+            'set_force': (
+                protocol.ToClerk_SetForce_Decode,
+                self.setForce,
+                protocol.FromClerk_SetForce_Encode),
+            'control_parts': (
+                protocol.ToClerk_ControlParts_Decode,
+                self.controlParts,
+                protocol.FromClerk_ControlParts_Encode),
             'add_constraints': (
                 protocol.ToClerk_AddConstraints_Decode,
                 self.addConstraints,
@@ -1219,7 +1219,7 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def setBodyState(self, objID: int, state: dict):
         """
-        Set the state variables of ``objID`` to ``state``.
+        Set the rigid body state of ``objID`` to ``state``.
 
         For a detailed description see ``leoAPI.addCmdModifyBodyState``
         since this method is only a wrapper for it.
