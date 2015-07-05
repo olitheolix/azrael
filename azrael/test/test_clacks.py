@@ -231,7 +231,8 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         assert clerk.addTemplates([t1]).ok
         self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
         ret = clerk.spawn([{'templateID': 't1', 'rbs': {'imass': 1}}])
-        assert ret.data == (1, )
+        objID = 1
+        assert ret.data == (objID, )
 
         # Verify that the instance has the old fragments, not the new ones.
         url_inst = config.url_instances
@@ -240,7 +241,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_new)
 
         # Update the fragments.
-        clerk.setFragmentGeometries(objID=1, fragments=frags_new)
+        clerk.setFragmentGeometries({objID: frags_new})
 
         # Verify that the instance now has the new fragments, but not the old
         # ones anymore.

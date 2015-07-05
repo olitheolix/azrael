@@ -341,19 +341,34 @@ class TestClerk:
         """
         Test setFragmentGeometry.
         """
+        fraw, fdae, fnone = getFragRaw(), getFragDae(), getFragNone()
+        payload_in = {
+            1: {'f1': fraw._asdict(), 'f2': fdae._asdict()},
+            2: {'f3': fnone._asdict()}
+        }
+        payload_out = {
+            1: {'f1': fraw, 'f2': fdae},
+            2: {'f3': fnone}
+        }
+
         # Client --> Clerk
-        objID = 1
-        frags = {'f1': getFragRaw(), 'f2': getFragDae(), 'f3': getFragNone()}
-        payload = (objID, frags)
         enc = protocol.ToClerk_SetFragmentGeometry_Encode
         dec = protocol.ToClerk_SetFragmentGeometry_Decode
-        self.verifyToClerk(enc, dec, *payload)
+        aux = enc(payload_in)
+        ok, _, aux = json.loads(json.dumps(aux))
+        assert ok
+            
+        # Decode on Clerk's side.
+        ok, out = dec(aux)
+        assert ok
+
+        # Verify that the the payload is correct.
+        assert out[0] == payload_out
 
     def test_setFragmentStates(self):
         """
         Test setFragmentStates.
         """
-        # Client --> Clerk
         objID_1, objID_2 = 2, 5
         fs_1 = FragState(scale=1, position=(0, 1, 2), orientation=(1, 0, 0, 0))
         fs_2 = FragState(scale=2, position=(3, 3, 3), orientation=(0, 1, 0, 0))
@@ -370,10 +385,10 @@ class TestClerk:
             objID_1: {'foo': fs_1},
             objID_2: {'bar': fs_2, 'foobar': fs_3}
         }
+
+        # Client --> Clerk
         enc = protocol.ToClerk_SetFragmentStates_Encode
         dec = protocol.ToClerk_SetFragmentStates_Decode
-
-        # Send from Client to Clerk via JSON link.
         aux = enc(payload_in)
         ok, _, aux = json.loads(json.dumps(aux))
         assert ok
