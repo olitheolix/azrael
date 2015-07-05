@@ -1130,7 +1130,8 @@ class TestClerk:
 
         # Modify the 'bar' fragment of objID0 and verify that exactly one
         # geometry was updated.
-        assert clerk.setFragmentGeometries(objID0, {'bar': getFragRaw()}).ok
+        cmd = {objID0: {'bar': getFragRaw()}}
+        assert clerk.setFragmentGeometries(cmd).ok
 
         # Verify that the new 'version' flag is now different.
         ret = clerk.getBodyStates([objID0])
@@ -1141,6 +1142,43 @@ class TestClerk:
         ret = clerk.getBodyStates([objID1])
         assert ret.ok
         assert ref_version == ret.data[objID1]['rbs'].version
+
+    def test_setFragmentGeometries(self):
+        """
+        Spawn three objects and modify the geometries of two.
+        """
+        # Convenience.
+        clerk = self.clerk
+
+        # Add a valid template and verify it now exists in Azrael.
+        temp = getTemplate('t1', fragments={'foo': getFragRaw(), 'bar': getFragDae()})
+        assert clerk.addTemplates([temp]).ok
+
+        # Spawn two objects from the previously defined template.
+        init = {'templateID': temp.aid}
+        ret = clerk.spawn([init, init, init])
+        assert ret.ok and (len(ret.data) == 3)
+        id_1, id_2, id_3 = ret.data
+
+        # Modify the 'bar' fragment of id_1 and 'foo' fragment of id_3 by
+        # swapping their types.
+        cmd = {id_1: {'foo': getFragDae()},
+               id_3: {'bar': getFragRaw()}}
+        assert clerk.setFragmentGeometries(cmd).ok
+
+        # Fetch the fragments.
+        ret = clerk.getFragmentGeometries([id_1, id_2, id_3])
+        assert ret.ok
+
+        # Verify fragment types reflect the changes.
+        assert ret.data[id_2]['foo']['fragtype'] == 'RAW'
+        assert ret.data[id_2]['bar']['fragtype'] == 'DAE'
+
+        assert ret.data[id_1]['foo']['fragtype'] == 'DAE'
+        assert ret.data[id_1]['bar']['fragtype'] == 'DAE'
+
+        assert ret.data[id_3]['foo']['fragtype'] == 'RAW'
+        assert ret.data[id_3]['bar']['fragtype'] == 'RAW'
 
     def test_updateBoosterValues(self):
         """
@@ -1431,7 +1469,8 @@ class TestClerk:
 
         # Change the fragment geometries.
         f_raw = getFragRaw()
-        assert clerk.setFragmentGeometries(objID, {'10': f_raw, 'test': f_dae}).ok
+        cmd = {objID: {'10': f_raw, 'test': f_dae}}
+        assert clerk.setFragmentGeometries(cmd).ok
         ret = clerk.getFragmentGeometries([objID])
         assert ret.ok
         data = ret.data[objID]
@@ -1630,8 +1669,8 @@ class TestClerk:
 
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
-        frags_new = {'fname_2': getFragNone(), 'fname_3': getFragDae()}
-        assert clerk.setFragmentGeometries(objID, frags_new).ok
+        cmd = {objID: {'fname_2': getFragNone(), 'fname_3': getFragDae()}}
+        assert clerk.setFragmentGeometries(cmd).ok
 
         # After the last update only two fragments must remain.
         ret = clerk.getFragmentGeometries([objID])

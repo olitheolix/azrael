@@ -956,55 +956,81 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def setFragmentGeometries(self, objID: int, fragments: dict):
+    def setFragmentGeometries(self, fragments: dict):
         """
-        Update the ``fragments`` of ``objID``.
+        Update the fragments in the database with the new ``fragments`` data.
 
-        Return with an error if ``objID`` does not exist.
+        This will update all existing objects and skip those that do not exist.
+        It will only return without if *all* fragments in *all* objects could
+        be updated.
 
-        :param int objID: the object for which to update the geometry.
         :param dict[str: ``FragMeta``] fragments: new fragments.
         :return: Success
         """
         # Compile- and sanity check the fragments.
         try:
-            fragments = {k: FragMeta(*v) for (k, v) in fragments.items()}
+            for objID, frags in fragments.items():
+                fragments[objID] = {k: FragMeta(*v) for (k, v) in frags.items()}
         except TypeError:
             return RetVal(False, 'Received invalid fragment data', None)
 
         # Convenience.
         db = database.dbHandles['ObjInstances']
+        ok, msg = True, []
 
-        # Update the fragment geometry in Dibbler.
-        ret = self.dibbler.updateFragments(objID, fragments)
-        if not ret.ok:
-            return ret
+        for objID, frags in fragments.items():
+            # Update the fragment geometry in Dibbler.
+            ret = self.dibbler.updateFragments(objID, frags)
+            if not ret.ok:
+                return ret
 
-        # Remove all '_NONE' fragments in the instance database.
-        for aid, frag in fragments.items():
-            if frag.fragtype.upper() == '_NONE_':
-                db.update({'objID': objID},
-                          {'$unset': {'template.fragments.{}'.format(aid): True}})
+            # Remove all '_NONE' fragments in the instance database.
+            for aid, frag in frags.items():
+                if frag.fragtype.upper() == '_NONE_':
+                    db.update({'objID': objID},
+                              {'$unset': {'template.fragments.{}'.format(aid): True}})
 
-        # Strip the geometry data because instance database only contains meta
-        # information about the fragments (Dibbler contains the geometry).
-        new_frags = {k: v._replace(fragdata=None) for (k, v) in fragments.items()}
+            # Remove all '_NONE_' type fragments from the current 'frags'
+            # dictionary.
+            frags = {k: v for (k, v) in frags.items() if v.fragtype != '_NONE_'}
 
-        # Conver the fragmetns to dictionaries.
-        frags = {k: v._asdict() for (k, v) in new_frags.items()}
+            # Strip the geometry data because the instance database only
+            # contains meta information about the fragments (Dibbler contains
+            # the geometry).
+            frags = {k: v._replace(fragdata=None) for (k, v) in frags.items()}
 
-        # Update the 'version' flag in the database. All clients
-        # automatically receive this flag with their state variables.
-        ret = db.update({'objID': objID},
-                        {'$inc': {'version': 1},
-                         '$set': {'template.fragments': frags}
-                         })
+            # Convert the fragments to dictionaries.
+            frags = {k: v._asdict() for (k, v) in frags.items()}
 
-        # Return the success status of the database update.
-        if ret['n'] == 1:
+            # Compile JSON hierarchy for the geometries to update without
+            # touching the ones we do not want to update. This will result in a
+            # dictionary like:
+            # data = {'template.fragments.foo': fragdata_foo,
+            #         'template.fragments.bar': fragdata_bar,...}
+            data = {}
+            for fragID, fragdata in frags.items():
+                key = 'template.fragments.{}'.format(fragID)
+                data[key] = fragdata
+
+            # Update the 'version' flag in the database. All clients
+            # automatically receive this flag with their state variables.
+            ret = db.update({'objID': objID},
+                            {'$inc': {'version': 1}, '$set': data})
+
+            # If an error occured save the current objID.
+            if ret['n'] != 1:
+                ok = False
+                msg.append(objID)
+
+        if ok:
+            # No error occurred.
             return RetVal(True, None, None)
         else:
-            return RetVal(False, 'ID <{}> does not exist'.format(objID), None)
+            # Return with an error and list all objIDs that did not update
+            # correctly.
+            tmp = '{' + str(set(msg)) + '}'
+            msg = 'objIDs {} do not exist'.format(tmp)
+            return RetVal(False, msg, None)
 
     @typecheck
     def setFragmentStates(self, fragData: dict):
