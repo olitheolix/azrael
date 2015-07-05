@@ -46,7 +46,8 @@ RetVal = namedtuple('RetVal', 'ok msg data')
 _Template = namedtuple('_Template', 'aid rbs fragments boosters factories')
 
 # Fragments.
-_FragMeta = namedtuple('_FragMeta', 'fragtype fragdata')
+_FragMeta = namedtuple('_FragMeta',
+                       'fragtype scale position orientation fragdata')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 FragNone = namedtuple('FragNone', '')
@@ -361,8 +362,15 @@ class FragMeta(_FragMeta):
     :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
-    def __new__(cls, fragtype: str, fragdata):
+    def __new__(cls, fragtype: str, scale: (int, float),
+                position: (tuple, list),
+                orientation: (tuple, list),
+                fragdata):
         try:
+            # Sanity check position and orientation.
+            position = toVec(3, position)
+            orientation = toVec(4, orientation)
+
             # Verify that `fragtype` is valid and construct the respective data
             # type for the ``fragdata`` attribute.
             if fragdata is None:
@@ -389,7 +397,7 @@ class FragMeta(_FragMeta):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, fragtype, frag)
+        return super().__new__(cls, fragtype, scale, position, orientation, frag)
 
     def _asdict(self):
         if self.fragtype.upper() == '_NONE_':

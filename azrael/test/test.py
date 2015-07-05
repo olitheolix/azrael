@@ -85,14 +85,15 @@ def getCSPlane(aid='csplane', pos=[0, 0, 0], rot=[0, 0, 0, 1],
     return CollShapeMeta(aid, 'plane', pos, rot, CollShapePlane(normal, ofs))
 
 
-def getFragNone():
+def getFragNone(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Convenience function to construct an empty geometry element.
     """
-    return FragMeta(fragtype='_none_', fragdata=FragNone())
+    return FragMeta(fragtype='_none_', scale=scale, position=pos,
+                    orientation=rot, fragdata=FragNone())
 
 
-def getFragRaw():
+def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Convenience function to construct a valid Raw geometry.
     """
@@ -101,10 +102,11 @@ def getFragRaw():
     rgb = np.random.randint(0, 100, 3).tolist()
 
     geo = FragRaw(vert, uv, rgb)
-    return FragMeta(fragtype='RAW', fragdata=geo)
+    return FragMeta(fragtype='RAW', scale=scale, position=pos,
+                    orientation=rot, fragdata=geo)
 
 
-def getFragDae():
+def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Convenience function to construct a valid Collada geometry.
     """
@@ -120,7 +122,8 @@ def getFragDae():
                   rgb={'rgb1.png': dae_rgb1,
                        'rgb2.jpg': dae_rgb2})
 
-    return FragMeta(fragtype='DAE', fragdata=geo)
+    return FragMeta(fragtype='DAE', scale=scale, position=pos,
+                    orientation=rot, fragdata=geo)
 
 
 def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2,
