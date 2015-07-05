@@ -902,10 +902,15 @@ class Clerk(config.AzraelProcess):
         """
         Return information about the fragments of each object in ``objIDs``.
 
+        fixme: return a dictionary versio of FragMeta where fragdata is zero,
+        plus the URL
+
         This method returns a dictionary of the form::
 
-            {objID_1: {'fragtype': 'raw', 'url_frag': 'http:...'},
-             objID_2: {'fragtype': 'dae', 'url_frag': 'http:...'},
+            {objID_1: {'fragtype': 'raw', 'scale': 1, 'position': (1, 2, 3),
+                       'orientation': (0, 1, 0, 0,), 'url_frag': 'http://'},
+             objID_2: {'fragtype': 'dae', 'scale': 1, 'position': (4, 5, 6),
+                       'orientation': (0, 0, 0, 1), 'url_frag': 'http://'},
              objID_3: None,
              ...
             }
@@ -946,6 +951,9 @@ class Clerk(config.AzraelProcess):
                 # data itself (we only provide the meta information).
                 out[doc['objID']] = {
                     k: {
+                        'scale': v.scale,
+                        'position': v.position,
+                        'orientation': v.orientation,
                         'fragtype': v.fragtype,
                         'url_frag': pjoin(doc['url_frag'], k)
                     } for (k, v) in frags.items()}
