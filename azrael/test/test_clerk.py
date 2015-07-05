@@ -1420,6 +1420,15 @@ class TestClerk:
             assert _frags[name_2] == FragState(scale_2, pos_2, rot_2)
             del ret, _frags
 
+        def getCmd(scale, pos, rot):
+            """
+            Return dictionary with the constituent entries.
+
+            This is a convenience function only to make this test more
+            readable.
+            """
+            return {'scale': scale, 'position': pos, 'orientation': rot}
+
         # Create two fragments.
         f_raw = getFragRaw()
         f_dae = getFragDae()
@@ -1453,10 +1462,10 @@ class TestClerk:
         # Modify the _state_ of both fragments and verify it worked.
         newStates = {
             objID: {
-                '10': FragState(7, [7, 7, 7], [7, 7, 7, 7]),
-                'test': FragState(8, [8, 8, 8], [8, 8, 8, 8])}
+                '10': getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
+                'test': getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
         }
-        assert clerk.setFragmentStates(newStates).ok
+        assert clerk.setFragmentGeometries(newStates).ok
         checkFragState(objID,
                        '10', 7, [7, 7, 7], [7, 7, 7, 7],
                        'test', 8, [8, 8, 8], [8, 8, 8, 8])

@@ -606,9 +606,10 @@ class TestClient:
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_setFragmentStates(self, client_type):
+    def test_update_FragmentStates(self, client_type):
         """
         Query and modify fragment states.
+        Note that fragment states are updated via 'setFragmentGeometries'.
         """
         # Get the client for this test.
         client = self.clients[client_type]
@@ -632,14 +633,22 @@ class TestClient:
         ref = {'bar': FragState(1, [0, 0, 0], [0, 0, 0, 1])}
         assert ret.ok
         assert ret.data[objID]['frag'] == ref
+        ret = ret.data[objID]['frag']['bar']
+        assert ret.scale == ref['bar'].scale
+        assert ret.position == ref['bar'].position
+        assert ret.orientation == ref['bar'].orientation
 
         # Modify and update the fragment states in Azrael, then query and
         # verify it worked.
-        newStates = {objID: {'bar': FragState(2.2, [1, 2, 3], [1, 0, 0, 0])}}
-        assert client.setFragmentStates(newStates).ok
+        newStates = {objID: {'bar': {'scale': 2.2, 'position': (1, 2, 3),
+                                     'orientation': (1, 0, 0, 0)}}}
+        assert client.setFragmentGeometries(newStates).ok
         ret = client.getBodyStates(objID)
         assert ret.ok
-        assert ret.data[objID]['frag'] == newStates[objID]
+        ret = ret.data[objID]['frag']['bar']
+        assert ret.scale == newStates[objID]['bar']['scale']
+        assert ret.position == newStates[objID]['bar']['position']
+        assert ret.orientation == newStates[objID]['bar']['orientation']
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_remove_fragments(self, client_type):
