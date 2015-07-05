@@ -400,14 +400,11 @@ class FragMeta(_FragMeta):
         return super().__new__(cls, fragtype, scale, position, orientation, frag)
 
     def _asdict(self):
-        if self.fragtype.upper() == '_NONE_':
-            return OrderedDict(zip(self._fields, self))
+        if self.fragdata is None:
+            tmp = self
         else:
-            if self.fragdata is None:
-                tmp = self
-            else:
-                tmp = self._replace(fragdata=self.fragdata._asdict())
-            return OrderedDict(zip(self._fields, tmp))
+            tmp = self._replace(fragdata=self.fragdata._asdict())
+        return OrderedDict(zip(self._fields, tmp))
 
 
 class FragState(_FragState):
