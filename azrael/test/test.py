@@ -173,7 +173,7 @@ def getRigidBody(scale: (int, float)=1,
 def getTemplate(name='template',
                 rbs=None,
                 fragments={},
-                boosters=[],
+                boosters={},
                 factories=[]):
     if rbs is None:
         rbs = getRigidBody(cshapes=[getCSSphere()])
