@@ -652,7 +652,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, newObjectIDs)
 
     @typecheck
-    def controlParts(self, objID: int, cmd_boosters: (tuple, list),
+    def controlParts(self, objID: int, cmd_boosters: dict,
                      cmd_factories: (tuple, list)):
         """
         Issue commands to individual parts of the ``objID``.
@@ -664,6 +664,7 @@ class Clerk(config.AzraelProcess):
         The commands for Boosters and Factories must be instances of
         ``CmdBooster`` or ``CmdFactory``, respectively.
 
+        fixme: argument types
         :param int objID: object ID.
         :param list cmd_booster: booster commands.
         :param list cmd_factory: factory commands.
@@ -688,9 +689,7 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
 
         # Compile a list of all Boosters and Factories defined for the object.
-        boosters = {_.partID: _ for _ in instance.boosters}
         factories = {_.partID: _ for _ in instance.factories}
-        del instance
 
         # Fetch the SV for objID (we need this to determine the orientation of
         # the base object to which the parts are attached).
@@ -713,7 +712,7 @@ class Clerk(config.AzraelProcess):
 
         # Sanity check the Booster- and Factory commands.
         try:
-            cmd_boosters = [types.CmdBooster(*_) for _ in cmd_boosters]
+            cmd_boosters = {k: types.CmdBooster(*v) for (k, v) in cmd_boosters.items()}
             cmd_factories = [types.CmdFactory(*_) for _ in cmd_factories]
         except TypeError:
             msg = 'Invalid booster- or factory command'
@@ -721,14 +720,13 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
 
         # Verify that the Booster commands reference existing Boosters.
-        for cmd in cmd_boosters:
+        for partID, cmd in cmd_boosters.items():
             # Verify the referenced booster exists.
-            if cmd.partID not in boosters:
+            if partID not in instance.boosters:
                 msg = 'Object <{}> has no Booster with AID <{}>'
-                msg = msg.format(objID, cmd.partID)
+                msg = msg.format(objID, partID)
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
-        del boosters
 
         # Verify that the Factory commands reference existing Factories.
         for cmd in cmd_factories:
@@ -740,11 +738,6 @@ class Clerk(config.AzraelProcess):
                 return RetVal(False, msg, None)
 
         # Ensure all boosters/factories receive at most one command each.
-        partIDs = [_.partID for _ in cmd_boosters]
-        if len(set(partIDs)) != len(partIDs):
-            msg = 'Same booster received multiple commands'
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
         partIDs = [_.partID for _ in cmd_factories]
         if len(set(partIDs)) != len(partIDs):
             msg = 'Same factory received multiple commands'
@@ -803,7 +796,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, objIDs)
 
     @typecheck
-    def updateBoosterForces(self, objID: int, cmds: list):
+    def updateBoosterForces(self, objID: int, cmds: dict):
         """
         Return forces and update the Booster values in the instance DB.
 
@@ -815,6 +808,8 @@ class Clerk(config.AzraelProcess):
              'bar': ([1, 2, 3], [4, 5, 6]),
              ...}
 
+        fixme: example above and parameter types
+
         :param int objID: object ID
         :param list cmds: list of Booster commands.
         :return: (linear force, torque) that the Booster apply to the object.
@@ -824,11 +819,11 @@ class Clerk(config.AzraelProcess):
         db = database.dbHandles['ObjInstances']
 
         # Put the new force values into a dictionary for convenience later on.
-        cmds = {_.partID: _.force_mag for _ in cmds}
+#        cmds = {_.partID: _.force_mag for _ in cmds}
 
         # Query the object's booster information.
         query = {'objID': objID}
-        doc = db.find_one(query, {'template.boosters': 1})
+        doc = db.find_one(query, {'template.boosters': True})
         if doc is None:
             msg = 'Object <{}> does not exist'.format(objID)
             return RetVal(False, msg, None)
@@ -837,8 +832,7 @@ class Clerk(config.AzraelProcess):
 
         # Put the Booster entries from the database into Booster tuples.
         try:
-            boosters = [types.Booster(**_) for _ in instance['boosters']]
-            boosters = {_.partID: _ for _ in boosters}
+            boosters = {k: types.Booster(**v) for (k, v) in instance['boosters'].items()}
         except TypeError:
             msg = 'Inconsistent Template data'
             self.logit.error(msg)
@@ -851,7 +845,7 @@ class Clerk(config.AzraelProcess):
             # remove the command (irrelevant for this loop but necessary for
             # the sanity check that follows after the loop).
             if partID in cmds:
-                boosters[partID] = booster._replace(force=cmds[partID])
+                boosters[partID] = booster._replace(force=cmds[partID].force_mag)
                 booster = boosters[partID]
                 del cmds[partID]
 
@@ -862,6 +856,7 @@ class Clerk(config.AzraelProcess):
             # Update the central force and torque.
             force += booster.force * b_dir
             torque += booster.force * np.cross(b_pos, b_dir)
+            del booster
 
         # If we have not consumed all commands then at least one partID did not
         # exist --> return with an error in that case.
@@ -871,7 +866,7 @@ class Clerk(config.AzraelProcess):
         # Update the new Booster values (and only the Booster values) in the
         # instance database. To this end convert them back to dictionaries and
         # issue the update.
-        boosters = [_._asdict() for _ in boosters.values()]
+        boosters = {k: v._asdict() for (k, v) in boosters.items()}
         db.update(query, {'$set': {'template.boosters': boosters}})
 
         # Return the final force- and torque as a tuple of 2-tuples.
