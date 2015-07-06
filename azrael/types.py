@@ -1053,11 +1053,13 @@ class Template(_Template):
     def __new__(cls, aid: str,
                 rbs: (tuple, list, dict),
                 fragments: dict,
-                boosters: (tuple, list),
+                boosters: dict,
                 factories: (tuple, list)):
         try:
-            # Sanity check the AID.
+            # Sanity check the AID of the template, boosters, and factories.
             assert isAIDStringValid(aid)
+            for bb in boosters:
+                assert isAIDStringValid(bb)
 
             # AID must be valid.
             for tmp_aid in fragments:
@@ -1068,9 +1070,9 @@ class Template(_Template):
                          for (k, v) in fragments.items()}
 
             # Compile- and sanity check all boosters.
-            boosters = [Booster(**_)
-                        if isinstance(_, dict) else Booster(*_)
-                        for _ in boosters]
+            boosters = {k: Booster(**v)
+                        if isinstance(v, dict) else Booster(*v)
+                        for (k, v) in boosters.items()}
 
             # Compile- and sanity check all factories.
             factories = [Factory(**_)
@@ -1094,7 +1096,7 @@ class Template(_Template):
 
     def _asdict(self):
         fragments = {k: v._asdict() for (k, v) in self.fragments.items()}
-        boosters = [_._asdict() for _ in self.boosters]
+        boosters = {k: v._asdict() for (k, v) in self.boosters.items()}
         factories = [_._asdict() for _ in self.factories]
         rbs = self.rbs._asdict()
         tmp = _Template(aid=self.aid,

@@ -152,7 +152,7 @@ class TestDibbler:
         temp_t = getTemplate('t1',
                              rbs=rbs,
                              fragments={'1': getFragRaw(), '2': getFragDae()},
-                             boosters=[b0, b1],
+                             boosters={'0': b0, '1': b1},
                              factories=[f0, f1])
 
         # Verify that it is JSON compatible.
@@ -162,7 +162,7 @@ class TestDibbler:
         # for all collision shapes, fragments, boosters, and factories.
         temp_d = temp_t._asdict()
         fragments_d = {k: v._asdict() for (k, v) in temp_t.fragments.items()}
-        boosters_d = [_._asdict() for _ in temp_t.boosters]
+        boosters_d = {k: v._asdict() for (k, v) in temp_t.boosters.items()}
         factories_d = [_._asdict() for _ in temp_t.factories]
         rbs_d = rbs._asdict()
         assert temp_d['fragments'] == fragments_d
