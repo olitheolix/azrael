@@ -610,7 +610,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         t_projectile = 'cube'
         frags = {'frag_1': getFragMeta('RAW', FragRaw(buf_vert, uv, rgb))}
         body = getRigidBody(cshapes=[cs])
-        temp = Template(t_projectile, body, frags, [], [])
+        temp = Template(t_projectile, body, frags, {}, {})
         ret = self.client.addTemplates([temp])
         del frags, temp
 

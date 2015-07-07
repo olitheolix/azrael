@@ -244,14 +244,16 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     pos_left = np.array([-1.5, 0, 0])
     pos_center = np.zeros(3)
 
-    b0 = types.Booster(partID='0', pos=pos_left, direction=-dir_up,
-                       minval=0, maxval=10.0, force=0)
-    b1 = types.Booster(partID='1', pos=pos_center, direction=dir_forward,
-                       minval=0, maxval=1000.0, force=0)
-    b2 = types.Booster(partID='2', pos=-pos_left, direction=dir_up,
-                       minval=0, maxval=10.0, force=0)
-    b3 = types.Booster(partID='3', pos=pos_center, direction=-dir_forward,
-                       minval=0, maxval=1000.0, force=0)
+    boosters = {
+        '0': types.Booster(pos=pos_left, direction=-dir_up,
+                           minval=0, maxval=10.0, force=0),
+        '1': types.Booster(pos=pos_center, direction=dir_forward,
+                           minval=0, maxval=1000.0, force=0),
+        '2': types.Booster(pos=-pos_left, direction=dir_up,
+                           minval=0, maxval=10.0, force=0),
+        '3': types.Booster(pos=pos_center, direction=-dir_forward,
+                           minval=0, maxval=1000.0, force=0)
+    }
     del dir_up, dir_forward, pos_left, pos_center
 
     # Construct a Tetrahedron (triangular Pyramid). This is going to be the
@@ -281,7 +283,7 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     }
 
     body = getRigidBody()
-    temp = Template(tID, body, frags, [b0, b1, b2, b3], [])
+    temp = Template(tID, body, frags, boosters, {})
     assert client.addTemplates([temp]).ok
     del cs, frags, temp, z
     print('done')
@@ -381,8 +383,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     frags_1 = {'frag_1': getFragMeta('raw', FragRaw(0.75 * vert, uv, rgb))}
     frags_2 = {'frag_1': getFragMeta('raw', FragRaw(0.24 * vert, uv, rgb))}
     body = getRigidBody(cshapes=[cs])
-    t1 = Template(tID_1, body, frags_1, [], [])
-    t2 = Template(tID_2, body, frags_2, [], [])
+    t1 = Template(tID_1, body, frags_1, {}, {})
+    t2 = Template(tID_2, body, frags_2, {}, {})
     assert client.addTemplates([t1, t2]).ok
     del frags_1, frags_2, t1, t2
 
@@ -390,25 +392,27 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # Define a cube with boosters and factories.
     # ----------------------------------------------------------------------
     # Two boosters, one left, one right. Both point in the same direction.
-    b0 = types.Booster(partID='0', pos=[+0.05, 0, 0], direction=[0, 0, 1],
-                       minval=0, maxval=10.0, force=0)
-    b1 = types.Booster(partID='1', pos=[-0.05, 0, 0], direction=[0, 0, 1],
-                       minval=0, maxval=10.0, force=0)
+    boosters = {
+        '0': types.Booster(pos=[+0.05, 0, 0], direction=[0, 0, 1],
+                           minval=0, maxval=10.0, force=0),
+        '1': types.Booster(pos=[-0.05, 0, 0], direction=[0, 0, 1],
+                           minval=0, maxval=10.0, force=0)
+    }
 
     # Two factories, one left one right. They will eject the new objects
     # forwards and backwards, respectively.
-    f0 = types.Factory(
-        partID='0', pos=[+1.5, 0, 0], direction=[+1, 0, 0],
-        templateID=tID_1, exit_speed=[0.1, 1])
-    f1 = types.Factory(
-        partID='1', pos=[-1.5, 0, 0], direction=[-1, 0, 0],
-        templateID=tID_2, exit_speed=[0.1, 1])
+    factories = {
+        '0': types.Factory(pos=[+1.5, 0, 0], direction=[+1, 0, 0],
+                           templateID=tID_1, exit_speed=[0.1, 1]),
+        '1': types.Factory(pos=[-1.5, 0, 0], direction=[-1, 0, 0],
+                           templateID=tID_2, exit_speed=[0.1, 1])
+    }
 
     # Add the template.
     tID_3 = 'BoosterCube'
     frags = {'frag_1': getFragMeta('raw', FragRaw(vert, uv, rgb))}
     body = getRigidBody(cshapes=[cs])
-    t3 = Template(tID_3, body, frags, [b0, b1], [f0, f1])
+    t3 = Template(tID_3, body, frags, boosters, factories)
     assert client.addTemplates([t3]).ok
     del frags, t3
 
@@ -438,7 +442,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         frags = {'frag_1': getFragMeta('raw', FragRaw(vert, curUV, rgb)),
                  'frag_2': getFragMeta('raw', FragRaw(vert, curUV, rgb))}
         body = getRigidBody(cshapes=[cs])
-        tmp = Template(tID, body, frags, [b0, b1], [])
+        tmp = Template(tID, body, frags, boosters, {})
         templates.append(tmp)
 
         # Add the templateID to a dictionary because we will need it in the
