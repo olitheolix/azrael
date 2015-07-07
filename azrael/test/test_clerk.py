@@ -1782,7 +1782,6 @@ class TestClerk:
 
         # Verify that both objects were spawned (simply query their template
         # ID to establish that).
-        leo.processCommandsAndSync()
         ret_a = clerk.getTemplateID(id_a)
         ret_b = clerk.getTemplateID(id_b)
         assert ret_a.ok and ret_b.ok
@@ -1938,7 +1937,6 @@ class TestClerk:
         assert clerk.setBodyState(id_cs, new_bs_cs).ok
         assert clerk.setBodyState(id_frag, new_bs_frag).ok
         assert clerk.setBodyState(id_none, new_bs_none).ok
-        leo.processCommandsAndSync()
 
         # Verify all objects have the new positions.
         ret = clerk.getBodyStates([id_cs, id_frag, id_none])
