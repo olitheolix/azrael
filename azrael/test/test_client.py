@@ -213,13 +213,17 @@ class TestClient:
         # The 'boosters' and 'factories' arguments are a list of named
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any).
-        b0 = types.Booster(partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
-                           minval=0, maxval=0.5, force=0)
-        b1 = types.Booster(partID='1', pos=(0, 0, 0), direction=(0, 0, 1),
-                           minval=0, maxval=0.5, force=0)
-        f0 = types.Factory(
-            partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
-            templateID='_templateBox', exit_speed=(0.1, 0.5))
+        boosters = {
+            '0': types.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
+                               minval=0, maxval=0.5, force=0),
+            '1': types.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
+                               minval=0, maxval=0.5, force=0),
+        }
+        factories = {
+            '0': types.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
+                               templateID='_templateBox',
+                               exit_speed=(0.1, 0.5))
+        }
 
         # Attempt to query the geometry of a non-existing object.
         assert client.getFragments([1]) == (True, None, {1: None})
@@ -230,8 +234,8 @@ class TestClient:
         temp = getTemplate('t2',
                            rbs=body,
                            fragments=frag,
-                           boosters={'0': b0, '1': b1},
-                           factories={'0': f0})
+                           boosters=boosters,
+                           factories=factories)
         assert client.addTemplates([temp]).ok
         init = {'templateID': temp.aid,
                 'rbs': {'position': (0, 0, 0)}}
@@ -411,22 +415,26 @@ class TestClient:
         # ---------------------------------------------------------------------
 
         # Define the parts.
-        b0 = types.Booster(partID='0', pos=pos_0, direction=dir_0,
-                           minval=0, maxval=0.5, force=0)
-        b1 = types.Booster(partID='1', pos=pos_1, direction=dir_1,
-                           minval=0, maxval=1.0, force=0)
-        f0 = types.Factory(
-            partID='0', pos=pos_0, direction=dir_0,
-            templateID='_templateBox', exit_speed=[0.1, 0.5])
-        f1 = types.Factory(
-            partID='1', pos=pos_1, direction=dir_1,
-            templateID='_templateSphere', exit_speed=[1, 5])
+        boosters = {
+            '0': types.Booster(pos=pos_0, direction=dir_0,
+                               minval=0, maxval=0.5, force=0),
+            '1': types.Booster(pos=pos_1, direction=dir_1,
+                               minval=0, maxval=1.0, force=0)
+        }
+        factories = {
+            '0': types.Factory(pos=pos_0, direction=dir_0,
+                               templateID='_templateBox',
+                               exit_speed=[0.1, 0.5]),
+            '1': types.Factory(pos=pos_1, direction=dir_1,
+                               templateID='_templateSphere',
+                               exit_speed=[1, 5])
+        }
 
         # Define the template, add it to Azrael, and spawn an instance.
         temp = getTemplate('t1',
                            rbs=getRigidBody(),
-                           boosters={'0': b0, '1': b1},
-                           factories={'0': f0, '1': f1})
+                           boosters=boosters,
+                           factories=factories)
         assert client.addTemplates([temp]).ok
         new_obj = {'templateID': temp.aid,
                    'rbs': {
@@ -435,8 +443,7 @@ class TestClient:
                        'orientation': orient_parent}}
         ret = client.spawn([new_obj])
         assert ret.ok and (ret.data == [objID_1])
-        leo.processCommandsAndSync()
-        del b0, b1, f0, f1, temp, new_obj
+        del boosters, factories, temp, new_obj
 
         # ---------------------------------------------------------------------
         # Activate booster and factories and verify that the applied force and
@@ -447,33 +454,42 @@ class TestClient:
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
         forcemag_0, forcemag_1 = 0.2, 0.4
-        cmd_0 = types.CmdBooster(partID='0', force_mag=forcemag_0)
-        cmd_1 = types.CmdBooster(partID='1', force_mag=forcemag_1)
-        cmd_2 = types.CmdFactory(partID='0', exit_speed=exit_speed_0)
-        cmd_3 = types.CmdFactory(partID='1', exit_speed=exit_speed_1)
+        cmd_b = {
+            '0': types.CmdBooster(force_mag=forcemag_0),
+            '1': types.CmdBooster(force_mag=forcemag_1),
+        }
+        cmd_f = {
+            '0': types.CmdFactory(exit_speed=exit_speed_0),
+            '1': types.CmdFactory(exit_speed=exit_speed_1),
+        }
 
         # Send the commands and ascertain that the returned object IDs now
         # exist in the simulation. These IDs must be '2' and '3'.
-        ret = client.controlParts(objID_1, {'0': cmd_0, '1': cmd_1},
-                                  {'0': cmd_2, '1': cmd_3})
-        spawnIDs = ret.data
-        assert (ret.ok, len(spawnIDs)) == (True, 2)
-        assert spawnIDs == [2, 3]
-        leo.processCommandsAndSync()
+        ret = client.controlParts(objID_1, cmd_b, cmd_f)
+        id_2, id_3 = 2, 3
+        assert (ret.ok, ret.data) == (True, [id_2, id_3])
 
         # Query the state variables of the objects spawned by the factories.
-        ok, _, ret_SVs = client.getBodyStates(spawnIDs)
+        ok, _, ret_SVs = client.getBodyStates([id_2, id_3])
         assert (ok, len(ret_SVs)) == (True, 2)
 
-        # Verify the position and velocity of the spawned objects is correct.
-        sv_2, sv_3 = [ret_SVs[_]['rbs'] for _ in spawnIDs]
-        ac = np.allclose
-        assert ac(sv_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
-        assert ac(sv_2.position, pos_0_out + pos_parent)
-        assert ac(sv_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
-        assert ac(sv_3.position, pos_1_out + pos_parent)
+        # Determine which body was spawned by which factory based on their
+        # position. We do this by looking at their initial position which
+        # *must* match one of the parents.
+        body_2, body_3 = ret_SVs[id_2]['rbs'], ret_SVs[id_3]['rbs']
+        if np.allclose(body_2.position, pos_1_out + pos_parent):
+            body_2, body_3 = body_3, body_2
 
-        # Manually compute the total force and torque exerted by the boosters.
+        # Verify the position and velocity of the spawned objects is correct.
+        ac = np.allclose
+        assert ac(body_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
+        assert ac(body_2.position, pos_0_out + pos_parent)
+        assert ac(body_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
+        assert ac(body_3.position, pos_1_out + pos_parent)
+
+        # Let Leonard sync its data and then verify it received the correct
+        # total force and torque exerted by the boosters.
+        leo.processCommandsAndSync()
         forcevec_0, forcevec_1 = forcemag_0 * dir_0_out, forcemag_1 * dir_1_out
         tot_force = forcevec_0 + forcevec_1
         tot_torque = (np.cross(pos_0_out, forcevec_0) +
@@ -802,10 +818,6 @@ class TestClient:
         ]
         id_1, id_2 = 1, 2
         assert client.spawn(new_objs) == (True, None, [id_1, id_2])
-
-        # Verify that both objects were spawned (simply query their template
-        # original template to establish that they now actually exist).
-        leo.processCommandsAndSync()
 
         # Define- and add the constraints.
         con = [getP2P(rb_a=id_1, rb_b=id_2, pivot_a=pos_b, pivot_b=pos_a)]
