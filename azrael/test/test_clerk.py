@@ -187,7 +187,7 @@ class TestClerk:
                            rbs=body,
                            fragments=frags,
                            boosters={'0': b0, '1': b1},
-                           factories=[f0])
+                           factories={'0': f0})
         assert clerk.addTemplates([temp]).ok
         assert mock_dibbler.addTemplate.call_count == 4
 
@@ -631,13 +631,13 @@ class TestClerk:
 
         # Call 'controlParts'. This must fail because the template for objID_1
         # has neither boosters nor factories.
-        assert not clerk.controlParts(objID_1, {'0': cmd_b}, []).ok
+        assert not clerk.controlParts(objID_1, {'0': cmd_b}, {}).ok
 
         # Must fail: object has no factory.
-        assert not clerk.controlParts(objID_1, {}, [cmd_f]).ok
+        assert not clerk.controlParts(objID_1, {}, {'0': cmd_f}).ok
 
         # Must fail: object still has neither a booster nor a factory.
-        assert not clerk.controlParts(objID_1, {'0': cmd_b}, [cmd_f]).ok
+        assert not clerk.controlParts(objID_1, {'0': cmd_b}, {'0': cmd_f}).ok
 
         # ---------------------------------------------------------------------
         # Create a template with one booster and one factory. Then send
@@ -654,7 +654,7 @@ class TestClerk:
         # Define a new template, add it to Azrael, and spawn an instance.
         temp = getTemplate('t1',
                            boosters={'0': b0},
-                           factories=[f0])
+                           factories={'0': f0})
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, (objID_2, ))
@@ -664,11 +664,7 @@ class TestClerk:
         cmd_f = types.CmdFactory(partID='0', exit_speed=0.5)
 
         # Valid: Clerk must accept these commands.
-        assert clerk.controlParts(objID_2, {'0': cmd_b}, [cmd_f]).ok
-
-        # Invalid: every part can only receive one command per call.
-#        assert not clerk.controlParts(objID_2, [cmd_b, cmd_b], []).ok
-        assert not clerk.controlParts(objID_2, {}, [cmd_f, cmd_f]).ok
+        assert clerk.controlParts(objID_2, {'0': cmd_b}, {'0': cmd_f}).ok
 
     def test_controlParts_Boosters_notmoving(self):
         """
@@ -721,7 +717,7 @@ class TestClerk:
         cmd_1 = types.CmdBooster(partID='1', force_mag=forcemag_1)
 
         # Send booster commands to Clerk.
-        assert clerk.controlParts(objID_1, {'0': cmd_0, '1': cmd_1}, []).ok
+        assert clerk.controlParts(objID_1, {'0': cmd_0, '1': cmd_1}, {}).ok
         leo.processCommandsAndSync()
 
         # Manually compute the total force and torque exerted by the boosters.
@@ -735,7 +731,7 @@ class TestClerk:
         assert np.array_equal(tmp[1], tot_torque)
 
         # Send an empty command. The total force and torque must not change.
-        assert clerk.controlParts(objID_1, {}, []).ok
+        assert clerk.controlParts(objID_1, {}, {}).ok
         leo.processCommandsAndSync()
         tmp = leo.totalForceAndTorque(objID_1)
         assert np.array_equal(tmp[0], tot_force)
@@ -772,7 +768,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Add the template to Azrael and spawn one instance.
-        temp = getTemplate('t1', factories=[f0, f1])
+        temp = getTemplate('t1', factories={'0': f0, '1': f1})
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
@@ -789,7 +785,8 @@ class TestClerk:
 
         # Send the commands and ascertain that the returned object IDs now
         # exist in the simulation. These IDs must be '2' and '3'.
-        ok, _, spawnedIDs = clerk.controlParts(objID_1, {}, [cmd_0, cmd_1])
+        ok, _, spawnedIDs = clerk.controlParts(objID_1, {},
+                                               {'0': cmd_0, '1': cmd_1})
         assert (ok, spawnedIDs) == (True, [2, 3])
 
         # Query the state variables of the objects spawned by the factories.
@@ -839,7 +836,7 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define a template with two factories, add it to Azrael, and spawn it.
-        temp = getTemplate('t1', factories=[f0, f1])
+        temp = getTemplate('t1', factories={'0': f0, '1': f1})
         init = {
             'templateID': temp.aid,
             'rbs': {'position': body.position, 'velocityLin': body.velocityLin}
@@ -861,7 +858,7 @@ class TestClerk:
 
         # Send the commands and ascertain that the returned object IDs now
         # exist in the simulation.
-        ret = clerk.controlParts(objID_1, {}, [cmd_0, cmd_1])
+        ret = clerk.controlParts(objID_1, {}, {'0': cmd_0, '1': cmd_1})
         assert ret.ok and (len(ret.data) == 2)
         spawnedIDs = ret.data
         assert spawnedIDs == [objID_2, objID_3]
@@ -942,7 +939,8 @@ class TestClerk:
             templateID='_templateSphere', exit_speed=[1, 5])
 
         # Define the template, add it to Azrael, and spawn one instance.
-        temp = getTemplate('t1', boosters={'0': b0, '1': b1}, factories=[f0, f1])
+        temp = getTemplate('t1', boosters={'0': b0, '1': b1},
+                           factories={'0': f0, '1': f1})
         assert clerk.addTemplates([temp]).ok
 
         init = {
@@ -974,7 +972,7 @@ class TestClerk:
         # Send the commands and ascertain that the returned object IDs now
         # exist in the simulation. These IDs must be '2' and '3'.
         ok, _, spawnIDs = clerk.controlParts(
-            objID_1, {'0': cmd_0, '1': cmd_1}, [cmd_2, cmd_3])
+            objID_1, {'0': cmd_0, '1': cmd_1}, {'0': cmd_2, '1': cmd_3})
         assert (ok, spawnIDs) == (True, [objID_2, objID_3])
         leo.processCommandsAndSync()
 

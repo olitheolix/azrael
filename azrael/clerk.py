@@ -652,8 +652,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, newObjectIDs)
 
     @typecheck
-    def controlParts(self, objID: int, cmd_boosters: dict,
-                     cmd_factories: (tuple, list)):
+    def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
         """
         Issue commands to individual parts of the ``objID``.
 
@@ -688,9 +687,6 @@ class Clerk(config.AzraelProcess):
             self.logit.error(msg)
             return RetVal(False, msg, None)
 
-        # Compile a list of all Boosters and Factories defined for the object.
-        factories = {_.partID: _ for _ in instance.factories}
-
         # Fetch the SV for objID (we need this to determine the orientation of
         # the base object to which the parts are attached).
         sv_parent = self.getBodyStates([objID])
@@ -713,7 +709,7 @@ class Clerk(config.AzraelProcess):
         # Sanity check the Booster- and Factory commands.
         try:
             cmd_boosters = {k: types.CmdBooster(*v) for (k, v) in cmd_boosters.items()}
-            cmd_factories = [types.CmdFactory(*_) for _ in cmd_factories]
+            cmd_factories = {k: types.CmdFactory(*v) for (k, v) in cmd_factories.items()}
         except TypeError:
             msg = 'Invalid booster- or factory command'
             self.logit.warning(msg)
@@ -729,21 +725,14 @@ class Clerk(config.AzraelProcess):
                 return RetVal(False, msg, None)
 
         # Verify that the Factory commands reference existing Factories.
-        for cmd in cmd_factories:
-            # Verify the referenced factory exists.
-            if cmd.partID not in factories:
+        for partID, cmd in cmd_factories.items():
+            # Verify that the referenced factory exists.
+            if partID not in instance.factories:
                 msg = 'Object <{}> has no Factory with AID <{}>'
-                msg = msg.format(objID, cmd.partID)
+                msg = msg.format(objID, partID)
                 self.logit.warning(msg)
                 return RetVal(False, msg, None)
-
-        # Ensure all boosters/factories receive at most one command each.
-        partIDs = [_.partID for _ in cmd_factories]
-        if len(set(partIDs)) != len(partIDs):
-            msg = 'Same factory received multiple commands'
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
-        del partIDs
+            del partID, cmd
 
         # Update the booster forces in the database. This will only update the
         # values for record keeping, but Leonard will never look at them (it
@@ -759,9 +748,9 @@ class Clerk(config.AzraelProcess):
 
         # Factories will spawn their objects.
         objIDs = []
-        for cmd in cmd_factories:
+        for partID, cmd in cmd_factories.items():
             # Template for this very factory.
-            this = factories[cmd.partID]
+            this = instance.factories[partID]
 
             # Position (in world coordinates) where the new object will be
             # spawned.
