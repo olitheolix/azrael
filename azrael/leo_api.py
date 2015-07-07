@@ -115,15 +115,6 @@ def computeAABBs(cshapes: (tuple, list)):
     return RetVal(True, None, aabbs)
 
 
-def getNumObjects():
-    """
-    Return the number of objects in the simulation.
-
-    :returns int: number of objects in simulation.
-    """
-    return database.dbHandles['RBS'].count()
-
-
 @typecheck
 def dequeueCommands():
     """
@@ -345,52 +336,6 @@ def addCmdBoosterForce(objID: int, force: list, torque: list):
 
 
 @typecheck
-def getBodyStates(objIDs: (list, tuple)):
-    """
-    Retrieve the state variables for all ``objIDs``.
-
-    Return *None* for every entry non-existing objID.
-
-    :param iterable objIDs: list of object IDs for which to return the SV.
-    :return dict: dictionary of the form {objID: sv}
-    """
-    # Sanity check.
-    for objID in objIDs:
-        if objID < 0:
-            msg = 'Object ID is negative'
-            logit.warning(msg)
-            return RetVal(False, msg, None)
-
-    # Retrieve the state variables.
-    out = {_: None for _ in objIDs}
-    with util.Timeit('leoAPI.1_getSV') as timeit:
-        tmp = list(database.dbHandles['RBS'].find({'objID': {'$in': objIDs}}))
-
-    with util.Timeit('leoAPI.2_getSV') as timeit:
-        for doc in tmp:
-            out[doc['objID']] = _RigidBodyState(*doc['rbs'])
-    return RetVal(True, None, out)
-
-
-def getAllBodyStates():
-    """
-    Return a dictionary of {objID: SV} all objects in the simulation.
-
-    The keys and values of the returned dictionary correspond to the object ID
-    and their associated State Vectors, respectively.
-
-    :return: dictionary of state variables with object IDs as keys.
-    :rtype: dict
-    """
-    # Compile all object IDs and state variables into a dictionary.
-    out = {}
-    for doc in database.dbHandles['RBS'].find():
-        key, value = doc['objID'], _RigidBodyState(*doc['rbs'])
-        out[key] = value
-    return RetVal(True, None, out)
-
-
-@typecheck
 def getAABB(objIDs: (list, tuple)):
     """
     Retrieve the AABBs for all ``objIDs``.
@@ -421,48 +366,4 @@ def getAABB(objIDs: (list, tuple)):
     out = [out[_] if _ in out else None for _ in objIDs]
 
     # Return the AABB values.
-    return RetVal(True, None, out)
-
-
-@typecheck
-def _updateRigidBodyStateTuple(orig: _RigidBodyState,
-                               new: types.RigidBodyStateOverride):
-    """
-    Overwrite fields in ``orig`` with content of ``new``.
-
-    If one or more fields in ``new`` are *None* then the original value in
-    ``orig`` will not be modified.
-
-    This is a convenience function. It avoids code duplication which was
-    otherwise unavoidable because not all Leonard implementations inherit the
-    same base class.
-
-    :param _RigidBodyState orig: the original tuple.
-    :param RigidBodyStateOverride new: new values (*None* entries are ignored).
-    :return: updated version of ``orig``.
-    :rtype: _RigidBodyState
-    """
-    if new is None:
-        return orig
-
-    # Copy all not-None values from ``new`` into the dictionary version of
-    # ``orig``.
-    dict_orig = orig._asdict()
-    for k, v in zip(dict_orig, new):
-        if v is not None:
-            dict_orig[k] = v
-
-    # Convert the dictionary back to a _RigidBodyState instance and return it.
-    return _RigidBodyState(**dict_orig)
-
-
-def getAllObjectIDs():
-    """
-    Return all object IDs in the simulation.
-
-    :return: list of all object IDs in the simulation.
-    :rtype: list
-    """
-    # Compile and return the list of all object IDs.
-    out = [_['objID'] for _ in database.dbHandles['RBS'].find()]
     return RetVal(True, None, out)
