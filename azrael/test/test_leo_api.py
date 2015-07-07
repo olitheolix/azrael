@@ -60,41 +60,26 @@ class TestLeonardAPI:
         id_1, id_2 = 0, 1
 
         # The number of SV entries must now be zero.
-        assert leoAPI.getNumObjects() == 0
+        assert len(leo.allBodies) == 0
 
         # Query an object. Since none exists yet this must fail.
-        assert leoAPI.getBodyStates([id_1]) == (True, None, {id_1: None})
+        assert id_1 not in leo.allBodies
 
         # Create an object and serialise it.
         body = getRigidBody(cshapes=[getCSSphere('cssphere')])
 
-        # Add the object to the DB with ID=0.
+        # Add the object to Leonard and verify it worked.
         assert leoAPI.addCmdSpawn([(id_1, body)])
         leo.processCommandsAndSync()
-
-        # Query the object. This must return the SV data directly.
-        ret = leoAPI.getBodyStates([id_1])
-        assert ret.ok
-        assert getRigidBody(*ret.data[id_1]) == body
-
-        # Query the same object but supply it as a list. This must return a
-        # list with one element which is the exact same object as before.
-        ret = leoAPI.getBodyStates([id_1])
-        assert ret.ok
-        assert getRigidBody(*ret.data[id_1]) == body
-
-        # Verify that the system contains exactly one object.
-        ret = leoAPI.getAllBodyStates()
-        assert (ret.ok, len(ret.data)) == (True, 1)
+        assert leo.allBodies[id_1] == body
 
         # Remove object id_1.
         assert leoAPI.addCmdRemoveObject(id_1).ok
         leo.processCommandsAndSync()
 
         # Object must not exist anymore in the simulation.
-        assert leoAPI.getBodyStates([id_1]) == (True, None, {id_1: None})
-        ret = leoAPI.getAllBodyStates()
-        assert (ret.ok, len(ret.data)) == (True, 0)
+        assert id_1 not in leo.allBodies
+        assert len(leo.allBodies) == 0
 
     def test_add_get_multiple(self):
         """
@@ -104,60 +89,36 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Create two object IDs for this test.
-        id_1, id_2 = 0, 1
+        id_1, id_2 = 1, 2
 
-        # The number of SV entries must now be zero.
-        assert leoAPI.getNumObjects() == 0
-        assert leoAPI.getBodyStates([id_1]) == (True, None, {id_1: None})
+        # The number of bodies in Leonard must be zero.
+        assert len(leo.allBodies) == 0
 
         # Create an object and serialise it.
         body_1 = getRigidBody(position=[0, 0, 0])
         body_2 = getRigidBody(position=[10, 10, 10])
 
-        # Add the objects to the DB.
+        # Add the bodies to Leonard.
         tmp = [(id_1, body_1), (id_2, body_2)]
         assert leoAPI.addCmdSpawn(tmp)
         leo.processCommandsAndSync()
 
-        # Query the objects individually.
-        ret = leoAPI.getBodyStates([id_1])
-        assert ret.ok
-        assert getRigidBody(*ret.data[id_1]) == body_1
-        ret = leoAPI.getBodyStates([id_2])
-        assert ret.ok
-        assert getRigidBody(*ret.data[id_2]) == body_2
-
-        # Manually query multiple objects.
-        ret = leoAPI.getBodyStates([id_1, id_2])
-        assert (ret.ok, len(ret.data)) == (True, 2)
-        assert getRigidBody(*ret.data[id_1]) == body_1
-        assert getRigidBody(*ret.data[id_2]) == body_2
-
-        # Repeat, but change the order of the objects.
-        ret = leoAPI.getBodyStates([id_2, id_1])
-        assert (ret.ok, len(ret.data)) == (True, 2)
-        assert getRigidBody(*ret.data[id_1]) == body_1
-        assert getRigidBody(*ret.data[id_2]) == body_2
-
-        # Query all objects at once.
-        ret = leoAPI.getAllBodyStates()
-        assert (ret.ok, len(ret.data)) == (True, 2)
-        assert getRigidBody(*ret.data[id_1]) == body_1
-        assert getRigidBody(*ret.data[id_2]) == body_2
+        # Verify the bodies.
+        assert leo.allBodies[id_1] == body_1
+        assert leo.allBodies[id_2] == body_2
 
     def test_add_same(self):
         """
         Try to add two objects with the same ID.
         """
-        # Reset the SV database and instantiate a Leonard.
+        # Instantiate a Leonard.
         leo = getLeonard()
 
         # Convenience.
-        id_1 = 0
+        id_1 = 1
 
-        # The number of SV entries must now be zero.
-        assert leoAPI.getNumObjects() == 0
-        assert leoAPI.getBodyStates([id_1]) == (True, None, {id_1: None})
+        # The number of bodies in Leonard must be zero.
+        assert len(leo.allBodies) == 0
 
         # Create three bodies.
         body_1 = getRigidBody(imass=1)
@@ -178,28 +139,23 @@ class TestLeonardAPI:
         assert ret.ok and (len(spawn) == 1) and (spawn[0]['objID'] == id_1)
 
         # Similar test as before, but this time Leonard has already pulled id_1
-        # into the simulation *before* are we want to spawn yet another object
-        # with the same ID. the 'addSpawnCmd' must succeed because it cannot
+        # into the simulation *before* we (attempt to) spawn another object
+        # with the same ID. The 'addSpawnCmd' must succeed because it cannot
         # reliably verify if Leonard has an object id_1 (it can only verify if
         # another such request is in the queue already -- see above). However,
         # Leonard itself must ignore that request. To verify this claim we will
-        # now spawn a new object with the same id_1 but a different State
-        # Vectors, let  Leonard process the queue, and then verify that it did
-        # not add/modify the object with id_1.
+        # now spawn a new object with the same id_1 but a different state data,
+        # let Leonard process the queue, and then verify that it did not
+        # add/modify the object with id_1.
         assert leoAPI.addCmdSpawn([(id_1, body_1)]).ok
         leo.processCommandsAndSync()
-        ret = leoAPI.getBodyStates([id_1])
-        assert ret.ok
-        assert getRigidBody(*ret.data[id_1]) == body_1
+        assert leo.allBodies[id_1] == body_1
 
-        # Spawn a new object with same id_1 but different state data.
+        # Spawn anoter object with id_1 but different state data and verify
+        # that Leonard did not modify the original body.
         assert leoAPI.addCmdSpawn([(id_1, body_3)]).ok
         leo.processCommandsAndSync()
-
-        # The state vector for id_1 must still be body_1.
-        ret = leoAPI.getBodyStates([id_1])
-        assert ret.ok
-        assert getRigidBody(*ret.data[id_1]) == body_1
+        assert leo.allBodies[id_1] == body_1
 
     def test_commandQueue(self):
         """
@@ -308,7 +264,7 @@ class TestLeonardAPI:
         Set and retrieve object attributes like position, velocity,
         acceleration, and orientation.
         """
-        # Reset the SV database and instantiate a Leonard.
+        # Instantiate a Leonard.
         leo = getLeonard()
 
         # Test constants.
@@ -333,9 +289,7 @@ class TestLeonardAPI:
         leo.processCommandsAndSync()
 
         # Query the body again and verify the changes are in effect.
-        ret = leoAPI.getBodyStates([id_1])
-        assert ret.ok
-        ret = ret.data[id_1]
+        ret = leo.allBodies[id_1]
         assert ret.imass == body_new.imass
         assert ret.scale == body_new.scale
         assert np.array_equal(ret.position, body_new.position)
