@@ -108,13 +108,17 @@ class TestClerk:
         # The 'boosters' and 'factories' arguments are a list of named
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any IDs).
-        b0 = types.Booster(partID='0', pos=(0, 1, 2), direction=(0, 0, 1),
-                           minval=0, maxval=0.5, force=0)
-        b1 = types.Booster(partID='1', pos=(6, 7, 8), direction=(0, 1, 0),
-                           minval=1, maxval=1.5, force=0)
-        f0 = types.Factory(
-            partID='0', pos=(0, 0, 0), direction=(0, 0, 1),
-            templateID='_templateBox', exit_speed=(0.1, 0.5))
+        boosters = {
+            '0': types.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
+                               minval=0, maxval=0.5, force=0),
+            '1': types.Booster(pos=(6, 7, 8), direction=(0, 1, 0),
+                               minval=1, maxval=1.5, force=0)
+        }
+        factories = {
+            '0': types.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
+                               templateID='_templateBox',
+                               exit_speed=(0.1, 0.5))
+        }
 
         # Create some fragments...
         frags = {'f1': getFragRaw(), 'f2': getFragDae(), 'f3': getFragNone()}
@@ -127,8 +131,8 @@ class TestClerk:
             templateID,
             rbs=body,
             fragments=frags,
-            boosters={'0': b0, '1': b1},
-            factories={'0': f0})
+            boosters=boosters,
+            factories=factories)
 
     def test_GetTemplate(self):
         """
@@ -157,11 +161,15 @@ class TestClerk:
         Test controlParts codec.
         """
         # Define the commands.
-        cmd_0 = types.CmdBooster(partID='0', force_mag=0.2)
-        cmd_1 = types.CmdBooster(partID='1', force_mag=0.4)
-        cmd_2 = types.CmdFactory(partID='0', exit_speed=0)
-        cmd_3 = types.CmdFactory(partID='2', exit_speed=0.4)
-        cmd_4 = types.CmdFactory(partID='3', exit_speed=4)
+        boosters = {
+            '0': types.CmdBooster(force_mag=0.2),
+            '1': types.CmdBooster(force_mag=0.4),
+        }
+        factories = {
+            '0': types.CmdFactory(exit_speed=0),
+            '2': types.CmdFactory(exit_speed=0.4),
+            '3': types.CmdFactory(exit_speed=4),
+        }
         objID = 1
 
         # ----------------------------------------------------------------------
@@ -173,8 +181,6 @@ class TestClerk:
         dec_fun = protocol.ToClerk_ControlParts_Decode
 
         # Encode the booster- and factory commands.
-        boosters= {'0': cmd_0, '1': cmd_1}
-        factories = {'0': cmd_2, '1': cmd_3, '2': cmd_4}
         ret = enc_fun(objID, boosters, factories)
         assert ret.ok
 
