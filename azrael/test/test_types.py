@@ -137,14 +137,17 @@ class TestDibbler:
 
     def test_Template(self):
         # Define boosters and factories.
-        b0 = Booster(partID='0', pos=(0, 1, 2), direction=(1, 0, 0),
-                     minval=0, maxval=1, force=0)
-        b1 = Booster(partID='1', pos=(3, 4, 5), direction=(0, 1, 0),
-                     minval=0, maxval=2, force=0)
-        f0 = Factory(partID='0', pos=(0, 1, 2), direction=(0, 0, 1),
-                     templateID='_templateBox', exit_speed=(0, 1))
-        f1 = Factory(partID='1', pos=(3, 4, 5), direction=(0, 1, 0),
-                     templateID='_templateBox', exit_speed=(0, 1))
+        boosters = {
+            '0': Booster(pos=(0, 1, 2), direction=(1, 0, 0),
+                         minval=0, maxval=1, force=0),
+            '1': Booster(pos=(3, 4, 5), direction=(0, 1, 0),
+                     minval=0, maxval=2, force=0)}
+        factories = {
+            '0': Factory(pos=(0, 1, 2), direction=(0, 0, 1),
+                         templateID='_templateBox', exit_speed=(0, 1)),
+            '1': Factory(pos=(3, 4, 5), direction=(0, 1, 0),
+                         templateID='_templateBox', exit_speed=(0, 1))
+        }
 
         rbs = getRigidBody(position=(1, 2, 3))
 
@@ -152,8 +155,8 @@ class TestDibbler:
         temp_t = getTemplate('t1',
                              rbs=rbs,
                              fragments={'1': getFragRaw(), '2': getFragDae()},
-                             boosters={'0': b0, '1': b1},
-                             factories={'0': f0, '1': f1})
+                             boosters=boosters,
+                             factories=factories)
 
         # Verify that it is JSON compatible.
         assert self.isJsonCompatible(temp_t, Template)

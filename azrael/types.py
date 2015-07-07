@@ -83,10 +83,10 @@ _Constraint6DofSpring2 = namedtuple(
                               'rotLimitLo rotLimitHi bounce enableSpring')
 
 # Boosters, Factories, and commands they can receive.
-_Booster = namedtuple('Booster', 'partID pos direction minval maxval force ')
-_Factory = namedtuple('Factory', 'partID pos direction templateID exit_speed')
-_CmdBooster = namedtuple('CmdBooster', 'partID force_mag')
-_CmdFactory = namedtuple('CmdFactory', 'partID exit_speed')
+_Booster = namedtuple('Booster', 'pos direction minval maxval force ')
+_Factory = namedtuple('Factory', 'pos direction templateID exit_speed')
+_CmdBooster = namedtuple('CmdBooster', 'force_mag')
+_CmdFactory = namedtuple('CmdFactory', 'exit_speed')
 
 
 def toVec(num_el, v):
@@ -768,7 +768,6 @@ class Booster(_Booster):
        ``direction`` is *not* a Quaternion but merely a unit vector that points
        in the direction of the force.
 
-    :param str partID: Booster ID (arbitrary)
     :param vec3 pos: position vector (3-elements)
     :param vec3 direction: force direction (3-elements)
     :param float minval: minimum force this Booster can generate.
@@ -777,12 +776,11 @@ class Booster(_Booster):
     :return Booster: compiled booster description.
     """
     @typecheck
-    def __new__(cls, partID: str, pos: (tuple, list, np.ndarray),
+    def __new__(cls, pos: (tuple, list, np.ndarray),
                 direction: (tuple, list, np.ndarray), minval: (int, float),
                 maxval: (int, float), force: (int, float)):
         try:
             # Verify the inputs.
-            assert isAIDStringValid(partID)
             pos = toVec(3, pos)
             direction = toVec(3, direction)
 
@@ -796,8 +794,7 @@ class Booster(_Booster):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, partID, pos, direction,
-                               minval, maxval, force)
+        return super().__new__(cls, pos, direction, minval, maxval, force)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
@@ -809,17 +806,13 @@ class CmdBooster(_CmdBooster):
 
     This wrapper only ensures the provided data is sane.
 
-    :param str partID: Booster ID (arbitrary)
     :param float force: magnitude of force (a scalar!)
     :return Booster: compiled description of booster command.
     """
     @typecheck
-    def __new__(cls, partID: str, force_mag: (int, float, np.float64)):
-        # Verify the inputs.
-        assert isAIDStringValid(partID)
-
+    def __new__(cls, force_mag: (int, float, np.float64)):
         # Return constructed data type.
-        return super().__new__(cls, partID, float(force_mag))
+        return super().__new__(cls, float(force_mag))
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
@@ -843,7 +836,6 @@ class Factory(_Factory):
        points in the nozzle direction of the factory (it the direction in
        which new objects will be spawned).
 
-    :param str partID: factory ID (arbitrary).
     :param vec3 pos: position vector (3-elements).
     :param vec3 direction: exit direction of new objects (3-elements).
     :param str templateID: name of template spawned by this factory.
@@ -851,12 +843,11 @@ class Factory(_Factory):
     :return Factory: compiled factory description.
     """
     @typecheck
-    def __new__(cls, partID: str, pos: (tuple, list, np.ndarray),
+    def __new__(cls, pos: (tuple, list, np.ndarray),
                 direction: (tuple, list, np.ndarray), templateID: str,
                 exit_speed: (tuple, list, np.ndarray)):
         try:
             # Verify the inputs.
-            assert isAIDStringValid(partID)
             pos = toVec(3, pos)
             direction = toVec(3, direction)
             exit_speed = toVec(2, exit_speed)
@@ -872,7 +863,7 @@ class Factory(_Factory):
 
         # Return a valid Factory instance based on the arguments.
         return super().__new__(
-            cls, partID, pos, direction, templateID, exit_speed)
+            cls, pos, direction, templateID, exit_speed)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
@@ -884,17 +875,15 @@ class CmdFactory(_CmdFactory):
 
     This wrapper only ensures the provided data is sane.
 
-    :param str partID: Factory ID (arbitrary)
     :param float force: magnitude of force (a scalar!)
     :return Factory: compiled description of factory command.
     """
     @typecheck
-    def __new__(cls, partID: str, exit_speed: (int, float, np.float64)):
-        assert isAIDStringValid(partID)
+    def __new__(cls, exit_speed: (int, float, np.float64)):
         exit_speed = float(exit_speed)
 
         # Return constructed data type.
-        return super().__new__(cls, partID, exit_speed)
+        return super().__new__(cls, exit_speed)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
