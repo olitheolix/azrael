@@ -807,9 +807,6 @@ class Clerk(config.AzraelProcess):
         # Convenience.
         db = database.dbHandles['ObjInstances']
 
-        # Put the new force values into a dictionary for convenience later on.
-#        cmds = {_.partID: _.force_mag for _ in cmds}
-
         # Query the object's booster information.
         query = {'objID': objID}
         doc = db.find_one(query, {'template.boosters': True})
