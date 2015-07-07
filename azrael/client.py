@@ -392,8 +392,7 @@ class Client():
         """
         return self.serialiseAndSend('remove', objID)
 
-    def controlParts(self, objID: int, cmd_boosters: (list, tuple),
-                     cmd_factories: (list, tuple)):
+    def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
         """
         Issue control commands to object parts.
 
@@ -405,6 +404,7 @@ class Client():
         ``parts`` module. The commands themselves must be ``types.CmdFactory``
         instances.
 
+        fixme: parameter types.
         :param int objID: object ID.
         :param list cmd_booster: booster commands.
         :param list cmd_factory: factory commands.
@@ -412,9 +412,9 @@ class Client():
         :rtype: list
         """
         # Sanity checks.
-        for cmd in cmd_boosters:
+        for partID, cmd in cmd_boosters.items():
             assert isinstance(cmd, types.CmdBooster)
-        for cmd in cmd_factories:
+        for partID, cmd in cmd_factories.items():
             assert isinstance(cmd, types.CmdFactory)
 
         # Every object can have at most 256 parts.

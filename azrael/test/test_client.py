@@ -230,8 +230,8 @@ class TestClient:
         temp = getTemplate('t2',
                            rbs=body,
                            fragments=frag,
-                           boosters=[b0, b1],
-                           factories=[f0])
+                           boosters={'0': b0, '1': b1},
+                           factories={'0': f0})
         assert client.addTemplates([temp]).ok
         init = {'templateID': temp.aid,
                 'rbs': {'position': (0, 0, 0)}}
@@ -425,8 +425,8 @@ class TestClient:
         # Define the template, add it to Azrael, and spawn an instance.
         temp = getTemplate('t1',
                            rbs=getRigidBody(),
-                           boosters=[b0, b1],
-                           factories=[f0, f1])
+                           boosters={'0': b0, '1': b1},
+                           factories={'0': f0, '1': f1})
         assert client.addTemplates([temp]).ok
         new_obj = {'templateID': temp.aid,
                    'rbs': {
@@ -454,7 +454,8 @@ class TestClient:
 
         # Send the commands and ascertain that the returned object IDs now
         # exist in the simulation. These IDs must be '2' and '3'.
-        ret = client.controlParts(objID_1, [cmd_0, cmd_1], [cmd_2, cmd_3])
+        ret = client.controlParts(objID_1, {'0': cmd_0, '1': cmd_1},
+                                  {'0': cmd_2, '1': cmd_3})
         spawnIDs = ret.data
         assert (ret.ok, len(spawnIDs)) == (True, 2)
         assert spawnIDs == [2, 3]
