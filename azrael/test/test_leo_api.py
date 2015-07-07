@@ -253,7 +253,7 @@ class TestLeonardAPI:
         modify = ret.data['modify']
         assert ret.ok and len(modify) == 1
         assert modify[0]['objID'] == id_1
-        assert RigidBodyStateOverride(*modify[0]['rbs']) == newSV
+        assert RigidBodyStateOverride(**modify[0]['rbs']) == newSV
         del newSV
 
         # Set the direct force and torque for id_2.

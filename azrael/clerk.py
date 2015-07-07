@@ -1214,44 +1214,37 @@ class Clerk(config.AzraelProcess):
                 return ret
 
     @typecheck
-    def setBodyState(self, objID: int, state: dict):
+    def setBodyState(self, objID: int, body: dict):
         """
-        Set the rigid body state of ``objID`` to ``state``.
+        Set the rigid body state of ``objID`` to ``body``.
 
         For a detailed description see ``leoAPI.addCmdModifyBodyState``
         since this method is only a wrapper for it.
 
         :param int objID: object ID
-        :param dict state: new object attributes.
+        :param dict body: new object attributes.
         :return: Success
         """
         db = azrael.database.dbHandles['ObjInstances']
 
-        # Backup the original state because addCmdModify will need.
-        state_bak = dict(state)
+        # Backup the original body because addCmdModify will need it.
+        body_bak = dict(body)
 
         try:
-            state = types.DefaultRigidBody(**state)
+            body = types.DefaultRigidBody(**body)
         except TypeError:
-            return RetVal(False, 'Invalid body state data', None)
-        state = state._asdict()
-
-        # Convert the collision shapes.
-        try:
-            if 'cshapes' in state:
-                state['cshapes'] = [_._asdict() for _ in state['cshapes']]
-        except TypeError:
-            return RetVal(False, 'Invalid collision shape', None)
+            return RetVal(False, 'Invalid body data', None)
+        body = body._asdict()
 
         # Update the respective entries in the data base. The keys already have
         # the correct names but must be saved under 'template.rbs'.
-        body = {'template.rbs.' + k: v for (k, v) in state.items()}
+        body = {'template.rbs.' + k: v for (k, v) in body.items()}
         query = {'objID': objID}
         db.update(query, {'$set': body})
 
         # Notify Leonard.
-        state = types.RigidBodyStateOverride(**state_bak)
-        ret = leoAPI.addCmdModifyBodyState(objID, state)
+        body = types.RigidBodyStateOverride(**body_bak)
+        ret = leoAPI.addCmdModifyBodyState(objID, body)
         if ret.ok:
             return RetVal(True, None, None)
         else:

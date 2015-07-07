@@ -162,13 +162,12 @@ class TestLeonardAllEngines:
 
         # Verify the SV data.
         leo.processCommandsAndSync()
-        ret = leoAPI.getBodyStates([objID])
-        assert ret.ok
-        assert ret.data[objID].imass == 2
-        assert ret.data[objID].scale == 3
-        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).aid
-        assert tmp == cshape_sphere[0].aid
-        del tmp
+        assert leo.allBodies[objID].imass == 2
+        assert leo.allBodies[objID].scale == 3
+
+        # fixme: can I test the entire cshapes list here (ie without the [0]
+        # index?).
+        assert leo.allBodies[objID].cshapes[0].aid == cshape_sphere[0].aid
 
         # Update the object's SV data.
         sv_new = RBSO(
@@ -488,7 +487,7 @@ class TestLeonardOther:
         # Change the State Vector of id_2.
         pos = (10, 11.5, 12)
         body_3 = RBSO(position=pos)
-        assert leo.allBodies[id_2].position == [0, 0, 0]
+        assert leo.allBodies[id_2].position == (0, 0, 0)
         assert leoAPI.addCmdModifyBodyState(id_2, body_3).ok
         leo.processCommandsAndSync()
         assert leo.allBodies[id_2].position == pos

@@ -158,7 +158,7 @@ def addCmdSpawn(objData: (tuple, list)):
     """
     Enqueue a new object described by ``objData`` for Leonard to spawn.
 
-    The ``objData`` tuple comprises (objID, sv).
+    The ``objData`` tuple comprises (objID, body).
 
     Returns **False** if ``objID`` already exists, is scheduled to spawn, or if
     any of the parameters are invalid.
@@ -166,15 +166,16 @@ def addCmdSpawn(objData: (tuple, list)):
     Leonard will process the queue (and thus this command) once per physics
     cycle. However, it is impossible to determine when exactly.
 
+    # fixme: parameters
     :param int objID: object ID to insert.
     :param _RigidBodyState sv: encoded state variable data.
     :return: success.
     """
     # Sanity checks all the provided bodies.
-    for objID, sv in objData:
+    for objID, body in objData:
         try:
             assert isinstance(objID, int)
-            assert isinstance(sv, _RigidBodyState)
+            assert isinstance(body, _RigidBodyState)
         except AssertionError:
             msg = '<addCmdQueue> received invalid argument type'
             return RetVal(False, msg, None)
@@ -187,15 +188,15 @@ def addCmdSpawn(objData: (tuple, list)):
     # Meta data for spawn command.
     db = database.dbHandles['Commands']
     bulk = db.initialize_unordered_bulk_op()
-    for objID, sv in objData:
+    for objID, body in objData:
         # Compile the AABBs. Return immediately if an error occurs.
-        aabbs = computeAABBs(sv.cshapes)
+        aabbs = computeAABBs(body.cshapes)
         if not aabbs.ok:
             return RetVal(False, 'Could not compile all AABBs', None)
 
         # Insert this document unless one already matches the query.
         query = {'cmd': 'spawn', 'objID': objID}
-        data = {'rbs': sv, 'AABBs': aabbs.data}
+        data = {'rbs': body._asdict(), 'AABBs': aabbs.data}
         bulk.find(query).upsert().update({'$setOnInsert': data})
 
     ret = bulk.execute()
@@ -270,7 +271,7 @@ def addCmdModifyBodyState(objID: int, body: RigidBodyStateOverride):
     # pending update commands for the same object - tough luck.
     db = database.dbHandles['Commands']
     query = {'cmd': 'modify', 'objID': objID}
-    db_data = {'rbs': body, 'AABBs': aabbs}
+    db_data = {'rbs': body._asdict(), 'AABBs': aabbs}
     db.update(query, {'$setOnInsert': db_data},  upsert=True)
 
     # This function was successful if exactly one document was updated.

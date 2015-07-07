@@ -889,8 +889,10 @@ class CmdFactory(_CmdFactory):
         return OrderedDict(zip(self._fields, self))
 
 
-@typecheck
-def RigidBodyState(scale: (int, float),
+class RigidBodyState(_RigidBodyState):
+    # fixme: docu
+    @typecheck
+    def __new__(cls, scale: (int, float),
                    imass: (int, float),
                    restitution: (int, float),
                    orientation: (tuple, list),
@@ -901,42 +903,43 @@ def RigidBodyState(scale: (int, float),
                    axesLockLin: (tuple, list, np.ndarray),
                    axesLockRot: (tuple, list, np.ndarray),
                    version: int):
-    """
-    Return a ``_RigidBodyState`` object.
+        """
+        Return a ``_RigidBodyState`` object.
+        """
+        try:
+            # Sanity checks inputs.
+            axesLockLin = toVec(3, axesLockLin)
+            axesLockRot = toVec(3, axesLockRot)
+            orientation = toVec(4, orientation)
+            position = toVec(3, position)
+            velocityLin = toVec(3, velocityLin)
+            velocityRot = toVec(3, velocityRot)
+            assert version >= 0
 
-    Without any arguments this function will return a valid ``RigidBodyState``
-    specimen with sensible defaults.
-    """
-    try:
-        # Sanity checks inputs.
-        axesLockLin = toVec(3, axesLockLin)
-        axesLockRot = toVec(3, axesLockRot)
-        orientation = toVec(4, orientation)
-        position = toVec(3, position)
-        velocityLin = toVec(3, velocityLin)
-        velocityRot = toVec(3, velocityRot)
-        assert version >= 0
+            # Compile- and sanity check all collision shapes.
+            cshapes = [CollShapeMeta(**_) if isinstance(_, dict)
+                       else CollShapeMeta(*_)
+                       for _ in cshapes]
+        except (AssertionError, TypeError) as err:
+            return None
 
-        # Compile- and sanity check all collision shapes.
-        cshapes = [CollShapeMeta(**_) if isinstance(_, dict)
-                   else CollShapeMeta(*_)
-                   for _ in cshapes]
-    except (AssertionError, TypeError) as err:
-        return None
+        # Build- and return the compiled RigidBodyState tuple.
+        return super().__new__(cls,
+            scale=scale,
+            imass=imass,
+            restitution=restitution,
+            orientation=orientation,
+            position=position,
+            velocityLin=velocityLin,
+            velocityRot=velocityRot,
+            cshapes=cshapes,
+            axesLockLin=axesLockLin,
+            axesLockRot=axesLockRot,
+            version=version)
 
-    # Build- and return the compiled RigidBodyState tuple.
-    return _RigidBodyState(
-        scale=scale,
-        imass=imass,
-        restitution=restitution,
-        orientation=orientation,
-        position=position,
-        velocityLin=velocityLin,
-        velocityRot=velocityRot,
-        cshapes=cshapes,
-        axesLockLin=axesLockLin,
-        axesLockRot=axesLockRot,
-        version=version)
+    def _asdict(self):
+        tmp = self._replace(cshapes=[_._asdict() for _ in self.cshapes])
+        return OrderedDict(zip(tmp._fields, tmp))
 
 
 def DefaultRigidBody(scale=1,
@@ -961,6 +964,10 @@ def DefaultRigidBody(scale=1,
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))
         cshapes = [cshapes]
+    else:
+        cshapes = [CollShapeMeta(**_)
+                   if isinstance(_, dict) else CollShapeMeta(*_)
+                   for _ in cshapes]
 
     return RigidBodyState(scale, imass, restitution, orientation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,

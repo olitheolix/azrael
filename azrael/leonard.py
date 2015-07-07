@@ -541,19 +541,23 @@ class LeonardBase(config.AzraelProcess):
             # Add the body and its AABB to Leonard's cache. Furthermore, add
             # (and initialise) the entry for the forces on this body.
             sv_old = doc['rbs']
-            self.allBodies[objID] = _RigidBodyState(*sv_old)
+            self.allBodies[objID] = RigidBodyState(**sv_old)
             self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
             self.allAABBs[objID] = doc['AABBs']
 
         # Update Body States.
-        fun = leoAPI._updateRigidBodyStateTuple
         for doc in cmds['modify']:
             objID, sv_new, aabbs_new = doc['objID'], doc['rbs'], doc['AABBs']
             if objID in self.allBodies:
-                sv_new = RigidBodyStateOverride(*sv_new)
+                # fixme; document this code fragment.
+                sv_new = RigidBodyStateOverride(**sv_new)._asdict()
                 sv_old = self.allBodies[objID]
-                sv_old = RigidBodyState(*sv_old)
-                self.allBodies[objID] = fun(sv_old, sv_new)
+                sv_old = RigidBodyState(*sv_old)._asdict()
+
+                sv_new = {k: v for (k, v) in sv_new.items() if v is not None}
+                sv_old.update(sv_new)
+                sv_old = RigidBodyState(**sv_old)
+                self.allBodies[objID] = sv_old
 
                 # Assign the new AABB if it is not None (note: a value of
                 # *None* explicitly means that there is no AABB update,
