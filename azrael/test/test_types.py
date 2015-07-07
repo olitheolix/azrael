@@ -153,7 +153,7 @@ class TestDibbler:
                              rbs=rbs,
                              fragments={'1': getFragRaw(), '2': getFragDae()},
                              boosters={'0': b0, '1': b1},
-                             factories=[f0, f1])
+                             factories={'0': f0, '1': f1})
 
         # Verify that it is JSON compatible.
         assert self.isJsonCompatible(temp_t, Template)
@@ -163,7 +163,7 @@ class TestDibbler:
         temp_d = temp_t._asdict()
         fragments_d = {k: v._asdict() for (k, v) in temp_t.fragments.items()}
         boosters_d = {k: v._asdict() for (k, v) in temp_t.boosters.items()}
-        factories_d = [_._asdict() for _ in temp_t.factories]
+        factories_d = {k: v._asdict() for (k, v)in temp_t.factories.items()}
         rbs_d = rbs._asdict()
         assert temp_d['fragments'] == fragments_d
         assert temp_d['boosters'] == boosters_d

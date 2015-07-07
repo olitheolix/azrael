@@ -1034,7 +1034,7 @@ class RigidBodyStateOverride(_RigidBodyState):
 
 class Template(_Template):
     """
-    Return a valid object templates.
+    Return a valid object template.
 
     Object templates encapsulate all the information known about the object.
     Azrael uses this information to spawn the object and make it available to
@@ -1054,12 +1054,14 @@ class Template(_Template):
                 rbs: (tuple, list, dict),
                 fragments: dict,
                 boosters: dict,
-                factories: (tuple, list)):
+                factories: dict):
         try:
             # Sanity check the AID of the template, boosters, and factories.
             assert isAIDStringValid(aid)
             for bb in boosters:
                 assert isAIDStringValid(bb)
+            for ff in factories:
+                assert isAIDStringValid(ff)
 
             # AID must be valid.
             for tmp_aid in fragments:
@@ -1075,9 +1077,9 @@ class Template(_Template):
                         for (k, v) in boosters.items()}
 
             # Compile- and sanity check all factories.
-            factories = [Factory(**_)
-                         if isinstance(_, dict) else Factory(*_)
-                         for _ in factories]
+            factories = {k: Factory(**v)
+                         if isinstance(v, dict) else Factory(*v)
+                         for (k, v) in factories.items()}
 
             # Compile the RBS data.
             if isinstance(rbs, dict):
@@ -1097,7 +1099,7 @@ class Template(_Template):
     def _asdict(self):
         fragments = {k: v._asdict() for (k, v) in self.fragments.items()}
         boosters = {k: v._asdict() for (k, v) in self.boosters.items()}
-        factories = [_._asdict() for _ in self.factories]
+        factories = {k: v._asdict() for (k, v) in self.factories.items()}
         rbs = self.rbs._asdict()
         tmp = _Template(aid=self.aid,
                         rbs=rbs,
