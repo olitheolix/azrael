@@ -120,26 +120,23 @@ class TestLeonardAllEngines:
         p = np.array([1, 2, 5])
         vl = np.array([8, 9, 10.5])
         vr = vl + 1
-        data = RBSO(
-            position=p, velocityLin=vl, velocityRot=vr)
+        body = RBSO(position=p, velocityLin=vl, velocityRot=vr)
         del p, vl, vr
 
         # Spawn a new object. It must have ID=1.
         assert leoAPI.addCmdSpawn([(id_1, getRigidBody())]).ok
 
         # Update the object's State Vector.
-        assert leoAPI.addCmdModifyBodyState(id_1, data).ok
+        assert leoAPI.addCmdModifyBodyState(id_1, body).ok
 
         # Sync the commands to Leonard.
         leo.processCommandsAndSync()
 
         # Verify that the attributes were correctly updated.
-        ret = leoAPI.getBodyStates([id_1])
-        assert (ret.ok, len(ret.data)) == (True, 1)
-        body = ret.data[id_1]
-        assert np.array_equal(body.position, data.position)
-        assert np.array_equal(body.velocityLin, data.velocityLin)
-        assert np.array_equal(body.velocityRot, data.velocityRot)
+        ret = leo.allBodies[id_1]
+        assert np.array_equal(ret.position, body.position)
+        assert np.array_equal(ret.velocityLin, body.velocityLin)
+        assert np.array_equal(ret.velocityRot, body.velocityRot)
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_setBodyState_advanced(self, clsLeonard):
@@ -159,30 +156,23 @@ class TestLeonardAllEngines:
         # Spawn an object.
         objID = 1
         assert leoAPI.addCmdSpawn([(objID, body)]).ok
+        del body
 
         # Verify the SV data.
         leo.processCommandsAndSync()
         assert leo.allBodies[objID].imass == 2
         assert leo.allBodies[objID].scale == 3
-
-        # fixme: can I test the entire cshapes list here (ie without the [0]
-        # index?).
-        assert leo.allBodies[objID].cshapes[0].aid == cshape_sphere[0].aid
+        assert leo.allBodies[objID].cshapes == cshape_sphere
 
         # Update the object's SV data.
-        sv_new = RBSO(
-            imass=4, scale=5, cshapes=cshape_box)
+        sv_new = RBSO(imass=4, scale=5, cshapes=cshape_box)
         assert leoAPI.addCmdModifyBodyState(objID, sv_new).ok
 
-        # Verify the SV data.
+        # Verify the body data.
         leo.processCommandsAndSync()
-        ret = leoAPI.getBodyStates([objID])
-        assert (ret.ok, len(ret.data)) == (True, 1)
-        sv = ret.data[objID]
-        assert (sv.imass == 4) and (sv.scale == 5)
-        tmp = CollShapeMeta(*ret.data[objID].cshapes[0]).aid
-        assert tmp == cshape_box[0].aid
-        del tmp
+        ret = leo.allBodies[objID]
+        assert (ret.imass == 4) and (ret.scale == 5)
+        assert ret.cshapes[0].aid == cshape_box[0].aid
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_move_single_object(self, clsLeonard):
@@ -201,21 +191,19 @@ class TestLeonardAllEngines:
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leo.step(1.0, 60)
-        ret = leoAPI.getBodyStates([id_0])
-        assert ret.ok
-        assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
+        assert np.array_equal(leo.allBodies[id_0].position, [0, 0, 0])
 
         # Give the object a velocity.
-        sv = RBSO(velocityLin=np.array([1, 0, 0]))
-        assert leoAPI.addCmdModifyBodyState(id_0, sv).ok
+        body = RBSO(velocityLin=np.array([1, 0, 0]))
+        assert leoAPI.addCmdModifyBodyState(id_0, body).ok
+        del body
 
         # Advance the simulation by another second and verify the objects have
         # moved accordingly.
         leo.step(1.0, 60)
-        ret = leoAPI.getBodyStates([id_0])
-        assert ret.ok
-        assert 0.9 <= ret.data[id_0].position[0] < 1.1
-        assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
+        body = leo.allBodies[id_0]
+        assert 0.9 <= body.position[0] < 1.1
+        assert body.position[1] == body.position[2] == 0
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_move_two_objects_no_collision(self, clsLeonard):
@@ -234,16 +222,12 @@ class TestLeonardAllEngines:
         tmp = [(id_0, body_0), (id_1, body_1)]
         assert leoAPI.addCmdSpawn(tmp).ok
 
-        # Advance the simulation by 1s and query the states of both objects.
+        # Advance the simulation by 1s.
         leo.step(1.0, 60)
-        ret = leoAPI.getBodyStates([id_0])
-        assert ret.ok
-        pos_0 = ret.data[id_0].position
-        ret = leoAPI.getBodyStates([id_1])
-        assert ret.ok
-        pos_1 = ret.data[id_1].position
 
         # The objects must have moved according to their initial velocity.
+        pos_0 = leo.allBodies[id_0].position
+        pos_1 = leo.allBodies[id_1].position
         assert pos_0[1] == pos_0[2] == 0
         assert pos_1[0] == pos_1[2] == 0
         assert 0.9 <= pos_0[0] <= 1.1
@@ -269,9 +253,7 @@ class TestLeonardAllEngines:
 
         # Advance the simulation by 1s and verify that nothing has moved.
         leo.step(1.0, 60)
-        ret = leoAPI.getBodyStates([id_0])
-        assert ret.ok
-        assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
+        assert np.array_equal(leo.allBodies[id_0].position, [0, 0, 0])
 
         # Define a force grid.
         assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
@@ -284,9 +266,7 @@ class TestLeonardAllEngines:
 
         # Step the simulation and verify the object remained where it was.
         leo.step(1.0, 60)
-        ret = leoAPI.getBodyStates([id_0])
-        assert ret.ok
-        assert np.array_equal(ret.data[id_0].position, [0, 0, 0])
+        assert np.array_equal(leo.allBodies[id_0].position, [0, 0, 0])
 
         # Specify a grid value of 1 Newton in x-direction.
         pos = np.array([0, 0, 0], np.float64)
@@ -295,11 +275,9 @@ class TestLeonardAllEngines:
 
         # Step the simulation and verify the object moved accordingly.
         leo.step(1.0, 60)
-
-        ret = leoAPI.getBodyStates([id_0])
-        assert ret.ok
-        assert 0.4 <= ret.data[id_0].position[0] < 0.6
-        assert ret.data[id_0].position[1] == ret.data[id_0].position[2] == 0
+        body = leo.allBodies[id_0]
+        assert 0.4 <= body.position[0] < 0.6
+        assert body.position[1] == body.position[2] == 0
 
 
 class TestLeonardOther:
@@ -327,9 +305,9 @@ class TestLeonardOther:
         The test code is similar to ``test_move_two_objects_no_collision``.
         """
         # Instantiate Leonard.
-        leonard = azrael.leonard.LeonardDistributedZeroMQ()
-        leonard.workerStepsUntilQuit = (1, 10)
-        leonard.setup()
+        leo = azrael.leonard.LeonardDistributedZeroMQ()
+        leo.workerStepsUntilQuit = (1, 10)
+        leo.setup()
 
         # Define a force grid (not used in this test but prevent a plethora
         # of meaningleass warning messages).
@@ -353,17 +331,11 @@ class TestLeonardOther:
         # Advance the simulation by 1s, but use many small time steps. This
         # ensures that the Workers will restart themselves frequently.
         for ii in range(60):
-            leonard.step(1.0 / 60, 1)
-
-        # Query the states of both objects.
-        ret = leoAPI.getBodyStates([id_0])
-        assert ret.ok
-        pos_0 = ret.data[id_0].position
-        ret = leoAPI.getBodyStates([id_1])
-        assert ret.ok
-        pos_1 = ret.data[id_1].position
+            leo.step(1.0 / 60, 1)
 
         # The objects must have moved according to their initial velocity.
+        pos_0 = leo.allBodies[id_0].position
+        pos_1 = leo.allBodies[id_1].position
         assert pos_0[1] == pos_0[2] == 0
         assert pos_1[0] == pos_1[2] == 0
         assert 0.9 <= pos_0[0] <= 1.1
