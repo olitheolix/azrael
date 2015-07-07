@@ -127,8 +127,8 @@ class TestClerk:
             templateID,
             rbs=body,
             fragments=frags,
-            boosters=[b0, b1],
-            factories=[f0])
+            boosters={'0': b0, '1': b1},
+            factories={'0': f0})
 
     def test_GetTemplate(self):
         """
@@ -173,7 +173,8 @@ class TestClerk:
         dec_fun = protocol.ToClerk_ControlParts_Decode
 
         # Encode the booster- and factory commands.
-        boosters, factories = [cmd_0, cmd_1], [cmd_2, cmd_3, cmd_4]
+        boosters= {'0': cmd_0, '1': cmd_1}
+        factories = {'0': cmd_2, '1': cmd_3, '2': cmd_4}
         ret = enc_fun(objID, boosters, factories)
         assert ret.ok
 

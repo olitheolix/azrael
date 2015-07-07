@@ -437,11 +437,11 @@ def FromClerk_Remove_Decode(dummyarg):
 
 
 @typecheck
-def ToClerk_ControlParts_Encode(objID: int, cmds_b: list, cmds_f: list):
+def ToClerk_ControlParts_Encode(objID: int, cmds_b: dict, cmds_f: dict):
     # Compile a dictionary with the payload data.
     d = {'objID': objID,
-         'cmd_boosters': [_._asdict() for _ in cmds_b],
-         'cmd_factories': [_._asdict() for _ in cmds_f]}
+         'cmd_boosters': {k: v._asdict() for (k, v) in cmds_b.items()},
+         'cmd_factories': {k: v._asdict() for (k, v) in cmds_f.items()}}
 
     return RetVal(True, None, d)
 
@@ -449,8 +449,8 @@ def ToClerk_ControlParts_Encode(objID: int, cmds_b: list, cmds_f: list):
 @typecheck
 def ToClerk_ControlParts_Decode(payload: dict):
     objID = payload['objID']
-    cmds_b = [types.CmdBooster(**_) for _ in payload['cmd_boosters']]
-    cmds_f = [types.CmdFactory(**_) for _ in payload['cmd_factories']]
+    cmds_b = {k: types.CmdBooster(**v) for (k, v) in payload['cmd_boosters'].items()}
+    cmds_f = {k: types.CmdFactory(**v) for (k, v) in payload['cmd_factories'].items()}
 
     return True, (objID, cmds_b, cmds_f)
 
