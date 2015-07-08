@@ -330,13 +330,13 @@ def FromClerk_GetBodyState_Encode(payload: dict):
 
         # Convert the constituent elements to dictionaries.
         if data['rbs'] is None:
-            sv = None
+            body = None
         else:
-            sv = data['rbs']._asdict()
+            body = data['rbs']._asdict()
         frags = {k: v._asdict() for (k, v) in data['frag'].items()}
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
-        out[objID] = {'rbs': sv, 'frag': frags}
+        out[objID] = {'rbs': body, 'frag': frags}
     return True, {'data': out}
 
 
