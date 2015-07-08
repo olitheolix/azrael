@@ -974,60 +974,6 @@ def DefaultRigidBody(scale=1,
                           axesLockRot, version)
 
 
-class RigidBodyStateOverride(_RigidBodyState):
-    """
-    Create a ``_RigidBodyState`` tuple.
-
-    The only difference between this class and ``RigidBodyState`` is
-    that this one permits *None* values for any of its arguments, whereas the
-    other one does not.
-    """
-    @typecheck
-    def __new__(cls, *args, **kwargs):
-        """
-        Same as ``RigidBodyState` except that every unspecified value is *None*
-        instead of a numeric default.
-        """
-        # Convert all positional- and keyword arguments that are not None to a
-        # dictionary of keyword arguments. Step 1: convert the positional
-        # arguments to a dictionary...
-        kwargs_tmp = dict(zip(_RigidBodyState._fields, args))
-
-        # ... Step 2: Remove all keys where the value is None...
-        kwargs_tmp = {k: v for (k, v) in kwargs_tmp.items() if v is not None}
-
-        # ... Step 3: add the original keyword arguments that are not None.
-        for key, value in kwargs.items():
-            if value is not None:
-                kwargs_tmp[key] = value
-        kwargs = kwargs_tmp
-        del args, kwargs_tmp
-
-        # Create a RigidBodyState instance. Return an error if this fails.
-        try:
-            body = DefaultRigidBody(**kwargs)
-        except TypeError:
-            body = None
-        if body is None:
-            return None
-
-        # Create keyword arguments for all fields and set them to *None*.
-        kwargs_all = {f: None for f in _RigidBodyState._fields}
-
-        # Overwrite those keys for which we actually have a value. Note that we
-        # will not use the values supplied to this function directly but use
-        # the ones from the temporary RigidBodyState object because this
-        # one already sanitised the inputs.
-        for key in kwargs:
-            kwargs_all[key] = getattr(body, key)
-
-        # Create the ``_RigidBodyState`` named tuple.
-        return super().__new__(cls, **kwargs_all)
-
-    def _asdict(self):
-        return OrderedDict(zip(self._fields, self))
-
-
 class Template(_Template):
     """
     Return a valid object template.

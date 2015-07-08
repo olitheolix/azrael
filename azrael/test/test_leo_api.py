@@ -31,8 +31,6 @@ from azrael.test.test import getCSSphere, getCSPlane, getRigidBody
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.types import CollShapeSphere, CollShapeBox
 
-RigidBodyStateOverride = types.RigidBodyStateOverride
-
 
 class TestLeonardAPI:
     @classmethod
@@ -319,52 +317,6 @@ class TestLeonardAPI:
         leo.processCommandsAndSync()
         correct = [[[1, 2, 3, 1, 1, 1], [4, 5, 6, 2, 2, 2]]]
         assert leoAPI.getAABB([id_1]) == (True, None, correct)
-
-    def test_RigidBodyStateOverride(self):
-        """
-        ``RigidBodyStateOverride`` must only accept valid input where the
-        ``RigidBodyState`` function defines what constitutes as "valid".
-        """
-        # Valid RigidBodyState and RigidBodyStateOverride calls.
-        assert getRigidBody() is not None
-        assert RigidBodyStateOverride() is not None
-
-        assert getRigidBody(position=[1, 2, 3]) is not None
-        assert RigidBodyStateOverride(position=[1, 2, 3]) is not None
-
-        # Pass positional arguments with None values.
-        assert RigidBodyStateOverride(None, None) is not None
-
-        # Pass a dictionary with None values. This must still result in the
-        # default structure.
-        tmp = {'velocityRot': None, 'cshapes': None}
-        assert RigidBodyStateOverride(**tmp) is not None
-        tmp = {'velocityRot': np.array([1, 2, 3], np.float64), 'cshapes': None}
-        out = RigidBodyStateOverride(**tmp)
-        assert out is not None
-        assert np.array_equal(out.velocityRot, tmp['velocityRot'])
-
-        # Combine positional and keyword arguments.
-        assert RigidBodyStateOverride(None, None, **tmp) is not None
-
-        # Pass Python- scalars and lists instead of NumPy types. The scalars
-        # must remain unaffected but the lists must become NumPy arrays.
-        ret = getRigidBody(imass=3, position=[1, 2, 3])
-        assert isinstance(ret.imass, int)
-        assert isinstance(ret.position, tuple)
-
-        ret = RigidBodyStateOverride(imass=3, position=[1, 2, 3])
-        assert isinstance(ret.imass, int)
-        assert isinstance(ret.position, tuple)
-
-        # Invalid calls.
-        assert getRigidBody(position=[1, 2]) is None
-        assert RigidBodyStateOverride(position=[1, 2]) is None
-        assert getRigidBody(position=np.array([1, 2])) is None
-        assert RigidBodyStateOverride(position=np.array([1, 2])) is None
-
-        assert RigidBodyStateOverride(position=1) is None
-        assert RigidBodyStateOverride(position='blah') is None
 
     def test_get_set_forceandtorque(self):
         """

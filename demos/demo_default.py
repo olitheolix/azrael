@@ -58,10 +58,6 @@ from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox
 
 
-# Convenience.
-RigidBodyStateOverride = leoAPI.RigidBodyStateOverride
-
-
 def parseCommandLine():
     """
     Parse program arguments.
@@ -578,7 +574,6 @@ class ResetSim(multiprocessing.Process):
             # Forcefully reset the position and velocity of every object. Do
             # this several times since network latency may result in some
             # objects being reset sooner than others.
-            RigidBodyStateOverride = azrael.leo_api.RigidBodyStateOverride
             for ii in range(5):
                 for objID, SV in allowed_objIDs.items():
                     tmp = {
