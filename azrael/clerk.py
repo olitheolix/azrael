@@ -1225,25 +1225,23 @@ class Clerk(config.AzraelProcess):
         :param dict body: new object attributes.
         :return: Success
         """
+        # Convenience.
         db = azrael.database.dbHandles['ObjInstances']
 
-        # Backup the original body because addCmdModify will need it.
-        body_bak = dict(body)
-
+        # Compile- and sanity check ``body``.
         try:
             body = types.DefaultRigidBody(**body)
         except TypeError:
             return RetVal(False, 'Invalid body data', None)
         body = body._asdict()
 
-        # Update the respective entries in the data base. The keys already have
+        # Update the respective entries in the database. The keys already have
         # the correct names but must be saved under 'template.rbs'.
-        body = {'template.rbs.' + k: v for (k, v) in body.items()}
-        query = {'objID': objID}
-        db.update(query, {'$set': body})
+        body_tmp = {'template.rbs.' + k: v for (k, v) in body.items()}
+        db.update({'objID': objID}, {'$set': body_tmp})
+        del body_tmp
 
         # Notify Leonard.
-        body = types.RigidBodyStateOverride(**body_bak)
         ret = leoAPI.addCmdModifyBodyState(objID, body)
         if ret.ok:
             return RetVal(True, None, None)
