@@ -33,9 +33,6 @@ from azrael.types import typecheck, RetVal, _RigidBodyState
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.types import CollShapeSphere, CollShapeBox
 
-# Convenience.
-RigidBodyStateOverride = types.RigidBodyStateOverride
-
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
 
@@ -224,15 +221,16 @@ def addCmdRemoveObject(objID: int):
 
 
 @typecheck
-def addCmdModifyBodyState(objID: int, body: RigidBodyStateOverride):
+def addCmdModifyBodyState(objID: int, body: dict):
     """
     Queue request to override the Body State of ``objID`` with ``body``.
 
     Leonard will process the queue (and thus this command) once per physics
     cycle. However, it is impossible to determine when exactly.
 
+    fixme: parameters
     :param int objID: object to update.
-    :param RigidBodyStateOverride body: new object attributes.
+    :param dict body: new object attributes.
     :return bool: Success
     """
     # Sanity check.
@@ -241,29 +239,32 @@ def addCmdModifyBodyState(objID: int, body: RigidBodyStateOverride):
         logit.warning(msg)
         return RetVal(False, msg, None)
 
-    # Do nothing if body is None.
-    if body is None:
-        return RetVal(True, None, None)
-
     # Make sure that ``body`` is really valid by constructing a new
-    # RigidBodyStateOverride instance from it.
-    body = RigidBodyStateOverride(*body)
-    if body is None:
+    # DefaultRigidBody from it.
+    body_sane = types.DefaultRigidBody(**body)
+    if body_sane is None:
         return RetVal(False, 'Invalid override data', None)
 
     # Recompute the AABBs if new collision shapes were provided.
     aabbs = None
-    if body.cshapes is not None:
-        ret = computeAABBs(body.cshapes)
-        if ret.ok:
-            aabbs = ret.data
+    if 'cshapes' in body:
+        if body_sane.cshapes is not None:
+            ret = computeAABBs(body_sane.cshapes)
+            if ret.ok:
+                aabbs = ret.data
 
-    # Save the new body state and AABBs to the DB. This will overwrite already
-    # pending update commands for the same object - tough luck.
+    # Build the original 'body' but from the sanitised version - just to be
+    # sure.
+    body = {k: v for (k, v) in body_sane._asdict().items() if k in body}
+    del body_sane
+
+    # Add the new body state and AABBs to the 'command' database from where
+    # clients can read it at their leisure. Note that this will overwrite
+    # already pending update commands for the same object - tough luck.
     db = database.dbHandles['Commands']
     query = {'cmd': 'modify', 'objID': objID}
-    db_data = {'rbs': body._asdict(), 'AABBs': aabbs}
-    db.update(query, {'$setOnInsert': db_data},  upsert=True)
+    db_data = {'rbs': body, 'AABBs': aabbs}
+    db.update(query, {'$setOnInsert': db_data}, upsert=True)
 
     # This function was successful if exactly one document was updated.
     return RetVal(True, None, None)

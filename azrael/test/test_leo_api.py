@@ -166,7 +166,7 @@ class TestLeonardAPI:
 
         # Convenience.
         body_1 = getRigidBody()
-        body_2 = RigidBodyStateOverride(imass=2, scale=3)
+        body_2 = {'imass': 2, 'scale': 3}
         id_1, id_2 = 0, 1
 
         # The command queue must be empty for every category.
@@ -203,13 +203,13 @@ class TestLeonardAPI:
         assert ret.data['booster_force'] == []
 
         # Modify state variable for body with id_1.
-        newSV = RigidBodyStateOverride(imass=10, position=[3, 4, 5])
+        newSV = {'imass': 10, 'position': [3, 4, 5]}
         assert leoAPI.addCmdModifyBodyState(id_1, newSV).ok
         ret = leoAPI.dequeueCommands()
         modify = ret.data['modify']
         assert ret.ok and len(modify) == 1
         assert modify[0]['objID'] == id_1
-        assert RigidBodyStateOverride(**modify[0]['rbs']) == newSV
+        assert modify[0]['rbs'] == newSV
         del newSV
 
         # Set the direct force and torque for id_2.
@@ -268,13 +268,15 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Test constants.
-        body_new = RigidBodyStateOverride(
-            imass=2, scale=3,
-            cshapes=[getCSEmpty()],
-            position=(1, 2, 5),
-            velocityLin=(8, 9, 10.5),
-            velocityRot=(9, 10, 11.5),
-            orientation=(11, 12.5, 13, 13.5))
+        body_new = {
+            'imass':2,
+            'scale': 3,
+            'cshapes': [getCSEmpty()],
+            'position': (1, 2, 5),
+            'velocityLin': (8, 9, 10.5),
+            'velocityRot': (9, 10, 11.5),
+            'orientation': (11, 12.5, 13, 13.5)
+        }
 
         # Create a test body.
         id_1 = 0
@@ -290,19 +292,19 @@ class TestLeonardAPI:
 
         # Query the body again and verify the changes are in effect.
         ret = leo.allBodies[id_1]
-        assert ret.imass == body_new.imass
-        assert ret.scale == body_new.scale
-        assert np.array_equal(ret.position, body_new.position)
-        assert np.array_equal(ret.velocityLin, body_new.velocityLin)
-        assert np.array_equal(ret.velocityRot, body_new.velocityRot)
-        assert np.array_equal(ret.orientation, body_new.orientation)
+        assert ret.imass == body_new['imass']
+        assert ret.scale == body_new['scale']
+        assert np.array_equal(ret.position, body_new['position'])
+        assert np.array_equal(ret.velocityLin, body_new['velocityLin'])
+        assert np.array_equal(ret.velocityRot, body_new['velocityRot'])
+        assert np.array_equal(ret.orientation, body_new['orientation'])
 
         # Query the AABB, update the collision shapes, and verify that the new
         # AABBs are in effect.
         assert leoAPI.getAABB([id_1]) == (True, None, [[]])
 
         # Modify the body state by adding a collision shape.
-        body_new = RigidBodyStateOverride(cshapes=[getCSSphere(radius=1)])
+        body_new = {'cshapes': [getCSSphere(radius=1)]}
         assert body_new is not None
         assert leoAPI.addCmdModifyBodyState(id_1, body_new).ok
         leo.processCommandsAndSync()
@@ -312,7 +314,7 @@ class TestLeonardAPI:
         cs_a = getCSSphere(radius=1, pos=(1, 2, 3))
         cs_b = getCSSphere(radius=2, pos=(4, 5, 6))
         cshapes = [cs_a, getCSEmpty(), cs_b]
-        body_new = RigidBodyStateOverride(cshapes=cshapes)
+        body_new = {'cshapes': cshapes}
         assert leoAPI.addCmdModifyBodyState(id_1, body_new).ok
         leo.processCommandsAndSync()
         correct = [[[1, 2, 3, 1, 1, 1], [4, 5, 6, 2, 2, 2]]]
