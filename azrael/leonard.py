@@ -44,7 +44,6 @@ from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Convenience.
 RigidBodyState = types.RigidBodyState
-RigidBodyStateOverride = types.RigidBodyStateOverride
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
@@ -549,12 +548,12 @@ class LeonardBase(config.AzraelProcess):
         for doc in cmds['modify']:
             objID, sv_new, aabbs_new = doc['objID'], doc['rbs'], doc['AABBs']
             if objID in self.allBodies:
-                # fixme; document this code fragment.
-                sv_new = RigidBodyStateOverride(**sv_new)._asdict()
+                # fixme; document this code fragment. add error check in next line.
+                tmp = types.DefaultRigidBody(**sv_new)._asdict()
+                tmp = {k: v for (k, v) in tmp.items() if k in sv_new}
                 sv_old = self.allBodies[objID]
                 sv_old = RigidBodyState(*sv_old)._asdict()
 
-                sv_new = {k: v for (k, v) in sv_new.items() if v is not None}
                 sv_old.update(sv_new)
                 sv_old = RigidBodyState(**sv_old)
                 self.allBodies[objID] = sv_old

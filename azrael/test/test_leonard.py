@@ -16,9 +16,6 @@ from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getP2P
 from azrael.test.test import killAzrael, getLeonard, getRigidBody
 
 
-# Convenience shortcuts.
-RBSO = azrael.types.RigidBodyStateOverride
-
 # List all available engines. This simplifies the parameterisation of those
 # tests that must pass for all engines.
 allEngines = [
@@ -40,6 +37,7 @@ class TestLeonardAllEngines:
 
     def setup_method(self, method):
         assert azrael.vectorgrid.deleteAllGrids().ok
+        azrael.database.init()
         self.igor.reset()
 
     def teardown_method(self, method):
@@ -120,7 +118,7 @@ class TestLeonardAllEngines:
         p = np.array([1, 2, 5])
         vl = np.array([8, 9, 10.5])
         vr = vl + 1
-        body = RBSO(position=p, velocityLin=vl, velocityRot=vr)
+        body = {'position': p, 'velocityLin': vl, 'velocityRot': vr}
         del p, vl, vr
 
         # Spawn a new object. It must have ID=1.
@@ -134,9 +132,9 @@ class TestLeonardAllEngines:
 
         # Verify that the attributes were correctly updated.
         ret = leo.allBodies[id_1]
-        assert np.array_equal(ret.position, body.position)
-        assert np.array_equal(ret.velocityLin, body.velocityLin)
-        assert np.array_equal(ret.velocityRot, body.velocityRot)
+        assert np.array_equal(ret.position, body['position'])
+        assert np.array_equal(ret.velocityLin, body['velocityLin'])
+        assert np.array_equal(ret.velocityRot, body['velocityRot'])
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_setBodyState_advanced(self, clsLeonard):
@@ -165,7 +163,7 @@ class TestLeonardAllEngines:
         assert leo.allBodies[objID].cshapes == cshape_sphere
 
         # Update the object's SV data.
-        sv_new = RBSO(imass=4, scale=5, cshapes=cshape_box)
+        sv_new = {'imass': 4, 'scale': 5, 'cshapes': cshape_box}
         assert leoAPI.addCmdModifyBodyState(objID, sv_new).ok
 
         # Verify the body data.
@@ -194,7 +192,7 @@ class TestLeonardAllEngines:
         assert np.array_equal(leo.allBodies[id_0].position, [0, 0, 0])
 
         # Give the object a velocity.
-        body = RBSO(velocityLin=np.array([1, 0, 0]))
+        body = {'velocityLin': np.array([1, 0, 0])}
         assert leoAPI.addCmdModifyBodyState(id_0, body).ok
         del body
 
@@ -458,7 +456,7 @@ class TestLeonardOther:
 
         # Change the State Vector of id_2.
         pos = (10, 11.5, 12)
-        body_3 = RBSO(position=pos)
+        body_3 = {'position': pos}
         assert leo.allBodies[id_2].position == (0, 0, 0)
         assert leoAPI.addCmdModifyBodyState(id_2, body_3).ok
         leo.processCommandsAndSync()
