@@ -546,17 +546,21 @@ class LeonardBase(config.AzraelProcess):
 
         # Update Body States.
         for doc in cmds['modify']:
-            objID, sv_new, aabbs_new = doc['objID'], doc['rbs'], doc['AABBs']
+            objID, new, aabbs_new = doc['objID'], doc['rbs'], doc['AABBs']
             if objID in self.allBodies:
-                # fixme; document this code fragment. add error check in next line.
-                tmp = types.DefaultRigidBody(**sv_new)._asdict()
-                tmp = {k: v for (k, v) in tmp.items() if k in sv_new}
-                sv_old = self.allBodies[objID]
-                sv_old = RigidBodyState(*sv_old)._asdict()
+                # Convert the original body state into a dictionary and update
+                # it with the new values.
+                old = self.allBodies[objID]._asdict()
+                old.update(new)
 
-                sv_old.update(sv_new)
-                sv_old = RigidBodyState(**sv_old)
-                self.allBodies[objID] = sv_old
+                # Attempt to construct a new RigidBody with the new body that
+                # now includes the updated values. If it fails skip this body
+                # altogether.
+                try:
+                    self.allBodies[objID] = RigidBodyState(**old)
+                except TypeError:
+                    self.logit.warning('Could not update body state in Leonard.')
+                    continue
 
                 # Assign the new AABB if it is not None (note: a value of
                 # *None* explicitly means that there is no AABB update,
