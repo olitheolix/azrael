@@ -352,26 +352,6 @@ def FromClerk_GetBodyState_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# GetAllBodyStates
-# ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_GetAllBodyStates_Encode():
-    return RetVal(True, None, None)
-
-
-@typecheck
-def ToClerk_GetAllBodyStates_Decode(payload: dict):
-    return True, (None, )
-
-# Reuse the protocol for 'getBodyStates' for the data that comes
-# back from Clerk.
-FromClerk_GetAllBodyStates_Encode = FromClerk_GetBodyState_Encode
-FromClerk_GetAllBodyStates_Decode = FromClerk_GetBodyState_Decode
-
-
-# ---------------------------------------------------------------------------
 # Spawn
 # ---------------------------------------------------------------------------
 

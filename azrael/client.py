@@ -101,9 +101,6 @@ class Client():
             'get_body_states': (
                 protocol.ToClerk_GetBodyState_Encode,
                 protocol.FromClerk_GetBodyState_Decode),
-            'get_all_body_states': (
-                protocol.ToClerk_GetAllBodyStates_Encode,
-                protocol.FromClerk_GetAllBodyStates_Decode),
             'set_body_state': (
                 protocol.ToClerk_SetBodyState_Encode,
                 protocol.FromClerk_SetBodyState_Decode),
@@ -508,27 +505,17 @@ class Client():
         """
         # If the user requested only a single State Variable wrap it into a
         # list to avoid special case treatment.
-        if isinstance(objIDs, int):
-            objIDs = [objIDs]
+        if objIDs is not None:
+            if isinstance(objIDs, int):
+                objIDs = [objIDs]
 
-        # Sanity check: all objIDs must be valid.
-        for objID in objIDs:
-            assert isinstance(objID, int)
-            assert objID >= 0
+            # Sanity check: all objIDs must be valid.
+            for objID in objIDs:
+                assert isinstance(objID, int)
+                assert objID >= 0
 
         # Pass on the request to Clerk.
         return self.serialiseAndSend('get_body_states', objIDs)
-
-    @typecheck
-    def getAllBodyStates(self):
-        """
-        Return the State Variables for all objects in the simulation.
-
-        :return: dictionary of State Variables.
-        :rtype: dict
-        """
-        # Pass on the request to Clerk.
-        return self.serialiseAndSend('get_all_body_states')
 
     @typecheck
     def setBodyState(self, objID: int, new: dict):

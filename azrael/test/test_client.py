@@ -312,7 +312,6 @@ class TestClient:
 
         # Query the state variables for a non existing object.
         objID = 100
-        assert client.getAllBodyStates() == (True, None, {})
         assert client.getBodyStates(objID) == (True, None, {objID: None})
         del objID
 
@@ -334,8 +333,8 @@ class TestClient:
         assert ret.data[objID_1]['rbs'].position == pos
         assert ret.data[objID_1]['rbs'].velocityLin == vlin
 
-        # Same test but for 'getAllBodyStates'.
-        assert client.getAllBodyStates() == ret
+        # Same test but this time get all of them.
+        assert client.getBodyStates(None) == ret
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_getAllObjectIDs(self, client_type):

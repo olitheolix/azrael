@@ -125,10 +125,6 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_GetBodyState_Decode,
                 self.getBodyStates,
                 protocol.FromClerk_GetBodyState_Encode),
-            'get_all_body_states': (
-                protocol.ToClerk_GetAllBodyStates_Decode,
-                self.getAllBodyStates,
-                protocol.FromClerk_GetAllBodyStates_Encode),
             'set_body_state': (
                 protocol.ToClerk_SetBodyState_Decode,
                 self.setBodyState,
@@ -1170,6 +1166,7 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def getBodyStates(self, objIDs: (list, tuple)):
         """
+        fixme: docu update because it was merged with getAllBodyStates
         Return the state variables for all ``objIDs`` in a dictionary.
 
         The dictionary keys will be the elements of ``objIDs`` and the
@@ -1182,37 +1179,15 @@ class Clerk(config.AzraelProcess):
         """
         with util.Timeit('clerk.getBodyStates') as timeit:
             ret = self._packBodyState(objIDs)
-            if ret.ok:
-                # Create a default dictionary because it is possible that the
-                # user asked us for objects that do not exist (_packBodyState
-                # will silently skip them).
-                out = {_: None for _ in objIDs}
-                out.update(ret.data)
-                return RetVal(True, None, out)
-            else:
+            if not ret.ok or objIDs is None:
                 return ret
 
-    @typecheck
-    def getAllBodyStates(self, dummy=None):
-        """
-        Return all State Variables in a dictionary.
-
-        The dictionary will have the object IDs and state-variables as
-        key/value pairs, respectively.
-
-        .. note::
-           The ``dummy`` argument is a placeholder because the ``runCommand``
-           function assumes that every method takes at least one argument.
-
-        :return: see :ref:``_packBodyState``.
-        :rtype: dict
-        """
-        with util.Timeit('clerk.getAllBodyStates') as timeit:
-            ret = self._packBodyState(None)
-            if ret.ok:
-                return RetVal(True, None, ret.data)
-            else:
-                return ret
+            # Create a default dictionary because it is possible that the
+            # user asked us for objects that do not exist (_packBodyState
+            # will silently skip them).
+            out = {_: None for _ in objIDs}
+            out.update(ret.data)
+            return RetVal(True, None, out)
 
     @typecheck
     def setBodyState(self, objID: int, body: dict):

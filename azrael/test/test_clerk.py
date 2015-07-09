@@ -484,6 +484,10 @@ class TestClerk:
         # Convenience.
         clerk = self.clerk
 
+        # Retrieve all body states --> there must be none.
+        ret = clerk.getBodyStates(None)
+        assert (ret.ok, ret.data) == (True, {})
+
         # Retrieve the SV for a non-existing ID.
         ret = clerk.getBodyStates([10])
         assert (ret.ok, ret.data) == (True, {10: None})
@@ -506,14 +510,15 @@ class TestClerk:
         ret = clerk.spawn([init_1])
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
-        # Retrieve the SV for a non-existing ID --> must fail.
+        # Retrieve the body state for a non-existing ID --> must fail.
         ret = clerk.getBodyStates([10])
         assert (ret.ok, ret.data) == (True, {10: None})
 
-        # Retrieve the SV for the existing ID=1.
+        # Retrieve the body state for the existing ID=1.
         ret = clerk.getBodyStates([objID_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
+        assert ret == clerk.getBodyStates(None)
 
         # Spawn a second object.
         ret = clerk.spawn([init_2])
@@ -531,57 +536,8 @@ class TestClerk:
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
         assert RBS(*ret.data[objID_2]['rbs']) == body_2
 
-    def test_getAllBodyStates(self):
-        """
-        Test the 'getAllBodyStates' command in the Clerk.
-        """
-        # Test parameters and constants.
-        objID_1, objID_2 = 1, 2
-        RBS = getRigidBody
-        body_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
-        body_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
-        templateID = '_templateSphere'
-
-        # Convenience.
-        clerk = self.clerk
-
-        # Retrieve all SVs --> there must be none.
-        ret = clerk.getAllBodyStates()
-        assert (ret.ok, ret.data) == (True, {})
-
-        # Spawn a new object and verify its ID.
-        init_1 = {
-            'templateID': templateID,
-            'rbs': {
-                'position': body_1.position,
-                'velocityLin': body_1.velocityLin
-            }
-        }
-        init_2 = {
-            'templateID': templateID,
-            'rbs': {
-                'position': body_2.position,
-                'velocityLin': body_2.velocityLin
-            }
-        }
-
-        ret = clerk.spawn([init_1])
-        assert (ret.ok, ret.data) == (True, (objID_1, ))
-
-        # Retrieve all SVs --> there must now be exactly one.
-        ret = clerk.getAllBodyStates()
-        assert (ret.ok, len(ret.data)) == (True, 1)
-        assert RBS(*ret.data[objID_1]['rbs']) == body_1
-
-        # Spawn a second object and verify its ID.
-        ret = clerk.spawn([init_2])
-        assert (ret.ok, ret.data) == (True, (objID_2, ))
-
-        # Retrieve all SVs --> there must now be exactly two.
-        ret = clerk.getAllBodyStates()
-        assert (ret.ok, len(ret.data)) == (True, 2)
-        assert RBS(*ret.data[objID_1]['rbs']) == body_1
-        assert RBS(*ret.data[objID_2]['rbs']) == body_2
+        # Query all of them.
+        assert ret == clerk.getBodyStates(None)
 
     def test_set_force(self):
         """
@@ -1494,12 +1450,8 @@ class TestClerk:
         ret_frags = ret.data[objID]['frag']
         assert len(ret_frags) == len(frags)
 
-        # Same as before, but this time use 'getAllBodyStates' instead of
-        # 'getBodyStates'.
-        ret = clerk.getAllBodyStates()
-        assert ret.ok
-        ret_frags = ret.data[objID]['frag']
-        assert len(ret_frags) == len(frags)
+        # Same as before, but this time get all of them.
+        assert clerk.getBodyStates(None) == ret
 
         # Verify the fragment _states_ themselves.
         checkFragState(objID,
