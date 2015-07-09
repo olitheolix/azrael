@@ -43,7 +43,7 @@ import azrael.database as database
 
 from IPython import embed as ipshell
 from azrael.types import RetVal, Template
-from azrael.types import FragState, FragDae, FragRaw
+from azrael.types import FragDae, FragRaw
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getRigidBody
@@ -647,25 +647,19 @@ class TestClient:
         # Query the Body State to get the Fragment States. Then verify the
         # Fragment State named 'bar'.
         ret = client.getBodyStates(objID)
-        ref = {'bar': FragState(1, [0, 0, 0], [0, 0, 0, 1])}
+        ref = {'bar': {'scale': 1, 'position': [0, 0, 0], 'orientation': [0, 0, 0, 1]}}
         assert ret.ok
         assert ret.data[objID]['frag'] == ref
-        ret = ret.data[objID]['frag']['bar']
-        assert ret.scale == ref['bar'].scale
-        assert ret.position == ref['bar'].position
-        assert ret.orientation == ref['bar'].orientation
 
         # Modify and update the fragment states in Azrael, then query and
         # verify it worked.
-        newStates = {objID: {'bar': {'scale': 2.2, 'position': (1, 2, 3),
-                                     'orientation': (1, 0, 0, 0)}}}
+        newStates = {objID: {'bar': {'scale': 2.2, 'position': [1, 2, 3],
+                                     'orientation': [1, 0, 0, 0]}}}
         assert client.setFragments(newStates).ok
         ret = client.getBodyStates(objID)
         assert ret.ok
         ret = ret.data[objID]['frag']['bar']
-        assert ret.scale == newStates[objID]['bar']['scale']
-        assert ret.position == newStates[objID]['bar']['position']
-        assert ret.orientation == newStates[objID]['bar']['orientation']
+        assert ret == newStates[objID]['bar']
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_remove_fragments(self, client_type):

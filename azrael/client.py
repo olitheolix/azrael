@@ -39,7 +39,7 @@ import azrael.config as config
 import azrael.protocol as protocol
 
 from azrael.types import typecheck, RetVal, Template
-from azrael.types import FragState, FragDae, FragRaw, FragMeta
+from azrael.types import FragDae, FragRaw, FragMeta
 
 
 class Client():
