@@ -203,7 +203,7 @@ class SetGeometry(multiprocessing.Process):
             for objID in objIDs:
                 # Change the scale of the overall object.
                 new_sv = RigidBodyStateOverride(scale=scale)
-                client.setBodyState(objID, new_sv)
+                client.setRigidBody(objID, new_sv)
 
                 # Move the second fragment.
                 x = -10 + cnt

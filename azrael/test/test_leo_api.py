@@ -257,7 +257,7 @@ class TestLeonardAPI:
         assert len(ret.data['direct_force']) == 2
         assert len(ret.data['booster_force']) == 2
 
-    def test_setBodyState(self):
+    def test_setRigidBody(self):
         """
         Set and retrieve object attributes like position, velocity,
         acceleration, and orientation.

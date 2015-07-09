@@ -962,7 +962,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         This method moves all SV objects from the database to the Bullet
         engine. Then it defers to Bullet for the physics update. Finally, it
         replaces the SV fields with the user specified values (only applies if
-        the user called 'setBodyState') and writes the results back to the
+        the user called 'setRigidBody') and writes the results back to the
         database.
 
         :param float dt: time step in seconds.

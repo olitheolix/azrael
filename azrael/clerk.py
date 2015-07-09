@@ -127,7 +127,7 @@ class Clerk(config.AzraelProcess):
                 protocol.FromClerk_GetBodyState_Encode),
             'set_body_state': (
                 protocol.ToClerk_SetBodyState_Decode,
-                self.setBodyState,
+                self.setRigidBody,
                 protocol.FromClerk_SetBodyState_Encode),
             'set_fragments': (
                 protocol.ToClerk_SetFragmentGeometry_Decode,
@@ -1190,7 +1190,7 @@ class Clerk(config.AzraelProcess):
             return RetVal(True, None, out)
 
     @typecheck
-    def setBodyState(self, objID: int, body: dict):
+    def setRigidBody(self, objID: int, body: dict):
         """
         Set the rigid body state of ``objID`` to ``body``.
 

@@ -1802,7 +1802,7 @@ class TestClerk:
         ret = clerk.getBodyStates([objID])
         assert ret.ok and len(ret.data[objID]['frag']) == 2
 
-    def test_setBodyState(self):
+    def test_setRigidBody(self):
         """
         Spawn an object and specify its state variables directly.
         """
@@ -1831,7 +1831,7 @@ class TestClerk:
             'imass': 2,
             'scale': 3,
             'cshapes': {'cssphere': getCSSphere()._asdict()}}
-        assert clerk.setBodyState(objID, new_bs).ok
+        assert clerk.setRigidBody(objID, new_bs).ok
 
         # Verify that the new attributes came into effect.
         ok, _, ret_bs = clerk.getBodyStates([objID])
@@ -1848,7 +1848,7 @@ class TestClerk:
             'imass': 2,
             'scale': 3,
             'cshapes': {'cssphere': getCSSphere()._asdict()}}
-        assert not clerk.setBodyState(objID, new_bs).ok
+        assert not clerk.setRigidBody(objID, new_bs).ok
 
     def test_stunted_objects(self):
         """
@@ -1892,9 +1892,9 @@ class TestClerk:
         new_bs_frag = {'position': [3, 4, 5]}
         new_bs_none = {'position': [6, 7, 8]}
 
-        assert clerk.setBodyState(id_cs, new_bs_cs).ok
-        assert clerk.setBodyState(id_frag, new_bs_frag).ok
-        assert clerk.setBodyState(id_none, new_bs_none).ok
+        assert clerk.setRigidBody(id_cs, new_bs_cs).ok
+        assert clerk.setRigidBody(id_frag, new_bs_frag).ok
+        assert clerk.setRigidBody(id_none, new_bs_none).ok
 
         # Verify all objects have the new positions.
         ret = clerk.getBodyStates([id_cs, id_frag, id_none])

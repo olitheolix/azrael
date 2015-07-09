@@ -518,7 +518,7 @@ class Client():
         return self.serialiseAndSend('get_body_states', objIDs)
 
     @typecheck
-    def setBodyState(self, objID: int, new: dict):
+    def setRigidBody(self, objID: int, new: dict):
         """
         Overwrite the the State Variables of ``objID`` with ``new``.
 
