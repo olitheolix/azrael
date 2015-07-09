@@ -64,7 +64,7 @@ class TestLeonardAPI:
         assert id_1 not in leo.allBodies
 
         # Create an object and serialise it.
-        body = getRigidBody(cshapes=[getCSSphere('cssphere')])
+        body = getRigidBody(cshapes={'cssphere': getCSSphere('cssphere')})
 
         # Add the object to Leonard and verify it worked.
         assert leoAPI.addCmdSpawn([(id_1, body)])
@@ -269,7 +269,7 @@ class TestLeonardAPI:
         body_new = {
             'imass':2,
             'scale': 3,
-            'cshapes': [getCSEmpty()],
+            'cshapes': {'csempty': getCSEmpty()},
             'position': (1, 2, 5),
             'velocityLin': (8, 9, 10.5),
             'velocityRot': (9, 10, 11.5),
@@ -278,7 +278,7 @@ class TestLeonardAPI:
 
         # Create a test body.
         id_1 = 0
-        body = getRigidBody(cshapes=[getCSEmpty()])
+        body = getRigidBody(cshapes={'csempty': getCSEmpty()})
 
         # Add the object to the DB with ID=0.
         assert leoAPI.addCmdSpawn([(id_1, body)]).ok
@@ -299,23 +299,25 @@ class TestLeonardAPI:
 
         # Query the AABB, update the collision shapes, and verify that the new
         # AABBs are in effect.
-        assert leoAPI.getAABB([id_1]) == (True, None, [[]])
+        assert leoAPI.getAABB([id_1]) == (True, None, [{}])
 
         # Modify the body state by adding a collision shape.
-        body_new = {'cshapes': [getCSSphere(radius=1)]}
+        body_new = {'cshapes': {'cssphere': getCSSphere(radius=1)}}
         assert body_new is not None
         assert leoAPI.addCmdModifyBodyState(id_1, body_new).ok
         leo.processCommandsAndSync()
-        assert leoAPI.getAABB([id_1]) == (True, None, [[[0, 0, 0, 1, 1, 1]]])
+        ret = leoAPI.getAABB([id_1])
+        assert ret.ok
+        assert ret.data == [{'cssphere': [0, 0, 0, 1, 1, 1]}]
 
         # Modify the body state by adding a collision shape.
         cs_a = getCSSphere(radius=1, pos=(1, 2, 3))
         cs_b = getCSSphere(radius=2, pos=(4, 5, 6))
-        cshapes = [cs_a, getCSEmpty(), cs_b]
+        cshapes = {'1': cs_a, '2': getCSEmpty(), '3': cs_b}
         body_new = {'cshapes': cshapes}
         assert leoAPI.addCmdModifyBodyState(id_1, body_new).ok
         leo.processCommandsAndSync()
-        correct = [[[1, 2, 3, 1, 1, 1], [4, 5, 6, 2, 2, 2]]]
+        correct = [{'1': [1, 2, 3, 1, 1, 1], '3': [4, 5, 6, 2, 2, 2]}]
         assert leoAPI.getAABB([id_1]) == (True, None, correct)
 
     def test_get_set_forceandtorque(self):
@@ -383,10 +385,10 @@ class TestLeonardAPI:
 
         # Create two IDs and body instances for this test.
         id_1, id_2 = 0, 1
-        aabb_2 = [[0, 0, 0, 1, 1, 1]]
-        aabb_3 = [[0, 0, 0, 2, 2, 2]]
-        body_a = getRigidBody(cshapes=[getCSSphere(radius=1)])
-        body_b = getRigidBody(cshapes=[getCSSphere(radius=2)])
+        aabb_2 = {'cssphere': [0, 0, 0, 1, 1, 1]}
+        aabb_3 = {'cssphere': [0, 0, 0, 2, 2, 2]}
+        body_a = getRigidBody(cshapes={'cssphere': getCSSphere(radius=1)})
+        body_b = getRigidBody(cshapes={'cssphere': getCSSphere(radius=2)})
 
         # Add two new objects to the DB.
         tmp = [(id_1, body_a), (id_2, body_b)]
@@ -419,7 +421,7 @@ class TestLeonardAPI:
         computeAABBs = azrael.leo_api.computeAABBs
 
         # Empty set of Collision shapes.
-        assert computeAABBs([]) == (True, None, [])
+        assert computeAABBs({}) == (True, None, {})
 
         # Cubes with different side lengths. The algorithm must always pick
         # the largest side length times sqrt(3)
@@ -427,66 +429,68 @@ class TestLeonardAPI:
             # The three side lengths used for the cubes.
             s1, s2, s3 = size, 2 * size, 3 * size
 
-            # The AABB dimensions are must always be the largest side lengths
-            # time sqrt(3) to accommodate all rotations. However, Azreal adds
-            # some slack and uses sqrt(3.1).
+            # The AABB dimensions must always be the largest side lengths time
+            # sqrt(3) to accommodate all rotations. However, Azreal adds some
+            # slack and uses sqrt(3.1).
             v = s3 * np.sqrt(3.1)
             correct = (1, 2, 3, v, v, v)
             pos = correct[:3]
 
             cs = getCSBox(dim=(s1, s2, s3), pos=pos)
-            assert computeAABBs([cs]) == (True, None, [correct])
+            assert computeAABBs({'1': cs}) == (True, None, {'1': correct})
 
             cs = getCSBox(dim=(s2, s3, s1), pos=pos)
-            assert computeAABBs([cs]) == (True, None, [correct])
+            assert computeAABBs({'2': cs}) == (True, None, {'2': correct})
 
             cs = getCSBox(dim=(s3, s1, s2), pos=pos)
-            assert computeAABBs([cs]) == (True, None, [correct])
+            assert computeAABBs({'3': cs}) == (True, None, {'3': correct})
 
         # The AABB for a sphere must always exactly bound the sphere.
         for radius in (0, 0.5, 1, 2):
             correct = (0, 0, 0, radius, radius, radius)
             cs = getCSSphere(radius=radius)
-            assert computeAABBs([cs]) == (True, None, [correct])
+            assert computeAABBs({'': cs}) == (True, None, {'': correct})
 
         # Sphere at origin but with a rotation: must remain at origin.
         pos, rot = (0, 0, 0), (np.sqrt(2), 0, 0, np.sqrt(2))
-        correct = [(0, 0, 0, 1, 1, 1)]
+        correct = {'': (0, 0, 0, 1, 1, 1)}
         cs = getCSSphere(radius=1, pos=pos, rot=rot)
-        assert computeAABBs([cs]) == (True, None, correct)
+        assert computeAABBs({'': cs}) == (True, None, correct)
 
         # Sphere at y=1 and rotated 180degrees around x-axis. This must result
         # in a sphere at y=-1.
         pos, rot = (0, 1, 0), (1, 0, 0, 0)
-        correct = [(0, -1, 0, 1, 1, 1)]
+        correct = {'': (0, -1, 0, 1, 1, 1)}
         cs = getCSSphere(radius=1, pos=pos, rot=rot)
-        assert computeAABBs([cs]) == (True, None, correct)
+        assert computeAABBs({'': cs}) == (True, None, correct)
 
         # Sphere at y=1 and rotated 90degrees around x-axis. This must move the
-        # sphere onto the z-axis, ie to position (x, y, z) = (0, 0, 1).
+        # sphere onto the z-axis, ie to position (x, y, z) = (0, 0, 1). Due to
+        # roundoff errors it will be necessary to test with np.allclose instead
+        # for exact equality.
         pos = (0, 1, 0)
         rot = (1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2))
-        correct = [(0, 0, 1, 1, 1, 1)]
+        correct = {'': (0, 0, 1, 1, 1, 1)}
         cs = getCSSphere(radius=1, pos=pos, rot=rot)
-        ret = computeAABBs([cs])
+        ret = computeAABBs({'': cs})
         assert ret.ok
-        assert np.allclose(ret.data, correct)
+        assert np.allclose(ret.data[''], correct[''])
 
         # Use an empty shape. This must not return any AABB.
         cs = getCSEmpty()
-        assert computeAABBs([cs]) == (True, None, [])
+        assert computeAABBs({'': cs}) == (True, None, {})
 
         # Pass in multiple collision shapes, namely [box, empty, sphere]. This
         # must return 2 collision shapes because the empty one is skipped.
-        cs = [getCSSphere(), getCSEmpty(), getCSBox()]
-        correct = [
-            (0, 0, 0, 1, 1, 1),
-            (0, 0, 0, np.sqrt(3.1), np.sqrt(3.1), np.sqrt(3.1))
-        ]
+        cs = {'1': getCSSphere(), '2': getCSEmpty(), '3': getCSBox()}
+        correct = {
+            '1': (0, 0, 0, 1, 1, 1),
+            '3': (0, 0, 0, np.sqrt(3.1), np.sqrt(3.1), np.sqrt(3.1))
+        }
         assert computeAABBs(cs) == (True, None, correct)
 
         # Pass in invalid arguments. This must return with an error.
-        assert not computeAABBs([(1, 2)]).ok
+        assert not computeAABBs({'x': (1, 2)}).ok
 
     def test_computeAABBS_StaticPlane(self):
         """
@@ -498,27 +502,27 @@ class TestLeonardAPI:
         computeAABBs = azrael.leo_api.computeAABBs
 
         # One or more spheres are permissible.
-        cs = [getCSSphere()]
+        cs = {'cssphere': getCSSphere()}
         assert computeAABBs(cs).ok
 
         # A single plane is permissible.
-        cs = [getCSPlane()]
+        cs = {'csplane': getCSPlane()}
         assert computeAABBs(cs).ok
 
         # A plane in conjunction with any other object is not allowed...
-        cs = [getCSPlane(), getCSSphere()]
+        cs = {'csplane': getCSPlane(), 'cssphere': getCSSphere()}
         assert not computeAABBs(cs).ok
 
         # not even with another plane.
-        cs = [getCSPlane(), getCSSphere()]
+        cs = {'csplane': getCSPlane(), 'cssphere': getCSSphere()}
         assert not computeAABBs(cs).ok
 
         # The position and orientation of a plane is defined via the normal
         # vector and its offset. The position/orientation fields in the
         # CollShapeMeta structure are thus redundant and *must* be set to
         # defaults to avoid unintended side effects.
-        cs = [getCSPlane(pos=(0, 1, 2))]
+        cs = {'csplane': getCSPlane(pos=(0, 1, 2))}
         assert not computeAABBs(cs).ok
 
-        cs = [getCSPlane(rot=(1, 0, 0, 0))]
+        cs = {'csplane': getCSPlane(rot=(1, 0, 0, 0))}
         assert not computeAABBs(cs).ok

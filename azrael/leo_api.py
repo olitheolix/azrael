@@ -37,8 +37,9 @@ from azrael.types import CollShapeSphere, CollShapeBox
 logit = logging.getLogger('azrael.' + __name__)
 
 
-def computeAABBs(cshapes: (tuple, list)):
+def computeAABBs(cshapes: dict):
     """
+    fixme: cshapes is now a dict
     Return a list of AABBs for each element in ``cshapes``.
 
     This function returns an error as soon as it encounters an unknown
@@ -60,26 +61,28 @@ def computeAABBs(cshapes: (tuple, list)):
     s3 = np.sqrt(3.1)
 
     # Compute the AABBs for each shape.
-    aabbs = []
+    aabbs = {}
     try:
         # Wrap the inputs into CollShapeMeta structures.
-        cshapes = [CollShapeMeta(*_) for _ in cshapes]
-        if 'PLANE' in [_.cstype.upper() for _ in cshapes]:
+        cshapes = {k: CollShapeMeta(*v) for (k, v) in cshapes.items()}
+        if 'PLANE' in [_.cstype.upper() for _ in cshapes.values()]:
             if len(cshapes) > 1:
                 msg = 'Plane must be the only collision shape'
                 return RetVal(False, msg, None)
 
+            name, cshape = cshapes.popitem()
+
             # Planes must have defaule values for position and orientation, or
             # Azrael considers them invalid.
-            pos, rot = tuple(cshapes[0].position), tuple(cshapes[0].rotation)
+            pos, rot = tuple(cshape.position), tuple(cshape.rotation)
             if (pos == (0, 0, 0)) and (rot == (0, 0, 0, 1)):
-                aabbs.append((0, 0, 0, 0, 0, 0))
+                aabbs[name] = (0, 0, 0, 0, 0, 0)
                 return RetVal(True, None, aabbs)
             else:
                 msg = 'Planes must have default position and orientation'
                 return RetVal(False, msg, None)
 
-        for cs in cshapes:
+        for name, cs in cshapes.items():
             # Move the origin of the collision shape according to its rotation.
             quat = util.Quaternion(cs.rotation[3], cs.rotation[:3])
             pos = tuple(quat * cs.position)
@@ -89,13 +92,13 @@ def computeAABBs(cshapes: (tuple, list)):
             if ctype == 'SPHERE':
                 # All half lengths have the same length (equal to radius).
                 r = CollShapeSphere(*cs.csdata).radius
-                aabbs.append(pos + (r, r, r))
+                aabbs[name] = pos + (r, r, r)
             elif ctype == 'BOX':
                 # All AABBs half lengths are equal. The value equals the
                 # largest extent times sqrt(3) to accommodate all possible
                 # orientations.
                 tmp = s3 * max(CollShapeBox(*cs.csdata))
-                aabbs.append(pos + (tmp, tmp, tmp))
+                aabbs[name] = pos + (tmp, tmp, tmp)
             elif ctype == 'EMPTY':
                 # Empty shapes do not have an AABB.
                 continue
