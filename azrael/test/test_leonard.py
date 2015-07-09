@@ -114,7 +114,7 @@ class TestLeonardAllEngines:
         id_0, id_1 = 0, 1
         templateID = '_templateSphere'.encode('utf8')
 
-        # State Vector.
+        # Body data.
         p = np.array([1, 2, 5])
         vl = np.array([8, 9, 10.5])
         vr = vl + 1
@@ -124,7 +124,7 @@ class TestLeonardAllEngines:
         # Spawn a new object. It must have ID=1.
         assert leoAPI.addCmdSpawn([(id_1, getRigidBody())]).ok
 
-        # Update the object's State Vector.
+        # Update the object's body.
         assert leoAPI.addCmdModifyBodyState(id_1, body).ok
 
         # Sync the commands to Leonard.
@@ -146,8 +146,8 @@ class TestLeonardAllEngines:
         leo = getLeonard(clsLeonard)
 
         # Parameters and constants for this test.
-        cshape_box = {'1': getCSBox('csbox')}
-        cshape_sphere = {'1': getCSSphere('cssphere')}
+        cshape_box = {'1': getCSBox()}
+        cshape_sphere = {'1': getCSSphere()}
         body = getRigidBody(imass=2, scale=3, cshapes=cshape_sphere)
         templateID = '_templateSphere'.encode('utf8')
 
@@ -170,7 +170,7 @@ class TestLeonardAllEngines:
         leo.processCommandsAndSync()
         ret = leo.allBodies[objID]
         assert (ret.imass == 4) and (ret.scale == 5)
-        assert ret.cshapes['1'].aid == cshape_box['1'].aid
+        assert ret.cshapes == cshape_box
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_move_single_object(self, clsLeonard):

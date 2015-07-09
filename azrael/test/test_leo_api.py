@@ -64,7 +64,7 @@ class TestLeonardAPI:
         assert id_1 not in leo.allBodies
 
         # Create an object and serialise it.
-        body = getRigidBody(cshapes={'cssphere': getCSSphere('cssphere')})
+        body = getRigidBody(cshapes={'cssphere': getCSSphere()})
 
         # Add the object to Leonard and verify it worked.
         assert leoAPI.addCmdSpawn([(id_1, body)])

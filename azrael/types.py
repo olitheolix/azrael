@@ -66,8 +66,7 @@ _RigidBodyState = namedtuple('_RigidBodyState',
                              'axesLockLin axesLockRot version')
 
 # Collision shapes.
-_CollShapeMeta = namedtuple('_CollShapeMeta',
-                            'aid cstype position rotation csdata')
+_CollShapeMeta = namedtuple('_CollShapeMeta', 'cstype position rotation csdata')
 _CollShapeBox = namedtuple('_CollShapeBox', 'x y z')
 _CollShapeEmpty = namedtuple('_CollShapeEmpty', '')
 _CollShapeSphere = namedtuple('_CollShapeSphere', 'radius')
@@ -448,7 +447,6 @@ class CollShapeMeta(_CollShapeMeta):
     """
     Return description of a collision shape and its meta data.
 
-    :param str aid: Collision shape ID.
     :param vec3 position: position of collision shape in world coordinates.
     :param vec4 rotation: orientation of collision shape in world coordinates.
     :param csdate: instance of a collision shape (eg. ``CollShapeSphere``).
@@ -456,14 +454,13 @@ class CollShapeMeta(_CollShapeMeta):
     :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
-    def __new__(cls, aid: str,
+    def __new__(cls,
                 cstype: str,
                 position: (tuple, list, np.ndarray),
                 rotation: (tuple, list, np.ndarray),
                 csdata):
         try:
             # Verify the meta data for the collision shape.
-            assert isAIDStringValid(aid)
             position = toVec(3, position)
             rotation = toVec(4, rotation)
 
@@ -497,7 +494,7 @@ class CollShapeMeta(_CollShapeMeta):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, aid, cstype, position, rotation, csdata)
+        return super().__new__(cls, cstype, position, rotation, csdata)
 
     def _asdict(self):
         csdata = self.csdata._asdict()
@@ -960,8 +957,7 @@ def DefaultRigidBody(scale=1,
     # Note that cshape={} means the object has no collision shape, whereas
     # cshape=None means we should create a default.
     if cshapes is None:
-        cshapes = CollShapeMeta(aid='',
-                                cstype='Sphere',
+        cshapes = CollShapeMeta(cstype='Sphere',
                                 position=(0, 0, 0),
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))

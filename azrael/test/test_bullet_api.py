@@ -51,7 +51,7 @@ class TestBulletAPI:
         # Define a set of collision shapes.
         pos = (0, 1, 2)
         rot = (0, 0, 0, 1)
-        cshapes = {'1': getCSEmpty('1', pos, rot), '2': getCSSphere('2', pos, rot)}
+        cshapes = {'1': getCSEmpty(pos, rot), '2': getCSSphere(pos, rot)}
         del pos, rot
 
         # Create an object and serialise it.
@@ -82,7 +82,7 @@ class TestBulletAPI:
         """
         Add an object to Bullet, then change its parameters.
         """
-        cshapes = {'foo': getCSSphere('foo')}
+        cshapes = {'foo': getCSSphere()}
 
         # Create an object and serialise it.
         obj_a = getRigidBody(
@@ -212,7 +212,7 @@ class TestBulletAPI:
 
         # Create a spherical object. Adjust the mass so that the sphere's
         # inertia is roughly unity.
-        cshapes = {'foo': getCSSphere('foo')}
+        cshapes = {'foo': getCSSphere()}
         obj_a = getRigidBody(cshapes=cshapes, imass=2 / 5)
 
         # Instantiate Bullet engine.
@@ -298,7 +298,7 @@ class TestBulletAPI:
         pos_b = [-5, 0, 0]
         force = np.array([0, 1, 0], np.float64)
         torque = np.array([0, 0, 0], np.float64)
-        cshapes = {'foo': getCSSphere('foo')}
+        cshapes = {'foo': getCSSphere()}
 
         # Create two identical spheres, one left, one right (x-axis).
         obj_a = getRigidBody(position=pos_a, cshapes=cshapes, imass=1)
@@ -355,8 +355,8 @@ class TestBulletAPI:
 
         # Create two identical spheres, one left, one right (x-axis).
         radius = 2
-        cs_a = {'csfoo': getCSSphere('csfoo', radius=radius)}
-        cs_b = {'csbar': getCSSphere('csbar', radius=radius)}
+        cs_a = {'csfoo': getCSSphere(radius=radius)}
+        cs_b = {'csbar': getCSSphere(radius=radius)}
         obj_a = getRigidBody(position=pos_a, cshapes=cs_a)
         obj_b = getRigidBody(position=pos_b, cshapes=cs_b)
         del cs_a, cs_b, pos_a, pos_b
@@ -410,8 +410,8 @@ class TestBulletAPI:
         pos_a = [-0.8, -0.8, 0]
         pos_b = [0.8, 0.8, 0]
         p, q = (0, 0, 0), (0, 0, 0, 1)
-        cshape_box = {'csbox': getCSBox('csbox', p, q)}
-        cshape_sph = {'cssphere': getCSSphere('cssphere', p, q)}
+        cshape_box = {'csbox': getCSBox(p, q)}
+        cshape_sph = {'cssphere': getCSSphere(p, q)}
         del p, q
 
         # Create two identical unit spheres at different positions.

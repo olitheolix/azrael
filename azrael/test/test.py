@@ -56,33 +56,32 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     return leo
 
 
-def getCSEmpty(aid='csempty', pos=[0, 0, 0], rot=[0, 0, 0, 1]):
+def getCSEmpty(pos=[0, 0, 0], rot=[0, 0, 0, 1]):
     """
     Convenience function to construct an Empty shape.
     """
-    return CollShapeMeta(aid, 'empty', pos, rot, CollShapeEmpty())
+    return CollShapeMeta('empty', pos, rot, CollShapeEmpty())
 
 
-def getCSBox(aid='csbox', pos=[0, 0, 0], rot=[0, 0, 0, 1], dim=[1, 1, 1]):
+def getCSBox(pos=[0, 0, 0], rot=[0, 0, 0, 1], dim=[1, 1, 1]):
     """
     Convenience function to construct a Box shape.
     """
-    return CollShapeMeta(aid, 'box', pos, rot, CollShapeBox(*dim))
+    return CollShapeMeta('box', pos, rot, CollShapeBox(*dim))
 
 
-def getCSSphere(aid='cssphere', pos=[0, 0, 0], rot=[0, 0, 0, 1], radius=1):
+def getCSSphere(pos=[0, 0, 0], rot=[0, 0, 0, 1], radius=1):
     """
     Convenience function to construct a Sphere shape.
     """
-    return CollShapeMeta(aid, 'sphere', pos, rot, CollShapeSphere(radius))
+    return CollShapeMeta('sphere', pos, rot, CollShapeSphere(radius))
 
 
-def getCSPlane(aid='csplane', pos=[0, 0, 0], rot=[0, 0, 0, 1],
-               normal=[0, 0, 1], ofs=0):
+def getCSPlane(pos=[0, 0, 0], rot=[0, 0, 0, 1], normal=[0, 0, 1], ofs=0):
     """
     Convenience function to construct a Plane in the x/y dimension.
     """
-    return CollShapeMeta(aid, 'plane', pos, rot, CollShapePlane(normal, ofs))
+    return CollShapeMeta('plane', pos, rot, CollShapePlane(normal, ofs))
 
 
 def getFragNone(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
