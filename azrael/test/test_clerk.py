@@ -38,7 +38,7 @@ from IPython import embed as ipshell
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
 from azrael.types import Template, RetVal, CollShapeMeta
-from azrael.types import FragState, FragDae, FragRaw, FragMeta
+from azrael.types import FragDae, FragRaw, FragMeta
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 from azrael.test.test import getCSPlane, getTemplate
 
@@ -1356,9 +1356,13 @@ class TestClerk:
             _frag_1 = ret.data[objID_1]['frag']['foo']
             _frag_2 = ret.data[objID_2]['frag']['foo']
 
+            # Compile the expected values into a dictionary.
+            ref_1 = {'scale': scale_1, 'position': pos_1, 'orientation': rot_1}
+            ref_2 = {'scale': scale_2, 'position': pos_2, 'orientation': rot_2}
+
             # Verify the fragments have the expected values.
-            assert _frag_1 == FragState(scale_1, pos_1, rot_1)
-            assert _frag_2 == FragState(scale_2, pos_2, rot_2)
+            assert _frag_1 == ref_1
+            assert _frag_2 == ref_2
 
         def getCmd(scale, pos, rot):
             """
@@ -1456,9 +1460,13 @@ class TestClerk:
             # Verify the correct fragment names are present.
             assert {name_1, name_2} == set(_frags.keys())
 
+            # Compile the expected values into a dictionary.
+            ref_1 = {'scale': scale_1, 'position': pos_1, 'orientation': rot_1}
+            ref_2 = {'scale': scale_2, 'position': pos_2, 'orientation': rot_2}
+
             # Verify the fragments have the expected values.
-            assert _frags[name_1] == FragState(scale_1, pos_1, rot_1)
-            assert _frags[name_2] == FragState(scale_2, pos_2, rot_2)
+            assert _frags[name_1] == ref_1
+            assert _frags[name_2] == ref_2
             del ret, _frags
 
         def getCmd(scale, pos, rot):

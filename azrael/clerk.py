@@ -60,7 +60,7 @@ import azrael.protocol as protocol
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, Template, CollShapeMeta, CollShapeEmpty
-from azrael.types import FragState, FragMeta, _FragMeta
+from azrael.types import FragMeta, _FragMeta
 
 
 class Clerk(config.AzraelProcess):
@@ -1113,6 +1113,7 @@ class Clerk(config.AzraelProcess):
         ``getBodyStates`` and ``getAllBodyStates``.
 
         The returned dictionary has the following form::
+        fixme: update docu and example below
 
         {
             objID_1: {
@@ -1153,10 +1154,10 @@ class Clerk(config.AzraelProcess):
             frags = doc['template']['fragments']
 
             # Compile the state data for each fragment of the current object.
-            fs = {k: FragState(scale=v['scale'],
-                               position=v['position'],
-                               orientation=v['orientation'])
-                               for (k, v) in frags.items()}
+            fs = {k: {'scale': v['scale'],
+                      'position': v['position'],
+                      'orientation': v['orientation']}
+                      for (k, v) in frags.items()}
 
             # Compile the rigid body data and update its version.
             rbs = RBS(**doc['template']['rbs'])
