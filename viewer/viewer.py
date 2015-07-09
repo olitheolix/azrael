@@ -94,8 +94,12 @@ def getRigidBody(scale: (int, float)=1,
                  axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
     if cshapes is None:
-        cshapes = [CollShapeMeta('', 'sphere', (0, 0, 0), (0, 0, 0, 1),
-                                 CollShapeSphere(radius=1))]
+        cshapes = CollShapeMeta(aid='',
+                                cstype='Sphere',
+                                position=(0, 0, 0),
+                                rotation=(0, 0, 0, 1),
+                                csdata=CollShapeSphere(radius=1))
+        cshapes = {'': cshapes}
     return azrael.types.RigidBodyState(scale, imass, restitution, orientation,
                                        position, velocityLin, velocityRot,
                                        cshapes, axesLockLin, axesLockRot,
@@ -609,7 +613,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Create the template with name 'cube'.
         t_projectile = 'cube'
         frags = {'frag_1': getFragMeta('RAW', FragRaw(buf_vert, uv, rgb))}
-        body = getRigidBody(cshapes=[cs])
+        body = getRigidBody(cshapes={'0': cs})
         temp = Template(t_projectile, body, frags, {}, {})
         ret = self.client.addTemplates([temp])
         del frags, temp
@@ -914,7 +918,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         pos = self.camera.position
         cs = CollShapeBox(1, 1, 1)
         cs = CollShapeMeta('player', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
-        attr = {'position': pos.tolist(), 'cshapes': [cs]}
+        attr = {'position': pos.tolist(), 'cshapes': {'0': cs}}
         assert self.client.setBodyState(self.player_id, attr).ok
         del cs
 

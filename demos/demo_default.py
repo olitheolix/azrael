@@ -113,13 +113,17 @@ def getRigidBody(scale: (int, float)=1,
                  position: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
-                 cshapes: (tuple, list)=None,
+                 cshapes: dict=None,
                  axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
                  axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
     if cshapes is None:
-        cshapes = [CollShapeMeta('', 'sphere', (0, 0, 0), (0, 0, 0, 1),
-                                 CollShapeSphere(radius=1))]
+        cshapes = CollShapeMeta(aid='',
+                                cstype='Sphere',
+                                position=(0, 0, 0),
+                                rotation=(0, 0, 0, 1),
+                                csdata=CollShapeSphere(radius=1))
+        cshapes = {'Sphere': cshapes}
     return azrael.types.RigidBodyState(scale, imass, restitution, orientation,
                                        position, velocityLin, velocityRot,
                                        cshapes, axesLockLin, axesLockRot,
@@ -378,7 +382,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     tID_2 = 'Product2'
     frags_1 = {'frag_1': getFragMeta('raw', FragRaw(0.75 * vert, uv, rgb))}
     frags_2 = {'frag_1': getFragMeta('raw', FragRaw(0.24 * vert, uv, rgb))}
-    body = getRigidBody(cshapes=[cs])
+    body = getRigidBody(cshapes={'0': cs})
     t1 = Template(tID_1, body, frags_1, {}, {})
     t2 = Template(tID_2, body, frags_2, {}, {})
     assert client.addTemplates([t1, t2]).ok
@@ -407,7 +411,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # Add the template.
     tID_3 = 'BoosterCube'
     frags = {'frag_1': getFragMeta('raw', FragRaw(vert, uv, rgb))}
-    body = getRigidBody(cshapes=[cs])
+    body = getRigidBody(cshapes={'0': cs})
     t3 = Template(tID_3, body, frags, boosters, factories)
     assert client.addTemplates([t3]).ok
     del frags, t3
@@ -437,7 +441,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         tID = ('BoosterCube_{}'.format(ii))
         frags = {'frag_1': getFragMeta('raw', FragRaw(vert, curUV, rgb)),
                  'frag_2': getFragMeta('raw', FragRaw(vert, curUV, rgb))}
-        body = getRigidBody(cshapes=[cs])
+        body = getRigidBody(cshapes={'0': cs})
         tmp = Template(tID, body, frags, boosters, {})
         templates.append(tmp)
 
