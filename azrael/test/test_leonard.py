@@ -146,8 +146,8 @@ class TestLeonardAllEngines:
         leo = getLeonard(clsLeonard)
 
         # Parameters and constants for this test.
-        cshape_box = [getCSBox('csbox')]
-        cshape_sphere = [getCSSphere('cssphere')]
+        cshape_box = {'1': getCSBox('csbox')}
+        cshape_sphere = {'1': getCSSphere('cssphere')}
         body = getRigidBody(imass=2, scale=3, cshapes=cshape_sphere)
         templateID = '_templateSphere'.encode('utf8')
 
@@ -156,21 +156,21 @@ class TestLeonardAllEngines:
         assert leoAPI.addCmdSpawn([(objID, body)]).ok
         del body
 
-        # Verify the SV data.
+        # Verify the body data.
         leo.processCommandsAndSync()
         assert leo.allBodies[objID].imass == 2
         assert leo.allBodies[objID].scale == 3
         assert leo.allBodies[objID].cshapes == cshape_sphere
 
-        # Update the object's SV data.
-        sv_new = {'imass': 4, 'scale': 5, 'cshapes': cshape_box}
-        assert leoAPI.addCmdModifyBodyState(objID, sv_new).ok
+        # Update the body.
+        cs_new = {'imass': 4, 'scale': 5, 'cshapes': cshape_box}
+        assert leoAPI.addCmdModifyBodyState(objID, cs_new).ok
 
         # Verify the body data.
         leo.processCommandsAndSync()
         ret = leo.allBodies[objID]
         assert (ret.imass == 4) and (ret.scale == 5)
-        assert ret.cshapes[0].aid == cshape_box[0].aid
+        assert ret.cshapes['1'].aid == cshape_box['1'].aid
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_move_single_object(self, clsLeonard):
@@ -314,7 +314,7 @@ class TestLeonardOther:
 
         # Constants and parameters for this test.
         id_0, id_1 = 0, 1
-        cshapes = [getCSSphere(radius=1)]
+        cshapes = {'cssphere': getCSSphere(radius=1)}
 
         # Two State Vectors for this test.
         body_0 = getRigidBody(
@@ -714,8 +714,8 @@ class TestLeonardOther:
         distance = abs(pos_a[0] - pos_b[0])
         assert distance >= 4
 
-        body_a = getRigidBody(position=pos_a, cshapes=[getCSSphere()])
-        body_b = getRigidBody(position=pos_b, cshapes=[getCSSphere()])
+        body_a = getRigidBody(position=pos_a, cshapes={'cssphere': getCSSphere()})
+        body_b = getRigidBody(position=pos_b, cshapes={'cssphere': getCSSphere()})
 
         # Specify the constraints.
         con = getP2P(rb_a=id_a, rb_b=id_b, pivot_a=pos_b, pivot_b=pos_a)
@@ -927,25 +927,6 @@ class TestBroadphase:
         azrael.leonard.sweeping = mock_sweeping
         mock_sweeping.return_value = RetVal(True, None, [])
 
-        def testCCS(pos, AABBs, expected_objIDs):
-            """
-            Compute broadphase results for bodies  at ``pos`` with ``AABBs``
-            verify that the ``expected_objIDs`` sets were produced.
-            """
-            # Compile the set of bodies- and their AABBs for this test run.
-            assert len(pos) == len(aabbs)
-            bodies = [getRigidBody(position=_) for _ in pos]
-
-            # Convert to dictionaries: the key is the bodyID in Azrael; here it
-            # is a simple enumeration.
-            bodies = {idx: val for (idx, val) in enumerate(bodies)}
-            AABBs = {idx: val for (idx, val) in enumerate(AABBs)}
-
-            # Determine the list of broadphase collision sets.
-            ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
-            assert ret.ok
-            mock_sweeping.assert_called_with([])
-
         # Single body with no AABBs.
         bodies = {5: getRigidBody(position=(0, 0, 0))}
         aabbs = {5: []}
@@ -955,7 +936,7 @@ class TestBroadphase:
 
         # Single body with one AABB.
         bodies = {5: getRigidBody(position=(0, 0, 0))}
-        aabbs = {5: [(0, 0, 0, 1, 2, 3)]}
+        aabbs = {5: {'1': (0, 0, 0, 1, 2, 3)}}
         correct = {5: {'x': [[-1, 1]],
                        'y': [[-2, 2]],
                        'z': [[-3, 3]]}}
@@ -964,8 +945,8 @@ class TestBroadphase:
 
         # Single body with two AABBs.
         bodies = {5: getRigidBody(position=(0, 0, 0))}
-        aabbs = {5: [(0, 0, 0, 1, 1, 1),
-                     (2, 3, 4, 2, 4, 8)]}
+        aabbs = {5: {'1': (0, 0, 0, 1, 1, 1),
+                     '2': (2, 3, 4, 2, 4, 8)}}
         correct = {5: {'x': [[-1, 1], [0, 4]],
                        'y': [[-1, 1], [-1, 7]],
                        'z': [[-1, 1], [-4, 12]]}}
@@ -974,8 +955,8 @@ class TestBroadphase:
 
         # Single body at an offset with two AABBs.
         bodies = {5: getRigidBody(position=(0, 1, 2))}
-        aabbs = {5: [(0, 0, 0, 1, 1, 1),
-                     (2, 3, 4, 2, 4, 8)]}
+        aabbs = {5: {'1': (0, 0, 0, 1, 1, 1),
+                     '2': (2, 3, 4, 2, 4, 8)}}
         correct = {5: {'x': [[-1, 1], [0, 4]],
                        'y': [[0, 2], [0, 8]],
                        'z': [[1, 3], [-2, 14]]}}
@@ -986,10 +967,10 @@ class TestBroadphase:
         bodies = {6: getRigidBody(position=(0, 0, 0)),
                   7: getRigidBody(position=(0, 0, 0)),
                   8: getRigidBody(position=(0, 0, 0))}
-        aabbs = {6: [],
-                 7: [(0, 0, 0, 1, 1, 1)],
-                 8: [(0, 0, 0, 1, 1, 1),
-                     (2, 3, 4, 2, 4, 8)]}
+        aabbs = {6: {},
+                 7: {'1': (0, 0, 0, 1, 1, 1)},
+                 8: {'1': (0, 0, 0, 1, 1, 1),
+                     '2': (2, 3, 4, 2, 4, 8)}}
         correct = {6: {'x': [],
                        'y': [],
                        'z': []},
@@ -1010,7 +991,7 @@ class TestBroadphase:
         def testCCS(pos, AABBs, expected_objIDs):
             """
             Compute broadphase results for bodies  at ``pos`` with ``AABBs``
-            verify that the ``expected_objIDs`` sets were produced.
+            and verify that the ``expected_objIDs`` sets were produced.
 
             This function assumes that every body has exactly one AABB and with
             no relative offset to the body's position.
@@ -1019,9 +1000,9 @@ class TestBroadphase:
             assert len(pos) == len(aabbs)
             bodies = [getRigidBody(position=_) for _ in pos]
 
-            # By assumption, this function, every object has exactly one AABB
-            # centered at zero.
-            AABBs = [[(0, 0, 0, _[0], _[1], _[2])] for _ in AABBs]
+            # By assumption for this function, every object has exactly one AABB
+            # centered at position zero relative to their rigid body.
+            AABBs = [{'1': (0, 0, 0, _[0], _[1], _[2])} for _ in AABBs]
 
             # Convert to dictionaries: the key is the bodyID in Azrael; here it
             # is a simple enumeration.
@@ -1093,7 +1074,7 @@ class TestBroadphase:
         correctly taken into account during the broadphase.
         """
         # Create the test body at the center. It is a centered unit cube.
-        body_a = getRigidBody(position=(0, 0, 0), cshapes=[getCSBox()])
+        body_a = getRigidBody(position=(0, 0, 0), cshapes={'csbox': getCSBox()})
 
         def _verify(rba, pos, rot, scale, intersect: bool):
             """
@@ -1108,12 +1089,12 @@ class TestBroadphase:
             # Create the second body. Its collision shape is a unit cube
             # at position `cs_ofs`.
             body_b = getRigidBody(position=pos, scale=scale, orientation=rot,
-                                  cshapes=[getCSBox()])
+                                  cshapes={'csbox': getCSBox()})
 
             # Compile the input dictionaries for the broadphase algorithm.
             bodies = {1: rba, 2: body_b}
-            aabbs = {1: [[0, 0, 0, 1, 1, 1]],
-                     2: [[cs_ofs[0], cs_ofs[1], cs_ofs[2], 1, 1, 1]]}
+            aabbs = {1: {'1': [0, 0, 0, 1, 1, 1]},
+                     2: {'1': [cs_ofs[0], cs_ofs[1], cs_ofs[2], 1, 1, 1]}}
 
             # Compute the broadphase collision sets.
             ret = azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
@@ -1176,7 +1157,7 @@ class TestBroadphase:
         num_bodies = 10
 
         # Create several rigid bodies with a spherical collision shape.
-        cs = [getCSSphere(radius=1)]
+        cs = {'1': getCSSphere(radius=1)}
         if dim == 0:
             states = [getRigidBody(position=[_, 0, 0], cshapes=cs) for _ in range(10)]
         elif dim == 1:
@@ -1255,7 +1236,7 @@ class TestBroadphase:
 
             # By assumption, this function, every object has exactly one AABB
             # centered at zero.
-            AABBs = [[(0, 0, 0, _[0], _[1], _[2])] for _ in AABBs]
+            AABBs = [{'1': (0, 0, 0, _[0], _[1], _[2])} for _ in AABBs]
 
             # Convert to dictionaries: the key is the bodyID in Azrael; here it
             # is a simple enumeration.

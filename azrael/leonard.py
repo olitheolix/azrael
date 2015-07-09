@@ -205,18 +205,22 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
             continue
 
         # Sanity check: the AABBs must be tantamount to a matrix (ie a list of
-        # lists). Since every AABB is described a position and 3 half lengths,
+        # lists). Since every AABB is described by a position and 3 half lengths,
         # the number of columns in the matrix must be an integer multiple of 6.
-        aabbs = np.array(AABBs[objID], np.float64)
-        assert aabbs.ndim == 2
-        assert aabbs.shape[1] % 6 == 0
-        num_aabbs = aabbs.shape[1] // 6
+#        aabbs = np.array(AABBs[objID], np.float64)
+#        assert aabbs.ndim == 2
+#$        assert aabbs.shape[1] % 6 == 0
+#        num_aabbs = aabbs.shape[1] // 6
 
         # Iterate over all AABBs, rotate- and translate them in accordance with
         # the body theyt are attached to, and compile the AABB boundaries.
         # Note: the AABBs are not re-computed here. The assumption is that the
         # AABB is large enough to contain their body at any rotation.
-        for aabb in aabbs:
+        for name, aabb in sorted(AABBs[objID].items()):
+            aabb = np.array(aabb, np.float64)
+            assert aabb.ndim == 1
+            assert len(aabb) % 6 == 0
+
             # Convenience: unpack the AABB positions and half lengths. Apply
             # the 'scale' to the half lengths.
             pos_aabb, half_lengths = aabb[:3], aabb[3:]
