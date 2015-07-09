@@ -48,7 +48,7 @@ import azrael.config as config
 import azrael.leo_api as leoAPI
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from azrael.types import Template, FragMeta, FragRaw, FragState
+from azrael.types import Template, FragMeta, FragRaw
 from azrael.types import CollShapeMeta, CollShapeBox
 
 
@@ -687,19 +687,19 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Load and compile all objects.
         self.loadGeometry()
 
-    def buildModelMatrix(self, sv):
+    def buildModelMatrix(self, frag):
         # Build the scaling matrix for the overall object. The
         # lower-right entry must be 1.
-        matScaleObj = sv.scale * np.eye(4)
+        matScaleObj = frag['scale'] * np.eye(4)
         matScaleObj[3, 3] = 1
 
         # Convert the object Quaternion into a rotation matrix.
-        q = sv.orientation
+        q = frag['orientation']
         matRotObj = util.Quaternion(q[3], q[:3]).toMatrix()
 
         # Build the model matrix for the overall object.
         matModelObj = np.eye(4)
-        matModelObj[:3, 3] = sv.position
+        matModelObj[:3, 3] = frag['position']
         matModelObj = np.dot(matModelObj, np.dot(matRotObj, matScaleObj))
         return matModelObj
 
@@ -753,7 +753,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     continue
 
                 # Compute the model matrix for the overall object.
-                matModelObj = self.buildModelMatrix(self.newSVs[objID]['rbs'])
+                body = self.newSVs[objID]['rbs']
+                tmp = {'scale': body.scale,
+                       'position': body.position,
+                       'orientation': body.orientation
+                }
+                matModelObj = self.buildModelMatrix(tmp)
+                del body, tmp
 
                 # Update each fragment in the scene based on the position,
                 # orientation, and scale of the overall object.
@@ -795,7 +801,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         each fragment before it applies the world coordinate transformation.
         """
         frags = self.newSVs[objID]['frag']
-        frags = {k: FragState(*v) for (k, v) in frags.items()}
         for fragID, frag in frags.items():
             # Convenience.
             textureHandle = self.textureBuffer[objID][fragID]
