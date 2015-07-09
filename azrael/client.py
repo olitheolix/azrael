@@ -544,7 +544,7 @@ class Client():
         :return: Success
         """
         if 'cshapes' in new:
-            new['cshapes'] = [_._asdict() for _ in new['cshapes']]
+            new['cshapes'] = {k: v._asdict() for (k, v) in new['cshapes'].items()}
 
         return self.serialiseAndSend('set_body_state', objID, new)
 

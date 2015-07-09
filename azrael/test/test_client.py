@@ -96,9 +96,9 @@ class TestClient:
         clerk = azrael.clerk.Clerk()
 
         frag = {'NoName': getFragRaw()}
-        rbs_empty = getRigidBody(cshapes=[getCSEmpty()])
-        rbs_sphere = getRigidBody(cshapes=[getCSSphere()])
-        rbs_box = getRigidBody(cshapes=[getCSBox()])
+        rbs_empty = getRigidBody(cshapes={'csempty': getCSEmpty()})
+        rbs_sphere = getRigidBody(cshapes={'cssphere': getCSSphere()})
+        rbs_box = getRigidBody(cshapes={'csbox': getCSBox()})
         t1 = getTemplate('_templateEmpty', rbs=rbs_empty, fragments=frag)
         t2 = getTemplate('_templateSphere', rbs=rbs_sphere, fragments=frag)
         t3 = getTemplate('_templateBox', rbs=rbs_box, fragments=frag)
@@ -164,27 +164,27 @@ class TestClient:
         name_1 = '_templateEmpty'
         ret = client.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1)
-        assert ret.data[name_1]['template'].rbs.cshapes == [getCSEmpty()]
+        assert ret.data[name_1]['template'].rbs.cshapes == {'csempty': getCSEmpty()}
 
         # ... this one is a sphere...
         name_2 = '_templateSphere'
         ret = client.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1)
-        assert ret.data[name_2]['template'].rbs.cshapes == [getCSSphere()]
+        assert ret.data[name_2]['template'].rbs.cshapes == {'cssphere': getCSSphere()}
 
         # ... and this one is a box.
         name_3 = '_templateBox'
         ret = client.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1)
-        assert ret.data[name_3]['template'].rbs.cshapes == [getCSBox()]
+        assert ret.data[name_3]['template'].rbs.cshapes == {'csbox': getCSBox()}
 
         # Retrieve all three again but with a single call.
         ret = client.getTemplates([name_1, name_2, name_3])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3))
-        assert ret.data[name_2]['template'].rbs.cshapes == [getCSSphere()]
-        assert ret.data[name_3]['template'].rbs.cshapes == [getCSBox()]
-        assert ret.data[name_1]['template'].rbs.cshapes == [getCSEmpty()]
+        assert ret.data[name_2]['template'].rbs.cshapes == {'cssphere': getCSSphere()}
+        assert ret.data[name_3]['template'].rbs.cshapes == {'csbox': getCSBox()}
+        assert ret.data[name_1]['template'].rbs.cshapes == {'csempty': getCSEmpty()}
 
         # Add a new object template.
         frag = {'bar': getFragRaw()}
@@ -230,7 +230,7 @@ class TestClient:
 
         # Define a new template, add it to Azrael, spawn it, and record its
         # object ID.
-        body = getRigidBody(cshapes=[getCSBox()])
+        body = getRigidBody(cshapes={'csbox': getCSBox()})
         temp = getTemplate('t2',
                            rbs=body,
                            fragments=frag,
