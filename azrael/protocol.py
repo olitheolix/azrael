@@ -328,12 +328,14 @@ def FromClerk_GetBodyState_Encode(payload: dict):
             out[objID] = None
             continue
 
+    # fixme: clean up and renamed to getBodeState(S!)
         # Convert the constituent elements to dictionaries.
-        if data['rbs'] is None:
-            body = None
-        else:
-            body = data['rbs']._asdict()
-        frags = {k: v._asdict() for (k, v) in data['frag'].items()}
+#        if data['rbs'] is None:
+#            body = None
+#        else:
+#            body = data['rbs']._asdict()
+#        frags = {k: v._asdict() for (k, v) in data['frag'].items()}
+        body, frags = data['rbs']._asdict(), data['frag']
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
         out[objID] = {'rbs': body, 'frag': frags}
@@ -350,14 +352,16 @@ def FromClerk_GetBodyState_Decode(payload: dict):
             continue
 
         # Compile the proper data types from the dictionaries.
-        if data['rbs'] is None:
-            sv = None
-        else:
-            sv = types.RigidBodyState(**data['rbs'])
-        frags = {k: types.FragState(**v) for (k, v) in data['frag'].items()}
+#        if data['rbs'] is None:
+#            body = None
+#        else:
+        body = types.RigidBodyState(**data['rbs'])
+#        frags = {k: types.FragState(**v) for (k, v) in data['frag'].items()}
+        frags = data['frag']
+#        body = data['rbs']
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
-        out[int(objID)] = {'rbs': sv, 'frag': frags}
+        out[int(objID)] = {'rbs': body, 'frag': frags}
     return RetVal(True, None, out)
 
 

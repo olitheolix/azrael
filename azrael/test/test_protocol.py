@@ -226,8 +226,8 @@ class TestClerk:
 
         # Clerk --> Client.
         frag_states = {
-            '1': FragState(1, (0, 1, 2), (0, 0, 0, 1)),
-            '2': FragState(2, (3, 4, 5), (1, 0, 0, 0)),
+            '1': {'scale': 1, 'position': [0, 1, 2], 'orientation': [0, 0, 0, 1]},
+            '2': {'scale': 2, 'position': [3, 4, 5], 'orientation': [1, 0, 0, 0]},
         }
 
         # The payload contains fragment- and body state data for each object.
@@ -236,15 +236,34 @@ class TestClerk:
         payload = {
             1: {'frag': frag_states, 'rbs': getRigidBody()},
             2: {'frag': {}, 'rbs': getRigidBody()},
-            3: {'frag': frag_states, 'rbs': None},
-            4: {'frag': {}, 'rbs': None},
-            5: None,
+            3: None,
         }
         del frag_states
 
-        enc = protocol.FromClerk_GetBodyState_Encode
-        dec = protocol.FromClerk_GetBodyState_Decode
-        self.verifyFromClerk(enc, dec, payload)
+        # Convenience.
+        enc_fun = protocol.FromClerk_GetBodyState_Encode
+        dec_fun = protocol.FromClerk_GetBodyState_Decode
+
+        # Encode source data.
+        ok, enc = enc_fun(payload)
+        assert ok
+
+        # Convert output to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps(enc))
+
+        # Verify that the rigid bodies survived the serialisation.
+        for objID in [1, 2]:
+            # Convenience.
+            src = payload[objID]
+            dst = enc['data'][str(objID)]
+
+            # Compile a rigid body from the returned data and compare it to the original.
+            assert src['rbs'] == types.RigidBodyState(**dst['rbs'])
+
+            # Compare the fragments.
+            assert src['frag'] == dst['frag']
+
+        assert enc['data']['3'] is None
 
     def test_add_get_constraint(self):
         """
