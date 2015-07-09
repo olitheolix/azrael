@@ -161,7 +161,7 @@ def getRigidBody(scale: (int, float)=1,
                  position: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
-                 cshapes: (tuple, list)=[getCSSphere()],
+                 cshapes: dict={'cssphere': getCSSphere()},
                  axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
                  axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
@@ -176,6 +176,6 @@ def getTemplate(name='template',
                 boosters={},
                 factories={}):
     if rbs is None:
-        rbs = getRigidBody(cshapes=[getCSSphere()])
+        rbs = getRigidBody(cshapes={'cssphere': getCSSphere()})
 
     return Template(name, rbs, fragments, boosters, factories)
