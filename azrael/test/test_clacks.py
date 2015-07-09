@@ -12,7 +12,7 @@ import azrael.config as config
 from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
 from azrael.test.test import getFragRaw, getFragDae, getTemplate
-from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getRigidBody
+from azrael.test.test import getCSBox, getCSSphere, getRigidBody
 
 
 class TestClacks(tornado.testing.AsyncHTTPTestCase):
@@ -142,8 +142,8 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_t2 = {'foo4': getFragRaw(),
                     'foo5': getFragRaw(),
                     'bar6': getFragDae()}
-        body_a = getRigidBody(cshapes=[getCSSphere()])
-        body_b = getRigidBody(cshapes=[getCSBox()])
+        body_a = getRigidBody(cshapes={'cssphere': getCSSphere()})
+        body_b = getRigidBody(cshapes={'csbox': getCSBox()})
         t1 = getTemplate('t1', rbs=body_a, fragments=frags_t1)
         t2 = getTemplate('t2', rbs=body_b, fragments=frags_t2)
         del frags_t1, frags_t2
@@ -180,8 +180,8 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         frags_t2 = {'raw4': getFragRaw(),
                     'raw5': getFragRaw(),
                     'dae6': getFragDae()}
-        body_t1 = getRigidBody(cshapes=[getCSSphere()])
-        body_t2 = getRigidBody(cshapes=[getCSBox()])
+        body_t1 = getRigidBody(cshapes={'cssphere': getCSSphere()})
+        body_t2 = getRigidBody(cshapes={'csbox': getCSBox()})
         t1 = getTemplate('t1', rbs=body_t1, fragments=frags_t1)
         t2 = getTemplate('t2', rbs=body_t2, fragments=frags_t2)
         del frags_t1, frags_t2
