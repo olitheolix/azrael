@@ -463,11 +463,12 @@ class PyBulletDynamicsWorld():
 
         # Create the collision shapes one by one.
         scale = rbState.scale
-        for cs in rbState.cshapes:
+        for name, cs in rbState.cshapes.items():
             # Convert the input data to a CollShapeMeta tuple. This is
             # necessary if the data passed to us here comes straight from the
             # database because then it it is merely a list of values, not (yet)
             # a named tuple.
+            # fixme: should be a dict in database
             cs = CollShapeMeta(*cs)
 
             # Determine which CollisionShape to instantiate, scale it

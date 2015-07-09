@@ -51,7 +51,7 @@ class TestBulletAPI:
         # Define a set of collision shapes.
         pos = (0, 1, 2)
         rot = (0, 0, 0, 1)
-        cshapes = [getCSEmpty('1', pos, rot), getCSSphere('2', pos, rot)]
+        cshapes = {'1': getCSEmpty('1', pos, rot), '2': getCSSphere('2', pos, rot)}
         del pos, rot
 
         # Create an object and serialise it.
@@ -82,7 +82,7 @@ class TestBulletAPI:
         """
         Add an object to Bullet, then change its parameters.
         """
-        cshapes = [getCSSphere('foo')]
+        cshapes = {'foo': getCSSphere('foo')}
 
         # Create an object and serialise it.
         obj_a = getRigidBody(
@@ -212,7 +212,7 @@ class TestBulletAPI:
 
         # Create a spherical object. Adjust the mass so that the sphere's
         # inertia is roughly unity.
-        cshapes = [getCSSphere('foo')]
+        cshapes = {'foo': getCSSphere('foo')}
         obj_a = getRigidBody(cshapes=cshapes, imass=2 / 5)
 
         # Instantiate Bullet engine.
@@ -298,7 +298,7 @@ class TestBulletAPI:
         pos_b = [-5, 0, 0]
         force = np.array([0, 1, 0], np.float64)
         torque = np.array([0, 0, 0], np.float64)
-        cshapes = [getCSSphere('foo')]
+        cshapes = {'foo': getCSSphere('foo')}
 
         # Create two identical spheres, one left, one right (x-axis).
         obj_a = getRigidBody(position=pos_a, cshapes=cshapes, imass=1)
@@ -355,8 +355,8 @@ class TestBulletAPI:
 
         # Create two identical spheres, one left, one right (x-axis).
         radius = 2
-        cs_a = [getCSSphere('csfoo', radius=radius)]
-        cs_b = [getCSSphere('csbar', radius=radius)]
+        cs_a = {'csfoo': getCSSphere('csfoo', radius=radius)}
+        cs_b = {'csbar': getCSSphere('csbar', radius=radius)}
         obj_a = getRigidBody(position=pos_a, cshapes=cs_a)
         obj_b = getRigidBody(position=pos_b, cshapes=cs_b)
         del cs_a, cs_b, pos_a, pos_b
@@ -375,8 +375,8 @@ class TestBulletAPI:
         ret_a = sim.getRigidBodyData(objID_a)
         ret_b = sim.getRigidBodyData(objID_b)
         assert ret_a.ok and ret_b.ok
-        assert ret_a.data.cshapes[0].aid.upper() == 'CSFOO'
-        assert ret_b.data.cshapes[0].aid.upper() == 'CSBAR'
+        assert list(ret_a.data.cshapes.keys()) == ['csfoo']
+        assert list(ret_b.data.cshapes.keys()) == ['csbar']
         tmp_cs = sim.rigidBodies[objID_a].getCollisionShape()
         assert tmp_cs.getChildShape(0).getRadius() == radius
         tmp_cs = sim.rigidBodies[objID_b].getCollisionShape()
@@ -410,11 +410,11 @@ class TestBulletAPI:
         pos_a = [-0.8, -0.8, 0]
         pos_b = [0.8, 0.8, 0]
         p, q = (0, 0, 0), (0, 0, 0, 1)
-        cshape_box = [getCSBox('csbox', p, q)]
-        cshape_sph = [getCSSphere('cssphere', p, q)]
+        cshape_box = {'csbox': getCSBox('csbox', p, q)}
+        cshape_sph = {'cssphere': getCSSphere('cssphere', p, q)}
         del p, q
 
-        # Create two identical unit spheres, offset along the x/y axis.
+        # Create two identical unit spheres at different positions.
         obj_a = getRigidBody(position=pos_a, cshapes=cshape_sph)
         obj_b = getRigidBody(position=pos_b, cshapes=cshape_sph)
 
@@ -431,10 +431,10 @@ class TestBulletAPI:
         # Verify the collision shapes are as expected.
         ret = sim.getRigidBodyData(objID_a)
         assert ret.ok
-        assert ret.data.cshapes[0].aid.upper() == 'CSSPHERE'
+        assert ret.data.cshapes == cshape_sph
         ret = sim.getRigidBodyData(objID_b)
         assert ret.ok
-        assert ret.data.cshapes[0].aid.upper() == 'CSSPHERE'
+        assert ret.data.cshapes == cshape_sph
 
         # Change both collision shape to unit cubes. Then step the simulation
         # again to ensure Bullet accesses each object and nothing bad happens
@@ -448,10 +448,10 @@ class TestBulletAPI:
         # Verify the collision shapes have been updated to boxes.
         ret = sim.getRigidBodyData(objID_a)
         assert ret.ok
-        assert ret.data.cshapes[0].aid.upper() == 'CSBOX'
+        assert ret.data.cshapes == cshape_box
         ret = sim.getRigidBodyData(objID_b)
         assert ret.ok
-        assert ret.data.cshapes[0].aid.upper() == 'CSBOX'
+        assert ret.data.cshapes == cshape_box
 
     def test_specify_P2P_constraint(self):
         """
@@ -465,8 +465,8 @@ class TestBulletAPI:
         id_a, id_b = 10, 20
         pos_a = (-1, 0, 0)
         pos_b = (1, 0, 0)
-        obj_a = getRigidBody(position=pos_a, cshapes=[getCSSphere()])
-        obj_b = getRigidBody(position=pos_b, cshapes=[getCSSphere()])
+        obj_a = getRigidBody(position=pos_a, cshapes={'cssphere': getCSSphere()})
+        obj_b = getRigidBody(position=pos_b, cshapes={'cssphere': getCSSphere()})
 
         # Load the objects into the physics engine.
         sim.setRigidBodyData(id_a, obj_a)
@@ -541,8 +541,8 @@ class TestBulletAPI:
         id_a, id_b = 10, 20
         pos_a = (-5, 0, 0)
         pos_b = (5, 0, 0)
-        obj_a = getRigidBody(position=pos_a, cshapes=[getCSSphere()])
-        obj_b = getRigidBody(position=pos_b, cshapes=[getCSSphere()])
+        obj_a = getRigidBody(position=pos_a, cshapes={'cssphere': getCSSphere()})
+        obj_b = getRigidBody(position=pos_b, cshapes={'cssphere': getCSSphere()})
 
         # Load the objects into the physics engine.
         sim.setRigidBodyData(id_a, obj_a)
@@ -582,8 +582,8 @@ class TestBulletAPI:
 
         # Create to spheres.
         id_a, id_b = 10, 20
-        obj_a = getRigidBody(cshapes=[getCSSphere()])
-        obj_b = getRigidBody(cshapes=[getCSSphere()])
+        obj_a = getRigidBody(cshapes={'cssphere': getCSSphere()})
+        obj_b = getRigidBody(cshapes={'cssphere': getCSSphere()})
 
         # An empty list is valid, albeit nothing will happen.
         assert sim.setConstraints([]).ok
@@ -625,8 +625,8 @@ class TestBulletAPI:
         # Create a box above a static plane. The ground plane is at z=-1.
         cs_plane = getCSPlane(normal=(0, 0, 1), ofs=-1)
         cs_box = getCSBox()
-        b_plane = getRigidBody(imass=0, cshapes=[cs_plane])
-        b_box = getRigidBody(position=(0, 0, 5), cshapes=[cs_box])
+        b_plane = getRigidBody(imass=0, cshapes={'csplane': cs_plane})
+        b_box = getRigidBody(position=(0, 0, 5), cshapes={'csbox': cs_box})
         assert b_box is not None
         assert b_plane is not None
 
@@ -677,8 +677,8 @@ class TestBulletAPI:
         ofs_z = 10
         cs_plane = getCSPlane(normal=(0, 0, 1), ofs=-1)
         cs_box = getCSBox(pos=(0, 0, ofs_z))
-        b_plane = getRigidBody(imass=0, cshapes=[cs_plane])
-        b_box = getRigidBody(position=(0, 0, 5), cshapes=[cs_box])
+        b_plane = getRigidBody(imass=0, cshapes={'csplane': cs_plane})
+        b_box = getRigidBody(position=(0, 0, 5), cshapes={'csbox': cs_box})
         assert b_box is not None
         assert b_plane is not None
 
