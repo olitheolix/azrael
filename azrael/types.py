@@ -899,7 +899,7 @@ class RigidBodyState(_RigidBodyState):
                    position: (tuple, list, np.ndarray),
                    velocityLin: (tuple, list, np.ndarray),
                    velocityRot: (tuple, list, np.ndarray),
-                   cshapes: (tuple, list),
+                   cshapes: dict,
                    axesLockLin: (tuple, list, np.ndarray),
                    axesLockRot: (tuple, list, np.ndarray),
                    version: int):
@@ -916,10 +916,12 @@ class RigidBodyState(_RigidBodyState):
             velocityRot = toVec(3, velocityRot)
             assert version >= 0
 
+            # fixme: sanity check the name of the collision shape.
             # Compile- and sanity check all collision shapes.
-            cshapes = [CollShapeMeta(**_) if isinstance(_, dict)
-                       else CollShapeMeta(*_)
-                       for _ in cshapes]
+            cshapes = {
+                k: CollShapeMeta(**v) if isinstance(v, dict) else CollShapeMeta(*v)
+                for (k, v) in cshapes.items()
+            }
         except (AssertionError, TypeError) as err:
             return None
 
@@ -938,7 +940,7 @@ class RigidBodyState(_RigidBodyState):
             version=version)
 
     def _asdict(self):
-        tmp = self._replace(cshapes=[_._asdict() for _ in self.cshapes])
+        tmp = self._replace(cshapes={k: v._asdict() for (k, v) in self.cshapes.items()})
         return OrderedDict(zip(tmp._fields, tmp))
 
 
@@ -955,7 +957,7 @@ def DefaultRigidBody(scale=1,
                      version=0):
 
     # If cshape was explicitly 'None' then we create a default collision shape.
-    # Note that cshape=[] means the object has no collision shape, wheres
+    # Note that cshape={} means the object has no collision shape, whereas
     # cshape=None means we should create a default.
     if cshapes is None:
         cshapes = CollShapeMeta(aid='',
@@ -963,11 +965,12 @@ def DefaultRigidBody(scale=1,
                                 position=(0, 0, 0),
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))
-        cshapes = [cshapes]
+        cshapes = {'': cshapes}
     else:
-        cshapes = [CollShapeMeta(**_)
-                   if isinstance(_, dict) else CollShapeMeta(*_)
-                   for _ in cshapes]
+        cshapes = {
+            k: CollShapeMeta(**v) if isinstance(v, dict) else CollShapeMeta(*v)
+            for (k, v) in cshapes.items()
+        }
 
     return RigidBodyState(scale, imass, restitution, orientation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,
