@@ -118,8 +118,7 @@ def getRigidBody(scale: (int, float)=1,
                  axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
     if cshapes is None:
-        cshapes = CollShapeMeta(aid='',
-                                cstype='Sphere',
+        cshapes = CollShapeMeta(cstype='Sphere',
                                 position=(0, 0, 0),
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))
@@ -274,7 +273,7 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'
     cs = CollShapeBox(1, 1, 1)
-    cs = CollShapeMeta('', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
+    cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
     z = np.array([])
     frags = {
         'frag_1': getFragMeta('raw', FragRaw(vert, uv, rgb)),
@@ -344,7 +343,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Convenience.
     cs = CollShapeBox(1, 1, 1)
-    cs = CollShapeMeta('', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
+    cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
     uv = np.array([], np.float64)
     rgb = np.array([], np.uint8)
 

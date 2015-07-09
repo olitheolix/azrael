@@ -606,14 +606,14 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Geometry.
         buf_vert = getGeometriesCube()
         cs = CollShapeBox(1, 1, 1)
-        cs = CollShapeMeta('player', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
+        cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
         uv = np.array([], np.float64)
         rgb = np.array([], np.uint8)
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'
         frags = {'frag_1': getFragMeta('RAW', FragRaw(buf_vert, uv, rgb))}
-        body = getRigidBody(cshapes={'0': cs})
+        body = getRigidBody(cshapes={'player': cs})
         temp = Template(t_projectile, body, frags, {}, {})
         ret = self.client.addTemplates([temp])
         del frags, temp
@@ -917,8 +917,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         pos = self.camera.position
         cs = CollShapeBox(1, 1, 1)
-        cs = CollShapeMeta('player', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
-        attr = {'position': pos.tolist(), 'cshapes': {'0': cs}}
+        cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
+        attr = {'position': pos.tolist(), 'cshapes': {'player': cs}}
         assert self.client.setBodyState(self.player_id, attr).ok
         del cs
 
