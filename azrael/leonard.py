@@ -1197,7 +1197,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
 
         # Convenience.
         applyForceAndTorque = self.bullet.applyForceAndTorque
-        setRigidBodyData = self.bullet.setRigidBodyData
+        setRB = self.bullet.setRigidBodyData
 
         # Add every object to the Bullet engine and set the force/torque.
         with util.Timeit('Worker:1.1.0  applyforce') as timeit:
@@ -1216,7 +1216,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             with util.Timeit('Worker:1.1.1   updateGeo') as timeit:
                 for obj in worklist:
                     # Update the object in Bullet and apply the force/torque.
-                    setRigidBodyData(obj.aid, obj.sv)
+                    setRB(obj.aid, obj.sv)
 
             with util.Timeit('Worker:1.1.1   updateForce') as timeit:
                 for obj in worklist:
