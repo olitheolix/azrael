@@ -61,10 +61,10 @@ class TestClerk:
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
         frag = {'NoName': getFragRaw()}
-        rbs_empty = getRigidBody(cshapes=[getCSEmpty()])
-        rbs_sphere = getRigidBody(cshapes=[getCSSphere()])
-        rbs_box = getRigidBody(cshapes=[getCSBox()])
-        rbs_plane = getRigidBody(cshapes=[getCSPlane()])
+        rbs_empty = getRigidBody(cshapes={'csempty': getCSEmpty()})
+        rbs_sphere = getRigidBody(cshapes={'cssphere': getCSSphere()})
+        rbs_box = getRigidBody(cshapes={'csbox': getCSBox()})
+        rbs_plane = getRigidBody(cshapes={'csplane': getCSPlane()})
         t1 = getTemplate('_templateEmpty', rbs=rbs_empty, fragments=frag)
         t2 = getTemplate('_templateSphere', rbs=rbs_sphere, fragments=frag)
         t3 = getTemplate('_templateBox', rbs=rbs_box, fragments=frag)
@@ -90,27 +90,25 @@ class TestClerk:
         name_1 = '_templateEmpty'
         ret = clerk.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
-        t = ret.data[name_1]['template']
-        assert ret.data[name_1]['template'].rbs.cshapes == [getCSEmpty()]
+        assert ret.data[name_1]['template'].rbs.cshapes == {'csempty': getCSEmpty()}
 
         # ... this one is a sphere,...
         name_2 = '_templateSphere'
         ret = clerk.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
-        t = ret.data[name_2]['template'].rbs.cshapes
-        assert ret.data[name_2]['template'].rbs.cshapes == [getCSSphere()]
+        assert ret.data[name_2]['template'].rbs.cshapes == {'cssphere': getCSSphere()}
 
         # ... this one is a box,...
         name_3 = '_templateBox'
         ret = clerk.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
-        assert ret.data[name_3]['template'].rbs.cshapes == [getCSBox()]
+        assert ret.data[name_3]['template'].rbs.cshapes == {'csbox': getCSBox()}
 
         # ... and this one is a static plane.
         name_4 = '_templatePlane'
         ret = clerk.getTemplates([name_4])
         assert ret.ok and (len(ret.data) == 1) and (name_4 in ret.data)
-        assert ret.data[name_4]['template'].rbs.cshapes == [getCSPlane()]
+        assert ret.data[name_4]['template'].rbs.cshapes == {'csplane': getCSPlane()}
 
         # Retrieve all three again but with a single call.
         ret = clerk.getTemplates([name_1, name_2, name_3, name_4])
@@ -118,10 +116,10 @@ class TestClerk:
         assert set(ret.data.keys()) == set((name_1, name_2, name_3, name_4))
 
         d = ret.data
-        assert d[name_1]['template'].rbs.cshapes == [getCSEmpty()]
-        assert d[name_2]['template'].rbs.cshapes == [getCSSphere()]
-        assert d[name_3]['template'].rbs.cshapes == [getCSBox()]
-        assert d[name_4]['template'].rbs.cshapes == [getCSPlane()]
+        assert d[name_1]['template'].rbs.cshapes == {'csempty': getCSEmpty()}
+        assert d[name_2]['template'].rbs.cshapes == {'cssphere': getCSSphere()}
+        assert d[name_3]['template'].rbs.cshapes == {'csbox': getCSBox()}
+        assert d[name_4]['template'].rbs.cshapes == {'csplane': getCSPlane()}
 
     def test_add_get_template_single(self):
         """
@@ -139,7 +137,7 @@ class TestClerk:
         assert mock_dibbler.addTemplate.call_count == 0
 
         # Convenience.
-        body = getRigidBody(cshapes=[getCSSphere()])
+        body = getRigidBody(cshapes={'cssphere': getCSSphere()})
 
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
@@ -1880,7 +1878,7 @@ class TestClerk:
             'position': [1, -1, 1],
             'imass': 2,
             'scale': 3,
-            'cshapes': [getCSSphere()._asdict()]}
+            'cshapes': {'cssphere': getCSSphere()._asdict()}}
         assert clerk.setBodyState(objID, new_bs).ok
 
         # Verify that the new attributes came into effect.
@@ -1890,14 +1888,14 @@ class TestClerk:
         assert ret_bs.imass == new_bs['imass']
         assert ret_bs.scale == new_bs['scale']
         assert ret_bs.position, new_bs['position']
-        assert CollShapeMeta(**ret_bs.cshapes[0]) == getCSSphere()
+        assert CollShapeMeta(**ret_bs.cshapes['cssphere']) == getCSSphere()
 
         # Attempt to update an unknown attribute.
         new_bs = {
             'blah': [1, -1, 1],
             'imass': 2,
             'scale': 3,
-            'cshapes': [getCSSphere()._asdict()]}
+            'cshapes': {'cssphere': getCSSphere()._asdict()}}
         assert not clerk.setBodyState(objID, new_bs).ok
 
     def test_stunted_objects(self):
@@ -1916,8 +1914,8 @@ class TestClerk:
         clerk = self.clerk
 
         # Create templates for all possible "stunted" objects.
-        body_cs = getRigidBody(cshapes=[getCSSphere()])
-        body_nocs = getRigidBody(cshapes=[])
+        body_cs = getRigidBody(cshapes={'cssphere': getCSSphere()})
+        body_nocs = getRigidBody(cshapes={})
         t_cs = getTemplate('t_cs', rbs=body_cs, fragments={})
         t_frag = getTemplate('t_frag', rbs=body_nocs, fragments={'foo': getFragRaw()})
         t_none = getTemplate('t_none', rbs=body_nocs, fragments={})
@@ -1926,7 +1924,7 @@ class TestClerk:
         assert clerk.addTemplates([t_cs, t_frag, t_none]).ok
 
         # Spawn an instance of each.
-        body = getRigidBody(cshapes=[])
+        body = getRigidBody(cshapes={})
         ret = clerk.spawn([{'templateID': 't_cs'},
                            {'templateID': 't_frag'},
                            {'templateID': 't_none'}])
