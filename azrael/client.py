@@ -98,6 +98,9 @@ class Client():
             'add_templates': (
                 protocol.ToClerk_AddTemplates_Encode,
                 protocol.FromClerk_AddTemplates_Decode),
+            'get_object_states': (
+                protocol.ToClerk_GetObjectStates_Encode,
+                protocol.FromClerk_GetObjectStates_Decode),
             'get_rigid_bodies': (
                 protocol.ToClerk_GetRigidBodies_Encode,
                 protocol.FromClerk_GetRigidBodies_Decode),
@@ -495,11 +498,34 @@ class Client():
         return self.serialiseAndSend('add_templates', templates)
 
     @typecheck
-    def getRigidBodies(self, objIDs: (list, tuple, int)):
+    def getObjectStates(self, objIDs: (list, tuple, int)):
+        """
+        Return the object states for all ``objIDs`` in a dictionary.
+
+        :param list/int objIDs: query the states for these objects.
+        :return: dictionary with state data about body and its fragments.
+        :rtype: dict
+        """
+        # If the user requested only a single State Variable wrap it into a
+        # list to avoid special case treatment.
+        if objIDs is not None:
+            if isinstance(objIDs, int):
+                objIDs = [objIDs]
+
+            # Sanity check: all objIDs must be valid.
+            for objID in objIDs:
+                assert isinstance(objID, int)
+                assert objID >= 0
+
+        # Pass on the request to Clerk.
+        return self.serialiseAndSend('get_object_states', objIDs)
+
+    @typecheck
+    def getRigidBodies(self, objIDs: (int, list, tuple)):
         """
         Return the State Variables for all ``objIDs`` in a dictionary.
 
-        :param list/int objIDs: query the SV for these objects
+        :param list/int objIDs: query the bodies for these objects
         :return: dictionary of State Variables.
         :rtype: dict
         """

@@ -121,6 +121,10 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_GetAllObjectIDs_Decode,
                 self.getAllObjectIDs,
                 protocol.FromClerk_GetAllObjectIDs_Encode),
+            'get_object_states': (
+                protocol.ToClerk_GetObjectStates_Decode,
+                self.getObjectStates,
+                protocol.FromClerk_GetObjectStates_Encode),
             'get_rigid_bodies': (
                 protocol.ToClerk_GetRigidBodies_Decode,
                 self.getRigidBodies,

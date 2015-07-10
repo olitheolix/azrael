@@ -352,6 +352,32 @@ def FromClerk_GetRigidBodies_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
+# GetObjectStates
+# ---------------------------------------------------------------------------
+
+
+@typecheck
+def ToClerk_GetObjectStates_Encode(objIDs: (list, tuple)):
+    return RetVal(True, None, {'objIDs': objIDs})
+
+
+@typecheck
+def ToClerk_GetObjectStates_Decode(payload: dict):
+    return True, (payload['objIDs'], )
+
+
+@typecheck
+def FromClerk_GetObjectStates_Encode(payload: dict):
+    return True, {'data': payload}
+
+
+@typecheck
+def FromClerk_GetObjectStates_Decode(payload: dict):
+    out = {int(k): v for (k, v) in payload['data'].items()}
+    return RetVal(True, None, out)
+
+
+# ---------------------------------------------------------------------------
 # Spawn
 # ---------------------------------------------------------------------------
 

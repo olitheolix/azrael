@@ -326,8 +326,8 @@ class TestClient:
         ret = client.spawn([init])
         assert ret.ok and ret.data == [objID_1]
 
-        # The state of the new object must match the inital state (plus the
-        # tweaks provided to the spawn command).
+        # The body parameters of the new object must match the inital state
+        # (plus the tweaks provided to the spawn command).
         ret = client.getRigidBodies(objID_1)
         assert ret.ok and (set(ret.data.keys()) == {1})
         assert ret.data[objID_1]['rbs'].position == pos
@@ -335,6 +335,16 @@ class TestClient:
 
         # Same test but this time get all of them.
         assert client.getRigidBodies(None) == ret
+
+        # Query just the state variables instead of the entire rigid body.
+        assert client.getObjectStates(None) == client.getObjectStates([objID_1])
+        ret = client.getObjectStates([objID_1])
+        assert ret.ok
+        r = ret.data[objID_1]
+        assert set(r.keys()) == set(['rbs', 'frag'])
+        r = ret.data[objID_1]['rbs']
+        assert r['position'] == list(pos)
+        assert r['velocityLin'] == list(vlin)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_getAllObjectIDs(self, client_type):
