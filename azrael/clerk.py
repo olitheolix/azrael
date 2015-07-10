@@ -656,13 +656,13 @@ class Clerk(config.AzraelProcess):
         applies in the direction of the booster (taking the rotation of the
         parent into account).
 
-        The commands for Boosters and Factories must be instances of
-        ``CmdBooster`` or ``CmdFactory``, respectively.
+        Both, ``cmd_booster`` and ``cmd_factories`` are dictionaries that use
+        the part ID as the key. The values are ``CmdBooster`` and
+        ``CmdFactory`` instances, respectively.
 
-        fixme: argument types
         :param int objID: object ID.
-        :param list cmd_booster: booster commands.
-        :param list cmd_factory: factory commands.
+        :param dict cmd_booster: booster commands.
+        :param dict cmd_factory: factory commands.
         :return: **True** if no error occurred.
         :rtype: bool
         :raises: None
@@ -783,22 +783,23 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def updateBoosterForces(self, objID: int, cmds: dict):
         """
-        Return forces and update the Booster values in the instance DB.
+        Update the Booster values for an object and return the new net force.
 
         This method returns the torque and linear force that each booster would
-        apply at object's center. A typical return value for boosters with IDs
-        'for' and 'bar' would like this::
+        apply at object's center. A typical return value is::
 
-            {'foo': ([1, 0, 0], [0, 2, 0]),
-             'bar': ([1, 2, 3], [4, 5, 6]),
+            {'foo': ([force_x, force_y, force_z],
+                     [torque_x, torque_y, torque_z]),
+             'bar': ([force_x, force_y, force_z],
+                     [torque_x, torque_y, torque_z]),
              ...}
 
-        fixme: example above and parameter types
+        where 'foo' and 'bar' are the names of the boosters.
 
         :param int objID: object ID
-        :param list cmds: list of Booster commands.
+        :param dict cmds: Booster commands.
         :return: (linear force, torque) that the Booster apply to the object.
-        :rtype: tuple
+        :rtype: tuple(vec3, vec3)
         """
         # Convenience.
         db = database.dbHandles['ObjInstances']
@@ -840,8 +841,8 @@ class Clerk(config.AzraelProcess):
             torque += booster.force * np.cross(b_pos, b_dir)
             del booster
 
-        # If we have not consumed all commands then at least one partID did not
-        # exist --> return with an error in that case.
+        # If we have not consumed all commands yet then at least one partID did
+        # not exist --> return with an error.
         if len(cmds) > 0:
             return RetVal(False, 'Some Booster partIDs were invalid', None)
 
@@ -875,9 +876,6 @@ class Clerk(config.AzraelProcess):
     def getFragments(self, objIDs: list):
         """
         Return information about the fragments of each object in ``objIDs``.
-
-        fixme: return a dictionary versio of FragMeta where fragdata is zero,
-        plus the URL
 
         This method returns a dictionary of the form::
 

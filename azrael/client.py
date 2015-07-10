@@ -398,10 +398,9 @@ class Client():
         ``parts`` module. The commands themselves must be ``types.CmdFactory``
         instances.
 
-        fixme: parameter types.
         :param int objID: object ID.
-        :param list cmd_booster: booster commands.
-        :param list cmd_factory: factory commands.
+        :param dict cmd_booster: booster commands.
+        :param dict cmd_factory: factory commands.
         :return: list of IDs of objects spawned by factories (if any).
         :rtype: list
         """

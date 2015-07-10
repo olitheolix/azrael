@@ -39,23 +39,22 @@ logit = logging.getLogger('azrael.' + __name__)
 
 def computeAABBs(cshapes: dict):
     """
-    fixme: cshapes is now a dict
-    Return a list of AABBs for each element in ``cshapes``.
+    Return a dictionary of AABBs that correspond to the ``cshapes``.
 
     This function returns an error as soon as it encounters an unknown
     collision shape.
 
-    if``cshapes`` contains a plane then it must be the only collision shape
-    (ie len(cshapes) == 1). Furthermore, planes must have default values for
-    position and rotation.
+    If ``cshapes`` contains a Plane shape then it must be the only collision
+    shape (ie len(cshapes) == 1). Furthermore, planes must have default values
+    for position and rotation.
 
     ..note:: The bounding boxes are large enough to accommodate all possible
              rotations of the collision shape. This makes them larger than
              necessary yet avoids recomputing them whenever the rotation of
              the body changes.
 
-    :param list[CollShapeMeta] cshapes: collision shapes
-    :return: list of AABBs for the ``cshapes``.
+    :param dict[name: CollShapeMeta] cshapes: collision shapes
+    :return: AABBs for the ``cshapes``.
     """
     # Convenience.
     s3 = np.sqrt(3.1)
@@ -147,19 +146,17 @@ def dequeueCommands():
 @typecheck
 def addCmdSpawn(objData: (tuple, list)):
     """
-    Enqueue a new object described by ``objData`` for Leonard to spawn.
+    Announce that the elements in ``objData`` were created.
 
-    The ``objData`` tuple comprises (objID, body).
+    The ``objData`` variables comprises a list of (objID, body) tuples.
 
-    Returns **False** if ``objID`` already exists, is scheduled to spawn, or if
-    any of the parameters are invalid.
+    Returns **False** if ``objID`` already exists, is already scheduled to
+    spawn, or if any of the parameters are invalid.
 
-    Leonard will process the queue (and thus this command) once per physics
-    cycle. However, it is impossible to determine when exactly.
+    Other services, most notably Leonard, will periodically check for new
+    announcements and incorporate them into the simulation as necessary.
 
-    # fixme: parameters
-    :param int objID: object ID to insert.
-    :param _RigidBodyData sv: encoded state variable data.
+    :param tuple[(int, _RigidBodyData)]: the new objects created in Azrael.
     :return: success.
     """
     # Sanity checks all the provided bodies.
@@ -208,8 +205,8 @@ def addCmdRemoveObject(objID: int):
     """
     Remove ``objID`` from the physics simulation.
 
-    Leonard will process the queue (and thus this command) once per physics
-    cycle. However, it is impossible to determine when exactly.
+    Other services, most notably Leonard, will periodically check for new
+    announcements and incorporate them into the simulation as necessary.
 
     .. note:: This function always succeeds.
 
@@ -228,10 +225,9 @@ def addCmdModifyBodyState(objID: int, body: dict):
     """
     Queue request to override the Body State of ``objID`` with ``body``.
 
-    Leonard will process the queue (and thus this command) once per physics
-    cycle. However, it is impossible to determine when exactly.
+    Other services, most notably Leonard, will periodically check for new
+    announcements and incorporate them into the simulation as necessary.
 
-    fixme: parameters
     :param int objID: object to update.
     :param dict body: new object attributes.
     :return bool: Success
@@ -278,8 +274,8 @@ def addCmdDirectForce(objID: int, force: list, torque: list):
     """
     Apply ``torque`` and central ``force`` to ``objID``.
 
-    Leonard will process the queue (and thus this command) once per physics
-    cycle. However, it is impossible to determine when exactly.
+    Other services, most notably Leonard, will periodically check for new
+    announcements and incorporate them into the simulation as necessary.
 
     :param int objID: the object
     :param list force: apply this central ``force`` to ``objID``.
@@ -314,8 +310,8 @@ def addCmdBoosterForce(objID: int, force: list, torque: list):
     system and Leonard will rotate them to world coordinates before actually
     applying the force.
 
-    Leonard will process the queue (and thus this command) once per physics
-    cycle. However, it is impossible to determine when exactly.
+    Other services, most notably Leonard, will periodically check for new
+    announcements and incorporate them into the simulation as necessary.
 
     :param int objID: the object
     :param list force: apply this central ``force`` to ``objID``.

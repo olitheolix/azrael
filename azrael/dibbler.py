@@ -239,8 +239,8 @@ class Dibbler:
         # Store all fragment models for this template.
         frag_names = {}
         for aid, frag in fragments.items():
-            # fixme: better explanation
-            # Fragment directory, eg .../instances/mymodel/frag1
+            # Fragment directory as '.../instances/aid/', for instance
+            # '/instances/20/'.
             frag_dir = os.path.join(location, aid)
 
             ftype = frag.fragtype.upper()

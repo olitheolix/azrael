@@ -849,7 +849,28 @@ class CmdFactory(_CmdFactory):
 
 
 class RigidBodyData(_RigidBodyData):
-    # fixme: docu
+    """
+    Return a valid Rigid Body object.
+
+    A ``RigidBodyData`` instance comprises all the information required for a
+    Newtonian rigid body simulation. Each object in Azrael has exactly one
+    Rigid Body attached to which denotes the position and orientation of that
+    object. The rigid body may have zero, one, or more collision shapes.
+
+    :param float scale: non-negative scale of rigid body (should almost
+        certainly be always 1).
+    :param float restitution: restitution coefficient (non-negative).
+    :param vec4 rotation: orientation Quaternion.
+    :param vec3 position: position of body in world coordinates.
+    :param vec3 velocityLin: linear velocity of body.
+    :param vec3 velocityRot: angular velocity of body.
+    :param dict cshapes: Collision shapes (the names is the key).
+    :param vec3 axisLockLin: linear damping of body movements.
+    :param vec3 axisLockRot: angular damping of body movements.
+    :param int version: version number of body (will be updated by Azrael).
+    :return: compiled ``RigidBodyData`` instance.
+    :raises: TypeError if the input does not compile to the data type.
+    """
     @typecheck
     def __new__(cls, scale: (int, float),
                    imass: (int, float),
@@ -862,25 +883,28 @@ class RigidBodyData(_RigidBodyData):
                    axesLockLin: (tuple, list, np.ndarray),
                    axesLockRot: (tuple, list, np.ndarray),
                    version: int):
-        """
-        Return a ``_RigidBodyData`` object.
-        """
         try:
             # Sanity checks inputs.
-            axesLockLin = toVec(3, axesLockLin)
-            axesLockRot = toVec(3, axesLockRot)
+            assert scale >= 0
+            assert restitution >= 0
+            assert version >= 0
             rotation = toVec(4, rotation)
             position = toVec(3, position)
+            axesLockLin = toVec(3, axesLockLin)
+            axesLockRot = toVec(3, axesLockRot)
             velocityLin = toVec(3, velocityLin)
             velocityRot = toVec(3, velocityRot)
-            assert version >= 0
 
-            # fixme: sanity check the name of the collision shape.
             # Compile- and sanity check all collision shapes.
             cshapes = {
                 k: CollShapeMeta(**v) if isinstance(v, dict) else CollShapeMeta(*v)
                 for (k, v) in cshapes.items()
             }
+
+            # Verify that the collision shapes have valid names.
+            for csname in cshapes:
+                assert isinstance(csname, str)
+                assert isAIDStringValid(csname)
         except (AssertionError, TypeError) as err:
             raise TypeError
 
@@ -899,6 +923,8 @@ class RigidBodyData(_RigidBodyData):
             version=version)
 
     def _asdict(self):
+        # Only the collision shapes requires special treatment and need to be
+        # converted to dictionaries.
         tmp = self._replace(cshapes={k: v._asdict() for (k, v) in self.cshapes.items()})
         return OrderedDict(zip(tmp._fields, tmp))
 
