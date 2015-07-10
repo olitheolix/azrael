@@ -538,7 +538,7 @@ class Client():
         return self.serialiseAndSend('get_rigid_bodies', objIDs)
 
     @typecheck
-    def setRigidBody(self, objID: int, new: dict):
+    def setRigidBody(self, new: dict):
         """
         Overwrite the the State Variables of ``objID`` with ``new``.
 
@@ -546,14 +546,14 @@ class Client():
         speed, irrespective of what the physics engine computes. The attributes
         will only be applied once.
 
-        :param int objID: the object to move.
         :param dict new: the object attributes to set.
         :return: Success
         """
-        if 'cshapes' in new:
-            new['cshapes'] = {k: v._asdict() for (k, v) in new['cshapes'].items()}
+        for objID, body in new.items():
+            if 'cshapes' in body:
+                new[objID]['cshapes'] = {k: v._asdict() for (k, v) in body['cshapes'].items()}
 
-        return self.serialiseAndSend('set_rigid_body', objID, new)
+        return self.serialiseAndSend('set_rigid_body', new)
 
     @typecheck
     def setForce(self, objID: int, force: (tuple, list, np.ndarray),

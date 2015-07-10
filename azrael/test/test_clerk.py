@@ -1933,13 +1933,13 @@ class TestClerk:
         assert ret_bs.position == init['rbs']['position']
         assert ret_bs.velocityLin == init['rbs']['velocityLin']
 
-        # Selectively update the body state of objID.
+        # Selectively update the body parameters for objID.
         new_bs = {
             'position': [1, -1, 1],
             'imass': 2,
             'scale': 3,
             'cshapes': {'cssphere': getCSSphere()._asdict()}}
-        assert clerk.setRigidBody(objID, new_bs).ok
+        assert clerk.setRigidBody({objID: new_bs}).ok
 
         # Verify that the new attributes came into effect.
         ok, _, ret_bs = clerk.getRigidBodies([objID])
@@ -1956,7 +1956,7 @@ class TestClerk:
             'imass': 2,
             'scale': 3,
             'cshapes': {'cssphere': getCSSphere()._asdict()}}
-        assert not clerk.setRigidBody(objID, new_bs).ok
+        assert not clerk.setRigidBody({objID: new_bs}).ok
 
     def test_stunted_objects(self):
         """
@@ -2000,9 +2000,12 @@ class TestClerk:
         new_bs_frag = {'position': [3, 4, 5]}
         new_bs_none = {'position': [6, 7, 8]}
 
-        assert clerk.setRigidBody(id_cs, new_bs_cs).ok
-        assert clerk.setRigidBody(id_frag, new_bs_frag).ok
-        assert clerk.setRigidBody(id_none, new_bs_none).ok
+        cmd = {
+            id_cs: new_bs_cs,
+            id_frag: new_bs_frag,
+            id_none: new_bs_none,
+        }
+        assert clerk.setRigidBody(cmd).ok
 
         # Verify that all bodies are at their new positions.
         ret_os = clerk.getObjectStates([id_cs, id_frag, id_none])

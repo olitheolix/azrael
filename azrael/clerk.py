@@ -1154,39 +1154,43 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def setRigidBody(self, objID: int, body: dict):
+    def setRigidBody(self, bodies: dict):
         """
         Set the rigid body state of ``objID`` to ``body``.
 
-        For a detailed description see ``leoAPI.addCmdModifyBodyState``
-        since this method is only a wrapper for it.
+        This method supports partial updates of rigid body data. To skip an
+        attribute simply set it to *None* in the `_RigidBodyData` structure.
 
-        :param int objID: object ID
-        :param dict body: new object attributes.
+        fixme: use a bulk query.
+        fixme: better tests where some bodies exist whereas others don't.
+        fixme: docu and parameters
+
+        :param dict[objID: RigidBodyData] bodies: new object attributes.
         :return: Success
         """
         # Convenience.
         db = azrael.database.dbHandles['ObjInstances']
 
-        # Compile- and sanity check ``body``.
-        try:
-            body = types.DefaultRigidBody(**body)
-        except TypeError:
-            return RetVal(False, 'Invalid body data', None)
-        body = body._asdict()
+        for objID, body in bodies.items():
+            # Compile- and sanity check ``body``.
+            try:
+                body = types.DefaultRigidBody(**body)
+            except TypeError:
+                return RetVal(False, 'Invalid body data', None)
+            body = body._asdict()
 
-        # Update the respective entries in the database. The keys already have
-        # the correct names but must be saved under 'template.rbs'.
-        body_tmp = {'template.rbs.' + k: v for (k, v) in body.items()}
-        db.update({'objID': objID}, {'$set': body_tmp})
-        del body_tmp
+            # Update the respective entries in the database. The keys already have
+            # the correct names but must be saved under 'template.rbs'.
+            body_tmp = {'template.rbs.' + k: v for (k, v) in body.items()}
+            db.update({'objID': objID}, {'$set': body_tmp})
+            del body_tmp
 
-        # Notify Leonard.
-        ret = leoAPI.addCmdModifyBodyState(objID, body)
-        if ret.ok:
-            return RetVal(True, None, None)
-        else:
-            return RetVal(False, ret.msg, None)
+            # Notify Leonard.
+            ret = leoAPI.addCmdModifyBodyState(objID, body)
+            if not ret.ok:
+                return ret
+
+        return RetVal(True, None, None)
 
     @typecheck
     def getObjectStates(self, objIDs: list):
