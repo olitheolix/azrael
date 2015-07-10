@@ -62,8 +62,8 @@ def ToClerk_Ping_Encode(payload: dict):
 
 
 @typecheck
-def ToClerk_Ping_Decode(dummyarg):
-    return True, dummyarg
+def ToClerk_Ping_Decode(payload):
+    return True, payload
 
 
 @typecheck
@@ -73,7 +73,7 @@ def FromClerk_Ping_Encode(payload: str):
 
 @typecheck
 def FromClerk_Ping_Decode(payload: dict):
-    return RetVal(True, None, payload['response'])
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +98,7 @@ def FromClerk_GetTemplateID_Encode(templateID: str):
 
 @typecheck
 def FromClerk_GetTemplateID_Decode(payload: dict):
-    return RetVal(True, None, payload['templateID'])
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -127,8 +127,8 @@ def FromClerk_AddTemplates_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_AddTemplates_Decode(dummyarg):
-    return RetVal(True, None, None)
+def FromClerk_AddTemplates_Decode(payload):
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -156,11 +156,7 @@ def FromClerk_GetTemplates_Encode(templates):
 
 @typecheck
 def FromClerk_GetTemplates_Decode(payload: dict):
-    out = {}
-    for objID, data in payload.items():
-        out[objID] = {'url_frag': data['url_frag'],
-                      'template': Template(**data['template'])}
-    return RetVal(True, None, out)
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -185,7 +181,7 @@ def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
 
 @typecheck
 def FromClerk_GetAllObjectIDs_Decode(payload: dict):
-    return RetVal(True, None, payload['objIDs'])
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -210,8 +206,8 @@ def FromClerk_SetRigidBodies_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_SetRigidBodies_Decode(dummyarg):
-    return RetVal(True, None, None)
+def FromClerk_SetRigidBodies_Decode(payload):
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -239,8 +235,8 @@ def FromClerk_SetForce_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_SetForce_Decode(dummyarg):
-    return RetVal(True, None, None)
+def FromClerk_SetForce_Decode(payload):
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -268,10 +264,7 @@ def FromClerk_GetFragments_Encode(geo):
 
 @typecheck
 def FromClerk_GetFragments_Decode(payload: dict):
-    # Convert all objIDs to integers (JSON always converts integers in hash
-    # maps to strings, which is why this conversion is necessary).
-    payload = {int(k): v for (k, v) in payload.items()}
-    return RetVal(True, None, payload)
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -297,8 +290,8 @@ def FromClerk_SetFragments_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_SetFragments_Decode(dummyarg):
-    return RetVal(True, None, None)
+def FromClerk_SetFragments_Decode(payload):
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -327,21 +320,12 @@ def FromClerk_GetRigidBodies_Encode(payload: dict):
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
         out[objID] = {'rbs': data['rbs']._asdict()}
-    return True, {'data': out}
+    return True, out
 
 
 @typecheck
 def FromClerk_GetRigidBodies_Decode(payload: dict):
-    out = {}
-    for objID, data in payload['data'].items():
-        if data is None:
-            # Clerk could not find this particular object.
-            out[int(objID)] = None
-            continue
-
-        # Replace the original 'rbs' and 'frag' entries with the new ones.
-        out[int(objID)] = {'rbs': types.RigidBodyData(**data['rbs'])}
-    return RetVal(True, None, out)
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -361,13 +345,12 @@ def ToClerk_GetObjectStates_Decode(payload: dict):
 
 @typecheck
 def FromClerk_GetObjectStates_Encode(payload: dict):
-    return True, {'data': payload}
+    return True, payload
 
 
 @typecheck
 def FromClerk_GetObjectStates_Decode(payload: dict):
-    out = {int(k): v for (k, v) in payload['data'].items()}
-    return RetVal(True, None, out)
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -392,7 +375,7 @@ def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
 
 @typecheck
 def FromClerk_Spawn_Decode(payload: dict):
-    return RetVal(True, None, payload['objIDs'])
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -416,8 +399,8 @@ def FromClerk_Remove_Encode(dummyarg):
 
 
 @typecheck
-def FromClerk_Remove_Decode(dummyarg):
-    return RetVal(True, None, None)
+def FromClerk_Remove_Decode(payload):
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -446,7 +429,7 @@ def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
 
 @typecheck
 def FromClerk_ControlParts_Decode(payload: dict):
-    return RetVal(True, None, payload['objIDs'])
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -472,7 +455,7 @@ def FromClerk_AddConstraints_Encode(num_added):
 
 @typecheck
 def FromClerk_AddConstraints_Decode(payload):
-    return RetVal(True, None, payload['added'])
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -482,7 +465,7 @@ def FromClerk_AddConstraints_Decode(payload):
 
 @typecheck
 def ToClerk_DeleteConstraints_Encode(payload: dict):
-    return ToClerk_AddConstraints_Encode(payload)
+    return payload
 
 
 @typecheck
@@ -497,7 +480,7 @@ def FromClerk_DeleteConstraints_Encode(num_added):
 
 @typecheck
 def FromClerk_DeleteConstraints_Decode(payload):
-    return FromClerk_AddConstraints_Decode(payload)
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -507,7 +490,7 @@ def FromClerk_DeleteConstraints_Decode(payload):
 
 @typecheck
 def ToClerk_GetConstraints_Encode(payload: dict):
-    return RetVal(True, None, payload)
+    return payload
 
 
 @typecheck
@@ -523,5 +506,4 @@ def FromClerk_GetConstraints_Encode(constraints):
 
 @typecheck
 def FromClerk_GetConstraints_Decode(payload):
-    out = [ConstraintMeta(**_) for _ in payload['constraints']]
-    return RetVal(True, None, out)
+    return payload
