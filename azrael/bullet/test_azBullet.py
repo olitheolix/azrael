@@ -1157,7 +1157,6 @@ class TestConstraints:
     def test_add_get_remove_iterate(self):
         """
         Test the various functions
-        fixme: need one more constraint to make this really useful.
         """
         # Create two rigid bodies side by side (they *do* touch, but just).
         pos_a = Vec3(-3, 0, 0)
@@ -1169,10 +1168,13 @@ class TestConstraints:
         rb_c = getRB(pos=pos_c, cshape=SphereShape(1))
         rb_d = getRB(pos=pos_d, cshape=BoxShape(Vec3(1, 2, 3)))
 
+        frameInA = Transform(Quaternion(0, 0, 0, 1), pos_b)
+        frameInB = Transform(Quaternion(0, 0, 0, 1), pos_a)
+
         # Connect the two rigid bodies at their left/right boundary.
         pivot_a, pivot_b, pivot_c, pivot_d = pos_a, pos_b, pos_c, pos_d
         p2p_ab = Point2PointConstraint(rb_a, rb_b, pivot_a, pivot_b)
-        p2p_bc = Point2PointConstraint(rb_b, rb_c, pivot_b, pivot_c)
+        dof_bc = Generic6DofSpring2Constraint(rb_b, rb_c, frameInA, frameInB)
         p2p_cd = Point2PointConstraint(rb_c, rb_d, pivot_c, pivot_d)
 
         # Add both rigid bodies into a simulation.
@@ -1201,20 +1203,20 @@ class TestConstraints:
         assert list(bb.iterateConstraints()) == [p2p_ab]
 
         # Add the second and third constraint.
-        bb.addConstraint(p2p_bc)
+        bb.addConstraint(dof_bc)
         assert bb.getNumConstraints() == 2
-        assert list(bb.iterateConstraints()) == [p2p_ab, p2p_bc]
+        assert list(bb.iterateConstraints()) == [p2p_ab, dof_bc]
         bb.addConstraint(p2p_cd)
         assert bb.getNumConstraints() == 3
         assert bb.getConstraint(0) == p2p_ab
-        assert bb.getConstraint(1) == p2p_bc
+        assert bb.getConstraint(1) == dof_bc
         assert bb.getConstraint(2) == p2p_cd
-        assert list(bb.iterateConstraints()) == [p2p_ab, p2p_bc, p2p_cd]
+        assert list(bb.iterateConstraints()) == [p2p_ab, dof_bc, p2p_cd]
 
         # Remove the middle constraint twice.
         p2p_none = Point2PointConstraint(rb_a, rb_d, pivot_b, pivot_c)
         for ii in range(2):
-            bb.removeConstraint(p2p_bc)
+            bb.removeConstraint(dof_bc)
             assert bb.getNumConstraints() == 2
             assert bb.getConstraint(0) == p2p_ab
             assert bb.getConstraint(1) == p2p_cd
