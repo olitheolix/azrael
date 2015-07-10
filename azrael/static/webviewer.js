@@ -223,8 +223,8 @@ function getTemplateID(objID) {
     return [cmd, dec]
 }
 
-function getStateVariables(objID) {
-    var cmd = {'cmd': 'get_rigid_bodies', 'payload': {'objIDs': objID}}
+function getObjectStates(objID) {
+    var cmd = {'cmd': 'get_object_states', 'payload': {'objIDs': objID}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
@@ -480,8 +480,8 @@ function* mycoroutine(connection) {
     // their position on the screen.
     while (true) {
         // Get the SV for all objects.
-        msg = yield getStateVariables(null)
-        if (msg.ok == false) {console.log('Error getStateVariables'); return;}
+        msg = yield getObjectStates(null)
+        if (msg.ok == false) {console.log('Error getObjectStates'); return;}
         var allSVs = msg.data
 
         // Update the position and orientation of all objects. If an
