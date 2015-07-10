@@ -305,22 +305,22 @@ def FromClerk_SetFragmentGeometry_Decode(dummyarg):
 
 
 # ---------------------------------------------------------------------------
-# GetBodyStates
+# GetRigidBodies
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_GetBodyState_Encode(objIDs: (list, tuple)):
+def ToClerk_GetRigidBodies_Encode(objIDs: (list, tuple)):
     return RetVal(True, None, {'objIDs': objIDs})
 
 
 @typecheck
-def ToClerk_GetBodyState_Decode(payload: dict):
+def ToClerk_GetRigidBodies_Decode(payload: dict):
     return True, (payload['objIDs'], )
 
 
 @typecheck
-def FromClerk_GetBodyState_Encode(payload: dict):
+def FromClerk_GetRigidBodies_Encode(payload: dict):
     out = {}
     for objID, data in payload.items():
         if data is None:
@@ -335,7 +335,7 @@ def FromClerk_GetBodyState_Encode(payload: dict):
 
 
 @typecheck
-def FromClerk_GetBodyState_Decode(payload: dict):
+def FromClerk_GetRigidBodies_Decode(payload: dict):
     out = {}
     for objID, data in payload['data'].items():
         if data is None:

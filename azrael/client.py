@@ -98,9 +98,9 @@ class Client():
             'add_templates': (
                 protocol.ToClerk_AddTemplates_Encode,
                 protocol.FromClerk_AddTemplates_Decode),
-            'get_body_states': (
-                protocol.ToClerk_GetBodyState_Encode,
-                protocol.FromClerk_GetBodyState_Decode),
+            'get_rigid_bodies': (
+                protocol.ToClerk_GetRigidBodies_Encode,
+                protocol.FromClerk_GetRigidBodies_Decode),
             'set_rigid_body': (
                 protocol.ToClerk_SetRigidBody_Encode,
                 protocol.FromClerk_SetRigidBody_Decode),
@@ -515,7 +515,7 @@ class Client():
                 assert objID >= 0
 
         # Pass on the request to Clerk.
-        return self.serialiseAndSend('get_body_states', objIDs)
+        return self.serialiseAndSend('get_rigid_bodies', objIDs)
 
     @typecheck
     def setRigidBody(self, objID: int, new: dict):

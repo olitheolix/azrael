@@ -213,15 +213,15 @@ class TestClerk:
         ret = dec_fun(enc)
         assert (ret.ok, ret.data) == (True, objIDs)
 
-    def test_GetBodyState(self):
+    def test_GetRigidBodies(self):
         """
-        Test codec for GetBodyState.
+        Test codec for GetRigidBodies.
         """
         # Client --> Clerk.
         # The payload are object IDs.
         payload = [1, 2, 5]
-        enc = protocol.ToClerk_GetBodyState_Encode
-        dec = protocol.ToClerk_GetBodyState_Decode
+        enc = protocol.ToClerk_GetRigidBodies_Encode
+        dec = protocol.ToClerk_GetRigidBodies_Decode
         self.verifyToClerk(enc, dec, payload)
 
         # Clerk --> Client.
@@ -241,8 +241,8 @@ class TestClerk:
         del frag_states
 
         # Convenience.
-        enc_fun = protocol.FromClerk_GetBodyState_Encode
-        dec_fun = protocol.FromClerk_GetBodyState_Decode
+        enc_fun = protocol.FromClerk_GetRigidBodies_Encode
+        dec_fun = protocol.FromClerk_GetRigidBodies_Decode
 
         # Encode source data.
         ok, enc = enc_fun(payload)
