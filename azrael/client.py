@@ -204,17 +204,17 @@ class Client():
             return RetVal(True, ret['msg'], ret['payload'])
 
     @typecheck
-    def serialiseAndSend(self, cmd: str, *args):
+    def serialiseAndSend(self, cmd: str, payload):
         """
-        Serialise ``args``, send it to Clerk, and return de-serialised reply.
+        Serialise ``payload``, send it to Clerk, and return the reply.
 
         This is a convenience wrapper around the encode-send-receive-decode
         cycle that constitutes every request to Clerk.
 
-        The value of ``cmd`` determines the encoding of ``args``. Note that
-        this method accepts a variable number of parameters in ``args`` yet
-        does not actually inspect them. Instead it passes them verbatim to
-        the respective encoding function in the ``protocol`` module.
+        The value of ``cmd`` determines the encoding of ``payload``. Note that
+        this method accepts a variable number of parameters in ``payload`` yet
+        does not actually inspect them. Instead it passes them verbatim to the
+        respective encoding function in the ``protocol`` module.
 
         :param str cmd: name of command.
         :return: deserialised reply.
@@ -227,14 +227,8 @@ class Client():
         ToClerk_Encode, FromClerk_Decode = self.codec[cmd]
 
         try:
-            # Encode the arguments and send them to Clerk.
-            ret = ToClerk_Encode(*args)
-            if not ret.ok:
-                msg = 'ToClerk_Encode_* error for <{}>'.format(cmd)
-                msg += '\n ' + ret.err
-                self.logit.error(msg)
-                return RetVal(False, msg, None)
-            ret = self.sendToClerk(cmd, ret.data)
+            # Send the data to Clerk.
+            ret = self.sendToClerk(cmd, payload)
             if not ret.ok:
                 return ret
 
