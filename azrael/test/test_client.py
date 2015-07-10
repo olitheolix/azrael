@@ -655,7 +655,7 @@ class TestClient:
 
         # Query the Body State to get the Fragment States. Then verify the
         # Fragment State named 'bar'.
-        ret = client.getRigidBodies(objID)
+        ret = client.getObjectStates(objID)
         ref = {'bar': {'scale': 1, 'position': [0, 0, 0], 'orientation': [0, 0, 0, 1]}}
         assert ret.ok
         assert ret.data[objID]['frag'] == ref
@@ -665,7 +665,7 @@ class TestClient:
         newStates = {objID: {'bar': {'scale': 2.2, 'position': [1, 2, 3],
                                      'orientation': [1, 0, 0, 0]}}}
         assert client.setFragments(newStates).ok
-        ret = client.getRigidBodies(objID)
+        ret = client.getObjectStates(objID)
         assert ret.ok
         ret = ret.data[objID]['frag']['bar']
         assert ret == newStates[objID]['bar']
@@ -700,7 +700,7 @@ class TestClient:
         # report three fragments.
         ret = client.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 3
-        ret = client.getRigidBodies(objID)
+        ret = client.getObjectStates(objID)
         assert ret.ok and len(ret.data[objID]['frag']) == 3
 
         # Update the fragments as follows: keep the first intact, remove the
@@ -711,7 +711,7 @@ class TestClient:
         # After the last update there must now only be two fragments.
         ret = client.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 2
-        ret = client.getRigidBodies(objID)
+        ret = client.getObjectStates(objID)
         assert ret.ok and len(ret.data[objID]['frag']) == 2
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
