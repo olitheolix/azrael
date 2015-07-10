@@ -1912,51 +1912,85 @@ class TestClerk:
 
     def test_setRigidBodies(self):
         """
-        Spawn an object and specify its state variables directly.
+        Spawn an object and update its body attributes.
         """
         clerk = self.clerk
 
         # Constants and parameters for this test.
-        templateID = '_templateSphere'
-        objID = 1
+        id_1, id_2 = 1, 2
 
         # Spawn one of the default templates.
-        init = {'templateID': templateID,
+        init = {'templateID': '_templateSphere',
                 'rbs': {'position': [0, 0, 0], 'velocityLin': [-1, -2, -3]}}
-        ret = clerk.spawn([init])
-        assert ret.ok and (ret.data == (objID, ))
+        ret = clerk.spawn([init, init])
+        assert ret.ok and (ret.data == (id_1, id_2))
 
         # Verify that the initial body states are correct.
-        ok, _, ret_bs = clerk.getRigidBodies([objID])
-        ret_bs = ret_bs[objID]['rbs']
-        assert isinstance(ret_bs, types._RigidBodyData)
-        assert ret_bs.position == init['rbs']['position']
-        assert ret_bs.velocityLin == init['rbs']['velocityLin']
+        ret = clerk.getRigidBodies([id_1, id_2])
+        assert ret.ok
+        ret_1 = ret.data[id_1]['rbs']
+        ret_2 = ret.data[id_2]['rbs']
+        assert isinstance(ret_1, types._RigidBodyData)
+        assert ret_1.position == init['rbs']['position']
+        assert ret_1.velocityLin == init['rbs']['velocityLin']
+        assert ret_2.position == init['rbs']['position']
+        assert ret_2.velocityLin == init['rbs']['velocityLin']
 
-        # Selectively update the body parameters for objID.
+        # Selectively update the body parameters for id_1.
         new_bs = {
             'position': [1, -1, 1],
             'imass': 2,
             'scale': 3,
-            'cshapes': {'cssphere': getCSSphere()._asdict()}}
-        assert clerk.setRigidBodies({objID: new_bs}).ok
+            'cshapes': {'cssphere': getCSBox()._asdict()}}
+        assert clerk.setRigidBodies({id_1: new_bs}).ok
 
-        # Verify that the new attributes came into effect.
-        ok, _, ret_bs = clerk.getRigidBodies([objID])
-        ret_bs = ret_bs[objID]['rbs']
-        assert isinstance(ret_bs, types._RigidBodyData)
-        assert ret_bs.imass == new_bs['imass']
-        assert ret_bs.scale == new_bs['scale']
-        assert ret_bs.position, new_bs['position']
-        assert CollShapeMeta(**ret_bs.cshapes['cssphere']) == getCSSphere()
+        # Verify that id_1 has the new attributes and id_2 remained unaffected.
+        ret = clerk.getRigidBodies([id_1, id_2])
+        assert ret.ok
+        ret_1 = ret.data[id_1]['rbs']
+        ret_2 = ret.data[id_2]['rbs']
+        assert isinstance(ret_1, types._RigidBodyData)
+        assert ret_1.imass == new_bs['imass']
+        assert ret_1.scale == new_bs['scale']
+        assert ret_1.position == new_bs['position']
+        assert ret_2.imass == 1
+        assert ret_2.scale == 1
+        assert ret_2.position == init['rbs']['position']
+        assert CollShapeMeta(**ret_1.cshapes['cssphere']) == getCSBox()
+        assert CollShapeMeta(**ret_2.cshapes['cssphere']) == getCSSphere()
 
         # Attempt to update an unknown attribute.
-        new_bs = {
+        new_bs_2 = {
             'blah': [1, -1, 1],
             'imass': 2,
             'scale': 3,
             'cshapes': {'cssphere': getCSSphere()._asdict()}}
-        assert not clerk.setRigidBodies({objID: new_bs}).ok
+        assert not clerk.setRigidBodies({id_1: new_bs_2}).ok
+
+        # Attempt to update one valid and one invalid object. This must update
+        # the valid object only.
+        new_bs_3 = {
+            'position': [2, -2, 2],
+            'imass': 3,
+            'scale': 4,
+            'cshapes': {'cssphere': getCSPlane()._asdict()}}
+        ret = clerk.setRigidBodies({id_2: new_bs_3, 10: new_bs_3})
+        assert ret == (True, None, [10])
+
+        # Verify that id_1 has the new attributes and id_2 remained unaffected.
+        ret = clerk.getRigidBodies([id_1, id_2])
+        assert ret.ok
+        ret_1 = ret.data[id_1]['rbs']
+        ret_2 = ret.data[id_2]['rbs']
+        assert isinstance(ret_1, types._RigidBodyData)
+        assert ret_1.imass == new_bs['imass']
+        assert ret_1.scale == new_bs['scale']
+        assert ret_1.position == new_bs['position']
+        assert ret_2.imass == new_bs_3['imass']
+        assert ret_2.scale == new_bs_3['scale']
+        assert ret_2.position == new_bs_3['position']
+        assert CollShapeMeta(**ret_1.cshapes['cssphere']) == getCSBox()
+        assert CollShapeMeta(**ret_2.cshapes['cssphere']) == getCSPlane()
 
     def test_stunted_objects(self):
         """

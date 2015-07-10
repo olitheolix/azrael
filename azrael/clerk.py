@@ -1159,36 +1159,40 @@ class Clerk(config.AzraelProcess):
         This method supports partial updates of rigid body data. To skip an
         attribute simply set it to *None* in the `_RigidBodyData` structure.
 
-        fixme: use a bulk query.
-        fixme: better tests where some bodies exist whereas others don't.
-        fixme: docu and parameters
+        This method always succeeds. However, the 'data' field in the return
+        value contains a list of all object IDs that could not be updated for
+        whatever reason. If an error occurs this method will simply skip to the
+        next object and not announce the creation of a new object.
 
         :param dict[objID: RigidBodyData] bodies: new object attributes.
         :return: Success
         """
         # Convenience.
         db = azrael.database.dbHandles['ObjInstances']
+        invalid_objects = []
 
         for objID, body in bodies.items():
             # Compile- and sanity check ``body``.
             try:
-                body = types.DefaultRigidBody(**body)
+                body = types.DefaultRigidBody(**body)._asdict()
             except TypeError:
                 return RetVal(False, 'Invalid body data', None)
-            body = body._asdict()
 
             # Update the respective entries in the database. The keys already have
-            # the correct names but must be saved under 'template.rbs'.
-            body_tmp = {'template.rbs.' + k: v for (k, v) in body.items()}
-            db.update({'objID': objID}, {'$set': body_tmp})
-            del body_tmp
+            # the correct names but require the 'template.rbs' to match the
+            # position in the master record.
+            tmp = {'template.rbs.' + k: v for (k, v) in body.items()}
+            ret = db.update({'objID': objID}, {'$set': tmp})
+            if ret['n'] == 0:
+                invalid_objects.append(objID)
+                continue
 
             # Notify Leonard.
             ret = leoAPI.addCmdModifyBodyState(objID, body)
             if not ret.ok:
                 return ret
 
-        return RetVal(True, None, None)
+        return RetVal(True, None, invalid_objects)
 
     @typecheck
     def getObjectStates(self, objIDs: list):
