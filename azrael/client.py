@@ -101,9 +101,9 @@ class Client():
             'get_body_states': (
                 protocol.ToClerk_GetBodyState_Encode,
                 protocol.FromClerk_GetBodyState_Decode),
-            'set_body_state': (
-                protocol.ToClerk_SetBodyState_Encode,
-                protocol.FromClerk_SetBodyState_Decode),
+            'set_rigid_body': (
+                protocol.ToClerk_SetRigidBody_Encode,
+                protocol.FromClerk_SetRigidBody_Decode),
             'set_force': (
                 protocol.ToClerk_SetForce_Encode,
                 protocol.FromClerk_SetForce_Decode),
@@ -533,7 +533,7 @@ class Client():
         if 'cshapes' in new:
             new['cshapes'] = {k: v._asdict() for (k, v) in new['cshapes'].items()}
 
-        return self.serialiseAndSend('set_body_state', objID, new)
+        return self.serialiseAndSend('set_rigid_body', objID, new)
 
     @typecheck
     def setForce(self, objID: int, force: (tuple, list, np.ndarray),

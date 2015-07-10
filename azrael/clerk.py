@@ -125,10 +125,10 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_GetBodyState_Decode,
                 self.getBodyStates,
                 protocol.FromClerk_GetBodyState_Encode),
-            'set_body_state': (
-                protocol.ToClerk_SetBodyState_Decode,
+            'set_rigid_body': (
+                protocol.ToClerk_SetRigidBody_Decode,
                 self.setRigidBody,
-                protocol.FromClerk_SetBodyState_Encode),
+                protocol.FromClerk_SetRigidBody_Encode),
             'set_fragments': (
                 protocol.ToClerk_SetFragmentGeometry_Decode,
                 self.setFragments,
