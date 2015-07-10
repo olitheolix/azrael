@@ -1103,40 +1103,27 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def getRigidBodies(self, objIDs: (list, tuple)):
         """
-        Return the state variables for all ``objIDs`` in a dictionary.
+        Return the rigid body data for all ``objIDs`` in a dictionary.
 
-        If ``objIDs`` is *None* then the states of all objects are returned.
+        If ``objIDs`` is *None* then all bodies will be returned.
 
         The dictionary keys will be the elements of ``objIDs`` and the
         associated  values are ``RigidBodyState`` instances, or *None*
         if the corresponding objID did not exist.
 
-        :param list[int] objIDs: list of objects to query.
-        :return: see :ref:``_packBodyState``.
-        :rtype: dict
-
-
-        fixme: merge these two doc strings
-
-        Return a dictionary of body states for all ``objIDs``.
-
-        If ``objIDs`` is *None* then the states of all objects are returned.
-
-        Non-existing object IDs will be silently ignored and do not make it
-        into the returned dictionary.
-
-        The returned dictionary contains the entire Rigid Body data plus meta
-        data about all fragments (eg. their position and velocity, but not
-        their actual geometry). Here is an example::
-
-        fixme: simplify this return value.
+        Return value example::
         {
-            objID_1: {'rbs': _RigidBodyState(...),}
-            objID_2: {'rbs': _RigidBodyState(...),}
+            id_1: {'rbs': RigidBodyState(...)}
+            id_2: {'rbs': RigidBodyState(...)}
         }
 
-        :param list objIDs: the objIDs for which to compile the data.
-        :return: see example above.
+        ..note:: the inner 'rbs' dictionary is currently redundant since it
+            contains only a single hard coded key, but this will make it easy
+            to pass along other values in the future, should the need arise.
+
+        :param list[int] objIDs: list of objects to query.
+        :return: see example above
+        :rtype: dict
         """
         # Create the MongoDB query. If `objID` is None then the client wants
         # the state for all objects.
@@ -1144,23 +1131,24 @@ class Clerk(config.AzraelProcess):
             query = {}
         else:
             query = {'objID': {'$in': objIDs}}
+        prj = {
+            'version': True,
+            'objID': True,
+            'template.rbs': True
+        }
 
         # Query object states and compile them into a dictionary.
         db = database.dbHandles['ObjInstances']
-        cursor = db.find(query,
-                         {'version': True,
-                          'objID': True,
-                          'template.rbs': True})
-        docs = {_['objID']: _ for _ in cursor}
 
         # Compile the data from the database into a simple dictionary that
         # contains the fragment- and body state.
         out = {}
         RBS = types._RigidBodyState
-        for objID, doc in docs.items():
-            # Compile the rigid body data and update its version.
+        for doc in db.find(query, prj):
+            # Compile the rigid body data and overwrite the version tag with
+            # one stored in the database.
             rbs = RBS(**doc['template']['rbs'])
-            out[objID] = {'rbs': rbs._replace(version=doc['version'])}
+            out[doc['objID']] = {'rbs': rbs._replace(version=doc['version'])}
 
         # If the user requested a particular set of objects then make sure each
         # one is in the output dictionary. If one is missing (eg it does not
