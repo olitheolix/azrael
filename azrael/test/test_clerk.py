@@ -1785,12 +1785,12 @@ class TestClerk:
         con_2 = get6DofSpring2(rb_a=id_2, rb_b=id_3)
 
         # Verify that no constraints are currently active.
-        assert clerk.getAllConstraints() == (True, None, tuple())
+        assert clerk.getConstraints(None) == (True, None, tuple())
         assert clerk.getConstraints([id_1]) == (True, None, tuple())
 
         # Add both constraints and verify Clerk returns them correctly.
         assert clerk.addConstraints([con_1, con_2]) == (True, None, 2)
-        ret = clerk.getAllConstraints()
+        ret = clerk.getConstraints(None)
         assert ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
 
         ret = clerk.getConstraints([id_2])
@@ -1801,7 +1801,7 @@ class TestClerk:
 
         # Remove one constraint and verify Clerk returns them correctly.
         assert clerk.deleteConstraints([con_2]) == (True, None, 1)
-        assert clerk.getAllConstraints() == (True, None, (con_1, ))
+        assert clerk.getConstraints(None) == (True, None, (con_1, ))
         assert clerk.getConstraints([id_1]) == (True, None, (con_1, ))
         assert clerk.getConstraints([id_2]) == (True, None, (con_1,))
         assert clerk.getConstraints([id_3]) == (True, None, tuple())

@@ -534,28 +534,3 @@ def FromClerk_GetConstraints_Encode(constraints):
 def FromClerk_GetConstraints_Decode(payload):
     out = [ConstraintMeta(**_) for _ in payload['constraints']]
     return RetVal(True, None, out)
-
-
-# ---------------------------------------------------------------------------
-# getAllConstraints
-# ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_GetAllConstraints_Encode(dummyarg):
-    return RetVal(True, None, {})
-
-
-@typecheck
-def ToClerk_GetAllConstraints_Decode(payload):
-    return True, tuple()
-
-
-@typecheck
-def FromClerk_GetAllConstraints_Encode(constraints: (tuple, list)):
-    return FromClerk_GetConstraints_Encode(constraints)
-
-
-@typecheck
-def FromClerk_GetAllConstraints_Decode(payload: dict):
-    return FromClerk_GetConstraints_Decode(payload)

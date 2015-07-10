@@ -122,9 +122,6 @@ class Client():
             'get_constraints': (
                 protocol.ToClerk_GetConstraints_Encode,
                 protocol.FromClerk_GetConstraints_Decode),
-            'get_all_constraints': (
-                protocol.ToClerk_GetAllConstraints_Encode,
-                protocol.FromClerk_GetAllConstraints_Decode),
             'delete_constraints': (
                 protocol.ToClerk_DeleteConstraints_Encode,
                 protocol.FromClerk_DeleteConstraints_Decode),
@@ -608,19 +605,12 @@ class Client():
         """
         Return all constraints that feature any of the bodies in ``bodyIDs``.
 
+        Return all constraints if ``bodyIDs`` is *None*.
+
         :param list[int] bodyIDs: list of body IDs.
         :return: List of ``ConstraintMeta`` instances.
         """
         return self.serialiseAndSend('get_constraints', bodyIDs)
-
-    @typecheck
-    def getAllConstraints(self):
-        """
-        Return all currently known constraints.
-
-        :return: List of ``ConstraintMeta`` instances.
-        """
-        return self.serialiseAndSend('get_all_constraints', None)
 
     @typecheck
     def deleteConstraints(self, constraints: (tuple, list)):

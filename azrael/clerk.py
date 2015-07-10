@@ -157,10 +157,6 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_GetConstraints_Decode,
                 self.getConstraints,
                 protocol.FromClerk_GetConstraints_Encode),
-            'get_all_constraints': (
-                protocol.ToClerk_GetAllConstraints_Decode,
-                self.getAllConstraints,
-                protocol.FromClerk_GetAllConstraints_Encode),
             'delete_constraints': (
                 protocol.ToClerk_DeleteConstraints_Decode,
                 self.deleteConstraints,
@@ -1343,21 +1339,13 @@ class Clerk(config.AzraelProcess):
         """
         Return all constraints that feature any of the bodies in ``bodyIDs``.
 
+        Return all contraints if ``bodyIDs`` is *None*.
+
         :param list[int] bodyIDs: list of body IDs.
         :return: List of ``ConstraintMeta`` instances.
         """
         self.igor.updateLocalCache()
         return self.igor.getConstraints(bodyIDs)
-
-    @typecheck
-    def getAllConstraints(self):
-        """
-        Return all currently known constraints.
-
-        :return: List of ``ConstraintMeta`` instances.
-        """
-        self.igor.updateLocalCache()
-        return self.igor.getConstraints(None)
 
     @typecheck
     def deleteConstraints(self, constraints: (tuple, list)):

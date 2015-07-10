@@ -772,12 +772,12 @@ class TestClient:
         con_2 = get6DofSpring2(rb_a=id_2, rb_b=id_3)
 
         # Verify that no constraints are currently active.
-        assert client.getAllConstraints() == (True, None, [])
+        assert client.getConstraints(None) == (True, None, [])
         assert client.getConstraints([id_1]) == (True, None, [])
 
         # Add both constraints and verify they are returned correctly.
         assert client.addConstraints([con_1, con_2]) == (True, None, 2)
-        ret = client.getAllConstraints()
+        ret = client.getConstraints(None)
         assert ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
 
         ret = client.getConstraints([id_2])
@@ -789,7 +789,7 @@ class TestClient:
         # Remove the second constraint and verify the remaining constraint is
         # returned correctly.
         assert client.deleteConstraints([con_2]) == (True, None, 1)
-        assert client.getAllConstraints() == (True, None, [con_1])
+        assert client.getConstraints(None) == (True, None, [con_1])
         assert client.getConstraints([id_1]) == (True, None, [con_1])
         assert client.getConstraints([id_2]) == (True, None, [con_1])
         assert client.getConstraints([id_3]) == (True, None, [])
