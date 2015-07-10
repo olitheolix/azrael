@@ -277,8 +277,8 @@ class PyBulletDynamicsWorld():
         # Convenience.
         body = self.rigidBodies[bodyID]
 
-        # Convert orientation and position to Vec3.
-        rot = Quaternion(*rbState.orientation)
+        # Convert rotation and position to Vec3.
+        rot = Quaternion(*rbState.rotation)
         pos = Vec3(*rbState.position)
 
         # Assign body properties.
@@ -506,7 +506,7 @@ class PyBulletDynamicsWorld():
                 del tmp
 
             # Add the collision shape at the respective position and
-            # orientation relative to the parent.
+            # rotation relative to the parent.
             t = azBullet.Transform(Quaternion(*cs.rotation),
                                    Vec3(*cs.position))
             compound.addChildShape(t, child)
@@ -524,15 +524,15 @@ class PyBulletDynamicsWorld():
         :param _RigidBodyData rbState: State Variables of rigid body.
         :return: Success
         """
-        # Convert orientation and position to Bullet types.
-        rot = Quaternion(*rbState.orientation)
+        # Convert rotation and position to Bullet types.
+        rot = Quaternion(*rbState.rotation)
         pos = Vec3(*rbState.position)
 
         # Build the collision shape.
         ret = self.compileCollisionShape(bodyID, rbState)
         mass, inertia, cshapes = ret.data
 
-        # Create a motion state for the initial orientation and position.
+        # Create a motion state for the initial rotation and position.
         ms = azBullet.DefaultMotionState(azBullet.Transform(rot, pos))
 
         # Instantiate the actual rigid body.

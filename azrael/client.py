@@ -318,7 +318,7 @@ class Client():
         * bytes templateID: template from which to spawn the object.
         * 3-vec pos: object position
         * 3-vec vel: initial velocity
-        * 4-vec orient: initial orientation
+        * 4-vec orient: initial rotation
         * float scale: scale entire object by this factor.
         * float imass: (inverse) object mass.
 
@@ -334,7 +334,7 @@ class Client():
             'scale': 1,
             'imass': 1,
             'position': None,
-            'orientation': [0, 0, 0, 1],
+            'rotation': [0, 0, 0, 1],
             'velocityLin': [0, 0, 0],
             'axesLockLin': [1, 1, 1],
             'axesLockRot': [1, 1, 1],
@@ -363,7 +363,7 @@ class Client():
             assert isinstance(obj['scale'], (int, float))
             assert isinstance(obj['imass'], (int, float))
             assert isinstance(obj['position'], list)
-            assert isinstance(obj['orientation'], list)
+            assert isinstance(obj['rotation'], list)
             assert isinstance(obj['velocityLin'], list)
             assert isinstance(obj['axesLockLin'], list)
             assert isinstance(obj['axesLockRot'], list)
@@ -391,7 +391,7 @@ class Client():
         Issue control commands to object parts.
 
         Boosters expect a scalar force which will apply according to their
-        orientation. The commands themselves must be ``types.CmdBooster``
+        rotation. The commands themselves must be ``types.CmdBooster``
         instances.
 
         Factories can spawn objects. Their command syntax is defined in the

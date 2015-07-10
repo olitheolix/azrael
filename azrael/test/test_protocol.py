@@ -226,8 +226,8 @@ class TestClerk:
 
         # Clerk --> Client.
         frag_states = {
-            '1': {'scale': 1, 'position': [0, 1, 2], 'orientation': [0, 0, 0, 1]},
-            '2': {'scale': 2, 'position': [3, 4, 5], 'orientation': [1, 0, 0, 0]},
+            '1': {'scale': 1, 'position': [0, 1, 2], 'rotation': [0, 0, 0, 1]},
+            '2': {'scale': 2, 'position': [3, 4, 5], 'rotation': [1, 0, 0, 0]},
         }
 
         # The payload contains fragment- and body state data for each object.
@@ -325,7 +325,7 @@ class TestClerk:
         # Compile a valid Template structure.
         payload = [
             {'templateID': 'tid_1', 'rbs': {'position': [0, 1, 2]}},
-            {'templateID': 'tid_2', 'rbs': {'orientation': [0, 1, 0, 0]}},
+            {'templateID': 'tid_2', 'rbs': {'rotation': [0, 1, 0, 0]}},
         ]
 
         # Client --> Clerk

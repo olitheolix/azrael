@@ -47,7 +47,7 @@ _Template = namedtuple('_Template', 'aid rbs fragments boosters factories')
 
 # Fragments.
 _FragMeta = namedtuple('_FragMeta',
-                       'fragtype scale position orientation fragdata')
+                       'fragtype scale position rotation fragdata')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 FragNone = namedtuple('FragNone', '')
@@ -60,7 +60,7 @@ Forces = namedtuple('Forces',
 
 # Motion state of an object.
 _RigidBodyData = namedtuple('_RigidBodyData',
-                             'scale imass restitution orientation '
+                             'scale imass restitution rotation '
                              'position velocityLin velocityRot cshapes '
                              'axesLockLin axesLockRot version')
 
@@ -362,12 +362,12 @@ class FragMeta(_FragMeta):
     @typecheck
     def __new__(cls, fragtype: str, scale: (int, float),
                 position: (tuple, list),
-                orientation: (tuple, list),
+                rotation: (tuple, list),
                 fragdata):
         try:
-            # Sanity check position and orientation.
+            # Sanity check position and rotation.
             position = toVec(3, position)
-            orientation = toVec(4, orientation)
+            rotation = toVec(4, rotation)
 
             # Verify that `fragtype` is valid and construct the respective data
             # type for the ``fragdata`` attribute.
@@ -395,7 +395,7 @@ class FragMeta(_FragMeta):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, fragtype, scale, position, orientation, frag)
+        return super().__new__(cls, fragtype, scale, position, rotation, frag)
 
     def _asdict(self):
         if self.fragdata is None:
@@ -410,7 +410,7 @@ class CollShapeMeta(_CollShapeMeta):
     Return description of a collision shape and its meta data.
 
     :param vec3 position: position of collision shape in world coordinates.
-    :param vec4 rotation: orientation of collision shape in world coordinates.
+    :param vec4 rotation: rotation of collision shape in world coordinates.
     :param csdate: instance of a collision shape (eg. ``CollShapeSphere``).
     :return: compiled  `_CollShapeMeta` instance.
     :raises: TypeError if the input does not compile to the data type.
@@ -538,7 +538,7 @@ class CollShapePlane(_CollShapePlane):
     """
     Return the description for a Plane shape.
 
-    Planes are an infinitely large flat surface. Its orientation is uniquely
+    Planes are an infinitely large flat surface. Its rotation is uniquely
     described by the normal vector on that sphere plus an offset along this
     normal.
 
@@ -717,7 +717,7 @@ class Booster(_Booster):
 
     Boosters exert a force on an object. Boosters have an ID (user can
     specify it), a position relative to the object's centre of mass, a
-    force direction relative to the object's overall orientation, and a
+    force direction relative to the object's overall rotation, and a
     maximum force. Note that the force is a scalar not a vector.
 
     The unit is located at ``pos`` relative to the parent's centre of mass. The
@@ -854,7 +854,7 @@ class RigidBodyData(_RigidBodyData):
     def __new__(cls, scale: (int, float),
                    imass: (int, float),
                    restitution: (int, float),
-                   orientation: (tuple, list),
+                   rotation: (tuple, list),
                    position: (tuple, list, np.ndarray),
                    velocityLin: (tuple, list, np.ndarray),
                    velocityRot: (tuple, list, np.ndarray),
@@ -869,7 +869,7 @@ class RigidBodyData(_RigidBodyData):
             # Sanity checks inputs.
             axesLockLin = toVec(3, axesLockLin)
             axesLockRot = toVec(3, axesLockRot)
-            orientation = toVec(4, orientation)
+            rotation = toVec(4, rotation)
             position = toVec(3, position)
             velocityLin = toVec(3, velocityLin)
             velocityRot = toVec(3, velocityRot)
@@ -889,7 +889,7 @@ class RigidBodyData(_RigidBodyData):
             scale=scale,
             imass=imass,
             restitution=restitution,
-            orientation=orientation,
+            rotation=rotation,
             position=position,
             velocityLin=velocityLin,
             velocityRot=velocityRot,
@@ -906,7 +906,7 @@ class RigidBodyData(_RigidBodyData):
 def DefaultRigidBody(scale=1,
                      imass=1,
                      restitution=0.9,
-                     orientation=(0, 0, 0, 1),
+                     rotation=(0, 0, 0, 1),
                      position=(0, 0, 0),
                      velocityLin=(0, 0, 0),
                      velocityRot=(0, 0, 0),
@@ -930,7 +930,7 @@ def DefaultRigidBody(scale=1,
             for (k, v) in cshapes.items()
         }
 
-    return RigidBodyData(scale, imass, restitution, orientation, position,
+    return RigidBodyData(scale, imass, restitution, rotation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,
                           axesLockRot, version)
 

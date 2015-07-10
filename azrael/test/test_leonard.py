@@ -550,7 +550,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Spawn one object.
-        sv = getRigidBody(imass=1, orientation=(0, 0, 0, 1))
+        sv = getRigidBody(imass=1, rotation=(0, 0, 0, 1))
         objID = 1
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
@@ -592,7 +592,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Spawn one object rotated 180 degress around x-axis.
-        sv = getRigidBody(imass=1, orientation=(1, 0, 0, 0))
+        sv = getRigidBody(imass=1, rotation=(1, 0, 0, 0))
         objID = 1
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
@@ -1070,7 +1070,7 @@ class TestBroadphase:
 
         Create two bodies with one AABB each. The AABB of the first body is
         a centered unit cube used for testing. The second body has an AABB with
-        an offset. Use different scales and orientations to verify it is
+        an offset. Use different scales and rotations to verify it is
         correctly taken into account during the broadphase.
         """
         # Create the test body at the center. It is a centered unit cube.
@@ -1088,7 +1088,7 @@ class TestBroadphase:
 
             # Create the second body. Its collision shape is a unit cube
             # at position `cs_ofs`.
-            body_b = getRigidBody(position=pos, scale=scale, orientation=rot,
+            body_b = getRigidBody(position=pos, scale=scale, rotation=rot,
                                   cshapes={'csbox': getCSBox()})
 
             # Compile the input dictionaries for the broadphase algorithm.

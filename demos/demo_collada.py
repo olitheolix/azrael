@@ -114,7 +114,7 @@ def spawnColladaModel(scale, fname):
     d = {'scale': scale,
          'imass': 0.1,
          'position': pos,
-         'orientation': orient,
+         'rotation': orient,
          'axesLockLin': [1, 1, 1],
          'axesLockRot': [1, 1, 1],
          'template': temp.aid}

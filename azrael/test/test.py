@@ -89,7 +89,7 @@ def getFragNone(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     Convenience function to construct an empty geometry element.
     """
     return FragMeta(fragtype='_del_', scale=scale, position=pos,
-                    orientation=rot, fragdata=FragNone())
+                    rotation=rot, fragdata=FragNone())
 
 
 def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
@@ -102,7 +102,7 @@ def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
 
     geo = FragRaw(vert, uv, rgb)
     return FragMeta(fragtype='RAW', scale=scale, position=pos,
-                    orientation=rot, fragdata=geo)
+                    rotation=rot, fragdata=geo)
 
 
 def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
@@ -122,7 +122,7 @@ def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
                        'rgb2.jpg': dae_rgb2})
 
     return FragMeta(fragtype='DAE', scale=scale, position=pos,
-                    orientation=rot, fragdata=geo)
+                    rotation=rot, fragdata=geo)
 
 
 def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2,
@@ -156,7 +156,7 @@ def get6DofSpring2(aid='constraint_6dofspring2', rb_a=1, rb_b=2):
 def getRigidBody(scale: (int, float)=1,
                  imass: (int, float)=1,
                  restitution: (int, float)=0.9,
-                 orientation: (tuple, list)=(0, 0, 0, 1),
+                 rotation: (tuple, list)=(0, 0, 0, 1),
                  position: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
@@ -164,7 +164,7 @@ def getRigidBody(scale: (int, float)=1,
                  axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
                  axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
-    return RigidBodyData(scale, imass, restitution, orientation, position,
+    return RigidBodyData(scale, imass, restitution, rotation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,
                           axesLockRot, version)
 

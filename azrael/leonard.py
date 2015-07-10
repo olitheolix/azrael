@@ -192,7 +192,7 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
         # Convenience: unpack the body parameters needed here.
         pos_rb = bodies[objID].position
         scale = bodies[objID].scale
-        rot = bodies[objID].orientation
+        rot = bodies[objID].rotation
         quat = util.Quaternion(rot[3], rot[:3])
 
         # Create an empty data structure (will be populated below).
@@ -231,7 +231,7 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
                 continue
 
             # Compute the AABB position in world coordinates. This takes into
-            # account the position-, orientation, and scale of the body.
+            # account the position-, rotation, and scale of the body.
             pos = pos_rb + scale * (quat * pos_aabb)
 
             # Compute the min/max value of the AABB value in world coordinates.
@@ -446,8 +446,8 @@ class LeonardBase(config.AzraelProcess):
         sv = self.allBodies[objID]
         f = self.allForces[objID]
 
-        # Construct the Quaternion of the object based on its orientation.
-        quat = util.Quaternion(sv.orientation[3], sv.orientation[:3])
+        # Construct the Quaternion of the object based on its rotation.
+        quat = util.Quaternion(sv.rotation[3], sv.rotation[:3])
 
         # Fetch the force vector for the current object from the DB.
         force = np.array(f.forceDirect, np.float64)

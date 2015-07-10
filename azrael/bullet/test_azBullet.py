@@ -671,7 +671,7 @@ class TestTransform:
         assert t.getOrigin() == Vec3(0, 0, 0)
         assert t.getRotation() == Quaternion(0, 0, 0, 1)
 
-        # Set the position and orientation.
+        # Set the position and rotation.
         pos = Vec3(1, 2, 3.5)
         rot = Quaternion(0, 1, 0, 0)
         t.setOrigin(pos)

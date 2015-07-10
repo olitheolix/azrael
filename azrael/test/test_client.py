@@ -417,7 +417,7 @@ class TestClient:
         sv = getRigidBody(
             position=pos_parent,
             velocityLin=vel_parent,
-            orientation=orient_parent)
+            rotation=orient_parent)
 
         # ---------------------------------------------------------------------
         # Create a template with two factories and spawn it.
@@ -449,7 +449,7 @@ class TestClient:
                    'rbs': {
                        'position': pos_parent,
                        'velocityLin': vel_parent,
-                       'orientation': orient_parent}}
+                       'rotation': orient_parent}}
         ret = client.spawn([new_obj])
         assert ret.ok and (ret.data == [objID_1])
         del boosters, factories, temp, new_obj
@@ -656,14 +656,14 @@ class TestClient:
         # Query the Body State to get the Fragment States. Then verify the
         # Fragment State named 'bar'.
         ret = client.getObjectStates(objID)
-        ref = {'bar': {'scale': 1, 'position': [0, 0, 0], 'orientation': [0, 0, 0, 1]}}
+        ref = {'bar': {'scale': 1, 'position': [0, 0, 0], 'rotation': [0, 0, 0, 1]}}
         assert ret.ok
         assert ret.data[objID]['frag'] == ref
 
         # Modify and update the fragment states in Azrael, then query and
         # verify it worked.
         newStates = {objID: {'bar': {'scale': 2.2, 'position': [1, 2, 3],
-                                     'orientation': [1, 0, 0, 0]}}}
+                                     'rotation': [1, 0, 0, 0]}}}
         assert client.setFragments(newStates).ok
         ret = client.getObjectStates(objID)
         assert ret.ok

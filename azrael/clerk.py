@@ -653,7 +653,7 @@ class Clerk(config.AzraelProcess):
         Issue commands to individual parts of the ``objID``.
 
         Boosters can be activated with a scalar force. The force automatically
-        applies in the direction of the booster (taking the orientation of the
+        applies in the direction of the booster (taking the rotation of the
         parent into account).
 
         The commands for Boosters and Factories must be instances of
@@ -683,7 +683,7 @@ class Clerk(config.AzraelProcess):
             self.logit.error(msg)
             return RetVal(False, msg, None)
 
-        # Fetch the SV for objID (we need this to determine the orientation of
+        # Fetch the SV for objID (we need this to determine the rotation of
         # the base object to which the parts are attached).
         sv_parent = self.getRigidBodies([objID])
         if not sv_parent.ok:
@@ -697,9 +697,9 @@ class Clerk(config.AzraelProcess):
             self.logit.warning(msg)
             return RetVal(False, msg, None)
 
-        # Extract the parent's orientation from its rigid body state.
+        # Extract the parent's rotation from its rigid body state.
         sv_parent = sv_parent.data[objID]['rbs']
-        parent_orient = sv_parent.orientation
+        parent_orient = sv_parent.rotation
         quat = util.Quaternion(parent_orient[3], parent_orient[:3])
 
         # Sanity check the Booster- and Factory commands.
@@ -752,20 +752,20 @@ class Clerk(config.AzraelProcess):
             # spawned.
             pos = quat * this.pos + sv_parent.position
 
-            # Align the exit velocity vector with the parent's orientation.
+            # Align the exit velocity vector with the parent's rotation.
             velocityLin = cmd.exit_speed * (quat * this.direction)
 
             # Add the parent's velocity to the exit velocity.
             velocityLin += sv_parent.velocityLin
 
             # The body state of the new object must align with the factory unit
-            # in terms of position, orientation, and velocity.
+            # in terms of position, rotation, and velocity.
             init = {
                 'templateID': this.templateID,
                 'rbs': {
                     'position': tuple(pos),
                     'velocityLin': tuple(velocityLin),
-                    'orientation': tuple(sv_parent.orientation),
+                    'rotation': tuple(sv_parent.rotation),
                 }
             }
 
@@ -882,9 +882,9 @@ class Clerk(config.AzraelProcess):
         This method returns a dictionary of the form::
 
             {objID_1: {'fragtype': 'raw', 'scale': 1, 'position': (1, 2, 3),
-                       'orientation': (0, 1, 0, 0,), 'url_frag': 'http://'},
+                       'rotation': (0, 1, 0, 0,), 'url_frag': 'http://'},
              objID_2: {'fragtype': 'dae', 'scale': 1, 'position': (4, 5, 6),
-                       'orientation': (0, 0, 0, 1), 'url_frag': 'http://'},
+                       'rotation': (0, 0, 0, 1), 'url_frag': 'http://'},
              objID_3: None,
              ...
             }
@@ -927,7 +927,7 @@ class Clerk(config.AzraelProcess):
                     k: {
                         'scale': v.scale,
                         'position': v.position,
-                        'orientation': v.orientation,
+                        'rotation': v.rotation,
                         'fragtype': v.fragtype,
                         'url_frag': pjoin(doc['url_frag'], k)
                     } for (k, v) in frags.items()}
@@ -959,7 +959,7 @@ class Clerk(config.AzraelProcess):
             ref_1 = {'fragtype': '_DEL_',
                      'scale': 1,
                      'position': (0, 0, 0),
-                     'orientation': (0, 0, 0, 1),
+                     'rotation': (0, 0, 0, 1),
                      'fragdata': types.FragNone()}
 
             # Same as ref_1 but all values are None.
@@ -1195,7 +1195,7 @@ class Clerk(config.AzraelProcess):
 
         If ``objIDs`` is *None* then the states of all objects are returned.
 
-        The returned dictionary contains the scale, position and orientation of
+        The returned dictionary contains the scale, position and rotation of
         every fragment and the rigid body, as well as the linear- and angular
         velocity of the body. The dictionary does not contain any collision
         shapes, fragment geometries, or other specialised data.
@@ -1206,15 +1206,15 @@ class Clerk(config.AzraelProcess):
         {
             objID_1: {
                 'frag': {
-                    'a': {'scale: x, 'position': [...], 'orientation': [...],},
-                    'b': {'scale: y, 'position': [...], 'orientation': [...],},
+                    'a': {'scale: x, 'position': [...], 'rotation': [...],},
+                    'b': {'scale: y, 'position': [...], 'rotation': [...],},
                 }
                 'rbs': _RigidBodyData(...),
             },
             objID_2: {
                 'frag': {
-                    'a': {'scale: x, 'position': [...], 'orientation': [...],},
-                    'b': {'scale: y, 'position': [...], 'orientation': [...],},
+                    'a': {'scale: x, 'position': [...], 'rotation': [...],},
+                    'b': {'scale: y, 'position': [...], 'rotation': [...],},
                 }
                 'rbs': _RigidBodyData(...),
             },
@@ -1240,7 +1240,7 @@ class Clerk(config.AzraelProcess):
             'template.fragments': True,
             'template.rbs.scale': True,
             'template.rbs.position': True,
-            'template.rbs.orientation': True,
+            'template.rbs.rotation': True,
             'template.rbs.velocityLin': True,
             'template.rbs.velocityRot': True,
         }
@@ -1255,7 +1255,7 @@ class Clerk(config.AzraelProcess):
             # Compile the state data for each fragment of the current object.
             fs = {k: {'scale': v['scale'],
                       'position': v['position'],
-                      'orientation': v['orientation']}
+                      'rotation': v['rotation']}
                       for (k, v) in frags.items()}
 
             # Add the current version to the rigid body data.

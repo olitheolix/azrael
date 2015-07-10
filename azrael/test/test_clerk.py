@@ -587,13 +587,13 @@ class TestClerk:
         assert (ret.ok, len(ret.data)) == (True, 1)
 
         # Verify that the rigid body meta data is correct and complete.
-        expected_keys = set(['scale', 'position', 'orientation',
+        expected_keys = set(['scale', 'position', 'rotation',
                              'velocityLin', 'velocityRot', 'version'])
         r = ret.data[id_1]['rbs']
         assert set(r.keys()) == expected_keys
         assert r['scale'] == 1
         assert r['position'] == list(body_1.position)
-        assert r['orientation'] == list(body_1.orientation)
+        assert r['rotation'] == list(body_1.rotation)
         assert r['velocityLin'] == list(body_1.velocityLin)
         assert r['velocityRot'] == list(body_1.velocityRot)
         del r
@@ -604,7 +604,7 @@ class TestClerk:
         for name in ('f1', 'f2'):
             assert r[name]['scale'] == frags[name].scale
             assert r[name]['position'] == list(frags[name].position)
-            assert r[name]['orientation'] == list(frags[name].orientation)
+            assert r[name]['rotation'] == list(frags[name].rotation)
         del r
 
         # Query all of them.
@@ -623,7 +623,7 @@ class TestClerk:
         assert set(r.keys()) == expected_keys
         assert r['scale'] == 1
         assert r['position'] == init_2['rbs']['position']
-        assert r['orientation'] == list(body_1.orientation)
+        assert r['rotation'] == list(body_1.rotation)
         assert r['velocityLin'] == init_2['rbs']['velocityLin']
         assert r['velocityRot'] == list(body_1.velocityRot)
         del r
@@ -634,7 +634,7 @@ class TestClerk:
         for name in ('f1', 'f2'):
             assert r[name]['scale'] == frags[name].scale
             assert r[name]['position'] == list(frags[name].position)
-            assert r[name]['orientation'] == list(frags[name].orientation)
+            assert r[name]['rotation'] == list(frags[name].rotation)
         del r
 
         # Query all states in a single query and verify it matches the
@@ -877,14 +877,14 @@ class TestClerk:
         if np.allclose(body_2.position, pos_1):
             body_2, body_3 = body_3, body_2
         
-        # Ensure the position, velocity, and orientation of the spawned objects
+        # Ensure the position, velocity, and rotation of the spawned objects
         # are correct.
         assert np.allclose(body_2.velocityLin, exit_speed_0 * dir_0)
         assert np.allclose(body_2.position, pos_0)
-        assert np.allclose(body_2.orientation, [0, 0, 0, 1])
+        assert np.allclose(body_2.rotation, [0, 0, 0, 1])
         assert np.allclose(body_3.velocityLin, exit_speed_1 * dir_1)
         assert np.allclose(body_3.position, pos_1)
-        assert np.allclose(body_3.orientation, [0, 0, 0, 1])
+        assert np.allclose(body_3.rotation, [0, 0, 0, 1])
 
     def test_controlParts_Factories_moving(self):
         """
@@ -960,13 +960,13 @@ class TestClerk:
         if np.allclose(body_2.position, pos_1 + pos_parent):
             body_2, body_3 = body_3, body_2
 
-        # Ensure the position/velocity/orientation are correct.
+        # Ensure the position/velocity/rotation are correct.
         assert np.allclose(body_2.velocityLin, exit_speed_0 * dir_0 + vel_parent)
         assert np.allclose(body_2.position, pos_0 + pos_parent)
-        assert np.allclose(body_2.orientation, [0, 0, 0, 1])
+        assert np.allclose(body_2.rotation, [0, 0, 0, 1])
         assert np.allclose(body_3.velocityLin, exit_speed_1 * dir_1 + vel_parent)
         assert np.allclose(body_3.position, pos_1 + pos_parent)
-        assert np.allclose(body_3.orientation, [0, 0, 0, 1])
+        assert np.allclose(body_3.rotation, [0, 0, 0, 1])
 
     def test_controlParts_Boosters_and_Factories_move_and_rotated(self):
         """
@@ -1010,7 +1010,7 @@ class TestClerk:
         # must be inverted.
         body = getRigidBody(position=pos_parent,
                             velocityLin=vel_parent,
-                            orientation=orient_parent)
+                            rotation=orient_parent)
         # Convenience.
         clerk = self.clerk
 
@@ -1042,7 +1042,7 @@ class TestClerk:
             'templateID': temp.aid,
             'rbs': {
                 'position': body.position,
-                'orientation': body.orientation,
+                'rotation': body.rotation,
                 'velocityLin': body.velocityLin
             }
         }
@@ -1088,10 +1088,10 @@ class TestClerk:
         AC = np.allclose
         assert AC(body_2.velocityLin, exit_speed_0 * dir_0_out + vel_parent)
         assert AC(body_2.position, pos_0_out + pos_parent)
-        assert AC(body_2.orientation, orient_parent)
+        assert AC(body_2.rotation, orient_parent)
         assert AC(body_3.velocityLin, exit_speed_1 * dir_1_out + vel_parent)
         assert AC(body_3.position, pos_1_out + pos_parent)
-        assert AC(body_3.orientation, orient_parent)
+        assert AC(body_3.rotation, orient_parent)
 
         # Manually compute the total force and torque exerted by the boosters.
         forcevec_0, forcevec_1 = forcemag_0 * dir_0_out, forcemag_1 * dir_1_out
@@ -1315,31 +1315,31 @@ class TestClerk:
         r1 = ret.data[id_1]
         assert r1['foo']['scale'] == 2
         assert r1['foo']['position'] == (0, 1, 2)
-        assert r1['foo']['orientation'] == fraw.orientation
+        assert r1['foo']['rotation'] == fraw.rotation
         assert r1['foo']['fragtype'] == fraw.fragtype
         assert r1['bar']['scale'] == fdae.scale
         assert r1['bar']['position'] == fdae.position
-        assert r1['bar']['orientation'] == fdae.orientation
+        assert r1['bar']['rotation'] == fdae.rotation
         assert r1['bar']['fragtype'] == fdae.fragtype
 
         r2 = ret.data[id_2]
         assert r2['foo']['scale'] == fraw.scale
         assert r2['foo']['position'] == fraw.position
-        assert r2['foo']['orientation'] == fraw.orientation
+        assert r2['foo']['rotation'] == fraw.rotation
         assert r2['foo']['fragtype'] == fraw.fragtype
         assert r2['bar']['scale'] == fdae.scale
         assert r2['bar']['position'] == fdae.position
-        assert r2['bar']['orientation'] == fdae.orientation
+        assert r2['bar']['rotation'] == fdae.rotation
         assert r2['bar']['fragtype'] == fdae.fragtype
                    
         r3 = ret.data[id_3]
         assert r3['foo']['scale'] == fraw.scale
         assert r3['foo']['position'] == fraw.position
-        assert r3['foo']['orientation'] == fraw.orientation
+        assert r3['foo']['rotation'] == fraw.rotation
         assert r3['foo']['fragtype'] == fraw.fragtype
         assert r3['bar']['scale'] == fdae.scale
         assert r3['bar']['position'] == fdae.position
-        assert r3['bar']['orientation'] == fdae.orientation
+        assert r3['bar']['rotation'] == fdae.rotation
         assert r3['bar']['fragtype'] == fraw.fragtype
 
     def test_setFragments_partial_bug(self):
@@ -1419,8 +1419,8 @@ class TestClerk:
             _frag_2 = ret.data[objID_2]['frag']['foo']
 
             # Compile the expected values into a dictionary.
-            ref_1 = {'scale': scale_1, 'position': pos_1, 'orientation': rot_1}
-            ref_2 = {'scale': scale_2, 'position': pos_2, 'orientation': rot_2}
+            ref_1 = {'scale': scale_1, 'position': pos_1, 'rotation': rot_1}
+            ref_2 = {'scale': scale_2, 'position': pos_2, 'rotation': rot_2}
 
             # Verify the fragments have the expected values.
             assert _frag_1 == ref_1
@@ -1433,7 +1433,7 @@ class TestClerk:
             This is a convenience function only to make this test more
             readable.
             """
-            return {'scale': scale, 'position': pos, 'orientation': rot}
+            return {'scale': scale, 'position': pos, 'rotation': rot}
         
         # All fragments must initially be at the center.
         checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
@@ -1523,8 +1523,8 @@ class TestClerk:
             assert {name_1, name_2} == set(_frags.keys())
 
             # Compile the expected values into a dictionary.
-            ref_1 = {'scale': scale_1, 'position': pos_1, 'orientation': rot_1}
-            ref_2 = {'scale': scale_2, 'position': pos_2, 'orientation': rot_2}
+            ref_1 = {'scale': scale_1, 'position': pos_1, 'rotation': rot_1}
+            ref_2 = {'scale': scale_2, 'position': pos_2, 'rotation': rot_2}
 
             # Verify the fragments have the expected values.
             assert _frags[name_1] == ref_1
@@ -1538,7 +1538,7 @@ class TestClerk:
             This is a convenience function only to make this test more
             readable.
             """
-            return {'scale': scale, 'position': pos, 'orientation': rot}
+            return {'scale': scale, 'position': pos, 'rotation': rot}
 
         # Create two fragments.
         f_raw = getFragRaw()

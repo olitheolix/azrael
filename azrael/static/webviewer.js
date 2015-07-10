@@ -1,9 +1,9 @@
-var StateVariable = function(pos, vel, orientation, scale, imass) {
+var StateVariable = function(pos, vel, rotation, scale, imass) {
     var d = {'radius': scale,
          'scale': scale,
          'imass': imass,
          'restitution': 0.9,
-         'orientation': orientation,
+         'rotation': rotation,
          'position': pos,
          'velocityLin': vel,
          'velocityRot': [0, 0, 0],
@@ -247,9 +247,9 @@ function arrayEqual(arr1, arr2) {
     return isequal;
 }
 
-// Update the position and orientation of each fragment. Both are a
-// function of the object's position and orientation in world
-// coordinates as well as the position and orientation of the fragment
+// Update the position and rotation of each fragment. Both are a
+// function of the object's position and rotation in world
+// coordinates as well as the position and rotation of the fragment
 // in object coordinates.  The exact formula for the position is:
 // 
 //   P = objPos + objScl * objRot * fragPos;
@@ -291,12 +291,12 @@ function updateObjectGeometries(objID, allSVs, obj_cache) {
 
         // Convert the Azrael data to ThreeJS types.
         fragPos = fragPos.fromArray(fragData['position']);
-        fragRot = fragRot.fromArray(fragData['orientation']);
+        fragRot = fragRot.fromArray(fragData['rotation']);
         fragScl.x = fragData['scale'];
         fragScl.y = fragData['scale'];
         fragScl.z = fragData['scale'];
         objPos = objPos.fromArray(sv.position);
-        objRot = objRot.fromArray(sv.orientation);
+        objRot = objRot.fromArray(sv.rotation);
         objScl = objScl.set(sv.scale, sv.scale, sv.scale);
 
         // Position: objPos + objScl * objRot * fragPos
@@ -310,7 +310,7 @@ function updateObjectGeometries(objID, allSVs, obj_cache) {
         // Scale: objScl * fragScl
         S = objScl.multiply(fragScl);
 
-        // Update position, orientation, and scale of the object.
+        // Update position, rotation, and scale of the object.
         obj_cache[objID][fragname].position.copy(P);
         obj_cache[objID][fragname].quaternion.copy(R);
         obj_cache[objID][fragname].scale.copy(S);
@@ -484,7 +484,7 @@ function* mycoroutine(connection) {
         if (msg.ok == false) {console.log('Error getObjectStates'); return;}
         var allSVs = msg.data
 
-        // Update the position and orientation of all objects. If an
+        // Update the position and rotation of all objects. If an
         // object does not yet exist then create one.
         $(".progress-bar").css('width', '0%');
         var numObjects = Object.keys(allSVs).length;
@@ -631,7 +631,7 @@ function* mycoroutine(connection) {
             for (ii in view) {view[ii] *= 0.2}
 
             // Spawn the new object at the correct position and with
-            // the correct velocity and orientation.
+            // the correct velocity and rotation.
             var templateID = [111, 108, 105];
             msg = yield spawn(templateID, pos, view, [x, y, z, w], 0.25, 20)
 

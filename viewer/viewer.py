@@ -80,12 +80,12 @@ def getFragMeta(ftype, fdata):
     pos = (0, 0, 0)
     rot = (0, 0, 0, 1)
     return FragMeta(fragtype=ftype, scale=scale, position=pos,
-                    orientation=rot, fragdata=fdata)
+                    rotation=rot, fragdata=fdata)
 
 def getRigidBody(scale: (int, float)=1,
                  imass: (int, float)=1,
                  restitution: (int, float)=0.9,
-                 orientation: (tuple, list)=(0, 0, 0, 1),
+                 rotation: (tuple, list)=(0, 0, 0, 1),
                  position: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
@@ -100,7 +100,7 @@ def getRigidBody(scale: (int, float)=1,
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))
         cshapes = {'': cshapes}
-    return azrael.types.RigidBodyData(scale, imass, restitution, orientation,
+    return azrael.types.RigidBodyData(scale, imass, restitution, rotation,
                                        position, velocityLin, velocityRot,
                                        cshapes, axesLockLin, axesLockRot,
                                        version)
@@ -223,7 +223,7 @@ class Camera:
         # Initial camera position.
         self.position = np.array(pos, dtype=np.float64)
 
-        # Initial camera orientation.
+        # Initial camera rotation.
         self.phi = phi
         self.theta = theta
 
@@ -248,7 +248,7 @@ class Camera:
         trans = np.eye(4)
         trans[:3, 3] = -self.position
 
-        # Rotation matrix to undo the camera orientation.
+        # Rotation matrix to undo the camera rotation.
         rot = np.zeros((4, 4))
         rot[:3, :3] = np.vstack((self.right, self.up, self.view))
         rot[3, 3] = 1
@@ -699,7 +699,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         matScaleObj[3, 3] = 1
 
         # Convert the object Quaternion into a rotation matrix.
-        q = frag['orientation']
+        q = frag['rotation']
         matRotObj = util.Quaternion(q[3], q[:3]).toMatrix()
 
         # Build the model matrix for the overall object.
@@ -730,7 +730,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         explicitly. In this script we use a timer to periodically trigger the
         updateGL() method for a smooth viewing experience.
         """
-        # Update the position/orientation of the camera depending on the
+        # Update the position/rotation of the camera depending on the
         # currently pressed keys and mouse position.
         self.updateCamera()
 
@@ -761,13 +761,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 body = self.newSVs[objID]['rbs']
                 tmp = {'scale': body['scale'],
                        'position': body['position'],
-                       'orientation': body['orientation']
+                       'rotation': body['rotation']
                 }
                 matModelObj = self.buildModelMatrix(tmp)
                 del body, tmp
 
                 # Update each fragment in the scene based on the position,
-                # orientation, and scale of the overall object.
+                # rotation, and scale of the overall object.
                 self._drawFragments(objID, matModelObj, matPerspCam)
 
         # --------------------------------------------------------------------
@@ -957,7 +957,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         This method will simply set the corresponding movement flags, which
         will be used in the painGL method to actually update the camera
-        position and orientation.
+        position and rotation.
         """
         # Convert input to a string character. Qt will sometimes lump
         # characters together if they arrive quicker than the event loop can

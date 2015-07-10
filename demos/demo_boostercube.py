@@ -144,7 +144,7 @@ def spawnBoosterSphere(scale, fname):
     d = {'scale': scale,
          'imass': 0.1,
          'position': [0, 0, -10],
-         'orientation': [0, 0, 0, 1],
+         'rotation': [0, 0, 0, 1],
          'axesLockLin': [1, 1, 1],
          'axesLockRot': [0, 0, 0],
          'template': tID}

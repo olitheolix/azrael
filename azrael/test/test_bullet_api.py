@@ -60,7 +60,7 @@ class TestBulletAPI:
             imass=4.5,
             cshapes=cshapes,
             restitution=5.5,
-            orientation=(0, 1, 0, 0),
+            rotation=(0, 1, 0, 0),
             position=(0.2, 0.4, 0.6),
             velocityLin=(0.8, 1.0, 1.2),
             velocityRot=(1.4, 1.6, 1.8))
@@ -90,7 +90,7 @@ class TestBulletAPI:
             imass=4.5,
             cshapes=cshapes,
             restitution=5.5,
-            orientation=(0, 1, 0, 0),
+            rotation=(0, 1, 0, 0),
             position=(0.2, 0.4, 0.6),
             velocityLin=(0.8, 1.0, 1.2),
             velocityRot=(1.4, 1.6, 1.8))
@@ -110,7 +110,7 @@ class TestBulletAPI:
             imass=7.5,
             cshapes=cshapes,
             restitution=8.5,
-            orientation=(0, 0, 1, 0),
+            rotation=(0, 0, 1, 0),
             position=(1.2, 1.4, 1.6),
             velocityLin=(2.8, 2.0, 2.2),
             velocityRot=(2.4, 2.6, 2.8))

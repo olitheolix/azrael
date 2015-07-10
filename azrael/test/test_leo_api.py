@@ -260,7 +260,7 @@ class TestLeonardAPI:
     def test_setRigidBody(self):
         """
         Set and retrieve object attributes like position, velocity,
-        acceleration, and orientation.
+        acceleration, and rotation.
         """
         # Instantiate a Leonard.
         leo = getLeonard()
@@ -273,7 +273,7 @@ class TestLeonardAPI:
             'position': (1, 2, 5),
             'velocityLin': (8, 9, 10.5),
             'velocityRot': (9, 10, 11.5),
-            'orientation': (11, 12.5, 13, 13.5)
+            'rotation': (11, 12.5, 13, 13.5)
         }
 
         # Create a test body.
@@ -295,7 +295,7 @@ class TestLeonardAPI:
         assert np.array_equal(ret.position, body_new['position'])
         assert np.array_equal(ret.velocityLin, body_new['velocityLin'])
         assert np.array_equal(ret.velocityRot, body_new['velocityRot'])
-        assert np.array_equal(ret.orientation, body_new['orientation'])
+        assert np.array_equal(ret.rotation, body_new['rotation'])
 
         # Query the AABB, update the collision shapes, and verify that the new
         # AABBs are in effect.
@@ -517,8 +517,8 @@ class TestLeonardAPI:
         cs = {'csplane': getCSPlane(), 'cssphere': getCSSphere()}
         assert not computeAABBs(cs).ok
 
-        # The position and orientation of a plane is defined via the normal
-        # vector and its offset. The position/orientation fields in the
+        # The position and rotation of a plane is defined via the normal
+        # vector and its offset. The position/rotation fields in the
         # CollShapeMeta structure are thus redundant and *must* be set to
         # defaults to avoid unintended side effects.
         cs = {'csplane': getCSPlane(pos=(0, 1, 2))}

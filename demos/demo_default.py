@@ -104,12 +104,12 @@ def getFragMeta(ftype, fdata):
     pos = (0, 0, 0)
     rot = (0, 0, 0, 1)
     return FragMeta(fragtype=ftype, scale=scale, position=pos,
-                    orientation=rot, fragdata=fdata)
+                    rotation=rot, fragdata=fdata)
 
 def getRigidBody(scale: (int, float)=1,
                  imass: (int, float)=1,
                  restitution: (int, float)=0.9,
-                 orientation: (tuple, list)=(0, 0, 0, 1),
+                 rotation: (tuple, list)=(0, 0, 0, 1),
                  position: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
@@ -123,7 +123,7 @@ def getRigidBody(scale: (int, float)=1,
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))
         cshapes = {'Sphere': cshapes}
-    return azrael.types.RigidBodyData(scale, imass, restitution, orientation,
+    return azrael.types.RigidBodyData(scale, imass, restitution, rotation,
                                        position, velocityLin, velocityRot,
                                        cshapes, axesLockLin, axesLockRot,
                                        version)
@@ -296,7 +296,7 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
             'scale': scale,
             'imass': 0.1,
             'position': pos,
-            'orientation': orient,
+            'rotation': orient,
             'axesLockLin': [1, 1, 1],
             'axesLockRot': [1, 1, 1]}
     }
@@ -583,7 +583,7 @@ class ResetSim(multiprocessing.Process):
                         'position': SV.position,
                         'velocityLin': SV.velocityLin,
                         'velocityRot': SV.velocityRot,
-                        'orientation': SV.orientation}
+                        'rotation': SV.rotation}
                     assert client.setRigidBody(objID, tmp).ok
                 time.sleep(0.1)
 

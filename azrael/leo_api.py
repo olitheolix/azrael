@@ -47,11 +47,11 @@ def computeAABBs(cshapes: dict):
 
     if``cshapes`` contains a plane then it must be the only collision shape
     (ie len(cshapes) == 1). Furthermore, planes must have default values for
-    position and orientation.
+    position and rotation.
 
     ..note:: The bounding boxes are large enough to accommodate all possible
-             orientations of the collision shape. This makes them larger than
-             necessary yet avoids recomputing them whenever the orientation of
+             rotations of the collision shape. This makes them larger than
+             necessary yet avoids recomputing them whenever the rotation of
              the body changes.
 
     :param list[CollShapeMeta] cshapes: collision shapes
@@ -72,14 +72,14 @@ def computeAABBs(cshapes: dict):
 
             name, cshape = cshapes.popitem()
 
-            # Planes must have defaule values for position and orientation, or
+            # Planes must have defaule values for position and rotation, or
             # Azrael considers them invalid.
             pos, rot = tuple(cshape.position), tuple(cshape.rotation)
             if (pos == (0, 0, 0)) and (rot == (0, 0, 0, 1)):
                 aabbs[name] = (0, 0, 0, 0, 0, 0)
                 return RetVal(True, None, aabbs)
             else:
-                msg = 'Planes must have default position and orientation'
+                msg = 'Planes must have default position and rotation'
                 return RetVal(False, msg, None)
 
         for name, cs in cshapes.items():
@@ -96,7 +96,7 @@ def computeAABBs(cshapes: dict):
             elif ctype == 'BOX':
                 # All AABBs half lengths are equal. The value equals the
                 # largest extent times sqrt(3) to accommodate all possible
-                # orientations.
+                # rotations.
                 tmp = s3 * max(CollShapeBox(*cs.csdata))
                 aabbs[name] = pos + (tmp, tmp, tmp)
             elif ctype == 'EMPTY':
