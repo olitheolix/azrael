@@ -247,17 +247,17 @@ def FromClerk_SetForce_Decode(dummyarg):
 
 
 # ---------------------------------------------------------------------------
-# GetFragmentGeometries
+# GetFragments
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_GetFragmentGeometries_Encode(objIDs: list):
+def ToClerk_GetFragments_Encode(objIDs: list):
     return RetVal(True, None, {'objIDs': objIDs})
 
 
 @typecheck
-def ToClerk_GetFragmentGeometries_Decode(payload: dict):
+def ToClerk_GetFragments_Decode(payload: dict):
     # Convert all objIDs to integers (JSON always converts integers in hash
     # maps to strings, which is why this conversion is necessary).
     objIDs = [int(_) for _ in payload['objIDs']]
@@ -265,12 +265,12 @@ def ToClerk_GetFragmentGeometries_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_GetFragmentGeometries_Encode(geo):
+def FromClerk_GetFragments_Encode(geo):
     return True, geo
 
 
 @typecheck
-def FromClerk_GetFragmentGeometries_Decode(payload: dict):
+def FromClerk_GetFragments_Decode(payload: dict):
     # Convert all objIDs to integers (JSON always converts integers in hash
     # maps to strings, which is why this conversion is necessary).
     payload = {int(k): v for (k, v) in payload.items()}
@@ -278,29 +278,29 @@ def FromClerk_GetFragmentGeometries_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# SetFragmentGeometry
+# SetFragments
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_SetFragmentGeometry_Encode(payload: dict):
+def ToClerk_SetFragments_Encode(payload: dict):
     return RetVal(True, None, payload)
 
 
 @typecheck
-def ToClerk_SetFragmentGeometry_Decode(payload: dict):
+def ToClerk_SetFragments_Decode(payload: dict):
     # Wrap the fragments into their dedicated tuple.
     ret = {int(k): v for (k, v) in payload.items()}
     return True, (ret, )
 
 
 @typecheck
-def FromClerk_SetFragmentGeometry_Encode(dummyarg):
+def FromClerk_SetFragments_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_SetFragmentGeometry_Decode(dummyarg):
+def FromClerk_SetFragments_Decode(dummyarg):
     return RetVal(True, None, None)
 
 

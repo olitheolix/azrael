@@ -345,8 +345,8 @@ class TestClerk:
         """
         # Client --> Clerk
         payload = [1, 2, 3]
-        enc = protocol.ToClerk_GetFragmentGeometries_Encode
-        dec = protocol.ToClerk_GetFragmentGeometries_Decode
+        enc = protocol.ToClerk_GetFragments_Encode
+        dec = protocol.ToClerk_GetFragments_Decode
         self.verifyToClerk(enc, dec, payload)
 
         # Clerk --> Client
@@ -356,6 +356,6 @@ class TestClerk:
             5: {'foo2': {'fragtype': 'raw', 'url_frag': 'http://foo2'},
                 'bar2': {'fragtype': 'dae', 'url_frag': 'http://bar2'}}
         }
-        enc = protocol.FromClerk_GetFragmentGeometries_Encode
-        dec = protocol.FromClerk_GetFragmentGeometries_Decode
+        enc = protocol.FromClerk_GetFragments_Encode
+        dec = protocol.FromClerk_GetFragments_Decode
         self.verifyFromClerk(enc, dec, payload)

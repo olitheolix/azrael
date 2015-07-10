@@ -78,11 +78,11 @@ class Client():
                 protocol.ToClerk_Ping_Encode,
                 protocol.FromClerk_Ping_Decode),
             'get_fragments': (
-                protocol.ToClerk_GetFragmentGeometries_Encode,
-                protocol.FromClerk_GetFragmentGeometries_Decode),
+                protocol.ToClerk_GetFragments_Encode,
+                protocol.FromClerk_GetFragments_Decode),
             'set_fragments': (
-                protocol.ToClerk_SetFragmentGeometry_Encode,
-                protocol.FromClerk_SetFragmentGeometry_Decode),
+                protocol.ToClerk_SetFragments_Encode,
+                protocol.FromClerk_SetFragments_Decode),
             'spawn': (
                 protocol.ToClerk_Spawn_Encode,
                 protocol.FromClerk_Spawn_Decode),

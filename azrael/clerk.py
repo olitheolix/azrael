@@ -134,13 +134,13 @@ class Clerk(config.AzraelProcess):
                 self.setRigidBody,
                 protocol.FromClerk_SetRigidBody_Encode),
             'set_fragments': (
-                protocol.ToClerk_SetFragmentGeometry_Decode,
+                protocol.ToClerk_SetFragments_Decode,
                 self.setFragments,
-                protocol.FromClerk_SetFragmentGeometry_Encode),
+                protocol.FromClerk_SetFragments_Encode),
             'get_fragments': (
-                protocol.ToClerk_GetFragmentGeometries_Decode,
+                protocol.ToClerk_GetFragments_Decode,
                 self.getFragments,
-                protocol.FromClerk_GetFragmentGeometries_Encode),
+                protocol.FromClerk_GetFragments_Encode),
             'set_force': (
                 protocol.ToClerk_SetForce_Decode,
                 self.setForce,
