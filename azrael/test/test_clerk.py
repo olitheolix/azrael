@@ -539,6 +539,114 @@ class TestClerk:
         # Query all of them.
         assert ret == clerk.getRigidBodies(None)
 
+    def test_getObjectStates(self):
+        """
+        Test the 'getObjectStates' command in the Clerk.
+        """
+        # Convenience.
+        clerk = self.clerk
+
+        # Test parameters and constants.
+        id_1, id_2 = 1, 2
+
+        # Define a template for this test and upload it.
+        frags = {'f1': getFragRaw(scale=2), 'f2': getFragRaw(rot=[0, 1, 0, 0])}
+        body_1 = getRigidBody(cshapes={'cssphere': getCSSphere()})
+        t1 = getTemplate('t1', rbs=body_1, fragments=frags)
+        assert clerk.addTemplates([t1]).ok
+
+        # Retrieve all body states --> there must be none.
+        ret = clerk.getObjectStates(None)
+        assert (ret.ok, ret.data) == (True, {})
+
+        # Retrieve the states for a non-existing object.
+        ret = clerk.getObjectStates([10])
+        assert (ret.ok, ret.data) == (True, {10: None})
+
+        # Create the spawn-parameters for two new objects, but only spawn the
+        # first for now.
+        init_1 = {
+            'templateID': 't1',
+        }
+        init_2 = {
+            'templateID': 't1',
+            'rbs': {
+                'position': [2, 4, 6],
+                'velocityLin': [6, 8, 10]
+            }
+        }
+        ret = clerk.spawn([init_1])
+        assert (ret.ok, ret.data) == (True, (id_1, ))
+
+        # Again: Retrieve the body state for a non-existing ID --> must fail.
+        ret = clerk.getObjectStates([10])
+        assert (ret.ok, ret.data) == (True, {10: None})
+
+        # Retrieve the object state for id_1 and verify it has the correct keys.
+        ret = clerk.getObjectStates([id_1])
+        assert (ret.ok, len(ret.data)) == (True, 1)
+
+        # Verify that the rigid body meta data is correct and complete.
+        expected_keys = set(['scale', 'position', 'orientation',
+                             'velocityLin', 'velocityRot', 'version'])
+        r = ret.data[id_1]['rbs']
+        assert set(r.keys()) == expected_keys
+        assert r['scale'] == 1
+        assert r['position'] == list(body_1.position)
+        assert r['orientation'] == list(body_1.orientation)
+        assert r['velocityLin'] == list(body_1.velocityLin)
+        assert r['velocityRot'] == list(body_1.velocityRot)
+        del r
+
+        # Verify that the list of fragments is correct and complete.
+        r = ret.data[id_1]['frag']
+        assert r.keys() == frags.keys()
+        for name in ('f1', 'f2'):
+            assert r[name]['scale'] == frags[name].scale
+            assert r[name]['position'] == list(frags[name].position)
+            assert r[name]['orientation'] == list(frags[name].orientation)
+        del r
+
+        # Query all of them.
+        assert clerk.getObjectStates(None) == clerk.getObjectStates([id_1])
+
+        # Spawn the second object.
+        ret = clerk.spawn([init_2])
+        assert (ret.ok, ret.data) == (True, (id_2, ))
+
+        # Retrieve the object state for id_2 and verify it has the correct keys.
+        ret = clerk.getObjectStates([id_2])
+        assert (ret.ok, len(ret.data)) == (True, 1)
+
+        # Verify that the rigid body meta data is correct and complete.
+        r = ret.data[id_2]['rbs']
+        assert set(r.keys()) == expected_keys
+        assert r['scale'] == 1
+        assert r['position'] == init_2['rbs']['position']
+        assert r['orientation'] == list(body_1.orientation)
+        assert r['velocityLin'] == init_2['rbs']['velocityLin']
+        assert r['velocityRot'] == list(body_1.velocityRot)
+        del r
+
+        # Verify that the list of fragments is correct and complete.
+        r = ret.data[id_2]['frag']
+        assert r.keys() == frags.keys()
+        for name in ('f1', 'f2'):
+            assert r[name]['scale'] == frags[name].scale
+            assert r[name]['position'] == list(frags[name].position)
+            assert r[name]['orientation'] == list(frags[name].orientation)
+        del r
+
+        # Query all states in a single query and verify it matches the
+        # individual queries.
+        ret_all = clerk.getObjectStates(None)
+        ret_1 = clerk.getObjectStates([id_1])
+        ret_2 = clerk.getObjectStates([id_2])
+        assert ret_all.ok == ret_1.ok == ret_2.ok is True
+        ret_all, ret_1, ret_2 = ret_all.data, ret_1.data, ret_2.data
+        assert ret_1[id_1] == ret_all[id_1]
+        assert ret_2[id_2] == ret_all[id_2]
+
     def test_set_force(self):
         """
         Set and retrieve force and torque values.

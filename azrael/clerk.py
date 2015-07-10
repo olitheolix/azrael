@@ -1230,6 +1230,90 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, ret.msg, None)
 
     @typecheck
+    def getObjectStates(self, objIDs: list):
+        """
+        Return the object states (eg position of the body and its fragments).
+
+        If ``objIDs`` is *None* then the states of all objects are returned.
+
+        The returned dictionary contains the scale, position and orientation of
+        every fragment and the rigid body, as well as the linear- and angular
+        velocity of the body. The dictionary does not contain any collision
+        shapes, fragment geometries, or other specialised data.
+
+        The purpose of this method is to make it easy to query the salient
+        information about an object in a bandwidth efficient way.
+
+        {
+            objID_1: {
+                'frag': {
+                    'a': {'scale: x, 'position': [...], 'orientation': [...],},
+                    'b': {'scale: y, 'position': [...], 'orientation': [...],},
+                }
+                'rbs': _RigidBodyState(...),
+            },
+            objID_2: {
+                'frag': {
+                    'a': {'scale: x, 'position': [...], 'orientation': [...],},
+                    'b': {'scale: y, 'position': [...], 'orientation': [...],},
+                }
+                'rbs': _RigidBodyState(...),
+            },
+        }
+
+        :param list objIDs: the objIDs for which to compile the data.
+        :return: see example above.
+        """
+        # Create the MongoDB query. If `objID` is None then the client wants
+        # the state for all objects.
+        if objIDs is None:
+            query = {}
+        else:
+            query = {'objID': {'$in': objIDs}}
+
+        # Query object states and compile them into a dictionary.
+        db = database.dbHandles['ObjInstances']
+
+        # Specify the fields we are really interested in here.
+        prj = {
+            'version': True,
+            'objID': True,
+            'template.fragments': True,
+            'template.rbs.scale': True,
+            'template.rbs.position': True,
+            'template.rbs.orientation': True,
+            'template.rbs.velocityLin': True,
+            'template.rbs.velocityRot': True,
+        }
+
+        # Compile the data from the database into a simple dictionary that
+        # contains the fragment- and body state.
+        out = {}
+        for doc in db.find(query, prj):
+            # Convenience: fragments of current object.
+            frags = doc['template']['fragments']
+
+            # Compile the state data for each fragment of the current object.
+            fs = {k: {'scale': v['scale'],
+                      'position': v['position'],
+                      'orientation': v['orientation']}
+                      for (k, v) in frags.items()}
+
+            # Add the current version to the rigid body data.
+            rbs = doc['template']['rbs']
+            rbs['version'] = doc['version']
+
+            # Construct the return value.
+            out[doc['objID']] = {'frag': fs, 'rbs': rbs}
+
+        # If the user requested a particular set of objects then make sure each
+        # one is in the output dictionary. If one is missing (eg it does not
+        # exist) then its value is None.
+        if objIDs is not None:
+            out = {_: out[_] if _ in out else None for _ in objIDs}
+        return RetVal(True, None, out)
+
+    @typecheck
     def getTemplateID(self, objID: int):
         """
         Return the template ID from which ``objID`` was created.
