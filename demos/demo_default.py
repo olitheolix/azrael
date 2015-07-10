@@ -584,7 +584,7 @@ class ResetSim(multiprocessing.Process):
                         'velocityLin': SV.velocityLin,
                         'velocityRot': SV.velocityRot,
                         'rotation': SV.rotation}
-                    assert client.setRigidBody({objID: tmp}).ok
+                    assert client.setRigidBodies({objID: tmp}).ok
                 time.sleep(0.1)
 
 

@@ -190,28 +190,28 @@ def FromClerk_GetAllObjectIDs_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# SetRigidBody
+# SetRigidBodies
 # ---------------------------------------------------------------------------
 
 
 @typecheck
-def ToClerk_SetRigidBody_Encode(bodies: dict):
+def ToClerk_SetRigidBodies_Encode(bodies: dict):
     return RetVal(True, None, {'bodies': bodies})
 
 
 @typecheck
-def ToClerk_SetRigidBody_Decode(payload: dict):
+def ToClerk_SetRigidBodies_Decode(payload: dict):
     out = {int(k): v for (k, v) in payload['bodies'].items()}
     return True, (out, )
 
 
 @typecheck
-def FromClerk_SetRigidBody_Encode(dummyarg):
+def FromClerk_SetRigidBodies_Encode(dummyarg):
     return True, {}
 
 
 @typecheck
-def FromClerk_SetRigidBody_Decode(dummyarg):
+def FromClerk_SetRigidBodies_Decode(dummyarg):
     return RetVal(True, None, None)
 
 

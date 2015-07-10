@@ -104,9 +104,9 @@ class Client():
             'get_rigid_bodies': (
                 protocol.ToClerk_GetRigidBodies_Encode,
                 protocol.FromClerk_GetRigidBodies_Decode),
-            'set_rigid_body': (
-                protocol.ToClerk_SetRigidBody_Encode,
-                protocol.FromClerk_SetRigidBody_Decode),
+            'set_rigid_bodies': (
+                protocol.ToClerk_SetRigidBodies_Encode,
+                protocol.FromClerk_SetRigidBodies_Decode),
             'set_force': (
                 protocol.ToClerk_SetForce_Encode,
                 protocol.FromClerk_SetForce_Decode),
@@ -538,7 +538,7 @@ class Client():
         return self.serialiseAndSend('get_rigid_bodies', objIDs)
 
     @typecheck
-    def setRigidBody(self, new: dict):
+    def setRigidBodies(self, new: dict):
         """
         Overwrite the the State Variables of ``objID`` with ``new``.
 
@@ -553,7 +553,7 @@ class Client():
             if 'cshapes' in body:
                 new[objID]['cshapes'] = {k: v._asdict() for (k, v) in body['cshapes'].items()}
 
-        return self.serialiseAndSend('set_rigid_body', new)
+        return self.serialiseAndSend('set_rigid_bodies', new)
 
     @typecheck
     def setForce(self, objID: int, force: (tuple, list, np.ndarray),
