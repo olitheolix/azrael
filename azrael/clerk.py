@@ -704,8 +704,10 @@ class Clerk(config.AzraelProcess):
 
         # Sanity check the Booster- and Factory commands.
         try:
-            cmd_boosters = {k: types.CmdBooster(*v) for (k, v) in cmd_boosters.items()}
-            cmd_factories = {k: types.CmdFactory(*v) for (k, v) in cmd_factories.items()}
+            b, f = types.CmdBooster, types.CmdFactory
+            cmd_boosters = {k: b(*v) for (k, v) in cmd_boosters.items()}
+            cmd_factories = {k: f(*v) for (k, v) in cmd_factories.items()}
+            del b, f
         except TypeError:
             msg = 'Invalid booster- or factory command'
             self.logit.warning(msg)
@@ -815,7 +817,9 @@ class Clerk(config.AzraelProcess):
 
         # Put the Booster entries from the database into Booster tuples.
         try:
-            boosters = {k: types.Booster(**v) for (k, v) in instance['boosters'].items()}
+            b = types.Booster
+            boosters = {k: b(**v)for (k, v) in instance['boosters'].items()}
+            del b
         except TypeError:
             msg = 'Inconsistent Template data'
             self.logit.error(msg)
@@ -1022,7 +1026,7 @@ class Clerk(config.AzraelProcess):
                 # removed.
                 if frag.fragtype.upper() != '_DEL_':
                     continue
-                
+
                 # Remove the fragment from the instance database.
                 db.update({'objID': objID},
                           {'$unset': {'template.fragments.{}'.format(fragID): True}})
@@ -1042,7 +1046,7 @@ class Clerk(config.AzraelProcess):
             # Compile JSON hierarchy for the geometries to update without
             # touching the ones we do not want to update. This will result in a
             # dictionary like:
-            # 
+            #
             #     data = {'
             #         'template.fragments.foo.position': (1, 2, 3),
             #         'template.fragments.bar.scale': 2,
@@ -1262,7 +1266,7 @@ class Clerk(config.AzraelProcess):
             fs = {k: {'scale': v['scale'],
                       'position': v['position'],
                       'rotation': v['rotation']}
-                      for (k, v) in frags.items()}
+                  for (k, v) in frags.items()}
 
             # Add the current version to the rigid body data.
             rbs = doc['template']['rbs']

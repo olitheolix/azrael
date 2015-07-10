@@ -876,7 +876,7 @@ class TestClerk:
         body_2, body_3 = ret.data[id_2]['rbs'], ret.data[id_3]['rbs']
         if np.allclose(body_2.position, pos_1):
             body_2, body_3 = body_3, body_2
-        
+
         # Ensure the position, velocity, and rotation of the spawned objects
         # are correct.
         assert np.allclose(body_2.velocityLin, exit_speed_0 * dir_0)
@@ -1063,7 +1063,7 @@ class TestClerk:
             '1': types.CmdBooster(force_mag=forcemag_1),
         }
         cmd_f = {
-            '0':types.CmdFactory(exit_speed=exit_speed_0),
+            '0': types.CmdFactory(exit_speed=exit_speed_0),
             '1': types.CmdFactory(exit_speed=exit_speed_1),
         }
 
@@ -1331,7 +1331,7 @@ class TestClerk:
         assert r2['bar']['position'] == fdae.position
         assert r2['bar']['rotation'] == fdae.rotation
         assert r2['bar']['fragtype'] == fdae.fragtype
-                   
+
         r3 = ret.data[id_3]
         assert r3['foo']['scale'] == fraw.scale
         assert r3['foo']['position'] == fraw.position
@@ -1434,7 +1434,7 @@ class TestClerk:
             readable.
             """
             return {'scale': scale, 'position': pos, 'rotation': rot}
-        
+
         # All fragments must initially be at the center.
         checkFragState(1, [0, 0, 0], [0, 0, 0, 1],
                        1, [0, 0, 0], [0, 0, 0, 1])
@@ -1901,7 +1901,8 @@ class TestClerk:
 
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
-        cmd = {objID: {'fname_2': getFragNone()._asdict(), 'fname_3': getFragDae()._asdict()}}
+        cmd = {objID: {'fname_2': getFragNone()._asdict(),
+                       'fname_3': getFragDae()._asdict()}}
         assert clerk.setFragments(cmd).ok
 
         # After the last update only two fragments must remain.

@@ -267,7 +267,7 @@ class TestLeonardAPI:
 
         # Test constants.
         body_new = {
-            'imass':2,
+            'imass': 2,
             'scale': 3,
             'cshapes': {'csempty': getCSEmpty()},
             'position': (1, 2, 5),

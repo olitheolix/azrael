@@ -705,7 +705,10 @@ class TestClient:
 
         # Update the fragments as follows: keep the first intact, remove the
         # second, and modify the third one.
-        frags_new = {'fname_2': getFragNone()._asdict(), 'fname_3': getFragDae()._asdict()}
+        frags_new = {
+            'fname_2': getFragNone()._asdict(),
+            'fname_3': getFragDae()._asdict()
+        }
         assert client.setFragments({objID: frags_new}).ok
 
         # After the last update there must now only be two fragments.

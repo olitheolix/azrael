@@ -550,7 +550,9 @@ class Client():
         """
         for objID, body in new.items():
             if 'cshapes' in body:
-                new[objID]['cshapes'] = {k: v._asdict() for (k, v) in body['cshapes'].items()}
+                new[objID]['cshapes'] = {
+                    k: v._asdict() for (k, v) in body['cshapes'].items()
+                }
 
         return self.serialiseAndSend('set_rigid_bodies', new)
 

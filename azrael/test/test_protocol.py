@@ -257,7 +257,8 @@ class TestClerk:
             src = payload[objID]
             dst = enc['data'][str(objID)]
 
-            # Compile a rigid body from the returned data and compare it to the original.
+            # Compile a rigid body from the returned data and compare it to the
+            # original.
             assert src['rbs'] == types.RigidBodyData(**dst['rbs'])
 
         assert enc['data']['3'] is None

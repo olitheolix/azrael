@@ -165,8 +165,8 @@ def getRigidBody(scale: (int, float)=1,
                  axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
     return RigidBodyData(scale, imass, restitution, rotation, position,
-                          velocityLin, velocityRot, cshapes, axesLockLin,
-                          axesLockRot, version)
+                         velocityLin, velocityRot, cshapes, axesLockLin,
+                         axesLockRot, version)
 
 
 def getTemplate(name='template',

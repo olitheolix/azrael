@@ -255,8 +255,8 @@ class PyBulletDynamicsWorld():
         # that will eventually be returned to the caller.
         csname = body.getCollisionShape().getChildShape(0).getName()
         out = _RigidBodyData(scale, body.getInvMass(),
-                              body.getRestitution(), rot, pos, vLin, vRot,
-                              cshapes, axesLockLin, axesLockRot, 0)
+                             body.getRestitution(), rot, pos, vLin, vRot,
+                             cshapes, axesLockLin, axesLockRot, 0)
         return RetVal(True, None, out)
 
     @typecheck

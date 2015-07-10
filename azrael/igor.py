@@ -151,7 +151,7 @@ class Igor:
         """
         if bodyIDs is None:
             return RetVal(True, None, tuple(self._cache.values()))
-    
+
         # Reduce bodyIDs to set of all integer valued IDs for fast look ups.
         bodyIDs = {_ for _ in bodyIDs if isinstance(_, int)}
 

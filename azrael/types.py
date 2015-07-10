@@ -60,9 +60,9 @@ Forces = namedtuple('Forces',
 
 # Motion state of an object.
 _RigidBodyData = namedtuple('_RigidBodyData',
-                             'scale imass restitution rotation '
-                             'position velocityLin velocityRot cshapes '
-                             'axesLockLin axesLockRot version')
+                            'scale imass restitution rotation '
+                            'position velocityLin velocityRot cshapes '
+                            'axesLockLin axesLockRot version')
 
 # Collision shapes.
 _CollShapeMeta = namedtuple('_CollShapeMeta', 'cstype position rotation csdata')
@@ -872,17 +872,18 @@ class RigidBodyData(_RigidBodyData):
     :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
-    def __new__(cls, scale: (int, float),
-                   imass: (int, float),
-                   restitution: (int, float),
-                   rotation: (tuple, list),
-                   position: (tuple, list, np.ndarray),
-                   velocityLin: (tuple, list, np.ndarray),
-                   velocityRot: (tuple, list, np.ndarray),
-                   cshapes: dict,
-                   axesLockLin: (tuple, list, np.ndarray),
-                   axesLockRot: (tuple, list, np.ndarray),
-                   version: int):
+    def __new__(cls,
+                scale: (int, float),
+                imass: (int, float),
+                restitution: (int, float),
+                rotation: (tuple, list),
+                position: (tuple, list, np.ndarray),
+                velocityLin: (tuple, list, np.ndarray),
+                velocityRot: (tuple, list, np.ndarray),
+                cshapes: dict,
+                axesLockLin: (tuple, list, np.ndarray),
+                axesLockRot: (tuple, list, np.ndarray),
+                version: int):
         try:
             # Sanity checks inputs.
             assert scale >= 0
@@ -909,7 +910,8 @@ class RigidBodyData(_RigidBodyData):
             raise TypeError
 
         # Build- and return the compiled RigidBodyData tuple.
-        return super().__new__(cls,
+        return super().__new__(
+            cls,
             scale=scale,
             imass=imass,
             restitution=restitution,
@@ -957,8 +959,8 @@ def DefaultRigidBody(scale=1,
         }
 
     return RigidBodyData(scale, imass, restitution, rotation, position,
-                          velocityLin, velocityRot, cshapes, axesLockLin,
-                          axesLockRot, version)
+                         velocityLin, velocityRot, cshapes, axesLockLin,
+                         axesLockRot, version)
 
 
 class Template(_Template):

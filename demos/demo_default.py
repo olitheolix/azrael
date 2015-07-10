@@ -106,6 +106,7 @@ def getFragMeta(ftype, fdata):
     return FragMeta(fragtype=ftype, scale=scale, position=pos,
                     rotation=rot, fragdata=fdata)
 
+
 def getRigidBody(scale: (int, float)=1,
                  imass: (int, float)=1,
                  restitution: (int, float)=0.9,
@@ -124,9 +125,9 @@ def getRigidBody(scale: (int, float)=1,
                                 csdata=CollShapeSphere(radius=1))
         cshapes = {'Sphere': cshapes}
     return azrael.types.RigidBodyData(scale, imass, restitution, rotation,
-                                       position, velocityLin, velocityRot,
-                                       cshapes, axesLockLin, axesLockRot,
-                                       version)
+                                      position, velocityLin, velocityRot,
+                                      cshapes, axesLockLin, axesLockRot,
+                                      version)
 
 
 def loadBoosterCubeBlender():

@@ -404,7 +404,7 @@ class Dibbler:
             return RetVal(False, msg, None)
 
         # Overwrite all fragments for the instance with with ``objID``.
-        location = self.getInstanceDir(objID)        
+        location = self.getInstanceDir(objID)
         return self.saveModel(location, fragments, update=True)
 
     @typecheck
