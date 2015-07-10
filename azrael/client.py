@@ -266,7 +266,7 @@ class Client():
         :return: reply from Clerk.
         :rtype: string
         """
-        return self.serialiseAndSend('ping_clerk', None)
+        return self.serialiseAndSend('ping_clerk', {})
 
     @typecheck
     def getFragments(self, objIDs: list):
@@ -289,7 +289,8 @@ class Client():
         :rtype: dict
 
         """
-        return self.serialiseAndSend('get_fragments', objIDs)
+        payload = {'objIDs': objIDs}
+        return self.serialiseAndSend('get_fragments', payload)
 
     @typecheck
     def setFragments(self, fragments: dict):
@@ -327,52 +328,7 @@ class Client():
         :rtype: tuple(int)
         """
         # Send to Clerk.
-        return self.serialiseAndSend('spawn', new_objects)
-
-        # Reference dictionary with default values.
-        template = {
-            'scale': 1,
-            'imass': 1,
-            'position': None,
-            'rotation': [0, 0, 0, 1],
-            'velocityLin': [0, 0, 0],
-            'axesLockLin': [1, 1, 1],
-            'axesLockRot': [1, 1, 1],
-            'template': None}
-
-        # Create valid object descriptions by copying the 'template' and
-        # overwriting its defaults with the values provided in
-        # ``new_objects``.
-        payload = []
-        for inp in new_objects:
-            assert 'position' in inp
-            assert 'template' in inp
-
-            # Copy the template and replace the provided keys with the provided
-            # values.
-            obj = dict(template)
-            for key in obj:
-                obj[key] = inp[key] if key in inp else obj[key]
-
-                # Replace all NumPy arrays with Python lists to ensure JSON
-                # compatibility.
-                if isinstance(obj[key], np.ndarray):
-                    obj[key] = obj[key].tolist()
-
-            # Sanity checks.
-            assert isinstance(obj['scale'], (int, float))
-            assert isinstance(obj['imass'], (int, float))
-            assert isinstance(obj['position'], list)
-            assert isinstance(obj['rotation'], list)
-            assert isinstance(obj['velocityLin'], list)
-            assert isinstance(obj['axesLockLin'], list)
-            assert isinstance(obj['axesLockRot'], list)
-
-            # Add the description to the list of objects to spawn.
-            payload.append(obj)
-
-        # Send to Clerk.
-        return self.serialiseAndSend('spawn', payload)
+        return self.serialiseAndSend('spawn', {'payload': new_objects})
 
     @typecheck
     def removeObject(self, objID: int):
@@ -384,7 +340,7 @@ class Client():
         :param int objID: request to remove this object.
         :return: Success
         """
-        return self.serialiseAndSend('remove', objID)
+        return self.serialiseAndSend('remove', {'objID': objID})
 
     def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
         """
@@ -414,8 +370,13 @@ class Client():
         assert len(cmd_boosters) < 256
         assert len(cmd_factories) < 256
 
+        payload = {
+            'objID': objID,
+            'cmd_boosters': {k: v._asdict() for (k, v) in cmd_boosters.items()},
+            'cmd_factories': {k: v._asdict() for (k, v) in cmd_factories.items()}
+        }
         return self.serialiseAndSend(
-            'control_parts', objID, cmd_boosters, cmd_factories)
+            'control_parts', payload)
 
     @typecheck
     def getTemplateID(self, objID: int):
@@ -428,7 +389,7 @@ class Client():
         :return: template ID
         :rtype: bytes
         """
-        return self.serialiseAndSend('get_template_id', objID)
+        return self.serialiseAndSend('get_template_id', {'objID': objID})
 
     @typecheck
     def getTemplates(self, templateIDs: list):
@@ -440,7 +401,8 @@ class Client():
         :param bytes templateID: return the description of this template.
         :return: (cs, geo, boosters, factories)
         """
-        return self.serialiseAndSend('get_templates', templateIDs)
+        payload = {'templateIDs': templateIDs}
+        return self.serialiseAndSend('get_templates', payload)
 
     @typecheck
     def getTemplateGeometry(self, template):
@@ -485,10 +447,10 @@ class Client():
         # Return an error unless all templates pass the sanity checks.
         try:
             # Sanity check each template.
-            templates = [Template(*_) for _ in templates]
+            templates = [Template(*_)._asdict() for _ in templates]
         except AssertionError as err:
             return RetVal(False, 'Data type error', None)
-        return self.serialiseAndSend('add_templates', templates)
+        return self.serialiseAndSend('add_templates', {'templates': templates})
 
     @typecheck
     def getObjectStates(self, objIDs: (list, tuple, int)):
@@ -511,7 +473,8 @@ class Client():
                 assert objID >= 0
 
         # Pass on the request to Clerk.
-        return self.serialiseAndSend('get_object_states', objIDs)
+        payload = {'objIDs': objIDs}
+        return self.serialiseAndSend('get_object_states', payload)
 
     @typecheck
     def getRigidBodies(self, objIDs: (int, list, tuple)):
@@ -534,7 +497,8 @@ class Client():
                 assert objID >= 0
 
         # Pass on the request to Clerk.
-        return self.serialiseAndSend('get_rigid_bodies', objIDs)
+        payload = {'objIDs': objIDs}
+        return self.serialiseAndSend('get_rigid_bodies', payload)
 
     @typecheck
     def setRigidBodies(self, new: dict):
@@ -554,7 +518,8 @@ class Client():
                     k: v._asdict() for (k, v) in body['cshapes'].items()
                 }
 
-        return self.serialiseAndSend('set_rigid_bodies', new)
+        payload = {'bodies': new}
+        return self.serialiseAndSend('set_rigid_bodies', payload)
 
     @typecheck
     def setForce(self, objID: int, force: (tuple, list, np.ndarray),
@@ -575,10 +540,12 @@ class Client():
             assert tmp.ndim == 1
             assert len(tmp) == 3
 
+        # Construct the payload.
         force = tuple(force)
         position = tuple(position)
+        payload = {'objID': objID, 'rel_pos': position, 'force': force}
 
-        return self.serialiseAndSend('set_force', objID, force, position)
+        return self.serialiseAndSend('set_force', payload)
 
     def getAllObjectIDs(self):
         """
@@ -587,7 +554,7 @@ class Client():
         :return: list of object IDs (integers)
         :rtype: list of int
         """
-        return self.serialiseAndSend('get_all_objids')
+        return self.serialiseAndSend('get_all_objids', {})
 
     @typecheck
     def addConstraints(self, constraints: (tuple, list)):
@@ -599,7 +566,8 @@ class Client():
         :param list constraints: the constraints to install.
         :return: number of newly added constraints.
         """
-        return self.serialiseAndSend('add_constraints', constraints)
+        payload = {'constraints': [_._asdict() for _ in constraints]}
+        return self.serialiseAndSend('add_constraints', payload)
 
     @typecheck
     def getConstraints(self, bodyIDs: (set, tuple, list)):
@@ -611,7 +579,8 @@ class Client():
         :param list[int] bodyIDs: list of body IDs.
         :return: List of ``ConstraintMeta`` instances.
         """
-        return self.serialiseAndSend('get_constraints', bodyIDs)
+        payload = {'bodyIDs': bodyIDs}
+        return self.serialiseAndSend('get_constraints', payload)
 
     @typecheck
     def deleteConstraints(self, constraints: (tuple, list)):
@@ -624,4 +593,5 @@ class Client():
         :param list constraints: the constraints to remove.
         :return: number of newly added constraints.
         """
-        return self.serialiseAndSend('delete_constraints', constraints)
+        payload = {'constraints': [_._asdict() for _ in constraints]}
+        return self.serialiseAndSend('delete_constraints', payload)

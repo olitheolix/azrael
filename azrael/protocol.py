@@ -57,8 +57,8 @@ from IPython import embed as ipshell
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_Ping_Encode(dummyarg=None):
-    return RetVal(True, None, {})
+def ToClerk_Ping_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -82,8 +82,8 @@ def FromClerk_Ping_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_GetTemplateID_Encode(objID: int):
-    return RetVal(True, None, {'objID': objID})
+def ToClerk_GetTemplateID_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -106,9 +106,8 @@ def FromClerk_GetTemplateID_Decode(payload: dict):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_AddTemplates_Encode(templates: list):
-    out = [tt._asdict() for tt in templates]
-    return RetVal(True, None, {'data': out})
+def ToClerk_AddTemplates_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -116,7 +115,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
     templates = []
 
     with azrael.util.Timeit('clerk.decode') as timeit:
-        templates = [Template(**_) for _ in payload['data']]
+        templates = [Template(**_) for _ in payload['templates']]
 
     # Return decoded quantities.
     return True, (templates, )
@@ -137,8 +136,8 @@ def FromClerk_AddTemplates_Decode(dummyarg):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_GetTemplates_Encode(templateIDs: list):
-    return RetVal(True, None, {'templateIDs': templateIDs})
+def ToClerk_GetTemplates_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -170,8 +169,8 @@ def FromClerk_GetTemplates_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_GetAllObjectIDs_Encode(dummyarg=None):
-    return RetVal(True, None, {})
+def ToClerk_GetAllObjectIDs_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -195,8 +194,8 @@ def FromClerk_GetAllObjectIDs_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_SetRigidBodies_Encode(bodies: dict):
-    return RetVal(True, None, {'bodies': bodies})
+def ToClerk_SetRigidBodies_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -221,9 +220,8 @@ def FromClerk_SetRigidBodies_Decode(dummyarg):
 
 
 @typecheck
-def ToClerk_SetForce_Encode(objID: int, force: tuple, rpos: tuple):
-    d = {'objID': objID, 'rel_pos': rpos, 'force': force}
-    return RetVal(True, None, d)
+def ToClerk_SetForce_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -251,8 +249,8 @@ def FromClerk_SetForce_Decode(dummyarg):
 
 
 @typecheck
-def ToClerk_GetFragments_Encode(objIDs: list):
-    return RetVal(True, None, {'objIDs': objIDs})
+def ToClerk_GetFragments_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -309,8 +307,8 @@ def FromClerk_SetFragments_Decode(dummyarg):
 
 
 @typecheck
-def ToClerk_GetRigidBodies_Encode(objIDs: (list, tuple)):
-    return RetVal(True, None, {'objIDs': objIDs})
+def ToClerk_GetRigidBodies_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -352,8 +350,8 @@ def FromClerk_GetRigidBodies_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_GetObjectStates_Encode(objIDs: (list, tuple)):
-    return RetVal(True, None, {'objIDs': objIDs})
+def ToClerk_GetObjectStates_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -378,8 +376,8 @@ def FromClerk_GetObjectStates_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_Spawn_Encode(payload: (tuple, list)):
-    return RetVal(True, None, {'payload': payload})
+def ToClerk_Spawn_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -403,8 +401,8 @@ def FromClerk_Spawn_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_Remove_Encode(objID: int):
-    return RetVal(True, None, {'objID': objID})
+def ToClerk_Remove_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -428,13 +426,8 @@ def FromClerk_Remove_Decode(dummyarg):
 
 
 @typecheck
-def ToClerk_ControlParts_Encode(objID: int, cmds_b: dict, cmds_f: dict):
-    # Compile a dictionary with the payload data.
-    d = {'objID': objID,
-         'cmd_boosters': {k: v._asdict() for (k, v) in cmds_b.items()},
-         'cmd_factories': {k: v._asdict() for (k, v) in cmds_f.items()}}
-
-    return RetVal(True, None, d)
+def ToClerk_ControlParts_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -462,9 +455,8 @@ def FromClerk_ControlParts_Decode(payload: dict):
 
 
 @typecheck
-def ToClerk_AddConstraints_Encode(constraints: (tuple, list)):
-    constraints = [_._asdict() for _ in constraints]
-    return RetVal(True, None, {'constraints': constraints})
+def ToClerk_AddConstraints_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck
@@ -489,8 +481,8 @@ def FromClerk_AddConstraints_Decode(payload):
 
 
 @typecheck
-def ToClerk_DeleteConstraints_Encode(constraints: (tuple, list)):
-    return ToClerk_AddConstraints_Encode(constraints)
+def ToClerk_DeleteConstraints_Encode(payload: dict):
+    return ToClerk_AddConstraints_Encode(payload)
 
 
 @typecheck
@@ -514,8 +506,8 @@ def FromClerk_DeleteConstraints_Decode(payload):
 
 
 @typecheck
-def ToClerk_GetConstraints_Encode(bodyIDs: (tuple, list)):
-    return RetVal(True, None, {'bodyIDs': bodyIDs})
+def ToClerk_GetConstraints_Encode(payload: dict):
+    return RetVal(True, None, payload)
 
 
 @typecheck

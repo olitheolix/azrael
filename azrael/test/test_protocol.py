@@ -122,6 +122,7 @@ class TestClerk:
 
         # Create some fragments...
         frags = {'f1': getFragRaw(), 'f2': getFragDae(), 'f3': getFragNone()}
+        frags = {'f1': getFragRaw()}
 
         # ... and a body...
         body = getRigidBody(position=(1, 2, 3))
@@ -141,12 +142,6 @@ class TestClerk:
         # Get a valid template.
         template = self.getTestTemplate()
 
-        # Client --> Clerk.
-        payload = [template.aid]
-        enc = protocol.ToClerk_GetTemplates_Encode
-        dec = protocol.ToClerk_GetTemplates_Decode
-        self.verifyToClerk(enc, dec, payload)
-
         # Clerk --> Client.
         payload = {template.aid: {
             'url_frag': 'http://somewhere',
@@ -161,11 +156,11 @@ class TestClerk:
         Test controlParts codec.
         """
         # Define the commands.
-        boosters = {
+        cmd_boosters = {
             '0': types.CmdBooster(force_mag=0.2),
             '1': types.CmdBooster(force_mag=0.4),
         }
-        factories = {
+        cmd_factories = {
             '0': types.CmdFactory(exit_speed=0),
             '2': types.CmdFactory(exit_speed=0.4),
             '3': types.CmdFactory(exit_speed=4),
@@ -180,8 +175,14 @@ class TestClerk:
         enc_fun = protocol.ToClerk_ControlParts_Encode
         dec_fun = protocol.ToClerk_ControlParts_Decode
 
+        payload = {
+            'objID': objID,
+            'cmd_boosters': {k: v._asdict() for (k, v) in cmd_boosters.items()},
+            'cmd_factories': {k: v._asdict() for (k, v) in cmd_factories.items()}
+        }
+
         # Encode the booster- and factory commands.
-        ret = enc_fun(objID, boosters, factories)
+        ret = enc_fun(payload)
         assert ret.ok
 
         # Convert to JSON and back (simulates the wire transmission).
@@ -190,8 +191,8 @@ class TestClerk:
         # Decode- and verify the data.
         ok, (dec_objID, dec_boosters, dec_factories) = dec_fun(enc)
         assert (ok, dec_objID) == (True, objID)
-        assert dec_boosters == boosters
-        assert dec_factories == factories
+        assert dec_boosters == cmd_boosters
+        assert dec_factories == cmd_factories
 
         # ----------------------------------------------------------------------
         # Clerk --> Client
@@ -217,13 +218,6 @@ class TestClerk:
         """
         Test codec for GetRigidBodies.
         """
-        # Client --> Clerk.
-        # The payload are object IDs.
-        payload = [1, 2, 5]
-        enc = protocol.ToClerk_GetRigidBodies_Encode
-        dec = protocol.ToClerk_GetRigidBodies_Decode
-        self.verifyToClerk(enc, dec, payload)
-
         # Clerk --> Client.
         frag_states = {
             '1': {'scale': 1, 'position': [0, 1, 2], 'rotation': [0, 0, 0, 1]},
@@ -275,8 +269,9 @@ class TestClerk:
         # Client --> Clerk.
         # ----------------------------------------------------------------------
         for con in (p2p, dof):
+            payload = {'constraints': [con._asdict()]}
             # Encode source data.
-            ret = protocol.ToClerk_AddConstraints_Encode([con])
+            ret = protocol.ToClerk_AddConstraints_Encode(payload)
             assert ret.ok
 
             # Convert to JSON and back (simulates the wire transmission).
@@ -313,11 +308,18 @@ class TestClerk:
         """
         # Compile a valid Template structure.
         payload = [self.getTestTemplate('t1'), self.getTestTemplate('t2')]
+        payload_d = [_._asdict() for _ in payload]
 
-        # Client --> Clerk
-        enc = protocol.ToClerk_AddTemplates_Encode
-        dec = protocol.ToClerk_AddTemplates_Decode
-        self.verifyToClerk(enc, dec, payload)
+        # Encode source data.
+        ok, _, enc = protocol.ToClerk_AddTemplates_Encode({'templates': payload_d})
+        assert ok
+
+        # Convert to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps(enc))
+
+        # Decode the data.
+        ok, (dec, ) = protocol.ToClerk_AddTemplates_Decode(enc)
+        assert (ok, dec) == (True, payload)
 
     def test_spawn(self):
         """
@@ -329,10 +331,11 @@ class TestClerk:
             {'templateID': 'tid_2', 'rbs': {'rotation': [0, 1, 0, 0]}},
         ]
 
-        # Client --> Clerk
-        enc = protocol.ToClerk_Spawn_Encode
-        dec = protocol.ToClerk_Spawn_Decode
-        self.verifyToClerk(enc, dec, payload)
+        # Client --> Clerk: Convert to JSON and back (simulates the wire
+        # transmission).
+        enc = json.loads(json.dumps({'payload': payload}))
+        ok, (dec, ) = protocol.ToClerk_Spawn_Decode(enc)
+        assert dec == payload
 
         # Clerk --> Client
         payload = [1, 20, 300]
@@ -344,12 +347,6 @@ class TestClerk:
         """
         Test getFragments.
         """
-        # Client --> Clerk
-        payload = [1, 2, 3]
-        enc = protocol.ToClerk_GetFragments_Encode
-        dec = protocol.ToClerk_GetFragments_Decode
-        self.verifyToClerk(enc, dec, payload)
-
         # Clerk --> Client
         payload = {
             1: {'foo1': {'fragtype': 'raw', 'url_frag': 'http://foo1'},
