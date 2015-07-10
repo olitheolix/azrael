@@ -48,29 +48,6 @@ class TestClerk:
     def teardown_method(self, method):
         pass
 
-    def verifyToClerk(self, encode, decode, *payload):
-        """
-        Verify the ``encoder``/``decoder`` pair with ``payload``.
-
-        This method encodes the payload with ``encoder``, converts the result
-        to- and from JSON to simulate the wire transmission, passes the result
-        to the ``decoder`` and verifies that the result matches the original
-        ``payload``.
-
-        This method is for the Client --> Clerk direction.
-        """
-        # Encode source data.
-        ok, msg, enc = encode(*payload)
-        assert ok
-
-        # Convert output to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(enc))
-
-        # Decode the data.
-        ok, dec = decode(enc)
-        assert ok is True
-        assert dec == payload
-
     def verifyFromClerk(self, encoder, decoder, payload):
         """
         Verify the ``encoder``/``decoder`` pair with ``payload``.
@@ -172,7 +149,6 @@ class TestClerk:
         # ----------------------------------------------------------------------
 
         # Convenience.
-        enc_fun = protocol.ToClerk_ControlParts_Encode
         dec_fun = protocol.ToClerk_ControlParts_Decode
 
         payload = {
@@ -181,12 +157,8 @@ class TestClerk:
             'cmd_factories': {k: v._asdict() for (k, v) in cmd_factories.items()}
         }
 
-        # Encode the booster- and factory commands.
-        ret = enc_fun(payload)
-        assert ret.ok
-
         # Convert to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(ret.data))
+        enc = json.loads(json.dumps(payload))
 
         # Decode- and verify the data.
         ok, (dec_objID, dec_boosters, dec_factories) = dec_fun(enc)
@@ -270,12 +242,8 @@ class TestClerk:
         # ----------------------------------------------------------------------
         for con in (p2p, dof):
             payload = {'constraints': [con._asdict()]}
-            # Encode source data.
-            ret = protocol.ToClerk_AddConstraints_Encode(payload)
-            assert ret.ok
-
             # Convert to JSON and back (simulates the wire transmission).
-            enc = json.loads(json.dumps(ret.data))
+            enc = json.loads(json.dumps(payload))
 
             # Decode the data.
             ok, (dec_con, ) = protocol.ToClerk_AddConstraints_Decode(enc)
@@ -310,12 +278,8 @@ class TestClerk:
         payload = [self.getTestTemplate('t1'), self.getTestTemplate('t2')]
         payload_d = [_._asdict() for _ in payload]
 
-        # Encode source data.
-        ok, _, enc = protocol.ToClerk_AddTemplates_Encode({'templates': payload_d})
-        assert ok
-
         # Convert to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(enc))
+        enc = json.loads(json.dumps({'templates': payload_d}))
 
         # Decode the data.
         ok, (dec, ) = protocol.ToClerk_AddTemplates_Decode(enc)
