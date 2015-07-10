@@ -30,7 +30,7 @@ import azrael.protocol as protocol
 from IPython import embed as ipshell
 from azrael.test.test import getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
-from azrael.types import FragState, FragDae, FragRaw, FragMeta, Template
+from azrael.types import FragDae, FragRaw, FragMeta, Template
 
 
 class TestClerk:

@@ -53,7 +53,7 @@ import azrael.leo_api as leoAPI
 del p
 
 from IPython import embed as ipshell
-from azrael.types import Template, FragMeta, FragRaw, FragState
+from azrael.types import Template, FragMeta, FragRaw
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox
 

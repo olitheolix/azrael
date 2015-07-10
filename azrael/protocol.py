@@ -47,7 +47,7 @@ import azrael.leo_api as leo_api
 
 from azrael.types import typecheck, RetVal, Template
 from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
-from azrael.types import FragState, FragDae, FragRaw, FragMeta, FragNone
+from azrael.types import FragDae, FragRaw, FragMeta, FragNone
 
 from IPython import embed as ipshell
 

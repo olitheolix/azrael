@@ -39,7 +39,7 @@ import azrael.util as util
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, FragMeta, FragDae, FragState
+from azrael.types import Template, FragMeta, FragDae
 
 
 def parseCommandLine():

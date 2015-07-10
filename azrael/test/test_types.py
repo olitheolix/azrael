@@ -23,7 +23,7 @@ from IPython import embed as ipshell
 from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
 from azrael.types import Booster, Factory
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox, CollShapePlane, FragState
+from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.types import RigidBodyData
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
@@ -127,13 +127,6 @@ class TestDibbler:
         assert body_a == body_b
 
         assert self.isJsonCompatible(body_a, RigidBodyData)
-
-    def test_FragState(self):
-        body_a = FragState(2, (1, 2, 3), (0, 0, 0, 1))
-        body_b = FragState(2, (1, 2, 3), (0, 0, 0, 1))
-        assert body_a == body_b
-
-        assert self.isJsonCompatible(body_a, FragState)
 
     def test_Template(self):
         # Define boosters and factories.

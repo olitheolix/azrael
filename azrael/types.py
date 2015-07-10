@@ -51,7 +51,6 @@ _FragMeta = namedtuple('_FragMeta',
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'dae rgb')
 FragNone = namedtuple('FragNone', '')
-_FragState = namedtuple('_FragState', 'scale position orientation')
 
 # Work package related.
 WPData = namedtuple('WPData', 'aid sv force torque')
@@ -404,43 +403,6 @@ class FragMeta(_FragMeta):
         else:
             tmp = self._replace(fragdata=self.fragdata._asdict())
         return OrderedDict(zip(self._fields, tmp))
-
-
-class FragState(_FragState):
-    """
-    Return a valid data set to describe the state of a particular fragment.
-
-    Fragment states contain the scale, position, and orientation of a graphical
-    object.
-
-    ..note:: Fragment states and collision shapes are independent data sets.
-             Changing parameters like position for one has no impact whatsoever
-             on the other.
-
-    :return: compiled ``_FragState`` instance.
-    :raises: TypeError if the input does not compile to the data type.
-    """
-    @typecheck
-    def __new__(cls,
-                scale: (int, float),
-                position: (tuple, list),
-                orientation: (tuple, list)):
-        try:
-            # Verify the inputs.
-            assert scale >= 0
-            position = toVec(3, position)
-            orientation = toVec(4, orientation)
-
-        except (TypeError, AssertionError):
-            msg = 'Cannot construct <{}>'.format(cls.__name__)
-            logit.warning(msg)
-            raise TypeError
-
-        # Return constructed data type.
-        return super().__new__(cls, scale, position, orientation)
-
-    def _asdict(self):
-        return OrderedDict(zip(self._fields, self))
 
 
 class CollShapeMeta(_CollShapeMeta):
