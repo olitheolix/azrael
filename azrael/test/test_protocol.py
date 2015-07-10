@@ -260,9 +260,6 @@ class TestClerk:
             # Compile a rigid body from the returned data and compare it to the original.
             assert src['rbs'] == types.RigidBodyState(**dst['rbs'])
 
-            # Compare the fragments.
-            assert src['frag'] == dst['frag']
-
         assert enc['data']['3'] is None
 
     def test_add_get_constraint(self):

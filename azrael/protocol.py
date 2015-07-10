@@ -329,8 +329,7 @@ def FromClerk_GetRigidBodies_Encode(payload: dict):
             continue
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
-        out[objID] = {'rbs': data['rbs']._asdict(), 
-                      'frag': data['frag']}
+        out[objID] = {'rbs': data['rbs']._asdict()}
     return True, {'data': out}
 
 
@@ -344,10 +343,7 @@ def FromClerk_GetRigidBodies_Decode(payload: dict):
             continue
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
-        out[int(objID)] = {
-            'rbs': types.RigidBodyState(**data['rbs']),
-            'frag': data['frag'],
-        }
+        out[int(objID)] = {'rbs': types.RigidBodyState(**data['rbs'])}
     return RetVal(True, None, out)
 
 
