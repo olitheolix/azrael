@@ -708,7 +708,7 @@ class LeonardBullet(LeonardBase):
 
         # Update the constraint cache in our local Igor instance.
         self.igor.updateLocalCache()
-        allConstraints = self.igor.getAllConstraints().data
+        allConstraints = self.igor.getConstraints(None).data
 
         # Fetch the forces for all object positions.
         idPos = {k: v.position for (k, v) in self.allBodies.items()}
@@ -792,7 +792,7 @@ class LeonardSweeping(LeonardBase):
 
         # Update the constraint cache in our local Igor instance.
         self.igor.updateLocalCache()
-        allConstraints = self.igor.getAllConstraints().data
+        allConstraints = self.igor.getConstraints(None).data
 
         # Compute all collision sets.
         with util.Timeit('CCS') as timeit:
@@ -975,7 +975,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Update the constraint cache in our local Igor instance.
         self.igor.updateLocalCache()
-        allConstraints = self.igor.getAllConstraints().data
+        allConstraints = self.igor.getConstraints(None).data
 
         # Compute the collision sets.
         with util.Timeit('Leonard:1.2  CCS') as timeit:

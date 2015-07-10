@@ -1357,7 +1357,7 @@ class Clerk(config.AzraelProcess):
         :return: List of ``ConstraintMeta`` instances.
         """
         self.igor.updateLocalCache()
-        return self.igor.getAllConstraints()
+        return self.igor.getConstraints(None)
 
     @typecheck
     def deleteConstraints(self, constraints: (tuple, list)):

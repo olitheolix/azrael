@@ -53,7 +53,7 @@ class TestClerk:
         without updating the cache or resetting the database.
         """
         igor = azrael.igor.Igor()
-        assert igor.getAllConstraints().ok
+        assert igor.getConstraints(None).ok
         assert igor.getConstraints([1, 2]).ok
         assert igor.uniquePairs().ok
 
@@ -104,7 +104,7 @@ class TestClerk:
         assert igor.addConstraints([c5, c5, c6, c6, c6]) == (True, None, 2)
         assert igor.updateLocalCache() == (True, None, 6)
         ref = sorted((c1, c2, c3, c4, c5, c6))
-        assert sorted(igor.getAllConstraints().data) == ref
+        assert sorted(igor.getConstraints(None).data) == ref
 
         # Reset igor and add two constraints, of which only one has a valid
         # 'contype'. The 'addConstraints' must only add the valid one.
@@ -143,10 +143,10 @@ class TestClerk:
         # Update the local cache and verify that really both constraints are
         # available.
         assert igor.updateLocalCache() == (True, None, 2)
-        assert sorted(igor.getAllConstraints().data) == sorted((c1, c2))
+        assert sorted(igor.getConstraints(None).data) == sorted((c1, c2))
 
     @pytest.mark.parametrize('getCon', _AllConstraintGetters)
-    def test_getAllConstraints(self, getCon):
+    def test_getConstraints_all(self, getCon):
         """
         Add constraints and very that Igor can return them after cache updates.
         """
@@ -161,22 +161,22 @@ class TestClerk:
 
         # The list of constraints must be empty after a reset.
         assert igor.reset() == (True, None, None)
-        assert igor.getAllConstraints().data == tuple()
+        assert igor.getConstraints(None).data == tuple()
         assert igor.updateLocalCache() == (True, None, 0)
-        assert igor.getAllConstraints().data == tuple()
+        assert igor.getConstraints(None).data == tuple()
 
         # Add two constraints and verify that Igor returns them *after* a cache
         # update.
         assert igor.addConstraints([c2, c3]) == (True, None, 2)
-        assert igor.getAllConstraints().data == tuple()
+        assert igor.getConstraints(None).data == tuple()
         assert igor.updateLocalCache() == (True, None, 2)
-        assert sorted(igor.getAllConstraints().data) == sorted((c2, c3))
+        assert sorted(igor.getConstraints(None).data) == sorted((c2, c3))
 
         # Add another two constraints, only one of which is new. Verify that
         # Igor returns the correct three constraints.
         assert igor.addConstraints([c3, c4]) == (True, None, 1)
         assert igor.updateLocalCache() == (True, None, 3)
-        assert sorted(igor.getAllConstraints().data) == sorted((c2, c3, c4))
+        assert sorted(igor.getConstraints(None).data) == sorted((c2, c3, c4))
 
     @pytest.mark.parametrize('getCon', _AllConstraintGetters)
     def test_delete(self, getCon):
@@ -216,7 +216,7 @@ class TestClerk:
         assert igor.deleteConstraints([c1, c2]) == (True, None, 1)
         assert igor.deleteConstraints([c1, c2]) == (True, None, 0)
         assert igor.updateLocalCache() == (True, None, 1)
-        assert igor.getAllConstraints().data == (c3, )
+        assert igor.getConstraints(None).data == (c3, )
 
     @pytest.mark.parametrize('getCon', _AllConstraintGetters)
     def test_uniquePairs(self, getCon):

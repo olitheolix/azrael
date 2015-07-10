@@ -139,6 +139,8 @@ class Igor:
         """
         Return all constraints that involve any of the bodies in ``bodyIDs``.
 
+        Return unconditionally all constraints if ``bodyIDs`` is *None*.
+
         ..note:: this method only consults the local cache. Depending on your
                  circumstances you may want to call ``updateLocalCache``
                  first.
@@ -147,6 +149,9 @@ class Igor:
         :return: list of ``ConstraintMeta`` instances.
         :rtype: tuple
         """
+        if bodyIDs is None:
+            return RetVal(True, None, tuple(self._cache.values()))
+    
         # Reduce bodyIDs to set of all integer valued IDs for fast look ups.
         bodyIDs = {_ for _ in bodyIDs if isinstance(_, int)}
 
@@ -158,19 +163,6 @@ class Igor:
                 continue
             out.append(self._cache[tmp])
         return RetVal(True, None, tuple(out))
-
-    def getAllConstraints(self):
-        """
-        Return all constraints in the local cache.
-
-        ..note:: this method only consults the local cache. Depending on your
-                 circumstances you may want to to call ``updateLocalCache``
-                 first.
-
-        :return: list of all ``ConstraintMeta`` instances in local cache.
-        :rtype: tuple
-        """
-        return RetVal(True, None, tuple(self._cache.values()))
 
     def deleteConstraints(self, constraints: (tuple, list)):
         """
