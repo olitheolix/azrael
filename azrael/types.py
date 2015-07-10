@@ -920,7 +920,7 @@ class RigidBodyState(_RigidBodyState):
                 for (k, v) in cshapes.items()
             }
         except (AssertionError, TypeError) as err:
-            return None
+            raise TypeError
 
         # Build- and return the compiled RigidBodyState tuple.
         return super().__new__(cls,
