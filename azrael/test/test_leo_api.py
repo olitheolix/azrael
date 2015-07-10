@@ -362,9 +362,9 @@ class TestLeonardAPI:
         assert np.array_equal(leo.allForces[id_2].forceDirect, force)
         assert np.array_equal(leo.allForces[id_2].torqueDirect, torque)
 
-    def test_RigidBodyState_tuple(self):
+    def test_RigidBodyData_tuple(self):
         """
-        Test the ``RigidBodyState`` class, most notably the __eq__ method.
+        Test the ``RigidBodyData`` class, most notably the __eq__ method.
         """
         # Compare two identical objects.
         sv1 = getRigidBody()

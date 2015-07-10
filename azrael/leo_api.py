@@ -29,7 +29,7 @@ import azrael.config as config
 import azrael.database as database
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _RigidBodyState
+from azrael.types import typecheck, RetVal, _RigidBodyData
 from azrael.types import CollShapeMeta, CollShapeEmpty
 from azrael.types import CollShapeSphere, CollShapeBox
 
@@ -159,14 +159,14 @@ def addCmdSpawn(objData: (tuple, list)):
 
     # fixme: parameters
     :param int objID: object ID to insert.
-    :param _RigidBodyState sv: encoded state variable data.
+    :param _RigidBodyData sv: encoded state variable data.
     :return: success.
     """
     # Sanity checks all the provided bodies.
     for objID, body in objData:
         try:
             assert isinstance(objID, int)
-            assert isinstance(body, _RigidBodyState)
+            assert isinstance(body, _RigidBodyData)
         except AssertionError:
             msg = '<addCmdQueue> received invalid argument type'
             return RetVal(False, msg, None)

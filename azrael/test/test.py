@@ -28,9 +28,9 @@ import azrael.leonard
 from azrael.types import FragMeta, FragDae, FragRaw, FragNone, Template
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
-from azrael.types import RigidBodyState
+from azrael.types import RigidBodyData
 from azrael.types import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
-from azrael.types import _RigidBodyState
+from azrael.types import _RigidBodyData
 
 
 def killAzrael():
@@ -164,7 +164,7 @@ def getRigidBody(scale: (int, float)=1,
                  axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
                  axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
-    return RigidBodyState(scale, imass, restitution, orientation, position,
+    return RigidBodyData(scale, imass, restitution, orientation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,
                           axesLockRot, version)
 

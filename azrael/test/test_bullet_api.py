@@ -22,7 +22,7 @@ import numpy as np
 import azrael.types as types
 
 from IPython import embed as ipshell
-from azrael.types import _RigidBodyState
+from azrael.types import _RigidBodyData
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane

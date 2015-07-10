@@ -32,7 +32,7 @@ import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _RigidBodyState
+from azrael.types import typecheck, RetVal, _RigidBodyData
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
@@ -43,7 +43,7 @@ Quaternion = azBullet.Quaternion
 Transform = azBullet.Transform
 
 # Convenience.
-RigidBodyState = types.RigidBodyState
+RigidBodyData = types.RigidBodyData
 
 
 class PyRigidBody(azBullet.RigidBody):
@@ -220,7 +220,7 @@ class PyBulletDynamicsWorld():
         This method aborts immediately if ``bodyID`` does not exists.
 
         :param int bodyID: the ID of body for which to return the state.
-        :return: ``_RigidBodyState`` instances.
+        :return: ``_RigidBodyData`` instances.
         """
         # Abort immediately if the ID is unknown.
         if bodyID not in self.rigidBodies:
@@ -251,23 +251,23 @@ class PyBulletDynamicsWorld():
         # information from the body's meta data.
         cshapes = body.azrael[1].cshapes
 
-        # Construct a new _RigidBodyState structure and add it to the list
+        # Construct a new _RigidBodyData structure and add it to the list
         # that will eventually be returned to the caller.
         csname = body.getCollisionShape().getChildShape(0).getName()
-        out = _RigidBodyState(scale, body.getInvMass(),
+        out = _RigidBodyData(scale, body.getInvMass(),
                               body.getRestitution(), rot, pos, vLin, vRot,
                               cshapes, axesLockLin, axesLockRot, 0)
         return RetVal(True, None, out)
 
     @typecheck
-    def setRigidBodyData(self, bodyID: int, rbState: _RigidBodyState):
+    def setRigidBodyData(self, bodyID: int, rbState: _RigidBodyData):
         """
         Update State Variables of ``bodyID`` to ``rbState``.
 
         Create a new body with ``bodyID`` if it does not yet exist.
 
         :param int bodyID: the IDs of all bodies to retrieve.
-        :param ``_RigidBodyState`` rbState: body description.
+        :param ``_RigidBodyData`` rbState: body description.
         :return: Success
         """
         # Create the Rigid Body if it does not exist yet.
@@ -326,7 +326,7 @@ class PyBulletDynamicsWorld():
             # Apply the new mass and inertia.
             body.setMassProps(m, Vec3(x, y, z))
 
-        # Overwrite the old RigidBodyState instance with the latest version.
+        # Overwrite the old RigidBodyData instance with the latest version.
         body.azrael = (bodyID, rbState)
         return RetVal(True, None, None)
 
@@ -432,7 +432,7 @@ class PyBulletDynamicsWorld():
             return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, bodyID: int, rbState: _RigidBodyState):
+    def compileCollisionShape(self, bodyID: int, rbState: _RigidBodyData):
         """
         Return the correct Bullet collision shape based on ``rbState``.
 
@@ -441,7 +441,7 @@ class PyBulletDynamicsWorld():
         fixme: find out how to combine mass/inertia of multi body bodies.
 
         :param int bodyID: body ID.
-        :param _RigidBodyState rbState: meta data to describe the body.
+        :param _RigidBodyData rbState: meta data to describe the body.
         :return: compound shape with all the individual shapes.
         :rtype: ``CompoundShape``
         """
@@ -516,12 +516,12 @@ class PyBulletDynamicsWorld():
         return RetVal(True, None, (tot_mass, tot_inertia, compound))
 
     @typecheck
-    def createRigidBody(self, bodyID: int, rbState: _RigidBodyState):
+    def createRigidBody(self, bodyID: int, rbState: _RigidBodyData):
         """
         Create a new rigid body ``rbState`` with ``bodyID``.
 
         :param int bodyID: ID of new rigid body.
-        :param _RigidBodyState rbState: State Variables of rigid body.
+        :param _RigidBodyData rbState: State Variables of rigid body.
         :return: Success
         """
         # Convert orientation and position to Bullet types.

@@ -1929,7 +1929,7 @@ class TestClerk:
         # Verify that the initial body states are correct.
         ok, _, ret_bs = clerk.getRigidBodies([objID])
         ret_bs = ret_bs[objID]['rbs']
-        assert isinstance(ret_bs, types._RigidBodyState)
+        assert isinstance(ret_bs, types._RigidBodyData)
         assert ret_bs.position == init['rbs']['position']
         assert ret_bs.velocityLin == init['rbs']['velocityLin']
 
@@ -1944,7 +1944,7 @@ class TestClerk:
         # Verify that the new attributes came into effect.
         ok, _, ret_bs = clerk.getRigidBodies([objID])
         ret_bs = ret_bs[objID]['rbs']
-        assert isinstance(ret_bs, types._RigidBodyState)
+        assert isinstance(ret_bs, types._RigidBodyData)
         assert ret_bs.imass == new_bs['imass']
         assert ret_bs.scale == new_bs['scale']
         assert ret_bs.position, new_bs['position']

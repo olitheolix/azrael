@@ -123,7 +123,7 @@ def getRigidBody(scale: (int, float)=1,
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))
         cshapes = {'Sphere': cshapes}
-    return azrael.types.RigidBodyState(scale, imass, restitution, orientation,
+    return azrael.types.RigidBodyData(scale, imass, restitution, orientation,
                                        position, velocityLin, velocityRot,
                                        cshapes, axesLockLin, axesLockRot,
                                        version)

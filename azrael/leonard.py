@@ -39,11 +39,11 @@ import azrael.config as config
 import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
-from azrael.types import _RigidBodyState
+from azrael.types import _RigidBodyData
 from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Convenience.
-RigidBodyState = types.RigidBodyState
+RigidBodyData = types.RigidBodyData
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
@@ -166,7 +166,7 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
     ..note:: *Every* static body will be added to *every* collision set. This
              will improved in the future when it becomes a bottle neck.
 
-    :param dict[RigidBodyStates] bodies: the bodies to check.
+    :param dict[RigidBodyDatas] bodies: the bodies to check.
     :param dict[AABBs]: dictionary of AABBs.
     :return: each list contains a unique set of overlapping objects.
     :rtype: list of lists
@@ -544,7 +544,7 @@ class LeonardBase(config.AzraelProcess):
             # Add the body and its AABB to Leonard's cache. Furthermore, add
             # (and initialise) the entry for the forces on this body.
             sv_old = doc['rbs']
-            self.allBodies[objID] = RigidBodyState(**sv_old)
+            self.allBodies[objID] = RigidBodyData(**sv_old)
             self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
             self.allAABBs[objID] = doc['AABBs']
 
@@ -561,7 +561,7 @@ class LeonardBase(config.AzraelProcess):
                 # now includes the updated values. If it fails skip this body
                 # altogether.
                 try:
-                    self.allBodies[objID] = RigidBodyState(**old)
+                    self.allBodies[objID] = RigidBodyData(**old)
                 except TypeError:
                     self.logit.warning('Could not update body state in Leonard.')
                     continue
@@ -1125,7 +1125,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Reset force and torque for all objects in the WP, and overwrite
         # the old Body States with the new one from the processed WP.
         for (objID, sv) in wpdata:
-            self.allBodies[objID] = _RigidBodyState(*sv)
+            self.allBodies[objID] = _RigidBodyData(*sv)
 
 
 class LeonardWorkerZeroMQ(config.AzraelProcess):

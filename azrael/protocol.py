@@ -343,7 +343,7 @@ def FromClerk_GetRigidBodies_Decode(payload: dict):
             continue
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
-        out[int(objID)] = {'rbs': types.RigidBodyState(**data['rbs'])}
+        out[int(objID)] = {'rbs': types.RigidBodyData(**data['rbs'])}
     return RetVal(True, None, out)
 
 

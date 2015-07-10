@@ -44,7 +44,7 @@ from IPython import embed as ipshell
 from azrael.types import FragMeta, FragRaw, FragState
 
 # Convenience.
-RigidBodyStateOverride = leoAPI.RigidBodyStateOverride
+RigidBodyDataOverride = leoAPI.RigidBodyDataOverride
 
 
 def parseCommandLine():
@@ -202,7 +202,7 @@ class SetGeometry(multiprocessing.Process):
             scale = (cnt + 1) / 10
             for objID in objIDs:
                 # Change the scale of the overall object.
-                new_sv = RigidBodyStateOverride(scale=scale)
+                new_sv = RigidBodyDataOverride(scale=scale)
                 client.setRigidBody(objID, new_sv)
 
                 # Move the second fragment.

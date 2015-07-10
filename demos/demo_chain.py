@@ -53,7 +53,7 @@ from azrael.types import Constraint6DofSpring2
 from IPython import embed as ipshell
 
 # Convenience.
-RigidBodyStateOverride = leoAPI.RigidBodyStateOverride
+RigidBodyDataOverride = leoAPI.RigidBodyDataOverride
 
 
 def parseCommandLine():

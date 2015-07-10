@@ -60,7 +60,7 @@ Forces = namedtuple('Forces',
                     'forceDirect forceBoost torqueDirect torqueBoost')
 
 # Motion state of an object.
-_RigidBodyState = namedtuple('_RigidBodyState',
+_RigidBodyData = namedtuple('_RigidBodyData',
                              'scale imass restitution orientation '
                              'position velocityLin velocityRot cshapes '
                              'axesLockLin axesLockRot version')
@@ -886,7 +886,7 @@ class CmdFactory(_CmdFactory):
         return OrderedDict(zip(self._fields, self))
 
 
-class RigidBodyState(_RigidBodyState):
+class RigidBodyData(_RigidBodyData):
     # fixme: docu
     @typecheck
     def __new__(cls, scale: (int, float),
@@ -901,7 +901,7 @@ class RigidBodyState(_RigidBodyState):
                    axesLockRot: (tuple, list, np.ndarray),
                    version: int):
         """
-        Return a ``_RigidBodyState`` object.
+        Return a ``_RigidBodyData`` object.
         """
         try:
             # Sanity checks inputs.
@@ -922,7 +922,7 @@ class RigidBodyState(_RigidBodyState):
         except (AssertionError, TypeError) as err:
             raise TypeError
 
-        # Build- and return the compiled RigidBodyState tuple.
+        # Build- and return the compiled RigidBodyData tuple.
         return super().__new__(cls,
             scale=scale,
             imass=imass,
@@ -968,7 +968,7 @@ def DefaultRigidBody(scale=1,
             for (k, v) in cshapes.items()
         }
 
-    return RigidBodyState(scale, imass, restitution, orientation, position,
+    return RigidBodyData(scale, imass, restitution, orientation, position,
                           velocityLin, velocityRot, cshapes, axesLockLin,
                           axesLockRot, version)
 
@@ -1024,9 +1024,9 @@ class Template(_Template):
 
             # Compile the RBS data.
             if isinstance(rbs, dict):
-                rbs = RigidBodyState(**rbs)
+                rbs = RigidBodyData(**rbs)
             else:
-                rbs = RigidBodyState(*rbs)
+                rbs = RigidBodyData(*rbs)
         except (TypeError, AssertionError) as err:
             raise err
             msg = 'Cannot construct <{}>'.format(cls.__name__)

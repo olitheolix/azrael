@@ -1108,13 +1108,13 @@ class Clerk(config.AzraelProcess):
         If ``objIDs`` is *None* then all bodies will be returned.
 
         The dictionary keys will be the elements of ``objIDs`` and the
-        associated  values are ``RigidBodyState`` instances, or *None*
+        associated  values are ``RigidBodyData`` instances, or *None*
         if the corresponding objID did not exist.
 
         Return value example::
         {
-            id_1: {'rbs': RigidBodyState(...)}
-            id_2: {'rbs': RigidBodyState(...)}
+            id_1: {'rbs': RigidBodyData(...)}
+            id_2: {'rbs': RigidBodyData(...)}
         }
 
         ..note:: the inner 'rbs' dictionary is currently redundant since it
@@ -1143,7 +1143,7 @@ class Clerk(config.AzraelProcess):
         # Compile the data from the database into a simple dictionary that
         # contains the fragment- and body state.
         out = {}
-        RBS = types._RigidBodyState
+        RBS = types._RigidBodyData
         for doc in db.find(query, prj):
             # Compile the rigid body data and overwrite the version tag with
             # one stored in the database.
@@ -1213,14 +1213,14 @@ class Clerk(config.AzraelProcess):
                     'a': {'scale: x, 'position': [...], 'orientation': [...],},
                     'b': {'scale: y, 'position': [...], 'orientation': [...],},
                 }
-                'rbs': _RigidBodyState(...),
+                'rbs': _RigidBodyData(...),
             },
             objID_2: {
                 'frag': {
                     'a': {'scale: x, 'position': [...], 'orientation': [...],},
                     'b': {'scale: y, 'position': [...], 'orientation': [...],},
                 }
-                'rbs': _RigidBodyState(...),
+                'rbs': _RigidBodyData(...),
             },
         }
 
