@@ -1410,8 +1410,8 @@ class TestClerk:
             assumes there are two objects and each has one fragment with
             name 'foo'.
             """
-            # Query the SV for both objects.
-            ret = clerk.getRigidBodies([objID_1, objID_2])
+            # Query the object states for both objects.
+            ret = clerk.getObjectStates([objID_1, objID_2])
             assert ret.ok and (len(ret.data) == 2)
 
             # Extract the one and only fragment of each object.
@@ -1511,8 +1511,8 @@ class TestClerk:
             Convenience function to verify the fragment states of ``objID``.
             This function assumes the object has exactly two fragments.
             """
-            # Query the SV for both objects.
-            ret = clerk.getRigidBodies([objID])
+            # Query the object states for both objects.
+            ret = clerk.getObjectStates([objID])
             assert ret.ok and (len(ret.data) == 1)
 
             # Extract the fragments and verify there are the two.
@@ -1553,13 +1553,13 @@ class TestClerk:
 
         # Query the state and verify it has as many FragmentState
         # vectors as it has fragments.
-        ret = clerk.getRigidBodies([objID])
+        ret = clerk.getObjectStates([objID])
         assert ret.ok
         ret_frags = ret.data[objID]['frag']
         assert len(ret_frags) == len(frags)
 
         # Same as before, but this time get all of them.
-        assert clerk.getRigidBodies(None) == ret
+        assert clerk.getObjectStates(None) == ret
 
         # Verify the fragment _states_ themselves.
         checkFragState(objID,
@@ -1896,7 +1896,7 @@ class TestClerk:
         # report three fragments.
         ret = clerk.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 3
-        ret = clerk.getRigidBodies([objID])
+        ret = clerk.getObjectStates([objID])
         assert ret.ok and len(ret.data[objID]['frag']) == 3
 
         # Update the fragments as follows: keep the first intact, remove the
@@ -1907,7 +1907,7 @@ class TestClerk:
         # After the last update only two fragments must remain.
         ret = clerk.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 2
-        ret = clerk.getRigidBodies([objID])
+        ret = clerk.getObjectStates([objID])
         assert ret.ok and len(ret.data[objID]['frag']) == 2
 
     def test_setRigidBody(self):
@@ -2004,17 +2004,19 @@ class TestClerk:
         assert clerk.setRigidBody(id_frag, new_bs_frag).ok
         assert clerk.setRigidBody(id_none, new_bs_none).ok
 
-        # Verify all objects have the new positions.
-        ret = clerk.getRigidBodies([id_cs, id_frag, id_none])
-        assert ret.ok
+        # Verify that all bodies are at their new positions.
+        ret_os = clerk.getObjectStates([id_cs, id_frag, id_none])
+        ret_rb = clerk.getRigidBodies([id_cs, id_frag, id_none])
+        assert ret_os.ok and ret_rb.ok
 
-        r = ret.data
-        assert len(r[id_frag]['frag']) == 1
-        assert r[id_frag]['rbs'].position == new_bs_frag['position']
-        assert r[id_cs]['frag'] == {}
-        assert r[id_cs]['rbs'].position == new_bs_cs['position']
-        assert r[id_none]['frag'] == {}
-        assert r[id_none]['rbs'].position == new_bs_none['position']
+        r_os = ret_os.data
+        r_rb = ret_rb.data
+        assert len(r_os[id_frag]['frag']) == 1
+        assert r_rb[id_frag]['rbs'].position == new_bs_frag['position']
+        assert r_os[id_cs]['frag'] == {}
+        assert r_rb[id_cs]['rbs'].position == new_bs_cs['position']
+        assert r_os[id_none]['frag'] == {}
+        assert r_rb[id_none]['rbs'].position == new_bs_none['position']
 
 
 def test_invalid():

@@ -1116,6 +1116,7 @@ class Clerk(config.AzraelProcess):
         :rtype: dict
 
 
+        fixme: merge these two doc strings
 
         Return a dictionary of body states for all ``objIDs``.
 
@@ -1128,21 +1129,10 @@ class Clerk(config.AzraelProcess):
         data about all fragments (eg. their position and velocity, but not
         their actual geometry). Here is an example::
 
+        fixme: simplify this return value.
         {
-            objID_1: {
-                'frag': {
-                    'a': {'scale: x, 'position': [...], 'orientation': [...],},
-                    'b': {'scale: y, 'position': [...], 'orientation': [...],},
-                }
-                'rbs': _RigidBodyState(...),
-            },
-            objID_2: {
-                'frag': {
-                    'a': {'scale: x, 'position': [...], 'orientation': [...],},
-                    'b': {'scale: y, 'position': [...], 'orientation': [...],},
-                }
-                'rbs': _RigidBodyState(...),
-            },
+            objID_1: {'rbs': _RigidBodyState(...),}
+            objID_2: {'rbs': _RigidBodyState(...),}
         }
 
         :param list objIDs: the objIDs for which to compile the data.
@@ -1160,7 +1150,6 @@ class Clerk(config.AzraelProcess):
         cursor = db.find(query,
                          {'version': True,
                           'objID': True,
-                          'template.fragments': True,
                           'template.rbs': True})
         docs = {_['objID']: _ for _ in cursor}
 
@@ -1169,21 +1158,9 @@ class Clerk(config.AzraelProcess):
         out = {}
         RBS = types._RigidBodyState
         for objID, doc in docs.items():
-            # Convenience: fragments of current object.
-            frags = doc['template']['fragments']
-
-            # Compile the state data for each fragment of the current object.
-            fs = {k: {'scale': v['scale'],
-                      'position': v['position'],
-                      'orientation': v['orientation']}
-                      for (k, v) in frags.items()}
-
             # Compile the rigid body data and update its version.
             rbs = RBS(**doc['template']['rbs'])
-            rbs = rbs._replace(version=doc['version'])
-
-            # Construct the dictionary to return.
-            out[objID] = {'frag': fs, 'rbs': rbs}
+            out[objID] = {'rbs': rbs._replace(version=doc['version'])}
 
         # If the user requested a particular set of objects then make sure each
         # one is in the output dictionary. If one is missing (eg it does not
