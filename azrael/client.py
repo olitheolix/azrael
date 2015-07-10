@@ -116,9 +116,6 @@ class Client():
             'control_parts': (
                 protocol.ToClerk_ControlParts_Encode,
                 protocol.FromClerk_ControlParts_Decode),
-            'set_fragment_states': (
-                protocol.ToClerk_SetFragmentStates_Encode,
-                protocol.FromClerk_SetFragmentStates_Decode),
             'add_constraints': (
                 protocol.ToClerk_AddConstraints_Encode,
                 protocol.FromClerk_AddConstraints_Decode),

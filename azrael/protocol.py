@@ -458,36 +458,6 @@ def FromClerk_ControlParts_Decode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# SetFragmentStates
-# ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_SetFragmentStates_Encode(fragData: dict):
-    # fragData = {objID_1: [FragState, FragState, ...],
-    #             objID_2: [FragState, FragState, ...],}
-    return RetVal(True, None, fragData)
-
-
-@typecheck
-def ToClerk_SetFragmentStates_Decode(payload: dict):
-    out = {}
-    for objID, fs in payload.items():
-        out[int(objID)] = {k: FragState(**v) for (k, v) in fs.items()}
-    return True, (out, )
-
-
-@typecheck
-def FromClerk_SetFragmentStates_Encode(dummyarg):
-    return True, {}
-
-
-@typecheck
-def FromClerk_SetFragmentStates_Decode(dummyarg):
-    return RetVal(True, None, None)
-
-
-# ---------------------------------------------------------------------------
 # AddConstraints
 # ---------------------------------------------------------------------------
 
