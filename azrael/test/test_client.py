@@ -808,10 +808,10 @@ class TestClient:
         # Get the client for this test.
         client = self.clients[client_type]
 
-        # Reset the SV database and instantiate a Leonard.
+        # Reset the database and instantiate a Leonard.
         leo = getLeonard(azrael.leonard.LeonardBullet)
 
-        # Spawn the two bodies.
+        # Spawn two bodies.
         pos_a, pos_b = [-2, 0, 0], [2, 0, 0]
         new_objs = [
             {'templateID': '_templateSphere',
@@ -821,6 +821,12 @@ class TestClient:
         ]
         id_1, id_2 = 1, 2
         assert client.spawn(new_objs) == (True, None, [id_1, id_2])
+
+        # Verify the position of the bodies.
+        ret = client.getObjectStates([id_1, id_2])
+        assert ret.ok
+        assert ret.data[id_1]['rbs']['position'] == pos_a
+        assert ret.data[id_2]['rbs']['position'] == pos_b
 
         # Define- and add the constraints.
         con = [getP2P(rb_a=id_1, rb_b=id_2, pivot_a=pos_b, pivot_b=pos_a)]
@@ -832,10 +838,26 @@ class TestClient:
         assert client.setForce(id_1, [-10, 0, 0]).ok
         leo.processCommandsAndSync()
         leo.step(1.0, 60)
-        ret = client.getRigidBodies([id_1, id_2])
-        assert ret.ok
-        pos_a2 = ret.data[id_1]['rbs'].position
-        pos_b2 = ret.data[id_2]['rbs'].position
+
+        # Query the object positions. Due to some database timings is sometimes
+        # happen that the objects appear to not have moved. In that case retry
+        # the query a few times before moving to the comparison.
+        for ii in range(10):
+            assert ii < 9
+
+            # Query the objects and put their positions into convenience
+            # variables.
+            ret = client.getRigidBodies([id_1, id_2])
+            pos_a2 = ret.data[id_1]['rbs'].position
+            pos_b2 = ret.data[id_2]['rbs'].position
+
+            # Exit this loop if both objects have moved.
+            if (pos_a != pos_a2) and (pos_b != pos_b2):
+                break
+            time.sleep(0.1)
+
+        # Verify that the objects have moved to the left and maintained their
+        # distance.
         delta_a = np.array(pos_a2) - np.array(pos_a)
         delta_b = np.array(pos_b2) - np.array(pos_b)
         assert delta_a[0] < pos_a[0]
