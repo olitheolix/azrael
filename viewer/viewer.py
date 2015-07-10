@@ -382,8 +382,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if objID not in self.oldSVs:
             return False
 
-        cs_old = self.newSVs[objID]['rbs'].version
-        cs_new = self.oldSVs[objID]['rbs'].version
+        cs_old = self.newSVs[objID]['rbs']['version']
+        cs_new = self.oldSVs[objID]['rbs']['version']
         return (cs_old != cs_new)
 
     def upload2GPU(self, objID, fragID, frag):
@@ -515,7 +515,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Get latest SV values.
         with util.Timeit('viewer.getV') as timeit:
-            ret = self.client.getRigidBodies(None)
+            ret = self.client.getObjectStates(None)
             if not ret.ok:
                 print('Could not retrieve the state variables -- Abort')
                 self.close()
@@ -523,6 +523,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Remove all *None* entries (means Azrael does not know about them;
         # should be impossible but just to be sure).
         self.newSVs = {k: v for k, v in ret.data.items() if v is not None}
+        del ret
 
         # Remove all objects from the local scene for which Azrael did not
         # provid SV data.
@@ -758,9 +759,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
                 # Compute the model matrix for the overall object.
                 body = self.newSVs[objID]['rbs']
-                tmp = {'scale': body.scale,
-                       'position': body.position,
-                       'orientation': body.orientation
+                tmp = {'scale': body['scale'],
+                       'position': body['position'],
+                       'orientation': body['orientation']
                 }
                 matModelObj = self.buildModelMatrix(tmp)
                 del body, tmp
