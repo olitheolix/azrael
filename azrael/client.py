@@ -495,7 +495,7 @@ class Client():
         return self.serialiseAndSend('add_templates', templates)
 
     @typecheck
-    def getBodyStates(self, objIDs: (list, tuple, int)):
+    def getRigidBodies(self, objIDs: (list, tuple, int)):
         """
         Return the State Variables for all ``objIDs`` in a dictionary.
 

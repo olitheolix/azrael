@@ -552,7 +552,7 @@ class ResetSim(multiprocessing.Process):
         # survive the reset.
         ret = client.getAllObjectIDs()
         assert ret.ok
-        ret = client.getBodyStates(ret.data)
+        ret = client.getRigidBodies(ret.data)
         assert ret.ok
         allowed_objIDs = {k: v['rbs'] for k, v in ret.data.items()
                           if v is not None}

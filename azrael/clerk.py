@@ -123,7 +123,7 @@ class Clerk(config.AzraelProcess):
                 protocol.FromClerk_GetAllObjectIDs_Encode),
             'get_body_states': (
                 protocol.ToClerk_GetBodyState_Decode,
-                self.getBodyStates,
+                self.getRigidBodies,
                 protocol.FromClerk_GetBodyState_Encode),
             'set_rigid_body': (
                 protocol.ToClerk_SetRigidBody_Decode,
@@ -685,7 +685,7 @@ class Clerk(config.AzraelProcess):
 
         # Fetch the SV for objID (we need this to determine the orientation of
         # the base object to which the parts are attached).
-        sv_parent = self.getBodyStates([objID])
+        sv_parent = self.getRigidBodies([objID])
         if not sv_parent.ok:
             msg = 'Could not retrieve body state for objID={}'.format(objID)
             self.logit.warning(msg)
@@ -1168,7 +1168,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def getBodyStates(self, objIDs: (list, tuple)):
+    def getRigidBodies(self, objIDs: (list, tuple)):
         """
         Return the state variables for all ``objIDs`` in a dictionary.
 
@@ -1182,7 +1182,7 @@ class Clerk(config.AzraelProcess):
         :return: see :ref:``_packBodyState``.
         :rtype: dict
         """
-        with util.Timeit('clerk.getBodyStates') as timeit:
+        with util.Timeit('clerk.getRigidBodies') as timeit:
             ret = self._packBodyState(objIDs)
             if not ret.ok or objIDs is None:
                 return ret

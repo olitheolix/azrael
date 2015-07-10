@@ -470,9 +470,9 @@ class TestClerk:
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
-    def test_getBodyStates(self):
+    def test_getRigidBodies(self):
         """
-        Test the 'getBodyStates' command in the Clerk.
+        Test the 'getRigidBodies' command in the Clerk.
         """
         # Test parameters and constants.
         objID_1 = 1
@@ -485,11 +485,11 @@ class TestClerk:
         clerk = self.clerk
 
         # Retrieve all body states --> there must be none.
-        ret = clerk.getBodyStates(None)
+        ret = clerk.getRigidBodies(None)
         assert (ret.ok, ret.data) == (True, {})
 
         # Retrieve the SV for a non-existing ID.
-        ret = clerk.getBodyStates([10])
+        ret = clerk.getRigidBodies([10])
         assert (ret.ok, ret.data) == (True, {10: None})
 
         # Spawn a new object. It must have ID=1.
@@ -511,14 +511,14 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Retrieve the body state for a non-existing ID --> must fail.
-        ret = clerk.getBodyStates([10])
+        ret = clerk.getRigidBodies([10])
         assert (ret.ok, ret.data) == (True, {10: None})
 
         # Retrieve the body state for the existing ID=1.
-        ret = clerk.getBodyStates([objID_1])
+        ret = clerk.getRigidBodies([objID_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
-        assert ret == clerk.getBodyStates(None)
+        assert ret == clerk.getRigidBodies(None)
 
         # Spawn a second object.
         ret = clerk.spawn([init_2])
@@ -526,18 +526,18 @@ class TestClerk:
 
         # Retrieve the state variables for both objects individually.
         for objID, ref_sv in zip([objID_1, objID_2], [body_1, body_2]):
-            ret = clerk.getBodyStates([objID])
+            ret = clerk.getRigidBodies([objID])
             assert (ret.ok, len(ret.data)) == (True, 1)
             assert RBS(*ret.data[objID]['rbs']) == ref_sv
 
         # Retrieve the state variables for both objects at once.
-        ret = clerk.getBodyStates([objID_1, objID_2])
+        ret = clerk.getRigidBodies([objID_1, objID_2])
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
         assert RBS(*ret.data[objID_2]['rbs']) == body_2
 
         # Query all of them.
-        assert ret == clerk.getBodyStates(None)
+        assert ret == clerk.getRigidBodies(None)
 
     def test_set_force(self):
         """
@@ -759,7 +759,7 @@ class TestClerk:
         del spawnedIDs
 
         # Query the state variables of the objects spawned by the factories.
-        ret = clerk.getBodyStates([id_2, id_3])
+        ret = clerk.getRigidBodies([id_2, id_3])
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Determine which body was spawned by which factory based on their
@@ -842,7 +842,7 @@ class TestClerk:
         assert ret.data == [objID_2, objID_3]
 
         # Query the state variables of the objects spawned by the factories.
-        ret = clerk.getBodyStates([objID_2, objID_3])
+        ret = clerk.getRigidBodies([objID_2, objID_3])
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Determine which body was spawned by which factory based on their
@@ -966,7 +966,7 @@ class TestClerk:
         del ret
 
         # Query the state variables of the objects spawned by the factories.
-        ret = clerk.getBodyStates([objID_2, objID_3])
+        ret = clerk.getRigidBodies([objID_2, objID_3])
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Determine which body was spawned by which factory based on their
@@ -1119,7 +1119,7 @@ class TestClerk:
         objID0, objID1 = ret.data
 
         # Query the State Vectors for both objects.
-        ret = clerk.getBodyStates([objID0, objID1])
+        ret = clerk.getRigidBodies([objID0, objID1])
         assert ret.ok and (set((objID0, objID1)) == set(ret.data.keys()))
         ref_version = ret.data[objID0]['rbs'].version
 
@@ -1129,12 +1129,12 @@ class TestClerk:
         assert clerk.setFragments(cmd).ok
 
         # Verify that the new 'version' flag is now different.
-        ret = clerk.getBodyStates([objID0])
+        ret = clerk.getRigidBodies([objID0])
         assert ret.ok
         assert ref_version != ret.data[objID0]['rbs'].version
 
         # Verify further that the version attribute of objID1 is unchanged.
-        ret = clerk.getBodyStates([objID1])
+        ret = clerk.getRigidBodies([objID1])
         assert ret.ok
         assert ref_version == ret.data[objID1]['rbs'].version
 
@@ -1303,7 +1303,7 @@ class TestClerk:
             name 'foo'.
             """
             # Query the SV for both objects.
-            ret = clerk.getBodyStates([objID_1, objID_2])
+            ret = clerk.getRigidBodies([objID_1, objID_2])
             assert ret.ok and (len(ret.data) == 2)
 
             # Extract the one and only fragment of each object.
@@ -1404,7 +1404,7 @@ class TestClerk:
             This function assumes the object has exactly two fragments.
             """
             # Query the SV for both objects.
-            ret = clerk.getBodyStates([objID])
+            ret = clerk.getRigidBodies([objID])
             assert ret.ok and (len(ret.data) == 1)
 
             # Extract the fragments and verify there are the two.
@@ -1445,13 +1445,13 @@ class TestClerk:
 
         # Query the state and verify it has as many FragmentState
         # vectors as it has fragments.
-        ret = clerk.getBodyStates([objID])
+        ret = clerk.getRigidBodies([objID])
         assert ret.ok
         ret_frags = ret.data[objID]['frag']
         assert len(ret_frags) == len(frags)
 
         # Same as before, but this time get all of them.
-        assert clerk.getBodyStates(None) == ret
+        assert clerk.getRigidBodies(None) == ret
 
         # Verify the fragment _states_ themselves.
         checkFragState(objID,
@@ -1755,7 +1755,7 @@ class TestClerk:
         assert clerk.setForce(id_a, [-10, 0, 0], [0, 0, 0]).ok
         leo.processCommandsAndSync()
         leo.step(1.0, 60)
-        ret = clerk.getBodyStates([id_a, id_b])
+        ret = clerk.getRigidBodies([id_a, id_b])
         assert ret.ok
         pos_a2 = ret.data[id_a]['rbs'].position
         pos_b2 = ret.data[id_b]['rbs'].position
@@ -1788,7 +1788,7 @@ class TestClerk:
         # report three fragments.
         ret = clerk.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 3
-        ret = clerk.getBodyStates([objID])
+        ret = clerk.getRigidBodies([objID])
         assert ret.ok and len(ret.data[objID]['frag']) == 3
 
         # Update the fragments as follows: keep the first intact, remove the
@@ -1799,7 +1799,7 @@ class TestClerk:
         # After the last update only two fragments must remain.
         ret = clerk.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 2
-        ret = clerk.getBodyStates([objID])
+        ret = clerk.getRigidBodies([objID])
         assert ret.ok and len(ret.data[objID]['frag']) == 2
 
     def test_setRigidBody(self):
@@ -1819,7 +1819,7 @@ class TestClerk:
         assert ret.ok and (ret.data == (objID, ))
 
         # Verify that the initial body states are correct.
-        ok, _, ret_bs = clerk.getBodyStates([objID])
+        ok, _, ret_bs = clerk.getRigidBodies([objID])
         ret_bs = ret_bs[objID]['rbs']
         assert isinstance(ret_bs, types._RigidBodyState)
         assert ret_bs.position == init['rbs']['position']
@@ -1834,7 +1834,7 @@ class TestClerk:
         assert clerk.setRigidBody(objID, new_bs).ok
 
         # Verify that the new attributes came into effect.
-        ok, _, ret_bs = clerk.getBodyStates([objID])
+        ok, _, ret_bs = clerk.getRigidBodies([objID])
         ret_bs = ret_bs[objID]['rbs']
         assert isinstance(ret_bs, types._RigidBodyState)
         assert ret_bs.imass == new_bs['imass']
@@ -1859,7 +1859,7 @@ class TestClerk:
         object with a visual geometry that cannot collide with anything.
 
         This test creates the three test cases and verifies that
-        `Clerk.getBodyStates' handles them correctly.
+        `Clerk.getRigidBodies' handles them correctly.
         """
         # Create a Leonard and Clerk.
         leo = getLeonard(azrael.leonard.LeonardBullet)
@@ -1897,7 +1897,7 @@ class TestClerk:
         assert clerk.setRigidBody(id_none, new_bs_none).ok
 
         # Verify all objects have the new positions.
-        ret = clerk.getBodyStates([id_cs, id_frag, id_none])
+        ret = clerk.getRigidBodies([id_cs, id_frag, id_none])
         assert ret.ok
 
         r = ret.data

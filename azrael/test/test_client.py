@@ -312,7 +312,7 @@ class TestClient:
 
         # Query the state variables for a non existing object.
         objID = 100
-        assert client.getBodyStates(objID) == (True, None, {objID: None})
+        assert client.getRigidBodies(objID) == (True, None, {objID: None})
         del objID
 
         # Instruct Clerk to spawn a new object. Its objID must be '1'.
@@ -328,13 +328,13 @@ class TestClient:
 
         # The state of the new object must match the inital state (plus the
         # tweaks provided to the spawn command).
-        ret = client.getBodyStates(objID_1)
+        ret = client.getRigidBodies(objID_1)
         assert ret.ok and (set(ret.data.keys()) == {1})
         assert ret.data[objID_1]['rbs'].position == pos
         assert ret.data[objID_1]['rbs'].velocityLin == vlin
 
         # Same test but this time get all of them.
-        assert client.getBodyStates(None) == ret
+        assert client.getRigidBodies(None) == ret
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_getAllObjectIDs(self, client_type):
@@ -469,7 +469,7 @@ class TestClient:
         assert (ret.ok, ret.data) == (True, [id_2, id_3])
 
         # Query the state variables of the objects spawned by the factories.
-        ok, _, ret_SVs = client.getBodyStates([id_2, id_3])
+        ok, _, ret_SVs = client.getRigidBodies([id_2, id_3])
         assert (ok, len(ret_SVs)) == (True, 2)
 
         # Determine which body was spawned by which factory based on their
@@ -523,7 +523,7 @@ class TestClient:
         del temp, new_obj, ret
 
         # Query the SV to obtain the 'version' value.
-        ret = client.getBodyStates(objID)
+        ret = client.getRigidBodies(objID)
         assert ret.ok
         version = ret.data[objID]['rbs'].version
 
@@ -561,7 +561,7 @@ class TestClient:
         assert FragRaw(**tmp) == frag['bar'].fragdata
 
         # Ensure 'version' is different as well.
-        ret = client.getBodyStates(objID)
+        ret = client.getRigidBodies(objID)
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
@@ -587,7 +587,7 @@ class TestClient:
         del temp, new_obj, ret
 
         # Query the body states to obtain the 'version' value.
-        ret = client.getBodyStates(objID)
+        ret = client.getRigidBodies(objID)
         assert ret.ok
         version = ret.data[objID]['rbs'].version
 
@@ -605,7 +605,7 @@ class TestClient:
         assert ret.data[objID]['f_dae']['fragtype'] == 'RAW'
 
         # Ensure 'version' is different as well.
-        ret = client.getBodyStates(objID)
+        ret = client.getRigidBodies(objID)
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
         # Change the fragment geometry once more.
@@ -618,7 +618,7 @@ class TestClient:
         assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
 
         # Ensure 'version' is different as well.
-        ret = client.getBodyStates(objID)
+        ret = client.getRigidBodies(objID)
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
@@ -645,7 +645,7 @@ class TestClient:
 
         # Query the Body State to get the Fragment States. Then verify the
         # Fragment State named 'bar'.
-        ret = client.getBodyStates(objID)
+        ret = client.getRigidBodies(objID)
         ref = {'bar': {'scale': 1, 'position': [0, 0, 0], 'orientation': [0, 0, 0, 1]}}
         assert ret.ok
         assert ret.data[objID]['frag'] == ref
@@ -655,7 +655,7 @@ class TestClient:
         newStates = {objID: {'bar': {'scale': 2.2, 'position': [1, 2, 3],
                                      'orientation': [1, 0, 0, 0]}}}
         assert client.setFragments(newStates).ok
-        ret = client.getBodyStates(objID)
+        ret = client.getRigidBodies(objID)
         assert ret.ok
         ret = ret.data[objID]['frag']['bar']
         assert ret == newStates[objID]['bar']
@@ -690,7 +690,7 @@ class TestClient:
         # report three fragments.
         ret = client.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 3
-        ret = client.getBodyStates(objID)
+        ret = client.getRigidBodies(objID)
         assert ret.ok and len(ret.data[objID]['frag']) == 3
 
         # Update the fragments as follows: keep the first intact, remove the
@@ -701,7 +701,7 @@ class TestClient:
         # After the last update there must now only be two fragments.
         ret = client.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 2
-        ret = client.getBodyStates(objID)
+        ret = client.getRigidBodies(objID)
         assert ret.ok and len(ret.data[objID]['frag']) == 2
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
@@ -822,7 +822,7 @@ class TestClient:
         assert client.setForce(id_1, [-10, 0, 0]).ok
         leo.processCommandsAndSync()
         leo.step(1.0, 60)
-        ret = client.getBodyStates([id_1, id_2])
+        ret = client.getRigidBodies([id_1, id_2])
         assert ret.ok
         pos_a2 = ret.data[id_1]['rbs'].position
         pos_b2 = ret.data[id_2]['rbs'].position

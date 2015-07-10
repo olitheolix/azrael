@@ -515,7 +515,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Get latest SV values.
         with util.Timeit('viewer.getV') as timeit:
-            ret = self.client.getBodyStates(None)
+            ret = self.client.getRigidBodies(None)
             if not ret.ok:
                 print('Could not retrieve the state variables -- Abort')
                 self.close()
