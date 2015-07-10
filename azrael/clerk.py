@@ -1100,8 +1100,23 @@ class Clerk(config.AzraelProcess):
             msg = 'objIDs {} do not exist'.format(tmp)
             return RetVal(False, msg, None)
 
-    def _packBodyState(self, objIDs: list):
+    @typecheck
+    def getRigidBodies(self, objIDs: (list, tuple)):
         """
+        Return the state variables for all ``objIDs`` in a dictionary.
+
+        If ``objIDs`` is *None* then the states of all objects are returned.
+
+        The dictionary keys will be the elements of ``objIDs`` and the
+        associated  values are ``RigidBodyState`` instances, or *None*
+        if the corresponding objID did not exist.
+
+        :param list[int] objIDs: list of objects to query.
+        :return: see :ref:``_packBodyState``.
+        :rtype: dict
+
+
+
         Return a dictionary of body states for all ``objIDs``.
 
         If ``objIDs`` is *None* then the states of all objects are returned.
@@ -1169,34 +1184,13 @@ class Clerk(config.AzraelProcess):
 
             # Construct the dictionary to return.
             out[objID] = {'frag': fs, 'rbs': rbs}
+
+        # If the user requested a particular set of objects then make sure each
+        # one is in the output dictionary. If one is missing (eg it does not
+        # exist) then its value is None.
+        if objIDs is not None:
+            out = {_: out[_] if _ in out else None for _ in objIDs}
         return RetVal(True, None, out)
-
-    @typecheck
-    def getRigidBodies(self, objIDs: (list, tuple)):
-        """
-        Return the state variables for all ``objIDs`` in a dictionary.
-
-        If ``objIDs`` is *None* then the states of all objects are returned.
-
-        The dictionary keys will be the elements of ``objIDs`` and the
-        associated  values are ``RigidBodyState`` instances, or *None*
-        if the corresponding objID did not exist.
-
-        :param list[int] objIDs: list of objects to query.
-        :return: see :ref:``_packBodyState``.
-        :rtype: dict
-        """
-        with util.Timeit('clerk.getRigidBodies') as timeit:
-            ret = self._packBodyState(objIDs)
-            if not ret.ok or objIDs is None:
-                return ret
-
-            # Create a default dictionary because it is possible that the
-            # user asked us for objects that do not exist (_packBodyState
-            # will silently skip them).
-            out = {_: None for _ in objIDs}
-            out.update(ret.data)
-            return RetVal(True, None, out)
 
     @typecheck
     def setRigidBody(self, objID: int, body: dict):
