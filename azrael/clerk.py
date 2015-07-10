@@ -1105,19 +1105,23 @@ class Clerk(config.AzraelProcess):
         Non-existing object IDs will be silently ignored and do not make it
         into the returned dictionary.
 
-        This is a convenience function to remove code duplication in
-        ``getBodyStates`` and ``getAllBodyStates``.
-
-        The returned dictionary has the following form::
-        fixme: update docu and example below
+        The returned dictionary contains the entire Rigid Body data plus meta
+        data about all fragments (eg. their position and velocity, but not
+        their actual geometry). Here is an example::
 
         {
             objID_1: {
-                'frag': [FragState(), ...],
+                'frag': {
+                    'a': {'scale: x, 'position': [...], 'orientation': [...],},
+                    'b': {'scale: y, 'position': [...], 'orientation': [...],},
+                }
                 'rbs': _RigidBodyState(...),
             },
             objID_2: {
-                'frag': [FragState(), ...],
+                'frag': {
+                    'a': {'scale: x, 'position': [...], 'orientation': [...],},
+                    'b': {'scale: y, 'position': [...], 'orientation': [...],},
+                }
                 'rbs': _RigidBodyState(...),
             },
         }
@@ -1166,8 +1170,9 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def getBodyStates(self, objIDs: (list, tuple)):
         """
-        fixme: docu update because it was merged with getAllBodyStates
         Return the state variables for all ``objIDs`` in a dictionary.
+
+        If ``objIDs`` is *None* then the states of all objects are returned.
 
         The dictionary keys will be the elements of ``objIDs`` and the
         associated  values are ``RigidBodyState`` instances, or *None*

@@ -1784,7 +1784,7 @@ class TestClerk:
         assert ret.ok
         objID = ret.data[0]
 
-        # Query the fragment geometries and Body State to verify that both
+        # Query the fragment geometries and body state to verify that both
         # report three fragments.
         ret = clerk.getFragments([objID])
         assert ret.ok and len(ret.data[objID]) == 3
