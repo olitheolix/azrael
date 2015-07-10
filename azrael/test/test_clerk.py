@@ -2056,6 +2056,35 @@ class TestClerk:
         assert r_os[id_none]['frag'] == {}
         assert r_rb[id_none]['rbs'].position == new_bs_none['position']
 
+    def test_set_get_custom(self):
+        """
+        Spawn an object and modify its custom data.
+        """
+        # Convenience.
+        clerk = self.clerk
+        id_1, id_2 = 1, 2
+        init = {'templateID': '_templateSphere'}
+        ret = clerk.spawn([init, init])
+        assert ret == (True, None, (id_1, id_2))
+
+        # Query the custom data for a non-existing object.
+        assert clerk.getCustomData([10]) == (True, None, {10: None})
+
+        # Query an existing object.
+        assert clerk.getCustomData([id_1]) == (True, None, {id_1: ''})
+
+        # Set the custom data for a non-existing object.
+        assert clerk.setCustomData({10: 'blah'}) == (True, None, [10])
+
+        # Set/get the custom data for an existing object.
+        ret = clerk.setCustomData({id_1: 'foo', 20: 'bar'})
+        assert ret.data == [20]
+        ret = clerk.getCustomData([id_1, id_2])
+        assert ret == (True, None, {id_1: 'foo', id_2: ''})
+
+        # Get all 'custom' fields at once.
+        assert clerk.getCustomData([id_1, id_2]) == clerk.getCustomData(None)
+
 
 def test_invalid():
     """

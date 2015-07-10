@@ -43,7 +43,7 @@ logit = logging.getLogger('azrael.' + __name__)
 RetVal = namedtuple('RetVal', 'ok msg data')
 
 # Object Template.
-_Template = namedtuple('_Template', 'aid rbs fragments boosters factories')
+_Template = namedtuple('_Template', 'aid rbs fragments boosters factories custom')
 
 # Fragments.
 _FragMeta = namedtuple('_FragMeta',
@@ -981,11 +981,13 @@ class Template(_Template):
     :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
-    def __new__(cls, aid: str,
+    def __new__(cls,
+                aid: str,
                 rbs: (tuple, list, dict),
                 fragments: dict,
                 boosters: dict,
-                factories: dict):
+                factories: dict,
+                custom: str=''):
         try:
             # Sanity check the AID of the template, boosters, and factories.
             assert isAIDStringValid(aid)
@@ -1024,8 +1026,9 @@ class Template(_Template):
             raise TypeError
 
         # Return constructed data type.
+        custom = ''
         return super().__new__(
-            cls, aid, rbs, fragments, boosters, factories)
+            cls, aid, rbs, fragments, boosters, factories, custom)
 
     def _asdict(self):
         fragments = {k: v._asdict() for (k, v) in self.fragments.items()}
@@ -1036,5 +1039,6 @@ class Template(_Template):
                         rbs=rbs,
                         fragments=fragments,
                         boosters=boosters,
-                        factories=factories)
+                        factories=factories,
+                        custom=self.custom)
         return OrderedDict(zip(tmp._fields, tmp))

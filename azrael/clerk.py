@@ -1368,3 +1368,66 @@ class Clerk(config.AzraelProcess):
         :return: number of deleted entries.
         """
         return self.igor.deleteConstraints(constraints)
+
+    @typecheck
+    def setCustomData(self, data: dict):
+        """
+        Update the `custom` field with the information in ``data``.
+
+        ``Data`` is a dictionary, eg::
+            {1: 'foo', 25: 'bar'}
+
+        Non-existing objects are silently ignored, but their ID will be
+        returned to the caller.
+
+        :param dict[int: str] data: new content for 'custom' field in object.
+        :return: List of invalid object IDs.
+        """
+        db = database.dbHandles['ObjInstances']
+
+        # Update the 'custom' field of the specified object IDs.
+        invalid_objects = []
+        for objID, entry in data.items():
+            ret = db.update({'objID': objID},
+                            {'$set': {'template.custom': entry}})
+
+            # If the update did not work then add the current object ID to the
+            # list.
+            if ret['n'] == 0:
+                invalid_objects.append(objID)
+
+        # Return the list of objects that could not be updated.
+        return RetVal(True, None, invalid_objects)
+
+    @typecheck
+    def getCustomData(self, objIDs: (tuple, list)):
+        """
+        Return the `custom` data for all ``objIDs`` in a dictionary.
+
+        The return value may look like:: {1: 'foo', 25: 'bar'}
+
+        :param dict[int: str] data: new content for 'custom' field in object.
+        :return: dictionary of 'custom' data.
+        """
+        db = database.dbHandles['ObjInstances']
+
+        if objIDs is None:
+            # Query all objects.
+            query = {}
+            out = {}
+        else:
+            # Only query the specified objects. Return a *None* value for all
+            # those objects not found in the database.
+            query = {'objID': {'$in': objIDs}}
+            out = {_: None for _ in objIDs}
+
+        # Prjection operator.
+        prj = {'template.custom': True, '_id': False, 'objID': True}
+
+        # Compile the dictionary of all custom fields.
+        tmp = {_['objID']: _['template']['custom'] for _ in db.find(query, prj)}
+
+        # Update the `out` dictionary with all the values we found in the
+        # database and return it.
+        out.update(tmp)
+        return RetVal(True, None, out)
