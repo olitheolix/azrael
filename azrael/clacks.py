@@ -82,12 +82,12 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         try:
             ret = json.dumps(data._asdict())
         except (ValueError, TypeError) as err:
-            self.returnErr({}, 'JSON encoding error')
+            self.returnErr(RetVal(False, 'JSON encoding error', {}))
 
         self.write_message(ret, binary=False)
 
     @typecheck
-    def returnErr(self, data: dict, msg: str):
+    def returnErr(self, data: RetVal):
         """
         Send negative reply and log a warning message.
 
@@ -97,8 +97,11 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         :param str msg: text message to pass along.
         :return: None
         """
-        msg = RetVal(False, msg, {})
-        msg = json.dumps(msg._asdict())
+        try:
+            msg = json.dumps(data._asdict())
+        except (ValueError, TypeError) as err:
+            msg = RetVal(False, 'Serious Bug when sending back error', None)
+            msg = json.dumps(msg)
         self.write_message(msg, binary=False)
 
     @typecheck
@@ -119,11 +122,11 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         try:
             msg = json.loads(msg)
         except (TypeError, ValueError) as err:
-            self.returnErr({}, 'JSON decoding error in Clacks')
+            self.returnErr(RetVal(False, 'JSON decoding error in Clacks', {}))
             return
 
         if not (('cmd' in msg) and ('data' in msg)):
-            self.returnErr({}, 'Invalid command format')
+            self.returnErr(RetVal(False, 'Invalid command format', {}))
             return
 
         # Extract command word (always first byte) and the payload.
@@ -140,7 +143,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             if ret.ok:
                 self.returnOk(ret)
             else:
-                self.returnErr({}, ret.msg)
+                self.returnErr(RetVal(False, ret.msg, {}))
 
     def on_close(self):
         """
