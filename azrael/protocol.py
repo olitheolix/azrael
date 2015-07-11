@@ -51,20 +51,6 @@ def FromClerk_Ping_Encode(payload: str):
 
 
 # ---------------------------------------------------------------------------
-# GetTemplateID
-# ---------------------------------------------------------------------------
-
-@typecheck
-def ToClerk_GetTemplateID_Decode(payload: dict):
-    return payload
-
-
-@typecheck
-def FromClerk_GetTemplateID_Encode(templateID: str):
-    return templateID
-
-
-# ---------------------------------------------------------------------------
 # AddTemplates
 # ---------------------------------------------------------------------------
 
@@ -102,6 +88,34 @@ def FromClerk_GetTemplates_Encode(templates):
 
 
 # ---------------------------------------------------------------------------
+# Spawn
+# ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_Spawn_Decode(payload: dict):
+    return payload
+
+
+@typecheck
+def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
+    return objIDs
+
+
+# ---------------------------------------------------------------------------
+# GetTemplateID
+# ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_GetTemplateID_Decode(payload: dict):
+    return payload
+
+
+@typecheck
+def FromClerk_GetTemplateID_Encode(templateID: str):
+    return templateID
+
+
+# ---------------------------------------------------------------------------
 # GetAllObjectIDs
 # ---------------------------------------------------------------------------
 
@@ -115,34 +129,43 @@ def FromClerk_GetAllObjectIDs_Encode(objIDs: (list, tuple)):
     return objIDs
 
 
+
 # ---------------------------------------------------------------------------
-# SetRigidBodies
+# RemoveObject
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_SetRigidBodies_Decode(payload: dict):
-    # Convert the IDs to integers.
-    payload['bodies'] = {int(k): v for (k, v) in payload['bodies'].items()}
+def ToClerk_RemoveObject_Decode(payload: dict):
     return payload
 
 
 @typecheck
-def FromClerk_SetRigidBodies_Encode(dummyarg):
+def FromClerk_RemoveObject_Encode(dummyarg):
     return None
 
 
 # ---------------------------------------------------------------------------
-# SetForce
+# ControlParts
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_SetForce_Decode(payload: dict):
+def ToClerk_ControlParts_Decode(payload: dict):
+    # Convenience.
+    CmdF, CmdB = types.CmdFactory, types.CmdBooster
+
+    # Compile- and sanity check the commands.
+    cmds_b = {k: CmdB(**v) for (k, v) in payload['cmd_boosters'].items()}
+    cmds_f = {k: CmdF(**v) for (k, v) in payload['cmd_factories'].items()}
+
+    # Overwrite the data in the payload.
+    payload['cmd_boosters'] = cmds_b
+    payload['cmd_factories'] = cmds_f
     return payload
 
 
 @typecheck
-def FromClerk_SetForce_Encode(dummyarg):
-    return None
+def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
+    return objIDs
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +197,22 @@ def ToClerk_SetFragments_Decode(payload: dict):
 
 @typecheck
 def FromClerk_SetFragments_Encode(dummyarg):
+    return None
+
+
+# ---------------------------------------------------------------------------
+# SetRigidBodies
+# ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_SetRigidBodies_Decode(payload: dict):
+    # Convert the IDs to integers.
+    payload['bodies'] = {int(k): v for (k, v) in payload['bodies'].items()}
+    return payload
+
+
+@typecheck
+def FromClerk_SetRigidBodies_Encode(dummyarg):
     return None
 
 
@@ -215,54 +254,17 @@ def FromClerk_GetObjectStates_Encode(payload: dict):
 
 
 # ---------------------------------------------------------------------------
-# Spawn
+# SetForce
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_Spawn_Decode(payload: dict):
+def ToClerk_SetForce_Decode(payload: dict):
     return payload
 
 
 @typecheck
-def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
-    return objIDs
-
-# ---------------------------------------------------------------------------
-# Remove
-# ---------------------------------------------------------------------------
-
-@typecheck
-def ToClerk_RemoveObject_Decode(payload: dict):
-    return payload
-
-
-@typecheck
-def FromClerk_RemoveObject_Encode(dummyarg):
+def FromClerk_SetForce_Encode(dummyarg):
     return None
-
-
-# ---------------------------------------------------------------------------
-# ControlParts
-# ---------------------------------------------------------------------------
-
-@typecheck
-def ToClerk_ControlParts_Decode(payload: dict):
-    # Convenience.
-    CmdF, CmdB = types.CmdFactory, types.CmdBooster
-
-    # Compile- and sanity check the commands.
-    cmds_b = {k: CmdB(**v) for (k, v) in payload['cmd_boosters'].items()}
-    cmds_f = {k: CmdF(**v) for (k, v) in payload['cmd_factories'].items()}
-
-    # Overwrite the data in the payload.
-    payload['cmd_boosters'] = cmds_b
-    payload['cmd_factories'] = cmds_f
-    return payload
-
-
-@typecheck
-def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
-    return objIDs
 
 
 # ---------------------------------------------------------------------------
