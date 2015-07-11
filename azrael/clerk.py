@@ -636,6 +636,84 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, newObjectIDs)
 
     @typecheck
+    def updateBoosterForces(self, objID: int, cmds: dict):
+        """
+        Update the Booster values for an object and return the new net force.
+
+        This method returns the torque and linear force that each booster would
+        apply at object's center. A typical return value is::
+
+            {'foo': ([force_x, force_y, force_z],
+                     [torque_x, torque_y, torque_z]),
+             'bar': ([force_x, force_y, force_z],
+                     [torque_x, torque_y, torque_z]),
+             ...}
+
+        where 'foo' and 'bar' are the names of the boosters.
+
+        :param int objID: object ID
+        :param dict cmds: Booster commands.
+        :return: (linear force, torque) that the Booster apply to the object.
+        :rtype: tuple(vec3, vec3)
+        """
+        # Convenience.
+        db = database.dbHandles['ObjInstances']
+
+        # Query the object's booster information.
+        query = {'objID': objID}
+        doc = db.find_one(query, {'template.boosters': True})
+        if doc is None:
+            msg = 'Object <{}> does not exist'.format(objID)
+            return RetVal(False, msg, None)
+        instance = doc['template']
+        del doc
+
+        # Put the Booster entries from the database into Booster tuples.
+        try:
+            b = types.Booster
+            boosters = {k: b(**v)for (k, v) in instance['boosters'].items()}
+            del b
+        except TypeError:
+            msg = 'Inconsistent Template data'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
+
+        # Tally up the forces exerted by all Boosters on the object.
+        force, torque = np.zeros(3), np.zeros(3)
+        for partID, booster in boosters.items():
+            # Update the Booster value if the user specified a new one. Then
+            # remove the command (irrelevant for this loop but necessary for
+            # the sanity check that follows after the loop).
+            if partID in cmds:
+                boosters[partID] = booster._replace(force=cmds[partID].force_mag)
+                booster = boosters[partID]
+                del cmds[partID]
+
+            # Convenience.
+            b_pos = np.array(booster.pos)
+            b_dir = np.array(booster.direction)
+
+            # Update the central force and torque.
+            force += booster.force * b_dir
+            torque += booster.force * np.cross(b_pos, b_dir)
+            del booster
+
+        # If we have not consumed all commands yet then at least one partID did
+        # not exist --> return with an error.
+        if len(cmds) > 0:
+            return RetVal(False, 'Some Booster partIDs were invalid', None)
+
+        # Update the new Booster values (and only the Booster values) in the
+        # instance database. To this end convert them back to dictionaries and
+        # issue the update.
+        boosters = {k: v._asdict() for (k, v) in boosters.items()}
+        db.update(query, {'$set': {'template.boosters': boosters}})
+
+        # Return the final force- and torque as a tuple of 2-tuples.
+        out = (force.tolist(), torque.tolist())
+        return RetVal(True, None, out)
+
+    @typecheck
     def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
         """
         Issue commands to individual parts of the ``objID``.
@@ -769,84 +847,6 @@ class Clerk(config.AzraelProcess):
 
         # Success. Return the IDs of all spawned objects.
         return RetVal(True, None, objIDs)
-
-    @typecheck
-    def updateBoosterForces(self, objID: int, cmds: dict):
-        """
-        Update the Booster values for an object and return the new net force.
-
-        This method returns the torque and linear force that each booster would
-        apply at object's center. A typical return value is::
-
-            {'foo': ([force_x, force_y, force_z],
-                     [torque_x, torque_y, torque_z]),
-             'bar': ([force_x, force_y, force_z],
-                     [torque_x, torque_y, torque_z]),
-             ...}
-
-        where 'foo' and 'bar' are the names of the boosters.
-
-        :param int objID: object ID
-        :param dict cmds: Booster commands.
-        :return: (linear force, torque) that the Booster apply to the object.
-        :rtype: tuple(vec3, vec3)
-        """
-        # Convenience.
-        db = database.dbHandles['ObjInstances']
-
-        # Query the object's booster information.
-        query = {'objID': objID}
-        doc = db.find_one(query, {'template.boosters': True})
-        if doc is None:
-            msg = 'Object <{}> does not exist'.format(objID)
-            return RetVal(False, msg, None)
-        instance = doc['template']
-        del doc
-
-        # Put the Booster entries from the database into Booster tuples.
-        try:
-            b = types.Booster
-            boosters = {k: b(**v)for (k, v) in instance['boosters'].items()}
-            del b
-        except TypeError:
-            msg = 'Inconsistent Template data'
-            self.logit.error(msg)
-            return RetVal(False, msg, None)
-
-        # Tally up the forces exerted by all Boosters on the object.
-        force, torque = np.zeros(3), np.zeros(3)
-        for partID, booster in boosters.items():
-            # Update the Booster value if the user specified a new one. Then
-            # remove the command (irrelevant for this loop but necessary for
-            # the sanity check that follows after the loop).
-            if partID in cmds:
-                boosters[partID] = booster._replace(force=cmds[partID].force_mag)
-                booster = boosters[partID]
-                del cmds[partID]
-
-            # Convenience.
-            b_pos = np.array(booster.pos)
-            b_dir = np.array(booster.direction)
-
-            # Update the central force and torque.
-            force += booster.force * b_dir
-            torque += booster.force * np.cross(b_pos, b_dir)
-            del booster
-
-        # If we have not consumed all commands yet then at least one partID did
-        # not exist --> return with an error.
-        if len(cmds) > 0:
-            return RetVal(False, 'Some Booster partIDs were invalid', None)
-
-        # Update the new Booster values (and only the Booster values) in the
-        # instance database. To this end convert them back to dictionaries and
-        # issue the update.
-        boosters = {k: v._asdict() for (k, v) in boosters.items()}
-        db.update(query, {'$set': {'template.boosters': boosters}})
-
-        # Return the final force- and torque as a tuple of 2-tuples.
-        out = (force.tolist(), torque.tolist())
-        return RetVal(True, None, out)
 
     @typecheck
     def removeObject(self, objID: int):
