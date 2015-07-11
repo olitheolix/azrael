@@ -2085,6 +2085,21 @@ class TestClerk:
         # Get all 'custom' fields at once.
         assert clerk.getCustomData([id_1, id_2]) == clerk.getCustomData(None)
 
+        # Attempt to store something other than a string.
+        assert clerk.getCustomData([id_1]) == (True, None, {id_1: 'foo'})
+        assert clerk.setCustomData({id_1: 10}) == (True, None, [id_1])
+        assert clerk.getCustomData([id_1]) == (True, None, {id_1: 'foo'})
+
+        # Attempt to use a string that exceeds the 16k limit.
+        max_len = 2 ** 16
+        long_string = 'v' * max_len
+        short_string = 'i' * (max_len - 1)
+        assert clerk.getCustomData([id_1]) == (True, None, {id_1: 'foo'})
+        assert clerk.setCustomData({id_1: long_string}) == (True, None, [id_1])
+        assert clerk.getCustomData([id_1]) == (True, None, {id_1: 'foo'})
+        assert clerk.setCustomData({id_1: short_string}).ok
+        assert clerk.getCustomData([id_1]) == (True, None, {id_1: short_string})
+
 
 def test_invalid():
     """

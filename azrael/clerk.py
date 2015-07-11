@@ -1382,6 +1382,8 @@ class Clerk(config.AzraelProcess):
         Non-existing objects are silently ignored, but their ID will be
         returned to the caller.
 
+        All entries must be strings with less than 16k characters.
+
         :param dict[int: str] data: new content for 'custom' field in object.
         :return: List of invalid object IDs.
         """
@@ -1389,13 +1391,18 @@ class Clerk(config.AzraelProcess):
 
         # Update the 'custom' field of the specified object IDs.
         invalid_objects = []
-        for objID, entry in data.items():
-            ret = db.update({'objID': objID},
-                            {'$set': {'template.custom': entry}})
+        for objID, value in data.items():
+            try:
+                assert isinstance(value, str)
+                assert len(value) < 2 ** 16
 
-            # If the update did not work then add the current object ID to the
-            # list.
-            if ret['n'] == 0:
+                ret = db.update({'objID': objID},
+                                {'$set': {'template.custom': value}})
+
+                # If the update did not work then add the current object ID to
+                # the list.
+                assert ret['n'] > 0
+            except AssertionError:
                 invalid_objects.append(objID)
 
         # Return the list of objects that could not be updated.
