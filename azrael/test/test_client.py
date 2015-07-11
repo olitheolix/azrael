@@ -865,3 +865,25 @@ class TestClient:
         delta_b = np.array(pos_b2) - np.array(pos_b)
         assert delta_a[0] < pos_a[0]
         assert np.allclose(delta_a, delta_b)
+
+    @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+    def test_set_get_custom(self, client_type):
+        """
+        Spawn two objects and modify their custom fields, as well as set/query
+        the custom field of a non-existing object.
+        """
+        # Get the client for this test.
+        client = self.clients[client_type]
+
+        # Spawn two objects.
+        id_1, id_2 = 1, 2
+        init = {'templateID': '_templateSphere'}
+        assert client.spawn([init, init]) == (True, None, [id_1, id_2])
+
+        # Update the custom data for an existing- and a non-existing object.
+        assert client.setCustomData({id_1: 'foo', 10: 'bar'}) == (True, None, [10])
+
+        # Query two existing- and one non-existing object.
+        ret = client.getCustomData([id_1, id_2, 10])
+        assert ret.ok
+        assert ret.data == ({id_1: 'foo', id_2: '', 10: None})

@@ -161,6 +161,14 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_DeleteConstraints_Decode,
                 self.deleteConstraints,
                 protocol.FromClerk_DeleteConstraints_Encode),
+            'set_custom': (
+                protocol.ToClerk_SetCustomData_Decode,
+                self.setCustomData,
+                protocol.FromClerk_SetCustomData_Encode),
+            'get_custom': (
+                protocol.ToClerk_GetCustomData_Decode,
+                self.getCustomData,
+                protocol.FromClerk_GetCustomData_Encode),
         }
 
     def runCommand(self, cmd, payload, fun_decode, fun_process, fun_encode):

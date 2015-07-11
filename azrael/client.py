@@ -546,3 +546,47 @@ class Client():
             # Wrap the fragments into their dedicated tuple type.
             out[aid] = FragRaw(**geo)
         return RetVal(True, None, out)
+
+    @typecheck
+    def setCustomData(self, data: dict):
+        """
+        Update the `custom` field with the information in ``data``.
+
+        ``Data`` is a dictionary, eg::
+            {1: 'foo', 25: 'bar'}
+
+        Non-existing objects are silently ignored, but their ID will be
+        returned to the caller.
+
+        :param dict[int: str] data: new content for 'custom' field in object.
+        :return: List of invalid object IDs.
+        """
+        # Sanity checks.
+        for k, v in data.items():
+            assert isinstance(k, int)
+            assert isinstance(v, str)
+
+        return self.serialiseAndSend('set_custom', {'data': data})
+
+    @typecheck
+    def getCustomData(self, objIDs: (tuple, list)):
+        """
+        Return the `custom` data for all ``objIDs`` in a dictionary.
+
+        The return value may look like:: {1: 'foo', 25: 'bar'}
+
+        :param dict[int: str] data: new content for 'custom' field in object.
+        :return: dictionary of 'custom' data.
+        """
+        # Sanity checks: all object IDs must be integers.
+        for objID in objIDs:
+            assert isinstance(objID, int)
+
+        # Send to Clerk and wait for response.
+        ret = self.serialiseAndSend('get_custom', {'objIDs': objIDs})
+        if not ret.ok:
+            return ret
+
+        # Convert the IDs to integers.
+        data = {int(k): v for (k, v) in ret.data.items()}
+        return ret._replace(data=data)

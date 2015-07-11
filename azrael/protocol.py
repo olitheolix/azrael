@@ -309,3 +309,33 @@ def ToClerk_GetConstraints_Decode(payload: dict):
 @typecheck
 def FromClerk_GetConstraints_Encode(constraints):
     return [_._asdict() for _ in constraints]
+
+
+# ---------------------------------------------------------------------------
+# setCustomData
+# ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_SetCustomData_Decode(payload: dict):
+    # Convert the IDs to integers.
+    payload['data'] = {int(k): v for (k, v) in payload['data'].items()}
+    return payload
+
+
+@typecheck
+def FromClerk_SetCustomData_Encode(payload):
+    return payload
+
+
+# ---------------------------------------------------------------------------
+# getCustomData
+# ---------------------------------------------------------------------------
+
+@typecheck
+def ToClerk_GetCustomData_Decode(payload: dict):
+    return payload
+
+
+@typecheck
+def FromClerk_GetCustomData_Encode(payload):
+    return payload
