@@ -48,31 +48,6 @@ class TestClerk:
     def teardown_method(self, method):
         pass
 
-    def verifyFromClerk(self, encoder, decoder, payload):
-        """
-        Verify the ``encoder``/``decoder`` pair with ``payload``.
-
-        This method encodes the payload with ``encoder``, converts the result
-        to- and from JSON to simulate the wire transmission, passes the result
-        to the ``decoder`` and verifies that the result matches the original
-        ``payload``.
-
-        This method is for the Clerk --> Client direction. The only difference
-        to ``verifyToClerk`` is the return value signature of the
-        encoder/decoder.
-        """
-        # Encode source data.
-        ok, enc = encoder(payload)
-        assert ok
-
-        # Convert to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(enc))
-
-        # Decode the data.
-        ok, msg, dec = decoder(enc)
-        assert ok is ok
-        assert dec == payload
-
     def getTestTemplate(self, templateID='templateID'):
         """
         Return a valid template with non-trivial data. The template contains
@@ -99,7 +74,6 @@ class TestClerk:
 
         # Create some fragments...
         frags = {'f1': getFragRaw(), 'f2': getFragDae(), 'f3': getFragNone()}
-        frags = {'f1': getFragRaw()}
 
         # ... and a body...
         body = getRigidBody(position=(1, 2, 3))
@@ -124,11 +98,16 @@ class TestClerk:
             'url_frag': 'http://somewhere',
             'template': template}
         }
-        enc = protocol.FromClerk_GetTemplates_Encode
-        dec = protocol.FromClerk_GetTemplates_Decode
-        self.verifyFromClerk(enc, dec, payload)
 
-    def test_ControlCommand(self):
+        # Simulate wire transmission.
+        enc = protocol.FromClerk_GetTemplates_Encode(payload)
+        enc = json.loads(json.dumps(enc))
+
+        r = enc[template.aid]
+        assert r['url_frag'] == payload[template.aid]['url_frag']
+        assert types.Template(**r['template']) == payload[template.aid]['template']
+
+    def test_ControlParts(self):
         """
         Test controlParts codec.
         """
@@ -148,9 +127,6 @@ class TestClerk:
         # Client --> Clerk.
         # ----------------------------------------------------------------------
 
-        # Convenience.
-        dec_fun = protocol.ToClerk_ControlParts_Decode
-
         payload = {
             'objID': objID,
             'cmd_boosters': {k: v._asdict() for (k, v) in cmd_boosters.items()},
@@ -159,32 +135,12 @@ class TestClerk:
 
         # Convert to JSON and back (simulates the wire transmission).
         enc = json.loads(json.dumps(payload))
+        r = protocol.ToClerk_ControlParts_Decode(enc)
 
         # Decode- and verify the data.
-        ok, (dec_objID, dec_boosters, dec_factories) = dec_fun(enc)
-        assert (ok, dec_objID) == (True, objID)
-        assert dec_boosters == cmd_boosters
-        assert dec_factories == cmd_factories
-
-        # ----------------------------------------------------------------------
-        # Clerk --> Client
-        # ----------------------------------------------------------------------
-
-        # Convenience.
-        enc_fun = protocol.FromClerk_ControlParts_Encode
-        dec_fun = protocol.FromClerk_ControlParts_Decode
-        objIDs = [1, 2]
-
-        # Encode source data.
-        ok, enc = enc_fun(objIDs)
-        assert ok
-
-        # Convert output to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps(enc))
-
-        # Decode the data.
-        ret = dec_fun(enc)
-        assert (ret.ok, ret.data) == (True, objIDs)
+        assert r['objID'] == objID
+        assert r['cmd_boosters'] == cmd_boosters
+        assert r['cmd_factories'] == cmd_factories
 
     def test_GetRigidBodies(self):
         """
@@ -206,28 +162,21 @@ class TestClerk:
         }
         del frag_states
 
-        # Convenience.
-        enc_fun = protocol.FromClerk_GetRigidBodies_Encode
-        dec_fun = protocol.FromClerk_GetRigidBodies_Decode
-
-        # Encode source data.
-        ok, enc = enc_fun(payload)
-        assert ok
-
-        # Convert output to JSON and back (simulates the wire transmission).
+        # Encode source data and simulate wire transmission.
+        enc = protocol.FromClerk_GetRigidBodies_Encode(payload)
         enc = json.loads(json.dumps(enc))
 
         # Verify that the rigid bodies survived the serialisation.
         for objID in [1, 2]:
             # Convenience.
             src = payload[objID]
-            dst = enc['data'][str(objID)]
+            dst = enc[str(objID)]
 
             # Compile a rigid body from the returned data and compare it to the
             # original.
             assert src['rbs'] == types.RigidBodyData(**dst['rbs'])
 
-        assert enc['data']['3'] is None
+        assert enc['3'] is None
 
     def test_add_get_constraint(self):
         """
@@ -246,29 +195,22 @@ class TestClerk:
             enc = json.loads(json.dumps(payload))
 
             # Decode the data.
-            ok, (dec_con, ) = protocol.ToClerk_AddConstraints_Decode(enc)
-            assert (ok, len(dec_con)) == (True, 1)
-
-            # Verify.
+            dec_con = protocol.ToClerk_AddConstraints_Decode(enc)
+            dec_con = dec_con['constraints']
+            assert len(dec_con) == 1
             assert dec_con[0] == con
 
         # ----------------------------------------------------------------------
         # Clerk --> Client
         # ----------------------------------------------------------------------
         for con in (p2p, dof):
-            # Encode source data.
-            ok, enc = protocol.FromClerk_GetConstraints_Encode([con])
-            assert ok
-
-            # Convert to JSON and back (simulates the wire transmission).
+            # Encode source data and simulate wire transmission.
+            enc = protocol.FromClerk_GetConstraints_Encode([con])
             enc = json.loads(json.dumps(enc))
 
             # Decode the data.
-            dec_con = protocol.FromClerk_GetConstraints_Decode(enc)
-            assert (dec_con.ok, len(dec_con.data)) == (True, 1)
-
-            # Verify.
-            assert dec_con.data[0] == con
+            assert len(enc) == 1
+            assert types.ConstraintMeta(**enc[0]) == con
 
     def test_addTemplate(self):
         """
@@ -280,10 +222,10 @@ class TestClerk:
 
         # Convert to JSON and back (simulates the wire transmission).
         enc = json.loads(json.dumps({'templates': payload_d}))
+        dec = protocol.ToClerk_AddTemplates_Decode(enc)
+        del enc
 
-        # Decode the data.
-        ok, (dec, ) = protocol.ToClerk_AddTemplates_Decode(enc)
-        assert (ok, dec) == (True, payload)
+        assert dec['templates'] == payload
 
     def test_spawn(self):
         """
@@ -297,15 +239,9 @@ class TestClerk:
 
         # Client --> Clerk: Convert to JSON and back (simulates the wire
         # transmission).
-        enc = json.loads(json.dumps({'payload': payload}))
-        ok, (dec, ) = protocol.ToClerk_Spawn_Decode(enc)
-        assert dec == payload
-
-        # Clerk --> Client
-        payload = [1, 20, 300]
-        enc = protocol.FromClerk_Spawn_Encode
-        dec = protocol.FromClerk_Spawn_Decode
-        self.verifyFromClerk(enc, dec, payload)
+        enc = json.loads(json.dumps({'newObjects': payload}))
+        dec = protocol.ToClerk_Spawn_Decode(enc)
+        assert dec['newObjects'] == payload
 
     def test_getFragments(self):
         """
@@ -318,6 +254,9 @@ class TestClerk:
             5: {'foo2': {'fragtype': 'raw', 'url_frag': 'http://foo2'},
                 'bar2': {'fragtype': 'dae', 'url_frag': 'http://bar2'}}
         }
-        enc = protocol.FromClerk_GetFragments_Encode
-        dec = protocol.FromClerk_GetFragments_Decode
-        self.verifyFromClerk(enc, dec, payload)
+        enc = protocol.FromClerk_GetFragments_Encode(payload)
+        dec = json.loads(json.dumps(enc))
+
+        # Convert the IDs to integers and makey sure the payload survived.
+        dec = {int(k): v for (k, v) in dec.items()}
+        assert payload == dec

@@ -95,9 +95,9 @@ def ToClerk_GetTemplates_Decode(payload: dict):
 @typecheck
 def FromClerk_GetTemplates_Encode(templates):
     out = {}
-    for objID, data in templates.items():
-        out[objID] = {'url_frag': data['url_frag'],
-                      'template': data['template']._asdict()}
+    for aid, data in templates.items():
+        out[aid] = {'url_frag': data['url_frag'],
+                    'template': data['template']._asdict()}
     return out
 
 
