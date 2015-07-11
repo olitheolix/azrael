@@ -41,7 +41,7 @@ import azrael.dibbler
 import azrael.util as util
 import azrael.config as config
 
-from azrael.types import typecheck
+from azrael.types import typecheck, RetVal
 
 
 class WebsocketHandler(tornado.websocket.WebSocketHandler):
@@ -69,7 +69,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         self.client = azrael.client.Client()
 
     @typecheck
-    def returnOk(self, data: dict, msg: str):
+    def returnOk(self, data: RetVal):
         """
         Send affirmative reply.
 
@@ -80,7 +80,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         :return: None
         """
         try:
-            ret = json.dumps({'ok': True, 'payload': data, 'msg': msg})
+            ret = json.dumps(data._asdict())
         except (ValueError, TypeError) as err:
             self.returnErr({}, 'JSON encoding error')
 
@@ -97,8 +97,8 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         :param str msg: text message to pass along.
         :return: None
         """
-        msg = {'ok': False, 'payload': {}, 'msg': msg}
-        msg = json.dumps(msg)
+        msg = RetVal(False, msg, {})
+        msg = json.dumps(msg._asdict())
         self.write_message(msg, binary=False)
 
     @typecheck
@@ -122,23 +122,23 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             self.returnErr({}, 'JSON decoding error in Clacks')
             return
 
-        if not (('cmd' in msg) and ('payload' in msg)):
+        if not (('cmd' in msg) and ('data' in msg)):
             self.returnErr({}, 'Invalid command format')
             return
 
         # Extract command word (always first byte) and the payload.
-        cmd, payload = msg['cmd'], msg['payload']
+        cmd, payload = msg['cmd'], msg['data']
 
         if cmd == 'ping_clacks':
-            # Handle ourselves: return the pong.
-            self.returnOk({'response': 'pong clacks'}, '')
+            # This one we handle ourselves: return the pong.
+            self.returnOk(RetVal(True, '', {'response': 'pong clacks'}))
         else:
             # Pass all other commands directly to the Client instnace which
             # will (probably) send it to Clerk for processing.
             ret = self.client.sendToClerk(cmd, payload)
 
             if ret.ok:
-                self.returnOk(ret.data, ret.msg)
+                self.returnOk(ret)
             else:
                 self.returnErr({}, ret.msg)
 

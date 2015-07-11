@@ -253,12 +253,12 @@ class Clerk(config.AzraelProcess):
                 continue
 
             # Sanity check: every message must contain at least a command word.
-            if not (('cmd' in msg) and ('payload' in msg)):
+            if not (('cmd' in msg) and ('data' in msg)):
                 self.returnErr(self.last_addr, 'Invalid command format')
                 continue
 
             # Extract the command word and payload.
-            cmd, self.payload = msg['cmd'], msg['payload']
+            cmd, self.payload = msg['cmd'], msg['data']
 
             # The command word determines the action...
             if cmd in self.codec:
@@ -310,7 +310,7 @@ class Clerk(config.AzraelProcess):
         :return: None
         """
         try:
-            ret = json.dumps({'ok': data.ok, 'msg': data.msg, 'payload': data.data})
+            ret = json.dumps(data._asdict())
         except (ValueError, TypeError) as err:
             self.returnErr(addr, 'JSON encoding error in Clerk')
             return
@@ -331,7 +331,8 @@ class Clerk(config.AzraelProcess):
         :return: None
         """
         # Convert the message to a byte string (if it is not already).
-        ret = json.dumps({'ok': False, 'msg': msg, 'payload': {}})
+        ret = RetVal(False, msg, {})
+        ret = json.dumps(ret._asdict())
         if addToLog:
             self.logit.warning(msg)
 

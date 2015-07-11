@@ -177,7 +177,7 @@ class Client():
         :rtype: any
         """
         try:
-            payload = json.dumps({'cmd': cmd, 'payload': data})
+            payload = json.dumps({'cmd': cmd, 'data': data})
         except (ValueError, TypeError) as err:
             msg = 'JSON encoding error for Client command <{}>'.format(cmd)
             self.logit.warning(msg)
@@ -187,13 +187,14 @@ class Client():
         self.send(payload)
         payload = self.recv()
 
-        # Decode the response.
+        # Decode the response and wrap it into a RetVal tuple.
         try:
             ret = json.loads(payload)
+            ret = RetVal(**ret)
         except (ValueError, TypeError) as err:
             return RetVal(False, 'JSON decoding error in Client', None)
 
-        return RetVal(ret['ok'], ret['msg'], ret['payload'])
+        return ret
 
     @typecheck
     def serialiseAndSend(self, cmd: str, payload):
@@ -334,7 +335,7 @@ class Client():
         :rtype: tuple(int)
         """
         # Send to Clerk.
-        ret = self.serialiseAndSend('spawn', {'payload': new_objects})
+        ret = self.serialiseAndSend('spawn', {'spawn': new_objects})
         if not ret.ok:
             return ret
 

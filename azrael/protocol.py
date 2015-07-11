@@ -365,7 +365,7 @@ def ToClerk_Spawn_Encode(payload: dict):
 
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
-    return (payload['payload'], )
+    return (payload['spawn'], )
 
 
 @typecheck
