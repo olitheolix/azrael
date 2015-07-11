@@ -199,8 +199,9 @@ class Clerk(config.AzraelProcess):
 
         if ret.ok:
             # Convert the output to a JSON string.
-            ret = fun_encode(ret.data)
-            self.returnOk(self.last_addr, ret, '')
+            enc = fun_encode(ret.data)
+            ret = ret._replace(data=enc)
+            self.returnOk(self.last_addr, ret)
         else:
             # The processing method encountered an error.
             self.returnErr(self.last_addr, ret.msg)
@@ -297,7 +298,7 @@ class Clerk(config.AzraelProcess):
                     self.last_addr, 'Invalid command <{}>'.format(cmd))
 
     @typecheck
-    def returnOk(self, addr, data: dict, msg: str=''):
+    def returnOk(self, addr, data: RetVal):
         """
         Send affirmative reply.
 
@@ -309,7 +310,7 @@ class Clerk(config.AzraelProcess):
         :return: None
         """
         try:
-            ret = json.dumps({'ok': True, 'msg': msg, 'payload': data})
+            ret = json.dumps({'ok': data.ok, 'msg': data.msg, 'payload': data.data})
         except (ValueError, TypeError) as err:
             self.returnErr(addr, 'JSON encoding error in Clerk')
             return
