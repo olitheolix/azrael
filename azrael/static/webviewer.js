@@ -1,19 +1,6 @@
-var StateVariable = function(pos, vel, rotation, scale, imass) {
-    var d = {'radius': scale,
-         'scale': scale,
-         'imass': imass,
-         'restitution': 0.9,
-         'rotation': rotation,
-         'position': pos,
-         'velocityLin': vel,
-         'velocityRot': [0, 0, 0],
-         'cshapes': [0, 1, 1, 1]};
-    return d
-}
-
-/*
-  Create a ThreeJS geometry object.
-*/
+// ----------------------------------------------------------------------
+// Create a ThreeJS geometry object.
+// ----------------------------------------------------------------------
 function compileMesh (objID, vert, uv, rgb, scale) {
     var geo = new THREE.Geometry()
 
@@ -86,52 +73,10 @@ function compileMesh (objID, vert, uv, rgb, scale) {
     return new THREE.Mesh(geo, mat)
 }
 
-/*
-Proof-of-concept function only to test downloading the geometry
-directly via an URL instead of via Clacks.
 
-The returned value is the same structure than that of "getGeometry".
-Example: download geometry and build the ThreeJS mesh.
-
-  >> msg = getGeometryFromURL("http://localhost:8080/templates/ground_geo");
-  >> ...
-  >> var new_geo = compileMesh(objID, msg.vert, msg.UV, scale);
-
-*/
-var getGeometryFromURL = function (url) {
-    xmlhttp = new XMLHttpRequest();
-    xmlhttp.open("GET", url, false);
-    xmlhttp.send();
-    var tmp = JSON.parse(xmlhttp.responseText);
-    return {'ok': true, 'data': tmp}
-}
-
-
-var getGeometryCube = function () {
-    buf_vert = [
-        -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
-        +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
-        +1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,   +1.0, -1.0, -1.0,
-        +1.0, +1.0, -1.0,   +1.0, -1.0, -1.0,   -1.0, -1.0, -1.0,
-        -1.0, -1.0, -1.0,   -1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,
-        +1.0, -1.0, +1.0,   -1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,
-        -1.0, +1.0, +1.0,   -1.0, -1.0, +1.0,   +1.0, -1.0, +1.0,
-        +1.0, +1.0, +1.0,   +1.0, -1.0, -1.0,   +1.0, +1.0, -1.0,
-        +1.0, -1.0, -1.0,   +1.0, +1.0, +1.0,   +1.0, -1.0, +1.0,
-        +1.0, +1.0, +1.0,   +1.0, +1.0, -1.0,   -1.0, +1.0, -1.0,
-        +1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,   -1.0, +1.0, +1.0,
-        +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0];
-
-    for (ii=0; ii < buf_vert.length; ii++) {
-        buf_vert[ii] *= 0.5;
-    }
-    return buf_vert;
-}
-
-/* ------------------------------------------------------------
-   Commands to Clacks/Clerk
- ------------------------------------------------------------ */
-
+// ------------------------------------------------------------
+//               Commands to Clacks/Clerk
+// ------------------------------------------------------------
 function ping() {
     var cmd = JSON.stringify({'cmd': 'ping_clacks', 'data': {}})
     var dec = function (msg) {
@@ -140,31 +85,6 @@ function ping() {
     return [cmd, dec]
 }
 
-
-function suggestPosition(objID, pos) {
-    var cmd = JSON.stringify({'cmd': 'suggest_pos',
-                              'data': {'objID': objID, 'pos': pos}})
-    var dec = function (msg) {
-        return JSON.parse(msg.data)
-    };
-    return [cmd, dec]
-}
-
-
-function getTemplate(templateID) {
-    var cmd = {'cmd': 'get_template', 'data': {'templateID': templateID}}
-    cmd = JSON.stringify(cmd)
-    var dec = function (msg) {
-        var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok,
-                'vert': parsed.data.vert,
-                'UV': parsed.data.UV,
-                'RGB': parsed.data.RGB,
-                'cs': parsed.data.cs}
-    };
-
-    return [cmd, dec]
-}
 
 function getGeometry(objIDs) {
     var cmd = {'cmd': 'get_fragments', 'data': {'objIDs': objIDs}}
@@ -177,51 +97,6 @@ function getGeometry(objIDs) {
     return [cmd, dec]
 }
 
-function addTemplate(templateID, cs, vertices) {
-    var cmd = {'cmd': 'add_template', 'data':
-               {'aid': templateID, 'cs': cs, 'vert': vertices,
-                'UV': [], 'RGB': [], 'boosters': [], 'factories': []}}
-    cmd = JSON.stringify(cmd)
-    var dec = function (msg) {
-        var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok}
-    };
-    return [cmd, dec]
-}
-
-function spawn(templateID, pos, vel, orient, scale, imass) {
-    var sv = StateVariable(pos, vel, orient, scale, imass)
-    sv.cshapes = [4, 1, 1, 1]
-
-    var payload = {'id': null, 'templateID': templateID, 'sv': sv}
-    var cmd = {'cmd': 'spawn', 'data': payload}
-    cmd = JSON.stringify(cmd)
-    var dec = function (msg) {
-        var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'objID': parsed.data.objID}
-    };
-    return [cmd, dec]
-}
-
-function getAllObjectIDs() {
-    var cmd = {'cmd': 'get_all_objids', 'data': {}}
-    cmd = JSON.stringify(cmd)
-    var dec = function (msg) {
-        var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'objIDs': parsed.data.objIDs}
-    };
-    return [cmd, dec]
-}
-
-function getTemplateID(objID) {
-    var cmd = {'cmd': 'get_template_id', 'data': {'objIDs': objID}}
-    cmd = JSON.stringify(cmd)
-    var dec = function (msg) {
-        var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'templateID': parsed.data.templateID}
-    };
-    return [cmd, dec]
-}
 
 function getObjectStates(objIDs) {
     var cmd = {'cmd': 'get_object_states', 'data': {'objIDs': objIDs}}
@@ -233,19 +108,6 @@ function getObjectStates(objIDs) {
     return [cmd, dec]
 }
 
-
-function arrayEqual(arr1, arr2) {
-    if ((arr1 == undefined) || (arr2 == undefined)) return false;
-    if (arr1.length != arr2.length) return false;
-    var isequal = true
-    for (var jj in arr1) {
-        if (arr1[jj] != arr2[jj]) {
-            isequal = false;
-            break;
-        }
-    }
-    return isequal;
-}
 
 // Update the position and rotation of each fragment. Both are a
 // function of the object's position and rotation in world
@@ -327,34 +189,18 @@ function updateObjectGeometries(objID, allSVs, obj_cache) {
     }
 }
 
-/* ------------------------------------------------------------
-   Command flow for one frame.
- ------------------------------------------------------------ */
 
+// ------------------------------------------------------------
+//   Command flow for one frame.
+// ------------------------------------------------------------
 function* mycoroutine(connection) {
     // Ensure we are live.
     var msg = yield ping()
     if (msg.ok == false) {console.log('Error ping'); return;}
     console.log('Ping successful')
 
-    // Define a new template.
-    var buf_vert = getGeometryCube();
-    var templateID = [111, 108, 105];
-    var cs = [4, 1, 1, 1];
-    msg = yield addTemplate(templateID, cs, buf_vert);
-    console.log('Added player template')
-
-    // Spawn the just defined player template.
-    var initPos = [-20, 0, 0]
-    if (false) {
-        // Spawn a player object.
-        msg = yield spawn(templateID, initPos, [0, 0, 0], [0, 0, 0, 1], 1, 1)
-        var playerID = msg.objID
-        console.log('Spawned player object with objID=' + playerID);
-    } else {
-        // Do not spawn a dedicated player object.
-        var playerID = undefined
-    }
+    // We do not have a player object.
+    var playerID = undefined
 
     // ----------------------------------------------------------------------
     // Rendering.
@@ -368,6 +214,7 @@ function* mycoroutine(connection) {
     var camera = new THREE.PerspectiveCamera(FOV, AR, 0.1, 1000);
     
     // Initialise camera.
+    var initPos = [-20, 0, 0]
     camera.position.set(initPos[0], initPos[1], initPos[2]);
     camera.lookAt(new THREE.Vector3(0, 0, 0))
     camera.updateProjectionMatrix();
@@ -533,7 +380,7 @@ function* mycoroutine(connection) {
             old_SVs[objID] = allSVs[objID];
 
             // Do not render ourselves.
-            if (arrayEqual(playerID, objID)) continue;
+            if (playerID == objID) continue;
 
             // Update the object visuals. If the object does not yet
             // exist in our scene then earmark it for download later.
@@ -587,58 +434,6 @@ function* mycoroutine(connection) {
         // Finalise message in progress bar.
         $("#PBLoading").css('width', '100%').text('All Models Loaded')
 
-        // The myClick attribute is set in the mouse click handler but
-        // processed here to keep everything inside the co-routine.
-        // The following code block will move the player object to the
-        // camera position.
-        if (window.myClick == true) {
-            // Extract camera position.
-            var pos = [0, 0, 0]
-            pos[0] = camera.position.x
-            pos[1] = camera.position.y
-            pos[2] = camera.position.z
-
-            // Extract camera Quaternion.
-            var x = camera.quaternion.x
-            var y = camera.quaternion.y
-            var z = camera.quaternion.z
-            var w = camera.quaternion.w
-
-            // Obtain the view-direction of the camera. For this
-            // purpose multiply the (0, 0, 1) position vector with the
-            // camera Quaternion. The multiplication works via the
-            // rotation matrix that corresponds to the Quaternion,
-            // albeit I simplified it below since the first two
-            // components of the (0, 0, 1) vector are zero anyway.
-            var v1 = [1 - 2*y*y - 2*z*z, 2*x*y - 2*z*w, 2*x*z + 2*y*w]
-            var v2 = [2*x*y + 2*z*w, 1 - 2*x*x - 2*z*z, 2*y*z - 2*x*w]
-            var v3 = [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x*x - 2*y*y]
-            var view = [2*x*z + 2*y*w, 2*y*z - 2*x*w, 1 - 2*x*x - 2*y*y]
-            var view_norm = Math.pow(view[0], 2) + Math.pow(view[1], 2)
-            view_norm += Math.pow(view[2], 2)
-
-            // Normalise the view vector.
-            if (view_norm < 1e-6) {view = [0, 0, 0]}
-            else {for (ii in view) view[ii] /= -Math.sqrt(view_norm)}
-
-            // Put the newly spawned object a ahead of us.
-            pos[0] += 2 * view[0]
-            pos[1] += 2 * view[1]
-            pos[2] += 2 * view[2]
-
-            // Compute the initial velocity of the new object. It
-            // moves in the view direction of the camera.
-            for (ii in view) {view[ii] *= 0.2}
-
-            // Spawn the new object at the correct position and with
-            // the correct velocity and rotation.
-            var templateID = [111, 108, 105];
-            msg = yield spawn(templateID, pos, view, [x, y, z, w], 0.25, 20)
-
-            // Mark the mouse event as processed.
-            window.myClick = false
-        }
-
         // Render the scene.
         renderer.render(scene, camera);
 
@@ -652,10 +447,6 @@ function* mycoroutine(connection) {
         pos[0] = camera.position.x
         pos[1] = camera.position.y
         pos[2] = camera.position.z
-
-        if (playerID != undefined) {
-            msg = yield suggestPosition(playerID, pos);
-        }
     }
 
     console.log('All done')
