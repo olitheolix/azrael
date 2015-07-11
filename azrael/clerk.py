@@ -163,7 +163,7 @@ class Clerk(config.AzraelProcess):
                 protocol.FromClerk_DeleteConstraints_Encode),
         }
 
-    def runCommand(self, fun_decode, fun_process, fun_encode):
+    def runCommand(self, cmd, payload, fun_decode, fun_process, fun_encode):
         """
         Wrapper function to process a client request.
 
@@ -185,26 +185,50 @@ class Clerk(config.AzraelProcess):
         types. Note however that ``some_tuple`` *must* always be a tuple, even
         if it contains only one entry, or no entry at all.
 
+        :param str cmd: the command word
+        :param dict payload: the data from the client.
         :param callable fun_decode: converter function (bytes --> Python)
         :param callable fun_process: processes the client request.
         :param callable fun_encode: converter function (Python --> bytes)
         :return: **None**
         """
-        # Convert the JSON data to Python/Azrael types.
-        out = fun_decode(self.payload)
+        # The try/except is to keep Clerk from dying due to malformed client
+        # request or processing errors.
+        try:
+            # Convert the JSON data to Python/Azrael types.
+            out = fun_decode(payload)
 
-        # Call the respective Clerk method with exactly the arguments supplied
-        # in the JSON dictionary. If ``out`` is not a JSON dictionary then this
-        # will raise an exception that the caller handles.
-        ret = fun_process(**out)
+            # Call the respective Clerk method with exactly the arguments supplied
+            # in the JSON dictionary. If ``out`` is not a JSON dictionary then this
+            # will raise an exception that the caller handles.
+            ret = fun_process(**out)
 
-        # If the Clerk method succeeded then encode the result to JSON.
-        if ret.ok:
-            tmp_json = fun_encode(ret.data)
-            ret = ret._replace(data=tmp_json)
+            # If the Clerk method succeeded then encode the result to JSON.
+            if ret.ok:
+                tmp_json = fun_encode(ret.data)
+                ret = ret._replace(data=tmp_json)
 
-        # Send the response to the client.
-        self.returnToClient(self.last_addr, ret)
+            # Send the response to the client.
+            self.returnToClient(self.last_addr, ret)
+        except Exception:
+            # Basic error message.
+            msg = 'Client data for <{}> raised an error in Clerk'
+            msg = msg.format(cmd)
+
+            # Get the Python stack trace as string (this will be added
+            # to the log for reference).
+            buf = io.StringIO()
+            traceback.print_exc(file=buf)
+            buf.seek(0)
+            msg_st = [' -> ' + _ for _ in buf.readlines()]
+            msg_st = msg + '\n' + ''.join(msg_st)
+
+            # Log the error message with stack trace. However, only
+            # the basic error message to the client.
+            self.logit.error(msg_st)
+            ret = RetVal(False, msg, None)
+            self.returnToClient(self.last_addr, ret, addToLog=False)
+            del msg, buf, msg_st, ret
 
     def run(self):
         """
@@ -262,7 +286,7 @@ class Clerk(config.AzraelProcess):
                 continue
 
             # Extract the command word and payload.
-            cmd, self.payload = msg['cmd'], msg['data']
+            cmd, payload = msg['cmd'], msg['data']
 
             # The command word determines the action...
             if cmd in self.codec:
@@ -274,32 +298,11 @@ class Clerk(config.AzraelProcess):
                 # the Client.
                 dec, proc, enc = self.codec[cmd]
 
-                # Run the Clerk function. The try/except is to intercept any
-                # errors and prevent Clerk from dying.
-                try:
-                    self.runCommand(dec, proc, enc)
-                except Exception:
-                    # Basic error message.
-                    msg = 'Client data for <{}> raised an error in Clerk'
-                    msg = msg.format(cmd)
-
-                    # Get the Python stack trace as string (this will be added
-                    # to the log for reference).
-                    buf = io.StringIO()
-                    traceback.print_exc(file=buf)
-                    buf.seek(0)
-                    msg_st = [' -> ' + _ for _ in buf.readlines()]
-                    msg_st = msg + '\n' + ''.join(msg_st)
-
-                    # Log the error message with stack trace. However, only
-                    # the basic error message to the client.
-                    self.logit.error(msg_st)
-                    ret = RetVal(False, msg, None),
-                    self.returnToClient(self.last_addr, ret, addToLog=False)
-                    del msg, buf, msg_st, ret
+                # Run the Clerk function.
+                self.runCommand(cmd, payload, dec, proc, enc)
             else:
-                ret = RetVal(False, 'Invalid command <{}>'.format(cmd), None)
                 # Unknown command word.
+                ret = RetVal(False, 'Invalid command <{}>'.format(cmd), None)
                 self.returnToClient(self.last_addr, ret)
 
     @typecheck
@@ -314,7 +317,7 @@ class Clerk(config.AzraelProcess):
         :param str msg: the error message to send back.
         :return: None
         """
-        if addToLog and ret.msg is not None:
+        if addToLog and (ret.msg is not None):
             self.logit.warning(ret.msg)
 
         # Convert the message to JSON.

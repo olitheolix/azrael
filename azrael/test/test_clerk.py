@@ -2100,6 +2100,7 @@ def test_invalid():
             return RetVal(**json.loads(data.decode('utf8')))
 
     # Start Clerk and instantiate a Client.
+    killAzrael()
     clerk = azrael.clerk.Clerk()
     clerk.start()
     client = ClientTest()
@@ -2119,8 +2120,22 @@ def test_invalid():
     ret = client.testSend(msg.encode('utf8'))
     assert ret == (False, 'Invalid command <blah>', None)
 
+    # Correct command but 'data' is not a dictionary.
+    msg = json.dumps({'cmd': 'get_rigid_bodies', 'data': [1, 2]})
+    assert not client.testSend(msg.encode('utf8')).ok
+
+    # Correct command and payload type, correct 'data' type, but the keys do
+    # not match the signature of 'Clerk.getTemplates'.
+    data = {'blah': [1, 2]}
+    msg = json.dumps({'cmd': 'get_rigid_bodies', 'data': data})
+    assert not client.testSend(msg.encode('utf8')).ok
+
+    # Correct command, correct payload type, correct payload content. This must
+    # succeed.
+    data = {'objIDs': [1, 2]}
+    msg = json.dumps({'cmd': 'get_rigid_bodies', 'data': data})
+    assert client.testSend(msg.encode('utf8')).ok
+
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join()
-
-    print('Test passed')
