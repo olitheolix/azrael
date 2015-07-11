@@ -197,11 +197,11 @@ class Clerk(config.AzraelProcess):
             self.returnErr(self.last_addr, out)
         else:
             # Decoding was successful. Pass all returned parameters directly
-            # to the processing method.
+            # to the respective Clerk method.
             ret = fun_process(*out)
 
             if ret.ok:
-                # Encode the output into a byte stream and return it.
+                # Convert the output to a JSON string.
                 ok, ret = fun_encode(ret.data)
                 self.returnOk(self.last_addr, ret, '')
             else:
@@ -312,11 +312,12 @@ class Clerk(config.AzraelProcess):
         :return: None
         """
         try:
-            ret = json.dumps({'ok': True, 'payload': data, 'msg': msg})
+            ret = json.dumps({'ok': True, 'msg': msg, 'payload': data})
         except (ValueError, TypeError) as err:
             self.returnErr(addr, 'JSON encoding error in Clerk')
             return
 
+        # Send the message via ZeroMQ.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
     @typecheck
@@ -332,11 +333,11 @@ class Clerk(config.AzraelProcess):
         :return: None
         """
         # Convert the message to a byte string (if it is not already).
-        ret = json.dumps({'ok': False, 'payload': {}, 'msg': msg})
+        ret = json.dumps({'ok': False, 'msg': msg, 'payload': {}})
         if addToLog:
             self.logit.warning(msg)
 
-        # Send the message.
+        # Send the message via ZeroMQ.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
     def pingClerk(self):
