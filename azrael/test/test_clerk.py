@@ -2088,22 +2088,16 @@ class TestClerk:
 
 def test_invalid():
     """
-    Send an invalid command to Clerk.
+    Send invalid commands to Clerk.
     """
     class ClientTest(azrael.client.Client):
         def testSend(self, data):
             """
             Pass data verbatim to Clerk.
-
-            This method is to test Clerk's ability to handle corrupt and
-            invalid commands. If we used a normal Client then the protocol
-            module would probably pick up most errors without them ever
-            reaching Clerk.
             """
             self.sock_cmd.send(data)
             data = self.sock_cmd.recv()
-            data = json.loads(data.decode('utf8'))
-            return data['ok'], data['msg']
+            return RetVal(**json.loads(data.decode('utf8')))
 
     # Start Clerk and instantiate a Client.
     clerk = azrael.clerk.Clerk()
@@ -2111,19 +2105,19 @@ def test_invalid():
     client = ClientTest()
 
     # Send a corrupt JSON to Clerk.
-    msg = 'invalid_cmd'
+    msg = 'this is not a json string'
     ret = client.testSend(msg.encode('utf8'))
-    assert ret == (False, 'JSON decoding error in Clerk')
+    assert ret == (False, 'JSON decoding error in Clerk', None)
 
-    # Send a malformatted JSON (it misses the 'payload' field).
+    # Send a malformatted JSON (it misses the mandatory 'data' field).
     msg = json.dumps({'cmd': 'blah'})
-    ok, ret = client.testSend(msg.encode('utf8'))
-    assert (ok, ret) == (False, 'Invalid command format')
+    ret = client.testSend(msg.encode('utf8'))
+    assert ret == (False, 'Invalid command format', None)
 
     # Send an invalid command.
-    msg = json.dumps({'cmd': 'blah', 'payload': ''})
-    ok, ret = client.testSend(msg.encode('utf8'))
-    assert (ok, ret) == (False, 'Invalid command <blah>')
+    msg = json.dumps({'cmd': 'blah', 'data': ''})
+    ret = client.testSend(msg.encode('utf8'))
+    assert ret == (False, 'Invalid command <blah>', None)
 
     # Terminate the Clerk.
     clerk.terminate()
