@@ -16,28 +16,19 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Python agnostic Codecs for data transmission to and from Clerk.
+Converts the JSON data from Clients to native data types for Clerk and vice
+versa.
 
 The codecs in this module specify the JSON format between Clerk and the
 clients.
 
-The encoders and decoders in this module specify the binary protocol for
-sending/receiving messages to/from Clerk.
+``FromClerk_*_Encode``: Converts Clerk's response to plain JSON.
 
-``ToClerk_*_Decode``: Clerk will use this function to de-serialise the incoming
-byte stream into native Python types.
+``ToClerk_*_Encode``: Converts the Client's JSON data to native (Python) types
+   that get passed to one of Clerk's methods for processing.
 
-``FromClerk_*_Encode``: Clerk will use this function to serialise its response.
-
-``ToClerk_*_Encode``: the (Python) client uses this function to serialise its
-request for Clerk.
-
-``FromClerk_*_Decode``: the (Python) client uses this function to de-serialise
-Clerk's response.
-
-The binary protocols are not pickled Python objects but (hopefully) language
-agnostic encodings of strings, JSON objects, or C-arrays (via NumPy). This
-should make it possible to write clients in other languages.
+The JSON only protocoly should make it possible to write clients in other
+languages.
 """
 
 import azrael.util
@@ -57,11 +48,6 @@ from IPython import embed as ipshell
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_Ping_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
-
-@typecheck
 def ToClerk_Ping_Decode(payload):
     return payload
 
@@ -71,20 +57,9 @@ def FromClerk_Ping_Encode(payload: str):
     return {'response': payload}
 
 
-@typecheck
-def FromClerk_Ping_Decode(payload: dict):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # GetTemplateID
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_GetTemplateID_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_GetTemplateID_Decode(payload: dict):
@@ -96,19 +71,9 @@ def FromClerk_GetTemplateID_Encode(templateID: str):
     return {'templateID': templateID}
 
 
-@typecheck
-def FromClerk_GetTemplateID_Decode(payload: dict):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # AddTemplates
 # ---------------------------------------------------------------------------
-
-@typecheck
-def ToClerk_AddTemplates_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_AddTemplates_Decode(payload: dict):
@@ -126,19 +91,9 @@ def FromClerk_AddTemplates_Encode(dummyarg):
     return {}
 
 
-@typecheck
-def FromClerk_AddTemplates_Decode(payload):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # GetTemplates
 # ---------------------------------------------------------------------------
-
-@typecheck
-def ToClerk_GetTemplates_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_GetTemplates_Decode(payload: dict):
@@ -154,20 +109,9 @@ def FromClerk_GetTemplates_Encode(templates):
     return out
 
 
-@typecheck
-def FromClerk_GetTemplates_Decode(payload: dict):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # GetAllObjectIDs
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_GetAllObjectIDs_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_GetAllObjectIDs_Decode(dummyarg):
@@ -179,20 +123,9 @@ def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
     return {'objIDs': data}
 
 
-@typecheck
-def FromClerk_GetAllObjectIDs_Decode(payload: dict):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # SetRigidBodies
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_SetRigidBodies_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_SetRigidBodies_Decode(payload: dict):
@@ -204,21 +137,9 @@ def ToClerk_SetRigidBodies_Decode(payload: dict):
 def FromClerk_SetRigidBodies_Encode(dummyarg):
     return {}
 
-
-@typecheck
-def FromClerk_SetRigidBodies_Decode(payload):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # SetForce
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_SetForce_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_SetForce_Decode(payload: dict):
@@ -234,20 +155,9 @@ def FromClerk_SetForce_Encode(dummyarg):
     return {}
 
 
-@typecheck
-def FromClerk_SetForce_Decode(payload):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # GetFragments
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_GetFragments_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_GetFragments_Decode(payload: dict):
@@ -262,20 +172,9 @@ def FromClerk_GetFragments_Encode(geo):
     return geo
 
 
-@typecheck
-def FromClerk_GetFragments_Decode(payload: dict):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # SetFragments
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_SetFragments_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_SetFragments_Decode(payload: dict):
@@ -288,21 +187,9 @@ def ToClerk_SetFragments_Decode(payload: dict):
 def FromClerk_SetFragments_Encode(dummyarg):
     return {}
 
-
-@typecheck
-def FromClerk_SetFragments_Decode(payload):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # GetRigidBodies
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_GetRigidBodies_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_GetRigidBodies_Decode(payload: dict):
@@ -323,20 +210,9 @@ def FromClerk_GetRigidBodies_Encode(payload: dict):
     return out
 
 
-@typecheck
-def FromClerk_GetRigidBodies_Decode(payload: dict):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # GetObjectStates
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_GetObjectStates_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_GetObjectStates_Decode(payload: dict):
@@ -348,20 +224,9 @@ def FromClerk_GetObjectStates_Encode(payload: dict):
     return payload
 
 
-@typecheck
-def FromClerk_GetObjectStates_Decode(payload: dict):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # Spawn
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_Spawn_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
@@ -372,21 +237,9 @@ def ToClerk_Spawn_Decode(payload: dict):
 def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
     return {'objIDs': objIDs}
 
-
-@typecheck
-def FromClerk_Spawn_Decode(payload: dict):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # Remove
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_Remove_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_Remove_Decode(payload: dict):
@@ -398,20 +251,9 @@ def FromClerk_Remove_Encode(dummyarg):
     return {}
 
 
-@typecheck
-def FromClerk_Remove_Decode(payload):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # ControlParts
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_ControlParts_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_ControlParts_Decode(payload: dict):
@@ -427,20 +269,9 @@ def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
     return {'objIDs': objIDs}
 
 
-@typecheck
-def FromClerk_ControlParts_Decode(payload: dict):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # AddConstraints
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_AddConstraints_Encode(payload: dict):
-    return RetVal(True, None, payload)
-
 
 @typecheck
 def ToClerk_AddConstraints_Decode(payload: dict):
@@ -453,20 +284,9 @@ def FromClerk_AddConstraints_Encode(num_added):
     return {'added': num_added}
 
 
-@typecheck
-def FromClerk_AddConstraints_Decode(payload):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # DeleteConstraints
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_DeleteConstraints_Encode(payload: dict):
-    return payload
-
 
 @typecheck
 def ToClerk_DeleteConstraints_Decode(payload: dict):
@@ -478,20 +298,9 @@ def FromClerk_DeleteConstraints_Encode(num_added):
     return FromClerk_AddConstraints_Encode(num_added)
 
 
-@typecheck
-def FromClerk_DeleteConstraints_Decode(payload):
-    return payload
-
-
 # ---------------------------------------------------------------------------
 # getConstraints
 # ---------------------------------------------------------------------------
-
-
-@typecheck
-def ToClerk_GetConstraints_Encode(payload: dict):
-    return payload
-
 
 @typecheck
 def ToClerk_GetConstraints_Decode(payload: dict):
@@ -502,8 +311,3 @@ def ToClerk_GetConstraints_Decode(payload: dict):
 def FromClerk_GetConstraints_Encode(constraints):
     constraints = [_._asdict() for _ in constraints]
     return {'constraints': constraints}
-
-
-@typecheck
-def FromClerk_GetConstraints_Decode(payload):
-    return payload
