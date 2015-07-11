@@ -113,10 +113,10 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_Spawn_Decode,
                 self.spawn,
                 protocol.FromClerk_Spawn_Encode),
-            'remove': (
-                protocol.ToClerk_Remove_Decode,
+            'remove_object': (
+                protocol.ToClerk_RemoveObject_Decode,
                 self.removeObject,
-                protocol.FromClerk_Remove_Encode),
+                protocol.FromClerk_RemoveObject_Encode),
             'get_all_objids': (
                 protocol.ToClerk_GetAllObjectIDs_Decode,
                 self.getAllObjectIDs,

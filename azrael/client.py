@@ -187,13 +187,7 @@ class Client():
         :return: reply from Clerk.
         :rtype: string
         """
-        ret = self.serialiseAndSend('ping_clerk', {})
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        data = ret.data['response']
-        return ret._replace(data=data)
+        return self.serialiseAndSend('ping_clerk', {})
 
     @typecheck
     def getFragments(self, objIDs: list):
@@ -241,12 +235,6 @@ class Client():
         :return: Success
         """
         return self.serialiseAndSend('set_fragments', fragments)
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        data = ret.data['response']
-        return ret._replace(data=data)
 
     @typecheck
     def spawn(self, new_objects: (tuple, list)):
@@ -268,13 +256,7 @@ class Client():
         :rtype: tuple(int)
         """
         # Send to Clerk.
-        ret = self.serialiseAndSend('spawn', {'spawn': new_objects})
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        data = ret.data['objIDs']
-        return ret._replace(data=data)
+        return self.serialiseAndSend('spawn', {'spawn': new_objects})
 
     @typecheck
     def removeObject(self, objID: int):
@@ -286,13 +268,7 @@ class Client():
         :param int objID: request to remove this object.
         :return: Success
         """
-        return self.serialiseAndSend('remove', {'objID': objID})
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        data = ret.data['response']
-        return ret._replace(data=data)
+        return self.serialiseAndSend('remove_object', {'objID': objID})
 
     def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
         """
@@ -327,13 +303,7 @@ class Client():
             'cmd_boosters': {k: v._asdict() for (k, v) in cmd_boosters.items()},
             'cmd_factories': {k: v._asdict() for (k, v) in cmd_factories.items()}
         }
-        ret = self.serialiseAndSend('control_parts', payload)
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        data = ret.data['objIDs']
-        return ret._replace(data=data)
+        return self.serialiseAndSend('control_parts', payload)
 
     @typecheck
     def getTemplateID(self, objID: int):
@@ -346,13 +316,7 @@ class Client():
         :return: template ID
         :rtype: bytes
         """
-        ret = self.serialiseAndSend('get_template_id', {'objID': objID})
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        data = ret.data['templateID']
-        return ret._replace(data=data)
+        return self.serialiseAndSend('get_template_id', {'objID': objID})
 
     @typecheck
     def getTemplates(self, templateIDs: list):
@@ -549,13 +513,7 @@ class Client():
         :return: list of object IDs (integers)
         :rtype: list of int
         """
-        ret = self.serialiseAndSend('get_all_objids', {})
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        data = ret.data['objIDs']
-        return ret._replace(data=data)
+        return self.serialiseAndSend('get_all_objids', {})
 
     @typecheck
     def addConstraints(self, constraints: (tuple, list)):
@@ -568,13 +526,7 @@ class Client():
         :return: number of newly added constraints.
         """
         payload = {'constraints': [_._asdict() for _ in constraints]}
-        ret = self.serialiseAndSend('add_constraints', payload)
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        data = ret.data['added']
-        return ret._replace(data=data)
+        return self.serialiseAndSend('add_constraints', payload)
 
     @typecheck
     def getConstraints(self, bodyIDs: (set, tuple, list)):
@@ -592,7 +544,7 @@ class Client():
             return ret
 
         # Unpack the response.
-        data = [ConstraintMeta(**_) for _ in ret.data['constraints']]
+        data = [ConstraintMeta(**_) for _ in ret.data]
         return ret._replace(data=data)
 
     @typecheck
@@ -607,10 +559,4 @@ class Client():
         :return: number of newly added constraints.
         """
         payload = {'constraints': [_._asdict() for _ in constraints]}
-        ret = self.serialiseAndSend('delete_constraints', payload)
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        data = ret.data['added']
-        return ret._replace(data=data)
+        return self.serialiseAndSend('delete_constraints', payload)

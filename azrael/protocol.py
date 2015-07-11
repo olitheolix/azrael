@@ -1,4 +1,4 @@
-# Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
+# Copyright 2015, Oliver Nagy <olitheolix@gmail.com>
 #
 # This file is part of Azrael (https://github.com/olitheolix/azrael)
 #
@@ -16,30 +16,23 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Converts the JSON data from Clients to native data types for Clerk and vice
-versa.
+Converts the JSON data from Clients to the native Python types Clerk expects,
+and vice versa.
 
 The codecs in this module specify the JSON format between Clerk and the
 clients.
 
+``ToClerk_*_Encode``: Converts the Client's JSON data to native (Python) types.
 ``FromClerk_*_Encode``: Converts Clerk's response to plain JSON.
-
-``ToClerk_*_Encode``: Converts the Client's JSON data to native (Python) types
-   that get passed to one of Clerk's methods for processing.
 
 The JSON only protocoly should make it possible to write clients in other
 languages.
 """
 
 import azrael.util
-import azrael.igor
 import azrael.types as types
-import azrael.leo_api as leo_api
 
-from azrael.types import typecheck, RetVal, Template
-from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
-from azrael.types import FragDae, FragRaw, FragMeta, FragNone
-
+from azrael.types import typecheck
 from IPython import embed as ipshell
 
 
@@ -54,7 +47,7 @@ def ToClerk_Ping_Decode(payload):
 
 @typecheck
 def FromClerk_Ping_Encode(payload: str):
-    return {'response': payload}
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +61,7 @@ def ToClerk_GetTemplateID_Decode(payload: dict):
 
 @typecheck
 def FromClerk_GetTemplateID_Encode(templateID: str):
-    return {'templateID': templateID}
+    return templateID
 
 
 # ---------------------------------------------------------------------------
@@ -77,10 +70,9 @@ def FromClerk_GetTemplateID_Encode(templateID: str):
 
 @typecheck
 def ToClerk_AddTemplates_Decode(payload: dict):
-    templates = []
-
+    T = types.Template
     with azrael.util.Timeit('clerk.decode') as timeit:
-        templates = [Template(**_) for _ in payload['templates']]
+        templates = [T(**_) for _ in payload['templates']]
 
     # Return decoded quantities.
     return (templates, )
@@ -88,7 +80,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
 
 @typecheck
 def FromClerk_AddTemplates_Encode(dummyarg):
-    return {}
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -119,8 +111,8 @@ def ToClerk_GetAllObjectIDs_Decode(dummyarg):
 
 
 @typecheck
-def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
-    return {'objIDs': data}
+def FromClerk_GetAllObjectIDs_Encode(objIDs: (list, tuple)):
+    return objIDs
 
 
 # ---------------------------------------------------------------------------
@@ -135,7 +127,7 @@ def ToClerk_SetRigidBodies_Decode(payload: dict):
 
 @typecheck
 def FromClerk_SetRigidBodies_Encode(dummyarg):
-    return {}
+    return None
 
 # ---------------------------------------------------------------------------
 # SetForce
@@ -144,15 +136,12 @@ def FromClerk_SetRigidBodies_Encode(dummyarg):
 @typecheck
 def ToClerk_SetForce_Decode(payload: dict):
     # Convert to native Python types and return to caller.
-    objID = payload['objID']
-    force = payload['force']
-    rel_pos = payload['rel_pos']
-    return (objID, force, rel_pos)
+    return (payload['objID'], payload['force'], payload['rel_pos'])
 
 
 @typecheck
 def FromClerk_SetForce_Encode(dummyarg):
-    return {}
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -185,7 +174,7 @@ def ToClerk_SetFragments_Decode(payload: dict):
 
 @typecheck
 def FromClerk_SetFragments_Encode(dummyarg):
-    return {}
+    return None
 
 # ---------------------------------------------------------------------------
 # GetRigidBodies
@@ -201,7 +190,7 @@ def FromClerk_GetRigidBodies_Encode(payload: dict):
     out = {}
     for objID, data in payload.items():
         if data is None:
-            # Clerk could not find this particular object.
+            # Clerk did not find this particular object.
             out[objID] = None
             continue
 
@@ -235,20 +224,20 @@ def ToClerk_Spawn_Decode(payload: dict):
 
 @typecheck
 def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
-    return {'objIDs': objIDs}
+    return objIDs
 
 # ---------------------------------------------------------------------------
 # Remove
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_Remove_Decode(payload: dict):
+def ToClerk_RemoveObject_Decode(payload: dict):
     return (payload['objID'], )
 
 
 @typecheck
-def FromClerk_Remove_Encode(dummyarg):
-    return {}
+def FromClerk_RemoveObject_Encode(dummyarg):
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -257,16 +246,18 @@ def FromClerk_Remove_Encode(dummyarg):
 
 @typecheck
 def ToClerk_ControlParts_Decode(payload: dict):
+    CmdF, CmdB = types.CmdFactory, types.CmdBooster
+
     objID = payload['objID']
-    cmds_b = {k: types.CmdBooster(**v) for (k, v) in payload['cmd_boosters'].items()}
-    cmds_f = {k: types.CmdFactory(**v) for (k, v) in payload['cmd_factories'].items()}
+    cmds_b = {k: CmdB(**v) for (k, v) in payload['cmd_boosters'].items()}
+    cmds_f = {k: CmdF(**v) for (k, v) in payload['cmd_factories'].items()}
 
     return (objID, cmds_b, cmds_f)
 
 
 @typecheck
 def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
-    return {'objIDs': objIDs}
+    return objIDs
 
 
 # ---------------------------------------------------------------------------
@@ -275,13 +266,14 @@ def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
 
 @typecheck
 def ToClerk_AddConstraints_Decode(payload: dict):
-    out = [ConstraintMeta(**_) for _ in payload['constraints']]
+    C = types.ConstraintMeta
+    out = [C(**_) for _ in payload['constraints']]
     return (out, )
 
 
 @typecheck
 def FromClerk_AddConstraints_Encode(num_added):
-    return {'added': num_added}
+    return num_added
 
 
 # ---------------------------------------------------------------------------
@@ -309,5 +301,4 @@ def ToClerk_GetConstraints_Decode(payload: dict):
 
 @typecheck
 def FromClerk_GetConstraints_Encode(constraints):
-    constraints = [_._asdict() for _ in constraints]
-    return {'constraints': constraints}
+    return [_._asdict() for _ in constraints]
