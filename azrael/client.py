@@ -190,6 +190,118 @@ class Client():
         return self.serialiseAndSend('ping_clerk', {})
 
     @typecheck
+    def addTemplates(self, templates: list):
+        """
+        Add the ``templates`` to Azrael.
+
+        Return an error if one or more template names already exist.
+
+        * ``list`` templates: list of ``Template`` objects.
+
+        :return: Success
+        """
+        # Return an error unless all templates pass the sanity checks.
+        try:
+            # Sanity check each template.
+            templates = [Template(*_)._asdict() for _ in templates]
+        except AssertionError as err:
+            return RetVal(False, 'Data type error', None)
+
+        return self.serialiseAndSend('add_templates', {'templates': templates})
+
+    @typecheck
+    def getTemplates(self, templateIDs: list):
+        """
+        Return the template data for all  ``templateIDs`` in a dictionary.
+
+        Use ``getFragments`` to query just the geometry.
+
+        :param bytes templateID: return the description of this template.
+        :return: (cs, geo, boosters, factories)
+        """
+        payload = {'templateIDs': templateIDs}
+        ret = self.serialiseAndSend('get_templates', payload)
+        if not ret.ok:
+            return ret
+
+        # Unpack the response.
+        out = {}
+        for objID, data in ret.data.items():
+            out[objID] = {'url_frag': data['url_frag'],
+                         'template': Template(**data['template'])}
+
+        return ret._replace(data=out)
+
+    @typecheck
+    def spawn(self, new_objects: (tuple, list)):
+        """
+        Spawn the objects described in ``new_objects`` and return their IDs.
+
+        The elements of the ``new_objects`` list must comprise the following
+        parameters:
+
+        * bytes templateID: template from which to spawn the object.
+        * 3-vec pos: object position
+        * 3-vec vel: initial velocity
+        * 4-vec orient: initial rotation
+        * float scale: scale entire object by this factor.
+        * float imass: (inverse) object mass.
+
+        :param list new_objects: description of all objects to spawn.
+        :return: object IDs
+        :rtype: tuple(int)
+        """
+        # Send to Clerk.
+        return self.serialiseAndSend('spawn', {'spawn': new_objects})
+
+    def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
+        """
+        Issue control commands to object parts.
+
+        Boosters expect a scalar force which will apply according to their
+        rotation. The commands themselves must be ``types.CmdBooster``
+        instances.
+
+        Factories can spawn objects. Their command syntax is defined in the
+        ``parts`` module. The commands themselves must be ``types.CmdFactory``
+        instances.
+
+        :param int objID: object ID.
+        :param dict cmd_booster: booster commands.
+        :param dict cmd_factory: factory commands.
+        :return: list of IDs of objects spawned by factories (if any).
+        :rtype: list
+        """
+        # Sanity checks.
+        for partID, cmd in cmd_boosters.items():
+            assert isinstance(cmd, types.CmdBooster)
+        for partID, cmd in cmd_factories.items():
+            assert isinstance(cmd, types.CmdFactory)
+
+        # Every object can have at most 256 parts.
+        assert len(cmd_boosters) < 256
+        assert len(cmd_factories) < 256
+
+        payload = {
+            'objID': objID,
+            'cmd_boosters': {k: v._asdict() for (k, v) in cmd_boosters.items()},
+            'cmd_factories': {k: v._asdict() for (k, v) in cmd_factories.items()}
+        }
+        return self.serialiseAndSend('control_parts', payload)
+
+    @typecheck
+    def removeObject(self, objID: int):
+        """
+        Remove ``objID`` from the physics simulation.
+
+        ..note:: this method will succeed even if there is no ``objID``.
+
+        :param int objID: request to remove this object.
+        :return: Success
+        """
+        return self.serialiseAndSend('remove_object', {'objID': objID})
+
+    @typecheck
     def getFragments(self, objIDs: list):
         """
         Return links to the models for the objects in ``objIDs``.
@@ -235,190 +347,6 @@ class Client():
         :return: Success
         """
         return self.serialiseAndSend('set_fragments', fragments)
-
-    @typecheck
-    def spawn(self, new_objects: (tuple, list)):
-        """
-        Spawn the objects described in ``new_objects`` and return their IDs.
-
-        The elements of the ``new_objects`` list must comprise the following
-        parameters:
-
-        * bytes templateID: template from which to spawn the object.
-        * 3-vec pos: object position
-        * 3-vec vel: initial velocity
-        * 4-vec orient: initial rotation
-        * float scale: scale entire object by this factor.
-        * float imass: (inverse) object mass.
-
-        :param list new_objects: description of all objects to spawn.
-        :return: object IDs
-        :rtype: tuple(int)
-        """
-        # Send to Clerk.
-        return self.serialiseAndSend('spawn', {'spawn': new_objects})
-
-    @typecheck
-    def removeObject(self, objID: int):
-        """
-        Remove ``objID`` from the physics simulation.
-
-        ..note:: this method will succeed even if there is no ``objID``.
-
-        :param int objID: request to remove this object.
-        :return: Success
-        """
-        return self.serialiseAndSend('remove_object', {'objID': objID})
-
-    def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
-        """
-        Issue control commands to object parts.
-
-        Boosters expect a scalar force which will apply according to their
-        rotation. The commands themselves must be ``types.CmdBooster``
-        instances.
-
-        Factories can spawn objects. Their command syntax is defined in the
-        ``parts`` module. The commands themselves must be ``types.CmdFactory``
-        instances.
-
-        :param int objID: object ID.
-        :param dict cmd_booster: booster commands.
-        :param dict cmd_factory: factory commands.
-        :return: list of IDs of objects spawned by factories (if any).
-        :rtype: list
-        """
-        # Sanity checks.
-        for partID, cmd in cmd_boosters.items():
-            assert isinstance(cmd, types.CmdBooster)
-        for partID, cmd in cmd_factories.items():
-            assert isinstance(cmd, types.CmdFactory)
-
-        # Every object can have at most 256 parts.
-        assert len(cmd_boosters) < 256
-        assert len(cmd_factories) < 256
-
-        payload = {
-            'objID': objID,
-            'cmd_boosters': {k: v._asdict() for (k, v) in cmd_boosters.items()},
-            'cmd_factories': {k: v._asdict() for (k, v) in cmd_factories.items()}
-        }
-        return self.serialiseAndSend('control_parts', payload)
-
-    @typecheck
-    def getTemplateID(self, objID: int):
-        """
-        Return the template ID for ``objID``.
-
-        Return an error if ``objID`` does not exist in the simulation.
-
-        :param int objID: ID of spawned object.
-        :return: template ID
-        :rtype: bytes
-        """
-        return self.serialiseAndSend('get_template_id', {'objID': objID})
-
-    @typecheck
-    def getTemplates(self, templateIDs: list):
-        """
-        Return the template data for all  ``templateIDs`` in a dictionary.
-
-        Use ``getFragments`` to query just the geometry.
-
-        :param bytes templateID: return the description of this template.
-        :return: (cs, geo, boosters, factories)
-        """
-        payload = {'templateIDs': templateIDs}
-        ret = self.serialiseAndSend('get_templates', payload)
-        if not ret.ok:
-            return ret
-
-        # Unpack the response.
-        out = {}
-        for objID, data in ret.data.items():
-            out[objID] = {'url_frag': data['url_frag'],
-                         'template': Template(**data['template'])}
-
-        return ret._replace(data=out)
-
-    @typecheck
-    def getTemplateGeometry(self, template):
-        """
-        Return the geometry ``template`` geometry.
-
-        The return value is a dictionary. The keys are the fragment names and
-        the values are ``Fragment`` instances:
-
-            {'frag_1': FragRaw(...), 'frag_2': FragDae(...), ...}
-
-        :param str url: template URL
-        :return: fragments.
-        :rtype: dict
-        """
-        # Compile the URL.
-        base_url = 'http://{ip}:{port}{url}'.format(
-            ip=self.ip, port=config.port_clacks, url=template['url_frag'])
-
-        # Fetch the geometry from the web server and decode it.
-        out = {}
-        for aid, frag in template['template'].fragments.items():
-            url = base_url + '/' + aid + '/model.json'
-            geo = urllib.request.urlopen(url).readall()
-            geo = json.loads(geo.decode('utf8'))
-
-            # Wrap the fragments into their dedicated tuple type.
-            out[aid] = FragRaw(**geo)
-        return RetVal(True, None, out)
-
-    @typecheck
-    def addTemplates(self, templates: list):
-        """
-        Add the ``templates`` to Azrael.
-
-        Return an error if one or more template names already exist.
-
-        * ``list`` templates: list of ``Template`` objects.
-
-        :return: Success
-        """
-        # Return an error unless all templates pass the sanity checks.
-        try:
-            # Sanity check each template.
-            templates = [Template(*_)._asdict() for _ in templates]
-        except AssertionError as err:
-            return RetVal(False, 'Data type error', None)
-
-        return self.serialiseAndSend('add_templates', {'templates': templates})
-
-    @typecheck
-    def getObjectStates(self, objIDs: (list, tuple, int)):
-        """
-        Return the object states for all ``objIDs`` in a dictionary.
-
-        :param list/int objIDs: query the states for these objects.
-        :return: dictionary with state data about body and its fragments.
-        :rtype: dict
-        """
-        # If the user requested only a single State Variable wrap it into a
-        # list to avoid special case treatment.
-        if objIDs is not None:
-            if isinstance(objIDs, int):
-                objIDs = [objIDs]
-
-            # Sanity check: all objIDs must be valid.
-            for objID in objIDs:
-                assert isinstance(objID, int)
-                assert objID >= 0
-
-        # Pass on the request to Clerk.
-        payload = {'objIDs': objIDs}
-        ret = self.serialiseAndSend('get_object_states', payload)
-        if not ret.ok:
-            return ret
-
-        # Unpack the response and convert all keys to integers.
-        data = {int(k): v for (k, v) in ret.data.items()}
-        return ret._replace(data=data)
 
     @typecheck
     def getRigidBodies(self, objIDs: (int, list, tuple)):
@@ -481,6 +409,58 @@ class Client():
         return self.serialiseAndSend('set_rigid_bodies', payload)
 
     @typecheck
+    def getObjectStates(self, objIDs: (list, tuple, int)):
+        """
+        Return the object states for all ``objIDs`` in a dictionary.
+
+        :param list/int objIDs: query the states for these objects.
+        :return: dictionary with state data about body and its fragments.
+        :rtype: dict
+        """
+        # If the user requested only a single State Variable wrap it into a
+        # list to avoid special case treatment.
+        if objIDs is not None:
+            if isinstance(objIDs, int):
+                objIDs = [objIDs]
+
+            # Sanity check: all objIDs must be valid.
+            for objID in objIDs:
+                assert isinstance(objID, int)
+                assert objID >= 0
+
+        # Pass on the request to Clerk.
+        payload = {'objIDs': objIDs}
+        ret = self.serialiseAndSend('get_object_states', payload)
+        if not ret.ok:
+            return ret
+
+        # Unpack the response and convert all keys to integers.
+        data = {int(k): v for (k, v) in ret.data.items()}
+        return ret._replace(data=data)
+
+    @typecheck
+    def getTemplateID(self, objID: int):
+        """
+        Return the template ID for ``objID``.
+
+        Return an error if ``objID`` does not exist in the simulation.
+
+        :param int objID: ID of spawned object.
+        :return: template ID
+        :rtype: bytes
+        """
+        return self.serialiseAndSend('get_template_id', {'objID': objID})
+
+    def getAllObjectIDs(self):
+        """
+        Return all object IDs currently in the simulation.
+
+        :return: list of object IDs (integers)
+        :rtype: list of int
+        """
+        return self.serialiseAndSend('get_all_objids', {})
+
+    @typecheck
     def setForce(self, objID: int, force: (tuple, list, np.ndarray),
                  position: (tuple, list, np.ndarray)=(0, 0, 0)):
         """
@@ -505,15 +485,6 @@ class Client():
         payload = {'objID': objID, 'rel_pos': position, 'force': force}
 
         return self.serialiseAndSend('set_force', payload)
-
-    def getAllObjectIDs(self):
-        """
-        Return all object IDs currently in the simulation.
-
-        :return: list of object IDs (integers)
-        :rtype: list of int
-        """
-        return self.serialiseAndSend('get_all_objids', {})
 
     @typecheck
     def addConstraints(self, constraints: (tuple, list)):
@@ -560,3 +531,32 @@ class Client():
         """
         payload = {'constraints': [_._asdict() for _ in constraints]}
         return self.serialiseAndSend('delete_constraints', payload)
+
+    @typecheck
+    def getTemplateGeometry(self, template):
+        """
+        Return the geometry ``template`` geometry.
+
+        The return value is a dictionary. The keys are the fragment names and
+        the values are ``Fragment`` instances:
+
+            {'frag_1': FragRaw(...), 'frag_2': FragDae(...), ...}
+
+        :param str url: template URL
+        :return: fragments.
+        :rtype: dict
+        """
+        # Compile the URL.
+        base_url = 'http://{ip}:{port}{url}'.format(
+            ip=self.ip, port=config.port_clacks, url=template['url_frag'])
+
+        # Fetch the geometry from the web server and decode it.
+        out = {}
+        for aid, frag in template['template'].fragments.items():
+            url = base_url + '/' + aid + '/model.json'
+            geo = urllib.request.urlopen(url).readall()
+            geo = json.loads(geo.decode('utf8'))
+
+            # Wrap the fragments into their dedicated tuple type.
+            out[aid] = FragRaw(**geo)
+        return RetVal(True, None, out)
