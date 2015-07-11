@@ -133,7 +133,7 @@ var getGeometryCube = function () {
  ------------------------------------------------------------ */
 
 function ping() {
-    var cmd = JSON.stringify({'cmd': 'ping_clacks', 'payload': {}})
+    var cmd = JSON.stringify({'cmd': 'ping_clacks', 'data': {}})
     var dec = function (msg) {
         return JSON.parse(msg.data)
     };
@@ -143,7 +143,7 @@ function ping() {
 
 function suggestPosition(objID, pos) {
     var cmd = JSON.stringify({'cmd': 'suggest_pos',
-                              'payload': {'objID': objID, 'pos': pos}})
+                              'data': {'objID': objID, 'pos': pos}})
     var dec = function (msg) {
         return JSON.parse(msg.data)
     };
@@ -152,26 +152,26 @@ function suggestPosition(objID, pos) {
 
 
 function getTemplate(templateID) {
-    var cmd = {'cmd': 'get_template', 'payload': {'templateID': templateID}}
+    var cmd = {'cmd': 'get_template', 'data': {'templateID': templateID}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
         return {'ok': parsed.ok,
-                'vert': parsed.payload.vert,
-                'UV': parsed.payload.UV,
-                'RGB': parsed.payload.RGB,
-                'cs': parsed.payload.cs}
+                'vert': parsed.data.vert,
+                'UV': parsed.data.UV,
+                'RGB': parsed.data.RGB,
+                'cs': parsed.data.cs}
     };
 
     return [cmd, dec]
 }
 
 function getGeometry(objIDs) {
-    var cmd = {'cmd': 'get_fragments', 'payload': {'objIDs': objIDs}}
+    var cmd = {'cmd': 'get_fragments', 'data': {'objIDs': objIDs}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'data': parsed.payload}
+        return {'ok': parsed.ok, 'data': parsed.data}
     };
 
     return [cmd, dec]
@@ -194,41 +194,41 @@ function spawn(templateID, pos, vel, orient, scale, imass) {
     sv.cshapes = [4, 1, 1, 1]
 
     var payload = {'id': null, 'templateID': templateID, 'sv': sv}
-    var cmd = {'cmd': 'spawn', 'payload': payload}
+    var cmd = {'cmd': 'spawn', 'data': payload}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'objID': parsed.payload.objID}
+        return {'ok': parsed.ok, 'objID': parsed.data.objID}
     };
     return [cmd, dec]
 }
 
 function getAllObjectIDs() {
-    var cmd = {'cmd': 'get_all_objids', 'payload': {}}
+    var cmd = {'cmd': 'get_all_objids', 'data': {}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'objIDs': parsed.payload.objIDs}
+        return {'ok': parsed.ok, 'objIDs': parsed.data.objIDs}
     };
     return [cmd, dec]
 }
 
 function getTemplateID(objID) {
-    var cmd = {'cmd': 'get_template_id', 'payload': {'objIDs': objID}}
+    var cmd = {'cmd': 'get_template_id', 'data': {'objIDs': objID}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'templateID': parsed.payload.templateID}
+        return {'ok': parsed.ok, 'templateID': parsed.data.templateID}
     };
     return [cmd, dec]
 }
 
-function getObjectStates(objID) {
-    var cmd = {'cmd': 'get_object_states', 'payload': {'objIDs': objID}}
+function getObjectStates(objIDs) {
+    var cmd = {'cmd': 'get_object_states', 'data': {'objIDs': objIDs}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
         var parsed = JSON.parse(msg.data)
-        return {'ok': parsed.ok, 'data': parsed.payload.data}
+        return {'ok': parsed.ok, 'data': parsed.data}
     };
     return [cmd, dec]
 }
