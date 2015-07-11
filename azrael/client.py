@@ -72,61 +72,6 @@ class Client():
         # Some methods need to know the address of the server.
         self.ip, self.port = ip, port
 
-        # Associate the encoding and decoding functions for every command.
-        self.codec = {
-            'ping_clerk': (
-                protocol.ToClerk_Ping_Encode,
-                protocol.FromClerk_Ping_Decode),
-            'get_fragments': (
-                protocol.ToClerk_GetFragments_Encode,
-                protocol.FromClerk_GetFragments_Decode),
-            'set_fragments': (
-                protocol.ToClerk_SetFragments_Encode,
-                protocol.FromClerk_SetFragments_Decode),
-            'spawn': (
-                protocol.ToClerk_Spawn_Encode,
-                protocol.FromClerk_Spawn_Decode),
-            'remove': (
-                protocol.ToClerk_Remove_Encode,
-                protocol.FromClerk_Remove_Decode),
-            'get_template_id': (
-                protocol.ToClerk_GetTemplateID_Encode,
-                protocol.FromClerk_GetTemplateID_Decode),
-            'get_templates': (
-                protocol.ToClerk_GetTemplates_Encode,
-                protocol.FromClerk_GetTemplates_Decode),
-            'add_templates': (
-                protocol.ToClerk_AddTemplates_Encode,
-                protocol.FromClerk_AddTemplates_Decode),
-            'get_object_states': (
-                protocol.ToClerk_GetObjectStates_Encode,
-                protocol.FromClerk_GetObjectStates_Decode),
-            'get_rigid_bodies': (
-                protocol.ToClerk_GetRigidBodies_Encode,
-                protocol.FromClerk_GetRigidBodies_Decode),
-            'set_rigid_bodies': (
-                protocol.ToClerk_SetRigidBodies_Encode,
-                protocol.FromClerk_SetRigidBodies_Decode),
-            'set_force': (
-                protocol.ToClerk_SetForce_Encode,
-                protocol.FromClerk_SetForce_Decode),
-            'get_all_objids': (
-                protocol.ToClerk_GetAllObjectIDs_Encode,
-                protocol.FromClerk_GetAllObjectIDs_Decode),
-            'control_parts': (
-                protocol.ToClerk_ControlParts_Encode,
-                protocol.FromClerk_ControlParts_Decode),
-            'add_constraints': (
-                protocol.ToClerk_AddConstraints_Encode,
-                protocol.FromClerk_AddConstraints_Decode),
-            'get_constraints': (
-                protocol.ToClerk_GetConstraints_Encode,
-                protocol.FromClerk_GetConstraints_Decode),
-            'delete_constraints': (
-                protocol.ToClerk_DeleteConstraints_Encode,
-                protocol.FromClerk_DeleteConstraints_Decode),
-        }
-
     def __del__(self):
         if self.sock_cmd is not None:
             self.sock_cmd.close(linger=0)
@@ -213,21 +158,9 @@ class Client():
         :return: deserialised reply.
         :rtype: any
         """
-        # Sanity checks.
-        assert cmd in self.codec
-
-        # Convenience.
-        ToClerk_Encode, FromClerk_Decode = self.codec[cmd]
-
         try:
             # Send the data to Clerk.
-            ret = self.sendToClerk(cmd, payload)
-            if not ret.ok:
-                return ret
-
-            # Command completed without error. Return the decode output.
-            tmp = FromClerk_Decode(ret.data)
-            return RetVal(True, None, tmp)
+            return self.sendToClerk(cmd, payload)
         except Exception:
             msg = 'Error during (de)serialisation on Client for cmd <{}>'
             msg = msg.format(cmd)
