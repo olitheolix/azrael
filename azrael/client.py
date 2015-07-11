@@ -183,7 +183,6 @@ class Client():
 
         This method will block if there is no Clerk process.
 
-        :param str cmd: name of command.
         :return: reply from Clerk.
         :rtype: string
         """
@@ -196,8 +195,7 @@ class Client():
 
         Return an error if one or more template names already exist.
 
-        * ``list`` templates: list of ``Template`` objects.
-
+        :param list templates: list of ``Template`` instances.
         :return: Success
         """
         # Return an error unless all templates pass the sanity checks.
@@ -216,8 +214,9 @@ class Client():
 
         Use ``getFragments`` to query just the geometry.
 
-        :param bytes templateID: return the description of this template.
-        :return: (cs, geo, boosters, factories)
+        :param list templateIDs: return the Template for these IDs.
+        :return: Template data and the URL of the fragments.
+        :rtype: dict
         """
         payload = {'templateIDs': templateIDs}
         ret = self.serialiseAndSend('get_templates', payload)
@@ -237,15 +236,7 @@ class Client():
         """
         Spawn the objects described in ``new_objects`` and return their IDs.
 
-        The elements of the ``new_objects`` list must comprise the following
-        parameters:
-
-        * bytes templateID: template from which to spawn the object.
-        * 3-vec pos: object position
-        * 3-vec vel: initial velocity
-        * 4-vec orient: initial rotation
-        * float scale: scale entire object by this factor.
-        * float imass: (inverse) object mass.
+        See `Clerk.spawn` for details.
 
         :param list new_objects: description of all objects to spawn.
         :return: object IDs
@@ -304,7 +295,7 @@ class Client():
     @typecheck
     def getFragments(self, objIDs: list):
         """
-        Return links to the models for the objects in ``objIDs``.
+        Return meta data for all fragments in all ``objIDs``.
 
         Example::
 
@@ -317,8 +308,8 @@ class Client():
                 {name_2: {'fragtype': 'dae', 'url_frag': 'http:...'}},
             }
 
-        :param int objIDs: list of objIDs to query.
-        :return: links to model data for all ``objIDs``.
+        :param list[int] objIDs: list of ``objIDs``.
+        :return: Meta data for all fragments of all ``objIDs``.
         :rtype: dict
 
         """
@@ -342,7 +333,6 @@ class Client():
             fragments = {objID_0: {fragID_0: {'scale': 2}, ...},
                          objID_1: {fragID_0: {'position': (1, 2, 3), ...},}
 
-        :param int objID: ID for which to return the geometry.
         :param dict fragments: nested dictionary to (partially) update fragments.
         :return: Success
         """
@@ -390,7 +380,7 @@ class Client():
     @typecheck
     def setRigidBodies(self, new: dict):
         """
-        Overwrite the the State Variables of ``objID`` with ``new``.
+        Overwrite the the body data for all bodies specified in ``new``.
 
         This method tells Leonard to manually set attributes like position and
         speed, irrespective of what the physics engine computes. The attributes
@@ -413,7 +403,7 @@ class Client():
         """
         Return the object states for all ``objIDs`` in a dictionary.
 
-        :param list/int objIDs: query the states for these objects.
+        :param list[int] objIDs: query the states for these objects.
         :return: dictionary with state data about body and its fragments.
         :rtype: dict
         """
@@ -441,7 +431,7 @@ class Client():
     @typecheck
     def getTemplateID(self, objID: int):
         """
-        Return the template ID for ``objID``.
+        Return the template ID from which ``objID`` was spawned.
 
         Return an error if ``objID`` does not exist in the simulation.
 
@@ -455,13 +445,15 @@ class Client():
         """
         Return all object IDs currently in the simulation.
 
-        :return: list of object IDs (integers)
-        :rtype: list of int
+        :return: object IDs
+        :rtype: list[int]
         """
         return self.serialiseAndSend('get_all_objids', {})
 
     @typecheck
-    def setForce(self, objID: int, force: (tuple, list, np.ndarray),
+    def setForce(self,
+                 objID: int,
+                 force: (tuple, list, np.ndarray),
                  position: (tuple, list, np.ndarray)=(0, 0, 0)):
         """
         Apply ``force`` to ``objID`` at ``position``.
@@ -535,14 +527,14 @@ class Client():
     @typecheck
     def getTemplateGeometry(self, template):
         """
-        Return the geometry ``template`` geometry.
+        Return the geometries for ``template``.
 
         The return value is a dictionary. The keys are the fragment names and
         the values are ``Fragment`` instances:
 
             {'frag_1': FragRaw(...), 'frag_2': FragDae(...), ...}
 
-        :param str url: template URL
+        :param dict template: template URL
         :return: fragments.
         :rtype: dict
         """
