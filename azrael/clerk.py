@@ -190,21 +190,21 @@ class Clerk(config.AzraelProcess):
         :param callable fun_encode: converter function (Python --> bytes)
         :return: **None**
         """
-        # Decode the binary data.
+        # Convert the JSON data to Python/Azrael types.
         out = fun_decode(self.payload)
 
-        # Decoding was successful. Pass all returned parameters directly
-        # to the respective Clerk method.
-        ret = fun_process(*out)
+        # Call the respective Clerk method with exactly the arguments supplied
+        # in the JSON dictionary. If ``out`` is not a JSON dictionary then this
+        # will raise an exception that the caller handles.
+        ret = fun_process(**out)
 
+        # If the Clerk method succeeded then encode the result to JSON.
         if ret.ok:
-            # Convert the output to a JSON string.
-            enc = fun_encode(ret.data)
-            ret = ret._replace(data=enc)
-            self.returnToClient(self.last_addr, ret)
-        else:
-            # The processing method encountered an error.
-            self.returnToClient(self.last_addr, ret)
+            tmp_json = fun_encode(ret.data)
+            ret = ret._replace(data=tmp_json)
+
+        # Send the response to the client.
+        self.returnToClient(self.last_addr, ret)
 
     def run(self):
         """

@@ -56,7 +56,7 @@ def FromClerk_Ping_Encode(payload: str):
 
 @typecheck
 def ToClerk_GetTemplateID_Decode(payload: dict):
-    return (payload['objID'], )
+    return payload
 
 
 @typecheck
@@ -70,12 +70,12 @@ def FromClerk_GetTemplateID_Encode(templateID: str):
 
 @typecheck
 def ToClerk_AddTemplates_Decode(payload: dict):
+    # Compile- and sanity check each template.
     T = types.Template
     with azrael.util.Timeit('clerk.decode') as timeit:
         templates = [T(**_) for _ in payload['templates']]
-
-    # Return decoded quantities.
-    return (templates, )
+    payload['templates'] = templates
+    return payload
 
 
 @typecheck
@@ -89,7 +89,7 @@ def FromClerk_AddTemplates_Encode(dummyarg):
 
 @typecheck
 def ToClerk_GetTemplates_Decode(payload: dict):
-    return (payload['templateIDs'], )
+    return payload
 
 
 @typecheck
@@ -106,8 +106,8 @@ def FromClerk_GetTemplates_Encode(templates):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_GetAllObjectIDs_Decode(dummyarg):
-    return (None,)
+def ToClerk_GetAllObjectIDs_Decode(payload):
+    return payload
 
 
 @typecheck
@@ -121,13 +121,15 @@ def FromClerk_GetAllObjectIDs_Encode(objIDs: (list, tuple)):
 
 @typecheck
 def ToClerk_SetRigidBodies_Decode(payload: dict):
-    out = {int(k): v for (k, v) in payload['bodies'].items()}
-    return (out, )
+    # Convert the IDs to integers.
+    payload['bodies'] = {int(k): v for (k, v) in payload['bodies'].items()}
+    return payload
 
 
 @typecheck
 def FromClerk_SetRigidBodies_Encode(dummyarg):
     return None
+
 
 # ---------------------------------------------------------------------------
 # SetForce
@@ -135,8 +137,7 @@ def FromClerk_SetRigidBodies_Encode(dummyarg):
 
 @typecheck
 def ToClerk_SetForce_Decode(payload: dict):
-    # Convert to native Python types and return to caller.
-    return (payload['objID'], payload['force'], payload['rel_pos'])
+    return payload
 
 
 @typecheck
@@ -150,10 +151,9 @@ def FromClerk_SetForce_Encode(dummyarg):
 
 @typecheck
 def ToClerk_GetFragments_Decode(payload: dict):
-    # Convert all objIDs to integers (JSON always converts integers in hash
-    # maps to strings, which is why this conversion is necessary).
-    objIDs = [int(_) for _ in payload['objIDs']]
-    return (objIDs, )
+    # Convert the IDs to integers.
+    payload['objIDs'] = [int(_) for _ in payload['objIDs']]
+    return payload
 
 
 @typecheck
@@ -167,14 +167,15 @@ def FromClerk_GetFragments_Encode(geo):
 
 @typecheck
 def ToClerk_SetFragments_Decode(payload: dict):
-    # Wrap the fragments into their dedicated tuple.
-    ret = {int(k): v for (k, v) in payload.items()}
-    return (ret, )
+    # Convert the IDs to integers.
+    payload['fragments'] = {int(k): v for (k, v) in payload['fragments'].items()}
+    return payload
 
 
 @typecheck
 def FromClerk_SetFragments_Encode(dummyarg):
     return None
+
 
 # ---------------------------------------------------------------------------
 # GetRigidBodies
@@ -182,7 +183,7 @@ def FromClerk_SetFragments_Encode(dummyarg):
 
 @typecheck
 def ToClerk_GetRigidBodies_Decode(payload: dict):
-    return (payload['objIDs'], )
+    return payload
 
 
 @typecheck
@@ -205,7 +206,7 @@ def FromClerk_GetRigidBodies_Encode(payload: dict):
 
 @typecheck
 def ToClerk_GetObjectStates_Decode(payload: dict):
-    return (payload['objIDs'], )
+    return payload
 
 
 @typecheck
@@ -219,7 +220,7 @@ def FromClerk_GetObjectStates_Encode(payload: dict):
 
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
-    return (payload['spawn'], )
+    return payload
 
 
 @typecheck
@@ -232,7 +233,7 @@ def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
 
 @typecheck
 def ToClerk_RemoveObject_Decode(payload: dict):
-    return (payload['objID'], )
+    return payload
 
 
 @typecheck
@@ -246,13 +247,17 @@ def FromClerk_RemoveObject_Encode(dummyarg):
 
 @typecheck
 def ToClerk_ControlParts_Decode(payload: dict):
+    # Convenience.
     CmdF, CmdB = types.CmdFactory, types.CmdBooster
 
-    objID = payload['objID']
+    # Compile- and sanity check the commands.
     cmds_b = {k: CmdB(**v) for (k, v) in payload['cmd_boosters'].items()}
     cmds_f = {k: CmdF(**v) for (k, v) in payload['cmd_factories'].items()}
 
-    return (objID, cmds_b, cmds_f)
+    # Overwrite the data in the payload.
+    payload['cmd_boosters'] = cmds_b
+    payload['cmd_factories'] = cmds_f
+    return payload
 
 
 @typecheck
@@ -266,9 +271,10 @@ def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
 
 @typecheck
 def ToClerk_AddConstraints_Decode(payload: dict):
+    # Compile- and sanity check the constraints.
     C = types.ConstraintMeta
-    out = [C(**_) for _ in payload['constraints']]
-    return (out, )
+    payload['constraints'] = [C(**_) for _ in payload['constraints']]
+    return payload
 
 
 @typecheck
@@ -296,7 +302,7 @@ def FromClerk_DeleteConstraints_Encode(num_added):
 
 @typecheck
 def ToClerk_GetConstraints_Decode(payload: dict):
-    return (payload['bodyIDs'], )
+    return payload
 
 
 @typecheck

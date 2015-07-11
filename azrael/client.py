@@ -243,7 +243,7 @@ class Client():
         :rtype: tuple(int)
         """
         # Send to Clerk.
-        return self.serialiseAndSend('spawn', {'spawn': new_objects})
+        return self.serialiseAndSend('spawn', {'newObjects': new_objects})
 
     def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
         """
@@ -313,8 +313,7 @@ class Client():
         :rtype: dict
 
         """
-        payload = {'objIDs': objIDs}
-        ret = self.serialiseAndSend('get_fragments', payload)
+        ret = self.serialiseAndSend('get_fragments', {'objIDs': objIDs})
         if not ret.ok:
             return ret
 
@@ -336,7 +335,7 @@ class Client():
         :param dict fragments: nested dictionary to (partially) update fragments.
         :return: Success
         """
-        return self.serialiseAndSend('set_fragments', fragments)
+        return self.serialiseAndSend('set_fragments', {'fragments': fragments})
 
     @typecheck
     def getRigidBodies(self, objIDs: (int, list, tuple)):
@@ -378,24 +377,24 @@ class Client():
 
 
     @typecheck
-    def setRigidBodies(self, new: dict):
+    def setRigidBodies(self, bodies: dict):
         """
-        Overwrite the the body data for all bodies specified in ``new``.
+        Overwrite the the body data for all bodies specified in ``bodies``.
 
         This method tells Leonard to manually set attributes like position and
         speed, irrespective of what the physics engine computes. The attributes
         will only be applied once.
 
-        :param dict new: the object attributes to set.
+        :param dict bodies: the object attributes to set.
         :return: Success
         """
-        for objID, body in new.items():
+        for objID, body in bodies.items():
             if 'cshapes' in body:
-                new[objID]['cshapes'] = {
+                bodies[objID]['cshapes'] = {
                     k: v._asdict() for (k, v) in body['cshapes'].items()
                 }
 
-        payload = {'bodies': new}
+        payload = {'bodies': bodies}
         return self.serialiseAndSend('set_rigid_bodies', payload)
 
     @typecheck
@@ -474,7 +473,7 @@ class Client():
         # Construct the payload.
         force = tuple(force)
         position = tuple(position)
-        payload = {'objID': objID, 'rel_pos': position, 'force': force}
+        payload = {'objID': objID, 'force': force, 'rpos': position}
 
         return self.serialiseAndSend('set_force', payload)
 
