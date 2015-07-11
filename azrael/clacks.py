@@ -69,9 +69,9 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         self.client = azrael.client.Client()
 
     @typecheck
-    def returnOk(self, data: RetVal):
+    def returnToClient(self, ret: RetVal):
         """
-        Send affirmative reply.
+        Send ``ret`` to back to Client via ZeroMQ.
 
         This is a convenience method to enhance readability.
 
@@ -79,31 +79,16 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         :param str msg: text message to pass along.
         :return: None
         """
+        # Convert the message to JSON.
         try:
-            ret = json.dumps(data._asdict())
+            ret = json.dumps(ret._asdict())
         except (ValueError, TypeError) as err:
-            self.returnErr(RetVal(False, 'JSON encoding error', None))
+            msg = 'Could not convert Clerk return value to JSON'
+            ret = json.dumps(RetVal(False, msg, None)._asdict())
 
+        # Send the message via HTTP.
         self.write_message(ret, binary=False)
-
-    @typecheck
-    def returnErr(self, data: RetVal):
-        """
-        Send negative reply and log a warning message.
-
-        This is a convenience method to enhance readability.
-
-        :param dict data: arbitrary data to pass back to client.
-        :param str msg: text message to pass along.
-        :return: None
-        """
-        try:
-            msg = json.dumps(data._asdict())
-        except (ValueError, TypeError) as err:
-            msg = RetVal(False, 'Serious Bug when sending back error', None)
-            msg = json.dumps(msg)
-        self.write_message(msg, binary=False)
-
+        
     @typecheck
     def on_message(self, msg: str):
         """
@@ -122,11 +107,11 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         try:
             msg = json.loads(msg)
         except (TypeError, ValueError) as err:
-            self.returnErr(RetVal(False, 'JSON decoding error in Clacks', None))
+            self.returnToClient(RetVal(False, 'JSON decoding error in Clacks', None))
             return
 
         if not (('cmd' in msg) and ('data' in msg)):
-            self.returnErr(RetVal(False, 'Invalid command format', None))
+            self.returnToClient(RetVal(False, 'Invalid command format', None))
             return
 
         # Extract command word (always first byte) and the payload.
@@ -134,16 +119,16 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
         if cmd == 'ping_clacks':
             # This one we handle ourselves: return the pong.
-            self.returnOk(RetVal(True, '', {'response': 'pong clacks'}))
+            self.returnToClient(RetVal(True, '', {'response': 'pong clacks'}))
         else:
             # Pass all other commands directly to the Client instnace which
             # will (probably) send it to Clerk for processing.
             ret = self.client.sendToClerk(cmd, payload)
 
             if ret.ok:
-                self.returnOk(ret)
+                self.returnToClient(ret)
             else:
-                self.returnErr(RetVal(False, ret.msg, None))
+                self.returnToClient(RetVal(False, ret.msg, None))
 
     def on_close(self):
         """
