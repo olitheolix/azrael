@@ -223,7 +223,7 @@ class Client():
         out = {}
         for objID, data in ret.data.items():
             out[objID] = {'url_frag': data['url_frag'],
-                         'template': Template(**data['template'])}
+                          'template': Template(**data['template'])}
 
         return ret._replace(data=out)
 
@@ -370,7 +370,6 @@ class Client():
             # Replace the original 'rbs' and 'frag' entries with the new ones.
             out[int(objID)] = {'rbs': types.RigidBodyData(**data['rbs'])}
         return ret._replace(data=out)
-
 
     @typecheck
     def setRigidBodies(self, bodies: dict):

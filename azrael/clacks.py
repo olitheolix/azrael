@@ -88,7 +88,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
         # Send the message via HTTP.
         self.write_message(ret, binary=False)
-        
+
     @typecheck
     def on_message(self, msg: str):
         """

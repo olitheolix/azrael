@@ -329,7 +329,7 @@ class Clerk(config.AzraelProcess):
 
         # Send the message via ZeroMQ.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
-        
+
     def pingClerk(self):
         """
         Return a 'pong'.
