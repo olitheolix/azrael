@@ -26,7 +26,7 @@ various model types supported in Azrael. Furthermore, it provides a simple
 Internally, Dibbler uses Mongo's GridFS to actually store the files.
 
 By design, Dibbler will be useful to Clerk instances to add/remove models, and
-Clacks to serve them up via HTTP. Its stateless design makes it possible to
+WebServer to serve them up via HTTP. Its stateless design makes it possible to
 create as many instances as necessary.
 
 .. note:: Dibbler sanity checks models but has hardly any safe guards for

@@ -16,15 +16,15 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Clacks serves up the files from Dibbler but can also relay Websocket
+WebServer serves up the files from Dibbler but can also relay Websocket
 connections to Clerk.
 
-Clacks facilitate browser access to Clerk. This is necessary since Websocket
+WebServer facilitate browser access to Clerk. This is necessary since Websocket
 are supported in all (relevant) browsers, yet ZeroMQ access is still
 non-trivial from JavaScript. This bridge remove that hurdle to make Azrael
 accessible from almost any platform.
 
-The second purpose of Clacks is to serve up model files. This is little more
+The second purpose of WebServer is to serve up model files. This is little more
 than a wrapper around Dibbler which administrates all model files.
 """
 
@@ -50,7 +50,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
     instance, and uses to relay the request to a Clerk.
 
     Among the few exceptions that are not passed to the Client instance are
-    Pings directed specifically to this Clacks server.
+    Pings directed specifically to this WebServer server.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -107,7 +107,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         try:
             msg = json.loads(msg)
         except (TypeError, ValueError) as err:
-            self.returnToClient(RetVal(False, 'JSON decoding error in Clacks', None))
+            self.returnToClient(RetVal(False, 'JSON decoding error in WebServer', None))
             return
 
         if not (('cmd' in msg) and ('data' in msg)):
@@ -117,9 +117,9 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         # Extract command word (always first byte) and the payload.
         cmd, payload = msg['cmd'], msg['data']
 
-        if cmd == 'ping_clacks':
+        if cmd == 'ping_webserver':
             # This one we handle ourselves: return the pong.
-            self.returnToClient(RetVal(True, '', {'response': 'pong clacks'}))
+            self.returnToClient(RetVal(True, '', {'response': 'pong webserver'}))
         else:
             # Pass all other commands directly to the Client instnace which
             # will (probably) send it to Clerk for processing.
@@ -202,9 +202,9 @@ class MyStaticFileHandler(tornado.web.StaticFileHandler):
                         'no-store, no-cache, must-revalidate, max-age=0')
 
 
-class ClacksServer(config.AzraelProcess):
+class WebServer(config.AzraelProcess):
     """
-    Tornado server that constitutes Clacks.
+    Tornado server that constitutes WebServer.
 
     The server itself only responds to Websocket requests. The entire logic for
     these is defined in ``WebsocketHandler``.
@@ -247,7 +247,7 @@ class ClacksServer(config.AzraelProcess):
         handlers.append(
             (config.url_instances + '/(.*)', MyGridFSHandler))
 
-        # Proxy handler to arbitrate between Websockets and Clacks.
+        # Proxy handler to arbitrate between Websockets and WebServer.
         handlers.append(('/websocket', WebsocketHandler))
 
         # Install the handlers and create the Tornado instance.
@@ -255,7 +255,7 @@ class ClacksServer(config.AzraelProcess):
         http = tornado.httpserver.HTTPServer(app)
 
         # Specify the server port and start the ioloop.
-        http.listen(config.port_clacks)
+        http.listen(config.port_webserver)
         tornado_app = ioloop.IOLoop.instance()
 
         # Start Tornado event loop.

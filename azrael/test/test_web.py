@@ -2,10 +2,10 @@ import json
 import pytest
 import base64
 import tornado.web
-import azrael.clerk
-import azrael.clacks
-import azrael.wsclient
 import tornado.testing
+import azrael.web
+import azrael.clerk
+import azrael.wsclient
 import azrael.types as types
 import azrael.config as config
 
@@ -15,7 +15,7 @@ from azrael.test.test import getFragRaw, getFragDae, getTemplate
 from azrael.test.test import getCSBox, getCSSphere, getRigidBody
 
 
-class TestClacks(tornado.testing.AsyncHTTPTestCase):
+class TestWebServer(tornado.testing.AsyncHTTPTestCase):
     @classmethod
     def setup_class(cls):
         pass
@@ -32,11 +32,11 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
     def get_app(self):
         # Dibbler instance is necessary because this test suite contains
-        # several integration tests between Dibbler and Clacks.
+        # several integration tests between Dibbler and WebServer.
         self.dibbler = azrael.dibbler.Dibbler()
 
         # Handler to serve up models.
-        FH = azrael.clacks.MyGridFSHandler
+        FH = azrael.web.MyGridFSHandler
         handlers = [(config.url_templates + '/(.*)', FH),
                     (config.url_instances + '/(.*)', FH)]
         return tornado.web.Application(handlers)
@@ -154,19 +154,19 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
         # Attempt to add the template a second time. This must fail.
         assert not clerk.addTemplates([t1]).ok
 
-        # Verify the first template is available for download via Clacks.
+        # Verify the first template is available for download via WebServer.
         url_template = config.url_templates
         self.verifyTemplate('{}/t1'.format(url_template), t1.fragments)
 
         # Add the second template and verify both are available for download
-        # via Clacks.
+        # via WebServer.
         assert clerk.addTemplates([t2]).ok
         self.verifyTemplate('{}/t1'.format(url_template), t1.fragments)
         self.verifyTemplate('{}/t2'.format(url_template), t2.fragments)
 
     def test_spawnTemplates(self):
         """
-        Spawn a template and verify it is available via Clacks.
+        Spawn a template and verify it is available via WebServer.
         """
         self.dibbler.reset()
         azrael.database.init()
@@ -252,7 +252,7 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
 
     def test_deleteInstance(self):
         """
-        Add/remove an instance from Dibbler via Clerk and verify via Clacks.
+        Add/remove an instance from Dibbler via Clerk and verify via WebServer.
         """
         self.dibbler.reset()
         azrael.database.init()
@@ -280,36 +280,36 @@ class TestClacks(tornado.testing.AsyncHTTPTestCase):
             self.verifyTemplate('{}/{}'.format(url_inst, 1), frags)
 
 
-def test_ping_clacks():
+def test_ping_WebServer():
     """
-    Start services and send Ping to Clacks. Then terminate clacks and verify
-    that the ping fails.
+    Start services and send Ping to WebServer. Then terminate the WebServer and
+    verify that the ping fails.
     """
     # Convenience.
     WSClient = azrael.wsclient.WSClient
-    ip, port = config.addr_clacks, config.port_clacks
+    ip, port = config.addr_webserver, config.port_webserver
 
     # Start the services.
     clerk = azrael.clerk.Clerk()
-    clacks = azrael.clacks.ClacksServer()
+    web = azrael.web.WebServer()
     clerk.start()
-    clacks.start()
+    web.start()
 
     # Create a Websocket client.
     client = azrael.wsclient.WSClient(ip=ip, port=port, timeout=1)
 
-    # Ping Clerk via Clacks.
+    # Ping Clerk via WebServer.
     assert client.ping()
-    assert client.pingClacks().ok
+    assert client.pingWebserver().ok
 
     # Terminate the services.
     clerk.terminate()
-    clacks.terminate()
+    web.terminate()
     clerk.join()
-    clacks.join()
+    web.join()
 
     # Ping must now be impossible.
     with pytest.raises(ConnectionRefusedError):
         WSClient(ip=ip, port=port, timeout=1)
 
-    assert not client.pingClacks().ok
+    assert not client.pingWebserver().ok

@@ -394,7 +394,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         This method does not return anything but updates the GPU related
         instances variables instead.
         """
-        # This is to mask a bug in Clacks: newly spawned objects can
+        # This is to mask a bug in WebServer: newly spawned objects can
         # become active before their geometry hits the DB.
         if len(frag.fragdata.vert) == 0:
             return
@@ -562,7 +562,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Fetch fragment model from Azrael and pass it to the GPU.
-            base_url = 'http://{}:{}'.format(self.ip, config.port_clacks)
+            base_url = 'http://{}:{}'.format(self.ip, config.port_webserver)
             for fragID, frag_data in ret.data[objID].items():
                 if frag_data['fragtype'] == 'RAW':
                     url = base_url + frag_data['url_frag'] + '/model.json'

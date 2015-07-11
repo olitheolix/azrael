@@ -27,8 +27,8 @@ import urllib.request
 import numpy as np
 import unittest.mock as mock
 
+import azrael.web
 import azrael.clerk
-import azrael.clacks
 import azrael.client
 import azrael.dibbler
 import azrael.types as types
@@ -1498,8 +1498,8 @@ class TestClerk:
         geometry, and verify again.
         """
         clerk = self.clerk
-        clacks = azrael.clacks.ClacksServer()
-        clacks.start()
+        web = azrael.web.WebServer()
+        web.start()
 
         # Convenience.
         vert_1 = list(range(0, 9))
@@ -1593,7 +1593,7 @@ class TestClerk:
 
         # Download the 'RAW' file and verify its content is correct.
         base_url = 'http://{}:{}'.format(
-            azrael.config.addr_clacks, azrael.config.port_clacks)
+            azrael.config.addr_webserver, azrael.config.port_webserver)
         url = base_url + data['10']['url_frag'] + '/model.json'
         tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))
@@ -1648,8 +1648,8 @@ class TestClerk:
         tmp = _download(url)
         assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb2.jpg'])
 
-        clacks.terminate()
-        clacks.join()
+        web.terminate()
+        web.join()
 
     def test_updateBoosterValues(self):
         """

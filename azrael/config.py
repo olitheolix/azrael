@@ -95,8 +95,8 @@ else:
     port_database = 27017
 
 # Addresses of the various Azrael services.
-addr_clacks = host_ip
-port_clacks = 8080
+addr_webserver = host_ip
+port_webserver = 8080
 
 addr_dibbler = host_ip
 port_dibbler = 8081
@@ -106,7 +106,7 @@ port_clerk = 5555
 
 addr_leonard_repreq = 'tcp://' + host_ip + ':5556'
 
-# Clacks URLs for the model- templates and instances. These *must not* include
+# WebServer URLs for the model- templates and instances. These *must not* include
 # the trailing slash.
 url_templates = '/templates'
 url_instances = '/instances'

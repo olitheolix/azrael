@@ -26,8 +26,8 @@ specific to this client type. Only these are covered here.
 import sys
 import pytest
 
+import azrael.web
 import azrael.clerk
-import azrael.clacks
 import azrael.wsclient
 
 from IPython import embed as ipshell
@@ -43,18 +43,18 @@ def test_custom_objid():
 
     This behaviour matches that of `Client`` but is not automatically
     inherited because the ``WSClient`` is not a client itself but a
-    wrapper to communicate with the client instance in Clacks.
+    wrapper to communicate with the client instance in WebServer.
     """
     # Start Clerk.
     clerk = azrael.clerk.Clerk()
     clerk.start()
 
-    # Start Clacks.
-    clacks = azrael.clacks.ClacksServer()
-    clacks.start()
+    # Start WebServer.
+    web = azrael.web.WebServer()
+    web.start()
 
     # Convenience.
-    ip, port = azrael.config.addr_clacks, azrael.config.port_clacks
+    ip, port = azrael.config.addr_webserver, azrael.config.port_webserver
 
     # Instantiate a WSClient without specifiying an object ID.
     client_0 = azrael.wsclient.WSClient(ip, port)
@@ -73,8 +73,8 @@ def test_custom_objid():
 
     # Shutdown the system.
     clerk.terminate()
-    clacks.terminate()
+    web.terminate()
     clerk.join(timeout=3)
-    clacks.join(timeout=3)
+    web.join(timeout=3)
 
     print('Test passed')

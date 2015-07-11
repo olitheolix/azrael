@@ -64,7 +64,7 @@ def parseCommandLine():
          help='Do not spawn a viewer')
     padd('--noinit', action='store_true', default=False,
          help='Do not load any models')
-    padd('--port', metavar='port', type=int, default=azrael.config.port_clacks,
+    padd('--port', metavar='port', type=int, default=azrael.config.port_webserver,
          help='Port number')
     padd('--cubes', metavar='X,Y,Z', type=str, default='1,1,1',
          help='Number of cubes in each dimension')
@@ -152,7 +152,7 @@ class SetGeometry(multiprocessing.Process):
         # Query and backup all models currently in the scene.
         geo_meta = client.getFragments(objIDs).data
         base_url = 'http://{}:{}'.format(
-            azrael.config.addr_clacks, azrael.config.port_clacks)
+            azrael.config.addr_webserver, azrael.config.port_webserver)
         geo_orig = {}
         for objID in objIDs:
             frags = {}

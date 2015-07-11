@@ -23,10 +23,10 @@ that web browser (ie JavaScript) can interact with Azrael.
 
 The class itself behaves like the original ``Client`` which is why the
 same unit tests run on both versions. However, it also requires a running
-``Clacks`` server to handle the Websocket connection.
+``WebServer`` server to handle the Websocket connection.
 
 For Python users it makes little sense to use this library as it first sends
-all commands via a Websocket to ``Clacks`` which will then relay the command
+all commands via a Websocket to ``WebServer`` which will then relay the command
 via ZeroMQ to ``Clerk``.
 
 This client uses the Websocket library from
@@ -45,17 +45,17 @@ class WSClient(azrael.client.Client):
     """
     Websocket version of ``Client``.
 
-    To use this class a ``Clacks`` instance must be running.
+    To use this class a ``WebServer`` instance must be running.
 
-    :param str ip: IP of ``Clacks`` (eg '127.0.0.1')
-    :param int port: port of ``Clacks`` (eg '8080')
+    :param str ip: IP of ``WebServer`` (eg '127.0.0.1')
+    :param int port: port of ``WebServer`` (eg '8080')
     :param float timeout: Websocket timeout.
     """
     @typecheck
     def __init__(self, ip: str, port: int, timeout: (int, float)=20):
         super().__init__()
 
-        # URL of Clacks server.
+        # URL of WebServer server.
         self.url = 'ws://{ip}:{port}/websocket'.format(ip=ip, port=port)
 
         # Websocket handle (will be initialised below).
@@ -98,11 +98,11 @@ class WSClient(azrael.client.Client):
         """
         return self.ws.recv()
 
-    def pingClacks(self):
+    def pingWebserver(self):
         """
-        Ping Clacks.
+        Ping WebServer.
 
-        This method returns **True** if Clacks responds. If Clacks does not
+        This method returns **True** if WebServer responds. If WebServer does not
         respond then the Websocket will (most likely) raise a Timeout error
         because it does not receive anything.
 
@@ -110,11 +110,11 @@ class WSClient(azrael.client.Client):
         :rtype: bool
         """
         try:
-            ret = self.sendToClerk('ping_clacks', None)
+            ret = self.sendToClerk('ping_webserver', None)
         except websocket.WebSocketConnectionClosedException as err:
             return RetVal(False, 'Websocket Error', None)
 
         if not ret.ok:
             return ret
         else:
-            return RetVal(True, None, 'pong clacks')
+            return RetVal(True, None, 'pong webserver')

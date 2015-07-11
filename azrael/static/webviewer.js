@@ -78,7 +78,7 @@ function compileMesh (objID, vert, uv, rgb, scale) {
 //               Commands to Clacks/Clerk
 // ------------------------------------------------------------
 function ping() {
-    var cmd = JSON.stringify({'cmd': 'ping_clacks', 'data': {}})
+    var cmd = JSON.stringify({'cmd': 'ping_webserver', 'data': {}})
     var dec = function (msg) {
         return JSON.parse(msg.data)
     };

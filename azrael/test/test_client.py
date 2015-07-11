@@ -30,10 +30,10 @@ import urllib.request
 
 import numpy as np
 
+import azrael.web
 import azrael.igor
 import azrael.util
 import azrael.clerk
-import azrael.clacks
 import azrael.client
 import azrael.dibbler
 import azrael.wsclient
@@ -55,11 +55,11 @@ class TestClient:
         # Kill all lingering Azrael processes.
         killAzrael()
 
-        # Start a Clerk and Clacks instance.
+        # Start a Clerk and WebServer instance.
         cls.clerk = azrael.clerk.Clerk()
-        cls.clacks = azrael.clacks.ClacksServer()
+        cls.web = azrael.web.WebServer()
         cls.clerk.start()
-        cls.clacks.start()
+        cls.web.start()
 
         # Dibbler.
         cls.dibbler = azrael.dibbler.Dibbler()
@@ -67,7 +67,7 @@ class TestClient:
         # Create a ZMQ- and Websocket client.
         client_zmq = azrael.client.Client()
         client_ws = azrael.wsclient.WSClient(
-            ip=config.addr_clacks, port=config.port_clacks, timeout=1)
+            ip=config.addr_webserver, port=config.port_webserver, timeout=1)
         assert client_ws.ping()
         cls.clients = {'ZeroMQ': client_zmq, 'Websocket': client_ws}
 
@@ -75,11 +75,11 @@ class TestClient:
     def teardown_class(cls):
         # Terminate the processes.
         cls.clerk.terminate()
-        cls.clacks.terminate()
+        cls.web.terminate()
 
         cls.clerk.join(5)
-        cls.clacks.join(5)
-        del cls.clients, cls.clerk, cls.clacks
+        cls.web.join(5)
+        del cls.clients, cls.clerk, cls.web
 
         # Kill all lingering Azrael processes.
         killAzrael()
@@ -544,7 +544,7 @@ class TestClient:
 
         # Download the fragment.
         base_url = 'http://{ip}:{port}'.format(
-            ip=config.addr_clacks, port=config.port_clacks)
+            ip=config.addr_webserver, port=config.port_webserver)
         url = base_url + ret.data[objID]['bar']['url_frag'] + '/model.json'
         for ii in range(10):
             assert ii < 8

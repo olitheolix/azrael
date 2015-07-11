@@ -31,7 +31,7 @@ entirely within a database -- ``Clerk`` has no state.
 
 ``Clerk`` uses ZeroMQ sockets for the communication with clients. ZeroMQ has
 bindings for virtually every language except JavaScript, which is why
-``Clacks`` implements a web server bridge. In both cases the data exchange is
+``WebServer`` implements a web server bridge. In both cases the data exchange is
 plain JSON; no Python specific data types are used to keep the interface
 language agnostic.
 

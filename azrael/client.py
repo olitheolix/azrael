@@ -534,7 +534,7 @@ class Client():
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
-            ip=self.ip, port=config.port_clacks, url=template['url_frag'])
+            ip=self.ip, port=config.port_webserver, url=template['url_frag'])
 
         # Fetch the geometry from the web server and decode it.
         out = {}

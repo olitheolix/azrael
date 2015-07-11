@@ -22,9 +22,9 @@ Convenience functions for testing and running Azrael.
 import time
 import logging
 import subprocess
+import azrael.web
 import azrael.util
 import azrael.clerk
-import azrael.clacks
 import azrael.dibbler
 import azrael.leonard
 import azrael.database
@@ -67,7 +67,7 @@ class AzraelStack:
         """
         # Spawn Azrael's APIs.
         clerk = azrael.clerk.Clerk()
-        clacks = azrael.clacks.ClacksServer()
+        web = azrael.web.WebServer()
 
         # Flush the model database.
         dibbler = azrael.dibbler.Dibbler()
@@ -79,9 +79,9 @@ class AzraelStack:
         # leo = leonard.LeonardSweeping()
         leo = azrael.leonard.LeonardDistributedZeroMQ()
 
-        # Start Clerk, Clacks, and Leonard.
+        # Start Clerk, WebServer, and Leonard.
         self.startProcess(clerk)
-        self.startProcess(clacks)
+        self.startProcess(web)
         self.startProcess(leo)
 
     def stop(self):
