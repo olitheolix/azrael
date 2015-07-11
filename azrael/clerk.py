@@ -201,10 +201,10 @@ class Clerk(config.AzraelProcess):
             # Convert the output to a JSON string.
             enc = fun_encode(ret.data)
             ret = ret._replace(data=enc)
-            self.returnOk(self.last_addr, ret)
+            self.returnToClient(self.last_addr, ret)
         else:
             # The processing method encountered an error.
-            self.returnErr(self.last_addr, ret)
+            self.returnToClient(self.last_addr, ret)
 
     def run(self):
         """
@@ -250,13 +250,15 @@ class Clerk(config.AzraelProcess):
                 msg = json.loads(msg.decode('utf8'))
             except (ValueError, TypeError) as err:
                 ret = RetVal(False, 'JSON decoding error in Clerk', None)
-                self.returnErr(self.last_addr, ret)
+                self.returnToClient(self.last_addr, ret)
+                del ret
                 continue
 
             # Sanity check: every message must contain at least a command word.
             if not (('cmd' in msg) and ('data' in msg)):
                 ret = RetVal(False, 'Invalid command format', None)
-                self.returnErr(self.last_addr, ret)
+                self.returnToClient(self.last_addr, ret)
+                del ret
                 continue
 
             # Extract the command word and payload.
@@ -292,43 +294,18 @@ class Clerk(config.AzraelProcess):
                     # Log the error message with stack trace. However, only
                     # the basic error message to the client.
                     self.logit.error(msg_st)
-                    self.returnErr(self.last_addr,
-                                   RetVal(False, msg, None),
-                                   addToLog=False)
-                    del msg, buf, msg_st
+                    ret = RetVal(False, msg, None),
+                    self.returnToClient(self.last_addr, ret, addToLog=False)
+                    del msg, buf, msg_st, ret
             else:
+                ret = RetVal(False, 'Invalid command <{}>'.format(cmd), None)
                 # Unknown command word.
-                self.returnErr(
-                    self.last_addr,
-                    RetVal(False, 'Invalid command <{}>'.format(cmd), None)
-                )
+                self.returnToClient(self.last_addr, ret)
 
     @typecheck
-    def returnOk(self, addr, data: RetVal):
+    def returnToClient(self, addr, ret: RetVal, addToLog: bool=True):
         """
-        Send affirmative reply.
-
-        This is a convenience method to enhance readability.
-
-        :param addr: ZeroMQ address as returned by the ROUTER socket.
-        :param dict data: the payload to send back to the client.
-        :param str msg: text message to pass along.
-        :return: None
-        """
-        try:
-            ret = json.dumps(data._asdict())
-        except (ValueError, TypeError) as err:
-            ret = RetVal(False, 'JSON encoding error in Clerk', None)
-            self.returnErr(addr, ret)
-            return
-
-        # Send the message via ZeroMQ.
-        self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
-
-    @typecheck
-    def returnErr(self, addr, msg: RetVal, addToLog: bool=True):
-        """
-        Send negative reply and log a warning message.
+        Send ``ret`` to back to Client via ZeroMQ.
 
         This is a convenience method to enhance readability.
 
@@ -337,14 +314,19 @@ class Clerk(config.AzraelProcess):
         :param str msg: the error message to send back.
         :return: None
         """
-        # Convert the message to JSON.
-        ret = json.dumps(msg._asdict())
         if addToLog:
-            self.logit.warning(msg)
+            self.logit.warning(ret.msg)
+
+        # Convert the message to JSON.
+        try:
+            ret = json.dumps(ret._asdict())
+        except (ValueError, TypeError) as err:
+            msg = 'Could not convert Clerk return value to JSON'
+            ret = json.dumps(RetVal(False, msg, None)._asdict())
 
         # Send the message via ZeroMQ.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
-
+        
     def pingClerk(self):
         """
         Return a 'pong'.
