@@ -314,7 +314,7 @@ class Clerk(config.AzraelProcess):
         :param str msg: the error message to send back.
         :return: None
         """
-        if addToLog:
+        if addToLog and ret.msg is not None:
             self.logit.warning(ret.msg)
 
         # Convert the message to JSON.
