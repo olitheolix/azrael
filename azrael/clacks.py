@@ -82,7 +82,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         try:
             ret = json.dumps(data._asdict())
         except (ValueError, TypeError) as err:
-            self.returnErr(RetVal(False, 'JSON encoding error', {}))
+            self.returnErr(RetVal(False, 'JSON encoding error', None))
 
         self.write_message(ret, binary=False)
 
@@ -122,11 +122,11 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         try:
             msg = json.loads(msg)
         except (TypeError, ValueError) as err:
-            self.returnErr(RetVal(False, 'JSON decoding error in Clacks', {}))
+            self.returnErr(RetVal(False, 'JSON decoding error in Clacks', None))
             return
 
         if not (('cmd' in msg) and ('data' in msg)):
-            self.returnErr(RetVal(False, 'Invalid command format', {}))
+            self.returnErr(RetVal(False, 'Invalid command format', None))
             return
 
         # Extract command word (always first byte) and the payload.
@@ -143,7 +143,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             if ret.ok:
                 self.returnOk(ret)
             else:
-                self.returnErr(RetVal(False, ret.msg, {}))
+                self.returnErr(RetVal(False, ret.msg, None))
 
     def on_close(self):
         """

@@ -204,7 +204,7 @@ class Clerk(config.AzraelProcess):
             self.returnOk(self.last_addr, ret)
         else:
             # The processing method encountered an error.
-            self.returnErr(self.last_addr, ret.msg)
+            self.returnErr(self.last_addr, ret)
 
     def run(self):
         """
@@ -249,12 +249,14 @@ class Clerk(config.AzraelProcess):
             try:
                 msg = json.loads(msg.decode('utf8'))
             except (ValueError, TypeError) as err:
-                self.returnErr(self.last_addr, 'JSON decoding error in Clerk')
+                ret = RetVal(False, 'JSON decoding error in Clerk', None)
+                self.returnErr(self.last_addr, ret)
                 continue
 
             # Sanity check: every message must contain at least a command word.
             if not (('cmd' in msg) and ('data' in msg)):
-                self.returnErr(self.last_addr, 'Invalid command format')
+                ret = RetVal(False, 'Invalid command format', None)
+                self.returnErr(self.last_addr, ret)
                 continue
 
             # Extract the command word and payload.
@@ -290,12 +292,16 @@ class Clerk(config.AzraelProcess):
                     # Log the error message with stack trace. However, only
                     # the basic error message to the client.
                     self.logit.error(msg_st)
-                    self.returnErr(self.last_addr, msg, addToLog=False)
+                    self.returnErr(self.last_addr,
+                                   RetVal(False, msg, None),
+                                   addToLog=False)
                     del msg, buf, msg_st
             else:
                 # Unknown command word.
                 self.returnErr(
-                    self.last_addr, 'Invalid command <{}>'.format(cmd))
+                    self.last_addr,
+                    RetVal(False, 'Invalid command <{}>'.format(cmd), None)
+                )
 
     @typecheck
     def returnOk(self, addr, data: RetVal):
@@ -312,14 +318,15 @@ class Clerk(config.AzraelProcess):
         try:
             ret = json.dumps(data._asdict())
         except (ValueError, TypeError) as err:
-            self.returnErr(addr, 'JSON encoding error in Clerk')
+            ret = RetVal(False, 'JSON encoding error in Clerk', None)
+            self.returnErr(addr, ret)
             return
 
         # Send the message via ZeroMQ.
         self.sock_cmd.send_multipart([addr, b'', ret.encode('utf8')])
 
     @typecheck
-    def returnErr(self, addr, msg: str='', addToLog: bool=True):
+    def returnErr(self, addr, msg: RetVal, addToLog: bool=True):
         """
         Send negative reply and log a warning message.
 
@@ -330,9 +337,8 @@ class Clerk(config.AzraelProcess):
         :param str msg: the error message to send back.
         :return: None
         """
-        # Convert the message to a byte string (if it is not already).
-        ret = RetVal(False, msg, {})
-        ret = json.dumps(ret._asdict())
+        # Convert the message to JSON.
+        ret = json.dumps(msg._asdict())
         if addToLog:
             self.logit.warning(msg)
 
