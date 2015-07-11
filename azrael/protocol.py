@@ -63,12 +63,12 @@ def ToClerk_Ping_Encode(payload: dict):
 
 @typecheck
 def ToClerk_Ping_Decode(payload):
-    return True, payload
+    return payload
 
 
 @typecheck
 def FromClerk_Ping_Encode(payload: str):
-    return True, {'response': payload}
+    return {'response': payload}
 
 
 @typecheck
@@ -88,12 +88,12 @@ def ToClerk_GetTemplateID_Encode(payload: dict):
 
 @typecheck
 def ToClerk_GetTemplateID_Decode(payload: dict):
-    return True, (payload['objID'], )
+    return (payload['objID'], )
 
 
 @typecheck
 def FromClerk_GetTemplateID_Encode(templateID: str):
-    return True, {'templateID': templateID}
+    return {'templateID': templateID}
 
 
 @typecheck
@@ -118,12 +118,12 @@ def ToClerk_AddTemplates_Decode(payload: dict):
         templates = [Template(**_) for _ in payload['templates']]
 
     # Return decoded quantities.
-    return True, (templates, )
+    return (templates, )
 
 
 @typecheck
 def FromClerk_AddTemplates_Encode(dummyarg):
-    return True, {}
+    return {}
 
 
 @typecheck
@@ -142,7 +142,7 @@ def ToClerk_GetTemplates_Encode(payload: dict):
 
 @typecheck
 def ToClerk_GetTemplates_Decode(payload: dict):
-    return True, (payload['templateIDs'], )
+    return (payload['templateIDs'], )
 
 
 @typecheck
@@ -151,7 +151,7 @@ def FromClerk_GetTemplates_Encode(templates):
     for objID, data in templates.items():
         out[objID] = {'url_frag': data['url_frag'],
                       'template': data['template']._asdict()}
-    return True, out
+    return out
 
 
 @typecheck
@@ -171,12 +171,12 @@ def ToClerk_GetAllObjectIDs_Encode(payload: dict):
 
 @typecheck
 def ToClerk_GetAllObjectIDs_Decode(dummyarg):
-    return True, (None,)
+    return (None,)
 
 
 @typecheck
 def FromClerk_GetAllObjectIDs_Encode(data: (list, tuple)):
-    return True, {'objIDs': data}
+    return {'objIDs': data}
 
 
 @typecheck
@@ -197,12 +197,12 @@ def ToClerk_SetRigidBodies_Encode(payload: dict):
 @typecheck
 def ToClerk_SetRigidBodies_Decode(payload: dict):
     out = {int(k): v for (k, v) in payload['bodies'].items()}
-    return True, (out, )
+    return (out, )
 
 
 @typecheck
 def FromClerk_SetRigidBodies_Encode(dummyarg):
-    return True, {}
+    return {}
 
 
 @typecheck
@@ -226,12 +226,12 @@ def ToClerk_SetForce_Decode(payload: dict):
     objID = payload['objID']
     force = payload['force']
     rel_pos = payload['rel_pos']
-    return True, (objID, force, rel_pos)
+    return (objID, force, rel_pos)
 
 
 @typecheck
 def FromClerk_SetForce_Encode(dummyarg):
-    return True, {}
+    return {}
 
 
 @typecheck
@@ -254,12 +254,12 @@ def ToClerk_GetFragments_Decode(payload: dict):
     # Convert all objIDs to integers (JSON always converts integers in hash
     # maps to strings, which is why this conversion is necessary).
     objIDs = [int(_) for _ in payload['objIDs']]
-    return True, (objIDs, )
+    return (objIDs, )
 
 
 @typecheck
 def FromClerk_GetFragments_Encode(geo):
-    return True, geo
+    return geo
 
 
 @typecheck
@@ -281,12 +281,12 @@ def ToClerk_SetFragments_Encode(payload: dict):
 def ToClerk_SetFragments_Decode(payload: dict):
     # Wrap the fragments into their dedicated tuple.
     ret = {int(k): v for (k, v) in payload.items()}
-    return True, (ret, )
+    return (ret, )
 
 
 @typecheck
 def FromClerk_SetFragments_Encode(dummyarg):
-    return True, {}
+    return {}
 
 
 @typecheck
@@ -306,7 +306,7 @@ def ToClerk_GetRigidBodies_Encode(payload: dict):
 
 @typecheck
 def ToClerk_GetRigidBodies_Decode(payload: dict):
-    return True, (payload['objIDs'], )
+    return (payload['objIDs'], )
 
 
 @typecheck
@@ -320,7 +320,7 @@ def FromClerk_GetRigidBodies_Encode(payload: dict):
 
         # Replace the original 'rbs' and 'frag' entries with the new ones.
         out[objID] = {'rbs': data['rbs']._asdict()}
-    return True, out
+    return out
 
 
 @typecheck
@@ -340,12 +340,12 @@ def ToClerk_GetObjectStates_Encode(payload: dict):
 
 @typecheck
 def ToClerk_GetObjectStates_Decode(payload: dict):
-    return True, (payload['objIDs'], )
+    return (payload['objIDs'], )
 
 
 @typecheck
 def FromClerk_GetObjectStates_Encode(payload: dict):
-    return True, payload
+    return payload
 
 
 @typecheck
@@ -365,12 +365,12 @@ def ToClerk_Spawn_Encode(payload: dict):
 
 @typecheck
 def ToClerk_Spawn_Decode(payload: dict):
-    return (True, (payload['payload'], ))
+    return (payload['payload'], )
 
 
 @typecheck
 def FromClerk_Spawn_Encode(objIDs: (list, tuple)):
-    return True, {'objIDs': objIDs}
+    return {'objIDs': objIDs}
 
 
 @typecheck
@@ -390,12 +390,12 @@ def ToClerk_Remove_Encode(payload: dict):
 
 @typecheck
 def ToClerk_Remove_Decode(payload: dict):
-    return True, (payload['objID'], )
+    return (payload['objID'], )
 
 
 @typecheck
 def FromClerk_Remove_Encode(dummyarg):
-    return True, {}
+    return {}
 
 
 @typecheck
@@ -419,12 +419,12 @@ def ToClerk_ControlParts_Decode(payload: dict):
     cmds_b = {k: types.CmdBooster(**v) for (k, v) in payload['cmd_boosters'].items()}
     cmds_f = {k: types.CmdFactory(**v) for (k, v) in payload['cmd_factories'].items()}
 
-    return True, (objID, cmds_b, cmds_f)
+    return (objID, cmds_b, cmds_f)
 
 
 @typecheck
 def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
-    return True, {'objIDs': objIDs}
+    return {'objIDs': objIDs}
 
 
 @typecheck
@@ -445,12 +445,12 @@ def ToClerk_AddConstraints_Encode(payload: dict):
 @typecheck
 def ToClerk_AddConstraints_Decode(payload: dict):
     out = [ConstraintMeta(**_) for _ in payload['constraints']]
-    return True, (out, )
+    return (out, )
 
 
 @typecheck
 def FromClerk_AddConstraints_Encode(num_added):
-    return True, {'added': num_added}
+    return {'added': num_added}
 
 
 @typecheck
@@ -495,13 +495,13 @@ def ToClerk_GetConstraints_Encode(payload: dict):
 
 @typecheck
 def ToClerk_GetConstraints_Decode(payload: dict):
-    return True, (payload['bodyIDs'], )
+    return (payload['bodyIDs'], )
 
 
 @typecheck
 def FromClerk_GetConstraints_Encode(constraints):
     constraints = [_._asdict() for _ in constraints]
-    return True, {'constraints': constraints}
+    return {'constraints': constraints}
 
 
 @typecheck

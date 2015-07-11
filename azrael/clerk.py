@@ -191,22 +191,19 @@ class Clerk(config.AzraelProcess):
         :return: **None**
         """
         # Decode the binary data.
-        ok, out = fun_decode(self.payload)
-        if not ok:
-            # Error during decoding.
-            self.returnErr(self.last_addr, out)
-        else:
-            # Decoding was successful. Pass all returned parameters directly
-            # to the respective Clerk method.
-            ret = fun_process(*out)
+        out = fun_decode(self.payload)
 
-            if ret.ok:
-                # Convert the output to a JSON string.
-                ok, ret = fun_encode(ret.data)
-                self.returnOk(self.last_addr, ret, '')
-            else:
-                # The processing method encountered an error.
-                self.returnErr(self.last_addr, ret.msg)
+        # Decoding was successful. Pass all returned parameters directly
+        # to the respective Clerk method.
+        ret = fun_process(*out)
+
+        if ret.ok:
+            # Convert the output to a JSON string.
+            ret = fun_encode(ret.data)
+            self.returnOk(self.last_addr, ret, '')
+        else:
+            # The processing method encountered an error.
+            self.returnErr(self.last_addr, ret.msg)
 
     def run(self):
         """
