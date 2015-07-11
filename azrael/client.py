@@ -27,20 +27,16 @@ feature set is identical).
 import io
 import zmq
 import json
-import base64
 import logging
 import traceback
 import urllib.request
 
 import numpy as np
-
 import azrael.types as types
 import azrael.config as config
-import azrael.protocol as protocol
 
-from azrael.types import typecheck, RetVal, Template
-from azrael.types import FragDae, FragRaw, FragMeta
-from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
+from azrael.types import typecheck, RetVal, Template, FragRaw, ConstraintMeta
+
 
 class Client():
     """
@@ -452,8 +448,8 @@ class Client():
     @typecheck
     def setForce(self,
                  objID: int,
-                 force: (tuple, list, np.ndarray),
-                 position: (tuple, list, np.ndarray)=(0, 0, 0)):
+                 force: (tuple, list),
+                 position: (tuple, list)=(0, 0, 0)):
         """
         Apply ``force`` to ``objID`` at ``position``.
 
