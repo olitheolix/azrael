@@ -428,7 +428,7 @@ class TestClerk:
         ret = clerk.spawn([init])
         assert ret == (True, None, tuple())
 
-    def test_delete(self):
+    def test_removeObject(self):
         """
         Test the 'removeObject' command in the Clerk.
 

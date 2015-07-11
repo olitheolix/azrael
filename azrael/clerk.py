@@ -859,7 +859,10 @@ class Clerk(config.AzraelProcess):
         :param int objID: ID of object to remove.
         :return: Success
         """
+        # Announce that an object was removed.
         ret = leoAPI.addCmdRemoveObject(objID)
+
+        # Remove the master record for the object.
         database.dbHandles['ObjInstances'].remove({'objID': objID}, mult=True)
         if ret.ok:
             self.dibbler.deleteInstance(objID)
