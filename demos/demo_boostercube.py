@@ -36,10 +36,11 @@ import demo_default as demolib
 import model_import
 import azrael.client
 import azrael.util as util
+import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, FragMeta, FragRaw, FragState
+from azrael.types import Template, FragMeta, FragRaw
 
 
 def parseCommandLine():
@@ -103,15 +104,14 @@ def spawnBoosterSphere(scale, fname):
     dir_x = np.array([1, 0, 0])
     dir_y = np.array([0, 1, 0])
     dir_z = np.array([0, 0, 1])
-    pos_center = np.zeros(3)
-
-    b0 = types.Booster(partID='b_x', pos=pos_center, direction=dir_x,
-                       minval=0, maxval=10.0, force=0)
-    b1 = types.Booster(partID='b_y', pos=pos_center, direction=dir_y,
-                       minval=0, maxval=10.0, force=0)
-    b2 = types.Booster(partID='b_z', pos=pos_center, direction=dir_z,
-                       minval=0, maxval=10.0, force=0)
-    del dir_x, dir_y, dir_z, pos_center
+    pos = (0, 0, 0)
+    B = types.Booster
+    boosters = {
+        'b_x': B(pos=pos, direction=(1, 0, 0), minval=0, maxval=10.0, force=0),
+        'b_y': B(pos=pos, direction=(0, 1, 0), minval=0, maxval=10.0, force=0),
+        'b_z': B(pos=pos, direction=(0, 0, 1), minval=0, maxval=10.0, force=0)
+    }
+    del dir_x, dir_y, dir_z, pos, B
 
     # Construct a Tetrahedron (triangular Pyramid). This is going to be the
     # (super simple) "flame" that comes out of the (still invisible) boosters.
@@ -128,39 +128,35 @@ def spawnBoosterSphere(scale, fname):
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'ground'
-    cs = np.array([3, 1, 1, 1], np.float64)
-    frags = [FragMeta('frag_1', 'raw', frag_cube),
-             FragMeta('b_x', 'raw', frag_flame),
-             FragMeta('b_y', 'raw', frag_flame),
-             FragMeta('b_z', 'raw', frag_flame),
-             ]
-    temp = Template(tID, cs, frags, [b0, b1, b2], [])
+    cs = types.CollShapeBox(scale, scale, scale)
+    cs = types.CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
+    body = demolib.getRigidBody(cshapes={'0': cs})
+    pos, rot = (0, 0, 0), (0, 0, 0, 1)
+    frags = {
+        'frag_1': FragMeta('raw', scale, pos, rot, frag_cube),
+        'b_x': FragMeta('raw', 0, pos, rot, frag_flame),
+        'b_y': FragMeta('raw', 0, pos, rot, frag_flame),
+        'b_z': FragMeta('raw', 0, pos, rot, frag_flame),
+    }
+    temp = Template(tID, body, frags, boosters, {})
     assert client.addTemplates([temp]).ok
-    del cs, frags, temp, frag_cube, frag_flame
+    del cs, frags, temp, frag_cube, frag_flame, scale, pos, rot
     print('done')
 
     # Spawn the template near the center.
     print('  Spawning object... ', end='', flush=True)
-    d = {'scale': scale,
-         'imass': 0.1,
-         'position': [0, 0, -10],
-         'rotation': [0, 0, 0, 1],
-         'axesLockLin': [1, 1, 1],
-         'axesLockRot': [0, 0, 0],
-         'template': tID}
+    d = {
+        'templateID': tID,
+        'rbs': {
+            'imass': 0.1,
+            'position': [0, 0, -10],
+            'axesLockRot': [0, 0, 0],
+        }
+    }
     ret = client.spawn([d])
+    assert ret.ok
     objID = ret.data[0]
     print('done (ID=<{}>)'.format(objID))
-
-    # Disable the booster fragments by settings its scale to Zero.
-    newStates = {
-        objID: [
-            FragState('b_x', 0, [0, 0, 0], [0, 0, 0, 1]),
-            FragState('b_y', 0, [0, 0, 0], [0, 0, 0, 1]),
-            FragState('b_z', 0, [0, 0, 0], [0, 0, 0, 1]),
-        ]
-    }
-    assert client.setFragmentStates(newStates).ok
     return objID
 
 
