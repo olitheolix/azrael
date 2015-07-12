@@ -15,21 +15,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import pytest
 import numpy as np
 
 import azrael.database
-import azrael.types as types
 import azrael.leo_api as leoAPI
-import azrael.leonard as leonard
 
 from IPython import embed as ipshell
 from azrael.test.test import getLeonard
 from azrael.test.test import getCSEmpty, getCSBox
 from azrael.test.test import getCSSphere, getCSPlane, getRigidBody
-from azrael.types import CollShapeMeta, CollShapeEmpty
-from azrael.types import CollShapeSphere, CollShapeBox
 
 
 class TestLeonardAPI:
@@ -55,7 +49,7 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Create an object ID for the test.
-        id_1, id_2 = 0, 1
+        id_1 = 1
 
         # The number of SV entries must now be zero.
         assert len(leo.allBodies) == 0
@@ -159,9 +153,6 @@ class TestLeonardAPI:
         """
         Add-, query, and remove commands from the command queue.
         """
-        # Reset the SV database and instantiate a Leonard.
-        leo = getLeonard()
-
         # Convenience.
         body_1 = getRigidBody()
         body_2 = {'imass': 2, 'scale': 3}

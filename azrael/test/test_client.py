@@ -22,7 +22,6 @@ The client class is merely a convenience class to wrap the Clerk
 commands. As such the tests here merely test these wrappers. See `test_clerk`
 if you want to see thorough tests for the Clerk functionality.
 """
-import sys
 import time
 import json
 import pytest
@@ -39,11 +38,9 @@ import azrael.dibbler
 import azrael.wsclient
 import azrael.types as types
 import azrael.config as config
-import azrael.database as database
 
 from IPython import embed as ipshell
-from azrael.types import RetVal, Template
-from azrael.types import FragDae, FragRaw
+from azrael.types import FragRaw
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getRigidBody
@@ -409,15 +406,6 @@ class TestClient:
         dir_1_out = -np.array(dir_1) / np.sum(abs(np.array(dir_1)))
         pos_0_out = -np.array(pos_0)
         pos_1_out = -np.array(pos_1)
-
-        # State variable for parent. It has a position, speed, and is rotated
-        # 180 degrees around the x-axis. This means the x-values of all forces
-        # (boosters) and exit speeds of factory spawned objects must be
-        # inverted.
-        sv = getRigidBody(
-            position=pos_parent,
-            velocityLin=vel_parent,
-            rotation=orient_parent)
 
         # ---------------------------------------------------------------------
         # Create a template with two factories and spawn it.

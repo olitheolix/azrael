@@ -6,11 +6,10 @@ import tornado.testing
 import azrael.web
 import azrael.clerk
 import azrael.wsclient
-import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
+from azrael.types import FragDae, FragRaw
 from azrael.test.test import getFragRaw, getFragDae, getTemplate
 from azrael.test.test import getCSBox, getCSSphere, getRigidBody
 

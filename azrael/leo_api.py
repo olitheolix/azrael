@@ -20,18 +20,15 @@ Specify and implement the necessary functions to create, access and manipulate
 state variables.
 """
 
-import sys
 import logging
 import numpy as np
 import azrael.util as util
 import azrael.types as types
-import azrael.config as config
 import azrael.database as database
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _RigidBodyData
-from azrael.types import CollShapeMeta, CollShapeEmpty
-from azrael.types import CollShapeSphere, CollShapeBox
+from azrael.types import CollShapeMeta, CollShapeSphere, CollShapeBox
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
@@ -126,7 +123,7 @@ def dequeueCommands():
 
     # Query all pending commands and delete them from the queue.
     docs = list(db.find())
-    ret = db.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
+    db.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
     for doc in docs:
         del doc['_id']
 

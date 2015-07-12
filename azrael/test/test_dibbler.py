@@ -20,9 +20,8 @@ import pytest
 import azrael.dibbler
 
 import azrael.config as config
-
 from IPython import embed as ipshell
-from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
+from azrael.types import FragDae, FragRaw
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 
 

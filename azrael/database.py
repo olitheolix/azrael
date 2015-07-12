@@ -18,9 +18,6 @@
 """
 Database abstractions.
 """
-import os
-import shutil
-import pymongo
 import logging
 
 import azrael.config as config

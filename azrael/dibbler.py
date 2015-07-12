@@ -42,7 +42,6 @@ import json
 import base64
 import gridfs
 
-import numpy as np
 import azrael.config as config
 
 from IPython import embed as ipshell

@@ -111,7 +111,7 @@ class WSClient(azrael.client.Client):
         """
         try:
             ret = self.sendToClerk('ping_webserver', None)
-        except websocket.WebSocketConnectionClosedException as err:
+        except websocket.WebSocketConnectionClosedException:
             return RetVal(False, 'Websocket Error', None)
 
         if not ret.ok:

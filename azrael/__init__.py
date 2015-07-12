@@ -37,7 +37,7 @@ def waitForDatabase(timeout=60):
         Return *True* if connecting to MongoDB is possible.
         """
         try:
-            client = config.getMongoClient()
+            config.getMongoClient()
         except pymongo.errors.ConnectionFailure:
             return False
         return True

@@ -8,7 +8,7 @@ from IPython import embed as ipshell
 
 import azBullet
 from azBullet import Vec3, Quaternion, Transform
-from azBullet import SphereShape, DefaultRigidBodyState
+from azBullet import SphereShape, DefaultMotionState
 from azBullet import RigidBody, RigidBodyConstructionInfo
 from azBullet import Generic6DofSpring2Constraint
 
@@ -40,7 +40,7 @@ def animateMotion(out_a, out_b):
     numFrames = out_a.shape[0]
 
     # Start the animation.
-    anim = animation.FuncAnimation(
+    animation.FuncAnimation(
         fig, animate, init_func=animInit,
         frames=numFrames, interval=50, blit=True)
     plt.show()
@@ -57,7 +57,7 @@ def getRB(pos=Vec3(0, 0, 0), cshape=SphereShape(1)):
     in memory.
     """
     t = Transform(Quaternion(0, 0, 0, 1), pos)
-    ms = DefaultRigidBodyState(t)
+    ms = DefaultMotionState(t)
     mass = 1
 
     # Build construction info and instantiate the rigid body.

@@ -9,11 +9,9 @@ import numpy as np
 import unittest.mock as mock
 import azrael.leo_api as leoAPI
 
+from azrael.types import RetVal
 from IPython import embed as ipshell
-from azrael.types import CollShapeBox, CollShapeSphere, RetVal
-from azrael.types import CollShapeMeta, CollShapeEmpty
-from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getP2P
-from azrael.test.test import killAzrael, getLeonard, getRigidBody
+from azrael.test.test import getCSBox, getCSSphere, getP2P, getLeonard, getRigidBody
 
 
 # List all available engines. This simplifies the parameterisation of those
@@ -111,8 +109,7 @@ class TestLeonardAllEngines:
         leo = getLeonard(clsLeonard)
 
         # Parameters and constants for this test.
-        id_0, id_1 = 0, 1
-        templateID = '_templateSphere'.encode('utf8')
+        id_1 = 1
 
         # Body data.
         p = np.array([1, 2, 5])
@@ -149,7 +146,6 @@ class TestLeonardAllEngines:
         cshape_box = {'1': getCSBox()}
         cshape_sphere = {'1': getCSSphere()}
         body = getRigidBody(imass=2, scale=3, cshapes=cshape_sphere)
-        templateID = '_templateSphere'.encode('utf8')
 
         # Spawn an object.
         objID = 1
@@ -396,7 +392,6 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Convenience.
-        WPData = azrael.leonard.WPData
         body_1 = getRigidBody(imass=1)
         body_2 = getRigidBody(imass=2)
         id_1, id_2 = 1, 2
@@ -405,9 +400,6 @@ class TestLeonardOther:
         tmp = [(id_1, body_1), (id_2, body_2)]
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
-
-        # Create a Work Package and verify its content.
-        ret = leo.createWorkPackage([id_1, id_2], dt=3, maxsteps=4)
 
         # Create a new State Vector to replace the old one.
         body_3 = getRigidBody(imass=4, position=[1, 2, 3])
@@ -892,7 +884,6 @@ class TestBroadphase:
         assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
         # Convenience variable.
-        sweeping = azrael.leonard.sweeping
         _verify = self.verifySweeping
 
         # Three non-overlapping objects.

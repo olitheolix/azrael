@@ -14,23 +14,15 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
-import os
-import sys
 import json
-import base64
-import pytest
-import numpy as np
 
 import azrael.test.test
 import azrael.types as types
-import azrael.config as config
-import azrael.leo_api as leoAPI
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
 from azrael.test.test import getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
-from azrael.types import FragDae, FragRaw, FragMeta, Template
 
 
 class TestClerk:

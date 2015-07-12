@@ -27,10 +27,8 @@ import azrael.leonard
 
 from azrael.types import FragMeta, FragDae, FragRaw, FragNone, Template
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox, CollShapePlane
-from azrael.types import RigidBodyData
+from azrael.types import CollShapeBox, CollShapePlane, RigidBodyData
 from azrael.types import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
-from azrael.types import _RigidBodyData
 
 
 def killAzrael():

@@ -19,14 +19,12 @@
 Physics manager.
 """
 import os
-import sys
 import zmq
 import time
 import signal
 import pickle
 import logging
 import networkx
-import itertools
 import numpy as np
 
 import azrael.igor
@@ -269,12 +267,13 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
     coll_sets = stage_2 + [[_] for _ in bodies_ignored]
 
     # Append every static body to every collision set. This may not be very
-    # efficient for large scale simulations but has not affect on smaller
-    # simulations. The main advantage is that Azrael can now support static
-    # bodies with infinite extent, most notably 'Plane' shapes without
+    # efficient for large scale simulations but has a negligible penalty for
+    # smaller simulations. The main advantage is that Azrael can now support
+    # static bodies with infinite extent, most notably 'Plane' shapes without
     # the extra logic that the sweeping algorithm would otherwise require to
     # deal with such infinite objects.
-    out = [_.extend(bodies_static) for _ in coll_sets]
+    for collset in coll_sets:
+        collset.extend(bodies_static)
 
     return RetVal(True, None, coll_sets)
 
@@ -663,7 +662,7 @@ class LeonardBase(config.AzraelProcess):
             t0 = time.time()
 
             # Trigger the physics update step.
-            with util.Timeit('Leonard:1.0 Step') as timeit:
+            with util.Timeit('Leonard:1.0 Step'):
                 self.step(stepinterval, 10)
 
 
@@ -695,9 +694,6 @@ class LeonardBullet(LeonardBase):
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
-        # Convenience.
-        vg = azrael.vectorgrid
-
         # Process pending commands.
         self.processCommandQueue()
 
@@ -737,7 +733,7 @@ class LeonardBullet(LeonardBase):
             self.logit.warning(ret.msg)
 
         # Advance the simulation by one time step.
-        with util.Timeit('compute') as timeit:
+        with util.Timeit('compute'):
             self.bullet.compute(list(self.allBodies.keys()), dt, maxsteps)
 
             # Remove all constraints.
@@ -787,10 +783,9 @@ class LeonardSweeping(LeonardBase):
 
         # Update the constraint cache in our local Igor instance.
         self.igor.updateLocalCache()
-        allConstraints = self.igor.getConstraints(None).data
 
         # Compute all collision sets.
-        with util.Timeit('CCS') as timeit:
+        with util.Timeit('CCS'):
             ret = self.igor.uniquePairs()
             if not ret.ok:
                 return
@@ -805,9 +800,6 @@ class LeonardSweeping(LeonardBase):
 
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
-
-        # Convenience.
-        vg = azrael.vectorgrid
 
         # Process all subsets individually.
         for subset in collSets:
@@ -826,7 +818,6 @@ class LeonardSweeping(LeonardBase):
             del ret, idPos
 
             # Iterate over all objects and update them.
-            constr = []
             for objID, sv in coll_SV.items():
                 # Pass the SV data from the DB to Bullet.
                 self.bullet.setRigidBodyData(objID, sv)
@@ -855,7 +846,7 @@ class LeonardSweeping(LeonardBase):
             del tmp
 
             # Wait for Bullet to advance the simulation by one step.
-            with util.Timeit('compute') as timeit:
+            with util.Timeit('compute'):
                 self.bullet.compute(list(coll_SV.keys()), dt, maxsteps)
 
             # Remove all constraints.
@@ -965,15 +956,14 @@ class LeonardDistributedZeroMQ(LeonardBase):
                              ``dt`` update.
         """
         # Read queued commands and update the local object cache accordingly.
-        with util.Timeit('Leonard:1.1  processCmdQueue') as timeit:
+        with util.Timeit('Leonard:1.1  processCmdQueue'):
             self.processCommandQueue()
 
         # Update the constraint cache in our local Igor instance.
         self.igor.updateLocalCache()
-        allConstraints = self.igor.getConstraints(None).data
 
         # Compute the collision sets.
-        with util.Timeit('Leonard:1.2  CCS') as timeit:
+        with util.Timeit('Leonard:1.2  CCS'):
             ret = self.igor.uniquePairs()
             if not ret.ok:
                 return
@@ -990,7 +980,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         util.logMetricQty('#CollSets', len(collSets))
 
         # Put each collision set into its own Work Package.
-        with util.Timeit('Leonard:1.3  CreateWPs') as timeit:
+        with util.Timeit('Leonard:1.3  CreateWPs'):
             all_WPs = {}
             for subset in collSets:
                 # Compile the Work Package. Skip this physics step altogether
@@ -1001,7 +991,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
                     return
                 all_WPs[ret.data['wpid']] = ret.data
 
-        with util.Timeit('Leonard:1.4  WPSendRecv') as timeit:
+        with util.Timeit('Leonard:1.4  WPSendRecv'):
             wpIdx = 0
             worklist = list(all_WPs.keys())
             while True:
@@ -1050,7 +1040,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 self.sock.send(pickle.dumps(wp))
 
         # Synchronise the local cache back to the database.
-        with util.Timeit('Leonard:1.5  syncObjects') as timeit:
+        with util.Timeit('Leonard:1.5  syncObjects'):
             self.syncObjects(writeconcern=False)
 
     @typecheck
@@ -1091,7 +1081,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 sv = self.allBodies[objID]
                 force, torque = self.totalForceAndTorque(objID)
                 wpdata.append(WPData(objID, sv, force, torque))
-        except KeyError as err:
+        except KeyError:
             return RetVal(False, 'Cannot compile WP', None)
 
         # Query all constraints.
@@ -1195,8 +1185,8 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         setRB = self.bullet.setRigidBodyData
 
         # Add every object to the Bullet engine and set the force/torque.
-        with util.Timeit('Worker:1.1.0  applyforce') as timeit:
-            with util.Timeit('Worker:1.1.1   grid') as timeit:
+        with util.Timeit('Worker:1.1.0  applyforce'):
+            with util.Timeit('Worker:1.1.1   grid'):
                 # Fetch the forces for all object positions.
                 idPos = {_.aid: _.sv.position for _ in worklist}
                 ret = self.getGridForces(idPos)
@@ -1208,12 +1198,12 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
                     gridForces = ret.data
                 del ret, idPos
 
-            with util.Timeit('Worker:1.1.1   updateGeo') as timeit:
+            with util.Timeit('Worker:1.1.1   updateGeo'):
                 for obj in worklist:
                     # Update the object in Bullet and apply the force/torque.
                     setRB(obj.aid, obj.sv)
 
-            with util.Timeit('Worker:1.1.1   updateForce') as timeit:
+            with util.Timeit('Worker:1.1.1   updateForce'):
                 for obj in worklist:
                     # Add the force defined on the 'force' grid.
                     force = obj.force + gridForces[obj.aid]
@@ -1227,14 +1217,14 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
 
         # Tell Bullet to advance the simulation for all objects in the
         # current work list.
-        with util.Timeit('Worker:1.2.0  compute') as timeit:
+        with util.Timeit('Worker:1.2.0  compute'):
             IDs = [_.aid for _ in worklist]
             self.bullet.compute(IDs, meta.dt, meta.maxsteps)
 
             # Remove all constraints.
             self.bullet.clearAllConstraints()
 
-        with util.Timeit('Worker:1.3.0  fetchFromBullet') as timeit:
+        with util.Timeit('Worker:1.3.0  fetchFromBullet'):
             # Retrieve the objects from Bullet again and update them in the DB.
             out = []
             for obj in worklist:
@@ -1287,7 +1277,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
                 wpdata = pickle.loads(msg)
 
                 # Process the Work Package.
-                with util.Timeit('Worker:1.0.0 WPTotal') as timeit:
+                with util.Timeit('Worker:1.0.0 WPTotal'):
                     wpdata = self.computePhysicsForWorkPackage(wpdata)
 
                 # Pack up the Work Package and send it back to Leonard.

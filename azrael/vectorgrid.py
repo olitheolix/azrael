@@ -28,9 +28,7 @@ nearest granularity multiple.
 Internally, the engine only adds non-zero values to the database, and removes
 all those set to zero.
 """
-import sys
 import logging
-import pymongo
 import numpy as np
 import azrael.config as config
 
@@ -287,7 +285,6 @@ def setValues(name: str, posVals: (tuple, list)):
     del admin, ret
 
     # Ensure the region dimensions are positive integers.
-    indexes = []
     bulk = db.initialize_unordered_bulk_op()
     try:
         for pv in posVals:

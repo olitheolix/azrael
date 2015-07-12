@@ -119,7 +119,7 @@ class Client():
         """
         try:
             payload = json.dumps({'cmd': cmd, 'data': data})
-        except (ValueError, TypeError) as err:
+        except (ValueError, TypeError):
             msg = 'JSON encoding error for Client command <{}>'.format(cmd)
             self.logit.warning(msg)
             return RetVal(False, msg, None)
@@ -132,7 +132,7 @@ class Client():
         try:
             ret = json.loads(payload)
             ret = RetVal(**ret)
-        except (ValueError, TypeError) as err:
+        except (ValueError, TypeError):
             return RetVal(False, 'JSON decoding error in Client', None)
 
         return ret
@@ -198,7 +198,7 @@ class Client():
         try:
             # Sanity check each template.
             templates = [Template(*_)._asdict() for _ in templates]
-        except AssertionError as err:
+        except AssertionError:
             return RetVal(False, 'Data type error', None)
 
         return self.serialiseAndSend('add_templates', {'templates': templates})

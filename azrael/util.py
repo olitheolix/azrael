@@ -20,12 +20,9 @@ Utility functions.
 """
 
 import time
-import pymongo
 
 import numpy as np
 import azrael.config as config
-
-from azrael.types import typecheck
 
 
 # Global handle to the collection for timing metrics.
@@ -126,7 +123,7 @@ def timefunc(func):
     Profile execution time of entire function.
     """
     def wrapper(*args, **kwargs):
-        with Timeit(func.__name__, False) as timeit:
+        with Timeit(func.__name__, False):
             res = func(*args, **kwargs)
         return res
 

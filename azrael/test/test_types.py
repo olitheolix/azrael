@@ -15,20 +15,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 import json
-import pytest
-
-import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, RetVal, FragDae, FragRaw, FragMeta
-from azrael.types import Booster, Factory
+from azrael.types import Template, FragMeta, RigidBodyData, Booster, Factory
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox, CollShapePlane
-from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
-from azrael.types import RigidBodyData
-from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
-from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
+from azrael.types import CollShapeBox, CollShapePlane, ConstraintMeta
 from azrael.test.test import getP2P, get6DofSpring2, getRigidBody
+from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
+from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 
 
 class TestDibbler:

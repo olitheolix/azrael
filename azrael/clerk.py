@@ -38,13 +38,10 @@ language agnostic.
 """
 import io
 import os
-import sys
 import zmq
 import copy
 import json
-import logging
 import traceback
-import subprocess
 
 import numpy as np
 
@@ -59,8 +56,7 @@ import azrael.database as database
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, Template, CollShapeMeta, CollShapeEmpty
-from azrael.types import FragMeta, _FragMeta
+from azrael.types import typecheck, RetVal, Template, FragMeta, _FragMeta
 
 
 class Clerk(config.AzraelProcess):
@@ -280,7 +276,7 @@ class Clerk(config.AzraelProcess):
             # The payload must be a valid JSON string.
             try:
                 msg = json.loads(msg.decode('utf8'))
-            except (ValueError, TypeError) as err:
+            except (ValueError, TypeError):
                 ret = RetVal(False, 'JSON decoding error in Clerk', None)
                 self.returnToClient(self.last_addr, ret)
                 del ret
@@ -331,7 +327,7 @@ class Clerk(config.AzraelProcess):
         # Convert the message to JSON.
         try:
             ret = json.dumps(ret._asdict())
-        except (ValueError, TypeError) as err:
+        except (ValueError, TypeError):
             msg = 'Could not convert Clerk return value to JSON'
             ret = json.dumps(RetVal(False, msg, None)._asdict())
 
@@ -373,7 +369,7 @@ class Clerk(config.AzraelProcess):
         if len(templates) == 0:
             return RetVal(True, None, None)
 
-        with util.Timeit('clerk.addTemplates') as timeit:
+        with util.Timeit('clerk.addTemplates'):
             # Verify that all templates contain valid data.
             try:
                 templates = [Template(*_) for _ in templates]
@@ -420,7 +416,7 @@ class Clerk(config.AzraelProcess):
                 query = {'templateID': template.aid}
                 bulk.find(query).upsert().update({'$setOnInsert': data})
 
-        with util.Timeit('clerk.addTemplates_db') as timeit:
+        with util.Timeit('clerk.addTemplates_db'):
             # Run the database query.
             ret = bulk.execute()
 
@@ -554,7 +550,7 @@ class Clerk(config.AzraelProcess):
 
         # Fetch the specified templates so that we can duplicate them in
         # the instance database afterwards.
-        with util.Timeit('spawn:1 getTemplates') as timeit:
+        with util.Timeit('spawn:1 getTemplates'):
             t_names = [_['templateID'] for _ in newObjects]
             ret = self.getTemplates(t_names)
             if not ret.ok:
@@ -570,7 +566,7 @@ class Clerk(config.AzraelProcess):
             return ret
         newObjectIDs = ret.data
 
-        with util.Timeit('spawn:2 createStates') as timeit:
+        with util.Timeit('spawn:2 createStates'):
             # Make a copy of every template and endow it with the meta
             # information for an instantiated object. Then add it to the list
             # of objects to spawn.
@@ -635,7 +631,7 @@ class Clerk(config.AzraelProcess):
             # not make Leonard aware of their existence (see next step).
             database.dbHandles['ObjInstances'].insert(dbDocs)
 
-        with util.Timeit('spawn:3 addCmds') as timeit:
+        with util.Timeit('spawn:3 addCmds'):
             # Compile the list of spawn commands that will be sent to Leonard.
             objs = tuple(bodyStates.items())
 
@@ -1001,7 +997,7 @@ class Clerk(config.AzraelProcess):
                     del fragID, fragdata, tmp, f
                 del objID, frags
             del ref_1, ref_2
-        except TypeError as err:
+        except TypeError:
             return RetVal(False, 'Not all fragment data sets are valid', None)
 
         # Convenience.

@@ -21,7 +21,6 @@ Test the Igor module.
 import pytest
 import azrael.igor
 
-import unittest.mock as mock
 from IPython import embed as ipshell
 from azrael.test.test import killAzrael, getP2P, get6DofSpring2
 
@@ -154,10 +153,9 @@ class TestClerk:
         igor = self.igor
 
         # Create the constraints for this test.
-        c1 = getCon('foo', 1, 2)
-        c2 = getCon('foo', 2, 3)
-        c3 = getCon('foo', 3, 4)
-        c4 = getCon('foo', 4, 5)
+        c1 = getCon('foo', 2, 3)
+        c2 = getCon('foo', 3, 4)
+        c3 = getCon('foo', 4, 5)
 
         # The list of constraints must be empty after a reset.
         assert igor.reset() == (True, None, None)
@@ -167,16 +165,16 @@ class TestClerk:
 
         # Add two constraints and verify that Igor returns them *after* a cache
         # update.
-        assert igor.addConstraints([c2, c3]) == (True, None, 2)
+        assert igor.addConstraints([c1, c2]) == (True, None, 2)
         assert igor.getConstraints(None).data == tuple()
         assert igor.updateLocalCache() == (True, None, 2)
-        assert sorted(igor.getConstraints(None).data) == sorted((c2, c3))
+        assert sorted(igor.getConstraints(None).data) == sorted((c1, c2))
 
         # Add another two constraints, only one of which is new. Verify that
         # Igor returns the correct three constraints.
-        assert igor.addConstraints([c3, c4]) == (True, None, 1)
+        assert igor.addConstraints([c2, c3]) == (True, None, 1)
         assert igor.updateLocalCache() == (True, None, 3)
-        assert sorted(igor.getConstraints(None).data) == sorted((c2, c3, c4))
+        assert sorted(igor.getConstraints(None).data) == sorted((c1, c2, c3))
 
     @pytest.mark.parametrize('getCon', _AllConstraintGetters)
     def test_delete(self, getCon):
@@ -190,7 +188,6 @@ class TestClerk:
         c1 = getCon('foo', 1, 2)
         c2 = getCon('foo', 2, 3)
         c3 = getCon('foo', 3, 4)
-        c4 = getCon('foo', 4, 5)
 
         # Attempt to delete a non-existing constraint. This must neither return
         # an error not delete anything.

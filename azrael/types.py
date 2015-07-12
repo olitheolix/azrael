@@ -598,7 +598,7 @@ class ConstraintMeta(_ConstraintMeta):
                     condata = Constraint6DofSpring2(*condata)
             else:
                 assert False
-        except (TypeError, AssertionError) as err:
+        except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
@@ -906,7 +906,7 @@ class RigidBodyData(_RigidBodyData):
             for csname in cshapes:
                 assert isinstance(csname, str)
                 assert isAIDStringValid(csname)
-        except (AssertionError, TypeError) as err:
+        except (AssertionError, TypeError):
             raise TypeError
 
         # Build- and return the compiled RigidBodyData tuple.

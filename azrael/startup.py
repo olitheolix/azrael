@@ -19,6 +19,7 @@
 Convenience functions for testing and running Azrael.
 """
 
+import sys
 import time
 import logging
 import subprocess
@@ -29,7 +30,6 @@ import azrael.dibbler
 import azrael.leonard
 import azrael.database
 import azrael.vectorgrid
-import azrael.config as config
 
 
 class AzraelStack:

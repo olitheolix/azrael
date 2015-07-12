@@ -21,7 +21,6 @@ Test the Clerk module.
 import json
 import time
 import base64
-import pytest
 import urllib.request
 
 import numpy as np
@@ -35,10 +34,10 @@ import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
+from azrael.types import RetVal, CollShapeMeta
+from azrael.types import FragRaw
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
-from azrael.types import Template, RetVal, CollShapeMeta
-from azrael.types import FragDae, FragRaw, FragMeta
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 from azrael.test.test import getCSPlane, getTemplate
 
@@ -317,11 +316,6 @@ class TestClerk:
         """
         # Convenience.
         clerk = self.clerk
-
-        # Default object.
-        body_1 = getRigidBody(imass=1)
-        body_2 = getRigidBody(imass=2)
-        body_3 = getRigidBody(imass=3)
 
         # Invalid templateID.
         init_invalid = {'templateID': 'blah', 'rbs': {'imass': 1}}
@@ -1147,7 +1141,6 @@ class TestClerk:
         # Raw object: specify vertices, UV, and texture (RGB) values directly.
         body_1 = getRigidBody(position=[1, 2, 3])
         body_2 = getRigidBody(position=[4, 5, 6])
-        f_raw = getFragRaw()
 
         # Put both fragments into a valid list of FragMetas.
         frags = {'f_raw': getFragRaw(), 'f_dae': getFragDae()}
@@ -1311,7 +1304,6 @@ class TestClerk:
         assert ret.ok
 
         # Verify that the changes reflect in the new fragment types.
-        _FragMeta = azrael.types._FragMeta
         r1 = ret.data[id_1]
         assert r1['foo']['scale'] == 2
         assert r1['foo']['position'] == (0, 1, 2)
@@ -1500,10 +1492,6 @@ class TestClerk:
         clerk = self.clerk
         web = azrael.web.WebServer()
         web.start()
-
-        # Convenience.
-        vert_1 = list(range(0, 9))
-        vert_2 = list(range(9, 18))
 
         def checkFragState(objID, name_1, scale_1, pos_1, rot_1,
                            name_2, scale_2, pos_2, rot_2):
@@ -1756,7 +1744,6 @@ class TestClerk:
         # Spawn the two bodies with a constraint among them.
         tID = '_templateSphere'
         id_1, id_2, id_3 = 1, 2, 3
-        templates = [(tID, body_1), (tID, body_2), (tID, body_3)]
         init_1 = {
             'templateID': tID,
             'rbs': {
@@ -2019,7 +2006,6 @@ class TestClerk:
         assert clerk.addTemplates([t_cs, t_frag, t_none]).ok
 
         # Spawn an instance of each.
-        body = getRigidBody(cshapes={})
         ret = clerk.spawn([{'templateID': 't_cs'},
                            {'templateID': 't_frag'},
                            {'templateID': 't_none'}])

@@ -1033,7 +1033,6 @@ class TestConstraints:
         p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
         p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
         init_pos = (p_a[0], p_b[0])
-        fixed_dist = p_a[0] - p_b[0]
         assert init_pos == (-1, 1)
 
         # Pull the right object to the right. Initially this must not affect
@@ -1112,7 +1111,6 @@ class TestConstraints:
         p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
         p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
         init_pos = (p_a[0], p_b[0])
-        fixed_dist = p_a[0] - p_b[0]
         assert init_pos == (-1, 1)
 
         # The ...Spring2... (notice the '2') behaves slightly differently (and

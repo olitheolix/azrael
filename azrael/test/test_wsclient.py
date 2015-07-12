@@ -23,9 +23,6 @@ version. However, some tests, especially for the initial connection are
 specific to this client type. Only these are covered here.
 """
 
-import sys
-import pytest
-
 import azrael.web
 import azrael.clerk
 import azrael.wsclient

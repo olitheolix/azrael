@@ -1,10 +1,5 @@
-import sys
-import time
-import pytest
-import subprocess
-import azrael.vectorgrid as vectorgrid
 import numpy as np
-
+import azrael.vectorgrid as vectorgrid
 from IPython import embed as ipshell
 
 
@@ -180,8 +175,6 @@ def test_define_reset_delete_grid_invalid():
     """
     # Test parameters.
     vg = vectorgrid
-    pos = np.array([1, 2, 3], np.float64)
-    value = np.array([-1, 0, 1], np.float64)
     name = 'force'
 
     # Delete all grids used in this test.

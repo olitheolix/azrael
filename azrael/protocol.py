@@ -58,7 +58,7 @@ def FromClerk_Ping_Encode(payload: str):
 def ToClerk_AddTemplates_Decode(payload: dict):
     # Compile- and sanity check each template.
     T = types.Template
-    with azrael.util.Timeit('clerk.decode') as timeit:
+    with azrael.util.Timeit('clerk.decode'):
         templates = [T(**_) for _ in payload['templates']]
     payload['templates'] = templates
     return payload

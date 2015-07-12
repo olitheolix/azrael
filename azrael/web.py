@@ -38,7 +38,6 @@ import zmq.eventloop.zmqstream
 
 import azrael.client
 import azrael.dibbler
-import azrael.util as util
 import azrael.config as config
 
 from azrael.types import typecheck, RetVal
@@ -82,7 +81,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         # Convert the message to JSON.
         try:
             ret = json.dumps(ret._asdict())
-        except (ValueError, TypeError) as err:
+        except (ValueError, TypeError):
             msg = 'Could not convert Clerk return value to JSON'
             ret = json.dumps(RetVal(False, msg, None)._asdict())
 
@@ -106,7 +105,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         """
         try:
             msg = json.loads(msg)
-        except (TypeError, ValueError) as err:
+        except (TypeError, ValueError):
             self.returnToClient(RetVal(False, 'JSON decoding error in WebServer', None))
             return
 

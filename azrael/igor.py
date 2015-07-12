@@ -18,12 +18,10 @@
 Igor is a stateless class to manage rigid body constraints.
 """
 import logging
-import azrael.config as config
 import azrael.database as database
 
 from IPython import embed as ipshell
-from azrael.types import RetVal, ConstraintMeta, ConstraintP2P
-from azrael.types import Constraint6DofSpring2
+from azrael.types import RetVal, ConstraintMeta
 
 
 class Igor:

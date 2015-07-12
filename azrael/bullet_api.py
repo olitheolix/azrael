@@ -22,20 +22,15 @@ This module is the *one and only* module that actually imports the Bullet
 engine (ie the wrapper called `azBullet`). This will make it easier to swap out
 Bullet for another engine at some point, should the need arise.
 """
-import sys
 import logging
-import azrael.util
-import azrael.bullet.azBullet as azBullet
-
 import numpy as np
 import azrael.types as types
-import azrael.config as config
+import azrael.bullet.azBullet as azBullet
 
 from IPython import embed as ipshell
 from azrael.types import typecheck, RetVal, _RigidBodyData
-from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox, CollShapePlane
 from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
+from azrael.types import CollShapeMeta, CollShapeSphere, CollShapeBox, CollShapePlane
 
 # Convenience.
 Vec3 = azBullet.Vec3
@@ -253,7 +248,6 @@ class PyBulletDynamicsWorld():
 
         # Construct a new _RigidBodyData structure and add it to the list
         # that will eventually be returned to the caller.
-        csname = body.getCollisionShape().getChildShape(0).getName()
         out = _RigidBodyData(scale, body.getInvMass(),
                              body.getRestitution(), rot, pos, vLin, vRot,
                              cshapes, axesLockLin, axesLockRot, 0)
