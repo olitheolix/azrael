@@ -596,8 +596,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # Only draw visible triangles for this fragment.
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glDepthFunc(gl.GL_LESS)
-            print('Added {} geometry fragments for objID=<{}>'
-                  .format(len(ret.data), objID))
 
     def defineProjectileTemplate(self):
         """
@@ -1052,7 +1050,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     'position': pos.tolist(),
                     'velocityLin': vel.tolist(),
                     'scale': 0.75,
-                    'imass': 2
+                    'imass': 0.2,
                 }
             }
             ret = self.client.spawn([d])
