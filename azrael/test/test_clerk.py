@@ -1932,7 +1932,9 @@ class TestClerk:
             'cshapes': {'cssphere': getCSBox()._asdict()}}
         assert clerk.setRigidBodies({id_1: new_bs}).ok
 
-        # Verify that id_1 has the new attributes and id_2 remained unaffected.
+        # Verify that the specified attributes for id_1 have changed, but the
+        # other ones (in particular velocityLin because we overwrote it in the
+        # spawn command) remained unaffected.
         ret = clerk.getRigidBodies([id_1, id_2])
         assert ret.ok
         ret_1 = ret.data[id_1]['rbs']
@@ -1941,6 +1943,9 @@ class TestClerk:
         assert ret_1.imass == new_bs['imass']
         assert ret_1.scale == new_bs['scale']
         assert ret_1.position == new_bs['position']
+        assert ret_1.velocityLin == init['rbs']['velocityLin']
+
+        # Object id_2 must not have changed at all.
         assert ret_2.imass == 1
         assert ret_2.scale == 1
         assert ret_2.position == init['rbs']['position']

@@ -1176,11 +1176,19 @@ class Clerk(config.AzraelProcess):
         invalid_objects = []
 
         for objID, body in bodies.items():
+            # Backup the key names the user wants us to update.
+            modify_keys = set(body.keys())
+
             # Compile- and sanity check ``body``.
             try:
                 body = types.DefaultRigidBody(**body)._asdict()
             except TypeError:
                 return RetVal(False, 'Invalid body data', None)
+
+            # Only retain those keys the user wanted us to update (the
+            # DefaultRigidBody constructed a complete body with *all*
+            # attributes).
+            body = {k: v for (k, v) in body.items() if k in modify_keys}
 
             # Update the respective entries in the database. The keys already have
             # the correct names but require the 'template.rbs' to match the
