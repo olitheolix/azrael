@@ -443,14 +443,15 @@ class Clerk(config.AzraelProcess):
         Each template will only be returned once, no matter how many times it
         was specified in `templateIDs`. For instance, these two calls will both
         return the same two templates::
+
             getTemplates([name_1, name_2, name_1])
             getTemplates([name_1, name_2])
 
         This method returns a dictionary with the `templateIDs` as keys::
 
-          ret = {templateIDs[0]: {'template': Template(),
-                                  'url_frag': URL for geometries},
-                 templateIDs[1]: {...}, }.
+            ret = {templateIDs[0]: {'template': Template(),
+                                    'url_frag': URL for geometries},
+                   templateIDs[1]: {...}, }.
 
         ..note:: The template data only contains meta information about the
             geometry. The geometry itself is available at the URL specified in
@@ -510,11 +511,11 @@ class Clerk(config.AzraelProcess):
         the values to override in the rigid body structure. For instance, a
         valid `newObjects` argument would be::
 
-        newObjects = [
-            {'templateID': 'foo'},
-            {'templateID': 'foo', 'rbs': {'imass': 5}},
-            {'templateID': 'bar', 'rbs': {'position': (1, 2, 3)},
-        ]
+            newObjects = [
+                {'templateID': 'foo'},
+                {'templateID': 'foo', 'rbs': {'imass': 5}},
+                {'templateID': 'bar', 'rbs': {'position': (1, 2, 3)},
+            ]
 
         This will spawn three objects. The first one is a verbatim copy of
         `foo`, the second will also be an instance of `foo` but with an `imass`
@@ -1112,10 +1113,11 @@ class Clerk(config.AzraelProcess):
         if the corresponding objID did not exist.
 
         Return value example::
-        {
-            id_1: {'rbs': RigidBodyData(...)}
-            id_2: {'rbs': RigidBodyData(...)}
-        }
+
+            ret = {
+                id_1: {'rbs': RigidBodyData(...)},
+                id_2: {'rbs': RigidBodyData(...)},
+            }
 
         ..note:: the inner 'rbs' dictionary is currently redundant since it
             contains only a single hard coded key, but this will make it easy
@@ -1213,24 +1215,24 @@ class Clerk(config.AzraelProcess):
         shapes, fragment geometries, or other specialised data.
 
         The purpose of this method is to make it easy to query the salient
-        information about an object in a bandwidth efficient way.
+        information about an object in a bandwidth efficient way.::
 
-        {
-            objID_1: {
-                'frag': {
-                    'a': {'scale: x, 'position': [...], 'rotation': [...],},
-                    'b': {'scale: y, 'position': [...], 'rotation': [...],},
-                }
-                'rbs': _RigidBodyData(...),
-            },
-            objID_2: {
-                'frag': {
-                    'a': {'scale: x, 'position': [...], 'rotation': [...],},
-                    'b': {'scale: y, 'position': [...], 'rotation': [...],},
-                }
-                'rbs': _RigidBodyData(...),
-            },
-        }
+            out = {
+                objID_1: {
+                    'frag': {
+                        'a': {'scale': x, 'position': [...], 'rotation': [...],},
+                        'b': {'scale': y, 'position': [...], 'rotation': [...],},
+                    },
+                    'rbs': _RigidBodyData(),
+                },
+                objID_2: {
+                    'frag': {
+                        'a': {'scale': x, 'position': [...], 'rotation': [...],},
+                        'b': {'scale': y, 'position': [...], 'rotation': [...],},
+                    },
+                    'rbs': _RigidBodyData(...),
+                },
+            }
 
         :param list objIDs: the objIDs for which to compile the data.
         :return: see example above.

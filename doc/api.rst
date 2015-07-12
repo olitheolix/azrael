@@ -12,10 +12,10 @@ azrael.bullet_api module
     :undoc-members:
     :show-inheritance:
 
-azrael.clacks module
+azrael.web module
 --------------------
 
-.. automodule:: azrael.clacks
+.. automodule:: azrael.web
     :members:
     :undoc-members:
     :show-inheritance:
