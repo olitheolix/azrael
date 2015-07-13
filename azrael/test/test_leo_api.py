@@ -290,16 +290,14 @@ class TestLeonardAPI:
 
         # Query the AABB, update the collision shapes, and verify that the new
         # AABBs are in effect.
-        assert leoAPI.getAABB([id_1]) == (True, None, [{}])
+        assert leo.allAABBs[id_1] == {}
 
         # Modify the body state by adding a collision shape.
         body_new = {'cshapes': {'cssphere': getCSSphere(radius=1)}}
         assert body_new is not None
         assert leoAPI.addCmdModifyBodyState(id_1, body_new).ok
         leo.processCommandsAndSync()
-        ret = leoAPI.getAABB([id_1])
-        assert ret.ok
-        assert ret.data == [{'cssphere': [0, 0, 0, 1, 1, 1]}]
+        assert leo.allAABBs[id_1] == {'cssphere': [0, 0, 0, 1, 1, 1]}
 
         # Modify the body state by adding a collision shape.
         cs_a = getCSSphere(radius=1, pos=(1, 2, 3))
@@ -308,8 +306,8 @@ class TestLeonardAPI:
         body_new = {'cshapes': cshapes}
         assert leoAPI.addCmdModifyBodyState(id_1, body_new).ok
         leo.processCommandsAndSync()
-        correct = [{'1': [1, 2, 3, 1, 1, 1], '3': [4, 5, 6, 2, 2, 2]}]
-        assert leoAPI.getAABB([id_1]) == (True, None, correct)
+        correct = {'1': [1, 2, 3, 1, 1, 1], '3': [4, 5, 6, 2, 2, 2]}
+        assert leo.allAABBs[id_1] == correct
 
     def test_get_set_forceandtorque(self):
         """
@@ -386,22 +384,9 @@ class TestLeonardAPI:
         assert leoAPI.addCmdSpawn(tmp).ok
         leo.processCommandsAndSync()
 
-        # Query the AABB of the first.
-        ret = leoAPI.getAABB([id_1])
-        assert ret.data == [aabb_2]
-
-        # Query the AABB of the second.
-        ret = leoAPI.getAABB([id_2])
-        assert ret.data == [aabb_3]
-
-        # Query the AABB of both simultaneously.
-        ret = leoAPI.getAABB([id_1, id_2])
-        assert ret.data == [aabb_2, aabb_3]
-
-        # Query the AABB of a non-existing ID.
-        ret = leoAPI.getAABB([id_1, 3])
-        assert ret.ok
-        assert ret.data == [aabb_2, None]
+        # Verify the two AABBs
+        assert leo.allAABBs[id_1] == aabb_2
+        assert leo.allAABBs[id_2] == aabb_3
 
     def test_compute_AABB(self):
         """

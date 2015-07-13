@@ -330,37 +330,3 @@ def addCmdBoosterForce(objID: int, force: list, torque: list):
     db.update(query, {'$setOnInsert': data}, upsert=True)
 
     return RetVal(True, None, None)
-
-
-@typecheck
-def getAABB(objIDs: (list, tuple)):
-    """
-    Retrieve the AABBs for all ``objIDs``.
-
-    This function returns the AABBs (or *None* if it does not exist) for all
-    ``objIDs``.
-
-    :param iterable objIDs: list of object ID for which to return the SV.
-    :return: size of AABBs.
-    :rtype: list of *floats*.
-    """
-    # Sanity check.
-    for objID in objIDs:
-        if objID < 0:
-            msg = 'Object ID is negative'
-            logit.warning(msg)
-            return RetVal(False, msg, None)
-
-    # Retrieve the objects states.
-    out = list(database.dbHandles['RBS'].find({'objID': {'$in': objIDs}}))
-
-    # Put all AABBs into a dictionary to simplify sorting afterwards.
-    out = {_['objID']: _['AABBs'] for _ in out}
-
-    # Compile the AABB values into a list ordered by ``objIDs``. Insert a None
-    # element if a particular objID has no AABB (probably means the object was
-    # recently deleted).
-    out = [out[_] if _ in out else None for _ in objIDs]
-
-    # Return the AABB values.
-    return RetVal(True, None, out)
