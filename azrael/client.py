@@ -91,8 +91,8 @@ class Client():
         Read next message from ZeroMQ socket.
 
         This method primarily exists to abstract away the underlying socket
-        type. In this case, it is a ZeroMQ socket, in the case of
-        ``WSClient`` it is a Websocket.
+        type. In the case of this very Client this is a ZeroMQ socket. In the
+        case of ``WSClient`` (a subclass of this one) it would be a Websocket.
 
         :return: received data as a string (usuallay a JSON string).
         :rtype: ste
