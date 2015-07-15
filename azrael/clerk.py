@@ -693,7 +693,7 @@ class Clerk(config.AzraelProcess):
             # remove the command (irrelevant for this loop but necessary for
             # the sanity check that follows after the loop).
             if partID in cmds:
-                boosters[partID] = booster._replace(force=cmds[partID].force_mag)
+                boosters[partID] = booster._replace(force=cmds[partID].force)
                 booster = boosters[partID]
                 del cmds[partID]
 

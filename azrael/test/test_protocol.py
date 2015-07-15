@@ -105,8 +105,8 @@ class TestClerk:
         """
         # Define the commands.
         cmd_boosters = {
-            '0': types.CmdBooster(force_mag=0.2),
-            '1': types.CmdBooster(force_mag=0.4),
+            '0': types.CmdBooster(force=0.2),
+            '1': types.CmdBooster(force=0.4),
         }
         cmd_factories = {
             '0': types.CmdFactory(exit_speed=0),

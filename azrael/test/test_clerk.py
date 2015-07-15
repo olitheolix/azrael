@@ -686,7 +686,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Create commands for a Booster and a Factory.
-        cmd_b = {'0': types.CmdBooster(force_mag=0.2)}
+        cmd_b = {'0': types.CmdBooster(force=0.2)}
         cmd_f = {'0': types.CmdFactory(exit_speed=0.5)}
 
         # Call 'controlParts'. This must fail because the template for objID_1
@@ -723,7 +723,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # Tell each factory to spawn an object.
-        cmd_b = {'0': types.CmdBooster(force_mag=0.5)}
+        cmd_b = {'0': types.CmdBooster(force=0.5)}
         cmd_f = {'0': types.CmdFactory(exit_speed=0.5)}
 
         # Valid: Clerk must accept these commands.
@@ -778,8 +778,8 @@ class TestClerk:
         # Create the commands to activate both boosters with a different force.
         forcemag_0, forcemag_1 = 0.2, 0.4
         cmd_b = {
-            '0': types.CmdBooster(force_mag=forcemag_0),
-            '1': types.CmdBooster(force_mag=forcemag_1)
+            '0': types.CmdBooster(force=forcemag_0),
+            '1': types.CmdBooster(force=forcemag_1)
         }
 
         # Send booster commands to Clerk.
@@ -1053,8 +1053,8 @@ class TestClerk:
         exit_speed_0, exit_speed_1 = 0.2, 2
         forcemag_0, forcemag_1 = 0.2, 0.4
         cmd_b = {
-            '0': types.CmdBooster(force_mag=forcemag_0),
-            '1': types.CmdBooster(force_mag=forcemag_1),
+            '0': types.CmdBooster(force=forcemag_0),
+            '1': types.CmdBooster(force=forcemag_1),
         }
         cmd_f = {
             '0': types.CmdFactory(exit_speed=exit_speed_0),
@@ -1675,8 +1675,8 @@ class TestClerk:
         # no torque.
         # ---------------------------------------------------------------------
         cmd_b = {
-            '0': types.CmdBooster(force_mag=1),
-            '1': types.CmdBooster(force_mag=1),
+            '0': types.CmdBooster(force=1),
+            '1': types.CmdBooster(force=1),
         }
         ret = clerk.updateBoosterForces(objID_1, cmd_b)
         assert ret.ok
@@ -1689,8 +1689,8 @@ class TestClerk:
         # net force but non-zero torque.
         # ---------------------------------------------------------------------
         cmd_b = {
-            '0': types.CmdBooster(force_mag=1),
-            '1': types.CmdBooster(force_mag=-1),
+            '0': types.CmdBooster(force=1),
+            '1': types.CmdBooster(force=-1),
         }
         ret = clerk.updateBoosterForces(objID_1, cmd_b)
         assert ret.ok
@@ -1702,13 +1702,13 @@ class TestClerk:
         # correctly distinguishes between objects.
         # ---------------------------------------------------------------------
         # Turn off left Booster of first object (right booster remains active).
-        cmd_b = {'0': types.CmdBooster(force_mag=0)}
+        cmd_b = {'0': types.CmdBooster(force=0)}
         ret = clerk.updateBoosterForces(objID_1, cmd_b)
         assert ret.ok
         assert ret.data == ([0, 0, -1], [0, 1, 0])
 
         # Turn on left Booster of the second object.
-        cmd_b = {'0': types.CmdBooster(force_mag=1)}
+        cmd_b = {'0': types.CmdBooster(force=1)}
         ret = clerk.updateBoosterForces(objID_2, cmd_b)
         assert ret.ok
         assert ret.data == ([0, 0, +1], [0, 1, 0])
@@ -1717,10 +1717,10 @@ class TestClerk:
         # ---------------------------------------------------------------------
         # Attempt to update a non-existing Booster or a non-existing object.
         # ---------------------------------------------------------------------
-        cmd_b = {'10': types.CmdBooster(force_mag=1)}
+        cmd_b = {'10': types.CmdBooster(force=1)}
         assert not clerk.updateBoosterForces(objID_2, cmd_b).ok
 
-        cmd_b = {'0': types.CmdBooster(force_mag=1)}
+        cmd_b = {'0': types.CmdBooster(force=1)}
         assert not clerk.updateBoosterForces(1000, cmd_b).ok
 
     def test_add_get_remove_constraints(self):

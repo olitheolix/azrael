@@ -452,8 +452,8 @@ class TestClient:
         exit_speed_0, exit_speed_1 = 0.2, 2
         forcemag_0, forcemag_1 = 0.2, 0.4
         cmd_b = {
-            '0': types.CmdBooster(force_mag=forcemag_0),
-            '1': types.CmdBooster(force_mag=forcemag_1),
+            '0': types.CmdBooster(force=forcemag_0),
+            '1': types.CmdBooster(force=forcemag_1),
         }
         cmd_f = {
             '0': types.CmdFactory(exit_speed=exit_speed_0),

@@ -83,7 +83,7 @@ _Constraint6DofSpring2 = namedtuple(
 # Boosters, Factories, and commands they can receive.
 _Booster = namedtuple('Booster', 'pos direction minval maxval force ')
 _Factory = namedtuple('Factory', 'pos direction templateID exit_speed')
-_CmdBooster = namedtuple('CmdBooster', 'force_mag')
+_CmdBooster = namedtuple('CmdBooster', 'force')
 _CmdFactory = namedtuple('CmdFactory', 'exit_speed')
 
 
@@ -769,9 +769,9 @@ class CmdBooster(_CmdBooster):
     :return Booster: compiled description of booster command.
     """
     @typecheck
-    def __new__(cls, force_mag: (int, float, np.float64)):
+    def __new__(cls, force: (int, float, np.float64)):
         # Return constructed data type.
-        return super().__new__(cls, float(force_mag))
+        return super().__new__(cls, float(force))
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))

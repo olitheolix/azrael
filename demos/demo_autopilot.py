@@ -171,9 +171,9 @@ class PyConBrisbaneClient():
         # has 6 boosters, one on each surface. The  net effect is the same for
         # this simple demo, but it is a tad bit simpler to deal with.
         cmd_b = {
-            'b_x': types.CmdBooster(force_mag=force[0]),
-            'b_y': types.CmdBooster(force_mag=force[1]),
-            'b_z': types.CmdBooster(force_mag=force[2]),
+            'b_x': types.CmdBooster(force=force[0]),
+            'b_y': types.CmdBooster(force=force[1]),
+            'b_z': types.CmdBooster(force=force[2]),
         }
 
         # Send the command to Azrael and wait for the reply.
