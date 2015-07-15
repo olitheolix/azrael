@@ -205,7 +205,7 @@ class PyConBrisbaneClient():
         # Compute the size of the flame that comes out of the thruster, as well
         # as the distance of the flame from the cube's centre.
         flame_size = 0.1 * np.sqrt(np.abs(force))
-        flame_pos = -np.sign(force) * (0.8 + flame_size)
+        flame_pos = -np.sign(force) * (1.3 + flame_size)
 
         # The final position of the flame depends on which thruster was
         # activated.
