@@ -1,9 +1,8 @@
 """
-This module contains a convenience wrapper around Azrael's Client module to
-streamline the presentation at PyCon Australia 2015.
-
-Use this class in conjunction with the 'demos/demo_boostercube.py' and the
-IPython notebook 'pydata_dallas.py'.
+Convenience wrapper around Azrael's Client module to streamline the
+presentation at PyCon Australia 2015. It is used in the IPython notebook
+'demo_autopilot.ipynb' which, in turn, assumes 'demos/demo_boostercube.py' is
+running.
 """
 import os
 import sys
