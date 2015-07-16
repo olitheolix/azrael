@@ -1,7 +1,8 @@
 import time
 import numpy as np
 import azrael.startup
-from azrael.types import Template, Fragment
+from azrael.types import Template, FragMeta, FragRaw, Booster
+from azrael.types import CollShapeMeta, CollShapeSphere, RigidBodyData
 
 
 def defineCube():
@@ -24,22 +25,44 @@ def defineCube():
         -1.0, +1.0, +1.0,   -1.0, -1.0, +1.0,   +1.0, -1.0, +1.0,
         +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0
     ])
-    return vert
+    return vert.tolist()
 
 
 def createTemplate():
     # Create the vertices for a unit cube.
     vert = defineCube()
 
-    # Define the one and only geometry fragment for this template.
-    frags = [Fragment('frag_1', vert, [], [])]
+    # Define initial fragment size and position relative to rigid body.
+    scale = 1
+    pos, rot = (0, 0, 0), (0, 0, 0, 1)
 
-    # Define the collision shape. This is still work in progress so just accept
-    # the magic numbers for now.
-    cs = [4, 1, 1, 1]
+    # Define the one and only geometry fragment for this template.
+    data_raw = FragRaw(vert, [], [])
+    frags = {'frag_foo': FragMeta('raw', scale, pos, rot, data_raw)}
+    del scale, pos, rot
+
+    # We will need that collision shape to construct the rigid body below.
+    cs_sphere = CollShapeMeta(cstype='Sphere',
+                              position=(0, 0, 0),
+                              rotation=(0, 0, 0, 1),
+                              csdata=CollShapeSphere(radius=1))
+
+    # Create the rigid body.
+    body = azrael.types.RigidBodyData(
+        scale=1,
+        imass=1,
+        restitution=0.9,
+        rotation=(0, 0, 0, 1),
+        position=(0, 0, 0),
+        velocityLin=(0, 0, 0),
+        velocityRot=(0, 0, 0),
+        cshapes={'foo_sphere': cs_sphere},
+        axesLockLin=(1, 1, 1),
+        axesLockRot=(1, 1, 1),
+        version=0)
 
     # Compile and return the template.
-    return Template('my_first_template', cs, frags, [], [])
+    return Template('my_first_template', body, frags, {}, {})
 
 
 def main():
@@ -51,22 +74,20 @@ def main():
     client = azrael.client.Client()
 
     # Verify that the client is connected.
-    ret = client.ping()
-    assert ret.ok
+    assert client.ping().ok
 
     # Create the template and send it to Azrael.
     template = createTemplate()
-    client.addTemplates([template])
+    assert client.addTemplates([template]).ok
 
     # Spawn two objects from the just added template. The only difference is
-    # their (x, y, z) position in space.
+    # their position in space.
     spawn_param = [
-        {'position': [0, 0, 0],
-         'template': template.aid},
-        {'position': [3, 0, 0],
-         'template': template.aid},
+        {'templateID': template.aid, 'rbs': {'position': [0, 0, -2]}},
+        {'templateID': template.aid, 'rbs': {'position': [0, 0, 2]}},
     ]
     ret = client.spawn(spawn_param)
+    assert ret.ok
     print('Spawned {} object(s). IDs: {}'.format(len(ret.data), ret.data))
     print('Point your browser to http://localhost:8080 to see them')
 
