@@ -556,9 +556,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             if (objID in self.oldSVs) and not self.hasGeometryChanged(objID):
                 continue
 
-            # Download the latest geometry for this object.
+            # Download the latest geometry for this object; skip it if the
+            # object does not exist (anymore).
             ret = self.client.getFragments([objID])
-            if not ret.ok:
+            if not ret.ok or ret.data is None:
                 continue
 
             # Fetch fragment model from Azrael and pass it to the GPU.
