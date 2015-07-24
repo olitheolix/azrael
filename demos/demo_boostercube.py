@@ -84,7 +84,7 @@ def parseCommandLine():
     return param
 
 
-def spawnBoosterSphere(scale, fname):
+def spawnSpaceship(scale, fname):
     """
     Define a sphere with three boosters and four fragments.
 
@@ -127,7 +127,7 @@ def spawnBoosterSphere(scale, fname):
 
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
-    tID = 'ground'
+    tID = 'spaceship'
     cs = types.CollShapeBox(scale, scale, scale)
     cs = types.CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
     body = demolib.getRigidBody(cshapes={'0': cs})
@@ -142,22 +142,6 @@ def spawnBoosterSphere(scale, fname):
     assert client.addTemplates([temp]).ok
     del cs, frags, temp, frag_cube, frag_flame, scale, pos, rot
     print('done')
-
-    # Spawn the template near the center.
-    print('  Spawning object... ', end='', flush=True)
-    d = {
-        'templateID': tID,
-        'rbs': {
-            'imass': 0.1,
-            'position': [0, 0, -10],
-            'axesLockRot': [0, 0, 0],
-        }
-    }
-    ret = client.spawn([d])
-    assert ret.ok
-    objID = ret.data[0]
-    print('done (ID=<{}>)'.format(objID))
-    return objID
 
 
 def main():
@@ -175,7 +159,7 @@ def main():
             p = os.path.dirname(os.path.abspath(__file__))
             p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
             fname = os.path.join(p, 'sphere.obj')
-            spawnBoosterSphere(scale=1.0, fname=fname)
+            spawnSpaceship(scale=1.0, fname=fname)
 
             # Add the specified number of cubes in a grid layout.
             demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
