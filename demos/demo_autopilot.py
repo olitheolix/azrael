@@ -34,7 +34,6 @@ class PyConBrisbaneClient():
         # The ID of the ship with the booster. This assumption is only valid if
         # Azrael runs the 'demo_boostercube.py' simulation.
         self.shipID = 1
-        print('Connected')
 
         # Take a snapshot of the current simulation, in particular the position
         # of all objects.
@@ -47,7 +46,7 @@ class PyConBrisbaneClient():
         Reset the position of all the cubes and update their mass.
         """
         # Turn off all boosters.
-        self.boosterForce([0,0,0])
+        self.boosterForce([0, 0, 0])
 
         # Convert the mass to an inverse mass.
         if mass is None:
@@ -257,9 +256,9 @@ class PyConBrisbaneClient():
 
 def main():
     # Connect to Azrael at the specified IP address.
-    ip = 'IP of Azrael goes here'
-    ip = '127.0.0.1'
-    client = PyConBrisbaneClient(ip=ip)
+    print('Connecting to Azrael...', end='', flush=True)
+    client = PyConBrisbaneClient(ip='127.0.0.1')
+    print('done')
 
     # Disable all boosters.
     client.boosterForce([0, 0, 0])
@@ -276,7 +275,7 @@ def main():
     client.reset()
     return
 
-    # Place the ship at a specific position and give it a velocity. The query
+    # Place the ship at a specific position, give it a velocity, and query
     # its position over time.
     assert client.setPositionAndVelocity(pos=[0, 1, 2], vel=[1, 0, 0]).ok
     for ii in range(3):
@@ -285,7 +284,7 @@ def main():
         print('Ship position: x={:.1f}  y={:.1f}  z={:.1f}'.format(*pos))
 
     # Reset all object states except the ship (typically this simply resets the
-    # addition cubes in the simulation).
+    # additional cubes in the simulation).
     client.reset()
     for ii in range(3):
         time.sleep(1)
