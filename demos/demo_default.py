@@ -509,7 +509,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Make 'frag_2' invisible by setting its scale to zero.
     for objID in ret.data:
-        client.setFragments({objID: {'frag_2': {'scale': 0}}})
+        assert client.setFragments({objID: {'frag_2': {'scale': 0}}}).ok
+        assert client.setCustomData({objID: 'asteroid'}).ok
 
 
 def launchQtViewer(param):
