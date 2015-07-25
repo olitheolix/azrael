@@ -324,7 +324,10 @@ class Dibbler:
         if ret is None:
             return RetVal(False, 'File not found', None)
         else:
-            return RetVal(True, None, ret.read())
+            try:
+                return RetVal(True, None, ret.read())
+            except gridfs.errors.CorruptGridFile:
+                return RetVal(False, 'File not found', None)
 
     @typecheck
     def addTemplate(self, template: Template):
