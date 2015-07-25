@@ -313,16 +313,7 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     assert client.setFragments(newStates).ok
 
 
-def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
-    """
-    Spawn multiple cubes in a regular grid.
-
-    The number of cubes equals ``numCols`` * ``numRows`` * ``numLayers``. The
-    center of this "prism" is at ``center``.
-
-    Every cube has two boosters and two factories. The factories can themselves
-    spawn more (purely passive) cubes.
-    """
+def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # Get a Client instance.
     client = azrael.client.Client()
 
@@ -459,6 +450,23 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     t0 = time.time()
     assert client.addTemplates(templates).ok
     print('{:.1f}s'.format(time.time() - t0))
+    return tID_cube
+
+
+def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
+    """
+    Spawn multiple cubes in a regular grid.
+
+    The number of cubes equals ``numCols`` * ``numRows`` * ``numLayers``. The
+    center of this "prism" is at ``center``.
+
+    Every cube has two boosters and two factories. The factories can themselves
+    spawn more (purely passive) cubes.
+    """
+    tID_cube = addTexturedCubeTemplates(numCols, numRows, numLayers)
+
+    # Get a Client instance.
+    client = azrael.client.Client()
 
     # ----------------------------------------------------------------------
     # Spawn the differently textured cubes in a regular grid.
