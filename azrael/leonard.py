@@ -616,7 +616,7 @@ class LeonardBase(config.AzraelProcess):
         db = azrael.database.dbHandles['ObjInstances']
         bulk = db.initialize_unordered_bulk_op()
         for objID, body in self.allBodies.items():
-            query = {'objID': objID}
+            query = {'objID': objID, 'template.rbs': {'$exists': True}}
             data = {'objID': objID, 'template.rbs': body._asdict()}
             bulk.find(query).upsert().update({'$set': data})
         if writeconcern:

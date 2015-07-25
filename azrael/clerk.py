@@ -1451,21 +1451,26 @@ class Clerk(config.AzraelProcess):
 
         if objIDs is None:
             # Query all objects.
-            query = {}
+            query = {'template.custom': {'$exists': True}}
             out = {}
         else:
             # Only query the specified objects. Return a *None* value for all
             # those objects not found in the database.
-            query = {'objID': {'$in': objIDs}}
+            query = {'objID': {'$in': objIDs}, 'template.custom': {'$exists': True}}
             out = {_: None for _ in objIDs}
 
         # Prjection operator.
         prj = {'template.custom': True, '_id': False, 'objID': True}
 
-        # Compile the dictionary of all custom fields.
-        tmp = {_['objID']: _['template']['custom'] for _ in db.find(query, prj)}
+        # Unpack the data. For some unknown reason (read: bug) the database
+        # record is sometimes incomplete. Therefore extract the entries
+        # one-by-one protected by a try/except.
+        for doc in db.find(query, prj):
+            try:
+                objID = doc['objID']
+                tag = doc['template']['custom']
+                out[objID] = tag
+            except KeyError:
+                pass
 
-        # Update the `out` dictionary with all the values we found in the
-        # database and return it.
-        out.update(tmp)
         return RetVal(True, None, out)
