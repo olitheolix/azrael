@@ -579,8 +579,9 @@ class Client():
         :return: dictionary of 'custom' data.
         """
         # Sanity checks: all object IDs must be integers.
-        for objID in objIDs:
-            assert isinstance(objID, int)
+        if objIDs is not None:
+            for objID in objIDs:
+                assert isinstance(objID, int)
 
         # Send to Clerk and wait for response.
         ret = self.serialiseAndSend('get_custom', {'objIDs': objIDs})

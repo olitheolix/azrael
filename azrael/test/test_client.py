@@ -875,3 +875,6 @@ class TestClient:
         ret = client.getCustomData([id_1, id_2, 10])
         assert ret.ok
         assert ret.data == ({id_1: 'foo', id_2: '', 10: None})
+
+        # Query all at once.
+        assert client.getCustomData(None) == client.getCustomData([id_1, id_2])
