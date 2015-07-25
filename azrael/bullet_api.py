@@ -533,7 +533,7 @@ class PyBulletDynamicsWorld():
         body = PyRigidBody(ci)
 
         # Set additional parameters.
-        body.setFriction(1)
+        body.setFriction(0.1)
         body.setDamping(0.02, 0.02)
         body.setSleepingThresholds(0.1, 0.1)
 
