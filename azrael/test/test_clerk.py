@@ -1201,7 +1201,7 @@ class TestClerk:
         assert ret.data[objID_1] is None
         assert _verify(ret.data, objID_2)
 
-    def test_instanceDB_checksum(self):
+    def test_instanceDB_fragment_version(self):
         """
         Spawn two objects, modify their geometries, and verify that the
         'version' flag changes accordingly.
@@ -1334,7 +1334,7 @@ class TestClerk:
         assert r3['bar']['rotation'] == fdae.rotation
         assert r3['bar']['fragtype'] == fraw.fragtype
 
-    def test_setFragments_partial_bug(self):
+    def test_setFragments_partial_bug1(self):
         """
         If the bug is present then a partial update that does not include the
         fragment geometry itself would actually delete the geometry in Dibbler.
@@ -1373,6 +1373,43 @@ class TestClerk:
         # Verify that the fragment dictionary did not contain 'foo' because it
         # did not update the geometry itself.
         assert set(args[1].keys()) == {'bar'}
+
+    def test_setFragments_partial_bug2(self):
+        """
+        Updating the fragment state without altering the geometry must not
+        modify the 'version' value.
+        """
+        # Convenience.
+        clerk = azrael.clerk.Clerk()
+
+        # Add and spawn a template.
+        fraw, fdae = getFragRaw(), getFragDae()
+        temp = getTemplate('t1', fragments={'foo': fraw, 'bar': fdae})
+        assert clerk.addTemplates([temp]).ok
+        ret = clerk.spawn([{'templateID': temp.aid}])
+        assert ret.ok and (len(ret.data) == 1)
+        id_1 = ret.data[0]
+
+        # Fetch the current version of the fragments.
+        ret = clerk.getObjectStates([id_1])
+        assert ret.ok
+        version = ret.data[id_1]['rbs']['version']
+
+        # Modify the scale value. This must not alter the version.
+        assert clerk.setFragments({id_1: {'foo': {'scale': 10}}}).ok
+        ret = clerk.getObjectStates([id_1])
+        assert ret.ok
+        assert ret.data[id_1]['rbs']['version'] == version
+        assert ret.data[id_1]['frag']['foo']['scale'] == 10
+
+        # Modify the scale value of the first fragment and replace the geometry
+        # of the second. This must change the version.
+        new_val = {id_1: {'foo': {'scale': 20}, 'bar': fdae._asdict()}}
+        assert clerk.setFragments(new_val).ok
+        ret = clerk.getObjectStates([id_1])
+        assert ret.ok
+        assert ret.data[id_1]['rbs']['version'] != version
+        assert ret.data[id_1]['frag']['foo']['scale'] == 20
 
     def test_setFragments_partial_eclectic(self):
         """

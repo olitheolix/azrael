@@ -986,9 +986,9 @@ class Clerk(config.AzraelProcess):
 
                     # Now that we know the input data is valid we can put it
                     # into a '_FragMeta' instance. We do *not* put it into a
-                    # 'FragMeta' type (note the missing underscore) to bypass
-                    # the sanity checks, because the object we construct here
-                    # may well have None values.
+                    # 'FragMeta' instance (note the missing underscore) to
+                    # avoid the expensive sanity checks, because the object we
+                    # construct here may well have None values.
                     tmp = dict(ref_2)
                     tmp.update(fragdata)
                     fragments[objID][fragID] = _FragMeta(**tmp)
@@ -1021,11 +1021,18 @@ class Clerk(config.AzraelProcess):
 
             # Remove all '_NONE' fragments in the instance database.
             to_remove = set()
+            new_version = False
             for fragID, frag in frags.items():
                 # Skip this fragment if it has not type (ie Client does not
                 # want to update the fragment geometry).
                 if frag.fragtype is None:
                     continue
+
+                # If we get to here then the geometry of at least one fragment
+                # will be modified and the object thus requires a new version
+                # (merely modifying the scale/position etc does not require a
+                # new version).
+                new_version = True
 
                 # Skip this fragment if the client did not request for it to be
                 # removed.
@@ -1059,6 +1066,7 @@ class Clerk(config.AzraelProcess):
             #     }
             data = {}
             q_find = {'objID': objID}
+            new_geometry = False
             for fragID, fragdata in frags.items():
                 for field, value in fragdata.items():
                     # Skip the field if its value is None because it means the
@@ -1083,12 +1091,14 @@ class Clerk(config.AzraelProcess):
                     else:
                         q_find[key] = {'$exists': True}
 
-            # Update the fragments. Also update the 'version' flag to indicate
-            # a change. Clients will automatically receive this flag with their
-            # state variables.
-            ret = db.update(q_find, {'$inc': {'version': 1}, '$set': data})
+            # Update the fragment state. Also update the 'version' if at least
+            # one of the underlying geometries was changed.
+            if new_version:
+                ret = db.update(q_find, {'$inc': {'version': 1}, '$set': data})
+            else:
+                ret = db.update(q_find, {'$set': data})
 
-            # If an error occured save the current objID.
+            # Save the current objID if an error occured.
             if ret['n'] != 1:
                 ok = False
                 msg.append(objID)
