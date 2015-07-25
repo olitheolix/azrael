@@ -902,13 +902,12 @@ class Clerk(config.AzraelProcess):
         :rtype: dict
         """
         # Retrieve the geometry. Return an error if the ID does not exist.
-        # Note: an empty geometry field is still valid object.
         db = database.dbHandles['ObjInstances']
         docs = list(db.find({'objID': {'$in': objIDs}}))
 
         # Initialise the output dictionary with a None value for every
-        # requested object. The loop below will overwrite these values for the
-        # objects we actually found in the database.
+        # requested object. The loop below will overwrite these values for
+        # those objects that we have actually found in the database.
         out = {_: None for _ in objIDs}
 
         # Determine the fragment- type (eg. 'raw' or 'dae') and URL and put it
@@ -917,21 +916,28 @@ class Clerk(config.AzraelProcess):
         try:
             # Create a dedicated dictionary for each object.
             for doc in docs:
-                # Unpack and compile geometry data for the current object.
-                frags = doc['template']['fragments']
-                frags = {k: FragMeta(**v) for (k, v) in frags.items()}
+                # It is well possible that (parts of) the document are being
+                # deleted by another client while we query it here. The try/except
+                # block ensures that we will skip documents that have become
+                # (partially) invalid because one or more keys have gone missing.
+                try:
+                    # Unpack and compile geometry data for the current object.
+                    frags = doc['template']['fragments']
+                    frags = {k: FragMeta(**v) for (k, v) in frags.items()}
 
-                # Compile the dictionary with all the geometries that comprise
-                # the current object, including where to download the geometry
-                # data itself (we only provide the meta information).
-                out[doc['objID']] = {
-                    k: {
-                        'scale': v.scale,
-                        'position': v.position,
-                        'rotation': v.rotation,
-                        'fragtype': v.fragtype,
-                        'url_frag': pjoin(doc['url_frag'], k)
-                    } for (k, v) in frags.items()}
+                    # Compile the dictionary with all the geometries that comprise
+                    # the current object, including where to download the geometry
+                    # data itself (we only provide the meta information).
+                    out[doc['objID']] = {
+                        k: {
+                            'scale': v.scale,
+                            'position': v.position,
+                            'rotation': v.rotation,
+                            'fragtype': v.fragtype,
+                            'url_frag': pjoin(doc['url_frag'], k)
+                        } for (k, v) in frags.items()}
+                except KeyError:
+                    continue
         except TypeError:
             msg = 'Inconsistent Fragment data'
             self.logit.error(msg)
@@ -1267,21 +1273,28 @@ class Clerk(config.AzraelProcess):
         # contains the fragment- and body state.
         out = {}
         for doc in db.find(query, prj):
-            # Convenience: fragments of current object.
-            frags = doc['template']['fragments']
+            # It is well possible that (parts of) the document are being
+            # deleted by another client while we query it here. The try/except
+            # block ensures that we will skip documents that have become
+            # (partially) invalid because one or more keys have gone missing.
+            try:
+                # Convenience: fragments of current object.
+                frags = doc['template']['fragments']
 
-            # Compile the state data for each fragment of the current object.
-            fs = {k: {'scale': v['scale'],
-                      'position': v['position'],
-                      'rotation': v['rotation']}
-                  for (k, v) in frags.items()}
+                # Compile the state data for each fragment of the current object.
+                fs = {k: {'scale': v['scale'],
+                          'position': v['position'],
+                          'rotation': v['rotation']}
+                      for (k, v) in frags.items()}
 
-            # Add the current version to the rigid body data.
-            rbs = doc['template']['rbs']
-            rbs['version'] = doc['version']
+                # Add the current version to the rigid body data.
+                rbs = doc['template']['rbs']
+                rbs['version'] = doc['version']
 
-            # Construct the return value.
-            out[doc['objID']] = {'frag': fs, 'rbs': rbs}
+                # Construct the return value.
+                out[doc['objID']] = {'frag': fs, 'rbs': rbs}
+            except KeyError as err:
+                continue
 
         # If the user requested a particular set of objects then make sure each
         # one is in the output dictionary. If one is missing (eg it does not
