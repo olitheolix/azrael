@@ -44,7 +44,7 @@ function compileMesh (objID, vert, uv, rgb, scale) {
             if (hasRGB) {
                 // No UV map, but RGB values are available: use them
                 // for the face colours. The multiplier of 9 is necessary
-                // because the RGB array from Azrael specifes the
+                // because the RGB array from Azrael specifies the
                 // color of each vertex, whereas here we only specify
                 // the color of the entire triangle.
                 face.color.setRGB(rgb[9 * i] / 255, rgb[9 * i + 1] / 255, rgb[9 * i + 2] / 255);

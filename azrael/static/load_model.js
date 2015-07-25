@@ -26,8 +26,15 @@ onmessage = function (e) {
                 // server called 'model.json'. Download it.
                 xmlhttp.open("GET", url + '/model.json', false);
                 xmlhttp.send();
-                model = JSON.parse(xmlhttp.responseText);
-                model['type'] = 'RAW';
+                try {
+                    model = JSON.parse(xmlhttp.responseText);
+                    model['type'] = 'RAW';
+                } catch (e) {
+                    // Usually means the fragmetns were not available
+                    // anymore, most likely because the object has
+                    // been deleted in the meantime.
+                    model = {'type': null};
+                }
                 break;
             case 'DAE':
                 model = {'type': 'DAE', 'url': url + '/' + frag_name};
