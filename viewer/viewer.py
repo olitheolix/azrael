@@ -509,6 +509,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.textureBuffer[objID][fragID] = textureBuffer
         self.vertex_array_object[objID][fragID] = VAO
 
+    def _removeObjectData(self, objID):
+        vars = (self.numVertices, self.vertex_array_object,
+                self.textureBuffer, self.newSVs)
+        for v in vars:
+            if objID in v:
+                del v[objID]
+
     def loadGeometry(self):
         # Backup the latest state variables because we will download new ones
         # from Azrael shortly.
@@ -523,8 +530,11 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Remove all *None* entries (means Azrael does not know about them;
         # should be impossible but just to be sure).
-        self.newSVs = {k: v for k, v in ret.data.items() if v is not None}
-        del ret
+        self.newSVs = {}
+        for objID in ret.data:
+            if ret.data[objID] is None:
+                self._removeObjectData(objID)
+            self.newSVs[objID] = ret.data[objID]
 
         # Remove all objects from the local scene for which Azrael did not
         # provid SV data.
@@ -539,14 +549,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
             # Delete the corresponding entries in our meta variables.
 #            gl.glDeleteBuffers(2, [1, 2])
-            del self.numVertices[objID]
-            del self.vertex_array_object[objID]
-            del self.textureBuffer[objID]
+            self._removeObjectData(objID)
 
         # The previous loop removed objects that do not exist anymore in
         # Azrael. This loop adds objects that now exist in Azrael but not yet
         # in our scene.
-        for objID in self.newSVs:
+        for objID in list(self.newSVs.keys()):
             # Do not add anything if it is the player object itself.
             if objID == self.player_id:
                 continue
@@ -559,7 +567,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             # Download the latest geometry for this object; skip it if the
             # object does not exist (anymore).
             ret = self.client.getFragments([objID])
-            if not ret.ok or ret.data is None:
+            if not ret.ok or ret.data is None or ret.data[objID] is None:
+                self._removeObjectData(objID)
                 continue
 
             # Fetch fragment model from Azrael and pass it to the GPU.
@@ -568,11 +577,17 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 if frag_data['fragtype'] == 'RAW':
                     url = base_url + frag_data['url_frag'] + '/model.json'
                     frag = urllib.request.urlopen(url).readall()
+                    if len(frag) == 0:
+                        self._removeObjectData(objID)
+                        break
                     frag = json.loads(frag.decode('utf8'))
                     frag = getFragMeta('RAW', FragRaw(**frag))
                 elif frag_data['fragtype'] == 'DAE':
                     url = base_url + frag_data['url_frag'] + '/' + fragID
                     frag = urllib.request.urlopen(url).readall()
+                    if len(frag) == 0:
+                        self._removeObjectData(objID)
+                        break
                     with tempfile.TemporaryDirectory() as tmpdir:
                         open('model.dae', 'wb').write(frag)
                         mesh = model_import.loadModelAll('model.dae')
@@ -594,9 +609,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     continue
                 self.upload2GPU(objID, fragID, frag)
 
-            # Only draw visible triangles for this fragment.
-            gl.glEnable(gl.GL_DEPTH_TEST)
-            gl.glDepthFunc(gl.GL_LESS)
+        # Only draw visible triangles for this fragment.
+        gl.glEnable(gl.GL_DEPTH_TEST)
+        gl.glDepthFunc(gl.GL_LESS)
 
     def defineProjectileTemplate(self):
         """
