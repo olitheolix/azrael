@@ -606,7 +606,7 @@ class LeonardBase(config.AzraelProcess):
         for objID, body in self.allBodies.items():
             query = {'objID': objID}
             data = {'objID': objID, 'rbs': body, 'AABBs': self.allAABBs[objID]}
-            bulk.find(query).upsert().update({'$set': data})
+            bulk.find(query).update({'$set': data})
         if writeconcern:
             bulk.execute()
         else:
@@ -618,7 +618,7 @@ class LeonardBase(config.AzraelProcess):
         for objID, body in self.allBodies.items():
             query = {'objID': objID, 'template.rbs': {'$exists': True}}
             data = {'objID': objID, 'template.rbs': body._asdict()}
-            bulk.find(query).upsert().update({'$set': data})
+            bulk.find(query).update({'$set': data})
         if writeconcern:
             bulk.execute()
         else:

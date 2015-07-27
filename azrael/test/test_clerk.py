@@ -2128,6 +2128,48 @@ class TestClerk:
         assert clerk.setCustomData({id_1: short_string}).ok
         assert clerk.getCustomData([id_1]) == (True, None, {id_1: short_string})
 
+    def test_remove_sync_bug(self):
+        """
+        Leonard (accidentally) used an upsert query instead of an update query.
+        This may lead to Leonard partially updating a record in the master that
+        does not exist (anymore), most likely because the object was deleted
+        during the physics cycle.
+
+        I could not think of an elegant way to test this via a Clerk method
+        since those method can deal with corrupt data. The test therefore
+        queries Mongo directly - not ideal due to its database dependency, but
+        at least it is a solid test.
+
+        Note that this test should become redundant once Clerk gains a method
+        to update rigid body states, whereas right now Leonard writes to the
+        database directly (legacy architecture).
+        """
+        # Create a Leonard and Clerk.
+        leo = getLeonard(azrael.leonard.LeonardBullet)
+        clerk = self.clerk
+
+        # Convenience.
+        id_1 = 1
+        body_1 = getRigidBody(imass=1)
+        db = azrael.database.dbHandles['ObjInstances']
+
+        # Database and Leonard cache must both be empty.
+        assert db.count() == 0
+        assert len(leo.allBodies) == len(leo.allForces) == 0
+
+        # Announce a newly spawned object in a way that bypasses Clerk. This
+        # will ensure that Clerk does not add anything to the master record.
+        import azrael.leo_api as leoAPI
+        assert leoAPI.addCmdSpawn([(id_1, body_1)]).ok
+        leo.processCommandsAndSync()
+
+        # Verify that Leonard now holds exactly one object.
+        assert len(leo.allBodies) == len(leo.allForces) == 1
+
+        # Verify further that Leonard did *not* create an entry in the master
+        # record due to an errornous 'upsert' command.
+        assert db.count() == 0
+
 
 def test_invalid():
     """
