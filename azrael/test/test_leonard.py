@@ -11,7 +11,8 @@ import azrael.leo_api as leoAPI
 
 from azrael.types import RetVal
 from IPython import embed as ipshell
-from azrael.test.test import getCSBox, getCSSphere, getP2P, getLeonard, getRigidBody
+from azrael.test.test import getCSBox, getCSSphere, getCSEmpty
+from azrael.test.test import getP2P, getLeonard, getRigidBody
 
 
 # List all available engines. This simplifies the parameterisation of those
@@ -1262,3 +1263,32 @@ class TestBroadphase:
         imasses = [1, 0, 1]
         correct_answer = ([0, 1], [1, 2])
         testCCS(pos, aabbs, imasses, correct_answer)
+
+    def test_skipEmpty(self):
+        """
+        Verify that _skipEmptyBodies removes all bodies that have a) exactly
+        one collision shape and b) that collision shape is empty.
+        """
+        # Convenience: some collision shapes.
+        empty = getCSEmpty()
+        sphere = getCSSphere(radius=1)
+
+        # Create several bodies with various collision shape combinations.
+        bodies = {
+            1: getRigidBody(cshapes={'foo': empty}),
+            2: getRigidBody(cshapes={'bar': sphere}),
+            3: getRigidBody(cshapes={'foo': empty, 'bar': sphere}),
+            4: getRigidBody(cshapes={'foo': empty, 'bar': empty})
+        }
+
+        # Shallow copy of the original dictionary for the comparison
+        # afterwards.
+        bodies_copy = dict(bodies)
+        ret = azrael.leonard._skipEmptyBodies(bodies_copy)
+
+        # Verify that the function has no side effect (ie that it does not
+        # alter the dictionary we pass in).
+        assert bodies == bodies_copy
+
+        # The function must have removed the first body.
+        assert ret == {2: bodies[2], 3: bodies[3]}

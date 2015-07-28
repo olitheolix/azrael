@@ -169,9 +169,11 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
     :return: each list contains a unique set of overlapping objects.
     :rtype: list of lists
     """
-    # Sanity check: SV and AABB must contain the same object IDs.
-    if bodies.keys() != AABBs.keys():
-        return RetVal(False, 'Bodies and AABBs are inconsistent', None)
+    # Ensure we have an AABB for every body.
+    try:
+        AABBs = {k: AABBs[k] for k in bodies}
+    except KeyError:
+        return RetVal(False, 'Some AABBs are missing', None)
 
     # The 'sweeping' function requires a list of dictionaries. Each dictionary
     # must contain the position of the AABB (object local coordinates), as well
@@ -315,6 +317,35 @@ def mergeConstraintSets(constraintPairs: tuple,
     return RetVal(True, None, collSets)
 
 
+def _skipEmptyBodies(bodies):
+    """
+    Return only those ``bodies`` that have an actual collision shape.
+
+    If a body has only EMPTY type collision shapes then remove it from the
+    list because they physics engine will not have to compute anything for it.
+
+    This is a convenience function to avoid computing physics for objects that
+    are not supposed to collide with anything.
+
+    ..note:: the ``bodies`` dictinoary will *not* be modified by this function.
+
+    :param dict bodies: dictionary of bodies (typically the dictionary of
+        bodies passed to `getFinalCollisionSets`.
+    :return: shallow copy of ``bodies`` with all empty bodies removed.
+    """
+    # Create a shallow copy of the input to avoid changing the original data.
+    bak_bodies = dict(bodies)
+
+    # Remove every body whose collision shapes have type EMPTY.
+    for objID, body in bodies.items():
+        tmp = [_.cstype.upper() for _ in body.cshapes.values()]
+        if set(tmp) == {'EMPTY'}:
+            del bak_bodies[objID]
+
+    # Return the pruned dictionary of bodies.
+    return bak_bodies
+
+
 def getFinalCollisionSets(constraintPairs: list,
                           allBodies: dict,
                           allAABBs: dict):
@@ -332,11 +363,13 @@ def getFinalCollisionSets(constraintPairs: list,
     :param dict allAABBs: Leonard's AABB cache.
     :return: list of non-overlapping collision sets.
     """
+    allBodies = _skipEmptyBodies(allBodies)
+
     # Broadphase based on AABB only.
     ret = computeCollisionSetsAABB(allBodies, allAABBs)
     if not ret.ok:
-        msg = 'ComputeCollisionSetsAABB returned an error'
-        logit.error(msg)
+        msg = 'ComputeCollisionSetsAABB returned an error: {}'
+        logit.error(msg.format(ret.msg))
         return RetVal(False, msg, None)
 
     # Sanity checks: constraints must not be attached to static objects. This
