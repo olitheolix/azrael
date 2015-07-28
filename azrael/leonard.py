@@ -316,8 +316,8 @@ def mergeConstraintSets(constraintPairs: tuple,
 
 
 def getFinalCollisionSets(constraintPairs: list,
-                          allBodies: list,
-                          allAABBs: list):
+                          allBodies: dict,
+                          allAABBs: dict):
     """
     Return the collision sets.
 
@@ -328,8 +328,8 @@ def getFinalCollisionSets(constraintPairs: list,
               Possibly it should not be a standalone function.
 
     :param list constraintPairs: list of 2-tuples eg [(1, 2), (1, 5), ...].
-    :param list allBodies: Leonard's object cache.
-    :param list allAABBs: Leonard's AABB cache.
+    :param dict allBodies: Leonard's object cache.
+    :param dict allAABBs: Leonard's AABB cache.
     :return: list of non-overlapping collision sets.
     """
     # Broadphase based on AABB only.

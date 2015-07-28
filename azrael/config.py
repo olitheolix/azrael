@@ -75,7 +75,7 @@ del console, logFormat, formatter, fileHandler
 # Global variables.
 # ---------------------------------------------------------------------------
 
-# Determine the host IP address. Try eth0  first. Use localhost is a fallback
+# Determine the host IP address. Try eth0 first. Use localhost is a fallback
 # option if no configured ethernet card was found.
 try:
     host_ip = netifaces.ifaddresses('eth0')[2][0]['addr']
