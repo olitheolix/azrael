@@ -20,9 +20,8 @@ import os
 import sys
 import time
 import argparse
-
-import numpy as np
 import demo_default as demolib
+import numpy as np
 
 # Import the necessary Azrael modules.
 import model_import
