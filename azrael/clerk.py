@@ -958,7 +958,7 @@ class Clerk(config.AzraelProcess):
         :param dict[str: ``FragMeta``] fragments: new fragments.
         :return: Success
         """
-        # Presever the caller's state of ``fragments`` because we are going to
+        # Preserve the caller's state of ``fragments`` because we are going to
         # modify and refactor it heavily.
         fragments = copy.deepcopy(fragments)
 
@@ -1013,13 +1013,14 @@ class Clerk(config.AzraelProcess):
         ok, msg = True, []
 
         for objID, frags in fragments.items():
-            # Update the fragment geometry in Dibbler. If an error occurs skip
-            # immediately to the next object.
-            ret = self.dibbler.updateFragments(objID, fragments_dibbler[objID])
-            if not ret.ok:
-                ok = False
-                msg.append(objID)
-                continue
+            # Update the fragment geometry in Dibbler (if there are any to
+            # update). If an error occurs skip immediately to the next object.
+            if len(fragments_dibbler[objID]) > 0:
+                ret = self.dibbler.updateFragments(objID, fragments_dibbler[objID])
+                if not ret.ok:
+                    ok = False
+                    msg.append(objID)
+                    continue
 
             # Remove all '_NONE' fragments in the instance database.
             to_remove = set()
