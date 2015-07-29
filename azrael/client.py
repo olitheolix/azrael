@@ -32,6 +32,7 @@ import traceback
 import urllib.request
 
 import numpy as np
+import azrael.util as util
 import azrael.types as types
 import azrael.config as config
 
@@ -117,23 +118,28 @@ class Client():
         :return: Payload data in whatever form it arrives.
         :rtype: any
         """
-        try:
-            payload = json.dumps({'cmd': cmd, 'data': data})
-        except (ValueError, TypeError):
-            msg = 'JSON encoding error for Client command <{}>'.format(cmd)
-            self.logit.warning(msg)
-            return RetVal(False, msg, None)
+        with util.Timeit('client.sendToClerk:{}:1'.format(cmd)):
+            try:
+                payload = json.dumps({'cmd': cmd, 'data': data})
+            except (ValueError, TypeError):
+                msg = 'JSON encoding error for Client command <{}>'.format(cmd)
+                self.logit.warning(msg)
+                return RetVal(False, msg, None)
 
         # Send data and wait for response.
-        self.send(payload)
-        payload = self.recv()
+        with util.Timeit('client.sendToClerk:{}:2'.format(cmd)):
+            self.send(payload)
+            payload = self.recv()
+
+        util.logMetricQty('client.recv:{}'.format(cmd), len(payload))
 
         # Decode the response and wrap it into a RetVal tuple.
-        try:
-            ret = json.loads(payload)
-            ret = RetVal(**ret)
-        except (ValueError, TypeError):
-            return RetVal(False, 'JSON decoding error in Client', None)
+        with util.Timeit('client.sendToClerk:{}:3'.format(cmd)):
+            try:
+                ret = json.loads(payload)
+                ret = RetVal(**ret)
+            except (ValueError, TypeError):
+                return RetVal(False, 'JSON decoding error in Client', None)
 
         return ret
 

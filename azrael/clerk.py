@@ -274,13 +274,14 @@ class Clerk(config.AzraelProcess):
             del data, empty
 
             # The payload must be a valid JSON string.
-            try:
-                msg = json.loads(msg.decode('utf8'))
-            except (ValueError, TypeError):
-                ret = RetVal(False, 'JSON decoding error in Clerk', None)
-                self.returnToClient(self.last_addr, ret)
-                del ret
-                continue
+            with util.Timeit('clerk.runCmd:1'):
+                try:
+                    msg = json.loads(msg.decode('utf8'))
+                except (ValueError, TypeError):
+                    ret = RetVal(False, 'JSON decoding error in Clerk', None)
+                    self.returnToClient(self.last_addr, ret)
+                    del ret
+                    continue
 
             # Sanity check: every message must contain at least a command word.
             if not (('cmd' in msg) and ('data' in msg)):
@@ -292,22 +293,23 @@ class Clerk(config.AzraelProcess):
             # Extract the command word and payload.
             cmd, payload = msg['cmd'], msg['data']
 
-            # The command word determines the action...
-            if cmd in self.codec:
-                # Look up the decode-process-encode functions for the current
-                # command word. The 'decode' part will interpret the JSON
-                # string we just received, the 'process' part is a handle to a
-                # method in this very Clerk instance, and 'encode' will convert
-                # the values to a valid JSON string that will be returned to
-                # the Client.
-                dec, proc, enc = self.codec[cmd]
+            with util.Timeit('clerk.runCmd:2-{}'.format(cmd)):
+                # The command word determines the action...
+                if cmd in self.codec:
+                    # Look up the decode-process-encode functions for the current
+                    # command word. The 'decode' part will interpret the JSON
+                    # string we just received, the 'process' part is a handle to a
+                    # method in this very Clerk instance, and 'encode' will convert
+                    # the values to a valid JSON string that will be returned to
+                    # the Client.
+                    dec, proc, enc = self.codec[cmd]
 
-                # Run the Clerk function.
-                self.runCommand(cmd, payload, dec, proc, enc)
-            else:
-                # Unknown command word.
-                ret = RetVal(False, 'Invalid command <{}>'.format(cmd), None)
-                self.returnToClient(self.last_addr, ret)
+                    # Run the Clerk function.
+                    self.runCommand(cmd, payload, dec, proc, enc)
+                else:
+                    # Unknown command word.
+                    ret = RetVal(False, 'Invalid command <{}>'.format(cmd), None)
+                    self.returnToClient(self.last_addr, ret)
 
     @typecheck
     def returnToClient(self, addr, ret: RetVal, addToLog: bool=True):
