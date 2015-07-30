@@ -44,7 +44,6 @@ def waitForDatabase(timeout=60):
 
     # Attempt to reach MongoDB for `timeout` seconds before giving up.
     t0 = time.time()
-    print('Connecting to MongoDB: ', flush=True, end='')
     while not isMongoLive():
         if time.time() - t0 > timeout:
             # A minute has passed - abort with an error.
@@ -53,7 +52,6 @@ def waitForDatabase(timeout=60):
             raise ImportError('Could not connect to MongoDB')
         time.sleep(1)
         print('.', end='', flush=True)
-    print('success!')
 
 
 # Do not proceed with Azrael until MongoDB is accessible.

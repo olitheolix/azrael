@@ -48,6 +48,7 @@ def init():
     """
     # Delete the database.
     client.drop_database(dbName)
+    dbHandles['ObjInstances'].ensure_index([('objID', 1)])
 
 
 @typecheck
