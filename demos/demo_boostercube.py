@@ -16,14 +16,6 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
-"""
-Create a sphere with three boosters and four geometry fragments.
-
-The four geometry fragments comprise the hull of the sphere, and three
-individual "flames" to visualise the output of the three boosters.
-
-Use this script in conjunction with ``ctrl_PDController.py``.
-"""
 import os
 import sys
 import time
@@ -162,7 +154,7 @@ def main():
             spawnSpaceship(scale=1.0, fname=fname)
 
             # Add the specified number of cubes in a grid layout.
-            demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
+            demolib.addTexturedCubeTemplates(2, 2, 1)
             del p, fname
 
         # Launch a dedicated process to periodically reset the simulation.
