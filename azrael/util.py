@@ -69,7 +69,7 @@ def logMetricQty(metric, value, ts=None):
            'Metric': metric,
            'Value': value,
            'Type': 'Quantity'}
-    dbTiming.insert(doc, j=0, w=0)
+    dbTiming.insert(doc, j=False)
 
 
 class Timeit(object):
@@ -108,7 +108,7 @@ class Timeit(object):
                'Metric': name,
                'Value': elapsed,
                'Type': 'Time'}
-        dbTiming.insert(doc, j=0, w=0)
+        dbTiming.insert(doc, j=False)
 
         if self.show:
             # Print the value to screen.

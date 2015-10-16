@@ -643,7 +643,7 @@ class LeonardBase(config.AzraelProcess):
         if writeconcern:
             bulk.execute()
         else:
-            bulk.execute({'w': 0, 'j': False})
+            bulk.execute({'w': False})
 
         # Update the RBS data in the master record.
         db = azrael.database.dbHandles['ObjInstances']
@@ -655,7 +655,7 @@ class LeonardBase(config.AzraelProcess):
         if writeconcern:
             bulk.execute()
         else:
-            bulk.execute({'w': 0, 'j': False})
+            bulk.execute({'w': False})
 
     def processCommandsAndSync(self):
         """

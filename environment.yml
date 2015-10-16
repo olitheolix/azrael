@@ -30,14 +30,14 @@ dependencies:
 - pandas=0.16.2=np19py34_0
 - pep8=1.6.2=py34_0
 - pillow=2.9.0=py34_0
-- pip=7.1.0=py34_0
+- pip=7.1.2=py34_0
 - psutil=2.2.1=py34_0
 - ptyprocess=0.4=py34_0
 - py=1.4.25=py34_0
 - pyflakes=0.9.2=py34_0
 - pygments=2.0.2=py34_0
 - pylint=1.4.2=py34_0
-- pymongo=2.8=py34_0
+- pymongo=3.0.3=py34_0
 - pyparsing=2.0.3=py34_0
 - pyqt=4.11.3=py34_1
 - pytest=2.6.3=py34_0
@@ -48,7 +48,7 @@ dependencies:
 - pyzmq=14.7.0=py34_0
 - qt=4.8.6=3
 - readline=6.2=2
-- setuptools=18.0.1=py34_0
+- setuptools=18.4=py34_0
 - sip=4.16.5=py34_0
 - six=1.9.0=py34_0
 - snowballstemmer=1.2.0=py34_0
@@ -59,11 +59,13 @@ dependencies:
 - terminado=0.5=py34_0
 - tk=8.5.18=0
 - tornado=4.2=py34_0
+- wheel=0.26.0=py34_1
 - xz=5.0.5=0
 - zeromq=4.0.5=0
 - zlib=1.2.8=0
 - pip:
   - netifaces==0.10.4
+  - pycapnp==0.5.7
   - pyopengl==3.1.0
   - pytest-capturelog==0.7
   - setproctitle==1.1.8
