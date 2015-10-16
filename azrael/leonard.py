@@ -246,7 +246,7 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
             continue
     del bodies, AABBs
 
-    # Determine the sets of objects that overlap 'x' direction.
+    # Determine the sets of objects that overlap in 'x' direction.
     stage_0 = sweeping(sweep_data, 'x').data
 
     # Iterate over all the just found sets. For each, determine the sets that
@@ -257,7 +257,7 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
         stage_1.extend(res.data)
 
     # Iterate over all the sets that overlap in 'x' and 'y' dimension. For
-    # each, determine which also overalp in the 'z' dimension.
+    # each, determine which also overlap in the 'z' dimension.
     stage_2 = []
     for subset in stage_1:
         res = sweeping({k: sweep_data[k] for k in subset}, 'z')
