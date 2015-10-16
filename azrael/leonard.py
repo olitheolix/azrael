@@ -149,7 +149,12 @@ def sweeping(data: dict, dim: str):
             g.add_node(cs.pop())
         else:
             g.add_path(cs)
-    result = list(networkx.connected_components(g))
+    result = networkx.connected_components(g)
+
+    # NetworkX returned a generator that produces. However, the calling code
+    # expects a list of lists.
+    result = [list(_) for _ in result]
+
     return RetVal(True, None, result)
 
 

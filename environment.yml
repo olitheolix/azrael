@@ -31,7 +31,7 @@ dependencies:
 - mistune=0.7.1=py34_0
 - nbconvert=4.0.0=py34_0
 - nbformat=4.0.1=py34_0
-- networkx=1.9.1=py34_0
+- networkx=1.10=py34_0
 - notebook=4.0.6=py34_0
 - numpy=1.10.1=py34_0
 - openblas=0.2.14=3
