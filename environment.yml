@@ -1,38 +1,27 @@
 name: azrael
 dependencies:
 - alabaster=0.7.3=py34_0
-- astroid=1.3.4=py34_0
 - babel=2.1.1=py34_0
 - certifi=14.05.14=py34_0
 - cython=0.23.4=py34_0
-- cytoolz=0.7.3=py34_0
 - decorator=4.0.4=py34_0
 - docutils=0.12=py34_0
 - execnet=1.2.0=py34_0
 - fontconfig=2.11.1=4
+- freeglut=2.8.1=0
 - freetype=2.5.2=2
-- ipykernel=4.1.0=py34_0
 - ipython=4.0.0=py34_0
-- ipython-notebook=4.0.4=py34_0
 - ipython_genutils=0.1.0=py34_0
 - jinja2=2.8=py34_0
 - jpeg=8d=0
-- jsonschema=2.4.0=py34_0
-- jupyter_client=4.1.1=py34_0
-- jupyter_core=4.0.6=py34_0
 - libgfortran=1.0=0
 - libpng=1.6.17=0
 - libsodium=0.4.5=0
 - libtiff=4.0.2=1
 - libxml2=2.9.2=0
-- logilab-common=0.63.2=py34_0
 - markupsafe=0.23=py34_0
 - matplotlib=1.4.3=np110py34_2
-- mistune=0.7.1=py34_0
-- nbconvert=4.0.0=py34_0
-- nbformat=4.0.1=py34_0
 - networkx=1.10=py34_0
-- notebook=4.0.6=py34_0
 - numpy=1.10.1=py34_0
 - openblas=0.2.14=3
 - openssl=1.0.1k=1
@@ -44,15 +33,13 @@ dependencies:
 - pillow=3.0.0=py34_0
 - pip=7.1.2=py34_0
 - psutil=3.2.2=py34_0
-- ptyprocess=0.4=py34_0
 - py=1.4.30=py34_0
-- pyflakes=1.0.0=py34_0
 - pygments=2.0.2=py34_0
-- pylint=1.4.2=py34_0
 - pymongo=3.0.3=py34_0
+- pyopengl=3.1.1a1=np110py34_0
 - pyparsing=2.0.3=py34_0
 - pyqt=4.11.4=py34_0
-- pytest=2.6.3=py34_0
+- pytest=2.8.1=py34_0
 - pytest-cache=1.0=py34_0
 - python=3.4.3=1
 - python-dateutil=2.4.2=py34_0
@@ -70,7 +57,6 @@ dependencies:
 - sphinx_rtd_theme=0.1.7=py34_0
 - sqlite=3.8.4.1=1
 - system=5.8=2
-- terminado=0.5=py34_0
 - tk=8.5.18=0
 - tornado=4.2.1=py34_0
 - traitlets=4.0.0=py34_0
@@ -80,13 +66,8 @@ dependencies:
 - zlib=1.2.8=0
 - pip:
   - ipython-genutils==0.1.0
-  - jupyter-client==4.1.1
-  - jupyter-core==4.0.6
   - netifaces==0.10.4
-  - pycapnp==0.5.7
-  - pyopengl==3.1.0
-  - pytest-capturelog==0.7
-  - setproctitle==1.1.8
+  - setproctitle==1.1.9
   - sphinx-rtd-theme==0.1.7
   - websocket-client-py3==0.15.0
 
