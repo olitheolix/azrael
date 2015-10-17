@@ -28,8 +28,8 @@ import io
 import zmq
 import json
 import logging
+import requests
 import traceback
-import urllib.request
 
 import numpy as np
 import azrael.util as util
@@ -546,7 +546,7 @@ class Client():
         out = {}
         for aid, frag in template['template'].fragments.items():
             url = base_url + '/' + aid + '/model.json'
-            geo = urllib.request.urlopen(url).readall()
+            geo = requests.get(url).content
             geo = json.loads(geo.decode('utf8'))
 
             # Wrap the fragments into their dedicated tuple type.

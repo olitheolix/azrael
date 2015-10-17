@@ -60,6 +60,7 @@ dependencies:
 - pyzmq=14.7.0=py34_0
 - qt=4.8.7=1
 - readline=6.2=2
+- requests=2.8.1=py34_0
 - setuptools=18.4=py34_0
 - simplegeneric=0.8.1=py34_0
 - sip=4.16.9=py34_0

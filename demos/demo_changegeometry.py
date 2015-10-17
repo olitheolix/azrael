@@ -24,7 +24,7 @@ import os
 import sys
 import time
 import json
-import urllib
+import requests
 import argparse
 import demo_default
 import multiprocessing
@@ -159,7 +159,7 @@ class SetGeometry(multiprocessing.Process):
             for frag_name in geo_meta[objID]:
                 url = base_url + geo_meta[objID][frag_name]['url_frag']
                 url += '/model.json'
-                tmp = urllib.request.urlopen(url).readall()
+                tmp = requests.get(url).content
                 tmp = json.loads(tmp.decode('utf8'))
                 tmp = FragRaw(**tmp)
                 frags[frag_name] = FragMeta(frag_name, 'raw', tmp)

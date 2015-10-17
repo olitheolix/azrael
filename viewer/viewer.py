@@ -39,7 +39,7 @@ import tempfile
 import argparse
 import model_import
 import azrael.client
-import urllib.request
+import requests
 
 import numpy as np
 import OpenGL.GL as gl
@@ -576,7 +576,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             for fragID, frag_data in ret.data[objID].items():
                 if frag_data['fragtype'] == 'RAW':
                     url = base_url + frag_data['url_frag'] + '/model.json'
-                    frag = urllib.request.urlopen(url).readall()
+                    frag = requests.get(url).content
                     if len(frag) == 0:
                         self._removeObjectData(objID)
                         break
@@ -584,7 +584,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     frag = getFragMeta('RAW', FragRaw(**frag))
                 elif frag_data['fragtype'] == 'DAE':
                     url = base_url + frag_data['url_frag'] + '/' + fragID
-                    frag = urllib.request.urlopen(url).readall()
+                    frag = requests.get(url).content
                     if len(frag) == 0:
                         self._removeObjectData(objID)
                         break

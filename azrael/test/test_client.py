@@ -25,7 +25,7 @@ if you want to see thorough tests for the Clerk functionality.
 import time
 import json
 import pytest
-import urllib.request
+import requests
 
 import numpy as np
 
@@ -537,9 +537,9 @@ class TestClient:
         for ii in range(10):
             assert ii < 8
             try:
-                tmp = urllib.request.urlopen(url).readall()
+                tmp = requests.get(url).content
                 break
-            except urllib.request.URLError:
+            except requests.exceptions.HTTPError:
                 time.sleep(0.2)
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == frag['bar'].fragdata
@@ -554,7 +554,7 @@ class TestClient:
 
         # Download the fragment.
         url = base_url + ret.data[objID]['bar']['url_frag'] + '/model.json'
-        tmp = urllib.request.urlopen(url).readall()
+        tmp = requests.get(url).content
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == frag['bar'].fragdata
 

@@ -21,7 +21,7 @@ Test the Clerk module.
 import json
 import time
 import base64
-import urllib.request
+import requests
 
 import numpy as np
 import unittest.mock as mock
@@ -1611,8 +1611,9 @@ class TestClerk:
         def _download(url):
             for ii in range(10):
                 try:
-                    return urllib.request.urlopen(url).readall()
-                except (urllib.request.HTTPError, urllib.request.URLError):
+                    return requests.get(url).content
+                except (requests.exceptions.HTTPError,
+                        requests.exceptions.ConnectionError):
                     time.sleep(0.1)
             assert False
 
