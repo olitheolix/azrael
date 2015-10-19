@@ -1,6 +1,6 @@
 # Azrael in a Docker container.
 #
-# To start the demo you need 'docker-compose' and the 'docker-compose' file.
+# To start the demo you need 'docker-compose' and the 'docker-compose.yml' file.
 #
 #   >> docker-compose up
 

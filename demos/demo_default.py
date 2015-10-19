@@ -132,14 +132,16 @@ def getRigidBody(scale: (int, float)=1,
 
 def loadBoosterCubeBlender():
     """
-    Load the Booster Sphere model from "boostercube.dae".
+    Load the Spaceship (if you want to call it that) from "boostercube.dae".
 
-    This is function is custom made for the model because the Collada model
-    exported via Blender is only partially imported. In particular, the
-    ``loadModel`` function will only return the vertices for the body (cube)
-    and one thruster. This function will scale-, rotate-, and copy that
-    thruster so that each side of the cube has one. Furthermore, it will
-    manually assign colors.
+    This function is custom made for the Blender model of the cube with
+    boosters because the model file is broken (no idea if the fault is with me,
+    Blender, or the AssImp library).
+
+    In particular, the ``loadModel`` function will only return the vertices for
+    the body (cube) and *one* thruster (instead of six). To remedy, this
+    function will attach a copy of that thruster to each side of the cube.  It
+    will manually assign the colors too.
     """
 
     # Load the Collada model.

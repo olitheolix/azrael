@@ -86,7 +86,7 @@ def spawnSpaceship(scale, fname):
     # Get a Client instance.
     client = azrael.client.Client()
 
-    # Load the model
+    # Load the model.
     vert, uv, rgb = demolib.loadBoosterCubeBlender()
     frag_cube = FragRaw(vert, uv, rgb)
     del vert, uv, rgb
@@ -104,8 +104,8 @@ def spawnSpaceship(scale, fname):
     }
     del dir_x, dir_y, dir_z, pos, B
 
-    # Construct a Tetrahedron (triangular Pyramid). This is going to be the
-    # (super simple) "flame" that comes out of the (still invisible) boosters.
+    # Load sphere and color it blue(ish). This is going to be the (super
+    # simple) "flame" that comes out of the (still invisible) boosters.
     p = os.path.dirname(os.path.abspath(__file__))
     p = os.path.join(p, '..', 'viewer', 'models')
     fname = os.path.join(p, 'sphere', 'sphere.obj')
