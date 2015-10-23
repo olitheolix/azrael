@@ -225,6 +225,7 @@ def loadModel(fname):
     vert = np.array(mesh['vertices']).flatten()
     uv = np.array(mesh['UV']).flatten()
     rgb = np.array(mesh['RGB']).flatten()
+    print('done')
 
     return vert, uv, rgb
 
@@ -315,10 +316,13 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     assert client.setFragments(newStates).ok
 
 
-def addTexturedCubeTemplates(numCols, numRows, numLayers):
-    # Get a Client instance.
-    client = azrael.client.Client()
+def cubeGeometry(hlen_x=1.0, hlen_y=1.0, hlen_z=1.0):
+    """
+    Return the vertices and collision shape for a Box.
 
+    The parameters ``hlen_*`` are the half lengths of the box in the respective
+    dimension.
+    """
     # Vertices that define a Cube.
     vert = 1 * np.array([
         -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
@@ -335,12 +339,26 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
         +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0
     ])
 
-    # Convenience.
-    cs = CollShapeBox(1, 1, 1)
-    cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
-    uv = np.array([], np.float64)
-    rgb = np.array([], np.uint8)
+    # Scale the x/y/z dimensions.
+    vert[0::3] *= hlen_x
+    vert[1::3] *= hlen_y
+    vert[2::3] *= hlen_z
 
+    # Convenience.
+    box = CollShapeBox(hlen_x, hlen_y, hlen_z)
+    cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), box)
+    return vert, cs
+
+
+def addTexturedCubeTemplates(numCols, numRows, numLayers):
+    # Get a Client instance.
+    client = azrael.client.Client()
+
+    # Geometry and collision shape for cube.
+    vert, cs = cubeGeometry()
+
+    # Assign the UV coordinates. Each vertex needs a coordinate pair. That
+    # means each triangle needs 6 coordinates. And the cube has 12 triangles.
     uv = np.zeros(12 * 6, np.float64)
     uv[0:6] = [0, 0, 1, 0, 1, 1]
     uv[6:12] = [0, 0, 1, 1, 0, 1]
