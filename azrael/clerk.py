@@ -951,8 +951,8 @@ class Clerk(config.AzraelProcess):
         """
         Update the fragments in the database with the new ``fragments`` data.
 
-        This will update all existing objects and skip those that do not exist.
-        It will only return without an error if *all* fragments in *all*
+        This will update existing objects and skips those that do not.
+        It will only return without error if *all* fragments in *all*
         objects could be updated.
 
         :param dict[str: ``FragMeta``] fragments: new fragments.
@@ -1026,8 +1026,8 @@ class Clerk(config.AzraelProcess):
             to_remove = set()
             new_version = False
             for fragID, frag in frags.items():
-                # Skip this fragment if it has not type (ie Client does not
-                # want to update the fragment geometry).
+                # Skip if it has no type (ie Client does not want to update the
+                # fragment geometry).
                 if frag.fragtype is None:
                     continue
 

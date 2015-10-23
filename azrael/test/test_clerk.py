@@ -2025,11 +2025,11 @@ class TestClerk:
 
     def test_stunted_objects(self):
         """
-        I define a "stunted" object as one that lacks either collision shapes,
-        or fragments, or both. Usually, objects have both, but there are
-        nevertheless cases where such "stunted" objects are useful, for
-        instance to initiate a collision without drawing an object, or have an
-        object with a visual geometry that cannot collide with anything.
+        I define a "stunted" object as one that lacks collision shapes,
+        or fragments, or both. Whereas most bodies usually have both there
+        exist cases where "stunted" objects are useful. For instance, to
+        cause a collision with an invisible object, or draw an object that does
+        not collide with anything.
 
         This test creates the three test cases and verifies that
         `Clerk.getRigidBodies' handles them correctly.

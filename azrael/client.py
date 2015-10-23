@@ -380,7 +380,7 @@ class Client():
     @typecheck
     def setRigidBodies(self, bodies: dict):
         """
-        Overwrite the the body data for all bodies specified in ``bodies``.
+        Overwrite the body data for all bodies specified in ``bodies``.
 
         This method tells Leonard to manually set attributes like position and
         speed, irrespective of what the physics engine computes. The attributes
