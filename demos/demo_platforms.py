@@ -23,11 +23,12 @@ assumption about the client that will be using it.
 """
 import time
 import argparse
+import demolib
 import numpy as np
-import demo_default as demolib
 
 # Import the necessary Azrael modules.
 import azrael.clerk
+import azrael.startup
 import azrael.types as types
 import azrael.config as config
 import azrael.vectorgrid as vectorgrid
@@ -138,6 +139,7 @@ def main():
     ret = vectorgrid.setRegion('force', ofs, val)
     del ofs, val, ret
     print('done')
+    print('Simulation setup complete')
 
     # Wait forever.
     while True:

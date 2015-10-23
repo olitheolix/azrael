@@ -32,7 +32,8 @@ import argparse
 import multiprocessing
 
 import numpy as np
-import demo_default as demolib
+import demolib
+import demo_default
 
 # Import the necessary Azrael modules.
 import azrael.client
@@ -169,11 +170,11 @@ def main():
         az.start()
         if not param.noinit:
             # Add the specified number of cubes in a grid layout.
-            demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
+            demo_default.spawnCubes(*param.cubes, center=(0, 0, 10))
 
         # Launch a dedicated process to periodically reset the simulation.
         time.sleep(2)
-        az.startProcess(demolib.ResetSim(period=param.reset))
+        az.startProcess(demo_default.ResetSim(period=param.reset))
 
     print('Azrael now live')
 

@@ -26,6 +26,7 @@ well.
 import os
 import sys
 import time
+import demolib
 import netifaces
 import numpy as np
 from IPython import embed as ipshell
@@ -36,7 +37,6 @@ sys.path.insert(0, os.path.join(p, '../'))
 import azrael.client
 import azrael.types as types
 import azrael.vectorgrid as vectorgrid
-import demo_default as demolib
 
 from azrael.types import Template, FragMeta, FragRaw
 

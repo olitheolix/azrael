@@ -38,6 +38,7 @@ import multiprocessing
 # modules cannot rename themselves. No, I do not know why.
 import setproctitle
 import numpy as np
+import demolib
 
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
@@ -107,129 +108,6 @@ def getFragMeta(ftype, fdata):
                     rotation=rot, fragdata=fdata)
 
 
-def getRigidBody(scale: (int, float)=1,
-                 imass: (int, float)=1,
-                 restitution: (int, float)=0.9,
-                 rotation: (tuple, list)=(0, 0, 0, 1),
-                 position: (tuple, list, np.ndarray)=(0, 0, 0),
-                 velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
-                 velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
-                 cshapes: dict=None,
-                 axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
-                 axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
-                 version: int=0):
-    if cshapes is None:
-        cshapes = CollShapeMeta(cstype='Sphere',
-                                position=(0, 0, 0),
-                                rotation=(0, 0, 0, 1),
-                                csdata=CollShapeSphere(radius=1))
-        cshapes = {'Sphere': cshapes}
-    return azrael.types.RigidBodyData(scale, imass, restitution, rotation,
-                                      position, velocityLin, velocityRot,
-                                      cshapes, axesLockLin, axesLockRot,
-                                      version)
-
-
-def loadBoosterCubeBlender():
-    """
-    Load the Spaceship (if you want to call it that) from "boostercube.dae".
-
-    This function is custom made for the Blender model of the cube with
-    boosters because the model file is broken (no idea if the fault is with me,
-    Blender, or the AssImp library).
-
-    In particular, the ``loadModel`` function will only return the vertices for
-    the body (cube) and *one* thruster (instead of six). To remedy, this
-    function will attach a copy of that thruster to each side of the cube.  It
-    will manually assign the colors too.
-    """
-
-    # Load the Collada model.
-    p = os.path.dirname(os.path.abspath(__file__))
-    fname = os.path.join(p, 'boostercube.dae')
-    vert, uv, rgb = loadModel(fname)
-
-    # Extract the body and thruster component.
-    body, thruster_z = np.array(vert[0]), np.array(vert[1])
-
-    # The body should be a unit cube, but I do not know what Blender created
-    # exactly. Therefore, determine the average position values (which should
-    # all have the same value except for the sign).
-    body_scale = np.mean(np.abs(body))
-
-    # Reduce the thruster size, translate it to the cube's surface, and
-    # duplicate on -z axis.
-    thruster_z = 0.3 * np.reshape(thruster_z, (len(thruster_z) // 3, 3))
-    thruster_z += [0, 0, -.6]
-    thruster_z = thruster_z.flatten()
-    thruster_z = np.hstack((thruster_z, -thruster_z))
-
-    # Reshape the vertices into an N x 3 matrix and duplicate for the other
-    # four thrusters.
-    thruster_z = np.reshape(thruster_z, (len(thruster_z) // 3, 3))
-    thruster_x, thruster_y = np.array(thruster_z), np.array(thruster_z)
-
-    # We will compute the thrusters for the remaining two cube faces with a
-    # 90degree rotation around the x- and y axis.
-    s2 = 1 / np.sqrt(2)
-    quat_x = util.Quaternion(s2, [s2, 0, 0])
-    quat_y = util.Quaternion(s2, [0, s2, 0])
-    for ii, (tx, ty) in enumerate(zip(thruster_x, thruster_y)):
-        thruster_x[ii] = quat_x * tx
-        thruster_y[ii] = quat_y * ty
-
-    # Flatten the arrays.
-    thruster_z = thruster_z.flatten()
-    thruster_x = thruster_x.flatten()
-    thruster_y = thruster_y.flatten()
-
-    # Combine all thrusters and the body into a single triangle mesh. Then
-    # scale the entire mesh to ensure the cube part is indeed a unit cube.
-    vert = np.hstack((thruster_z, thruster_x, thruster_y, body))
-    vert /= body_scale
-
-    # Assign the same base color to all three thrusters.
-    rgb_thruster = np.tile([0.8, 0, 0], len(thruster_x) // 3)
-    rgb_thrusters = np.tile(rgb_thruster, 3)
-
-    # Assign a color to the body.
-    rgb_body = np.tile([0.8, 0.8, 0.8], len(body) // 3)
-
-    # Combine the RGB vectors into single one to match the vector of vertices.
-    rgb = np.hstack((rgb_thrusters, rgb_body))
-    del rgb_thruster, rgb_thrusters, rgb_body
-
-    # Add some random "noise" to the colors.
-    rgb += 0.2 * (np.random.rand(len(rgb)) - 0.5)
-
-    # Convert the RGB values from a triple of [0, 1] floats to a triple of [0,
-    # 255] integers.
-    rgb = rgb.clip(0, 1)
-    rgb = np.array(rgb * 255, np.uint8)
-
-    # Return the model data.
-    return vert, uv, rgb
-
-
-def loadModel(fname):
-    """
-    Load 3D model from ``fname`` and return the vertices, UV, and RGB arrays.
-    """
-    # Load the model.
-    print('  Importing <{}>... '.format(fname), end='', flush=True)
-    mesh = model_import.loadModelAll(fname)
-
-    # The model may contain several sub-models. Each one has a set of vertices,
-    # UV- and texture maps. The following code simply flattens the three lists
-    # of lists into just three lists.
-    vert = np.array(mesh['vertices']).flatten()
-    uv = np.array(mesh['UV']).flatten()
-    rgb = np.array(mesh['RGB']).flatten()
-    print('done')
-
-    return vert, uv, rgb
-
-
 def addBoosterCubeTemplate(scale, vert, uv, rgb):
     # Get a Client instance.
     client = azrael.client.Client()
@@ -285,7 +163,7 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
         'b_right': getFragMeta('raw',  FragRaw(vert_b, z, z)),
     }
 
-    body = getRigidBody()
+    body = demolib.getRigidBody()
     temp = Template(tID, body, frags, boosters, {})
     assert client.addTemplates([temp]).ok
     del cs, frags, temp, z
@@ -316,46 +194,12 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     assert client.setFragments(newStates).ok
 
 
-def cubeGeometry(hlen_x=1.0, hlen_y=1.0, hlen_z=1.0):
-    """
-    Return the vertices and collision shape for a Box.
-
-    The parameters ``hlen_*`` are the half lengths of the box in the respective
-    dimension.
-    """
-    # Vertices that define a Cube.
-    vert = 1 * np.array([
-        -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
-        -1.0, -1.0, -1.0,   -1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,
-        +1.0, -1.0, -1.0,   +1.0, +1.0, +1.0,   +1.0, -1.0, +1.0,
-        +1.0, -1.0, -1.0,   +1.0, +1.0, -1.0,   +1.0, +1.0, +1.0,
-        +1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,   +1.0, -1.0, -1.0,
-        +1.0, -1.0, +1.0,   -1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,
-        +1.0, +1.0, +1.0,   +1.0, +1.0, -1.0,   -1.0, +1.0, -1.0,
-        +1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,   -1.0, +1.0, +1.0,
-        +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
-        +1.0, +1.0, -1.0,   +1.0, -1.0, -1.0,   -1.0, -1.0, -1.0,
-        -1.0, +1.0, +1.0,   -1.0, -1.0, +1.0,   +1.0, -1.0, +1.0,
-        +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0
-    ])
-
-    # Scale the x/y/z dimensions.
-    vert[0::3] *= hlen_x
-    vert[1::3] *= hlen_y
-    vert[2::3] *= hlen_z
-
-    # Convenience.
-    box = CollShapeBox(hlen_x, hlen_y, hlen_z)
-    cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), box)
-    return vert, cs
-
-
 def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # Get a Client instance.
     client = azrael.client.Client()
 
     # Geometry and collision shape for cube.
-    vert, cs = cubeGeometry()
+    vert, cs = demolib.cubeGeometry()
 
     # Assign the UV coordinates. Each vertex needs a coordinate pair. That
     # means each triangle needs 6 coordinates. And the cube has 12 triangles.
@@ -393,7 +237,7 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
     tID_2 = 'Product2'
     frags_1 = {'frag_1': getFragMeta('raw', FragRaw(0.75 * vert, uv, rgb))}
     frags_2 = {'frag_1': getFragMeta('raw', FragRaw(0.24 * vert, uv, rgb))}
-    body = getRigidBody(cshapes={'0': cs})
+    body = demolib.getRigidBody(cshapes={'0': cs})
     t1 = Template(tID_1, body, frags_1, {}, {})
     t2 = Template(tID_2, body, frags_2, {}, {})
     assert client.addTemplates([t1, t2]).ok
@@ -422,7 +266,7 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # Add the template.
     tID_3 = 'BoosterCube'
     frags = {'frag_1': getFragMeta('raw', FragRaw(vert, uv, rgb))}
-    body = getRigidBody(cshapes={'0': cs})
+    body = demolib.getRigidBody(cshapes={'0': cs})
     t3 = Template(tID_3, body, frags, boosters, factories)
     assert client.addTemplates([t3]).ok
     del frags, t3
@@ -452,7 +296,7 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
         tID = ('BoosterCube_{}'.format(ii))
         frags = {'frag_1': getFragMeta('raw', FragRaw(vert, curUV, rgb)),
                  'frag_2': getFragMeta('raw', FragRaw(vert, curUV, rgb))}
-        body = getRigidBody(cshapes={'0': cs})
+        body = demolib.getRigidBody(cshapes={'0': cs})
         tmp = Template(tID, body, frags, boosters, {})
         templates.append(tmp)
 
@@ -541,24 +385,6 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         assert client.setCustomData({objID: 'asteroid'}).ok
 
 
-def launchQtViewer(param):
-    """
-    Launch the Qt Viewer in a separate process.
-
-    This function does not return until the viewer process finishes.
-    """
-    path_base = os.path.dirname(os.path.abspath(__file__))
-    fname = os.path.join(path_base, '..', 'viewer', 'viewer.py')
-
-    try:
-        if param.noviewer:
-            time.sleep(3600000000)
-        else:
-            subprocess.call(['python3', fname])
-    except KeyboardInterrupt:
-        pass
-
-
 class ResetSim(multiprocessing.Process):
     """
     Periodically reset the simulation.
@@ -644,10 +470,10 @@ def main():
             #     50, 'viewer/models/vatican/vatican-cathedral.3ds')
             # scale, model_name = (
             #     1.25, 'viewer/models/house/house.3ds')
-            vert, uv, rgb = loadModel(model_name)
+            vert, uv, rgb = demolib.loadModel(model_name)
 
             # Load the Booster Cube Model created in Blender.
-            scale, (vert, uv, rgb) = 1, loadBoosterCubeBlender()
+            scale, (vert, uv, rgb) = 1, demolib.loadBoosterCubeBlender()
 
             # Wrap the UV data into a BoosterCube template and add it to
             # Azrael.
@@ -664,7 +490,7 @@ def main():
     print('Azrael now live')
 
     # Start the Qt Viewer. This call will block until the viewer exits.
-    launchQtViewer(param)
+    demolib.launchQtViewer(param)
 
     # Stop Azrael stack.
     az.stop()

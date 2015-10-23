@@ -20,7 +20,8 @@ import os
 import sys
 import time
 import argparse
-import demo_default as demolib
+import demolib
+import demo_default
 import numpy as np
 
 # Import the necessary Azrael modules.
@@ -153,12 +154,12 @@ def main():
             spawnSpaceship(scale=1.0, fname=fname)
 
             # Add the specified number of cubes in a grid layout.
-            demolib.addTexturedCubeTemplates(2, 2, 1)
+            demo_default.addTexturedCubeTemplates(2, 2, 1)
             del p, fname
 
         # Launch a dedicated process to periodically reset the simulation.
         time.sleep(2)
-        az.startProcess(demolib.ResetSim(period=param.reset))
+        az.startProcess(demo_default.ResetSim(period=param.reset))
 
     print('Azrael now live')
 

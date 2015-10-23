@@ -36,24 +36,23 @@ import PIL.Image
 import multiprocessing
 
 import numpy as np
-import demo_default as demolib
+import demolib
 
 # Import the necessary Azrael modules.
+import azrael.types as types
 import azrael.client
+import azrael.startup
 import azrael.util as util
 import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
 
-from azrael.types import Template, FragMeta, FragRaw, FragState
+from azrael.types import Template, FragMeta, FragRaw
 from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.types import CollShapeBox, ConstraintMeta, ConstraintP2P
 from azrael.types import Constraint6DofSpring2
 
 from IPython import embed as ipshell
-
-# Convenience.
-RigidBodyDataOverride = leoAPI.RigidBodyDataOverride
 
 
 def parseCommandLine():
@@ -176,6 +175,14 @@ class UpdateGrid(multiprocessing.Process):
             time.sleep(self.period_lin)
 
 
+def getFragMeta(ftype, fdata):
+    scale = 1
+    pos = (0, 0, 0)
+    rot = (0, 0, 0, 1)
+    return FragMeta(fragtype=ftype, scale=scale, position=pos,
+                    rotation=rot, fragdata=fdata)
+
+
 def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     """
     Spawn multiple cubes in a regular grid.
@@ -189,28 +196,11 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # Get a Client instance.
     client = azrael.client.Client()
 
-    # Vertices that define a Cube.
-    vert = 1 * np.array([
-        -1.0, -1.0, -1.0,   -1.0, -1.0, +1.0,   -1.0, +1.0, +1.0,
-        -1.0, -1.0, -1.0,   -1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,
-        +1.0, -1.0, -1.0,   +1.0, +1.0, +1.0,   +1.0, -1.0, +1.0,
-        +1.0, -1.0, -1.0,   +1.0, +1.0, -1.0,   +1.0, +1.0, +1.0,
-        +1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,   +1.0, -1.0, -1.0,
-        +1.0, -1.0, +1.0,   -1.0, -1.0, +1.0,   -1.0, -1.0, -1.0,
-        +1.0, +1.0, +1.0,   +1.0, +1.0, -1.0,   -1.0, +1.0, -1.0,
-        +1.0, +1.0, +1.0,   -1.0, +1.0, -1.0,   -1.0, +1.0, +1.0,
-        +1.0, +1.0, -1.0,   -1.0, -1.0, -1.0,   -1.0, +1.0, -1.0,
-        +1.0, +1.0, -1.0,   +1.0, -1.0, -1.0,   -1.0, -1.0, -1.0,
-        -1.0, +1.0, +1.0,   -1.0, -1.0, +1.0,   +1.0, -1.0, +1.0,
-        +1.0, +1.0, +1.0,   -1.0, +1.0, +1.0,   +1.0, -1.0, +1.0
-    ])
+    # Geometry and collision shape for cube.
+    vert, cs = demolib.cubeGeometry()
 
-    # Convenience.
-    cs = CollShapeBox(1, 1, 1)
-    cs = CollShapeMeta('', 'box', (0, 0, 0), (0, 0, 0, 1), cs)
-    uv = np.array([], np.float64)
-    rgb = np.array([], np.uint8)
-
+    # Assign the UV coordinates. Each vertex needs a coordinate pair. That
+    # means each triangle needs 6 coordinates. And the cube has 12 triangles.
     uv = np.zeros(12 * 6, np.float64)
     uv[0:6] = [0, 0, 1, 0, 1, 1]
     uv[6:12] = [0, 0, 1, 1, 0, 1]
@@ -238,42 +228,16 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     img = np.array(img)
     rgb = np.rollaxis(np.flipud(img), 1).flatten()
 
-    # # ----------------------------------------------------------------------
-    # # Create templates for the factory output.
-    # # ----------------------------------------------------------------------
-    # tID_1 = 'Product1'
-    # tID_2 = 'Product2'
-    # frags_1 = [FragMeta('frag_1', 'raw', FragRaw(0.75 * vert, uv, rgb))]
-    # frags_2 = [FragMeta('frag_1', 'raw', FragRaw(0.24 * vert, uv, rgb))]
-    # t1 = Template(tID_1, [cs], frags_1, [], [])
-    # t2 = Template(tID_2, [cs], frags_2, [], [])
-    # assert client.addTemplates([t1, t2]).ok
-    # del frags_1, frags_2, t1, t2
-
     # ----------------------------------------------------------------------
     # Define a cube with boosters and factories.
     # ----------------------------------------------------------------------
     # Two boosters, one left, one right. Both point in the same direction.
-    b0 = types.Booster(partID='0', pos=[+0.05, 0, 0], direction=[0, 0, 1],
-                       minval=0, maxval=10.0, force=0)
-    b1 = types.Booster(partID='1', pos=[-0.05, 0, 0], direction=[0, 0, 1],
-                       minval=0, maxval=10.0, force=0)
-
-    # # Two factories, one left one right. They will eject the new objects
-    # # forwards and backwards, respectively.
-    # f0 = types.Factory(
-    #     partID='0', pos=[+1.5, 0, 0], direction=[+1, 0, 0],
-    #     templateID=tID_1, exit_speed=[0.1, 1])
-    # f1 = types.Factory(
-    #     partID='1', pos=[-1.5, 0, 0], direction=[-1, 0, 0],
-    #     templateID=tID_2, exit_speed=[0.1, 1])
-
-    # # Add the template.
-    # tID_3 = 'BoosterCube'
-    # frags = [FragMeta('frag_1', 'raw', FragRaw(vert, uv, rgb))]
-    # t3 = Template(tID_3, [cs], frags, [b0, b1], [f0, f1])
-    # assert client.addTemplates([t3]).ok
-    # del frags, t3
+    boosters = {
+        '0': types.Booster(pos=[+0.05, 0, 0], direction=[0, 0, 1],
+                           minval=0, maxval=10.0, force=0),
+        '1': types.Booster(pos=[-0.05, 0, 0], direction=[0, 0, 1],
+                           minval=0, maxval=10.0, force=0)
+    }
 
     # ----------------------------------------------------------------------
     # Define more booster cubes, each with a different texture.
@@ -298,9 +262,10 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        frags = [FragMeta('frag_1', 'raw', FragRaw(vert, curUV, rgb)),
-                 FragMeta('frag_2', 'raw', FragRaw(vert, curUV, rgb))]
-        tmp = Template(tID, [cs], frags, [b0, b1], [])
+        frags = {'frag_1': getFragMeta('raw', FragRaw(vert, curUV, rgb)),
+                 'frag_2': getFragMeta('raw', FragRaw(vert, curUV, rgb))}
+        body = demolib.getRigidBody(cshapes={'0': cs})
+        tmp = Template(tID, body, frags, boosters, {})
         templates.append(tmp)
 
         # Add the templateID to a dictionary because we will need it in the
@@ -362,21 +327,21 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     pos_1 = [-2, 0, 10]
     pos_2 = [-6, 0, 10]
     pos_3 = [-10, 0, 10]
-    allObjs.append({'template': tID_cube[0], 'position': pos_0})
-    allObjs.append({'template': tID_cube[1], 'position': pos_1})
-    allObjs.append({'template': tID_cube[2], 'position': pos_2})
-    allObjs.append({'template': tID_cube[3], 'position': pos_3})
+    allObjs.append({'templateID': tID_cube[0], 'rbs': {'position': pos_0}})
+    allObjs.append({'templateID': tID_cube[1], 'rbs': {'position': pos_1}})
+    allObjs.append({'templateID': tID_cube[2], 'rbs': {'position': pos_2}})
+    allObjs.append({'templateID': tID_cube[3], 'rbs': {'position': pos_3}})
 
     # The first object cannot move (only rotate). It serves as an anchor for
     # the connected bodies.
-    allObjs[0]['axesLockLin'] = [0, 0, 0]
-    allObjs[0]['axesLockRot'] = [1, 1, 1]
+    allObjs[0]['rbs']['axesLockLin'] = [0, 0, 0]
+    allObjs[0]['rbs']['axesLockRot'] = [1, 1, 1]
 
     # Add a small damping factor to all bodies to avoid them moving around
     # perpetually.
     for oo in allObjs[1:]:
-        oo['axesLockLin'] = [0.9, 0.9, 0.9]
-        oo['axesLockRot'] = [0.9, 0.9, 0.9]
+        oo['rbs']['axesLockLin'] = [0.9, 0.9, 0.9]
+        oo['rbs']['axesLockRot'] = [0.9, 0.9, 0.9]
 
     print('{:,} objects ({:.1f}s)'.format(len(allObjs), time.time() - t0))
     del cube_idx, cube_spacing, row, col, lay
@@ -414,8 +379,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Make 'frag_2' invisible by setting its scale to zero.
     for objID in ret.data:
-        client.setFragmentStates({objID: [
-            FragState('frag_2', 0, [0, 0, 0], [0, 0, 0, 1])]})
+        client.setFragments({objID: {'frag_2': {'scale': 0}}})
 
 
 def main():
