@@ -30,7 +30,8 @@ import demo_default
 import multiprocessing
 
 import numpy as np
-import demo_default as demolib
+import demolib
+import demo_default
 
 # Import the necessary Azrael modules.
 import model_import
@@ -41,10 +42,7 @@ import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
 
 from IPython import embed as ipshell
-from azrael.types import FragMeta, FragRaw, FragState
-
-# Convenience.
-RigidBodyDataOverride = leoAPI.RigidBodyDataOverride
+from azrael.types import FragMeta, FragRaw
 
 
 def parseCommandLine():
@@ -123,7 +121,9 @@ def loadSphere():
 
 class SetGeometry(multiprocessing.Process):
     """
-    Periodically update the geometry.
+    Alternate the geometry between a sphere and a textured cube.
+
+    Note that the original collision shape will not be updated.
     """
     def __init__(self, period=1):
         """
@@ -149,23 +149,25 @@ class SetGeometry(multiprocessing.Process):
         objIDs = ret.data
         print('\n-- {} objects --\n'.format(len(objIDs)))
 
-        # Query and backup all models currently in the scene.
+        # Backup all models currently in the scene.
         geo_meta = client.getFragments(objIDs).data
         base_url = 'http://{}:{}'.format(
             azrael.config.addr_webserver, azrael.config.port_webserver)
         geo_orig = {}
         for objID in objIDs:
-            frags = {}
+            geo_orig[objID] = {}
             for frag_name in geo_meta[objID]:
                 url = base_url + geo_meta[objID][frag_name]['url_frag']
                 url += '/model.json'
                 tmp = requests.get(url).content
                 tmp = json.loads(tmp.decode('utf8'))
-                tmp = FragRaw(**tmp)
-                frags[frag_name] = FragMeta(frag_name, 'raw', tmp)
+                geo_orig[objID][frag_name] = {
+                    'fragtype': 'RAW',
+                    'scale': 1,
+                    'fragdata': FragRaw(**tmp),
+                }
                 del url, tmp
-            geo_orig[objID] = frags
-            del frags, objID
+            del objID
         del geo_meta, base_url
 
         # Compile a set of sphere models for all objects. These will be
@@ -174,9 +176,9 @@ class SetGeometry(multiprocessing.Process):
         sphere = FragRaw(sphere_vert, sphere_uv, sphere_rgb)
         geo_spheres = {}
         for objID in objIDs:
-            tmp = {_: FragMeta(_, 'raw', sphere) for _ in geo_orig[objID]}
-            geo_spheres[objID] = tmp
-            del tmp
+            geo_spheres[objID] = {
+                _: {'fragtype': 'RAW', 'scale': 1, 'fragdata': sphere}
+                for _ in geo_orig[objID]}
         del sphere_vert, sphere_uv, sphere_rgb, sphere
 
         cnt = 0
@@ -192,25 +194,24 @@ class SetGeometry(multiprocessing.Process):
                 geo = geo_orig
 
             # Apply the new geometry to each fragment.
-            for objID, val in geo.items():
-                ret = client.updateFragments(objID, list(val.values()))
-                if not ret.ok:
-                    print('--> Terminating geometry updates')
-                    sys.exit(1)
+            ret = client.setFragments(geo)
+            if not ret.ok:
+                print('--> Terminating geometry updates')
+                sys.exit(1)
 
             # Modify the global scale and a fragment position.
             scale = (cnt + 1) / 10
+            new_frag_states = {}
+            new_body_states = {}
             for objID in objIDs:
-                # Change the scale of the overall object.
-                new_sv = RigidBodyDataOverride(scale=scale)
-                client.setRigidBody(objID, new_sv)
-
-                # Move the second fragment.
-                x = -10 + cnt
-                newStates = {
-                    objID: [FragState('frag_2', 1, [x, 0, 0], [0, 0, 0, 1])]
-                }
-                client.setFragmentStates(newStates)
+                # Modify the position of the second fragment.
+                new_frag_states[objID] = {
+                    'frag_2': {
+                        'scale': scale,
+                        'position': [-10 + cnt, 0, 0]
+                }}
+                new_body_states[objID] = {'cshapes': {}}
+            client.setFragments(new_frag_states)
 
             # Print status for user.
             print('Scale={:.1f}'.format(scale))
@@ -227,19 +228,12 @@ def main():
     with azrael.util.Timeit('Startup Time', True):
         az.start()
         if not param.noinit:
-            # Define a sphere with boosters and spawn an instance thereof.
-            p = os.path.dirname(os.path.abspath(__file__))
-            p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
-            fname = os.path.join(p, 'sphere.obj')
-            demolib.addModel(scale=1.25, fname=fname)
-
             # Define additional templates.
-            demolib.spawnCubes(*param.cubes, center=(0, 0, 10))
-            del p, fname
+            demo_default.spawnCubes(*param.cubes, center=(0, 0, 10))
 
         # Launch a dedicated process to periodically reset the simulation.
         time.sleep(2)
-        az.startProcess(demolib.ResetSim(period=param.reset))
+        az.startProcess(demo_default.ResetSim(period=param.reset))
 
     print('Azrael now live')
 
