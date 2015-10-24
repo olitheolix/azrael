@@ -4,8 +4,8 @@
 #
 #   >> docker-compose up
 
-# Ubuntu 14.04 base image.
-FROM ubuntu:14.04
+# Anaconda base image.
+FROM continuumio/miniconda3:latest
 MAINTAINER Oliver Nagy <olitheolix@gmail.com>
 
 # Create "/demo" to hold the Azrael repo.
@@ -16,16 +16,8 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     git \
-    libassimp-dev \
-    libassimp3 \
     wget \
     && apt-get clean
-
-# Install Miniconda (Python 3 version).
-RUN wget -O miniconda3.sh \
-    http://repo.continuum.io/miniconda/Miniconda3-3.10.1-Linux-x86_64.sh \
-    && bash miniconda3.sh -b -p /opt/miniconda3 \
-    && rm miniconda3.sh
 
 # Add the Anaconda binaries to the path.
 ENV PATH /opt/miniconda3/bin:$PATH
@@ -39,7 +31,11 @@ ENV INSIDEDOCKER 1
 # Move into Azrael's home directory.
 WORKDIR /demo/azrael
 
-# Update the Anaconda environment to ensure all necessary packages are installed.
+# Build and install the AssImp library and its Python bindings.
+RUN conda install -y conda-build
+RUN conda build recipes/assimp && conda install -y assimp --use-local
+
+# Install the missing packages required by Azrael.
 RUN conda env update --name root --file environment_docker.yml \
     && conda clean -p -t -y
 
