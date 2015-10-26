@@ -58,6 +58,9 @@ class TestClient:
         cls.clerk.start()
         cls.web.start()
 
+        # Reset the constraint database.
+        cls.igor = azrael.igor.Igor()
+
         # Dibbler.
         cls.dibbler = azrael.dibbler.Dibbler()
 
@@ -87,6 +90,9 @@ class TestClient:
 
         # Flush the model database.
         self.dibbler.reset()
+
+        # Flush the constraints.
+        assert self.igor.reset().ok
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
@@ -741,10 +747,6 @@ class TestClient:
         This test only verifies that the Igor interface works. It does *not*
         verify that the objects are really linked in the actual simulation.
         """
-        # Reset the constraint database.
-        igor = azrael.igor.Igor()
-        assert igor.reset().ok
-
         # Get the client for this test.
         client = self.clients[client_type]
 
@@ -792,10 +794,6 @@ class TestClient:
         Then apply a force onto one of them and verify the second one moves
         accordingly.
         """
-        # Reset the constraint database.
-        igor = azrael.igor.Igor()
-        assert igor.reset().ok
-
         # Get the client for this test.
         client = self.clients[client_type]
 
