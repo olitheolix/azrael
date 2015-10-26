@@ -36,7 +36,6 @@ p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
 import azrael.client
 import azrael.types as types
-import azrael.vectorgrid as vectorgrid
 
 from azrael.types import Template, FragMeta, FragRaw
 
