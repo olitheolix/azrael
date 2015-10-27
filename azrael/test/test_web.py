@@ -5,7 +5,6 @@ import tornado.web
 import tornado.testing
 import azrael.web
 import azrael.clerk
-import azrael.wsclient
 import azrael.config as config
 
 from IPython import embed as ipshell
@@ -277,38 +276,3 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         self.dibbler.getNumFiles().data == cnt - 2
         with pytest.raises(AssertionError):
             self.verifyTemplate('{}/{}'.format(url_inst, 1), frags)
-
-
-def test_ping_WebServer():
-    """
-    Start services and send Ping to WebServer. Then terminate the WebServer and
-    verify that the ping fails.
-    """
-    # Convenience.
-    WSClient = azrael.wsclient.WSClient
-    ip, port = config.addr_webserver, config.port_webserver
-
-    # Start the services.
-    clerk = azrael.clerk.Clerk()
-    web = azrael.web.WebServer()
-    clerk.start()
-    web.start()
-
-    # Create a Websocket client.
-    client = azrael.wsclient.WSClient(ip=ip, port=port, timeout=1)
-
-    # Ping Clerk via WebServer.
-    assert client.ping()
-    assert client.pingWebserver().ok
-
-    # Terminate the services.
-    clerk.terminate()
-    web.terminate()
-    clerk.join()
-    web.join()
-
-    # Ping must now be impossible.
-    with pytest.raises(ConnectionRefusedError):
-        WSClient(ip=ip, port=port, timeout=1)
-
-    assert not client.pingWebserver().ok
