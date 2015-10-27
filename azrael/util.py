@@ -21,12 +21,12 @@ Utility functions.
 
 import time
 
+import pymongo
 import numpy as np
-import azrael.config as config
 
 
 # Global handle to the collection for timing metrics.
-dbTiming = config.getMongoClient()['timing']['timing']
+dbTiming = pymongo.MongoClient()['timing']['timing']
 
 
 def resetTiming():
@@ -36,7 +36,7 @@ def resetTiming():
     global dbTiming
 
     # Drop existing collection.
-    col = config.getMongoClient()['timing']
+    col = pymongo.MongoClient()['timing']
     col.drop_collection('timing')
 
     # Create a new capped collection and update the dbTiming variable.

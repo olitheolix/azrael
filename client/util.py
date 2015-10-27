@@ -21,7 +21,28 @@ Utility functions.
 
 import time
 
+import pymongo
 import numpy as np
+
+
+# Global handle to the collection for timing metrics.
+dbTiming = pymongo.MongoClient()['timing']['timing']
+
+
+def resetTiming():
+    """
+    Flush existing timing metrics and create a new capped collection.
+    """
+    global dbTiming
+
+    # Drop existing collection.
+    col = pymongo.MongoClient()['timing']
+    col.drop_collection('timing')
+
+    # Create a new capped collection and update the dbTiming variable.
+    col.create_collection(name='timing', size=100000000, capped=True)
+    dbTiming = col['timing']
+
 
 def logMetricQty(metric, value, ts=None):
     """
@@ -34,7 +55,6 @@ def logMetricQty(metric, value, ts=None):
     :param int value: value
     :param float value: unix time stamp as supplied by eg. time.time()
     """
-    return
     if ts is None:
         ts = time.time()
 
@@ -84,7 +104,6 @@ class Timeit(object):
         """
         Write the measurement to the DB.
         """
-        return
         doc = {'Timestamp': self.start,
                'Metric': name,
                'Value': elapsed,
