@@ -35,7 +35,6 @@ import tornado.websocket
 import tornado.httpserver
 import zmq.eventloop.zmqstream
 
-import azrael.client
 import azrael.dibbler
 import azrael.config as config
 
@@ -44,14 +43,18 @@ from azrael.types import typecheck, RetVal
 
 class WebsocketHandler(tornado.websocket.WebSocketHandler):
     """
-    Internally, every Websocket instance creates a standard ``Client``
-    instance, and uses to relay the request to a Clerk.
+    Internally, every Websocket instance connects to ``Clerk`` and relays the
+    data on behalf of the client.
 
-    Among the few exceptions that are not passed to the Client instance are
-    Pings directed specifically to this WebServer server.
+    Among the few exceptions of commands that are not passed to Clerk are Pings
+    directed specifically to this Web server.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Define a dummy in case the destructor is called before the Websocket
+        # gets initialised.
+        self.sock_cmd = None
 
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
@@ -59,17 +62,23 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         """
-        Create a Client instance.
+        Connect to Clerk.
 
         This method is a Tornado callback and triggers when a client initiates
         a new Websocket connection.
         """
-        self.client = azrael.client.Client()
+        # Create ZeroMQ sockets and connect them to Clerk.
+        ip = config.addr_clerk
+        port = config.port_clerk
+        self.ctx = zmq.Context()
+        self.sock_cmd = self.ctx.socket(zmq.REQ)
+        self.sock_cmd.linger = 0
+        self.sock_cmd.connect('tcp://{}:{}'.format(ip, port))
 
     @typecheck
     def returnToClient(self, ret: RetVal):
         """
-        Send ``ret`` to back to Client via ZeroMQ.
+        Send ``ret`` to the Client via the Websocket.
 
         This is a convenience method to enhance readability.
 
@@ -88,7 +97,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         self.write_message(ret, binary=False)
 
     @typecheck
-    def on_message(self, msg: str):
+    def on_message(self, msg_json: str):
         """
         Parse client request and return reply.
 
@@ -99,10 +108,10 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         Based on the command this handler will either respond directly
         or relay everything to a Clerk and return its reponse upon completion.
 
-        :param bytes msg: message from client.
+        :param bytes msg_json: message from client.
         """
         try:
-            msg = json.loads(msg)
+            msg = json.loads(msg_json)
         except (TypeError, ValueError):
             self.returnToClient(RetVal(False, 'JSON decoding error in WebServer', None))
             return
@@ -118,10 +127,17 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             # This one we handle ourselves: return the pong.
             self.returnToClient(RetVal(True, '', {'response': 'pong webserver'}))
         else:
-            # Pass all other commands directly to the Client instnace which
-            # will (probably) send it to Clerk for processing.
-            ret = self.client.sendToClerk(cmd, payload)
+            # Pass the command directly to Clerk, wait for its response, and
+            # send that back to the client.
+            self.sock_cmd.send(msg_json.encode('utf8'))
+            payload = self.sock_cmd.recv().decode('utf8')
+            try:
+                ret = json.loads(payload)
+                ret = RetVal(**ret)
+            except (ValueError, TypeError):
+                ret = RetVal(False, 'JSON decoding error in Client', None)
 
+            # Return payload (or error message) to client.
             if ret.ok:
                 self.returnToClient(ret)
             else:
@@ -134,10 +150,10 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         This method is a Tornado callback and triggers whenever the Websocket
         is closed.
         """
-        if self.client is not None:
-            # Not strictly necessary but forcefully triggering the desctructor
+        if self.sock_cmd is not None:
+            # Not strictly necessary but forcefully triggering the destructor
             # to close the ZeroMQ connection cannot be a bad idea.
-            del self.client
+            self.sock_cmd.close(linger=0)
         self.logit.debug('Connection closed')
 
 
