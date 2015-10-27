@@ -18,6 +18,7 @@
 """
 Test the Clerk module.
 """
+import zmq
 import json
 import time
 import base64
@@ -28,7 +29,6 @@ import unittest.mock as mock
 
 import azrael.web
 import azrael.clerk
-import azrael.client
 import azrael.dibbler
 import azrael.types as types
 import azrael.config as config
@@ -2174,9 +2174,27 @@ class TestClerk:
 
 def test_invalid():
     """
-    Send invalid commands to Clerk.
+    Send invalid commands to Clerk. Use the actual ZeroMQ link.
     """
-    class ClientTest(azrael.client.Client):
+    class ClerkConnector():
+        """
+        Test class to connect to Clerk via ZeroMQ.
+        """
+        def __init__(self):
+            # Convenience.
+            ip = config.addr_clerk
+            port = config.port_clerk
+
+            # Create ZeroMQ sockets and connect them to Clerk.
+            self.ctx = zmq.Context()
+            self.sock_cmd = self.ctx.socket(zmq.REQ)
+            self.sock_cmd.linger = 0
+            self.sock_cmd.connect('tcp://{}:{}'.format(ip, port))
+
+        def __del__(self):
+            self.sock_cmd.close(linger=0)
+            self.ctx.destroy()
+
         def testSend(self, data):
             """
             Pass data verbatim to Clerk.
@@ -2189,7 +2207,7 @@ def test_invalid():
     killAzrael()
     clerk = azrael.clerk.Clerk()
     clerk.start()
-    client = ClientTest()
+    client = ClerkConnector()
 
     # Send a corrupt JSON to Clerk.
     msg = 'this is not a json string'
