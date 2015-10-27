@@ -23,14 +23,23 @@ version. However, some tests, especially for the initial connection are
 specific to this client type. Only these are covered here.
 """
 
+import os
+import sys
+import client
+import pytest
+import wsclient
 import azrael.web
 import azrael.clerk
-import azrael.wsclient
 
 from IPython import embed as ipshell
 
-Client = azrael.client.Client
-WSClient = azrael.wsclient.WSClient
+p = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(p, '../'))
+import azrael.clerk
+
+
+Client = client.Client
+WSClient = wsclient.WSClient
 
 
 def test_custom_objid():
@@ -51,10 +60,11 @@ def test_custom_objid():
     web.start()
 
     # Convenience.
-    ip, port = azrael.config.addr_webserver, azrael.config.port_webserver
+    ip = '127.0.0.1'
+    port = 8080
 
     # Instantiate a WSClient without specifiying an object ID.
-    client_0 = azrael.wsclient.WSClient(ip, port)
+    client_0 = wsclient.WSClient(ip, port)
 
     # Ping Clerk to verify the connection is live.
     ret = client_0.ping()
@@ -62,7 +72,7 @@ def test_custom_objid():
 
     # Instantiate another WSClient. This time specify an ID. Note: the ID
     # need not exist albeit object specific commands will subsequently fail.
-    client_1 = azrael.wsclient.WSClient(ip, port)
+    client_1 = wsclient.WSClient(ip, port)
 
     # Ping Clerk again to verify the connection is live.
     ret = client_1.ping()
@@ -75,3 +85,38 @@ def test_custom_objid():
     web.join(timeout=3)
 
     print('Test passed')
+
+
+def test_ping_WebServer():
+    """
+    Start services and send Ping to WebServer. Then terminate the WebServer and
+    verify that the ping fails.
+    """
+    # Convenience.
+    ip = '127.0.0.1'
+    port = 8080
+
+    # Start the services.
+    clerk = azrael.clerk.Clerk()
+    web = azrael.web.WebServer()
+    clerk.start()
+    web.start()
+
+    # Create a Websocket client.
+    client = WSClient(ip=ip, port=port, timeout=1)
+
+    # Ping Clerk via the Web service.
+    assert client.ping()
+    assert client.pingWebserver().ok
+
+    # Terminate the services.
+    clerk.terminate()
+    web.terminate()
+    clerk.join()
+    web.join()
+
+    # Ping must now be impossible.
+    with pytest.raises(ConnectionRefusedError):
+        WSClient(ip=ip, port=port, timeout=1)
+
+    assert not client.pingWebserver().ok

@@ -35,13 +35,13 @@ https://github.com/liris/websocket-client
 import time
 import websocket
 
-import azrael.util
-import azrael.client
+import util
+import client
 
-from azrael.types import typecheck, RetVal
+from aztypes import typecheck, RetVal
 
 
-class WSClient(azrael.client.Client):
+class WSClient(client.Client):
     """
     Websocket version of ``Client``.
 

@@ -22,6 +22,8 @@ The client class is merely a convenience class to wrap the Clerk
 commands. As such the tests here merely test these wrappers. See `test_clerk`
 if you want to see thorough tests for the Clerk functionality.
 """
+import os
+import sys
 import time
 import json
 import pytest
@@ -29,18 +31,24 @@ import requests
 
 import numpy as np
 
+import util
+import client
+import wsclient
+import aztypes
+
+# Import the necessary Azrael modules.
+# fixme: use pytest path variable
+p = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(p, '../'))
+
 import azrael.web
 import azrael.igor
-import azrael.util
 import azrael.clerk
-import azrael.client
 import azrael.dibbler
-import azrael.wsclient
-import azrael.types as types
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import FragRaw
+from aztypes import FragRaw
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getRigidBody
@@ -65,8 +73,8 @@ class TestClient:
         cls.dibbler = azrael.dibbler.Dibbler()
 
         # Create a ZMQ- and Websocket client.
-        client_zmq = azrael.client.Client()
-        client_ws = azrael.wsclient.WSClient(
+        client_zmq = client.Client()
+        client_ws = wsclient.WSClient(
             ip=config.addr_webserver, port=config.port_webserver, timeout=1)
         assert client_ws.ping()
         cls.clients = {'ZeroMQ': client_zmq, 'Websocket': client_ws}
@@ -217,13 +225,13 @@ class TestClient:
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any).
         boosters = {
-            '0': types.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
                                minval=0, maxval=0.5, force=0),
-            '1': types.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
+            '1': aztypes.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
                                minval=0, maxval=0.5, force=0),
         }
         factories = {
-            '0': types.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
                                templateID='_templateBox',
                                exit_speed=(0.1, 0.5))
         }
@@ -419,16 +427,16 @@ class TestClient:
 
         # Define the parts.
         boosters = {
-            '0': types.Booster(pos=pos_0, direction=dir_0,
+            '0': aztypes.Booster(pos=pos_0, direction=dir_0,
                                minval=0, maxval=0.5, force=0),
-            '1': types.Booster(pos=pos_1, direction=dir_1,
+            '1': aztypes.Booster(pos=pos_1, direction=dir_1,
                                minval=0, maxval=1.0, force=0)
         }
         factories = {
-            '0': types.Factory(pos=pos_0, direction=dir_0,
+            '0': aztypes.Factory(pos=pos_0, direction=dir_0,
                                templateID='_templateBox',
                                exit_speed=[0.1, 0.5]),
-            '1': types.Factory(pos=pos_1, direction=dir_1,
+            '1': aztypes.Factory(pos=pos_1, direction=dir_1,
                                templateID='_templateSphere',
                                exit_speed=[1, 5])
         }
@@ -458,12 +466,12 @@ class TestClient:
         exit_speed_0, exit_speed_1 = 0.2, 2
         forcemag_0, forcemag_1 = 0.2, 0.4
         cmd_b = {
-            '0': types.CmdBooster(force=forcemag_0),
-            '1': types.CmdBooster(force=forcemag_1),
+            '0': aztypes.CmdBooster(force=forcemag_0),
+            '1': aztypes.CmdBooster(force=forcemag_1),
         }
         cmd_f = {
-            '0': types.CmdFactory(exit_speed=exit_speed_0),
-            '1': types.CmdFactory(exit_speed=exit_speed_1),
+            '0': aztypes.CmdFactory(exit_speed=exit_speed_0),
+            '1': aztypes.CmdFactory(exit_speed=exit_speed_1),
         }
 
         # Send the commands and ascertain that the returned object IDs now

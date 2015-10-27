@@ -32,11 +32,18 @@ import requests
 import traceback
 
 import numpy as np
-import azrael.util as util
-import azrael.types as types
-import azrael.config as config
+import util
+import aztypes
 
-from azrael.types import typecheck, RetVal, Template, FragRaw, ConstraintMeta
+typecheck = aztypes.typecheck
+RetVal = aztypes.RetVal
+Template = aztypes.Template
+FragRaw = aztypes.FragRaw
+ConstraintMeta = aztypes.ConstraintMeta
+
+addr_clerk = '127.0.0.1'
+port_clerk = 5555
+port_webserver = 8080
 
 
 class Client():
@@ -53,7 +60,7 @@ class Client():
     :raises: None
     """
     @typecheck
-    def __init__(self, ip: str=config.addr_clerk, port: int=config.port_clerk):
+    def __init__(self, ip: str=addr_clerk, port: int=port_clerk):
         super().__init__()
 
         # Create a Class-specific logger.
@@ -267,9 +274,9 @@ class Client():
         """
         # Sanity checks.
         for partID, cmd in cmd_boosters.items():
-            assert isinstance(cmd, types.CmdBooster)
+            assert isinstance(cmd, aztypes.CmdBooster)
         for partID, cmd in cmd_factories.items():
-            assert isinstance(cmd, types.CmdFactory)
+            assert isinstance(cmd, aztypes.CmdFactory)
 
         # Every object can have at most 256 parts.
         assert len(cmd_boosters) < 256
@@ -374,7 +381,7 @@ class Client():
                 continue
 
             # Replace the original 'rbs' and 'frag' entries with the new ones.
-            out[int(objID)] = {'rbs': types.RigidBodyData(**data['rbs'])}
+            out[int(objID)] = {'rbs': aztypes.RigidBodyData(**data['rbs'])}
         return ret._replace(data=out)
 
     @typecheck
@@ -540,7 +547,7 @@ class Client():
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
-            ip=self.ip, port=config.port_webserver, url=template['url_frag'])
+            ip=self.ip, port=port_webserver, url=template['url_frag'])
 
         # Fetch the geometry from the web server and decode it.
         out = {}
