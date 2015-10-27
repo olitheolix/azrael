@@ -16,16 +16,15 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-WebServer serves up the files from Dibbler but can also relay Websocket
+WebServer serves up the geometry files (from Dibbler). It also relays Websocket
 connections to Clerk.
 
-WebServer facilitate browser access to Clerk. This is necessary since Websocket
-are supported in all (relevant) browsers, yet ZeroMQ access is still
-non-trivial from JavaScript. This bridge remove that hurdle to make Azrael
-accessible from almost any platform.
+WebServer facilitates browser access to Azrael/Clerk via Websockets. This would
+otherwise be impossible because the rest is built with ZeroMQ, which browsers
+do not support.
 
-The second purpose of WebServer is to serve up model files. This is little more
-than a wrapper around Dibbler which administrates all model files.
+The second purpose of WebServer is to serve up model geometry files. This is
+little more than a wrapper around Dibbler which administrates all model files.
 """
 
 import os
@@ -93,13 +92,12 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         """
         Parse client request and return reply.
 
-        This method is a Tornado callback and triggers whenever a message
-        arrives from the client. By definition, every message starts with a
-        command byte (always exactly one byte) plus an optional payload.
+        Tornado triggers this callback whenever a message arrives from
+        the client. Every message must contain a command, and may contain a
+        payload.
 
-        Based on the command Byte this handler will either respond directly to
-        that command or pass it on to the Client instances associated with
-        this Websocket/client.
+        Based on the command this handler will either respond directly
+        or relay everything to a Clerk and return its reponse upon completion.
 
         :param bytes msg: message from client.
         """
@@ -113,7 +111,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
             self.returnToClient(RetVal(False, 'Invalid command format', None))
             return
 
-        # Extract command word (always first byte) and the payload.
+        # Extract command and payload.
         cmd, payload = msg['cmd'], msg['data']
 
         if cmd == 'ping_webserver':

@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Dibbler stored and provides all model files.
+Dibbler stores and provides all geometry files.
 
 Dibbler itself is a stateless service to store and retrieve model files. For
 that purpose it provides dedicated methods to store- and sanity check the
