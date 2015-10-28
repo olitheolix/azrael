@@ -197,8 +197,8 @@ def launchQtViewer(param):
 
     This function does not return until the viewer process finishes.
     """
-    path_base = os.path.dirname(os.path.abspath(__file__))
-    fname = os.path.join(path_base, '..', 'viewer', 'viewer.py')
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    fname = os.path.join(this_dir, 'viewer.py')
 
     try:
         if param.noviewer:

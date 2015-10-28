@@ -43,7 +43,7 @@ import demolib
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '..'))
-sys.path.insert(0, os.path.join(p, '../viewer'))
+
 import model_import
 import pyazrael
 import azrael.startup
@@ -460,8 +460,7 @@ def main():
             # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
             # uid=3290&count=count
             p = os.path.dirname(os.path.abspath(__file__))
-            p = os.path.join(p, '..', 'viewer', 'models')
-            fname = os.path.join(p, 'sphere', 'sphere.obj')
+            fname = os.path.join(p, 'models', 'sphere', 'sphere.obj')
 #            fname = os.path.join(p, 'house', 'house.obj')
 #            fname = '/home/oliver/delme/export/monster.dae'
 #            fname = os.path.join(p, 'test.obj')
