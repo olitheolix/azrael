@@ -56,7 +56,7 @@ from IPython import embed as ipshell
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
-import azrael.client
+import pyazrael
 import azrael.types as types
 del p
 
@@ -71,7 +71,7 @@ def resetSimulation(host, port=5555):
     The `host` and `port` parameters specify the location of the Azrael API.
     """
     # Connect to Azrael.
-    client = azrael.client.Client(host, port=port)
+    client = pyazrael.AzraelClient(host, port=port)
 
     # Query IDs of all objects in the simulation.
     ret = client.getAllObjectIDs()
@@ -93,7 +93,7 @@ class PyConBrisbaneClient():
     """
     def __init__(self, host, port=5555):
         # Connect to Azrael.
-        self.client = azrael.client.Client(ip=host, port=port)
+        self.client = pyazrael.AzraelClient(ip=host, port=port)
 
         # Ping Azrael. This call will block if it cannot connect.
         ret = self.client.ping()
@@ -353,7 +353,7 @@ def placeTarget(host, numTargets=1):
     with anything).
     """
     # Connect to Azrael.
-    client = azrael.client.Client(ip=host)
+    client = pyazrael.AzraelClient(ip=host)
 
     # Spawn the target object from the 'BoosterCube_1' template (defined in
     # 'demo_boostercube' that must already be running at this point).

@@ -26,7 +26,7 @@ import numpy as np
 
 # Import the necessary Azrael modules.
 import model_import
-import azrael.client
+import pyazrael
 import azrael.util as util
 import azrael.types as types
 import azrael.config as config
@@ -85,7 +85,7 @@ def spawnSpaceship(scale, fname):
     boosters.
     """
     # Get a Client instance.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # Load the model.
     vert, uv, rgb = demolib.loadBoosterCubeBlender()

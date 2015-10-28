@@ -29,7 +29,7 @@ import time
 import setproctitle
 import numpy as np
 
-import azrael.client
+import pyazrael
 import azrael.util as util
 import azrael.config as config
 
@@ -42,7 +42,7 @@ def startController(objID):
     object in the simulation.
     """
     # Connect to Clerk.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # Specify the toggle interval in seconds.
     toggle_interval = 4.0

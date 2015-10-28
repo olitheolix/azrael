@@ -35,7 +35,7 @@ import demo_default
 
 # Import the necessary Azrael modules.
 import model_import
-import azrael.client
+import pyazrael
 import azrael.util as util
 import azrael.config as config
 import azrael.leo_api as leoAPI
@@ -140,7 +140,7 @@ class SetGeometry(multiprocessing.Process):
             return
 
         # Instantiate Client.
-        client = azrael.client.Client()
+        client = pyazrael.AzraelClient()
 
         # Query all object IDs. This happens only once which means the geometry
         # swap does not affect newly generated objects.

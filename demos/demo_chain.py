@@ -40,7 +40,7 @@ import demolib
 
 # Import the necessary Azrael modules.
 import azrael.types as types
-import azrael.client
+import pyazrael
 import azrael.startup
 import azrael.util as util
 import azrael.config as config
@@ -194,7 +194,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     spawn more (purely passive) cubes.
     """
     # Get a Client instance.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # Geometry and collision shape for cube.
     vert, cs = demolib.cubeGeometry()

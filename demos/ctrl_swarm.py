@@ -34,7 +34,7 @@ p = os.path.join(p, '..')
 sys.path.insert(0, p)
 del p
 
-import azrael.client
+import pyazrael
 import azrael.config as config
 
 
@@ -49,7 +49,7 @@ class ControllerCubeLeft(multiprocessing.Process):
         self.objID = objID
 
     def run(self):
-        client = azrael.client.Client(ip=self.ip, port_clerk=self.port)
+        client = pyazrael.AzraelClient(ip=self.ip, port_clerk=self.port)
 
         # ---------------------------------------------------------------------
         # Edit here to change the force of boosters.

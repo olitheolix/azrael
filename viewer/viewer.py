@@ -38,7 +38,7 @@ import json
 import tempfile
 import argparse
 import model_import
-import azrael.client
+import pyazrael
 import requests
 
 import numpy as np
@@ -663,7 +663,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Create the graphic buffers and compile the shaders.
         """
         # Connect to Azrael.
-        self.client = azrael.client.Client(ip=self.ip, port=self.port)
+        self.client = pyazrael.AzraelClient(ip=self.ip, port=self.port)
 
         print('Client connected')
 

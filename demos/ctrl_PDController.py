@@ -32,7 +32,7 @@ import numpy as np
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
-import azrael.client
+import pyazrael
 from azrael.types import FragState
 del p
 
@@ -142,7 +142,7 @@ def main(objID, ref_pos):
     :param float ref_pos: desired position in space.
     """
     # Connect to Azrael.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # Time step for polling/updating the booster values.
     dt = 0.3

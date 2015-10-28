@@ -45,7 +45,7 @@ p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '..'))
 sys.path.insert(0, os.path.join(p, '../viewer'))
 import model_import
-import azrael.client
+import pyazrael
 import azrael.startup
 import azrael.util as util
 import azrael.types as types
@@ -110,7 +110,7 @@ def getFragMeta(ftype, fdata):
 
 def addBoosterCubeTemplate(scale, vert, uv, rgb):
     # Get a Client instance.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # Ensure the data has the correct format.
     vert = scale * np.array(vert)
@@ -196,7 +196,7 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
 
 def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # Get a Client instance.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # Geometry and collision shape for cube.
     vert, cs = demolib.cubeGeometry()
@@ -330,7 +330,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     tID_cube = addTexturedCubeTemplates(numCols, numRows, numLayers)
 
     # Get a Client instance.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # ----------------------------------------------------------------------
     # Spawn the differently textured cubes in a regular grid.
@@ -402,7 +402,7 @@ class ResetSim(multiprocessing.Process):
             return
 
         # Establish connection to Azrael.
-        client = azrael.client.Client()
+        client = pyazrael.AzraelClient()
 
         # Query all objects in the scene. These are the only objects that will
         # survive the reset.

@@ -80,7 +80,7 @@ def main():
     az.start()
 
     # Instantiate a Client to communicate with Azrael.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # Verify that the client is connected.
     assert client.ping().ok

@@ -34,7 +34,7 @@ from IPython import embed as ipshell
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
-import azrael.client
+import pyazrael
 import azrael.types as types
 
 from azrael.types import Template, FragMeta, FragRaw
@@ -45,7 +45,7 @@ def BoostercubeTemplate(scale=1.0):
     Return template for BoosterCube.
     """
     # Get a Client instance.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # Load the model.
     vert, uv, rgb = demolib.loadBoosterCubeBlender()
@@ -106,7 +106,7 @@ class CtrlBoosterCube():
         self.shipID = None
         
         # Connect to Azrael.
-        self.client = azrael.client.Client(ip=host, port=port)
+        self.client = pyazrael.AzraelClient(ip=host, port=port)
 
         # Ping Azrael. This call will block if it cannot connect.
         ret = self.client.ping()

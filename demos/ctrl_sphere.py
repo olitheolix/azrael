@@ -30,14 +30,14 @@ p = os.path.join(p, '..')
 sys.path.insert(0, p)
 del p
 
-import azrael.client
+import pyazrael
 import azrael.util as util
 import azrael.config as config
 
 
 def startController(objID):
     # Connect to Clerk.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # ---------------------------------------------------------------------
     # Central booster (partID='1')

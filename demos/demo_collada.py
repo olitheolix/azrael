@@ -34,7 +34,7 @@ import demo_default as demolib
 
 # Import the necessary Azrael modules.
 import model_import
-import azrael.client
+import pyazrael
 import azrael.util as util
 import azrael.config as config
 
@@ -88,7 +88,7 @@ def spawnColladaModel(scale, fname):
     Import the collada file ``fname`` as a new template and spawn it.
     """
     # Get a Client instance.
-    client = azrael.client.Client()
+    client = pyazrael.AzraelClient()
 
     # Collada format: a .dae file plus a list of textures in jpg or png format.
     b = os.path.dirname(__file__)
