@@ -29,12 +29,12 @@ import numpy as np
 # Import the necessary Azrael modules.
 import azrael.clerk
 import azrael.startup
-import azrael.types as types
+import azrael.aztypes as aztypes
 import azrael.config as config
 import azrael.vectorgrid as vectorgrid
 
 from IPython import embed as ipshell
-from azrael.types import Template, FragMeta, FragRaw
+from azrael.aztypes import Template, FragMeta, FragRaw
 
 
 def parseCommandLine():
@@ -81,7 +81,7 @@ def addPlatforms():
     cshapes = {'cs': cshapes}
 
     # Rigid body data for platforms (defines their physics, not appearance).
-    body = azrael.types.RigidBodyData(
+    body = azrael.aztypes.RigidBodyData(
         scale, imass, restitution, rotation,
         position, velocityLin, velocityRot,
         cshapes, axesLockLin, axesLockRot,

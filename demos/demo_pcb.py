@@ -57,7 +57,7 @@ from IPython import embed as ipshell
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
 import pyazrael
-import azrael.types as types
+import azrael.aztypes as aztypes
 del p
 
 
@@ -195,9 +195,9 @@ class PyConBrisbaneClient():
         # The following command specifies the amount of force to apply at each
         # booster.
         cmd_b = {
-            'b_x': types.CmdBooster(force=force[0]),
-            'b_y': types.CmdBooster(force=force[1]),
-            'b_z': types.CmdBooster(force=force[2]),
+            'b_x': aztypes.CmdBooster(force=force[0]),
+            'b_y': aztypes.CmdBooster(force=force[1]),
+            'b_z': aztypes.CmdBooster(force=force[2]),
         }
 
         # Send the command to Azrael and wait for the reply.
@@ -378,8 +378,8 @@ def placeTarget(host, numTargets=1):
 
     # Replace the collision shape with an empty one to disable the physics for
     # those targets.
-    cs = types.CollShapeEmpty()
-    cs = types.CollShapeMeta('empty', (0, 0, 0), (0, 0, 0, 1), cs)
+    cs = aztypes.CollShapeEmpty()
+    cs = aztypes.CollShapeMeta('empty', (0, 0, 0), (0, 0, 0, 1), cs)
     cmd = {targetID: {'cshapes': {'cssphere': cs}} for targetID in targetIDs}
     assert client.setRigidBodies(cmd).ok
     del cs

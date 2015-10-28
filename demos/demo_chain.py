@@ -39,7 +39,7 @@ import numpy as np
 import demolib
 
 # Import the necessary Azrael modules.
-import azrael.types as types
+import azrael.aztypes as aztypes
 import pyazrael
 import azrael.startup
 import azrael.util as util
@@ -47,10 +47,10 @@ import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
 
-from azrael.types import Template, FragMeta, FragRaw
-from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox, ConstraintMeta, ConstraintP2P
-from azrael.types import Constraint6DofSpring2
+from azrael.aztypes import Template, FragMeta, FragRaw
+from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.aztypes import CollShapeBox, ConstraintMeta, ConstraintP2P
+from azrael.aztypes import Constraint6DofSpring2
 
 from IPython import embed as ipshell
 
@@ -233,9 +233,9 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     # Two boosters, one left, one right. Both point in the same direction.
     boosters = {
-        '0': types.Booster(pos=[+0.05, 0, 0], direction=[0, 0, 1],
+        '0': aztypes.Booster(pos=[+0.05, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=10.0, force=0),
-        '1': types.Booster(pos=[-0.05, 0, 0], direction=[0, 0, 1],
+        '1': aztypes.Booster(pos=[-0.05, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=10.0, force=0)
     }
 

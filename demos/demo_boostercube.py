@@ -28,11 +28,11 @@ import numpy as np
 import model_import
 import pyazrael
 import azrael.util as util
-import azrael.types as types
+import azrael.aztypes as aztypes
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import Template, FragMeta, FragRaw
+from azrael.aztypes import Template, FragMeta, FragRaw
 
 
 def parseCommandLine():
@@ -97,7 +97,7 @@ def spawnSpaceship(scale, fname):
     dir_y = np.array([0, 1, 0])
     dir_z = np.array([0, 0, 1])
     pos = (0, 0, 0)
-    B = types.Booster
+    B = aztypes.Booster
     boosters = {
         'b_x': B(pos=pos, direction=(1, 0, 0), minval=0, maxval=10.0, force=0),
         'b_y': B(pos=pos, direction=(0, 1, 0), minval=0, maxval=10.0, force=0),
@@ -120,8 +120,8 @@ def spawnSpaceship(scale, fname):
     # Add the template to Azrael.
     print('  Adding template to Azrael... ', end='', flush=True)
     tID = 'spaceship'
-    cs = types.CollShapeBox(scale, scale, scale)
-    cs = types.CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
+    cs = aztypes.CollShapeBox(scale, scale, scale)
+    cs = aztypes.CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
     body = demolib.getRigidBody(cshapes={'0': cs})
     pos, rot = (0, 0, 0), (0, 0, 0, 1)
     frags = {

@@ -45,13 +45,13 @@ def startController(objID):
     # time.sleep(2)
     # Engage. This will accelerate the sphere forwards.
     print('Fire central booster...', end='', flush=True)
-    central = types.CmdBooster(partID='1', force=20)
+    central = aztypes.CmdBooster(partID='1', force=20)
     client.controlParts(objID, [central], [])
 
     return
     # Turn off after 4s.
     time.sleep(2)
-    central = types.CmdBooster(partID='1', force=0)
+    central = aztypes.CmdBooster(partID='1', force=0)
 #    client.controlParts(objID, [central], [])
     print('done')
 
@@ -60,14 +60,14 @@ def startController(objID):
     # ---------------------------------------------------------------------
     # Engage. This will induce spinning due to the booster positions.
     print('Fire peripheral boosters...', end='', flush=True)
-    left = types.CmdBooster(partID='0', force=10)
-    right = types.CmdBooster(partID='2', force=10)
+    left = aztypes.CmdBooster(partID='0', force=10)
+    right = aztypes.CmdBooster(partID='2', force=10)
     client.controlParts(objID, [left, right], [])
 
     # Turn off after 2s.
     time.sleep(2)
-    left = types.CmdBooster(partID='0', force=0)
-    right = types.CmdBooster(partID='2', force=0)
+    left = aztypes.CmdBooster(partID='0', force=0)
+    right = aztypes.CmdBooster(partID='2', force=0)
     client.controlParts(objID, [left, right], [])
     print('done')
 

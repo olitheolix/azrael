@@ -48,15 +48,15 @@ import model_import
 import pyazrael
 import azrael.startup
 import azrael.util as util
-import azrael.types as types
+import azrael.aztypes as aztypes
 import azrael.config as config
 import azrael.leo_api as leoAPI
 del p
 
 from IPython import embed as ipshell
-from azrael.types import Template, FragMeta, FragRaw
-from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox
+from azrael.aztypes import Template, FragMeta, FragRaw
+from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.aztypes import CollShapeBox
 
 
 def parseCommandLine():
@@ -126,13 +126,13 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     pos_center = np.zeros(3)
 
     boosters = {
-        '0': types.Booster(pos=pos_left, direction=-dir_up,
+        '0': aztypes.Booster(pos=pos_left, direction=-dir_up,
                            minval=0, maxval=10.0, force=0),
-        '1': types.Booster(pos=pos_center, direction=dir_forward,
+        '1': aztypes.Booster(pos=pos_center, direction=dir_forward,
                            minval=0, maxval=1000.0, force=0),
-        '2': types.Booster(pos=-pos_left, direction=dir_up,
+        '2': aztypes.Booster(pos=-pos_left, direction=dir_up,
                            minval=0, maxval=10.0, force=0),
-        '3': types.Booster(pos=pos_center, direction=-dir_forward,
+        '3': aztypes.Booster(pos=pos_center, direction=-dir_forward,
                            minval=0, maxval=1000.0, force=0)
     }
     del dir_up, dir_forward, pos_left, pos_center
@@ -248,18 +248,18 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # ----------------------------------------------------------------------
     # Two boosters, one left, one right. Both point in the same direction.
     boosters = {
-        '0': types.Booster(pos=[+0.05, 0, 0], direction=[0, 0, 1],
+        '0': aztypes.Booster(pos=[+0.05, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=10.0, force=0),
-        '1': types.Booster(pos=[-0.05, 0, 0], direction=[0, 0, 1],
+        '1': aztypes.Booster(pos=[-0.05, 0, 0], direction=[0, 0, 1],
                            minval=0, maxval=10.0, force=0)
     }
 
     # Two factories, one left one right. They will eject the new objects
     # forwards and backwards, respectively.
     factories = {
-        '0': types.Factory(pos=[+1.5, 0, 0], direction=[+1, 0, 0],
+        '0': aztypes.Factory(pos=[+1.5, 0, 0], direction=[+1, 0, 0],
                            templateID=tID_1, exit_speed=[0.1, 1]),
-        '1': types.Factory(pos=[-1.5, 0, 0], direction=[-1, 0, 0],
+        '1': aztypes.Factory(pos=[-1.5, 0, 0], direction=[-1, 0, 0],
                            templateID=tID_2, exit_speed=[0.1, 1])
     }
 

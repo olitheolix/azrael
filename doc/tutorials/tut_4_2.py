@@ -1,8 +1,8 @@
 import time
 import numpy as np
 import azrael.startup
-from azrael.types import Template, FragMeta, FragRaw, Booster, CmdBooster
-from azrael.types import CollShapeMeta, CollShapeSphere, RigidBodyData
+from azrael.aztypes import Template, FragMeta, FragRaw, Booster, CmdBooster
+from azrael.aztypes import CollShapeMeta, CollShapeSphere, RigidBodyData
 
 
 def defineCube():

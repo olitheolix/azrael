@@ -33,7 +33,7 @@ import numpy as np
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
 import pyazrael
-from azrael.types import FragState
+from azrael.aztypes import FragState
 del p
 
 

@@ -35,9 +35,9 @@ from IPython import embed as ipshell
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
 import pyazrael
-import azrael.types as types
+import azrael.aztypes as aztypes
 
-from azrael.types import Template, FragMeta, FragRaw
+from azrael.aztypes import Template, FragMeta, FragRaw
 
 
 def BoostercubeTemplate(scale=1.0):
@@ -57,7 +57,7 @@ def BoostercubeTemplate(scale=1.0):
     dir_y = np.array([0, 1, 0])
     dir_z = np.array([0, 0, 1])
     pos = (0, 0, 0)
-    B = types.Booster
+    B = aztypes.Booster
     boosters = {
         'b_x': B(pos=pos, direction=(1, 0, 0), minval=0, maxval=10.0, force=0),
         'b_y': B(pos=pos, direction=(0, 1, 0), minval=0, maxval=10.0, force=0),
@@ -79,8 +79,8 @@ def BoostercubeTemplate(scale=1.0):
 
     # Add the template to Azrael.
     tID = 'spaceship'
-    cs = types.CollShapeBox(scale, scale, scale)
-    cs = types.CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
+    cs = aztypes.CollShapeBox(scale, scale, scale)
+    cs = aztypes.CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
     body = demolib.getRigidBody(cshapes={'0': cs})
     pos, rot = (0, 0, 0), (0, 0, 0, 1)
     frags = {
@@ -205,9 +205,9 @@ class CtrlBoosterCube():
         # The following command specifies the amount of force to apply at each
         # booster.
         cmd_b = {
-            'b_x': types.CmdBooster(force=force[0]),
-            'b_y': types.CmdBooster(force=force[1]),
-            'b_z': types.CmdBooster(force=force[2]),
+            'b_x': aztypes.CmdBooster(force=force[0]),
+            'b_y': aztypes.CmdBooster(force=force[1]),
+            'b_z': aztypes.CmdBooster(force=force[2]),
         }
 
         # Send the command to Azrael and wait for the reply.

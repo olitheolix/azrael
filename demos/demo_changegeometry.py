@@ -42,7 +42,7 @@ import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
 
 from IPython import embed as ipshell
-from azrael.types import FragMeta, FragRaw
+from azrael.aztypes import FragMeta, FragRaw
 
 
 def parseCommandLine():

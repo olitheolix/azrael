@@ -28,11 +28,11 @@ del p
 
 import model_import
 import azrael.util as util
-import azrael.types as types
+import azrael.aztypes as aztypes
 from IPython import embed as ipshell
-from azrael.types import Template, FragMeta, FragRaw
-from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox
+from azrael.aztypes import Template, FragMeta, FragRaw
+from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.aztypes import CollShapeBox
 
 
 def getRigidBody(scale: (int, float)=1,
@@ -52,7 +52,7 @@ def getRigidBody(scale: (int, float)=1,
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))
         cshapes = {'Sphere': cshapes}
-    return types.RigidBodyData(scale, imass, restitution, rotation,
+    return aztypes.RigidBodyData(scale, imass, restitution, rotation,
                                       position, velocityLin, velocityRot,
                                       cshapes, axesLockLin, axesLockRot,
                                       version)
