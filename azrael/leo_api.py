@@ -23,12 +23,12 @@ state variables.
 import logging
 import numpy as np
 import azrael.util as util
-import azrael.types as types
+import azrael.aztypes as aztypes
 import azrael.database as database
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _RigidBodyData
-from azrael.types import CollShapeMeta, CollShapeSphere, CollShapeBox
+from azrael.aztypes import typecheck, RetVal, _RigidBodyData
+from azrael.aztypes import CollShapeMeta, CollShapeSphere, CollShapeBox
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
@@ -237,7 +237,7 @@ def addCmdModifyBodyState(objID: int, body: dict):
 
     # Make sure that ``body`` is really valid by constructing a new
     # DefaultRigidBody from it.
-    body_sane = types.DefaultRigidBody(**body)
+    body_sane = aztypes.DefaultRigidBody(**body)
     if body_sane is None:
         return RetVal(False, 'Invalid override data', None)
 

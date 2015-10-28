@@ -21,7 +21,7 @@ import logging
 import azrael.database as database
 
 from IPython import embed as ipshell
-from azrael.types import RetVal, ConstraintMeta
+from azrael.aztypes import RetVal, ConstraintMeta
 
 
 class Igor:

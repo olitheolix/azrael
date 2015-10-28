@@ -32,16 +32,13 @@ import azrael.database
 import azrael.vectorgrid
 import azrael.bullet_api
 import azrael.util as util
-import azrael.types as types
+import azrael.aztypes as aztypes
 import azrael.config as config
 import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
-from azrael.types import _RigidBodyData
-from azrael.types import typecheck, RetVal, WPData, WPMeta, Forces
-
-# Convenience.
-RigidBodyData = types.RigidBodyData
+from azrael.aztypes import _RigidBodyData, RigidBodyData
+from azrael.aztypes import typecheck, RetVal, WPData, WPMeta, Forces
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)

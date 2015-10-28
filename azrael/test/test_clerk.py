@@ -30,12 +30,12 @@ import unittest.mock as mock
 import azrael.web
 import azrael.clerk
 import azrael.dibbler
-import azrael.types as types
+import azrael.aztypes as aztypes
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import RetVal, CollShapeMeta
-from azrael.types import FragRaw
+from azrael.aztypes import RetVal, CollShapeMeta
+from azrael.aztypes import FragRaw
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
@@ -172,13 +172,13 @@ class TestClerk:
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any IDs).
         boosters = {
-            '0': types.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
+            '0': aztypes.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
                                minval=0, maxval=0.5, force=0),
-            '1': types.Booster(pos=(6, 7, 8), direction=(0, 1, 0),
+            '1': aztypes.Booster(pos=(6, 7, 8), direction=(0, 1, 0),
                                minval=1, maxval=1.5, force=0)
         }
         factories = {
-            '0': types.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
                                templateID='_templateBox',
                                exit_speed=(0.1, 0.5))
         }
@@ -686,8 +686,8 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_1, ))
 
         # Create commands for a Booster and a Factory.
-        cmd_b = {'0': types.CmdBooster(force=0.2)}
-        cmd_f = {'0': types.CmdFactory(exit_speed=0.5)}
+        cmd_b = {'0': aztypes.CmdBooster(force=0.2)}
+        cmd_f = {'0': aztypes.CmdFactory(exit_speed=0.5)}
 
         # Call 'controlParts'. This must fail because the template for objID_1
         # has neither boosters nor factories.
@@ -706,11 +706,11 @@ class TestClerk:
 
         # Define the Booster and Factory parts.
         boosters = {
-            '0': types.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
                                minval=0, maxval=0.5, force=0)
         }
         factories = {
-            '0': types.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
                                templateID='_templateBox', exit_speed=(0, 1))
         }
 
@@ -723,8 +723,8 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (objID_2, ))
 
         # Tell each factory to spawn an object.
-        cmd_b = {'0': types.CmdBooster(force=0.5)}
-        cmd_f = {'0': types.CmdFactory(exit_speed=0.5)}
+        cmd_b = {'0': aztypes.CmdBooster(force=0.5)}
+        cmd_f = {'0': aztypes.CmdFactory(exit_speed=0.5)}
 
         # Valid: Clerk must accept these commands.
         assert clerk.controlParts(objID_2, cmd_b, cmd_f).ok
@@ -756,9 +756,9 @@ class TestClerk:
 
         # Define two boosters.
         boosters = {
-            '0': types.Booster(pos=pos_0, direction=dir_0,
+            '0': aztypes.Booster(pos=pos_0, direction=dir_0,
                                minval=0, maxval=0.5, force=0),
-            '1': types.Booster(pos=pos_1, direction=dir_1,
+            '1': aztypes.Booster(pos=pos_1, direction=dir_1,
                                minval=0, maxval=0.5, force=0)
         }
 
@@ -778,8 +778,8 @@ class TestClerk:
         # Create the commands to activate both boosters with a different force.
         forcemag_0, forcemag_1 = 0.2, 0.4
         cmd_b = {
-            '0': types.CmdBooster(force=forcemag_0),
-            '1': types.CmdBooster(force=forcemag_1)
+            '0': aztypes.CmdBooster(force=forcemag_0),
+            '1': aztypes.CmdBooster(force=forcemag_1)
         }
 
         # Send booster commands to Clerk.
@@ -827,10 +827,10 @@ class TestClerk:
         # named tuples passed to addTemplates. The user must assign the partIDs
         # manually.
         factories = {
-            '0': types.Factory(pos=pos_0, direction=dir_0,
+            '0': aztypes.Factory(pos=pos_0, direction=dir_0,
                                templateID='_templateBox',
                                exit_speed=[0.1, 0.5]),
-            '1': types.Factory(pos=pos_1, direction=dir_1,
+            '1': aztypes.Factory(pos=pos_1, direction=dir_1,
                                templateID='_templateSphere',
                                exit_speed=[1, 5])
         }
@@ -849,8 +849,8 @@ class TestClerk:
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
         cmd_f = {
-            '0': types.CmdFactory(exit_speed=exit_speed_0),
-            '1': types.CmdFactory(exit_speed=exit_speed_1)
+            '0': aztypes.CmdFactory(exit_speed=exit_speed_0),
+            '1': aztypes.CmdFactory(exit_speed=exit_speed_1)
         }
 
         # Send the commands and ascertain that the returned object IDs now
@@ -906,10 +906,10 @@ class TestClerk:
 
         # Define factory parts.
         factories = {
-            '0': types.Factory(pos=pos_0, direction=dir_0,
+            '0': aztypes.Factory(pos=pos_0, direction=dir_0,
                                templateID='_templateBox',
                                exit_speed=[0.1, 0.5]),
-            '1': types.Factory(pos=pos_1, direction=dir_1,
+            '1': aztypes.Factory(pos=pos_1, direction=dir_1,
                                templateID='_templateSphere',
                                exit_speed=[1, 5])
         }
@@ -933,8 +933,8 @@ class TestClerk:
         # Create the commands to let each factory spawn an object.
         exit_speed_0, exit_speed_1 = 0.2, 2
         cmd_f = {
-            '0': types.CmdFactory(exit_speed=exit_speed_0),
-            '1': types.CmdFactory(exit_speed=exit_speed_1),
+            '0': aztypes.CmdFactory(exit_speed=exit_speed_0),
+            '1': aztypes.CmdFactory(exit_speed=exit_speed_1),
         }
 
         # Send the commands and ascertain that the returned object IDs now
@@ -1014,16 +1014,16 @@ class TestClerk:
 
         # Define the Booster and Factory parts.
         boosters = {
-            '0': types.Booster(pos=pos_0, direction=dir_0,
+            '0': aztypes.Booster(pos=pos_0, direction=dir_0,
                                minval=0, maxval=0.5, force=0),
-            '1': types.Booster(pos=pos_1, direction=dir_1,
+            '1': aztypes.Booster(pos=pos_1, direction=dir_1,
                                minval=0, maxval=1.0, force=0)
         }
         factories = {
-            '0': types.Factory(pos=pos_0, direction=dir_0,
+            '0': aztypes.Factory(pos=pos_0, direction=dir_0,
                                templateID='_templateBox',
                                exit_speed=[0.1, 0.5]),
-            '1': types.Factory(pos=pos_1, direction=dir_1,
+            '1': aztypes.Factory(pos=pos_1, direction=dir_1,
                                templateID='_templateSphere',
                                exit_speed=[1, 5])
         }
@@ -1053,12 +1053,12 @@ class TestClerk:
         exit_speed_0, exit_speed_1 = 0.2, 2
         forcemag_0, forcemag_1 = 0.2, 0.4
         cmd_b = {
-            '0': types.CmdBooster(force=forcemag_0),
-            '1': types.CmdBooster(force=forcemag_1),
+            '0': aztypes.CmdBooster(force=forcemag_0),
+            '1': aztypes.CmdBooster(force=forcemag_1),
         }
         cmd_f = {
-            '0': types.CmdFactory(exit_speed=exit_speed_0),
-            '1': types.CmdFactory(exit_speed=exit_speed_1),
+            '0': aztypes.CmdFactory(exit_speed=exit_speed_0),
+            '1': aztypes.CmdFactory(exit_speed=exit_speed_1),
         }
 
         # Send the commands and ascertain that the returned object IDs now
@@ -1691,9 +1691,9 @@ class TestClerk:
         # z-direction.
         # ---------------------------------------------------------------------
         boosters = {
-            '0': types.Booster(pos=[-1, 0, 0], direction=[0, 0, 1],
+            '0': aztypes.Booster(pos=[-1, 0, 0], direction=[0, 0, 1],
                                minval=-1, maxval=1, force=0),
-            '1': types.Booster(pos=[+1, 0, 0], direction=[0, 0, 1],
+            '1': aztypes.Booster(pos=[+1, 0, 0], direction=[0, 0, 1],
                                minval=-1, maxval=1, force=0)
         }
 
@@ -1713,8 +1713,8 @@ class TestClerk:
         # no torque.
         # ---------------------------------------------------------------------
         cmd_b = {
-            '0': types.CmdBooster(force=1),
-            '1': types.CmdBooster(force=1),
+            '0': aztypes.CmdBooster(force=1),
+            '1': aztypes.CmdBooster(force=1),
         }
         ret = clerk.updateBoosterForces(objID_1, cmd_b)
         assert ret.ok
@@ -1727,8 +1727,8 @@ class TestClerk:
         # net force but non-zero torque.
         # ---------------------------------------------------------------------
         cmd_b = {
-            '0': types.CmdBooster(force=1),
-            '1': types.CmdBooster(force=-1),
+            '0': aztypes.CmdBooster(force=1),
+            '1': aztypes.CmdBooster(force=-1),
         }
         ret = clerk.updateBoosterForces(objID_1, cmd_b)
         assert ret.ok
@@ -1740,13 +1740,13 @@ class TestClerk:
         # correctly distinguishes between objects.
         # ---------------------------------------------------------------------
         # Turn off left Booster of first object (right booster remains active).
-        cmd_b = {'0': types.CmdBooster(force=0)}
+        cmd_b = {'0': aztypes.CmdBooster(force=0)}
         ret = clerk.updateBoosterForces(objID_1, cmd_b)
         assert ret.ok
         assert ret.data == ([0, 0, -1], [0, 1, 0])
 
         # Turn on left Booster of the second object.
-        cmd_b = {'0': types.CmdBooster(force=1)}
+        cmd_b = {'0': aztypes.CmdBooster(force=1)}
         ret = clerk.updateBoosterForces(objID_2, cmd_b)
         assert ret.ok
         assert ret.data == ([0, 0, +1], [0, 1, 0])
@@ -1755,10 +1755,10 @@ class TestClerk:
         # ---------------------------------------------------------------------
         # Attempt to update a non-existing Booster or a non-existing object.
         # ---------------------------------------------------------------------
-        cmd_b = {'10': types.CmdBooster(force=1)}
+        cmd_b = {'10': aztypes.CmdBooster(force=1)}
         assert not clerk.updateBoosterForces(objID_2, cmd_b).ok
 
-        cmd_b = {'0': types.CmdBooster(force=1)}
+        cmd_b = {'0': aztypes.CmdBooster(force=1)}
         assert not clerk.updateBoosterForces(1000, cmd_b).ok
 
     def test_add_get_remove_constraints(self):
@@ -1956,7 +1956,7 @@ class TestClerk:
         assert ret.ok
         ret_1 = ret.data[id_1]['rbs']
         ret_2 = ret.data[id_2]['rbs']
-        assert isinstance(ret_1, types._RigidBodyData)
+        assert isinstance(ret_1, aztypes._RigidBodyData)
         assert ret_1.position == init['rbs']['position']
         assert ret_1.velocityLin == init['rbs']['velocityLin']
         assert ret_2.position == init['rbs']['position']
@@ -1977,7 +1977,7 @@ class TestClerk:
         assert ret.ok
         ret_1 = ret.data[id_1]['rbs']
         ret_2 = ret.data[id_2]['rbs']
-        assert isinstance(ret_1, types._RigidBodyData)
+        assert isinstance(ret_1, aztypes._RigidBodyData)
         assert ret_1.imass == new_bs['imass']
         assert ret_1.scale == new_bs['scale']
         assert ret_1.position == new_bs['position']
@@ -2013,7 +2013,7 @@ class TestClerk:
         assert ret.ok
         ret_1 = ret.data[id_1]['rbs']
         ret_2 = ret.data[id_2]['rbs']
-        assert isinstance(ret_1, types._RigidBodyData)
+        assert isinstance(ret_1, aztypes._RigidBodyData)
         assert ret_1.imass == new_bs['imass']
         assert ret_1.scale == new_bs['scale']
         assert ret_1.position == new_bs['position']

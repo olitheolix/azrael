@@ -1,6 +1,6 @@
 import pytest
 import azrael.igor
-import azrael.types
+import azrael.aztypes
 import azrael.leonard
 import azrael.database
 import azrael.vectorgrid
@@ -9,7 +9,7 @@ import numpy as np
 import unittest.mock as mock
 import azrael.leo_api as leoAPI
 
-from azrael.types import RetVal
+from azrael.aztypes import RetVal
 from IPython import embed as ipshell
 from azrael.test.test import getCSBox, getCSSphere, getCSEmpty
 from azrael.test.test import getP2P, getLeonard, getRigidBody

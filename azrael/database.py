@@ -22,7 +22,7 @@ import logging
 
 import azrael.config as config
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal
+from azrael.aztypes import typecheck, RetVal
 
 # Global database handles.
 logit = logging.getLogger('azrael.' + __name__)

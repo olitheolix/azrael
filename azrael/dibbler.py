@@ -45,8 +45,8 @@ import gridfs
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, Template, RetVal
-from azrael.types import FragDae, FragRaw, FragMeta
+from azrael.aztypes import typecheck, Template, RetVal
+from azrael.aztypes import FragDae, FragRaw, FragMeta
 
 
 class Dibbler:

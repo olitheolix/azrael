@@ -38,7 +38,7 @@ import zmq.eventloop.zmqstream
 import azrael.dibbler
 import azrael.config as config
 
-from azrael.types import typecheck, RetVal
+from azrael.aztypes import typecheck, RetVal
 
 
 class WebsocketHandler(tornado.websocket.WebSocketHandler):

@@ -17,7 +17,7 @@
 import json
 
 import azrael.test.test
-import azrael.types as types
+import azrael.aztypes as aztypes
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
@@ -53,13 +53,13 @@ class TestClerk:
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any IDs).
         boosters = {
-            '0': types.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
+            '0': aztypes.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
                                minval=0, maxval=0.5, force=0),
-            '1': types.Booster(pos=(6, 7, 8), direction=(0, 1, 0),
+            '1': aztypes.Booster(pos=(6, 7, 8), direction=(0, 1, 0),
                                minval=1, maxval=1.5, force=0)
         }
         factories = {
-            '0': types.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
                                templateID='_templateBox',
                                exit_speed=(0.1, 0.5))
         }
@@ -97,7 +97,7 @@ class TestClerk:
 
         r = enc[template.aid]
         assert r['url_frag'] == payload[template.aid]['url_frag']
-        assert types.Template(**r['template']) == payload[template.aid]['template']
+        assert aztypes.Template(**r['template']) == payload[template.aid]['template']
 
     def test_ControlParts(self):
         """
@@ -105,13 +105,13 @@ class TestClerk:
         """
         # Define the commands.
         cmd_boosters = {
-            '0': types.CmdBooster(force=0.2),
-            '1': types.CmdBooster(force=0.4),
+            '0': aztypes.CmdBooster(force=0.2),
+            '1': aztypes.CmdBooster(force=0.4),
         }
         cmd_factories = {
-            '0': types.CmdFactory(exit_speed=0),
-            '2': types.CmdFactory(exit_speed=0.4),
-            '3': types.CmdFactory(exit_speed=4),
+            '0': aztypes.CmdFactory(exit_speed=0),
+            '2': aztypes.CmdFactory(exit_speed=0.4),
+            '3': aztypes.CmdFactory(exit_speed=4),
         }
         objID = 1
 
@@ -166,7 +166,7 @@ class TestClerk:
 
             # Compile a rigid body from the returned data and compare it to the
             # original.
-            assert src['rbs'] == types.RigidBodyData(**dst['rbs'])
+            assert src['rbs'] == aztypes.RigidBodyData(**dst['rbs'])
 
         assert enc['3'] is None
 
@@ -202,7 +202,7 @@ class TestClerk:
 
             # Decode the data.
             assert len(enc) == 1
-            assert types.ConstraintMeta(**enc[0]) == con
+            assert aztypes.ConstraintMeta(**enc[0]) == con
 
     def test_addTemplate(self):
         """

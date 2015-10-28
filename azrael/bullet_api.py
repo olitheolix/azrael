@@ -24,21 +24,18 @@ Bullet for another engine at some point, should the need arise.
 """
 import logging
 import numpy as np
-import azrael.types as types
+import azrael.aztypes as aztypes
 import azrael.bullet.azBullet as azBullet
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, _RigidBodyData
-from azrael.types import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
-from azrael.types import CollShapeMeta, CollShapeSphere, CollShapeBox, CollShapePlane
+from azrael.aztypes import typecheck, RetVal, _RigidBodyData, RigidBodyData
+from azrael.aztypes import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
+from azrael.aztypes import CollShapeMeta, CollShapeSphere, CollShapeBox, CollShapePlane
 
 # Convenience.
 Vec3 = azBullet.Vec3
 Quaternion = azBullet.Quaternion
 Transform = azBullet.Transform
-
-# Convenience.
-RigidBodyData = types.RigidBodyData
 
 
 class PyRigidBody(azBullet.RigidBody):

@@ -48,7 +48,7 @@ import numpy as np
 import azrael.igor
 import azrael.database
 import azrael.util as util
-import azrael.types as types
+import azrael.aztypes as aztypes
 import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.dibbler as dibbler
@@ -56,7 +56,7 @@ import azrael.database as database
 import azrael.protocol as protocol
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal, Template, FragMeta, _FragMeta
+from azrael.aztypes import typecheck, RetVal, Template, FragMeta, _FragMeta
 
 
 class Clerk(config.AzraelProcess):
@@ -546,7 +546,7 @@ class Clerk(config.AzraelProcess):
                 assert isinstance(tmp, dict)
                 assert isinstance(tmp['templateID'], str)
                 if 'rbs' in tmp:
-                    types.DefaultRigidBody(**tmp['rbs'])
+                    aztypes.DefaultRigidBody(**tmp['rbs'])
         except (AssertionError, KeyError, TypeError):
             return RetVal(False, '<spawn> received invalid arguments', None)
 
@@ -680,7 +680,7 @@ class Clerk(config.AzraelProcess):
 
         # Put the Booster entries from the database into Booster tuples.
         try:
-            b = types.Booster
+            b = aztypes.Booster
             boosters = {k: b(**v)for (k, v) in instance['boosters'].items()}
             del b
         except TypeError:
@@ -780,7 +780,7 @@ class Clerk(config.AzraelProcess):
 
         # Sanity check the Booster- and Factory commands.
         try:
-            b, f = types.CmdBooster, types.CmdFactory
+            b, f = aztypes.CmdBooster, aztypes.CmdFactory
             cmd_boosters = {k: b(*v) for (k, v) in cmd_boosters.items()}
             cmd_factories = {k: f(*v) for (k, v) in cmd_factories.items()}
             del b, f
@@ -969,7 +969,7 @@ class Clerk(config.AzraelProcess):
                      'scale': 1,
                      'position': (0, 0, 0),
                      'rotation': (0, 0, 0, 1),
-                     'fragdata': types.FragNone()}
+                     'fragdata': aztypes.FragNone()}
 
             # Same as ref_1 but all values are None.
             ref_2 = {k: None for k in ref_1}
@@ -1160,7 +1160,7 @@ class Clerk(config.AzraelProcess):
         # Compile the data from the database into a simple dictionary that
         # contains the fragment- and body state.
         out = {}
-        RBS = types._RigidBodyData
+        RBS = aztypes._RigidBodyData
         for doc in db.find(query, prj):
             # Compile the rigid body data and overwrite the version tag with
             # one stored in the database.
@@ -1200,7 +1200,7 @@ class Clerk(config.AzraelProcess):
 
             # Compile- and sanity check ``body``.
             try:
-                body = types.DefaultRigidBody(**body)._asdict()
+                body = aztypes.DefaultRigidBody(**body)._asdict()
             except TypeError:
                 return RetVal(False, 'Invalid body data', None)
 

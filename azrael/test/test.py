@@ -25,10 +25,10 @@ import subprocess
 import numpy as np
 import azrael.leonard
 
-from azrael.types import FragMeta, FragDae, FragRaw, FragNone, Template
-from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox, CollShapePlane, RigidBodyData
-from azrael.types import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
+from azrael.aztypes import FragMeta, FragDae, FragRaw, FragNone, Template
+from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.aztypes import CollShapeBox, CollShapePlane, RigidBodyData
+from azrael.aztypes import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
 
 
 def killAzrael():

@@ -30,9 +30,9 @@ languages.
 """
 
 import azrael.util
-import azrael.types as types
+import azrael.aztypes as aztypes
 
-from azrael.types import typecheck
+from azrael.aztypes import typecheck
 from IPython import embed as ipshell
 
 
@@ -57,7 +57,7 @@ def FromClerk_Ping_Encode(payload: str):
 @typecheck
 def ToClerk_AddTemplates_Decode(payload: dict):
     # Compile- and sanity check each template.
-    T = types.Template
+    T = aztypes.Template
     with azrael.util.Timeit('clerk.decode'):
         templates = [T(**_) for _ in payload['templates']]
     payload['templates'] = templates
@@ -150,7 +150,7 @@ def FromClerk_RemoveObject_Encode(dummyarg):
 @typecheck
 def ToClerk_ControlParts_Decode(payload: dict):
     # Convenience.
-    CmdF, CmdB = types.CmdFactory, types.CmdBooster
+    CmdF, CmdB = aztypes.CmdFactory, aztypes.CmdBooster
 
     # Compile- and sanity check the commands.
     cmds_b = {k: CmdB(**v) for (k, v) in payload['cmd_boosters'].items()}
@@ -273,7 +273,7 @@ def FromClerk_SetForce_Encode(dummyarg):
 @typecheck
 def ToClerk_AddConstraints_Decode(payload: dict):
     # Compile- and sanity check the constraints.
-    C = types.ConstraintMeta
+    C = aztypes.ConstraintMeta
     payload['constraints'] = [C(**_) for _ in payload['constraints']]
     return payload
 

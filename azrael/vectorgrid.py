@@ -33,7 +33,7 @@ import numpy as np
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.types import typecheck, RetVal
+from azrael.aztypes import typecheck, RetVal
 
 # Global database handle.
 _DB_Grid = config.getMongoClient()['azrael_grid']

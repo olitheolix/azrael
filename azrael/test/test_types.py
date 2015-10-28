@@ -17,9 +17,9 @@
 import json
 
 from IPython import embed as ipshell
-from azrael.types import Template, FragMeta, RigidBodyData, Booster, Factory
-from azrael.types import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.types import CollShapeBox, CollShapePlane, ConstraintMeta
+from azrael.aztypes import Template, FragMeta, RigidBodyData, Booster, Factory
+from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
+from azrael.aztypes import CollShapeBox, CollShapePlane, ConstraintMeta
 from azrael.test.test import getP2P, get6DofSpring2, getRigidBody
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
