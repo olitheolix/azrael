@@ -697,12 +697,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         gl.glClearColor(0, 0, 0, 0)
 
         # Put the two possible shaders into dictionaries.
-        vs = os.path.join(_this_directory, 'passthrough.vs')
-        fs = os.path.join(_this_directory, 'passthrough.fs')
+        vs = os.path.join(_this_directory, 'shaders/passthrough.vs')
+        fs = os.path.join(_this_directory, 'shaders/passthrough.fs')
         self.shaderDict['passthrough'] = self.linkShaders(vs, fs)
 
-        vs = os.path.join(_this_directory, 'uv.vs')
-        fs = os.path.join(_this_directory, 'uv.fs')
+        vs = os.path.join(_this_directory, 'shaders/uv.vs')
+        fs = os.path.join(_this_directory, 'shaders/uv.fs')
         self.shaderDict['uv'] = self.linkShaders(vs, fs)
 
         # Load and compile all objects.
