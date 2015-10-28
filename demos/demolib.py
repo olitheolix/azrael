@@ -74,7 +74,7 @@ def loadBoosterCubeBlender():
 
     # Load the Collada model.
     p = os.path.dirname(os.path.abspath(__file__))
-    fname = os.path.join(p, 'boostercube.dae')
+    fname = os.path.join(p, 'models', 'boostercube', 'boostercube.dae')
     vert, uv, rgb = loadModel(fname)
 
     # Extract the body and thruster component.
