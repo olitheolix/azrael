@@ -38,18 +38,17 @@ import json
 import tempfile
 import argparse
 import model_import
-import pyazrael
 import requests
 
 import numpy as np
 import OpenGL.GL as gl
-import azrael.util as util
-import azrael.config as config
-import azrael.leo_api as leoAPI
+
+import pyazrael
+import pyazrael.util as util
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from azrael.types import Template, FragMeta, FragRaw
-from azrael.types import CollShapeMeta, CollShapeBox
+from pyazrael.aztypes import Template, FragMeta, FragRaw
+from pyazrael.aztypes import CollShapeMeta, CollShapeBox
 
 
 def parseCommandLine():
@@ -64,9 +63,9 @@ def parseCommandLine():
     padd = parser.add_argument
 
     # Add the command line options.
-    padd('--addr', metavar='addr', type=str, default=config.addr_clerk,
+    padd('--addr', metavar='addr', type=str, default='127.0.0.1',
          help='IP of Clerk (eg. "127.0.0.1"')
-    padd('--port', metavar='addr', type=int, default=config.port_clerk,
+    padd('--port', metavar='addr', type=int, default=5555,
          help='Port of Clerk (eg. 5555')
 
     param = parser.parse_args()
@@ -101,10 +100,10 @@ def getRigidBody(scale: (int, float)=1,
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))
         cshapes = {'': cshapes}
-    return azrael.types.RigidBodyData(scale, imass, restitution, rotation,
-                                      position, velocityLin, velocityRot,
-                                      cshapes, axesLockLin, axesLockRot,
-                                      version)
+    return pyazrael.aztypes.RigidBodyData(
+        scale, imass, restitution, rotation, position,
+        velocityLin, velocityRot, cshapes,
+        axesLockLin, axesLockRot, version)
 
 
 def perspective(fov, ar, near, far):
@@ -319,6 +318,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Address of Clerk.
         self.ip = ip
         self.port = port
+        self.port_webserver = 8080
+
 
         # Place the window in the top left corner.
         self.setGeometry(0, 0, 640, 480)
@@ -572,7 +573,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Fetch fragment model from Azrael and pass it to the GPU.
-            base_url = 'http://{}:{}'.format(self.ip, config.port_webserver)
+            base_url = 'http://{}:{}'.format(self.ip, self.port_webserver)
             for fragID, frag_data in ret.data[objID].items():
                 if frag_data['fragtype'] == 'RAW':
                     url = base_url + frag_data['url_frag'] + '/model.json'
