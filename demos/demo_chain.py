@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 # Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
 #
 # This file is part of Azrael (https://github.com/olitheolix/azrael)
