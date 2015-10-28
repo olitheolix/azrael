@@ -35,55 +35,12 @@ import demo_default
 
 # Import the necessary Azrael modules.
 import model_import
+import azrael
 import pyazrael
 import azrael.util as util
-import azrael.config as config
-import azrael.leo_api as leoAPI
-import azrael.vectorgrid as vectorgrid
 
 from IPython import embed as ipshell
 from azrael.aztypes import FragMeta, FragRaw
-
-
-def parseCommandLine():
-    """
-    Parse program arguments.
-    """
-    # Create the parser.
-    parser = argparse.ArgumentParser(
-        description=('Azrael Demo Script'),
-        formatter_class=argparse.RawTextHelpFormatter)
-
-    # Shorthand.
-    padd = parser.add_argument
-
-    # Add the command line options.
-    padd('--noviewer', action='store_true', default=False,
-         help='Do not spawn a viewer')
-    padd('--noinit', action='store_true', default=False,
-         help='Do not load any models')
-    padd('--port', metavar='port', type=int, default=azrael.config.port_webserver,
-         help='Port number')
-    padd('--cubes', metavar='X,Y,Z', type=str, default='1,1,1',
-         help='Number of cubes in each dimension')
-    padd('--loglevel', type=int, metavar='level', default=1,
-         help='Specify error log level (0: Debug, 1:Info)')
-    padd('--reset', type=int, metavar='T', default=-1,
-         help='Simulation will reset every T seconds')
-
-    # Run the parser.
-    param = parser.parse_args()
-    try:
-        cubes = [int(_) for _ in param.cubes.split(',')]
-        assert len(cubes) == 3
-        assert min(cubes) >= 0
-        assert sum(cubes) >= 0
-        param.cubes = cubes
-    except (TypeError, ValueError, AssertionError):
-        print('The <cubes> argument is invalid')
-        sys.exit(1)
-
-    return param
 
 
 def loadSphere():
@@ -96,8 +53,7 @@ def loadSphere():
     """
     # Assemble path to the model.
     p = os.path.dirname(os.path.abspath(__file__))
-    p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
-    fname = os.path.join(p, 'sphere.obj')
+    fname = os.path.join(p, 'models', 'sphere', 'sphere.obj')
 
     # Import the model geometry.
     print('  Importing <{}>... '.format(fname), end='', flush=True)
@@ -132,6 +88,10 @@ class SetGeometry(multiprocessing.Process):
         super().__init__()
         self.period = period
 
+        # Address of Clerk.
+        self.addr_webserver = '127.0.0.1'
+        self.port_webserver = 8080
+
     def run(self):
         """
         """
@@ -152,7 +112,7 @@ class SetGeometry(multiprocessing.Process):
         # Backup all models currently in the scene.
         geo_meta = client.getFragments(objIDs).data
         base_url = 'http://{}:{}'.format(
-            azrael.config.addr_webserver, azrael.config.port_webserver)
+            self.addr_webserver, self.port_webserver)
         geo_orig = {}
         for objID in objIDs:
             geo_orig[objID] = {}
@@ -219,7 +179,7 @@ class SetGeometry(multiprocessing.Process):
 
 def main():
     # Parse the command line.
-    param = parseCommandLine()
+    param = demo_default.parseCommandLine()
 
     # Helper class to start/stop Azrael stack and other processes.
     az = azrael.startup.AzraelStack(param.loglevel)

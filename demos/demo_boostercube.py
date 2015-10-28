@@ -27,53 +27,12 @@ import numpy as np
 # Import the necessary Azrael modules.
 import model_import
 import pyazrael
+import azrael
 import azrael.util as util
 import azrael.aztypes as aztypes
-import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.aztypes import Template, FragMeta, FragRaw
-
-
-def parseCommandLine():
-    """
-    Parse program arguments.
-    """
-    # Create the parser.
-    parser = argparse.ArgumentParser(
-        description=('Azrael Demo Script'),
-        formatter_class=argparse.RawTextHelpFormatter)
-
-    # Shorthand.
-    padd = parser.add_argument
-
-    # Add the command line options.
-    padd('--noviewer', action='store_true', default=False,
-         help='Do not spawn a viewer')
-    padd('--noinit', action='store_true', default=False,
-         help='Do not load any models')
-    padd('--port', metavar='port', type=int, default=azrael.config.port_webserver,
-         help='Port number')
-    padd('--cubes', metavar='X,Y,Z', type=str, default='1,1,1',
-         help='Number of cubes in each dimension')
-    padd('--loglevel', type=int, metavar='level', default=1,
-         help='Specify error log level (0: Debug, 1:Info)')
-    padd('--reset', type=int, metavar='T', default=-1,
-         help='Simulation will reset every T seconds')
-
-    # Run the parser.
-    param = parser.parse_args()
-    try:
-        cubes = [int(_) for _ in param.cubes.split(',')]
-        assert len(cubes) == 3
-        assert min(cubes) >= 0
-        assert sum(cubes) >= 0
-        param.cubes = cubes
-    except (TypeError, ValueError, AssertionError):
-        print('The <cubes> argument is invalid')
-        sys.exit(1)
-
-    return param
 
 
 def spawnSpaceship(scale, fname):
@@ -108,8 +67,7 @@ def spawnSpaceship(scale, fname):
     # Load sphere and color it blue(ish). This is going to be the (super
     # simple) "flame" that comes out of the (still invisible) boosters.
     p = os.path.dirname(os.path.abspath(__file__))
-    p = os.path.join(p, '..', 'viewer', 'models')
-    fname = os.path.join(p, 'sphere', 'sphere.obj')
+    fname = os.path.join(p, 'models', 'sphere', 'sphere.obj')
     vert, uv, rgb = demolib.loadModel(fname)
     rgb = np.tile([0, 0, 0.8], len(vert) // 3)
     rgb += 0.2 * np.random.rand(len(rgb))
@@ -138,7 +96,7 @@ def spawnSpaceship(scale, fname):
 
 def main():
     # Parse the command line.
-    param = parseCommandLine()
+    param = demo_default.parseCommandLine()
 
     # Helper class to start/stop Azrael stack and other processes.
     az = azrael.startup.AzraelStack(param.loglevel)
@@ -149,8 +107,7 @@ def main():
         if not param.noinit:
             # Define a sphere with boosters and spawn an instance thereof.
             p = os.path.dirname(os.path.abspath(__file__))
-            p = os.path.join(p, '..', 'viewer', 'models', 'sphere')
-            fname = os.path.join(p, 'sphere.obj')
+            fname = os.path.join(p, 'models', 'sphere', 'sphere.obj')
             spawnSpaceship(scale=1.0, fname=fname)
 
             # Add the specified number of cubes in a grid layout.
