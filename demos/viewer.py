@@ -320,7 +320,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.port = port
         self.port_webserver = 8080
 
-
         # Place the window in the top left corner.
         self.setGeometry(0, 0, 640, 480)
 
