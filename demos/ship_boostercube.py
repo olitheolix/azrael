@@ -35,9 +35,9 @@ from IPython import embed as ipshell
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '../'))
 import pyazrael
-import azrael.aztypes as aztypes
+import pyazrael.aztypes as aztypes
 
-from azrael.aztypes import Template, FragMeta, FragRaw
+from pyazrael.aztypes import Template, FragMeta, FragRaw
 
 
 def BoostercubeTemplate(scale=1.0):
@@ -68,8 +68,7 @@ def BoostercubeTemplate(scale=1.0):
     # Load sphere and color it blue(ish). This is going to be the (super
     # simple) "flame" that comes out of the (still invisible) boosters.
     p = os.path.dirname(os.path.abspath(__file__))
-    p = os.path.join(p, '..', 'viewer', 'models')
-    fname = os.path.join(p, 'sphere', 'sphere.obj')
+    fname = os.path.join(p, 'models', 'sphere', 'sphere.obj')
     vert, uv, rgb = demolib.loadModel(fname)
     rgb = np.tile([0, 0, 0.8], len(vert) // 3)
     rgb += 0.2 * np.random.rand(len(rgb))
