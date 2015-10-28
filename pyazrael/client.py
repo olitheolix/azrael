@@ -32,8 +32,8 @@ import requests
 import traceback
 
 import numpy as np
-import util
-import aztypes
+import pyazrael.util as util
+import pyazrael.aztypes as aztypes
 
 typecheck = aztypes.typecheck
 RetVal = aztypes.RetVal

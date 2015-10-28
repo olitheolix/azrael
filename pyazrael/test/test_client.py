@@ -31,10 +31,8 @@ import requests
 
 import numpy as np
 
-import util
-import client
-import wsclient
-import aztypes
+import pyazrael
+import pyazrael.aztypes as aztypes
 
 # Import the necessary Azrael modules.
 # fixme: use pytest path variable
@@ -73,8 +71,8 @@ class TestClient:
         cls.dibbler = azrael.dibbler.Dibbler()
 
         # Create a ZMQ- and Websocket client.
-        client_zmq = client.Client()
-        client_ws = wsclient.WSClient(
+        client_zmq = pyazrael.client.Client()
+        client_ws = pyazrael.wsclient.WSClient(
             ip=config.addr_webserver, port=config.port_webserver, timeout=1)
         assert client_ws.ping()
         cls.clients = {'ZeroMQ': client_zmq, 'Websocket': client_ws}
