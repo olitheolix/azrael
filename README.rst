@@ -140,4 +140,7 @@ Use the WASD keys, or the mouse, to fly through the scene.
 License
 =======
 
-Azrael is licensed under the terms of the AGPL v3.
+Azrael (everything under `azrael/`) is licensed under the terms of the AGPL v3.
+
+Everything else is (including the Python client and the demos) are licensed
+under the terms of Apache v2.
