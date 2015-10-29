@@ -119,6 +119,23 @@ class TestClient:
         azrael.database.init()
         self.dibbler.reset()
 
+    def test_shared_files(self):
+        """
+        The client library uses a very few of Azrael's utility modules, most
+        notably the type definitions. This test ensures the files stay in sync.
+        """
+        # Verify these files.
+        fnames = ['util.py', 'aztypes.py']
+
+        cur_path = os.path.dirname(os.path.abspath(__file__))
+        pjoin = os.path.join
+        dir_1 = pjoin(cur_path, '..')
+        dir_2 = pjoin(cur_path, '..', '..', 'azrael')
+        for fname in fnames:
+            tmp_1 = open(pjoin(dir_1, fname), 'rb').read() 
+            tmp_2 = open(pjoin(dir_2, fname), 'rb').read() 
+            assert tmp_1 == tmp_2
+
     def test_ping(self):
         """
         Send a ping to the Clerk and check the response is correct.
