@@ -245,7 +245,7 @@ class Dibbler:
             if ftype == 'RAW':
                 self._deleteSubLocation(frag_dir)
                 ret = self.saveModelRaw(frag_dir, frag)
-            elif ftype == 'DAE':
+            elif ftype in ['DAE', 'OBJ']:
                 self._deleteSubLocation(frag_dir)
                 ret = self.saveModelDae(frag_dir, aid, frag)
             elif ftype == '_DEL_':

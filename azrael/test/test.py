@@ -123,6 +123,26 @@ def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
                     rotation=rot, fragdata=geo)
 
 
+def getFragObj(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
+    """
+    Convenience function: return valid OBJ geometry.
+    """
+    b = os.path.dirname(__file__)
+    obj_file = open(b + '/house.obj', 'rb').read()
+    obj_jpg = open(b + '/house.jpg', 'rb').read()
+    obj_mtl = open(b + '/house.mtl', 'rb').read()
+
+    obj_file = base64.b64encode(obj_file).decode('utf8')
+    obj_jpg = base64.b64encode(obj_jpg).decode('utf8')
+    obj_mtl = base64.b64encode(obj_mtl).decode('utf8')
+    geo = FragDae(files={'house.obj': obj_file,
+                         'house.jpg': obj_jpg,
+                         'house.mtl': obj_mtl})
+
+    return FragMeta(fragtype='OBJ', scale=scale, position=pos,
+                    rotation=rot, fragdata=geo)
+
+
 def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2,
            pivot_a=(0, 0, -1), pivot_b=(0, 0, 1)):
     """

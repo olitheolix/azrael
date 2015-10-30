@@ -22,7 +22,7 @@ import azrael.dibbler
 import azrael.config as config
 from IPython import embed as ipshell
 from azrael.aztypes import FragDae, FragRaw
-from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
+from azrael.test.test import getFragNone, getTemplate, getFragRaw, getFragDae, getFragObj
 
 
 class TestDibbler:
@@ -48,8 +48,12 @@ class TestDibbler:
     def verifyDae(self, url: str, aid, fragments: dict):
         """
         fixme: docu
+        fixme: process the body in a loop
 
-        Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
+        Verify that ``url`` contains the Collada model.
+
+        fixme: types of aid
+        fixme: missing 'fragments' description
 
         :param str url: the URL where the Collada fragment is supposed to be.
         :param FragMeta mf: the fragment to compare it with.
@@ -76,6 +80,46 @@ class TestDibbler:
         rgb1 = base64.b64encode(r_rgb1.data).decode('utf8')
         rgb2 = base64.b64encode(r_rgb2.data).decode('utf8')
         downloaded = FragDae({'model.dae': dae, 'rgb1.png': rgb1, 'rgb2.jpg': rgb2})
+
+        # Ensure the downloaded data matches the reference data.
+        assert ref == downloaded
+
+    def verifyObj(self, url: str, aid, fragments: dict):
+        """
+        fixme: docu
+        fixme: process the body in a loop
+
+        Verify that ``url`` contains the OBJ model.
+
+        fixme: types of aid
+        fixme: missing 'fragments' description
+
+        :param str url: the URL where the Collada fragment is supposed to be.
+        :param aid: Azrael's ID for the model to verify.
+        :param dict fragments:
+        :return: None
+        :raises: AssertionError if the fragment does not match.
+        """
+        # Convenience.
+        name = aid
+        ref = fragments[aid].fragdata
+
+        # Fetch- the components of the Collada file.
+        r_obj = self.dibbler.getFile(url + '/{}/house.obj'.format(name))
+        r_mtl = self.dibbler.getFile(url + '/{}/house.mtl'.format(name))
+        r_jpg = self.dibbler.getFile(url + '/{}/house.jpg'.format(name))
+
+        # Verify Dibbler could retrieve all components.
+        assert r_obj.ok
+        assert r_mtl.ok
+        assert r_jpg.ok
+
+        # Base64 encode the downloaded components and put them into a pristine
+        # 'FragDae' instance.
+        obj = base64.b64encode(r_obj.data).decode('utf8')
+        mtl = base64.b64encode(r_mtl.data).decode('utf8')
+        jpg = base64.b64encode(r_jpg.data).decode('utf8')
+        downloaded = FragDae({'house.obj': obj, 'house.mtl': mtl, 'house.jpg': jpg})
 
         # Ensure the downloaded data matches the reference data.
         assert ref == downloaded
@@ -166,10 +210,34 @@ class TestDibbler:
         # Add the first template and verify the database now contains
         # exactly four files (a meta file, the DAE file, and two textures).
         ret = dibbler.addTemplate(t_dae)
+        assert ret.ok
         assert dibbler.getNumFiles() == (True, None, 4)
 
         # Fetch- and verify the model.
         self.verifyDae(ret.data['url_frag'], 'foo', frag)
+
+    def test_addObjTemplate(self):
+        """
+        Add an OBJ template and fetch the individual files again afterwards.
+        """
+        dibbler = self.dibbler
+
+        # Define a template for this test.
+        frag = {'foo': getFragObj()}
+        t_dae = getTemplate('_templateEmpty', fragments=frag)
+
+        # Create a Dibbler instance and verify it is empty.
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Add the first template and verify the database now contains
+        # exactly four files (a meta file, the obj file, one textures, and one
+        # .mtl file).
+        ret = dibbler.addTemplate(t_dae)
+        assert ret.ok
+        assert dibbler.getNumFiles() == (True, None, 4)
+
+        # Fetch- and verify the model.
+        self.verifyObj(ret.data['url_frag'], 'foo', frag)
 
     def test_invalid(self):
         """
