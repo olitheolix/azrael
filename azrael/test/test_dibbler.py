@@ -158,11 +158,11 @@ class TestDibbler:
         frag = {'foo': getFragDae()}
         t_dae = getTemplate('_templateEmpty', fragments=frag)
 
-        # Create a Dibbler instance and flush all data.
+        # Create a Dibbler instance and verify it is empty.
         assert dibbler.getNumFiles() == (True, None, 0)
 
-        # Add the first template and verify that the database now contains
-        # extactly fourc files (a meta file, the DAE file, and two textures).
+        # Add the first template and verify the database now contains
+        # exactly four files (a meta file, the DAE file, and two textures).
         ret = dibbler.addTemplate(t_dae)
         assert dibbler.getNumFiles() == (True, None, 4)
 

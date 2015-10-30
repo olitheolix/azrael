@@ -49,8 +49,9 @@ own space shuttle, design my own sub-marine, invent my own Mars rover with
 awesome navigation abilities, launch my own Rosetta mission, invent my own
 reusable rocket ... no job at ESA, NASA or SpaceX required.
 
-How It (Might) Works
-===================
+
+How It (may) Work
+=================
 
 Classical Physics engines assume they run on a single computer, which means
 data access is fast/free and the number of CPU cores is limited. In the Cloud

@@ -25,7 +25,7 @@ from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 
 
-class TestDibbler:
+class TestAZTypes:
     @classmethod
     def setup_class(cls):
         pass
