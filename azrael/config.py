@@ -75,16 +75,34 @@ del console, logFormat, formatter, fileHandler
 # Global variables.
 # ---------------------------------------------------------------------------
 
-# Determine the host IP address. Try eth0 first. Use localhost is a fallback
-# option if no configured ethernet card was found.
-try:
-    host_ip = netifaces.ifaddresses('eth0')[2][0]['addr']
-except (ValueError, KeyError):
-    try:
-        host_ip = netifaces.ifaddresses('lo')[2][0]['addr']
-    except (ValueError, KeyError):
+def getNetworkAddress():
+    """
+    Return the IP address of the first configured network interface.
+
+    The search order is 'eth*', 'wlan*', and localhost last.
+    """
+    # Find all interface names.
+    eth = [_ for _ in netifaces.interfaces() if _.lower().startswith('eth')]
+    wlan = [_ for _ in netifaces.interfaces() if _.lower().startswith('wlan')]
+    lo = [_ for _ in netifaces.interfaces() if _.lower().startswith('lo')]
+
+    # Search through all interfaces until a configured one (ie one with an IP
+    # address) was found. Return that one to the user, or abort with an error.
+    host_ip = None
+    for iface in eth + wlan + lo:
+        try:
+            host_ip = netifaces.ifaddresses(iface)[2][0]['addr']
+            break
+        except (ValueError, KeyError):
+            pass
+    if host_ip is None:
         logger.critical('Could not find a valid network interface')
         sys.exit(1)
+
+    return host_ip
+
+# Default address where all of Azrael's services will run.
+addr_azrael = getNetworkAddress()
 
 # Database host.
 if 'INSIDEDOCKER' in os.environ:
@@ -95,16 +113,16 @@ else:
     port_database = 27017
 
 # Addresses of the various Azrael services.
-addr_webserver = host_ip
+addr_webserver = addr_azrael
 port_webserver = 8080
 
-addr_dibbler = host_ip
+addr_dibbler = addr_azrael
 port_dibbler = 8081
 
-addr_clerk = host_ip
+addr_clerk = addr_azrael
 port_clerk = 5555
 
-addr_leonard_repreq = 'tcp://' + host_ip + ':5556'
+addr_leonard_repreq = 'tcp://' + addr_azrael + ':5556'
 
 # WebServer URLs for the model- templates and instances. These *must not* include
 # the trailing slash.

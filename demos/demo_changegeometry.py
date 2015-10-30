@@ -36,6 +36,7 @@ import model_import
 import azrael
 import pyazrael
 import azrael.util as util
+import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.aztypes import FragMeta, FragRaw
@@ -87,8 +88,8 @@ class SetGeometry(multiprocessing.Process):
         self.period = period
 
         # Address of Clerk.
-        self.addr_webserver = '127.0.0.1'
-        self.port_webserver = 8080
+        self.addr_webserver = config.addr_webserver
+        self.port_webserver = config.port_webserver
 
     def run(self):
         """

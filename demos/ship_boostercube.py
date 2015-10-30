@@ -28,7 +28,6 @@ import os
 import sys
 import time
 import demolib
-import netifaces
 import numpy as np
 from IPython import embed as ipshell
 
@@ -307,20 +306,11 @@ class CtrlBoosterCube():
 
 
 def main():
-    # Guess which network interface Azrael uses. In plain english, if eth0 has
-    # an IP then use it, otherwise assume Azrael runs is reachable via the
-    # local loopback interface.
-    try:
-        host = netifaces.ifaddresses('eth0')[2][0]['addr']
-    except (ValueError, KeyError):
-        try:
-            host = netifaces.ifaddresses('lo')[2][0]['addr']
-        except (ValueError, KeyError):
-            print('Could not find a valid network interface')
-            sys.exit(1)
+    # Guess Azrael's IP address on the local computer.
+    ip = demolib.getNetworkAddress()
 
     # Instantiate the controller for a BoosterCube ship. Then spawn it.
-    c = CtrlBoosterCube(host)
+    c = CtrlBoosterCube(ip)
     c.spawn((0, 5, 0))
 
     # Successively manoeuvre the ship above each platform.

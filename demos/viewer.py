@@ -35,10 +35,11 @@ del p
 
 import time
 import json
+import demolib
 import tempfile
 import argparse
-import model_import
 import requests
+import model_import
 
 import numpy as np
 import OpenGL.GL as gl
@@ -63,12 +64,15 @@ def parseCommandLine():
     padd = parser.add_argument
 
     # Add the command line options.
-    padd('--addr', metavar='addr', type=str, default='127.0.0.1',
+    padd('--addr', metavar='addr', type=str, default='',
          help='IP of Clerk (eg. "127.0.0.1"')
     padd('--port', metavar='addr', type=int, default=5555,
          help='Port of Clerk (eg. 5555')
 
     param = parser.parse_args()
+
+    if param.addr == '':
+        param.addr = demolib.getNetworkAddress()
 
     # run the parser.
     return param
@@ -663,7 +667,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Create the graphic buffers and compile the shaders.
         """
         # Connect to Azrael.
-        self.client = pyazrael.AzraelClient(ip=self.ip, port=self.port)
+        self.client = pyazrael.AzraelClient(ip=self.ip, port_clerk=self.port)
 
         print('Client connected')
 

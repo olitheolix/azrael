@@ -18,6 +18,7 @@
 import os
 import sys
 import time
+import netifaces
 import subprocess
 import numpy as np
 
@@ -34,6 +35,33 @@ from IPython import embed as ipshell
 from azrael.aztypes import Template, FragMeta, FragRaw
 from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox
+
+
+def getNetworkAddress():
+    """
+    Return the IP address of the first configured network interface.
+
+    The search order is 'eth*', 'wlan*', and localhost last.
+    """
+    # Find all interface names.
+    eth = [_ for _ in netifaces.interfaces() if _.lower().startswith('eth')]
+    wlan = [_ for _ in netifaces.interfaces() if _.lower().startswith('wlan')]
+    lo = [_ for _ in netifaces.interfaces() if _.lower().startswith('lo')]
+
+    # Search through all interfaces until a configured one (ie one with an IP
+    # address) was found. Return that one to the user, or abort with an error.
+    host_ip = None
+    for iface in eth + wlan + lo:
+        try:
+            host_ip = netifaces.ifaddresses(iface)[2][0]['addr']
+            break
+        except (ValueError, KeyError):
+            pass
+    if host_ip is None:
+        logger.critical('Could not find a valid network interface')
+        sys.exit(1)
+
+    return host_ip
 
 
 def getRigidBody(scale: (int, float)=1,

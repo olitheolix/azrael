@@ -30,6 +30,7 @@ import json
 import logging
 import requests
 import traceback
+import netifaces
 
 import numpy as np
 import pyazrael.util as util
@@ -41,9 +42,32 @@ Template = aztypes.Template
 FragRaw = aztypes.FragRaw
 ConstraintMeta = aztypes.ConstraintMeta
 
-addr_clerk = '127.0.0.1'
-port_clerk = 5555
-port_webserver = 8080
+
+def getNetworkAddress():
+    """
+    Return the IP address of the first configured network interface.
+
+    The search order is 'eth*', 'wlan*', and localhost last.
+    """
+    # Find all interface names.
+    eth = [_ for _ in netifaces.interfaces() if _.lower().startswith('eth')]
+    wlan = [_ for _ in netifaces.interfaces() if _.lower().startswith('wlan')]
+    lo = [_ for _ in netifaces.interfaces() if _.lower().startswith('lo')]
+
+    # Search through all interfaces until a configured one (ie one with an IP
+    # address) was found. Return that one to the user, or abort with an error.
+    host_ip = None
+    for iface in eth + wlan + lo:
+        try:
+            host_ip = netifaces.ifaddresses(iface)[2][0]['addr']
+            break
+        except (ValueError, KeyError):
+            pass
+    if host_ip is None:
+        logger.critical('Could not find a valid network interface')
+        sys.exit(1)
+
+    return host_ip
 
 
 class Client():
@@ -56,12 +80,25 @@ class Client():
     decode the reply back to Python types, and pass the result back to the
     caller.
 
-    :param str addr: Address of Clerk.
+    :param str ip: Address of Clerk.
+    :param int port_clerk: Port of Clerk.
+    :param int port_webserver: Port of Azrael's web API.
     :raises: None
     """
     @typecheck
-    def __init__(self, ip: str=addr_clerk, port: int=port_clerk):
+    def __init__(self, ip: str=None,
+                 port_clerk: int=5555,
+                 port_webserver: int=8080):
         super().__init__()
+
+        # If no IP address was given for Azrael then try to determine it
+        # automatically.
+        if ip is None:
+            self.addr_clerk = getNetworkAddress()
+        else:
+            self.addr_clerk = ip
+        self.port_clerk = port_clerk
+        self.port_webserver = port_webserver
 
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
@@ -71,10 +108,7 @@ class Client():
         self.ctx = zmq.Context()
         self.sock_cmd = self.ctx.socket(zmq.REQ)
         self.sock_cmd.linger = 0
-        self.sock_cmd.connect('tcp://{}:{}'.format(ip, port))
-
-        # Some methods need to know the address of the server.
-        self.ip, self.port = ip, port
+        self.sock_cmd.connect('tcp://{}:{}'.format(self.addr_clerk, self.port_clerk))
 
     def __del__(self):
         if self.sock_cmd is not None:
@@ -547,7 +581,7 @@ class Client():
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
-            ip=self.ip, port=port_webserver, url=template['url_frag'])
+            ip=self.addr_clerk, port=self.port_webserver, url=template['url_frag'])
 
         # Fetch the geometry from the web server and decode it.
         out = {}

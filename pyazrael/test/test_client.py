@@ -71,9 +71,10 @@ class TestClient:
         cls.dibbler = azrael.dibbler.Dibbler()
 
         # Create a ZMQ- and Websocket client.
-        client_zmq = pyazrael.AzraelClient(ip=config.addr_clerk, port=config.port_clerk)
+        client_zmq = pyazrael.AzraelClient(
+            config.addr_azrael, config.port_clerk, config.port_webserver)
         client_ws = pyazrael.AzraelWSClient(
-            ip=config.addr_webserver, port=config.port_webserver, timeout=1)
+            config.addr_azrael, config.port_webserver, timeout=1)
         assert client_ws.ping()
         cls.clients = {'ZeroMQ': client_zmq, 'Websocket': client_ws}
 
