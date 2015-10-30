@@ -40,13 +40,13 @@ class TestAZTypes:
     def teardown_method(self, method):
         pass
 
-    def isJsonCompatible(self, dt_a, DataType):
+    def isJsonCompatible(self, data, DataType):
         """
-        Verify that that the `instance` serialises to JSON and can compile
-        itself from positional- and keyword arguments.
+        Verify that `data` serialises to JSON and can compile
+        itself into ``DataType`` from positional- and keyword arguments.
         """
-        assert dt_a == DataType(*json.loads(json.dumps(dt_a)))
-        assert dt_a == DataType(**json.loads(json.dumps(dt_a._asdict())))
+        assert data == DataType(*json.loads(json.dumps(data)))
+        assert data == DataType(**json.loads(json.dumps(data._asdict())))
         return True
 
     def test_CollShapeMeta(self):
@@ -97,20 +97,25 @@ class TestAZTypes:
         assert tmp == con_d['condata']
 
     def test_FragMeta(self):
+        # Verify that all geometry types serialise correctly.
         for Getter in (getFragRaw, getFragDae, getFragNone):
-            # Get a proper FragMeta, and a stunted one where the 'fragdata'
-            # field is None. This case often happens internally in Azrael
-            # because the meta data is stored in a separate database.
+            # Get a proper FragMeta instance. Then get a stunted one where
+            # 'fragdata' is None. The stunted case often happens internally in
+            # Azrael because the meta data is stored in a separate database
+            # that may not yet have synced.
             frag_a = Getter()
             frag_b = frag_a._replace(fragdata=None)
             assert self.isJsonCompatible(frag_a, FragMeta)
             assert self.isJsonCompatible(frag_b, FragMeta)
 
         # Verify that 'FragMeta._asdict' also converts the 'fragdata' field
-        # to dictionaries.
+        # to dictionaries. To do this we first convert the entire structure,
+        # then only the 'fragdata' field, and finally verify that the entire
+        # structure contains the correct dictionary for 'fragdata'.
         frag_t = getFragRaw()
         frag_d = frag_t._asdict()
         assert isinstance(frag_d, dict)
+
         tmp = frag_t.fragdata._asdict()
         assert isinstance(tmp, dict)
         assert tmp == frag_d['fragdata']
