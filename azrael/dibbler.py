@@ -84,6 +84,8 @@ class Dibbler:
     @typecheck
     def saveModelDae(self, location: str, aid: str, model: FragMeta):
         """
+        fixme: docu string, and inline docu
+
         Save the Collada ``model`` to ``location``.
 
         This will create the necessary files under ``location`` to store all
@@ -116,20 +118,16 @@ class Dibbler:
             tmp = FragDae(*model.fragdata)
 
             # Undo the Base64 encoding ('dae' and 'rgb' will be Bytes).
-            dae = b64dec(tmp.dae.encode('utf8'))
-            rgb = {k: b64dec(v.encode('utf8')) for k, v in tmp.rgb.items()}
+            model_files = {k: b64dec(v.encode('utf8')) for k, v in tmp.files.items()}
         except TypeError:
             msg = 'Could not save Collada fragments'
             return RetVal(False, msg, None)
 
-        # Save the dae file to "location/model_name/model_name".
-        self.fs.put(dae, filename=os.path.join(location, aid))
-
         # Save the textures. These are stored as dictionaries with the texture
         # file name as key and the data as a binary stream, eg,
         # {'house.jpg': b'abc', 'tree.png': b'def', ...}
-        for name, rgb in rgb.items():
-            self.fs.put(rgb, filename=os.path.join(location, name))
+        for fname, fdata in model_files.items():
+            self.fs.put(fdata, filename=os.path.join(location, fname))
 
         return RetVal(True, None, 1.0)
 

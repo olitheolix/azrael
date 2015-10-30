@@ -49,7 +49,7 @@ _Template = namedtuple('_Template', 'aid rbs fragments boosters factories custom
 _FragMeta = namedtuple('_FragMeta',
                        'fragtype scale position rotation fragdata')
 _FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
-_FragDae = namedtuple('_FragDae', 'dae rgb')
+_FragDae = namedtuple('_FragDae', 'files')
 FragNone = namedtuple('FragNone', '')
 
 # Work package related.
@@ -309,22 +309,22 @@ class FragRaw(_FragRaw):
 
 class FragDae(_FragDae):
     """
+    fixme: docu update
     Return a valid description for a Collada file and its textures.
 
     The RGB dictionary denotes the texture images. The keys are file names (eg.
     'foo.png') whereas the associated values are the Base64 encoded images
     themselves.
 
-    :param str dae: Collada file
-    :param dict rgb: dictionary of texture files.
+    :param dict files: dictionary of files.
     :return: compiled ``_FragDae`` instance.
     :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
-    def __new__(cls, dae: str, rgb: dict):
+    def __new__(cls, files: dict):
         try:
             # Verify the RGB dictionary.
-            for k, v in rgb.items():
+            for k, v in files.items():
                 assert isinstance(k, str)
                 assert isinstance(v, str)
         except AssertionError:
@@ -333,7 +333,7 @@ class FragDae(_FragDae):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, dae, rgb)
+        return super().__new__(cls, files)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))

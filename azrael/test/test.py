@@ -115,9 +115,9 @@ def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     dae_file = base64.b64encode(dae_file).decode('utf8')
     dae_rgb1 = base64.b64encode(dae_rgb1).decode('utf8')
     dae_rgb2 = base64.b64encode(dae_rgb2).decode('utf8')
-    geo = FragDae(dae=dae_file,
-                  rgb={'rgb1.png': dae_rgb1,
-                       'rgb2.jpg': dae_rgb2})
+    geo = FragDae(files={'model.dae': dae_file,
+                         'rgb1.png': dae_rgb1,
+                         'rgb2.jpg': dae_rgb2})
 
     return FragMeta(fragtype='DAE', scale=scale, position=pos,
                     rotation=rot, fragdata=geo)

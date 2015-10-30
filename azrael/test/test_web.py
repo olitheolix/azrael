@@ -58,8 +58,10 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
             assert False
         return FragRaw(**(ret))
 
-    def downloadFragDae(self, url: str, dae: str, textures: list):
+    def downloadFragDae(self, url: str, fnames: list):
         """
+        fixme: docu
+
         Download and unpack the Collada model from ``url`` and return it as a
         ``FragDae`` instance.
 
@@ -72,23 +74,20 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         :rtype: FragDae
         :raises: AssertionError if there was a problem.
         """
-        # Download the Collada file itself.
-        dae = self.fetch(url + dae, method='GET').body
-
         # Download all the textures.
-        rgb = {}
-        for texture in textures:
-            rgb[texture] = self.fetch(url + texture, method='GET').body
+        fdata = {}
+        for fname in fnames:
+            fdata[fname] = self.fetch(url + fname, method='GET').body
 
         # Convert the fields to Base64 encode strings and construct a new
         # FragDae instance.
         b64enc = base64.b64encode
-        dae = b64enc(dae).decode('utf8')
-        rgb = {k: b64enc(v).decode('utf8') for (k, v) in rgb.items()}
-        return FragDae(dae=dae, rgb=rgb)
+        fdata = {k: b64enc(v).decode('utf8') for (k, v) in fdata.items()}
+        return FragDae(files=fdata)
 
     def verifyTemplate(self, url, fragments):
         """
+        fixme: docu
         Raise an error if the ``fragments`` are not available at ``url``.
 
         This method will automatically adapts to the fragment type and verifies
@@ -118,8 +117,8 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
                 assert self.downloadFragRaw(tmp_url) == frag.fragdata
             elif ftype == 'DAE':
                 tmp_url = url + '/{name}/'.format(name=aid)
-                texture_names = list(frag.fragdata.rgb.keys())
-                ret = self.downloadFragDae(tmp_url, aid, texture_names)
+                fnames = list(frag.fragdata.files.keys())
+                ret = self.downloadFragDae(tmp_url, fnames)
                 assert ret == frag.fragdata
             else:
                 assert False

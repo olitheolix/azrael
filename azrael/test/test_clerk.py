@@ -1523,8 +1523,8 @@ class TestClerk:
     def test_fragments_end2end(self):
         """
         Integration test: create a live system, add a template with two
-        fragments, spawn it, query it, very its geometry, alter its
-        geometry, and verify again.
+        fragments, spawn it, query it, verify its geometry, alter its
+        geometry, and verify the geometry again.
         """
         clerk = self.clerk
         web = azrael.web.WebServer()
@@ -1625,22 +1625,11 @@ class TestClerk:
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == f_raw.fragdata
 
-        # Download and verify the dae file. Note that the file name itself
-        # matches the name of the fragment (ie. 'test'), *not* the name of the
-        # original Collada file ('cube.dae').
-        url = base_url + data['test']['url_frag'] + '/test'
-        tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.fragdata.dae)
-
-        # Download and verify the first texture.
-        url = base_url + data['test']['url_frag'] + '/rgb1.png'
-        tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb1.png'])
-
-        # Download and verify the second texture.
-        url = base_url + data['test']['url_frag'] + '/rgb2.jpg'
-        tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb2.jpg'])
+        # Download and verify all model files.
+        for fname in f_dae.fragdata.files.keys():
+            url = base_url + data['test']['url_frag'] + '/' + fname
+            tmp = _download(url)
+            assert tmp == base64.b64decode(f_dae.fragdata.files[fname])
 
         # Change the fragment geometries.
         f_raw = getFragRaw()
@@ -1657,22 +1646,11 @@ class TestClerk:
         tmp = json.loads(tmp.decode('utf8'))
         assert FragRaw(**tmp) == f_raw.fragdata
 
-        # Download and verify the dae file. Note that the file name itself
-        # matches the name of the fragment (ie. 'test'), *not* the name of the
-        # original Collada file ('cube.dae').
-        url = base_url + data['test']['url_frag'] + '/test'
-        tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.fragdata.dae)
-
-        # Download and verify the first texture.
-        url = base_url + data['test']['url_frag'] + '/rgb1.png'
-        tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb1.png'])
-
-        # Download and verify the second texture.
-        url = base_url + data['test']['url_frag'] + '/rgb2.jpg'
-        tmp = _download(url)
-        assert tmp == base64.b64decode(f_dae.fragdata.rgb['rgb2.jpg'])
+        # Download and verify all model files.
+        for fname in f_dae.fragdata.files.keys():
+            url = base_url + data['test']['url_frag'] + '/' + fname
+            tmp = _download(url)
+            assert tmp == base64.b64decode(f_dae.fragdata.files[fname])
 
         web.terminate()
         web.join()
