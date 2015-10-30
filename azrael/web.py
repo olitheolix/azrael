@@ -268,7 +268,7 @@ class WebServer(config.AzraelProcess):
         http = tornado.httpserver.HTTPServer(app)
 
         # Specify the server port and start the ioloop.
-        http.listen(config.port_webserver)
+        http.listen(config.port_webapi)
         tornado_app = ioloop.IOLoop.instance()
 
         # Start Tornado event loop.

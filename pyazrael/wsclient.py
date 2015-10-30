@@ -47,16 +47,16 @@ class WSClient(pyazrael.client.Client):
 
     To use this class a ``WebServer`` instance must be running.
 
-    :param str ip: IP of ``WebServer`` (eg '127.0.0.1')
+    :param str addr_webapi: IP of ``WebServer`` (eg '127.0.0.1')
     :param int port_webapi: port of ``WebServer`` (eg '8080')
     :param float timeout: Websocket timeout.
     """
     @typecheck
-    def __init__(self, ip: str, port_webapi: int, timeout: (int, float)=20):
+    def __init__(self, addr_webapi: str, port_webapi: int, timeout: (int, float)=20):
         super().__init__()
 
         # URL of WebServer server.
-        self.url = 'ws://{ip}:{port}/websocket'.format(ip=ip, port=port_webapi)
+        self.url = 'ws://{ip}:{port}/websocket'.format(ip=addr_webapi, port=port_webapi)
 
         # Websocket handle (will be initialised below).
         self.ws = None

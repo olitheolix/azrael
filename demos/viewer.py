@@ -310,7 +310,7 @@ class Camera:
 
 
 class ViewerWidget(QtOpenGL.QGLWidget):
-    def __init__(self, ip: str, port: int, parent=None):
+    def __init__(self, addr_clerk: str, port_clerk: int, parent=None):
         super().__init__(parent)
 
         # Camera instance.
@@ -320,9 +320,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.oldSVs, self.newSVs = {}, {}
 
         # Address of Clerk.
-        self.ip = ip
-        self.port = port
-        self.port_webserver = 8080
+        self.addr_clerk = addr_clerk
+        self.port_clerk = port_clerk
+        self.port_webapi = 8080
 
         # Place the window in the top left corner.
         self.setGeometry(0, 0, 640, 480)
@@ -576,7 +576,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 continue
 
             # Fetch fragment model from Azrael and pass it to the GPU.
-            base_url = 'http://{}:{}'.format(self.ip, self.port_webserver)
+            base_url = 'http://{}:{}'.format(self.addr_clerk, self.port_webapi)
             for fragID, frag_data in ret.data[objID].items():
                 if frag_data['fragtype'] == 'RAW':
                     url = base_url + frag_data['url_frag'] + '/model.json'
@@ -667,7 +667,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         Create the graphic buffers and compile the shaders.
         """
         # Connect to Azrael.
-        self.client = pyazrael.AzraelClient(ip=self.ip, port_clerk=self.port)
+        self.client = pyazrael.AzraelClient(self.addr_clerk, self.port_clerk)
 
         print('Client connected')
 

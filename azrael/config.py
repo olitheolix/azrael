@@ -113,8 +113,8 @@ else:
     port_database = 27017
 
 # Addresses of the various Azrael services.
-addr_webserver = addr_azrael
-port_webserver = 8080
+addr_webapi = addr_azrael
+port_webapi = 8080
 
 addr_dibbler = addr_azrael
 port_dibbler = 8081

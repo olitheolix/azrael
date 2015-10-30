@@ -1619,7 +1619,7 @@ class TestClerk:
 
         # Download the 'RAW' file and verify its content is correct.
         base_url = 'http://{}:{}'.format(
-            azrael.config.addr_webserver, azrael.config.port_webserver)
+            azrael.config.addr_webapi, azrael.config.port_webapi)
         url = base_url + data['10']['url_frag'] + '/model.json'
         tmp = _download(url)
         tmp = json.loads(tmp.decode('utf8'))

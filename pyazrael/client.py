@@ -82,23 +82,23 @@ class Client():
 
     :param str ip: Address of Clerk.
     :param int port_clerk: Port of Clerk.
-    :param int port_webserver: Port of Azrael's web API.
+    :param int port_webapi: Port of Azrael's web API.
     :raises: None
     """
     @typecheck
-    def __init__(self, ip: str=None,
+    def __init__(self, addr_clerk: str=None,
                  port_clerk: int=5555,
-                 port_webserver: int=8080):
+                 port_webapi: int=8080):
         super().__init__()
 
         # If no IP address was given for Azrael then try to determine it
         # automatically.
-        if ip is None:
+        if addr_clerk is None:
             self.addr_clerk = getNetworkAddress()
         else:
-            self.addr_clerk = ip
+            self.addr_clerk = addr_clerk
         self.port_clerk = port_clerk
-        self.port_webserver = port_webserver
+        self.port_webapi = port_webapi
 
         # Create a Class-specific logger.
         name = '.'.join([__name__, self.__class__.__name__])
@@ -581,7 +581,7 @@ class Client():
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
-            ip=self.addr_clerk, port=self.port_webserver, url=template['url_frag'])
+            ip=self.addr_clerk, port=self.port_webapi, url=template['url_frag'])
 
         # Fetch the geometry from the web server and decode it.
         out = {}

@@ -88,8 +88,8 @@ class SetGeometry(multiprocessing.Process):
         self.period = period
 
         # Address of Clerk.
-        self.addr_webserver = config.addr_webserver
-        self.port_webserver = config.port_webserver
+        self.addr_webapi = config.addr_webapi
+        self.port_webapi = config.port_webapi
 
     def run(self):
         """
@@ -111,7 +111,7 @@ class SetGeometry(multiprocessing.Process):
         # Backup all models currently in the scene.
         geo_meta = client.getFragments(objIDs).data
         base_url = 'http://{}:{}'.format(
-            self.addr_webserver, self.port_webserver)
+            self.addr_webapi, self.port_webapi)
         geo_orig = {}
         for objID in objIDs:
             geo_orig[objID] = {}

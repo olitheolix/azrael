@@ -72,9 +72,9 @@ class TestClient:
 
         # Create a ZMQ- and Websocket client.
         client_zmq = pyazrael.AzraelClient(
-            config.addr_azrael, config.port_clerk, config.port_webserver)
+            config.addr_clerk, config.port_clerk, config.port_webapi)
         client_ws = pyazrael.AzraelWSClient(
-            config.addr_azrael, config.port_webserver, timeout=1)
+            config.addr_webapi, config.port_webapi, timeout=1)
         assert client_ws.ping()
         cls.clients = {'ZeroMQ': client_zmq, 'Websocket': client_ws}
 
@@ -562,7 +562,7 @@ class TestClient:
 
         # Download the fragment.
         base_url = 'http://{ip}:{port}'.format(
-            ip=config.addr_webserver, port=config.port_webserver)
+            ip=config.addr_webapi, port=config.port_webapi)
         url = base_url + ret.data[objID]['bar']['url_frag'] + '/model.json'
         for ii in range(10):
             assert ii < 8

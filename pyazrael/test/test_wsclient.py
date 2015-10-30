@@ -54,12 +54,8 @@ def test_custom_objid():
     web = azrael.web.WebServer()
     web.start()
 
-    # Convenience.
-    ip = config.addr_webserver
-    port = config.port_webserver
-
     # Instantiate a WSClient without specifiying an object ID.
-    client = pyazrael.AzraelWSClient(ip=ip, port_webapi=port, timeout=1)
+    client = pyazrael.AzraelWSClient(config.addr_webapi, config.port_webapi, timeout=1)
 
     # Ping Clerk to verify the connection is live.
     ret = client.ping()
@@ -80,8 +76,8 @@ def test_ping_WebServer():
     verify that the ping fails.
     """
     # Convenience.
-    ip = config.addr_webserver
-    port = config.port_webserver
+    addr_webapi = config.addr_webapi
+    port_webapi = config.port_webapi
 
     # Start the services.
     clerk = azrael.clerk.Clerk()
@@ -90,7 +86,7 @@ def test_ping_WebServer():
     web.start()
 
     # Create a Websocket client.
-    client = pyazrael.AzraelWSClient(ip=ip, port_webapi=port, timeout=1)
+    client = pyazrael.AzraelWSClient(addr_webapi, port_webapi, timeout=1)
 
     # Ping Clerk via the Web service.
     assert client.ping()
@@ -104,6 +100,6 @@ def test_ping_WebServer():
 
     # Ping must now be impossible.
     with pytest.raises(ConnectionRefusedError):
-        pyazrael.AzraelWSClient(ip=ip, port_webapi=port, timeout=1)
+        pyazrael.AzraelWSClient(addr_webapi, port_webapi, timeout=1)
 
     assert not client.pingWebserver().ok
