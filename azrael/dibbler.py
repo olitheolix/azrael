@@ -29,9 +29,9 @@ By design, Dibbler will be useful to Clerk instances to add/remove models, and
 WebServer to serve them up via HTTP. Its stateless design makes it possible to
 create as many instances as necessary.
 
-.. note:: Dibbler sanity checks models but has hardly any safe guards for
-          overwriting existing files or concurrent access, other than those
-          provided by GridFS itself. This is deliberate, partially because
+.. note:: Dibbler sanity checks models but has hardly any safe guards against
+          overwriting existing files or concurrent access. Unless
+          GridFS provides them itself. This is deliberate, partially because
           GridFS makes this considerably harder than plain MongoDB, and mostly
           because the Clerks already take care of it with the meta data they
           store in MongoDB. After all, Dibbler is merely the storage engine for
@@ -151,13 +151,13 @@ class Dibbler:
         # Sanity checks.
         try:
             data = FragRaw(*model.fragdata)
+            data = json.dumps(data._asdict()).encode('utf8')
         except (AssertionError, TypeError):
             msg = 'Invalid data types for Raw fragments'
             return RetVal(False, msg, None)
 
-        # Save the fragments as JSON data to eg "templates/mymodel/model.json".
-        self.fs.put(json.dumps(data._asdict()).encode('utf8'),
-                    filename=os.path.join(location, 'model.json'))
+        # Save the fragments as JSON data to eg "location/model_name/model.json".
+        self.fs.put(data, filename=os.path.join(location, 'model.json'))
         return RetVal(True, None, None)
 
     @typecheck
@@ -168,10 +168,10 @@ class Dibbler:
         This function is the equivalent of 'rm -rf url/*'. It always succeeds
         and returns the number of deleted files.
 
-        ..note:: It is well possible that file with the same file name exists
-            multiple times in MongoDB. However, the numberr of deleted files
-            only returns the number of unique file names deleted, even if it
-            may have deleted several versions of some of the files.
+        ..note:: It is well possible that multiple versions of a single file
+            exist in GridFS. However, this method only returns the number of
+            unique files deleted, irrespective of how many version of
+            particular files were deleted along the way.
 
         :param str url: location (eg. '/instances/blah/')
         :return: number of deleted files
@@ -195,14 +195,14 @@ class Dibbler:
 
         If ``update`` is *True* then 'location/meta.json' must already exist.
 
-        .. note:: The ``update`` flag does not guarnatee that meta.json still
+        .. note:: The ``update`` flag does not guarantee that meta.json still
                   exists when the files are written because another Dibbler
                   from another process may delete it at the same time. It is
                   the responsibility of the caller (usually Clerk) to ensure
                   this does not happen.
 
-        For instance, if location='/foo' the the "directory" structure in the
-        model databae will look like this:
+        For instance, if location='/foo' the "directory" structure in the
+        model database will look like this:
 
         * /foo/meta.json
         * /foo/frag_name_1/...
