@@ -134,7 +134,7 @@ class Dibbler:
         return RetVal(True, None, 1.0)
 
     @typecheck
-    def saveModelRaw(self, location: str, aid: str, model: FragMeta):
+    def saveModelRaw(self, location: str, model: FragMeta):
         """
         Save the Raw ``model`` to ``location``.
 
@@ -246,7 +246,7 @@ class Dibbler:
             # Delete the current fragments and save the new ones.
             if ftype == 'RAW':
                 self._deleteSubLocation(frag_dir)
-                ret = self.saveModelRaw(frag_dir, aid, frag)
+                ret = self.saveModelRaw(frag_dir, frag)
             elif ftype == 'DAE':
                 self._deleteSubLocation(frag_dir)
                 ret = self.saveModelDae(frag_dir, aid, frag)
