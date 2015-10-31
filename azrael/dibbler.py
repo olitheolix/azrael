@@ -46,7 +46,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.aztypes import typecheck, Template, RetVal
-from azrael.aztypes import FragDae, FragRaw, FragMeta
+from azrael.aztypes import FragDae, FragMeta
 
 
 class Dibbler:
@@ -130,33 +130,6 @@ class Dibbler:
             self.fs.put(fdata, filename=os.path.join(location, fname))
 
         return RetVal(True, None, 1.0)
-
-    @typecheck
-    def saveModelRaw(self, location: str, model: FragMeta):
-        """
-        Save the Raw ``model`` to ``location``.
-
-        This will create the necessary files under ``location`` to store all
-        the attached information.
-
-        The "directory" structure will contain only a single entry:
-          location/model_name/model.json
-
-        :param str location: directory where to store ``model``.
-        :param FragMeta model: the Raw model itself.
-        :return: success
-        """
-        # Sanity checks.
-        try:
-            data = FragRaw(*model.fragdata)
-            data = json.dumps(data._asdict()).encode('utf8')
-        except (AssertionError, TypeError):
-            msg = 'Invalid data types for Raw fragments'
-            return RetVal(False, msg, None)
-
-        # Save the fragments as JSON data to eg "location/model_name/model.json".
-        self.fs.put(data, filename=os.path.join(location, 'model.json'))
-        return RetVal(True, None, None)
 
     @typecheck
     def _deleteSubLocation(self, url: str):
@@ -261,7 +234,7 @@ class Dibbler:
 
             # Update the 'meta.json': it contains a dictionary with all
             # fragment names and their type, for instance:
-            # {'foo': 'raw', 'bar': # 'dae', ...}
+            # {'foo': 'raw', 'bar': 'dae', ...}
             frag_names[aid] = frag.fragtype
             self.fs.put(json.dumps({'fragments': frag_names}).encode('utf8'),
                         filename=os.path.join(location, 'meta.json'))
