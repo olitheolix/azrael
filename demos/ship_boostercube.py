@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.join(p, '../'))
 import pyazrael
 import pyazrael.aztypes as aztypes
 
-from pyazrael.aztypes import Template, FragMeta, FragRaw
+from pyazrael.aztypes import Template
 
 
 def BoostercubeTemplate(scale=1.0):
@@ -49,7 +49,8 @@ def BoostercubeTemplate(scale=1.0):
 
     # Load the model.
     vert, uv, rgb = demolib.loadBoosterCubeBlender()
-    frag_cube = FragRaw(vert, uv, rgb)
+    frag_cube = {'vert': vert, 'uv': uv, 'rgb': rgb, 'scale': scale,
+                 'pos': (0, 0, 0), 'rot': (0, 0, 0, 1)}
     del vert, uv, rgb
 
     # Attach six boosters, two for every axis.
@@ -73,7 +74,8 @@ def BoostercubeTemplate(scale=1.0):
     rgb = np.tile([0, 0, 0.8], len(vert) // 3)
     rgb += 0.2 * np.random.rand(len(rgb))
     rgb = np.array(255 * rgb.clip(0, 1), np.uint8)
-    frag_flame = FragRaw(vert, np.array([]), rgb)
+    frag_flame = {'vert': vert, 'uv': [], 'rgb': rgb,
+                  'pos': (0, 0, 0), 'rot': (0, 0, 0, 1)}
     del p, fname, vert, uv, rgb
 
     # Add the template to Azrael.
@@ -81,12 +83,11 @@ def BoostercubeTemplate(scale=1.0):
     cs = aztypes.CollShapeBox(scale, scale, scale)
     cs = aztypes.CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
     body = demolib.getRigidBody(cshapes={'0': cs})
-    pos, rot = (0, 0, 0), (0, 0, 0, 1)
     frags = {
-        'frag_1': FragMeta('raw', scale, pos, rot, frag_cube),
-        'b_x': FragMeta('raw', 0, pos, rot, frag_flame),
-        'b_y': FragMeta('raw', 0, pos, rot, frag_flame),
-        'b_z': FragMeta('raw', 0, pos, rot, frag_flame),
+        'frag_1': demolib.getFragMeta('raw', **frag_cube),
+        'b_x': demolib.getFragMeta('raw', **frag_flame),
+        'b_y': demolib.getFragMeta('raw', **frag_flame),
+        'b_z': demolib.getFragMeta('raw', **frag_flame),
     }
     template = Template(tID, body, frags, boosters, {})
     return template
