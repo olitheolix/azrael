@@ -380,7 +380,7 @@ class FragMeta(_FragMeta):
                         frag = FragRaw(**fragdata)
                     else:
                         frag = FragRaw(*fragdata)
-                elif fragtype == 'DAE':
+                elif fragtype in ['DAE', 'OBJ']:
                     if isinstance(fragdata, dict):
                         frag = FragDae(**fragdata)
                     else:
