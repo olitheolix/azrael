@@ -35,7 +35,7 @@ import azrael.config as config
 import azrael.vectorgrid as vectorgrid
 
 from IPython import embed as ipshell
-from azrael.aztypes import Template, FragMeta, FragRaw
+from azrael.aztypes import Template
 
 
 def parseCommandLine():
@@ -89,9 +89,13 @@ def addPlatforms():
         version)
     
     # Geometry for the platforms (defines their appearance, not physics).
-    fr = FragRaw(vert, uv=[], rgb=[])
-    fm = FragMeta(fragtype='RAW', scale=1, position=position,
-                  rotation=rotation, fragdata=fr)
+    fm = demolib.getFragMeta(ftype='RAW',
+                  vert=vert,
+                  uv=[],
+                  rgb=[],
+                  scale=1,
+                  pos=position,
+                  rot=rotation)
     frags = {'frag_1': fm}
 
     # Define the platform template and upload it to Azrael.
