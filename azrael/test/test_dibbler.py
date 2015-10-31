@@ -126,7 +126,7 @@ class TestDibbler:
 
     def verifyRaw(self, url: str, aid: str, fragments: dict):
         """
-        Verify that ``url`` contains the canned Collada Metga fragment ``mf``.
+        Verify that ``url`` contains the geometry of a RAW geometry.
 
         :param str url: the URL where the Collada fragment is supposed to be.
         :param FragMeta mf: the fragment to compare it with.
@@ -140,12 +140,8 @@ class TestDibbler:
         # Fetch- the data for the Raw fragment.
         ret = self.dibbler.getFile('{}/{}/model.json'.format(url, name))
         assert ret.ok
-        ret = json.loads(ret.data.decode('utf8'))
-
-        # Construct a pristine FragRaw from the downloaded data and compare it
-        # to the provided reference.
-        download = FragRaw(ret['vert'], ret['uv'], ret['rgb'])
-        assert ref == download
+        model = base64.b64encode(ret.data).decode('utf8')
+        assert model == ref.files['model.json']
 
     def test_addTemplate_with_no_fragments(self):
         """

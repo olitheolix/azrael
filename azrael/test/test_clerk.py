@@ -35,7 +35,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.aztypes import RetVal, CollShapeMeta
-from azrael.aztypes import FragRaw
+from azrael.aztypes import FragRaw, FragDae
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
@@ -1622,8 +1622,8 @@ class TestClerk:
             azrael.config.addr_webapi, azrael.config.port_webapi)
         url = base_url + data['10']['url_frag'] + '/model.json'
         tmp = _download(url)
-        tmp = json.loads(tmp.decode('utf8'))
-        assert FragRaw(**tmp) == f_raw.fragdata
+        tmp = base64.b64encode(tmp).decode('utf8')
+        assert tmp == f_raw.fragdata.files['model.json']
 
         # Download and verify all model files.
         for fname in f_dae.fragdata.files.keys():
@@ -1643,8 +1643,8 @@ class TestClerk:
         # Download the 'RAW' file and verify its content is correct.
         url = base_url + data['10']['url_frag'] + '/model.json'
         tmp = _download(url)
-        tmp = json.loads(tmp.decode('utf8'))
-        assert FragRaw(**tmp) == f_raw.fragdata
+        tmp = base64.b64encode(tmp).decode('utf8')
+        assert tmp == f_raw.fragdata.files['model.json']
 
         # Download and verify all model files.
         for fname in f_dae.fragdata.files.keys():

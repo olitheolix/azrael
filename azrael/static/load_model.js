@@ -38,6 +38,9 @@ onmessage = function (e) {
             case 'DAE':
                 model = {'type': 'DAE', 'url': url + '/' + frag_name};
                 break;
+            case 'OBJ':
+                model = {'type': 'OBJ', 'url': url + '/' + frag_name + '.json'};
+                break;
             default:
                 model = {'type': null};
             }

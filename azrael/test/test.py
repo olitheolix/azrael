@@ -20,6 +20,7 @@ This module does not contain any tests but utility functions often used in
 other tests.
 """
 import os
+import json
 import base64
 import subprocess
 import numpy as np
@@ -94,11 +95,14 @@ def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Convenience function to construct a valid Raw geometry.
     """
-    vert = np.random.randint(0, 100, 9).tolist()
-    uv = np.random.randint(0, 100, 6).tolist()
-    rgb = np.random.randint(0, 100, 3).tolist()
+    model = {
+        'vert': np.random.randint(0, 100, 9).tolist(),
+        'uv': np.random.randint(0, 100, 6).tolist(),
+        'rgb': np.random.randint(0, 100, 3).tolist()
+    }
 
-    geo = FragRaw(vert, uv, rgb)
+    model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
+    geo = FragDae({'model.json': model})
     return FragMeta(fragtype='RAW', scale=scale, position=pos,
                     rotation=rot, fragdata=geo)
 

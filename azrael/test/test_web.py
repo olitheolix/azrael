@@ -39,7 +39,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
                     (config.url_instances + '/(.*)', FH)]
         return tornado.web.Application(handlers)
 
-    def downloadFragRaw(self, url: str):
+    def downloadFragRaw(self, url: str, fname: str):
         """
         Download and unpack the Raw model from ``url`` and return it as a
         ``FragRaw`` instance.
@@ -51,12 +51,12 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         :rtype: FragRaw
         :raises: AssertionError if there was a problem.
         """
-        ret = self.fetch(url + 'model.json', method='GET')
+        ret = self.fetch(url + fname, method='GET')
         try:
-            ret = json.loads(ret.body.decode('utf8'))
+            data = base64.b64encode(ret.body).decode('utf8')
         except ValueError:
             assert False
-        return FragRaw(**(ret))
+        return FragDae(files={fname: data})
 
     def downloadFragDae(self, url: str, fnames: list):
         """
@@ -114,7 +114,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
             ftype = frag.fragtype.upper()
             if ftype == 'RAW':
                 tmp_url = url + '/{name}/'.format(name=aid)
-                assert self.downloadFragRaw(tmp_url) == frag.fragdata
+                assert self.downloadFragRaw(tmp_url, 'model.json') == frag.fragdata
             elif ftype == 'DAE':
                 tmp_url = url + '/{name}/'.format(name=aid)
                 fnames = list(frag.fragdata.files.keys())

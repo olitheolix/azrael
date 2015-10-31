@@ -275,6 +275,7 @@ function* mycoroutine(connection) {
                     ' new object models from <load_model.js> Worker');
 
         var loader = new THREE.ColladaLoader();
+        var loader_json = new THREE.JSONLoader();
 
         // Iterate over all downloaded models by object ID.
         for (var objID in e.data) {
@@ -308,6 +309,24 @@ function* mycoroutine(connection) {
 	                    dae.position.x = -1;
 	                    dae.updateMatrix();
     	                    scene.add(collada.scene);
+                        }
+                    )
+                    break;
+                case 'OBJ':
+                    console.log('Loading dae from <' + d.url_frag + '>');
+                    loader_json.load(
+                        d.url,
+                        // Function when resource is loaded
+                        function ( geometry, materials ) {
+                            console.log('JSONLoader callback.');
+	                    var material = new THREE.MeshFaceMaterial( materials );
+	                    var object = new THREE.Mesh( geometry, material );
+
+                            // var dae = collada.scene;
+	                    // dae.scale.x = dae.scale.y = dae.scale.z = scale;
+	                    // dae.position.x = -1;
+	                    // dae.updateMatrix();
+    	                    scene.add(object);
                         }
                     )
                     break;

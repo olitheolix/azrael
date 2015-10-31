@@ -374,13 +374,10 @@ class FragMeta(_FragMeta):
             if fragdata is None:
                 frag = None
             else:
+                # fixme: this if condition should become redundant once the
+                # formats have been eliminated.
                 fragtype = fragtype.upper()
-                if fragtype == 'RAW':
-                    if isinstance(fragdata, dict):
-                        frag = FragRaw(**fragdata)
-                    else:
-                        frag = FragRaw(*fragdata)
-                elif fragtype in ['DAE', 'OBJ']:
+                if fragtype in ['DAE', 'OBJ', 'RAW']:
                     if isinstance(fragdata, dict):
                         frag = FragDae(**fragdata)
                     else:
