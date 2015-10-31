@@ -66,13 +66,13 @@ def getNetworkAddress():
     return host_ip
 
 
-def getFragMeta(ftype, vert, uv, rgb):
-    """
-    fixme: docu
-    """
-    scale = 1
-    pos = (0, 0, 0)
-    rot = (0, 0, 0, 1)
+def compileRawFragment(vert, uv, rgb):
+    if not isinstance(vert, np.ndarray):
+        vert = np.array(vert, np.float64)
+    if not isinstance(uv, np.ndarray):
+        uv = np.array(uv, np.float64)
+    if not isinstance(rgb, np.ndarray):
+        rgb = np.array(rgb, np.uint8)
 
     model = {
         'vert': vert.tolist(),
@@ -81,7 +81,14 @@ def getFragMeta(ftype, vert, uv, rgb):
     }
 
     model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
-    fdata = FragDae({'model.json': model})
+    return FragDae({'model.json': model})
+
+
+def getFragMeta(ftype, vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
+    """
+    fixme: docu
+    """
+    fdata = compileRawFragment(vert, uv, rgb)
 
     return FragMeta(fragtype=ftype, scale=scale, position=pos,
                     rotation=rot, fragdata=fdata)
