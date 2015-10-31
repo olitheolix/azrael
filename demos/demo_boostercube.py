@@ -31,7 +31,7 @@ import azrael.util as util
 import azrael.aztypes as aztypes
 
 from IPython import embed as ipshell
-from azrael.aztypes import Template, FragMeta, FragRaw
+from azrael.aztypes import Template, FragMeta
 
 
 def spawnSpaceship(scale, fname):
@@ -47,7 +47,7 @@ def spawnSpaceship(scale, fname):
 
     # Load the model.
     vert, uv, rgb = demolib.loadBoosterCubeBlender()
-    frag_cube = FragRaw(vert, uv, rgb)
+    frag_cube = demolib.compileRawFragment(vert, uv, rgb)
     del vert, uv, rgb
 
     # Attach six boosters, two for every axis.
@@ -71,7 +71,7 @@ def spawnSpaceship(scale, fname):
     rgb = np.tile([0, 0, 0.8], len(vert) // 3)
     rgb += 0.2 * np.random.rand(len(rgb))
     rgb = np.array(255 * rgb.clip(0, 1), np.uint8)
-    frag_flame = FragRaw(vert, np.array([]), rgb)
+    frag_flame = demolib.compileRawFragment(vert, np.array([]), rgb)
     del p, fname, vert, uv, rgb
 
     # Add the template to Azrael.
