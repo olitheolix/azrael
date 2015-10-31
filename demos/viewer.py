@@ -49,8 +49,8 @@ import pyazrael
 import pyazrael.util as util
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from pyazrael.aztypes import Template, FragMeta, FragRaw, FragDae
-from pyazrael.aztypes import CollShapeMeta, CollShapeBox
+from collections import namedtuple, OrderedDict
+from pyazrael.aztypes import Template, CollShapeMeta, CollShapeBox, FragMeta
 
 
 def parseCommandLine():
@@ -79,12 +79,13 @@ def parseCommandLine():
     return param
 
 
-def getFragMeta(ftype, fdata):
+def getFragMeta(ftype, vert, uv, rgb):
     scale = 1
     pos = (0, 0, 0)
     rot = (0, 0, 0, 1)
-    return pyazrael.aztypes._FragMeta(fragtype=ftype, scale=scale, position=pos,
-                    rotation=rot, fragdata=fdata)
+    
+    Model = namedtuple('Model', 'fragtype scale position rotation vert uv rgb')
+    return Model(ftype, scale, pos, rot, vert, uv, rgb)
 
 
 def getRigidBody(scale: (int, float)=1,
@@ -401,16 +402,16 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         """
         # This is to mask a bug in WebServer: newly spawned objects can
         # become active before their geometry hits the DB.
-        if len(frag.fragdata.vert) == 0:
+        if len(frag.vert) == 0:
             return
 
         # fixme: getGeometries must provide this (what about getGeometries?).
-        width = height = int(np.sqrt(len(frag.fragdata.rgb) // 3))
+        width = height = int(np.sqrt(len(frag.rgb) // 3))
 
         # GPU needs float32 values for vertices and UV, and uint8 for RGB.
-        buf_vert = np.array(frag.fragdata.vert).astype(np.float32)
-        buf_uv = np.array(frag.fragdata.uv).astype(np.float32)
-        buf_rgb = np.array(frag.fragdata.rgb).astype(np.uint8)
+        buf_vert = np.array(frag.vert).astype(np.float32)
+        buf_uv = np.array(frag.uv).astype(np.float32)
+        buf_rgb = np.array(frag.rgb).astype(np.uint8)
 
         # Sanity checks.
         assert (len(buf_vert) % 9) == 0
@@ -586,7 +587,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                         self._removeObjectData(objID)
                         break
                     frag = json.loads(frag.decode('utf8'))
-                    frag = getFragMeta('RAW', FragRaw(**frag))
+                    frag = getFragMeta('RAW', frag['vert'], frag['uv'], frag['rgb'])
                 elif frag_data['fragtype'] == 'DAE':
                     url = base_url + frag_data['url_frag'] + '/' + fragID
                     frag = requests.get(url).content
@@ -609,7 +610,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     vert = np.array(vert)
                     uv = np.array(uv, np.float32)
                     rgb = np.array(rgb, np.uint8)
-                    frag = getFragMeta('RAW', FragRaw(vert, uv, rgb))
+                    frag = getFragMeta('RAW', vert, uv, rgb)
                 else:
                     continue
                 self.upload2GPU(objID, fragID, frag)
@@ -634,14 +635,20 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Create the template with name 'cube'.
         t_projectile = 'cube'
 
+        # Fixme: use convenience method in demolib
         model = {
             'vert': buf_vert.tolist(),
             'uv': uv.tolist(),
             'rgb': rgb.tolist()
         }
         model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
-    
-        frags = {'frag_1': getFragMeta('RAW', FragDae(files={'model.json': model}))}
+
+        fm = FragMeta(fragtype='RAW',
+                      scale=1,
+                      position=(0, 0, 0),
+                      rotation=(0, 0, 0, 1),
+                      fragdata={'files': {'model.json': model}})
+        frags = {'frag_1': fm}
         body = getRigidBody(cshapes={'player': cs})
         temp = Template(t_projectile, body, frags, {}, {})
         ret = self.client.addTemplates([temp])
