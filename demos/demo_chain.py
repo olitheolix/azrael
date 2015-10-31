@@ -45,7 +45,7 @@ import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
 
-from azrael.aztypes import Template, FragMeta, FragRaw
+from azrael.aztypes import Template
 from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox, ConstraintMeta, ConstraintP2P
 from azrael.aztypes import Constraint6DofSpring2
@@ -173,14 +173,6 @@ class UpdateGrid(multiprocessing.Process):
             time.sleep(self.period_lin)
 
 
-def getFragMeta(ftype, fdata):
-    scale = 1
-    pos = (0, 0, 0)
-    rot = (0, 0, 0, 1)
-    return FragMeta(fragtype=ftype, scale=scale, position=pos,
-                    rotation=rot, fragdata=fdata)
-
-
 def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     """
     Spawn multiple cubes in a regular grid.
@@ -260,8 +252,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        frags = {'frag_1': getFragMeta('raw', FragRaw(vert, curUV, rgb)),
-                 'frag_2': getFragMeta('raw', FragRaw(vert, curUV, rgb))}
+        frags = {'frag_1': demolib.getFragMeta('raw', vert, curUV, rgb),
+                 'frag_2': demolib.getFragMeta('raw', vert, curUV, rgb)}
         body = demolib.getRigidBody(cshapes={'0': cs})
         tmp = Template(tID, body, frags, boosters, {})
         templates.append(tmp)
