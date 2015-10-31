@@ -30,9 +30,8 @@ onmessage = function (e) {
                     model = JSON.parse(xmlhttp.responseText);
                     model['type'] = 'RAW';
                 } catch (e) {
-                    // Usually means the fragmetns were not available
-                    // anymore, most likely because the object has
-                    // been deleted in the meantime.
+                    // Usually means the fragments unavailable.
+                    // Maybe the object was just deleted.
                     model = {'type': null};
                 }
                 break;

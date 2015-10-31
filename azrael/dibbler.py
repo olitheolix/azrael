@@ -226,10 +226,10 @@ class Dibbler:
                 return RetVal(False, 'Model does not exist', None)
 
         # Save the meta JSON file. That file contains meta information about
-        # the fragments, most notably which fragments exist. This file we be
-        # overwritten in the loop below, but it is nevertheless important to
-        # add save it right now as well because the loop below will not execute
-        # at all if an object has no fragments (unusual, but perfectly valid).
+        # the fragments, most notably which fragments exist. We will overwrite
+        # it in the loop below, but it is nevertheless important to save it now
+        # in case the loop does not go ahead, for instance due to an error or
+        # if an object has no fragments (unusual, but perfectly valid).
         self.fs.put(json.dumps({'fragments': {}}).encode('utf8'),
                     filename=os.path.join(location, 'meta.json'))
 
