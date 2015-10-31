@@ -36,10 +36,11 @@ import numpy as np
 import pyazrael.util as util
 import pyazrael.aztypes as aztypes
 
+from IPython import embed as ipshell
+
 typecheck = aztypes.typecheck
 RetVal = aztypes.RetVal
 Template = aztypes.Template
-FragRaw = aztypes.FragRaw
 ConstraintMeta = aztypes.ConstraintMeta
 
 
@@ -568,6 +569,8 @@ class Client():
     @typecheck
     def getTemplateGeometry(self, template):
         """
+        fixme: this method assumes there exactly one fragment with type 'RAW'.
+
         Return the geometries for ``template``.
 
         The return value is a dictionary. The keys are the fragment names and
@@ -588,10 +591,9 @@ class Client():
         for aid, frag in template['template'].fragments.items():
             url = base_url + '/' + aid + '/model.json'
             geo = requests.get(url).content
-            geo = json.loads(geo.decode('utf8'))
 
             # Wrap the fragments into their dedicated tuple type.
-            out[aid] = FragRaw(**geo)
+            out[aid] = aztypes.FragDae(files={'model.json': geo.decode('utf8')})
         return RetVal(True, None, out)
 
     @typecheck
