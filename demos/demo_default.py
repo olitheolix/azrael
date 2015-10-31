@@ -27,6 +27,8 @@ Qt Viewer.
 import os
 import sys
 import time
+import json
+import base64
 import argparse
 import PIL.Image
 import subprocess
@@ -53,7 +55,7 @@ import azrael.leo_api as leoAPI
 del p
 
 from IPython import embed as ipshell
-from azrael.aztypes import Template, FragMeta, FragRaw
+from azrael.aztypes import Template, FragMeta, FragDae
 from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox
 
@@ -105,6 +107,17 @@ def getFragMeta(ftype, fdata):
     rot = (0, 0, 0, 1)
     return FragMeta(fragtype=ftype, scale=scale, position=pos,
                     rotation=rot, fragdata=fdata)
+
+
+def FragRaw(vert, uv, rgb):
+    model = {
+        'vert': vert.tolist(),
+        'uv': uv.tolist(),
+        'rgb': rgb.tolist()
+    }
+
+    model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
+    return FragDae({'model.json': model})
 
 
 def addBoosterCubeTemplate(scale, vert, uv, rgb):

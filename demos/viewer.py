@@ -35,6 +35,7 @@ del p
 
 import time
 import json
+import base64
 import demolib
 import tempfile
 import argparse
@@ -48,7 +49,7 @@ import pyazrael
 import pyazrael.util as util
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from pyazrael.aztypes import Template, FragMeta, FragRaw
+from pyazrael.aztypes import Template, FragMeta, FragRaw, FragDae
 from pyazrael.aztypes import CollShapeMeta, CollShapeBox
 
 
@@ -82,7 +83,7 @@ def getFragMeta(ftype, fdata):
     scale = 1
     pos = (0, 0, 0)
     rot = (0, 0, 0, 1)
-    return FragMeta(fragtype=ftype, scale=scale, position=pos,
+    return pyazrael.aztypes._FragMeta(fragtype=ftype, scale=scale, position=pos,
                     rotation=rot, fragdata=fdata)
 
 
@@ -632,7 +633,15 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Create the template with name 'cube'.
         t_projectile = 'cube'
-        frags = {'frag_1': getFragMeta('RAW', FragRaw(buf_vert, uv, rgb))}
+
+        model = {
+            'vert': buf_vert.tolist(),
+            'uv': uv.tolist(),
+            'rgb': rgb.tolist()
+        }
+        model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
+    
+        frags = {'frag_1': getFragMeta('RAW', FragDae(files={'model.json': model}))}
         body = getRigidBody(cshapes={'player': cs})
         temp = Template(t_projectile, body, frags, {}, {})
         ret = self.client.addTemplates([temp])
