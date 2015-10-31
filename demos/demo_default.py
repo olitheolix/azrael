@@ -27,8 +27,6 @@ Qt Viewer.
 import os
 import sys
 import time
-import json
-import base64
 import argparse
 import PIL.Image
 import subprocess
@@ -44,20 +42,19 @@ import demolib
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '..'))
+del p
 
 import model_import
 import pyazrael
 import azrael.startup
 import azrael.util as util
-import azrael.aztypes as aztypes
 import azrael.config as config
 import azrael.leo_api as leoAPI
-del p
+import azrael.aztypes as aztypes
 
 from IPython import embed as ipshell
-from azrael.aztypes import Template, FragMeta, FragDae
-from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
-from azrael.aztypes import CollShapeBox
+from azrael.aztypes import Template, CollShapeMeta
+from azrael.aztypes import CollShapeEmpty, CollShapeSphere, CollShapeBox
 
 
 def parseCommandLine():
@@ -99,24 +96,6 @@ def parseCommandLine():
         sys.exit(1)
 
     return param
-
-
-def getFragMeta(ftype, vert, uv, rgb):
-    scale = 1
-    pos = (0, 0, 0)
-    rot = (0, 0, 0, 1)
-
-    model = {
-        'vert': vert.tolist(),
-        'uv': uv.tolist(),
-        'rgb': rgb.tolist()
-    }
-
-    model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
-    fdata = FragDae({'model.json': model})
-
-    return FragMeta(fragtype=ftype, scale=scale, position=pos,
-                    rotation=rot, fragdata=fdata)
 
 
 def addBoosterCubeTemplate(scale, vert, uv, rgb):
@@ -169,9 +148,9 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
     z = np.array([])
     frags = {
-        'frag_1': getFragMeta('raw', vert, uv, rgb),
-        'b_left': getFragMeta('raw', vert_b, z, z),
-        'b_right': getFragMeta('raw',  vert_b, z, z),
+        'frag_1': demolib.getFragMeta('raw', vert, uv, rgb),
+        'b_left': demolib.getFragMeta('raw', vert_b, z, z),
+        'b_right': demolib.getFragMeta('raw',  vert_b, z, z),
     }
 
     body = demolib.getRigidBody()
@@ -246,8 +225,8 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # ----------------------------------------------------------------------
     tID_1 = 'Product1'
     tID_2 = 'Product2'
-    frags_1 = {'frag_1': getFragMeta('raw', 0.75 * vert, uv, rgb)}
-    frags_2 = {'frag_1': getFragMeta('raw', 0.24 * vert, uv, rgb)}
+    frags_1 = {'frag_1': demolib.getFragMeta('raw', 0.75 * vert, uv, rgb)}
+    frags_2 = {'frag_1': demolib.getFragMeta('raw', 0.24 * vert, uv, rgb)}
     body = demolib.getRigidBody(cshapes={'0': cs})
     t1 = Template(tID_1, body, frags_1, {}, {})
     t2 = Template(tID_2, body, frags_2, {}, {})
@@ -276,7 +255,7 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
 
     # Add the template.
     tID_3 = 'BoosterCube'
-    frags = {'frag_1': getFragMeta('raw', vert, uv, rgb)}
+    frags = {'frag_1': demolib.getFragMeta('raw', vert, uv, rgb)}
     body = demolib.getRigidBody(cshapes={'0': cs})
     t3 = Template(tID_3, body, frags, boosters, factories)
     assert client.addTemplates([t3]).ok
@@ -305,8 +284,8 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        frags = {'frag_1': getFragMeta('raw', vert, curUV, rgb),
-                 'frag_2': getFragMeta('raw', vert, curUV, rgb)}
+        frags = {'frag_1': demolib.getFragMeta('raw', vert, curUV, rgb),
+                 'frag_2': demolib.getFragMeta('raw', vert, curUV, rgb)}
         body = demolib.getRigidBody(cshapes={'0': cs})
         tmp = Template(tID, body, frags, boosters, {})
         templates.append(tmp)

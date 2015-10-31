@@ -18,6 +18,8 @@
 import os
 import sys
 import time
+import json
+import base64
 import netifaces
 import subprocess
 import numpy as np
@@ -32,7 +34,7 @@ import model_import
 import azrael.util as util
 import azrael.aztypes as aztypes
 from IPython import embed as ipshell
-from azrael.aztypes import Template, FragMeta, FragRaw
+from azrael.aztypes import Template, FragMeta, FragDae
 from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox
 
@@ -62,6 +64,27 @@ def getNetworkAddress():
         sys.exit(1)
 
     return host_ip
+
+
+def getFragMeta(ftype, vert, uv, rgb):
+    """
+    fixme: docu
+    """
+    scale = 1
+    pos = (0, 0, 0)
+    rot = (0, 0, 0, 1)
+
+    model = {
+        'vert': vert.tolist(),
+        'uv': uv.tolist(),
+        'rgb': rgb.tolist()
+    }
+
+    model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
+    fdata = FragDae({'model.json': model})
+
+    return FragMeta(fragtype=ftype, scale=scale, position=pos,
+                    rotation=rot, fragdata=fdata)
 
 
 def getRigidBody(scale: (int, float)=1,
