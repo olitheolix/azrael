@@ -105,7 +105,7 @@ class CtrlBoosterCube():
         self.shipID = None
         
         # Connect to Azrael.
-        self.client = pyazrael.AzraelClient(ip=host, port=port)
+        self.client = pyazrael.AzraelClient(addr_clerk=host, port_clerk=port)
 
         # Ping Azrael. This call will block if it cannot connect.
         ret = self.client.ping()
