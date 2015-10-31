@@ -26,7 +26,7 @@ import subprocess
 import numpy as np
 import azrael.leonard
 
-from azrael.aztypes import FragMeta, FragDae, FragRaw, FragNone, Template
+from azrael.aztypes import FragMeta, FragDae, FragNone, Template
 from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox, CollShapePlane, RigidBodyData
 from azrael.aztypes import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta

@@ -21,7 +21,7 @@ import azrael.dibbler
 
 import azrael.config as config
 from IPython import embed as ipshell
-from azrael.aztypes import FragDae, FragRaw
+from azrael.aztypes import FragDae
 from azrael.test.test import getFragNone, getTemplate, getFragRaw, getFragDae, getFragObj
 
 
