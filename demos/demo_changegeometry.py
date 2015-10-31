@@ -39,7 +39,6 @@ import azrael.util as util
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.aztypes import FragMeta, FragRaw
 
 
 def loadSphere():
@@ -98,6 +97,9 @@ class SetGeometry(multiprocessing.Process):
         if self.period == -1:
             return
 
+        # Convenience.
+        crf = demolib.compileRawFragment
+
         # Instantiate Client.
         client = pyazrael.AzraelClient()
 
@@ -123,7 +125,7 @@ class SetGeometry(multiprocessing.Process):
                 geo_orig[objID][frag_name] = {
                     'fragtype': 'RAW',
                     'scale': 1,
-                    'fragdata': FragRaw(**tmp),
+                    'fragdata': crf(tmp['vert'], tmp['uv'], tmp['rgb']),
                 }
                 del url, tmp
             del objID
@@ -132,7 +134,7 @@ class SetGeometry(multiprocessing.Process):
         # Compile a set of sphere models for all objects. These will be
         # periodically swapped out for the original models.
         sphere_vert, sphere_uv, sphere_rgb = loadSphere()
-        sphere = FragRaw(sphere_vert, sphere_uv, sphere_rgb)
+        sphere = crf(sphere_vert, sphere_uv, sphere_rgb)
         geo_spheres = {}
         for objID in objIDs:
             geo_spheres[objID] = {
