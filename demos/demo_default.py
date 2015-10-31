@@ -101,15 +101,11 @@ def parseCommandLine():
     return param
 
 
-def getFragMeta(ftype, fdata):
+def getFragMeta(ftype, vert, uv, rgb):
     scale = 1
     pos = (0, 0, 0)
     rot = (0, 0, 0, 1)
-    return FragMeta(fragtype=ftype, scale=scale, position=pos,
-                    rotation=rot, fragdata=fdata)
 
-
-def FragRaw(vert, uv, rgb):
     model = {
         'vert': vert.tolist(),
         'uv': uv.tolist(),
@@ -117,7 +113,10 @@ def FragRaw(vert, uv, rgb):
     }
 
     model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
-    return FragDae({'model.json': model})
+    fdata = FragDae({'model.json': model})
+
+    return FragMeta(fragtype=ftype, scale=scale, position=pos,
+                    rotation=rot, fragdata=fdata)
 
 
 def addBoosterCubeTemplate(scale, vert, uv, rgb):
@@ -170,9 +169,9 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
     z = np.array([])
     frags = {
-        'frag_1': getFragMeta('raw', FragRaw(vert, uv, rgb)),
-        'b_left': getFragMeta('raw', FragRaw(vert_b, z, z)),
-        'b_right': getFragMeta('raw',  FragRaw(vert_b, z, z)),
+        'frag_1': getFragMeta('raw', vert, uv, rgb),
+        'b_left': getFragMeta('raw', vert_b, z, z),
+        'b_right': getFragMeta('raw',  vert_b, z, z),
     }
 
     body = demolib.getRigidBody()
@@ -247,8 +246,8 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # ----------------------------------------------------------------------
     tID_1 = 'Product1'
     tID_2 = 'Product2'
-    frags_1 = {'frag_1': getFragMeta('raw', FragRaw(0.75 * vert, uv, rgb))}
-    frags_2 = {'frag_1': getFragMeta('raw', FragRaw(0.24 * vert, uv, rgb))}
+    frags_1 = {'frag_1': getFragMeta('raw', 0.75 * vert, uv, rgb)}
+    frags_2 = {'frag_1': getFragMeta('raw', 0.24 * vert, uv, rgb)}
     body = demolib.getRigidBody(cshapes={'0': cs})
     t1 = Template(tID_1, body, frags_1, {}, {})
     t2 = Template(tID_2, body, frags_2, {}, {})
@@ -277,7 +276,7 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
 
     # Add the template.
     tID_3 = 'BoosterCube'
-    frags = {'frag_1': getFragMeta('raw', FragRaw(vert, uv, rgb))}
+    frags = {'frag_1': getFragMeta('raw', vert, uv, rgb)}
     body = demolib.getRigidBody(cshapes={'0': cs})
     t3 = Template(tID_3, body, frags, boosters, factories)
     assert client.addTemplates([t3]).ok
@@ -306,8 +305,8 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        frags = {'frag_1': getFragMeta('raw', FragRaw(vert, curUV, rgb)),
-                 'frag_2': getFragMeta('raw', FragRaw(vert, curUV, rgb))}
+        frags = {'frag_1': getFragMeta('raw', vert, curUV, rgb),
+                 'frag_2': getFragMeta('raw', vert, curUV, rgb)}
         body = demolib.getRigidBody(cshapes={'0': cs})
         tmp = Template(tID, body, frags, boosters, {})
         templates.append(tmp)
