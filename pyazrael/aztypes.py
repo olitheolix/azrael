@@ -48,7 +48,6 @@ _Template = namedtuple('_Template', 'aid rbs fragments boosters factories custom
 # Fragments.
 _FragMeta = namedtuple('_FragMeta',
                        'fragtype scale position rotation fragdata')
-_FragRaw = namedtuple('_FragRaw', 'vert uv rgb')
 _FragDae = namedtuple('_FragDae', 'files')
 FragNone = namedtuple('FragNone', '')
 
@@ -260,53 +259,6 @@ def typecheck(func_handle):
     return wrapper
 
 
-class FragRaw(_FragRaw):
-    """
-    A raw geometry fragment.
-
-    Raw fragments are consists of a list of vertices, UV coordinates, and RGB
-    values. They are useful for debugging since it is easy to specify
-    triangles and build simple shapes like cubes.
-
-    :param [float] vert: vertex data
-    :param [float] uv: UV map coordinates
-    :param [uint8]: RGB texture values.
-    :return: compiled ``_FragRaw`` instance.
-    :raises: TypeError if the input does not compile to the data type.
-    """
-    @typecheck
-    def __new__(cls, vert, uv, rgb):
-        try:
-            # Sanity check.
-            vert = toVec(0, vert)
-            uv = toVec(0, uv)
-            rgb = toVec(0, rgb)
-
-            # RGB values must be integers in [0, 255]
-            if len(rgb) > 0:
-                assert (np.amin(rgb) >= 0) and (np.amax(rgb) < 256)
-                rgb = tuple(np.array(rgb, np.uint8).tolist())
-
-            # The number of vertices must be an integer multiple of 9 to
-            # constitute a valid triangle mesh (every triangle has three
-            # edges and every edge requires an (x, y, z) triplet to
-            # describe its position).
-            assert len(vert) % 9 == 0
-            assert len(uv) % 2 == 0
-            assert len(rgb) % 3 == 0
-            assert len(vert) % 3 == len(uv) % 2
-        except (TypeError, AssertionError):
-            msg = 'Cannot construct <{}>'.format(cls.__name__)
-            logit.warning(msg)
-            raise TypeError
-
-        # Return constructed data type.
-        return super().__new__(cls, vert, uv, rgb)
-
-    def _asdict(self):
-        return OrderedDict(zip(self._fields, self))
-
-
 class FragDae(_FragDae):
     """
     fixme: docu update
@@ -355,7 +307,7 @@ class FragMeta(_FragMeta):
     argument is ignored altogether.
 
     :param str fragtype: fragment type (eg 'raw', or 'dae', or None)
-    :param fragdata: one of the fragment types (eg. `FragRaw` or `FragDae`).
+    :param dict fragdata: fragment files (eg {'model.json': base64 string})
     :return: compiled  ``_FragMeta`` instance.
     :raises: TypeError if the input does not compile to the data type.
     """

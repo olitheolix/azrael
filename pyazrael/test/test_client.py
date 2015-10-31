@@ -47,7 +47,6 @@ import azrael.dibbler
 import azrael.config as config
 
 from IPython import embed as ipshell
-from aztypes import FragRaw
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getRigidBody
