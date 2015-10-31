@@ -82,7 +82,7 @@ class Dibbler:
         return RetVal(True, None, len(self.fs.list()))
 
     @typecheck
-    def saveModelDae(self, location: str, aid: str, model: FragMeta):
+    def saveModelData(self, location: str, aid: str, model: FragMeta):
         """
         fixme: docu string, and inline docu
 
@@ -217,7 +217,7 @@ class Dibbler:
             # Delete the current fragments and save the new ones.
             if ftype in ['DAE', 'OBJ', 'RAW']:
                 self._deleteSubLocation(frag_dir)
-                ret = self.saveModelDae(frag_dir, aid, frag)
+                ret = self.saveModelData(frag_dir, aid, frag)
             elif ftype == '_DEL_':
                 # Dummy fragment that tells us to remove it.
                 ret = RetVal(False, None, None)
