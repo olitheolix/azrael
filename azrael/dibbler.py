@@ -215,7 +215,7 @@ class Dibbler:
 
             ftype = frag.fragtype.upper()
             # Delete the current fragments and save the new ones.
-            if ftype in ['DAE', 'OBJ', 'RAW']:
+            if ftype in ['DAE', 'OBJ', 'RAW', '3JS_V4']:
                 self._deleteSubLocation(frag_dir)
                 ret = self.saveModelData(frag_dir, aid, frag)
             elif ftype == '_DEL_':

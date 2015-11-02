@@ -329,7 +329,7 @@ class FragMeta(_FragMeta):
                 # fixme: this if condition should become redundant once the
                 # formats have been eliminated.
                 fragtype = fragtype.upper()
-                if fragtype in ['DAE', 'OBJ', 'RAW']:
+                if fragtype in ['DAE', 'OBJ', 'RAW', '3JS_V4']:
                     if isinstance(fragdata, dict):
                         frag = FragDae(**fragdata)
                     else:
