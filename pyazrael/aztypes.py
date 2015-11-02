@@ -276,9 +276,9 @@ class FragDae(_FragDae):
     def __new__(cls, files: dict):
         try:
             # Verify the RGB dictionary.
-            for k, v in files.items():
-                assert isinstance(k, str)
-                assert isinstance(v, str)
+            for fname, fdata in files.items():
+                assert isinstance(fname, str)
+                assert isinstance(fdata, str) or fdata is None
         except AssertionError:
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)

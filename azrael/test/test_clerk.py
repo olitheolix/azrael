@@ -201,6 +201,19 @@ class TestClerk:
         assert ret.data[temp.aid]['template'].boosters == temp.boosters
         assert ret.data[temp.aid]['template'].factories == temp.factories
 
+        # Make a copy of 'frag'. Then replace all the content of all fragment
+        # files with None. The net effect is that eg
+        # ...['files'] = {'foo': something', 'bar': something} will become
+        # ...['files'] = {'foo': None, 'bar': None}.
+        # This is the kind of data that Clerk was suppoed to store in the
+        # template data base (ie all the fragment file names but not their
+        # content). Here we verify that this is true.
+        frag_ref = {k: aztypes.FragMeta(*v) for k, v in frags.items()}
+        for fragname, fm in frag_ref.items():
+            for fname, fdata in fm.fragdata.files.items():
+                fm.fragdata.files[fname] = None
+        assert ret.data[temp.aid]['template'].fragments == frag_ref
+
         # Request the same templates multiple times in a single call. This must
         # return a dictionary with as many keys as there are unique template
         # IDs.
@@ -336,7 +349,6 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, (1, ))
 
         # Geometry for this object must now exist.
-        print(clerk.getFragments([1]))
         assert clerk.getFragments([1]).data[1] is not None
 
         # Spawn two more objects with a single call.

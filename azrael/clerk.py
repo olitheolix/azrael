@@ -387,9 +387,6 @@ class Clerk(config.AzraelProcess):
             # contains only meta information (eg the type of geometry, but not
             # geometry itself).
             for template in templates:
-                # Convenience.
-                frags = template.fragments
-
                 # Dibbler administrates the geometry data. Abort immediately if
                 # it returns an error (should be impossible, but just to be
                 # sure).
@@ -401,18 +398,15 @@ class Clerk(config.AzraelProcess):
                 # available.
                 url_frag = ret.data['url_frag']
 
-                # Only retain the meta data for the geometries to save space
-                # and avoid data duplication (Dibbler handles the actual
-                # geometry data).
-                frags = {k: v._replace(fragdata=None) for (k, v) in frags.items()}
-                template = template._replace(fragments=frags)
+                # Mangle all fragment file names to make them compatible with
+                # Mongo.
+                template_json = self._mangleFileNames(template._asdict())
 
                 # Compile the template data that will go into the database. The
                 # template will be stored as an explicit dictionary.
                 data = {'url_frag': url_frag,
-                        'template': template._asdict(),
+                        'template': template_json,
                         'templateID': template.aid}
-                del frags
 
                 # Add the template to the database.
                 query = {'templateID': template.aid}
@@ -478,9 +472,15 @@ class Clerk(config.AzraelProcess):
         out = {}
         try:
             for doc in cursor:
+                # Undo the file name mangling.
+                template_json = self._unmangleFileNames(doc['template'])
+
+                # Parse the document into a Template structure and add it to
+                # the list of templates.
+                template = Template(**template_json)
                 out[doc['templateID']] = {
                     'url_frag': doc['url_frag'],
-                    'template': Template(**doc['template']),
+                    'template': template,
                 }
         except TypeError:
             msg = 'Inconsistent Template data'
@@ -496,6 +496,62 @@ class Clerk(config.AzraelProcess):
 
         # Return the templates.
         return RetVal(True, None, out)
+
+    def _mangleFileNamesHelper(self, template_json: dict, char_src, char_dst):
+        """
+        Return 'template_json' where all file names were mangled.
+
+        The mangling simply replaces all occurrences of ``char_src`` with
+        ``char_dst``. Example: if ``char_src`` is '.' and ``char_dst`` is ';'
+        then 'foo.bar' will become 'foo;bar;.
+
+        The returned dictionary will be identical to``template_json`` except
+        for the mangled file names.
+
+        :param dict template_json: dictionary version of ``Template`` data
+            structure.
+        :param str char_src: the character(s) to replace
+        :param str char_dst: the character(s) with which to replace
+            ``char_src``.
+        :return: dict
+        """
+        # Convert the template to JSON but remove the fragment data;
+        # retain only names of the fragment files. The actual geometry
+        # content is managed by Dibbler.
+        for fragname, metafrag in template_json['fragments'].items():
+            # Replace the 'files' dictionary with one where all values
+            # are empty. Then mangle all file names (replace all
+            # dots with semicolons) because Mongo would not accept dots
+            # in any of the keys.
+            fnames = metafrag['fragdata']['files']
+            tmp = {fname.replace(char_src, char_dst): None for fname in fnames}
+            metafrag['fragdata']['files'] = tmp
+        return template_json
+        
+    def _mangleFileNames(self, template_json: dict):
+        """
+        Return ``template_json`` with mangled file names.
+
+        This is a convenience function because eg Mongo does not allow dots in
+        file names, yet virtually every file name has them.
+
+        :param dict template_json: dictionary version of ``Template`` data
+            structure.
+        :return: dict
+        """
+        return self._mangleFileNamesHelper(template_json, '.', ';')
+
+    def _unmangleFileNames(self, template_json: dict):
+        """
+        Return ``template_json`` with unmangled file names.
+
+        This method is the inverse of ``_mangleFileNames``.
+
+        :param dict template_json: dictionary version of ``Template`` data
+            structure.
+        :return: dict
+        """
+        return self._mangleFileNamesHelper(template_json, ';', '.')
 
     @typecheck
     def spawn(self, newObjects: (tuple, list)):
@@ -604,6 +660,10 @@ class Clerk(config.AzraelProcess):
                     # URL where the instance geometry is available.
                     geo_url = ret.data['url_frag']
 
+                # Mangle all fragment file names to make them compatible with
+                # Mongo.
+                template_json = self._mangleFileNames(template._asdict())
+
                 # Compile the database document. Each entry must be an explicit
                 # dictionary (eg 'template'). The document contains the
                 # original template plus additional meta information that is
@@ -614,7 +674,7 @@ class Clerk(config.AzraelProcess):
                     'url_frag': geo_url,
                     'version': 0,
                     'templateID': templateID,
-                    'template': template._asdict(),
+                    'template': template_json,
                 }
 
                 # Track the rigid body state separately because we will need it
