@@ -1189,22 +1189,31 @@ class TestClerk:
             assert _ret['f_raw']['url_frag'] == _url_inst + _objID + '/f_raw'
             assert _ret['f_dae']['fragtype'] == 'DAE'
             assert _ret['f_dae']['url_frag'] == _url_inst + _objID + '/f_dae'
+
+            # The RAW geometry only as a single 'model.json' file.
+            assert _ret['f_raw']['files'] == ['model.json']
+
+            # The DAE geometry contains three files. The order in which they
+            # are returned is random, hence the auxiliary sets below.
+            _ret_files = set(_ret['f_dae']['files'])
+            assert _ret_files == {'model.dae', 'rgb1.png', 'rgb2.jpg'}
             return True
 
-        # Query and verify the geometry of the first instance.
+        # Query the geometry of the first instance. Then verify it.
         ret = clerk.getFragments([objID_1])
         assert ret.ok and _verify(ret.data, objID_1)
 
-        # Query and verify the geometry of the second instance.
+        # Query the geometry of the second instance. Then verify it.
         ret = clerk.getFragments([objID_2])
         assert ret.ok and _verify(ret.data, objID_2)
 
-        # Query both instances at once and verify them.
+        # Query both instances at once. Then verify them.
         ret = clerk.getFragments([objID_1, objID_2])
         assert ret.ok and _verify(ret.data, objID_1)
         assert ret.ok and _verify(ret.data, objID_2)
 
-        # Delete first and query again.
+        # Delete first object. Then verify that Clerk returns None for its
+        # geometry.
         assert clerk.removeObject(objID_1).ok
         ret = clerk.getFragments([objID_1, objID_2])
         assert ret.ok

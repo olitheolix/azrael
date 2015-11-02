@@ -102,7 +102,7 @@ def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     }
 
     model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
-    geo = FragDae({'model.json': model})
+    geo = FragDae(files={'model.json': model})
     return FragMeta(fragtype='RAW', scale=scale, position=pos,
                     rotation=rot, fragdata=geo)
 

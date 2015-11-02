@@ -945,9 +945,11 @@ class Clerk(config.AzraelProcess):
         This method returns a dictionary of the form::
 
             {objID_1: {'fragtype': 'raw', 'scale': 1, 'position': (1, 2, 3),
-                       'rotation': (0, 1, 0, 0,), 'url_frag': 'http://'},
+                       'rotation': (0, 1, 0, 0,), 'url_frag': 'http://',
+                       'files': ['file1.json', 'file2.jpg', ...]},
              objID_2: {'fragtype': 'dae', 'scale': 1, 'position': (4, 5, 6),
-                       'rotation': (0, 0, 0, 1), 'url_frag': 'http://'},
+                       'rotation': (0, 0, 0, 1), 'url_frag': 'http://',
+                       'files': ['file1.json', 'file2.jpg', ...]},
              objID_3: None,
              ...
             }
@@ -983,8 +985,11 @@ class Clerk(config.AzraelProcess):
                 # block ensures that we will skip documents that have become
                 # (partially) invalid because one or more keys have gone missing.
                 try:
-                    # Unpack and compile geometry data for the current object.
-                    frags = doc['template']['fragments']
+                    # Restore the original fragment file names.
+                    template_json = self._unmangleFileNames(doc['template'])
+
+                    # Compile each fragment into a `FragMeta` type.
+                    frags = template_json['fragments']
                     frags = {k: FragMeta(**v) for (k, v) in frags.items()}
 
                     # Compile the dictionary with all the geometries that comprise
@@ -996,7 +1001,8 @@ class Clerk(config.AzraelProcess):
                             'position': v.position,
                             'rotation': v.rotation,
                             'fragtype': v.fragtype,
-                            'url_frag': pjoin(doc['url_frag'], k)
+                            'url_frag': pjoin(doc['url_frag'], k),
+                            'files': list(v.fragdata.files.keys()),
                         } for (k, v) in frags.items()}
                 except KeyError:
                     continue
