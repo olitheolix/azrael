@@ -77,7 +77,8 @@ class TestClerk:
 
     def test_get_default_templates(self):
         """
-        Query the default templates in Azrael.
+        Query the default templates created in the setup_method of this test
+        harness.
         """
         # Instantiate a Clerk.
         clerk = self.clerk
@@ -85,31 +86,31 @@ class TestClerk:
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
 
-        # Clerk has a few default objects. This one has no collision shape,...
+        # This template has no collision shape,...
         name_1 = '_templateEmpty'
         ret = clerk.getTemplates([name_1])
         assert ret.ok and (len(ret.data) == 1) and (name_1 in ret.data)
         assert ret.data[name_1]['template'].rbs.cshapes == {'csempty': getCSEmpty()}
 
-        # ... this one is a sphere,...
+        # ... this one a sphere shape,...
         name_2 = '_templateSphere'
         ret = clerk.getTemplates([name_2])
         assert ret.ok and (len(ret.data) == 1) and (name_2 in ret.data)
         assert ret.data[name_2]['template'].rbs.cshapes == {'cssphere': getCSSphere()}
 
-        # ... this one is a box,...
+        # ... this one a box,...
         name_3 = '_templateBox'
         ret = clerk.getTemplates([name_3])
         assert ret.ok and (len(ret.data) == 1) and (name_3 in ret.data)
         assert ret.data[name_3]['template'].rbs.cshapes == {'csbox': getCSBox()}
 
-        # ... and this one is a static plane.
+        # ... and this one is a static plane shape.
         name_4 = '_templatePlane'
         ret = clerk.getTemplates([name_4])
         assert ret.ok and (len(ret.data) == 1) and (name_4 in ret.data)
         assert ret.data[name_4]['template'].rbs.cshapes == {'csplane': getCSPlane()}
 
-        # Retrieve all three again but with a single call.
+        # Retrieve them all again with a single call to getTemplates.
         ret = clerk.getTemplates([name_1, name_2, name_3, name_4])
         assert ret.ok
         assert set(ret.data.keys()) == set((name_1, name_2, name_3, name_4))
@@ -141,7 +142,7 @@ class TestClerk:
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
 
-        # Wrong argument .
+        # Wrong argument.
         ret = clerk.addTemplates([1])
         assert (ret.ok, ret.msg) == (False, 'Invalid template data')
         assert mock_dibbler.addTemplate.call_count == 0
@@ -150,14 +151,14 @@ class TestClerk:
         frags = {'foo': getFragRaw()}
         temp = getTemplate('bar', rbs=body, fragments=frags)
 
-        # Add template when 'saveModel' fails.
+        # Add template when Dibbler's 'saveModel' fails.
         mock_ret = RetVal(False, 't_error', {'url_frag': 'http://'})
         mock_dibbler.addTemplate.return_value = mock_ret
         ret = clerk.addTemplates([temp])
         assert (ret.ok, ret.msg) == (False, 't_error')
         assert mock_dibbler.addTemplate.call_count == 1
 
-        # Add template when 'saveModel' succeeds.
+        # Add template when Dibbler's 'saveModel' succeeds.
         mock_ret = RetVal(True, None, {'url_frag': 'http://'})
         mock_dibbler.addTemplate.return_value = mock_ret
         assert clerk.addTemplates([temp]).ok
@@ -167,10 +168,7 @@ class TestClerk:
         assert not clerk.addTemplates([temp]).ok
         assert mock_dibbler.addTemplate.call_count == 3
 
-        # Define a new object with two boosters and one factory unit.
-        # The 'boosters' and 'factories' arguments are a list of named
-        # tuples. Their first argument is the unit ID (Azrael does not
-        # automatically assign any IDs).
+        # Define two boosters and one factory unit for a new template.
         boosters = {
             '0': aztypes.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
                                minval=0, maxval=0.5, force=0),
@@ -183,7 +181,7 @@ class TestClerk:
                                exit_speed=(0.1, 0.5))
         }
 
-        # Add the new template.
+        # Compile the new template and send it to Clerk.
         temp = getTemplate('t3',
                            rbs=body,
                            fragments=frags,
