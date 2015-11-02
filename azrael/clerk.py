@@ -1017,9 +1017,11 @@ class Clerk(config.AzraelProcess):
         """
         Update the fragments in the database with the new ``fragments`` data.
 
-        This will update existing objects and skips those that do not.
-        It will only return without error if *all* fragments in *all*
-        objects could be updated.
+        This will update existing objects. Non-existing objects will be
+        skipped.
+
+        Returns with an error unless *all* fragments in *all* objects could be
+        updated.
 
         :param dict[str: ``FragMeta``] fragments: new fragments.
         :return: Success
@@ -1040,6 +1042,13 @@ class Clerk(config.AzraelProcess):
             # Same as ref_1 but all values are None.
             ref_2 = {k: None for k in ref_1}
 
+            # Compile dictionary with all fragments to update. This is mostly
+            # to sanitise data. It will also create valid FragMeta data from
+            # the partial FragMeta data it receives. The partial FragMeta
+            # coming from the client is valid in this case because all missing
+            # fields mean they should not be modified (eg if the 'position'
+            # field is missing then it means to not update the position field
+            # of the fragment.)
             fragments_dibbler = {}
             for objID, frags in fragments.items():
                 fragments_dibbler[objID] = {}
@@ -1054,9 +1063,9 @@ class Clerk(config.AzraelProcess):
 
                     # Now that we know the input data is valid we can put it
                     # into a '_FragMeta' instance. We do *not* put it into a
-                    # 'FragMeta' instance (note the missing underscore) to
-                    # avoid the expensive sanity checks, because the object we
-                    # construct here may well have None values.
+                    # 'FragMeta' instance (note the missing underscore). This
+                    # circumvents the sanity checks because our new object
+                    # may well contain None values.
                     tmp = dict(ref_2)
                     tmp.update(fragdata)
                     fragments[objID][fragID] = _FragMeta(**tmp)
@@ -1078,6 +1087,7 @@ class Clerk(config.AzraelProcess):
         db = database.dbHandles['ObjInstances']
         ok, msg = True, []
 
+        # Update the objects (one by one) in the instance database.
         for objID, frags in fragments.items():
             # Update the fragment geometry in Dibbler (if there are any to
             # update). If an error occurs skip immediately to the next object.
@@ -1092,26 +1102,24 @@ class Clerk(config.AzraelProcess):
             to_remove = set()
             new_version = False
             for fragID, frag in frags.items():
-                # Skip if it has no type (ie Client does not want to update the
-                # fragment geometry).
+                # Skip fragments that have not type (ie Client does not want to
+                # update the geometry for this fragment).
                 if frag.fragtype is None:
                     continue
 
                 # If we get to here then the geometry of at least one fragment
-                # will be modified and the object thus requires a new version
-                # (merely modifying the scale/position etc does not require a
-                # new version).
+                # will be modified. This demands an update of the 'version'
+                # flag (the version remains stable if we will merely update eg
+                # scale/position because the client does not have to download
+                # new geometry data in that case).
                 new_version = True
 
-                # Skip this fragment if the client did not request for it to be
-                # removed.
-                if frag.fragtype.upper() != '_DEL_':
-                    continue
-
-                # Remove the fragment from the instance database.
-                db.update({'objID': objID},
-                          {'$unset': {'template.fragments.{}'.format(fragID): True}})
-                to_remove.add(fragID)
+                # Remove the fragment from the instance database if so
+                # requested by the user.
+                if frag.fragtype.upper() == '_DEL_':
+                    db.update({'objID': objID},
+                              {'$unset': {'template.fragments.{}'.format(fragID): True}})
+                    to_remove.add(fragID)
 
             # Remove all those fragments from the fragment dictionary that the
             # client wanted removed, because we have already dealt with them.

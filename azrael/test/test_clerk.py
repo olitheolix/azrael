@@ -1595,14 +1595,14 @@ class TestClerk:
         assert ret.ok
         objID = ret.data[0]
 
-        # Query the state and verify it has as many FragmentState
-        # vectors as it has fragments.
+        # Query the state. Verify that we got one set of state variables for
+        # each fragment.
         ret = clerk.getObjectStates([objID])
         assert ret.ok
         ret_frags = ret.data[objID]['frag']
         assert len(ret_frags) == len(frags)
 
-        # Same as before, but this time get all of them.
+        # Same as before, but this time query all states at once.
         assert clerk.getObjectStates(None) == ret
 
         # Verify the fragment _states_ themselves.
