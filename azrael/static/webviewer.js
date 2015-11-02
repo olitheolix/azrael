@@ -86,7 +86,7 @@ function ping() {
 }
 
 
-function getGeometry(objIDs) {
+function getFragments(objIDs) {
     var cmd = {'cmd': 'get_fragments', 'data': {'objIDs': objIDs}}
     cmd = JSON.stringify(cmd)
     var dec = function (msg) {
@@ -274,8 +274,8 @@ function* mycoroutine(connection) {
         console.log('Received ' + Object.keys(e.data).length +
                     ' new object models from <load_model.js> Worker');
 
-        var loader = new THREE.ColladaLoader();
-        var loader_json = new THREE.JSONLoader();
+        var loader_dae = new THREE.ColladaLoader();
+        var loader_3js = new THREE.JSONLoader();
 
         // Iterate over all downloaded models by object ID.
         for (var objID in e.data) {
@@ -298,8 +298,8 @@ function* mycoroutine(connection) {
                     scene.add(geo);
                     break;
                 case 'DAE':
-                    console.log('Loading dae from <' + d.url_frag + '>');
-                    loader.load(
+                    console.log('Loading DAE from <' + d.url_frag + '>');
+                    loader_dae.load(
                         d.url,
                         // Function when resource is loaded
                         function (collada) {
@@ -312,9 +312,9 @@ function* mycoroutine(connection) {
                         }
                     )
                     break;
-                case 'OBJ':
-                    console.log('Loading dae from <' + d.url_frag + '>');
-                    loader_json.load(
+                case '3JS_V4':
+                    console.log('Loading ThreeJS JSON v4 from <' + d.url_frag + '>');
+                    loader_3js.load(
                         d.url,
                         // Function when resource is loaded
                         function ( geometry, materials ) {
@@ -331,6 +331,7 @@ function* mycoroutine(connection) {
                     )
                     break;
                 default:
+                    console.log('Unknown format <' + d.url_frag + '>');
                     break;
                 }
             }
@@ -415,12 +416,12 @@ function* mycoroutine(connection) {
             }
         }
         
-        // Request the undefined models if the worker is idle.
+        // Request the undefined model geometries if the worker is idle.
         if ((worker_jobs.length > 0) && (worker_idle == true)) {
             // Download the meta data for the models.
-            msg = yield getGeometry(worker_jobs);
+            msg = yield getFragments(worker_jobs);
             if (msg.ok == false) {
-                console.log('Error getGeometry');
+                console.log('Error getFragments');
             } else {
                 // Mark the Worker as being busy.
                 worker_idle = false;
@@ -430,7 +431,8 @@ function* mycoroutine(connection) {
                 // download them.
                 worker.postMessage(
                     {'objData': msg.data,
-                     'baseURL': 'http://' + window.location.host});
+                     'baseURL': 'http://' + window.location.host}
+                );
             }
         }
 
