@@ -84,13 +84,12 @@ def compileRawFragment(vert, uv, rgb):
     return FragDae({'model.json': model})
 
 
-def getFragMeta(ftype, vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
+def getFragMetaRaw(vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
-    fixme: docu
+    Return compiled FragMeta tuple for a modle in RAW format.
     """
     fdata = compileRawFragment(vert, uv, rgb)
-
-    return FragMeta(fragtype=ftype, scale=scale, position=pos,
+    return FragMeta(fragtype='RAW', scale=scale, position=pos,
                     rotation=rot, fragdata=fdata)
 
 

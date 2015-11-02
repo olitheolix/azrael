@@ -84,10 +84,10 @@ def BoostercubeTemplate(scale=1.0):
     cs = aztypes.CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
     body = demolib.getRigidBody(cshapes={'0': cs})
     frags = {
-        'frag_1': demolib.getFragMeta('raw', **frag_cube),
-        'b_x': demolib.getFragMeta('raw', **frag_flame),
-        'b_y': demolib.getFragMeta('raw', **frag_flame),
-        'b_z': demolib.getFragMeta('raw', **frag_flame),
+        'frag_1': demolib.getFragMetaRaw(**frag_cube),
+        'b_x': demolib.getFragMetaRaw(**frag_flame),
+        'b_y': demolib.getFragMetaRaw(**frag_flame),
+        'b_z': demolib.getFragMetaRaw(**frag_flame),
     }
     template = Template(tID, body, frags, boosters, {})
     return template

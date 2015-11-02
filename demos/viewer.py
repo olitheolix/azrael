@@ -79,13 +79,13 @@ def parseCommandLine():
     return param
 
 
-def getFragMeta(ftype, vert, uv, rgb):
+def getFragMetaRaw(vert, uv, rgb):
     scale = 1
     pos = (0, 0, 0)
     rot = (0, 0, 0, 1)
     
     Model = namedtuple('Model', 'fragtype scale position rotation vert uv rgb')
-    return Model(ftype, scale, pos, rot, vert, uv, rgb)
+    return Model('RAW', scale, pos, rot, vert, uv, rgb)
 
 
 def getRigidBody(scale: (int, float)=1,
@@ -587,7 +587,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                         self._removeObjectData(objID)
                         break
                     frag = json.loads(frag.decode('utf8'))
-                    frag = getFragMeta('RAW', frag['vert'], frag['uv'], frag['rgb'])
+                    frag = getFragMetaRaw(frag['vert'], frag['uv'], frag['rgb'])
                 elif frag_data['fragtype'] == 'DAE':
                     url = base_url + frag_data['url_frag'] + '/' + fragID
                     frag = requests.get(url).content
@@ -610,7 +610,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     vert = np.array(vert)
                     uv = np.array(uv, np.float32)
                     rgb = np.array(rgb, np.uint8)
-                    frag = getFragMeta('RAW', vert, uv, rgb)
+                    frag = getFragMetaRaw(vert, uv, rgb)
                 else:
                     continue
                 self.upload2GPU(objID, fragID, frag)

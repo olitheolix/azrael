@@ -252,8 +252,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
         # Create the template.
         tID = ('BoosterCube_{}'.format(ii))
-        frags = {'frag_1': demolib.getFragMeta('raw', vert, curUV, rgb),
-                 'frag_2': demolib.getFragMeta('raw', vert, curUV, rgb)}
+        frags = {'frag_1': demolib.getFragMetaRaw(vert, curUV, rgb),
+                 'frag_2': demolib.getFragMetaRaw(vert, curUV, rgb)}
         body = demolib.getRigidBody(cshapes={'0': cs})
         tmp = Template(tID, body, frags, boosters, {})
         templates.append(tmp)

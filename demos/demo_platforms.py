@@ -89,7 +89,7 @@ def addPlatforms():
         version)
     
     # Geometry for the platforms (defines their appearance, not physics).
-    fm = demolib.getFragMeta(ftype='RAW',
+    fm = demolib.getFragMetaRaw(
                   vert=vert,
                   uv=[],
                   rgb=[],
