@@ -502,3 +502,39 @@ class Dibbler:
                 # All other GridFS errors.
                 pass
         return RetVal(True, None, num_deleted)
+
+    @typecheck
+    def removeDirs(self, dirnames: (tuple, list)):
+        """
+        Fixme docu.
+        Fixme: merge _deleteSubLocation
+        """
+        try:
+            for idx, name in enumerate(dirnames):
+                assert isinstance(name, str)
+                dirnames[idx] = name if name[-1] != '/' else name[:-1]
+        except AssertionError:
+            return RetVal(False, 'Invalid arguments', None)
+
+        num_deleted = 0
+        for name in dirnames:
+            ret = self._deleteSubLocation(name)
+            if ret.ok:
+                num_deleted += ret.data
+        return RetVal(True, None, num_deleted)
+
+        num_deleted = 0
+        for fname in dirnames:
+            try:
+                found_at_least_one = False
+                for mid in self.fs.find({'filename': fname}):
+                    ret = self.fs.delete(mid._id)
+                    found_at_least_one = True
+                if found_at_least_one:
+                    num_deleted += 1
+            except gridfs.errors.NoFile as err:
+                pass
+            except gridfs.errors.GridFSError as err:
+                # All other GridFS errors.
+                pass
+        return RetVal(True, None, num_deleted)

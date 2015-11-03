@@ -688,3 +688,70 @@ class TestDibbler:
 
         # Attempt to copy both files to the same target name.
         assert not dibbler.copy({'foo': 'blah', 'bar': 'blah'}).ok
+
+    def test_remove_directory(self):
+        """
+        Remove all files with common prefix.
+        """
+        dibbler = self.dibbler
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Create files a small directory hierarchy.
+        files = {
+            'dir1/foo1': b'foo1',
+            'dir1/bar1': b'bar1',
+            'dir2/foo2': b'foo2',
+            'dir2/bar2': b'bar2',
+            'dir2/sub/foo3': b'foo3',
+            'dir2/sub/bar3': b'bar3'
+        }
+        assert dibbler.put(files).ok
+        assert dibbler.getNumFiles() == (True, None, len(files))
+
+        # Attempt to remove a non-existing directory. The call must succeed yet
+        # nothing must have been deleted.
+        assert dibbler.removeDirs(['blah']) == (True, None, 0)
+        assert dibbler.getNumFiles() == (True, None, len(files))
+
+        # Attempt to remove all files in the non-existent 'dir' directory (not
+        # that this is a prefix for the 'dir1/' and 'dir2' directories, and
+        # Dibbler must ensure that these are _not_ deleted.
+        assert dibbler.removeDirs(['dir']) == (True, None, 0)
+        assert dibbler.getNumFiles() == (True, None, len(files))
+
+        # Delete all files in dir1. Then verify the number of files.
+        assert dibbler.removeDirs(['dir1']) == (True, None, 2)
+        assert dibbler.getNumFiles() == (True, None, len(files) - 2)
+
+        # Delete all files in dir2. Then verify that there are no more files
+        # left.
+        assert dibbler.removeDirs(['dir2']) == (True, None, 4)
+        assert dibbler.getNumFiles() == (True, None, 0)
+
+        # Populate the database again.
+        assert dibbler.put(files).ok
+        assert dibbler.getNumFiles() == (True, None, len(files))
+
+        # Delete 'dir2/sub'.
+        assert dibbler.removeDirs(['dir2/sub']) == (True, None, 2)
+        assert dibbler.getNumFiles() == (True, None, len(files) - 2)
+        fnames = ['dir1/foo1', 'dir1/bar1', 'dir2/foo2', 'dir2/bar2']
+        ret = dibbler.get(fnames)
+        assert ret.ok
+        for fname in fnames:
+            ret.data[fname] == files[fname]
+
+        # Reset the database and populate it again.
+        self.dibbler.reset()
+        assert dibbler.put(files).ok
+        assert dibbler.getNumFiles() == (True, None, len(files))
+
+        # As before, delete the 'dir2/sub' directory, but this time supply a
+        # trailing a slash. The result must be the same.
+        assert dibbler.removeDirs(['dir2/sub/']) == (True, None, 2)
+        assert dibbler.getNumFiles() == (True, None, len(files) - 2)
+        fnames = ['dir1/foo1', 'dir1/bar1', 'dir2/foo2', 'dir2/bar2']
+        ret = dibbler.get(fnames)
+        assert ret.ok
+        for fname in fnames:
+            ret.data[fname] == files[fname]
