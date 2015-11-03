@@ -283,17 +283,22 @@ class FragMeta(_FragMeta):
                 rotation: (tuple, list),
                 files: dict):
         try:
+            # For consistency.
             fragtype = fragtype.upper()
 
             # Sanity check position and rotation.
             position = toVec(3, position)
             rotation = toVec(4, rotation)
 
+            # The 'files' field must be a dict. We need to check this
+            # explicitly because the typecheck decorator would also
+            # allow a 'None' type.
+            assert isinstance(files, dict)
+
             # Verify the RGB dictionary.
-            if files is not None:
-                for fname, fdata in files.items():
-                    assert isinstance(fname, str)
-                    assert isinstance(fdata, str) or fdata is None
+            for fname, fdata in files.items():
+                assert isinstance(fname, str)
+                assert isinstance(fdata, str) or fdata is None
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)

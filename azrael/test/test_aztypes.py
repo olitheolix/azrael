@@ -104,7 +104,7 @@ class TestAZTypes:
             # Azrael because the meta data is stored in a separate database
             # that may not yet have synced.
             frag_a = Getter()
-            frag_b = frag_a._replace(files=None)
+            frag_b = frag_a._replace(files={})
             assert self.isJsonCompatible(frag_a, FragMeta)
             assert self.isJsonCompatible(frag_b, FragMeta)
 

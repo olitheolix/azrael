@@ -1155,7 +1155,7 @@ class Clerk(config.AzraelProcess):
                      'scale': 1,
                      'position': (0, 0, 0),
                      'rotation': (0, 0, 0, 1),
-                     'files': None}
+                     'files': {}}
 
             # Same as ref_1 but all values are None.
             ref_2 = {k: None for k in ref_1}
@@ -1265,7 +1265,7 @@ class Clerk(config.AzraelProcess):
 
             # Strip the geometry data because the instance database only
             # contains meta information; Dibbler contains the geometry.
-            frags = {k: v._replace(files=None) for (k, v) in frags.items()}
+            frags = {k: v._replace(files={}) for (k, v) in frags.items()}
 
             # Convert the fragments to dictionaries.
             frags = {k: v._asdict() for (k, v) in frags.items()}
