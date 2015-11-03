@@ -1533,11 +1533,11 @@ class TestClerk:
             ret = clerk.getObjectStates([objID])
             assert ret.ok and (len(ret.data) == 1)
 
-            # Extract the fragments and verify there are the two.
+            # Extract the fragments and verify there are exactly two.
             _frags = ret.data[objID]['frag']
             assert len(_frags) == 2
 
-            # Verify the correct fragment names are present.
+            # Verify the fragment names match the provided ones.
             assert {name_1, name_2} == set(_frags.keys())
 
             # Compile the expected values into a dictionary.
@@ -2142,6 +2142,143 @@ class TestClerk:
         # record due to an errornous 'upsert' command.
         assert db.count() == 0
 
+    def test_setFragments2_state_only(self):
+        """
+        fixme: rename method; docu
+        """
+        # Convenience.
+        clerk = self.clerk
+
+        # Compile a valid template. Then add it to Azrael and spawn two
+        # instances.
+        fraw, fdae = getFragRaw(), getFragDae()
+        frags = {
+            'foo': fraw,
+            'bar': fdae,
+        }
+        template = getTemplate('foo', fragments=frags)
+        assert clerk.addTemplates([template]).ok
+        ret = clerk.spawn([{'templateID': template.aid},
+                           {'templateID': template.aid}])
+        assert ret.ok
+        id_0, id_1 = ret.data
+        del template, ret
+
+        # Modify the 'foo' fragment of the first object and the 'bar' fragment
+        # of the second object. Only modify state information, not geometry.
+        # The version flag must not change for any fragment because no geometry
+        # file was altered.
+        cmd = {
+            id_0: {'foo': {'state': {'scale': 2, 'position': (0, 1, 2)}}},
+            id_1: {'bar': {'state': {'scale': 3, 'rotation': (0, 1, 0, 0)}}},
+        }
+        assert clerk.setFragments2(cmd).ok
+        ret = clerk.getFragments([id_0, id_1])
+
+        # Query the fragments and verify the changes.
+        r1 = ret.data[id_0]
+        assert r1['foo']['scale'] == 2
+        assert r1['foo']['position'] == (0, 1, 2)
+        assert r1['foo']['rotation'] == (0, 0, 0, 1)
+
+        r2 = ret.data[id_1]
+        assert r2['bar']['scale'] == 3
+        assert r2['bar']['position'] == (0, 0, 0)
+        assert r2['bar']['rotation'] == (0, 1, 0, 0)
+
+    def test_setFragments2_geometry_only(self):
+        """
+        fixme: rename method; docu
+        """
+        # Convenience.
+        clerk = self.clerk
+        web = azrael.web.WebServer()
+        web.start()
+
+        # Compile a valid template. Then add it to Azrael and spawn two
+        # instances.
+        fraw, fdae = getFragRaw(), getFragDae()
+        frags = {
+            'fraw': fraw,
+            'fdae': fdae,
+        }
+        template = getTemplate('foo', fragments=frags)
+        assert clerk.addTemplates([template]).ok
+        ret = clerk.spawn([{'templateID': template.aid},
+                           {'templateID': template.aid}])
+        assert ret.ok
+        id_0, id_1 = ret.data
+        del template, ret
+
+        # Modify the geometries. The first fragment of the first object gains a
+        # new file ('myfile.txt') and modifies an existing one ('model.json').
+        # The second fragment of the second file looses 'model.json' and
+        # changes its type to 'RAW'.
+        b64enc = base64.b64encode
+        cmd = {
+            id_0: {'fraw': {
+                'put': {
+                    'myfile.txt': b64enc(b'aaa'),
+                    'model.json': b64enc(b'bbb')
+                }
+            }},
+            id_1: {'fdae': {
+                'fragtype': 'raw',
+                'del': ['model.dae']
+            }},
+        }
+        assert clerk.setFragments2(cmd).ok
+        ret = clerk.getFragments([id_0, id_1])
+        assert ret.ok
+
+        # Verify the first object: it got a new file.
+        r0 = ret.data[id_0]
+#        assert r0['fraw']['version'] == 2
+#        assert r0['fdae']['version'] == 1
+        assert r0['fraw']['fragtype'] == 'RAW'
+        assert r0['fdae']['fragtype'] == 'DAE'
+        assert set(r0['fraw']['files']) == {'myfile.txt', 'model.json'}
+
+        # Verify the first object: it must not have a 'model.dae' anymore.
+        r1 = ret.data[id_1]
+#        assert r1['fraw']['version'] == 1
+#        assert r1['fdae']['version'] == 2
+        assert r1['fraw']['fragtype'] == 'RAW'
+        assert r1['fdae']['fragtype'] == 'RAW'
+        assert 'model.dae' not in r1['fdae']['files']
+
+        def _download(url):
+            for ii in range(10):
+                try:
+                    return requests.get(url).content
+                except (requests.exceptions.HTTPError,
+                        requests.exceptions.ConnectionError):
+                    time.sleep(0.1)
+            assert False
+
+        base_url = 'http://{}:{}'.format(
+            azrael.config.addr_webapi, azrael.config.port_webapi)
+
+        # Verify the files of the first object.
+        url = r0['fraw']['url_frag'] + '/myfile.txt'
+        print('URL: ', url)
+        assert self.dibbler.getFile(url).data == cmd[id_0]['fraw']['put']['myfile.txt']
+        assert _download(base_url + url) == cmd[id_0]['fraw']['put']['myfile.txt']
+
+        url = r0['fraw']['url_frag'] + '/model.json'
+        assert self.dibbler.getFile(url).data == cmd[id_0]['fraw']['put']['model.json']
+        assert _download(base_url + url) == cmd[id_0]['fraw']['put']['model.json']
+
+        # It must be impossible to fetch 'model.dae' for the second object.
+        url = r1['fdae']['url_frag'] + '/model.dae'
+        assert not self.dibbler.getFile(url).ok
+        assert _download(base_url + url) == b''
+
+        web.terminate()
+        web.join()
+
+#        assert False
+
 
 def test_invalid():
     """
@@ -2214,3 +2351,4 @@ def test_invalid():
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join()
+

@@ -1050,6 +1050,84 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
+    def setFragments2(self, fragments: dict):
+        """
+        Fixme: copy docu from 'setFragments'
+        """
+        db = database.dbHandles['ObjInstances']
+
+        # Update the fragments of each object.
+        for objID, frags in fragments.items():
+            # Compile the query to update the instance data.
+            db_set = {}
+            db_del = {}
+            to_delete = []
+            to_put = {}
+            pre = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
+            for fragname, fragdata in frags.items():
+                if 'state' in fragdata:
+                    ref = {k: None for k in aztypes.FragMeta._fields}
+                    ref = {k: fragdata['state'].get(k, None) for k in ref}
+                    ref = {k: v for k, v in ref.items() if v is not None}
+                    for field, value in ref.items():
+                        tmp = 'template.fragments.{}.{}'.format(fragname, field)
+                        db_set[tmp] = value
+                        del tmp
+
+                if 'fragtype' in fragdata:
+                    tmp = 'template.fragments.{}.fragtype'.format(fragname)
+                    db_set[tmp] = fragdata['fragtype']
+
+                # Files to delete.
+                print(fragdata)
+                url_base = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
+                for fname in fragdata.get('del', []):
+                    to_delete.append('{url}/{filename}'.format(url=url_base, filename=fname))
+
+                    fname = fname.replace('.', ';')
+                    tmp = 'template.fragments.{}.fragdata.files.{}'.format(fragname, fname)
+                    db_del[tmp] = True
+
+                # Files to add/update.
+                for fname, fdata in fragdata.get('put', {}).items():
+                    to_put['{url}/{filename}'.format(url=url_base, filename=fname)] = fdata
+                    print('\n***check put', to_put)
+
+                    fname = fname.replace('.', ';')
+                    tmp = 'template.fragments.{}.fragdata.files.{}'.format(fragname, fname)
+                    db_set[tmp] = None
+                print('\ncheck 2put: ', to_put)
+            print('\n---------- done')
+
+                
+            # Issue the database query.
+            ret = RetVal(True, None, None)
+            print()
+            print('Set: ', db_set)
+            print('Del: ', db_del)
+            if not (db_set == {} and db_del == {}):
+                q_find = {'objID': objID}
+                op = {}
+                op['$inc'] = {'version': 1}
+                if len(db_set) > 0:
+                    op['$set'] = db_set
+                if len(db_del) > 0:
+                    op['$unset'] = db_del
+                ret = db.update(q_find, op)
+                print(ret)
+
+            print('Dibbler put: ', to_put.keys())
+            
+            # Issue the Dibbler queries.
+            self.dibbler.remove(to_delete)
+            self.dibbler.put(to_put)
+
+            del objID, frags
+
+            
+        return RetVal(True, None, None)
+
+    @typecheck
     def setFragments(self, fragments: dict):
         """
         Update the fragments in the database with the new ``fragments`` data.
