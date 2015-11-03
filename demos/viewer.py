@@ -647,7 +647,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                       scale=1,
                       position=(0, 0, 0),
                       rotation=(0, 0, 0, 1),
-                      fragdata={'files': {'model.json': model}})
+                      files={'model.json': model})
         frags = {'frag_1': fm}
         body = getRigidBody(cshapes={'player': cs})
         temp = Template(t_projectile, body, frags, {}, {})

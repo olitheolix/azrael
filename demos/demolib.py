@@ -34,7 +34,7 @@ import model_import
 import azrael.util as util
 import azrael.aztypes as aztypes
 from IPython import embed as ipshell
-from azrael.aztypes import Template, FragMeta, FragDae
+from azrael.aztypes import Template, FragMeta
 from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox
 
