@@ -1367,46 +1367,6 @@ class TestClerk:
         assert r3['bar']['rotation'] == fdae.rotation
         assert r3['bar']['fragtype'] == fraw.fragtype
 
-    def test_setFragments_partial_bug1(self):
-        """
-        If the bug is present then a partial update that does not include the
-        fragment geometry itself would actually delete the geometry in Dibbler.
-        This test verifies that Dibbler is called with the correct arguments to
-        prevent that.
-        """
-        # Convenience.
-        clerk = azrael.clerk.Clerk()
-
-        # Add a valid template and verify it now exists in Azrael.
-        fraw, fdae = getFragRaw(), getFragDae()
-        temp = getTemplate('t1', fragments={'foo': fraw, 'bar': fdae})
-        assert clerk.addTemplates([temp]).ok
-
-        # Spawn one objects from the previously defined template.
-        init = {'templateID': temp.aid}
-        ret = clerk.spawn([init])
-        assert ret.ok and (len(ret.data) == 1)
-        id_1, = ret.data
-
-        # Install a mock for Dibbler with an 'addTemplate' function that
-        # always succeeds.
-        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
-        clerk.dibbler = mock_dibbler
-
-        # Specify what to update.
-        cmd = {id_1: {'foo': {'scale': 2, 'position': (0, 1, 2)},
-                      'bar': getFragRaw()._asdict()}}
-        assert clerk.setFragments(cmd).ok
-
-        # Verify that 'dibbler.updateFragments' was called exactly once for id_0
-        assert mock_dibbler.updateFragments.call_count == 1
-        args = mock_dibbler.updateFragments.call_args[0]
-        assert args[0] == id_1
-
-        # Verify that the fragment dictionary did not contain 'foo' because it
-        # did not update the geometry itself.
-        assert set(args[1].keys()) == {'bar'}
-
     def test_setFragments_partial_bug2(self):
         """
         Updating the fragment state without altering the geometry must not
