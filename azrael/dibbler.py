@@ -47,7 +47,7 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.aztypes import typecheck, Template, RetVal
-from azrael.aztypes import FragDae, FragMeta
+from azrael.aztypes import FragMeta
 
 
 class Dibbler:

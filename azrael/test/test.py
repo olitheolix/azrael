@@ -26,7 +26,7 @@ import subprocess
 import numpy as np
 import azrael.leonard
 
-from azrael.aztypes import FragMeta, FragDae, Template
+from azrael.aztypes import FragMeta, Template
 from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox, CollShapePlane, RigidBodyData
 from azrael.aztypes import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
@@ -88,7 +88,7 @@ def getFragNone(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     Convenience function to construct an empty geometry element.
     """
     return FragMeta(fragtype='_del_', scale=scale, position=pos,
-                    rotation=rot, fragdata=FragDae(files={}))
+                    rotation=rot, files={})
 
 
 def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
@@ -102,9 +102,8 @@ def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     }
 
     model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
-    geo = FragDae(files={'model.json': model})
     return FragMeta(fragtype='RAW', scale=scale, position=pos,
-                    rotation=rot, fragdata=geo)
+                    rotation=rot, files={'model.json': model})
 
 
 def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
@@ -119,12 +118,14 @@ def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     dae_file = base64.b64encode(dae_file).decode('utf8')
     dae_rgb1 = base64.b64encode(dae_rgb1).decode('utf8')
     dae_rgb2 = base64.b64encode(dae_rgb2).decode('utf8')
-    geo = FragDae(files={'model.dae': dae_file,
-                         'rgb1.png': dae_rgb1,
-                         'rgb2.jpg': dae_rgb2})
+    files = {
+        'model.dae': dae_file,
+        'rgb1.png': dae_rgb1,
+        'rgb2.jpg': dae_rgb2,
+    }
 
     return FragMeta(fragtype='DAE', scale=scale, position=pos,
-                    rotation=rot, fragdata=geo)
+                    rotation=rot, files=files)
 
 
 def getFragObj(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
@@ -139,12 +140,14 @@ def getFragObj(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     obj_file = base64.b64encode(obj_file).decode('utf8')
     obj_jpg = base64.b64encode(obj_jpg).decode('utf8')
     obj_mtl = base64.b64encode(obj_mtl).decode('utf8')
-    geo = FragDae(files={'house.obj': obj_file,
-                         'house.jpg': obj_jpg,
-                         'house.mtl': obj_mtl})
+    files = {
+        'house.obj': obj_file,
+        'house.jpg': obj_jpg,
+        'house.mtl': obj_mtl
+    }
 
     return FragMeta(fragtype='OBJ', scale=scale, position=pos,
-                    rotation=rot, fragdata=geo)
+                    rotation=rot, files=files)
 
 
 def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2,

@@ -81,16 +81,16 @@ def compileRawFragment(vert, uv, rgb):
     }
 
     model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
-    return FragDae({'model.json': model})
+    return {'model.json': model}
 
 
 def getFragMetaRaw(vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Return compiled FragMeta tuple for a modle in RAW format.
     """
-    fdata = compileRawFragment(vert, uv, rgb)
+    files = compileRawFragment(vert, uv, rgb)
     return FragMeta(fragtype='RAW', scale=scale, position=pos,
-                    rotation=rot, fragdata=fdata)
+                    rotation=rot, files=files)
 
 
 def getRigidBody(scale: (int, float)=1,

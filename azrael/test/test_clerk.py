@@ -35,7 +35,6 @@ import azrael.config as config
 
 from IPython import embed as ipshell
 from azrael.aztypes import RetVal, CollShapeMeta
-from azrael.aztypes import FragDae
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
 from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
@@ -213,8 +212,8 @@ class TestClerk:
         # content). Here we verify that this is true.
         frag_ref = {k: aztypes.FragMeta(*v) for k, v in frags.items()}
         for fragname, fm in frag_ref.items():
-            for fname, fdata in fm.fragdata.files.items():
-                fm.fragdata.files[fname] = None
+            for fname, fdata in fm.files.items():
+                fm.files[fname] = None
         assert ret.data[temp.aid]['template'].fragments == frag_ref
 
         # Request the same templates multiple times in a single call. This must
@@ -1616,13 +1615,13 @@ class TestClerk:
         url = base_url + data['10']['url_frag'] + '/model.json'
         tmp = _download(url)
         tmp = base64.b64encode(tmp).decode('utf8')
-        assert tmp == f_raw.fragdata.files['model.json']
+        assert tmp == f_raw.files['model.json']
 
         # Download and verify all model files.
-        for fname in f_dae.fragdata.files.keys():
+        for fname in f_dae.files.keys():
             url = base_url + data['test']['url_frag'] + '/' + fname
             tmp = _download(url)
-            assert tmp == base64.b64decode(f_dae.fragdata.files[fname])
+            assert tmp == base64.b64decode(f_dae.files[fname])
 
         # Change the fragment geometries.
         f_raw = getFragRaw()
@@ -1637,13 +1636,13 @@ class TestClerk:
         url = base_url + data['10']['url_frag'] + '/model.json'
         tmp = _download(url)
         tmp = base64.b64encode(tmp).decode('utf8')
-        assert tmp == f_raw.fragdata.files['model.json']
+        assert tmp == f_raw.files['model.json']
 
         # Download and verify all model files.
-        for fname in f_dae.fragdata.files.keys():
+        for fname in f_dae.files.keys():
             url = base_url + data['test']['url_frag'] + '/' + fname
             tmp = _download(url)
-            assert tmp == base64.b64decode(f_dae.fragdata.files[fname])
+            assert tmp == base64.b64decode(f_dae.files[fname])
 
         web.terminate()
         web.join()

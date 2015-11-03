@@ -592,8 +592,8 @@ class Client():
             url = base_url + '/' + aid + '/model.json'
             geo = requests.get(url).content
 
-            # Wrap the fragments into their dedicated tuple type.
-            out[aid] = aztypes.FragDae(files={'model.json': geo.decode('utf8')})
+            # Add the files.
+            out[aid] = {'model.json': geo.decode('utf8')}
         return RetVal(True, None, out)
 
     @typecheck

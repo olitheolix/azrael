@@ -8,7 +8,6 @@ import azrael.clerk
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.aztypes import FragDae
 from azrael.test.test import getFragRaw, getFragDae, getTemplate
 from azrael.test.test import getCSBox, getCSSphere, getRigidBody
 
@@ -56,7 +55,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
             data = base64.b64encode(ret.body).decode('utf8')
         except ValueError:
             assert False
-        return FragDae(files={fname: data})
+        return {fname: data}
 
     def downloadFragDae(self, url: str, fnames: list):
         """
@@ -83,7 +82,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         # FragDae instance.
         b64enc = base64.b64encode
         fdata = {k: b64enc(v).decode('utf8') for (k, v) in fdata.items()}
-        return FragDae(files=fdata)
+        return fdata
 
     def verifyTemplate(self, url, fragments):
         """
@@ -103,12 +102,12 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
             ftype = frag.fragtype.upper()
             if ftype == 'RAW':
                 tmp_url = url + '/{name}/'.format(name=aid)
-                assert self.downloadFragRaw(tmp_url, 'model.json') == frag.fragdata
+                assert self.downloadFragRaw(tmp_url, 'model.json') == frag.files
             elif ftype == 'DAE':
                 tmp_url = url + '/{name}/'.format(name=aid)
-                fnames = list(frag.fragdata.files.keys())
+                fnames = list(frag.files.keys())
                 ret = self.downloadFragDae(tmp_url, fnames)
-                assert ret == frag.fragdata
+                assert ret == frag.files
             else:
                 assert False
 

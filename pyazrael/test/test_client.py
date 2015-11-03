@@ -233,9 +233,9 @@ class TestClient:
         # Fetch the geometry from the web server and verify it.
         ret = client.getTemplateGeometry(ret.data[temp_name])
         assert ret.ok
-        ret = ret.data['bar'].files['model.json'].encode('utf8')
+        ret = ret.data['bar']['model.json'].encode('utf8')
         ret = base64.b64encode(ret).decode('utf8')
-        assert ret == frag['bar'].fragdata.files['model.json']
+        assert ret == frag['bar'].files['model.json']
         del ret, temp_out, temp_orig
 
         # Define a new object with two boosters and one factory unit.
@@ -289,9 +289,9 @@ class TestClient:
         # Fetch the geometry from the Web server and verify it is correct.
         ret = client.getTemplateGeometry(ret.data[temp.aid])
         assert ret.ok
-        ret = ret.data['bar'].files['model.json'].encode('utf8')
+        ret = ret.data['bar']['model.json'].encode('utf8')
         ret = base64.b64encode(ret).decode('utf8')
-        assert ret == frag['bar'].fragdata.files['model.json']
+        assert ret == frag['bar'].files['model.json']
 
     @pytest.mark.parametrize('client_type', ['ZeroMQ', 'Websocket'])
     def test_spawn_and_delete_one_object(self, client_type):
@@ -576,7 +576,7 @@ class TestClient:
             except requests.exceptions.HTTPError:
                 time.sleep(0.2)
         model = base64.b64encode(tmp).decode('utf8')
-        assert model == frag['bar'].fragdata.files['model.json']
+        assert model == frag['bar'].files['model.json']
 
         # Change the fragment geometries.
         cmd = {objID: {k: v._asdict() for (k, v) in frag.items()}}
@@ -591,7 +591,7 @@ class TestClient:
         tmp = requests.get(url).content
 
         model = base64.b64encode(tmp).decode('utf8')
-        assert model == frag['bar'].fragdata.files['model.json']
+        assert model == frag['bar'].files['model.json']
 
         # Ensure 'version' is different as well.
         ret = client.getRigidBodies(objID)

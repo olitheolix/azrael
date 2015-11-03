@@ -399,7 +399,7 @@ class Clerk(config.AzraelProcess):
                     prefix = '{url}/{name}/'.format(url=url_frag, name=fragname)
 
                     # Attach the url prefix to each file in the fragment.
-                    files = {prefix + k: v for k, v in frag.fragdata.files.items()}
+                    files = {prefix + k: v for k, v in frag.files.items()}
 
                     # Base64 encode the data (cannot be binary because it will
                     # be served up via HTTP).
@@ -540,9 +540,9 @@ class Clerk(config.AzraelProcess):
             # are empty. Then mangle all file names (replace all
             # dots with semicolons) because Mongo would not accept dots
             # in any of the keys.
-            fnames = metafrag['fragdata']['files']
+            fnames = metafrag['files']
             tmp = {fname.replace(char_src, char_dst): None for fname in fnames}
-            metafrag['fragdata']['files'] = tmp
+            metafrag['files'] = tmp
         return template_json
         
     def _mangleFileNames(self, template_json: dict):
@@ -666,7 +666,7 @@ class Clerk(config.AzraelProcess):
                 url_dst = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
                 ret = RetVal(True, None, None)
                 for fragname in template.fragments:
-                    fnames = template.fragments[fragname].fragdata.files
+                    fnames = template.fragments[fragname].files
 
                     # Compile the names of the source and target files.
                     pre_src = '{url}/{name}/'.format(url=url_src, name=fragname)
@@ -1039,7 +1039,7 @@ class Clerk(config.AzraelProcess):
                             'rotation': v.rotation,
                             'fragtype': v.fragtype,
                             'url_frag': pjoin(doc['url_frag'], k),
-                            'files': list(v.fragdata.files.keys()),
+                            'files': list(v.files.keys()),
                         } for (k, v) in frags.items()}
                 except KeyError:
                     continue
@@ -1088,7 +1088,7 @@ class Clerk(config.AzraelProcess):
                     to_delete.append('{url}/{filename}'.format(url=url_base, filename=fname))
 
                     fname = fname.replace('.', ';')
-                    tmp = 'template.fragments.{}.fragdata.files.{}'.format(fragname, fname)
+                    tmp = 'template.fragments.{}.files.{}'.format(fragname, fname)
                     db_del[tmp] = True
 
                 # Files to add/update.
@@ -1097,7 +1097,7 @@ class Clerk(config.AzraelProcess):
                     print('\n***check put', to_put)
 
                     fname = fname.replace('.', ';')
-                    tmp = 'template.fragments.{}.fragdata.files.{}'.format(fragname, fname)
+                    tmp = 'template.fragments.{}.files.{}'.format(fragname, fname)
                     db_set[tmp] = None
                 print('\ncheck 2put: ', to_put)
             print('\n---------- done')
@@ -1155,7 +1155,7 @@ class Clerk(config.AzraelProcess):
                      'scale': 1,
                      'position': (0, 0, 0),
                      'rotation': (0, 0, 0, 1),
-                     'fragdata': None}
+                     'files': None}
 
             # Same as ref_1 but all values are None.
             ref_2 = {k: None for k in ref_1}
@@ -1192,7 +1192,7 @@ class Clerk(config.AzraelProcess):
                     # not provide a fragment type and fragment data (ie the
                     # user does not want us to touch the geometry itself).
                     f = fragments[objID][fragID]
-                    if None in (f.fragtype, f.fragdata):
+                    if None in (f.fragtype, f.files):
                         del fragments_dibbler[objID][fragID]
 
                     del fragID, fragdata, tmp, f
@@ -1226,7 +1226,7 @@ class Clerk(config.AzraelProcess):
                         assert self.dibbler.removeDirs([prefix])
                     else:
                         # Compile all file names and encode them properly.
-                        fnames = frag.fragdata.files
+                        fnames = frag.files
                         files = {prefix + k: v for k, v in fnames.items()}
                         files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
 
@@ -1265,7 +1265,7 @@ class Clerk(config.AzraelProcess):
 
             # Strip the geometry data because the instance database only
             # contains meta information; Dibbler contains the geometry.
-            frags = {k: v._replace(fragdata=None) for (k, v) in frags.items()}
+            frags = {k: v._replace(files=None) for (k, v) in frags.items()}
 
             # Convert the fragments to dictionaries.
             frags = {k: v._asdict() for (k, v) in frags.items()}

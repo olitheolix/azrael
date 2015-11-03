@@ -47,8 +47,7 @@ _Template = namedtuple('_Template', 'aid rbs fragments boosters factories custom
 
 # Fragments.
 _FragMeta = namedtuple('_FragMeta',
-                       'fragtype scale position rotation fragdata')
-_FragDae = namedtuple('_FragDae', 'files')
+                       'fragtype scale position rotation files')
 
 # Work package related.
 WPData = namedtuple('WPData', 'aid sv force torque')
@@ -258,38 +257,6 @@ def typecheck(func_handle):
     return wrapper
 
 
-class FragDae(_FragDae):
-    """
-    fixme: docu update
-    Return a valid description for a Collada file and its textures.
-
-    The RGB dictionary denotes the texture images. The keys are file names (eg.
-    'foo.png') whereas the associated values are the Base64 encoded images
-    themselves.
-
-    :param dict files: dictionary of files.
-    :return: compiled ``_FragDae`` instance.
-    :raises: TypeError if the input does not compile to the data type.
-    """
-    @typecheck
-    def __new__(cls, files: dict):
-        try:
-            # Verify the RGB dictionary.
-            for fname, fdata in files.items():
-                assert isinstance(fname, str)
-                assert isinstance(fdata, str) or fdata is None
-        except AssertionError:
-            msg = 'Cannot construct <{}>'.format(cls.__name__)
-            logit.warning(msg)
-            raise TypeError
-
-        # Return constructed data type.
-        return super().__new__(cls, files)
-
-    def _asdict(self):
-        return OrderedDict(zip(self._fields, self))
-
-
 class FragMeta(_FragMeta):
     """
     Return a valid description for any of Azrael's supported data formats.
@@ -314,41 +281,29 @@ class FragMeta(_FragMeta):
     def __new__(cls, fragtype: str, scale: (int, float),
                 position: (tuple, list),
                 rotation: (tuple, list),
-                fragdata):
+                files: dict):
         try:
+            fragtype = fragtype.upper()
+
             # Sanity check position and rotation.
             position = toVec(3, position)
             rotation = toVec(4, rotation)
 
-            # Verify that `fragtype` is valid and construct the respective data
-            # type for the ``fragdata`` attribute.
-            if fragdata is None:
-                frag = None
-            else:
-                # fixme: this if condition should become redundant once the
-                # formats have been eliminated.
-                fragtype = fragtype.upper()
-                if fragtype in ['DAE', 'OBJ', 'RAW', '3JS_V4', '_DEL_']:
-                    if isinstance(fragdata, dict):
-                        frag = FragDae(**fragdata)
-                    else:
-                        frag = FragDae(*fragdata)
-                else:
-                    assert False
+            # Verify the RGB dictionary.
+            if files is not None:
+                for fname, fdata in files.items():
+                    assert isinstance(fname, str)
+                    assert isinstance(fdata, str) or fdata is None
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, fragtype, scale, position, rotation, frag)
+        return super().__new__(cls, fragtype, scale, position, rotation, files)
 
     def _asdict(self):
-        if self.fragdata is None:
-            tmp = self
-        else:
-            tmp = self._replace(fragdata=self.fragdata._asdict())
-        return OrderedDict(zip(self._fields, tmp))
+        return OrderedDict(zip(self._fields, self))
 
 
 class CollShapeMeta(_CollShapeMeta):

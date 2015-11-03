@@ -104,21 +104,14 @@ class TestAZTypes:
             # Azrael because the meta data is stored in a separate database
             # that may not yet have synced.
             frag_a = Getter()
-            frag_b = frag_a._replace(fragdata=None)
+            frag_b = frag_a._replace(files=None)
             assert self.isJsonCompatible(frag_a, FragMeta)
             assert self.isJsonCompatible(frag_b, FragMeta)
 
-        # Verify that 'FragMeta._asdict' also converts the 'fragdata' field
-        # to dictionaries. To do this we first convert the entire structure,
-        # then only the 'fragdata' field, and finally verify that the entire
-        # structure contains the correct dictionary for 'fragdata'.
+        # Verify that 'FragMeta._asdict' convert to a dictionary.
         frag_t = getFragRaw()
         frag_d = frag_t._asdict()
         assert isinstance(frag_d, dict)
-
-        tmp = frag_t.fragdata._asdict()
-        assert isinstance(tmp, dict)
-        assert tmp == frag_d['fragdata']
 
     def test_RigidBodyData(self):
         body_a = getRigidBody()
