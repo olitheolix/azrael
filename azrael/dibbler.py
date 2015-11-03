@@ -404,3 +404,101 @@ class Dibbler:
         """
         location = self.getInstanceDir(objID)
         return self._deleteSubLocation(location)
+
+    def isValidFileName(self, fname):
+        """
+        fixme: docu
+        """
+        # Compile the set of admissible characters.
+        ref = 'abcdefghijklmnopqrstuvwxyz'
+        ref += ref.upper()
+        ref += '0123456789_/.'
+        ref = set(ref)
+
+        try:
+            assert isinstance(fname, str)
+            assert set(fname).issubset(ref)
+        except AssertionError:
+            return False
+        return True
+
+    @typecheck
+    def put(self, files: dict):
+        """
+        Fixme: docu
+        """
+        # Sanity check input files.
+        try:
+            for fname, fdata in files.items():
+                assert isinstance(fdata, bytes)
+                assert self.isValidFileName(fname)
+        except AssertionError:
+            return RetVal(False, 'Invalid arguments', None)
+
+        # Write the files to disk.
+        for fname, fdata in files.items():
+            try:
+                self.fs.put(fdata, filename=fname)
+            except gridfs.errors.GridFSError as err:
+                pass
+        return RetVal(True, None, None)
+
+    @typecheck
+    def get(self, fnames: (tuple, list)):
+        """
+        fixme: docu
+        """
+        out = {}
+        for fname in fnames:
+            try:
+                out[fname] = self.fs.get_last_version(fname).read()
+            except gridfs.errors.NoFile as err:
+                pass
+            except gridfs.errors.GridFSError as err:
+                # All other GridFS errors.
+                pass
+        return RetVal(True, None, out)
+
+    @typecheck
+    def copy(self, srcdst: dict):
+        """
+        fixme: docu
+
+        :param dict srcdst: eg {'src1': 'dst1', 'src2': 'dst2', ...}
+        """
+        # Verify that all targets are unique.
+        dst = list(srcdst.values())
+        if sorted(dst) != sorted(list(set(dst))):
+            return RetVal(False, 'Not all targets are unique', None)
+
+        num_copied = 0
+        for src, dst in srcdst.items():
+            try:
+                ret = self.get([src])
+                assert ret.ok and src in ret.data
+                assert self.put({dst: ret.data[src]}).ok
+                num_copied += 1
+            except AssertionError:
+                continue
+        return RetVal(True, None, num_copied)
+
+    @typecheck
+    def remove(self, fnames: (tuple, list)):
+        """
+        Fixme docu.
+        """
+        num_deleted = 0
+        for fname in fnames:
+            try:
+                found_at_least_one = False
+                for mid in self.fs.find({'filename': fname}):
+                    ret = self.fs.delete(mid._id)
+                    found_at_least_one = True
+                if found_at_least_one:
+                    num_deleted += 1
+            except gridfs.errors.NoFile as err:
+                pass
+            except gridfs.errors.GridFSError as err:
+                # All other GridFS errors.
+                pass
+        return RetVal(True, None, num_deleted)
