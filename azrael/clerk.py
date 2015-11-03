@@ -410,7 +410,9 @@ class Clerk(config.AzraelProcess):
                         prefix = '{url}/{name}/'.format(url=url_frag, name=fragname)
                         files = {prefix + k: v for k, v in fnames.items()}
                         files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
-                        assert self.dibbler.put(files).ok
+                        ret = self.dibbler.put(files)
+                        if not ret.ok:
+                            return ret
                         del fragname, fnames, prefix, files
 
 
@@ -687,9 +689,23 @@ class Clerk(config.AzraelProcess):
                         fnames = {pre_src + k: pre_dst + k for k in fnames}
                         ret = self.dibbler.copy(fnames)
                         if not ret.ok:
-                            from pprint import pprint
-                            pprint(fnames)
-                        assert ret.ok
+                            break
+
+                    if not ret.ok:
+                        self.dibbler.removeDirs([pre_dst])
+                        # If Dibbler could not copy the files then delete
+                        # any files it may have copied already for this
+                        # object. Then skip this object altogether (ie it
+                        # will _not_ be spawned) and proceed with the next
+                        # object.
+                        msg = ('Dibbler could not copy the fragments from '
+                               'the template <{}> '
+                               'because of this error <{}>. '
+                               'Object will not be spawned')
+                        msg = msg.format(templateID, ret.msg)
+                        self.logit.error(msg)
+                        continue
+
                         del fragname, fnames, pre_src, pre_dst
                     geo_url = url_dst
 
