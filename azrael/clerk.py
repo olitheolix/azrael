@@ -41,6 +41,7 @@ import os
 import zmq
 import copy
 import json
+import base64
 import traceback
 
 import numpy as np
@@ -387,16 +388,31 @@ class Clerk(config.AzraelProcess):
             # contains only meta information (eg the type of geometry, but not
             # geometry itself).
             for template in templates:
-                # Dibbler administrates the geometry data. Abort immediately if
-                # it returns an error (should be impossible, but just to be
-                # sure).
-                ret = self.dibbler.addTemplate(template)
-                if not ret.ok:
-                    return ret
+                # fixme: remove redundant branch
+                if False:
+                    # Dibbler administrates the geometry data. Abort immediately if
+                    # it returns an error (should be impossible, but just to be
+                    # sure).
+                    ret = self.dibbler.addTemplate(template)
+                    if not ret.ok:
+                        return ret
 
-                # Dibbler must have returned the URL where the fragments are
-                # available.
-                url_frag = ret.data['url_frag']
+                    # Dibbler must have returned the URL where the fragments are
+                    # available.
+                    url_frag = ret.data['url_frag']
+                else:
+                    # Convenience.
+                    b64dec = base64.b64decode
+
+                    url_frag = '{url}/{aid}'.format(url=config.url_templates, aid=template.aid)
+                    for fragname in template.fragments:
+                        fnames = template.fragments[fragname].fragdata.files
+                        prefix = '{url}/{name}/'.format(url=url_frag, name=fragname)
+                        files = {prefix + k: v for k, v in fnames.items()}
+                        files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
+                        assert self.dibbler.put(files).ok
+                        del fragname, fnames, prefix, files
+
 
                 # Mangle all fragment file names to make them compatible with
                 # Mongo.
@@ -643,23 +659,41 @@ class Clerk(config.AzraelProcess):
                     body = body._replace(**newObj['rbs'])
                 template = template._replace(rbs=body)
 
-                # Tell Dibbler to duplicate the template data into the instance
-                # location.
-                ret = self.dibbler.spawnTemplate(objID, templateID)
-                if not ret.ok:
-                    # Dibbler and Clerk are out of sync because Clerk found
-                    # a template that Dibbler does not know about. This really
-                    # should not happen --> do not spawn and skip.
-                    msg = 'Dibbler and Clerk are out of sync for template {}.'
-                    msg = msg.format(templateID)
-                    msg += ' Dibbler returned this error: <{}>'
-                    msg = msg.format(ret.msg)
-                    self.logit.error(msg)
-                    continue
+                # fixme: remove redundant branch
+                if False:
+                    # Tell Dibbler to duplicate the template data into the instance
+                    # location.
+                    ret = self.dibbler.spawnTemplate(objID, templateID)
+                    if not ret.ok:
+                        # Dibbler and Clerk are out of sync because Clerk found
+                        # a template that Dibbler does not know about. This really
+                        # should not happen --> do not spawn and skip.
+                        msg = 'Dibbler and Clerk are out of sync for template {}.'
+                        msg = msg.format(templateID)
+                        msg += ' Dibbler returned this error: <{}>'
+                        msg = msg.format(ret.msg)
+                        self.logit.error(msg)
+                        continue
+                    else:
+                        # URL where the instance geometry is available.
+                        geo_url = ret.data['url_frag']
                 else:
-                    # URL where the instance geometry is available.
-                    geo_url = ret.data['url_frag']
+                    url_src = '{src}/{aid}'.format(src=config.url_templates, aid=template.aid)
+                    url_dst = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
+                    for fragname in template.fragments:
+                        fnames = template.fragments[fragname].fragdata.files
+                        pre_src = '{url}/{name}/'.format(url=url_src, name=fragname)
+                        pre_dst = '{url}/{name}/'.format(url=url_dst, name=fragname)
+                        fnames = {pre_src + k: pre_dst + k for k in fnames}
+                        ret = self.dibbler.copy(fnames)
+                        if not ret.ok:
+                            from pprint import pprint
+                            pprint(fnames)
+                        assert ret.ok
+                        del fragname, fnames, pre_src, pre_dst
+                    geo_url = url_dst
 
+                
                 # Mangle all fragment file names to make them compatible with
                 # Mongo.
                 template_json = self._mangleFileNames(template._asdict())
@@ -1092,13 +1126,33 @@ class Clerk(config.AzraelProcess):
             # Update the fragment geometry in Dibbler (if there are any to
             # update). If an error occurs skip immediately to the next object.
             if len(fragments_dibbler[objID]) > 0:
-                ret = self.dibbler.updateFragments(objID, fragments_dibbler[objID])
-                if not ret.ok:
-                    ok = False
-                    msg.append(objID)
-                    continue
+                # fixme: remove redundant branch
+                if False:
+                    ret = self.dibbler.updateFragments(objID, fragments_dibbler[objID])
+                    if not ret.ok:
+                        ok = False
+                        msg.append(objID)
+                        continue
+                else:
+                    # Convenience.
+                    b64dec = base64.b64decode
 
-            # Remove all '_NONE' fragments in the instance database.
+                    url_dst = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
+                    for fragname, frag in fragments_dibbler[objID].items():
+                        prefix = '{url}/{name}/'.format(url=url_dst, name=fragname)
+                        if frag.fragtype.upper() == '_DEL_':
+                            assert self.dibbler.removeDirs([prefix])
+                        else:
+                            fnames = frag.fragdata.files
+                            files = {prefix + k: v for k, v in fnames.items()}
+                            files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
+                            assert self.dibbler.put(files).ok
+                            del fnames, files
+                        del fragname, prefix
+                    del url_dst
+
+
+            # Remove all '_DEL_' fragments in the instance database.
             to_remove = set()
             new_version = False
             for fragID, frag in frags.items():

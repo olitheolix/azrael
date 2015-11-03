@@ -128,13 +128,12 @@ class TestClerk:
         # Convenience.
         clerk = azrael.clerk.Clerk()
 
-        # Install a mock for Dibbler with an 'addTemplate' function that
-        # always succeeds.
+        # Install a mock for 'Dibbler.put'.
         mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
         clerk.dibbler = mock_dibbler
 
         # The mock must not have been called so far.
-        assert mock_dibbler.addTemplate.call_count == 0
+        assert mock_dibbler.put.call_count == 0
 
         # Convenience.
         body = getRigidBody(cshapes={'cssphere': getCSSphere()})
@@ -145,28 +144,32 @@ class TestClerk:
         # Wrong argument.
         ret = clerk.addTemplates([1])
         assert (ret.ok, ret.msg) == (False, 'Invalid template data')
-        assert mock_dibbler.addTemplate.call_count == 0
+        assert mock_dibbler.put.call_count == 0
 
         # Compile a template structure.
         frags = {'foo': getFragRaw()}
         temp = getTemplate('bar', rbs=body, fragments=frags)
 
-        # Add template when Dibbler's 'saveModel' fails.
-        mock_ret = RetVal(False, 't_error', {'url_frag': 'http://'})
-        mock_dibbler.addTemplate.return_value = mock_ret
+        # Add template when Dibbler's 'put' fails. Exactly one such call must
+        # occur (for the one 'model.json' file associated with the RAW fragment
+        # in our template).
+        mock_ret = RetVal(False, 't_error', None)
+        mock_dibbler.put.return_value = mock_ret
         ret = clerk.addTemplates([temp])
         assert (ret.ok, ret.msg) == (False, 't_error')
-        assert mock_dibbler.addTemplate.call_count == 1
+        assert mock_dibbler.put.call_count == 1
 
-        # Add template when Dibbler's 'saveModel' succeeds.
-        mock_ret = RetVal(True, None, {'url_frag': 'http://'})
-        mock_dibbler.addTemplate.return_value = mock_ret
+        # Add template when Dibbler's 'put' method succeeds.
+        mock_ret = RetVal(True, None, {'url_frag': 'mock_str'})
+        mock_dibbler.put.return_value = mock_ret
         assert clerk.addTemplates([temp]).ok
-        assert mock_dibbler.addTemplate.call_count == 2
+        assert mock_dibbler.put.call_count == 2
 
         # Adding the same template again must fail.
+        # fixme: dibbler.put must not be called (ie its call count must be 2).
+        #        This is not how it works at the moment.
         assert not clerk.addTemplates([temp]).ok
-        assert mock_dibbler.addTemplate.call_count == 3
+        assert mock_dibbler.put.call_count == 3
 
         # Define two boosters and one factory unit for a new template.
         boosters = {
@@ -188,7 +191,7 @@ class TestClerk:
                            boosters=boosters,
                            factories=factories)
         assert clerk.addTemplates([temp]).ok
-        assert mock_dibbler.addTemplate.call_count == 4
+        assert mock_dibbler.put.call_count == 4
 
         # Retrieve the just created object and verify the collision shape,
         # factories, and boosters. Note: we cannot compare against `temp`
@@ -231,12 +234,12 @@ class TestClerk:
         # Install a mock for Dibbler with an 'addTemplate' function that
         # always succeeds.
         mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
-        mock_ret = RetVal(True, None, {'url_frag': 'http://'})
-        mock_dibbler.addTemplate.return_value = mock_ret
+        mock_ret = RetVal(True, None, {'url_frag': 'mock_str'})
+        mock_dibbler.put.return_value = mock_ret
         clerk.dibbler = mock_dibbler
 
         # The mock must not have been called so far.
-        assert mock_dibbler.addTemplate.call_count == 0
+        assert mock_dibbler.put.call_count == 0
 
         # Convenience.
         name_1, name_2 = 't1', 't2'
@@ -249,11 +252,12 @@ class TestClerk:
 
         # Uploading the templates must succeed.
         assert clerk.addTemplates([t1, t2]).ok
-        assert mock_dibbler.addTemplate.call_count == 2
+        assert mock_dibbler.put.call_count == 2
 
         # Attempt to upload the same templates again. This must fail.
+        # fixme: the 'dibbler.put' should not be called.
         assert not clerk.addTemplates([t1, t2]).ok
-        assert mock_dibbler.addTemplate.call_count == 4
+        assert mock_dibbler.put.call_count == 4
 
         # Fetch the first template.
         ret = clerk.getTemplates([name_1])
@@ -412,25 +416,35 @@ class TestClerk:
 
     def test_spawn_DibblerClerkSyncProblem(self):
         """
-        Try to spawn a template that Clerk finds in its template database but
-        that is not in Dibbler.
+        Try to spawn a template when Dibbler does not have it in its database.
         """
         # Convenience.
         clerk = azrael.clerk.Clerk()
 
-        # Mock the Dibbler instance.
+        # Mock 'Dibbler.copy'.
         mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
         clerk.dibbler = mock_dibbler
-        mock_dibbler.spawnTemplate.return_value = RetVal(False, 'error', None)
+        mock_dibbler.copy.return_value = RetVal(False, 'error', None)
+
+        # Baseline.
+        assert mock_dibbler.copy.call_count == 0
+        assert mock_dibbler.removeDirs.call_count == 0
 
         # Attempt to spawn a valid template. The template exists in the
-        # template database (the setup method for this test did it), but
-        # because Dibbler cannot find the model data Clerk will skip it. The
-        # net effect is that the spawn command must succeed but not spawn any
-        # objects.
+        # template database (the setup method for this test did it). However,
+        # Clerk will skip it because Dibbler cannot find the model files. The
+        # net effect is that the call to spawn must succeed, yet no objects
+        # must have been spawned.
         init = {'templateID': '_templateEmpty', 'rbs': {'imass': 1}}
         ret = clerk.spawn([init])
         assert ret == (True, None, tuple())
+
+        # Copy must have been called once. Since the call failed (because we
+        # mocked it to make sure it does), Clerk must also clean up and delete
+        # all files associated with that object (some may have been copied
+        # already).
+        assert mock_dibbler.copy.call_count == 1
+        assert mock_dibbler.removeDirs.call_count == 1
 
     def test_removeObject(self):
         """
