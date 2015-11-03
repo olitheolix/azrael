@@ -966,8 +966,10 @@ class Clerk(config.AzraelProcess):
 
         # Remove the master record for the object.
         database.dbHandles['ObjInstances'].remove({'objID': objID})
+
         if ret.ok:
-            self.dibbler.deleteInstance(objID)
+            url = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
+            self.dibbler.removeDirs([url])
             return RetVal(True, None, None)
         else:
             return RetVal(False, ret.msg, None)
