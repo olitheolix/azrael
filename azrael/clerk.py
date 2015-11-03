@@ -357,11 +357,11 @@ class Clerk(config.AzraelProcess):
 
         The elements in ``templates`` must be ``Template`` instances.
 
-        This method will abort immediately when it encounters an invalid
-        Template. If that happens then no templates will be added at all.
+        This method will abort immediately when one or more templates are
+        invalid. If that happens then no templates will be added at all.
 
-        It will also return with an error if a template with the same  name
-        already exists. However, it will still add all the other templates that
+        It will also return an error if a template name already exists in the
+        database. However, it will still add all the other templates that
         have unique names.
 
         :param list[Template]: the templates to add.
@@ -383,38 +383,37 @@ class Clerk(config.AzraelProcess):
             db = database.dbHandles['Templates']
             bulk = db.initialize_unordered_bulk_op()
 
-            # Add each template to the bulk. Dibbler handles the (possibly
-            # large) geometry data, whereas the template database itself
-            # contains only meta information (eg the type of geometry, but not
-            # geometry itself).
+            # Insert each template into the database (only queue it in the bulk
+            # operation, actually).
             for template in templates:
-                # fixme: remove redundant branch
-                if False:
-                    # Dibbler administrates the geometry data. Abort immediately if
-                    # it returns an error (should be impossible, but just to be
-                    # sure).
-                    ret = self.dibbler.addTemplate(template)
+                # Convenience.
+                b64dec = base64.b64decode
+
+                # Store all fragment files in Dibbler under the following URL
+                # prefix (eg. 'templates/template_name/'). The final URL for
+                # each fragment will look something like this:
+                # templates/template_name/fragment_name/fragfile_name_1'.
+                url_frag = '{url}/{aid}'.format(url=config.url_templates, aid=template.aid)
+                for fragname, frag in template.fragments.items():
+                    # Create the url prefix for the current fragment name.
+                    prefix = '{url}/{name}/'.format(url=url_frag, name=fragname)
+
+                    # Attach the url prefix to each file in the fragment.
+                    files = {prefix + k: v for k, v in frag.fragdata.files.items()}
+
+                    # Base64 encode the data (cannot be binary because it will
+                    # be served up via HTTP).
+                    files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
+
+                    # Put the files into Dibbler. Abort the entire method if an
+                    # error occurs.
+                    # fixme: either delete all templates that may have already
+                    # been added, or skip only this template and proceed to the
+                    # next (prefered option). Then update the doc string.
+                    ret = self.dibbler.put(files)
                     if not ret.ok:
                         return ret
-
-                    # Dibbler must have returned the URL where the fragments are
-                    # available.
-                    url_frag = ret.data['url_frag']
-                else:
-                    # Convenience.
-                    b64dec = base64.b64decode
-
-                    url_frag = '{url}/{aid}'.format(url=config.url_templates, aid=template.aid)
-                    for fragname in template.fragments:
-                        fnames = template.fragments[fragname].fragdata.files
-                        prefix = '{url}/{name}/'.format(url=url_frag, name=fragname)
-                        files = {prefix + k: v for k, v in fnames.items()}
-                        files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
-                        ret = self.dibbler.put(files)
-                        if not ret.ok:
-                            return ret
-                        del fragname, fnames, prefix, files
-
+                    del fragname, frag, prefix, files
 
                 # Mangle all fragment file names to make them compatible with
                 # Mongo.
