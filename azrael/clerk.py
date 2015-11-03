@@ -660,54 +660,41 @@ class Clerk(config.AzraelProcess):
                     body = body._replace(**newObj['rbs'])
                 template = template._replace(rbs=body)
 
-                # fixme: remove redundant branch
-                if False:
-                    # Tell Dibbler to duplicate the template data into the instance
-                    # location.
-                    ret = self.dibbler.spawnTemplate(objID, templateID)
+                # Copy all fragment files from the template to a new
+                # location dedicated to the object instance.
+                url_src = '{src}/{aid}'.format(src=config.url_templates, aid=template.aid)
+                url_dst = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
+                ret = RetVal(True, None, None)
+                for fragname in template.fragments:
+                    fnames = template.fragments[fragname].fragdata.files
+
+                    # Compile the names of the source and target files.
+                    pre_src = '{url}/{name}/'.format(url=url_src, name=fragname)
+                    pre_dst = '{url}/{name}/'.format(url=url_dst, name=fragname)
+                    fnames = {pre_src + k: pre_dst + k for k in fnames}
+                    del pre_src, pre_dst, fragname
+
+                    # Copy the files. Abort the loop if an error occurs.
+                    ret = self.dibbler.copy(fnames)
                     if not ret.ok:
-                        # Dibbler and Clerk are out of sync because Clerk found
-                        # a template that Dibbler does not know about. This really
-                        # should not happen --> do not spawn and skip.
-                        msg = 'Dibbler and Clerk are out of sync for template {}.'
-                        msg = msg.format(templateID)
-                        msg += ' Dibbler returned this error: <{}>'
-                        msg = msg.format(ret.msg)
-                        self.logit.error(msg)
-                        continue
-                    else:
-                        # URL where the instance geometry is available.
-                        geo_url = ret.data['url_frag']
-                else:
-                    url_src = '{src}/{aid}'.format(src=config.url_templates, aid=template.aid)
-                    url_dst = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
-                    for fragname in template.fragments:
-                        fnames = template.fragments[fragname].fragdata.files
-                        pre_src = '{url}/{name}/'.format(url=url_src, name=fragname)
-                        pre_dst = '{url}/{name}/'.format(url=url_dst, name=fragname)
-                        fnames = {pre_src + k: pre_dst + k for k in fnames}
-                        ret = self.dibbler.copy(fnames)
-                        if not ret.ok:
-                            break
+                        break
+                    del fnames
 
-                    if not ret.ok:
-                        self.dibbler.removeDirs([pre_dst])
-                        # If Dibbler could not copy the files then delete
-                        # any files it may have copied already for this
-                        # object. Then skip this object altogether (ie it
-                        # will _not_ be spawned) and proceed with the next
-                        # object.
-                        msg = ('Dibbler could not copy the fragments from '
-                               'the template <{}> '
-                               'because of this error <{}>. '
-                               'Object will not be spawned')
-                        msg = msg.format(templateID, ret.msg)
-                        self.logit.error(msg)
-                        continue
+                # If the last Dibbler operation failed then delete all
+                # fragments that would have been associated with the
+                # object. Then skip to the next object.
+                if not ret.ok:
+                    # Clean up any fragment files from this object that may
+                    # have been copied before the error occurred.
+                    self.dibbler.removeDirs([url_dst])
 
-                        del fragname, fnames, pre_src, pre_dst
-                    geo_url = url_dst
-
+                    # Log an error message.
+                    msg = ('Dibbler could not copy the fragments from '
+                           'the template <{}> because of this error: <{}>.'
+                           ' This template will not be spawned')
+                    msg = msg.format(templateID, ret.msg)
+                    self.logit.error(msg)
+                    continue
                 
                 # Mangle all fragment file names to make them compatible with
                 # Mongo.
@@ -715,19 +702,18 @@ class Clerk(config.AzraelProcess):
 
                 # Compile the database document. Each entry must be an explicit
                 # dictionary (eg 'template'). The document contains the
-                # original template plus additional meta information that is
-                # specific to this instance, for instance the 'objID' and
-                # 'version'.
+                # original template plus additional meta information,
+                # for instance 'objID' and 'version'.
                 doc = {
                     'objID': objID,
-                    'url_frag': geo_url,
+                    'url_frag': url_dst,
                     'version': 0,
                     'templateID': templateID,
                     'template': template_json,
                 }
 
-                # Track the rigid body state separately because we will need it
-                # to send to Leonard.
+                # Track the rigid body state separately. These will be sent to
+                # Leonard later.
                 bodyStates[objID] = template.rbs
 
                 # Add the new template document.
