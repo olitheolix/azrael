@@ -1127,31 +1127,31 @@ class Clerk(config.AzraelProcess):
             # Update the fragment geometry in Dibbler (if there are any to
             # update). If an error occurs skip immediately to the next object.
             if len(fragments_dibbler[objID]) > 0:
-                # fixme: remove redundant branch
-                if False:
-                    ret = self.dibbler.updateFragments(objID, fragments_dibbler[objID])
-                    if not ret.ok:
-                        ok = False
-                        msg.append(objID)
-                        continue
-                else:
-                    # Convenience.
-                    b64dec = base64.b64decode
+                # Convenience.
+                b64dec = base64.b64decode
 
-                    url_dst = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
-                    for fragname, frag in fragments_dibbler[objID].items():
-                        prefix = '{url}/{name}/'.format(url=url_dst, name=fragname)
-                        if frag.fragtype.upper() == '_DEL_':
-                            assert self.dibbler.removeDirs([prefix])
-                        else:
-                            fnames = frag.fragdata.files
-                            files = {prefix + k: v for k, v in fnames.items()}
-                            files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
-                            assert self.dibbler.put(files).ok
-                            del fnames, files
-                        del fragname, prefix
-                    del url_dst
+                # Compile the location prefix for this object instance. The
+                # overwrite all the fragments for which we got new data.
+                url_dst = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
+                for fragname, frag in fragments_dibbler[objID].items():
+                    # Final location of model file.
+                    prefix = '{url}/{name}/'.format(url=url_dst, name=fragname)
 
+                    # Either delete the model file or overwrite it, depending
+                    # on what the user specified.
+                    if frag.fragtype.upper() == '_DEL_':
+                        assert self.dibbler.removeDirs([prefix])
+                    else:
+                        # Compile all file names and encode them properly.
+                        fnames = frag.fragdata.files
+                        files = {prefix + k: v for k, v in fnames.items()}
+                        files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
+
+                        # Update all files in dibbbler.
+                        self.dibbler.put(files)
+                        del fnames, files
+                    del fragname, prefix
+                del url_dst
 
             # Remove all '_DEL_' fragments in the instance database.
             to_remove = set()
