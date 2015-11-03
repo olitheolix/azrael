@@ -1053,6 +1053,9 @@ class Clerk(config.AzraelProcess):
     def setFragments2(self, fragments: dict):
         """
         Fixme: copy docu from 'setFragments'
+
+        Missing:
+         - test for version update
         """
         db = database.dbHandles['ObjInstances']
 
@@ -1152,7 +1155,7 @@ class Clerk(config.AzraelProcess):
                      'scale': 1,
                      'position': (0, 0, 0),
                      'rotation': (0, 0, 0, 1),
-                     'fragdata': aztypes.FragNone()}
+                     'fragdata': None}
 
             # Same as ref_1 but all values are None.
             ref_2 = {k: None for k in ref_1}

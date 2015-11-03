@@ -49,7 +49,6 @@ _Template = namedtuple('_Template', 'aid rbs fragments boosters factories custom
 _FragMeta = namedtuple('_FragMeta',
                        'fragtype scale position rotation fragdata')
 _FragDae = namedtuple('_FragDae', 'files')
-FragNone = namedtuple('FragNone', '')
 
 # Work package related.
 WPData = namedtuple('WPData', 'aid sv force torque')
@@ -329,13 +328,11 @@ class FragMeta(_FragMeta):
                 # fixme: this if condition should become redundant once the
                 # formats have been eliminated.
                 fragtype = fragtype.upper()
-                if fragtype in ['DAE', 'OBJ', 'RAW', '3JS_V4']:
+                if fragtype in ['DAE', 'OBJ', 'RAW', '3JS_V4', '_DEL_']:
                     if isinstance(fragdata, dict):
                         frag = FragDae(**fragdata)
                     else:
                         frag = FragDae(*fragdata)
-                elif fragtype == '_DEL_':
-                    frag = FragNone()
                 else:
                     assert False
         except (TypeError, AssertionError):

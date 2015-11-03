@@ -26,7 +26,7 @@ import subprocess
 import numpy as np
 import azrael.leonard
 
-from azrael.aztypes import FragMeta, FragDae, FragNone, Template
+from azrael.aztypes import FragMeta, FragDae, Template
 from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox, CollShapePlane, RigidBodyData
 from azrael.aztypes import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
@@ -88,7 +88,7 @@ def getFragNone(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     Convenience function to construct an empty geometry element.
     """
     return FragMeta(fragtype='_del_', scale=scale, position=pos,
-                    rotation=rot, fragdata=FragNone())
+                    rotation=rot, fragdata=FragDae(files={}))
 
 
 def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
