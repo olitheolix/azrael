@@ -2141,165 +2141,150 @@ class TestClerk:
         # record due to an errornous 'upsert' command.
         assert db.count() == 0
 
-    def test_setFragments2_state_only(self):
+
+class TestSetFragments:
+    """
+    Dedicated test harness just for updating fragments.
+    """
+    @classmethod
+    def setup_class(cls):
+        killAzrael()
+        cls.clerk = azrael.clerk.Clerk()
+
+    @classmethod
+    def teardown_class(cls):
+        killAzrael()
+
+    def setup_method(self, method):
+        self.dibbler = azrael.dibbler.Dibbler()
+        self.dibbler.reset()
+        azrael.database.init()
+
+        # Compile a template with two fragments.
+        frags = {'fraw': getFragRaw(), 'fdae': getFragDae()}
+        template = getTemplate('foo', fragments=frags)
+        assert self.clerk.addTemplates([template]).ok
+
+        # Spawn one instance.
+        ret = self.clerk.spawn([{'templateID': template.aid}])
+        assert ret.ok and len(ret.data) == 1
+        self.id_0 = ret.data[0]
+
+    def teardown_method(self, method):
+        self.dibbler.reset()
+        azrael.database.init()
+
+    def test_setFragments_state_only(self):
         """
-        fixme: rename method; docu
+        Modify the state variables of the fragments. This must alter any of the
+        model files. It must also keep the version number intact.
         """
         # Convenience.
-        clerk = self.clerk
+        clerk, id_0 = self.clerk, self.id_0
+        b64enc = base64.b64encode
 
-        # Compile a valid template. Then add it to Azrael and spawn two
-        # instances.
-        fraw, fdae = getFragRaw(), getFragDae()
-        frags = {
-            'foo': fraw,
-            'bar': fdae,
-        }
-        template = getTemplate('foo', fragments=frags)
-        assert clerk.addTemplates([template]).ok
-        ret = clerk.spawn([{'templateID': template.aid},
-                           {'templateID': template.aid}])
-        assert ret.ok
-        id_0, id_1 = ret.data
-        del template, ret
-
-        # Get the current version for each object.
-        ret = clerk.getObjectStates([id_0, id_1])
+        # Fetch the current version.
+        ret = clerk.getObjectStates([id_0])
         assert ret.ok
         version_0 = ret.data[id_0]['rbs']['version']
-        version_1 = ret.data[id_1]['rbs']['version']
 
-        # Modify the 'foo' fragment of the first object and the 'bar' fragment
-        # of the second object. Only modify state information, not geometry.
-        # The version flag must not change for any fragment because no geometry
-        # file was altered.
+        # Modify a subset of the state variables for each of the two fragments.
         cmd = {
-            id_0: {'foo': {'state': {'scale': 2, 'position': (0, 1, 2)}}},
-            id_1: {'bar': {'state': {'scale': 3, 'rotation': (0, 1, 0, 0)}}},
+            id_0: {
+                'fraw': {'state': {'scale': 2, 'position': (0, 1, 2)}},
+                'fdae': {'state': {'scale': 3, 'rotation': (0, 1, 0, 0)}}
+            }
         }
         assert clerk.setFragments2(cmd).ok
-        ret = clerk.getFragments([id_0, id_1])
+        ret = clerk.getFragments([id_0])
 
         # Query the fragments and verify the changes.
-        r1 = ret.data[id_0]
-        assert r1['foo']['scale'] == 2
-        assert r1['foo']['position'] == (0, 1, 2)
-        assert r1['foo']['rotation'] == (0, 0, 0, 1)
-
-        r2 = ret.data[id_1]
-        assert r2['bar']['scale'] == 3
-        assert r2['bar']['position'] == (0, 0, 0)
-        assert r2['bar']['rotation'] == (0, 1, 0, 0)
+        r0 = ret.data[id_0]
+        assert r0['fraw']['scale'] == 2
+        assert r0['fraw']['position'] == (0, 1, 2)
+        assert r0['fraw']['rotation'] == (0, 0, 0, 1)
+        assert r0['fdae']['scale'] == 3
+        assert r0['fdae']['position'] == (0, 0, 0)
+        assert r0['fdae']['rotation'] == (0, 1, 0, 0)
 
         # Verify the version field.
-        ret = clerk.getObjectStates([id_0, id_1])
+        ret = clerk.getObjectStates([id_0])
         assert ret.ok
         assert version_0 == ret.data[id_0]['rbs']['version']
-        assert version_1 == ret.data[id_1]['rbs']['version']
 
-    def test_setFragments2_geometry_only(self):
+    def test_setFragments_geometry_only(self):
         """
-        fixme: rename method; docu
+        Modify some fragments. In particular, add some files, delete some files, modify
+        some files, and change the fragment. This test will not touch the state
+        information.
         """
         # Convenience.
-        clerk = self.clerk
-        web = azrael.web.WebServer()
-        web.start()
-
-        # Compile a valid template. Then add it to Azrael and spawn two
-        # instances.
+        clerk, id_0 = self.clerk, self.id_0
         fraw, fdae = getFragRaw(), getFragDae()
-        frags = {
-            'fraw': fraw,
-            'fdae': fdae,
-        }
-        template = getTemplate('foo', fragments=frags)
-        assert clerk.addTemplates([template]).ok
-        ret = clerk.spawn([{'templateID': template.aid},
-                           {'templateID': template.aid}])
-        assert ret.ok
-        id_0, id_1 = ret.data
-        del template, ret
+        b64enc = base64.b64encode
 
-        ret = clerk.getObjectStates([id_0, id_1])
+        # Fetch the current object version.
+        ret = clerk.getObjectStates([id_0])
         assert ret.ok
         version_0 = ret.data[id_0]['rbs']['version']
-        version_1 = ret.data[id_1]['rbs']['version']
 
-        # Modify the geometries. The first fragment of the first object gains a
-        # new file ('myfile.txt') and modifies an existing one ('model.json').
-        # The second fragment of the second file looses 'model.json' and
-        # changes its type to 'RAW'.
-        b64enc = base64.b64encode
+        # ---------------------------------------------------------------------
+        # Modify the geometries. To the first (RAW) fragment we will add a new
+        # 'myfile.txt' and modify 'model.json'. From the second (DAE) fragment
+        # we will delete the 'model.dae' file. We will also change its type
+        # from DAE to RAW.
+        # ---------------------------------------------------------------------
         cmd = {
-            id_0: {'fraw': {
-                'put': {
-                    'myfile.txt': b64enc(b'aaa'),
-                    'model.json': b64enc(b'bbb')
+            id_0: {
+                'fraw': {
+                    'put': {
+                        'myfile.txt': b64enc(b'aaa'),
+                        'model.json': b64enc(b'bbb')
+                    }
+                },
+                'fdae': {
+                    'fragtype': 'raw',
+                    'del': ['model.dae']
                 }
-            }},
-            id_1: {'fdae': {
-                'fragtype': 'raw',
-                'del': ['model.dae']
-            }},
+            }
         }
         assert clerk.setFragments2(cmd).ok
-        ret = clerk.getFragments([id_0, id_1])
+
+        # -------------------------------------------------
+        # Verify the content of the State Variable Database
+        # -------------------------------------------------
+        # Fetch fragment information.
+        ret = clerk.getFragments([id_0])
         assert ret.ok
 
-        # Verify the first object: it got a new file.
+        # The first fragment must have gained a new file ('myfile.txt').
         r0 = ret.data[id_0]
-#        assert r0['fraw']['version'] == 2
-#        assert r0['fdae']['version'] == 1
         assert r0['fraw']['fragtype'] == 'RAW'
-        assert r0['fdae']['fragtype'] == 'DAE'
+        assert r0['fdae']['fragtype'] == 'RAW'
         assert set(r0['fraw']['files']) == {'myfile.txt', 'model.json'}
 
-        # Verify the first object: it must not have a 'model.dae' anymore.
-        r1 = ret.data[id_1]
-#        assert r1['fraw']['version'] == 1
-#        assert r1['fdae']['version'] == 2
-        assert r1['fraw']['fragtype'] == 'RAW'
-        assert r1['fdae']['fragtype'] == 'RAW'
-        assert 'model.dae' not in r1['fdae']['files']
+        # The second fragment must have lost its 'model.dae' file.
+        assert 'model.dae' not in r0['fdae']['files']
 
-        # Verify the version field.
-        ret = clerk.getObjectStates([id_0, id_1])
+        # The version must have changed.
+        ret = clerk.getObjectStates([id_0])
         assert ret.ok
         assert version_0 != ret.data[id_0]['rbs']['version']
-        assert version_1 != ret.data[id_1]['rbs']['version']
 
-        def _download(url):
-            for ii in range(10):
-                try:
-                    return requests.get(url).content
-                except (requests.exceptions.HTTPError,
-                        requests.exceptions.ConnectionError):
-                    time.sleep(0.1)
-            assert False
-
-        base_url = 'http://{}:{}'.format(
-            azrael.config.addr_webapi, azrael.config.port_webapi)
-
-        # Verify the files of the first object.
+        # -----------------------------------
+        # Verify the actual files in Dibbler
+        # -----------------------------------
+        # Verify the new 'myfile.txt' of the first fragment.
         url = r0['fraw']['url_frag'] + '/myfile.txt'
-        print('URL: ', url)
         assert self.dibbler.getFile(url).data == cmd[id_0]['fraw']['put']['myfile.txt']
-        assert _download(base_url + url) == cmd[id_0]['fraw']['put']['myfile.txt']
 
+        # Verify the modified 'model.json' of the first fragment.
         url = r0['fraw']['url_frag'] + '/model.json'
         assert self.dibbler.getFile(url).data == cmd[id_0]['fraw']['put']['model.json']
-        assert _download(base_url + url) == cmd[id_0]['fraw']['put']['model.json']
 
-        # It must be impossible to fetch 'model.dae' for the second object.
-        url = r1['fdae']['url_frag'] + '/model.dae'
+        # Verify that 'model.dae' is now unavailable for the second fragment.
+        url = r0['fdae']['url_frag'] + '/model.dae'
         assert not self.dibbler.getFile(url).ok
-        assert _download(base_url + url) == b''
-
-        web.terminate()
-        web.join()
-
-#        assert False
 
 
 def test_invalid():
