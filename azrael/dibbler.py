@@ -16,27 +16,21 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 """
-fixme: docu update
-Dibbler stores and provides all geometry files.
+Dibbler is a database for files (think of it a an Amazon S3 for the poor).
 
-Dibbler itself is a stateless service to store and retrieve model files. For
-that purpose it provides dedicated methods to store- and sanity check the
-various model types supported in Azrael. Furthermore, it provides a simple
-`getFile` method to fetch the latest version of any file, if it exists.
+Dibbler exists because it can store files of any size. It provides methods to
+put, get, copy and delete files. The storage system is flat and each file has
+exactly one associated name. This name can contain the '/' character and the
+application is free to interpret this as directory boundaries.
 
-Internally, Dibbler uses Mongo's GridFS to actually store the files.
+Storing files in Dibbler comes at the cost of atomicity because the files
+should (probably) be stored alongside the state information.  However, those
+databases often restrict the size of their documents.
 
-By design, Dibbler will be useful to Clerk instances to add/remove models, and
-WebServer to serve them up via HTTP. Its stateless design makes it possible to
-create as many instances as necessary.
+Loss of atomicity is bearable (for now) because files tend to change
+infrequently. They usually contain only geometric models and textures.
 
-.. note:: Dibbler sanity checks models but has hardly any safe guards against
-          overwriting existing files or concurrent access. Unless
-          GridFS provides them itself. This is deliberate, partially because
-          GridFS makes this considerably harder than plain MongoDB, and mostly
-          because the Clerks already take care of it with the meta data they
-          store in MongoDB. After all, Dibbler is merely the storage engine for
-          large files.
+This version of Dibbler uses Mongo's GridFS to store the files.
 """
 import os
 import json
