@@ -1111,7 +1111,8 @@ class Clerk(config.AzraelProcess):
             if not (db_set == {} and db_del == {}):
                 q_find = {'objID': objID}
                 op = {}
-                op['$inc'] = {'version': 1}
+                if (len(to_put) + len(to_delete)) > 0:
+                    op['$inc'] = {'version': 1}
                 if len(db_set) > 0:
                     op['$set'] = db_set
                 if len(db_del) > 0:

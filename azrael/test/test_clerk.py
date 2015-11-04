@@ -2163,6 +2163,12 @@ class TestClerk:
         id_0, id_1 = ret.data
         del template, ret
 
+        # Get the current version for each object.
+        ret = clerk.getObjectStates([id_0, id_1])
+        assert ret.ok
+        version_0 = ret.data[id_0]['rbs']['version']
+        version_1 = ret.data[id_1]['rbs']['version']
+
         # Modify the 'foo' fragment of the first object and the 'bar' fragment
         # of the second object. Only modify state information, not geometry.
         # The version flag must not change for any fragment because no geometry
@@ -2184,6 +2190,12 @@ class TestClerk:
         assert r2['bar']['scale'] == 3
         assert r2['bar']['position'] == (0, 0, 0)
         assert r2['bar']['rotation'] == (0, 1, 0, 0)
+
+        # Verify the version field.
+        ret = clerk.getObjectStates([id_0, id_1])
+        assert ret.ok
+        assert version_0 == ret.data[id_0]['rbs']['version']
+        assert version_1 == ret.data[id_1]['rbs']['version']
 
     def test_setFragments2_geometry_only(self):
         """
@@ -2208,6 +2220,11 @@ class TestClerk:
         assert ret.ok
         id_0, id_1 = ret.data
         del template, ret
+
+        ret = clerk.getObjectStates([id_0, id_1])
+        assert ret.ok
+        version_0 = ret.data[id_0]['rbs']['version']
+        version_1 = ret.data[id_1]['rbs']['version']
 
         # Modify the geometries. The first fragment of the first object gains a
         # new file ('myfile.txt') and modifies an existing one ('model.json').
@@ -2245,6 +2262,12 @@ class TestClerk:
         assert r1['fraw']['fragtype'] == 'RAW'
         assert r1['fdae']['fragtype'] == 'RAW'
         assert 'model.dae' not in r1['fdae']['files']
+
+        # Verify the version field.
+        ret = clerk.getObjectStates([id_0, id_1])
+        assert ret.ok
+        assert version_0 != ret.data[id_0]['rbs']['version']
+        assert version_1 != ret.data[id_1]['rbs']['version']
 
         def _download(url):
             for ii in range(10):
