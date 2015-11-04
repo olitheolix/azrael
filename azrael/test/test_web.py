@@ -38,33 +38,12 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
                     (config.url_instances + '/(.*)', FH)]
         return tornado.web.Application(handlers)
 
-    def downloadFragRaw(self, url: str, fname: str):
+    def downloadFragments(self, url: str, fnames: list):
         """
-        Download and unpack the Raw model from ``url`` and return it as a
-        ``FragRaw`` instance.
-
-        Example: downloadFragRaw('/instances/3/raw1/')
-
-        :param str url: download URL
-        :return: Raw model
-        :rtype: FragRaw
-        :raises: AssertionError if there was a problem.
-        """
-        ret = self.fetch(url + fname, method='GET')
-        try:
-            data = base64.b64encode(ret.body).decode('utf8')
-        except ValueError:
-            assert False
-        return {fname: data}
-
-    def downloadFragDae(self, url: str, fnames: list):
-        """
-        fixme: docu
-
-        Download and unpack the Collada model from ``url`` and return it as a
+        Download a fragment file.
         ``FragDae`` instance.
 
-        Example: downloadFragDae('/instances/1/name1/')
+        Example: downloadFragments(['/instances/1/name1/'])
 
         :param str url: download URL
         :param str dae: name of Collada model.
@@ -81,12 +60,14 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         # Convert the fields to Base64 encode strings and construct a new
         # FragDae instance.
         b64enc = base64.b64encode
-        fdata = {k: b64enc(v).decode('utf8') for (k, v) in fdata.items()}
+        try:
+            fdata = {k: b64enc(v).decode('utf8') for (k, v) in fdata.items()}
+        except ValueError:
+            assert False
         return fdata
 
     def verifyTemplate(self, url, fragments):
         """
-        fixme: docu
         Raise an error if the ``fragments`` are not available at ``url``.
 
         This method automatically adapts to the fragment type and verifies
@@ -102,11 +83,11 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
             ftype = frag.fragtype.upper()
             if ftype == 'RAW':
                 tmp_url = url + '/{name}/'.format(name=aid)
-                assert self.downloadFragRaw(tmp_url, 'model.json') == frag.files
+                assert self.downloadFragments(tmp_url, ['model.json']) == frag.files
             elif ftype == 'DAE':
                 tmp_url = url + '/{name}/'.format(name=aid)
                 fnames = list(frag.files.keys())
-                ret = self.downloadFragDae(tmp_url, fnames)
+                ret = self.downloadFragments(tmp_url, fnames)
                 assert ret == frag.files
             else:
                 assert False
