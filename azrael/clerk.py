@@ -1066,14 +1066,14 @@ class Clerk(config.AzraelProcess):
             # fixme: verify the type of `objID` and `frags`
 
             # The following variables are work lists.
-            # idb_set: the database keys to set and their value
-            # idb_del: delete these keys (pertain to geometry files)
-            # dib_put: files to add/overwrite in Dibbler (and their content).
-            # dib_del: files to delete in Dibbler.
-            idb_set = {}
-            idb_del = {}
-            dib_put = {}
-            dib_del = []
+            # db_set: the database keys to set and their value
+            # db_del: delete these keys (pertain to geometry files)
+            # file_put: files to add/overwrite in Dibbler (and their content).
+            # file_del: files to delete in Dibbler.
+            db_set = {}
+            db_del = {}
+            file_put = {}
+            file_del = []
 
             # Path prefix for all the files that Dibbler has on this object.
             pre = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
@@ -1095,45 +1095,45 @@ class Clerk(config.AzraelProcess):
                     # of the state variable in the database document hierarchy.
                     for field, value in ref.items():
                         tmp = 'template.fragments.{}.{}'.format(fragname, field)
-                        idb_set[tmp] = value
+                        db_set[tmp] = value
                         del tmp
 
                 # If the user wants to change the fragment type then we must
                 # update the corresponding field in the database as well.
                 if 'fragtype' in fragdata:
                     tmp = 'template.fragments.{}.fragtype'.format(fragname)
-                    idb_set[tmp] = fragdata['fragtype']
+                    db_set[tmp] = fragdata['fragtype']
 
                 # Files to delete. This entails deleting the actual file in
                 # Dibbler, as well as the reference to it in the instance database.
-                url_base = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
+                url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
                 for fname in fragdata.get('del', []):
                     # The file to delete in Dibbler.
-                    dib_del.append('{url}/{filename}'.format(url=url_base, filename=fname))
+                    file_del.append('{url}/{filename}'.format(url=url, filename=fname))
 
                     # Mangle the file names (fixme: put this in dedicated method).
                     fname = fname.replace('.', ';')
 
                     # Specify which key to remove in the database.
                     tmp = 'template.fragments.{}.files.{}'.format(fragname, fname)
-                    idb_del[tmp] = True
+                    db_del[tmp] = True
 
                 # Files to add/update. As above, we need to delete the files in
                 # Dibbler and remove the corresponding keys in the instance database.
                 for fname, fdata in fragdata.get('put', {}).items():
                     # The file to add/overwrite in Dibbler.
-                    dib_put['{url}/{filename}'.format(url=url_base, filename=fname)] = fdata
+                    file_put['{url}/{filename}'.format(url=url, filename=fname)] = fdata
 
                     # Mangle the file names (fixme: put this in dedicated method).
                     fname = fname.replace('.', ';')
 
                     # Specify which key to add in the database.
                     tmp = 'template.fragments.{}.files.{}'.format(fragname, fname)
-                    idb_set[tmp] = None
+                    db_set[tmp] = None
                 
             # Compile the database query and issue it.
             ret = RetVal(True, None, None)
-            if not (idb_set == {} and idb_del == {}):
+            if not (db_set == {} and db_del == {}):
                 # The operations for MongoDB will be stored in this dictionary.
                 op = {}
 
@@ -1141,22 +1141,22 @@ class Clerk(config.AzraelProcess):
                 # or the fragment type changed.
                 # fixme: must also increase the version when only the fragment
                 #        type changes (needs a test).
-                if (len(dib_put) + len(dib_del)) > 0:
+                if (len(file_put) + len(file_del)) > 0:
                     op['$inc'] = {'version': 1}
 
                 # Specify the fields to add/overwrite, as well as their values.
-                if len(idb_set) > 0:
-                    op['$set'] = idb_set
+                if len(db_set) > 0:
+                    op['$set'] = db_set
 
                 # Specify the fields to unset.
-                if len(idb_del) > 0:
-                    op['$unset'] = idb_del
+                if len(db_del) > 0:
+                    op['$unset'] = db_del
                 ret = db.update({'objID': objID}, op)
                 # fixme: check return value
 
             # Issue the Dibbler queries.
-            self.dibbler.remove(dib_del)
-            self.dibbler.put(dib_put)
+            self.dibbler.remove(file_del)
+            self.dibbler.put(file_put)
 
             del objID, frags
 

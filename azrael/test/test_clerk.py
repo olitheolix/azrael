@@ -2181,7 +2181,6 @@ class TestSetFragments:
         """
         # Convenience.
         clerk, id_0 = self.clerk, self.id_0
-        b64enc = base64.b64encode
 
         # Fetch the current version.
         ret = clerk.getObjectStates([id_0])
@@ -2220,7 +2219,6 @@ class TestSetFragments:
         """
         # Convenience.
         clerk, id_0 = self.clerk, self.id_0
-        fraw, fdae = getFragRaw(), getFragDae()
         b64enc = base64.b64encode
 
         # Fetch the current object version.
