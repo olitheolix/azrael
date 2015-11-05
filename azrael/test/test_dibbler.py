@@ -21,7 +21,7 @@ import azrael.dibbler
 
 import azrael.config as config
 from IPython import embed as ipshell
-from azrael.test.test import getFragNone, getTemplate, getFragRaw, getFragDae, getFragObj
+from azrael.test.test import getFragNone, getTemplate, getFragRaw, getFragDae
 
 
 class TestDibbler:

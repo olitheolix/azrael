@@ -22,7 +22,7 @@ from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox, CollShapePlane, ConstraintMeta
 from azrael.test.test import getP2P, get6DofSpring2, getRigidBody
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere, getCSPlane
-from azrael.test.test import getFragRaw, getFragDae, getFragObj, getFragNone, getTemplate
+from azrael.test.test import getFragRaw, getFragDae, getFragNone, getTemplate
 
 
 class TestAZTypes:
@@ -98,7 +98,7 @@ class TestAZTypes:
 
     def test_FragMeta(self):
         # Verify that all geometry types serialise correctly.
-        for Getter in (getFragRaw, getFragDae, getFragObj, getFragNone):
+        for Getter in (getFragRaw, getFragDae, getFragNone):
             # Get a proper FragMeta instance. Then get a stunted one where
             # 'fragdata' is None. The stunted case often happens internally in
             # Azrael because the meta data is stored in a separate database
@@ -138,7 +138,7 @@ class TestAZTypes:
         rbs = getRigidBody(position=(1, 2, 3))
 
         # Define a new template with two boosters and add it to Azrael.
-        frags = {'1': getFragRaw(), '2': getFragDae(), '3': getFragObj()}
+        frags = {'1': getFragRaw(), '2': getFragDae()}
         temp_t = getTemplate('t1',
                              rbs=rbs,
                              fragments=frags,
