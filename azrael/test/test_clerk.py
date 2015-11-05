@@ -1261,12 +1261,12 @@ class TestClerk:
         cmd = {objID0: {'bar': getFragRaw()._asdict()}}
         assert clerk.setFragments(cmd).ok
 
-        # Verify that the new 'version' flag is now different.
+        # Verify that objID0 has a new version.
         ret = clerk.getRigidBodies([objID0])
         assert ret.ok
         assert ref_version != ret.data[objID0]['rbs'].version
 
-        # Verify further that the version attribute of objID1 is unchanged.
+        # Verify that objID1 still has the same version.
         ret = clerk.getRigidBodies([objID1])
         assert ret.ok
         assert ref_version == ret.data[objID1]['rbs'].version
@@ -2283,6 +2283,34 @@ class TestSetFragments:
         # Verify that 'model.dae' is now unavailable for the second fragment.
         url = r0['fdae']['url_frag'] + '/model.dae'
         assert not self.dibbler.getFile(url).ok
+
+    def test_setFragments_modify_type(self):
+        """
+        Modify only the type of a single fragment. This must change the version.
+        """
+        # Convenience.
+        clerk, id_0 = self.clerk, self.id_0
+
+        # Fetch the current object version.
+        ret = clerk.getObjectStates([id_0])
+        assert ret.ok
+        version_0 = ret.data[id_0]['rbs']['version']
+
+        # Change the fragment type (but nothing else). This must change the
+        # version flag.
+        cmd = {
+            id_0: {
+                'fdae': {
+                    'fragtype': 'raw',
+                }
+            }
+        }
+        assert clerk.setFragments2(cmd).ok
+
+        # Verify that the version of the object is now different.
+        ret = clerk.getObjectStates([id_0])
+        assert ret.ok
+        assert version_0 != ret.data[id_0]['rbs']['version']
 
 
 def test_invalid():

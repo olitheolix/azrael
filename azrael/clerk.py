@@ -1075,6 +1075,10 @@ class Clerk(config.AzraelProcess):
             file_put = {}
             file_del = []
 
+            # If any of the files were modified then the object needs a new
+            # version.
+            new_version = False
+
             # Path prefix for all the files that Dibbler has on this object.
             pre = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
 
@@ -1103,6 +1107,7 @@ class Clerk(config.AzraelProcess):
                 if 'fragtype' in fragdata:
                     tmp = 'template.fragments.{}.fragtype'.format(fragname)
                     db_set[tmp] = fragdata['fragtype']
+                    new_version = True
 
                 # Files to delete. This entails deleting the actual file in
                 # Dibbler, as well as the reference to it in the instance database.
@@ -1117,6 +1122,7 @@ class Clerk(config.AzraelProcess):
                     # Specify which key to remove in the database.
                     tmp = 'template.fragments.{}.files.{}'.format(fragname, fname)
                     db_del[tmp] = True
+                    new_version = True
 
                 # Files to add/update. As above, we need to delete the files in
                 # Dibbler and remove the corresponding keys in the instance database.
@@ -1130,6 +1136,7 @@ class Clerk(config.AzraelProcess):
                     # Specify which key to add in the database.
                     tmp = 'template.fragments.{}.files.{}'.format(fragname, fname)
                     db_set[tmp] = None
+                    new_version = True
                 
             # Compile the database query and issue it.
             ret = RetVal(True, None, None)
@@ -1141,7 +1148,7 @@ class Clerk(config.AzraelProcess):
                 # or the fragment type changed.
                 # fixme: must also increase the version when only the fragment
                 #        type changes (needs a test).
-                if (len(file_put) + len(file_del)) > 0:
+                if new_version:
                     op['$inc'] = {'version': 1}
 
                 # Specify the fields to add/overwrite, as well as their values.
