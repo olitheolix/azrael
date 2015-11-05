@@ -119,16 +119,14 @@ def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
 
 def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
-    Convenience function to construct a valid Collada geometry.
+    Convenience function: return typical Collada fragment.
     """
-    b = os.path.dirname(__file__)
-    dae_file = open(b + '/cube.dae', 'rb').read()
-    dae_rgb1 = open(b + '/rgb1.png', 'rb').read()
-    dae_rgb2 = open(b + '/rgb2.jpg', 'rb').read()
+    # Create a random Collada file and two textures.
+    dae_file = base64.b64encode(b'data.dae').decode('utf8')
+    dae_rgb1 = base64.b64encode(b'rgb1.png').decode('utf8')
+    dae_rgb2 = base64.b64encode(b'rgb2.jpg').decode('utf8')
 
-    dae_file = base64.b64encode(dae_file).decode('utf8')
-    dae_rgb1 = base64.b64encode(dae_rgb1).decode('utf8')
-    dae_rgb2 = base64.b64encode(dae_rgb2).decode('utf8')
+    # Create a dictionary of all the files that constitute this model.
     files = {
         'model.dae': dae_file,
         'rgb1.png': dae_rgb1,
