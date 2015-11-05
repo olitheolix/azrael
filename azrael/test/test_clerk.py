@@ -1233,44 +1233,6 @@ class TestClerk:
         assert ret.data[objID_1] is None
         assert _verify(ret.data, objID_2)
 
-    def test_instanceDB_fragment_version(self):
-        """
-        Spawn two objects, modify their geometries, and verify that the
-        'version' flag changes accordingly.
-        """
-        # Convenience.
-        clerk = self.clerk
-
-        # Add a valid template and verify it now exists in Azrael.
-        temp = getTemplate('foo', fragments={'bar': getFragRaw()})
-        assert clerk.addTemplates([temp]).ok
-
-        # Spawn two objects from the previously defined template.
-        init = {'templateID': temp.aid}
-        ret = clerk.spawn([init, init])
-        assert ret.ok and (len(ret.data) == 2)
-        objID0, objID1 = ret.data
-
-        # Query the State Vectors for both objects.
-        ret = clerk.getRigidBodies([objID0, objID1])
-        assert ret.ok and (set((objID0, objID1)) == set(ret.data.keys()))
-        ref_version = ret.data[objID0]['rbs'].version
-
-        # Modify the 'bar' fragment of objID0 and verify that exactly one
-        # geometry was updated.
-        cmd = {objID0: {'bar': getFragRaw()._asdict()}}
-        assert clerk.setFragments(cmd).ok
-
-        # Verify that objID0 has a new version.
-        ret = clerk.getRigidBodies([objID0])
-        assert ret.ok
-        assert ref_version != ret.data[objID0]['rbs'].version
-
-        # Verify that objID1 still has the same version.
-        ret = clerk.getRigidBodies([objID1])
-        assert ret.ok
-        assert ref_version == ret.data[objID1]['rbs'].version
-
     def test_setFragments(self):
         """
         Spawn three objects and modify the geometries of two.
@@ -2142,7 +2104,7 @@ class TestClerk:
         assert db.count() == 0
 
 
-class TestSetFragments:
+class TestModifyFragments:
     """
     Dedicated test harness just for updating fragments.
     """
@@ -2166,9 +2128,10 @@ class TestSetFragments:
         assert self.clerk.addTemplates([template]).ok
 
         # Spawn one instance.
-        ret = self.clerk.spawn([{'templateID': template.aid}])
-        assert ret.ok and len(ret.data) == 1
-        self.id_0 = ret.data[0]
+        ret = self.clerk.spawn([{'templateID': template.aid},
+                                {'templateID': template.aid}])
+        assert ret.ok and len(ret.data) == 2
+        self.id_0, self.id_1 = ret.data
 
     def teardown_method(self, method):
         self.dibbler.reset()
@@ -2311,6 +2274,40 @@ class TestSetFragments:
         ret = clerk.getObjectStates([id_0])
         assert ret.ok
         assert version_0 != ret.data[id_0]['rbs']['version']
+
+    def test_setFragment_two_objects(self):
+        """
+        Update multiple objects at once.
+        """
+        # Convenience.
+        clerk, id_0, id_1 = self.clerk, self.id_0, self.id_1
+
+        # Get the current version of both objects.
+        ret = clerk.getObjectStates([id_0, id_1])
+        assert ret.ok
+        version_0 = ret.data[id_0]['rbs']['version']
+        version_1 = ret.data[id_1]['rbs']['version']
+
+        # Modify the geometry of 'fraw' in object id_0 and update the state of
+        # 'fdae' in id_1.
+        cmd = {
+            id_0: {'fraw': {'fragtype': 'DAE'}},
+            id_1: {'fdae': {'state': {'position': (1, 2, 3)}}}
+        }
+        assert clerk.setFragments2(cmd).ok
+
+        # Fetch the object states. Verify that the first object has a new
+        # version but the second does not.
+        ret = clerk.getObjectStates([id_0, id_1])
+        assert ret.ok
+        assert version_0 != ret.data[id_0]['rbs']['version']
+        assert version_1 == ret.data[id_1]['rbs']['version']
+
+        # Verify the new fragment type and position.
+        ret = clerk.getFragments([id_0, id_1])
+        assert ret.ok
+        assert ret.data[id_0]['fraw']['fragtype'] == 'DAE'
+        assert ret.data[id_1]['fdae']['position'] == (1, 2, 3)
 
 
 def test_invalid():
