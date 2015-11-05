@@ -93,17 +93,28 @@ def getFragNone(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
 
 def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
-    Convenience function to construct a valid Raw geometry.
+    Convenience function: return typical RAW fragment.
     """
+    # Create a random RAW fragment.
     model = {
         'vert': np.random.randint(0, 100, 9).tolist(),
         'uv': np.random.randint(0, 100, 6).tolist(),
         'rgb': np.random.randint(0, 100, 3).tolist()
     }
 
+    # Make it compatible with HTTP transport.
     model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
-    return FragMeta(fragtype='RAW', scale=scale, position=pos,
-                    rotation=rot, files={'model.json': model})
+
+    # Create a dictionary of all the files that constitute this model (RAW
+    # models only have a single file called 'model.json').
+    files = {'model.json': model}
+
+    # Return the fragment description.
+    return FragMeta(fragtype='RAW',
+                    scale=scale,
+                    position=pos,
+                    rotation=rot,
+                    files=files)
 
 
 def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
