@@ -1474,161 +1474,6 @@ class TestClerk:
         assert clerk.setFragments(newStates).ok
         assert clerk.setFragments(newStates).ok
 
-    def test_fragments_end2end(self):
-        """
-        Integration test: create a live system, add a template with two
-        fragments, spawn it, query it, verify its geometry, alter its
-        geometry, and verify the geometry again.
-        """
-        clerk = self.clerk
-        web = azrael.web.WebServer()
-        web.start()
-
-        def checkFragState(objID, name_1, scale_1, pos_1, rot_1,
-                           name_2, scale_2, pos_2, rot_2):
-            """
-            Convenience function to verify the fragment states of ``objID``.
-            This function assumes the object has exactly two fragments.
-            """
-            # Query the object states for both objects.
-            ret = clerk.getObjectStates([objID])
-            assert ret.ok and (len(ret.data) == 1)
-
-            # Extract the fragments and verify there are exactly two.
-            _frags = ret.data[objID]['frag']
-            assert len(_frags) == 2
-
-            # Verify the fragment names match the provided ones.
-            assert {name_1, name_2} == set(_frags.keys())
-
-            # Compile the expected values into a dictionary.
-            ref_1 = {'scale': scale_1, 'position': pos_1, 'rotation': rot_1}
-            ref_2 = {'scale': scale_2, 'position': pos_2, 'rotation': rot_2}
-
-            # Verify the fragments have the expected values.
-            assert _frags[name_1] == ref_1
-            assert _frags[name_2] == ref_2
-            del ret, _frags
-
-        def getCmd(scale, pos, rot):
-            """
-            Return dictionary with the constituent entries.
-
-            This is a convenience function only to make this test more
-            readable.
-            """
-            return {'state': {'scale': scale, 'position': pos, 'rotation': rot}}
-
-        # Create two fragments.
-        f_raw = getFragRaw()
-        f_dae = getFragDae()
-        frags = {'10': f_raw, 'test': f_dae}
-
-        t1 = getTemplate('t1', fragments=frags)
-        assert clerk.addTemplates([t1]).ok
-        ret = clerk.spawn([{'templateID': t1.aid}])
-        assert ret.ok
-        objID = ret.data[0]
-
-        # Query the state. Verify that we got one set of state variables for
-        # each fragment.
-        ret = clerk.getObjectStates([objID])
-        assert ret.ok
-        ret_frags = ret.data[objID]['frag']
-        assert len(ret_frags) == len(frags)
-
-        # Same as before, but this time query all states at once.
-        assert clerk.getObjectStates(None) == ret
-
-        # Verify the fragment _states_ themselves.
-        checkFragState(objID,
-                       '10', 1, [0, 0, 0], [0, 0, 0, 1],
-                       'test', 1, [0, 0, 0], [0, 0, 0, 1])
-
-        # Modify the _state_ of both fragments and verify it worked.
-        newStates = {
-            objID: {
-                '10': getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
-                'test': getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
-        }
-        assert clerk.setFragments2(newStates).ok
-        checkFragState(objID,
-                       '10', 7, [7, 7, 7], [7, 7, 7, 7],
-                       'test', 8, [8, 8, 8], [8, 8, 8, 8])
-
-        # Query the fragment _geometries_.
-        ret = clerk.getFragments([objID])
-        assert ret.ok
-        data = ret.data[objID]
-        del ret
-
-        def _download(url):
-            for ii in range(10):
-                try:
-                    return requests.get(url).content
-                except (requests.exceptions.HTTPError,
-                        requests.exceptions.ConnectionError):
-                    time.sleep(0.1)
-            assert False
-
-        # Download the 'RAW' file and verify its content is correct.
-        base_url = 'http://{}:{}'.format(
-            azrael.config.addr_webapi, azrael.config.port_webapi)
-        url = base_url + data['10']['url_frag'] + '/model.json'
-        tmp = _download(url)
-        tmp = base64.b64encode(tmp).decode('utf8')
-        assert tmp == f_raw.files['model.json']
-
-        # Download and verify all model files.
-        for fname in f_dae.files.keys():
-            url = base_url + data['test']['url_frag'] + '/' + fname
-            tmp = _download(url)
-            assert tmp == base64.b64decode(f_dae.files[fname])
-
-        # Change the fragment geometries.
-        f_raw = getFragRaw()
-        cmd = {
-            objID: {
-                '10': {
-                    'state': {
-                        'scale': 2,
-                        'position': (3, 4, 5),
-                        'rotation': f_raw.rotation,
-                    },
-                    'put': f_raw.files
-                },
-                'test': {
-                    'state': {
-                        'scale': f_dae.scale,
-                        'position': f_dae.position,
-                        'rotation': f_dae.rotation,
-                    },
-                    'put': f_dae.files
-                }
-            }
-        }
-
-        assert clerk.setFragments2(cmd) == (True, None, {'updated': 1})
-        ret = clerk.getFragments([objID])
-        assert ret.ok
-        data = ret.data[objID]
-        del ret
-
-        # Download the 'RAW' file and verify its content is correct.
-        url = base_url + data['10']['url_frag'] + '/model.json'
-        dl = _download(url)
-        tmp = base64.b64encode(dl).decode('utf8')
-        assert tmp == f_raw.files['model.json']
-
-        # Download and verify all model files.
-        for fname in f_dae.files.keys():
-            url = base_url + data['test']['url_frag'] + '/' + fname
-            dl = _download(url)
-            assert dl == base64.b64decode(f_dae.files[fname])
-
-        web.terminate()
-        web.join()
-
     def test_updateBoosterValues(self):
         """
         Query and update the booster values in the instance data base.
@@ -2406,6 +2251,197 @@ class TestModifyFragments:
         # Attempt to modify the fragment for a non-existing object.
         cmd = {fake_id: {'myfrag': {'fragtype': 'test'}}}
         assert clerk.setFragments2(cmd) == (True, None, {'updated': 0})
+
+
+class TestClerkEnd2End:
+    @classmethod
+    def setup_class(cls):
+        killAzrael()
+        cls.clerk = azrael.clerk.Clerk()
+
+    @classmethod
+    def teardown_class(cls):
+        killAzrael()
+
+    def setup_method(self, method):
+        self.dibbler = azrael.dibbler.Dibbler()
+        self.dibbler.reset()
+        azrael.database.init()
+
+        self.web = azrael.web.WebServer()
+        self.web.start()
+
+    def teardown_method(self, method):
+        self.dibbler.reset()
+        azrael.database.init()
+        self.web.terminate()
+        self.web.join()
+
+    def downloadURL(self, url):
+        for ii in range(10):
+            try:
+                return requests.get(url).content
+            except (requests.exceptions.HTTPError,
+                    requests.exceptions.ConnectionError):
+                time.sleep(0.1)
+        assert False
+
+    def checkFragState(self, objID, name_1, scale_1, pos_1, rot_1,
+                       name_2, scale_2, pos_2, rot_2):
+        """
+        Convenience function to verify the fragment states of ``objID``.
+        This function assumes the object has exactly two fragments.
+        """
+        # Query the object states for both objects.
+        ret = self.clerk.getObjectStates([objID])
+        assert ret.ok and (len(ret.data) == 1)
+
+        # Extract the fragments and verify there are exactly two.
+        _frags = ret.data[objID]['frag']
+        assert len(_frags) == 2
+
+        # Verify the fragment names match the provided ones.
+        assert {name_1, name_2} == set(_frags.keys())
+
+        # Compile the expected values into a dictionary.
+        ref_1 = {'scale': scale_1, 'position': pos_1, 'rotation': rot_1}
+        ref_2 = {'scale': scale_2, 'position': pos_2, 'rotation': rot_2}
+
+        # Verify the fragments have the expected values.
+        assert _frags[name_1] == ref_1
+        assert _frags[name_2] == ref_2
+
+    def getCmd(self, scale, pos, rot):
+        """
+        Return dictionary with the constituent entries.
+
+        This is a convenience function only to make this test more
+        readable.
+        """
+        return {'state': {'scale': scale, 'position': pos, 'rotation': rot}}
+
+    def test_fragments_end2end(self):
+        """
+        Integration test: create a live system, add a template with two
+        fragments, spawn it, query it, verify its geometry, alter its
+        geometry, and verify the geometry again.
+        """
+        clerk = self.clerk
+
+        # ---------------------------------------------------------------------
+        # Create template with two fragments.
+        # ---------------------------------------------------------------------
+        f_raw = getFragRaw()
+        f_dae = getFragDae()
+        frags = {'10': f_raw, 'test': f_dae}
+
+        t1 = getTemplate('t1', fragments=frags)
+        assert clerk.addTemplates([t1]).ok
+        ret = clerk.spawn([{'templateID': t1.aid}])
+        assert ret.ok
+        objID = ret.data[0]
+        del ret
+
+        # ---------------------------------------------------------------------
+        # Query states and verify them.
+        # ---------------------------------------------------------------------
+        ret = clerk.getObjectStates([objID])
+        assert ret.ok
+        ret_frags = ret.data[objID]['frag']
+        assert len(ret_frags) == len(frags)
+
+        # Same as before, but this time query all states at once.
+        assert clerk.getObjectStates(None) == ret
+
+        # Verify the fragment _states_ themselves.
+        self.checkFragState(objID,
+                       '10', 1, [0, 0, 0], [0, 0, 0, 1],
+                       'test', 1, [0, 0, 0], [0, 0, 0, 1])
+
+        # ---------------------------------------------------------------------
+        # Modify the fragment states. The geometries will not be altered.
+        # ---------------------------------------------------------------------
+        newStates = {
+            objID: {
+                '10': self.getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
+                'test': self.getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
+        }
+        assert clerk.setFragments2(newStates).ok
+        self.checkFragState(objID,
+                       '10', 7, [7, 7, 7], [7, 7, 7, 7],
+                       'test', 8, [8, 8, 8], [8, 8, 8, 8])
+
+        # ---------------------------------------------------------------------
+        # Verify the current fragment geometries (nothing is modified).
+        # ---------------------------------------------------------------------
+        # URL of web server from where we will get the geometries.
+        base_url = 'http://{}:{}'.format(
+            azrael.config.addr_webapi, azrael.config.port_webapi)
+
+        # Query the current fragment _geometries_.
+        ret = clerk.getFragments([objID])
+        assert ret.ok
+        data = ret.data[objID]
+        del ret
+
+        # Download the fragment with name '10' (a RAW fragment). Then verify
+        # its files.
+        url = base_url + data['10']['url_frag'] + '/model.json'
+        tmp = self.downloadURL(url)
+        tmp = base64.b64encode(tmp).decode('utf8')
+        assert tmp == f_raw.files['model.json']
+
+        # Download the fragment with name 'test' (a Collada fragment). Then
+        # verify its files.
+        for fname in f_dae.files.keys():
+            url = base_url + data['test']['url_frag'] + '/' + fname
+            tmp = self.downloadURL(url)
+            assert tmp == base64.b64decode(f_dae.files[fname])
+
+        # ---------------------------------------------------------------------
+        # Modify the fragment geometries. Then verify the update was
+        # successful.
+        # ---------------------------------------------------------------------
+        # Change the fragment geometries.
+        f_raw = getFragRaw()
+        cmd = {
+            objID: {
+                '10': {
+                    'state': {
+                        'scale': 2,
+                        'position': (3, 4, 5),
+                        'rotation': f_raw.rotation,
+                    },
+                    'put': f_raw.files
+                },
+                'test': {
+                    'state': {
+                        'scale': f_dae.scale,
+                        'position': f_dae.position,
+                        'rotation': f_dae.rotation,
+                    },
+                    'put': f_dae.files
+                }
+            }
+        }
+
+        assert clerk.setFragments2(cmd) == (True, None, {'updated': 1})
+        ret = clerk.getFragments([objID])
+        assert ret.ok
+        data = ret.data[objID]
+        del ret
+
+        # Download the 'RAW' file and verify its content is correct.
+        url = base_url + data['10']['url_frag'] + '/model.json'
+        dl = self.downloadURL(url)
+        tmp = base64.b64encode(dl).decode('utf8')
+        assert tmp == f_raw.files['model.json']
+
+        # Download and verify all model files.
+        for fname in f_dae.files.keys():
+            url = base_url + data['test']['url_frag'] + '/' + fname
+            dl = self.downloadURL(url)
+            assert dl == base64.b64decode(f_dae.files[fname])
 
 
 def test_invalid():
