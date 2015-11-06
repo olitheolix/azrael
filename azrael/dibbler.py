@@ -36,6 +36,7 @@ import os
 import json
 import base64
 import gridfs
+import logging
 
 import azrael.config as config
 
@@ -52,6 +53,10 @@ class Dibbler:
         # Create a GridFS handle.
         db = config.getMongoClient()['AzraelGridDB']
         self.fs = gridfs.GridFS(db)
+
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
 
     def reset(self):
         """
@@ -106,6 +111,8 @@ class Dibbler:
 
         If ``location`` does not exist then return an error.
 
+        fixme: utilise 'self.get' to the work here.
+
         :param str location: the location to retrieve (eg.
                              '/instances/8/meta.json').
         :return: content of ``location`` (or *None* if an error occurred).
@@ -154,14 +161,19 @@ class Dibbler:
             for fname, fdata in files.items():
                 assert isinstance(fdata, bytes)
                 assert self.isValidFileName(fname)
-        except AssertionError:
-            return RetVal(False, 'Invalid arguments', None)
+        except AssertionError as e:
+            msg = 'Invalid file name or data format for <{}>'
+            msg = msg.format(fname)
+            self.logit.info(msg)
+            return RetVal(False, msg, None)
 
         # Write the files to disk.
         for fname, fdata in files.items():
             try:
                 self.fs.put(fdata, filename=fname)
             except gridfs.errors.GridFSError as err:
+                # fixme: what is the expected return value here?
+                self.logit.error('GridFS error')
                 pass
         return RetVal(True, None, None)
 

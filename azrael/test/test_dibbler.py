@@ -100,6 +100,9 @@ class TestDibbler:
         assert dibbler.get(['foo']) == (True, None, new_file)
         assert dibbler.getNumFiles() == (True, None, 2)
 
+        # Send invalid data format.
+        assert not dibbler.put({'xy': 'str_instead_of_bytes'}).ok
+
     def test_copy_individual(self):
         """
         Create one file, then copy it to another location.
