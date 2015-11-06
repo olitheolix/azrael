@@ -1517,7 +1517,7 @@ class TestClerk:
             This is a convenience function only to make this test more
             readable.
             """
-            return {'scale': scale, 'position': pos, 'rotation': rot}
+            return {'state': {'scale': scale, 'position': pos, 'rotation': rot}}
 
         # Create two fragments.
         f_raw = getFragRaw()
@@ -1551,7 +1551,7 @@ class TestClerk:
                 '10': getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
                 'test': getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
         }
-        assert clerk.setFragments(newStates).ok
+        assert clerk.setFragments2(newStates).ok
         checkFragState(objID,
                        '10', 7, [7, 7, 7], [7, 7, 7, 7],
                        'test', 8, [8, 8, 8], [8, 8, 8, 8])
@@ -1587,8 +1587,28 @@ class TestClerk:
 
         # Change the fragment geometries.
         f_raw = getFragRaw()
-        cmd = {objID: {'10': f_raw._asdict(), 'test': f_dae._asdict()}}
-        assert clerk.setFragments(cmd).ok
+        cmd = {
+            objID: {
+                '10': {
+                    'state': {
+                        'scale': 2,
+                        'position': (3, 4, 5),
+                        'rotation': f_raw.rotation,
+                    },
+                    'put': f_raw.files
+                },
+                'test': {
+                    'state': {
+                        'scale': f_dae.scale,
+                        'position': f_dae.position,
+                        'rotation': f_dae.rotation,
+                    },
+                    'put': f_dae.files
+                }
+            }
+        }
+
+        assert clerk.setFragments2(cmd) == (True, None, {'updated': 1})
         ret = clerk.getFragments([objID])
         assert ret.ok
         data = ret.data[objID]
@@ -1596,15 +1616,15 @@ class TestClerk:
 
         # Download the 'RAW' file and verify its content is correct.
         url = base_url + data['10']['url_frag'] + '/model.json'
-        tmp = _download(url)
-        tmp = base64.b64encode(tmp).decode('utf8')
+        dl = _download(url)
+        tmp = base64.b64encode(dl).decode('utf8')
         assert tmp == f_raw.files['model.json']
 
         # Download and verify all model files.
         for fname in f_dae.files.keys():
             url = base_url + data['test']['url_frag'] + '/' + fname
-            tmp = _download(url)
-            assert tmp == base64.b64decode(f_dae.files[fname])
+            dl = _download(url)
+            assert dl == base64.b64decode(f_dae.files[fname])
 
         web.terminate()
         web.join()
