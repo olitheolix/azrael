@@ -1059,6 +1059,7 @@ class Clerk(config.AzraelProcess):
           - specify behaviour when data is corrupt for a sub-set of objects
         """
         db = database.dbHandles['ObjInstances']
+        num_updated = 0
 
         # Determine what data to update in each object. The database query runs
         # for every object individually.
@@ -1066,12 +1067,15 @@ class Clerk(config.AzraelProcess):
             # fixme: verify the type of `objID` and `frags`
 
             # The following variables are work lists.
-            # db_set: the database keys to set and their value
-            # db_del: delete these keys (pertain to geometry files)
+            # db_set: overwrite these DB keys with the new values
+            # db_del: delete these DB keys (pertains to geometry files)
+            # db_exists: these keys must exist or the entire update does not
+            #            got ahead
             # file_put: files to add/overwrite in Dibbler (and their content).
             # file_del: files to delete in Dibbler.
             db_set = {}
             db_del = {}
+            db_exists = {}
             file_put = {}
             file_del = []
 
@@ -1084,6 +1088,10 @@ class Clerk(config.AzraelProcess):
 
             # Compile the query to update the instance data.
             for fragname, fragdata in frags.items():
+                # The fragment must exist.
+                dbkey = 'template.fragments.{}'.format(fragname)
+                db_exists[dbkey] = True
+                
                 # Determine the state variables to update.
                 if 'state' in fragdata:
                     # Compile the list of all states that should be changed.
@@ -1098,15 +1106,12 @@ class Clerk(config.AzraelProcess):
                     # Compile a dictionary where the key denotes the position
                     # of the state variable in the database document hierarchy.
                     for field, value in ref.items():
-                        tmp = 'template.fragments.{}.{}'.format(fragname, field)
-                        db_set[tmp] = value
-                        del tmp
+                        db_set['{}.{}'.format(dbkey, field)] = value
 
                 # If the user wants to change the fragment type then we must
                 # update the corresponding field in the database as well.
                 if 'fragtype' in fragdata:
-                    tmp = 'template.fragments.{}.fragtype'.format(fragname)
-                    db_set[tmp] = fragdata['fragtype']
+                    db_set['{}.fragtype'.format(dbkey)] = fragdata['fragtype']
                     new_version = True
 
                 # Files to delete. This entails deleting the actual file in
@@ -1120,7 +1125,7 @@ class Clerk(config.AzraelProcess):
                     fname = fname.replace('.', ';')
 
                     # Specify which key to remove in the database.
-                    tmp = 'template.fragments.{}.files.{}'.format(fragname, fname)
+                    tmp = '{}.files.{}'.format(dbkey, fname)
                     db_del[tmp] = True
                     new_version = True
 
@@ -1134,10 +1139,10 @@ class Clerk(config.AzraelProcess):
                     fname = fname.replace('.', ';')
 
                     # Specify which key to add in the database.
-                    tmp = 'template.fragments.{}.files.{}'.format(fragname, fname)
+                    tmp = '{}.files.{}'.format(dbkey, fname)
                     db_set[tmp] = None
                     new_version = True
-                
+
             # Compile the database query and issue it.
             ret = RetVal(True, None, None)
             if not (db_set == {} and db_del == {}):
@@ -1158,8 +1163,18 @@ class Clerk(config.AzraelProcess):
                 # Specify the fields to unset.
                 if len(db_del) > 0:
                     op['$unset'] = db_del
-                ret = db.update({'objID': objID}, op)
-                # fixme: check return value
+
+                query = {'objID': objID}
+                for k, v in db_exists.items():
+                    if v is not True:
+                        continue
+                    query[k] = {'$exists': True}
+                ret = db.update_one(query, op)
+                if ret.modified_count > 1:
+                    self.logit.error('Too many documents were udpated')
+                    num_updated += 1
+                else:
+                    num_updated += ret.modified_count
 
             # Issue the Dibbler queries.
             self.dibbler.remove(file_del)
@@ -1167,8 +1182,7 @@ class Clerk(config.AzraelProcess):
 
             del objID, frags
 
-            
-        return RetVal(True, None, None)
+        return RetVal(True, None, {'updated': num_updated})
 
     @typecheck
     def setFragments(self, fragments: dict):

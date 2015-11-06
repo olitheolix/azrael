@@ -2209,10 +2209,10 @@ class TestModifyFragments:
                 }
             }
         }
-        assert clerk.setFragments2(cmd).ok
+        assert clerk.setFragments2(cmd) == (True, None, {'updated': 1})
 
         # -------------------------------------------------
-        # Verify the content of the State Variable Database
+        # Verify the content in the state variable database
         # -------------------------------------------------
         # Fetch fragment information.
         ret = clerk.getFragments([id_0])
@@ -2237,11 +2237,13 @@ class TestModifyFragments:
         # -----------------------------------
         # Verify the new 'myfile.txt' of the first fragment.
         url = r0['fraw']['url_frag'] + '/myfile.txt'
-        assert self.dibbler.getFile(url).data == cmd[id_0]['fraw']['put']['myfile.txt']
+        dl = self.dibbler.getFile(url).data
+        assert dl == cmd[id_0]['fraw']['put']['myfile.txt']
 
         # Verify the modified 'model.json' of the first fragment.
         url = r0['fraw']['url_frag'] + '/model.json'
-        assert self.dibbler.getFile(url).data == cmd[id_0]['fraw']['put']['model.json']
+        dl = self.dibbler.getFile(url).data
+        assert dl == cmd[id_0]['fraw']['put']['model.json']
 
         # Verify that 'model.dae' is now unavailable for the second fragment.
         url = r0['fdae']['url_frag'] + '/model.dae'
@@ -2308,6 +2310,82 @@ class TestModifyFragments:
         assert ret.ok
         assert ret.data[id_0]['fraw']['fragtype'] == 'DAE'
         assert ret.data[id_1]['fdae']['position'] == (1, 2, 3)
+
+    def test_update_nonexisting_fragment(self):
+        """
+        Clerk must skip objects if any of the fragments do not exist.
+        """
+        # Convenience.
+        clerk, id_0 = self.clerk, self.id_0
+
+        # Fetch the current state.
+        reference = clerk.getFragments([id_0])
+        assert reference.ok
+
+        # Attempt to modify the type of a non-existing fragment.
+        cmd = {
+            id_0: {'blah': {'fragtype': 'DAE'}},
+        }
+        assert clerk.setFragments2(cmd) == (True, None, {'updated': 0})
+
+        # Nothing must have changed.
+        assert reference == clerk.getFragments([id_0])
+
+    def test_add_fragment(self):
+        """
+        Add a new fragment to the object. This must only succeed if the
+        fragment description is complete and valid.
+        """
+        # fixme: not yet implemented
+        return
+        # Convenience.
+        clerk, id_0 = self.clerk, self.id_0
+
+        # Fetch the current state.
+        reference = clerk.getFragments([id_0])
+        assert reference.ok
+
+        # Attempt to create a new fragment called 'myfrag' with an incomplete
+        # description (this one misses 'fragdata' and 'files').
+        state = {'scale': 2, 'position': (1, 2, 3), 'rotation': (1, 0, 0, 1)}
+        cmd = {id_0: {'myfrag': {'state': state, 'new': True}}}
+        assert clerk.setFragments2(cmd) == (True, None, {'updated': 0})
+        assert reference == clerk.getFragments([id_0])
+
+        # Update a fragment that does not yet exist. This must succeed if all
+        # the state variables were provided.
+        cmd[id_0]['myfrag']['put'] = {}
+        cmd[id_0]['myfrag']['fragtype'] = 'test'
+        assert clerk.setFragments2(cmd) == (True, None, {'updated': 1})
+
+        # Verify that the fragment now exists and has the correct state values.
+        ret = clerk.getFragments([id_0])
+        print(ret)
+        assert ret.ok
+        for key, val in state.items():
+            assert ret[id_0]['myfragname'][key] == val
+
+    def test_delete_fragment(self):
+        """
+        Delete a fragment from an object.
+        """
+        # fixme: not yet implemented
+        return
+
+    def test_update_nonexisting_object(self):
+        """
+        SetFragments must skip non-existing objects. No error must be raised
+        but the return values must indicate the number of updated objects.
+        """
+        # Convenience.
+        clerk, id_0, id_1 = self.clerk, self.id_0, self.id_1
+
+        fake_id = 100
+        assert (fake_id != id_0) and (fake_id != id_1)
+
+        # Attempt to modify the fragment for a non-existing object.
+        cmd = {fake_id: {'myfrag': {'fragtype': 'test'}}}
+        assert clerk.setFragments2(cmd) == (True, None, {'updated': 0})
 
 
 def test_invalid():
