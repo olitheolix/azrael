@@ -2018,8 +2018,8 @@ class TestModifyFragments:
         # Modify a subset of the state variables for each of the two fragments.
         cmd = {
             id_0: {
-                'fraw': {'state': {'scale': 2, 'position': (0, 1, 2)}},
-                'fdae': {'state': {'scale': 3, 'rotation': (0, 1, 0, 0)}}
+                'fraw': {'state': {'scale': 2, 'position': [0, 1, 2]}},
+                'fdae': {'state': {'scale': 3, 'rotation': [0, 1, 0, 0]}}
             }
         }
         assert clerk.setFragments2(cmd).ok
@@ -2159,7 +2159,7 @@ class TestModifyFragments:
         # 'fdae' in id_1.
         cmd = {
             id_0: {'fraw': {'fragtype': 'DAE'}},
-            id_1: {'fdae': {'state': {'position': (1, 2, 3)}}}
+            id_1: {'fdae': {'state': {'position': [1, 2, 3]}}}
         }
         assert clerk.setFragments2(cmd).ok
 
@@ -2333,7 +2333,7 @@ class TestClerkEnd2End:
         # ---------------------------------------------------------------------
         f_raw = getFragRaw()
         f_dae = getFragDae()
-        frags = {'10': f_raw, 'test': f_dae}
+        frags = {'fraw': f_raw, 'fdae': f_dae}
 
         t1 = getTemplate('t1', fragments=frags)
         assert clerk.addTemplates([t1]).ok
@@ -2355,21 +2355,21 @@ class TestClerkEnd2End:
 
         # Verify the fragment _states_ themselves.
         self.checkFragState(objID,
-                       '10', 1, [0, 0, 0], [0, 0, 0, 1],
-                       'test', 1, [0, 0, 0], [0, 0, 0, 1])
+                       'fraw', 1, [0, 0, 0], [0, 0, 0, 1],
+                       'fdae', 1, [0, 0, 0], [0, 0, 0, 1])
 
         # ---------------------------------------------------------------------
         # Modify the fragment states. The geometries will not be altered.
         # ---------------------------------------------------------------------
         newStates = {
             objID: {
-                '10': self.getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
-                'test': self.getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
+                'fraw': self.getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
+                'fdae': self.getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
         }
         assert clerk.setFragments2(newStates).ok
         self.checkFragState(objID,
-                       '10', 7, [7, 7, 7], [7, 7, 7, 7],
-                       'test', 8, [8, 8, 8], [8, 8, 8, 8])
+                       'fraw', 7, [7, 7, 7], [7, 7, 7, 7],
+                       'fdae', 8, [8, 8, 8], [8, 8, 8, 8])
 
         # ---------------------------------------------------------------------
         # Verify the current fragment geometries (nothing is modified).
@@ -2384,17 +2384,15 @@ class TestClerkEnd2End:
         data = ret.data[objID]
         del ret
 
-        # Download the fragment with name '10' (a RAW fragment). Then verify
-        # its files.
-        url = base_url + data['10']['url_frag'] + '/model.json'
+        # Download the fragment with name 'fraw'. Then verify its files.
+        url = base_url + data['fraw']['url_frag'] + '/model.json'
         tmp = self.downloadURL(url)
         tmp = base64.b64encode(tmp).decode('utf8')
         assert tmp == f_raw.files['model.json']
 
-        # Download the fragment with name 'test' (a Collada fragment). Then
-        # verify its files.
+        # Download the fragment with name 'fdae'. Then verify its files.
         for fname in f_dae.files.keys():
-            url = base_url + data['test']['url_frag'] + '/' + fname
+            url = base_url + data['fdae']['url_frag'] + '/' + fname
             tmp = self.downloadURL(url)
             assert tmp == base64.b64decode(f_dae.files[fname])
 
@@ -2404,21 +2402,22 @@ class TestClerkEnd2End:
         # ---------------------------------------------------------------------
         # Change the fragment geometries.
         f_raw = getFragRaw()
+        f_dae = getFragDae()
         cmd = {
             objID: {
-                '10': {
+                'fraw': {
                     'state': {
                         'scale': 2,
-                        'position': (3, 4, 5),
-                        'rotation': f_raw.rotation,
+                        'position': [3, 4, 5],
+                        'rotation': list(f_raw.rotation),
                     },
                     'put': f_raw.files
                 },
-                'test': {
+                'fdae': {
                     'state': {
                         'scale': f_dae.scale,
-                        'position': f_dae.position,
-                        'rotation': f_dae.rotation,
+                        'position': list(f_dae.position),
+                        'rotation': list(f_dae.rotation),
                     },
                     'put': f_dae.files
                 }
@@ -2432,14 +2431,13 @@ class TestClerkEnd2End:
         del ret
 
         # Download the 'RAW' file and verify its content is correct.
-        url = base_url + data['10']['url_frag'] + '/model.json'
+        url = base_url + data['fraw']['url_frag'] + '/model.json'
         dl = self.downloadURL(url)
-        tmp = base64.b64encode(dl).decode('utf8')
-        assert tmp == f_raw.files['model.json']
+        assert dl == base64.b64decode(f_raw.files['model.json'])
 
         # Download and verify all model files.
         for fname in f_dae.files.keys():
-            url = base_url + data['test']['url_frag'] + '/' + fname
+            url = base_url + data['fdae']['url_frag'] + '/' + fname
             dl = self.downloadURL(url)
             assert dl == base64.b64decode(f_dae.files[fname])
 

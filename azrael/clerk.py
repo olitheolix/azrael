@@ -41,6 +41,7 @@ import os
 import zmq
 import copy
 import json
+import jsonschema
 import base64
 import traceback
 
@@ -55,6 +56,7 @@ import azrael.leo_api as leoAPI
 import azrael.dibbler as dibbler
 import azrael.database as database
 import azrael.protocol as protocol
+import azrael.azschemas as azschemas
 
 from IPython import embed as ipshell
 from azrael.aztypes import typecheck, RetVal, Template, FragMeta, _FragMeta
@@ -1088,6 +1090,12 @@ class Clerk(config.AzraelProcess):
 
             # Compile the query to update the instance data.
             for fragname, fragdata in frags.items():
+                try:
+                    jsonschema.validate(fragdata, azschemas.setFragments)
+                except jsonschema.exceptions.ValidationError:
+                    self.logit.warning('Input failed to validate')
+                    continue
+
                 # The fragment must exist.
                 dbkey = 'template.fragments.{}'.format(fragname)
                 db_exists[dbkey] = True
