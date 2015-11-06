@@ -2199,39 +2199,43 @@ class TestModifyFragments:
         # Nothing must have changed.
         assert reference == clerk.getFragments([id_0])
 
-    def test_add_fragment(self):
+    def test_add_overwrite_fragment(self):
         """
-        Add a new fragment to the object. This must only succeed if the
-        fragment description is complete and valid.
+        Replace an existing fragment. Then add a new fragment.
         """
-        # fixme: not yet implemented
-        return
         # Convenience.
         clerk, id_0 = self.clerk, self.id_0
+        b64enc = base64.b64encode
 
-        # Fetch the current state.
-        reference = clerk.getFragments([id_0])
-        assert reference.ok
-
-        # Attempt to create a new fragment called 'myfrag' with an incomplete
-        # description (this one misses 'fragdata' and 'files').
-        state = {'scale': 2, 'position': (1, 2, 3), 'rotation': (1, 0, 0, 1)}
-        cmd = {id_0: {'myfrag': {'state': state, 'new': True}}}
-        assert clerk.setFragments2(cmd) == (True, None, {'updated': 0})
-        assert reference == clerk.getFragments([id_0])
-
-        # Update a fragment that does not yet exist. This must succeed if all
-        # the state variables were provided.
-        cmd[id_0]['myfrag']['put'] = {}
-        cmd[id_0]['myfrag']['fragtype'] = 'test'
+        # Overwrite the existing fragment 'fraw'.
+        cmd = {
+            id_0: {
+                'fraw': {
+                    'state': {
+                        'scale': 2,
+                        'position': [1, 2, 3],
+                        'rotation': [1, 0, 0, 1],
+                        },
+                    'fragtype': 'CUSTOM',
+                    'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
+                    'new': True,
+                    }
+                }
+            }
         assert clerk.setFragments2(cmd) == (True, None, {'updated': 1})
 
-        # Verify that the fragment now exists and has the correct state values.
+        # The replacement worked if the values are accurate. Any leftovers
+        # from the original fragment must have been deleted, most notably all
+        # the files (we should only have a 'myfile.txt' anymore).
         ret = clerk.getFragments([id_0])
-        print(ret)
         assert ret.ok
-        for key, val in state.items():
-            assert ret[id_0]['myfragname'][key] == val
+        assert ret.data[id_0]['fraw']['position'] == (1, 2, 3)
+        assert ret.data[id_0]['fraw']['files'] == ['myfile.txt']
+        assert ret.data[id_0]['fraw']['fragtype'] == 'CUSTOM'
+
+        url = ret.data[id_0]['fraw']['url_frag'] + '/'
+        assert not self.dibbler.getFile(url + 'model.json').ok
+        assert self.dibbler.getFile(url + 'myfile.txt').ok
 
     def test_delete_fragment(self):
         """
@@ -2366,9 +2370,24 @@ class TestClerkEnd2End:
         # ---------------------------------------------------------------------
         newStates = {
             objID: {
-                'fraw': self.getCmd(7, [7, 7, 7], [7, 7, 7, 7]),
-                'fdae': self.getCmd(8, [8, 8, 8], [8, 8, 8, 8])}
-        }
+                'fraw': {
+                    'state': {
+                        'scale': 7,
+                        'position': [7, 7, 7],
+                        'rotation': [7, 7, 7, 7],
+                        },
+                    'new': False,
+                    },
+                'fdae': {
+                    'state': {
+                        'scale': 8,
+                        'position': [8, 8, 8],
+                        'rotation': [8, 8, 8, 8],
+                        },
+                    'new': False,
+                    }
+                }
+            }
         assert clerk.setFragments2(newStates).ok
         self.checkFragState(objID,
                        'fraw', 7, [7, 7, 7], [7, 7, 7, 7],
@@ -2414,7 +2433,8 @@ class TestClerkEnd2End:
                         'position': [3, 4, 5],
                         'rotation': list(f_raw.rotation),
                     },
-                    'put': f_raw.files
+                    'put': f_raw.files,
+                    'new': False
                 },
                 'fdae': {
                     'state': {
@@ -2422,7 +2442,8 @@ class TestClerkEnd2End:
                         'position': list(f_dae.position),
                         'rotation': list(f_dae.rotation),
                     },
-                    'put': f_dae.files
+                    'put': f_dae.files,
+                    'new': False
                 }
             }
         }

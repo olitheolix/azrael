@@ -1080,6 +1080,7 @@ class Clerk(config.AzraelProcess):
             db_exists = {}
             file_put = {}
             file_del = []
+            file_rmdir = []
 
             # If any of the files were modified then the object needs a new
             # version.
@@ -1100,57 +1101,86 @@ class Clerk(config.AzraelProcess):
                 dbkey = 'template.fragments.{}'.format(fragname)
                 db_exists[dbkey] = True
                 
-                # Determine the state variables to update.
-                if 'state' in fragdata:
-                    # Compile the list of all states that should be changed.
-                    # The logic below will silently ignore all those keys that
-                    # do not denote a state.
-                    ref = {k: None for k in aztypes.FragMeta._fields}
-                    ref = {k: fragdata['state'].get(k, None) for k in ref}
-
-                    # Remove all keys for which we did not get new values.
-                    ref = {k: v for k, v in ref.items() if v is not None}
-
-                    # Compile a dictionary where the key denotes the position
-                    # of the state variable in the database document hierarchy.
-                    for field, value in ref.items():
-                        db_set['{}.{}'.format(dbkey, field)] = value
-
-                # If the user wants to change the fragment type then we must
-                # update the corresponding field in the database as well.
-                if 'fragtype' in fragdata:
-                    db_set['{}.fragtype'.format(dbkey)] = fragdata['fragtype']
-                    new_version = True
-
-                # Files to delete. This entails deleting the actual file in
-                # Dibbler, as well as the reference to it in the instance database.
                 url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
-                for fname in fragdata.get('del', []):
-                    # The file to delete in Dibbler.
-                    file_del.append('{url}/{filename}'.format(url=url, filename=fname))
 
-                    # Mangle the file names (fixme: put this in dedicated method).
-                    fname = fname.replace('.', ';')
+                if fragdata['new']:
+                    doc = {
+                        'scale': fragdata['state']['scale'],
+                        'position': fragdata['state']['position'],
+                        'rotation': fragdata['state']['rotation'],
+                        'fragtype': fragdata['fragtype'],
+                        'files': [fname.replace('.', ';') for fname in fragdata['put']]
+                        }
 
-                    # Specify which key to remove in the database.
-                    tmp = '{}.files.{}'.format(dbkey, fname)
-                    db_del[tmp] = True
+                    for fname, fdata in fragdata['put'].items():
+                        fdata = base64.b64decode(fdata.encode('utf8'))
+                        # The file to add/overwrite in Dibbler.
+                        file_put['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+                    db_set[dbkey] = doc
+
+                    # ret = db.update_one({'objID': objID}, {'$set': {dbkey: doc}})
+                    # print(ret.raw_result)
+                    # if ret.modified_count > 1:
+                    #     self.logit.error('Too many documents were udpated')
+                    #     num_updated += 1
+                    # else:
+                    #     num_updated += ret.modified_count
+
+                    file_rmdir.append(url)
+#                    self.dibbler.removeDirs([url])
+#                    self.dibbler.put(file_put)
                     new_version = True
+                else:
+                    # Determine the state variables to update.
+                    if 'state' in fragdata:
+                        # Compile the list of all states that should be changed.
+                        # The logic below will silently ignore all those keys that
+                        # do not denote a state.
+                        ref = {k: None for k in aztypes.FragMeta._fields}
+                        ref = {k: fragdata['state'].get(k, None) for k in ref}
 
-                # Files to add/update. As above, we need to delete the files in
-                # Dibbler and remove the corresponding keys in the instance database.
-                for fname, fdata in fragdata.get('put', {}).items():
-                    fdata = base64.b64decode(fdata.encode('utf8'))
-                    # The file to add/overwrite in Dibbler.
-                    file_put['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+                        # Remove all keys for which we did not get new values.
+                        ref = {k: v for k, v in ref.items() if v is not None}
 
-                    # Mangle the file names (fixme: put this in dedicated method).
-                    fname = fname.replace('.', ';')
+                        # Compile a dictionary where the key denotes the position
+                        # of the state variable in the database document hierarchy.
+                        for field, value in ref.items():
+                            db_set['{}.{}'.format(dbkey, field)] = value
 
-                    # Specify which key to add in the database.
-                    tmp = '{}.files.{}'.format(dbkey, fname)
-                    db_set[tmp] = None
-                    new_version = True
+                    # If the user wants to change the fragment type then we must
+                    # update the corresponding field in the database as well.
+                    if 'fragtype' in fragdata:
+                        db_set['{}.fragtype'.format(dbkey)] = fragdata['fragtype']
+                        new_version = True
+
+                    # Files to delete. This entails deleting the actual file in
+                    # Dibbler, as well as the reference to it in the instance database.
+                    for fname in fragdata.get('del', []):
+                        # The file to delete in Dibbler.
+                        file_del.append('{url}/{filename}'.format(url=url, filename=fname))
+
+                        # Mangle the file names (fixme: put this in dedicated method).
+                        fname = fname.replace('.', ';')
+
+                        # Specify which key to remove in the database.
+                        tmp = '{}.files.{}'.format(dbkey, fname)
+                        db_del[tmp] = True
+                        new_version = True
+
+                    # Files to add/update. As above, we need to delete the files in
+                    # Dibbler and remove the corresponding keys in the instance database.
+                    for fname, fdata in fragdata.get('put', {}).items():
+                        fdata = base64.b64decode(fdata.encode('utf8'))
+                        # The file to add/overwrite in Dibbler.
+                        file_put['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+
+                        # Mangle the file names (fixme: put this in dedicated method).
+                        fname = fname.replace('.', ';')
+
+                        # Specify which key to add in the database.
+                        tmp = '{}.files.{}'.format(dbkey, fname)
+                        db_set[tmp] = None
+                        new_version = True
 
             # Compile the database query and issue it.
             ret = RetVal(True, None, None)
@@ -1186,6 +1216,7 @@ class Clerk(config.AzraelProcess):
                     num_updated += ret.modified_count
 
             # Issue the Dibbler queries.
+            self.dibbler.removeDirs(file_rmdir)
             self.dibbler.remove(file_del)
             self.dibbler.put(file_put)
 
