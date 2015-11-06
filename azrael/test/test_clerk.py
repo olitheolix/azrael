@@ -2018,8 +2018,8 @@ class TestModifyFragments:
         # Modify a subset of the state variables for each of the two fragments.
         cmd = {
             id_0: {
-                'fraw': {'new': False, 'state': {'scale': 2, 'position': [0, 1, 2]}},
-                'fdae': {'new': False, 'state': {'scale': 3, 'rotation': [0, 1, 0, 0]}}
+                'fraw': {'op': 'mod', 'state': {'scale': 2, 'position': [0, 1, 2]}},
+                'fdae': {'op': 'mod', 'state': {'scale': 3, 'rotation': [0, 1, 0, 0]}}
             }
         }
         assert clerk.setFragments2(cmd).ok
@@ -2067,12 +2067,12 @@ class TestModifyFragments:
                         'myfile.txt': b64enc(b'aaa').decode('utf8'),
                         'model.json': b64enc(b'bbb').decode('utf8'),
                         },
-                    'new': False,
+                    'op': 'mod',
                 },
                 'fdae': {
                     'fragtype': 'raw',
                     'del': ['model.dae'],
-                    'new': False,
+                    'op': 'mod',
                 }
             }
         }
@@ -2134,7 +2134,7 @@ class TestModifyFragments:
             id_0: {
                 'fdae': {
                     'fragtype': 'raw',
-                    'new': False,
+                    'op': 'mod',
                 }
             }
         }
@@ -2161,8 +2161,8 @@ class TestModifyFragments:
         # Modify the geometry of 'fraw' in object id_0 and update the state of
         # 'fdae' in id_1.
         cmd = {
-            id_0: {'fraw': {'new': False, 'fragtype': 'DAE'}},
-            id_1: {'fdae': {'new': False, 'state': {'position': [1, 2, 3]}}}
+            id_0: {'fraw': {'op': 'mod', 'fragtype': 'DAE'}},
+            id_1: {'fdae': {'op': 'mod', 'state': {'position': [1, 2, 3]}}}
         }
         assert clerk.setFragments2(cmd) == (True, None, {'updated': 2})
 
@@ -2192,7 +2192,7 @@ class TestModifyFragments:
 
         # Attempt to modify the type of a non-existing fragment.
         cmd = {
-            id_0: {'blah': {'fragtype': 'DAE', 'new': False}},
+            id_0: {'blah': {'fragtype': 'DAE', 'op': 'mod'}},
         }
         assert clerk.setFragments2(cmd) == (True, None, {'updated': 0})
 
@@ -2218,7 +2218,7 @@ class TestModifyFragments:
                         },
                     'fragtype': 'CUSTOM',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
-                    'new': True,
+                    'op': 'put',
                     }
                 }
             }
@@ -2376,7 +2376,7 @@ class TestClerkEnd2End:
                         'position': [7, 7, 7],
                         'rotation': [7, 7, 7, 7],
                         },
-                    'new': False,
+                    'op': 'mod',
                     },
                 'fdae': {
                     'state': {
@@ -2384,7 +2384,7 @@ class TestClerkEnd2End:
                         'position': [8, 8, 8],
                         'rotation': [8, 8, 8, 8],
                         },
-                    'new': False,
+                    'op': 'mod',
                     }
                 }
             }
@@ -2434,7 +2434,7 @@ class TestClerkEnd2End:
                         'rotation': list(f_raw.rotation),
                     },
                     'put': f_raw.files,
-                    'new': False
+                    'op': 'mod',
                 },
                 'fdae': {
                     'state': {
@@ -2443,7 +2443,7 @@ class TestClerkEnd2End:
                         'rotation': list(f_dae.rotation),
                     },
                     'put': f_dae.files,
-                    'new': False
+                    'op': 'mod',
                 }
             }
         }

@@ -59,8 +59,8 @@ setFragments = {
             'type' : 'object',
 #            'additionalProperties': {'type': 'string'}
             },
-        'new': {'type': 'boolean'},
+        'op': {'type': 'string', 'pattern': "put|mod|del"},
         },
-    'required': ['new'],
+    'required': ['op'],
     'additionalProperties': False,
     }

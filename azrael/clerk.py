@@ -1103,7 +1103,7 @@ class Clerk(config.AzraelProcess):
                 
                 url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
 
-                if fragdata['new']:
+                if fragdata['op'] == 'put':
                     doc = {
                         'scale': fragdata['state']['scale'],
                         'position': fragdata['state']['position'],
