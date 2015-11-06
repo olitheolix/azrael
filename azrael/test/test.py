@@ -122,9 +122,13 @@ def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     Convenience function: return typical Collada fragment.
     """
     # Create a random Collada file and two textures.
-    dae_file = base64.b64encode(b'data.dae').decode('utf8')
-    dae_rgb1 = base64.b64encode(b'rgb1.png').decode('utf8')
-    dae_rgb2 = base64.b64encode(b'rgb2.jpg').decode('utf8')
+    dae_file = bytes(np.random.randint(0, 100, 3).astype(np.uint8))
+    dae_rgb1 = bytes(np.random.randint(0, 100, 3).astype(np.uint8))
+    dae_rgb2 = bytes(np.random.randint(0, 100, 3).astype(np.uint8))
+
+    dae_file = base64.b64encode(dae_file).decode('utf8')
+    dae_rgb1 = base64.b64encode(dae_rgb1).decode('utf8')
+    dae_rgb2 = base64.b64encode(dae_rgb2).decode('utf8')
 
     # Create a dictionary of all the files that constitute this model.
     files = {
