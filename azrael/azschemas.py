@@ -58,7 +58,9 @@ setFragments = {
         'put' : {
             'type' : 'object',
 #            'additionalProperties': {'type': 'string'}
-            }
+            },
+        'new': {'type': 'boolean'},
         },
+    'required': ['new'],
     'additionalProperties': False,
     }

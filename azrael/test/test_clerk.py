@@ -2018,8 +2018,8 @@ class TestModifyFragments:
         # Modify a subset of the state variables for each of the two fragments.
         cmd = {
             id_0: {
-                'fraw': {'state': {'scale': 2, 'position': [0, 1, 2]}},
-                'fdae': {'state': {'scale': 3, 'rotation': [0, 1, 0, 0]}}
+                'fraw': {'new': False, 'state': {'scale': 2, 'position': [0, 1, 2]}},
+                'fdae': {'new': False, 'state': {'scale': 3, 'rotation': [0, 1, 0, 0]}}
             }
         }
         assert clerk.setFragments2(cmd).ok
@@ -2066,11 +2066,13 @@ class TestModifyFragments:
                     'put': {
                         'myfile.txt': b64enc(b'aaa').decode('utf8'),
                         'model.json': b64enc(b'bbb').decode('utf8'),
-                    }
+                        },
+                    'new': False,
                 },
                 'fdae': {
                     'fragtype': 'raw',
-                    'del': ['model.dae']
+                    'del': ['model.dae'],
+                    'new': False,
                 }
             }
         }
@@ -2132,6 +2134,7 @@ class TestModifyFragments:
             id_0: {
                 'fdae': {
                     'fragtype': 'raw',
+                    'new': False,
                 }
             }
         }
@@ -2158,10 +2161,10 @@ class TestModifyFragments:
         # Modify the geometry of 'fraw' in object id_0 and update the state of
         # 'fdae' in id_1.
         cmd = {
-            id_0: {'fraw': {'fragtype': 'DAE'}},
-            id_1: {'fdae': {'state': {'position': [1, 2, 3]}}}
+            id_0: {'fraw': {'new': False, 'fragtype': 'DAE'}},
+            id_1: {'fdae': {'new': False, 'state': {'position': [1, 2, 3]}}}
         }
-        assert clerk.setFragments2(cmd).ok
+        assert clerk.setFragments2(cmd) == (True, None, {'updated': 2})
 
         # Fetch the object states. Verify that the first object has a new
         # version but the second does not.
@@ -2189,7 +2192,7 @@ class TestModifyFragments:
 
         # Attempt to modify the type of a non-existing fragment.
         cmd = {
-            id_0: {'blah': {'fragtype': 'DAE'}},
+            id_0: {'blah': {'fragtype': 'DAE', 'new': False}},
         }
         assert clerk.setFragments2(cmd) == (True, None, {'updated': 0})
 
