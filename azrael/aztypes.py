@@ -295,7 +295,7 @@ class FragMeta(_FragMeta):
             # allow a 'None' type.
             assert isinstance(files, dict)
 
-            # Verify the RGB dictionary.
+            # Verify that the geometry files have the correct format.
             for fname, fdata in files.items():
                 assert isinstance(fname, str)
                 assert isinstance(fdata, str) or fdata is None
