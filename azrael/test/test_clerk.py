@@ -2064,8 +2064,8 @@ class TestModifyFragments:
             id_0: {
                 'fraw': {
                     'put': {
-                        'myfile.txt': b64enc(b'aaa'),
-                        'model.json': b64enc(b'bbb')
+                        'myfile.txt': b64enc(b'aaa').decode('utf8'),
+                        'model.json': b64enc(b'bbb').decode('utf8'),
                     }
                 },
                 'fdae': {
@@ -2103,12 +2103,12 @@ class TestModifyFragments:
         # Verify the new 'myfile.txt' of the first fragment.
         url = r0['fraw']['url_frag'] + '/myfile.txt'
         dl = self.dibbler.getFile(url).data
-        assert dl == cmd[id_0]['fraw']['put']['myfile.txt']
+        assert dl == b'aaa'
 
         # Verify the modified 'model.json' of the first fragment.
         url = r0['fraw']['url_frag'] + '/model.json'
         dl = self.dibbler.getFile(url).data
-        assert dl == cmd[id_0]['fraw']['put']['model.json']
+        assert dl == b'bbb'
 
         # Verify that 'model.dae' is now unavailable for the second fragment.
         url = r0['fdae']['url_frag'] + '/model.dae'

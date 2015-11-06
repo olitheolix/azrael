@@ -1132,6 +1132,7 @@ class Clerk(config.AzraelProcess):
                 # Files to add/update. As above, we need to delete the files in
                 # Dibbler and remove the corresponding keys in the instance database.
                 for fname, fdata in fragdata.get('put', {}).items():
+                    fdata = base64.b64decode(fdata.encode('utf8'))
                     # The file to add/overwrite in Dibbler.
                     file_put['{url}/{filename}'.format(url=url, filename=fname)] = fdata
 
