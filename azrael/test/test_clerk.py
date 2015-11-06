@@ -2241,8 +2241,37 @@ class TestModifyFragments:
         """
         Delete a fragment from an object.
         """
-        # fixme: not yet implemented
-        return
+        # Convenience.
+        clerk, id_0 = self.clerk, self.id_0
+        b64enc = base64.b64encode
+
+        # Get the fragment information for id_0
+        ret = clerk.getFragments([id_0])
+        assert ret.ok
+        
+        # Verify that id_0 has a fragment called 'fraw'. That
+        # fragment must also have an associated 'model.json'.
+        assert {'fraw', 'fdae'} == set(ret.data[id_0].keys())
+        url = ret.data[id_0]['fraw']['url_frag'] + '/'
+        assert self.dibbler.getFile(url + 'model.json').ok
+
+        # Delete the 'fraw' fragment.
+        cmd = {
+            id_0: {
+                'fraw': {
+                    'op': 'del',
+                    }
+                }
+            }
+        assert clerk.setFragments2(cmd) == (True, None, {'updated': 1})
+
+        # No fragment data must be available anymore for 'fraw'.
+        ret = clerk.getFragments([id_0])
+        assert ret.ok
+        assert {'fdae'} == set(ret.data[id_0].keys())
+
+        # The associated 'model.json' must not exist anymore.
+        assert not self.dibbler.getFile(url + 'model.json').ok
 
     def test_update_nonexisting_object(self):
         """
@@ -2256,7 +2285,7 @@ class TestModifyFragments:
         assert (fake_id != id_0) and (fake_id != id_1)
 
         # Attempt to modify the fragment for a non-existing object.
-        cmd = {fake_id: {'myfrag': {'fragtype': 'test'}}}
+        cmd = {fake_id: {'myfrag': {'fragtype': 'test', 'op': 'mod'}}}
         assert clerk.setFragments2(cmd) == (True, None, {'updated': 0})
 
 

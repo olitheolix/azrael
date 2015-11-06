@@ -1077,6 +1077,7 @@ class Clerk(config.AzraelProcess):
             # file_del: files to delete in Dibbler.
             db_set = {}
             db_del = {}
+            db_unset = []
             db_exists = {}
             file_put = {}
             file_del = []
@@ -1127,9 +1128,10 @@ class Clerk(config.AzraelProcess):
                     #     num_updated += ret.modified_count
 
                     file_rmdir.append(url)
-#                    self.dibbler.removeDirs([url])
-#                    self.dibbler.put(file_put)
                     new_version = True
+                elif fragdata['op'] == 'del':
+                    db_unset.append(dbkey)
+                    file_rmdir.append(url)
                 else:
                     # Determine the state variables to update.
                     if 'state' in fragdata:
@@ -1184,7 +1186,7 @@ class Clerk(config.AzraelProcess):
 
             # Compile the database query and issue it.
             ret = RetVal(True, None, None)
-            if not (db_set == {} and db_del == {}):
+            if not (db_set == {} and db_del == {} and db_unset == []):
                 # The operations for MongoDB will be stored in this dictionary.
                 op = {}
 
@@ -1198,6 +1200,9 @@ class Clerk(config.AzraelProcess):
                 # Specify the fields to add/overwrite, as well as their values.
                 if len(db_set) > 0:
                     op['$set'] = db_set
+
+                if len(db_unset) > 0:
+                    op['$unset'] = {name: '' for name in db_unset}
 
                 # Specify the fields to unset.
                 if len(db_del) > 0:
