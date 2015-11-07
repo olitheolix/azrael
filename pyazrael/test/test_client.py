@@ -685,7 +685,6 @@ class TestClient:
         assert ref['scale'] == ret1['scale'] == ret2['scale']
         assert ref['position'] == ret1['position'] == ret1['position']
         assert ref['rotation'] == ret1['rotation'] == ret1['rotation']
-        assert False
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_collada_model(self, client_type):
