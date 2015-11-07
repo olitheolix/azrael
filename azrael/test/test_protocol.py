@@ -54,14 +54,14 @@ class TestClerk:
         # automatically assign any IDs).
         boosters = {
             '0': aztypes.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
-                               minval=0, maxval=0.5, force=0),
+                                 minval=0, maxval=0.5, force=0),
             '1': aztypes.Booster(pos=(6, 7, 8), direction=(0, 1, 0),
-                               minval=1, maxval=1.5, force=0)
+                                 minval=1, maxval=1.5, force=0)
         }
         factories = {
             '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
-                               templateID='_templateBox',
-                               exit_speed=(0.1, 0.5))
+                                 templateID='_templateBox',
+                                 exit_speed=(0.1, 0.5))
         }
 
         # Create some fragments...

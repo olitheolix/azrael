@@ -173,14 +173,14 @@ class TestClerk:
         # Define two boosters and one factory unit for a new template.
         boosters = {
             '0': aztypes.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
-                               minval=0, maxval=0.5, force=0),
+                                 minval=0, maxval=0.5, force=0),
             '1': aztypes.Booster(pos=(6, 7, 8), direction=(0, 1, 0),
-                               minval=1, maxval=1.5, force=0)
+                                 minval=1, maxval=1.5, force=0)
         }
         factories = {
             '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
-                               templateID='_templateBox',
-                               exit_speed=(0.1, 0.5))
+                                 templateID='_templateBox',
+                                 exit_speed=(0.1, 0.5))
         }
 
         # Compile the new template and send it to Clerk.
@@ -730,11 +730,11 @@ class TestClerk:
         # Define the Booster and Factory parts.
         boosters = {
             '0': aztypes.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
-                               minval=0, maxval=0.5, force=0)
+                                 minval=0, maxval=0.5, force=0)
         }
         factories = {
             '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
-                               templateID='_templateBox', exit_speed=(0, 1))
+                                 templateID='_templateBox', exit_speed=(0, 1))
         }
 
         # Define a new template, add it to Azrael, and spawn an instance.
@@ -780,9 +780,9 @@ class TestClerk:
         # Define two boosters.
         boosters = {
             '0': aztypes.Booster(pos=pos_0, direction=dir_0,
-                               minval=0, maxval=0.5, force=0),
+                                 minval=0, maxval=0.5, force=0),
             '1': aztypes.Booster(pos=pos_1, direction=dir_1,
-                               minval=0, maxval=0.5, force=0)
+                                 minval=0, maxval=0.5, force=0)
         }
 
         # Define a new template with two boosters and add it to Azrael.
@@ -851,11 +851,11 @@ class TestClerk:
         # manually.
         factories = {
             '0': aztypes.Factory(pos=pos_0, direction=dir_0,
-                               templateID='_templateBox',
-                               exit_speed=[0.1, 0.5]),
+                                 templateID='_templateBox',
+                                 exit_speed=[0.1, 0.5]),
             '1': aztypes.Factory(pos=pos_1, direction=dir_1,
-                               templateID='_templateSphere',
-                               exit_speed=[1, 5])
+                                 templateID='_templateSphere',
+                                 exit_speed=[1, 5])
         }
 
         # Add the template to Azrael and spawn one instance.
@@ -930,11 +930,11 @@ class TestClerk:
         # Define factory parts.
         factories = {
             '0': aztypes.Factory(pos=pos_0, direction=dir_0,
-                               templateID='_templateBox',
-                               exit_speed=[0.1, 0.5]),
+                                 templateID='_templateBox',
+                                 exit_speed=[0.1, 0.5]),
             '1': aztypes.Factory(pos=pos_1, direction=dir_1,
-                               templateID='_templateSphere',
-                               exit_speed=[1, 5])
+                                 templateID='_templateSphere',
+                                 exit_speed=[1, 5])
         }
 
         # Define a template with two factories, add it to Azrael, and spawn it.
@@ -1038,17 +1038,17 @@ class TestClerk:
         # Define the Booster and Factory parts.
         boosters = {
             '0': aztypes.Booster(pos=pos_0, direction=dir_0,
-                               minval=0, maxval=0.5, force=0),
+                                 minval=0, maxval=0.5, force=0),
             '1': aztypes.Booster(pos=pos_1, direction=dir_1,
-                               minval=0, maxval=1.0, force=0)
+                                 minval=0, maxval=1.0, force=0)
         }
         factories = {
             '0': aztypes.Factory(pos=pos_0, direction=dir_0,
-                               templateID='_templateBox',
-                               exit_speed=[0.1, 0.5]),
+                                 templateID='_templateBox',
+                                 exit_speed=[0.1, 0.5]),
             '1': aztypes.Factory(pos=pos_1, direction=dir_1,
-                               templateID='_templateSphere',
-                               exit_speed=[1, 5])
+                                 templateID='_templateSphere',
+                                 exit_speed=[1, 5])
         }
 
         # Define the template, add it to Azrael, and spawn one instance.
@@ -1248,9 +1248,9 @@ class TestClerk:
         # ---------------------------------------------------------------------
         boosters = {
             '0': aztypes.Booster(pos=[-1, 0, 0], direction=[0, 0, 1],
-                               minval=-1, maxval=1, force=0),
+                                 minval=-1, maxval=1, force=0),
             '1': aztypes.Booster(pos=[+1, 0, 0], direction=[0, 0, 1],
-                               minval=-1, maxval=1, force=0)
+                                 minval=-1, maxval=1, force=0)
         }
 
         # Define a template with one fragment.
@@ -1786,7 +1786,7 @@ class TestModifyFragments:
                     'put': {
                         'myfile.txt': b64enc(b'aaa').decode('utf8'),
                         'model.json': b64enc(b'bbb').decode('utf8'),
-                        },
+                    },
                     'op': 'mod',
                 },
                 'fdae': {
@@ -1922,9 +1922,9 @@ class TestModifyFragments:
                     'rotation': [1, 0, 0, 1],
                     'fragtype': 'CUSTOM',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
-                    }
                 }
             }
+        }
         assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
 
         # The object must now have a new version.
@@ -1959,9 +1959,9 @@ class TestModifyFragments:
                     'rotation': [1, 0, 0, 1],
                     'fragtype': 'CUSTOM',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
-                    }
                 }
             }
+        }
         assert clerk.setFragments(cmd) == (True, None, {'updated': 0})
 
         # The object version must not have changed.
@@ -2012,9 +2012,9 @@ class TestModifyFragments:
                     'fragtype': 'CUSTOM',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
                     'op': 'put',
-                    }
                 }
             }
+        }
         assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
 
         # The replacement worked if the values are accurate. Any leftovers
@@ -2054,7 +2054,7 @@ class TestModifyFragments:
         # Get the fragment information for id_0
         ret = clerk.getFragments([id_0])
         assert ret.ok
-        
+
         # Verify that id_0 has a fragment called 'fraw'. That
         # fragment must also have an associated 'model.json'.
         assert {'fraw', 'fdae'} == set(ret.data[id_0].keys())
@@ -2067,9 +2067,9 @@ class TestModifyFragments:
             id_0: {
                 'fraw': {
                     'op': 'del',
-                    }
                 }
             }
+        }
         assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
 
         # No fragment data must be available anymore for 'fraw'.
@@ -2202,9 +2202,10 @@ class TestClerkEnd2End:
         assert clerk.getObjectStates(None) == ret
 
         # Verify the fragment _states_ themselves.
-        self.checkFragState(objID,
-                       'fraw', 1, [0, 0, 0], [0, 0, 0, 1],
-                       'fdae', 1, [0, 0, 0], [0, 0, 0, 1])
+        self.checkFragState(
+            objID,
+            'fraw', 1, [0, 0, 0], [0, 0, 0, 1],
+            'fdae', 1, [0, 0, 0], [0, 0, 0, 1])
 
         # ---------------------------------------------------------------------
         # Modify the fragment states. The geometries will not be altered.
@@ -2216,19 +2217,20 @@ class TestClerkEnd2End:
                     'position': [7, 7, 7],
                     'rotation': [7, 7, 7, 7],
                     'op': 'mod',
-                    },
+                },
                 'fdae': {
                     'scale': 8,
                     'position': [8, 8, 8],
                     'rotation': [8, 8, 8, 8],
                     'op': 'mod',
-                    }
                 }
             }
+        }
         assert clerk.setFragments(newStates).ok
-        self.checkFragState(objID,
-                       'fraw', 7, [7, 7, 7], [7, 7, 7, 7],
-                       'fdae', 8, [8, 8, 8], [8, 8, 8, 8])
+        self.checkFragState(
+            objID,
+            'fraw', 7, [7, 7, 7], [7, 7, 7, 7],
+            'fdae', 8, [8, 8, 8], [8, 8, 8, 8])
 
         # ---------------------------------------------------------------------
         # Verify the current fragment geometries (nothing is modified).
@@ -2370,4 +2372,3 @@ def test_invalid():
     # Terminate the Clerk.
     clerk.terminate()
     clerk.join()
-

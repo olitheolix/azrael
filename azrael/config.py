@@ -71,10 +71,10 @@ logger.addHandler(fileHandler)
 
 del console, logFormat, formatter, fileHandler
 
+
 # ---------------------------------------------------------------------------
 # Global variables.
 # ---------------------------------------------------------------------------
-
 def getNetworkAddress():
     """
     Return the IP address of the first configured network interface.

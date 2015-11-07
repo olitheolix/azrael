@@ -23,7 +23,7 @@ vec3 = {
     'minItems': 3,
     'maxItems': 3,
     'items': {'type': 'number'},
-    }
+}
 
 # 4 Element vector (eg rotation Quaternion).
 vec4 = {
@@ -31,30 +31,30 @@ vec4 = {
     'minItems': 4,
     'maxItems': 4,
     'items': {'type': 'number'},
-    }
+}
 
 # Non-negative scalar.
 num_nonneg = {
     'type': 'number',
     'minimum': 0,
-    }
+}
 
 # Scheme to validate the input to 'Clerk.setFragments'.
 setFragments = {
     'title': 'setFragments',
-    'type' : 'object',
-    'properties' : {
+    'type': 'object',
+    'properties': {
         'scale': num_nonneg,
         'position': vec3,
         'rotation': vec4,
         'fragtype': {'type': 'string'},
         'del': {'type': 'array', 'items': {'type': 'string'}},
-        'put' : {
-            'type' : 'object',
-#            'additionalProperties': {'type': 'string'}
-            },
-        'op': {'type': 'string', 'pattern': "put|mod|del"},
+        'put': {
+            'type': 'object',
+            # 'additionalProperties': {'type': 'string'}
         },
+        'op': {'type': 'string', 'pattern': "put|mod|del"},
+    },
     'required': ['op'],
     'additionalProperties': False,
-    }
+}

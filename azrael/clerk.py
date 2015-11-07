@@ -395,7 +395,8 @@ class Clerk(config.AzraelProcess):
                 # prefix (eg. 'templates/template_name/'). The final URL for
                 # each fragment will look something like this:
                 # templates/template_name/fragment_name/fragfile_name_1'.
-                url_frag = '{url}/{aid}'.format(url=config.url_templates, aid=template.aid)
+                url_frag = '{url}/{aid}'.format(url=config.url_templates,
+                                                aid=template.aid)
                 for fragname, frag in template.fragments.items():
                     # Create the url prefix for the current fragment name.
                     prefix = '{url}/{name}/'.format(url=url_frag, name=fragname)
@@ -656,8 +657,10 @@ class Clerk(config.AzraelProcess):
 
                 # Copy all fragment files from the template to a new
                 # location dedicated to the object instance.
-                url_src = '{src}/{aid}'.format(src=config.url_templates, aid=template.aid)
-                url_dst = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
+                url_src = '{src}/{aid}'.format(src=config.url_templates,
+                                               aid=template.aid)
+                url_dst = '{dst}/{aid}'.format(dst=config.url_instances,
+                                               aid=objID)
                 ret = RetVal(True, None, None)
                 for fragname in template.fragments:
                     fnames = template.fragments[fragname].files
@@ -689,7 +692,7 @@ class Clerk(config.AzraelProcess):
                     msg = msg.format(templateID, ret.msg)
                     self.logit.error(msg)
                     continue
-                
+
                 # Mangle all fragment file names to make them compatible with
                 # Mongo.
                 template_json = self._mangleTemplate(template._asdict())
@@ -1081,7 +1084,7 @@ class Clerk(config.AzraelProcess):
                     'rotation': fragdata['rotation'],
                     'fragtype': fragdata['fragtype'],
                     'files': [fname.replace('.', ';') for fname in fragdata['put']]
-                    }
+                }
 
                 # Specify the files that have should to go into Dibbler.
                 files = {}
@@ -1124,7 +1127,8 @@ class Clerk(config.AzraelProcess):
             # Delete geometry files for the current fragment.
             for fname in fragdata.get('del', []):
                 # The file to delete in Dibbler.
-                op_file['del'].append('{url}/{filename}'.format(url=url, filename=fname))
+                absname = '{url}/{filename}'.format(url=url, filename=fname)
+                op_file['del'].append(absname)
 
                 # Mangle the file names to make them compatible with Mongo.
                 fname = self._mangleFileName(fname, unmangle=False)
@@ -1139,7 +1143,8 @@ class Clerk(config.AzraelProcess):
                 fdata = base64.b64decode(fdata.encode('utf8'))
 
                 # The file to add/overwrite in Dibbler.
-                op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+                absname = '{url}/{filename}'.format(url=url, filename=fname)
+                op_file['put'][absname] = fdata
 
                 # Mangle the file names to make them compatible with Mongo.
                 fname = self._mangleFileName(fname, unmangle=False)
@@ -1185,12 +1190,12 @@ class Clerk(config.AzraelProcess):
                 'set': {},
                 'unset': [],
                 'exists': [],
-                }
+            }
             op_file = {
                 'put': {},
                 'del': [],
                 'rmdir': []
-                }
+            }
 
             # Path prefix for all the files that Dibbler has on this object.
             pre = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
@@ -1226,7 +1231,7 @@ class Clerk(config.AzraelProcess):
                 '$inc': {'version': 1} if op_db['new_version'] else {},
                 '$set': op_db['set'],
                 '$unset': {name: '' for name in op_db['unset']}
-                }
+            }
             # Prune update operations.
             op = {k: v for k, v in op.items() if len(v) > 0}
             del op_db
@@ -1245,7 +1250,7 @@ class Clerk(config.AzraelProcess):
 
             # Increment the update counter (will be returned to caller).
             num_updated += ret.modified_count
-                
+
             # Issue the Dibbler queries.
             self.dibbler.removeDirs(op_file['rmdir'])
             self.dibbler.remove(op_file['del'])
