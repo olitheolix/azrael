@@ -1738,8 +1738,8 @@ class TestModifyFragments:
         # Modify a subset of the state variables for each of the two fragments.
         cmd = {
             id_0: {
-                'fraw': {'op': 'mod', 'state': {'scale': 2, 'position': [0, 1, 2]}},
-                'fdae': {'op': 'mod', 'state': {'scale': 3, 'rotation': [0, 1, 0, 0]}}
+                'fraw': {'op': 'mod', 'scale': 2, 'position': [0, 1, 2]},
+                'fdae': {'op': 'mod', 'scale': 3, 'rotation': [0, 1, 0, 0]}
             }
         }
         assert clerk.setFragments(cmd).ok
@@ -1882,7 +1882,7 @@ class TestModifyFragments:
         # 'fdae' in id_1.
         cmd = {
             id_0: {'fraw': {'op': 'mod', 'fragtype': 'DAE'}},
-            id_1: {'fdae': {'op': 'mod', 'state': {'position': [1, 2, 3]}}}
+            id_1: {'fdae': {'op': 'mod', 'position': [1, 2, 3]}}
         }
         assert clerk.setFragments(cmd) == (True, None, {'updated': 2})
 
@@ -1917,11 +1917,9 @@ class TestModifyFragments:
             id_0: {
                 'newfrag': {
                     'op': 'put',
-                    'state': {
-                        'scale': 2,
-                        'position': [1, 2, 3],
-                        'rotation': [1, 0, 0, 1],
-                        },
+                    'scale': 2,
+                    'position': [1, 2, 3],
+                    'rotation': [1, 0, 0, 1],
                     'fragtype': 'CUSTOM',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
                     }
@@ -1957,10 +1955,8 @@ class TestModifyFragments:
             id_0: {
                 'newfrag': {
                     'op': 'put',
-                    'state': {
-                        'scale': 2,
-                        'rotation': [1, 0, 0, 1],
-                        },
+                    'scale': 2,
+                    'rotation': [1, 0, 0, 1],
                     'fragtype': 'CUSTOM',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
                     }
@@ -2010,11 +2006,9 @@ class TestModifyFragments:
         cmd = {
             id_0: {
                 'fraw': {
-                    'state': {
-                        'scale': 2,
-                        'position': [1, 2, 3],
-                        'rotation': [1, 0, 0, 1],
-                        },
+                    'scale': 2,
+                    'position': [1, 2, 3],
+                    'rotation': [1, 0, 0, 1],
                     'fragtype': 'CUSTOM',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
                     'op': 'put',
@@ -2172,7 +2166,7 @@ class TestClerkEnd2End:
         This is a convenience function only to make this test more
         readable.
         """
-        return {'state': {'scale': scale, 'position': pos, 'rotation': rot}}
+        return {'scale': scale, 'position': pos, 'rotation': rot}
 
     def test_fragments_end2end(self):
         """
@@ -2218,19 +2212,15 @@ class TestClerkEnd2End:
         newStates = {
             objID: {
                 'fraw': {
-                    'state': {
-                        'scale': 7,
-                        'position': [7, 7, 7],
-                        'rotation': [7, 7, 7, 7],
-                        },
+                    'scale': 7,
+                    'position': [7, 7, 7],
+                    'rotation': [7, 7, 7, 7],
                     'op': 'mod',
                     },
                 'fdae': {
-                    'state': {
-                        'scale': 8,
-                        'position': [8, 8, 8],
-                        'rotation': [8, 8, 8, 8],
-                        },
+                    'scale': 8,
+                    'position': [8, 8, 8],
+                    'rotation': [8, 8, 8, 8],
                     'op': 'mod',
                     }
                 }
@@ -2275,20 +2265,16 @@ class TestClerkEnd2End:
         cmd = {
             objID: {
                 'fraw': {
-                    'state': {
-                        'scale': 2,
-                        'position': [3, 4, 5],
-                        'rotation': list(f_raw.rotation),
-                    },
+                    'scale': 2,
+                    'position': [3, 4, 5],
+                    'rotation': list(f_raw.rotation),
                     'put': f_raw.files,
                     'op': 'mod',
                 },
                 'fdae': {
-                    'state': {
-                        'scale': f_dae.scale,
-                        'position': list(f_dae.position),
-                        'rotation': list(f_dae.rotation),
-                    },
+                    'scale': f_dae.scale,
+                    'position': list(f_dae.position),
+                    'rotation': list(f_dae.rotation),
                     'put': f_dae.files,
                     'op': 'mod',
                 }

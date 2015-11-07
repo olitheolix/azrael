@@ -1084,9 +1084,9 @@ class Clerk(config.AzraelProcess):
             try:
                 # The JSON hierarchy for the new fragment.
                 doc = {
-                    'scale': fragdata['state']['scale'],
-                    'position': fragdata['state']['position'],
-                    'rotation': fragdata['state']['rotation'],
+                    'scale': fragdata['scale'],
+                    'position': fragdata['position'],
+                    'rotation': fragdata['rotation'],
                     'fragtype': fragdata['fragtype'],
                     'files': [fname.replace('.', ';') for fname in fragdata['put']]
                     }
@@ -1118,13 +1118,11 @@ class Clerk(config.AzraelProcess):
             # Only existing objects can be updated.
             op_db['exists'].append(dbkey)
 
-            # Update state variables. This does not create a new object
-            # version because the geometry remains unchanged (so far).
-            if 'state' in fragdata:
-                # Compile a dictionary where the key denotes the position of
-                # the state variable in the JSON hierarchy.
-                for field, value in fragdata['state'].items():
-                    op_db['set']['{}.{}'.format(dbkey, field)] = value
+            # Overwrite the state variables (if there are any).
+            for state in ('scale', 'position', 'rotation'):
+                if state not in fragdata:
+                    continue
+                op_db['set']['{}.{}'.format(dbkey, state)] = fragdata[state]
 
             # A new fragment types must trigger a version increase.
             if 'fragtype' in fragdata:

@@ -637,11 +637,9 @@ class TestClient:
             objID: {
                 'fraw': {
                     'op': 'mod',
-                    'state': {
-                        'scale': 2,
-                        'position': [3, 4, 5],
-                        'rotation': [1, 0, 0, 0],
-                        },
+                    'scale': 2,
+                    'position': [3, 4, 5],
+                    'rotation': [1, 0, 0, 0],
                     'fragtype': 'BLAH',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
                     },
@@ -661,7 +659,7 @@ class TestClient:
         # 'getObjectStates' and 'getFragments' agree.
         # ---------------------------------------------------------------------
         # Download the fragment data via getObjectState.
-        ref = cmd[objID]['fraw']['state']
+        ref = cmd[objID]['fraw']
         ret1 = client.getObjectStates(objID)
         assert ret1.ok
 

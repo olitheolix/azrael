@@ -44,15 +44,9 @@ setFragments = {
     'title': 'setFragments',
     'type' : 'object',
     'properties' : {
-        'state' : {
-            'type': 'object',
-            'properties': {
-                'scale': num_nonneg,
-                'position': vec3,
-                'rotation': vec4,
-                },
-            'additionalProperties': False,
-            },
+        'scale': num_nonneg,
+        'position': vec3,
+        'rotation': vec4,
         'fragtype': {'type': 'string'},
         'del': {'type': 'array', 'items': {'type': 'string'}},
         'put' : {
