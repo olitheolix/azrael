@@ -136,7 +136,12 @@ class Dibbler:
 
     def isValidFileName(self, fname):
         """
-        fixme: docu
+        Return True if ``fname`` is admissible.
+
+        This is a convenience method to ensure that all file names are sane.
+
+        :param str fname: the file name
+        :return: bool
         """
         # Compile the set of admissible characters.
         ref = 'abcdefghijklmnopqrstuvwxyz'
@@ -154,9 +159,18 @@ class Dibbler:
     @typecheck
     def put(self, files: dict):
         """
-        Fixme: docu
+        Save all ``files`` to Dibbler and return the number of succesful writes.
+
+        The ``files`` argument is a simple {file_name: file_content_in_bytes}
+        dictionary. For instance, `files = {'todo.txt': b'foobar'}.
+
+        Errors with the underlying storage are silently ignored. However, the
+        return value states how many files were successfully written.
+
+        :param dict files: {fname: content}
+        :return: dict (eg. {'written': 3})
         """
-        # Sanity check input files.
+        # Sanity checks. File names must be valid. File content must be Bytes.
         try:
             for fname, fdata in files.items():
                 assert isinstance(fdata, bytes)
@@ -167,20 +181,23 @@ class Dibbler:
             self.logit.info(msg)
             return RetVal(False, msg, None)
 
-        # Write the files to disk.
+        # Save each file.
+        num_written = 0
         for fname, fdata in files.items():
             try:
                 self.fs.put(fdata, filename=fname)
+                num_written += 1
             except gridfs.errors.GridFSError as err:
-                # fixme: what is the expected return value here?
                 self.logit.error('GridFS error')
-                pass
-        return RetVal(True, None, None)
+        return RetVal(True, None, {'written': num_written})
 
     @typecheck
     def get(self, fnames: (tuple, list)):
         """
-        fixme: docu
+        Return the files specified in ``fnames``.
+
+        :param list[str] fname: the file names to retrieve.
+        :return: dict[file_name: file_content]
         """
         out = {}
         for fname in fnames:
@@ -196,15 +213,23 @@ class Dibbler:
     @typecheck
     def copy(self, srcdst: dict):
         """
-        fixme: docu
+        Copy the files in ``srcdst``.
 
-        :param dict srcdst: eg {'src1': 'dst1', 'src2': 'dst2', ...}
+        This method only copies individual files. It does not recursivley copy
+        directories.
+
+        All destination names must be unique. If they are not then this method
+        will return immediately with an error.
+
+        :param dict[src:dst] srcdst: src/dst pairs.
+        :return: int num_copied
         """
         # Verify that all targets are unique.
         dst = list(srcdst.values())
         if sorted(dst) != sorted(list(set(dst))):
             return RetVal(False, 'Not all targets are unique', None)
 
+        # Copy each file from src to dst.
         num_copied = 0
         for src, dst in srcdst.items():
             try:
@@ -219,15 +244,24 @@ class Dibbler:
     @typecheck
     def remove(self, fnames: (tuple, list)):
         """
-        Fixme docu.
+        Remove all files specified in ``fnames``.
+
+        :param list[str] fname: the file names to retrieve.
+        :return: number of deleted files.
         """
+        # Iterate over each file and delete it.
         num_deleted = 0
         for fname in fnames:
             try:
+                # File names are unique. However, multiple versions of the same
+                # file may exist (an implicit GridFS feature).
                 found_at_least_one = False
                 for mid in self.fs.find({'filename': fname}):
-                    ret = self.fs.delete(mid._id)
+                    self.fs.delete(mid._id)
                     found_at_least_one = True
+
+                # Increment the counter by at most one, no matter how many
+                # versions we found.
                 if found_at_least_one:
                     num_deleted += 1
             except gridfs.errors.NoFile as err:
@@ -240,9 +274,16 @@ class Dibbler:
     @typecheck
     def removeDirs(self, dirnames: (tuple, list)):
         """
-        Fixme docu.
-        Fixme: merge _deleteSubLocation
+        Recursively delete all directories specified in ``dirnames``.
+
+        This function is the equivalent of 'rm -rf path/*'. It always succeeds
+        and returns the number of deleted files.
+
+        :param list[str] fname: the file names to retrieve.
+        :return: number of deleted directories.
         """
+        # Sanity check: all entries must be strings. If a named does not end
+        # with a slash ('/') then add it to avoid ambiguous queries.
         try:
             for idx, name in enumerate(dirnames):
                 assert isinstance(name, str)
@@ -250,25 +291,17 @@ class Dibbler:
         except AssertionError:
             return RetVal(False, 'Invalid arguments', None)
 
+        # Delete the directories.
         num_deleted = 0
-        for name in dirnames:
-            ret = self._deleteSubLocation(name)
-            if ret.ok:
-                num_deleted += ret.data
-        return RetVal(True, None, num_deleted)
+        for dirname in dirnames:
+            # Find all filenames that begin with 'dirname' and delete them.
+            query = {'filename': {'$regex': '^{}/.*'.format(dirname)}}
+            fnames = set()
+            for doc in self.fs.find(query):
+                fnames.add(doc.filename)
+                self.fs.delete(doc._id)
 
-        num_deleted = 0
-        for fname in dirnames:
-            try:
-                found_at_least_one = False
-                for mid in self.fs.find({'filename': fname}):
-                    ret = self.fs.delete(mid._id)
-                    found_at_least_one = True
-                if found_at_least_one:
-                    num_deleted += 1
-            except gridfs.errors.NoFile as err:
-                pass
-            except gridfs.errors.GridFSError as err:
-                # All other GridFS errors.
-                pass
+            # Aggregate the total number of deleted files (we do not count
+            # multiple versions of the same file.).
+            num_deleted += len(fnames)
         return RetVal(True, None, num_deleted)
