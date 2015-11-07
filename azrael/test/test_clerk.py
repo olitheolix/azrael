@@ -1824,17 +1824,17 @@ class TestModifyFragments:
         # -----------------------------------
         # Verify the new 'myfile.txt' of the first fragment.
         url = r0['fraw']['url_frag'] + '/myfile.txt'
-        dl = self.dibbler.getFile(url).data
+        dl = self.dibbler.get([url]).data[url]
         assert dl == b'aaa'
 
         # Verify the modified 'model.json' of the first fragment.
         url = r0['fraw']['url_frag'] + '/model.json'
-        dl = self.dibbler.getFile(url).data
+        dl = self.dibbler.get([url]).data[url]
         assert dl == b'bbb'
 
         # Verify that 'model.dae' is now unavailable for the second fragment.
         url = r0['fdae']['url_frag'] + '/model.dae'
-        assert not self.dibbler.getFile(url).ok
+        assert url not in self.dibbler.get([url]).data
 
     def test_setFragments_modify_type(self):
         """
@@ -1945,7 +1945,7 @@ class TestModifyFragments:
         assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
 
         # The replacement worked if the values are accurate. Any leftovers
-        # from the original fragment must have been deleted, most notably all
+        # from the original fragment must have been deleted.  Most notably
         # the files (we should only have a 'myfile.txt' anymore).
         ret = clerk.getFragments([id_0])
         assert ret.ok
@@ -1954,8 +1954,16 @@ class TestModifyFragments:
         assert ret.data[id_0]['fraw']['fragtype'] == 'CUSTOM'
 
         url = ret.data[id_0]['fraw']['url_frag'] + '/'
-        assert not self.dibbler.getFile(url + 'model.json').ok
-        assert self.dibbler.getFile(url + 'myfile.txt').ok
+
+        # 'model.json' must not exist anymore.
+        tmp = url + 'model.json'
+        ret = self.dibbler.get([tmp])
+        assert ret.ok and tmp not in ret.data
+
+        # 'myfile.txt' must now exist.
+        tmp = url + 'myfile.txt'
+        ret = self.dibbler.get([tmp])
+        assert ret.ok and tmp in ret.data
 
     def test_delete_fragment(self):
         """
@@ -1972,8 +1980,9 @@ class TestModifyFragments:
         # Verify that id_0 has a fragment called 'fraw'. That
         # fragment must also have an associated 'model.json'.
         assert {'fraw', 'fdae'} == set(ret.data[id_0].keys())
-        url = ret.data[id_0]['fraw']['url_frag'] + '/'
-        assert self.dibbler.getFile(url + 'model.json').ok
+        url = ret.data[id_0]['fraw']['url_frag'] + '/' + 'model.json'
+        ret = self.dibbler.get([url])
+        assert ret.ok and url in ret.data
 
         # Delete the 'fraw' fragment.
         cmd = {
@@ -1991,7 +2000,8 @@ class TestModifyFragments:
         assert {'fdae'} == set(ret.data[id_0].keys())
 
         # The associated 'model.json' must not exist anymore.
-        assert not self.dibbler.getFile(url + 'model.json').ok
+        ret = self.dibbler.get([url])
+        assert ret.ok and url not in ret.data
 
     def test_update_nonexisting_object(self):
         """
