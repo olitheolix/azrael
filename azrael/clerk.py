@@ -1107,7 +1107,6 @@ class Clerk(config.AzraelProcess):
 
                 # The fragment must exist.
                 dbkey = 'template.fragments.{}'.format(fragname)
-                op_db['exists'].append(dbkey)
                 
                 url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
 
@@ -1133,6 +1132,9 @@ class Clerk(config.AzraelProcess):
                     op_db['new_version'] = True
                     op_db['unset'].append(dbkey)
                 else:
+                    # Only existing objects can be updated.
+                    op_db['exists'].append(dbkey)
+
                     # Determine the state variables to update.
                     if 'state' in fragdata:
                         # Compile the list of all states that should be changed.

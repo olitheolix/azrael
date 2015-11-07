@@ -1899,9 +1899,49 @@ class TestModifyFragments:
         assert ret.data[id_0]['fraw']['fragtype'] == 'DAE'
         assert ret.data[id_1]['fdae']['position'] == (1, 2, 3)
 
+    def test_add_nonexisting_fragment(self):
+        """
+        Add a new fragment that does not yet exist.
+        """
+        # Convenience.
+        b64enc = base64.b64encode
+        clerk, id_0 = self.clerk, self.id_0
+
+        # Get the current version of both objects.
+        ret = clerk.getObjectStates([id_0])
+        assert ret.ok
+        version = ret.data[id_0]['rbs']['version']
+
+        # Attempt to modify the type of a non-existing fragment.
+        cmd = {
+            id_0: {
+                'newfrag': {
+                    'op': 'put',
+                    'state': {
+                        'scale': 2,
+                        'position': [1, 2, 3],
+                        'rotation': [1, 0, 0, 1],
+                        },
+                    'fragtype': 'CUSTOM',
+                    'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
+                    }
+                }
+            }
+        assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
+
+        # The object must now have a new version.
+        ret = clerk.getObjectStates([id_0])
+        assert ret.ok
+        assert version != ret.data[id_0]['rbs']['version']
+
+        # Verify the 'newfrag' fragment now exists.
+        ret = clerk.getFragments([id_0])
+        assert ret.ok and 'newfrag' in ret.data[id_0]
+
     def test_update_nonexisting_fragment(self):
         """
-        Clerk must skip objects if any of the fragments do not exist.
+        Clerk must skip objects if any of the fragments to update(!) do not
+        exist.
         """
         # Convenience.
         clerk, id_0 = self.clerk, self.id_0
@@ -1919,7 +1959,7 @@ class TestModifyFragments:
         # Nothing must have changed.
         assert reference == clerk.getFragments([id_0])
 
-    def test_add_overwrite_fragment(self):
+    def test_overwrite_fragment(self):
         """
         Replace an existing fragment. Then add a new fragment.
         """
