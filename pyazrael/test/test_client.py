@@ -688,53 +688,6 @@ class TestClient:
         assert False
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_remove_fragments(self, client_type):
-        """
-        Remove a fragment. This test is basically the integration test for
-        'test_dibbler.test_updateFragments_partial'.
-        """
-        # Get the client for this test.
-        client = self.clients[client_type]
-
-        # Convenience.
-        objID = 1
-
-        # The original template has the following three fragments:
-        frags_orig = {
-            'fname_1': getFragRaw(),
-            'fname_2': getFragDae(),
-            'fname_3': getFragRaw(),
-        }
-        t1 = getTemplate('t1', fragments=frags_orig)
-
-        # Add a new template and spawn it.
-        assert client.addTemplates([t1]).ok
-        new_obj = {'templateID': t1.aid,
-                   'rbs': {'position': (1, 1, 1), 'velocityLin': (-1, -1, -1)}}
-        assert client.spawn([new_obj]) == (True, None, [objID])
-
-        # Query the fragment geometries and Body State to verify that both
-        # report three fragments.
-        ret = client.getFragments([objID])
-        assert ret.ok and len(ret.data[objID]) == 3
-        ret = client.getObjectStates(objID)
-        assert ret.ok and len(ret.data[objID]['frag']) == 3
-
-        # Update the fragments as follows: keep the first intact, remove the
-        # second, and modify the third one.
-        frags_new = {
-            'fname_2': getFragNone()._asdict(),
-            'fname_3': getFragDae()._asdict()
-        }
-        assert client.setFragments({objID: frags_new}).ok
-
-        # After the last update there must now only be two fragments.
-        ret = client.getFragments([objID])
-        assert ret.ok and len(ret.data[objID]) == 2
-        ret = client.getObjectStates(objID)
-        assert ret.ok and len(ret.data[objID]['frag']) == 2
-
-    @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_collada_model(self, client_type):
         """
         Add a template based on a Collada model, spawn it, and query its
