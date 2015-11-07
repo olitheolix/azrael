@@ -88,28 +88,16 @@ class Dibbler:
 
         If ``location`` does not exist then return an error.
 
-        fixme: utilise 'self.get' to do the work here.
-
         :param str location: the location to retrieve (eg.
                              '/instances/8/meta.json').
         :return: content of ``location`` (or *None* if an error occurred).
         :rtype: bytes
         """
-        try:
-            ret = self.fs.get_last_version(location)
-        except gridfs.errors.NoFile as err:
-            return RetVal(False, repr(err), None)
-        except gridfs.errors.GridFSError as err:
-            # All other GridFS errors.
-            return RetVal(False, None, None)
-
-        if ret is None:
-            return RetVal(False, 'File not found', None)
+        ret = self.get([location])
+        if ret.ok and location in ret.data:
+            return RetVal(True, None, ret.data[location])
         else:
-            try:
-                return RetVal(True, None, ret.read())
-            except gridfs.errors.CorruptGridFile:
-                return RetVal(False, 'File not found', None)
+            return RetVal(False, ret.msg, None)
 
     def isValidFileName(self, fname):
         """
@@ -181,10 +169,15 @@ class Dibbler:
             try:
                 out[fname] = self.fs.get_last_version(fname).read()
             except gridfs.errors.NoFile as err:
-                pass
+                msg = 'GridFS URL <{}> not found'.format(fname)
+                self.logit.info(msg)
+            except gridfs.errors.CorruptGridFile:
+                msg = 'Corrupt GridFS for URL <{}>'.format(fname)
+                return RetVal(False, msg, None)
             except gridfs.errors.GridFSError as err:
                 # All other GridFS errors.
-                pass
+                return RetVal(False, None, None)
+
         return RetVal(True, None, out)
 
     @typecheck
