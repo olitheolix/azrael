@@ -82,36 +82,13 @@ class Dibbler:
         return RetVal(True, None, len(self.fs.list()))
 
     @typecheck
-    def _deleteSubLocation(self, url: str):
-        """
-        Delete all files under ``url``.
-
-        This function is the equivalent of 'rm -rf url/*'. It always succeeds
-        and returns the number of deleted files.
-
-        ..note:: It is well possible that multiple versions of a single file
-            exist in GridFS. However, this method only returns the number of
-            unique files deleted, irrespective of how many version of
-            particular files were deleted along the way.
-
-        :param str url: location (eg. '/instances/blah/')
-        :return: number of deleted files
-       """
-        query = {'filename': {'$regex': '^{}/.*'.format(url)}}
-        fnames = set()
-        for _ in self.fs.find(query):
-            fnames.add(_.filename)
-            self.fs.delete(_._id)
-        return RetVal(True, None, len(fnames))
-
-    @typecheck
     def getFile(self, location: str):
         """
         Return the latest version of ``location``.
 
         If ``location`` does not exist then return an error.
 
-        fixme: utilise 'self.get' to the work here.
+        fixme: utilise 'self.get' to do the work here.
 
         :param str location: the location to retrieve (eg.
                              '/instances/8/meta.json').
