@@ -83,7 +83,7 @@ def getFragMetaRaw(vert, uv, rgb):
     scale = 1
     pos = (0, 0, 0)
     rot = (0, 0, 0, 1)
-    
+
     Model = namedtuple('Model', 'fragtype scale position rotation vert uv rgb')
     return Model('RAW', scale, pos, rot, vert, uv, rgb)
 

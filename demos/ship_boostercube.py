@@ -104,7 +104,7 @@ class CtrlBoosterCube():
     """
     def __init__(self, host, port=5555):
         self.shipID = None
-        
+
         # Connect to Azrael.
         self.client = pyazrael.AzraelClient(addr_clerk=host, port_clerk=port)
 
@@ -224,7 +224,7 @@ class CtrlBoosterCube():
         The "flames" are blue spheres placed next to the thruster and scaled
         according to `force`. The flames are already part of the model. All we
         have to do is place- and scale them.
-        
+
         This method will not activate any forces; it will only modify the
         visual appearance of the object to give visual feedback. The
         `activateBooster` method will use this method in conjunction
@@ -249,18 +249,18 @@ class CtrlBoosterCube():
                 'op': 'mod',
                 'scale': flame_size[0],
                 'position': pos_x,
-                },
+            },
             'b_y': {
                 'op': 'mod',
                 'scale': flame_size[1],
                 'position': pos_y,
-                },
+            },
             'b_z': {
                 'op': 'mod',
                 'scale': flame_size[2],
                 'position': pos_z
-                }
             }
+        }
         cmd = {self.shipID: cmd}
         ret = self.client.setFragments(cmd)
         if not ret.ok:
@@ -331,7 +331,7 @@ def main():
         pos_ref = (ii * 5, -ii * 2 + 0.5 + 2, ii * 5)
         c.controller(pos_ref, dt=0.1, num_steps=50, verbose=False)
     del c
-    
+
 
 if __name__ == '__main__':
     main()

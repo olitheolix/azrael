@@ -87,15 +87,15 @@ def addPlatforms():
         position, velocityLin, velocityRot,
         cshapes, axesLockLin, axesLockRot,
         version)
-    
+
     # Geometry for the platforms (defines their appearance, not physics).
     fm = demolib.getFragMetaRaw(
-                  vert=vert,
-                  uv=[],
-                  rgb=[],
-                  scale=1,
-                  pos=position,
-                  rot=rotation)
+        vert=vert,
+        uv=[],
+        rgb=[],
+        scale=1,
+        pos=position,
+        rot=rotation)
     frags = {'frag_1': fm}
 
     # Define the platform template and upload it to Azrael.
@@ -108,7 +108,8 @@ def addPlatforms():
     for ii in range(5):
         pos = (ii * 5, -ii * 2, ii * 5)
         platforms.append(
-            {'templateID': 'platform',
+            {
+                'templateID': 'platform',
                 'rbs': {
                     'position': pos,
                     'velocityLin': (0, 0, 0),

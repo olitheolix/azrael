@@ -170,7 +170,8 @@ class SetGeometry(multiprocessing.Process):
                     'frag_2': {
                         'scale': scale,
                         'position': [-10 + cnt, 0, 0]
-                }}
+                    }
+                }
                 new_body_states[objID] = {'cshapes': {}}
             client.setFragments(new_frag_states)
 

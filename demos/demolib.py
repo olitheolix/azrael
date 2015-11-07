@@ -110,10 +110,10 @@ def getRigidBody(scale: (int, float)=1,
                                 rotation=(0, 0, 0, 1),
                                 csdata=CollShapeSphere(radius=1))
         cshapes = {'Sphere': cshapes}
-    return aztypes.RigidBodyData(scale, imass, restitution, rotation,
-                                      position, velocityLin, velocityRot,
-                                      cshapes, axesLockLin, axesLockRot,
-                                      version)
+    return aztypes.RigidBodyData(
+        scale, imass, restitution, rotation, position,
+        velocityLin, velocityRot, cshapes,
+        axesLockLin, axesLockRot, version)
 
 
 def loadBoosterCubeBlender():
@@ -214,6 +214,7 @@ def loadModel(fname):
     print('done')
 
     return vert, uv, rgb
+
 
 def cubeGeometry(hlen_x=1.0, hlen_y=1.0, hlen_z=1.0):
     """

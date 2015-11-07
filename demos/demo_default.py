@@ -117,13 +117,13 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
 
     boosters = {
         '0': aztypes.Booster(pos=pos_left, direction=-dir_up,
-                           minval=0, maxval=10.0, force=0),
+                             minval=0, maxval=10.0, force=0),
         '1': aztypes.Booster(pos=pos_center, direction=dir_forward,
-                           minval=0, maxval=1000.0, force=0),
+                             minval=0, maxval=1000.0, force=0),
         '2': aztypes.Booster(pos=-pos_left, direction=dir_up,
-                           minval=0, maxval=10.0, force=0),
+                             minval=0, maxval=10.0, force=0),
         '3': aztypes.Booster(pos=pos_center, direction=-dir_forward,
-                           minval=0, maxval=1000.0, force=0)
+                             minval=0, maxval=1000.0, force=0)
     }
     del dir_up, dir_forward, pos_left, pos_center
 
@@ -150,7 +150,7 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     frags = {
         'frag_1': demolib.getFragMetaRaw(vert, uv, rgb),
         'b_left': demolib.getFragMetaRaw(vert_b, z, z),
-        'b_right': demolib.getFragMetaRaw( vert_b, z, z),
+        'b_right': demolib.getFragMetaRaw(vert_b, z, z),
     }
 
     body = demolib.getRigidBody()
@@ -239,18 +239,18 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # Two boosters, one left, one right. Both point in the same direction.
     boosters = {
         '0': aztypes.Booster(pos=[+0.05, 0, 0], direction=[0, 0, 1],
-                           minval=0, maxval=10.0, force=0),
+                             minval=0, maxval=10.0, force=0),
         '1': aztypes.Booster(pos=[-0.05, 0, 0], direction=[0, 0, 1],
-                           minval=0, maxval=10.0, force=0)
+                             minval=0, maxval=10.0, force=0)
     }
 
     # Two factories, one left one right. They will eject the new objects
     # forwards and backwards, respectively.
     factories = {
         '0': aztypes.Factory(pos=[+1.5, 0, 0], direction=[+1, 0, 0],
-                           templateID=tID_1, exit_speed=[0.1, 1]),
+                             templateID=tID_1, exit_speed=[0.1, 1]),
         '1': aztypes.Factory(pos=[-1.5, 0, 0], direction=[-1, 0, 0],
-                           templateID=tID_2, exit_speed=[0.1, 1])
+                             templateID=tID_2, exit_speed=[0.1, 1])
     }
 
     # Add the template.

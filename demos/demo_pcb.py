@@ -231,7 +231,7 @@ class PyConBrisbaneClient():
         The "flames" are blue spheres placed next to the thruster and scaled
         according to `force`. The flames are already part of the model. All we
         have to do is place- and scale them.
-        
+
         This method will not activate any forces; it will only modify the
         visual appearance of the object to give visual feedback. The
         `activateBooster` method will use this method in conjunction
