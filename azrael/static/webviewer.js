@@ -298,7 +298,7 @@ function* mycoroutine(connection) {
                     scene.add(geo);
                     break;
                 case 'DAE':
-                    console.log('Loading DAE from <' + d.url_frag + '>');
+                    console.log('Loading DAE from <' + d.url + '>');
                     loader_dae.load(
                         d.url,
                         // Function when resource is loaded
@@ -313,7 +313,7 @@ function* mycoroutine(connection) {
                     )
                     break;
                 case '3JS_V4':
-                    console.log('Loading ThreeJS JSON v4 from <' + d.url_frag + '>');
+                    console.log('Loading ThreeJS JSON v4 from <' + d.url + '>');
                     loader_3js.load(
                         d.url,
                         // Function when resource is loaded
