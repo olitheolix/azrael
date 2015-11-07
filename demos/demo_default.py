@@ -178,8 +178,8 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
 
     # Disable the booster fragments by settings their scale to Zero.
     newStates = {objID: {
-        'b_left': {'scale': 0},
-        'b_right': {'scale': 0},
+        'b_left': {'op': 'mod', 'state': {'scale': 0}},
+        'b_right': {'op': 'mod', 'state': {'scale': 0}},
     }}
     assert client.setFragments(newStates).ok
 
@@ -371,7 +371,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # Make 'frag_2' invisible by setting its scale to zero.
     for objID in ret.data:
-        assert client.setFragments({objID: {'frag_2': {'scale': 0}}}).ok
+        cmd = {objID: {'frag_2': {'op': 'mod', 'state': {'scale': 0}}}}
+        assert client.setFragments(cmd).ok
         assert client.setCustomData({objID: 'asteroid'}).ok
 
 
