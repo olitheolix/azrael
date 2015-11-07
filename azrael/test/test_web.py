@@ -41,7 +41,6 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
     def downloadFragments(self, url: str, fnames: list):
         """
         Download a fragment file.
-        ``FragDae`` instance.
 
         Example: downloadFragments(['/instances/1/name1/'])
 
@@ -91,6 +90,19 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
                 assert ret == frag.files
             else:
                 assert False
+
+    def test_invalid_file_name(self):
+        """
+        Attempt to download a fragment that does not exist.
+        """
+        # Make up a random file name. It is important that its prefix points to
+        # the template DB because this is how the web server will decide which
+        # handler to invoke.
+        url = config.url_templates + '/foo/bar/blah/blah'
+
+        # Attempt to fetch the file.
+        ret = self.fetch(url, method='GET').body
+        assert ret == b''
 
     def test_addTemplates(self):
         """
