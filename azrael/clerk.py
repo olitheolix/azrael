@@ -1052,13 +1052,19 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def setFragments2(self, fragments: dict):
+    def setFragments(self, fragments: dict):
         """
-        Fixme: copy docu from 'setFragments'
+        Modify the ``fragments`` and return the number of modified objects.
 
-        Missing:
-          - verify the type of objID and frags
-          - specify behaviour when data is corrupt for a sub-set of objects
+        Skip non-existing objects, as well as objects that contain one or more
+        invalid fragment update commands.
+
+        The ``fragments`` argument is a dictionary of the form
+        {objID_0: fragdata, objID_1: fragdata, ...}, where each ``fragdata``
+        entry must adhere to the `setFragments` schema.
+
+        :param dict fragments: new fragments.
+        :return: dict (eg. {'update: #update objects})
         """
         db = database.dbHandles['ObjInstances']
         num_updated = 0
@@ -1066,8 +1072,6 @@ class Clerk(config.AzraelProcess):
         # Determine what data to update in each object. The database query runs
         # for every object individually.
         for objID, frags in fragments.items():
-            # fixme: verify the type of `objID` and `frags`
-
             # The following variables are work lists.
             # db_set: overwrite these DB keys with the new values
             # db_del: delete these DB keys (pertains to geometry files)
@@ -1228,204 +1232,6 @@ class Clerk(config.AzraelProcess):
             del objID, frags
 
         return RetVal(True, None, {'updated': num_updated})
-
-    @typecheck
-    def setFragments(self, fragments: dict):
-        """
-        Update the fragments in the database with the new ``fragments`` data.
-
-        This will update existing objects. Non-existing objects will be
-        skipped.
-
-        Returns with an error unless *all* fragments in *all* objects could be
-        updated.
-
-        :param dict[str: ``FragMeta``] fragments: new fragments.
-        :return: Success
-        """
-        # Preserve the caller's state of ``fragments`` because we are going to
-        # modify and refactor it heavily.
-        fragments = copy.deepcopy(fragments)
-
-        # Compile- and sanity check the fragments.
-        try:
-            # Valid default values for a FragMeta types.
-            ref_1 = {'fragtype': '_DEL_',
-                     'scale': 1,
-                     'position': (0, 0, 0),
-                     'rotation': (0, 0, 0, 1),
-                     'files': {}}
-
-            # Same as ref_1 but all values are None.
-            ref_2 = {k: None for k in ref_1}
-
-            # Compile dictionary with all fragments to update. This is mostly
-            # to sanitise data. It will also create valid FragMeta data from
-            # the partial FragMeta data it receives. The partial FragMeta
-            # coming from the client is valid in this case because all missing
-            # fields mean they should not be modified (eg if the 'position'
-            # field is missing then it means to not update the position field
-            # of the fragment.)
-            fragments_dibbler = {}
-            for objID, frags in fragments.items():
-                fragments_dibbler[objID] = {}
-                for fragID, fragdata in frags.items():
-                    # Create a valid FragMeta instance from the data that has
-                    # valid default values for all those keys that the Client
-                    # did not provide.
-                    # This will sanity check the input data.
-                    tmp = dict(ref_1)
-                    tmp.update(fragdata)
-                    fragments_dibbler[objID][fragID] = FragMeta(**tmp)
-
-                    # Now that we know the input data is valid we can put it
-                    # into a '_FragMeta' instance. We do *not* put it into a
-                    # 'FragMeta' instance (note the missing underscore). This
-                    # circumvents the sanity checks because our new object
-                    # may well contain None values.
-                    tmp = dict(ref_2)
-                    tmp.update(fragdata)
-                    fragments[objID][fragID] = _FragMeta(**tmp)
-
-                    # Remove this from Dibbler's fragment list if the user did
-                    # not provide a fragment type and fragment data (ie the
-                    # user does not want us to touch the geometry itself).
-                    f = fragments[objID][fragID]
-                    if None in (f.fragtype, f.files):
-                        del fragments_dibbler[objID][fragID]
-
-                    del fragID, fragdata, tmp, f
-                del objID, frags
-            del ref_1, ref_2
-        except TypeError:
-            return RetVal(False, 'Not all fragment data sets are valid', None)
-
-        # Convenience.
-        db = database.dbHandles['ObjInstances']
-        ok, msg = True, []
-
-        # Update the objects (one by one) in the instance database.
-        for objID, frags in fragments.items():
-            # Update the fragment geometry in Dibbler (if there are any to
-            # update). If an error occurs skip immediately to the next object.
-            if len(fragments_dibbler[objID]) > 0:
-                # Convenience.
-                b64dec = base64.b64decode
-
-                # Compile the location prefix for this object instance. The
-                # overwrite all the fragments for which we got new data.
-                url_dst = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
-                for fragname, frag in fragments_dibbler[objID].items():
-                    # Final location of model file.
-                    prefix = '{url}/{name}/'.format(url=url_dst, name=fragname)
-
-                    # Either delete the model file or overwrite it, depending
-                    # on what the user specified.
-                    if frag.fragtype.upper() == '_DEL_':
-                        assert self.dibbler.removeDirs([prefix])
-                    else:
-                        # Compile all file names and encode them properly.
-                        fnames = frag.files
-                        files = {prefix + k: v for k, v in fnames.items()}
-                        files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
-
-                        # Update all files in dibbbler.
-                        self.dibbler.put(files)
-                        del fnames, files
-                    del fragname, prefix
-                del url_dst
-
-            # Remove all '_DEL_' fragments in the instance database.
-            to_remove = set()
-            new_version = False
-            for fragID, frag in frags.items():
-                # Skip fragments that have not type (ie Client does not want to
-                # update the geometry for this fragment).
-                if frag.fragtype is None:
-                    continue
-
-                # If we get to here then the geometry of at least one fragment
-                # will be modified. This demands an update of the 'version'
-                # flag (the version remains stable if we will merely update eg
-                # scale/position because the client does not have to download
-                # new geometry data in that case).
-                new_version = True
-
-                # Remove the fragment from the instance database if so
-                # requested by the user.
-                if frag.fragtype.upper() == '_DEL_':
-                    db.update({'objID': objID},
-                              {'$unset': {'template.fragments.{}'.format(fragID): True}})
-                    to_remove.add(fragID)
-
-            # Remove all those fragments from the fragment dictionary that the
-            # client wanted removed, because we have already dealt with them.
-            frags = {k: v for (k, v) in frags.items() if k not in to_remove}
-
-            # Strip the geometry data because the instance database only
-            # contains meta information; Dibbler contains the geometry.
-            frags = {k: v._replace(files={}) for (k, v) in frags.items()}
-
-            # Convert the fragments to dictionaries.
-            frags = {k: v._asdict() for (k, v) in frags.items()}
-
-            # Compile JSON hierarchy for the geometries to update without
-            # touching the ones we do not want to update. This will result in a
-            # dictionary like:
-            #
-            #     data = {'
-            #         'template.fragments.foo.position': (1, 2, 3),
-            #         'template.fragments.bar.scale': 2,
-            #          ...
-            #     }
-            data = {}
-            q_find = {'objID': objID}
-            new_geometry = False
-            for fragID, fragdata in frags.items():
-                for field, value in fragdata.items():
-                    # Skip the field if its value is None because it means the
-                    # Client did not specify it (None values are otherwise not
-                    # allowed and would not have passed the sanity check at the
-                    # beginning of this method.
-                    if value is None:
-                        continue
-                    key = 'template.fragments.{}.{}'.format(fragID, field)
-                    data[key] = value
-
-                    # If the fragment was not fully specified then it must
-                    # already exist, as a partial update would otherwise not be
-                    # possible. The next few lines will modify the Mongo query
-                    # to enforce the existence of the fields unless *all* of
-                    # them were specified, which means Dibbler must have
-                    # processed (and accepted) it, and all other fields must
-                    # not be None.
-                    if fragID in fragments_dibbler:
-                        if None not in fragments_dibbler[objID][fragID]:
-                            q_find[key] = False
-                    else:
-                        q_find[key] = {'$exists': True}
-
-            # Update the fragment state. Also update the 'version' if at least
-            # one of the underlying geometries was changed.
-            if new_version:
-                ret = db.update(q_find, {'$inc': {'version': 1}, '$set': data})
-            else:
-                ret = db.update(q_find, {'$set': data})
-
-            # Save the current objID if an error occured.
-            if ret['n'] != 1:
-                ok = False
-                msg.append(objID)
-
-        if ok:
-            # No error occurred.
-            return RetVal(True, None, None)
-        else:
-            # Return with an error and list all objIDs that did not update
-            # correctly.
-            tmp = '{' + str(set(msg)) + '}'
-            msg = 'objIDs {} do not exist'.format(tmp)
-            return RetVal(False, msg, None)
 
     @typecheck
     def getRigidBodies(self, objIDs: (list, tuple)):
