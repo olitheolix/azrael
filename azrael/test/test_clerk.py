@@ -1938,6 +1938,45 @@ class TestModifyFragments:
         ret = clerk.getFragments([id_0])
         assert ret.ok and 'newfrag' in ret.data[id_0]
 
+    def test_add_nonexisting_fragment_incomplete(self):
+        """
+        Add a new fragment with an incomplete description. This must fail.
+        """
+        # Convenience.
+        b64enc = base64.b64encode
+        clerk, id_0 = self.clerk, self.id_0
+
+        # Get the current version of both objects.
+        ret = clerk.getObjectStates([id_0])
+        assert ret.ok
+        version = ret.data[id_0]['rbs']['version']
+
+        # The following description is complete except for the 'position'
+        # argument.
+        cmd = {
+            id_0: {
+                'newfrag': {
+                    'op': 'put',
+                    'state': {
+                        'scale': 2,
+                        'rotation': [1, 0, 0, 1],
+                        },
+                    'fragtype': 'CUSTOM',
+                    'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
+                    }
+                }
+            }
+        assert clerk.setFragments(cmd) == (True, None, {'updated': 0})
+
+        # The object version must not have changed.
+        ret = clerk.getObjectStates([id_0])
+        assert ret.ok
+        assert version == ret.data[id_0]['rbs']['version']
+
+        # Verify that 'newfrag' does not exist.
+        ret = clerk.getFragments([id_0])
+        assert ret.ok and 'newfrag' not in ret.data[id_0]
+
     def test_update_nonexisting_fragment(self):
         """
         Clerk must skip objects if any of the fragments to update(!) do not

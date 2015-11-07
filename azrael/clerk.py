@@ -1111,18 +1111,24 @@ class Clerk(config.AzraelProcess):
                 url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
 
                 if fragdata['op'] == 'put':
-                    doc = {
-                        'scale': fragdata['state']['scale'],
-                        'position': fragdata['state']['position'],
-                        'rotation': fragdata['state']['rotation'],
-                        'fragtype': fragdata['fragtype'],
-                        'files': [fname.replace('.', ';') for fname in fragdata['put']]
-                        }
+                    try:
+                        doc = {
+                            'scale': fragdata['state']['scale'],
+                            'position': fragdata['state']['position'],
+                            'rotation': fragdata['state']['rotation'],
+                            'fragtype': fragdata['fragtype'],
+                            'files': [fname.replace('.', ';') for fname in fragdata['put']]
+                            }
 
-                    for fname, fdata in fragdata['put'].items():
-                        fdata = base64.b64decode(fdata.encode('utf8'))
-                        # The file to add/overwrite in Dibbler.
-                        op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+                        for fname, fdata in fragdata['put'].items():
+                            fdata = base64.b64decode(fdata.encode('utf8'))
+                            # The file to add/overwrite in Dibbler.
+                            op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+                    except KeyError:
+                        msg = 'New fragment for object <{}> is incomplete'.format(objID)
+                        self.logit.info(msg)
+                        continue
+
                     op_db['set'][dbkey] = doc
 
                     op_file['rmdir'].append(url)
