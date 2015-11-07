@@ -133,8 +133,8 @@ class TestClient:
         dir_1 = pjoin(cur_path, '..')
         dir_2 = pjoin(cur_path, '..', '..', 'azrael')
         for fname in fnames:
-            tmp_1 = open(pjoin(dir_1, fname), 'rb').read() 
-            tmp_2 = open(pjoin(dir_2, fname), 'rb').read() 
+            tmp_1 = open(pjoin(dir_1, fname), 'rb').read()
+            tmp_2 = open(pjoin(dir_2, fname), 'rb').read()
             assert tmp_1 == tmp_2
 
     def test_ping(self):
@@ -244,14 +244,14 @@ class TestClient:
         # automatically assign any).
         boosters = {
             '0': aztypes.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
-                               minval=0, maxval=0.5, force=0),
+                                 minval=0, maxval=0.5, force=0),
             '1': aztypes.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
-                               minval=0, maxval=0.5, force=0),
+                                 minval=0, maxval=0.5, force=0),
         }
         factories = {
             '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
-                               templateID='_templateBox',
-                               exit_speed=(0.1, 0.5))
+                                 templateID='_templateBox',
+                                 exit_speed=(0.1, 0.5))
         }
 
         # Attempt to query the geometry of a non-existing object.
@@ -448,17 +448,17 @@ class TestClient:
         # Define the parts.
         boosters = {
             '0': aztypes.Booster(pos=pos_0, direction=dir_0,
-                               minval=0, maxval=0.5, force=0),
+                                 minval=0, maxval=0.5, force=0),
             '1': aztypes.Booster(pos=pos_1, direction=dir_1,
-                               minval=0, maxval=1.0, force=0)
+                                 minval=0, maxval=1.0, force=0)
         }
         factories = {
             '0': aztypes.Factory(pos=pos_0, direction=dir_0,
-                               templateID='_templateBox',
-                               exit_speed=[0.1, 0.5]),
+                                 templateID='_templateBox',
+                                 exit_speed=[0.1, 0.5]),
             '1': aztypes.Factory(pos=pos_1, direction=dir_1,
-                               templateID='_templateSphere',
-                               exit_speed=[1, 5])
+                                 templateID='_templateSphere',
+                                 exit_speed=[1, 5])
         }
 
         # Define the template, add it to Azrael, and spawn an instance.
@@ -627,7 +627,7 @@ class TestClient:
             base_url + ret.data[objID]['fdae']['url_frag'] + '/model.dae',
             base_url + ret.data[objID]['fdae']['url_frag'] + '/rgb1.png',
             base_url + ret.data[objID]['fdae']['url_frag'] + '/rgb2.jpg',
-            ]
+        ]
 
         # ---------------------------------------------------------------------
         # Modify the fragments.
@@ -642,12 +642,12 @@ class TestClient:
                     'rotation': [1, 0, 0, 0],
                     'fragtype': 'BLAH',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
-                    },
+                },
                 'fdae': {
                     'op': 'del'
-                    }
                 }
             }
+        }
         assert client.setFragments(cmd) == (True, None, {'updated': 1})
 
         # The object must have received a new 'version'.
