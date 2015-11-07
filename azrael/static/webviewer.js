@@ -316,17 +316,18 @@ function* mycoroutine(connection) {
                     console.log('Loading ThreeJS JSON v4 from <' + d.url + '>');
                     loader_3js.load(
                         d.url,
-                        // Function when resource is loaded
+                        // Callback for when the model has been loaded.
                         function ( geometry, materials ) {
                             console.log('JSONLoader callback.');
-	                    var material = new THREE.MeshFaceMaterial( materials );
-	                    var object = new THREE.Mesh( geometry, material );
 
-                            // var dae = collada.scene;
-	                    // dae.scale.x = dae.scale.y = dae.scale.z = scale;
-	                    // dae.position.x = -1;
-	                    // dae.updateMatrix();
-    	                    scene.add(object);
+                            // Compile material and geometry.
+	                    var material = new THREE.MeshFaceMaterial( materials );
+	                    var geo = new THREE.Mesh( geometry, material );
+
+                            // Add the geometry fragment to the local object
+                            // cache and scene.
+                            obj_cache[objID][frag_name] = geo;
+    	                    scene.add(geo);
                         }
                     )
                     break;
