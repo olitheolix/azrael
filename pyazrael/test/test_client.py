@@ -652,13 +652,40 @@ class TestClient:
 
         # Modify and update the fragment states in Azrael, then query and
         # verify it worked.
-        newStates = {objID: {'bar': {'scale': 2.2, 'position': [1, 2, 3],
-                                     'rotation': [1, 0, 0, 0]}}}
-        assert client.setFragments(newStates).ok
-        ret = client.getObjectStates(objID)
-        assert ret.ok
-        ret = ret.data[objID]['frag']['bar']
-        assert ret == newStates[objID]['bar']
+        cmd = {
+            objID: {
+                'bar': {
+                    'op': 'mod',
+                    'state': {
+                        'scale': 2.2,
+                        'position': [1, 2, 3],
+                        'rotation': [1, 0, 0, 0]
+                        }
+                    }
+                }
+            }
+        assert client.setFragments(cmd) == (True, None, {'updated': 1})
+
+        # ---------------------------------------------------------------------
+        # Query the object state and the fragment. Both must return the same
+        # data for the fragment state (scale, position, rotation).
+        # ---------------------------------------------------------------------
+        # Query the object state.
+        ref = cmd[objID]['bar']['state']
+        ret1 = client.getObjectStates(objID)
+        assert ret1.ok
+        ret1 = ret1.data[objID]['frag']['bar']
+
+        # Query the fragment.
+        ret2 = client.getFragments([objID])
+        assert ret2.ok
+        ret2 = ret2.data[objID]['bar']
+
+        # Compare that all values match.
+        assert ref['scale'] == ret1['scale'] == ret2['scale']
+        assert ref['position'] == ret1['position'] == ret1['position']
+        assert ref['rotation'] == ret1['rotation'] == ret1['rotation']
+        assert False
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_remove_fragments(self, client_type):
