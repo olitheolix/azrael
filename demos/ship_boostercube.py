@@ -244,14 +244,31 @@ class CtrlBoosterCube():
         flame_size = flame_size.tolist()
 
         # Compile the data for the updated state of the flame fragment.
-        new_frags = {
-            'b_x': {'scale': flame_size[0], 'position': pos_x},
-            'b_y': {'scale': flame_size[1], 'position': pos_y},
-            'b_z': {'scale': flame_size[2], 'position': pos_z},
-        }
-
-        # Send the update request to Azrael and check for errors.
-        ret = self.client.setFragments({self.shipID: new_frags})
+        cmd = {
+            'b_x': {
+                'op': 'mod',
+                'state': {
+                    'scale': flame_size[0],
+                    'position': pos_x,
+                    }
+                },
+            'b_y': {
+                'op': 'mod',
+                'state': {
+                    'scale': flame_size[1],
+                    'position': pos_y,
+                    }
+                },
+            'b_z': {
+                'op': 'mod',
+                'state': {
+                    'scale': flame_size[2],
+                    'position': pos_z
+                    },
+                }
+            }
+        cmd = {self.shipID: cmd}
+        ret = self.client.setFragments(cmd)
         if not ret.ok:
             print('Error setFragments: ', ret.msg)
 
