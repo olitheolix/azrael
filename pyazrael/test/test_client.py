@@ -622,63 +622,6 @@ class TestClient:
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_setFragments_dae(self, client_type):
-        """
-        Spawn a new object and modify its geometry at runtime.
-        """
-        # Get the client for this test.
-        client = self.clients[client_type]
-
-        # Get a Collada fragment.
-        f_dae = {'f_dae': getFragDae()}
-
-        # Add a new template and spawn it.
-        temp = getTemplate('t1', fragments=f_dae)
-        assert client.addTemplates([temp]).ok
-
-        new_obj = {'templateID': temp.aid,
-                   'rbs': {'position': (1, 1, 1), 'velocityLin': (-1, -1, -1)}}
-        ret = client.spawn([new_obj])
-        objID = ret.data[0]
-        assert ret.ok and ret.data == [objID]
-        del temp, new_obj, ret
-
-        # Query the body states to obtain the 'version' value.
-        ret = client.getRigidBodies(objID)
-        assert ret.ok
-        version = ret.data[objID]['rbs'].version
-
-        # Fetch-, modify-, update- and verify the geometry.
-        ret = client.getFragments([objID])
-        assert ret.ok
-        assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
-
-        # Change the geometry for fragment 'f_dae' to a RAW type.
-        assert client.setFragments({objID: {'f_dae': getFragRaw()._asdict()}}).ok
-
-        # Ensure the fragment is now indeed of type 'RAW'.
-        ret = client.getFragments([objID])
-        assert ret.ok
-        assert ret.data[objID]['f_dae']['fragtype'] == 'RAW'
-
-        # Ensure 'version' is different as well.
-        ret = client.getRigidBodies(objID)
-        assert ret.ok and (ret.data[objID]['rbs'].version != version)
-
-        # Change the fragment geometry once more.
-        version = ret.data[objID]['rbs'].version
-        assert client.setFragments({objID: {'f_dae': getFragDae()._asdict()}}).ok
-
-        # Ensure it now has type 'DAE' again.
-        ret = client.getFragments([objID])
-        assert ret.ok
-        assert ret.data[objID]['f_dae']['fragtype'] == 'DAE'
-
-        # Ensure 'version' is different as well.
-        ret = client.getRigidBodies(objID)
-        assert ret.ok and (ret.data[objID]['rbs'].version != version)
-
-    @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_update_FragmentStates(self, client_type):
         """
         Query and modify fragment states.
