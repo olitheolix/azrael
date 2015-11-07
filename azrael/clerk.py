@@ -1051,6 +1051,103 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
         return RetVal(True, None, out)
 
+    def _setFragOps(self, objID, dbkey, url, fragdata, op_db, op_file):
+        """
+        Compile meta commands for database.
+
+        This is an auxiliary function for `setFragments`. It parses the
+        provided ``fragdata`` and determine which database fields need to be
+        set, modified, or deleted. The results are added to ``op_db``.
+
+        Similarly, it determine which files have to be
+        added, overwritten, or removed into Dibbler. The results are added to
+        ``op_file``.
+
+        ..note:: This method is database agnostic. The caller is responsible
+            for compiling ``op_db`` into actual database commands.
+        """
+        if fragdata['op'] == 'put':
+            try:
+                doc = {
+                    'scale': fragdata['state']['scale'],
+                    'position': fragdata['state']['position'],
+                    'rotation': fragdata['state']['rotation'],
+                    'fragtype': fragdata['fragtype'],
+                    'files': [fname.replace('.', ';') for fname in fragdata['put']]
+                    }
+
+                for fname, fdata in fragdata['put'].items():
+                    fdata = base64.b64decode(fdata.encode('utf8'))
+                    # The file to add/overwrite in Dibbler.
+                    op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+            except KeyError:
+                msg = 'New fragment for object <{}> is incomplete'.format(objID)
+                self.logit.info(msg)
+                return
+
+            op_db['set'][dbkey] = doc
+
+            op_file['rmdir'].append(url)
+            op_db['new_version'] = True
+        elif fragdata['op'] == 'del':
+            op_file['rmdir'].append(url)
+            op_db['new_version'] = True
+            op_db['unset'].append(dbkey)
+        else:
+            # Only existing objects can be updated.
+            op_db['exists'].append(dbkey)
+
+            # Determine the state variables to update.
+            if 'state' in fragdata:
+                # Compile the list of all states that should be changed.
+                # The logic below will silently ignore all those keys that
+                # do not denote a state.
+                ref = {k: None for k in aztypes.FragMeta._fields}
+                ref = {k: fragdata['state'].get(k, None) for k in ref}
+
+                # Remove all keys for which we did not get new values.
+                ref = {k: v for k, v in ref.items() if v is not None}
+
+                # Compile a dictionary where the key denotes the position
+                # of the state variable in the database document hierarchy.
+                for field, value in ref.items():
+                    op_db['set']['{}.{}'.format(dbkey, field)] = value
+
+            # If the user wants to change the fragment type then we must
+            # update the corresponding field in the database as well.
+            if 'fragtype' in fragdata:
+                op_db['set']['{}.fragtype'.format(dbkey)] = fragdata['fragtype']
+                op_db['new_version'] = True
+
+            # Files to delete. This entails deleting the actual file in
+            # Dibbler, as well as the reference to it in the instance database.
+            for fname in fragdata.get('del', []):
+                # The file to delete in Dibbler.
+                op_file['del'].append('{url}/{filename}'.format(url=url, filename=fname))
+
+                # Mangle the file names (fixme: put this in dedicated method).
+                fname = fname.replace('.', ';')
+
+                # Specify which key to remove in the database.
+                tmp = '{}.files.{}'.format(dbkey, fname)
+                op_db['unset'].append(tmp)
+                op_db['new_version'] = True
+
+            # Files to add/update. As above, we need to delete the files in
+            # Dibbler and remove the corresponding keys in the instance database.
+            for fname, fdata in fragdata.get('put', {}).items():
+                fdata = base64.b64decode(fdata.encode('utf8'))
+                # The file to add/overwrite in Dibbler.
+                op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+
+                # Mangle the file names (fixme: put this in dedicated method).
+                fname = fname.replace('.', ';')
+
+                # Specify which key to add in the database.
+                tmp = '{}.files.{}'.format(dbkey, fname)
+                op_db['set'][tmp] = None
+                op_db['new_version'] = True
+
     @typecheck
     def setFragments(self, fragments: dict):
         """
@@ -1099,101 +1196,24 @@ class Clerk(config.AzraelProcess):
 
             # Compile the query to update the instance data.
             for fragname, fragdata in frags.items():
+                # Check input data against schema.
                 try:
                     jsonschema.validate(fragdata, azschemas.setFragments)
                 except jsonschema.exceptions.ValidationError:
                     self.logit.warning('Input failed to validate')
                     continue
 
-                # The fragment must exist.
+                # Define the prefix key in the JSON hierarchy for current fragment, and
+                # the file name prefix in Dibbler.
                 dbkey = 'template.fragments.{}'.format(fragname)
-                
                 url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
 
-                if fragdata['op'] == 'put':
-                    try:
-                        doc = {
-                            'scale': fragdata['state']['scale'],
-                            'position': fragdata['state']['position'],
-                            'rotation': fragdata['state']['rotation'],
-                            'fragtype': fragdata['fragtype'],
-                            'files': [fname.replace('.', ';') for fname in fragdata['put']]
-                            }
-
-                        for fname, fdata in fragdata['put'].items():
-                            fdata = base64.b64decode(fdata.encode('utf8'))
-                            # The file to add/overwrite in Dibbler.
-                            op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
-                    except KeyError:
-                        msg = 'New fragment for object <{}> is incomplete'.format(objID)
-                        self.logit.info(msg)
-                        continue
-
-                    op_db['set'][dbkey] = doc
-
-                    op_file['rmdir'].append(url)
-                    op_db['new_version'] = True
-                elif fragdata['op'] == 'del':
-                    op_file['rmdir'].append(url)
-                    op_db['new_version'] = True
-                    op_db['unset'].append(dbkey)
-                else:
-                    # Only existing objects can be updated.
-                    op_db['exists'].append(dbkey)
-
-                    # Determine the state variables to update.
-                    if 'state' in fragdata:
-                        # Compile the list of all states that should be changed.
-                        # The logic below will silently ignore all those keys that
-                        # do not denote a state.
-                        ref = {k: None for k in aztypes.FragMeta._fields}
-                        ref = {k: fragdata['state'].get(k, None) for k in ref}
-
-                        # Remove all keys for which we did not get new values.
-                        ref = {k: v for k, v in ref.items() if v is not None}
-
-                        # Compile a dictionary where the key denotes the position
-                        # of the state variable in the database document hierarchy.
-                        for field, value in ref.items():
-                            op_db['set']['{}.{}'.format(dbkey, field)] = value
-
-                    # If the user wants to change the fragment type then we must
-                    # update the corresponding field in the database as well.
-                    if 'fragtype' in fragdata:
-                        op_db['set']['{}.fragtype'.format(dbkey)] = fragdata['fragtype']
-                        op_db['new_version'] = True
-
-                    # Files to delete. This entails deleting the actual file in
-                    # Dibbler, as well as the reference to it in the instance database.
-                    for fname in fragdata.get('del', []):
-                        # The file to delete in Dibbler.
-                        op_file['del'].append('{url}/{filename}'.format(url=url, filename=fname))
-
-                        # Mangle the file names (fixme: put this in dedicated method).
-                        fname = fname.replace('.', ';')
-
-                        # Specify which key to remove in the database.
-                        tmp = '{}.files.{}'.format(dbkey, fname)
-                        op_db['unset'].append(tmp)
-                        op_db['new_version'] = True
-
-                    # Files to add/update. As above, we need to delete the files in
-                    # Dibbler and remove the corresponding keys in the instance database.
-                    for fname, fdata in fragdata.get('put', {}).items():
-                        fdata = base64.b64decode(fdata.encode('utf8'))
-                        # The file to add/overwrite in Dibbler.
-                        op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
-
-                        # Mangle the file names (fixme: put this in dedicated method).
-                        fname = fname.replace('.', ';')
-
-                        # Specify which key to add in the database.
-                        tmp = '{}.files.{}'.format(dbkey, fname)
-                        op_db['set'][tmp] = None
-                        op_db['new_version'] = True
+                # Determine the necessary database operations (will update the
+                # 'op_db' and 'op_file' dictionaries).
+                self._setFragOps(objID, dbkey, url, fragdata, op_db, op_file)
 
             # -----------------------------------------------------------------
-            # Compile the dabase query and update operation.
+            # Compile the database query and update operation.
             # -----------------------------------------------------------------
             # Query: specific object ID; particular fields may have to exist
             # for the update to take place.
@@ -1230,7 +1250,7 @@ class Clerk(config.AzraelProcess):
             self.dibbler.remove(op_file['del'])
             self.dibbler.put(op_file['put'])
 
-            del objID, frags, query, op, ret
+            del objID, frags, query, op, ret, op_file
 
         return RetVal(True, None, {'updated': num_updated})
 
