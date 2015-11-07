@@ -1072,16 +1072,16 @@ class Clerk(config.AzraelProcess):
         # Determine what data to update in each object. The database query runs
         # for every object individually.
         for objID, frags in fragments.items():
-            # The following variables are work lists.
-            # db_set: overwrite these DB keys with the new values
-            # db_unset: delete these DB keys
-            # db_exists: these keys must exist or the entire update does not
-            #            got ahead
-            # file_put: files to add/overwrite in Dibbler (and their content).
-            # file_del: files to delete in Dibbler.
-            file_put = {}
-            file_del = []
-            file_rmdir = []
+            # The following variables are work lists for the database (op_db)
+            # and Dibbler (op_file). The keys in op_db mean:
+            #    set: overwrite these DB keys with the new values
+            #    unset: delete these DB keys
+            #    exists: this key must exist for the update to go ahead
+            #
+            # The keys in op_file mean:
+            #    put: files to add/overwrite in Dibbler (and their content).
+            #    del: files to delete in Dibbler.
+            #    rmdir: directories to delete in Dibbler.
             op_db = {
                 'new_version': False,
                 'set': {},
@@ -1123,13 +1123,13 @@ class Clerk(config.AzraelProcess):
                     for fname, fdata in fragdata['put'].items():
                         fdata = base64.b64decode(fdata.encode('utf8'))
                         # The file to add/overwrite in Dibbler.
-                        file_put['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+                        op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
                     op_db['set'][dbkey] = doc
 
-                    file_rmdir.append(url)
+                    op_file['rmdir'].append(url)
                     op_db['new_version'] = True
                 elif fragdata['op'] == 'del':
-                    file_rmdir.append(url)
+                    op_file['rmdir'].append(url)
                     op_db['new_version'] = True
                     op_db['unset'].append(dbkey)
                 else:
@@ -1159,7 +1159,7 @@ class Clerk(config.AzraelProcess):
                     # Dibbler, as well as the reference to it in the instance database.
                     for fname in fragdata.get('del', []):
                         # The file to delete in Dibbler.
-                        file_del.append('{url}/{filename}'.format(url=url, filename=fname))
+                        op_file['del'].append('{url}/{filename}'.format(url=url, filename=fname))
 
                         # Mangle the file names (fixme: put this in dedicated method).
                         fname = fname.replace('.', ';')
@@ -1174,7 +1174,7 @@ class Clerk(config.AzraelProcess):
                     for fname, fdata in fragdata.get('put', {}).items():
                         fdata = base64.b64decode(fdata.encode('utf8'))
                         # The file to add/overwrite in Dibbler.
-                        file_put['{url}/{filename}'.format(url=url, filename=fname)] = fdata
+                        op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
 
                         # Mangle the file names (fixme: put this in dedicated method).
                         fname = fname.replace('.', ';')
@@ -1218,9 +1218,9 @@ class Clerk(config.AzraelProcess):
             num_updated += ret.modified_count
                 
             # Issue the Dibbler queries.
-            self.dibbler.removeDirs(file_rmdir)
-            self.dibbler.remove(file_del)
-            self.dibbler.put(file_put)
+            self.dibbler.removeDirs(op_file['rmdir'])
+            self.dibbler.remove(op_file['del'])
+            self.dibbler.put(op_file['put'])
 
             del objID, frags, query, op, ret
 
