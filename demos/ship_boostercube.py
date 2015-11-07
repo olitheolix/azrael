@@ -247,24 +247,18 @@ class CtrlBoosterCube():
         cmd = {
             'b_x': {
                 'op': 'mod',
-                'state': {
-                    'scale': flame_size[0],
-                    'position': pos_x,
-                    }
+                'scale': flame_size[0],
+                'position': pos_x,
                 },
             'b_y': {
                 'op': 'mod',
-                'state': {
-                    'scale': flame_size[1],
-                    'position': pos_y,
-                    }
+                'scale': flame_size[1],
+                'position': pos_y,
                 },
             'b_z': {
                 'op': 'mod',
-                'state': {
-                    'scale': flame_size[2],
-                    'position': pos_z
-                    },
+                'scale': flame_size[2],
+                'position': pos_z
                 }
             }
         cmd = {self.shipID: cmd}
