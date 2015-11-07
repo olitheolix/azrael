@@ -52,7 +52,7 @@ console = logging.StreamHandler(sys.stdout)
 console.setLevel(logging.DEBUG)
 # console.setLevel(logging.ERROR)
 
-logFormat = '%(levelname)s - %(name)s - %(message)s'
+logFormat = '%(levelname)s %(module)s.%(funcName)s: %(message)s'
 console.setFormatter(logging.Formatter(logFormat))
 
 # Install the handler.
