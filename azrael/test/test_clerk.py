@@ -1973,6 +1973,11 @@ class TestModifyFragments:
         clerk, id_0 = self.clerk, self.id_0
         b64enc = base64.b64encode
 
+        # Get the current version for id_0.
+        ret = clerk.getObjectStates([id_0])
+        assert ret.ok
+        version = ret.data[id_0]['rbs']['version']
+
         # Get the fragment information for id_0
         ret = clerk.getFragments([id_0])
         assert ret.ok
@@ -2002,6 +2007,10 @@ class TestModifyFragments:
         # The associated 'model.json' must not exist anymore.
         ret = self.dibbler.get([url])
         assert ret.ok and url not in ret.data
+
+        # Verify that the version has changed.
+        ret = clerk.getObjectStates([id_0])
+        assert ret.ok and ret.data[id_0]['rbs']['version'] != version
 
     def test_update_nonexisting_object(self):
         """

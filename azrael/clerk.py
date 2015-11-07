@@ -1127,6 +1127,7 @@ class Clerk(config.AzraelProcess):
                 elif fragdata['op'] == 'del':
                     db_unset.append(dbkey)
                     file_rmdir.append(url)
+                    new_version = True
                 else:
                     # Determine the state variables to update.
                     if 'state' in fragdata:
