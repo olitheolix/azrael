@@ -1074,15 +1074,14 @@ class Clerk(config.AzraelProcess):
         for objID, frags in fragments.items():
             # The following variables are work lists.
             # db_set: overwrite these DB keys with the new values
-            # db_del: delete these DB keys (pertains to geometry files)
+            # db_unset: delete these DB keys
             # db_exists: these keys must exist or the entire update does not
             #            got ahead
             # file_put: files to add/overwrite in Dibbler (and their content).
             # file_del: files to delete in Dibbler.
             db_set = {}
-            db_del = {}
             db_unset = []
-            db_exists = {}
+            db_exists = []
             file_put = {}
             file_del = []
             file_rmdir = []
@@ -1104,7 +1103,7 @@ class Clerk(config.AzraelProcess):
 
                 # The fragment must exist.
                 dbkey = 'template.fragments.{}'.format(fragname)
-                db_exists[dbkey] = True
+                db_exists.append(dbkey)
                 
                 url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
 
@@ -1122,14 +1121,6 @@ class Clerk(config.AzraelProcess):
                         # The file to add/overwrite in Dibbler.
                         file_put['{url}/{filename}'.format(url=url, filename=fname)] = fdata
                     db_set[dbkey] = doc
-
-                    # ret = db.update_one({'objID': objID}, {'$set': {dbkey: doc}})
-                    # print(ret.raw_result)
-                    # if ret.modified_count > 1:
-                    #     self.logit.error('Too many documents were udpated')
-                    #     num_updated += 1
-                    # else:
-                    #     num_updated += ret.modified_count
 
                     file_rmdir.append(url)
                     new_version = True
@@ -1170,7 +1161,7 @@ class Clerk(config.AzraelProcess):
 
                         # Specify which key to remove in the database.
                         tmp = '{}.files.{}'.format(dbkey, fname)
-                        db_del[tmp] = True
+                        db_unset.append(tmp)
                         new_version = True
 
                     # Files to add/update. As above, we need to delete the files in
@@ -1188,48 +1179,44 @@ class Clerk(config.AzraelProcess):
                         db_set[tmp] = None
                         new_version = True
 
-            # Compile the database query and issue it.
-            ret = RetVal(True, None, None)
-            if not (db_set == {} and db_del == {} and db_unset == []):
-                # The operations for MongoDB will be stored in this dictionary.
-                op = {}
+            # -----------------------------------------------------------------
+            # Compile the dabase query and update operation.
+            # -----------------------------------------------------------------
+            # Query: specific object ID; particular fields may have to exist
+            # for the update to take place.
+            query = {k: {'$exists': True} for k in db_exists}
+            query['objID'] = objID
 
-                # Increment the version if at least one geometry file changed,
-                # or the fragment type changed.
-                # fixme: must also increase the version when only the fragment
-                #        type changes (needs a test).
-                if new_version:
-                    op['$inc'] = {'version': 1}
+            # Update operations.
+            op = {
+                '$inc': {'version': 1} if new_version else {},
+                '$set': db_set,
+                '$unset': {name: '' for name in db_unset}
+                }
+            # Prune update operations.
+            op = {k: v for k, v in op.items() if len(v) > 0}
 
-                # Specify the fields to add/overwrite, as well as their values.
-                if len(db_set) > 0:
-                    op['$set'] = db_set
+            # If no updates are necessary then skip this object.
+            if len(op) == 0:
+                continue
 
-                if len(db_unset) > 0:
-                    op['$unset'] = {name: '' for name in db_unset}
+            # Issue the database query.
+            ret = db.update_one(query, op)
+            if not ret.acknowledged:
+                msg = 'Update for objID <{}> was not acknowledged'
+                msg = msg.format(objID)
+                self.logit.warning(msg)
+                continue
 
-                # Specify the fields to unset.
-                if len(db_del) > 0:
-                    op['$unset'] = db_del
-
-                query = {'objID': objID}
-                for k, v in db_exists.items():
-                    if v is not True:
-                        continue
-                    query[k] = {'$exists': True}
-                ret = db.update_one(query, op)
-                if ret.modified_count > 1:
-                    self.logit.error('Too many documents were udpated')
-                    num_updated += 1
-                else:
-                    num_updated += ret.modified_count
-
+            # Increment the update counter (will be returned to caller).
+            num_updated += ret.modified_count
+                
             # Issue the Dibbler queries.
             self.dibbler.removeDirs(file_rmdir)
             self.dibbler.remove(file_del)
             self.dibbler.put(file_put)
 
-            del objID, frags
+            del objID, frags, query, op, ret
 
         return RetVal(True, None, {'updated': num_updated})
 
