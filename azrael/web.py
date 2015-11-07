@@ -195,9 +195,10 @@ class MyGridFSHandler(tornado.web.RequestHandler):
 
         If the file does not exist then return an empty string to the client.
         """
-        tmp = self.dibbler.getFile(self.request.path)
-        if isinstance(tmp.data, bytes):
-            self.write(tmp.data)
+        fname = self.request.path
+        ret = self.dibbler.get([fname])
+        if ret.ok:
+            self.write(ret.data[fname])
         else:
             self.write(b'')
 
