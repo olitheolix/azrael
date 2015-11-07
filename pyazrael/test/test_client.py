@@ -534,7 +534,7 @@ class TestClient:
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_setFragments_raw(self, client_type):
         """
-        Spawn a new object and modify its geometry at runtime.
+        Spawn a new object with a raw fragment. Then modify that fragment.
         """
         # Get the client for this test.
         client = self.clients[client_type]
@@ -543,8 +543,8 @@ class TestClient:
         objID = 1
 
         # Add a new template and spawn it.
-        frag = {'bar': getFragRaw()}
-        temp = getTemplate('t1', fragments=frag)
+        fraw = getFragRaw()
+        temp = getTemplate('t1', fragments={'fraw': fraw})
         assert client.addTemplates([temp]).ok
 
         new_obj = {'templateID': temp.aid,
@@ -554,20 +554,23 @@ class TestClient:
         assert ret.ok and ret.data == [objID]
         del temp, new_obj, ret
 
-        # Query the SV to obtain the 'version' value.
+        # Query the rigid body to obtain the 'version' value.
         ret = client.getRigidBodies(objID)
         assert ret.ok
         version = ret.data[objID]['rbs'].version
 
-        # Fetch-, modify-, update- and verify the geometry.
+        # Verify the fragment type.
         ret = client.getFragments([objID])
         assert ret.ok
-        assert ret.data[objID]['bar']['fragtype'] == 'RAW'
+        assert ret.data[objID]['fraw']['scale'] == fraw.scale
+        assert ret.data[objID]['fraw']['position'] == list(fraw.position)
+        assert ret.data[objID]['fraw']['rotation'] == list(fraw.rotation)
+        assert ret.data[objID]['fraw']['fragtype'] == fraw.fragtype
 
         # Download the fragment.
         base_url = 'http://{ip}:{port}'.format(
             ip=config.addr_webapi, port=config.port_webapi)
-        url = base_url + ret.data[objID]['bar']['url_frag'] + '/model.json'
+        url = base_url + ret.data[objID]['fraw']['url_frag'] + '/model.json'
         for ii in range(10):
             assert ii < 8
             try:
@@ -576,24 +579,45 @@ class TestClient:
             except requests.exceptions.HTTPError:
                 time.sleep(0.2)
         model = base64.b64encode(tmp).decode('utf8')
-        assert model == frag['bar'].files['model.json']
+        assert model == fraw.files['model.json']
 
-        # Change the fragment geometries.
-        cmd = {objID: {k: v._asdict() for (k, v) in frag.items()}}
-        assert client.setFragments(cmd).ok
+        # Change the geometries of fragment 'fraw'.
+        b64enc = base64.b64encode
+        cmd = {
+            objID: {
+                'fraw': {
+                    'op': 'mod',
+                    'state': {
+                        'scale': 2,
+                        'position': [3, 4, 5],
+                        'rotation': [1, 0, 0, 0],
+                        },
+                    'fragtype': 'BLAH',
+                    'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
+                    }
+                }
+            }
+        assert client.setFragments(cmd) == (True, None, {'updated': 1})
 
+        # Query the fragment.
         ret = client.getFragments([objID])
         assert ret.ok
-        assert ret.data[objID]['bar']['fragtype'] == 'RAW'
+        assert ret.data[objID]['fraw']['scale'] == 2
+        assert ret.data[objID]['fraw']['position'] == [3, 4, 5]
+        assert ret.data[objID]['fraw']['rotation'] == [1, 0, 0, 0]
+        assert ret.data[objID]['fraw']['fragtype'] == 'BLAH'
 
-        # Download the fragment.
-        url = base_url + ret.data[objID]['bar']['url_frag'] + '/model.json'
+        # Download the 'model.json' and verify its content.
+        url = base_url + ret.data[objID]['fraw']['url_frag'] + '/model.json'
         tmp = requests.get(url).content
-
         model = base64.b64encode(tmp).decode('utf8')
-        assert model == frag['bar'].files['model.json']
+        assert model == fraw.files['model.json']
 
-        # Ensure 'version' is different as well.
+        # Download the new 'myfile.txt' and verify its content.
+        url = base_url + ret.data[objID]['fraw']['url_frag'] + '/myfile.txt'
+        assert requests.get(url).content == b'aaa'
+
+        # Ensure 'version' is different.
         ret = client.getRigidBodies(objID)
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
