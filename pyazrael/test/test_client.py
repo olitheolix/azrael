@@ -599,92 +599,46 @@ class TestClient:
             }
         assert client.setFragments(cmd) == (True, None, {'updated': 1})
 
-        # Query the fragment.
-        ret = client.getFragments([objID])
-        assert ret.ok
-        assert ret.data[objID]['fraw']['scale'] == 2
-        assert ret.data[objID]['fraw']['position'] == [3, 4, 5]
-        assert ret.data[objID]['fraw']['rotation'] == [1, 0, 0, 0]
-        assert ret.data[objID]['fraw']['fragtype'] == 'BLAH'
-
-        # Download the 'model.json' and verify its content.
-        url = base_url + ret.data[objID]['fraw']['url_frag'] + '/model.json'
-        tmp = requests.get(url).content
-        model = base64.b64encode(tmp).decode('utf8')
-        assert model == fraw.files['model.json']
-
-        # Download the new 'myfile.txt' and verify its content.
-        url = base_url + ret.data[objID]['fraw']['url_frag'] + '/myfile.txt'
-        assert requests.get(url).content == b'aaa'
-
-        # Ensure 'version' is different.
+        # The object must have received a new 'version'.
         ret = client.getRigidBodies(objID)
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
-
-    @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_update_FragmentStates(self, client_type):
-        """
-        Query and modify fragment states.
-        Note that fragment states are updated via 'setFragments'.
-        """
-        # Get the client for this test.
-        client = self.clients[client_type]
-
-        # Convenience.
-        objID = 1
-
-        # Add a new template and spawn it.
-        temp = getTemplate('t1', fragments={'bar': getFragRaw()})
-        assert client.addTemplates([temp]).ok
-
-        new_obj = {'templateID': temp.aid,
-                   'rbs': {'position': (1, 1, 1), 'velocityLin': (-1, -1, -1)}}
-        ret = client.spawn([new_obj])
-        assert ret.ok and ret.data == [objID]
-        del temp, new_obj, ret
-
-        # Query the Body State to get the Fragment States. Then verify the
-        # Fragment State named 'bar'.
-        ret = client.getObjectStates(objID)
-        ref = {'bar': {'scale': 1, 'position': [0, 0, 0], 'rotation': [0, 0, 0, 1]}}
-        assert ret.ok
-        assert ret.data[objID]['frag'] == ref
-
-        # Modify and update the fragment states in Azrael, then query and
-        # verify it worked.
-        cmd = {
-            objID: {
-                'bar': {
-                    'op': 'mod',
-                    'state': {
-                        'scale': 2.2,
-                        'position': [1, 2, 3],
-                        'rotation': [1, 0, 0, 0]
-                        }
-                    }
-                }
-            }
-        assert client.setFragments(cmd) == (True, None, {'updated': 1})
 
         # ---------------------------------------------------------------------
         # Query the object state and the fragment. Both must return the same
         # data for the fragment state (scale, position, rotation).
         # ---------------------------------------------------------------------
         # Query the object state.
-        ref = cmd[objID]['bar']['state']
+        ref = cmd[objID]['fraw']['state']
         ret1 = client.getObjectStates(objID)
         assert ret1.ok
-        ret1 = ret1.data[objID]['frag']['bar']
+        ret1 = ret1.data[objID]['frag']['fraw']
 
         # Query the fragment.
         ret2 = client.getFragments([objID])
         assert ret2.ok
-        ret2 = ret2.data[objID]['bar']
+        ret2 = ret2.data[objID]['fraw']
 
         # Compare that all values match.
         assert ref['scale'] == ret1['scale'] == ret2['scale']
         assert ref['position'] == ret1['position'] == ret1['position']
         assert ref['rotation'] == ret1['rotation'] == ret1['rotation']
+
+        # ---------------------------------------------------------------------
+        # Download the actual geometry files and verify their content.
+        # ---------------------------------------------------------------------
+        ret = client.getFragments([objID])
+
+        # fraw: model.json (must not have changed).
+        url = base_url + ret.data[objID]['fraw']['url_frag'] + '/model.json'
+        tmp = requests.get(url).content
+        model = base64.b64encode(tmp).decode('utf8')
+        assert model == fraw.files['model.json']
+
+        # fraw: myfile.txt (this one is new)
+        url = base_url + ret.data[objID]['fraw']['url_frag'] + '/myfile.txt'
+        assert requests.get(url).content == b'aaa'
+
+        assert False
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_collada_model(self, client_type):
