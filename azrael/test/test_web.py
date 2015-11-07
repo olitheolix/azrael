@@ -175,51 +175,6 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         self.verifyTemplate('{}/{}'.format(url_inst, 2), t2.fragments)
         self.verifyTemplate('{}/{}'.format(url_inst, 3), t1.fragments)
 
-    def test_updateFragments(self):
-        """
-        Modify the fragments of a spawned object.
-        """
-        self.dibbler.reset()
-        azrael.database.init()
-        clerk = azrael.clerk.Clerk()
-
-        # Create two Templates. The first has only one Raw- and two
-        # Collada geometries, the other has it the other way around.
-        frags_old = {'name1': getFragRaw(),
-                     'name2': getFragDae(),
-                     'name3': getFragDae()}
-        frags_new = {'name1': getFragDae(),
-                     'name2': getFragDae(),
-                     'name3': getFragRaw()}
-        t1 = getTemplate('t1', fragments=frags_old)
-
-        # Add-, spawn-, and verify the template.
-        assert clerk.addTemplates([t1]).ok
-        self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
-        ret = clerk.spawn([{'templateID': 't1', 'rbs': {'imass': 1}}])
-        objID = 1
-        assert ret.data == (objID, )
-
-        # Verify that the instance has the old fragments, not the new ones.
-        url_inst = config.url_instances
-        self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_old)
-        with pytest.raises(AssertionError):
-            self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_new)
-
-        # Update the fragments.
-        tmp = {k: v._asdict() for (k, v) in frags_new.items()}
-        clerk.setFragments({objID: tmp})
-
-        # Verify that the object now has the new fragments. Then verify that
-        # its old fragments are no longer available.
-        self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_new)
-
-        # fixme: activate this code again when updating setFragments. Currently
-        # the exception is not raised because no fragment were explicity
-        # deleted (some files were merely overwritten).
-#        with pytest.raises(AssertionError):
-#            self.verifyTemplate('{}/{}'.format(url_inst, 1), frags_old)
-
     def test_deleteInstance(self):
         """
         Add/remove an instance from Dibbler via Clerk and verify via WebServer.
