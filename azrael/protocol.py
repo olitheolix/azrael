@@ -195,8 +195,8 @@ def ToClerk_SetFragments_Decode(payload: dict):
 
 
 @typecheck
-def FromClerk_SetFragments_Encode(dummyarg):
-    return None
+def FromClerk_SetFragments_Encode(response):
+    return response
 
 
 # ---------------------------------------------------------------------------
