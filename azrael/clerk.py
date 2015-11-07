@@ -1126,8 +1126,8 @@ class Clerk(config.AzraelProcess):
                 # The file to delete in Dibbler.
                 op_file['del'].append('{url}/{filename}'.format(url=url, filename=fname))
 
-                # Mangle the file names (fixme: put this in dedicated method).
-                fname = fname.replace('.', ';')
+                # Mangle the file names to make them compatible with Mongo.
+                fname = self._mangleFileName(fname, unmangle=False)
 
                 # Remove the keys that list the file names.
                 op_db['unset'].append('{}.files.{}'.format(dbkey, fname))
@@ -1141,8 +1141,8 @@ class Clerk(config.AzraelProcess):
                 # The file to add/overwrite in Dibbler.
                 op_file['put']['{url}/{filename}'.format(url=url, filename=fname)] = fdata
 
-                # Mangle the file names (fixme: put this in dedicated method).
-                fname = fname.replace('.', ';')
+                # Mangle the file names to make them compatible with Mongo.
+                fname = self._mangleFileName(fname, unmangle=False)
 
                 # Update the keys that list the file names.
                 tmp = '{}.files.{}'.format(dbkey, fname)
