@@ -143,6 +143,17 @@ class Dibbler:
         """
         Return the files specified in ``fnames``.
 
+        The return value is a dictionary with the entries of ``fnames`` as
+        keys. For instance, if `fnames = ['foo.txt', 'bar.png']` then the
+        returned dictionary will be `{'foo.txt': bytes', 'bar.png': bytes}`.
+
+        If a file could not be found then the returned dictionary will miss the
+        respective key. This does not constitute an error (ie the 'ok' flag is
+        still set).
+
+        The 'ok' flag is only False if an error in the underlying file system
+        occurred.
+
         :param list[str] fname: the file names to retrieve.
         :return: dict[file_name: file_content]
         """
@@ -155,11 +166,12 @@ class Dibbler:
                 self.logit.info(msg)
             except gridfs.errors.CorruptGridFile:
                 msg = 'Corrupt GridFS for URL <{}>'.format(fname)
+                self.logit.error(msg)
                 return RetVal(False, msg, None)
             except gridfs.errors.GridFSError as err:
-                # All other GridFS errors.
-                return RetVal(False, None, None)
-
+                msg = 'Unkown GridFS error'
+                self.logit.error(msg)
+                return RetVal(False, msg, None)
         return RetVal(True, None, out)
 
     @typecheck
