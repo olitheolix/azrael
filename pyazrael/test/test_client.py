@@ -531,20 +531,36 @@ class TestClient:
         assert np.array_equal(leo_force, tot_force)
         assert np.array_equal(leo_torque, tot_torque)
 
+    def downloadURL(self, url):
+        for ii in range(10):
+            try:
+                return requests.get(url).content
+            except (requests.exceptions.HTTPError,
+                    requests.exceptions.ConnectionError):
+                time.sleep(0.1)
+        assert False
+
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
-    def test_setFragments_raw(self, client_type):
+    def test_setFragments(self, client_type):
         """
         Spawn a new object with a raw fragment. Then modify that fragment.
         """
         # Get the client for this test.
         client = self.clients[client_type]
 
+        # Address of web server.
+        base_url = 'http://{ip}:{port}'.format(
+            ip=config.addr_webapi, port=config.port_webapi)
+
+        # ---------------------------------------------------------------------
+        # Create a template with two fragments and spawn it.
+        # ---------------------------------------------------------------------
         # Convenience.
         objID = 1
 
         # Add a new template and spawn it.
-        fraw = getFragRaw()
-        temp = getTemplate('t1', fragments={'fraw': fraw})
+        fraw, fdae = getFragRaw(), getFragDae()
+        temp = getTemplate('t1', fragments={'fraw': fraw, 'fdae': fdae})
         assert client.addTemplates([temp]).ok
 
         new_obj = {'templateID': temp.aid,
@@ -554,34 +570,68 @@ class TestClient:
         assert ret.ok and ret.data == [objID]
         del temp, new_obj, ret
 
-        # Query the rigid body to obtain the 'version' value.
+        # Query the rigid body and record the current 'version'.
         ret = client.getRigidBodies(objID)
         assert ret.ok
         version = ret.data[objID]['rbs'].version
+        del ret
 
-        # Verify the fragment type.
+        # ---------------------------------------------------------------------
+        # Verify the fragments states.
+        # ---------------------------------------------------------------------
         ret = client.getFragments([objID])
         assert ret.ok
+
+        # State of RAW fragment.
         assert ret.data[objID]['fraw']['scale'] == fraw.scale
         assert ret.data[objID]['fraw']['position'] == list(fraw.position)
         assert ret.data[objID]['fraw']['rotation'] == list(fraw.rotation)
         assert ret.data[objID]['fraw']['fragtype'] == fraw.fragtype
 
-        # Download the fragment.
-        base_url = 'http://{ip}:{port}'.format(
-            ip=config.addr_webapi, port=config.port_webapi)
+        # State of DAE fragment.
+        assert ret.data[objID]['fdae']['scale'] == fdae.scale
+        assert ret.data[objID]['fdae']['position'] == list(fdae.position)
+        assert ret.data[objID]['fdae']['rotation'] == list(fdae.rotation)
+        assert ret.data[objID]['fdae']['fragtype'] == fdae.fragtype
+
+        # ---------------------------------------------------------------------
+        # Verify the fragments files.
+        # ---------------------------------------------------------------------
+        # fraw: model.json
         url = base_url + ret.data[objID]['fraw']['url_frag'] + '/model.json'
-        for ii in range(10):
-            assert ii < 8
-            try:
-                tmp = requests.get(url).content
-                break
-            except requests.exceptions.HTTPError:
-                time.sleep(0.2)
-        model = base64.b64encode(tmp).decode('utf8')
+        dl = self.downloadURL(url)
+        model = base64.b64encode(dl).decode('utf8')
         assert model == fraw.files['model.json']
 
-        # Change the geometries of fragment 'fraw'.
+        # fdae: model.dae
+        url = base_url + ret.data[objID]['fdae']['url_frag'] + '/model.dae'
+        dl = self.downloadURL(url)
+        model = base64.b64encode(dl).decode('utf8')
+        assert model == fdae.files['model.dae']
+
+        # fdae: rgb1.png
+        url = base_url + ret.data[objID]['fdae']['url_frag'] + '/rgb1.png'
+        dl = self.downloadURL(url)
+        model = base64.b64encode(dl).decode('utf8')
+        assert model == fdae.files['rgb1.png']
+
+        # fdae: rgb2.jpg
+        url = base_url + ret.data[objID]['fdae']['url_frag'] + '/rgb2.jpg'
+        dl = self.downloadURL(url)
+        model = base64.b64encode(dl).decode('utf8')
+        assert model == fdae.files['rgb2.jpg']
+
+        # Collect the URLs of all files from the 'fdae' model (We will need
+        # them later to verify that this fragment was correctly deleted).
+        urls_dae = [
+            base_url + ret.data[objID]['fdae']['url_frag'] + '/model.dae',
+            base_url + ret.data[objID]['fdae']['url_frag'] + '/rgb1.png',
+            base_url + ret.data[objID]['fdae']['url_frag'] + '/rgb2.jpg',
+            ]
+
+        # ---------------------------------------------------------------------
+        # Modify the fragments.
+        # ---------------------------------------------------------------------
         b64enc = base64.b64encode
         cmd = {
             objID: {
@@ -594,6 +644,9 @@ class TestClient:
                         },
                     'fragtype': 'BLAH',
                     'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
+                    },
+                'fdae': {
+                    'op': 'del'
                     }
                 }
             }
@@ -604,21 +657,27 @@ class TestClient:
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
         # ---------------------------------------------------------------------
-        # Query the object state and the fragment. Both must return the same
-        # data for the fragment state (scale, position, rotation).
+        # Verify the fragment states. Furthermore, verify that
+        # 'getObjectStates' and 'getFragments' agree.
         # ---------------------------------------------------------------------
-        # Query the object state.
+        # Download the fragment data via getObjectState.
         ref = cmd[objID]['fraw']['state']
         ret1 = client.getObjectStates(objID)
         assert ret1.ok
+
+        # Verify that only 'fraw' survived because we deleted 'fdae'.
+        assert set(ret1.data[objID]['frag']) == {'fraw'}
         ret1 = ret1.data[objID]['frag']['fraw']
 
-        # Query the fragment.
+        # Download the fragment data via getFragments.
         ret2 = client.getFragments([objID])
         assert ret2.ok
+
+        # Verify that only 'fraw' survived because we deleted 'fdae'.
+        assert set(ret2.data[objID]) == {'fraw'}
         ret2 = ret2.data[objID]['fraw']
 
-        # Compare that all values match.
+        # Verify that both methods returned the same (correct) result.
         assert ref['scale'] == ret1['scale'] == ret2['scale']
         assert ref['position'] == ret1['position'] == ret1['position']
         assert ref['rotation'] == ret1['rotation'] == ret1['rotation']
@@ -630,15 +689,17 @@ class TestClient:
 
         # fraw: model.json (must not have changed).
         url = base_url + ret.data[objID]['fraw']['url_frag'] + '/model.json'
-        tmp = requests.get(url).content
-        model = base64.b64encode(tmp).decode('utf8')
+        dl = self.downloadURL(url)
+        model = base64.b64encode(dl).decode('utf8')
         assert model == fraw.files['model.json']
 
         # fraw: myfile.txt (this one is new)
         url = base_url + ret.data[objID]['fraw']['url_frag'] + '/myfile.txt'
-        assert requests.get(url).content == b'aaa'
+        assert self.downloadURL(url) == b'aaa'
 
-        assert False
+        # The DAE models must not be available anymore.
+        for url in urls_dae:
+            assert self.downloadURL(url) == b''
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_collada_model(self, client_type):
