@@ -1079,16 +1079,20 @@ class Clerk(config.AzraelProcess):
             #            got ahead
             # file_put: files to add/overwrite in Dibbler (and their content).
             # file_del: files to delete in Dibbler.
-            db_set = {}
-            db_unset = []
-            db_exists = []
             file_put = {}
             file_del = []
             file_rmdir = []
-
-            # If any of the files were modified then the object needs a new
-            # version.
-            new_version = False
+            op_db = {
+                'new_version': False,
+                'set': {},
+                'unset': [],
+                'exists': [],
+                }
+            op_file = {
+                'put': {},
+                'del': [],
+                'rmdir': []
+                }
 
             # Path prefix for all the files that Dibbler has on this object.
             pre = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
@@ -1103,7 +1107,7 @@ class Clerk(config.AzraelProcess):
 
                 # The fragment must exist.
                 dbkey = 'template.fragments.{}'.format(fragname)
-                db_exists.append(dbkey)
+                op_db['exists'].append(dbkey)
                 
                 url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
 
@@ -1120,14 +1124,14 @@ class Clerk(config.AzraelProcess):
                         fdata = base64.b64decode(fdata.encode('utf8'))
                         # The file to add/overwrite in Dibbler.
                         file_put['{url}/{filename}'.format(url=url, filename=fname)] = fdata
-                    db_set[dbkey] = doc
+                    op_db['set'][dbkey] = doc
 
                     file_rmdir.append(url)
-                    new_version = True
+                    op_db['new_version'] = True
                 elif fragdata['op'] == 'del':
-                    db_unset.append(dbkey)
                     file_rmdir.append(url)
-                    new_version = True
+                    op_db['new_version'] = True
+                    op_db['unset'].append(dbkey)
                 else:
                     # Determine the state variables to update.
                     if 'state' in fragdata:
@@ -1143,13 +1147,13 @@ class Clerk(config.AzraelProcess):
                         # Compile a dictionary where the key denotes the position
                         # of the state variable in the database document hierarchy.
                         for field, value in ref.items():
-                            db_set['{}.{}'.format(dbkey, field)] = value
+                            op_db['set']['{}.{}'.format(dbkey, field)] = value
 
                     # If the user wants to change the fragment type then we must
                     # update the corresponding field in the database as well.
                     if 'fragtype' in fragdata:
-                        db_set['{}.fragtype'.format(dbkey)] = fragdata['fragtype']
-                        new_version = True
+                        op_db['set']['{}.fragtype'.format(dbkey)] = fragdata['fragtype']
+                        op_db['new_version'] = True
 
                     # Files to delete. This entails deleting the actual file in
                     # Dibbler, as well as the reference to it in the instance database.
@@ -1162,8 +1166,8 @@ class Clerk(config.AzraelProcess):
 
                         # Specify which key to remove in the database.
                         tmp = '{}.files.{}'.format(dbkey, fname)
-                        db_unset.append(tmp)
-                        new_version = True
+                        op_db['unset'].append(tmp)
+                        op_db['new_version'] = True
 
                     # Files to add/update. As above, we need to delete the files in
                     # Dibbler and remove the corresponding keys in the instance database.
@@ -1177,25 +1181,26 @@ class Clerk(config.AzraelProcess):
 
                         # Specify which key to add in the database.
                         tmp = '{}.files.{}'.format(dbkey, fname)
-                        db_set[tmp] = None
-                        new_version = True
+                        op_db['set'][tmp] = None
+                        op_db['new_version'] = True
 
             # -----------------------------------------------------------------
             # Compile the dabase query and update operation.
             # -----------------------------------------------------------------
             # Query: specific object ID; particular fields may have to exist
             # for the update to take place.
-            query = {k: {'$exists': True} for k in db_exists}
+            query = {k: {'$exists': True} for k in op_db['exists']}
             query['objID'] = objID
 
             # Update operations.
             op = {
-                '$inc': {'version': 1} if new_version else {},
-                '$set': db_set,
-                '$unset': {name: '' for name in db_unset}
+                '$inc': {'version': 1} if op_db['new_version'] else {},
+                '$set': op_db['set'],
+                '$unset': {name: '' for name in op_db['unset']}
                 }
             # Prune update operations.
             op = {k: v for k, v in op.items() if len(v) > 0}
+            del op_db
 
             # If no updates are necessary then skip this object.
             if len(op) == 0:
