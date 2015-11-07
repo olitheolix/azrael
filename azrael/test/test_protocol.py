@@ -22,7 +22,7 @@ import azrael.protocol as protocol
 
 from IPython import embed as ipshell
 from azrael.test.test import getP2P, get6DofSpring2
-from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
+from azrael.test.test import getFragRaw, getFragDae, getRigidBody
 
 
 class TestClerk:
@@ -65,7 +65,7 @@ class TestClerk:
         }
 
         # Create some fragments...
-        frags = {'f1': getFragRaw(), 'f2': getFragDae(), 'f3': getFragNone()}
+        frags = {'f1': getFragRaw(), 'f2': getFragDae()}
 
         # ... and a body...
         body = getRigidBody(position=(1, 2, 3))

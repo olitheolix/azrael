@@ -46,8 +46,7 @@ RetVal = namedtuple('RetVal', 'ok msg data')
 _Template = namedtuple('_Template', 'aid rbs fragments boosters factories custom')
 
 # Fragments.
-_FragMeta = namedtuple('_FragMeta',
-                       'fragtype scale position rotation files')
+_FragMeta = namedtuple('_FragMeta', 'fragtype scale position rotation files')
 
 # Work package related.
 WPData = namedtuple('WPData', 'aid sv force torque')

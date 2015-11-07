@@ -36,7 +36,7 @@ import azrael.config as config
 from IPython import embed as ipshell
 from azrael.aztypes import RetVal, CollShapeMeta
 from azrael.test.test import getLeonard, killAzrael, getP2P, get6DofSpring2
-from azrael.test.test import getFragRaw, getFragDae, getFragNone, getRigidBody
+from azrael.test.test import getFragRaw, getFragDae, getRigidBody
 from azrael.test.test import getCSEmpty, getCSBox, getCSSphere
 from azrael.test.test import getCSPlane, getTemplate
 

@@ -83,14 +83,6 @@ def getCSPlane(pos=[0, 0, 0], rot=[0, 0, 0, 1], normal=[0, 0, 1], ofs=0):
     return CollShapeMeta('plane', pos, rot, CollShapePlane(normal, ofs))
 
 
-def getFragNone(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
-    """
-    Convenience function to construct an empty geometry element.
-    """
-    return FragMeta(fragtype='_del_', scale=scale, position=pos,
-                    rotation=rot, files={})
-
-
 def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Convenience function: return typical RAW fragment.
