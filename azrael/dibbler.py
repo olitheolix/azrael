@@ -81,24 +81,6 @@ class Dibbler:
         """
         return RetVal(True, None, len(self.fs.list()))
 
-    @typecheck
-    def getFile(self, location: str):
-        """
-        Return the latest version of ``location``.
-
-        If ``location`` does not exist then return an error.
-
-        :param str location: the location to retrieve (eg.
-                             '/instances/8/meta.json').
-        :return: content of ``location`` (or *None* if an error occurred).
-        :rtype: bytes
-        """
-        ret = self.get([location])
-        if ret.ok and location in ret.data:
-            return RetVal(True, None, ret.data[location])
-        else:
-            return RetVal(False, ret.msg, None)
-
     def isValidFileName(self, fname):
         """
         Return True if ``fname`` is admissible.
