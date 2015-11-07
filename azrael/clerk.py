@@ -419,7 +419,7 @@ class Clerk(config.AzraelProcess):
 
                 # Mangle all fragment file names to make them compatible with
                 # Mongo.
-                template_json = self._mangleFileNames(template._asdict())
+                template_json = self._mangleTemplate(template._asdict())
 
                 # Compile the template data that will go into the database. The
                 # template will be stored as an explicit dictionary.
@@ -492,7 +492,7 @@ class Clerk(config.AzraelProcess):
         try:
             for doc in cursor:
                 # Undo the file name mangling.
-                template_json = self._unmangleFileNames(doc['template'])
+                template_json = self._unmangleTemplate(doc['template'])
 
                 # Parse the document into a Template structure and add it to
                 # the list of templates.
@@ -516,38 +516,16 @@ class Clerk(config.AzraelProcess):
         # Return the templates.
         return RetVal(True, None, out)
 
-    def _mangleFileNamesHelper(self, template_json: dict, char_src, char_dst):
+    def _mangleFileName(self, fname: str, unmangle: bool):
         """
-        Return 'template_json' where all file names were mangled.
-
-        The mangling simply replaces all occurrences of ``char_src`` with
-        ``char_dst``. Example: if ``char_src`` is '.' and ``char_dst`` is ';'
-        then 'foo.bar' will become 'foo;bar;.
-
-        The returned dictionary will be identical to``template_json`` except
-        for the mangled file names.
-
-        :param dict template_json: dictionary version of ``Template`` data
-            structure.
-        :param str char_src: the character(s) to replace
-        :param str char_dst: the character(s) with which to replace
-            ``char_src``.
-        :return: dict
+        Return the (un)mangled version of ``fname``.
         """
-        # Convert the template to JSON but remove the fragment data;
-        # retain only names of the fragment files. The actual geometry
-        # content is managed by Dibbler.
-        for fragname, metafrag in template_json['fragments'].items():
-            # Replace the 'files' dictionary with one where all values
-            # are empty. Then mangle all file names (replace all
-            # dots with semicolons) because Mongo would not accept dots
-            # in any of the keys.
-            fnames = metafrag['files']
-            tmp = {fname.replace(char_src, char_dst): None for fname in fnames}
-            metafrag['files'] = tmp
-        return template_json
-        
-    def _mangleFileNames(self, template_json: dict):
+        if unmangle:
+            return fname.replace(';', '.')
+        else:
+            return fname.replace('.', ';')
+
+    def _mangleTemplate(self, template_json: dict):
         """
         Return ``template_json`` with mangled file names.
 
@@ -558,19 +536,33 @@ class Clerk(config.AzraelProcess):
             structure.
         :return: dict
         """
-        return self._mangleFileNamesHelper(template_json, '.', ';')
+        # Iterate over all fragments in the template and mangle the geometry
+        # file names.
+        for fragname, metafrag in template_json['fragments'].items():
+            fnames = metafrag['files']
+            tmp = {self._mangleFileName(fname, unmangle=False): None
+                   for fname in fnames}
+            metafrag['files'] = tmp
+        return template_json
 
-    def _unmangleFileNames(self, template_json: dict):
+    def _unmangleTemplate(self, template_json: dict):
         """
         Return ``template_json`` with unmangled file names.
 
-        This method is the inverse of ``_mangleFileNames``.
+        This method is the inverse of ``_mangleTemplate``.
 
         :param dict template_json: dictionary version of ``Template`` data
             structure.
         :return: dict
         """
-        return self._mangleFileNamesHelper(template_json, ';', '.')
+        # Iterate over all fragments in the template and mangle the geometry
+        # file names.
+        for fragname, metafrag in template_json['fragments'].items():
+            fnames = metafrag['files']
+            tmp = {self._mangleFileName(fname, unmangle=True): None
+                   for fname in fnames}
+            metafrag['files'] = tmp
+        return template_json
 
     @typecheck
     def spawn(self, newObjects: (tuple, list)):
@@ -700,7 +692,7 @@ class Clerk(config.AzraelProcess):
                 
                 # Mangle all fragment file names to make them compatible with
                 # Mongo.
-                template_json = self._mangleFileNames(template._asdict())
+                template_json = self._mangleTemplate(template._asdict())
 
                 # Compile the database document. Each entry must be an explicit
                 # dictionary (eg 'template'). The document contains the
@@ -1025,7 +1017,7 @@ class Clerk(config.AzraelProcess):
                 # (partially) invalid because one or more keys have gone missing.
                 try:
                     # Restore the original fragment file names.
-                    template_json = self._unmangleFileNames(doc['template'])
+                    template_json = self._unmangleTemplate(doc['template'])
 
                     # Compile each fragment into a `FragMeta` type.
                     frags = template_json['fragments']
