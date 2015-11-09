@@ -272,7 +272,7 @@ class FragMeta(_FragMeta):
     argument is ignored altogether.
 
     :param str fragtype: fragment type (eg 'raw', or 'dae', or None)
-    :param dict fragdata: fragment files (eg {'model.json': base64 string})
+    :param dict fragdata: fragment files (eg {'model.json': string or bytes})
     :return: compiled  ``_FragMeta`` instance.
     :raises: TypeError if the input does not compile to the data type.
     """

@@ -34,7 +34,6 @@ This version of Dibbler uses Mongo's GridFS to store the files.
 """
 import os
 import json
-import base64
 import gridfs
 import logging
 
