@@ -35,7 +35,6 @@ del p
 
 import time
 import json
-import base64
 import demolib
 import tempfile
 import argparse
@@ -641,7 +640,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             'uv': uv.tolist(),
             'rgb': rgb.tolist()
         }
-        model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
+        model = json.dumps(model).encode('utf8')
 
         fm = FragMeta(fragtype='RAW',
                       scale=1,

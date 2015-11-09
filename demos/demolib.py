@@ -19,7 +19,6 @@ import os
 import sys
 import time
 import json
-import base64
 import netifaces
 import subprocess
 import numpy as np
@@ -80,8 +79,7 @@ def compileRawFragment(vert, uv, rgb):
         'rgb': rgb.tolist()
     }
 
-    model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
-    return {'model.json': model}
+    return {'model.json': json.dumps(model).encode('utf8')}
 
 
 def getFragMetaRaw(vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
@@ -272,13 +270,10 @@ def getFragMeta3JS(filenames, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Return compiled FragMeta tuple for a ThreeJS model.
     """
-    # Load all the model files and encode them.
-    files = {}
-    for fname in filenames:
-        tmp = open(fname, 'rb').read()
-        files[fname] = base64.b64encode(tmp).decode('utf8')
+    # Load all model files.
+    files = {fname: open(fname, 'rb').read() for fname in filenames}
 
-    # Wrap the geometry data in a FragMeta tuple.
+    # Wrap the geometry data into a FragMeta tuple.
     return FragMeta(fragtype='3JS_V4',
                     scale=scale,
                     position=pos,
