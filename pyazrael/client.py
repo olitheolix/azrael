@@ -27,6 +27,7 @@ feature set is identical).
 import io
 import zmq
 import json
+import base64
 import logging
 import requests
 import traceback
@@ -242,10 +243,17 @@ class Client():
         :param list templates: list of ``Template`` instances.
         :return: Success
         """
+        b64enc = base64.b64encode
         # Return an error unless all templates pass the sanity checks.
         try:
-            # Sanity check each template.
+            # Sanity check each template and Base64 encode all fragment files.
             templates = [Template(*_)._asdict() for _ in templates]
+            for template in templates:
+                for fragname in template['fragments']:
+                    files = template['fragments'][fragname]['files']
+                    files = {k: b64enc(v).decode('utf8') for k, v in files.items()}
+                    template['fragments'][fragname]['files'] = files
+
         except AssertionError:
             return RetVal(False, 'Data type error', None)
 
@@ -367,19 +375,37 @@ class Client():
         return ret._replace(data=data)
 
     @typecheck
-    def setFragments(self, fragments: dict):
+    def setFragments(self, cmd: dict):
         """
-        Change the ``fragments``.
+        Modify the fragments according to ``cmd``.
 
-        The format of ``fragments`` is::
+        The format of ``cmd`` is defined in `azschema.setFragments`. Basically
+        it looks like this::
 
-            fragments = {objID_0: {fragID_0: {'scale': 2}, ...},
-                         objID_1: {fragID_0: {'position': (1, 2, 3), ...},}
+            {objID: {
+                'scale': num_nonneg,
+                'position': vec3,
+                'rotation': vec4,
+                'fragtype': {'type': 'string'},
+                'del': [file_1, file_2, ...]
+                'put': {{file_1: content, file_2: content, ...},
+                'op': {'type': 'string', 'pattern': "put|mod|del"},
+            }}
 
-        :param dict fragments: nested dictionary to (partially) update fragments.
+        :param dict cmd: 
         :return: Success
         """
-        return self.serialiseAndSend('set_fragments', {'fragments': fragments})
+        def enc(filedata):
+            return base64.b64encode(filedata).decode('utf8')
+
+        for objID in cmd:
+            for fragname, fragdata in cmd[objID].items():
+                if 'del' in fragdata:
+                    fragdata['del'] = [enc(v) for v in fragdata['del']]
+                if 'put' in fragdata:
+                    fragdata['put'] = {k: enc(v) for k, v in fragdata['put'].items()}
+            
+        return self.serialiseAndSend('set_fragments', {'fragments': cmd})
 
     @typecheck
     def getRigidBodies(self, objIDs: (int, list, tuple)):

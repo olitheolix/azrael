@@ -26,7 +26,6 @@ import os
 import sys
 import time
 import json
-import base64
 import pytest
 import requests
 
@@ -234,7 +233,6 @@ class TestClient:
         ret = client.getTemplateGeometry(ret.data[temp_name])
         assert ret.ok
         ret = ret.data['bar']['model.json'].encode('utf8')
-        ret = base64.b64encode(ret).decode('utf8')
         assert ret == frag['bar'].files['model.json']
         del ret, temp_out, temp_orig
 
@@ -290,7 +288,6 @@ class TestClient:
         ret = client.getTemplateGeometry(ret.data[temp.aid])
         assert ret.ok
         ret = ret.data['bar']['model.json'].encode('utf8')
-        ret = base64.b64encode(ret).decode('utf8')
         assert ret == frag['bar'].files['model.json']
 
     @pytest.mark.parametrize('client_type', ['ZeroMQ', 'Websocket'])
@@ -600,26 +597,22 @@ class TestClient:
         # fraw: model.json
         url = base_url + ret.data[objID]['fraw']['url_frag'] + '/model.json'
         dl = self.downloadURL(url)
-        model = base64.b64encode(dl).decode('utf8')
-        assert model == fraw.files['model.json']
+        assert dl == fraw.files['model.json']
 
         # fdae: model.dae
         url = base_url + ret.data[objID]['fdae']['url_frag'] + '/model.dae'
         dl = self.downloadURL(url)
-        model = base64.b64encode(dl).decode('utf8')
-        assert model == fdae.files['model.dae']
+        assert dl == fdae.files['model.dae']
 
         # fdae: rgb1.png
         url = base_url + ret.data[objID]['fdae']['url_frag'] + '/rgb1.png'
         dl = self.downloadURL(url)
-        model = base64.b64encode(dl).decode('utf8')
-        assert model == fdae.files['rgb1.png']
+        assert dl == fdae.files['rgb1.png']
 
         # fdae: rgb2.jpg
         url = base_url + ret.data[objID]['fdae']['url_frag'] + '/rgb2.jpg'
         dl = self.downloadURL(url)
-        model = base64.b64encode(dl).decode('utf8')
-        assert model == fdae.files['rgb2.jpg']
+        assert dl == fdae.files['rgb2.jpg']
 
         # Collect the URLs of all files from the 'fdae' model (We will need
         # them later to verify that this fragment was correctly deleted).
@@ -632,7 +625,6 @@ class TestClient:
         # ---------------------------------------------------------------------
         # Modify the fragments.
         # ---------------------------------------------------------------------
-        b64enc = base64.b64encode
         cmd = {
             objID: {
                 'fraw': {
@@ -641,7 +633,7 @@ class TestClient:
                     'position': [3, 4, 5],
                     'rotation': [1, 0, 0, 0],
                     'fragtype': 'BLAH',
-                    'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
+                    'put': {'myfile.txt': b'aaa'},
                 },
                 'fdae': {
                     'op': 'del'
@@ -688,8 +680,7 @@ class TestClient:
         # fraw: model.json (must not have changed).
         url = base_url + ret.data[objID]['fraw']['url_frag'] + '/model.json'
         dl = self.downloadURL(url)
-        model = base64.b64encode(dl).decode('utf8')
-        assert model == fraw.files['model.json']
+        assert dl == fraw.files['model.json']
 
         # fraw: myfile.txt (this one is new)
         url = base_url + ret.data[objID]['fraw']['url_frag'] + '/myfile.txt'
