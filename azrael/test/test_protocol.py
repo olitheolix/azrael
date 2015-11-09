@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
+import base64
 import json
 
 import azrael.test.test
@@ -78,12 +79,43 @@ class TestClerk:
             boosters=boosters,
             factories=factories)
 
+    def test_addTemplate(self):
+        """
+        The codec must undo the Base64 encodings on all files in all fragments.
+        """
+        # Compile a valid Template structure.
+        payload_src = [self.getTestTemplate('t1'), self.getTestTemplate('t2')]
+        payload_dict = [_._asdict() for _ in payload_src]
+
+        # Base64 encode all files because this is how the protocol on Clerk's
+        # end expects it.
+        for payload in payload_dict:
+            for fragname in payload['fragments']:
+                files = payload['fragments'][fragname]['files']
+                files = {k: base64.b64encode(v).decode('utf8')
+                         for k, v in files.items()}
+                payload['fragments'][fragname]['files'] = files
+
+        # Convert to JSON and back (simulates the wire transmission).
+        enc = json.loads(json.dumps({'templates': payload_dict}))
+        dec = protocol.ToClerk_AddTemplates_Decode(enc)
+
+        # The decoded template must match the original.
+        assert dec['templates'] == payload_src
+
     def test_GetTemplate(self):
         """
-        Test codec for {add,get}Template functions.
+        Verify the return format.
         """
         # Get a valid template.
         template = self.getTestTemplate()
+
+        # Remove the content of all files because this is how Clerk will do it
+        # too (files are only available via the web server).
+        for fragname in template.fragments:
+            files = template.fragments[fragname].files
+            for k in files:
+                files[k] = None
 
         # Clerk --> Client.
         payload = {template.aid: {
@@ -203,21 +235,6 @@ class TestClerk:
             # Decode the data.
             assert len(enc) == 1
             assert aztypes.ConstraintMeta(**enc[0]) == con
-
-    def test_addTemplate(self):
-        """
-        Test addTemplate codec a complex Template.
-        """
-        # Compile a valid Template structure.
-        payload = [self.getTestTemplate('t1'), self.getTestTemplate('t2')]
-        payload_d = [_._asdict() for _ in payload]
-
-        # Convert to JSON and back (simulates the wire transmission).
-        enc = json.loads(json.dumps({'templates': payload_d}))
-        dec = protocol.ToClerk_AddTemplates_Decode(enc)
-        del enc
-
-        assert dec['templates'] == payload
 
     def test_spawn(self):
         """

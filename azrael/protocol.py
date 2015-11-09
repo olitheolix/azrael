@@ -28,7 +28,7 @@ clients.
 The JSON only protocoly should make it possible to write clients in other
 languages.
 """
-
+import base64
 import azrael.util
 import azrael.aztypes as aztypes
 
@@ -56,11 +56,32 @@ def FromClerk_Ping_Encode(payload: str):
 
 @typecheck
 def ToClerk_AddTemplates_Decode(payload: dict):
-    # Compile- and sanity check each template.
+    """
+    Undo the Base64 encoding from all files. Otherwise the templates remain
+    unchanged.
+    """
+
+    # Convenience.
     T = aztypes.Template
+    dec = base64.b64decode
     with azrael.util.Timeit('clerk.decode'):
-        templates = [T(**_) for _ in payload['templates']]
-    payload['templates'] = templates
+        decoded = []
+        # Iterate over all templates.
+        for template in payload['templates']:
+            # Iterate over all fragments in current template.
+            for fragname in template['fragments']:
+                # Undo the Base64 encoding for each fragment.
+                files = template['fragments'][fragname]['files']
+                files = {k: dec(v.encode('utf8')) for k, v in files.items()}
+
+                # Overwrite the original 'file' dictionary.
+                template['fragments'][fragname]['files'] = files
+
+            # Turn the input data into a Template type.
+            decoded.append(T(**template))
+
+    # Overwrite the original template with the updated version.
+    payload['templates'] = decoded
     return payload
 
 
@@ -191,6 +212,17 @@ def FromClerk_GetFragments_Encode(geo):
 def ToClerk_SetFragments_Decode(payload: dict):
     # Convert the IDs to integers.
     payload['fragments'] = {int(k): v for (k, v) in payload['fragments'].items()}
+
+    def dec(filedata):
+        return base64.b64decode(filedata.encode('utf8'))
+
+    # Undo the Base64 encoding.
+    for objID in payload['fragments']:
+        for fragname, fragdata in payload['fragments'][objID].items():
+            if 'del' in fragdata:
+                fragdata['del'] = [dec(v) for v in fragdata['del']]
+            if 'put' in fragdata:
+                fragdata['put'] = {k: dec(v) for k, v in fragdata['put'].items()}
     return payload
 
 
