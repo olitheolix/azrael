@@ -42,7 +42,6 @@ import zmq
 import copy
 import json
 import jsonschema
-import base64
 import traceback
 
 import numpy as np
@@ -388,9 +387,6 @@ class Clerk(config.AzraelProcess):
             # Insert each template into the database (only queue it in the bulk
             # operation, actually).
             for template in templates:
-                # Convenience.
-                b64dec = base64.b64decode
-
                 # Store all fragment files in Dibbler under the following URL
                 # prefix (eg. 'templates/template_name/'). The final URL for
                 # each fragment will look something like this:
@@ -401,12 +397,8 @@ class Clerk(config.AzraelProcess):
                     # Create the url prefix for the current fragment name.
                     prefix = '{url}/{name}/'.format(url=url_frag, name=fragname)
 
-                    # Attach the url prefix to each file in the fragment.
+                    # Attach the URL prefix to each file in the fragment.
                     files = {prefix + k: v for k, v in frag.files.items()}
-
-                    # Base64 encode the data (cannot be binary because it will
-                    # be served up via HTTP).
-                    files = {k: b64dec(v.encode('utf8')) for k, v in files.items()}
 
                     # Put the files into Dibbler. Abort the entire method if an
                     # error occurs.
@@ -482,7 +474,7 @@ class Clerk(config.AzraelProcess):
         # Remove all duplicates from the list of templateIDs.
         templateIDs = tuple(set(templateIDs))
 
-        # Fetch all requested templates and place them into a dictonary where
+        # Fetch all requested templates and place them into a dictionary where
         # the template ID is the key. Use a projection operator to suppress
         # Mongo's "_id" field.
         db = database.dbHandles['Templates']
@@ -1089,7 +1081,6 @@ class Clerk(config.AzraelProcess):
                 # Specify the files that have should to go into Dibbler.
                 files = {}
                 for fname, fdata in fragdata['put'].items():
-                    fdata = base64.b64decode(fdata.encode('utf8'))
                     files['{url}/{filename}'.format(url=url, filename=fname)] = fdata
             except KeyError:
                 msg = 'New fragment for object <{}> is incomplete'.format(objID)
@@ -1139,9 +1130,6 @@ class Clerk(config.AzraelProcess):
 
             # Overwrite these files.
             for fname, fdata in fragdata.get('put', {}).items():
-                # Dibbler needs binary data.
-                fdata = base64.b64decode(fdata.encode('utf8'))
-
                 # The file to add/overwrite in Dibbler.
                 absname = '{url}/{filename}'.format(url=url, filename=fname)
                 op_file['put'][absname] = fdata

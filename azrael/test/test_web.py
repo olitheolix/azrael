@@ -1,6 +1,5 @@
 import json
 import pytest
-import base64
 import tornado.web
 import tornado.testing
 import azrael.web
@@ -55,14 +54,6 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         fdata = {}
         for fname in fnames:
             fdata[fname] = self.fetch(url + fname, method='GET').body
-
-        # Convert the fields to Base64 encode strings and construct a new
-        # FragDae instance.
-        b64enc = base64.b64encode
-        try:
-            fdata = {k: b64enc(v).decode('utf8') for (k, v) in fdata.items()}
-        except ValueError:
-            assert False
         return fdata
 
     def verifyTemplate(self, url, fragments):

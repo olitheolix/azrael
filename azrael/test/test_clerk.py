@@ -21,7 +21,6 @@ Test the Clerk module.
 import zmq
 import json
 import time
-import base64
 import requests
 
 import numpy as np
@@ -1767,7 +1766,6 @@ class TestModifyFragments:
         """
         # Convenience.
         clerk, id_0 = self.clerk, self.id_0
-        b64enc = base64.b64encode
 
         # Fetch the current object version.
         ret = clerk.getObjectStates([id_0])
@@ -1784,8 +1782,8 @@ class TestModifyFragments:
             id_0: {
                 'fraw': {
                     'put': {
-                        'myfile.txt': b64enc(b'aaa').decode('utf8'),
-                        'model.json': b64enc(b'bbb').decode('utf8'),
+                        'myfile.txt': b'aaa',
+                        'model.json': b'bbb',
                     },
                     'op': 'mod',
                 },
@@ -1904,7 +1902,6 @@ class TestModifyFragments:
         Add a new fragment that does not yet exist.
         """
         # Convenience.
-        b64enc = base64.b64encode
         clerk, id_0 = self.clerk, self.id_0
 
         # Get the current version of both objects.
@@ -1921,7 +1918,7 @@ class TestModifyFragments:
                     'position': [1, 2, 3],
                     'rotation': [1, 0, 0, 1],
                     'fragtype': 'CUSTOM',
-                    'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
+                    'put': {'myfile.txt': b'aaa'},
                 }
             }
         }
@@ -1941,7 +1938,6 @@ class TestModifyFragments:
         Add a new fragment with an incomplete description. This must fail.
         """
         # Convenience.
-        b64enc = base64.b64encode
         clerk, id_0 = self.clerk, self.id_0
 
         # Get the current version of both objects.
@@ -1958,7 +1954,7 @@ class TestModifyFragments:
                     'scale': 2,
                     'rotation': [1, 0, 0, 1],
                     'fragtype': 'CUSTOM',
-                    'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
+                    'put': {'myfile.txt': b'aaa'},
                 }
             }
         }
@@ -2000,7 +1996,6 @@ class TestModifyFragments:
         """
         # Convenience.
         clerk, id_0 = self.clerk, self.id_0
-        b64enc = base64.b64encode
 
         # Overwrite the existing fragment 'fraw'.
         cmd = {
@@ -2010,7 +2005,7 @@ class TestModifyFragments:
                     'position': [1, 2, 3],
                     'rotation': [1, 0, 0, 1],
                     'fragtype': 'CUSTOM',
-                    'put': {'myfile.txt': b64enc(b'aaa').decode('utf8')},
+                    'put': {'myfile.txt': b'aaa'},
                     'op': 'put',
                 }
             }
@@ -2044,7 +2039,6 @@ class TestModifyFragments:
         """
         # Convenience.
         clerk, id_0 = self.clerk, self.id_0
-        b64enc = base64.b64encode
 
         # Get the current version for id_0.
         ret = clerk.getObjectStates([id_0])
@@ -2248,14 +2242,13 @@ class TestClerkEnd2End:
         # Download the fragment with name 'fraw'. Then verify its files.
         url = base_url + data['fraw']['url_frag'] + '/model.json'
         tmp = self.downloadURL(url)
-        tmp = base64.b64encode(tmp).decode('utf8')
         assert tmp == f_raw.files['model.json']
 
         # Download the fragment with name 'fdae'. Then verify its files.
         for fname in f_dae.files.keys():
             url = base_url + data['fdae']['url_frag'] + '/' + fname
             tmp = self.downloadURL(url)
-            assert tmp == base64.b64decode(f_dae.files[fname])
+            assert tmp == f_dae.files[fname]
 
         # ---------------------------------------------------------------------
         # Modify the fragment geometries. Then verify the update was
@@ -2292,13 +2285,13 @@ class TestClerkEnd2End:
         # Download the 'RAW' file and verify its content is correct.
         url = base_url + data['fraw']['url_frag'] + '/model.json'
         dl = self.downloadURL(url)
-        assert dl == base64.b64decode(f_raw.files['model.json'])
+        assert dl == f_raw.files['model.json']
 
         # Download and verify all model files.
         for fname in f_dae.files.keys():
             url = base_url + data['fdae']['url_frag'] + '/' + fname
             dl = self.downloadURL(url)
-            assert dl == base64.b64decode(f_dae.files[fname])
+            assert dl == f_dae.files[fname]
 
 
 def test_invalid():

@@ -21,7 +21,6 @@ other tests.
 """
 import os
 import json
-import base64
 import subprocess
 import numpy as np
 import azrael.leonard
@@ -95,7 +94,7 @@ def getFragRaw(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     }
 
     # Make it compatible with HTTP transport.
-    model = base64.b64encode(json.dumps(model).encode('utf8')).decode('utf8')
+    model = json.dumps(model).encode('utf8')
 
     # Create a dictionary of all the files that constitute this model (RAW
     # models only have a single file called 'model.json').
@@ -117,10 +116,6 @@ def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     dae_file = bytes(np.random.randint(0, 100, 3).astype(np.uint8))
     dae_rgb1 = bytes(np.random.randint(0, 100, 3).astype(np.uint8))
     dae_rgb2 = bytes(np.random.randint(0, 100, 3).astype(np.uint8))
-
-    dae_file = base64.b64encode(dae_file).decode('utf8')
-    dae_rgb1 = base64.b64encode(dae_rgb1).decode('utf8')
-    dae_rgb2 = base64.b64encode(dae_rgb2).decode('utf8')
 
     # Create a dictionary of all the files that constitute this model.
     files = {
