@@ -297,7 +297,7 @@ class FragMeta(_FragMeta):
             # Verify that the geometry files have the correct format.
             for fname, fdata in files.items():
                 assert isinstance(fname, str)
-                assert isinstance(fdata, str) or fdata is None
+                assert isinstance(fdata, (str, bytes)) or fdata is None
         except (TypeError, AssertionError):
             msg = 'Cannot construct <{}>'.format(cls.__name__)
             logit.warning(msg)
