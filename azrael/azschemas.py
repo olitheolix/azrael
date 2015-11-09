@@ -166,6 +166,5 @@ Template = {
         },
     },
     'required': ['aid', 'custom', 'rbs', 'fragments', 'boosters', 'factories'],
-#    'additionalProperties': False,
+    'additionalProperties': False,
 }
-
