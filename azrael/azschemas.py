@@ -17,6 +17,14 @@
 """
 JSON schemas to validate data structures.
 """
+# 2 Element vector (eg position).
+vec2 = {
+    'type': 'array',
+    'minItems': 2,
+    'maxItems': 2,
+    'items': {'type': 'number'},
+}
+
 # 3 Element vector (eg position).
 vec3 = {
     'type': 'array',
@@ -58,3 +66,106 @@ setFragments = {
     'required': ['op'],
     'additionalProperties': False,
 }
+
+
+FragMeta = {
+    'title': 'FragMeta',
+    'type': 'object',
+    'properties': {
+        'scale': num_nonneg,
+        'position': vec3,
+        'rotation': vec4,
+        'fragtype': {'type': 'string'},
+        'files': {'type': 'object'},
+    },
+    'required': ['scale', 'position', 'rotation', 'fragtype', 'files'],
+    'additionalProperties': False,
+}
+
+
+Booster = {
+    'title': 'Booster',
+    'type': 'object',
+    'properties': {
+        'minval': {'type': 'number'},
+        'maxval': {'type': 'number'},
+        'force': {'type': 'number'},
+        'pos': vec3,
+        'direction': vec3,
+    },
+    'required': ['minval', 'maxval', 'force', 'pos', 'direction'],
+    'additionalProperties': False,
+}
+
+
+Factory = {
+    'title': 'Factory',
+    'type': 'object',
+    'properties': {
+        'templateID': {'type': 'string'},
+        'exit_speed': vec2,
+        'pos': vec3,
+        'direction': vec3,
+    },
+    'required': ['templateID', 'exit_speed', 'pos', 'direction'],
+    'additionalProperties': False,
+}
+
+
+RigidBodyState = {
+    'title': 'RigidBodyState',
+    'type': 'object',
+    'properties': {
+        'scale': num_nonneg,
+        'imass': num_nonneg,
+        'restitution': num_nonneg,
+        'position': vec3,
+        'velocityLin': vec3,
+        'velocityRot': vec3,
+        'rotation': vec4,
+        'cshapes': {'type': 'object'},
+        'axesLockLin': vec3,
+        'axesLockRot': vec3,
+        'version': {'type': 'number'},
+    },
+    'required': ['scale', 'imass', 'restitution', 'position', 'rotation',
+                 'axesLockLin', 'axesLockRot', 'version', 'cshapes'],
+    'additionalProperties': False,
+}
+
+Template = {
+    'title': 'Template',
+    'definitions': {
+        'FragMeta': FragMeta,
+        'RigidBodyState': RigidBodyState,
+        'Booster': Booster,
+        'Factory': Factory,
+    },
+    'type': 'object',
+    'properties': {
+        'aid': {'type': 'string'},
+        'custom': {'type': 'string'},
+        'rbs': {'$ref': '#/definitions/RigidBodyState'},
+        'fragments': {
+            'type': 'object',
+            'patternProperties': {
+                '.*': {'oneOf': [{'$ref': '#/definitions/FragMeta'}]},
+            }
+        },
+        'boosters': {
+            'type': 'object',
+            'patternProperties': {
+                '.*': {'oneOf': [{'$ref': '#/definitions/Booster'}]},
+            }
+        },
+        'factories': {
+            'type': 'object',
+            'patternProperties': {
+                '.*': {'oneOf': [{'$ref': '#/definitions/Factory'}]},
+            }
+        },
+    },
+    'required': ['aid', 'custom', 'rbs', 'fragments', 'boosters', 'factories'],
+#    'additionalProperties': False,
+}
+
