@@ -110,7 +110,7 @@ def main():
         print('Cannot open <manhatten.json>')
         print('Please create it according to https://youtu.be/S6LbKH6NnZU ')
         sys.exit(1)
-        
+
     # Helper class to start/stop Azrael stack and other processes.
     az = azrael.startup.AzraelStack(param.loglevel)
     az.start()

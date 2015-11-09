@@ -392,7 +392,7 @@ class Client():
                 'op': {'type': 'string', 'pattern': "put|mod|del"},
             }}
 
-        :param dict cmd: 
+        :param dict cmd: fragment update information.
         :return: Success
         """
         def enc(filedata):
@@ -404,7 +404,7 @@ class Client():
                     fragdata['del'] = [enc(v) for v in fragdata['del']]
                 if 'put' in fragdata:
                     fragdata['put'] = {k: enc(v) for k, v in fragdata['put'].items()}
-            
+
         return self.serialiseAndSend('set_fragments', {'fragments': cmd})
 
     @typecheck

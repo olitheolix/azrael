@@ -84,7 +84,7 @@ class TestAZSchema:
                 'files': {'model.json': 'aa'}
             }
         }
-        
+
     def getBoosters(self):
         return {
             '0': {'pos': [-1.5, 0.0, 0.0],
