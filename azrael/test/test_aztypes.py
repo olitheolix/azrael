@@ -97,17 +97,6 @@ class TestAZTypes:
         assert tmp == con_d['condata']
 
     def test_FragMeta(self):
-        # Verify that all geometry types serialise correctly.
-        for Getter in (getFragRaw, getFragDae):
-            # Get a proper FragMeta instance. Then get a stunted one where
-            # 'fragdata' is None. The stunted case often happens internally in
-            # Azrael because the meta data is stored in a separate database
-            # that may not yet have synced.
-            frag_a = Getter()
-            frag_b = frag_a._replace(files={})
-            assert self.isJsonCompatible(frag_a, FragMeta)
-            assert self.isJsonCompatible(frag_b, FragMeta)
-
         # Verify that 'FragMeta._asdict' convert to a dictionary.
         frag_t = getFragRaw()
         frag_d = frag_t._asdict()
@@ -144,9 +133,6 @@ class TestAZTypes:
                              fragments=frags,
                              boosters=boosters,
                              factories=factories)
-
-        # Verify that it is JSON compatible.
-        assert self.isJsonCompatible(temp_t, Template)
 
         # Verify that Template._asdict() method calls the _asdict() methods
         # for all collision shapes, fragments, boosters, and factories.
