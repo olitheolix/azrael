@@ -610,6 +610,25 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     uv = np.array(uv, np.float32)
                     rgb = np.array(rgb, np.uint8)
                     frag = getFragMetaRaw(vert, uv, rgb)
+                elif frag_data['fragtype'] == '3JS_V3':
+                    # Model files in 3JS format. These are stored in a main
+                    # JSON file plus (optional) texture files. Find the JSON
+                    # file and log an error if there is not exactly one.
+                    fnames = [_ for _ in frag_data['files'] if _.lower().endswith('.json')]
+                    if len(fnames) != 1:
+                        print('Got {} possible 3JS model candidates'.format(len(fnames)))
+                        break
+
+                    # Download the model.
+                    url = base_url + frag_data['url_frag'] + '/' + fnames[0]
+                    frag = requests.get(url).content
+                    if len(frag) == 0:
+                        self._removeObjectData(objID)
+                        break
+
+                    frag = json.loads(frag.decode('utf8'))
+                    vert, uv, rgb = demolib.load3JSModel(frag)
+                    frag = getFragMetaRaw(vert, [], [])
                 else:
                     continue
                 self.upload2GPU(objID, fragID, frag)
