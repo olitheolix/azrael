@@ -35,6 +35,7 @@ del p
 
 import time
 import json
+import PIL
 import demolib
 import tempfile
 import argparse
@@ -628,7 +629,25 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
                     frag = json.loads(frag.decode('utf8'))
                     vert, uv, rgb = demolib.load3JSModel(frag)
-                    frag = getFragMetaRaw(vert, [], [])
+
+                    # Download a texture file (if the model has one).
+                    fnames = [_ for _ in frag_data['files'] if _.lower().endswith('.jpg')]
+                    if len(fnames) > 0:
+                        print('found texture')
+                        url = base_url + frag_data['url_frag'] + '/' + fnames[0]
+                        texture = requests.get(url).content
+                        assert len(texture) > 0
+                        with tempfile.TemporaryDirectory() as tmpdir:
+                            open('texture.jpg', 'wb').write(texture)
+                            img = PIL.Image.open(fnames[0])
+                            img = np.array(img)
+                            rgb = np.rollaxis(np.flipud(img), 1).flatten()
+                            print('imported texture {}'.format(url))
+                            del img
+                        del url, texture
+                    del fnames
+
+                    frag = getFragMetaRaw(vert, uv, rgb)
                 else:
                     continue
                 self.upload2GPU(objID, fragID, frag)

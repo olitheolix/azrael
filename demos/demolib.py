@@ -403,11 +403,9 @@ def load3JSModel(data_json):
         return [], [], []
     
     num_vert = len(vert) // 3
-    num_uvs = len(uvs) // 2
 
     np.random.seed(0)
-    uv = np.random.rand(2 * num_vert).tolist()
     rgb = np.random.rand(3 * num_vert)
     rgb = (255 * rgb).astype(np.uint8).tolist()
 
-    return vert, uv, rgb
+    return vert, uvs, rgb
