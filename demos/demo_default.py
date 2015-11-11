@@ -325,41 +325,20 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     # Spawn the differently textured cubes in a regular grid.
     # ----------------------------------------------------------------------
-    allObjs = []
-    cube_idx = 0
-    cube_spacing = 0.1
+    # The cubes currently have a size of 2. The grid spacing must thus be
+    # larger than 2 if the cubes are not to touch each other.
+    cube_size = 2 + 0.1
 
-    # Determine the template and position for every cube. The cubes are *not*
-    # spawned in this loop, but afterwards.
-    print('Compiling scene: ', end='', flush=True)
-    t0 = time.time()
-    for row in range(numRows):
-        for col in range(numCols):
-            for lay in range(numLayers):
-                # Base position of cube.
-                pos = np.array([col, row, lay], np.float64)
+    # Compute the grid position. The grid is centered at `center`.
+    positions = np.array(list(np.ndindex(numCols, numRows, numLayers)))
+    positions = positions - np.mean(positions, axis=0)
+    positions = positions * cube_size + center
 
-                # Add space in between cubes.
-                pos *= -(2 + cube_spacing)
-
-                # Correct the cube's position to ensure the center of the
-                # grid coincides with the origin.
-                pos[0] += (numCols // 2) * (1 + cube_spacing)
-                pos[1] += (numRows // 2) * (1 + cube_spacing)
-                pos[2] += (numLayers // 2) * (1 + cube_spacing)
-
-                # Move the grid to position ``center``.
-                pos += np.array(center)
-
-                # Store the position and template for this cube.
-                allObjs.append({'templateID': tID_cube[cube_idx],
-                                'rbs': {'position': pos.tolist()}})
-                cube_idx += 1
-                del pos
-    print('{:,} objects ({:.1f}s)'.format(len(allObjs), time.time() - t0))
-    del cube_idx, cube_spacing, row, col, lay
-
-    # Spawn the cubes from the templates at the just determined positions.
+    # Compile the initial state for the object to spawn.
+    allObjs = [
+        {'templateID': tID_cube[idx], 'rbs': {'position': pos.tolist()}}
+        for idx, pos in enumerate(positions)
+    ]
     print('Spawning {} objects: '.format(len(allObjs)), end='', flush=True)
     t0 = time.time()
     ret = client.spawn(allObjs)
