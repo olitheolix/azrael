@@ -274,7 +274,7 @@ def getFragMeta3JS(filenames, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     files = {fname: open(fname, 'rb').read() for fname in filenames}
 
     # Wrap the geometry data into a FragMeta tuple.
-    return FragMeta(fragtype='3JS_V4',
+    return FragMeta(fragtype='3JS_V3',
                     scale=scale,
                     position=pos,
                     rotation=rot,

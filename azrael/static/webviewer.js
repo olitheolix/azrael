@@ -312,8 +312,8 @@ function* mycoroutine(connection) {
                         }
                     )
                     break;
-                case '3JS_V4':
-                    console.log('Loading ThreeJS JSON v4 from <' + d.url + '>');
+                case '3JS_V3':
+                    console.log('Loading ThreeJS JSON v3 from <' + d.url + '>');
                     loader_3js.load(
                         d.url,
                         // Callback for when the model has been loaded.

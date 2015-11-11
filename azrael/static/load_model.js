@@ -58,7 +58,7 @@ onmessage = function (e) {
             case 'DAE':
                 model = {'type': 'DAE', 'url': url + '/' + frag_name};
                 break;
-            case '3JS_V4':
+            case '3JS_V3':
                 // Find the first file that ends in JSON. Consider it
                 // an error if no such file exists.
                 model = null
@@ -66,11 +66,11 @@ onmessage = function (e) {
                     var fname = obj[frag_name].files[idx]
                     if (!endsWith(fname.toLowerCase(fname), '.json')) continue;
 
-                    model = {'type': '3JS_V4', 'url': url + '/' + fname};
+                    model = {'type': '3JS_V3', 'url': url + '/' + fname};
                     break
                 }
                 if (model == null) {
-                    console.log('Worker: did not find 3JS_v4 JSON file')
+                    console.log('Worker: did not find 3JS_v3 JSON file')
                     model = {'type': null};
                     break
                 }
