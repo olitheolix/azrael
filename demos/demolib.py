@@ -279,3 +279,135 @@ def getFragMeta3JS(filenames, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
                     position=pos,
                     rotation=rot,
                     files=files)
+
+
+def load3JSModel(data_json):
+    """
+    Load a model file in ThreeJS format.
+
+    The model specification is here:
+    https://github.com/mrdoob/three.js/wiki/JSON-Model-format-3
+    """
+    # Unpack and reshape the 'vertices', and 'UVs' for convenience. These are
+    # essentially look up tables (LUT) to match up the indexes specified in the
+    # 'faces' array (see below) to particular vertex/uv coordinates.
+    vertex_LUT = np.array(data_json['vertices'])
+    uv_LUT = np.array(data_json['uvs'][0])
+    assert len(vertex_LUT) % 3 == 0
+    assert len(uv_LUT) % 2 == 0
+
+    # Reshape the flat vertex and uv arrays into [:, 3] and [:, 2] arrays,
+    # respectively. This will come in handy for indexing later.
+    vertex_LUT = vertex_LUT.reshape((len(vertex_LUT) // 3, 3))
+    uv_LUT = uv_LUT.reshape((len(uv_LUT) // 2, 2))
+    
+    # Initialise the output structure.
+    out = {'faces': [], 'uv': [], 'rgb': []}
+
+    # The ThreeJS format stores all its information about vertices, their UV
+    # coordinates, etc in an array called 'faces'. All entries in that array
+    # are integers. The first integer is a command word (see spec). It
+    # specifies the vertex indexes and (optionally) other characteristics, for
+    # instance UV coordinates. This means the command word determines how many
+    # of the integers that follow constitute one face. The first integer after
+    # those is the next command word, etc.
+    #
+    # Interpret the face data and convert it to coordinates for vertices, UV,
+    # and colour properties.
+    ofs = 0
+    faces = data_json['faces']
+    while ofs < len(faces):
+        # Command word (always one integer).
+        cmd = faces[ofs]
+        ofs += 1
+
+        # Extract the bits of the command word according to the format
+        # specification.
+        isQuad = True if cmd & 1 else False
+        hasMaterial = True if cmd & 2 else False
+        hasUV = True if cmd & 4 else False
+        hasVertexUV = True if cmd & 8 else False
+        hasNormal = True if cmd & 16 else False
+        hasVertexNormal = True if cmd & 32 else False
+        hasColor = True if cmd & 64 else False
+        hasVertexColor = True if cmd & 128 else False
+
+        # Triangle or Quad (three or four integers).
+        if isQuad:
+            out['faces'].append(faces[ofs:ofs+4])
+            ofs += 4
+        else:
+            out['faces'].append(faces[ofs:ofs+3])
+            ofs += 3
+
+        # Face material (one integer).
+        if hasMaterial:
+            out['rgb'].append(faces[ofs:ofs+1][0])
+            ofs += 1
+
+        # Face UV (one integer).
+        if hasUV:
+            ofs += 1
+
+        # Vertex UVs (0, 3, or 4 integers).
+        if hasVertexUV:
+            if isQuad:
+                out['uv'].append(faces[ofs:ofs+4])
+                ofs += 4
+            else:
+                out['uv'].append(faces[ofs:ofs+3])
+                ofs += 3
+
+        # Face normal (one integer).
+        if hasNormal:
+            ofs += 1
+
+        # Vertex normals.
+        if hasVertexNormal:
+            ofs += 4 if isQuad else 3
+
+        # Face color (one integer).
+        if hasColor:
+            ofs += 1
+
+        # Vertex color.
+        if hasVertexColor:
+            ofs += 4 if isQuad else 3
+
+    # Compile the vertex array that will be uploaded to the GPU (presumably).
+    # The values are based on the indices that we parsed from the 'faces' field
+    # above.
+    vert = []
+    for el in out['faces']:
+        tmp = vertex_LUT[el].flatten()
+        vert.extend(list(tmp))
+
+    # Compile UV values.
+    uvs= []
+    for el in out['uv']:
+        tmp = uv_LUT[el].flatten()
+        uvs.extend(list(tmp))
+
+    # Compile the material colors. Materials have various color components but
+    # for now this will only return the ambient component.
+    rgb= []
+    for el in out['rgb']:
+        mat = data_json['materials'][el]
+        rgb.extend(mat['colorAmbient'])
+
+    # Sanity checks.
+    try:
+        assert len(vert) % (3 * 3) == 0
+        assert len(uvs) % (2 * 3) == 0
+    except AssertionError:
+        return [], [], []
+    
+    num_vert = len(vert) // 3
+    num_uvs = len(uvs) // 2
+
+    np.random.seed(0)
+    uv = np.random.rand(2 * num_vert).tolist()
+    rgb = np.random.rand(3 * num_vert)
+    rgb = (255 * rgb).astype(np.uint8).tolist()
+
+    return vert, uv, rgb
