@@ -29,7 +29,9 @@ The JSON only protocoly should make it possible to write clients in other
 languages.
 """
 import base64
+import jsonschema
 import azrael.util
+import azrael.azschemas
 import azrael.aztypes as aztypes
 
 from azrael.aztypes import typecheck
@@ -68,9 +70,12 @@ def ToClerk_AddTemplates_Decode(payload: dict):
         decoded = []
         # Iterate over all templates.
         for template in payload['templates']:
+            # Validate the template against the schema.
+            jsonschema.validate(template, azrael.azschemas.Template)
+
             # Iterate over all fragments in current template.
             for fragname in template['fragments']:
-                # Undo the Base64 encoding for each fragment.
+                # Undo the Base64 encoding for each fragment geometry file.
                 files = template['fragments'][fragname]['files']
                 files = {k: dec(v.encode('utf8')) for k, v in files.items()}
 
