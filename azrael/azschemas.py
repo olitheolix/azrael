@@ -168,3 +168,12 @@ Template = {
     'required': ['aid', 'custom', 'rbs', 'fragments', 'boosters', 'factories'],
     'additionalProperties': False,
 }
+
+autodoc_allschemas = {
+    'sf': setFragments,
+    'fm': FragMeta,
+    'bo': Booster,
+    'fa': Factory,
+    'rbs': RigidBodyState,
+    'template': Template,
+}

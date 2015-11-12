@@ -61,6 +61,13 @@ def ToClerk_AddTemplates_Decode(payload: dict):
     """
     Undo the Base64 encoding from all files. Otherwise the templates remain
     unchanged.
+
+    .. raw:: html
+
+       <script src="http://localhost:9000/docson/widget.js"
+           data-schema="/json_schemas/template.json">
+       </script>
+
     """
 
     # Convenience.

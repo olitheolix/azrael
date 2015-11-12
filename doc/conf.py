@@ -336,3 +336,29 @@ epub_exclude_files = ['search.html']
 
 # If false, no index is generated.
 # epub_use_index = True
+
+# ------------------------------------------------------------------------------
+# Generate schema files from azschemas
+# This will only be useful if the user also has docson installed
+# Docson: https://github.com/lbovet/docson.git
+# ------------------------------------------------------------------------------
+import json
+import azrael.azschemas
+
+if not os.path.exists('docson'):
+    print('Could not find docson to render the JSON schemas. '
+          'To rectify run (in this directory):\n'
+          ' >> git clone https://github.com/lbovet/docson.git')
+
+# Ensure 'json_schema' exists. Create if necessary.
+try:
+    dir_name = 'json_schemas'
+    os.mkdir(dir_name)
+except FileExistsError:
+    pass
+
+# Export each JSON schema from Azrael to a plain JSON file. The docson module
+# will render the schema based on these files.
+for name, schema in azrael.azschemas.autodoc_allschemas.items():
+    fname = os.path.join(dir_name, '{}.json'.format(name))
+    open(fname, 'w').write(json.dumps(schema))
