@@ -107,8 +107,13 @@ class Dibbler:
         """
         Save all ``files`` to Dibbler and return the number of succesful writes.
 
-        The ``files`` argument is a simple {file_name: file_content_in_bytes}
-        dictionary. For instance, `files = {'todo.txt': b'foobar'}.
+        The ``files`` argument is a simple ::
+
+            {file_name: file_content_in_bytes}
+
+        dictionary. For instance::
+
+            `files = {'todo.txt': b'foobar'}.
 
         Errors with the underlying storage are silently ignored. However, the
         return value states how many files were successfully written.
@@ -239,7 +244,7 @@ class Dibbler:
         """
         Recursively delete all directories specified in ``dirnames``.
 
-        This function is the equivalent of 'rm -rf path/*'. It always succeeds
+        This function is the equivalent of `rm -rf path/*`. It always succeeds
         and returns the number of deleted files.
 
         :param list[str] fname: the file names to retrieve.

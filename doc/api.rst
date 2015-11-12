@@ -28,14 +28,6 @@ azrael.clerk module
     :undoc-members:
     :show-inheritance:
 
-azrael.client module
---------------------
-
-.. automodule:: azrael.client
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 azrael.config module
 --------------------
 
@@ -92,10 +84,10 @@ azrael.protocol module
     :undoc-members:
     :show-inheritance:
 
-azrael.types module
+azrael.aztypes module
 -------------------------------
 
-.. automodule:: azrael.types
+.. automodule:: azrael.aztypes
     :members:
     :undoc-members:
     :show-inheritance:
@@ -117,10 +109,10 @@ azrael.vectorgrid module
     :undoc-members:
     :show-inheritance:
 
-azrael.wsclient module
+pyazrael.client module
 ----------------------
 
-.. automodule:: azrael.wsclient
+.. automodule:: pyazrael.client
     :members:
     :undoc-members:
     :show-inheritance:
