@@ -1286,30 +1286,25 @@ class Clerk(config.AzraelProcess):
         :return: see example above
         :rtype: dict
         """
-        # Create the MongoDB query. If `objID` is None then the client wants
-        # the state for all objects.
+        # Fetch the objects. If `objID` is None the client wants all objects.
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
         if objIDs is None:
-            query = {}
+            docs = db2.getAll([['version'], ['objID'], ['template', 'rbs']])
         else:
-            query = {'objID': {'$in': objIDs}}
-        prj = {
-            'version': True,
-            'objID': True,
-            'template.rbs': True
-        }
+            docs = db2.getMulti(objIDs, [['version'], ['objID'], ['template', 'rbs']])
 
-        # Query object states and compile them into a dictionary.
-        db = database.dbHandles['ObjInstances']
+        # fixme: error handling
+        docs = docs.data
 
         # Compile the data from the database into a simple dictionary that
         # contains the fragment- and body state.
         out = {}
         RBS = aztypes._RigidBodyData
-        for doc in db.find(query, prj):
+        for aid, doc in docs.items():
             # Compile the rigid body data and overwrite the version tag with
             # one stored in the database.
             rbs = RBS(**doc['template']['rbs'])
-            out[doc['objID']] = {'rbs': rbs._replace(version=doc['version'])}
+            out[aid] = {'rbs': rbs._replace(version=doc['version'])}
 
         # If the user requested a particular set of objects then make sure each
         # one is in the output dictionary. If one is missing (eg it does not
