@@ -1330,7 +1330,7 @@ class Clerk(config.AzraelProcess):
         :return: Success
         """
         # Convenience.
-        db = azrael.database.dbHandles['ObjInstances']
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
         invalid_objects = []
 
         for objID, body in bodies.items():
@@ -1351,21 +1351,18 @@ class Clerk(config.AzraelProcess):
             # Update the respective entries in the database. The keys already have
             # the correct names but require the 'template.rbs' to match the
             # position in the master record.
-            tmp = {'template.rbs.' + k: v for (k, v) in body.items()}
-            ret = db.update({'objID': objID}, {'$set': tmp})
-            if ret['n'] == 0:
-                invalid_objects.append(objID)
-                continue
-
             ops = {
                 objID: {
                     'inc': {},
-                    'set': {'template.rbs.' + k: v for (k, v) in body.items()},
+                    'set': {('template', 'rbs',  k): v for (k, v) in body.items()},
                     'unset': {},
                     'exists': {},
                 }
             }
-            # use with mynewdb.mod(ops)
+            ret = db2.mod(ops)
+            if False in ret.data.values():
+                invalid_objects.append(objID)
+                continue
 
             # Notify Leonard.
             ret = leoAPI.addCmdModifyBodyState(objID, body)
