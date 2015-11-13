@@ -105,7 +105,7 @@ class DatabaseInMemory:
     def count(self):
         return RetVal(True, None, len(self.content))
 
-    def put(self, ops: dict, must_exists: bool=False):
+    def put(self, ops: dict):
         ret = {}
         for aid, op in ops.items():
             exists, data = op['exists'], op['data']
@@ -250,15 +250,15 @@ class DatabaseMongo:
     def count(self):
         return RetVal(True, None, self.db.count())
 
-    def put(self, ops: dict, must_exists: bool=False):
+    def put(self, ops: dict):
         ret = {}
         for aid, op in ops.items():
             exists, data = op['exists'], op['data']
             data = copy.deepcopy(data)
             data['objID'] = aid
             if exists:
-                r = self.db.update_one({'objID': aid}, {'$set': data})
-                if (r.matched_count == 1) and (r.modified_count == 1):
+                r = self.db.update({'objID': aid}, data, upsert=False)
+                if r['updatedExisting']:
                     ret[aid] = True
                 else:
                     ret[aid] = False
@@ -268,10 +268,10 @@ class DatabaseMongo:
                     {'$setOnInsert': data},
                     upsert=True
                 )
-                if r.acknowledged:
-                    ret[aid] = True
-                else:
+                if r.upserted_id is None:
                     ret[aid] = False
+                else:
+                    ret[aid] = True
         return RetVal(True, None, ret)
 
     def mod(self, ops):

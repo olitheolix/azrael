@@ -9,6 +9,12 @@ Todo: tests for
   - several corner cases for when a variable to increment does not exist, or if
     it does exist but has the wrong type.
   - rename 'objID' to 'aid' in Mongo driver (only after all of Azrael uses it)
+  - move all Database specific tests into a separate classs and keep one class
+    that features all the database agnostic tests.
+  - search for all print in clerk/database/test_database
+  - instead of db.update use db.replace_one
+  - fixme
+  - docu
 """
 import pytest
 import azrael.database as database
@@ -148,6 +154,70 @@ class TestDatabaseAPI:
         assert db.getMulti(['1', '2']) == db.getAll()
 
         assert db.reset().ok and (db.count().data == 0)
+
+    @pytest.mark.parametrize('clsDatabase', allEngines)
+    def test_put(self, clsDatabase):
+        """
+        Test all four possible cases when inserting documents, depending on the
+        'exists' parameter and whether or not the corresponding document is
+        already in the database.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # ---------------------------------------------------------------------
+        # Empty database: unconditonal put must succeed.
+        # ---------------------------------------------------------------------
+        
+        # Put unconditionally. Must always succeed.
+        assert db.reset().ok and db.count().data == 0
+        ops = {'1': {'exists': False, 'data': {'key1': 'value1'}}}
+        assert db.put(ops) == (True, None, {'1': True})
+        assert db.getOne('1') == (True, None, {'key1': 'value1'})
+
+        # ---------------------------------------------------------------------
+        # Empty database: conditional put must fail.
+        # ---------------------------------------------------------------------
+
+        # Overwrite if exists. Do nothing otherwise. Since the database is
+        # empty nothing must happen.
+        assert db.reset().ok and db.count().data == 0
+        ops = {'1': {'exists': True, 'data': {'key1': 'value1'}}}
+        assert db.put(ops) == (True, None, {'1': False})
+        assert db.getOne('1') == (False, None, None)
+
+        # ---------------------------------------------------------------------
+        # Non-empty database. Our command specifies that the document must not
+        # yet exist. Since it alrady does the update must fail and the original
+        # document must prevail.
+        # ---------------------------------------------------------------------
+
+        # Put one document into database.
+        assert db.reset().ok and db.count().data == 0
+        ops = {'1': {'exists': False, 'data': {'key1': 'value1'}}}
+        assert db.put(ops) == (True, None, {'1': True})
+        assert db.getOne('1') == (True, None, {'key1': 'value1'})
+
+        # Put unconditionally. Must always succeed and replace the current one.
+        ops = {'1': {'exists': False, 'data': {'key2': 'value2'}}}
+        assert db.put(ops) == (True, None, {'1': False})
+        assert db.getOne('1') == (True, None, {'key1': 'value1'})
+
+        # ---------------------------------------------------------------------
+        # Non-empty database. Our command specifies that the document must
+        # already exist. Since it does the update must proceed and overwrite
+        # the original document.
+        # ---------------------------------------------------------------------
+
+        # Put one document into database.
+        assert db.reset().ok and db.count().data == 0
+        ops = {'1': {'exists': False, 'data': {'key1': 'value1'}}}
+        assert db.put(ops) == (True, None, {'1': True})
+        assert db.getOne('1') == (True, None, {'key1': 'value1'})
+
+        # Conditional 'put'. Must not overwrite the document.
+        ops = {'1': {'exists': True, 'data': {'key2': 'value2'}}}
+        assert db.put(ops) == (True, None, {'1': True})
+        assert db.getOne('1') == (True, None, {'key2': 'value2'})
 
     def test_projection(self):
         db = database.DatabaseInMemory(name=('test1', 'test2'))
