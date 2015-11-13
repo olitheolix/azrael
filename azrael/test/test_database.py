@@ -1,20 +1,23 @@
 """
 Todo: tests for
-  - invalid arguments to any of the methods
-  - put:
-     * verify return values for different combinations of exist
-     * repeat, but use multiple objects and check the boolean return dict
-  - put/mod must verify that none of the keys contains a dot ('.').
-  - setInc
-  - several corner cases for when a variable to increment does not exist, or if
-    it does exist but has the wrong type.
-  - rename 'objID' to 'aid' in Mongo driver (only after all of Azrael uses it)
-  - move all Database specific tests into a separate classs and keep one class
-    that features all the database agnostic tests.
-  - search for all print in clerk/database/test_database
-  - instead of db.update use db.replace_one
-  - fixme
-  - docu
+- invalid arguments to any of the methods
+- put:
+   * verify return values for different combinations of exist
+   * repeat, but use multiple objects and check the boolean return dict
+- put/mod must verify that none of the keys contains a dot ('.').
+- setInc
+- several corner cases for when a variable to increment does not exist, or if
+  it does exist but has the wrong type.
+- rename 'objID' to 'aid' in Mongo driver (only after all of Azrael uses it)
+- move all Database specific tests into a separate classs and keep one class
+  that features all the database agnostic tests.
+- search for all print in clerk/database/test_database
+- instead of db.update use db.replace_one
+- don't use a list default argument (eg getAll)
+- implement getDistinct() method and use in clerk.getAllObjectIDs
+- go over clerk and eliminate all database calls inside loops.
+- fixme
+- docu
 """
 import pytest
 import azrael.database as database

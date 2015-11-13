@@ -330,6 +330,7 @@ class DatabaseMongo:
         docs = self._removeAID(cursor)
         return RetVal(True, None, docs)
 
+    # fixme: don't use a list default argument
     def getAll(self, prj=[]):
         prj = {'.'.join(_): True for _ in prj}
         if len(prj) > 0:
