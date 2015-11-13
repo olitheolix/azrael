@@ -380,12 +380,11 @@ class Clerk(config.AzraelProcess):
             except TypeError:
                 return RetVal(False, 'Invalid template data', None)
 
-            # The templates will be inserted with a single bulk operation.
-            db = database.dbHandles['Templates']
-            bulk = db.initialize_unordered_bulk_op()
+            # fixme
+            db2 = azrael.database.DatabaseMongo(('azrael', 'template'))
+            ops = {}
 
-            # Insert each template into the database (only queue it in the bulk
-            # operation, actually).
+            # Prepare each template and compile the database operations.
             for template in templates:
                 # Store all fragment files in Dibbler under the following URL
                 # prefix (eg. 'templates/template_name/'). The final URL for
@@ -420,15 +419,14 @@ class Clerk(config.AzraelProcess):
                         'template': template_json,
                         'templateID': template.aid}
 
-                # Add the template to the database.
-                query = {'templateID': template.aid}
-                bulk.find(query).upsert().update({'$setOnInsert': data})
-
-        with util.Timeit('clerk.addTemplates_db'):
-            # Run the database query.
-            ret = bulk.execute()
-
-        if ret['nMatched'] > 0:
+                # Compile the DB ops for this template.
+                ops[template.aid] = {
+                    'exists': False,
+                    'data': data,
+                }
+        # use with: mynewdb.put(ops)
+        ret = db2.put(ops)
+        if False in ret.data.values():
             # A template with name ``templateID`` already existed --> failure.
             msg = 'At least one template already existed'
             return RetVal(False, msg, None)
@@ -751,11 +749,11 @@ class Clerk(config.AzraelProcess):
         :rtype: tuple(vec3, vec3)
         """
         # Convenience.
-        db = database.dbHandles['ObjInstances']
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
 
         # Query the object's booster information.
-        query = {'objID': objID}
-        doc = db.find_one(query, {'template.boosters': True})
+        doc = db2.getOne(objID, [['template', 'boosters']]).data
+
         if doc is None:
             msg = 'Object <{}> does not exist'.format(objID)
             return RetVal(False, msg, None)
@@ -801,7 +799,15 @@ class Clerk(config.AzraelProcess):
         # instance database. To this end convert them back to dictionaries and
         # issue the update.
         boosters = {k: v._asdict() for (k, v) in boosters.items()}
-        db.update(query, {'$set': {'template.boosters': boosters}})
+        ops = {
+            objID: {
+                'inc': {},
+                'set': {('template', 'boosters'): boosters},
+                'unset': {},
+                'exists': {('template', 'boosters'): True},
+            }
+        }
+        db2.mod(ops)
 
         # Return the final force- and torque as a tuple of 2-tuples.
         out = (force.tolist(), torque.tolist())
@@ -955,6 +961,7 @@ class Clerk(config.AzraelProcess):
 
         # Remove the master record for the object.
         database.dbHandles['ObjInstances'].remove({'objID': objID})
+        # use with mynewdb.del([objID])
 
         if ret.ok:
             url = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
@@ -1350,6 +1357,16 @@ class Clerk(config.AzraelProcess):
                 invalid_objects.append(objID)
                 continue
 
+            ops = {
+                objID: {
+                    'inc': {},
+                    'set': {'template.rbs.' + k: v for (k, v) in body.items()},
+                    'unset': {},
+                    'exists': {},
+                }
+            }
+            # use with mynewdb.mod(ops)
+
             # Notify Leonard.
             ret = leoAPI.addCmdModifyBodyState(objID, body)
             if not ret.ok:
@@ -1562,6 +1579,16 @@ class Clerk(config.AzraelProcess):
 
                 ret = db.update({'objID': objID},
                                 {'$set': {'template.custom': value}})
+
+                ops = {
+                    objID: {
+                        'inc': {},
+                        'set': {'template.custom': value},
+                        'unset': {},
+                        'exists': {'template.custom': True},
+                    }
+                }
+                # use with mynewdb.mod(ops)
 
                 # If the update did not work then add the current object ID to
                 # the list.
