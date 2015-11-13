@@ -5,6 +5,10 @@ Todo: tests for
      * verify return values for different combinations of exist
      * repeat, but use multiple objects and check the boolean return dict
   - put/mod must verify that none of the keys contains a dot ('.').
+  - setInc
+  - several corner cases for when a variable to increment does not exist, or if
+    it does exist but has the wrong type.
+  - rename 'objID' to 'aid' in Mongo driver (only after all of Azrael uses it)
 """
 import pytest
 import azrael.database as database
@@ -144,6 +148,70 @@ class TestDatabaseAPI:
         assert db.getMulti(['1', '2']) == db.getAll()
 
         assert db.reset().ok and (db.count().data == 0)
+
+    def test_projection(self):
+        db = database.DatabaseInMemory(name=('test1', 'test2'))
+
+        src = {'x': 1, 'a': {'b0': 2, 'b1': 3}, 'c': {'d': {'e': 3}}}
+        assert db.project(src, [['z']]) == {}
+        assert db.project(src, [['x']]) == {'x': 1}
+        assert db.project(src, [['x'], ['a']]) == {'x': 1, 'a': {'b0': 2, 'b1': 3}}
+        assert db.project(src, [['x'], ['a', 'b0']]) == {'x': 1, 'a': {'b0': 2}}
+        assert db.project(src, [['x'], ['a', 'b5']]) == {'x': 1}
+        assert db.project(src, [['c']]) == {'c': {'d': {'e': 3}}}
+        assert db.project(src, [['c', 'd']]) == {'c': {'d': {'e': 3}}}
+        assert db.project(src, [['c', 'd', 'e']]) == {'c': {'d': {'e': 3}}}
+        assert db.project(src, [['c', 'd', 'blah']]) == {}
+
+    @pytest.mark.parametrize('clsDatabase', allEngines)
+    def test_get_with_projections(self, clsDatabase):
+        """
+        Add data and verify that 'reset' flushes it.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # Reset the database and verify that it is empty.
+        assert db.reset().ok and db.count().data == 0
+
+        # Insert two documents and verify the document count.
+        doc = {
+            'foo': {'x': {'y0': 0, 'y1': 1}},
+            'bar': {'a': {'b0': 2, 'b1': 3}},
+        }
+        ops = {'1': {'exists': False, 'data': doc}}
+        assert db.put(ops) == (True, None, {'1': True})
+        assert db.count() == (True, None, 1)
+            
+        # Fetch the content via getOne.
+
+        assert db.getOne('1', [['blah']]) == (True, None, {})
+
+        ret = db.getOne('1', [['foo', 'x']])
+        assert ret.ok
+        assert ret.data == {'foo': {'x': {'y0': 0, 'y1': 1}}}
+
+        ret = db.getOne('1', [['foo', 'x', 'y0']])
+        assert ret.ok
+        assert ret.data == {'foo': {'x': {'y0': 0}}}
+
+        # Fetch the content via getMulti.
+
+        assert db.getMulti(['1'], [['blah']]) == (True, None, {'1': {}})
+
+        ret = db.getMulti(['1'], [['foo', 'x']])
+        assert ret.ok
+        assert ret.data == {'1': {'foo': {'x': {'y0': 0, 'y1': 1}}}}
+
+        ret = db.getMulti(['1'], [['foo', 'x', 'y0']])
+        assert ret.ok
+        assert ret.data == {'1': {'foo': {'x': {'y0': 0}}}}
+
+        # Fetch the content via getAll. For simplicity, just verify that the
+        # output matched that of getMult since we just tested that that one
+        # worked.
+        projections = [ [['blah']], [['foo', 'x']], [['foo', 'x', 'y0']] ]
+        for prj in projections:
+            assert db.getMulti(['1'], prj) == db.getAll(prj)
 
     def test_hasKey(self):
         db = database.DatabaseInMemory(name=('test1', 'test2'))

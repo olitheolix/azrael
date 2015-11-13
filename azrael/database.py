@@ -161,6 +161,12 @@ class DatabaseInMemory:
             return False
         return True
 
+    def getKey(self, d, key_hierarchy):
+        tmp = d
+        for key in key_hierarchy:
+            tmp = tmp[key]
+        return tmp
+
     def mod(self, ops):
         ret = {}
         for aid, op in ops.items():
@@ -192,19 +198,39 @@ class DatabaseInMemory:
         return RetVal(True, None, ret)
         
 
-    def getOne(self, aid):
+    def project(self, doc, prj):
+        doc = copy.deepcopy(doc)
+        out = {}
+        for p in prj:
+            try:
+                self.setKey(out, p, self.getKey(doc, p))
+            except KeyError:
+                continue
+        return out
+        
+    def getOne(self, aid, prj=[]):
         doc = self.content.get(aid, None)
         if doc is None:
             return RetVal(False, None, None)
         else:
+            if len(prj) > 0:
+                doc = self.project(doc, prj)
             return RetVal(True, None, doc)
 
-    def getMulti(self, aids):
+    def getMulti(self, aids, prj=[]):
         docs = {aid: self.content[aid] for aid in aids if aid in self.content}
+        if len(prj) > 0:
+            for doc in docs:
+                docs[doc] = self.project(docs[doc], prj)
+
         return RetVal(True, None, docs)
 
-    def getAll(self):
+    def getAll(self, prj=[]):
         docs = copy.deepcopy(self.content)
+        if len(prj) > 0:
+            for doc in docs:
+                docs[doc] = self.project(docs[doc], prj)
+
         return RetVal(True, None, docs)
 
 
@@ -214,7 +240,8 @@ class DatabaseMongo:
         self.name_db, self.name_col = name
         client = pymongo.MongoClient()
         self.db = client[self.name_db][self.name_col]
-        self.reset()
+        print(self.db)
+        print(self.db.count())
 
     def reset(self):
         self.db.drop()
@@ -228,16 +255,16 @@ class DatabaseMongo:
         for aid, op in ops.items():
             exists, data = op['exists'], op['data']
             data = copy.deepcopy(data)
-            data['aid'] = aid
+            data['objID'] = aid
             if exists:
-                r = self.db.update_one({'aid': aid}, {'$set': data})
+                r = self.db.update_one({'objID': aid}, {'$set': data})
                 if (r.matched_count == 1) and (r.modified_count == 1):
                     ret[aid] = True
                 else:
                     ret[aid] = False
             else:
                 r = self.db.update_one(
-                    {'aid': aid},
+                    {'objID': aid},
                     {'$setOnInsert': data},
                     upsert=True
                 )
@@ -251,7 +278,7 @@ class DatabaseMongo:
         ret = {}
         for aid, op_tmp in ops.items():
             query = {'.'.join(key): {'$exists': yes} for key, yes in op_tmp['exists'].items()}
-            query['aid'] = aid
+            query['objID'] = aid
 
             # Update operations.
             op = {
@@ -267,32 +294,47 @@ class DatabaseMongo:
                 continue
 
             # Issue the database query.
-            r = self.db.update_one(query, op)
+            print('\nQuery:', query)
+            print('Op:', op)
+            r = self.db.update_one(query, op, upsert=False)
             ret[aid] = r.acknowledged
         return RetVal(True, None, ret)
         
     def _removeAID(self, docs):
-        docs = {doc['aid']: doc for doc in docs}
+        docs = {doc['objID']: doc for doc in docs}
         for aid, doc in docs.items():
-            del doc['aid']
+            del doc['objID']
         return docs
 
-    def getOne(self, aid):
-        prj = {'_id': False, 'aid': False}
-        doc = self.db.find_one({'aid': aid}, prj)
+    def getOne(self, aid, prj=[]):
+        prj = {'.'.join(_): True for _ in prj}
+        prj['_id'] = False
+
+        doc = self.db.find_one({'objID': aid}, prj)
+        try:
+            del doc['objID']
+        except (KeyError, TypeError):
+            pass
+
         if doc is None:
             return RetVal(False, None, None)
         else:
             return RetVal(True, None, doc)
 
-    def getMulti(self, aids):
-        prj = {'_id': False}
-        cursor = self.db.find({'aid': {'$in': aids}}, prj)
+    def getMulti(self, aids, prj=[]):
+        prj = {'.'.join(_): True for _ in prj}
+        if len(prj) > 0:
+            prj['objID'] = True
+        prj['_id'] = False
+        cursor = self.db.find({'objID': {'$in': aids}}, prj)
         docs = self._removeAID(cursor)
         return RetVal(True, None, docs)
 
-    def getAll(self):
-        prj = {'_id': False}
+    def getAll(self, prj=[]):
+        prj = {'.'.join(_): True for _ in prj}
+        if len(prj) > 0:
+            prj['objID'] = True
+        prj['_id'] = False
         cursor = self.db.find({}, prj)
         docs = self._removeAID(cursor)
         return RetVal(True, None, docs)
