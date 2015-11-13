@@ -1406,32 +1406,33 @@ class Clerk(config.AzraelProcess):
         :param list objIDs: the objIDs for which to compile the data.
         :return: see example above.
         """
-        # Create the MongoDB query. If `objID` is None then the client wants
-        # the state for all objects.
-        if objIDs is None:
-            query = {}
-        else:
-            query = {'objID': {'$in': objIDs}}
-
         # Query object states and compile them into a dictionary.
-        db = database.dbHandles['ObjInstances']
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        
+        prj = [
+            ('version', ),
+            ('objID', ),
+            ('template', 'fragments'),
+            ('template', 'rbs', 'scale'),
+            ('template', 'rbs', 'position'),
+            ('template', 'rbs', 'rotation'),
+            ('template', 'rbs', 'velocityLin'),
+            ('template', 'rbs', 'velocityRot'),
+        ]
 
-        # Specify the fields we are really interested in here.
-        prj = {
-            'version': True,
-            'objID': True,
-            'template.fragments': True,
-            'template.rbs.scale': True,
-            'template.rbs.position': True,
-            'template.rbs.rotation': True,
-            'template.rbs.velocityLin': True,
-            'template.rbs.velocityRot': True,
-        }
+        # Fetch the objects. If `objID` is None the client wants all objects.
+        if objIDs is None:
+            docs = db2.getAll(prj)
+        else:
+            docs = db2.getMulti(objIDs, prj)
+
+        # fixme: error handling.
+        docs = docs.data
 
         # Compile the data from the database into a simple dictionary that
         # contains the fragment- and body state.
         out = {}
-        for doc in db.find(query, prj):
+        for aid, doc in docs.items():
             # It is well possible that (parts of) the document are being
             # deleted by another client while we query it here. The try/except
             # block ensures that we will skip documents that have become
@@ -1451,7 +1452,7 @@ class Clerk(config.AzraelProcess):
                 rbs['version'] = doc['version']
 
                 # Construct the return value.
-                out[doc['objID']] = {'frag': fs, 'rbs': rbs}
+                out[aid] = {'frag': fs, 'rbs': rbs}
             except KeyError as err:
                 continue
 
