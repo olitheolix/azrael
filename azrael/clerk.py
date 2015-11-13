@@ -1606,6 +1606,7 @@ class Clerk(config.AzraelProcess):
         :return: dictionary of 'custom' data.
         """
         db = database.dbHandles['ObjInstances']
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
 
         if objIDs is None:
             # Query all objects.
@@ -1619,15 +1620,22 @@ class Clerk(config.AzraelProcess):
 
         # Prjection operator.
         prj = {'template.custom': True, '_id': False, 'objID': True}
+        docs = db.find(query, prj)
+
+        # Fetch the objects. If `objID` is None the client wants all objects.
+        prj = [('template', 'custom')]
+        if objIDs is None:
+            docs = db2.getAll(prj)
+        else:
+            docs = db2.getMulti(objIDs, prj)
+        docs = docs.data
 
         # Unpack the data. For some unknown reason (read: bug) the database
         # record is sometimes incomplete. Therefore extract the entries
         # one-by-one protected by a try/except.
-        for doc in db.find(query, prj):
+        for aid, doc in docs.items():
             try:
-                objID = doc['objID']
-                tag = doc['template']['custom']
-                out[objID] = tag
+                out[aid] = doc['template']['custom']
             except KeyError:
                 pass
 
