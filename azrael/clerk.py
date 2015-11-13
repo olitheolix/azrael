@@ -1492,6 +1492,7 @@ class Clerk(config.AzraelProcess):
         :rtype: list(int)
         """
         db = database.dbHandles['ObjInstances']
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
         return RetVal(True, None, db.distinct('objID'))
 
     @typecheck
@@ -1566,7 +1567,7 @@ class Clerk(config.AzraelProcess):
         :param dict[int: str] data: new content for 'custom' field in object.
         :return: List of invalid object IDs.
         """
-        db = database.dbHandles['ObjInstances']
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
 
         # Update the 'custom' field of the specified object IDs.
         invalid_objects = []
@@ -1575,22 +1576,19 @@ class Clerk(config.AzraelProcess):
                 assert isinstance(value, str)
                 assert len(value) < 2 ** 16
 
-                ret = db.update({'objID': objID},
-                                {'$set': {'template.custom': value}})
-
                 ops = {
                     objID: {
                         'inc': {},
-                        'set': {'template.custom': value},
+                        'set': {('template', 'custom'): value},
                         'unset': {},
-                        'exists': {'template.custom': True},
+                        'exists': {('template', 'custom'): True},
                     }
                 }
-                # use with mynewdb.mod(ops)
+                ret = db2.mod(ops)
 
                 # If the update did not work then add the current object ID to
                 # the list.
-                assert ret['n'] > 0
+                assert False not in ret.data.values()
             except AssertionError:
                 invalid_objects.append(objID)
 
