@@ -1003,8 +1003,9 @@ class Clerk(config.AzraelProcess):
         :rtype: dict
         """
         # Retrieve the geometry. Return an error if the ID does not exist.
-        db = database.dbHandles['ObjInstances']
-        docs = list(db.find({'objID': {'$in': objIDs}}))
+        # fixme: error handling
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        docs = db2.getMulti(objIDs).data
 
         # Initialise the output dictionary with a None value for every
         # requested object. The loop below will overwrite these values for
@@ -1016,7 +1017,7 @@ class Clerk(config.AzraelProcess):
         pjoin = os.path.join
         try:
             # Create a dedicated dictionary for each object.
-            for doc in docs:
+            for aid, doc in docs.items():
                 # It is well possible that (parts of) the document are being
                 # deleted by another client while we query it here. The try/except
                 # block ensures that we will skip documents that have become
@@ -1032,7 +1033,7 @@ class Clerk(config.AzraelProcess):
                     # Compile the dictionary with all the geometries that comprise
                     # the current object, including where to download the geometry
                     # data itself (we only provide the meta information).
-                    out[doc['objID']] = {
+                    out[aid] = {
                         k: {
                             'scale': v.scale,
                             'position': v.position,
@@ -1041,7 +1042,7 @@ class Clerk(config.AzraelProcess):
                             'url_frag': pjoin(doc['url_frag'], k),
                             'files': list(v.files.keys()),
                         } for (k, v) in frags.items()}
-                except KeyError:
+                except KeyError as err:
                     continue
         except TypeError:
             msg = 'Inconsistent Fragment data'
