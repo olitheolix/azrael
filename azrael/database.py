@@ -240,8 +240,6 @@ class DatabaseMongo:
         self.name_db, self.name_col = name
         client = pymongo.MongoClient()
         self.db = client[self.name_db][self.name_col]
-        print(self.db)
-        print(self.db.count())
 
     def reset(self):
         self.db.drop()
@@ -294,10 +292,12 @@ class DatabaseMongo:
                 continue
 
             # Issue the database query.
-            print('\nQuery:', query)
-            print('Op:', op)
             r = self.db.update_one(query, op, upsert=False)
-            ret[aid] = r.acknowledged
+
+            # fixme: this used to be acknowledged. That was wrong yet it passed
+            # all unit tests. Devise a test to identify this problem.
+#            ret[aid] = r.acknowledged
+            ret[aid] = r.matched_count
         return RetVal(True, None, ret)
         
     def _removeAID(self, docs):
