@@ -475,20 +475,22 @@ class Clerk(config.AzraelProcess):
         # Fetch all requested templates and place them into a dictionary where
         # the template ID is the key. Use a projection operator to suppress
         # Mongo's "_id" field.
-        db = database.dbHandles['Templates']
-        cursor = db.find({'templateID': {'$in': templateIDs}}, {'_id': False})
+
+        # fixme: error handling; docu string above.
+        db2 = azrael.database.DatabaseMongo(('azrael', 'template'))
+        cursor = db2.getMulti(templateIDs).data
 
         # Compile the output dictionary and compile the `Template` instances.
         out = {}
         try:
-            for doc in cursor:
+            for aid, doc in cursor.items():
                 # Undo the file name mangling.
                 template_json = self._unmangleTemplate(doc['template'])
 
                 # Parse the document into a Template structure and add it to
                 # the list of templates.
                 template = Template(**template_json)
-                out[doc['templateID']] = {
+                out[aid] = {
                     'url_frag': doc['url_frag'],
                     'template': template,
                 }
@@ -496,6 +498,7 @@ class Clerk(config.AzraelProcess):
             msg = 'Inconsistent Template data'
             self.logit.error(msg)
             return RetVal(False, msg, None)
+        del cursor
 
         # Return immediately if we received fewer templates than requested
         # (simply means that not all requested template names were valid).
