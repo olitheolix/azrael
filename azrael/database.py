@@ -90,3 +90,68 @@ def getUniqueObjectIDs(numIDs: int):
     else:
         newIDs = tuple(range(cnt - numIDs + 1, cnt + 1))
         return RetVal(True, None, newIDs)
+
+
+class DatabaseInMemory:
+    def __init__(self, name: tuple):
+        self.dbname = name
+        self.reset()
+
+    def reset(self):
+        self.content = {}
+        return RetVal(True, None, None)
+
+    def count(self):
+        return RetVal(True, None, len(self.content))
+
+    def put(self, ops: dict, must_exists: bool=False):
+        ret = {}
+        for aid, op in ops.items():
+            exists, data = op['exists'], op['data']
+            if exists and aid in self.content:
+                self.content[aid] = data
+                ret[aid] = True
+            elif not exists and aid not in self.content:
+                self.content[aid] = data
+                ret[aid] = True
+            else:
+                ret[aid] = False
+        return RetVal(True, None, ret)
+
+
+class DatabaseMongo:
+    def __init__(self, name: tuple):
+        import pymongo
+        self.name_db, self.name_col = name
+        client = pymongo.MongoClient()
+        self.db = client[self.name_db][self.name_col]
+        self.reset()
+
+    def reset(self):
+        self.db.drop()
+        return RetVal(True, None, None)
+
+    def count(self):
+        return RetVal(True, None, self.db.count())
+
+    def put(self, ops: dict, must_exists: bool=False):
+        ret = {}
+        for aid, op in ops.items():
+            exists, data = op['exists'], op['data']
+            if exists:
+                r = self.db.update_one({'aid': aid}, {'$set': {aid: data}})
+                if (r.matched_count == 1) and (r.modified_count == 1):
+                    ret[aid] = True
+                else:
+                    ret[aid] = False
+            else:
+                r = self.db.update_one(
+                    {'aid': aid},
+                    {'$setOnInsert': {aid: data}},
+                    upsert=True
+                )
+                if r.acknowledged:
+                    ret[aid] = True
+                else:
+                    ret[aid] = False
+        return RetVal(True, None, ret)
