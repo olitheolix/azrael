@@ -837,9 +837,10 @@ class Clerk(config.AzraelProcess):
         :raises: None
         """
         # Fetch the instance data and return immediately if it does not exist.
-        db = database.dbHandles['ObjInstances']
-        doc = db.find_one({'objID': objID}, {'template': True, '_id': False})
-        if doc is None:
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        ret = db2.getOne(objID, [['template']])
+        doc = ret.data
+        if not ret.ok or doc is None:
             msg = 'Could not find instance data for objID <{}>'.format(objID)
             self.logit.info(msg)
             return RetVal(False, msg, None)
