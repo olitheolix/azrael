@@ -1605,29 +1605,17 @@ class Clerk(config.AzraelProcess):
         :param dict[int: str] data: new content for 'custom' field in object.
         :return: dictionary of 'custom' data.
         """
-        db = database.dbHandles['ObjInstances']
         db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
-
-        if objIDs is None:
-            # Query all objects.
-            query = {'template.custom': {'$exists': True}}
-            out = {}
-        else:
-            # Only query the specified objects. Return a *None* value for all
-            # those objects not found in the database.
-            query = {'objID': {'$in': objIDs}, 'template.custom': {'$exists': True}}
-            out = {_: None for _ in objIDs}
-
-        # Prjection operator.
-        prj = {'template.custom': True, '_id': False, 'objID': True}
-        docs = db.find(query, prj)
 
         # Fetch the objects. If `objID` is None the client wants all objects.
         prj = [('template', 'custom')]
         if objIDs is None:
             docs = db2.getAll(prj)
+            out = {}
         else:
+            # fixme: docu (for out)
             docs = db2.getMulti(objIDs, prj)
+            out = {_: None for _ in objIDs}
         docs = docs.data
 
         # Unpack the data. For some unknown reason (read: bug) the database
