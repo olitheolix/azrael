@@ -1,3 +1,11 @@
+"""
+Todo: tests for
+  - invalid arguments to any of the methods
+  - put:
+     * verify return values for different combinations of exist
+     * repeat, but use multiple objects and check the boolean return dict
+  - put/mod must verify that none of the keys contains a dot ('.').
+"""
 import pytest
 import azrael.database as database
 
@@ -136,6 +144,96 @@ class TestDatabaseAPI:
         assert db.getMulti(['1', '2']) == db.getAll()
 
         assert db.reset().ok and (db.count().data == 0)
+
+    def test_hasKey(self):
+        db = database.DatabaseInMemory(name=('test1', 'test2'))
+
+        src = {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+        assert not db.hasKey(src, ['z'])
+        assert not db.hasKey(src, ['x', 'a'])
+        assert not db.hasKey(src, ['a', 'x'])
+        assert db.hasKey(src, ['x'])
+        assert db.hasKey(src, ['a'])
+        assert db.hasKey(src, ['c'])
+        assert db.hasKey(src, ['a', 'b'])
+        assert db.hasKey(src, ['c', 'd'])
+        assert db.hasKey(src, ['c', 'd', 'e'])
+
+    def test_delKey(self):
+        db = database.DatabaseInMemory(name=('test1', 'test2'))
+
+        src = {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+
+        db.delKey(src, ['z'])
+        assert src == {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+
+        db.delKey(src, ['x'])
+        assert src == {'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+
+        db.delKey(src, ['a'])
+        assert src == {'c': {'d': {'e': 3}}}
+
+        db.delKey(src, ['c', 'd'])
+        assert src == {'c': {}}
+
+        db.delKey(src, ['c'])
+        assert src == {}
+
+    def test_setKey(self):
+        db = database.DatabaseInMemory(name=('test1', 'test2'))
+
+        src = {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+
+        db.setKey(src, ['z'], -1)
+        assert src == {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}, 'z': -1}
+
+        db.setKey(src, ['x'], -1)
+        assert src == {'x': -1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}, 'z': -1}
+
+        db.setKey(src, ['a'], -1)
+        assert src == {'x': -1, 'a': -1, 'c': {'d': {'e': 3}}, 'z': -1}
+
+        db.setKey(src, ['a'], {'b': -2})
+        assert src == {'x': -1, 'a': {'b': -2}, 'c': {'d': {'e': 3}}, 'z': -1}
+
+        db.setKey(src, ['c', 'd', 'e'], -2)
+        assert src == {'x': -1, 'a': {'b': -2}, 'c': {'d': {'e': -2}}, 'z': -1}
+
+    @pytest.mark.parametrize('clsDatabase', allEngines)
+    def test_modify_single(self, clsDatabase):
+        """
+        Insert a single document and modify it.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # Reset the database and verify that it is empty.
+        assert db.reset().ok and db.count().data == 0
+
+        doc = {
+            'foo': {'a': 1, 'b': 2},
+            'bar': {'c': 3, 'd': 2},
+        }
+        ops = {'1': {'exists': False, 'data': doc}}
+
+        assert db.put(ops) == (True, None, {'1': True})
+
+        ops = {
+            '1': {
+                'inc': {('foo', 'a'): 1, ('bar', 'c'): -1},
+                'set': {('foo', 'b'): 20},
+                'unset': [('bar', 'd')],
+                'exists': {('bar', 'd'): True},
+            }
+        }
+        assert db.mod(ops) == (True, None, {'1': True})
+
+        ret = db.getOne('1')
+        assert ret.ok
+        ref = {
+            'foo': {'a': 2, 'b': 20},
+            'bar': {'c': 2},
+        }
+        assert ret.data == ref
 
 
 if __name__ == '__main__':

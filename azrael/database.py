@@ -119,6 +119,79 @@ class DatabaseInMemory:
                 ret[aid] = False
         return RetVal(True, None, ret)
 
+    def hasKey(self, d, key_hierarchy):
+        try:
+            tmp = d
+            for key in key_hierarchy:
+                tmp = tmp[key]
+                
+        except (KeyError, TypeError):
+            return False
+        return True
+        
+    def setKey(self, d, key_hierarchy, value):
+        tmp = d
+        for key in key_hierarchy[:-1]:
+            if key not in tmp:
+                tmp[key] = {}
+            tmp = tmp[key]
+        tmp[key_hierarchy[-1]] = value
+        return True
+
+    def incKey(self, d, key_hierarchy, value):
+        tmp = d
+        for key in key_hierarchy[:-1]:
+            if key not in tmp:
+                tmp[key] = {}
+            tmp = tmp[key]
+
+        try:
+            tmp[key_hierarchy[-1]] += value
+        except TypeError:
+            return False
+        return True
+
+    def delKey(self, d, key_hierarchy):
+        try:
+            tmp = d
+            for key in key_hierarchy[:-1]:
+                tmp = tmp[key]
+            del tmp[key_hierarchy[-1]]
+        except (KeyError, TypeError):
+            return False
+        return True
+
+    def mod(self, ops):
+        ret = {}
+        for aid, op in ops.items():
+            # Verify the specified items exist.
+            try:
+                c = self.content[aid]
+                for key, yes in op['exists'].items():
+                    assert self.hasKey(c, key) is yes
+
+                for key_hierarchy in op['inc']:
+                    tmp = c
+                    for key in key_hierarchy:
+                        tmp = tmp[key]
+                    assert isinstance(tmp, (float, int))
+                ret[aid] = True
+            except (AssertionError, KeyError):
+                ret[aid] = False
+                continue
+
+            for key, val in op['inc'].items():
+                self.incKey(self.content[aid], key, val)
+
+            for key in op['unset']:
+                self.delKey(self.content[aid], key)
+
+            for key, val in op['set'].items():
+                self.setKey(self.content[aid], key, val)
+
+        return RetVal(True, None, ret)
+        
+
     def getOne(self, aid):
         doc = self.content.get(aid, None)
         if doc is None:
@@ -156,7 +229,6 @@ class DatabaseMongo:
             exists, data = op['exists'], op['data']
             data = copy.deepcopy(data)
             data['aid'] = aid
-            print('\nMongo put: ', data)
             if exists:
                 r = self.db.update_one({'aid': aid}, {'$set': data})
                 if (r.matched_count == 1) and (r.modified_count == 1):
@@ -175,6 +247,30 @@ class DatabaseMongo:
                     ret[aid] = False
         return RetVal(True, None, ret)
 
+    def mod(self, ops):
+        ret = {}
+        for aid, op_tmp in ops.items():
+            query = {'.'.join(key): {'$exists': yes} for key, yes in op_tmp['exists'].items()}
+            query['aid'] = aid
+
+            # Update operations.
+            op = {
+                '$inc': {'.'.join(key): val for key, val in op_tmp['inc'].items()},
+                '$set': {'.'.join(key): val for key, val in op_tmp['set'].items()},
+                '$unset': {'.'.join(key): True for key in op_tmp['unset']},
+            }
+            # Prune update operations.
+            op = {k: v for k, v in op.items() if len(v) > 0}
+
+            # If no updates are necessary then skip this object.
+            if len(op) == 0:
+                continue
+
+            # Issue the database query.
+            r = self.db.update_one(query, op)
+            ret[aid] = r.acknowledged
+        return RetVal(True, None, ret)
+        
     def _removeAID(self, docs):
         docs = {doc['aid']: doc for doc in docs}
         for aid, doc in docs.items():
@@ -184,7 +280,6 @@ class DatabaseMongo:
     def getOne(self, aid):
         prj = {'_id': False, 'aid': False}
         doc = self.db.find_one({'aid': aid}, prj)
-        print('Mongo got: ', doc)
         if doc is None:
             return RetVal(False, None, None)
         else:
