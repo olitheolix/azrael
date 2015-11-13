@@ -18,6 +18,7 @@
 """
 Database abstractions.
 """
+import copy
 import logging
 
 import azrael.config as config
@@ -118,6 +119,21 @@ class DatabaseInMemory:
                 ret[aid] = False
         return RetVal(True, None, ret)
 
+    def getOne(self, aid):
+        doc = self.content.get(aid, None)
+        if doc is None:
+            return RetVal(False, None, None)
+        else:
+            return RetVal(True, None, doc)
+
+    def getMulti(self, aids):
+        docs = {aid: self.content[aid] for aid in aids if aid in self.content}
+        return RetVal(True, None, docs)
+
+    def getAll(self):
+        docs = copy.deepcopy(self.content)
+        return RetVal(True, None, docs)
+
 
 class DatabaseMongo:
     def __init__(self, name: tuple):
@@ -138,8 +154,11 @@ class DatabaseMongo:
         ret = {}
         for aid, op in ops.items():
             exists, data = op['exists'], op['data']
+            data = copy.deepcopy(data)
+            data['aid'] = aid
+            print('\nMongo put: ', data)
             if exists:
-                r = self.db.update_one({'aid': aid}, {'$set': {aid: data}})
+                r = self.db.update_one({'aid': aid}, {'$set': data})
                 if (r.matched_count == 1) and (r.modified_count == 1):
                     ret[aid] = True
                 else:
@@ -147,7 +166,7 @@ class DatabaseMongo:
             else:
                 r = self.db.update_one(
                     {'aid': aid},
-                    {'$setOnInsert': {aid: data}},
+                    {'$setOnInsert': data},
                     upsert=True
                 )
                 if r.acknowledged:
@@ -155,3 +174,30 @@ class DatabaseMongo:
                 else:
                     ret[aid] = False
         return RetVal(True, None, ret)
+
+    def _removeAID(self, docs):
+        docs = {doc['aid']: doc for doc in docs}
+        for aid, doc in docs.items():
+            del doc['aid']
+        return docs
+
+    def getOne(self, aid):
+        prj = {'_id': False, 'aid': False}
+        doc = self.db.find_one({'aid': aid}, prj)
+        print('Mongo got: ', doc)
+        if doc is None:
+            return RetVal(False, None, None)
+        else:
+            return RetVal(True, None, doc)
+
+    def getMulti(self, aids):
+        prj = {'_id': False}
+        cursor = self.db.find({'aid': {'$in': aids}}, prj)
+        docs = self._removeAID(cursor)
+        return RetVal(True, None, docs)
+
+    def getAll(self):
+        prj = {'_id': False}
+        cursor = self.db.find({}, prj)
+        docs = self._removeAID(cursor)
+        return RetVal(True, None, docs)

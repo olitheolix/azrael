@@ -87,7 +87,7 @@ class TestDatabaseAPI:
     @pytest.mark.parametrize('clsDatabase', allEngines)
     def test_reset_add(self, clsDatabase):
         """
-        Add data and verify that 'reset' removes it.
+        Add data and verify that 'reset' flushes it.
         """
         db = clsDatabase(name=('test1', 'test2'))
 
@@ -103,6 +103,39 @@ class TestDatabaseAPI:
         # Reset the database and verfify that it is empty again.
         assert db.reset() == (True, None, None)
         assert db.count() == (True, None, 0)
+
+    @pytest.mark.parametrize('clsDatabase', allEngines)
+    def test_add_get(self, clsDatabase):
+        """
+        Add data and verify that 'reset' flushes it.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # Reset the database and verify that it is empty.
+        assert db.reset().ok and db.count().data == 0
+
+        # Insert two documents and verify the document count.
+        ops = {
+            '1': {'exists': False, 'data': {'key1': 'value1'}},
+            '2': {'exists': False, 'data': {'key2': 'value2'}},
+        }
+        assert db.put(ops) == (True, None, {'1': True, '2': True})
+        assert db.count() == (True, None, 2)
+            
+        # Fetch the content via three different methods.
+
+        # getOne:
+        assert db.getOne('1') == (True, None, ops['1']['data'])
+        assert db.getOne('2') == (True, None, ops['2']['data'])
+
+        # getMulti:
+        tmp = {'1': ops['1']['data'], '2': ops['2']['data']}
+        assert db.getMulti(['1', '2']) == (True, None, tmp)
+
+        # getAll:
+        assert db.getMulti(['1', '2']) == db.getAll()
+
+        assert db.reset().ok and (db.count().data == 0)
 
 
 if __name__ == '__main__':
