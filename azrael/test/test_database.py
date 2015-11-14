@@ -297,6 +297,33 @@ class TestDatabaseAPI:
         assert db.remove(['1', '4']) == (True, None, 1)
         assert db.count() == (True, None, 0)
 
+    @pytest.mark.parametrize('clsDatabase', allEngines)
+    def test_allKeys(self, clsDatabase):
+        """
+        Verify the allKeys method.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # Empty database: unconditonal put must succeed.
+        assert db.reset().ok and db.count().data == 0
+        ops = {
+            '1': {'exists': False, 'data': {'key1': 'value1'}},
+            '2': {'exists': False, 'data': {'key2': 'value2'}},
+            '3': {'exists': False, 'data': {'key3': 'value3'}},
+            '4': {'exists': False, 'data': {'key4': 'value4'}},
+        }
+        assert db.put(ops) == (True, None, {str(_): True for _ in range(1, 5)})
+        assert db.count() == (True, None, 4)
+        ret = db.allKeys()
+        assert ret.ok
+        assert sorted(ret.data) == ['1', '2', '3', '4']
+
+        # Delete two documents.
+        assert db.remove(['1', '3']) == (True, None, 2)
+        assert db.count() == (True, None, 2)
+        ret = db.allKeys()
+        assert ret.ok
+        assert sorted(ret.data) == ['2', '4']
 
     def test_projection(self):
         db = database.DatabaseInMemory(name=('test1', 'test2'))

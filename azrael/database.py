@@ -206,6 +206,10 @@ class DatabaseInMemory:
                 pass
         return RetVal(True, None, num_deleted)
     
+    def allKeys(self):
+        keys = list(self.content.keys())
+        return RetVal(True, None, keys)
+
     def project(self, doc, prj):
         doc = copy.deepcopy(doc)
         out = {}
@@ -317,6 +321,10 @@ class DatabaseMongo:
     def remove(self, aids: (tuple, list)):
         ret = self.db.delete_many({'objID': {'$in': aids}})
         return RetVal(True, None, ret.deleted_count)
+
+    def allKeys(self):
+        keys = self.db.distinct('objID')
+        return RetVal(True, None, keys)
 
     def getOne(self, aid, prj=[]):
         prj = {'.'.join(_): True for _ in prj}
