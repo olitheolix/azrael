@@ -381,7 +381,7 @@ class Clerk(config.AzraelProcess):
                 return RetVal(False, 'Invalid template data', None)
 
             # fixme
-            db2 = azrael.database.DatabaseMongo(('azrael', 'template'))
+            db2 = database.dbHandles['Templates']
             ops = {}
 
             # Prepare each template and compile the database operations.
@@ -477,7 +477,7 @@ class Clerk(config.AzraelProcess):
         # Mongo's "_id" field.
 
         # fixme: error handling; docu string above.
-        db2 = azrael.database.DatabaseMongo(('azrael', 'template'))
+        db2 = database.dbHandles['Templates']
         cursor = db2.getMulti(templateIDs).data
 
         # Compile the output dictionary and compile the `Template` instances.
@@ -629,8 +629,7 @@ class Clerk(config.AzraelProcess):
             return ret
         newObjectIDs = ret.data
 
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
-
+        db2 = database.dbHandles['ObjInstances']
         with util.Timeit('spawn:2 createStates'):
             # Make a copy of every template and endow it with the meta
             # information for an instantiated object. Then add it to the list
@@ -757,7 +756,7 @@ class Clerk(config.AzraelProcess):
         :rtype: tuple(vec3, vec3)
         """
         # Convenience.
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
 
         # Query the object's booster information.
         doc = db2.getOne(objID, [['template', 'boosters']]).data
@@ -842,7 +841,7 @@ class Clerk(config.AzraelProcess):
         :raises: None
         """
         # Fetch the instance data and return immediately if it does not exist.
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
         ret = db2.getOne(objID, [['template']])
         doc = ret.data
         if not ret.ok or doc is None:
@@ -975,7 +974,7 @@ class Clerk(config.AzraelProcess):
             return ret
 
         # Fetch the document. Then remove it.
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
         doc = db2.getOne(objID).data
         db2.remove([objID])
 
@@ -1014,7 +1013,7 @@ class Clerk(config.AzraelProcess):
         """
         # Retrieve the geometry. Return an error if the ID does not exist.
         # fixme: error handling
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
         docs = db2.getMulti(objIDs).data
 
         # Initialise the output dictionary with a None value for every
@@ -1178,7 +1177,7 @@ class Clerk(config.AzraelProcess):
         :param dict fragments: new fragments.
         :return: dict (eg. {'update: #update objects})
         """
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
         num_updated = 0
 
         # Determine what data to update in each object. The database query runs
@@ -1269,7 +1268,7 @@ class Clerk(config.AzraelProcess):
         :rtype: dict
         """
         # Fetch the objects. If `objID` is None the client wants all objects.
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
         if objIDs is None:
             docs = db2.getAll([['version'], ['objID'], ['template', 'rbs']])
         else:
@@ -1312,7 +1311,7 @@ class Clerk(config.AzraelProcess):
         :return: Success
         """
         # Convenience.
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
         invalid_objects = []
 
         for objID, body in bodies.items():
@@ -1389,7 +1388,7 @@ class Clerk(config.AzraelProcess):
         :return: see example above.
         """
         # Query object states and compile them into a dictionary.
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
         
         prj = [
             ('version', ),
@@ -1453,7 +1452,7 @@ class Clerk(config.AzraelProcess):
         :param int objID: object ID.
         :return: templateID from which ``objID`` was created.
         """
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
         ret = db2.getOne(objID)
         doc = ret.data
         if ret.ok and doc is not None:
@@ -1475,7 +1474,7 @@ class Clerk(config.AzraelProcess):
         :return: list of objIDs
         :rtype: list(int)
         """
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
         return db2.allKeys()
 
     @typecheck
@@ -1550,7 +1549,7 @@ class Clerk(config.AzraelProcess):
         :param dict[int: str] data: new content for 'custom' field in object.
         :return: List of invalid object IDs.
         """
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
 
         # Update the 'custom' field of the specified object IDs.
         invalid_objects = []
@@ -1588,7 +1587,7 @@ class Clerk(config.AzraelProcess):
         :param dict[int: str] data: new content for 'custom' field in object.
         :return: dictionary of 'custom' data.
         """
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = database.dbHandles['ObjInstances']
 
         # Fetch the objects. If `objID` is None the client wants all objects.
         prj = [('template', 'custom')]
