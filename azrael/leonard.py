@@ -632,16 +632,16 @@ class LeonardBase(config.AzraelProcess):
             return
 
         # Update the RBS data in the master record.
-        db = azrael.database.dbHandles['ObjInstances']
-        bulk = db.initialize_unordered_bulk_op()
-        for objID, body in self.allBodies.items():
-            query = {'objID': objID, 'template.rbs': {'$exists': True}}
-            data = {'objID': objID, 'template.rbs': body._asdict()}
-            bulk.find(query).update({'$set': data})
-        if writeconcern:
-            bulk.execute()
-        else:
-            bulk.execute({'w': False})
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        ops = {}
+        for aid, body in self.allBodies.items():
+            ops[aid] = {
+                'inc': {},
+                'set': {('template', 'rbs'): body._asdict()},
+                'unset': {},
+                'exists': {('template', 'rbs'): True},
+            }
+        db2.mod(ops)
 
     def processCommandsAndSync(self):
         """
