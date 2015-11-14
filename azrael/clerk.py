@@ -1470,9 +1470,8 @@ class Clerk(config.AzraelProcess):
         :return: list of objIDs
         :rtype: list(int)
         """
-        db = database.dbHandles['ObjInstances']
         db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
-        return RetVal(True, None, db.distinct('objID'))
+        return db2.allKeys()
 
     @typecheck
     def setForce(self, objID: int, force: (tuple, list), rpos: (tuple, list)):
