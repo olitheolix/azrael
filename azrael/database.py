@@ -33,7 +33,6 @@ logit = logging.getLogger('azrael.' + __name__)
 client = config.getMongoClient()
 dbName = 'azrael'
 dbHandles = {
-    'RBS': client[dbName]['rbs'],
     'Commands': client[dbName]['Cmd'],
     'Templates': client[dbName]['template'],
     'ObjInstances': client[dbName]['objinstances'],

@@ -407,9 +407,6 @@ class LeonardBase(config.AzraelProcess):
     def __init__(self):
         super().__init__()
 
-        # Create the DB handles.
-        self._DB_SV = azrael.database.dbHandles['RBS']
-
         # Create an Igor instance.
         self.igor = azrael.igor.Igor()
 
@@ -557,7 +554,6 @@ class LeonardBase(config.AzraelProcess):
         for doc in cmds['remove']:
             objID = doc['objID']
             if objID in self.allBodies:
-                self._DB_SV.remove({'objID': objID})
                 del self.allBodies[objID]
                 del self.allForces[objID]
                 del self.allAABBs[objID]
@@ -634,18 +630,6 @@ class LeonardBase(config.AzraelProcess):
         # Return immediately if we have no objects to begin with.
         if len(self.allBodies) == 0:
             return
-
-        # Update (or insert non-existing) bodies. Use a MongoDB Bulk operator
-        # for the update to improve the performance.
-        bulk = self._DB_SV.initialize_unordered_bulk_op()
-        for objID, body in self.allBodies.items():
-            query = {'objID': objID}
-            data = {'objID': objID, 'rbs': body, 'AABBs': self.allAABBs[objID]}
-            bulk.find(query).update({'$set': data})
-        if writeconcern:
-            bulk.execute()
-        else:
-            bulk.execute({'w': False})
 
         # Update the RBS data in the master record.
         db = azrael.database.dbHandles['ObjInstances']
