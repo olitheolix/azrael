@@ -297,7 +297,7 @@ class DatabaseMongo:
             # fixme: this used to be acknowledged. That was wrong yet it passed
             # all unit tests. Devise a test to identify this problem.
 #            ret[aid] = r.acknowledged
-            ret[aid] = r.matched_count
+            ret[aid] = (r.matched_count == 1)
         return RetVal(True, None, ret)
         
     def _removeAID(self, docs):
