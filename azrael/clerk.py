@@ -629,11 +629,13 @@ class Clerk(config.AzraelProcess):
             return ret
         newObjectIDs = ret.data
 
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+
         with util.Timeit('spawn:2 createStates'):
             # Make a copy of every template and endow it with the meta
             # information for an instantiated object. Then add it to the list
             # of objects to spawn.
-            dbDocs = []
+            dbops = {}
             bodyStates = {}
             for newObj, objID in zip(newObjects, newObjectIDs):
                 # Convenience: 'template' is a Template instance converted to
@@ -695,6 +697,7 @@ class Clerk(config.AzraelProcess):
                 # original template plus additional meta information,
                 # for instance 'objID' and 'version'.
                 doc = {
+                    # fixme: is the objID really still necessary?
                     'objID': objID,
                     'url_frag': url_dst,
                     'version': 0,
@@ -706,17 +709,19 @@ class Clerk(config.AzraelProcess):
                 # Leonard later.
                 bodyStates[objID] = template.rbs
 
-                # Add the new template document.
-                dbDocs.append(doc)
+                # Compile the datastore command to add the template to the
+                # instance database.
+                dbops[objID] = {'exists': False, 'data': doc}
                 del templateID, objID, doc
 
             # Return immediately if there are no objects to spaw.
-            if len(dbDocs) == 0:
+            if len(dbops) == 0:
                 return RetVal(True, None, tuple())
 
             # Insert all objects into the State Variable DB. Note: this does
             # not make Leonard aware of their existence (see next step).
-            database.dbHandles['ObjInstances'].insert(dbDocs)
+            db2.put(dbops)
+            del dbops
 
         with util.Timeit('spawn:3 addCmds'):
             # Compile the list of spawn commands that will be sent to Leonard.
