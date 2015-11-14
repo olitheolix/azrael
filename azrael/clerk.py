@@ -962,22 +962,27 @@ class Clerk(config.AzraelProcess):
         """
         Remove ``objID`` from the physics simulation.
 
+        This method will suceed even if ``objID`` does not exist (anymore) in
+        Azrael.
+
         :param int objID: ID of object to remove.
         :return: Success
         """
-        # Announce that an object was removed.
+        # Announce that an object was removed. Return if that is impossible for
+        # whatever reason.
         ret = leoAPI.addCmdRemoveObject(objID)
+        if not ret.ok:
+            return ret
 
-        # Remove the master record for the object.
-        database.dbHandles['ObjInstances'].remove({'objID': objID})
-        # use with mynewdb.del([objID])
+        # Fetch the document. Then remove it.
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        doc = db2.getOne(objID).data
+        db2.remove([objID])
 
-        if ret.ok:
-            url = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
-            self.dibbler.removeDirs([url])
-            return RetVal(True, None, None)
-        else:
-            return RetVal(False, ret.msg, None)
+        # Delete the fragment data if the object still existed.
+        if doc is not None:
+            self.dibbler.removeDirs([doc['url_frag']])
+        return RetVal(True, None, None)
 
     @typecheck
     def getFragments(self, objIDs: list):
