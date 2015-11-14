@@ -262,6 +262,42 @@ class TestDatabaseAPI:
         assert ret.msg is None
         assert ret.data['1'] is False
 
+    @pytest.mark.parametrize('clsDatabase', allEngines)
+    def test_remove(self, clsDatabase):
+        """
+        Insert some documents. Then delete them.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # Empty database: unconditonal put must succeed.
+        assert db.reset().ok and db.count().data == 0
+        ops = {
+            '1': {'exists': False, 'data': {'key1': 'value1'}},
+            '2': {'exists': False, 'data': {'key2': 'value2'}},
+            '3': {'exists': False, 'data': {'key3': 'value3'}},
+            '4': {'exists': False, 'data': {'key4': 'value4'}},
+        }
+        assert db.put(ops) == (True, None, {str(_): True for _ in range(1, 5)})
+        assert db.count() == (True, None, 4)
+
+        # Attempt to delete a non-existing document. This must not return
+        # error, yet the database must remain unchanged.
+        assert db.remove(['5']) == (True, None, 0)
+        assert db.count() == (True, None, 4)
+
+        # Delete one document.
+        assert db.remove(['2']) == (True, None, 1)
+        assert db.count() == (True, None, 3)
+
+        # Delete two documents.
+        assert db.remove(['1', '3']) == (True, None, 2)
+        assert db.count() == (True, None, 1)
+
+        # Delete two documents, only of which exists.
+        assert db.remove(['1', '4']) == (True, None, 1)
+        assert db.count() == (True, None, 0)
+
+
     def test_projection(self):
         db = database.DatabaseInMemory(name=('test1', 'test2'))
 
