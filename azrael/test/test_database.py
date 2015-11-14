@@ -235,6 +235,33 @@ class TestDatabaseAPI:
         assert db.put(ops) == (True, None, {'1': True})
         assert db.getOne('1') == (True, None, {'key2': 'value2'})
 
+    @pytest.mark.parametrize('clsDatabase', allEngines)
+    def test_put_boolean_return(self, clsDatabase):
+        """
+        In Python `1 == 1 == True` and `0 == 0 == False`. The API
+        specifies that the return value for the `put` operations are bools,
+        However, most tests in this harness just use the `==' to check. This is
+        usually alright and yet the problem did arise. This test will therefore
+        explicity verify that the return values are bools not integers.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # Empty database: unconditonal put must succeed.
+        assert db.reset().ok and db.count().data == 0
+        ops = {'1': {'exists': False, 'data': {'key1': 'value1'}}}
+        ret = db.put(ops)
+        assert ret.ok is True
+        assert ret.msg is None
+        assert ret.data['1'] is True
+
+        # Empty database: conditional put must fail.
+        assert db.reset().ok and db.count().data == 0
+        ops = {'1': {'exists': True, 'data': {'key1': 'value1'}}}
+        ret = db.put(ops)
+        assert ret.ok is True
+        assert ret.msg is None
+        assert ret.data['1'] is False
+
     def test_projection(self):
         db = database.DatabaseInMemory(name=('test1', 'test2'))
 
@@ -368,7 +395,6 @@ class TestDatabaseAPI:
             'bar': {'c': 3, 'd': 2},
         }
         ops = {'1': {'exists': False, 'data': doc}}
-
         assert db.put(ops) == (True, None, {'1': True})
 
         ops = {
