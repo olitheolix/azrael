@@ -28,18 +28,6 @@ from azrael.aztypes import typecheck, RetVal
 # Global database handles.
 logit = logging.getLogger('azrael.' + __name__)
 
-# Connect to MongoDB and store the relevant collection handles in the
-# 'dbHandles' variables to avoid hard coded collection names in Azrael.
-client = config.getMongoClient()
-dbName = 'azrael'
-dbHandles = {
-    'Commands': client[dbName]['Cmd'],
-    'Templates': client[dbName]['template'],
-    'ObjInstances': client[dbName]['objinstances'],
-    'Counters': client[dbName]['Counters'],
-    'Constraints': client[dbName]['Constraints'],
-}
-
 
 @typecheck
 def init():
@@ -48,7 +36,6 @@ def init():
     """
     # Delete the database.
     client.drop_database(dbName)
-    dbHandles['ObjInstances'].ensure_index([('objID', 1)])
 
 
 @typecheck
@@ -360,3 +347,16 @@ class DatabaseMongo:
         cursor = self.db.find({}, prj)
         docs = self._removeAID(cursor)
         return RetVal(True, None, docs)
+
+
+# Connect to MongoDB and store the relevant collection handles in the
+# 'dbHandles' variables to avoid hard coded collection names in Azrael.
+client = config.getMongoClient()
+dbName = 'azrael'
+dbHandles = {
+    'Commands': client[dbName]['Cmd'],
+    'Templates': DatabaseMongo((dbName, 'template')),
+    'ObjInstances': DatabaseMongo((dbName, 'objinstances')),
+    'Counters': client[dbName]['Counters'],
+    'Constraints': client[dbName]['Constraints'],
+}
