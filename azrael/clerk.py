@@ -1072,7 +1072,7 @@ class Clerk(config.AzraelProcess):
             # database. Recursively delete all its files starting at the
             # top-level directory.
             # This operation must update the version number.
-            op_db['new_version'] = True
+            op_db['inc'] = {('version', ): 1}
             op_db['unset'].append(dbkey)
             op_file['rmdir'].append(url)
         elif fragdata['op'] == 'put':
@@ -1102,7 +1102,7 @@ class Clerk(config.AzraelProcess):
             # The fragment is valid. Therefore specify the new document
             # hierarchy.
             op_db['set'][dbkey] = doc
-            op_db['new_version'] = True
+            op_db['inc'] = {('version', ): 1}
 
             # Specify the files to go into Dibbler (this could not happen
             # earlier because we needed to ensure the whole fragment was
@@ -1114,18 +1114,18 @@ class Clerk(config.AzraelProcess):
             op_file['rmdir'].append(url)
         else:
             # Only existing objects can be updated.
-            op_db['exists'].append(dbkey)
+            op_db['exists'][dbkey] = True
 
             # Overwrite the state variables (if there are any).
             for state in ('scale', 'position', 'rotation'):
                 if state not in fragdata:
                     continue
-                op_db['set']['{}.{}'.format(dbkey, state)] = fragdata[state]
+                op_db['set'][dbkey + (state,)] = fragdata[state]
 
             # A new fragment types must trigger a version increase.
             if 'fragtype' in fragdata:
-                op_db['set']['{}.fragtype'.format(dbkey)] = fragdata['fragtype']
-                op_db['new_version'] = True
+                op_db['set'][dbkey + ('fragtype',)] = fragdata['fragtype']
+                op_db['inc'] = {('version', ): 1}
 
             # Delete geometry files for the current fragment.
             for fname in fragdata.get('del', []):
@@ -1137,8 +1137,8 @@ class Clerk(config.AzraelProcess):
                 fname = self._mangleFileName(fname, unmangle=False)
 
                 # Remove the keys that list the file names.
-                op_db['unset'].append('{}.files.{}'.format(dbkey, fname))
-                op_db['new_version'] = True
+                op_db['unset'].append(dbkey + ('files', fname))
+                op_db['inc'] = {('version', ): 1}
 
             # Overwrite these files.
             for fname, fdata in fragdata.get('put', {}).items():
@@ -1150,9 +1150,8 @@ class Clerk(config.AzraelProcess):
                 fname = self._mangleFileName(fname, unmangle=False)
 
                 # Update the keys that list the file names.
-                tmp = '{}.files.{}'.format(dbkey, fname)
-                op_db['set'][tmp] = None
-                op_db['new_version'] = True
+                op_db['set'][dbkey + ('files', fname)] = None
+                op_db['inc'] = {('version', ): 1}
 
     @typecheck
     def setFragments(self, fragments: dict):
@@ -1169,7 +1168,7 @@ class Clerk(config.AzraelProcess):
         :param dict fragments: new fragments.
         :return: dict (eg. {'update: #update objects})
         """
-        db = database.dbHandles['ObjInstances']
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
         num_updated = 0
 
         # Determine what data to update in each object. The database query runs
@@ -1186,10 +1185,10 @@ class Clerk(config.AzraelProcess):
             #    del: files to delete in Dibbler.
             #    rmdir: directories to delete in Dibbler.
             op_db = {
-                'new_version': False,
+                'inc': {},
                 'set': {},
                 'unset': [],
-                'exists': [],
+                'exists': {},
             }
             op_file = {
                 'put': {},
@@ -1211,7 +1210,7 @@ class Clerk(config.AzraelProcess):
 
                 # Define the prefix key in the JSON hierarchy for current fragment, and
                 # the file name prefix in Dibbler.
-                dbkey = 'template.fragments.{}'.format(fragname)
+                dbkey = ('template', 'fragments', fragname)
                 url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
 
                 # Determine the necessary database operations (will update the
@@ -1221,42 +1220,15 @@ class Clerk(config.AzraelProcess):
             # -----------------------------------------------------------------
             # Compile the database query and update operation.
             # -----------------------------------------------------------------
-            # Query: specific object ID; particular fields may have to exist
-            # for the update to take place.
-            query = {k: {'$exists': True} for k in op_db['exists']}
-            query['objID'] = objID
-
-            # Update operations.
-            op = {
-                '$inc': {'version': 1} if op_db['new_version'] else {},
-                '$set': op_db['set'],
-                '$unset': {name: '' for name in op_db['unset']}
-            }
-            # Prune update operations.
-            op = {k: v for k, v in op.items() if len(v) > 0}
-            del op_db
-
-            # If no updates are necessary then skip this object.
-            if len(op) == 0:
-                continue
-
-            # Issue the database query.
-            ret = db.update_one(query, op)
-            if not ret.acknowledged:
-                msg = 'Update for objID <{}> was not acknowledged'
-                msg = msg.format(objID)
-                self.logit.warning(msg)
-                continue
-
-            # Increment the update counter (will be returned to caller).
-            num_updated += ret.modified_count
+            ret = db2.mod({objID: op_db})
+            num_updated += len([_ for _ in ret.data.values() if _])
 
             # Issue the Dibbler queries.
             self.dibbler.removeDirs(op_file['rmdir'])
             self.dibbler.remove(op_file['del'])
             self.dibbler.put(op_file['put'])
 
-            del objID, frags, query, op, ret, op_file
+            del objID, frags, op_db, ret, op_file
 
         return RetVal(True, None, {'updated': num_updated})
 
