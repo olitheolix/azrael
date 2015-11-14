@@ -1448,12 +1448,14 @@ class Clerk(config.AzraelProcess):
         :param int objID: object ID.
         :return: templateID from which ``objID`` was created.
         """
-        doc = database.dbHandles['ObjInstances'].find_one({'objID': objID})
-        if doc is None:
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        ret = db2.getOne(objID)
+        doc = ret.data
+        if ret.ok and doc is not None:
+            return RetVal(True, None, doc['templateID'])
+        else:
             msg = 'Could not find template for objID {}'.format(objID)
             return RetVal(False, msg, None)
-        else:
-            return RetVal(True, None, doc['templateID'])
 
     @typecheck
     def getAllObjectIDs(self, dummy=None):
