@@ -1653,12 +1653,11 @@ class TestClerk:
         during the physics cycle.
 
         I could not think of an elegant way to test this via a Clerk method
-        since those method can deal with corrupt data. The test therefore
-        queries Mongo directly - not ideal due to its database dependency, but
-        at least it is a solid test.
+        since its methods can deal with corrupt data. The test therefore
+        queries the datastore directly to ensure a solid test.
 
         Note that this test should become redundant once Clerk gains a method
-        to update rigid body states, whereas right now Leonard writes to the
+        to update rigid body states. Right now Leonard writes to the
         database directly (legacy architecture).
         """
         # Create a Leonard and Clerk.
@@ -1668,10 +1667,10 @@ class TestClerk:
         # Convenience.
         id_1 = 1
         body_1 = getRigidBody(imass=1)
-        db = azrael.database.dbHandles['ObjInstances']
+        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
 
         # Database and Leonard cache must both be empty.
-        assert db.count() == 0
+        assert db2.count() == (True, None, 0)
         assert len(leo.allBodies) == len(leo.allForces) == 0
 
         # Announce a newly spawned object in a way that bypasses Clerk. This
@@ -1685,7 +1684,7 @@ class TestClerk:
 
         # Verify further that Leonard did *not* create an entry in the master
         # record due to an errornous 'upsert' command.
-        assert db.count() == 0
+        assert db2.count() == (True, None, 0)
 
 
 class TestModifyFragments:
