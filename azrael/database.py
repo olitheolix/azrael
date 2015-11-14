@@ -252,6 +252,7 @@ class DatabaseMongo:
         self.name_db, self.name_col = name
         client = pymongo.MongoClient()
         self.db = client[self.name_db][self.name_col]
+        self.db.ensure_index([('objID', 1)])
 
     def reset(self):
         self.db.drop()
