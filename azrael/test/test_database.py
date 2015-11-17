@@ -28,10 +28,13 @@ implement getDistinct() method and use in clerk.getAllObjectIDs
 
 go over clerk and eliminate all database calls inside loops.
 
-fixme
+fixme:
+  - rename allEngines to all_engines
+
 
 docu
 """
+import copy
 import pytest
 import azrael.database as database
 
@@ -388,6 +391,168 @@ class TestDatabaseAPI:
         projections = [ [['blah']], [['foo', 'x']], [['foo', 'x', 'y0']] ]
         for prj in projections:
             assert db.getMulti(['1'], prj) == db.getAll(prj)
+
+    def test_datastore_validJsonKey(self):
+        """
+        Verify that 'DatastoreBase.validJsonKey' only admits valid JSON
+        hierarchy specifiers.
+        """
+        db = database
+
+        assert db._validJsonKey(('a', )) is True
+        assert db._validJsonKey(('a', 'b')) is True
+        assert db._validJsonKey(('a', 1)) is False
+        assert db._validJsonKey(('a', 'b.c')) is False
+
+    def test_invalid_args_getOne(self):
+        """
+        Create invalid arguments for 'getOne'.
+
+        The 'get' methods expect two arguments: aid(s) (str) and an optional
+        projection (list of lists). The projection must contain only strings,
+        none of which must contain the dot ('.') character. That last
+        restriction is necessary because the nested JSON hierarchies are
+        usually traversed with dots, eg 'parent.child.grandchild'.
+        """
+        db = database
+
+        # Valid.
+        assert db._checkGet('1', [('x', 'y')]) is True
+
+        # AID is not a string.
+        assert db._checkGet(1, [['blah']]) is False
+
+        # Projection is not a list of lists.
+        assert db._checkGet('1', {}) is False
+        assert db._checkGet('1', [{}]) is False
+
+        # Projection does not contain only strings.
+        assert db._checkGet('1', [['a', 2]]) is False
+
+        # Projection contains a string with a dot.
+        assert db._checkGet('1', [['a', 'b.c']]) is False
+
+    def test_invalid_args_getAll(self):
+        """
+        Create invalid arguments for 'getAll'.
+
+        Almost identical to `test_invalid_args_getOne`.
+        """
+        db = database
+
+        # Valid.
+        assert db._checkGetAll([('x', 'y')]) is True
+
+        # Projection is not a list of lists.
+        assert db._checkGetAll({}) is False
+        assert db._checkGetAll([{}]) is False
+
+        # Projection does not contain only strings.
+        assert db._checkGetAll([['a', 2]]) is False
+
+        # Projection contains a string with a dot.
+        assert db._checkGetAll([['a', 'b.c']]) is False
+
+    def test_invalid_args_put(self):
+        """
+        Create invalid arguments for 'put'.
+
+        Put takes one argument called 'ops'. This must be a dictionary with a
+        string key. The value is another dictionary and must contain two fields
+        called 'exists' and 'data'. Their types are bool and dict,
+        respectively.
+        """
+        db = database
+
+        # Valid.
+        ops = {'1': {'exists': False, 'data': {'foo': 1}}}
+        assert db._checkPut(ops) is True
+
+        # 'data' is not a dict.
+        ops = {'1': {'exists': False, 'data': 'foo'}}
+        assert db._checkPut(ops) is False
+
+        # 'exists' is not a bool
+        ops = {'1': {'exists': 2, 'data': {}}}
+        assert db._checkPut(ops) is False
+
+        # AID is not a string.
+        ops = {5: {'exists': True, 'data': {}}}
+        assert db._checkPut(ops) is False
+
+    def test_invalid_args_remove(self):
+        """
+        Create invalid arguments for 'remove'.
+
+        The 'remove' methods expect a list of aid strings.
+        """
+        db = database
+
+        # Not a list of strings.
+        assert db._checkRemove([['blah']]) is False
+        assert db._checkRemove(['blah', 1]) is False
+
+    def test_invalid_args_mod(self):
+        """
+        Create invalid arguments for 'mod'.
+
+        The 'mod' methods expect {aid: ops}, where 'ops' is itself a dictionary
+        that must contain the keys 'exists', 'inc', 'set', and 'unset. Each of
+        those keys hols another dictionary. The keys of those dictionaries must
+        be another tuple of strings, none of which must contain the dot ('.')
+        character.
+        """
+        db = database
+
+        ops_valid = {
+            '1': {
+                'inc': {('foo', 'a'): 1},
+                'set': {('foo', 'a'): 20},
+                'unset': [('foo', 'a')],
+                'exists': {('foo', 'a'): True},
+            }
+        }
+
+        assert db._checkMod(ops_valid) is True
+
+        # AID is not a string.
+        op = {1: {'inc': None, 'set': None, 'unset': None, 'exists': None}}
+        assert db._checkMod(op) is False
+
+        # Does not contain all keys.
+        op = {'1': {}}
+        assert db._checkMod(op) is False
+
+        # Invalid JSON hierarchy in one of the keys.
+        valid, invalid = ('foo', 'a'), ('foo.a', 'b')
+        op = {'1': {'inc': {invalid: 1}, 'set': {valid: 20},
+                    'unset': [valid], 'exists': {valid: True}}}
+        assert db._checkMod(op) is False
+        op = {'1': {'inc': {valid: 1}, 'set': {invalid: 20},
+                    'unset': [valid], 'exists': {valid: True}}}
+        assert db._checkMod(op) is False
+        op = {'1': {'inc': {valid: 1}, 'set': {valid: 20},
+                    'unset': [invalid], 'exists': {valid: True}}}
+        assert db._checkMod(op) is False
+        op = {'1': {'inc': {valid: 1}, 'set': {valid: 20},
+                    'unset': [valid], 'exists': {invalid: True}}}
+        assert db._checkMod(op) is False
+        del op
+
+        # 'inc' must specify a number.
+        ops = copy.deepcopy(ops_valid)
+        ops['1']['inc'][('foo', 'a')] = 'b'
+        assert db._checkMod(ops) is False
+
+        # 'exists' must specify bools.
+        ops = copy.deepcopy(ops_valid)
+        ops['1']['exists'][('foo', 'a')] = 5
+        assert db._checkMod(ops) is False
+
+        # 'unset' must be a list, not a dict like all the other fields.
+        ops = copy.deepcopy(ops_valid)
+        ops['1']['unset'] = {('foo', 'a'): 5}
+        assert db._checkMod(ops) is False
 
     def test_hasKey(self):
         db = database.DatabaseInMemory(name=('test1', 'test2'))

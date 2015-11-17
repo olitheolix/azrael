@@ -79,6 +79,102 @@ def getUniqueObjectIDs(numIDs: int):
         return RetVal(True, None, newIDs)
 
 
+def _checkGet(aids, prj):
+    try:
+        for aid in aids:
+            assert isinstance(aid, str)
+
+        assert isinstance(prj, (list,tuple))
+        for jsonkey in prj:
+            assert _validJsonKey(jsonkey)
+    except (KeyError, AssertionError, TypeError):
+        return False
+    return True
+
+
+def _checkGetAll(prj):
+    try:
+        assert isinstance(prj, (list,tuple))
+        for jsonkey in prj:
+            assert _validJsonKey(jsonkey)
+    except (KeyError, AssertionError, TypeError):
+        return False
+    return True
+
+
+def _checkPut(ops):
+    try:
+        for key, value in ops.items():
+            assert isinstance(key, str)
+            assert isinstance(value['data'], dict)
+            assert isinstance(value['exists'], bool)
+    except (KeyError, AssertionError):
+        return False
+    return True
+
+
+def _checkMod(ops):
+    try:
+        for key, value in ops.items():
+            assert isinstance(key, str)
+
+            assert isinstance(value['inc'], dict)
+            for k_inc, v_inc in value['inc'].items():
+                assert _validJsonKey(k_inc)
+                assert isinstance(v_inc, (float, int))
+                
+            assert isinstance(value['set'], dict)
+            for k_set, v_set in value['set'].items():
+                assert _validJsonKey(k_set)
+                
+            assert isinstance(value['unset'], (tuple, list))
+            for v_unset in value['unset']:
+                assert _validJsonKey(v_unset)
+                
+            assert isinstance(value['exists'], dict)
+            for k_exists, v_exists in value['exists'].items():
+                assert _validJsonKey(k_exists)
+                assert isinstance(v_exists, bool)
+    except (KeyError, AssertionError) as err:
+        return False
+    return True
+
+
+def _checkRemove(aids):
+    try:
+        for aid in aids:
+            assert isinstance(aid, str)
+    except AssertionError:
+        return False
+    return True
+
+
+def _validJsonKey(name: (list, tuple)):
+    """
+    Return True if ``name`` constitutes a valid (nested) key.
+
+    Datastores use nested JSON documents. To reach a key the nested
+    hierarchy requires one valid key per nesting level. These keys must be
+    strings and they must not contain the dot ('.') character.
+
+    Valid example: ('foo', 'bar'). This is valid and references the element
+             J['foo']['bar'].
+
+    Invalid eample: ('fo.o', 'bar') is invalid because it contains a dot.
+    
+    :param list/tuple name: the (nested) field name to verify.
+    :return: bool
+    """
+    try:
+        assert isinstance(name, (tuple, list))
+        for n in name:
+            assert isinstance(n, str)
+        assert '.' not in ''.join(name)
+    except (AssertionError, TypeError):
+        return False
+    return True
+
+
 class DatastoreBase:
     def __init__(self, name: tuple):
         self.dbname = name
@@ -86,28 +182,40 @@ class DatastoreBase:
     def reset(self):
         raise NotImplementedError
 
-    def count(self):
-        raise NotImplementedError
-
-    def put(self, ops: dict):
-        raise NotImplementedError
-
-    def mod(self, ops):
-        raise NotImplementedError
-
-    def remove(self, aids: (tuple, list)):
-        raise NotImplementedError
-
-    def allKeys(self):
-        raise NotImplementedError
-
     def getOne(self, aid, prj=[]):
+        if self._checkGet([aid], prj) is False:
+            return RetVal(False, 'Argument error', None)
         raise NotImplementedError
 
     def getMulti(self, aids, prj=[]):
+        if self._checkGet(aids, prj) is False:
+            return RetVal(False, 'Argument error', None)
         raise NotImplementedError
 
     def getAll(self, prj=[]):
+        if self._checkGetAll(prj) is False:
+            return RetVal(False, 'Argument error', None)
+        raise NotImplementedError
+
+    def put(self, ops: dict):
+        if self._checkPut(ops) is False:
+            return RetVal(False, 'Argument error', None)
+        raise NotImplementedError
+
+    def mod(self, ops):
+        if self._checkMod(ops) is False:
+            return RetVal(False, 'Argument error', None)
+        raise NotImplementedError
+
+    def remove(self, aids: (tuple, list)):
+        if self._checkRemove(aids) is False:
+            return RetVal(False, 'Argument error', None)
+        raise NotImplementedError
+
+    def count(self):
+        raise NotImplementedError
+
+    def allKeys(self):
         raise NotImplementedError
 
 
