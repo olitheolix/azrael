@@ -239,7 +239,7 @@ class DatabaseMongo:
         self.name_db, self.name_col = name
         client = pymongo.MongoClient()
         self.db = client[self.name_db][self.name_col]
-        self.db.ensure_index([('objID', 1)])
+        self.db.ensure_index([('aid', 1)])
 
     def reset(self):
         self.db.drop()
@@ -253,16 +253,16 @@ class DatabaseMongo:
         for aid, op in ops.items():
             exists, data = op['exists'], op['data']
             data = copy.deepcopy(data)
-            data['objID'] = aid
+            data['aid'] = aid
             if exists:
-                r = self.db.update({'objID': aid}, data, upsert=False)
+                r = self.db.update({'aid': aid}, data, upsert=False)
                 if r['updatedExisting']:
                     ret[aid] = True
                 else:
                     ret[aid] = False
             else:
                 r = self.db.update_one(
-                    {'objID': aid},
+                    {'aid': aid},
                     {'$setOnInsert': data},
                     upsert=True
                 )
@@ -276,7 +276,7 @@ class DatabaseMongo:
         ret = {}
         for aid, op_tmp in ops.items():
             query = {'.'.join(key): {'$exists': yes} for key, yes in op_tmp['exists'].items()}
-            query['objID'] = aid
+            query['aid'] = aid
 
             # Update operations.
             op = {
@@ -301,26 +301,26 @@ class DatabaseMongo:
         return RetVal(True, None, ret)
         
     def _removeAID(self, docs):
-        docs = {doc['objID']: doc for doc in docs}
+        docs = {doc['aid']: doc for doc in docs}
         for aid, doc in docs.items():
-            del doc['objID']
+            del doc['aid']
         return docs
 
     def remove(self, aids: (tuple, list)):
-        ret = self.db.delete_many({'objID': {'$in': aids}})
+        ret = self.db.delete_many({'aid': {'$in': aids}})
         return RetVal(True, None, ret.deleted_count)
 
     def allKeys(self):
-        keys = self.db.distinct('objID')
+        keys = self.db.distinct('aid')
         return RetVal(True, None, keys)
 
     def getOne(self, aid, prj=[]):
         prj = {'.'.join(_): True for _ in prj}
         prj['_id'] = False
 
-        doc = self.db.find_one({'objID': aid}, prj)
+        doc = self.db.find_one({'aid': aid}, prj)
         try:
-            del doc['objID']
+            del doc['aid']
         except (KeyError, TypeError):
             pass
 
@@ -332,9 +332,9 @@ class DatabaseMongo:
     def getMulti(self, aids, prj=[]):
         prj = {'.'.join(_): True for _ in prj}
         if len(prj) > 0:
-            prj['objID'] = True
+            prj['aid'] = True
         prj['_id'] = False
-        cursor = self.db.find({'objID': {'$in': aids}}, prj)
+        cursor = self.db.find({'aid': {'$in': aids}}, prj)
         docs = self._removeAID(cursor)
         return RetVal(True, None, docs)
 
@@ -342,7 +342,7 @@ class DatabaseMongo:
     def getAll(self, prj=[]):
         prj = {'.'.join(_): True for _ in prj}
         if len(prj) > 0:
-            prj['objID'] = True
+            prj['aid'] = True
         prj['_id'] = False
         cursor = self.db.find({}, prj)
         docs = self._removeAID(cursor)
