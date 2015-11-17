@@ -79,8 +79,41 @@ def getUniqueObjectIDs(numIDs: int):
         return RetVal(True, None, newIDs)
 
 
-class DatabaseInMemory:
+class DatastoreBase:
     def __init__(self, name: tuple):
+        self.dbname = name
+
+    def reset(self):
+        raise NotImplementedError
+
+    def count(self):
+        raise NotImplementedError
+
+    def put(self, ops: dict):
+        raise NotImplementedError
+
+    def mod(self, ops):
+        raise NotImplementedError
+
+    def remove(self, aids: (tuple, list)):
+        raise NotImplementedError
+
+    def allKeys(self):
+        raise NotImplementedError
+
+    def getOne(self, aid, prj=[]):
+        raise NotImplementedError
+
+    def getMulti(self, aids, prj=[]):
+        raise NotImplementedError
+
+    def getAll(self, prj=[]):
+        raise NotImplementedError
+
+
+class DatabaseInMemory(DatastoreBase):
+    def __init__(self, name: tuple):
+        super().__init__(name)
         self.dbname = name
         self.reset()
 
@@ -233,8 +266,10 @@ class DatabaseInMemory:
         return RetVal(True, None, docs)
 
 
-class DatabaseMongo:
+class DatabaseMongo(DatastoreBase):
     def __init__(self, name: tuple):
+        super().__init__(name)
+
         import pymongo
         self.name_db, self.name_col = name
         client = pymongo.MongoClient()
