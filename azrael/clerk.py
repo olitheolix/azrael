@@ -694,10 +694,9 @@ class Clerk(config.AzraelProcess):
                 # Compile the database document. Each entry must be an explicit
                 # dictionary (eg 'template'). The document contains the
                 # original template plus additional meta information,
-                # for instance 'objID' and 'version'.
+                # for instance the AID of the template from which it was
+                # spawned, or the current 'version'.
                 doc = {
-                    # fixme: is the objID really still necessary?
-                    'objID': objID,
                     'url_frag': url_dst,
                     'version': 0,
                     'templateID': templateID,
