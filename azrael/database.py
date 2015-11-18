@@ -183,33 +183,21 @@ class DatastoreBase:
         raise NotImplementedError
 
     def getOne(self, aid, prj=[]):
-        if self._checkGet([aid], prj) is False:
-            return RetVal(False, 'Argument error', None)
         raise NotImplementedError
 
     def getMulti(self, aids, prj=[]):
-        if self._checkGet(aids, prj) is False:
-            return RetVal(False, 'Argument error', None)
         raise NotImplementedError
 
     def getAll(self, prj=[]):
-        if self._checkGetAll(prj) is False:
-            return RetVal(False, 'Argument error', None)
         raise NotImplementedError
 
     def put(self, ops: dict):
-        if self._checkPut(ops) is False:
-            return RetVal(False, 'Argument error', None)
         raise NotImplementedError
 
     def mod(self, ops):
-        if self._checkMod(ops) is False:
-            return RetVal(False, 'Argument error', None)
         raise NotImplementedError
 
     def remove(self, aids: (tuple, list)):
-        if self._checkRemove(aids) is False:
-            return RetVal(False, 'Argument error', None)
         raise NotImplementedError
 
     def count(self):
@@ -233,6 +221,9 @@ class DatabaseInMemory(DatastoreBase):
         return RetVal(True, None, len(self.content))
 
     def put(self, ops: dict):
+        if _checkPut(ops) is False:
+            return RetVal(False, 'Argument error', None)
+
         ret = {}
         for aid, op in ops.items():
             exists, data = op['exists'], op['data']
@@ -295,6 +286,9 @@ class DatabaseInMemory(DatastoreBase):
         return tmp
 
     def mod(self, ops):
+        if _checkMod(ops) is False:
+            return RetVal(False, 'Argument error', None)
+
         ret = {}
         for aid, op in ops.items():
             # Verify the specified items exist.
@@ -325,6 +319,9 @@ class DatabaseInMemory(DatastoreBase):
         return RetVal(True, None, ret)
         
     def remove(self, aids: (tuple, list)):
+        if _checkRemove(aids) is False:
+            return RetVal(False, 'Argument error', None)
+
         num_deleted = 0
         for aid in aids:
             try:
@@ -349,6 +346,9 @@ class DatabaseInMemory(DatastoreBase):
         return out
         
     def getOne(self, aid, prj=[]):
+        if _checkGet([aid], prj) is False:
+            return RetVal(False, 'Argument error', None)
+
         doc = self.content.get(aid, None)
         if doc is None:
             return RetVal(False, None, None)
@@ -358,6 +358,9 @@ class DatabaseInMemory(DatastoreBase):
             return RetVal(True, None, doc)
 
     def getMulti(self, aids, prj=[]):
+        if _checkGet(aids, prj) is False:
+            return RetVal(False, 'Argument error', None)
+
         docs = {aid: self.content[aid] for aid in aids if aid in self.content}
         if len(prj) > 0:
             for doc in docs:
@@ -366,6 +369,9 @@ class DatabaseInMemory(DatastoreBase):
         return RetVal(True, None, docs)
 
     def getAll(self, prj=[]):
+        if _checkGetAll(prj) is False:
+            return RetVal(False, 'Argument error', None)
+
         docs = copy.deepcopy(self.content)
         if len(prj) > 0:
             for doc in docs:
@@ -392,6 +398,9 @@ class DatabaseMongo(DatastoreBase):
         return RetVal(True, None, self.db.count())
 
     def put(self, ops: dict):
+        if _checkPut(ops) is False:
+            return RetVal(False, 'Argument error', None)
+
         ret = {}
         for aid, op in ops.items():
             exists, data = op['exists'], op['data']
@@ -416,6 +425,9 @@ class DatabaseMongo(DatastoreBase):
         return RetVal(True, None, ret)
 
     def mod(self, ops):
+        if _checkMod(ops) is False:
+            return RetVal(False, 'Argument error', None)
+
         ret = {}
         for aid, op_tmp in ops.items():
             query = {'.'.join(key): {'$exists': yes} for key, yes in op_tmp['exists'].items()}
@@ -450,6 +462,9 @@ class DatabaseMongo(DatastoreBase):
         return docs
 
     def remove(self, aids: (tuple, list)):
+        if _checkRemove(aids) is False:
+            return RetVal(False, 'Argument error', None)
+
         ret = self.db.delete_many({'aid': {'$in': aids}})
         return RetVal(True, None, ret.deleted_count)
 
@@ -458,6 +473,9 @@ class DatabaseMongo(DatastoreBase):
         return RetVal(True, None, keys)
 
     def getOne(self, aid, prj=[]):
+        if _checkGet([aid], prj) is False:
+            return RetVal(False, 'Argument error', None)
+
         prj = {'.'.join(_): True for _ in prj}
         prj['_id'] = False
 
@@ -473,6 +491,9 @@ class DatabaseMongo(DatastoreBase):
             return RetVal(True, None, doc)
 
     def getMulti(self, aids, prj=[]):
+        if _checkGet(aids, prj) is False:
+            return RetVal(False, 'Argument error', None)
+
         prj = {'.'.join(_): True for _ in prj}
         if len(prj) > 0:
             prj['aid'] = True
@@ -483,6 +504,9 @@ class DatabaseMongo(DatastoreBase):
 
     # fixme: don't use a list default argument
     def getAll(self, prj=[]):
+        if _checkGetAll(prj) is False:
+            return RetVal(False, 'Argument error', None)
+
         prj = {'.'.join(_): True for _ in prj}
         if len(prj) > 0:
             prj['aid'] = True
