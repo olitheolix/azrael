@@ -137,7 +137,7 @@ def getP2P(aid='constraint_p2p', rb_a='1', rb_b='2',
     return ConstraintMeta(aid, 'p2p', rb_a, rb_b, p2p)
 
 
-def get6DofSpring2(aid='constraint_6dofspring2', rb_a=1, rb_b=2):
+def get6DofSpring2(aid='constraint_6dofspring2', rb_a='1', rb_b='2'):
     """
     Return a 6DofSpring2 constraint for bodies ``rb_a`` and ``rb_b`.
     """
