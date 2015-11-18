@@ -128,7 +128,7 @@ def getFragDae(scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
                     rotation=rot, files=files)
 
 
-def getP2P(aid='constraint_p2p', rb_a=1, rb_b=2,
+def getP2P(aid='constraint_p2p', rb_a='1', rb_b='2',
            pivot_a=(0, 0, -1), pivot_b=(0, 0, 1)):
     """
     Return a Point2Point constraint for bodies ``rb_a`` and ``rb_b`.

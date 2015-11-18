@@ -121,7 +121,7 @@ def sweeping(data: dict, dim: str):
         # Update the index variable and add the current object to the set (need
         # to convert it from NumPy int to Python int first).
         sumVal += inc
-        setObjs.add(int(objID))
+        setObjs.add(objID)
 
         # A new set of overlapping AABBs is complete whenever `sumVal`
         # reaches zero.
@@ -148,9 +148,9 @@ def sweeping(data: dict, dim: str):
             g.add_path(cs)
     result = networkx.connected_components(g)
 
-    # NetworkX returned a generator that produces. However, the calling code
-    # expects a list of lists.
-    result = [list(_) for _ in result]
+    # NetworkX returned a generator yet the calling code
+    # expects a list of lists. Rectify.
+    result = [[str(a) for a in _] for _ in result]
 
     return RetVal(True, None, result)
 

@@ -110,7 +110,7 @@ class TestLeonardAllEngines:
         leo = getLeonard(clsLeonard)
 
         # Parameters and constants for this test.
-        id_1 = 1
+        id_1 = '1'
 
         # Body data.
         p = np.array([1, 2, 5])
@@ -149,7 +149,7 @@ class TestLeonardAllEngines:
         body = getRigidBody(imass=2, scale=3, cshapes=cshape_sphere)
 
         # Spawn an object.
-        objID = 1
+        objID = '1'
         assert leoAPI.addCmdSpawn([(objID, body)]).ok
         del body
 
@@ -179,7 +179,7 @@ class TestLeonardAllEngines:
         leo = getLeonard(clsLeonard)
 
         # Constants and parameters for this test.
-        id_0 = 0
+        id_0 = '0'
 
         # Spawn an object.
         assert leoAPI.addCmdSpawn([(id_0, getRigidBody())]).ok
@@ -209,7 +209,7 @@ class TestLeonardAllEngines:
         leo = getLeonard(clsLeonard)
 
         # Constants and parameters for this test.
-        id_0, id_1 = 0, 1
+        id_0, id_1 = '0', '1'
         body_0 = getRigidBody(position=[0, 0, 0], velocityLin=[1, 0, 0])
         body_1 = getRigidBody(position=[0, 10, 0], velocityLin=[0, -1, 0])
 
@@ -241,7 +241,7 @@ class TestLeonardAllEngines:
         leo = getLeonard(clsLeonard)
 
         # Constants and parameters for this test.
-        id_0 = 0
+        id_0 = '0'
 
         # Spawn one object.
         assert leoAPI.addCmdSpawn([(id_0, getRigidBody())]).ok
@@ -310,7 +310,7 @@ class TestLeonardOther:
         assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
         # Constants and parameters for this test.
-        id_0, id_1 = 0, 1
+        id_0, id_1 = '0', '1'
         cshapes = {'cssphere': getCSSphere(radius=1)}
 
         # Two State Vectors for this test.
@@ -344,7 +344,7 @@ class TestLeonardOther:
         leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Constants.
-        id_1, id_2 = 1, 2
+        id_1, id_2 = '1', '2'
         dt, maxsteps = 2, 3
 
         # Invalid call: list of IDs must not be empty.
@@ -395,7 +395,7 @@ class TestLeonardOther:
         # Convenience.
         body_1 = getRigidBody(imass=1)
         body_2 = getRigidBody(imass=2)
-        id_1, id_2 = 1, 2
+        id_1, id_2 = '1', '2'
 
         # Spawn new objects.
         tmp = [(id_1, body_1), (id_2, body_2)]
@@ -423,7 +423,7 @@ class TestLeonardOther:
         # Convenience.
         body_1 = getRigidBody(imass=1)
         body_2 = getRigidBody(imass=2)
-        id_1, id_2 = 1, 2
+        id_1, id_2 = '1', '2'
 
         # Cache must be empty.
         assert len(leo.allBodies) == len(leo.allForces) == 0
@@ -480,7 +480,7 @@ class TestLeonardOther:
 
         # Convenience.
         sv = getRigidBody(imass=1)
-        objID = 1
+        objID = '1'
 
         # Spawn object.
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
@@ -544,7 +544,7 @@ class TestLeonardOther:
 
         # Spawn one object.
         sv = getRigidBody(imass=1, rotation=(0, 0, 0, 1))
-        objID = 1
+        objID = '1'
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
         del sv
@@ -586,7 +586,7 @@ class TestLeonardOther:
 
         # Spawn one object rotated 180 degress around x-axis.
         sv = getRigidBody(imass=1, rotation=(1, 0, 0, 0))
-        objID = 1
+        objID = '1'
         assert leoAPI.addCmdSpawn([(objID, sv)]).ok
         leo.processCommandsAndSync()
         del sv
@@ -659,35 +659,35 @@ class TestLeonardOther:
 
         # Two disjoint sets.
         self.igor.reset()
-        s = [[1], [2]]
+        s = [['1'], ['2']]
         _verify(s, s)
 
         assert igor.addConstraints([getP2P()]).ok
-        _verify(s, [[1, 2]])
+        _verify(s, [['1', '2']])
         self.igor.reset()
         _verify(s, s)
 
         # Two disjoint sets but the constraint does not link them.
         self.igor.reset()
-        s = [[1], [2]]
+        s = [['1'], ['2']]
         _verify(s, s)
-        assert igor.addConstraints([getP2P(rb_a=1, rb_b=3)]).ok
+        assert igor.addConstraints([getP2P(rb_a='1', rb_b='3')]).ok
         _verify(s, s)
 
         # Three disjoint sets and the constraint links two of them.
         self.igor.reset()
-        s = [[1, 2, 3], [4, 5], [6]]
+        s = [['1', '2', '3'], ['4', '5'], ['6']]
         _verify(s, s)
-        assert igor.addConstraints([getP2P(rb_a=1, rb_b=6)]).ok
-        _verify(s, [[1, 2, 3, 6], [4, 5]])
+        assert igor.addConstraints([getP2P(rb_a='1', rb_b='6')]).ok
+        _verify(s, [['1', '2', '3', '6'], ['4', '5']])
 
         # Three disjoint sets and two constraint link both of them.
         self.igor.reset()
-        s = [[1, 2, 3], [4, 5], [6]]
+        s = [['1', '2', '3'], ['4', '5'], ['6']]
         _verify(s, s)
-        assert igor.addConstraints([getP2P(rb_a=1, rb_b=6)]).ok
-        assert igor.addConstraints([getP2P(rb_a=3, rb_b=4)]).ok
-        _verify(s, [[1, 2, 3, 6, 4, 5]])
+        assert igor.addConstraints([getP2P(rb_a='1', rb_b='6')]).ok
+        assert igor.addConstraints([getP2P(rb_a='3', rb_b='4')]).ok
+        _verify(s, [['1', '2', '3', '6', '4', '5']])
 
     @pytest.mark.parametrize('clsLeonard', [
         azrael.leonard.LeonardBullet,
@@ -702,7 +702,7 @@ class TestLeonardOther:
         leo = getLeonard(clsLeonard)
 
         # Convenience.
-        id_a, id_b = 1, 2
+        id_a, id_b = '1', '2'
         pos_a, pos_b = (-2, 0, 0), (2, 0, 0)
         distance = abs(pos_a[0] - pos_b[0])
         assert distance >= 4
@@ -766,8 +766,8 @@ class TestBroadphase:
         pass
 
     def verifySweeping(self, aabbsIn, correct_answer):
-        # Create the AABB dictionaries. For this test, the data in all
-        # three dimensions is identical.
+        # Create the AABB dictionaries. For this test the data is
+        # identical in all three dimensions.
         aabbs = {}
         for k, v in aabbsIn.items():
             aabbs[k] = {'x': v, 'y': v, 'z': v}
@@ -802,33 +802,33 @@ class TestBroadphase:
         _verify = self.verifySweeping
 
         # Two orthogonal objects; the first has two AABBs, the second only one.
-        _verify({0: [[4, 5], [6, 7]], 1: [[0, 1]]},
-                correct_answer=[[0], [1]])
+        _verify({0: [['4', '5'], ['6', '7']], 1: [['0', '1']]},
+                correct_answer=[['0'], ['1']])
 
         # Self intersecting object: the two objects do not touch, but the AABBs
         # of the first do. This must result in to independent objects.
         _verify({0: [[4, 5], [4, 5]], 1: [[0, 1]]},
-                correct_answer=[[0], [1]])
+                correct_answer=[['0'], ['1']])
 
         # Two objects; the first has two AABS the second only one. The second
         # object touches the first AABB of the first object.
         _verify({0: [[4, 5], [6, 7]], 1: [[3, 5]]},
-                correct_answer=[[0, 1]])
+                correct_answer=[['0', '1']])
 
         # Two identical objects with two AABBs (each). This must produce one
         # set.
         _verify({0: [[4, 5], [6, 7]], 1: [[4, 5], [6, 7]]},
-                correct_answer=[[0, 1]])
+                correct_answer=[['0', '1']])
 
         # Three objects with one-, two-, and one AABB. The first touches the
         # left AABB of the middle object in 'x', whereas the third touches the
         # right AABB of the middle object in the 'y' dimensions.
         _verify({0: [[3, 5]], 1: [[4, 5], [7, 8]], 2: [[7, 9]]},
-                correct_answer=[[0, 1, 2]])
+                correct_answer=[['0', '1', '2']])
 
         # Same as above, but the third object does not touch.
         _verify({0: [[3, 5]], 1: [[4, 5], [7, 8]], 2: [[70, 90]]},
-                correct_answer=[[0, 1], [2]])
+                correct_answer=[['0', '1'], ['2']])
 
     def test_sweeping_2objects(self):
         """
@@ -850,30 +850,30 @@ class TestBroadphase:
 
         # Two orthogonal objects.
         _verify({0: [[4, 5]], 1: [[1, 2]]},
-                correct_answer=[[0], [1]])
+                correct_answer=[['0'], ['1']])
 
         # Repeat the test but use a different set of ID labels.
         _verify({3: [[4, 5]], 10: [[1, 2]]},
-                correct_answer=[[3], [10]])
+                correct_answer=[['3'], ['10']])
 
         # One object inside the other.
         _verify({0: [[2, 4]], 1: [[0, 1]]},
-                correct_answer=[[0], [1]])
+                correct_answer=[['0'], ['1']])
 
         # Partially overlapping to the right of the first object.
         _verify({0: [[1, 5]], 1: [[2, 4]]},
-                correct_answer=[[0, 1]])
+                correct_answer=[['0', '1']])
 
         # Partially overlapping to the left of the first object.
         _verify({0: [[1, 5]], 1: [[0, 2]]},
-                correct_answer=[[0, 1]])
+                correct_answer=[['0', '1']])
 
         # Pass no object to the Sweeping algorithm.
         assert azrael.leonard.sweeping({}, 'x').data == []
 
         # Pass only a single object to the Sweeping algorithm.
         _verify({0: [[1, 5]]},
-                correct_answer=[[0]])
+                correct_answer=[['0']])
 
     def test_sweeping_3objects(self):
         """
@@ -889,25 +889,25 @@ class TestBroadphase:
 
         # Three non-overlapping objects.
         _verify({0: [[1, 2]], 1: [[3, 4]], 2: [[5, 6]]},
-                correct_answer=[[0], [1], [2]])
+                correct_answer=[['0'], ['1'], ['2']])
 
         # First and second overlap.
         _verify({0: [[1, 2]], 1: [[1.5, 4]], 2: [[5, 6]]},
-                correct_answer=[[0, 1], [2]])
+                correct_answer=[['0', '1'], ['2']])
 
         # Repeat test with different set of ID labels.
         _verify({2: [[1, 2]], 4: [[1.5, 4]], 10: [[5, 6]]},
-                correct_answer=[[2, 4], [10]])
+                correct_answer=[['2', '4'], ['10']])
 
         # First overlaps with second, second overlaps with third, but third
         # does not overlap with first. The algorithm must nevertheless return
         # all three in a single set.
         _verify({0: [[1, 2]], 1: [[1.5, 4]], 2: [[3, 6]]},
-                correct_answer=[[0, 1, 2]])
+                correct_answer=[['0', '1', '2']])
 
         # First and third overlap.
         _verify({0: [[1, 2]], 1: [[10, 11]], 2: [[0, 1.5]]},
-                correct_answer=[[0, 2], [1]])
+                correct_answer=[['0', '2'], ['1']])
 
     @mock.patch('azrael.leonard.sweeping')
     def test_computeCollisionSetsAABB_mocksweeping(self, mock_sweeping):
@@ -998,8 +998,8 @@ class TestBroadphase:
 
             # Convert to dictionaries: the key is the bodyID in Azrael; here it
             # is a simple enumeration.
-            bodies = {idx: val for (idx, val) in enumerate(bodies)}
-            AABBs = {idx: val for (idx, val) in enumerate(AABBs)}
+            bodies = {str(idx): val for (idx, val) in enumerate(bodies)}
+            AABBs = {str(idx): val for (idx, val) in enumerate(AABBs)}
 
             # Determine the list of broadphase collision sets.
             ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
@@ -1018,13 +1018,13 @@ class TestBroadphase:
         # three bodies.
         pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
         aabbs = [(0.9, 0.9, 0.9), (0.9, 0.9, 0.9), (0.9, 0.9, 0.9)]
-        correct_answer = ([0, 1, 2], )
+        correct_answer = (['0', '1', '2'], )
         testCCS(pos, aabbs, correct_answer)
 
         # Move the middle object away: three independent objects.
         pos = [(0, 0, 0), (1, 10, 1), (2, 2, 2)]
         aabbs = [(0.9, 0.9, 0.9), (0.9, 0.9, 0.9), (0.9, 0.9, 0.9)]
-        correct_answer = ([0], [1], [2])
+        correct_answer = (['0'], ['1'], ['2'])
         testCCS(pos, aabbs, correct_answer)
 
         # Move the middle object back but make it so small in 'y' direction
@@ -1032,20 +1032,20 @@ class TestBroadphase:
         # objects.
         pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
         aabbs = [(0.9, 0.9, 0.9), (0.05, 0.05, 0.05), (0.9, 0.9, 0.9)]
-        correct_answer = ([0], [1], [2])
+        correct_answer = (['0'], ['1'], ['2'])
         testCCS(pos, aabbs, correct_answer)
 
         # Second and third overlap, but first is by itself.
         pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
         aabbs = ([0.1, 0.1, 0.1], [0.1, 0.1, 0.1], [1, 1, 1])
-        correct_answer = ([0], [1, 2])
+        correct_answer = (['0'], ['1', '2'])
         testCCS(pos, aabbs, correct_answer)
 
         # Objects overlap in 'x' and 'z', but not 'y': three independent
         # objects.
         pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
         aabbs = ([1, 0.4, 1], [1, 0.4, 1], [1, 0.4, 1])
-        correct_answer = ([0], [1], [2])
+        correct_answer = (['0'], ['1'], ['2'])
         testCCS(pos, aabbs, correct_answer)
 
         # Middle object has no size, but the first/third objects are large
@@ -1053,7 +1053,7 @@ class TestBroadphase:
         # must be by itself.
         pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
         aabbs = ([1.01, 1.01, 1.01], [0, 0, 0], [1.01, 1.01, 1.01])
-        correct_answer = ([0, 2], [1])
+        correct_answer = (['0', '2'], ['1'])
         testCCS(pos, aabbs, correct_answer)
 
     def test_computeCollisionSetsAABB_rotate_scale(self):
@@ -1084,9 +1084,9 @@ class TestBroadphase:
                                   cshapes={'csbox': getCSBox()})
 
             # Compile the input dictionaries for the broadphase algorithm.
-            bodies = {1: rba, 2: body_b}
-            aabbs = {1: {'1': [0, 0, 0, 1, 1, 1]},
-                     2: {'1': [cs_ofs[0], cs_ofs[1], cs_ofs[2], 1, 1, 1]}}
+            bodies = {'1': rba, '2': body_b}
+            aabbs = {'1': {'1': [0, 0, 0, 1, 1, 1]},
+                     '2': {'1': [cs_ofs[0], cs_ofs[1], cs_ofs[2], 1, 1, 1]}}
 
             # Compute the broadphase collision sets.
             ret = azrael.leonard.computeCollisionSetsAABB(bodies, aabbs)
@@ -1162,7 +1162,7 @@ class TestBroadphase:
 
         # Add all objects to the Body State DB and sync with Leonard.
         for objID, bs in enumerate(states):
-            assert leoAPI.addCmdSpawn([(objID, bs)]).ok
+            assert leoAPI.addCmdSpawn([(str(objID), bs)]).ok
         del states
         leo.processCommandsAndSync()
 
@@ -1193,20 +1193,24 @@ class TestBroadphase:
             assert expected_objIDs == computed_objIDs
 
         # Two non-overlapping objects.
-        ccsWrapper([0, 9], [[0], [9]])
+        ccsWrapper(['0', '9'],
+                   [['0'], ['9']])
 
         # Two overlapping objects.
-        ccsWrapper([0, 1], [[0, 1]])
+        ccsWrapper(['0', '1'],
+                   [['0', '1']])
 
         # Three sets.
-        ccsWrapper([0, 1, 5, 8, 9], [[0, 1], [5], [8, 9]])
+        ccsWrapper(['0', '1', '5', '8', '9'],
+                   [['0', '1'], ['5'], ['8', '9']])
 
         # Same test, but objects are passed in a different sequence. This must
         # not alter the test outcome.
-        ccsWrapper([0, 5, 1, 9, 8], [[0, 1], [5], [8, 9]])
+        ccsWrapper(['0', '5', '1', '9', '8'],
+                   [['0', '1'], ['5'], ['8', '9']])
 
         # All objects must form one connected set.
-        ccsWrapper(list(range(10)), [list(range(10))])
+        ccsWrapper([str(_) for _ in range(10)], [[str(_) for _ in range(10)]])
 
     def test_computeCollisionSetsAABB_static(self):
         """
@@ -1232,8 +1236,8 @@ class TestBroadphase:
 
             # Convert to dictionaries: the key is the bodyID in Azrael; here it
             # is a simple enumeration.
-            bodies = {idx: val for (idx, val) in enumerate(bodies)}
-            AABBs = {idx: val for (idx, val) in enumerate(AABBs)}
+            bodies = {str(idx): val for (idx, val) in enumerate(bodies)}
+            AABBs = {str(idx): val for (idx, val) in enumerate(AABBs)}
 
             # Determine the list of broadphase collision sets.
             ret = azrael.leonard.computeCollisionSetsAABB(bodies, AABBs)
@@ -1253,7 +1257,7 @@ class TestBroadphase:
         pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
         aabbs = [(0.9, 0.9, 0.9), (0.9, 0.9, 0.9), (0.9, 0.9, 0.9)]
         imasses = [1, 1, 1]
-        correct_answer = ([0, 1, 2], )
+        correct_answer = (['0', '1', '2'], )
         testCCS(pos, aabbs, imasses, correct_answer)
 
         # Same test, but this time the middle body is static (ie imass=0). This
@@ -1261,7 +1265,7 @@ class TestBroadphase:
         pos = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
         aabbs = [(0.9, 0.9, 0.9), (0.9, 0.9, 0.9), (0.9, 0.9, 0.9)]
         imasses = [1, 0, 1]
-        correct_answer = ([0, 1], [1, 2])
+        correct_answer = (['0', '1'], ['1', '2'])
         testCCS(pos, aabbs, imasses, correct_answer)
 
     def test_skipEmpty(self):
