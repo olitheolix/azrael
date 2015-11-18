@@ -453,7 +453,7 @@ class LeonardBase(config.AzraelProcess):
         return RetVal(True, None, gridForces)
 
     @typecheck
-    def totalForceAndTorque(self, objID: int):
+    def totalForceAndTorque(self, objID: str):
         """
         Return the total force- and torque on the object.
 
@@ -464,7 +464,7 @@ class LeonardBase(config.AzraelProcess):
         Note that this function does not account for the forces from the 'force
         grid'.
 
-        :param int objID: return the force and torque for this object.
+        :param str objID: return the force and torque for this object.
         :return: the force and torque as two Python lists (not NumPy arrays)
         :rtype: (list, list)
         """
@@ -638,7 +638,7 @@ class LeonardBase(config.AzraelProcess):
             ops[aid] = {
                 'inc': {},
                 'set': {('template', 'rbs'): body._asdict()},
-                'unset': {},
+                'unset': [],
                 'exists': {('template', 'rbs'): True},
             }
         db2.mod(ops)

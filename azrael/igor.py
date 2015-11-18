@@ -150,8 +150,8 @@ class Igor:
         if bodyIDs is None:
             return RetVal(True, None, tuple(self._cache.values()))
 
-        # Reduce bodyIDs to set of all integer valued IDs for fast look ups.
-        bodyIDs = {_ for _ in bodyIDs if isinstance(_, int)}
+        # Reduce bodyIDs to a set. This should speed up look ups.
+        bodyIDs = {_ for _ in bodyIDs if isinstance(_, str)}
 
         # Iterate over all constraints and pick the ones that contain at least
         # one of the bodies specified in `bodyIDs`.

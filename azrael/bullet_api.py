@@ -178,11 +178,11 @@ class PyBulletDynamicsWorld():
         body.applyTorque(b_torque)
         return RetVal(True, None, None)
 
-    def applyForce(self, bodyID: int, force, rel_pos):
+    def applyForce(self, bodyID: str, force, rel_pos):
         """
         Apply a ``force`` at ``rel_pos`` to ``bodyID``.
 
-        :param int bodyID: the ID of the body to update
+        :param str bodyID: the ID of the body to update
         :param 3-array force: force applied directly to center of mass
         :param 3-array rel_pos: position of force relative to center of mass
         :return: Success
@@ -205,13 +205,13 @@ class PyBulletDynamicsWorld():
         body.applyForce(b_force, b_relpos)
         return RetVal(True, None, None)
 
-    def getRigidBodyData(self, bodyID: int):
+    def getRigidBodyData(self, bodyID: str):
         """
         Return Body State of ``bodyID``.
 
         This method aborts immediately if ``bodyID`` does not exists.
 
-        :param int bodyID: the ID of body for which to return the state.
+        :param str bodyID: the ID of body for which to return the state.
         :return: ``_RigidBodyData`` instances.
         """
         # Abort immediately if the ID is unknown.
@@ -251,13 +251,13 @@ class PyBulletDynamicsWorld():
         return RetVal(True, None, out)
 
     @typecheck
-    def setRigidBodyData(self, bodyID: int, rbState: _RigidBodyData):
+    def setRigidBodyData(self, bodyID: str, rbState: _RigidBodyData):
         """
         Update State Variables of ``bodyID`` to ``rbState``.
 
         Create a new body with ``bodyID`` if it does not yet exist.
 
-        :param int bodyID: the IDs of all bodies to retrieve.
+        :param str bodyID: the IDs of all bodies to retrieve.
         :param ``_RigidBodyData`` rbState: body description.
         :return: Success
         """
@@ -423,7 +423,7 @@ class PyBulletDynamicsWorld():
             return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, bodyID: int, rbState: _RigidBodyData):
+    def compileCollisionShape(self, bodyID: str, rbState: _RigidBodyData):
         """
         Return the correct Bullet collision shape based on ``rbState``.
 
@@ -431,7 +431,7 @@ class PyBulletDynamicsWorld():
 
         fixme: find out how to combine mass/inertia of multi body bodies.
 
-        :param int bodyID: body ID.
+        :param str bodyID: body ID.
         :param _RigidBodyData rbState: meta data to describe the body.
         :return: compound shape with all the individual shapes.
         :rtype: ``CompoundShape``
@@ -506,11 +506,11 @@ class PyBulletDynamicsWorld():
         return RetVal(True, None, (tot_mass, tot_inertia, compound))
 
     @typecheck
-    def createRigidBody(self, bodyID: int, rbState: _RigidBodyData):
+    def createRigidBody(self, bodyID: str, rbState: _RigidBodyData):
         """
         Create a new rigid body ``rbState`` with ``bodyID``.
 
-        :param int bodyID: ID of new rigid body.
+        :param str bodyID: ID of new rigid body.
         :param _RigidBodyData rbState: State Variables of rigid body.
         :return: Success
         """

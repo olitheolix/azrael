@@ -612,11 +612,12 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, '<spawn> received invalid arguments', None)
 
         # Fetch the specified templates so that we can duplicate them in
-        # the instance database afterwards.
+        # the instance database afterwards. Return with an error unless all
+        # templates were found.
         with util.Timeit('spawn:1 getTemplates'):
             t_names = [_['templateID'] for _ in newObjects]
             ret = self.getTemplates(t_names)
-            if not ret.ok:
+            if ret.ok is False or set(ret.data.keys()) != set(t_names):
                 self.logit.info(ret.msg)
                 return ret
             templates = ret.data
@@ -627,7 +628,9 @@ class Clerk(config.AzraelProcess):
         if not ret.ok:
             self.logit.error(ret.msg)
             return ret
-        newObjectIDs = ret.data
+
+        # fixme: getUniqueObjectID should return a string.
+        newObjectIDs = [str(_) for _ in ret.data]
 
         db2 = database.dbHandles['ObjInstances']
         with util.Timeit('spawn:2 createStates'):
@@ -714,10 +717,11 @@ class Clerk(config.AzraelProcess):
 
             # Return immediately if there are no objects to spaw.
             if len(dbops) == 0:
-                return RetVal(True, None, tuple())
+                return RetVal(True, 'No objects to spawn', tuple())
 
             # Insert all objects into the State Variable DB. Note: this does
             # not make Leonard aware of their existence (see next step).
+            # fixme: check return value.
             db2.put(dbops)
             del dbops
 
@@ -734,7 +738,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, newObjectIDs)
 
     @typecheck
-    def updateBoosterForces(self, objID: int, cmds: dict):
+    def updateBoosterForces(self, objID: str, cmds: dict):
         """
         Update the Booster values for an object and return the new net force.
 
@@ -749,7 +753,7 @@ class Clerk(config.AzraelProcess):
 
         where 'foo' and 'bar' are the names of the boosters.
 
-        :param int objID: object ID
+        :param str objID: object ID
         :param dict cmds: Booster commands.
         :return: (linear force, torque) that the Booster apply to the object.
         :rtype: tuple(vec3, vec3)
@@ -805,11 +809,13 @@ class Clerk(config.AzraelProcess):
         # instance database. To this end convert them back to dictionaries and
         # issue the update.
         boosters = {k: v._asdict() for (k, v) in boosters.items()}
+
+        # fixme: get the template from somewhere?
         ops = {
             objID: {
                 'inc': {},
                 'set': {('template', 'boosters'): boosters},
-                'unset': {},
+                'unset': [],
                 'exists': {('template', 'boosters'): True},
             }
         }
@@ -820,7 +826,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
+    def controlParts(self, objID: str, cmd_boosters: dict, cmd_factories: dict):
         """
         Issue commands to individual parts of the ``objID``.
 
@@ -832,7 +838,7 @@ class Clerk(config.AzraelProcess):
         the part ID as the key. The values are ``CmdBooster`` and
         ``CmdFactory`` instances, respectively.
 
-        :param int objID: object ID.
+        :param str objID: object ID.
         :param dict cmd_booster: booster commands.
         :param dict cmd_factory: factory commands.
         :return: **True** if no error occurred.
@@ -956,14 +962,14 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, objIDs)
 
     @typecheck
-    def removeObject(self, objID: int):
+    def removeObject(self, objID: str):
         """
         Remove ``objID`` from the physics simulation.
 
         This method will suceed even if ``objID`` does not exist (anymore) in
         Azrael.
 
-        :param int objID: ID of object to remove.
+        :param str objID: ID of object to remove.
         :return: Success
         """
         # Announce that an object was removed. Return if that is impossible for
@@ -1010,6 +1016,10 @@ class Clerk(config.AzraelProcess):
         :return: meta information about all fragment for each object.
         :rtype: dict
         """
+        # fixme: sanity check objID (must be str); in particular, a None value
+        # caused havoc during debugging. Error checking is redundant if the
+        # return value of getMulti call is inspected.
+
         # Retrieve the geometry. Return an error if the ID does not exist.
         # fixme: error handling
         db2 = database.dbHandles['ObjInstances']
@@ -1335,7 +1345,7 @@ class Clerk(config.AzraelProcess):
                 objID: {
                     'inc': {},
                     'set': {('template', 'rbs',  k): v for (k, v) in body.items()},
-                    'unset': {},
+                    'unset': [],
                     'exists': {},
                 }
             }
@@ -1444,11 +1454,11 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def getTemplateID(self, objID: int):
+    def getTemplateID(self, objID: str):
         """
         Return the template ID from which ``objID`` was created.
 
-        :param int objID: object ID.
+        :param str objID: object ID.
         :return: templateID from which ``objID`` was created.
         """
         db2 = database.dbHandles['ObjInstances']
@@ -1477,7 +1487,7 @@ class Clerk(config.AzraelProcess):
         return db2.allKeys()
 
     @typecheck
-    def setForce(self, objID: int, force: (tuple, list), rpos: (tuple, list)):
+    def setForce(self, objID: str, force: (tuple, list), rpos: (tuple, list)):
         """
         Apply ``force`` to ``objID`` at position ``rpos``.
 
@@ -1485,7 +1495,9 @@ class Clerk(config.AzraelProcess):
 
         If ``objID`` does not exist return an error.
 
-        :param int objID: object ID
+        fixme: missing parameter docu
+
+        :param str objID: object ID
         :return: Sucess
         """
         # Compute the torque and then queue a command for Leonard to apply the
@@ -1557,11 +1569,13 @@ class Clerk(config.AzraelProcess):
                 assert isinstance(value, str)
                 assert len(value) < 2 ** 16
 
+                # fixme: take out of loop; get the template from somewhere
+                # else.
                 ops = {
                     objID: {
                         'inc': {},
                         'set': {('template', 'custom'): value},
-                        'unset': {},
+                        'unset': [],
                         'exists': {('template', 'custom'): True},
                     }
                 }

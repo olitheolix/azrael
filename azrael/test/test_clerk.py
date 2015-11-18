@@ -340,7 +340,8 @@ class TestClerk:
         init_invalid = {'templateID': '_templateSphere', 'rbs': {'blah': 1}}
         assert not clerk.spawn([init_invalid]).ok
 
-        # Valid templateID, valid key, but invalid data.
+        # Valid templateID, valid key, but invalid data (position cannot be
+        # a scalar).
         init_invalid = {'templateID': '_templateSphere', 'rbs': {'position': 1}}
         assert not clerk.spawn([init_invalid]).ok
 
@@ -348,10 +349,10 @@ class TestClerk:
         # because this is the first ID in an otherwise pristine system.
         init_1 = {'templateID': '_templateSphere', 'rbs': {'imass': 1}}
         ret = clerk.spawn([init_1])
-        assert (ret.ok, ret.data) == (True, (1, ))
+        assert (ret.ok, ret.data) == (True, ['1', ])
 
         # Geometry for this object must now exist.
-        assert clerk.getFragments([1]).data[1] is not None
+        assert clerk.getFragments(['1']).data['1'] is not None
 
         # Spawn two more objects with a single call.
         name_2 = '_templateSphere'
@@ -359,21 +360,21 @@ class TestClerk:
         init_2 = {'templateID': name_2, 'rbs': {'imass': 2}}
         init_3 = {'templateID': name_3, 'rbs': {'imass': 3}}
         ret = clerk.spawn([init_2, init_3])
-        assert (ret.ok, ret.data) == (True, (2, 3))
+        assert (ret.ok, ret.data) == (True, ['2', '3'])
 
         # Geometry for last two object must now exist as well.
-        ret = clerk.getFragments([2, 3])
-        assert ret.data[2] is not None
-        assert ret.data[3] is not None
+        ret = clerk.getFragments(['2', '3'])
+        assert ret.data['2'] is not None
+        assert ret.data['3'] is not None
 
         # Spawn two identical objects with a single call.
         ret = clerk.spawn([init_2, init_3])
-        assert (ret.ok, ret.data) == (True, (4, 5))
+        assert (ret.ok, ret.data) == (True, ['4', '5'])
 
         # Geometry for last two object must now exist as well.
-        ret = clerk.getFragments([4, 5])
-        assert ret.data[4] is not None
-        assert ret.data[5] is not None
+        ret = clerk.getFragments(['4', '5'])
+        assert ret.data['4'] is not None
+        assert ret.data['5'] is not None
 
         # Invalid: list of objects must not be empty.
         assert not clerk.spawn([]).ok
@@ -390,7 +391,7 @@ class TestClerk:
         based on the object ID.
         """
         # Parameters and constants for this test.
-        id_0, id_1 = 1, 2
+        id_0, id_1 = '1', '2'
         tID_0 = '_templateEmpty'
         tID_1 = '_templateBox'
 
@@ -399,7 +400,7 @@ class TestClerk:
 
         # Spawn two objects. Their IDs must be id_0 and id_1, respectively.
         ret = clerk.spawn([{'templateID': tID_0}, {'templateID': tID_1}])
-        assert (ret.ok, ret.data) == (True, (id_0, id_1))
+        assert (ret.ok, ret.data) == (True, [id_0, id_1])
 
         # Retrieve template of first object.
         ret = clerk.getTemplateID(id_0)
@@ -410,7 +411,7 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, tID_1)
 
         # Attempt to retrieve a non-existing object.
-        assert not clerk.getTemplateID(100).ok
+        assert not clerk.getTemplateID('100').ok
 
     def test_spawn_DibblerClerkSyncProblem(self):
         """
@@ -435,7 +436,7 @@ class TestClerk:
         # must have been spawned.
         init = {'templateID': '_templateEmpty', 'rbs': {'imass': 1}}
         ret = clerk.spawn([init])
-        assert ret == (True, None, tuple())
+        assert ret == (True, 'No objects to spawn', tuple())
 
         # Copy must have been called once. Since the call failed (because we
         # mocked it to make sure it does), Clerk must also clean up and delete
@@ -452,7 +453,7 @@ class TestClerk:
         not exist anymore.
         """
         # Test constants and parameters.
-        objID_1, objID_2 = 1, 2
+        objID_1, objID_2 = '1', '2'
 
         # Convenience.
         clerk = self.clerk
@@ -465,7 +466,7 @@ class TestClerk:
         templateID = '_templateSphere'
         init = {'templateID': templateID}
         ret = clerk.spawn([init, init])
-        assert (ret.ok, ret.data) == (True, (objID_1, objID_2))
+        assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
 
         # Two objects must now exist.
         ret = clerk.getAllObjectIDs()
@@ -491,8 +492,8 @@ class TestClerk:
         Test the 'getRigidBodies' command in the Clerk.
         """
         # Test parameters and constants.
-        objID_1 = 1
-        objID_2 = 2
+        objID_1 = '1'
+        objID_2 = '2'
         RBS = getRigidBody
         body_1 = RBS(position=(0, 1, 2), velocityLin=(2, 4, 6))
         body_2 = RBS(position=(2, 4, 6), velocityLin=(6, 8, 10))
@@ -505,8 +506,8 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, {})
 
         # Retrieve the SV for a non-existing ID.
-        ret = clerk.getRigidBodies([10])
-        assert (ret.ok, ret.data) == (True, {10: None})
+        ret = clerk.getRigidBodies(['10'])
+        assert (ret.ok, ret.data) == (True, {'10': None})
 
         # Spawn a new object. It must have ID=1.
         init_1 = {
@@ -524,11 +525,11 @@ class TestClerk:
             }
         }
         ret = clerk.spawn([init_1])
-        assert (ret.ok, ret.data) == (True, (objID_1, ))
+        assert (ret.ok, ret.data) == (True, [objID_1])
 
         # Retrieve the body state for a non-existing ID --> must fail.
-        ret = clerk.getRigidBodies([10])
-        assert (ret.ok, ret.data) == (True, {10: None})
+        ret = clerk.getRigidBodies(['10'])
+        assert (ret.ok, ret.data) == (True, {'10': None})
 
         # Retrieve the body state for the existing ID=1.
         ret = clerk.getRigidBodies([objID_1])
@@ -538,7 +539,7 @@ class TestClerk:
 
         # Spawn a second object.
         ret = clerk.spawn([init_2])
-        assert (ret.ok, ret.data) == (True, (objID_2, ))
+        assert (ret.ok, ret.data) == (True, [objID_2])
 
         # Retrieve the state variables for both objects individually.
         for objID, ref_sv in zip([objID_1, objID_2], [body_1, body_2]):
@@ -563,7 +564,7 @@ class TestClerk:
         clerk = self.clerk
 
         # Test parameters and constants.
-        id_1, id_2 = 1, 2
+        id_1, id_2 = '1', '2'
 
         # Define a template for this test and upload it.
         frags = {'f1': getFragRaw(scale=2), 'f2': getFragRaw(rot=[0, 1, 0, 0])}
@@ -576,8 +577,8 @@ class TestClerk:
         assert (ret.ok, ret.data) == (True, {})
 
         # Retrieve the states for a non-existing object.
-        ret = clerk.getObjectStates([10])
-        assert (ret.ok, ret.data) == (True, {10: None})
+        ret = clerk.getObjectStates(['10'])
+        assert (ret.ok, ret.data) == (True, {'10': None})
 
         # Create the spawn-parameters for two new objects, but only spawn the
         # first for now.
@@ -592,11 +593,11 @@ class TestClerk:
             }
         }
         ret = clerk.spawn([init_1])
-        assert (ret.ok, ret.data) == (True, (id_1, ))
+        assert (ret.ok, ret.data) == (True, [id_1])
 
         # Again: Retrieve the body state for a non-existing ID --> must fail.
-        ret = clerk.getObjectStates([10])
-        assert (ret.ok, ret.data) == (True, {10: None})
+        ret = clerk.getObjectStates(['10'])
+        assert (ret.ok, ret.data) == (True, {'10': None})
 
         # Retrieve the object state for id_1 and verify it has the correct keys.
         ret = clerk.getObjectStates([id_1])
@@ -628,7 +629,7 @@ class TestClerk:
 
         # Spawn the second object.
         ret = clerk.spawn([init_2])
-        assert (ret.ok, ret.data) == (True, (id_2, ))
+        assert (ret.ok, ret.data) == (True, [id_2])
 
         # Retrieve the object state for id_2 and verify it has the correct keys.
         ret = clerk.getObjectStates([id_2])
@@ -671,7 +672,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Parameters and constants for this test.
-        id_1 = 1
+        id_1 = '1'
         force = np.array([1, 2, 3], np.float64).tolist()
         relpos = np.array([4, 5, 6], np.float64).tolist()
 
@@ -681,7 +682,7 @@ class TestClerk:
         # Spawn a new object. It must have ID=1.
         templateID = '_templateSphere'
         ret = clerk.spawn([{'templateID': templateID}])
-        assert (ret.ok, ret.data) == (True, (id_1, ))
+        assert (ret.ok, ret.data) == (True, [id_1])
 
         # Apply the force.
         assert clerk.setForce(id_1, force, relpos).ok
@@ -696,7 +697,7 @@ class TestClerk:
         Send invalid control commands to object.
         """
         # Parameters and constants for this test.
-        objID_1, objID_2 = 1, 2
+        objID_1, objID_2 = '1', '2'
         templateID_1 = '_templateSphere'
 
         # Convenience.
@@ -705,7 +706,7 @@ class TestClerk:
         # Create a fake object. We will not need the actual object but other
         # commands used here depend on one to exist.
         ret = clerk.spawn([{'templateID': templateID_1}])
-        assert (ret.ok, ret.data) == (True, (objID_1, ))
+        assert (ret.ok, ret.data) == (True, [objID_1])
 
         # Create commands for a Booster and a Factory.
         cmd_b = {'0': aztypes.CmdBooster(force=0.2)}
@@ -742,7 +743,7 @@ class TestClerk:
                            factories=factories)
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([{'templateID': temp.aid}])
-        assert (ret.ok, ret.data) == (True, (objID_2, ))
+        assert (ret.ok, ret.data) == (True, [objID_2])
 
         # Tell each factory to spawn an object.
         cmd_b = {'0': aztypes.CmdBooster(force=0.5)}
@@ -761,7 +762,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Parameters and constants for this test.
-        objID_1 = 1
+        objID_1 = '1'
 
         # Convenience.
         clerk = self.clerk
@@ -790,7 +791,7 @@ class TestClerk:
 
         # Spawn an instance of the template.
         ret = clerk.spawn([{'templateID': temp.aid}])
-        assert (ret.ok, ret.data) == (True, (objID_1, ))
+        assert (ret.ok, ret.data) == (True, [objID_1])
         del ret, temp
 
         # ---------------------------------------------------------------------
@@ -839,7 +840,7 @@ class TestClerk:
         # ---------------------------------------------------------------------
 
         # Constants for the new template object.
-        objID_1 = 1
+        objID_1 = '1'
         dir_0 = np.array([1, 0, 0], np.float64)
         dir_1 = np.array([0, 1, 0], np.float64)
         pos_0 = np.array([1, 1, -1], np.float64)
@@ -861,7 +862,7 @@ class TestClerk:
         temp = getTemplate('t1', factories=factories)
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([{'templateID': temp.aid}])
-        assert (ret.ok, ret.data) == (True, (objID_1, ))
+        assert (ret.ok, ret.data) == (True, [objID_1])
         del ret, temp, factories
 
         # ---------------------------------------------------------------------
@@ -878,7 +879,7 @@ class TestClerk:
         # Send the commands and ascertain that the returned object IDs now
         # exist in the simulation. These IDs must be '2' and '3'.
         ok, _, spawnedIDs = clerk.controlParts(objID_1, {}, cmd_f)
-        id_2, id_3 = 2, 3
+        id_2, id_3 = '2', '3'
         assert (ok, spawnedIDs) == (True, [id_2, id_3])
         del spawnedIDs
 
@@ -911,7 +912,7 @@ class TestClerk:
         clerk = self.clerk
 
         # Parameters and constants for this test.
-        objID_1, objID_2, objID_3 = 1, 2, 3
+        objID_1, objID_2, objID_3 = '1', '2', '3'
         pos_parent = np.array([1, 2, 3], np.float64)
         vel_parent = np.array([4, 5, 6], np.float64)
         dir_0 = np.array([1, 0, 0], np.float64)
@@ -945,7 +946,7 @@ class TestClerk:
 
         assert clerk.addTemplates([temp]).ok
         ret = clerk.spawn([init])
-        assert (ret.ok, ret.data) == (True, (objID_1, ))
+        assert (ret.ok, ret.data) == (True, [objID_1])
         del temp, ret, factories, body
 
         # ---------------------------------------------------------------------
@@ -997,7 +998,7 @@ class TestClerk:
         leo = getLeonard()
 
         # Parameters and constants for this test.
-        objID_1, objID_2, objID_3 = 1, 2, 3
+        objID_1, objID_2, objID_3 = '1', '2', '3'
         pos_parent = np.array([1, 2, 3], np.float64)
         vel_parent = np.array([4, 5, 6], np.float64)
 
@@ -1063,7 +1064,7 @@ class TestClerk:
             }
         }
         ret = clerk.spawn([init])
-        assert (ret.ok, ret.data) == (True, (objID_1, ))
+        assert (ret.ok, ret.data) == (True, [objID_1])
         del boosters, factories, temp
 
         # ---------------------------------------------------------------------
@@ -1127,7 +1128,7 @@ class TestClerk:
         Test getAllObjects.
         """
         # Parameters and constants for this test.
-        objID_1, objID_2 = 1, 2
+        objID_1, objID_2 = '1', '2'
         templateID = '_templateSphere'
 
         # Convenience.
@@ -1139,7 +1140,7 @@ class TestClerk:
 
         # Spawn a new object.
         ret = clerk.spawn([{'templateID': templateID}])
-        assert (ret.ok, ret.data) == (True, (objID_1, ))
+        assert (ret.ok, ret.data) == (True, [objID_1])
 
         # The object list must now contain the ID of the just spawned object.
         ret = clerk.getAllObjectIDs()
@@ -1147,7 +1148,7 @@ class TestClerk:
 
         # Spawn another object.
         ret = clerk.spawn([{'templateID': templateID}])
-        assert (ret.ok, ret.data) == (True, (objID_2, ))
+        assert (ret.ok, ret.data) == (True, [objID_2])
 
         # The object list must now contain the ID of both spawned objects.
         ret = clerk.getAllObjectIDs()
@@ -1174,7 +1175,7 @@ class TestClerk:
         assert clerk.getTemplates([temp.aid]).ok
 
         # Attempt to query the geometry of a non-existing object.
-        assert clerk.getFragments([123]) == (True, None, {123: None})
+        assert clerk.getFragments(['123']) == (True, None, {'123': None})
 
         init_1 = {
             'templateID': temp.aid,
@@ -1314,7 +1315,7 @@ class TestClerk:
         assert not clerk.updateBoosterForces(objID_2, cmd_b).ok
 
         cmd_b = {'0': aztypes.CmdBooster(force=1)}
-        assert not clerk.updateBoosterForces(1000, cmd_b).ok
+        assert not clerk.updateBoosterForces('1000', cmd_b).ok
 
     def test_add_get_remove_constraints(self):
         """
@@ -1336,7 +1337,7 @@ class TestClerk:
 
         # Spawn the two bodies with a constraint among them.
         tID = '_templateSphere'
-        id_1, id_2, id_3 = 1, 2, 3
+        id_1, id_2, id_3 = '1', '2', '3'
         init_1 = {
             'templateID': tID,
             'rbs': {
@@ -1356,7 +1357,7 @@ class TestClerk:
             }
         }
         ret = clerk.spawn([init_1, init_2, init_3])
-        assert (ret.ok, ret.data) == (True, (id_1, id_2, id_3))
+        assert (ret.ok, ret.data) == (True, [id_1, id_2, id_3])
         del tID
 
         # Link the three objects. The first two with a Point2Point constraint
@@ -1400,7 +1401,7 @@ class TestClerk:
         assert clerk.igor.reset().ok
 
         # Parameters and constants for this test.
-        id_a, id_b = 1, 2
+        id_a, id_b = '1', '2'
         templateID = '_templateSphere'
 
         # Define two spherical collision shapes at x=+/-2. Since the default
@@ -1424,7 +1425,7 @@ class TestClerk:
             }
         }
         ret = clerk.spawn([init_a, init_b])
-        assert (ret.ok, ret.data) == (True, (id_a, id_b))
+        assert (ret.ok, ret.data) == (True, [id_a, id_b])
 
         # Verify that both objects were spawned (simply query their template
         # ID to establish that).
@@ -1459,13 +1460,13 @@ class TestClerk:
         clerk = self.clerk
 
         # Constants and parameters for this test.
-        id_1, id_2 = 1, 2
+        id_1, id_2 = '1', '2'
 
         # Spawn one of the default templates.
         init = {'templateID': '_templateSphere',
                 'rbs': {'position': [0, 0, 0], 'velocityLin': [-1, -2, -3]}}
         ret = clerk.spawn([init, init])
-        assert ret.ok and (ret.data == (id_1, id_2))
+        assert ret.ok and (ret.data == [id_1, id_2])
 
         # Verify that the initial body states are correct.
         ret = clerk.getRigidBodies([id_1, id_2])
@@ -1521,8 +1522,8 @@ class TestClerk:
             'imass': 3,
             'scale': 4,
             'cshapes': {'cssphere': getCSPlane()._asdict()}}
-        ret = clerk.setRigidBodies({id_2: new_bs_3, 10: new_bs_3})
-        assert ret == (True, None, [10])
+        ret = clerk.setRigidBodies({id_2: new_bs_3, '10': new_bs_3})
+        assert ret == (True, None, ['10'])
 
         # Verify that id_1 has the new attributes and id_2 remained unaffected.
         ret = clerk.getRigidBodies([id_1, id_2])
@@ -1607,23 +1608,23 @@ class TestClerk:
         """
         # Convenience.
         clerk = self.clerk
-        id_1, id_2 = 1, 2
+        id_1, id_2 = '1', '2'
         init = {'templateID': '_templateSphere'}
         ret = clerk.spawn([init, init])
-        assert ret == (True, None, (id_1, id_2))
+        assert ret == (True, None, [id_1, id_2])
 
         # Query the custom data for a non-existing object.
-        assert clerk.getCustomData([10]) == (True, None, {10: None})
+        assert clerk.getCustomData(['10']) == (True, None, {'10': None})
 
         # Query an existing object.
         assert clerk.getCustomData([id_1]) == (True, None, {id_1: ''})
 
         # Set the custom data for a non-existing object.
-        assert clerk.setCustomData({10: 'blah'}) == (True, None, [10])
+        assert clerk.setCustomData({'10': 'blah'}) == (True, None, ['10'])
 
         # Set/get the custom data for an existing object.
-        ret = clerk.setCustomData({id_1: 'foo', 20: 'bar'})
-        assert ret.data == [20]
+        ret = clerk.setCustomData({id_1: 'foo', '20': 'bar'})
+        assert ret.data == ['20']
         ret = clerk.getCustomData([id_1, id_2])
         assert ret == (True, None, {id_1: 'foo', id_2: ''})
 
@@ -1665,7 +1666,7 @@ class TestClerk:
         clerk = self.clerk
 
         # Convenience.
-        id_1 = 1
+        id_1 = '1'
         body_1 = getRigidBody(imass=1)
         db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
 
@@ -2086,7 +2087,7 @@ class TestModifyFragments:
         # Convenience.
         clerk, id_0, id_1 = self.clerk, self.id_0, self.id_1
 
-        fake_id = 100
+        fake_id = '100'
         assert (fake_id != id_0) and (fake_id != id_1)
 
         # Attempt to modify the fragment for a non-existing object.
@@ -2357,7 +2358,7 @@ def test_invalid():
 
     # Correct command, correct payload type, correct payload content. This must
     # succeed.
-    data = {'objIDs': [1, 2]}
+    data = {'objIDs': ['1', '2']}
     msg = json.dumps({'cmd': 'get_rigid_bodies', 'data': data})
     assert client.testSend(msg.encode('utf8')).ok
 

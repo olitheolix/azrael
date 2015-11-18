@@ -159,14 +159,14 @@ def addCmdSpawn(objData: (tuple, list)):
     # Sanity checks all the provided bodies.
     for objID, body in objData:
         try:
-            assert isinstance(objID, int)
+            assert isinstance(objID, str)
             assert isinstance(body, _RigidBodyData)
         except AssertionError:
             msg = '<addCmdQueue> received invalid argument type'
             return RetVal(False, msg, None)
 
-        if objID < 0:
-            msg = 'Object ID is negative'
+        if objID == '':
+            msg = 'Invalid Object ID'
             logit.warning(msg)
             return RetVal(False, msg, None)
 
@@ -198,7 +198,7 @@ def addCmdSpawn(objData: (tuple, list)):
 
 
 @typecheck
-def addCmdRemoveObject(objID: int):
+def addCmdRemoveObject(objID: str):
     """
     Remove ``objID`` from the physics simulation.
 
@@ -207,7 +207,7 @@ def addCmdRemoveObject(objID: int):
 
     .. note:: This function always succeeds.
 
-    :param int objID: ID of object to delete.
+    :param str objID: ID of object to delete.
     :return: Success.
     """
     # The 'data' is dummy because Mongo's 'update' requires one.
@@ -218,7 +218,7 @@ def addCmdRemoveObject(objID: int):
 
 
 @typecheck
-def addCmdModifyBodyState(objID: int, body: dict):
+def addCmdModifyBodyState(objID: str, body: dict):
     """
     Queue request to override the Body State of ``objID`` with ``body``.
 
@@ -230,8 +230,8 @@ def addCmdModifyBodyState(objID: int, body: dict):
     :return bool: Success
     """
     # Sanity check.
-    if objID < 0:
-        msg = 'Object ID is negative'
+    if objID == '':
+        msg = 'Invalid Object ID'
         logit.warning(msg)
         return RetVal(False, msg, None)
 
@@ -267,21 +267,21 @@ def addCmdModifyBodyState(objID: int, body: dict):
 
 
 @typecheck
-def addCmdDirectForce(objID: int, force: list, torque: list):
+def addCmdDirectForce(objID: str, force: list, torque: list):
     """
     Apply ``torque`` and central ``force`` to ``objID``.
 
     Other services, most notably Leonard, will periodically check for new
     announcements and incorporate them into the simulation as necessary.
 
-    :param int objID: the object
+    :param str objID: the object
     :param list force: apply this central ``force`` to ``objID``.
     :param list torque: apply this ``torque`` to ``objID``.
     :return bool: Success
     """
     # Sanity check.
-    if objID < 0:
-        msg = 'Object ID is negative'
+    if objID == '':
+        msg = 'Invalid Object ID'
         logit.warning(msg)
         return RetVal(False, msg, None)
     if not (len(force) == len(torque) == 3):
@@ -297,7 +297,7 @@ def addCmdDirectForce(objID: int, force: list, torque: list):
 
 
 @typecheck
-def addCmdBoosterForce(objID: int, force: list, torque: list):
+def addCmdBoosterForce(objID: str, force: list, torque: list):
     """
     Orient ``torque`` and ``force`` according to the ``objID`` and then apply
     them to the object.
@@ -310,14 +310,14 @@ def addCmdBoosterForce(objID: int, force: list, torque: list):
     Other services, most notably Leonard, will periodically check for new
     announcements and incorporate them into the simulation as necessary.
 
-    :param int objID: the object
+    :param str objID: the object
     :param list force: apply this central ``force`` to ``objID``.
     :param list torque: apply this ``torque`` to ``objID``.
     :return bool: Success
     """
     # Sanity check.
-    if objID < 0:
-        msg = 'Object ID is negative'
+    if objID == '':
+        msg = 'Invalid Object ID'
         logit.warning(msg)
         return RetVal(False, msg, None)
     if not (len(force) == len(torque) == 3):
