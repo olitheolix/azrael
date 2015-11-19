@@ -207,8 +207,8 @@ class TestClerk:
         Add- and get constraints.
         """
         # Define the constraints.
-        p2p = getP2P(rb_a=1, rb_b=2, pivot_a=(0, 1, 2), pivot_b=(3, 4, 5))
-        dof = get6DofSpring2(rb_a=1, rb_b=2)
+        p2p = getP2P(rb_a='1', rb_b='2', pivot_a=(0, 1, 2), pivot_b=(3, 4, 5))
+        dof = get6DofSpring2(rb_a='1', rb_b='2')
 
         # ----------------------------------------------------------------------
         # Client --> Clerk.

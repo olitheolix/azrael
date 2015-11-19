@@ -206,8 +206,6 @@ def FromClerk_ControlParts_Encode(objIDs: (list, tuple)):
 
 @typecheck
 def ToClerk_GetFragments_Decode(payload: dict):
-    # Convert the IDs to integers.
-    payload['objIDs'] = [int(_) for _ in payload['objIDs']]
     return payload
 
 
@@ -222,9 +220,6 @@ def FromClerk_GetFragments_Encode(geo):
 
 @typecheck
 def ToClerk_SetFragments_Decode(payload: dict):
-    # Convert the IDs to integers.
-    payload['fragments'] = {int(k): v for (k, v) in payload['fragments'].items()}
-
     def dec(filedata):
         return base64.b64decode(filedata.encode('utf8'))
 
@@ -249,8 +244,6 @@ def FromClerk_SetFragments_Encode(response):
 
 @typecheck
 def ToClerk_SetRigidBodies_Decode(payload: dict):
-    # Convert the IDs to integers.
-    payload['bodies'] = {int(k): v for (k, v) in payload['bodies'].items()}
     return payload
 
 
@@ -361,8 +354,6 @@ def FromClerk_GetConstraints_Encode(constraints):
 
 @typecheck
 def ToClerk_SetCustomData_Decode(payload: dict):
-    # Convert the IDs to integers.
-    payload['data'] = {int(k): v for (k, v) in payload['data'].items()}
     return payload
 
 
