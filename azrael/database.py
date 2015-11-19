@@ -484,9 +484,6 @@ class DatabaseMongo(DatastoreBase):
             # Issue the database query.
             r = self.db.update_one(query, op, upsert=False)
 
-            # fixme: this used to be acknowledged. That was wrong yet it passed
-            # all unit tests. Devise a test to identify this problem.
-#            ret[aid] = r.acknowledged
             ret[aid] = (r.matched_count == 1)
         return RetVal(True, None, ret)
 
@@ -508,28 +505,30 @@ class DatabaseMongo(DatastoreBase):
         keys = self.db.distinct('aid')
         return RetVal(True, None, keys)
 
-    def getOne(self, aid, prj=None):
-        if _checkGet([aid], prj) is False:
-            self.logit.warning('Invalid GETONE argument')
-            return RetVal(False, 'Argument error', None)
-
+    def _compileProjectionOperator(self, prj):
+        """
+        Return a Mongo compatible projection operator.
+        """
         if prj is None:
             prj = {}
         else:
             prj = {'.'.join(_): True for _ in prj}
             prj['aid'] = True
         prj['_id'] = False
+        return prj
 
+    def getOne(self, aid, prj=None):
+        if _checkGet([aid], prj) is False:
+            self.logit.warning('Invalid GETONE argument')
+            return RetVal(False, 'Argument error', None)
+
+        prj = self._compileProjectionOperator(prj)
         doc = self.db.find_one({'aid': aid}, prj)
-
-        try:
-            del doc['aid']
-        except (KeyError, TypeError):
-            pass
 
         if doc is None:
             return RetVal(False, None, None)
         else:
+            doc = self._removeAID([doc])[aid]
             return RetVal(True, None, doc)
 
     def getMulti(self, aids, prj=None):
@@ -537,32 +536,21 @@ class DatabaseMongo(DatastoreBase):
             self.logit.warning('Invalid GETMULTI argument')
             return RetVal(False, 'Argument error', None)
 
-        if prj is None:
-            prj = {}
-        else:
-            prj = {'.'.join(_): True for _ in prj}
-            prj['aid'] = True
-        prj['_id'] = False
-
+        prj = self._compileProjectionOperator(prj)
         cursor = self.db.find({'aid': {'$in': aids}}, prj)
         docs = self._removeAID(cursor)
+
         return RetVal(True, None, docs)
 
-    # fixme: don't use a list default argument
     def getAll(self, prj=None):
         if _checkGetAll(prj) is False:
             self.logit.warning('Invalid GETALL argument')
             return RetVal(False, 'Argument error', None)
 
-        if prj is None:
-            prj = {}
-        else:
-            prj = {'.'.join(_): True for _ in prj}
-            prj['aid'] = True
-        prj['_id'] = False
-
+        prj = self._compileProjectionOperator(prj)
         cursor = self.db.find({}, prj)
         docs = self._removeAID(cursor)
+
         return RetVal(True, None, docs)
 
 
