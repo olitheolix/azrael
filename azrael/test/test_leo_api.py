@@ -49,7 +49,7 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Create an object ID for the test.
-        id_1 = 1
+        id_1 = '1'
 
         # The number of SV entries must now be zero.
         assert len(leo.allBodies) == 0
@@ -81,7 +81,7 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Create two object IDs for this test.
-        id_1, id_2 = 1, 2
+        id_1, id_2 = '1', '2'
 
         # The number of bodies in Leonard must be zero.
         assert len(leo.allBodies) == 0
@@ -107,7 +107,7 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Convenience.
-        id_1 = 1
+        id_1 = '1'
 
         # The number of bodies in Leonard must be zero.
         assert len(leo.allBodies) == 0
@@ -156,7 +156,7 @@ class TestLeonardAPI:
         # Convenience.
         body_1 = getRigidBody()
         body_2 = {'imass': 2, 'scale': 3}
-        id_1, id_2 = 0, 1
+        id_1, id_2 = '0', '1'
 
         # The command queue must be empty for every category.
         ret = leoAPI.dequeueCommands()
@@ -268,7 +268,7 @@ class TestLeonardAPI:
         }
 
         # Create a test body.
-        id_1 = 0
+        id_1 = '0'
         body = getRigidBody(cshapes={'csempty': getCSEmpty()})
 
         # Add the object to the DB with ID=0.
@@ -317,7 +317,7 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Create two object IDs for this test.
-        id_1, id_2 = 0, 1
+        id_1, id_2 = '0', '1'
 
         # Create two objects and serialise them.
         body_1 = getRigidBody(position=[0, 0, 0])
@@ -373,7 +373,7 @@ class TestLeonardAPI:
         leo = getLeonard()
 
         # Create two IDs and body instances for this test.
-        id_1, id_2 = 0, 1
+        id_1, id_2 = '0', '1'
         aabb_2 = {'cssphere': [0, 0, 0, 1, 1, 1]}
         aabb_3 = {'cssphere': [0, 0, 0, 2, 2, 2]}
         body_a = getRigidBody(cshapes={'cssphere': getCSSphere(radius=1)})
