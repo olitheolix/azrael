@@ -207,6 +207,21 @@ class TestDatabaseAPI:
         assert db.put(ops) == (True, None, {'1': False})
         assert db.getOne('1') == (True, None, {'key1': 'value1'})
 
+        # ---------------------------------------------------------------------
+        # Attempt to insert two new documents, one of which already exists.
+        # ---------------------------------------------------------------------
+        ops = {
+            '1': {'data': {'key3': 'value3'}},
+            '2': {'data': {'key4': 'value4'}},
+        }
+        assert db.put(ops) == (True, None, {'1': False, '2': True})
+        assert db.count() == (True, None, 2)
+
+        # Query both documents. Both must exist.
+        ret = db.getMulti(['1', '2'])
+        assert ret.ok
+        assert ret.data == {'1': {'key1': 'value1'}, '2': {'key4': 'value4'}}
+
     @pytest.mark.parametrize('clsDatabase', allEngines)
     def test_replace(self, clsDatabase):
         """
@@ -239,6 +254,21 @@ class TestDatabaseAPI:
         ops = {'1': {'data': {'key2': 'value2'}}}
         assert db.replace(ops) == (True, None, {'1': True})
         assert db.getOne('1') == (True, None, {'key2': 'value2'})
+
+        # ---------------------------------------------------------------------
+        # Attempt to replace two documents, only one of which already exists.
+        # ---------------------------------------------------------------------
+        ops = {
+            '1': {'data': {'key3': 'value3'}},
+            '2': {'data': {'key4': 'value4'}},
+        }
+        assert db.replace(ops) == (True, None, {'1': True, '2': False})
+        assert db.count() == (True, None, 1)
+
+        # Query both documents. Only the first must be returned.
+        ret = db.getMulti(['1', '2'])
+        assert ret.ok
+        assert ret.data == {'1': {'key3': 'value3'}}
 
     @pytest.mark.parametrize('clsDatabase', allEngines)
     def test_put_boolean_return(self, clsDatabase):
