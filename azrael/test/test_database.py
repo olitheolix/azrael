@@ -299,6 +299,46 @@ class TestDatabaseAPI:
         assert ret.data['1'] is False
 
     @pytest.mark.parametrize('clsDatabase', allEngines)
+    def test_getMulti_getAll(self, clsDatabase):
+        """
+        Insert some documents. Then query them in batches.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # Empty database: unconditonal put must succeed.
+        assert db.reset().ok and db.count().data == 0
+        ops = {
+            '1': {'data': {'key1': 'value1'}},
+            '2': {'data': {'key2': 'value2'}},
+            '3': {'data': {'key3': 'value3'}},
+            '4': {'data': {'key4': 'value4'}},
+        }
+        assert db.put(ops) == (True, None, {str(_): True for _ in range(1, 5)})
+        assert db.count() == (True, None, 4)
+
+        # If the query is empty then no documents must be returned.
+        assert db.getMulti([]) == (True, None, {})
+
+        # A query for non-existing documents must return nothing.
+        ret = db.getMulti(['5', '6'])
+        assert ret == (True, None, {})
+
+        # Query two existing documents.
+        ret = db.getMulti(['1', '4'])
+        assert ret.ok
+        assert ret.data == {'1': {'key1': 'value1'}, '4': {'key4': 'value4'}}
+
+        # Query two documents. Only one exists. This must return the one that
+        # does exist and not mention the non-existing one at all.
+        ret = db.getMulti(['2', '5'])
+        assert ret.ok
+        assert ret.data == {'2': {'key2': 'value2'}}
+
+        # getAll and getMulti must return the exact same data when getMulti was
+        # asked for all documents.
+        assert db.getAll() == db.getMulti(['1', '2', '3', '4'])
+
+    @pytest.mark.parametrize('clsDatabase', allEngines)
     def test_remove(self, clsDatabase):
         """
         Insert some documents. Then delete them.
