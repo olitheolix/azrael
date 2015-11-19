@@ -1068,7 +1068,7 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
         return RetVal(True, None, out)
 
-    def _setFragOps(self, objID, dbkey, url, fragdata, op_db, op_file):
+    def _setFragOps(self, objID, fragkey, url, fragdata, op_db, op_file):
         """
         Compile meta commands for database.
 
@@ -1091,7 +1091,7 @@ class Clerk(config.AzraelProcess):
             # top-level directory.
             # This operation must update the version number.
             op_db['inc'] = {('version', ): 1}
-            op_db['unset'].append(dbkey)
+            op_db['unset'].append(fragkey)
             op_file['rmdir'].append(url)
         elif fragdata['op'] == 'put':
             # New fragment: this will delete the old fragment and then insert a
@@ -1119,7 +1119,7 @@ class Clerk(config.AzraelProcess):
 
             # The fragment is valid. Therefore specify the new document
             # hierarchy.
-            op_db['set'][dbkey] = doc
+            op_db['set'][fragkey] = doc
             op_db['inc'] = {('version', ): 1}
 
             # Specify the files to go into Dibbler (this could not happen
@@ -1131,18 +1131,18 @@ class Clerk(config.AzraelProcess):
             # files and directories first before adding new files.
             op_file['rmdir'].append(url)
         else:
-            # Only existing objects can be updated.
-            op_db['exists'][dbkey] = True
+            # Only existing keys can be updated.
+            op_db['exists'][fragkey] = True
 
             # Overwrite the state variables (if there are any).
             for state in ('scale', 'position', 'rotation'):
                 if state not in fragdata:
                     continue
-                op_db['set'][dbkey + (state,)] = fragdata[state]
+                op_db['set'][fragkey + (state,)] = fragdata[state]
 
             # A new fragment types must trigger a version increase.
             if 'fragtype' in fragdata:
-                op_db['set'][dbkey + ('fragtype',)] = fragdata['fragtype']
+                op_db['set'][fragkey + ('fragtype',)] = fragdata['fragtype']
                 op_db['inc'] = {('version', ): 1}
 
             # Delete geometry files for the current fragment.
@@ -1155,7 +1155,7 @@ class Clerk(config.AzraelProcess):
                 fname = self._mangleFileName(fname, unmangle=False)
 
                 # Remove the keys that list the file names.
-                op_db['unset'].append(dbkey + ('files', fname))
+                op_db['unset'].append(fragkey + ('files', fname))
                 op_db['inc'] = {('version', ): 1}
 
             # Overwrite these files.
@@ -1168,7 +1168,7 @@ class Clerk(config.AzraelProcess):
                 fname = self._mangleFileName(fname, unmangle=False)
 
                 # Update the keys that list the file names.
-                op_db['set'][dbkey + ('files', fname)] = None
+                op_db['set'][fragkey + ('files', fname)] = None
                 op_db['inc'] = {('version', ): 1}
 
     @typecheck
@@ -1228,12 +1228,12 @@ class Clerk(config.AzraelProcess):
 
                 # Define the prefix key in the JSON hierarchy for current fragment, and
                 # the file name prefix in Dibbler.
-                dbkey = ('template', 'fragments', fragname)
+                fragkey = ('template', 'fragments', fragname)
                 url = '{pre}/{fragname}'.format(pre=pre, fragname=fragname)
 
                 # Determine the necessary database operations (will update the
                 # 'op_db' and 'op_file' dictionaries).
-                self._setFragOps(objID, dbkey, url, fragdata, op_db, op_file)
+                self._setFragOps(objID, fragkey, url, fragdata, op_db, op_file)
 
             # -----------------------------------------------------------------
             # Compile the database query and update operation.
