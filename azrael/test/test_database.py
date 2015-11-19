@@ -625,20 +625,20 @@ class TestHelperFunctions:
         db = database
 
         # Valid.
-        assert db._checkGet('1', [('x', 'y')]) is True
+        assert db._checkGet(['1'], [('x', 'y')]) is True
 
         # AID is not a string.
-        assert db._checkGet(1, [['blah']]) is False
+        assert db._checkGet([1], [['blah']]) is False
 
         # Projection is not a list of lists.
-        assert db._checkGet('1', {}) is False
-        assert db._checkGet('1', [{}]) is False
+        assert db._checkGet(['1'], {}) is False
+        assert db._checkGet(['1'], [{}]) is False
 
         # Projection does not contain only strings.
-        assert db._checkGet('1', [['a', 2]]) is False
+        assert db._checkGet(['1'], [['a', 2]]) is False
 
         # Projection contains a string with a dot.
-        assert db._checkGet('1', [['a', 'b.c']]) is False
+        assert db._checkGet(['1'], [['a', 'b.c']]) is False
 
     def test_invalid_args_getAll(self):
         """
