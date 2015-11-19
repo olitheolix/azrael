@@ -167,14 +167,14 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
 
         # Spawn the first template (it must get objID=1).
         ret = clerk.spawn([{'templateID': 't1', 'rbs': {'imass': 1}}])
-        assert ret.data == (1, )
+        assert ret.data == ['1']
         self.verifyTemplate('{}/{}'.format(url_inst, 1), t1.fragments)
 
         # Spawn two more templates and very their instance models.
         new_objs = [{'templateID': 't2', 'rbs': {'imass': 1}},
                     {'templateID': 't1', 'rbs': {'imass': 1}}]
         ret = clerk.spawn(new_objs)
-        assert ret.data == (2, 3)
+        assert ret.data == ['2', '3']
         self.verifyTemplate('{}/{}'.format(url_inst, 2), t2.fragments)
         self.verifyTemplate('{}/{}'.format(url_inst, 3), t1.fragments)
 
@@ -194,7 +194,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         assert clerk.addTemplates([t1]).ok
         self.verifyTemplate('{}/t1'.format(config.url_templates), t1.fragments)
         ret = clerk.spawn([{'templateID': 't1', 'rbs': {'imass': 1}}])
-        assert ret.data == (1, )
+        assert ret.data == ['1']
 
         # Verify that the instance exists.
         url_inst = config.url_instances
@@ -202,7 +202,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
 
         # Delete the instance and verify it is now gone.
         cnt = self.dibbler.getNumFiles().data
-        assert clerk.removeObject(objID=1) == (True, None, None)
+        assert clerk.removeObject(objID='1') == (True, None, None)
         self.dibbler.getNumFiles().data == cnt - 2
         with pytest.raises(AssertionError):
             self.verifyTemplate('{}/{}'.format(url_inst, 1), frags)
