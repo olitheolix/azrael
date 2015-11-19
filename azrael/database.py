@@ -84,9 +84,10 @@ def _checkGet(aids, prj):
         for aid in aids:
             assert isinstance(aid, str)
 
-        assert isinstance(prj, (list, tuple))
-        for jsonkey in prj:
-            assert _validJsonKey(jsonkey)
+        if prj is not None:
+            assert isinstance(prj, (list, tuple))
+            for jsonkey in prj:
+                assert _validJsonKey(jsonkey)
     except (KeyError, AssertionError, TypeError):
         return False
     return True
@@ -94,9 +95,10 @@ def _checkGet(aids, prj):
 
 def _checkGetAll(prj):
     try:
-        assert isinstance(prj, (list, tuple))
-        for jsonkey in prj:
-            assert _validJsonKey(jsonkey)
+        if prj is not None:
+            assert isinstance(prj, (list, tuple))
+            for jsonkey in prj:
+                assert _validJsonKey(jsonkey)
     except (KeyError, AssertionError, TypeError):
         return False
     return True
@@ -185,13 +187,13 @@ class DatastoreBase:
     def reset(self):
         raise NotImplementedError
 
-    def getOne(self, aid, prj=[]):
+    def getOne(self, aid, prj=None):
         raise NotImplementedError
 
-    def getMulti(self, aids, prj=[]):
+    def getMulti(self, aids, prj=None):
         raise NotImplementedError
 
-    def getAll(self, prj=[]):
+    def getAll(self, prj=None):
         raise NotImplementedError
 
     def put(self, ops: dict):
@@ -362,7 +364,7 @@ class DatabaseInMemory(DatastoreBase):
                 continue
         return out
 
-    def getOne(self, aid, prj=[]):
+    def getOne(self, aid, prj=None):
         if _checkGet([aid], prj) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
@@ -371,29 +373,29 @@ class DatabaseInMemory(DatastoreBase):
         if doc is None:
             return RetVal(False, None, None)
         else:
-            if len(prj) > 0:
+            if prj is not None:
                 doc = self.project(doc, prj)
             return RetVal(True, None, doc)
 
-    def getMulti(self, aids, prj=[]):
+    def getMulti(self, aids, prj=None):
         if _checkGet(aids, prj) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
         docs = {aid: self.content[aid] for aid in aids if aid in self.content}
-        if len(prj) > 0:
+        if prj is not None:
             for doc in docs:
                 docs[doc] = self.project(docs[doc], prj)
 
         return RetVal(True, None, docs)
 
-    def getAll(self, prj=[]):
+    def getAll(self, prj=None):
         if _checkGetAll(prj) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
         docs = copy.deepcopy(self.content)
-        if len(prj) > 0:
+        if prj is not None:
             for doc in docs:
                 docs[doc] = self.project(docs[doc], prj)
 
@@ -506,15 +508,20 @@ class DatabaseMongo(DatastoreBase):
         keys = self.db.distinct('aid')
         return RetVal(True, None, keys)
 
-    def getOne(self, aid, prj=[]):
+    def getOne(self, aid, prj=None):
         if _checkGet([aid], prj) is False:
             self.logit.warning('Invalid GETONE argument')
             return RetVal(False, 'Argument error', None)
 
-        prj = {'.'.join(_): True for _ in prj}
+        if prj is None:
+            prj = {}
+        else:
+            prj = {'.'.join(_): True for _ in prj}
+            prj['aid'] = True
         prj['_id'] = False
 
         doc = self.db.find_one({'aid': aid}, prj)
+
         try:
             del doc['aid']
         except (KeyError, TypeError):
@@ -525,29 +532,35 @@ class DatabaseMongo(DatastoreBase):
         else:
             return RetVal(True, None, doc)
 
-    def getMulti(self, aids, prj=[]):
+    def getMulti(self, aids, prj=None):
         if _checkGet(aids, prj) is False:
             self.logit.warning('Invalid GETMULTI argument')
             return RetVal(False, 'Argument error', None)
 
-        prj = {'.'.join(_): True for _ in prj}
-        if len(prj) > 0:
+        if prj is None:
+            prj = {}
+        else:
+            prj = {'.'.join(_): True for _ in prj}
             prj['aid'] = True
         prj['_id'] = False
+
         cursor = self.db.find({'aid': {'$in': aids}}, prj)
         docs = self._removeAID(cursor)
         return RetVal(True, None, docs)
 
     # fixme: don't use a list default argument
-    def getAll(self, prj=[]):
+    def getAll(self, prj=None):
         if _checkGetAll(prj) is False:
             self.logit.warning('Invalid GETALL argument')
             return RetVal(False, 'Argument error', None)
 
-        prj = {'.'.join(_): True for _ in prj}
-        if len(prj) > 0:
+        if prj is None:
+            prj = {}
+        else:
+            prj = {'.'.join(_): True for _ in prj}
             prj['aid'] = True
         prj['_id'] = False
+
         cursor = self.db.find({}, prj)
         docs = self._removeAID(cursor)
         return RetVal(True, None, docs)
