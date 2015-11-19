@@ -81,12 +81,16 @@ class TestAtomicCounter:
         assert not database.getUniqueObjectIDs(-1).ok
 
 
-all_engines = [
-    database.DatabaseInMemory,
-    database.DatabaseMongo,
-]
+class TestAllDatastoreBackends:
+    """
+    The tests here are valid for every storage backend listed in all_engines.
+    """
+    # Used in the py.test decorator to apply every test each backend.
+    all_engines = [
+            database.DatabaseInMemory,
+            database.DatabaseMongo,
+    ]
 
-class TestDatabaseAPI:
     @classmethod
     def setup_class(cls):
         pass
@@ -381,20 +385,6 @@ class TestDatabaseAPI:
         assert ret.ok
         assert sorted(ret.data) == ['2', '4']
 
-    def test_projection(self):
-        db = database.DatabaseInMemory(name=('test1', 'test2'))
-
-        src = {'x': 1, 'a': {'b0': 2, 'b1': 3}, 'c': {'d': {'e': 3}}}
-        assert db.project(src, [['z']]) == {}
-        assert db.project(src, [['x']]) == {'x': 1}
-        assert db.project(src, [['x'], ['a']]) == {'x': 1, 'a': {'b0': 2, 'b1': 3}}
-        assert db.project(src, [['x'], ['a', 'b0']]) == {'x': 1, 'a': {'b0': 2}}
-        assert db.project(src, [['x'], ['a', 'b5']]) == {'x': 1}
-        assert db.project(src, [['c']]) == {'c': {'d': {'e': 3}}}
-        assert db.project(src, [['c', 'd']]) == {'c': {'d': {'e': 3}}}
-        assert db.project(src, [['c', 'd', 'e']]) == {'c': {'d': {'e': 3}}}
-        assert db.project(src, [['c', 'd', 'blah']]) == {}
-
     @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_get_with_projections(self, clsDatabase):
         """
@@ -414,7 +404,9 @@ class TestDatabaseAPI:
         assert db.put(ops) == (True, None, {'1': True})
         assert db.count() == (True, None, 1)
             
+        # ---------------------------------------------------------------------
         # Fetch the content via getOne.
+        # ---------------------------------------------------------------------
 
         assert db.getOne('1', [['blah']]) == (True, None, {})
 
@@ -426,7 +418,9 @@ class TestDatabaseAPI:
         assert ret.ok
         assert ret.data == {'foo': {'x': {'y0': 0}}}
 
+        # ---------------------------------------------------------------------
         # Fetch the content via getMulti.
+        # ---------------------------------------------------------------------
 
         assert db.getMulti(['1'], [['blah']]) == (True, None, {'1': {}})
 
@@ -438,12 +432,171 @@ class TestDatabaseAPI:
         assert ret.ok
         assert ret.data == {'1': {'foo': {'x': {'y0': 0}}}}
 
+        # ---------------------------------------------------------------------
         # Fetch the content via getAll. For simplicity, just verify that the
         # output matched that of getMult since we just tested that that one
         # worked.
+        # ---------------------------------------------------------------------
         projections = [ [['blah']], [['foo', 'x']], [['foo', 'x', 'y0']] ]
         for prj in projections:
             assert db.getMulti(['1'], prj) == db.getAll(prj)
+
+    @pytest.mark.parametrize('clsDatabase', all_engines)
+    def test_modify_single(self, clsDatabase):
+        """
+        Insert a single document and modify it.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # Reset the database and verify that it is empty.
+        assert db.reset().ok and db.count().data == 0
+
+        # Insert one document.
+        doc = {
+            'foo': {'a': 1, 'b': 2},
+            'bar': {'c': 3, 'd': 2},
+        }
+        ops = {'1': {'data': doc}}
+        assert db.put(ops) == (True, None, {'1': True})
+
+        # Modify that document.
+        ops = {
+            '1': {
+                'inc': {('foo', 'a'): 1, ('bar', 'c'): -1},
+                'set': {('foo', 'b'): 20},
+                'unset': [('bar', 'd')],
+                'exists': {('bar', 'd'): True},
+            }
+        }
+        ret = db.mod(ops)
+        assert ret.ok
+        assert ret.data == {'1': True}
+        assert ret.data['1'] is True
+
+        # Verify the document was modified correctly.
+        ret = db.getOne('1')
+        assert ret.ok
+        ref = {
+            'foo': {'a': 2, 'b': 20},
+            'bar': {'c': 2},
+        }
+        assert ret.data == ref
+
+
+class TestDatabaseInMemory:
+    """
+    The tests here pertain to various helper functions defined in the datastore
+    module (eg. various argument checks).
+    """
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        self.db = database.DatabaseInMemory(name=('test1', 'test2'))
+
+    def teardown_method(self, method):
+        pass
+
+    def test_projection(self):
+        """
+        The projection operator must only return the specified subset of
+        fields. The fields can specify a key in a nested JSON hierarchy.
+        """
+        src = {'x': 1, 'a': {'b0': 2, 'b1': 3}, 'c': {'d': {'e': 3}}}
+        assert self.db.project(src, [['z']]) == {}
+        assert self.db.project(src, [['x']]) == {'x': 1}
+        assert self.db.project(src, [['x'], ['a']]) == {'x': 1, 'a': {'b0': 2, 'b1': 3}}
+        assert self.db.project(src, [['x'], ['a', 'b0']]) == {'x': 1, 'a': {'b0': 2}}
+        assert self.db.project(src, [['x'], ['a', 'b5']]) == {'x': 1}
+        assert self.db.project(src, [['c']]) == {'c': {'d': {'e': 3}}}
+        assert self.db.project(src, [['c', 'd']]) == {'c': {'d': {'e': 3}}}
+        assert self.db.project(src, [['c', 'd', 'e']]) == {'c': {'d': {'e': 3}}}
+        assert self.db.project(src, [['c', 'd', 'blah']]) == {}
+
+    def test_hasKey(self):
+        """
+        'delKey' is a helper function in the InMemory data store. It returns
+        True if a (possibly) nested key exists in the document structure.
+        """
+        src = {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+        assert not self.db.hasKey(src, ['z'])
+        assert not self.db.hasKey(src, ['x', 'a'])
+        assert not self.db.hasKey(src, ['a', 'x'])
+        assert self.db.hasKey(src, ['x'])
+        assert self.db.hasKey(src, ['a'])
+        assert self.db.hasKey(src, ['c'])
+        assert self.db.hasKey(src, ['a', 'b'])
+        assert self.db.hasKey(src, ['c', 'd'])
+        assert self.db.hasKey(src, ['c', 'd', 'e'])
+
+    def test_delKey(self):
+        """
+        'delKey' is a helper function in the InMemory data store. It must
+        remove the specified key if it exists, and do nothing if not.
+        """
+        src = {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+
+        self.db.delKey(src, ['z'])
+        assert src == {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+
+        self.db.delKey(src, ['x'])
+        assert src == {'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+
+        self.db.delKey(src, ['a'])
+        assert src == {'c': {'d': {'e': 3}}}
+
+        self.db.delKey(src, ['c', 'd'])
+        assert src == {'c': {}}
+
+        self.db.delKey(src, ['c'])
+        assert src == {}
+
+    def test_setKey(self):
+        """
+        'setKey' is a helper function in the InMemory data store. It must
+        create/overwrite the specified key in the (nested) JSON document.
+        """
+        src = {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
+
+        self.db.setKey(src, ['z'], -1)
+        assert src == {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}, 'z': -1}
+
+        self.db.setKey(src, ['x'], -1)
+        assert src == {'x': -1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}, 'z': -1}
+
+        self.db.setKey(src, ['a'], -1)
+        assert src == {'x': -1, 'a': -1, 'c': {'d': {'e': 3}}, 'z': -1}
+
+        self.db.setKey(src, ['a'], {'b': -2})
+        assert src == {'x': -1, 'a': {'b': -2}, 'c': {'d': {'e': 3}}, 'z': -1}
+
+        self.db.setKey(src, ['c', 'd', 'e'], -2)
+        assert src == {'x': -1, 'a': {'b': -2}, 'c': {'d': {'e': -2}}, 'z': -1}
+
+
+class TestHelperFunctions:
+    """
+    The tests here pertain to various helper functions defined in the datastore
+    module (eg. various argument checks).
+    """
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
 
     def test_datastore_validJsonKey(self):
         """
@@ -602,98 +755,6 @@ class TestDatabaseAPI:
         ops = copy.deepcopy(ops_valid)
         ops['1']['unset'] = {('foo', 'a'): 5}
         assert db._checkMod(ops) is False
-
-    def test_hasKey(self):
-        db = database.DatabaseInMemory(name=('test1', 'test2'))
-
-        src = {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
-        assert not db.hasKey(src, ['z'])
-        assert not db.hasKey(src, ['x', 'a'])
-        assert not db.hasKey(src, ['a', 'x'])
-        assert db.hasKey(src, ['x'])
-        assert db.hasKey(src, ['a'])
-        assert db.hasKey(src, ['c'])
-        assert db.hasKey(src, ['a', 'b'])
-        assert db.hasKey(src, ['c', 'd'])
-        assert db.hasKey(src, ['c', 'd', 'e'])
-
-    def test_delKey(self):
-        db = database.DatabaseInMemory(name=('test1', 'test2'))
-
-        src = {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
-
-        db.delKey(src, ['z'])
-        assert src == {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
-
-        db.delKey(src, ['x'])
-        assert src == {'a': {'b': 2}, 'c': {'d': {'e': 3}}}
-
-        db.delKey(src, ['a'])
-        assert src == {'c': {'d': {'e': 3}}}
-
-        db.delKey(src, ['c', 'd'])
-        assert src == {'c': {}}
-
-        db.delKey(src, ['c'])
-        assert src == {}
-
-    def test_setKey(self):
-        db = database.DatabaseInMemory(name=('test1', 'test2'))
-
-        src = {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}}
-
-        db.setKey(src, ['z'], -1)
-        assert src == {'x': 1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}, 'z': -1}
-
-        db.setKey(src, ['x'], -1)
-        assert src == {'x': -1, 'a': {'b': 2}, 'c': {'d': {'e': 3}}, 'z': -1}
-
-        db.setKey(src, ['a'], -1)
-        assert src == {'x': -1, 'a': -1, 'c': {'d': {'e': 3}}, 'z': -1}
-
-        db.setKey(src, ['a'], {'b': -2})
-        assert src == {'x': -1, 'a': {'b': -2}, 'c': {'d': {'e': 3}}, 'z': -1}
-
-        db.setKey(src, ['c', 'd', 'e'], -2)
-        assert src == {'x': -1, 'a': {'b': -2}, 'c': {'d': {'e': -2}}, 'z': -1}
-
-    @pytest.mark.parametrize('clsDatabase', all_engines)
-    def test_modify_single(self, clsDatabase):
-        """
-        Insert a single document and modify it.
-        """
-        db = clsDatabase(name=('test1', 'test2'))
-
-        # Reset the database and verify that it is empty.
-        assert db.reset().ok and db.count().data == 0
-
-        doc = {
-            'foo': {'a': 1, 'b': 2},
-            'bar': {'c': 3, 'd': 2},
-        }
-        ops = {'1': {'data': doc}}
-        assert db.put(ops) == (True, None, {'1': True})
-
-        ops = {
-            '1': {
-                'inc': {('foo', 'a'): 1, ('bar', 'c'): -1},
-                'set': {('foo', 'b'): 20},
-                'unset': [('bar', 'd')],
-                'exists': {('bar', 'd'): True},
-            }
-        }
-        ret = db.mod(ops)
-        assert ret.ok
-        assert ret.data == {'1': True}
-        assert ret.data['1'] is True
-
-        ret = db.getOne('1')
-        assert ret.ok
-        ref = {
-            'foo': {'a': 2, 'b': 20},
-            'bar': {'c': 2},
-        }
-        assert ret.data == ref
 
 
 if __name__ == '__main__':
