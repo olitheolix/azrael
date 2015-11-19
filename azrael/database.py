@@ -84,7 +84,7 @@ def _checkGet(aids, prj):
         for aid in aids:
             assert isinstance(aid, str)
 
-        assert isinstance(prj, (list,tuple))
+        assert isinstance(prj, (list, tuple))
         for jsonkey in prj:
             assert _validJsonKey(jsonkey)
     except (KeyError, AssertionError, TypeError):
@@ -94,7 +94,7 @@ def _checkGet(aids, prj):
 
 def _checkGetAll(prj):
     try:
-        assert isinstance(prj, (list,tuple))
+        assert isinstance(prj, (list, tuple))
         for jsonkey in prj:
             assert _validJsonKey(jsonkey)
     except (KeyError, AssertionError, TypeError):
@@ -121,15 +121,15 @@ def _checkMod(ops):
             for k_inc, v_inc in value['inc'].items():
                 assert _validJsonKey(k_inc)
                 assert isinstance(v_inc, (float, int))
-                
+
             assert isinstance(value['set'], dict)
             for k_set, v_set in value['set'].items():
                 assert _validJsonKey(k_set)
-                
+
             assert isinstance(value['unset'], (tuple, list))
             for v_unset in value['unset']:
                 assert _validJsonKey(v_unset)
-                
+
             assert isinstance(value['exists'], dict)
             for k_exists, v_exists in value['exists'].items():
                 assert _validJsonKey(k_exists)
@@ -160,7 +160,7 @@ def _validJsonKey(name: (list, tuple)):
              J['foo']['bar'].
 
     Invalid eample: ('fo.o', 'bar') is invalid because it contains a dot.
-    
+
     :param list/tuple name: the (nested) field name to verify.
     :return: bool
     """
@@ -258,11 +258,11 @@ class DatabaseInMemory(DatastoreBase):
             tmp = d
             for key in key_hierarchy:
                 tmp = tmp[key]
-                
+
         except (KeyError, TypeError):
             return False
         return True
-        
+
     def setKey(self, d, key_hierarchy, value):
         tmp = d
         for key in key_hierarchy[:-1]:
@@ -334,7 +334,7 @@ class DatabaseInMemory(DatastoreBase):
                 self.setKey(self.content[aid], key, val)
 
         return RetVal(True, None, ret)
-        
+
     def remove(self, aids: (tuple, list)):
         if _checkRemove(aids) is False:
             return RetVal(False, 'Argument error', None)
@@ -347,7 +347,7 @@ class DatabaseInMemory(DatastoreBase):
             except KeyError:
                 pass
         return RetVal(True, None, num_deleted)
-    
+
     def allKeys(self):
         keys = list(self.content.keys())
         return RetVal(True, None, keys)
@@ -361,7 +361,7 @@ class DatabaseInMemory(DatastoreBase):
             except KeyError:
                 continue
         return out
-        
+
     def getOne(self, aid, prj=[]):
         if _checkGet([aid], prj) is False:
             self.logit.warning('Invalid PUT argument')
@@ -462,7 +462,8 @@ class DatabaseMongo(DatastoreBase):
 
         ret = {}
         for aid, op_tmp in ops.items():
-            query = {'.'.join(key): {'$exists': yes} for key, yes in op_tmp['exists'].items()}
+            query = {'.'.join(key): {'$exists': yes}
+                     for key, yes in op_tmp['exists'].items()}
             query['aid'] = aid
 
             # Update operations.
@@ -486,7 +487,7 @@ class DatabaseMongo(DatastoreBase):
 #            ret[aid] = r.acknowledged
             ret[aid] = (r.matched_count == 1)
         return RetVal(True, None, ret)
-        
+
     def _removeAID(self, docs):
         docs = {doc['aid']: doc for doc in docs}
         for aid, doc in docs.items():

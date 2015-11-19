@@ -87,8 +87,8 @@ class TestAllDatastoreBackends:
     """
     # Used in the py.test decorator to apply every test each backend.
     all_engines = [
-            database.DatabaseInMemory,
-            database.DatabaseMongo,
+        database.DatabaseInMemory,
+        database.DatabaseMongo,
     ]
 
     @classmethod
@@ -120,7 +120,7 @@ class TestAllDatastoreBackends:
         ops = {'1': {'data': {'key': 'value'}}}
         assert db.put(ops) == (True, None, {'1': True})
         assert db.count() == (True, None, 1)
-            
+
         # Reset the database and verfify that it is empty again.
         assert db.reset() == (True, None, None)
         assert db.count() == (True, None, 0)
@@ -142,7 +142,7 @@ class TestAllDatastoreBackends:
         }
         assert db.put(ops) == (True, None, {'1': True, '2': True})
         assert db.count() == (True, None, 2)
-            
+
         # Fetch the content via three different methods.
 
         # getOne:
@@ -170,7 +170,7 @@ class TestAllDatastoreBackends:
         # ---------------------------------------------------------------------
         # Put must succeed when no document with the same ID exists in database.
         # ---------------------------------------------------------------------
-        
+
         assert db.reset().ok and db.count().data == 0
         ops = {'1': {'data': {'key1': 'value1'}}}
         assert db.put(ops) == (True, None, {'1': True})
@@ -403,7 +403,7 @@ class TestAllDatastoreBackends:
         ops = {'1': {'data': doc}}
         assert db.put(ops) == (True, None, {'1': True})
         assert db.count() == (True, None, 1)
-            
+
         # ---------------------------------------------------------------------
         # Fetch the content via getOne.
         # ---------------------------------------------------------------------
@@ -437,7 +437,9 @@ class TestAllDatastoreBackends:
         # output matched that of getMult since we just tested that that one
         # worked.
         # ---------------------------------------------------------------------
-        projections = [ [['blah']], [['foo', 'x']], [['foo', 'x', 'y0']] ]
+        projections = [
+            [['blah']], [['foo', 'x']], [['foo', 'x', 'y0']]
+        ]
         for prj in projections:
             assert db.getMulti(['1'], prj) == db.getAll(prj)
 
