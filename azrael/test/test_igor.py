@@ -67,12 +67,12 @@ class TestClerk:
         igor.reset()
 
         # Create the constraints for this test.
-        c1 = getCon('foo', 1, 2)
-        c2 = getCon('foo', 2, 3)
-        c3 = getCon('foo', 3, 4)
-        c4 = getCon('foo', 4, 5)
-        c5 = getCon('foo', 5, 6)
-        c6 = getCon('foo', 6, 7)
+        c1 = getCon('foo', '1', '2')
+        c2 = getCon('foo', '2', '3')
+        c3 = getCon('foo', '3', '4')
+        c4 = getCon('foo', '4', '5')
+        c5 = getCon('foo', '5', '6')
+        c6 = getCon('foo', '6', '7')
 
         # There must not be any objects to download.
         assert igor.updateLocalCache() == (True, None, 0)
@@ -126,8 +126,8 @@ class TestClerk:
         igor = self.igor
 
         # Two constraints that only differ in their 'aid' attribute.
-        c1 = getCon('foo', 1, 2)
-        c2 = getCon('bar', 1, 2)
+        c1 = getCon('foo', '1', '2')
+        c2 = getCon('bar', '1', '2')
 
         # Attempt to add the first constraint twice. Igor must detect this and
         # only add it once.
@@ -153,9 +153,9 @@ class TestClerk:
         igor = self.igor
 
         # Create the constraints for this test.
-        c1 = getCon('foo', 2, 3)
-        c2 = getCon('foo', 3, 4)
-        c3 = getCon('foo', 4, 5)
+        c1 = getCon('foo', '2', '3')
+        c2 = getCon('foo', '3', '4')
+        c3 = getCon('foo', '4', '5')
 
         # The list of constraints must be empty after a reset.
         assert igor.reset() == (True, None, None)
@@ -185,9 +185,9 @@ class TestClerk:
         igor = self.igor
 
         # Create the constraints for this test.
-        c1 = getCon('foo', 1, 2)
-        c2 = getCon('foo', 2, 3)
-        c3 = getCon('foo', 3, 4)
+        c1 = getCon('foo', '1', '2')
+        c2 = getCon('foo', '2', '3')
+        c3 = getCon('foo', '3', '4')
 
         # Attempt to delete a non-existing constraint. This must neither return
         # an error not delete anything.
@@ -225,9 +225,9 @@ class TestClerk:
         igor = self.igor
 
         # Create the constraints for this test.
-        c1 = getCon('foo', 1, 2)
-        c2 = getCon('foo', 2, 3)
-        c3 = getCon('foo', 3, 4)
+        c1 = getCon('foo', '1', '2')
+        c2 = getCon('foo', '2', '3')
+        c3 = getCon('foo', '3', '4')
 
         # There must not be any pairs after a reset.
         assert igor.reset() == (True, None, None)
@@ -264,9 +264,9 @@ class TestClerk:
         igor = self.igor
 
         # Create the constraints for this test.
-        c1 = getCon('foo', 1, 2)
-        c2 = getCon('foo', 2, 3)
-        c3 = getCon('foo', 3, 4)
+        c1 = getCon('foo', '1', '2')
+        c2 = getCon('foo', '2', '3')
+        c3 = getCon('foo', '3', '4')
 
         # Query the constraints for bodies that do not feature in any
         # constraints.
@@ -280,25 +280,25 @@ class TestClerk:
 
         # Query the constraints that involve object one. This must return only
         # the first object, and only *after* the local Igor cache was updated.
-        assert igor.getConstraints([1]) == (True, None, ())
+        assert igor.getConstraints(['1']) == (True, None, ())
         assert igor.updateLocalCache() == (True, None, 3)
-        ret = igor.getConstraints([1])
+        ret = igor.getConstraints(['1'])
         assert ret.data == (c1, )
 
         # Query the constraints that involve body 1 & 5. This must again return
         # only a single hit because body 5 is not part of any constraint.
-        ret = igor.getConstraints([1, 5])
+        ret = igor.getConstraints(['1', '5'])
         assert ret.data == (c1, )
 
         # Objects 1 & 4 feature in to individual constraints.
-        ret = igor.getConstraints([1, 4])
+        ret = igor.getConstraints(['1', '4'])
         assert sorted(ret.data) == sorted((c1, c3))
 
         # Objects 1 & 2 & 4 feature in all three constraints.
-        ret = igor.getConstraints([1, 2, 4])
+        ret = igor.getConstraints(['1', '2', '4'])
         assert len(ret.data) == 3
         assert sorted(ret.data) == sorted((c1, c2, c3))
 
         # Body 2 features in two constraints whereas body 10 features in none.
-        ret = igor.getConstraints([2, 10])
+        ret = igor.getConstraints(['2', '10'])
         assert sorted(ret.data) == sorted((c1, c2))
