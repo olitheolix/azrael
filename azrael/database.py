@@ -45,7 +45,7 @@ def getUniqueObjectIDs(numIDs: int):
 
     If ``numIDs`` is Zero then return a scalar with the current value.
 
-    The ``numIDs`` is positive then return a tuple with ``numIDs`` entries,
+    If ``numIDs`` is positive then return a tuple with ``numIDs`` entries,
     each of which constitutes a unique ID.
 
     This function returns an error unless ``numIDs`` is non-negative.

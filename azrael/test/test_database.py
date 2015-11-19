@@ -133,7 +133,7 @@ class TestDatabaseAPI:
         assert db.count() == (True, None, 0)
 
         # Insert one document and verify the document count is now at 1.
-        ops = {'1': {'exists': False, 'data': {'key': 'value'}}}
+        ops = {'1': {'data': {'key': 'value'}}}
         assert db.put(ops) == (True, None, {'1': True})
         assert db.count() == (True, None, 1)
             
@@ -153,8 +153,8 @@ class TestDatabaseAPI:
 
         # Insert two documents and verify the document count.
         ops = {
-            '1': {'exists': False, 'data': {'key1': 'value1'}},
-            '2': {'exists': False, 'data': {'key2': 'value2'}},
+            '1': {'data': {'key1': 'value1'}},
+            '2': {'data': {'key2': 'value2'}},
         }
         assert db.put(ops) == (True, None, {'1': True, '2': True})
         assert db.count() == (True, None, 2)
@@ -278,10 +278,10 @@ class TestDatabaseAPI:
         # Empty database: unconditonal put must succeed.
         assert db.reset().ok and db.count().data == 0
         ops = {
-            '1': {'exists': False, 'data': {'key1': 'value1'}},
-            '2': {'exists': False, 'data': {'key2': 'value2'}},
-            '3': {'exists': False, 'data': {'key3': 'value3'}},
-            '4': {'exists': False, 'data': {'key4': 'value4'}},
+            '1': {'data': {'key1': 'value1'}},
+            '2': {'data': {'key2': 'value2'}},
+            '3': {'data': {'key3': 'value3'}},
+            '4': {'data': {'key4': 'value4'}},
         }
         assert db.put(ops) == (True, None, {str(_): True for _ in range(1, 5)})
         assert db.count() == (True, None, 4)
@@ -313,10 +313,10 @@ class TestDatabaseAPI:
         # Empty database: unconditonal put must succeed.
         assert db.reset().ok and db.count().data == 0
         ops = {
-            '1': {'exists': False, 'data': {'key1': 'value1'}},
-            '2': {'exists': False, 'data': {'key2': 'value2'}},
-            '3': {'exists': False, 'data': {'key3': 'value3'}},
-            '4': {'exists': False, 'data': {'key4': 'value4'}},
+            '1': {'data': {'key1': 'value1'}},
+            '2': {'data': {'key2': 'value2'}},
+            '3': {'data': {'key3': 'value3'}},
+            '4': {'data': {'key4': 'value4'}},
         }
         assert db.put(ops) == (True, None, {str(_): True for _ in range(1, 5)})
         assert db.count() == (True, None, 4)
@@ -360,7 +360,7 @@ class TestDatabaseAPI:
             'foo': {'x': {'y0': 0, 'y1': 1}},
             'bar': {'a': {'b0': 2, 'b1': 3}},
         }
-        ops = {'1': {'exists': False, 'data': doc}}
+        ops = {'1': {'data': doc}}
         assert db.put(ops) == (True, None, {'1': True})
         assert db.count() == (True, None, 1)
             
@@ -476,7 +476,7 @@ class TestDatabaseAPI:
         assert db._checkPut(ops) is False
 
         # AID is not a string.
-        ops = {5: {'exists': True, 'data': {}}}
+        ops = {5: {'data': {}}}
         assert db._checkPut(ops) is False
 
     def test_invalid_args_remove(self):
@@ -621,7 +621,7 @@ class TestDatabaseAPI:
             'foo': {'a': 1, 'b': 2},
             'bar': {'c': 3, 'd': 2},
         }
-        ops = {'1': {'exists': False, 'data': doc}}
+        ops = {'1': {'data': doc}}
         assert db.put(ops) == (True, None, {'1': True})
 
         ops = {
