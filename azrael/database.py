@@ -417,11 +417,8 @@ class DatabaseMongo(DatastoreBase):
             data = copy.deepcopy(data)
             data['aid'] = aid
             if exists:
-                r = self.db.update({'aid': aid}, data, upsert=False)
-                if r['updatedExisting']:
-                    ret[aid] = True
-                else:
-                    ret[aid] = False
+                r = self.db.replace_one({'aid': aid}, data, upsert=False)
+                ret[aid] = (r.matched_count > 0)
             else:
                 r = self.db.update_one(
                     {'aid': aid},
