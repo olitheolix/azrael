@@ -179,6 +179,10 @@ class DatastoreBase:
     def __init__(self, name: tuple):
         self.dbname = name
 
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
+
     def reset(self):
         raise NotImplementedError
 
@@ -222,6 +226,7 @@ class DatabaseInMemory(DatastoreBase):
 
     def put(self, ops: dict):
         if _checkPut(ops) is False:
+            self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
         ret = {}
@@ -287,6 +292,7 @@ class DatabaseInMemory(DatastoreBase):
 
     def mod(self, ops):
         if _checkMod(ops) is False:
+            self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
         ret = {}
@@ -347,6 +353,7 @@ class DatabaseInMemory(DatastoreBase):
         
     def getOne(self, aid, prj=[]):
         if _checkGet([aid], prj) is False:
+            self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
         doc = self.content.get(aid, None)
@@ -359,6 +366,7 @@ class DatabaseInMemory(DatastoreBase):
 
     def getMulti(self, aids, prj=[]):
         if _checkGet(aids, prj) is False:
+            self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
         docs = {aid: self.content[aid] for aid in aids if aid in self.content}
@@ -370,6 +378,7 @@ class DatabaseInMemory(DatastoreBase):
 
     def getAll(self, prj=[]):
         if _checkGetAll(prj) is False:
+            self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
         docs = copy.deepcopy(self.content)
@@ -399,6 +408,7 @@ class DatabaseMongo(DatastoreBase):
 
     def put(self, ops: dict):
         if _checkPut(ops) is False:
+            self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
         ret = {}
@@ -426,6 +436,7 @@ class DatabaseMongo(DatastoreBase):
 
     def mod(self, ops):
         if _checkMod(ops) is False:
+            self.logit.warning('Invalid MOD argument')
             return RetVal(False, 'Argument error', None)
 
         ret = {}
@@ -463,6 +474,7 @@ class DatabaseMongo(DatastoreBase):
 
     def remove(self, aids: (tuple, list)):
         if _checkRemove(aids) is False:
+            self.logit.warning('Invalid REMOVE argument')
             return RetVal(False, 'Argument error', None)
 
         ret = self.db.delete_many({'aid': {'$in': aids}})
@@ -474,6 +486,7 @@ class DatabaseMongo(DatastoreBase):
 
     def getOne(self, aid, prj=[]):
         if _checkGet([aid], prj) is False:
+            self.logit.warning('Invalid GETONE argument')
             return RetVal(False, 'Argument error', None)
 
         prj = {'.'.join(_): True for _ in prj}
@@ -492,6 +505,7 @@ class DatabaseMongo(DatastoreBase):
 
     def getMulti(self, aids, prj=[]):
         if _checkGet(aids, prj) is False:
+            self.logit.warning('Invalid GETMULTI argument')
             return RetVal(False, 'Argument error', None)
 
         prj = {'.'.join(_): True for _ in prj}
@@ -505,6 +519,7 @@ class DatabaseMongo(DatastoreBase):
     # fixme: don't use a list default argument
     def getAll(self, prj=[]):
         if _checkGetAll(prj) is False:
+            self.logit.warning('Invalid GETALL argument')
             return RetVal(False, 'Argument error', None)
 
         prj = {'.'.join(_): True for _ in prj}
