@@ -29,7 +29,6 @@ from azrael.aztypes import typecheck, RetVal
 logit = logging.getLogger('azrael.' + __name__)
 
 
-@typecheck
 def init():
     """
     Flush the database.
@@ -79,11 +78,24 @@ def getUniqueObjectIDs(numIDs: int):
         return RetVal(True, None, newIDs)
 
 
-def _checkGet(aids, prj):
+def _checkGet(aids: (tuple, list), prj: list):
+    """
+    Return True if the ``aids`` and ``prj`` are valid input to the
+    get{One, Multi, All} methods.
+
+    Example:: _checkGet(['foo', 'bar'], [('a', 'b')])
+
+    :param str aids: the objec ID.
+    :param list[list] prj: list of (nested) JSON keys.
+    :return: bool
+    """
     try:
+        # Each AID must be a string.
         for aid in aids:
             assert isinstance(aid, str)
 
+        # Prj can be None. If it is not then it must be a list of lists/tuples.
+        # Each of these inner lists/tuples must denote a valid JSON key.
         if prj is not None:
             assert isinstance(prj, (list, tuple))
             for jsonkey in prj:
@@ -93,7 +105,17 @@ def _checkGet(aids, prj):
     return True
 
 
-def _checkGetAll(prj):
+def _checkGetAll(prj: list):
+    """
+    Return True if ``prj`` is valid.
+
+    A projection is valid iff all its constitents are valid JSON keys.
+
+    Example:: _checkGetAll([('x', 'y')])
+
+    :param list prj: list of projection keys.
+    :return: bool
+    """
     try:
         if prj is not None:
             assert isinstance(prj, (list, tuple))
@@ -104,7 +126,18 @@ def _checkGetAll(prj):
     return True
 
 
-def _checkPut(ops):
+def _checkPut(ops: dict):
+    """
+    Return True if ``ops`` is valid input for {'put', 'replace'}.
+
+    All keys in the ``ops`` dictionary must be strings. All the values must be
+    dictionaries.
+
+    Example:: _checkPut({'1': {'data': {'foo': 1}}})
+
+    :param dict ops: put/replace operations.
+    :return: bool
+    """
     try:
         for key, value in ops.items():
             assert isinstance(key, str)
@@ -115,23 +148,43 @@ def _checkPut(ops):
 
 
 def _checkMod(ops):
+    """
+    Return True if ``ops`` is valid input for 'mod'.
+
+    All keys in the ``ops`` dictionary must be strings. All the values must be
+    dictionaries with the folling keys: 'inc', 'set', 'unset', 'exists'.
+
+    See unit tests for examples.
+
+    :param dict ops: mod operations.
+    :return: bool
+    """
     try:
         for key, value in ops.items():
+            # The key is the AID and must thus be a string.
             assert isinstance(key, str)
 
+            # The 'inc' field must be a dictionary. Its keys must be valid JSON
+            # keys and its values must be numbers only.
             assert isinstance(value['inc'], dict)
             for k_inc, v_inc in value['inc'].items():
                 assert _validJsonKey(k_inc)
                 assert isinstance(v_inc, (float, int))
 
+            # The 'set' field must be a dictionary. All its keys must be valid
+            # JSON keys.
             assert isinstance(value['set'], dict)
             for k_set, v_set in value['set'].items():
                 assert _validJsonKey(k_set)
 
+            # The 'unset' field must be a dictionary. All its keys must be
+            # valid JSON keys.
             assert isinstance(value['unset'], (tuple, list))
             for v_unset in value['unset']:
                 assert _validJsonKey(v_unset)
 
+            # The 'exists' field must be a dictionary. All its keys must be
+            # valid JSON keys and all its values must be Bools.
             assert isinstance(value['exists'], dict)
             for k_exists, v_exists in value['exists'].items():
                 assert _validJsonKey(k_exists)
@@ -142,6 +195,14 @@ def _checkMod(ops):
 
 
 def _checkRemove(aids):
+    """
+    Return True if all ``aids`` are strings.
+
+    Example:: _checkRemove(['foo', 'bar'])
+
+    :param list aids: The AIDS to remove.
+    :return: bool
+    """
     try:
         for aid in aids:
             assert isinstance(aid, str)
@@ -150,6 +211,7 @@ def _checkRemove(aids):
     return True
 
 
+@typecheck
 def _validJsonKey(name: (list, tuple)):
     """
     Return True if ``name`` constitutes a valid (nested) key.
@@ -177,7 +239,21 @@ def _validJsonKey(name: (list, tuple)):
 
 
 class DatastoreBase:
+    """
+    Base class for all Datastores.
+
+    This class merely specifies the API.
+
+    :param tuple[str, str] name: (db_name, collection_name)
+    """
     def __init__(self, name: tuple):
+        # Sanity check name. Must be a tuple of two strings.
+        assert len(name) == 2
+        assert isinstance(name[0], str)
+        assert isinstance(name[1], str)
+
+        # Store the database/collection name (or whatever terminology the
+        # database uses).
         self.dbname = name
 
         # Create a Class-specific logger.
@@ -185,37 +261,158 @@ class DatastoreBase:
         self.logit = logging.getLogger(name)
 
     def reset(self):
+        """
+        Flush the database.
+        """
         raise NotImplementedError
 
     def getOne(self, aid, prj=None):
+        """
+        Return the document with ``aid``, or None if it does not exist.
+
+        :param str aid: AID of object.
+        :param list prj: only return the fields specified in ``prj``.
+        :return: document dictionary.
+        """
         raise NotImplementedError
 
     def getMulti(self, aids, prj=None):
+        """
+        Return the documents with ``aid``.
+
+        Return the documents in a dictionary. The keys are the AIDs. If an AID
+        was not found then no such key will be present in the returned
+        dictionary.
+
+        The `ok` flag indicates either malformed arguments or a database error.
+        A query for non-existing objects will still return ok=True.
+
+        :param str aid: AID of object.
+        :param list prj: only return the fields specified in ``prj``.
+        :return: document dictionary.
+        """
         raise NotImplementedError
 
     def getAll(self, prj=None):
+        """
+        Return all documents in the database in a dictionary.
+
+        The keys in the return dictionary correspond to the AIDs.
+
+        The `ok` flag indicates either malformed arguments or a database error.
+
+        :param list prj: only return the fields specified in ``prj``.
+        :return: document dictionary.
+        """
         raise NotImplementedError
 
     def put(self, ops: dict):
+        """
+        Insert a not yet existing document into the data store.
+
+        This method does nothing to already existing documents in the database
+        that have the same AID.
+
+        The boolean values in the returned dictionary state whether the
+        document was inserted or not.
+
+        Example::
+
+            doc = {'key1': 'value1'}
+            db.put({'1': {'data': doc}}) == (True, None, {'1': True})
+
+        :param dict ops: insert operations.
+        :return: dict
+        """
         raise NotImplementedError
 
-    def mod(self, ops):
+    def replace(self, ops: dict):
+        """
+        Replace existing documents.
+
+        If one of the documents specified in ``ops`` does not exist then it is
+        ignored (ie not inserted).
+
+        The boolean values in the returned dictionary state whether the
+        document was replaced or not.
+
+        Example::
+
+            doc = {'key1': 'value1'}
+            db.replace({'1': {'data': doc}}) == (True, None, {'1': True})
+
+        :param dict ops: insert operations.
+        :return: dict
+        """
+        raise NotImplementedError
+
+    def mod(self, ops: dict):
+        """
+        Modify the documents specified in ``ops``.
+
+        The returned boolean dictionary states which documents were modified
+        (unmodified documents did not exist).
+
+        Example::
+
+            ops = {
+                '1': {
+                    'inc': {('foo', 'a'): 1, ('bar', 'c'): -1},
+                    'set': {('foo', 'b'): 20},
+                    'unset': [('bar', 'd')],
+                    'exists': {('bar', 'd'): True},
+                }
+            }
+            db.mod(ops) == (True, None, {'1': True})
+
+        :param dict ops: document specific modifications.
+        :return: dict of bools
+        """
         raise NotImplementedError
 
     def remove(self, aids: (tuple, list)):
+        """
+        Remove the documents with the specified ``aids``.
+
+        Return the number of actually removed documents.
+
+        :param list aids: list of AID strings.
+        :return: int number of actually removed objects.
+        """
         raise NotImplementedError
 
     def count(self):
+        """
+        Return the number of documents currently in the data store.
+
+        :return: int #documents in data store.
+        """
         raise NotImplementedError
 
     def allKeys(self):
+        """
+        Return a list of all AIDs currently in the data store.
+
+        :return: list[str] AIDs.
+        """
         raise NotImplementedError
 
 
 class DatabaseInMemory(DatastoreBase):
+    """
+    Implements the Datastore as a simple dictionary.
+
+    This class is currently only useful for testing because different instances
+    operate on their own copy of the database.
+
+    The main purpose of this class is to (eventually) speed up the unit tests,
+    and have a reference implementation for the ideal Datastore for Azrael.
+    """
+    @typecheck
     def __init__(self, name: tuple):
         super().__init__(name)
-        self.dbname = name
+
+        # Setup the database dictionary.
         self.reset()
 
     def reset(self):
