@@ -335,12 +335,12 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     positions = positions * cube_size + center
 
     # Specify the initial state for each cube and spawn them.
-    print('Spawning {} objects: '.format(len(allObjs)), end='', flush=True)
     t0 = time.time()
     allObjs = [
         {'templateID': tID_cube[idx], 'rbs': {'position': pos.tolist()}}
         for idx, pos in enumerate(positions)
     ]
+    print('Spawning {} objects: '.format(len(allObjs)), end='', flush=True)
     ret = client.spawn(allObjs)
     if not ret.ok:
         print('** Error:')
