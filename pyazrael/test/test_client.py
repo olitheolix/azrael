@@ -152,7 +152,7 @@ class TestClient:
         client = self.clients[client_type]
 
         # Parameters and constants for this test.
-        objID_1, objID_2 = 1, 2
+        objID_1, objID_2 = '1', '2'
         templateID_0 = '_templateEmpty'
         templateID_1 = '_templateBox'
 
@@ -173,7 +173,7 @@ class TestClient:
         assert ret.ok and (ret.data == templateID_1)
 
         # Attempt to retrieve a non-existing object.
-        assert not client.getTemplateID(100).ok
+        assert not client.getTemplateID('100').ok
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_create_fetch_template(self, client_type):
@@ -253,7 +253,7 @@ class TestClient:
         }
 
         # Attempt to query the geometry of a non-existing object.
-        assert client.getFragments([1]) == (True, None, {1: None})
+        assert client.getFragments(['1']) == (True, None, {'1': None})
 
         # Define a new template, add it to Azrael, spawn it, and record its
         # object ID.
@@ -299,7 +299,7 @@ class TestClient:
         client = self.clients[client_type]
 
         # Constants and parameters for this test.
-        objID, templateID = 1, '_templateEmpty'
+        objID, templateID = '1', '_templateEmpty'
 
         # Spawn a new object from templateID. The new object must have objID=1.
         init = {'templateID': templateID,
@@ -318,7 +318,7 @@ class TestClient:
         assert (ret.ok, ret.data) == (True, [objID])
 
         # Attempt to delete a non-existing object. This must silently fail.
-        assert client.removeObject(100).ok
+        assert client.removeObject('100').ok
         ret = client.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID])
 
@@ -336,12 +336,12 @@ class TestClient:
         client = self.clients[client_type]
 
         # Constants and parameters for this test.
-        templateID, objID_1 = '_templateEmpty', 1
+        templateID, objID_1 = '_templateEmpty', '1'
 
         # Query the state variables for a non existing object.
-        objID = 100
-        assert client.getRigidBodies(objID) == (True, None, {objID: None})
-        del objID
+        tmp_ID = '100'
+        assert client.getRigidBodies(tmp_ID) == (True, None, {tmp_ID: None})
+        del tmp_ID
 
         # Instruct Clerk to spawn a new object. Its objID must be '1'.
         pos, vlin = (0, 1, 2), (-3, 4, -5)
@@ -357,7 +357,7 @@ class TestClient:
         # The body parameters of the new object must match the inital state
         # (plus the tweaks provided to the spawn command).
         ret = client.getRigidBodies(objID_1)
-        assert ret.ok and (set(ret.data.keys()) == {1})
+        assert ret.ok and (set(ret.data.keys()) == {objID_1})
         assert ret.data[objID_1]['rbs'].position == pos
         assert ret.data[objID_1]['rbs'].velocityLin == vlin
 
@@ -383,7 +383,7 @@ class TestClient:
         client = self.clients[client_type]
 
         # Constants and parameters for this test.
-        templateID, objID_1 = '_templateEmpty', 1
+        templateID, objID_1 = '_templateEmpty', '1'
 
         # So far no objects have been spawned.
         ret = client.getAllObjectIDs()
@@ -415,7 +415,7 @@ class TestClient:
         leo = getLeonard()
 
         # Parameters and constants for this test.
-        objID_1 = 1
+        objID_1 = '1'
         pos_parent = [1, 2, 3]
         vel_parent = [4, 5, 6]
 
@@ -494,7 +494,7 @@ class TestClient:
         # Send the commands and ascertain that the returned object IDs now
         # exist in the simulation. These IDs must be '2' and '3'.
         ret = client.controlParts(objID_1, cmd_b, cmd_f)
-        id_2, id_3 = 2, 3
+        id_2, id_3 = '2', '3'
         assert (ret.ok, ret.data) == (True, [id_2, id_3])
 
         # Query the state variables of the objects spawned by the factories.
@@ -553,7 +553,7 @@ class TestClient:
         # Create a template with two fragments and spawn it.
         # ---------------------------------------------------------------------
         # Convenience.
-        objID = 1
+        objID = '1'
 
         # Add a new template and spawn it.
         fraw, fdae = getFragRaw(), getFragDae()
@@ -736,7 +736,7 @@ class TestClient:
             {'templateID': '_templateSphere', 'rbs': {'position': pos_2}},
             {'templateID': '_templateSphere', 'rbs': {'position': pos_3}}
         ]
-        id_1, id_2, id_3 = 1, 2, 3
+        id_1, id_2, id_3 = '1', '2', '3'
         assert client.spawn(new_objs) == (True, None, [id_1, id_2, id_3])
 
         # Define the constraints.
@@ -787,7 +787,7 @@ class TestClient:
             {'templateID': '_templateSphere',
              'rbs': {'position': pos_b}},
         ]
-        id_1, id_2 = 1, 2
+        id_1, id_2 = '1', '2'
         assert client.spawn(new_objs) == (True, None, [id_1, id_2])
 
         # Verify the position of the bodies.
@@ -841,17 +841,17 @@ class TestClient:
         client = self.clients[client_type]
 
         # Spawn two objects.
-        id_1, id_2 = 1, 2
+        id_1, id_2, id_fake = '1', '2', '10'
         init = {'templateID': '_templateSphere'}
         assert client.spawn([init, init]) == (True, None, [id_1, id_2])
 
         # Update the custom data for an existing- and a non-existing object.
-        assert client.setCustomData({id_1: 'foo', 10: 'bar'}) == (True, None, [10])
+        assert client.setCustomData({id_1: 'foo', id_fake: 'bar'}) == (True, None, [id_fake])
 
         # Query two existing- and one non-existing object.
-        ret = client.getCustomData([id_1, id_2, 10])
+        ret = client.getCustomData([id_1, id_2, id_fake])
         assert ret.ok
-        assert ret.data == ({id_1: 'foo', id_2: '', 10: None})
+        assert ret.data == ({id_1: 'foo', id_2: '', id_fake: None})
 
         # Query all at once.
         assert client.getCustomData(None) == client.getCustomData([id_1, id_2])

@@ -266,7 +266,7 @@ class Client():
 
         Use ``getFragments`` to query just the geometry.
 
-        :param list templateIDs: return the Template for these IDs.
+        :param list[str] templateIDs: return the Template for these IDs.
         :return: Template data and the URL of the fragments.
         :rtype: dict
         """
@@ -297,7 +297,7 @@ class Client():
         # Send to Clerk.
         return self.serialiseAndSend('spawn', {'newObjects': new_objects})
 
-    def controlParts(self, objID: int, cmd_boosters: dict, cmd_factories: dict):
+    def controlParts(self, objID: str, cmd_boosters: dict, cmd_factories: dict):
         """
         Issue control commands to object parts.
 
@@ -309,7 +309,7 @@ class Client():
         ``parts`` module. The commands themselves must be ``types.CmdFactory``
         instances.
 
-        :param int objID: object ID.
+        :param str objID: object ID.
         :param dict cmd_booster: booster commands.
         :param dict cmd_factory: factory commands.
         :return: list of IDs of objects spawned by factories (if any).
@@ -333,13 +333,13 @@ class Client():
         return self.serialiseAndSend('control_parts', payload)
 
     @typecheck
-    def removeObject(self, objID: int):
+    def removeObject(self, objID: str):
         """
         Remove ``objID`` from the physics simulation.
 
         ..note:: this method will succeed even if there is no ``objID``.
 
-        :param int objID: request to remove this object.
+        :param str objID: request to remove this object.
         :return: Success
         """
         return self.serialiseAndSend('remove_object', {'objID': objID})
@@ -360,7 +360,7 @@ class Client():
                 {name_2: {'fragtype': 'dae', 'url_frag': 'http:...'}},
             }
 
-        :param list[int] objIDs: list of ``objIDs``.
+        :param list[str] objIDs: list of ``objIDs``.
         :return: Meta data for all fragments of all ``objIDs``.
         :rtype: dict
 
@@ -371,7 +371,7 @@ class Client():
 
         # Unpack the response: convert all objIDs to integers becauseJSON
         # always converts integer keys in hash maps to strings.
-        data = {int(k): v for (k, v) in ret.data.items()}
+        data = {k: v for (k, v) in ret.data.items()}
         return ret._replace(data=data)
 
     @typecheck
@@ -408,24 +408,24 @@ class Client():
         return self.serialiseAndSend('set_fragments', {'fragments': cmd})
 
     @typecheck
-    def getRigidBodies(self, objIDs: (int, list, tuple)):
+    def getRigidBodies(self, objIDs: (str, list, tuple)):
         """
         Return the State Variables for all ``objIDs`` in a dictionary.
 
-        :param list/int objIDs: query the bodies for these objects
+        :param list/str objIDs: query the bodies for these objects
         :return: dictionary of State Variables.
         :rtype: dict
         """
         # If the user requested only a single State Variable wrap it into a
         # list to avoid special case treatment.
         if objIDs is not None:
-            if isinstance(objIDs, int):
+            if isinstance(objIDs, str):
                 objIDs = [objIDs]
 
             # Sanity check: all objIDs must be valid.
             for objID in objIDs:
-                assert isinstance(objID, int)
-                assert objID >= 0
+                assert isinstance(objID, str)
+                assert objID != ''
 
         # Pass on the request to Clerk.
         payload = {'objIDs': objIDs}
@@ -438,11 +438,11 @@ class Client():
         for objID, data in ret.data.items():
             if data is None:
                 # Clerk could not find this particular object.
-                out[int(objID)] = None
+                out[objID] = None
                 continue
 
             # Replace the original 'rbs' and 'frag' entries with the new ones.
-            out[int(objID)] = {'rbs': aztypes.RigidBodyData(**data['rbs'])}
+            out[objID] = {'rbs': aztypes.RigidBodyData(**data['rbs'])}
         return ret._replace(data=out)
 
     @typecheck
@@ -467,7 +467,7 @@ class Client():
         return self.serialiseAndSend('set_rigid_bodies', payload)
 
     @typecheck
-    def getObjectStates(self, objIDs: (list, tuple, int)):
+    def getObjectStates(self, objIDs: (list, tuple, str)):
         """
         Return the object states for all ``objIDs`` in a dictionary.
 
@@ -478,32 +478,29 @@ class Client():
         # If the user requested only a single State Variable wrap it into a
         # list to avoid special case treatment.
         if objIDs is not None:
-            if isinstance(objIDs, int):
+            if isinstance(objIDs, str):
                 objIDs = [objIDs]
 
             # Sanity check: all objIDs must be valid.
             for objID in objIDs:
-                assert isinstance(objID, int)
-                assert objID >= 0
+                assert isinstance(objID, str)
+                assert objID != ''
 
         # Pass on the request to Clerk.
         payload = {'objIDs': objIDs}
         ret = self.serialiseAndSend('get_object_states', payload)
         if not ret.ok:
             return ret
-
-        # Unpack the response and convert all keys to integers.
-        data = {int(k): v for (k, v) in ret.data.items()}
-        return ret._replace(data=data)
+        return ret
 
     @typecheck
-    def getTemplateID(self, objID: int):
+    def getTemplateID(self, objID: str):
         """
         Return the template ID from which ``objID`` was spawned.
 
         Return an error if ``objID`` does not exist in the simulation.
 
-        :param int objID: ID of spawned object.
+        :param str objID: ID of spawned object.
         :return: template ID
         :rtype: bytes
         """
@@ -520,7 +517,7 @@ class Client():
 
     @typecheck
     def setForce(self,
-                 objID: int,
+                 objID: str,
                  force: (tuple, list),
                  position: (tuple, list)=(0, 0, 0)):
         """
@@ -528,7 +525,7 @@ class Client():
 
         The ``position`` is relative to the object's center of mass.
 
-        :param int objID: apply ``force`` to this object
+        :param str objID: apply ``force`` to this object
         :param vec3 force: the actual force vector (3 elements).
         :param vec3 position: position of the force relative to body.
         :return: Success
@@ -633,12 +630,12 @@ class Client():
         Non-existing objects are silently ignored, but their ID will be
         returned to the caller.
 
-        :param dict[int: str] data: new content for 'custom' field in object.
+        :param dict[str: str] data: new content for 'custom' field in object.
         :return: List of invalid object IDs.
         """
         # Sanity checks.
         for k, v in data.items():
-            assert isinstance(k, int)
+            assert isinstance(k, str)
             assert isinstance(v, str)
 
         return self.serialiseAndSend('set_custom', {'data': data})
@@ -656,13 +653,10 @@ class Client():
         # Sanity checks: all object IDs must be integers.
         if objIDs is not None:
             for objID in objIDs:
-                assert isinstance(objID, int)
+                assert isinstance(objID, str)
 
         # Send to Clerk and wait for response.
         ret = self.serialiseAndSend('get_custom', {'objIDs': objIDs})
         if not ret.ok:
             return ret
-
-        # Convert the IDs to integers.
-        data = {int(k): v for (k, v) in ret.data.items()}
-        return ret._replace(data=data)
+        return ret

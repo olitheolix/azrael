@@ -477,19 +477,19 @@ class ConstraintMeta(_ConstraintMeta):
 
     :param str aid: Constraint ID.
     :param str contype: constraint type (eg. 'P2P').
-    :param int rb_a: First rigid body this constraint is connected to.
-    :param int rb_b: Second rigid body this constraint is connected to.
+    :param str rb_a: First rigid body this constraint is connected to.
+    :param str rb_b: Second rigid body this constraint is connected to.
     :param condata: specific information about the constraint.
     :return: Compiled `_ConstraintMeta` instance.
     :raises: TypeError if the input does not compile to the data type.
     """
     @typecheck
-    def __new__(cls, aid: str, contype: str, rb_a: int, rb_b: int,
+    def __new__(cls, aid: str, contype: str, rb_a: str, rb_b: str,
                 condata: (tuple, list, dict)):
         try:
             # Verify the inputs.
             assert isAIDStringValid(aid)
-            assert (rb_a >= 0) and (rb_b >= 0)
+            assert (rb_a != '') and (rb_b != '')
 
             if contype.upper() == 'P2P':
                 if isinstance(condata, dict):
