@@ -107,7 +107,6 @@ def _checkPut(ops):
         for key, value in ops.items():
             assert isinstance(key, str)
             assert isinstance(value['data'], dict)
-            assert isinstance(value['exists'], bool)
     except (KeyError, AssertionError):
         return False
     return True
@@ -231,11 +230,23 @@ class DatabaseInMemory(DatastoreBase):
 
         ret = {}
         for aid, op in ops.items():
-            exists, data = op['exists'], op['data']
-            if exists and aid in self.content:
+            data = op['data']
+            if aid not in self.content:
                 self.content[aid] = data
                 ret[aid] = True
-            elif not exists and aid not in self.content:
+            else:
+                ret[aid] = False
+        return RetVal(True, None, ret)
+
+    def replace(self, ops: dict):
+        if _checkPut(ops) is False:
+            self.logit.warning('Invalid PUT argument')
+            return RetVal(False, 'Argument error', None)
+
+        ret = {}
+        for aid, op in ops.items():
+            data = op['data']
+            if aid in self.content:
                 self.content[aid] = data
                 ret[aid] = True
             else:
@@ -411,15 +422,14 @@ class DatabaseMongo(DatastoreBase):
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
+        print('check')
         ret = {}
         for aid, op in ops.items():
-            exists, data = op['exists'], op['data']
+            data = op['data']
             data = copy.deepcopy(data)
             data['aid'] = aid
-            if exists:
-                r = self.db.replace_one({'aid': aid}, data, upsert=False)
-                ret[aid] = (r.matched_count > 0)
-            else:
+
+            if True:
                 r = self.db.update_one(
                     {'aid': aid},
                     {'$setOnInsert': data},
@@ -429,6 +439,21 @@ class DatabaseMongo(DatastoreBase):
                     ret[aid] = False
                 else:
                     ret[aid] = True
+        return RetVal(True, None, ret)
+
+    def replace(self, ops: dict):
+        if _checkPut(ops) is False:
+            self.logit.warning('Invalid PUT argument')
+            return RetVal(False, 'Argument error', None)
+
+        ret = {}
+        for aid, op in ops.items():
+            data = op['data']
+            data = copy.deepcopy(data)
+            data['aid'] = aid
+            if True:
+                r = self.db.replace_one({'aid': aid}, data, upsert=False)
+                ret[aid] = (r.matched_count > 0)
         return RetVal(True, None, ret)
 
     def mod(self, ops):

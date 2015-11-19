@@ -177,65 +177,67 @@ class TestDatabaseAPI:
     @pytest.mark.parametrize('clsDatabase', allEngines)
     def test_put(self, clsDatabase):
         """
-        Test all four possible cases when inserting documents, depending on the
-        'exists' parameter and whether or not the corresponding document is
-        already in the database.
+        Attempt to insert new documents. This must succeed when the database
+        does not yet contain an object with the same AID. Otherwise the
+        database content must not be modified.
         """
         db = clsDatabase(name=('test1', 'test2'))
 
         # ---------------------------------------------------------------------
-        # Empty database: unconditonal put must succeed.
+        # Put must succeed when no document with the same ID exists in database.
         # ---------------------------------------------------------------------
         
-        # Put unconditionally. Must always succeed.
         assert db.reset().ok and db.count().data == 0
-        ops = {'1': {'exists': False, 'data': {'key1': 'value1'}}}
+        ops = {'1': {'data': {'key1': 'value1'}}}
         assert db.put(ops) == (True, None, {'1': True})
         assert db.getOne('1') == (True, None, {'key1': 'value1'})
 
         # ---------------------------------------------------------------------
-        # Empty database: conditional put must fail.
+        # Put must fail when no document with the same ID exists in database.
+        # ---------------------------------------------------------------------
+
+        # Pre-fill database with one document.
+        assert db.reset().ok and db.count().data == 0
+        ops = {'1': {'data': {'key1': 'value1'}}}
+        assert db.put(ops) == (True, None, {'1': True})
+        assert db.getOne('1') == (True, None, {'key1': 'value1'})
+
+        # Put must not return an error but also not modify the document.
+        ops = {'1': {'data': {'key2': 'value2'}}}
+        assert db.put(ops) == (True, None, {'1': False})
+        assert db.getOne('1') == (True, None, {'key1': 'value1'})
+
+    @pytest.mark.parametrize('clsDatabase', allEngines)
+    def test_replace(self, clsDatabase):
+        """
+        Attempt to replace existing and non-existing documents.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # ---------------------------------------------------------------------
+        # Replacing a non-existing document must do nothing.
         # ---------------------------------------------------------------------
 
         # Overwrite if exists. Do nothing otherwise. Since the database is
         # empty nothing must happen.
         assert db.reset().ok and db.count().data == 0
-        ops = {'1': {'exists': True, 'data': {'key1': 'value1'}}}
-        assert db.put(ops) == (True, None, {'1': False})
+        ops = {'1': {'data': {'key1': 'value1'}}}
+        assert db.replace(ops) == (True, None, {'1': False})
         assert db.getOne('1') == (False, None, None)
 
         # ---------------------------------------------------------------------
-        # Non-empty database. Our command specifies that the document must not
-        # yet exist. Since it alrady does the update must fail and the original
-        # document must prevail.
+        # Replacing an existing document must succeed.
         # ---------------------------------------------------------------------
 
-        # Put one document into database.
+        # Pre-fill database with one document.
         assert db.reset().ok and db.count().data == 0
-        ops = {'1': {'exists': False, 'data': {'key1': 'value1'}}}
+        ops = {'1': {'data': {'key1': 'value1'}}}
         assert db.put(ops) == (True, None, {'1': True})
         assert db.getOne('1') == (True, None, {'key1': 'value1'})
 
-        # Put unconditionally. Must always succeed and replace the current one.
-        ops = {'1': {'exists': False, 'data': {'key2': 'value2'}}}
-        assert db.put(ops) == (True, None, {'1': False})
-        assert db.getOne('1') == (True, None, {'key1': 'value1'})
-
-        # ---------------------------------------------------------------------
-        # Non-empty database. Our command specifies that the document must
-        # already exist. Since it does the update must proceed and overwrite
-        # the original document.
-        # ---------------------------------------------------------------------
-
-        # Put one document into database.
-        assert db.reset().ok and db.count().data == 0
-        ops = {'1': {'exists': False, 'data': {'key1': 'value1'}}}
-        assert db.put(ops) == (True, None, {'1': True})
-        assert db.getOne('1') == (True, None, {'key1': 'value1'})
-
-        # Conditional 'put'. Must not overwrite the document.
-        ops = {'1': {'exists': True, 'data': {'key2': 'value2'}}}
-        assert db.put(ops) == (True, None, {'1': True})
+        # Replace the existing document with a new one.
+        ops = {'1': {'data': {'key2': 'value2'}}}
+        assert db.replace(ops) == (True, None, {'1': True})
         assert db.getOne('1') == (True, None, {'key2': 'value2'})
 
     @pytest.mark.parametrize('clsDatabase', allEngines)
@@ -249,18 +251,19 @@ class TestDatabaseAPI:
         """
         db = clsDatabase(name=('test1', 'test2'))
 
-        # Empty database: unconditonal put must succeed.
+        # Empty database: put must insert a new document.
         assert db.reset().ok and db.count().data == 0
-        ops = {'1': {'exists': False, 'data': {'key1': 'value1'}}}
+        ops = {'1': {'data': {'key1': 'value1'}}}
         ret = db.put(ops)
         assert ret.ok is True
         assert ret.msg is None
         assert ret.data['1'] is True
 
-        # Empty database: conditional put must fail.
+        # Empty database: replace must not return an error but also not insert
+        # a new document.
         assert db.reset().ok and db.count().data == 0
-        ops = {'1': {'exists': True, 'data': {'key1': 'value1'}}}
-        ret = db.put(ops)
+        ops = {'1': {'data': {'key1': 'value1'}}}
+        ret = db.replace(ops)
         assert ret.ok is True
         assert ret.msg is None
         assert ret.data['1'] is False
@@ -465,15 +468,11 @@ class TestDatabaseAPI:
         db = database
 
         # Valid.
-        ops = {'1': {'exists': False, 'data': {'foo': 1}}}
+        ops = {'1': {'data': {'foo': 1}}}
         assert db._checkPut(ops) is True
 
         # 'data' is not a dict.
-        ops = {'1': {'exists': False, 'data': 'foo'}}
-        assert db._checkPut(ops) is False
-
-        # 'exists' is not a bool
-        ops = {'1': {'exists': 2, 'data': {}}}
+        ops = {'1': {'data': 'foo'}}
         assert db._checkPut(ops) is False
 
         # AID is not a string.
