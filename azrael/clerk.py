@@ -420,10 +420,7 @@ class Clerk(config.AzraelProcess):
                         'templateID': template.aid}
 
                 # Compile the DB ops for this template.
-                ops[template.aid] = {
-                    'exists': False,
-                    'data': data,
-                }
+                ops[template.aid] = {'data': data}
         # use with: mynewdb.put(ops)
         ret = db2.put(ops)
         if False in ret.data.values():
@@ -712,7 +709,7 @@ class Clerk(config.AzraelProcess):
 
                 # Compile the datastore command to add the template to the
                 # instance database.
-                dbops[objID] = {'exists': False, 'data': doc}
+                dbops[objID] = {'data': doc}
                 del templateID, objID, doc
 
             # Return immediately if there are no objects to spaw.
