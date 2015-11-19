@@ -44,6 +44,8 @@ class TestBulletAPI:
         """
         Send/retrieve object to/from Bullet and verify the integrity.
         """
+        aid = '0'
+
         # Define a set of collision shapes.
         pos = (0, 1, 2)
         rot = (0, 0, 0, 1)
@@ -70,14 +72,15 @@ class TestBulletAPI:
         assert not ret.ok
 
         # Send object to Bullet and request it back.
-        sim.setRigidBodyData(0, obj_a)
-        ret = sim.getRigidBodyData(0)
+        sim.setRigidBodyData(aid, obj_a)
+        ret = sim.getRigidBodyData(aid)
         assert (ret.ok, ret.data) == (True, obj_a)
 
     def test_update_object(self):
         """
         Add an object to Bullet, then change its parameters.
         """
+        aid = '0'
         cshapes = {'foo': getCSSphere()}
 
         # Create an object and serialise it.
@@ -96,8 +99,8 @@ class TestBulletAPI:
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Send object to Bullet and request it back.
-        sim.setRigidBodyData(0, obj_a)
-        ret = sim.getRigidBodyData(0)
+        sim.setRigidBodyData(aid, obj_a)
+        ret = sim.getRigidBodyData(aid)
         assert (ret.ok, ret.data) == (True, obj_a)
 
         # Update the object.
@@ -111,8 +114,8 @@ class TestBulletAPI:
             velocityLin=(2.8, 2.0, 2.2),
             velocityRot=(2.4, 2.6, 2.8))
         assert obj_a is not None
-        sim.setRigidBodyData(0, obj_a)
-        ret = sim.getRigidBodyData(0)
+        sim.setRigidBodyData(aid, obj_a)
+        ret = sim.getRigidBodyData(aid)
         assert (ret.ok, ret.data) == (True, obj_a)
 
     @pytest.mark.parametrize('forceFun', ['applyForce', 'applyForceAndTorque'])
@@ -122,7 +125,7 @@ class TestBulletAPI:
         simulation, and verify the object moved correctly.
         """
         # Constants and parameters for this test.
-        objID = 10
+        objID = '10'
         force = np.array([0, 0, 1], np.float64)
         dt, maxsteps = 1.0, 60
 
@@ -172,7 +175,7 @@ class TestBulletAPI:
         Call 'compute' method for non-existing object IDs.
         """
         # Constants and parameters for this test.
-        objID = 10
+        objID = '10'
         dt, maxsteps = 1.0, 60
 
         # Create an object and overwrite the CShape data to obtain a sphere.
@@ -201,7 +204,7 @@ class TestBulletAPI:
         simulation, and verify the object moved correctly.
         """
         # Constants and parameters for this test.
-        objID = 10
+        objID = '10'
         force = np.array([0, 0, 1], np.float64)
         torque = np.array([0, 0, 1], np.float64)
         dt, maxsteps = 1.0, 60
@@ -263,6 +266,8 @@ class TestBulletAPI:
         """
         Remove an object from the Bullet cache.
         """
+        aid = '0'
+
         # Create a spherical object.
         obj_a = getRigidBody()
 
@@ -270,17 +275,17 @@ class TestBulletAPI:
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Request an invalid object ID.
-        ret = sim.getRigidBodyData(0)
+        ret = sim.getRigidBodyData(aid)
         assert not ret.ok
 
         # Send object to Bullet and request it back.
-        sim.setRigidBodyData(0, obj_a)
-        ret = sim.getRigidBodyData(0)
+        sim.setRigidBodyData(aid, obj_a)
+        ret = sim.getRigidBodyData(aid)
         assert (ret.ok, ret.data) == (True, obj_a)
 
         # Delete the object. The attempt to request it afterwards must fail.
-        assert sim.removeRigidBody([0]).ok
-        assert not sim.getRigidBodyData(0).ok
+        assert sim.removeRigidBody([aid]).ok
+        assert not sim.getRigidBodyData(aid).ok
 
     def test_modify_mass(self):
         """
@@ -289,7 +294,7 @@ class TestBulletAPI:
         far.
         """
         # Constants and parameters for this test.
-        objID_a, objID_b = 10, 20
+        objID_a, objID_b = '10', '20'
         pos_a = [+5, 0, 0]
         pos_b = [-5, 0, 0]
         force = np.array([0, 1, 0], np.float64)
@@ -345,7 +350,7 @@ class TestBulletAPI:
         really care how).
         """
         # Constants and parameters for this test.
-        objID_a, objID_b = 10, 20
+        objID_a, objID_b = '10', '20'
         pos_a = [0, 0, 0]
         pos_b = [3, 0, 0]
 
@@ -402,7 +407,7 @@ class TestBulletAPI:
         identify this movement.
         """
         # Constants and parameters for this test.
-        objID_a, objID_b = 10, 20
+        objID_a, objID_b = '10', '20'
         pos_a = [-0.8, -0.8, 0]
         pos_b = [0.8, 0.8, 0]
         p, q = (0, 0, 0), (0, 0, 0, 1)
@@ -458,7 +463,7 @@ class TestBulletAPI:
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Create identical unit spheres at x=+/-1.
-        id_a, id_b = 10, 20
+        id_a, id_b = '10', '20'
         pos_a = (-1, 0, 0)
         pos_b = (1, 0, 0)
         obj_a = getRigidBody(position=pos_a, cshapes={'cssphere': getCSSphere()})
@@ -534,7 +539,7 @@ class TestBulletAPI:
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Create identical unit spheres 10 meters apart.
-        id_a, id_b = 10, 20
+        id_a, id_b = '10', '20'
         pos_a = (-5, 0, 0)
         pos_b = (5, 0, 0)
         obj_a = getRigidBody(position=pos_a, cshapes={'cssphere': getCSSphere()})
@@ -577,7 +582,7 @@ class TestBulletAPI:
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
         # Create to spheres.
-        id_a, id_b = 10, 20
+        id_a, id_b = '10', '20'
         obj_a = getRigidBody(cshapes={'cssphere': getCSSphere()})
         obj_b = getRigidBody(cshapes={'cssphere': getCSSphere()})
 
@@ -614,6 +619,8 @@ class TestBulletAPI:
         that after a long time the box will have come to rest on the infinitely
         large plane.
         """
+        aid_1, aid_2 = '1', '2'
+
         # Instantiate Bullet engine and activate gravity.
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
         sim.setGravity((0, 0, -10))
@@ -627,10 +634,10 @@ class TestBulletAPI:
         assert b_plane is not None
 
         # Add the objects to the simulation and verify their positions.
-        sim.createRigidBody(1, b_plane)
-        sim.createRigidBody(2, b_box)
-        ret_plane = sim.getRigidBodyData(1)
-        ret_box = sim.getRigidBodyData(2)
+        sim.createRigidBody(aid_1, b_plane)
+        sim.createRigidBody(aid_2, b_box)
+        ret_plane = sim.getRigidBodyData(aid_1)
+        ret_box = sim.getRigidBodyData(aid_2)
         assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert ret_box.data.position[2] == 5
@@ -639,14 +646,14 @@ class TestBulletAPI:
         # rest on the surface.
         dt, maxsteps = 1.0, 60
         for ii in range(10):
-            sim.compute([1, 2], dt, maxsteps)
+            sim.compute([aid_1, aid_2], dt, maxsteps)
 
         # Verify that the plane has not moved (because it is static) and that
         # the box has come to rest atop. The position of the box rigid body
         # must be approximately zero, because the plane is at position z=-1,
         # and the half length of the box is 1 Meters.
-        ret_plane = sim.getRigidBodyData(1)
-        ret_box = sim.getRigidBodyData(2)
+        ret_plane = sim.getRigidBodyData(aid_1)
+        ret_box = sim.getRigidBodyData(aid_2)
         assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert abs(ret_box.data.position[2]) < 1E-5
@@ -663,6 +670,8 @@ class TestBulletAPI:
         Setup: place a box above a plane and verify that after a long time the
         box will have come to rest on the infinitely large plane.
         """
+        aid_1, aid_2 = '1', '2'
+
         # Instantiate Bullet engine and activate gravity.
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
         sim.setGravity((0, 0, -10))
@@ -679,10 +688,10 @@ class TestBulletAPI:
         assert b_plane is not None
 
         # Add the objects to the simulation and verify their positions.
-        sim.createRigidBody(1, b_plane)
-        sim.createRigidBody(2, b_box)
-        ret_plane = sim.getRigidBodyData(1)
-        ret_box = sim.getRigidBodyData(2)
+        sim.createRigidBody(aid_1, b_plane)
+        sim.createRigidBody(aid_2, b_box)
+        ret_plane = sim.getRigidBodyData(aid_1)
+        ret_box = sim.getRigidBodyData(aid_2)
         assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert ret_box.data.position[2] == 5
@@ -691,7 +700,7 @@ class TestBulletAPI:
         # rest on the surface.
         dt, maxsteps = 1.0, 60
         for ii in range(10):
-            sim.compute([1, 2], dt, maxsteps)
+            sim.compute([aid_1, aid_2], dt, maxsteps)
 
         # Verify that the plane has not moved (because it is static). If the
         # position of the box' collision shape were at the origin of the body,
@@ -699,8 +708,8 @@ class TestBulletAPI:
         # the collisions shape is at 'ofs_z' higher, the final resting position
         # of the body must be 'ofs_z' lower, ie rb_position + ofs_z must now be
         # approximately zero.
-        ret_plane = sim.getRigidBodyData(1)
-        ret_box = sim.getRigidBodyData(2)
+        ret_plane = sim.getRigidBodyData(aid_1)
+        ret_box = sim.getRigidBodyData(aid_2)
         assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert abs(ret_box.data.position[2] + ofs_z) < 1E-3
