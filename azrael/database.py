@@ -422,7 +422,6 @@ class DatabaseMongo(DatastoreBase):
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
-        print('check')
         ret = {}
         for aid, op in ops.items():
             data = op['data']

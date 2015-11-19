@@ -1,39 +1,19 @@
-"""
-Todo: tests for
-invalid arguments to any of the methods
-
-put:
- * verify return values for different combinations of exist
- * repeat, but use multiple objects and check the boolean return dict
-
-put/mod must verify that none of the keys contains a dot ('.').
-
-setInc
-
-several corner cases for when a variable to increment does not exist, or if
-it does exist but has the wrong type.
-
-rename 'objID' to 'aid' in Mongo driver (only after all of Azrael uses it)
-
-move all Database specific tests into a separate classs and keep one class
-that features all the database agnostic tests.
-
-search for all print in clerk/database/test_database
-
-instead of db.update use db.replace_one
-
-don't use a list default argument (eg getAll)
-
-implement getDistinct() method and use in clerk.getAllObjectIDs
-
-go over clerk and eliminate all database calls inside loops.
-
-fixme:
-  - rename allEngines to all_engines
-
-
-docu
-"""
+# Copyright 2014, Oliver Nagy <olitheolix@gmail.com>
+#
+# This file is part of Azrael (https://github.com/olitheolix/azrael)
+#
+# Azrael is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# Azrael is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 import copy
 import pytest
 import azrael.database as database
@@ -101,7 +81,7 @@ class TestAtomicCounter:
         assert not database.getUniqueObjectIDs(-1).ok
 
 
-allEngines = [
+all_engines = [
     database.DatabaseInMemory,
     database.DatabaseMongo,
 ]
@@ -121,7 +101,7 @@ class TestDatabaseAPI:
     def teardown_method(self, method):
         pass
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_reset_add(self, clsDatabase):
         """
         Add data and verify that 'reset' flushes it.
@@ -141,7 +121,7 @@ class TestDatabaseAPI:
         assert db.reset() == (True, None, None)
         assert db.count() == (True, None, 0)
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_add_get(self, clsDatabase):
         """
         Add data and verify that 'reset' flushes it.
@@ -174,7 +154,7 @@ class TestDatabaseAPI:
 
         assert db.reset().ok and (db.count().data == 0)
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_put(self, clsDatabase):
         """
         Attempt to insert new documents. This must succeed when the database
@@ -222,7 +202,7 @@ class TestDatabaseAPI:
         assert ret.ok
         assert ret.data == {'1': {'key1': 'value1'}, '2': {'key4': 'value4'}}
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_replace(self, clsDatabase):
         """
         Attempt to replace existing and non-existing documents.
@@ -270,7 +250,7 @@ class TestDatabaseAPI:
         assert ret.ok
         assert ret.data == {'1': {'key3': 'value3'}}
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_put_boolean_return(self, clsDatabase):
         """
         In Python `1 == 1 == True` and `0 == 0 == False`. The API
@@ -298,7 +278,7 @@ class TestDatabaseAPI:
         assert ret.msg is None
         assert ret.data['1'] is False
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_getMulti_getAll(self, clsDatabase):
         """
         Insert some documents. Then query them in batches.
@@ -338,7 +318,7 @@ class TestDatabaseAPI:
         # asked for all documents.
         assert db.getAll() == db.getMulti(['1', '2', '3', '4'])
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_remove(self, clsDatabase):
         """
         Insert some documents. Then delete them.
@@ -373,7 +353,7 @@ class TestDatabaseAPI:
         assert db.remove(['1', '4']) == (True, None, 1)
         assert db.count() == (True, None, 0)
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_allKeys(self, clsDatabase):
         """
         Verify the allKeys method.
@@ -415,7 +395,7 @@ class TestDatabaseAPI:
         assert db.project(src, [['c', 'd', 'e']]) == {'c': {'d': {'e': 3}}}
         assert db.project(src, [['c', 'd', 'blah']]) == {}
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_get_with_projections(self, clsDatabase):
         """
         Add data and verify that 'reset' flushes it.
@@ -677,7 +657,7 @@ class TestDatabaseAPI:
         db.setKey(src, ['c', 'd', 'e'], -2)
         assert src == {'x': -1, 'a': {'b': -2}, 'c': {'d': {'e': -2}}, 'z': -1}
 
-    @pytest.mark.parametrize('clsDatabase', allEngines)
+    @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_modify_single(self, clsDatabase):
         """
         Insert a single document and modify it.
