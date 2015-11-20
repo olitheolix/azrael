@@ -24,7 +24,7 @@ import logging
 import numpy as np
 import azrael.util as util
 import azrael.aztypes as aztypes
-import azrael.database as database
+import azrael.datastore as datastore
 
 from IPython import embed as ipshell
 from azrael.aztypes import typecheck, RetVal, _RigidBodyData
@@ -119,7 +119,7 @@ def dequeueCommands():
     :return QueuedCommands: a tuple with lists for each command.
     """
     # Convenience.
-    db = database.dbHandles['Commands']
+    db = datastore.dbHandles['Commands']
 
     # Query all pending commands and delete them from the queue.
     docs = list(db.find())
@@ -171,7 +171,7 @@ def addCmdSpawn(objData: (tuple, list)):
             return RetVal(False, msg, None)
 
     # Meta data for spawn command.
-    db = database.dbHandles['Commands']
+    db = datastore.dbHandles['Commands']
     bulk = db.initialize_unordered_bulk_op()
     for objID, body in objData:
         # Compile the AABBs. Return immediately if an error occurs.
@@ -188,7 +188,7 @@ def addCmdSpawn(objData: (tuple, list)):
     if ret['nMatched'] > 0:
         # A template with name ``templateID`` already existed --> failure.
         # It should be impossible for this to happen if the object IDs come
-        # from ``database.getUniqueObjectIDs``.
+        # from ``datastore.getUniqueObjectIDs``.
         msg = 'At least one objID already existed --> serious bug'
         logit.error(msg)
         return RetVal(False, msg, None)
@@ -211,7 +211,7 @@ def addCmdRemoveObject(objID: str):
     :return: Success.
     """
     # The 'data' is dummy because Mongo's 'update' requires one.
-    db = database.dbHandles['Commands']
+    db = datastore.dbHandles['Commands']
     data = query = {'cmd': 'remove', 'objID': objID}
     db.update(query, {'$setOnInsert': data}, upsert=True)
     return RetVal(True, None, None)
@@ -257,7 +257,7 @@ def addCmdModifyBodyState(objID: str, body: dict):
     # Add the new body state and AABBs to the 'command' database from where
     # clients can read it at their leisure. Note that this will overwrite
     # already pending update commands for the same object - tough luck.
-    db = database.dbHandles['Commands']
+    db = datastore.dbHandles['Commands']
     query = {'cmd': 'modify', 'objID': objID}
     db_data = {'rbs': body, 'AABBs': aabbs}
     db.update(query, {'$setOnInsert': db_data}, upsert=True)
@@ -288,7 +288,7 @@ def addCmdDirectForce(objID: str, force: list, torque: list):
         return RetVal(False, 'force or torque has invalid length', None)
 
     # Update the DB.
-    db = database.dbHandles['Commands']
+    db = datastore.dbHandles['Commands']
     query = {'cmd': 'direct_force', 'objID': objID}
     data = {'force': force, 'torque': torque}
     db.update(query, {'$setOnInsert': data}, upsert=True)
@@ -324,7 +324,7 @@ def addCmdBoosterForce(objID: str, force: list, torque: list):
         return RetVal(False, 'force or torque has invalid length', None)
 
     # Update the DB.
-    db = database.dbHandles['Commands']
+    db = datastore.dbHandles['Commands']
     query = {'cmd': 'booster_force', 'objID': objID}
     data = {'force': force, 'torque': torque}
     db.update(query, {'$setOnInsert': data}, upsert=True)

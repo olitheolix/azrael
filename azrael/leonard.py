@@ -28,7 +28,7 @@ import networkx
 import numpy as np
 
 import azrael.igor
-import azrael.database
+import azrael.datastore
 import azrael.vectorgrid
 import azrael.bullet_api
 import azrael.util as util
@@ -632,7 +632,7 @@ class LeonardBase(config.AzraelProcess):
             return
 
         # Update the RBS data in the master record.
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = azrael.datastore.DatabaseMongo(('azrael', 'objinstances'))
         ops = {}
         for aid, body in self.allBodies.items():
             ops[aid] = {

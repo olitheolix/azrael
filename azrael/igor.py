@@ -18,7 +18,7 @@
 Igor is a stateless class to manage rigid body constraints.
 """
 import logging
-import azrael.database as database
+import azrael.datastore as datastore
 
 from IPython import embed as ipshell
 from azrael.aztypes import RetVal, ConstraintMeta
@@ -33,7 +33,7 @@ class Igor:
         self.logit = logging.getLogger(name)
 
         # Create the database handle and local constraint cache.
-        self.db = database.dbHandles['Constraints']
+        self.db = datastore.dbHandles['Constraints']
         self._cache = {}
 
     def reset(self):

@@ -28,7 +28,7 @@ import azrael.util
 import azrael.clerk
 import azrael.dibbler
 import azrael.leonard
-import azrael.database
+import azrael.datastore
 import azrael.vectorgrid
 
 
@@ -46,7 +46,7 @@ class AzraelStack:
         # Kill any pending processes.
         subprocess.call(['pkill', 'Azrael:'])
         time.sleep(0.2)
-        azrael.database.init()
+        azrael.datastore.init()
 
         # Reset the profiling database and enable logging.
         azrael.util.resetTiming()

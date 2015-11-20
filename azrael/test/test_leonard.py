@@ -2,7 +2,7 @@ import pytest
 import azrael.igor
 import azrael.aztypes
 import azrael.leonard
-import azrael.database
+import azrael.datastore
 import azrael.vectorgrid
 
 import numpy as np
@@ -36,7 +36,7 @@ class TestLeonardAllEngines:
 
     def setup_method(self, method):
         assert azrael.vectorgrid.deleteAllGrids().ok
-        azrael.database.init()
+        azrael.datastore.init()
         self.igor.reset()
 
     def teardown_method(self, method):
@@ -286,7 +286,7 @@ class TestLeonardOther:
 
     def setup_method(self, method):
         assert azrael.vectorgrid.deleteAllGrids().ok
-        azrael.database.init()
+        azrael.datastore.init()
         self.igor.reset()
 
     def teardown_method(self, method):

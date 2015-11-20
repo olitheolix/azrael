@@ -100,7 +100,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         Add and query a template with one Raw fragment.
         """
         self.dibbler.reset()
-        azrael.database.init()
+        azrael.datastore.init()
         clerk = azrael.clerk.Clerk()
 
         # Create two Templates. The first has only one Raw- and two
@@ -138,7 +138,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         Spawn a template and verify it is available via WebServer.
         """
         self.dibbler.reset()
-        azrael.database.init()
+        azrael.datastore.init()
         clerk = azrael.clerk.Clerk()
 
         # # Create two Templates. The first has only one Raw- and two
@@ -183,7 +183,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         Add/remove an instance from Dibbler via Clerk and verify via WebServer.
         """
         self.dibbler.reset()
-        azrael.database.init()
+        azrael.datastore.init()
         clerk = azrael.clerk.Clerk()
 
         # Create a Template.

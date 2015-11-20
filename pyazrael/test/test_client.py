@@ -92,7 +92,7 @@ class TestClient:
 
     def setup_method(self, method):
         # Reset the database.
-        azrael.database.init()
+        azrael.datastore.init()
 
         # Flush the model database.
         self.dibbler.reset()
@@ -116,7 +116,7 @@ class TestClient:
 
     def teardown_method(self, method):
         # Clean up.
-        azrael.database.init()
+        azrael.datastore.init()
         self.dibbler.reset()
 
     def test_shared_files(self):

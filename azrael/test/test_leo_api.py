@@ -17,7 +17,7 @@
 
 import numpy as np
 
-import azrael.database
+import azrael.datastore
 import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
@@ -36,7 +36,7 @@ class TestLeonardAPI:
         pass
 
     def setup_method(self, method):
-        azrael.database.init()
+        azrael.datastore.init()
 
     def teardown_method(self, method):
         pass

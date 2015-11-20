@@ -16,7 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 import copy
 import pytest
-import azrael.database as database
+import azrael.datastore as datastore
 
 from IPython import embed as ipshell
 
@@ -41,44 +41,44 @@ class TestAtomicCounter:
         Reset the Counter DB and fetch a few counter values.
         """
         # Reset Azrael.
-        database.init()
-        ret = database.getUniqueObjectIDs(0)
+        datastore.init()
+        ret = datastore.getUniqueObjectIDs(0)
         assert ret.ok and ret.data == 0
 
-        ret = database.getUniqueObjectIDs(1)
+        ret = datastore.getUniqueObjectIDs(1)
         assert ret.ok and ret.data == (1, )
 
         # Ask for new counter values.
         for ii in range(5):
-            ret = database.getUniqueObjectIDs(1)
+            ret = datastore.getUniqueObjectIDs(1)
             assert ret.ok
             assert ret.data == (ii + 2, )
 
         # Reset Azrael again and verify that all counters start at '1' again.
-        database.init()
-        ret = database.getUniqueObjectIDs(0)
+        datastore.init()
+        ret = datastore.getUniqueObjectIDs(0)
         assert ret.ok and ret.data == 0
 
-        ret = database.getUniqueObjectIDs(3)
+        ret = datastore.getUniqueObjectIDs(3)
         assert ret.ok
         assert ret.data == (1, 2, 3)
 
         # Increment the counter by a different values.
-        database.init()
-        ret = database.getUniqueObjectIDs(0)
+        datastore.init()
+        ret = datastore.getUniqueObjectIDs(0)
         assert ret.ok and ret.data == 0
 
-        ret = database.getUniqueObjectIDs(2)
+        ret = datastore.getUniqueObjectIDs(2)
         assert ret.ok and ret.data == (1, 2)
 
-        ret = database.getUniqueObjectIDs(3)
+        ret = datastore.getUniqueObjectIDs(3)
         assert ret.ok and ret.data == (3, 4, 5)
 
-        ret = database.getUniqueObjectIDs(4)
+        ret = datastore.getUniqueObjectIDs(4)
         assert ret.ok and ret.data == (6, 7, 8, 9)
 
         # Run invalid queries.
-        assert not database.getUniqueObjectIDs(-1).ok
+        assert not datastore.getUniqueObjectIDs(-1).ok
 
 
 class TestAllDatastoreBackends:
@@ -87,8 +87,8 @@ class TestAllDatastoreBackends:
     """
     # Used in the py.test decorator to apply every test each backend.
     all_engines = [
-        database.DatabaseInMemory,
-        database.DatabaseMongo,
+        datastore.DatabaseInMemory,
+        datastore.DatabaseMongo,
     ]
 
     @classmethod
@@ -168,7 +168,7 @@ class TestAllDatastoreBackends:
         db = clsDatabase(name=('test1', 'test2'))
 
         # ---------------------------------------------------------------------
-        # Put must succeed when no document with the same ID exists in database.
+        # Put must succeed when no document with the same ID exists in datastore.
         # ---------------------------------------------------------------------
 
         assert db.reset().ok and db.count().data == 0
@@ -177,7 +177,7 @@ class TestAllDatastoreBackends:
         assert db.getOne('1') == (True, None, {'key1': 'value1'})
 
         # ---------------------------------------------------------------------
-        # Put must fail when no document with the same ID exists in database.
+        # Put must fail when no document with the same ID exists in datastore.
         # ---------------------------------------------------------------------
 
         # Pre-fill database with one document.
@@ -499,7 +499,7 @@ class TestDatabaseInMemory:
         pass
 
     def setup_method(self, method):
-        self.db = database.DatabaseInMemory(name=('test1', 'test2'))
+        self.db = datastore.DatabaseInMemory(name=('test1', 'test2'))
 
     def teardown_method(self, method):
         pass
@@ -605,10 +605,10 @@ class TestHelperFunctions:
         Verify that 'DatastoreBase.validJsonKey' only admits valid JSON
         hierarchy specifiers.
         """
-        assert database._validJsonKey(('a', )) is True
-        assert database._validJsonKey(('a', 'b')) is True
-        assert database._validJsonKey(('a', 1)) is False
-        assert database._validJsonKey(('a', 'b.c')) is False
+        assert datastore._validJsonKey(('a', )) is True
+        assert datastore._validJsonKey(('a', 'b')) is True
+        assert datastore._validJsonKey(('a', 1)) is False
+        assert datastore._validJsonKey(('a', 'b.c')) is False
 
     def test_invalid_args_getOne(self):
         """
@@ -621,20 +621,20 @@ class TestHelperFunctions:
         usually traversed with dots, eg 'parent.child.grandchild'.
         """
         # Valid.
-        assert database._checkGet(['1'], [('x', 'y')]) is True
+        assert datastore._checkGet(['1'], [('x', 'y')]) is True
 
         # AID is not a string.
-        assert database._checkGet([1], [['blah']]) is False
+        assert datastore._checkGet([1], [['blah']]) is False
 
         # Projection is not a list of lists.
-        assert database._checkGet(['1'], {}) is False
-        assert database._checkGet(['1'], [{}]) is False
+        assert datastore._checkGet(['1'], {}) is False
+        assert datastore._checkGet(['1'], [{}]) is False
 
         # Projection does not contain only strings.
-        assert database._checkGet(['1'], [['a', 2]]) is False
+        assert datastore._checkGet(['1'], [['a', 2]]) is False
 
         # Projection contains a string with a dot.
-        assert database._checkGet(['1'], [['a', 'b.c']]) is False
+        assert datastore._checkGet(['1'], [['a', 'b.c']]) is False
 
     def test_invalid_args_getAll(self):
         """
@@ -643,17 +643,17 @@ class TestHelperFunctions:
         Almost identical to `test_invalid_args_getOne`.
         """
         # Valid.
-        assert database._checkGetAll([('x', 'y')]) is True
+        assert datastore._checkGetAll([('x', 'y')]) is True
 
         # Projection is not a list of lists.
-        assert database._checkGetAll({}) is False
-        assert database._checkGetAll([{}]) is False
+        assert datastore._checkGetAll({}) is False
+        assert datastore._checkGetAll([{}]) is False
 
         # Projection does not contain only strings.
-        assert database._checkGetAll([['a', 2]]) is False
+        assert datastore._checkGetAll([['a', 2]]) is False
 
         # Projection contains a string with a dot.
-        assert database._checkGetAll([['a', 'b.c']]) is False
+        assert datastore._checkGetAll([['a', 'b.c']]) is False
 
     def test_invalid_args_put(self):
         """
@@ -666,15 +666,15 @@ class TestHelperFunctions:
         """
         # Valid.
         ops = {'1': {'data': {'foo': 1}}}
-        assert database._checkPut(ops) is True
+        assert datastore._checkPut(ops) is True
 
         # 'data' is not a dict.
         ops = {'1': {'data': 'foo'}}
-        assert database._checkPut(ops) is False
+        assert datastore._checkPut(ops) is False
 
         # AID is not a string.
         ops = {5: {'data': {}}}
-        assert database._checkPut(ops) is False
+        assert datastore._checkPut(ops) is False
 
     def test_invalid_args_remove(self):
         """
@@ -683,8 +683,8 @@ class TestHelperFunctions:
         The 'remove' methods expect a list of aid strings.
         """
         # Not a list of strings.
-        assert database._checkRemove([['blah']]) is False
-        assert database._checkRemove(['blah', 1]) is False
+        assert datastore._checkRemove([['blah']]) is False
+        assert datastore._checkRemove(['blah', 1]) is False
 
     def test_invalid_args_mod(self):
         """
@@ -705,46 +705,46 @@ class TestHelperFunctions:
             }
         }
 
-        assert database._checkMod(ops_valid) is True
+        assert datastore._checkMod(ops_valid) is True
 
         # AID is not a string.
         op = {1: {'inc': None, 'set': None, 'unset': None, 'exists': None}}
-        assert database._checkMod(op) is False
+        assert datastore._checkMod(op) is False
 
         # Does not contain all keys.
         op = {'1': {}}
-        assert database._checkMod(op) is False
+        assert datastore._checkMod(op) is False
 
         # Invalid JSON hierarchy in one of the keys.
         valid, invalid = ('foo', 'a'), ('foo.a', 'b')
         op = {'1': {'inc': {invalid: 1}, 'set': {valid: 20},
                     'unset': [valid], 'exists': {valid: True}}}
-        assert database._checkMod(op) is False
+        assert datastore._checkMod(op) is False
         op = {'1': {'inc': {valid: 1}, 'set': {invalid: 20},
                     'unset': [valid], 'exists': {valid: True}}}
-        assert database._checkMod(op) is False
+        assert datastore._checkMod(op) is False
         op = {'1': {'inc': {valid: 1}, 'set': {valid: 20},
                     'unset': [invalid], 'exists': {valid: True}}}
-        assert database._checkMod(op) is False
+        assert datastore._checkMod(op) is False
         op = {'1': {'inc': {valid: 1}, 'set': {valid: 20},
                     'unset': [valid], 'exists': {invalid: True}}}
-        assert database._checkMod(op) is False
+        assert datastore._checkMod(op) is False
         del op
 
         # 'inc' must specify a number.
         ops = copy.deepcopy(ops_valid)
         ops['1']['inc'][('foo', 'a')] = 'b'
-        assert database._checkMod(ops) is False
+        assert datastore._checkMod(ops) is False
 
         # 'exists' must specify bools.
         ops = copy.deepcopy(ops_valid)
         ops['1']['exists'][('foo', 'a')] = 5
-        assert database._checkMod(ops) is False
+        assert datastore._checkMod(ops) is False
 
         # 'unset' must be a list, not a dict like all the other fields.
         ops = copy.deepcopy(ops_valid)
         ops['1']['unset'] = {('foo', 'a'): 5}
-        assert database._checkMod(ops) is False
+        assert datastore._checkMod(ops) is False
 
 
 if __name__ == '__main__':

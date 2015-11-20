@@ -53,7 +53,7 @@ class TestClerk:
     def setup_method(self, method):
         self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
-        azrael.database.init()
+        azrael.datastore.init()
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
@@ -71,7 +71,7 @@ class TestClerk:
 
     def teardown_method(self, method):
         self.dibbler.reset()
-        azrael.database.init()
+        azrael.datastore.init()
 
     def test_get_default_templates(self):
         """
@@ -1668,7 +1668,7 @@ class TestClerk:
         # Convenience.
         id_1 = '1'
         body_1 = getRigidBody(imass=1)
-        db2 = azrael.database.DatabaseMongo(('azrael', 'objinstances'))
+        db2 = azrael.datastore.DatabaseMongo(('azrael', 'objinstances'))
 
         # Database and Leonard cache must both be empty.
         assert db2.count() == (True, None, 0)
@@ -1704,7 +1704,7 @@ class TestModifyFragments:
     def setup_method(self, method):
         self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
-        azrael.database.init()
+        azrael.datastore.init()
 
         # Compile a template with two fragments.
         frags = {'fraw': getFragRaw(), 'fdae': getFragDae()}
@@ -1719,7 +1719,7 @@ class TestModifyFragments:
 
     def teardown_method(self, method):
         self.dibbler.reset()
-        azrael.database.init()
+        azrael.datastore.init()
 
     def test_setFragments_state_only(self):
         """
@@ -2108,14 +2108,14 @@ class TestClerkEnd2End:
     def setup_method(self, method):
         self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
-        azrael.database.init()
+        azrael.datastore.init()
 
         self.web = azrael.web.WebServer()
         self.web.start()
 
     def teardown_method(self, method):
         self.dibbler.reset()
-        azrael.database.init()
+        azrael.datastore.init()
         self.web.terminate()
         self.web.join()
 
