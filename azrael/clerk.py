@@ -1457,11 +1457,13 @@ class Clerk(config.AzraelProcess):
         :param str objID: object ID.
         :return: templateID from which ``objID`` was created.
         """
-        db2 = datastore.dbHandles['ObjInstances']
-        ret = db2.getOne(objID)
-        doc = ret.data
-        if ret.ok and doc is not None:
-            return RetVal(True, None, doc['templateID'])
+        # Get handle to datastore and query for the specified ``objID``.
+        db = datastore.dbHandles['ObjInstances']
+        ret = db.getOne(objID)
+
+        # Return the template (or an error).
+        if ret.ok and ret.data is not None:
+            return RetVal(True, None, ret.data['templateID'])
         else:
             msg = 'Could not find template for objID {}'.format(objID)
             return RetVal(False, msg, None)
