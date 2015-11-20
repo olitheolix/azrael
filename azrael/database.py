@@ -282,7 +282,7 @@ class DatastoreBase:
         """
         raise NotImplementedError
 
-    def getOne(self, aid, prj=None):
+    def getOne(self, aid: (list, tuple), prj=None):
         """
         Return the document with ``aid``, or None if it does not exist.
 
@@ -292,7 +292,7 @@ class DatastoreBase:
         """
         raise NotImplementedError
 
-    def getMulti(self, aids, prj=None):
+    def getMulti(self, aids: (list, tuple), prj=None):
         """
         Return the documents with ``aid``.
 
@@ -362,7 +362,7 @@ class DatastoreBase:
         """
         raise NotImplementedError
 
-    def mod(self, ops: dict):
+    def modify(self, ops: dict):
         """
         Modify the documents specified in ``ops``.
 
@@ -456,7 +456,7 @@ class DatabaseInMemory(DatastoreBase):
             return RetVal(True, None, doc)
 
     @typecheck
-    def getMulti(self, aids: list, prj=None):
+    def getMulti(self, aids: (list, tuple), prj=None):
         """
         See docu in ``DatastoreBase``.
         """
@@ -526,7 +526,7 @@ class DatabaseInMemory(DatastoreBase):
         return RetVal(True, None, ret)
 
     @typecheck
-    def mod(self, ops: dict):
+    def modify(self, ops: dict):
         """
         See docu in ``DatastoreBase``.
         """
@@ -694,7 +694,7 @@ class DatabaseMongo(DatastoreBase):
             return RetVal(True, None, doc)
 
     @typecheck
-    def getMulti(self, aids: list, prj=None):
+    def getMulti(self, aids: (list, tuple), prj=None):
         """
         See docu in ``DatastoreBase``.
         """
@@ -770,7 +770,7 @@ class DatabaseMongo(DatastoreBase):
         return RetVal(True, None, ret)
 
     @typecheck
-    def mod(self, ops: dict):
+    def modify(self, ops: dict):
         """
         See docu in ``DatastoreBase``.
         """
