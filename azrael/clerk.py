@@ -1550,13 +1550,13 @@ class Clerk(config.AzraelProcess):
         """
         Apply ``force`` to ``objID`` at position ``rpos``.
 
-        The force will be applied at ``rpos`` relative to the center of mass.
+        The ``force`` applies at ``rpos`` relative to the center of mass.
 
         If ``objID`` does not exist return an error.
 
-        fixme: missing parameter docu
-
         :param str objID: object ID
+        :param vec3 forceID: force vector
+        :param vec3 rpos: force position relative to object's center of mass.
         :return: Sucess
         """
         # Compute the torque and then queue a command for Leonard to apply the
