@@ -1370,7 +1370,7 @@ class Clerk(config.AzraelProcess):
         shapes, fragment geometries, or other specialised data.
 
         The purpose of this method is to make it easy to query the salient
-        information about an object in a bandwidth efficient way.::
+        information about an object in a (more) bandwidth efficient way.::
 
             out = {
                 objID_1: {
@@ -1392,9 +1392,10 @@ class Clerk(config.AzraelProcess):
         :param list objIDs: the objIDs for which to compile the data.
         :return: see example above.
         """
-        # Query object states and compile them into a dictionary.
-        db2 = datastore.dbHandles['ObjInstances']
+        # Get handle to datastore.
+        db = datastore.dbHandles['ObjInstances']
         
+        # Projection operator to reduce the amount of network traffic.
         prj = [
             ('version', ),
             ('objID', ),
@@ -1406,45 +1407,40 @@ class Clerk(config.AzraelProcess):
             ('template', 'rbs', 'velocityRot'),
         ]
 
-        # Fetch the objects. If `objID` is None the client wants all objects.
+        # Fetch the specified `objIDs`. Fetch all if `objIDs` is None.
         if objIDs is None:
-            docs = db2.getAll(prj)
+            ret = db.getAll(prj)
         else:
-            docs = db2.getMulti(objIDs, prj)
-
-        # fixme: error handling.
-        docs = docs.data
+            ret = db.getMulti(objIDs, prj)
+        if not ret.ok:
+            return ret
 
         # Compile the data from the database into a simple dictionary that
         # contains the fragment- and body state.
         out = {}
+        docs = ret.data
         for aid, doc in docs.items():
-            # It is well possible that (parts of) the document are being
-            # deleted by another client while we query it here. The try/except
-            # block ensures that we will skip documents that have become
-            # (partially) invalid because one or more keys have gone missing.
-            try:
-                # Convenience: fragments of current object.
-                frags = doc['template']['fragments']
+            # Convenience: fragments of current object.
+            frags = doc['template']['fragments']
 
-                # Compile the state data for each fragment of the current object.
-                fs = {k: {'scale': v['scale'],
-                          'position': v['position'],
-                          'rotation': v['rotation']}
-                      for (k, v) in frags.items()}
+            # Compile the state for each fragment of the current object.
+            fs = {k: {'scale': v['scale'],
+                      'position': v['position'],
+                      'rotation': v['rotation']}
+                  for (k, v) in frags.items()}
 
-                # Add the current version to the rigid body data.
-                rbs = doc['template']['rbs']
-                rbs['version'] = doc['version']
+            # Add the current version to the rigid body data.
+            rbs = doc['template']['rbs']
+            rbs['version'] = doc['version']
 
-                # Construct the return value.
-                out[aid] = {'frag': fs, 'rbs': rbs}
-            except KeyError as err:
-                continue
+            # Construct the return value.
+            out[aid] = {'frag': fs, 'rbs': rbs}
 
         # If the user requested a particular set of objects then make sure each
         # one is in the output dictionary. If one is missing (eg it does not
         # exist) then its value is None.
+        # fixme: should only return the objects we found to be consistent with
+        # datastore api.
         if objIDs is not None:
             out = {_: out[_] if _ in out else None for _ in objIDs}
         return RetVal(True, None, out)
