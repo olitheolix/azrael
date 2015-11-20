@@ -736,7 +736,7 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def updateBoosterForces(self, objID: str, cmds: dict):
         """
-        Update the Booster values for an object and return the new net force.
+        Update the Booster values for ``objID`` and return the new net force.
 
         This method returns the torque and linear force that each booster would
         apply at object's center. A typical return value is::
@@ -747,7 +747,7 @@ class Clerk(config.AzraelProcess):
                      [torque_x, torque_y, torque_z]),
              ...}
 
-        where 'foo' and 'bar' are the names of the boosters.
+        where 'foo' and 'bar' are the booster names.
 
         :param str objID: object ID
         :param dict cmds: Booster commands.
@@ -755,16 +755,18 @@ class Clerk(config.AzraelProcess):
         :rtype: tuple(vec3, vec3)
         """
         # Convenience.
-        db2 = datastore.dbHandles['ObjInstances']
+        db = datastore.dbHandles['ObjInstances']
 
         # Query the object's booster information.
-        doc = db2.getOne(objID, [['template', 'boosters']]).data
+        ret = db.getOne(objID, [['template', 'boosters']])
+        if not ret.ok:
+            return ret
 
-        if doc is None:
+        # Return with an error if `objID` does not exists.
+        if ret.data is None:
             msg = 'Object <{}> does not exist'.format(objID)
             return RetVal(False, msg, None)
-        instance = doc['template']
-        del doc
+        instance = ret.data['template']
 
         # Put the Booster entries from the database into Booster tuples.
         try:
@@ -806,7 +808,7 @@ class Clerk(config.AzraelProcess):
         # issue the update.
         boosters = {k: v._asdict() for (k, v) in boosters.items()}
 
-        # fixme: get the template from somewhere?
+        # Compile modification op.
         ops = {
             objID: {
                 'inc': {},
@@ -815,11 +817,15 @@ class Clerk(config.AzraelProcess):
                 'exists': {('template', 'boosters'): True},
             }
         }
-        db2.modify(ops)
-
-        # Return the final force- and torque as a tuple of 2-tuples.
-        out = (force.tolist(), torque.tolist())
-        return RetVal(True, None, out)
+        ret = db.modify(ops)
+        if ret.ok:
+            # Return the final force- and torque as a tuple of 2-tuples.
+            out = (force.tolist(), torque.tolist())
+            return RetVal(True, None, out)
+        else:
+            # The object was probably deleted in between querying it earlier
+            # and now that we want to update it.
+            return ret
 
     @typecheck
     def controlParts(self, objID: str, cmd_boosters: dict, cmd_factories: dict):
