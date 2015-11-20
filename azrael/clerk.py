@@ -418,7 +418,7 @@ class Clerk(config.AzraelProcess):
                 ds_ops[template.aid] = {'data': data}
 
         # Insert the templates. Since this will overwrite existing templates
-        # with the same name we need to determi which templates were actually
+        # with the same name we need to determine which templates were actually
         # added.
         ret = db.put(ds_ops)
         if ret.ok is False:
@@ -507,6 +507,7 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
 
         # Return the templates.
+        # fixme: only return the templates we found.
         return RetVal(True, None, out)
 
     def _mangleFileName(self, fname: str, unmangle: bool):
@@ -563,11 +564,11 @@ class Clerk(config.AzraelProcess):
         Spawn all ``newObjects`` and return their IDs in a tuple.
 
         The ``newObjects`` variable mut be a list of dictionaries. Each
-        dictionary *must* contain an 'templateID' and *may* contain an 'rbs'
-        key. The 'templateID' specify which template should be used for the new
-        object, and the 'rbs' value, which is a dictionary itself, specifies
-        the values to override in the rigid body structure. For instance, a
-        valid `newObjects` argument would be::
+        dictionary *must* contain a 'templateID'. It *may* contain an 'rbs'
+        key. The 'templateID' specifies which template should be used for the
+        new object. The 'rbs' value, which is a dictionary itself,
+        specifies the values to override in the rigid body structure. For
+        instance, a valid `newObjects` argument would be::
 
             newObjects = [
                 {'templateID': 'foo'},
@@ -576,30 +577,21 @@ class Clerk(config.AzraelProcess):
             ]
 
         This will spawn three objects. The first one is a verbatim copy of
-        `foo`, the second will also be an instance of `foo` but with an `imass`
+        `foo`. The second will also be an instance of `foo` but with an `imass`
         of 5, whereas the third object is an instance of `bar` that is spawned
         at position (1, 2, 3).
 
         This method will either spawn all objects, or return with an error
         without spawning a single one.
 
-        ..note:: Note to myself: ``newObjects`` cannot be a dictionary because
-            the client may want to spawn the same template ID (which would be
-            the keys) several times with different initial states, for instance
-            to create a chain of spheres. It is possible to store the initial
-            states in a list but then there is still the problem for the client
-            to uniquely map every templateID and initials state to a particular
-            object ID.
-
         :param list[dict] newObjects: template IDs (key) and body parameters to
             override (value).
         :return: IDs of spawned objects
         :rtype: tuple of int
         """
-        # Sanity checks: newObjects must be a list of dictionaries, and each
-        # dictionary must contain at least a 'templateID' field that contains a
-        # string. If an RBS field is present it must contain a valid rigid body
-        # state.
+        # Sanity checks: newObjects must be a list of dictionaries. Each must
+        # contain at least a 'templateID' field that contains a string. If the
+        # RBS field is present it must contain a valid rigid body state.
         try:
             assert len(newObjects) > 0
             for tmp in newObjects:
@@ -612,7 +604,7 @@ class Clerk(config.AzraelProcess):
 
         # Fetch the specified templates so that we can duplicate them in
         # the instance database afterwards. Return with an error unless all
-        # templates were found.
+        # requested templates were found.
         with util.Timeit('spawn:1 getTemplates'):
             t_names = [_['templateID'] for _ in newObjects]
             ret = self.getTemplates(t_names)
@@ -631,33 +623,42 @@ class Clerk(config.AzraelProcess):
         # fixme: getUniqueObjectID should return a string.
         newObjectIDs = [str(_) for _ in ret.data]
 
-        db2 = datastore.dbHandles['ObjInstances']
+        db = datastore.dbHandles['ObjInstances']
         with util.Timeit('spawn:2 createStates'):
-            # Make a copy of every template and endow it with the meta
-            # information for an instantiated object. Then add it to the list
-            # of objects to spawn.
-            dbops = {}
+            # Copy every template, endow it with the meta information for an
+            # instance object, and add it to the list of objects to spawn.
+            ds_ops, dib_files = {}, {}
             bodyStates = {}
             for newObj, objID in zip(newObjects, newObjectIDs):
-                # Convenience: 'template' is a Template instance converted to
-                # a dictionary (see types.py for the detailed layout).
+                # Unpack the template name and its data (convenience).
                 templateID = newObj['templateID']
                 template = templates[templateID]['template']
 
-                # Selectively overwrite the rigid body state stored in the
-                # template with the values provided by the client.
+                # ------------------------------------------------------------
+                # Overwrite the initial state with the provided values (eg
+                # initial position).
+                # ------------------------------------------------------------
                 body = template.rbs
                 if 'rbs' in newObj:
                     body = body._replace(**newObj['rbs'])
                 template = template._replace(rbs=body)
+                del body
 
-                # Copy all fragment files from the template to a new
-                # location dedicated to the object instance.
+                # The new bodies will be published once the objects exist in
+                # the database. Until then, store them.
+                bodyStates[objID] = template.rbs
+
+                # ------------------------------------------------------------
+                # Compile the copy operations for Dibbler. This means
+                # duplicating all fragment files from the template data store
+                # to the instance data store.
+                # ------------------------------------------------------------
+                # Duplicate the fragment files to the instance URL.
                 url_src = '{src}/{aid}'.format(src=config.url_templates,
                                                aid=template.aid)
                 url_dst = '{dst}/{aid}'.format(dst=config.url_instances,
                                                aid=objID)
-                ret = RetVal(True, None, None)
+                dib_files[objID] = {}
                 for fragname in template.fragments:
                     fnames = template.fragments[fragname].files
 
@@ -665,39 +666,23 @@ class Clerk(config.AzraelProcess):
                     pre_src = '{url}/{name}/'.format(url=url_src, name=fragname)
                     pre_dst = '{url}/{name}/'.format(url=url_dst, name=fragname)
                     fnames = {pre_src + k: pre_dst + k for k in fnames}
-                    del pre_src, pre_dst, fragname
+                    dib_files[objID].update(fnames)
+                    del fragname, fnames, pre_src, pre_dst
+                del url_src
 
-                    # Copy the files. Abort the loop if an error occurs.
-                    ret = self.dibbler.copy(fnames)
-                    if not ret.ok:
-                        break
-                    del fnames
-
-                # If the last Dibbler operation failed then delete all
-                # fragments that would have been associated with the
-                # object. Then skip to the next object.
-                if not ret.ok:
-                    # Clean up any fragment files from this object that may
-                    # have been copied before the error occurred.
-                    self.dibbler.removeDirs([url_dst])
-
-                    # Log an error message.
-                    msg = ('Dibbler could not copy the fragments from '
-                           'the template <{}> because of this error: <{}>.'
-                           ' This template will not be spawned')
-                    msg = msg.format(templateID, ret.msg)
-                    self.logit.error(msg)
-                    continue
-
-                # Mangle all fragment file names to make them compatible with
-                # Mongo.
+                # ------------------------------------------------------------
+                # Compile the data store commands to insert the objects into
+                # the instance store.
+                # ------------------------------------------------------------
+                # Mangle the name of all fragment files to avoid problems with
+                # indexing the document hierarchy (ie. replace all dots '.').
                 template_json = self._mangleTemplate(template._asdict())
 
                 # Compile the database document. Each entry must be an explicit
                 # dictionary (eg 'template'). The document contains the
-                # original template plus additional meta information,
-                # for instance the AID of the template from which it was
-                # spawned, or the current 'version'.
+                # original template plus additional meta information, for
+                # instance the AID of the template from which it was spawned,
+                # or the current 'version'.
                 doc = {
                     'url_frag': url_dst,
                     'version': 0,
@@ -705,34 +690,44 @@ class Clerk(config.AzraelProcess):
                     'template': template_json,
                 }
 
-                # Track the rigid body state separately. These will be sent to
-                # Leonard later.
-                bodyStates[objID] = template.rbs
-
                 # Compile the datastore command to add the template to the
                 # instance database.
-                dbops[objID] = {'data': doc}
-                del templateID, objID, doc
+                ds_ops[objID] = {'data': doc}
+                del templateID, template, newObj, objID, doc
 
+            # -----------------------------------------------------------------
+            # Run the actual datastore- and Dibbler queries.
+            # -----------------------------------------------------------------
             # Return immediately if there are no objects to spaw.
-            if len(dbops) == 0:
+            if len(ds_ops) == 0:
                 return RetVal(True, 'No objects to spawn', tuple())
 
-            # Insert all objects into the State Variable DB. Note: this does
-            # not make Leonard aware of their existence (see next step).
-            # fixme: check return value.
-            db2.put(dbops)
-            del dbops
+            # Insert the objects. Since this will overwrite existing templates
+            # with the same name we need to determine which templates were
+            # actually added.
+            ret = db.put(ds_ops)
+            if not ret.ok:
+                return ret
+            valid = [k for k, v in ret.data.items() if v is True]
+            self.logit.debug('Spawned {} new objects'.format(len(valid)))
 
+            # For every successfully added objects we will now tell Dibbler to
+            # duplicate the fragment files and make them available at the
+            # instance URL for the respective object.
+            for aid in valid:
+                if not self.dibbler.copy(dib_files[aid]).ok:
+                    msg = 'Dibbler could not copy the files {} for template <{}>'
+                    fnames = list(dib_files[aid].keys())
+                    self.logit.warning(msg.format(fnames, aid))
+
+        # Publish the existence of the new objects.
         with util.Timeit('spawn:3 addCmds'):
-            # Compile the list of spawn commands that will be sent to Leonard.
-            objs = tuple(bodyStates.items())
-
             # Queue the spawn commands. Leonard will fetch them at its leisure.
+            objs = tuple(bodyStates.items())
             ret = leoAPI.addCmdSpawn(objs)
             if not ret.ok:
                 return ret
-            self.logit.debug('Spawned {} new objects'.format(len(objs)))
+            self.logit.debug('Announced {} newly spawned objects'.format(len(objs)))
 
         return RetVal(True, None, newObjectIDs)
 

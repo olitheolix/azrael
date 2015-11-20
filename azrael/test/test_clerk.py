@@ -394,38 +394,6 @@ class TestClerk:
         # Attempt to retrieve a non-existing object.
         assert not clerk.getTemplateID('100').ok
 
-    def test_spawn_DibblerClerkSyncProblem(self):
-        """
-        Try to spawn a template when Dibbler does not have it in its database.
-        """
-        # Convenience.
-        clerk = azrael.clerk.Clerk()
-
-        # Mock 'Dibbler.copy'.
-        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
-        clerk.dibbler = mock_dibbler
-        mock_dibbler.copy.return_value = RetVal(False, 'error', None)
-
-        # Baseline.
-        assert mock_dibbler.copy.call_count == 0
-        assert mock_dibbler.removeDirs.call_count == 0
-
-        # Attempt to spawn a valid template. The template exists in the
-        # template database (the setup method for this test did it). However,
-        # Clerk will skip it because Dibbler cannot find the model files. The
-        # net effect is that the call to spawn must succeed, yet no objects
-        # must have been spawned.
-        init = {'templateID': '_templateEmpty', 'rbs': {'imass': 1}}
-        ret = clerk.spawn([init])
-        assert ret == (True, 'No objects to spawn', tuple())
-
-        # Copy must have been called once. Since the call failed (because we
-        # mocked it to make sure it does), Clerk must also clean up and delete
-        # all files associated with that object (some may have been copied
-        # already).
-        assert mock_dibbler.copy.call_count == 1
-        assert mock_dibbler.removeDirs.call_count == 1
-
     def test_removeObject(self):
         """
         Test the 'removeObject' command in the Clerk.
