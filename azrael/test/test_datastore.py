@@ -249,10 +249,11 @@ class TestAllDatastoreBackends:
         assert db.replace(ops) == (True, None, {'1': True, '2': False})
         assert db.count() == (True, None, 1)
 
-        # Query both documents. Only the first must be returned.
+        # Query both documents albeit only one exists. The value for the
+        # non-existing one must be None.
         ret = db.getMulti(['1', '2'])
         assert ret.ok
-        assert ret.data == {'1': {'key3': 'value3'}}
+        assert ret.data == {'1': {'key3': 'value3'}, '2': None}
 
     @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_put_boolean_return(self, clsDatabase):
@@ -303,20 +304,20 @@ class TestAllDatastoreBackends:
         # If the query is empty then no documents must be returned.
         assert db.getMulti([]) == (True, None, {})
 
-        # A query for non-existing documents must return nothing.
+        # A query for non-existing documents must return a None for each AID.
         ret = db.getMulti(['5', '6'])
-        assert ret == (True, None, {})
+        assert ret == (True, None, {'5': None, '6': None})
 
         # Query two existing documents.
         ret = db.getMulti(['1', '4'])
         assert ret.ok
         assert ret.data == {'1': {'key1': 'value1'}, '4': {'key4': 'value4'}}
 
-        # Query two documents. Only one exists. This must return the one that
-        # does exist and not mention the non-existing one at all.
+        # Query two documents. Only one exists. This must return the document
+        # for the existing one, and None for the not-existing one.
         ret = db.getMulti(['2', '5'])
         assert ret.ok
-        assert ret.data == {'2': {'key2': 'value2'}}
+        assert ret.data == {'2': {'key2': 'value2'}, '5': None}
 
         # getAll and getMulti must return the exact same data when getMulti was
         # asked for all documents.

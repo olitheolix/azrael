@@ -296,9 +296,8 @@ class DatastoreBase:
         """
         Return the documents with ``aid``.
 
-        Return the documents in a dictionary. The keys are the AIDs. If an AID
-        was not found then no such key will be present in the returned
-        dictionary.
+        Return the documents in a dictionary. The keys are the AIDs and the
+        values the documents. If an AID does not exist the value is None.
 
         The `ok` flag indicates either malformed arguments or a database error.
         A query for non-existing objects will still return ok=True.
@@ -460,14 +459,22 @@ class DatabaseInMemory(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check the arguments.
         if _checkGet(aids, prj) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
-        docs = {aid: self.content[aid] for aid in aids if aid in self.content}
+        # Copy the requested documents into an output dictionary. If a document
+        # does not exist set it to None in the output dictionary.
+        cp = copy.deepcopy
+        content = self.content
+        docs = {aid: content[aid] if aid in content else None
+                for aid in aids}
+
+        # Apply the projection operator.
         if prj is not None:
-            for doc in docs:
-                docs[doc] = self.project(docs[doc], prj)
+            project = self.project
+            docs = {aid: project(doc, prj) for aid, doc in docs.items()}
 
         return RetVal(True, None, docs)
 
@@ -706,7 +713,10 @@ class DatabaseMongo(DatastoreBase):
         cursor = self.db.find({'aid': {'$in': aids}}, prj)
         docs = self._removeAID(cursor)
 
-        return RetVal(True, None, docs)
+        out = {_: None for _ in aids}
+        out.update(docs)
+
+        return RetVal(True, None, out)
 
     @typecheck
     def getAll(self, prj=None):
