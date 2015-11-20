@@ -123,7 +123,7 @@ class CtrlBoosterCube():
     def __del__(self):
         if self.shipID is None:
             return
-        self.client.removeObject(self.shipID)
+        self.client.removeObjects([self.shipID])
         self.shipID = None
 
     def spawn(self, pos=(0, 0, 0)):

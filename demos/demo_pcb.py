@@ -97,7 +97,7 @@ def resetSimulation(host, port=5555):
 
     # Delete all objects.
     for objID in allIDs:
-        assert client.removeObject(objID).ok
+        assert client.removeObjects([objID]).ok
 
 
 class PyConBrisbaneClient():
@@ -479,7 +479,7 @@ def controlShip(host, numShips=1):
     print()
 
     # Remove the ship from the simulation.
-    assert self.client.removeObject(self.shipID).ok
+    assert self.client.removeObject([self.shipID]).ok
 
 
 def interactive(host):

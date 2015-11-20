@@ -398,7 +398,7 @@ class ResetSim(multiprocessing.Process):
             ret = client.getAllObjectIDs()
             for objID in ret.data:
                 if objID not in allowed_objIDs:
-                    client.removeObject(objID)
+                    client.removeObjects([objID])
 
             # Forcefully reset the position and velocity of every object. Do
             # this several times since network latency may result in some
