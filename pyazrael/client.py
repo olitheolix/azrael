@@ -333,16 +333,17 @@ class Client():
         return self.serialiseAndSend('control_parts', payload)
 
     @typecheck
-    def removeObject(self, objID: str):
+    def removeObjects(self, objIDs: list):
         """
-        Remove ``objID`` from the physics simulation.
+        Remove ``objIDs`` from the physics simulation.
 
-        ..note:: this method will succeed even if there is no ``objID``.
+        ..note:: this method will succeed even if one or more of the ``objIDs``
+            do not exist.
 
-        :param str objID: request to remove this object.
+        :param list[str] objIDs: request to remove this object.
         :return: Success
         """
-        return self.serialiseAndSend('remove_object', {'objID': objID})
+        return self.serialiseAndSend('remove_objects', {'objIDs': objIDs})
 
     @typecheck
     def getFragments(self, objIDs: list):

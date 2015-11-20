@@ -318,12 +318,12 @@ class TestClient:
         assert (ret.ok, ret.data) == (True, [objID])
 
         # Attempt to delete a non-existing object. This must silently fail.
-        assert client.removeObject('100').ok
+        assert client.removeObjects(['100']).ok
         ret = client.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [objID])
 
         # Delete an existing object.
-        assert client.removeObject(objID).ok
+        assert client.removeObjects([objID]).ok
         ret = client.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
@@ -848,10 +848,11 @@ class TestClient:
         # Update the custom data for an existing- and a non-existing object.
         assert client.setCustomData({id_1: 'foo', id_fake: 'bar'}) == (True, None, [id_fake])
 
-        # Query two existing- and one non-existing object.
+        # Query two existing- and one non-existing object. The returned
+        # dictionary must not include a key for the non-existing id_fake.
         ret = client.getCustomData([id_1, id_2, id_fake])
         assert ret.ok
-        assert ret.data == ({id_1: 'foo', id_2: '', id_fake: None})
+        assert ret.data == ({id_1: 'foo', id_2: ''})
 
         # Query all at once.
         assert client.getCustomData(None) == client.getCustomData([id_1, id_2])
