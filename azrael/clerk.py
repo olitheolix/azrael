@@ -1556,35 +1556,34 @@ class Clerk(config.AzraelProcess):
         :param dict[int: str] data: new content for 'custom' field in object.
         :return: List of invalid object IDs.
         """
-        db2 = datastore.dbHandles['ObjInstances']
+        # Get handle to datastore.
+        db = datastore.dbHandles['ObjInstances']
 
-        # Update the 'custom' field of the specified object IDs.
+        # Will hold the database operations and AIDs of objects that could not
+        # be updatd.
+        ops = {}
         invalid_objects = []
+
+        # Compile the data store operations to update the 'custom' field of the
+        # specified objects.
         for objID, value in data.items():
-            try:
-                assert isinstance(value, str)
-                assert len(value) < 2 ** 16
-
-                # fixme: take out of loop; get the template from somewhere
-                # else.
-                ops = {
-                    objID: {
-                        'inc': {},
-                        'set': {('template', 'custom'): value},
-                        'unset': [],
-                        'exists': {('template', 'custom'): True},
-                    }
+            if isinstance(value, str) and (len(value) < 2 ** 16):
+                ops[objID] = {
+                    'inc': {},
+                    'set': {('template', 'custom'): value},
+                    'unset': [],
+                    'exists': {('template', 'custom'): True},
                 }
-                ret = db2.modify(ops)
-
-                # If the update did not work then add the current object ID to
-                # the list.
-                assert False not in ret.data.values()
-            except AssertionError:
+            else:
+                # Either the AID is invalid or the custom data is too big.
                 invalid_objects.append(objID)
 
+        # Run the query and determine which objects were not updated.
+        ret = db.modify(ops)
+        not_updated = [k for k, v in ret.data.items() if v is False]
+
         # Return the list of objects that could not be updated.
-        return RetVal(True, None, invalid_objects)
+        return RetVal(True, None, invalid_objects + not_updated)
 
     @typecheck
     def getCustomData(self, objIDs: (tuple, list)):
