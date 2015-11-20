@@ -987,9 +987,9 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def getFragments(self, objIDs: list):
         """
-        Return information about the fragments of each object in ``objIDs``.
+        Return fragments information for all ``objIDs``.
 
-        This method returns a dictionary of the form::
+        The returned dictionary has the following form::
 
             {objID_1: {'fragtype': 'raw', 'scale': 1, 'position': (1, 2, 3),
                        'rotation': (0, 1, 0, 0,), 'url_frag': 'http://',
@@ -1005,21 +1005,18 @@ class Clerk(config.AzraelProcess):
         However, the corresponding value will be *None* if the object does not
         exist in Azrael.
 
-        ..note:: This method does not actually return any geometries, only URLs
-            from where they can be downloaded.
+        ..note:: This method does not actually return any geometries; it only
+            returns the URLs from where they can be downloaded.
 
         :param list objIDs: return geometry information for all of them.
         :return: meta information about all fragment for each object.
         :rtype: dict
         """
-        # fixme: sanity check objID (must be str); in particular, a None value
-        # caused havoc during debugging. Error checking is redundant if the
-        # return value of getMulti call is inspected.
-
         # Retrieve the geometry. Return an error if the ID does not exist.
-        # fixme: error handling
-        db2 = datastore.dbHandles['ObjInstances']
-        docs = db2.getMulti(objIDs).data
+        db = datastore.dbHandles['ObjInstances']
+        ret = db.getMulti(objIDs)
+        if not ret.ok:
+            return ret
 
         # Initialise the output dictionary with a None value for every
         # requested object. The loop below will overwrite these values for
@@ -1028,39 +1025,35 @@ class Clerk(config.AzraelProcess):
 
         # Determine the fragment- type (eg. 'raw' or 'dae') and URL and put it
         # into the output dictionary.
+        docs = ret.data
         pjoin = os.path.join
         try:
-            # Create a dedicated dictionary for each object.
+            # Create a dedicated dictionary for each object. If the data in the
+            # data store is corrupt then this will trigger a type error. This is
+            # serious error that must not happen.
             for aid, doc in docs.items():
-                # It is well possible that (parts of) the document are being
-                # deleted by another client while we query it here. The try/except
-                # block ensures that we will skip documents that have become
-                # (partially) invalid because one or more keys have gone missing.
-                try:
-                    # Restore the original fragment file names.
-                    template_json = self._unmangleTemplate(doc['template'])
+                # Restore the original fragment file names.
+                template_json = self._unmangleTemplate(doc['template'])
 
-                    # Compile each fragment into a `FragMeta` type.
-                    frags = template_json['fragments']
-                    frags = {k: FragMeta(**v) for (k, v) in frags.items()}
+                # Compile each fragment into a `FragMeta` type.
+                frags = template_json['fragments']
+                frags = {k: FragMeta(**v) for (k, v) in frags.items()}
 
-                    # Compile the dictionary with all the geometries that comprise
-                    # the current object, including where to download the geometry
-                    # data itself (we only provide the meta information).
-                    out[aid] = {
-                        k: {
-                            'scale': v.scale,
-                            'position': v.position,
-                            'rotation': v.rotation,
-                            'fragtype': v.fragtype,
-                            'url_frag': pjoin(doc['url_frag'], k),
-                            'files': list(v.files.keys()),
-                        } for (k, v) in frags.items()}
-                except KeyError as err:
-                    continue
+                # Compile the dictionary with all the geometries that comprise
+                # the current object, including where to download the geometry
+                # data itself (we only provide the meta information).
+                out[aid] = {
+                    k: {
+                        'scale': v.scale,
+                        'position': v.position,
+                        'rotation': v.rotation,
+                        'fragtype': v.fragtype,
+                        'url_frag': pjoin(doc['url_frag'], k),
+                        'files': list(v.files.keys()),
+                    } for (k, v) in frags.items()}
         except TypeError:
             msg = 'Inconsistent Fragment data'
-            self.logit.error(msg)
+            self.logit.critical(msg)
             return RetVal(False, msg, None)
         return RetVal(True, None, out)
 
