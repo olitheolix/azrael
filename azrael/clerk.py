@@ -1479,8 +1479,7 @@ class Clerk(config.AzraelProcess):
         :return: list of objIDs
         :rtype: list(int)
         """
-        db2 = datastore.dbHandles['ObjInstances']
-        return db2.allKeys()
+        return datastore.dbHandles['ObjInstances'].allKeys()
 
     @typecheck
     def setForce(self, objID: str, force: (tuple, list), rpos: (tuple, list)):
