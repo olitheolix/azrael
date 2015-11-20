@@ -224,12 +224,12 @@ def ToClerk_SetFragments_Decode(payload: dict):
         return base64.b64decode(filedata.encode('utf8'))
 
     # Undo the Base64 encoding.
-    for objID in payload['fragments']:
-        for fragname, fragdata in payload['fragments'][objID].items():
-            if 'del' in fragdata:
-                fragdata['del'] = [dec(v) for v in fragdata['del']]
-            if 'put' in fragdata:
-                fragdata['put'] = {k: dec(v) for k, v in fragdata['put'].items()}
+    for objID in payload['fragupdates']:
+        for fragops in payload['fragupdates'][objID].values():
+            if 'del' in fragops:
+                fragops['del'] = [dec(v) for v in fragops['del']]
+            if 'put' in fragops:
+                fragops['put'] = {k: dec(v) for k, v in fragops['put'].items()}
     return payload
 
 
