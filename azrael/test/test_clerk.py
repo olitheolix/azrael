@@ -394,9 +394,9 @@ class TestClerk:
         # Attempt to retrieve a non-existing object.
         assert not clerk.getTemplateID('100').ok
 
-    def test_removeObject(self):
+    def test_removeObjects(self):
         """
-        Test the 'removeObject' command in the Clerk.
+        Test the 'removeObjects' command in the Clerk.
 
         Spawn an object and ensure it exists, then delete it and ensure it does
         not exist anymore.
@@ -423,27 +423,27 @@ class TestClerk:
 
         # Delete a non-existing object. This must do nothing. It must not
         # return an error.
-        assert clerk.removeObject(['blah']).ok
+        assert clerk.removeObjects(['blah']).ok
         ret = clerk.getAllObjectIDs()
         assert len(ret.data) == len(objIDs)
 
         # Delete the first object.
-        assert clerk.removeObject([objIDs[0]]).ok
+        assert clerk.removeObjects([objIDs[0]]).ok
 
         # Only three objects must still exist.
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, set(ret.data)) == (True, set(objIDs[1:]))
 
         # Deleting the same object again must silently fail.
-        assert clerk.removeObject([objIDs[0]]).ok
+        assert clerk.removeObjects([objIDs[0]]).ok
 
         # Delete the second object.
-        assert clerk.removeObject([objIDs[1]]).ok
+        assert clerk.removeObjects([objIDs[1]]).ok
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, set(ret.data)) == (True, set(objIDs[2:]))
 
         # Delete the last two objects.
-        assert clerk.removeObject(objIDs[2:]).ok
+        assert clerk.removeObjects(objIDs[2:]).ok
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
@@ -1187,7 +1187,7 @@ class TestClerk:
 
         # Delete first object. Then verify that Clerk returns None for its
         # geometry.
-        assert clerk.removeObject([objID_1]).ok
+        assert clerk.removeObjects([objID_1]).ok
         ret = clerk.getFragments([objID_1, objID_2])
         assert ret.ok
         assert ret.data[objID_1] is None

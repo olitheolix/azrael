@@ -167,12 +167,12 @@ def FromClerk_GetAllObjectIDs_Encode(objIDs: (list, tuple)):
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_RemoveObject_Decode(payload: dict):
+def ToClerk_RemoveObjects_Decode(payload: dict):
     return payload
 
 
 @typecheck
-def FromClerk_RemoveObject_Encode(dummyarg):
+def FromClerk_RemoveObjects_Encode(dummyarg):
     return None
 
 

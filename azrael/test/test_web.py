@@ -203,7 +203,7 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
 
         # Delete the instance and verify it is now gone.
         cnt = self.dibbler.getNumFiles().data
-        assert clerk.removeObject(objID='1') == (True, None, None)
+        assert clerk.removeObjects(['1']) == (True, None, None)
         self.dibbler.getNumFiles().data == cnt - 2
         with pytest.raises(AssertionError):
             self.verifyTemplate('{}/{}'.format(url_inst, 1), frags)

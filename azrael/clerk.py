@@ -110,10 +110,10 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_Spawn_Decode,
                 self.spawn,
                 protocol.FromClerk_Spawn_Encode),
-            'remove_object': (
-                protocol.ToClerk_RemoveObject_Decode,
-                self.removeObject,
-                protocol.FromClerk_RemoveObject_Encode),
+            'remove_objects': (
+                protocol.ToClerk_RemoveObjects_Decode,
+                self.removeObjects,
+                protocol.FromClerk_RemoveObjects_Encode),
             'get_all_objids': (
                 protocol.ToClerk_GetAllObjectIDs_Decode,
                 self.getAllObjectIDs,
@@ -966,7 +966,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, objIDs)
 
     @typecheck
-    def removeObject(self, objIDs: (tuple, list)):
+    def removeObjects(self, objIDs: (tuple, list)):
         """
         Remove all ``objIDs`` from the physics simulation.
 
