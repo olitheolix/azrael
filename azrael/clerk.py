@@ -1301,26 +1301,18 @@ class Clerk(config.AzraelProcess):
         if not ret.ok:
             return ret
 
-        # Compile a dictionary containing the fragment- and body state.
+        # Compile a dictionary containing the fragment- and body states.
         out = {}
         RBS = aztypes._RigidBodyData
         for aid, doc in ret.data.items():
             if doc is None:
-                # State is None for non-existing objects.
+                # The requested object does not exist.
                 out[aid] = None
             else:
                 # Compile the rigid body data and overwrite the version tag
                 # with the one stored in the database.
                 rbs = RBS(**doc['template']['rbs'])
                 out[aid] = {'rbs': rbs._replace(version=doc['version'])}
-
-        # If the user requested a particular set of objects then make sure each
-        # one is in the output dictionary. If one is missing (eg it does not
-        # exist) then its value is None.
-        # fixme: should only return the objects we found to be consistent with
-        # datastore api.
-        if objIDs is not None:
-            out = {_: out[_] if _ in out else None for _ in objIDs}
         return RetVal(True, None, out)
 
     @typecheck

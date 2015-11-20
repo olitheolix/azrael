@@ -464,11 +464,11 @@ class TestClerk:
         ret = clerk.getRigidBodies(None)
         assert (ret.ok, ret.data) == (True, {})
 
-        # Retrieve the SV for a non-existing ID.
+        # Retrieve the bodies for a non-existing ID.
         ret = clerk.getRigidBodies(['10'])
         assert (ret.ok, ret.data) == (True, {'10': None})
 
-        # Spawn a new object. It must have ID=1.
+        # Spawn a new object. Its AID must be objID_1.
         init_1 = {
             'templateID': '_templateSphere',
             'rbs': {
@@ -486,11 +486,12 @@ class TestClerk:
         ret = clerk.spawn([init_1])
         assert (ret.ok, ret.data) == (True, [objID_1])
 
-        # Retrieve the body state for a non-existing ID --> must fail.
+        # Retrieve the body state for a non-existing ID --> must return None
+        # for that body.
         ret = clerk.getRigidBodies(['10'])
         assert (ret.ok, ret.data) == (True, {'10': None})
 
-        # Retrieve the body state for the existing ID=1.
+        # Retrieve the body state for the existing objID_1.
         ret = clerk.getRigidBodies([objID_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
