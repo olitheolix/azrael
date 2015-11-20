@@ -1309,52 +1309,60 @@ class Clerk(config.AzraelProcess):
 
         This method always succeeds. However, the 'data' field in the return
         value contains a list of all object IDs that could not be updated for
-        whatever reason. If an error occurs this method will simply skip to the
-        next object and not announce the creation of a new object.
+        whatever reason.
+
+        This this method will publish an object modification announcment for
+        all those objects that could be updated in the database.
 
         :param dict[objID: RigidBodyData] bodies: new object attributes.
         :return: Success
         """
-        # Convenience.
-        db2 = datastore.dbHandles['ObjInstances']
-        invalid_objects = []
+        # Get handle to datastore.
+        db = datastore.dbHandles['ObjInstances']
 
+        # Compile the data store ops to modify all the objects.
+        ops = {}
         for objID, body in bodies.items():
-            # Backup the key names the user wants us to update.
+            # Backup the attribute names the user wants us to modify.
             modify_keys = set(body.keys())
 
-            # Compile- and sanity check ``body``.
+            # Compile- and sanity check ``body``. This will return a complete
+            # RigidBody object with defaults for all the values the user did
+            # not specify. We will remove these default values later.
             try:
                 body = aztypes.DefaultRigidBody(**body)._asdict()
             except TypeError:
                 return RetVal(False, 'Invalid body data', None)
 
-            # Only retain those keys the user wanted us to update (the
-            # DefaultRigidBody constructed a complete body with *all*
-            # attributes).
+            # Remove the default values and retain only those the user wants to
+            # explicitly update.
             body = {k: v for (k, v) in body.items() if k in modify_keys}
 
             # Update the respective entries in the database. The keys already have
-            # the correct names but require the 'template.rbs' to match the
-            # position in the master record.
-            ops = {
-                objID: {
-                    'inc': {},
-                    'set': {('template', 'rbs',  k): v for (k, v) in body.items()},
-                    'unset': [],
-                    'exists': {},
-                }
+            # the correct names but require the 'template.rbs' prefix to match the
+            # position in the document hierarchy.
+            ops[objID] = {
+                'inc': {},
+                'set': {('template', 'rbs',  k): v for (k, v) in body.items()},
+                'unset': [],
+                'exists': {},
             }
-            ret = db2.modify(ops)
-            if False in ret.data.values():
-                invalid_objects.append(objID)
-                continue
 
-            # Notify Leonard.
-            ret = leoAPI.addCmdModifyBodyState(objID, body)
-            if not ret.ok:
-                return ret
+        # Update all the objects.
+        ret = db.modify(ops)
+        if not ret.ok:
+            return ret
 
+        # Announce the modification for each object that was successfully
+        # updated. Furthermore, compile a list of all objects that could not be
+        # updated for whatever reason.
+        invalid_objects = []
+        for aid, valid in ret.data.items():
+            if valid:
+                # Notify Leonard.
+                leoAPI.addCmdModifyBodyState(objID, body)
+            else:
+                invalid_objects.append(aid)
         return RetVal(True, None, invalid_objects)
 
     @typecheck
