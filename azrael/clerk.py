@@ -842,15 +842,19 @@ class Clerk(config.AzraelProcess):
         :raises: None
         """
         # Fetch the instance data and return immediately if it does not exist.
-        db2 = datastore.dbHandles['ObjInstances']
-        ret = db2.getOne(objID, [['template']])
-        doc = ret.data
-        if not ret.ok or doc is None:
+        db = datastore.dbHandles['ObjInstances']
+        ret = db.getOne(objID, [['template']])
+        if not ret.ok:
+            return ret
+
+        # Return with an error if ``objID`` does not exist.
+        if ret.data is None:
             msg = 'Could not find instance data for objID <{}>'.format(objID)
             self.logit.info(msg)
             return RetVal(False, msg, None)
 
         # Compile the instance information (it is a `Template` data structure).
+        doc = ret.data
         try:
             instance = Template(**doc['template'])
         except TypeError:
