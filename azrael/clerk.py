@@ -1070,24 +1070,28 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
         return RetVal(True, None, out)
 
-    def _setFragOps(self, objID, fragkey, url, fragdata, op_db, op_file):
+    def _setFragOps(self, objID, fragkey, url, fragop, op_db, op_file):
         """
-        Compile meta commands for database.
+        Compile meta commands for database and return success.
 
         This is an auxiliary function for `setFragments`. It parses the
-        provided ``fragdata`` and determine which database fields need to be
+        provided ``fragop`` and determine which database fields need to be
         set, modified, or deleted. The results are added to ``op_db``.
 
         Similarly, it determine which files have to be
         added, overwritten, or removed into Dibbler. The results are added to
         ``op_file``.
 
+        This method modifies the ``op_db`` and ``op_file`` dictionaries
+        directly. It returns True if ``fragop`` specifies a valid operation,
+        otherwise it returns False.
+
         ..note:: This method is database agnostic. The caller is responsible
             for compiling ``op_db`` into actual database commands.
         """
         # Determine if the fragments needs to be overwritten ('put'), modified
         # ('mod'), or deleted ('del').
-        if fragdata['op'] == 'del':
+        if fragop['op'] == 'del':
             # Delete a fragment: remove the top level key from the
             # database. Recursively delete all its files starting at the
             # top-level directory.
@@ -1095,32 +1099,32 @@ class Clerk(config.AzraelProcess):
             op_db['inc'] = {('version', ): 1}
             op_db['unset'].append(fragkey)
             op_file['rmdir'].append(url)
-        elif fragdata['op'] == 'put':
+        elif fragop['op'] == 'put':
             # New fragment: this will delete the old fragment and then insert a
             # new one. This operation only goes ahead if a complete fragment is
-            # specified. If the one or more keys (eg. 'position') are missing
-            # then nothing happens. The old fragment remains valid.
+            # specified. If one or more keys (eg. 'position') are missing then
+            # nothing happens and the old fragment remains intact.
             try:
                 # The JSON hierarchy for the new fragment.
                 doc = {
-                    'scale': fragdata['scale'],
-                    'position': fragdata['position'],
-                    'rotation': fragdata['rotation'],
-                    'fragtype': fragdata['fragtype'],
-                    'files': [fname.replace('.', ';') for fname in fragdata['put']]
+                    'scale': fragop['scale'],
+                    'position': fragop['position'],
+                    'rotation': fragop['rotation'],
+                    'fragtype': fragop['fragtype'],
+                    'files': [fname.replace('.', ';') for fname in fragop['put']]
                 }
 
-                # Specify the files that have should to go into Dibbler.
+                # Specify the files that should go into Dibbler.
                 files = {}
-                for fname, fdata in fragdata['put'].items():
+                for fname, fdata in fragop['put'].items():
                     files['{url}/{filename}'.format(url=url, filename=fname)] = fdata
             except KeyError:
+                # PUT operation is inconsistent. Notify the caller.
                 msg = 'New fragment for object <{}> is incomplete'.format(objID)
                 self.logit.info(msg)
-                return
+                return False
 
-            # The fragment is valid. Therefore specify the new document
-            # hierarchy.
+            # The fragment is valid. Specify the new document hierarchy.
             op_db['set'][fragkey] = doc
             op_db['inc'] = {('version', ): 1}
 
@@ -1138,17 +1142,17 @@ class Clerk(config.AzraelProcess):
 
             # Overwrite the state variables (if there are any).
             for state in ('scale', 'position', 'rotation'):
-                if state not in fragdata:
+                if state not in fragop:
                     continue
-                op_db['set'][fragkey + (state,)] = fragdata[state]
+                op_db['set'][fragkey + (state,)] = fragop[state]
 
             # A new fragment types must trigger a version increase.
-            if 'fragtype' in fragdata:
-                op_db['set'][fragkey + ('fragtype',)] = fragdata['fragtype']
+            if 'fragtype' in fragop:
+                op_db['set'][fragkey + ('fragtype',)] = fragop['fragtype']
                 op_db['inc'] = {('version', ): 1}
 
             # Delete geometry files for the current fragment.
-            for fname in fragdata.get('del', []):
+            for fname in fragop.get('del', []):
                 # The file to delete in Dibbler.
                 absname = '{url}/{filename}'.format(url=url, filename=fname)
                 op_file['del'].append(absname)
@@ -1161,7 +1165,7 @@ class Clerk(config.AzraelProcess):
                 op_db['inc'] = {('version', ): 1}
 
             # Overwrite these files.
-            for fname, fdata in fragdata.get('put', {}).items():
+            for fname, fdata in fragop.get('put', {}).items():
                 # The file to add/overwrite in Dibbler.
                 absname = '{url}/{filename}'.format(url=url, filename=fname)
                 op_file['put'][absname] = fdata
@@ -1172,6 +1176,9 @@ class Clerk(config.AzraelProcess):
                 # Update the keys that list the file names.
                 op_db['set'][fragkey + ('files', fname)] = None
                 op_db['inc'] = {('version', ): 1}
+
+        # Tell the caller that the operation is valid.
+        return True
 
     @typecheck
     def setFragments(self, fragments: dict):
@@ -1184,8 +1191,10 @@ class Clerk(config.AzraelProcess):
         For instance:: {objID_0: fragdata, objID_1: fragdata, ...}, where each
         ``fragdata`` entry must adhere to the `setFragments` schema.
 
+        The returned dictionary of Booleans states which updates succeeded.
+
         :param dict fragments: new fragments.
-        :return: dict (eg. {'update: #update objects})
+        :return: dict[aid]: bool to state which ones were successfully updated.
         """
         db = datastore.dbHandles['ObjInstances']
 
@@ -1219,13 +1228,15 @@ class Clerk(config.AzraelProcess):
             pre = '{dst}/{aid}'.format(dst=config.url_instances, aid=objID)
 
             # Compile the query to update the instance data.
-            for fragname, fragdata in frags.items():
+            for fragname, fragop in frags.items():
                 # Check input data against schema.
                 try:
-                    jsonschema.validate(fragdata, azschemas.setFragments)
+                    jsonschema.validate(fragop, azschemas.setFragments)
                 except jsonschema.exceptions.ValidationError:
-                    self.logit.warning('Input failed to validate')
-                    continue
+                    msg = 'Invalid input data for AID {} and fragment {}'
+                    msg = msg.format(objID, fragname)
+                    self.logit.warning(msg)
+                    return RetVal(False, msg, None)
 
                 # Define the prefix key in the JSON hierarchy for current fragment, and
                 # the file name prefix in Dibbler.
@@ -1234,7 +1245,9 @@ class Clerk(config.AzraelProcess):
 
                 # Determine the necessary database operations (will update the
                 # 'op_db' and 'op_file' dictionaries).
-                self._setFragOps(objID, fragkey, url, fragdata, op_db, op_file)
+                sfo = self._setFragOps
+                if not sfo(objID, fragkey, url, fragop, op_db, op_file):
+                    return RetVal(False, 'Invalid operation', None)
                 del fragkey, url
 
             # Add the ops for the data store and Igor.
@@ -1251,7 +1264,8 @@ class Clerk(config.AzraelProcess):
             return ret
 
         # Determine the AIDs for which the update succeeded.
-        valid = [k for k, v in ret.data.items() if v is True]
+        updated = ret.data
+        valid = [k for k, v in updated.items() if v is True]
 
         # Issue the Dibbler update for each object that could be successfully
         # updated in the data store.
@@ -1263,7 +1277,7 @@ class Clerk(config.AzraelProcess):
 
         # Return the number of successfully updated objects.
         # fixme: should return which ones were updated instead.
-        return RetVal(True, None, {'updated': len(valid)})
+        return RetVal(True, None, {'updated': updated})
 
     @typecheck
     def getRigidBodies(self, objIDs: (list, tuple)):

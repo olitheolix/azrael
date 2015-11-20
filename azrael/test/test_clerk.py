@@ -1760,7 +1760,7 @@ class TestModifyFragments:
                 }
             }
         }
-        assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
+        assert clerk.setFragments(cmd) == (True, None, {'updated': {id_0: True}})
 
         # -------------------------------------------------
         # Verify the content in the state variable database
@@ -1842,13 +1842,15 @@ class TestModifyFragments:
         version_0 = ret.data[id_0]['rbs']['version']
         version_1 = ret.data[id_1]['rbs']['version']
 
-        # Modify the geometry of 'fraw' in object id_0 and update the state of
+        # Modify the 'fraw' geometry in object id_0 and update the state of
         # 'fdae' in id_1.
         cmd = {
             id_0: {'fraw': {'op': 'mod', 'fragtype': 'DAE'}},
             id_1: {'fdae': {'op': 'mod', 'position': [1, 2, 3]}}
         }
-        assert clerk.setFragments(cmd) == (True, None, {'updated': 2})
+        ret = clerk.setFragments(cmd)
+        assert ret.ok is True
+        assert ret.data == {'updated': {id_0: True, id_1: True}}
 
         # Fetch the object states. Verify that the first object has a new
         # version but the second does not.
@@ -1888,7 +1890,7 @@ class TestModifyFragments:
                 }
             }
         }
-        assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
+        assert clerk.setFragments(cmd) == (True, None, {'updated': {id_0: True}})
 
         # The object must now have a new version.
         ret = clerk.getObjectStates([id_0])
@@ -1924,7 +1926,7 @@ class TestModifyFragments:
                 }
             }
         }
-        assert clerk.setFragments(cmd) == (True, None, {'updated': 0})
+        assert not clerk.setFragments(cmd).ok
 
         # The object version must not have changed.
         ret = clerk.getObjectStates([id_0])
@@ -1951,7 +1953,7 @@ class TestModifyFragments:
         cmd = {
             id_0: {'blah': {'fragtype': 'DAE', 'op': 'mod'}},
         }
-        assert clerk.setFragments(cmd) == (True, None, {'updated': 0})
+        assert clerk.setFragments(cmd) == (True, None, {'updated': {id_0: False}})
 
         # Nothing must have changed.
         assert reference == clerk.getFragments([id_0])
@@ -1976,7 +1978,7 @@ class TestModifyFragments:
                 }
             }
         }
-        assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
+        assert clerk.setFragments(cmd) == (True, None, {'updated': {id_0: True}})
 
         # The replacement worked if the values are accurate. Any leftovers
         # from the original fragment must have been deleted.  Most notably
@@ -2030,7 +2032,7 @@ class TestModifyFragments:
                 }
             }
         }
-        assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
+        assert clerk.setFragments(cmd) == (True, None, {'updated': {id_0: True}})
 
         # No fragment data must be available anymore for 'fraw'.
         ret = clerk.getFragments([id_0])
@@ -2058,7 +2060,7 @@ class TestModifyFragments:
 
         # Attempt to modify the fragment for a non-existing object.
         cmd = {fake_id: {'myfrag': {'fragtype': 'test', 'op': 'mod'}}}
-        assert clerk.setFragments(cmd) == (True, None, {'updated': 0})
+        assert clerk.setFragments(cmd) == (True, None, {'updated': {fake_id: False}})
 
 
 class TestClerkEnd2End:
@@ -2242,7 +2244,7 @@ class TestClerkEnd2End:
             }
         }
 
-        assert clerk.setFragments(cmd) == (True, None, {'updated': 1})
+        assert clerk.setFragments(cmd) == (True, None, {'updated': {objID: True}})
         ret = clerk.getFragments([objID])
         assert ret.ok
         data = ret.data[objID]
