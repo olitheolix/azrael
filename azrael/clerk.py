@@ -1253,9 +1253,8 @@ class Clerk(config.AzraelProcess):
 
         If ``objIDs`` is *None* then all bodies will be returned.
 
-        The dictionary keys will be the elements of ``objIDs`` and the
-        associated  values are ``RigidBodyData`` instances, or *None*
-        if the corresponding objID did not exist.
+        The dictionary are ``objIDs`` and the values the associated
+        ``RigidBodyData`` data (or *None* if the objID did not exist).
 
         Return value example::
 
@@ -1264,37 +1263,39 @@ class Clerk(config.AzraelProcess):
                 id_2: {'rbs': RigidBodyData(...)},
             }
 
-        ..note:: the inner 'rbs' dictionary is currently redundant since it
-            contains only a single hard coded key, but this will make it easy
-            to pass along other values in the future, should the need arise.
+        ..note:: The inner 'rbs' dictionary is currently redundant since it
+            contains only a single hard coded key. However, this will make it
+            easy to pass along other values in the future, should the need
+            arise.
 
         :param list[int] objIDs: list of objects to query.
         :return: see example above
         :rtype: dict
         """
         # Fetch the objects. If `objID` is None the client wants all objects.
-        db2 = datastore.dbHandles['ObjInstances']
+        db = datastore.dbHandles['ObjInstances']
         if objIDs is None:
-            docs = db2.getAll([['version'], ['objID'], ['template', 'rbs']])
+            ret = db.getAll([['version'], ['objID'], ['template', 'rbs']])
         else:
-            docs = db2.getMulti(objIDs, [['version'], ['objID'], ['template', 'rbs']])
-
-        # fixme: error handling
-        docs = docs.data
+            ret = db.getMulti(objIDs, [['version'], ['objID'], ['template', 'rbs']])
+        if not ret.ok:
+            return ret
 
         # Compile the data from the database into a simple dictionary that
         # contains the fragment- and body state.
         out = {}
         RBS = aztypes._RigidBodyData
-        for aid, doc in docs.items():
+        for aid, doc in ret.data.items():
             # Compile the rigid body data and overwrite the version tag with
-            # one stored in the database.
+            # the one stored in the database.
             rbs = RBS(**doc['template']['rbs'])
             out[aid] = {'rbs': rbs._replace(version=doc['version'])}
 
         # If the user requested a particular set of objects then make sure each
         # one is in the output dictionary. If one is missing (eg it does not
         # exist) then its value is None.
+        # fixme: should only return the objects we found to be consistent with
+        # datastore api.
         if objIDs is not None:
             out = {_: out[_] if _ in out else None for _ in objIDs}
         return RetVal(True, None, out)
