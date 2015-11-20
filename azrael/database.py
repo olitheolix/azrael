@@ -419,17 +419,29 @@ class DatabaseInMemory(DatastoreBase):
     #                             API methods.
     # -------------------------------------------------------------------------
     def reset(self):
+        """
+        See docu in ``DatastoreBase``.
+        """
         self.content = {}
         return RetVal(True, None, None)
 
     def count(self):
+        """
+        See docu in ``DatastoreBase``.
+        """
         return RetVal(True, None, len(self.content))
 
     def allKeys(self):
+        """
+        See docu in ``DatastoreBase``.
+        """
         keys = list(self.content.keys())
         return RetVal(True, None, keys)
 
     def getOne(self, aid, prj=None):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkGet([aid], prj) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
@@ -443,6 +455,9 @@ class DatabaseInMemory(DatastoreBase):
             return RetVal(True, None, doc)
 
     def getMulti(self, aids, prj=None):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkGet(aids, prj) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
@@ -455,6 +470,9 @@ class DatabaseInMemory(DatastoreBase):
         return RetVal(True, None, docs)
 
     def getAll(self, prj=None):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkGetAll(prj) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
@@ -467,6 +485,9 @@ class DatabaseInMemory(DatastoreBase):
         return RetVal(True, None, docs)
 
     def put(self, ops: dict):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkPut(ops) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
@@ -482,6 +503,9 @@ class DatabaseInMemory(DatastoreBase):
         return RetVal(True, None, ret)
 
     def replace(self, ops: dict):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkPut(ops) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
@@ -497,6 +521,9 @@ class DatabaseInMemory(DatastoreBase):
         return RetVal(True, None, ret)
 
     def mod(self, ops):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkMod(ops) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
@@ -531,6 +558,9 @@ class DatabaseInMemory(DatastoreBase):
         return RetVal(True, None, ret)
 
     def remove(self, aids: (tuple, list)):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkRemove(aids) is False:
             return RetVal(False, 'Argument error', None)
 
@@ -619,17 +649,29 @@ class DatabaseMongo(DatastoreBase):
     #                             API methods.
     # -------------------------------------------------------------------------
     def reset(self):
+        """
+        See docu in ``DatastoreBase``.
+        """
         self.db.drop()
         return RetVal(True, None, None)
 
     def count(self):
+        """
+        See docu in ``DatastoreBase``.
+        """
         return RetVal(True, None, self.db.count())
 
     def allKeys(self):
+        """
+        See docu in ``DatastoreBase``.
+        """
         keys = self.db.distinct('aid')
         return RetVal(True, None, keys)
 
     def getOne(self, aid, prj=None):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkGet([aid], prj) is False:
             self.logit.warning('Invalid GETONE argument')
             return RetVal(False, 'Argument error', None)
@@ -644,6 +686,9 @@ class DatabaseMongo(DatastoreBase):
             return RetVal(True, None, doc)
 
     def getMulti(self, aids, prj=None):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkGet(aids, prj) is False:
             self.logit.warning('Invalid GETMULTI argument')
             return RetVal(False, 'Argument error', None)
@@ -655,6 +700,9 @@ class DatabaseMongo(DatastoreBase):
         return RetVal(True, None, docs)
 
     def getAll(self, prj=None):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkGetAll(prj) is False:
             self.logit.warning('Invalid GETALL argument')
             return RetVal(False, 'Argument error', None)
@@ -666,6 +714,9 @@ class DatabaseMongo(DatastoreBase):
         return RetVal(True, None, docs)
 
     def put(self, ops: dict):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkPut(ops) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
@@ -689,6 +740,9 @@ class DatabaseMongo(DatastoreBase):
         return RetVal(True, None, ret)
 
     def replace(self, ops: dict):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkPut(ops) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
@@ -704,6 +758,9 @@ class DatabaseMongo(DatastoreBase):
         return RetVal(True, None, ret)
 
     def mod(self, ops):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkMod(ops) is False:
             self.logit.warning('Invalid MOD argument')
             return RetVal(False, 'Argument error', None)
@@ -734,6 +791,9 @@ class DatabaseMongo(DatastoreBase):
         return RetVal(True, None, ret)
 
     def remove(self, aids: (tuple, list)):
+        """
+        See docu in ``DatastoreBase``.
+        """
         if _checkRemove(aids) is False:
             self.logit.warning('Invalid REMOVE argument')
             return RetVal(False, 'Argument error', None)
