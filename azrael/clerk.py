@@ -468,36 +468,35 @@ class Clerk(config.AzraelProcess):
         # Remove all duplicates from the list of templateIDs.
         templateIDs = tuple(set(templateIDs))
 
-        # Fetch all requested templates and place them into a dictionary where
-        # the template ID is the key. Use a projection operator to suppress
-        # Mongo's "_id" field.
+        # Fetch the requsted templates.
+        db = datastore.dbHandles['Templates']
+        ret = db.getMulti(templateIDs)
+        if not ret.ok:
+            return ret
 
-        # fixme: error handling; docu string above.
-        db2 = datastore.dbHandles['Templates']
-        cursor = db2.getMulti(templateIDs).data
-
-        # Compile the output dictionary and compile the `Template` instances.
-        out = {}
+        # Guard agains corrupt data in the data store.
         try:
-            for aid, doc in cursor.items():
+            # Compile all templates into the 'out' dictionary.
+            out = {}
+            for aid, doc in ret.data.items():
                 # Undo the file name mangling.
                 template_json = self._unmangleTemplate(doc['template'])
 
                 # Parse the document into a Template structure and add it to
                 # the list of templates.
-                template = Template(**template_json)
                 out[aid] = {
                     'url_frag': doc['url_frag'],
-                    'template': template,
+                    'template': Template(**template_json),
                 }
         except TypeError:
+            # This is a serious error because it means the data in the data
+            # store is corrupt.
             msg = 'Inconsistent Template data'
-            self.logit.error(msg)
+            self.logit.critical(msg)
             return RetVal(False, msg, None)
-        del cursor
 
-        # Return immediately if we received fewer templates than requested
-        # (simply means that not all requested template names were valid).
+        # Return immediately if we received fewer templates than requested.
+        # This simply means that some template names were invalid.
         if len(out) < len(templateIDs):
             msg = 'Could not find all templates'
             self.logit.info(msg)
