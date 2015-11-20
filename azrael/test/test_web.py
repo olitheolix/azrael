@@ -118,10 +118,11 @@ class TestWebServer(tornado.testing.AsyncHTTPTestCase):
         del frags_t1, frags_t2
 
         # Add the first template.
-        assert clerk.addTemplates([t1]).ok
+        assert clerk.addTemplates([t1]) == (True, None, {'t1': True})
 
-        # Attempt to add the template a second time. This must fail.
-        assert not clerk.addTemplates([t1]).ok
+        # Attempt to add the same template a second time. This must not do
+        # anything.
+        assert clerk.addTemplates([t1]) == (True, None, {'t1': False})
 
         # Verify the first template is available for download via WebServer.
         url_template = config.url_templates

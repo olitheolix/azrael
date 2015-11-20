@@ -68,6 +68,10 @@ class TestClerk:
         t4 = getTemplate('_templatePlane', rbs=rbs_plane, fragments=frag)
         ret = self.clerk.addTemplates([t1, t2, t3, t4])
         assert ret.ok
+        assert ret.data == {
+            '_templateEmpty': True, '_templateSphere': True,
+            '_templateBox': True, '_templatePlane': True,
+        }
 
     def teardown_method(self, method):
         self.dibbler.reset()
@@ -126,50 +130,26 @@ class TestClerk:
         # Convenience.
         clerk = azrael.clerk.Clerk()
 
-        # Install a mock for 'Dibbler.put'.
-        mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
-        clerk.dibbler = mock_dibbler
-
-        # The mock must not have been called so far.
-        assert mock_dibbler.put.call_count == 0
-
         # Convenience.
         body = getRigidBody(cshapes={'cssphere': getCSSphere()})
 
         # Request an invalid ID.
         assert not clerk.getTemplates(['blah']).ok
 
-        # Wrong argument.
-        ret = clerk.addTemplates([1])
-        assert (ret.ok, ret.msg) == (False, 'Invalid template data')
-        assert mock_dibbler.put.call_count == 0
+        # Invalid argument type.
+        assert clerk.addTemplates([1]) == (False, 'Invalid template data', None)
 
         # Compile a template structure.
         frags = {'foo': getFragRaw()}
         temp = getTemplate('bar', rbs=body, fragments=frags)
 
-        # Add template when Dibbler's 'put' fails. Exactly one such call must
-        # occur (for the one 'model.json' file associated with the RAW fragment
-        # in our template).
-        mock_ret = RetVal(False, 't_error', None)
-        mock_dibbler.put.return_value = mock_ret
-        ret = clerk.addTemplates([temp])
-        assert (ret.ok, ret.msg) == (False, 't_error')
-        assert mock_dibbler.put.call_count == 1
-
-        # Add template when Dibbler's 'put' method succeeds.
-        mock_ret = RetVal(True, None, {'url_frag': 'mock_str'})
-        mock_dibbler.put.return_value = mock_ret
-        assert clerk.addTemplates([temp]).ok
-        assert mock_dibbler.put.call_count == 2
+        # Add a valid template.
+        assert clerk.addTemplates([temp]) == (True, None, {'bar': True})
 
         # Adding the same template again must fail.
-        # fixme: dibbler.put must not be called (ie its call count must be 2).
-        #        This is not how it works at the moment.
-        assert not clerk.addTemplates([temp]).ok
-        assert mock_dibbler.put.call_count == 3
+        assert clerk.addTemplates([temp]) == (True, None, {'bar': False})
 
-        # Define two boosters and one factory unit for a new template.
+        # Define a new template with two boosters and one factory.
         boosters = {
             '0': aztypes.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
                                  minval=0, maxval=0.5, force=0),
@@ -188,8 +168,7 @@ class TestClerk:
                            fragments=frags,
                            boosters=boosters,
                            factories=factories)
-        assert clerk.addTemplates([temp]).ok
-        assert mock_dibbler.put.call_count == 4
+        assert clerk.addTemplates([temp]) == (True, None, {'t3': True})
 
         # Retrieve the just created object and verify the collision shape,
         # factories, and boosters. Note: we cannot compare against `temp`
@@ -206,9 +185,9 @@ class TestClerk:
         # files with None. The net effect is that eg
         # ...['files'] = {'foo': something', 'bar': something} will become
         # ...['files'] = {'foo': None, 'bar': None}.
-        # This is the kind of data that Clerk was suppoed to store in the
-        # template data base (ie all the fragment file names but not their
-        # content). Here we verify that this is true.
+        # This is the kind of data that Clerk is supposed to store in the
+        # templates, ie only the file names, not their content (Dibbler takes
+        # care of that). Here we verify that this is true.
         frag_ref = {k: aztypes.FragMeta(*v) for k, v in frags.items()}
         for fragname, fm in frag_ref.items():
             for fname, fdata in fm.files.items():
@@ -229,8 +208,7 @@ class TestClerk:
         # Convenience.
         clerk = azrael.clerk.Clerk()
 
-        # Install a mock for Dibbler with an 'addTemplate' function that
-        # always succeeds.
+        # Install a Dibbler mock in Clerk.
         mock_dibbler = mock.create_autospec(azrael.dibbler.Dibbler)
         mock_ret = RetVal(True, None, {'url_frag': 'mock_str'})
         mock_dibbler.put.return_value = mock_ret
@@ -249,13 +227,16 @@ class TestClerk:
         t2 = getTemplate(name_2, fragments=frag_2)
 
         # Uploading the templates must succeed.
-        assert clerk.addTemplates([t1, t2]).ok
+        ret = clerk.addTemplates([t1, t2])
+        assert ret == (True, None, {'t1': True, 't2': True})
         assert mock_dibbler.put.call_count == 2
 
-        # Attempt to upload the same templates again. This must fail.
-        # fixme: the 'dibbler.put' should not be called.
-        assert not clerk.addTemplates([t1, t2]).ok
-        assert mock_dibbler.put.call_count == 4
+        # Attempt to upload the same templates again must not return an error.
+        # However, addTemplate must tell us that no templates have been added
+        # to the data store and Dibbler must not have been called.
+        ret = clerk.addTemplates([t1, t2])
+        assert ret == (True, None, {'t1': False, 't2': False})
+        assert mock_dibbler.put.call_count == 2
 
         # Fetch the first template.
         ret = clerk.getTemplates([name_1])
@@ -292,10 +273,10 @@ class TestClerk:
         t2 = getTemplate(name_2, fragments={'bar': frag_2})
 
         # Uploading the templates must succeed.
-        assert clerk.addTemplates([t1, t2]).ok
+        assert clerk.addTemplates([t1, t2]) == (True, None, {'t1': True, 't2': True})
 
         # Attempt to upload the same templates again. This must fail.
-        assert not clerk.addTemplates([t1, t2]).ok
+        assert clerk.addTemplates([t1, t2]) == (True, None, {'t1': False, 't2': False})
 
         # Fetch the just added template in order to get the URL where its
         # geometries are stored.
@@ -570,7 +551,7 @@ class TestClerk:
         frags = {'f1': getFragRaw(scale=2), 'f2': getFragRaw(rot=[0, 1, 0, 0])}
         body_1 = getRigidBody(cshapes={'cssphere': getCSSphere()})
         t1 = getTemplate('t1', rbs=body_1, fragments=frags)
-        assert clerk.addTemplates([t1]).ok
+        assert clerk.addTemplates([t1]) == (True, None, {'t1': True})
 
         # Retrieve all body states --> there must be none.
         ret = clerk.getObjectStates(None)
@@ -741,7 +722,7 @@ class TestClerk:
         temp = getTemplate('t1',
                            boosters=boosters,
                            factories=factories)
-        assert clerk.addTemplates([temp]).ok
+        assert clerk.addTemplates([temp]).data == {'t1': True}
         ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, [objID_2])
 
@@ -787,7 +768,7 @@ class TestClerk:
 
         # Define a new template with two boosters and add it to Azrael.
         temp = getTemplate('t1', boosters=boosters)
-        assert clerk.addTemplates([temp]).ok
+        assert clerk.addTemplates([temp]).data == {'t1': True}
 
         # Spawn an instance of the template.
         ret = clerk.spawn([{'templateID': temp.aid}])
@@ -860,7 +841,7 @@ class TestClerk:
 
         # Add the template to Azrael and spawn one instance.
         temp = getTemplate('t1', factories=factories)
-        assert clerk.addTemplates([temp]).ok
+        assert clerk.addTemplates([temp]).data == {'t1': True}
         ret = clerk.spawn([{'templateID': temp.aid}])
         assert (ret.ok, ret.data) == (True, [objID_1])
         del ret, temp, factories
@@ -944,7 +925,7 @@ class TestClerk:
             'rbs': {'position': body.position, 'velocityLin': body.velocityLin}
         }
 
-        assert clerk.addTemplates([temp]).ok
+        assert clerk.addTemplates([temp]).data == {'t1': True}
         ret = clerk.spawn([init])
         assert (ret.ok, ret.data) == (True, [objID_1])
         del temp, ret, factories, body
@@ -1053,7 +1034,7 @@ class TestClerk:
 
         # Define the template, add it to Azrael, and spawn one instance.
         temp = getTemplate('t1', boosters=boosters,  factories=factories)
-        assert clerk.addTemplates([temp]).ok
+        assert clerk.addTemplates([temp]).data == {'t1': True}
 
         init = {
             'templateID': temp.aid,
@@ -1171,7 +1152,7 @@ class TestClerk:
         # Add a valid template with the just specified fragments and verify the
         # upload worked.
         temp = getTemplate('foo', rbs=body_1, fragments=frags)
-        assert clerk.addTemplates([temp]).ok
+        assert clerk.addTemplates([temp]).data == {'foo': True}
         assert clerk.getTemplates([temp.aid]).ok
 
         # Attempt to query the geometry of a non-existing object.
@@ -1257,7 +1238,7 @@ class TestClerk:
         t1 = getTemplate('t1', boosters=boosters)
 
         # Add the template and spawn two instances.
-        assert clerk.addTemplates([t1]).ok
+        assert clerk.addTemplates([t1]).data == {'t1': True}
         init = {'templateID': t1.aid}
         ret = clerk.spawn([init, init])
         assert ret.ok
@@ -1563,7 +1544,8 @@ class TestClerk:
         t_none = getTemplate('t_none', rbs=body_nocs, fragments={})
 
         # Add the templates to Azrael and verify it accepted them.
-        assert clerk.addTemplates([t_cs, t_frag, t_none]).ok
+        ret = clerk.addTemplates([t_cs, t_frag, t_none])
+        assert ret.data == {'t_cs': True, 't_frag': True, 't_none': True}
 
         # Spawn an instance of each.
         ret = clerk.spawn([{'templateID': 't_cs'},
@@ -1712,7 +1694,8 @@ class TestModifyFragments:
         # Compile a template with two fragments.
         frags = {'fraw': getFragRaw(), 'fdae': getFragDae()}
         template = getTemplate('foo', fragments=frags)
-        assert self.clerk.addTemplates([template]).ok
+        ret = self.clerk.addTemplates([template])
+        assert ret == (True, None, {'foo': True})
 
         # Spawn one instance.
         ret = self.clerk.spawn([{'templateID': template.aid},
@@ -2057,7 +2040,7 @@ class TestModifyFragments:
         assert {'fraw', 'fdae'} == set(ret.data[id_0].keys())
         url = ret.data[id_0]['fraw']['url_frag'] + '/' + 'model.json'
         ret = self.dibbler.get([url])
-        assert ret.ok and url in ret.data
+        assert ret.ok and (url in ret.data)
 
         # Delete the 'fraw' fragment.
         cmd = {
@@ -2181,7 +2164,7 @@ class TestClerkEnd2End:
         frags = {'fraw': f_raw, 'fdae': f_dae}
 
         t1 = getTemplate('t1', fragments=frags)
-        assert clerk.addTemplates([t1]).ok
+        assert clerk.addTemplates([t1]).data == {'t1': True}
         ret = clerk.spawn([{'templateID': t1.aid}])
         assert ret.ok
         objID = ret.data[0]

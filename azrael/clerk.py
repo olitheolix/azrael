@@ -353,16 +353,18 @@ class Clerk(config.AzraelProcess):
     @typecheck
     def addTemplates(self, templates: list):
         """
-        Add all ``templates`` to Azrael so that they can be spawned.
+        Add all ``templates`` to Azrael and return the success.
 
         The elements in ``templates`` must be ``Template`` instances.
 
-        This method will abort immediately when one or more templates are
-        invalid. If that happens then no templates will be added at all.
+        If a template with the same name already exists in the data store then
+        it will not be added.
 
-        It will also return an error if a template name already exists in the
-        database. However, it will still add all the other templates that
-        have unique names.
+        The returned dictionary contains a key for each template AID and a
+        Boolean value to indicate whether the template was successfully added.
+        Example::
+
+            addTemplates(...) == (True, None, {'foo': True, 'bar': False})
 
         :param list[Template]: the templates to add.
         :return: success
@@ -373,62 +375,64 @@ class Clerk(config.AzraelProcess):
             return RetVal(True, None, None)
 
         with util.Timeit('clerk.addTemplates'):
-            # Verify that all templates contain valid data.
+            # Verify that all `templates` are valid.
             try:
                 templates = [Template(*_) for _ in templates]
             except TypeError:
                 return RetVal(False, 'Invalid template data', None)
 
-            # fixme
-            db2 = datastore.dbHandles['Templates']
-            ops = {}
+            # Handle to data store.
+            db = datastore.dbHandles['Templates']
 
             # Prepare each template and compile the database operations.
+            dib_files, ds_ops = {}, {}
             for template in templates:
+                aid = template.aid
+                dib_files[aid] = {}
+
                 # Store all fragment files in Dibbler under the following URL
                 # prefix (eg. 'templates/template_name/'). The final URL for
                 # each fragment will look something like this:
                 # templates/template_name/fragment_name/fragfile_name_1'.
-                url_frag = '{url}/{aid}'.format(url=config.url_templates,
-                                                aid=template.aid)
+                url_frag = '{url}/{aid}'.format(url=config.url_templates, aid=aid)
                 for fragname, frag in template.fragments.items():
-                    # Create the url prefix for the current fragment name.
-                    prefix = '{url}/{name}/'.format(url=url_frag, name=fragname)
+                    # Create the url prefix for the current fragment name and
+                    # prefix each file name with it.
+                    pre = '{url}/{name}/'.format(url=url_frag, name=fragname)
+                    files = {pre + k: v for k, v in frag.files.items()}
 
-                    # Attach the URL prefix to each file in the fragment.
-                    files = {prefix + k: v for k, v in frag.files.items()}
+                    dib_files[aid].update(files)
+                    del fragname, frag, pre, files
 
-                    # Put the files into Dibbler. Abort the entire method if an
-                    # error occurs.
-                    # fixme: either delete all templates that may have already
-                    # been added, or skip only this template and proceed to the
-                    # next (prefered option). Then update the doc string.
-                    ret = self.dibbler.put(files)
-                    if not ret.ok:
-                        return ret
-                    del fragname, frag, prefix, files
-
-                # Mangle all fragment file names to make them compatible with
-                # Mongo.
+                # Mangle the name of all fragment files to avoid problems with
+                # indexing the document hierarchy (ie. replace all dots '.').
                 template_json = self._mangleTemplate(template._asdict())
 
                 # Compile the template data that will go into the database. The
                 # template will be stored as an explicit dictionary.
                 data = {'url_frag': url_frag,
                         'template': template_json,
-                        'templateID': template.aid}
+                        'templateID': aid}
 
-                # Compile the DB ops for this template.
-                ops[template.aid] = {'data': data}
-        # use with: mynewdb.put(ops)
-        ret = db2.put(ops)
-        if False in ret.data.values():
-            # A template with name ``templateID`` already existed --> failure.
-            msg = 'At least one template already existed'
-            return RetVal(False, msg, None)
-        else:
-            # No template name existed before the insertion --> success.
-            return RetVal(True, None, None)
+                # Compile the data store ops for this template.
+                ds_ops[template.aid] = {'data': data}
+
+        # Insert the templates. Since this will overwrite existing templates
+        # with the same name we need to determi which templates were actually
+        # added.
+        ret = db.put(ds_ops)
+        if ret.ok is False:
+            return ret
+        valid = [k for k, v in ret.data.items() if v is True]
+
+        # For every successfully added template we will now put the
+        # corresponding fragment files into Dibbler.
+        for aid in valid:
+            if not self.dibbler.put(dib_files[aid]).ok:
+                msg = 'Dibbler could not add the files {} for template <{}>'
+                fnames = list(dib_files[aid].keys())
+                self.logit.warning(msg.format(fnames, aid))
+        return ret
 
     @typecheck
     def getTemplates(self, templateIDs: list):
