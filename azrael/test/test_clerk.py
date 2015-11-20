@@ -86,7 +86,7 @@ class TestClerk:
         clerk = self.clerk
 
         # Request an invalid ID.
-        assert not clerk.getTemplates(['blah']).ok
+        assert clerk.getTemplates(['blah']) == (True, None, {'blah': None})
 
         # This template has no collision shape,...
         name_1 = '_templateEmpty'
@@ -134,7 +134,7 @@ class TestClerk:
         body = getRigidBody(cshapes={'cssphere': getCSSphere()})
 
         # Request an invalid ID.
-        assert not clerk.getTemplates(['blah']).ok
+        assert clerk.getTemplates(['blah']) == (True, None, {'blah': None})
 
         # Invalid argument type.
         assert clerk.addTemplates([1]) == (False, 'Invalid template data', None)

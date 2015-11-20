@@ -439,17 +439,16 @@ class Clerk(config.AzraelProcess):
         """
         Return the meta data for all ``templateIDs`` as a dictionary.
 
-        This method will either return all the templates specified in
-        `templateIDs` or none.
+        The data for for non-existing templates will be None.
 
-        Each template will only be returned once, no matter how many times it
-        was specified in `templateIDs`. For instance, these two calls will both
-        return the same two templates::
+        Note that each template will be returned only once, no matter
+        how many times it was specified in `templateIDs`. For instance,
+        these two calls will both return the same two templates::
 
             getTemplates([name_1, name_2, name_1])
             getTemplates([name_1, name_2])
 
-        This method returns a dictionary with the `templateIDs` as keys::
+        The keys in the returned dictionary are the entries of `templateIDs`::
 
             ret = {templateIDs[0]: {'template': Template(),
                                     'url_frag': URL for geometries},
@@ -459,8 +458,8 @@ class Clerk(config.AzraelProcess):
             geometry. The geometry itself is available at the URL specified in
             the return value.
 
-        :param list[str] templateIDs: template IDs
-        :return dict: raw template data (the templateID is the key).
+        :param list[Template] templateIDs: template IDs
+        :return dict: raw template data with templateID as key.
         """
         # Sanity check: all template IDs must be strings.
         try:
@@ -478,22 +477,20 @@ class Clerk(config.AzraelProcess):
         if not ret.ok:
             return ret
 
-        # Return an error immediately if we could not find all templates.
-        if None in ret.data.values():
-            msg = 'Could not find all templates'
-            self.logit.info(msg)
-            return RetVal(False, msg, None)
-
         # Guard against corrupt data in the data store.
         try:
             # Compile all templates into the 'out' dictionary.
             out = {}
             for aid, doc in ret.data.items():
+                # The template data for non-existing objects is None.
+                if doc is None:
+                    out[aid] = None
+                    continue
+
                 # Undo the file name mangling.
                 template_json = self._unmangleTemplate(doc['template'])
 
-                # Parse the document into a Template structure and add it to
-                # the list of templates.
+                # Parse the document into a Template structure.
                 out[aid] = {
                     'url_frag': doc['url_frag'],
                     'template': Template(**template_json),
@@ -506,7 +503,6 @@ class Clerk(config.AzraelProcess):
             return RetVal(False, msg, None)
 
         # Return the templates.
-        # fixme: only return the templates we found.
         return RetVal(True, None, out)
 
     def _mangleFileName(self, fname: str, unmangle: bool):
