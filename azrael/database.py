@@ -266,6 +266,22 @@ class DatastoreBase:
         """
         raise NotImplementedError
 
+    def count(self):
+        """
+        Return the number of documents currently in the data store.
+
+        :return: int #documents in data store.
+        """
+        raise NotImplementedError
+
+    def allKeys(self):
+        """
+        Return a list of all AIDs currently in the data store.
+
+        :return: list[str] AIDs.
+        """
+        raise NotImplementedError
+
     def getOne(self, aid, prj=None):
         """
         Return the document with ``aid``, or None if it does not exist.
@@ -381,22 +397,6 @@ class DatastoreBase:
         """
         raise NotImplementedError
 
-    def count(self):
-        """
-        Return the number of documents currently in the data store.
-
-        :return: int #documents in data store.
-        """
-        raise NotImplementedError
-
-    def allKeys(self):
-        """
-        Return a list of all AIDs currently in the data store.
-
-        :return: list[str] AIDs.
-        """
-        raise NotImplementedError
-
 
 class DatabaseInMemory(DatastoreBase):
     """
@@ -415,12 +415,56 @@ class DatabaseInMemory(DatastoreBase):
         # Setup the database dictionary.
         self.reset()
 
+    # -------------------------------------------------------------------------
+    #                             API methods.
+    # -------------------------------------------------------------------------
     def reset(self):
         self.content = {}
         return RetVal(True, None, None)
 
     def count(self):
         return RetVal(True, None, len(self.content))
+
+    def allKeys(self):
+        keys = list(self.content.keys())
+        return RetVal(True, None, keys)
+
+    def getOne(self, aid, prj=None):
+        if _checkGet([aid], prj) is False:
+            self.logit.warning('Invalid PUT argument')
+            return RetVal(False, 'Argument error', None)
+
+        doc = self.content.get(aid, None)
+        if doc is None:
+            return RetVal(False, None, None)
+        else:
+            if prj is not None:
+                doc = self.project(doc, prj)
+            return RetVal(True, None, doc)
+
+    def getMulti(self, aids, prj=None):
+        if _checkGet(aids, prj) is False:
+            self.logit.warning('Invalid PUT argument')
+            return RetVal(False, 'Argument error', None)
+
+        docs = {aid: self.content[aid] for aid in aids if aid in self.content}
+        if prj is not None:
+            for doc in docs:
+                docs[doc] = self.project(docs[doc], prj)
+
+        return RetVal(True, None, docs)
+
+    def getAll(self, prj=None):
+        if _checkGetAll(prj) is False:
+            self.logit.warning('Invalid PUT argument')
+            return RetVal(False, 'Argument error', None)
+
+        docs = copy.deepcopy(self.content)
+        if prj is not None:
+            for doc in docs:
+                docs[doc] = self.project(docs[doc], prj)
+
+        return RetVal(True, None, docs)
 
     def put(self, ops: dict):
         if _checkPut(ops) is False:
@@ -451,54 +495,6 @@ class DatabaseInMemory(DatastoreBase):
             else:
                 ret[aid] = False
         return RetVal(True, None, ret)
-
-    def hasKey(self, d, key_hierarchy):
-        try:
-            tmp = d
-            for key in key_hierarchy:
-                tmp = tmp[key]
-
-        except (KeyError, TypeError):
-            return False
-        return True
-
-    def setKey(self, d, key_hierarchy, value):
-        tmp = d
-        for key in key_hierarchy[:-1]:
-            if key not in tmp:
-                tmp[key] = {}
-            tmp = tmp[key]
-        tmp[key_hierarchy[-1]] = value
-        return True
-
-    def incKey(self, d, key_hierarchy, value):
-        tmp = d
-        for key in key_hierarchy[:-1]:
-            if key not in tmp:
-                tmp[key] = {}
-            tmp = tmp[key]
-
-        try:
-            tmp[key_hierarchy[-1]] += value
-        except TypeError:
-            return False
-        return True
-
-    def delKey(self, d, key_hierarchy):
-        try:
-            tmp = d
-            for key in key_hierarchy[:-1]:
-                tmp = tmp[key]
-            del tmp[key_hierarchy[-1]]
-        except (KeyError, TypeError):
-            return False
-        return True
-
-    def getKey(self, d, key_hierarchy):
-        tmp = d
-        for key in key_hierarchy:
-            tmp = tmp[key]
-        return tmp
 
     def mod(self, ops):
         if _checkMod(ops) is False:
@@ -547,9 +543,56 @@ class DatabaseInMemory(DatastoreBase):
                 pass
         return RetVal(True, None, num_deleted)
 
-    def allKeys(self):
-        keys = list(self.content.keys())
-        return RetVal(True, None, keys)
+    # -------------------------------------------------------------------------
+    #                           Utility methods.
+    # -------------------------------------------------------------------------
+    def hasKey(self, d, key_hierarchy):
+        try:
+            tmp = d
+            for key in key_hierarchy:
+                tmp = tmp[key]
+
+        except (KeyError, TypeError):
+            return False
+        return True
+
+    def setKey(self, d, key_hierarchy, value):
+        tmp = d
+        for key in key_hierarchy[:-1]:
+            if key not in tmp:
+                tmp[key] = {}
+            tmp = tmp[key]
+        tmp[key_hierarchy[-1]] = value
+        return True
+
+    def incKey(self, d, key_hierarchy, value):
+        tmp = d
+        for key in key_hierarchy[:-1]:
+            if key not in tmp:
+                tmp[key] = {}
+            tmp = tmp[key]
+
+        try:
+            tmp[key_hierarchy[-1]] += value
+        except TypeError:
+            return False
+        return True
+
+    def delKey(self, d, key_hierarchy):
+        try:
+            tmp = d
+            for key in key_hierarchy[:-1]:
+                tmp = tmp[key]
+            del tmp[key_hierarchy[-1]]
+        except (KeyError, TypeError):
+            return False
+        return True
+
+    def getKey(self, d, key_hierarchy):
+        tmp = d
+        for key in key_hierarchy:
+            tmp = tmp[key]
+        return tmp
 
     def project(self, doc, prj):
         doc = copy.deepcopy(doc)
@@ -560,43 +603,6 @@ class DatabaseInMemory(DatastoreBase):
             except KeyError:
                 continue
         return out
-
-    def getOne(self, aid, prj=None):
-        if _checkGet([aid], prj) is False:
-            self.logit.warning('Invalid PUT argument')
-            return RetVal(False, 'Argument error', None)
-
-        doc = self.content.get(aid, None)
-        if doc is None:
-            return RetVal(False, None, None)
-        else:
-            if prj is not None:
-                doc = self.project(doc, prj)
-            return RetVal(True, None, doc)
-
-    def getMulti(self, aids, prj=None):
-        if _checkGet(aids, prj) is False:
-            self.logit.warning('Invalid PUT argument')
-            return RetVal(False, 'Argument error', None)
-
-        docs = {aid: self.content[aid] for aid in aids if aid in self.content}
-        if prj is not None:
-            for doc in docs:
-                docs[doc] = self.project(docs[doc], prj)
-
-        return RetVal(True, None, docs)
-
-    def getAll(self, prj=None):
-        if _checkGetAll(prj) is False:
-            self.logit.warning('Invalid PUT argument')
-            return RetVal(False, 'Argument error', None)
-
-        docs = copy.deepcopy(self.content)
-        if prj is not None:
-            for doc in docs:
-                docs[doc] = self.project(docs[doc], prj)
-
-        return RetVal(True, None, docs)
 
 
 class DatabaseMongo(DatastoreBase):
@@ -609,12 +615,55 @@ class DatabaseMongo(DatastoreBase):
         self.db = client[self.name_db][self.name_col]
         self.db.ensure_index([('aid', 1)])
 
+    # -------------------------------------------------------------------------
+    #                             API methods.
+    # -------------------------------------------------------------------------
     def reset(self):
         self.db.drop()
         return RetVal(True, None, None)
 
     def count(self):
         return RetVal(True, None, self.db.count())
+
+    def allKeys(self):
+        keys = self.db.distinct('aid')
+        return RetVal(True, None, keys)
+
+    def getOne(self, aid, prj=None):
+        if _checkGet([aid], prj) is False:
+            self.logit.warning('Invalid GETONE argument')
+            return RetVal(False, 'Argument error', None)
+
+        prj = self._compileProjectionOperator(prj)
+        doc = self.db.find_one({'aid': aid}, prj)
+
+        if doc is None:
+            return RetVal(False, None, None)
+        else:
+            doc = self._removeAID([doc])[aid]
+            return RetVal(True, None, doc)
+
+    def getMulti(self, aids, prj=None):
+        if _checkGet(aids, prj) is False:
+            self.logit.warning('Invalid GETMULTI argument')
+            return RetVal(False, 'Argument error', None)
+
+        prj = self._compileProjectionOperator(prj)
+        cursor = self.db.find({'aid': {'$in': aids}}, prj)
+        docs = self._removeAID(cursor)
+
+        return RetVal(True, None, docs)
+
+    def getAll(self, prj=None):
+        if _checkGetAll(prj) is False:
+            self.logit.warning('Invalid GETALL argument')
+            return RetVal(False, 'Argument error', None)
+
+        prj = self._compileProjectionOperator(prj)
+        cursor = self.db.find({}, prj)
+        docs = self._removeAID(cursor)
+
+        return RetVal(True, None, docs)
 
     def put(self, ops: dict):
         if _checkPut(ops) is False:
@@ -684,12 +733,6 @@ class DatabaseMongo(DatastoreBase):
             ret[aid] = (r.matched_count == 1)
         return RetVal(True, None, ret)
 
-    def _removeAID(self, docs):
-        docs = {doc['aid']: doc for doc in docs}
-        for aid, doc in docs.items():
-            del doc['aid']
-        return docs
-
     def remove(self, aids: (tuple, list)):
         if _checkRemove(aids) is False:
             self.logit.warning('Invalid REMOVE argument')
@@ -698,9 +741,14 @@ class DatabaseMongo(DatastoreBase):
         ret = self.db.delete_many({'aid': {'$in': aids}})
         return RetVal(True, None, ret.deleted_count)
 
-    def allKeys(self):
-        keys = self.db.distinct('aid')
-        return RetVal(True, None, keys)
+    # -------------------------------------------------------------------------
+    #                           Utility methods.
+    # -------------------------------------------------------------------------
+    def _removeAID(self, docs):
+        docs = {doc['aid']: doc for doc in docs}
+        for aid, doc in docs.items():
+            del doc['aid']
+        return docs
 
     def _compileProjectionOperator(self, prj):
         """
@@ -713,42 +761,6 @@ class DatabaseMongo(DatastoreBase):
             prj['aid'] = True
         prj['_id'] = False
         return prj
-
-    def getOne(self, aid, prj=None):
-        if _checkGet([aid], prj) is False:
-            self.logit.warning('Invalid GETONE argument')
-            return RetVal(False, 'Argument error', None)
-
-        prj = self._compileProjectionOperator(prj)
-        doc = self.db.find_one({'aid': aid}, prj)
-
-        if doc is None:
-            return RetVal(False, None, None)
-        else:
-            doc = self._removeAID([doc])[aid]
-            return RetVal(True, None, doc)
-
-    def getMulti(self, aids, prj=None):
-        if _checkGet(aids, prj) is False:
-            self.logit.warning('Invalid GETMULTI argument')
-            return RetVal(False, 'Argument error', None)
-
-        prj = self._compileProjectionOperator(prj)
-        cursor = self.db.find({'aid': {'$in': aids}}, prj)
-        docs = self._removeAID(cursor)
-
-        return RetVal(True, None, docs)
-
-    def getAll(self, prj=None):
-        if _checkGetAll(prj) is False:
-            self.logit.warning('Invalid GETALL argument')
-            return RetVal(False, 'Argument error', None)
-
-        prj = self._compileProjectionOperator(prj)
-        cursor = self.db.find({}, prj)
-        docs = self._removeAID(cursor)
-
-        return RetVal(True, None, docs)
 
 
 # Connect to MongoDB and store the relevant collection handles in the
