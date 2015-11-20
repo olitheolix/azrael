@@ -1591,31 +1591,26 @@ class Clerk(config.AzraelProcess):
         """
         Return the `custom` data for all ``objIDs`` in a dictionary.
 
-        The return value may look like:: {1: 'foo', 25: 'bar'}
+        The return value looks like this:: {1: 'foo', 25: 'bar'}
+
+        The returned dictionary will only contain keys for objects that were
+        actually found.
 
         :param dict[int: str] data: new content for 'custom' field in object.
         :return: dictionary of 'custom' data.
         """
-        db2 = datastore.dbHandles['ObjInstances']
+        # Get handle to datastore.
+        db = datastore.dbHandles['ObjInstances']
 
-        # Fetch the objects. If `objID` is None the client wants all objects.
+        # Fetch the specified objects. Fetch all if `objID` is None.
         prj = [('template', 'custom')]
         if objIDs is None:
-            docs = db2.getAll(prj)
-            out = {}
+            ret = db.getAll(prj)
         else:
-            # fixme: docu (for out)
-            docs = db2.getMulti(objIDs, prj)
-            out = {_: None for _ in objIDs}
-        docs = docs.data
+            ret = db.getMulti(objIDs, prj)
+        if not ret.ok:
+            return ret
 
-        # Unpack the data. For some unknown reason (read: bug) the database
-        # record is sometimes incomplete. Therefore extract the entries
-        # one-by-one protected by a try/except.
-        for aid, doc in docs.items():
-            try:
-                out[aid] = doc['template']['custom']
-            except KeyError:
-                pass
-
+        # Compile the return dictionary with the custom data.
+        out = {k: v['template']['custom'] for k, v in ret.data.items()}
         return RetVal(True, None, out)

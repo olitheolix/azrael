@@ -1614,10 +1614,13 @@ class TestClerk:
         assert ret == (True, None, [id_1, id_2])
 
         # Query the custom data for a non-existing object.
-        assert clerk.getCustomData(['10']) == (True, None, {'10': None})
+        assert clerk.getCustomData(['10']) == (True, None, {})
 
         # Query an existing object.
         assert clerk.getCustomData([id_1]) == (True, None, {id_1: ''})
+
+        # Query the custom data for two objects, only one of which exists.
+        assert clerk.getCustomData([id_1, '10']) == (True, None, {id_1: ''})
 
         # Set the custom data for a non-existing object.
         assert clerk.setCustomData({'10': 'blah'}) == (True, None, ['10'])
