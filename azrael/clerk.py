@@ -1136,7 +1136,7 @@ class Clerk(config.AzraelProcess):
             # Delete the original fragment. 'setFragments' will always delete
             # files and directories first before adding new files.
             op_file['rmdir'].append(url)
-        else:
+        elif fragop['op'] == 'mod':
             # Only existing keys can be updated.
             op_db['exists'][fragkey] = True
 
@@ -1176,6 +1176,13 @@ class Clerk(config.AzraelProcess):
                 # Update the keys that list the file names.
                 op_db['set'][fragkey + ('files', fname)] = None
                 op_db['inc'] = {('version', ): 1}
+        else:
+            # Impossible to reach because the JSON schema validated the
+            # possible options already. However, just to be sure, let's handle
+            # the case anyway.
+            msg = 'Invalid update operation type <{}>'.format(fragop['op'])
+            self.logit.critical()
+            return False
 
         # Tell the caller that the operation is valid.
         return True
