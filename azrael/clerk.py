@@ -1172,21 +1172,20 @@ class Clerk(config.AzraelProcess):
         """
         Modify the ``fragments`` and return the number of modified objects.
 
-        Skip non-existing objects, as well as objects that contain one or more
-        invalid fragment update commands.
+        Skip non-existing objects. Also skip those with invalid update commands.
 
-        The ``fragments`` argument is a dictionary of the form
-        {objID_0: fragdata, objID_1: fragdata, ...}, where each ``fragdata``
-        entry must adhere to the `setFragments` schema.
+        The ``fragments`` argument is a dictionary of ``fragdata`` instances.
+        For instance:: {objID_0: fragdata, objID_1: fragdata, ...}, where each
+        ``fragdata`` entry must adhere to the `setFragments` schema.
 
         :param dict fragments: new fragments.
         :return: dict (eg. {'update: #update objects})
         """
-        db2 = datastore.dbHandles['ObjInstances']
-        num_updated = 0
+        db = datastore.dbHandles['ObjInstances']
 
-        # Determine what data to update in each object. The database query runs
-        # for every object individually.
+        # Compile the data store ops for all objects (no actual data store
+        # querie take place in this loop.
+        ops_db, ops_file = {}, {}
         for objID, frags in fragments.items():
             # The following variables are work lists for the database (op_db)
             # and Dibbler (op_file). The keys in op_db mean:
@@ -1230,21 +1229,35 @@ class Clerk(config.AzraelProcess):
                 # Determine the necessary database operations (will update the
                 # 'op_db' and 'op_file' dictionaries).
                 self._setFragOps(objID, fragkey, url, fragdata, op_db, op_file)
+                del fragkey, url
 
-            # -----------------------------------------------------------------
-            # Compile the database query and update operation.
-            # -----------------------------------------------------------------
-            ret = db2.modify({objID: op_db})
-            num_updated += len([_ for _ in ret.data.values() if _])
+            # Add the ops for the data store and Igor.
+            ops_db[objID] = op_db
+            ops_file[objID] = op_file
+            del op_db, op_file, pre
+        del objID, frags
 
-            # Issue the Dibbler queries.
+        # -----------------------------------------------------------------
+        # Apply the updates.
+        # -----------------------------------------------------------------
+        ret = db.modify(ops_db)
+        if not ret.ok:
+            return ret
+
+        # Determine the AIDs for which the update succeeded.
+        valid = [k for k, v in ret.data.items() if v is True]
+
+        # Issue the Dibbler update for each object that could be successfully
+        # updated in the data store.
+        for aid in valid:
+            op_file = ops_file[aid]
             self.dibbler.removeDirs(op_file['rmdir'])
             self.dibbler.remove(op_file['del'])
             self.dibbler.put(op_file['put'])
 
-            del objID, frags, op_db, ret, op_file
-
-        return RetVal(True, None, {'updated': num_updated})
+        # Return the number of successfully updated objects.
+        # fixme: should return which ones were updated instead.
+        return RetVal(True, None, {'updated': len(valid)})
 
     @typecheck
     def getRigidBodies(self, objIDs: (list, tuple)):
