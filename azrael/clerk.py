@@ -1181,19 +1181,44 @@ class Clerk(config.AzraelProcess):
         return True
 
     @typecheck
-    def setFragments(self, fragments: dict):
+    def setFragments(self, fragupdates: dict):
         """
-        Modify the ``fragments`` and return the number of modified objects.
+        Modify the ``fragupdates`` and return the success status for each.
 
-        Skip non-existing objects. Also skip those with invalid update commands.
+        The ``fragupdates`` dictionary specifies operations. For
+        instance, assume we want to modify the three fragments 'foo_frag',
+        'bar_frag', and 'foobar_frag' in the following way:
 
-        The ``fragments`` argument is a dictionary of ``fragdata`` instances.
-        For instance:: {objID_0: fragdata, objID_1: fragdata, ...}, where each
-        ``fragdata`` entry must adhere to the `setFragments` schema.
+        * 'foo_frag': modify (op='mod') the scale to 5, and add/replace the
+          geometry file 'myfile.txt' with the content b'aaa'.
+        * 'bar_frag': replace (op='put') completely. Operation *must* specify
+           scale, position, rotation, and fragtype
+        * 'foobar_frag': delete (op='del').
 
-        The returned dictionary of Booleans states which updates succeeded.
+        The update command for this would be::
 
-        :param dict fragments: new fragments.
+            fragupdates = {
+                'foo_obj': {
+                    'foo_frag': {
+                        'op': 'mod',
+                        'scale': 5,
+                        'put': {'myfile.txt': b'aaa'},
+                    },
+                    'bar_frag': {
+                        'op': 'put',
+                        'scale': 2,
+                        'position': [1, 2, 3],
+                        'rotation': [1, 0, 0, 1],
+                        'fragtype': 'CUSTOM',
+                        'put': {'myfile.txt': b'aaa'},
+                    },
+                    'foobar_frag': {
+                        'op': 'del',
+                    }
+                }
+            }
+
+        :param dict fragupdates: update operations.
         :return: dict[aid]: bool to state which ones were successfully updated.
         """
         db = datastore.dbHandles['ObjInstances']
@@ -1201,7 +1226,7 @@ class Clerk(config.AzraelProcess):
         # Compile the data store ops for all objects (no actual data store
         # querie take place in this loop.
         ops_db, ops_file = {}, {}
-        for objID, frags in fragments.items():
+        for objID, frags in fragupdates.items():
             # The following variables are work lists for the database (op_db)
             # and Dibbler (op_file). The keys in op_db mean:
             #    set: overwrite these DB keys with the new values
@@ -1275,8 +1300,7 @@ class Clerk(config.AzraelProcess):
             self.dibbler.remove(op_file['del'])
             self.dibbler.put(op_file['put'])
 
-        # Return the number of successfully updated objects.
-        # fixme: should return which ones were updated instead.
+        # Return update status for each object.
         return RetVal(True, None, {'updated': updated})
 
     @typecheck

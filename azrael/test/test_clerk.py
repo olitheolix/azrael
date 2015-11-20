@@ -1877,7 +1877,7 @@ class TestModifyFragments:
         assert ret.ok
         version = ret.data[id_0]['rbs']['version']
 
-        # Attempt to modify the type of a non-existing fragment.
+        # Add/replace a fragment.
         cmd = {
             id_0: {
                 'newfrag': {
