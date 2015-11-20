@@ -438,7 +438,8 @@ class DatabaseInMemory(DatastoreBase):
         keys = list(self.content.keys())
         return RetVal(True, None, keys)
 
-    def getOne(self, aid, prj=None):
+    @typecheck
+    def getOne(self, aid: str, prj=None):
         """
         See docu in ``DatastoreBase``.
         """
@@ -454,7 +455,8 @@ class DatabaseInMemory(DatastoreBase):
                 doc = self.project(doc, prj)
             return RetVal(True, None, doc)
 
-    def getMulti(self, aids, prj=None):
+    @typecheck
+    def getMulti(self, aids: list, prj=None):
         """
         See docu in ``DatastoreBase``.
         """
@@ -469,6 +471,7 @@ class DatabaseInMemory(DatastoreBase):
 
         return RetVal(True, None, docs)
 
+    @typecheck
     def getAll(self, prj=None):
         """
         See docu in ``DatastoreBase``.
@@ -484,6 +487,7 @@ class DatabaseInMemory(DatastoreBase):
 
         return RetVal(True, None, docs)
 
+    @typecheck
     def put(self, ops: dict):
         """
         See docu in ``DatastoreBase``.
@@ -502,6 +506,7 @@ class DatabaseInMemory(DatastoreBase):
                 ret[aid] = False
         return RetVal(True, None, ret)
 
+    @typecheck
     def replace(self, ops: dict):
         """
         See docu in ``DatastoreBase``.
@@ -520,7 +525,8 @@ class DatabaseInMemory(DatastoreBase):
                 ret[aid] = False
         return RetVal(True, None, ret)
 
-    def mod(self, ops):
+    @typecheck
+    def mod(self, ops: dict):
         """
         See docu in ``DatastoreBase``.
         """
@@ -557,6 +563,7 @@ class DatabaseInMemory(DatastoreBase):
 
         return RetVal(True, None, ret)
 
+    @typecheck
     def remove(self, aids: (tuple, list)):
         """
         See docu in ``DatastoreBase``.
@@ -668,7 +675,8 @@ class DatabaseMongo(DatastoreBase):
         keys = self.db.distinct('aid')
         return RetVal(True, None, keys)
 
-    def getOne(self, aid, prj=None):
+    @typecheck
+    def getOne(self, aid: str, prj=None):
         """
         See docu in ``DatastoreBase``.
         """
@@ -685,7 +693,8 @@ class DatabaseMongo(DatastoreBase):
             doc = self._removeAID([doc])[aid]
             return RetVal(True, None, doc)
 
-    def getMulti(self, aids, prj=None):
+    @typecheck
+    def getMulti(self, aids: list, prj=None):
         """
         See docu in ``DatastoreBase``.
         """
@@ -699,6 +708,7 @@ class DatabaseMongo(DatastoreBase):
 
         return RetVal(True, None, docs)
 
+    @typecheck
     def getAll(self, prj=None):
         """
         See docu in ``DatastoreBase``.
@@ -713,6 +723,7 @@ class DatabaseMongo(DatastoreBase):
 
         return RetVal(True, None, docs)
 
+    @typecheck
     def put(self, ops: dict):
         """
         See docu in ``DatastoreBase``.
@@ -739,6 +750,7 @@ class DatabaseMongo(DatastoreBase):
                     ret[aid] = True
         return RetVal(True, None, ret)
 
+    @typecheck
     def replace(self, ops: dict):
         """
         See docu in ``DatastoreBase``.
@@ -757,7 +769,8 @@ class DatabaseMongo(DatastoreBase):
                 ret[aid] = (r.matched_count > 0)
         return RetVal(True, None, ret)
 
-    def mod(self, ops):
+    @typecheck
+    def mod(self, ops: dict):
         """
         See docu in ``DatastoreBase``.
         """
@@ -790,6 +803,7 @@ class DatabaseMongo(DatastoreBase):
             ret[aid] = (r.matched_count == 1)
         return RetVal(True, None, ret)
 
+    @typecheck
     def remove(self, aids: (tuple, list)):
         """
         See docu in ``DatastoreBase``.
