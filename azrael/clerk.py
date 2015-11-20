@@ -1464,14 +1464,6 @@ class Clerk(config.AzraelProcess):
 
             # Construct the return value.
             out[aid] = {'frag': fs, 'rbs': rbs}
-
-        # If the user requested a particular set of objects then make sure each
-        # one is in the output dictionary. If one is missing (eg it does not
-        # exist) then its value is None.
-        # fixme: should only return the objects we found to be consistent with
-        # datastore api.
-        if objIDs is not None:
-            out = {_: out[_] if _ in out else None for _ in objIDs}
         return RetVal(True, None, out)
 
     @typecheck
