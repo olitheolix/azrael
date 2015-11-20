@@ -470,7 +470,7 @@ class TestAllDatastoreBackends:
                 'exists': {('bar', 'd'): True},
             }
         }
-        ret = db.mod(ops)
+        ret = db.modify(ops)
         assert ret.ok
         assert ret.data == {'1': True}
         assert ret.data['1'] is True

@@ -641,7 +641,7 @@ class LeonardBase(config.AzraelProcess):
                 'unset': [],
                 'exists': {('template', 'rbs'): True},
             }
-        db2.mod(ops)
+        db2.modify(ops)
 
     def processCommandsAndSync(self):
         """

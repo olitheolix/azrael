@@ -816,7 +816,7 @@ class Clerk(config.AzraelProcess):
                 'exists': {('template', 'boosters'): True},
             }
         }
-        db2.mod(ops)
+        db2.modify(ops)
 
         # Return the final force- and torque as a tuple of 2-tuples.
         out = (force.tolist(), torque.tolist())
@@ -1235,7 +1235,7 @@ class Clerk(config.AzraelProcess):
             # -----------------------------------------------------------------
             # Compile the database query and update operation.
             # -----------------------------------------------------------------
-            ret = db2.mod({objID: op_db})
+            ret = db2.modify({objID: op_db})
             num_updated += len([_ for _ in ret.data.values() if _])
 
             # Issue the Dibbler queries.
@@ -1346,7 +1346,7 @@ class Clerk(config.AzraelProcess):
                     'exists': {},
                 }
             }
-            ret = db2.mod(ops)
+            ret = db2.modify(ops)
             if False in ret.data.values():
                 invalid_objects.append(objID)
                 continue
@@ -1576,7 +1576,7 @@ class Clerk(config.AzraelProcess):
                         'exists': {('template', 'custom'): True},
                     }
                 }
-                ret = db2.mod(ops)
+                ret = db2.modify(ops)
 
                 # If the update did not work then add the current object ID to
                 # the list.
