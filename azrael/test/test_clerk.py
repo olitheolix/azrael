@@ -314,8 +314,7 @@ class TestClerk:
         # Invalid templateID.
         init_invalid = {'templateID': 'blah', 'rbs': {'imass': 1}}
         ret = clerk.spawn([init_invalid])
-        assert not ret.ok
-        assert ret.msg.startswith('Could not find all templates')
+        assert (ret.ok is False) and (ret.data is None)
 
         # Valid templateID but invalid key name in rbs field.
         init_invalid = {'templateID': '_templateSphere', 'rbs': {'blah': 1}}
@@ -1575,13 +1574,14 @@ class TestClerk:
         assert ret == (True, None, [id_1, id_2])
 
         # Query the custom data for a non-existing object.
-        assert clerk.getCustomData(['10']) == (True, None, {})
+        assert clerk.getCustomData(['10']) == (True, None, {'10': None})
 
         # Query an existing object.
         assert clerk.getCustomData([id_1]) == (True, None, {id_1: ''})
 
         # Query the custom data for two objects, only one of which exists.
-        assert clerk.getCustomData([id_1, '10']) == (True, None, {id_1: ''})
+        assert clerk.getCustomData([id_1, '10']) == (True, None, {id_1: '',
+        '10': None})
 
         # Set the custom data for a non-existing object.
         assert clerk.setCustomData({'10': 'blah'}) == (True, None, ['10'])

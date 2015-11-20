@@ -472,13 +472,19 @@ class Clerk(config.AzraelProcess):
         # Remove all duplicates from the list of templateIDs.
         templateIDs = tuple(set(templateIDs))
 
-        # Fetch the requsted templates.
+        # Fetch the requested templates.
         db = datastore.dbHandles['Templates']
         ret = db.getMulti(templateIDs)
         if not ret.ok:
             return ret
 
-        # Guard agains corrupt data in the data store.
+        # Return an error immediately if we could not find all templates.
+        if None in ret.data.values():
+            msg = 'Could not find all templates'
+            self.logit.info(msg)
+            return RetVal(False, msg, None)
+
+        # Guard against corrupt data in the data store.
         try:
             # Compile all templates into the 'out' dictionary.
             out = {}
@@ -497,13 +503,6 @@ class Clerk(config.AzraelProcess):
             # store is corrupt.
             msg = 'Inconsistent Template data'
             self.logit.critical(msg)
-            return RetVal(False, msg, None)
-
-        # Return immediately if we received fewer templates than requested.
-        # This simply means that some template names were invalid.
-        if len(out) < len(templateIDs):
-            msg = 'Could not find all templates'
-            self.logit.info(msg)
             return RetVal(False, msg, None)
 
         # Return the templates.
@@ -608,11 +607,18 @@ class Clerk(config.AzraelProcess):
         with util.Timeit('spawn:1 getTemplates'):
             t_names = [_['templateID'] for _ in newObjects]
             ret = self.getTemplates(t_names)
-            if ret.ok is False or set(ret.data.keys()) != set(t_names):
-                self.logit.info(ret.msg)
+            if not ret.ok:
                 return ret
+            del t_names
+
+            # Could not find all templates. Abort without spawning anything.
+            if None in ret.data.values():
+                msg = 'Could not find all templates'
+                self.logit.info(msg)
+                return RetVal(False, msg, None)
+
+            # These are the templates to spawn.
             templates = ret.data
-            del t_names, ret
 
         # Request unique IDs for the new objects.
         ret = datastore.getUniqueObjectIDs(len(newObjects))
@@ -979,8 +985,7 @@ class Clerk(config.AzraelProcess):
         for objID in objIDs:
             leoAPI.addCmdRemoveObject(objID)
 
-        # Fetch the documents (we will need the fragment URLs for Dibbler
-        # below).
+        # Fetch the documents before deleting them (need later).
         db = datastore.dbHandles['ObjInstances']
         docs = db.getMulti(objIDs).data
 
@@ -989,8 +994,8 @@ class Clerk(config.AzraelProcess):
         if not ret.ok:
             return ret
 
-        # Delete the fragment data if the object still existed.
-        ops = [_['url_frag'] for _ in docs.values()]
+        # Delete the fragments for all those objects that actually existed.
+        ops = [_['url_frag'] for _ in docs.values() if _ is not None]
         self.dibbler.removeDirs(ops)
         return RetVal(True, None, None)
 
@@ -1033,15 +1038,17 @@ class Clerk(config.AzraelProcess):
         # those objects that we have actually found in the database.
         out = {_: None for _ in objIDs}
 
-        # Determine the fragment- type (eg. 'raw' or 'dae') and URL and put it
-        # into the output dictionary.
-        docs = ret.data
-        pjoin = os.path.join
+        # Guard against corrupt data. This really should not happen and means
+        # there is a serious bug somewhere.
         try:
-            # Create a dedicated dictionary for each object. If the data in the
-            # data store is corrupt then this will trigger a type error. This is
-            # serious error that must not happen.
+            # Compile the fragment info for the requested AIDs into a dictionary.
+            docs = ret.data
+            pjoin = os.path.join
             for aid, doc in docs.items():
+                # The fragment data for non-existing objects is None.
+                if doc is None:
+                    continue
+
                 # Restore the original fragment file names.
                 template_json = self._unmangleTemplate(doc['template'])
 
@@ -1049,20 +1056,20 @@ class Clerk(config.AzraelProcess):
                 frags = template_json['fragments']
                 frags = {k: FragMeta(**v) for (k, v) in frags.items()}
 
-                # Compile the dictionary with all the geometries that comprise
-                # the current object, including where to download the geometry
-                # data itself (we only provide the meta information).
+                # The fragment information includes the state (scale/pos/rot)
+                # and fragment type. It also includes the prefix URL for all
+                # the files, as well as the file names themselves.
                 out[aid] = {
-                    k: {
-                        'scale': v.scale,
-                        'position': v.position,
-                        'rotation': v.rotation,
-                        'fragtype': v.fragtype,
-                        'url_frag': pjoin(doc['url_frag'], k),
-                        'files': list(v.files.keys()),
-                    } for (k, v) in frags.items()}
+                    fragname: {
+                        'scale': frag.scale,
+                        'position': frag.position,
+                        'rotation': frag.rotation,
+                        'fragtype': frag.fragtype,
+                        'url_frag': pjoin(doc['url_frag'], fragname),
+                        'files': list(frag.files.keys()),
+                    } for (fragname, frag) in frags.items()}
         except TypeError:
-            msg = 'Inconsistent Fragment data'
+            msg = 'Inconsistent fragment data'
             self.logit.critical(msg)
             return RetVal(False, msg, None)
         return RetVal(True, None, out)
@@ -1288,24 +1295,28 @@ class Clerk(config.AzraelProcess):
         :return: see example above
         :rtype: dict
         """
-        # Fetch the objects. If `objID` is None the client wants all objects.
+        # Fetch the specified objects, or fetch all if none were specified.
         db = datastore.dbHandles['ObjInstances']
+        prj = [['version'], ['objID'], ['template', 'rbs']]
         if objIDs is None:
-            ret = db.getAll([['version'], ['objID'], ['template', 'rbs']])
+            ret = db.getAll(prj)
         else:
-            ret = db.getMulti(objIDs, [['version'], ['objID'], ['template', 'rbs']])
+            ret = db.getMulti(objIDs, prj)
         if not ret.ok:
             return ret
 
-        # Compile the data from the database into a simple dictionary that
-        # contains the fragment- and body state.
+        # Compile a dictionary containing the fragment- and body state.
         out = {}
         RBS = aztypes._RigidBodyData
         for aid, doc in ret.data.items():
-            # Compile the rigid body data and overwrite the version tag with
-            # the one stored in the database.
-            rbs = RBS(**doc['template']['rbs'])
-            out[aid] = {'rbs': rbs._replace(version=doc['version'])}
+            if doc is None:
+                # State is None for non-existing objects.
+                out[aid] = None
+            else:
+                # Compile the rigid body data and overwrite the version tag
+                # with the one stored in the database.
+                rbs = RBS(**doc['template']['rbs'])
+                out[aid] = {'rbs': rbs._replace(version=doc['version'])}
 
         # If the user requested a particular set of objects then make sure each
         # one is in the output dictionary. If one is missing (eg it does not
@@ -1445,6 +1456,11 @@ class Clerk(config.AzraelProcess):
         out = {}
         docs = ret.data
         for aid, doc in docs.items():
+            # The returned state is None for all non-existing objects.
+            if doc is None:
+                out[aid] = None
+                continue
+
             # Convenience: fragments of current object.
             frags = doc['template']['fragments']
 
@@ -1633,5 +1649,6 @@ class Clerk(config.AzraelProcess):
             return ret
 
         # Compile the return dictionary with the custom data.
-        out = {k: v['template']['custom'] for k, v in ret.data.items()}
+        out = {k: v['template']['custom'] if v is not None else None
+               for k, v in ret.data.items()}
         return RetVal(True, None, out)
