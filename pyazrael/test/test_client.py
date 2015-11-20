@@ -640,7 +640,7 @@ class TestClient:
                 }
             }
         }
-        assert client.setFragments(cmd) == (True, None, {'updated': 1})
+        assert client.setFragments(cmd) == (True, None, {'updated': {objID: True}})
 
         # The object must have received a new 'version'.
         ret = client.getRigidBodies(objID)
@@ -852,7 +852,7 @@ class TestClient:
         # dictionary must not include a key for the non-existing id_fake.
         ret = client.getCustomData([id_1, id_2, id_fake])
         assert ret.ok
-        assert ret.data == ({id_1: 'foo', id_2: ''})
+        assert ret.data == ({id_1: 'foo', id_2: '', id_fake: None})
 
         # Query all at once.
         assert client.getCustomData(None) == client.getCustomData([id_1, id_2])

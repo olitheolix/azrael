@@ -406,7 +406,7 @@ class Client():
                 if 'put' in fragdata:
                     fragdata['put'] = {k: enc(v) for k, v in fragdata['put'].items()}
 
-        return self.serialiseAndSend('set_fragments', {'fragments': cmd})
+        return self.serialiseAndSend('set_fragments', {'fragupdates': cmd})
 
     @typecheck
     def getRigidBodies(self, objIDs: (str, list, tuple)):
