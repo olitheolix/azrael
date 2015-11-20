@@ -402,7 +402,7 @@ class TestClerk:
         not exist anymore.
         """
         # Test constants and parameters.
-        objID_1, objID_2 = '1', '2'
+        objIDs = ['1', '2', '3', '4']
 
         # Convenience.
         clerk = self.clerk
@@ -414,25 +414,36 @@ class TestClerk:
         # Spawn two default objects.
         templateID = '_templateSphere'
         init = {'templateID': templateID}
-        ret = clerk.spawn([init, init])
-        assert (ret.ok, ret.data) == (True, [objID_1, objID_2])
+        ret = clerk.spawn([init, init, init, init])
+        assert (ret.ok, ret.data) == (True, objIDs)
 
-        # Two objects must now exist.
+        # Four objects must now exist.
         ret = clerk.getAllObjectIDs()
-        assert ret.ok and (set(ret.data) == set([objID_1, objID_2]))
+        assert ret.ok and (set(ret.data) == set(objIDs))
+
+        # Delete a non-existing object. This must do nothing. It must not
+        # return an error.
+        assert clerk.removeObject(['blah']).ok
+        ret = clerk.getAllObjectIDs()
+        assert len(ret.data) == len(objIDs)
 
         # Delete the first object.
-        assert clerk.removeObject(objID_1).ok
+        assert clerk.removeObject([objIDs[0]]).ok
 
-        # Only the second object must still exist.
+        # Only three objects must still exist.
         ret = clerk.getAllObjectIDs()
-        assert (ret.ok, ret.data) == (True, [objID_2])
+        assert (ret.ok, set(ret.data)) == (True, set(objIDs[1:]))
 
         # Deleting the same object again must silently fail.
-        assert clerk.removeObject(objID_1).ok
+        assert clerk.removeObject([objIDs[0]]).ok
 
         # Delete the second object.
-        assert clerk.removeObject(objID_2).ok
+        assert clerk.removeObject([objIDs[1]]).ok
+        ret = clerk.getAllObjectIDs()
+        assert (ret.ok, set(ret.data)) == (True, set(objIDs[2:]))
+
+        # Delete the last two objects.
+        assert clerk.removeObject(objIDs[2:]).ok
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
@@ -1176,7 +1187,7 @@ class TestClerk:
 
         # Delete first object. Then verify that Clerk returns None for its
         # geometry.
-        assert clerk.removeObject(objID_1).ok
+        assert clerk.removeObject([objID_1]).ok
         ret = clerk.getFragments([objID_1, objID_2])
         assert ret.ok
         assert ret.data[objID_1] is None

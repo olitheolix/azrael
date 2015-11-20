@@ -966,30 +966,32 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, objIDs)
 
     @typecheck
-    def removeObject(self, objID: str):
+    def removeObject(self, objIDs: (tuple, list)):
         """
-        Remove ``objID`` from the physics simulation.
+        Remove all ``objIDs`` from the physics simulation.
 
-        This method will suceed even if ``objID`` does not exist (anymore) in
-        Azrael.
+        This method will silently ignore non-existing objIDs.
 
-        :param str objID: ID of object to remove.
+        :param list[str] objIDs: ID of object to remove.
         :return: Success
         """
-        # Announce that an object was removed. Return if that is impossible for
-        # whatever reason.
-        ret = leoAPI.addCmdRemoveObject(objID)
+        # Announce that an object was removed.
+        for objID in objIDs:
+            leoAPI.addCmdRemoveObject(objID)
+
+        # Fetch the documents (we will need the fragment URLs for Dibbler
+        # below).
+        db = datastore.dbHandles['ObjInstances']
+        docs = db.getMulti(objIDs).data
+
+        # Remove the objects from the instance data store.
+        ret = db.remove(objIDs)
         if not ret.ok:
             return ret
 
-        # Fetch the document. Then remove it.
-        db2 = datastore.dbHandles['ObjInstances']
-        doc = db2.getOne(objID).data
-        db2.remove([objID])
-
         # Delete the fragment data if the object still existed.
-        if doc is not None:
-            self.dibbler.removeDirs([doc['url_frag']])
+        ops = [_['url_frag'] for _ in docs.values()]
+        self.dibbler.removeDirs(ops)
         return RetVal(True, None, None)
 
     @typecheck
