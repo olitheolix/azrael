@@ -36,10 +36,10 @@ azrael.config module
     :undoc-members:
     :show-inheritance:
 
-azrael.database module
-----------------------
+azrael.datastore module
+-----------------------
 
-.. automodule:: azrael.database
+.. automodule:: azrael.datastore
     :members:
     :undoc-members:
     :show-inheritance:
