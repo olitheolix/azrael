@@ -279,10 +279,6 @@ function* mycoroutine(connection) {
 
         // Iterate over all downloaded models by object ID.
         for (var objID in e.data) {
-            // Keys are always strings in JS, but object IDs are
-            // integers in Azrael.
-            objID = parseInt(objID);
-
             // Create an empty entry in the local object cache for the
             // new object.
             obj_cache[objID] = {};
@@ -358,8 +354,7 @@ function* mycoroutine(connection) {
         var numObjects = Object.keys(allSVs).length;
         var objCnt = 0;
         for (var objID in allSVs) {
-            // Convert the objID to an integer and increment the counter.
-            objID = parseInt(objID);
+            // Increment the object counter.
             objCnt += 1;
 
             // Update text in progress bar.
@@ -439,10 +434,6 @@ function* mycoroutine(connection) {
 
         // Remove models that do not exist anymore.
         for (var objID in obj_cache) {
-            // Yes, the keys of obj_cache are integers but objID is of
-            // type string because JS does not support integer keys in hash maps.
-            objID = parseInt(objID);
-
             // If the objID is in our cache but not in the simulation
             // then it is time to remove it.
             if (!(objID in allSVs)) {
