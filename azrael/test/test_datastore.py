@@ -36,7 +36,7 @@ class TestAtomicCounter:
     def teardown_method(self, method):
         pass
 
-    def test_increment_WPCounter(self):
+    def test_getUniqueObjectIDs(self):
         """
         Reset the Counter DB and fetch a few counter values.
         """
@@ -63,7 +63,7 @@ class TestAtomicCounter:
         assert ret.ok
         assert ret.data == (1, 2, 3)
 
-        # Increment the counter by a different values.
+        # Increment the counter by different values.
         datastore.init()
         ret = datastore.getUniqueObjectIDs(0)
         assert ret.ok and ret.data == 0
@@ -106,7 +106,7 @@ class TestAllDatastoreBackends:
         pass
 
     @pytest.mark.parametrize('clsDatabase', all_engines)
-    def test_reset_add(self, clsDatabase):
+    def test_reset(self, clsDatabase):
         """
         Add data and verify that 'reset' flushes it.
         """
@@ -128,33 +128,37 @@ class TestAllDatastoreBackends:
     @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_add_get(self, clsDatabase):
         """
-        Add data and verify that 'reset' flushes it.
+        Add data, then fetch it back.
         """
         db = clsDatabase(name=('test1', 'test2'))
 
         # Reset the database and verify that it is empty.
         assert db.reset().ok and db.count().data == 0
 
-        # Insert two documents and verify the document count.
+        # Insert two documents and verify the document count. The AID of the
+        # first document is a simple string whereas the AID of the second one
+        # is a tuple of strings.
+        aid1 = '1'
+        aid2 = '2'
         ops = {
-            '1': {'data': {'key1': 'value1'}},
-            '2': {'data': {'key2': 'value2'}},
+            aid1: {'data': {'key1': 'value1'}},
+            aid2: {'data': {'key2': 'value2'}},
         }
-        assert db.put(ops) == (True, None, {'1': True, '2': True})
+        assert db.put(ops) == (True, None, {aid1: True, aid2: True})
         assert db.count() == (True, None, 2)
 
         # Fetch the content via three different methods.
 
         # getOne:
-        assert db.getOne('1') == (True, None, ops['1']['data'])
-        assert db.getOne('2') == (True, None, ops['2']['data'])
+        assert db.getOne(aid1) == (True, None, ops[aid1]['data'])
+        assert db.getOne(aid2) == (True, None, ops[aid2]['data'])
 
         # getMulti:
-        tmp = {'1': ops['1']['data'], '2': ops['2']['data']}
-        assert db.getMulti(['1', '2']) == (True, None, tmp)
+        tmp = {aid1: ops[aid1]['data'], aid2: ops[aid2]['data']}
+        assert db.getMulti([aid1, aid2]) == (True, None, tmp)
 
         # getAll:
-        assert db.getMulti(['1', '2']) == db.getAll()
+        assert db.getMulti([aid1, aid2]) == db.getAll()
 
         assert db.reset().ok and (db.count().data == 0)
 
@@ -166,45 +170,47 @@ class TestAllDatastoreBackends:
         database content must not be modified.
         """
         db = clsDatabase(name=('test1', 'test2'))
+        aid1 = '1'
+        aid2 = '2'
 
         # ---------------------------------------------------------------------
-        # Put must succeed when no document with the same ID exists in datastore.
+        # PUT must succeed when no document with the same ID exists in datastore.
         # ---------------------------------------------------------------------
 
         assert db.reset().ok and db.count().data == 0
-        ops = {'1': {'data': {'key1': 'value1'}}}
-        assert db.put(ops) == (True, None, {'1': True})
-        assert db.getOne('1') == (True, None, {'key1': 'value1'})
+        ops = {aid1: {'data': {'key1': 'value1'}}}
+        assert db.put(ops) == (True, None, {aid1: True})
+        assert db.getOne(aid1) == (True, None, {'key1': 'value1'})
 
         # ---------------------------------------------------------------------
-        # Put must fail when no document with the same ID exists in datastore.
+        # PUT must fail when no document with the same ID exists in datastore.
         # ---------------------------------------------------------------------
 
         # Pre-fill database with one document.
         assert db.reset().ok and db.count().data == 0
-        ops = {'1': {'data': {'key1': 'value1'}}}
-        assert db.put(ops) == (True, None, {'1': True})
-        assert db.getOne('1') == (True, None, {'key1': 'value1'})
+        ops = {aid1: {'data': {'key1': 'value1'}}}
+        assert db.put(ops) == (True, None, {aid1: True})
+        assert db.getOne(aid1) == (True, None, {'key1': 'value1'})
 
         # Put must not return an error but also not modify the document.
-        ops = {'1': {'data': {'key2': 'value2'}}}
-        assert db.put(ops) == (True, None, {'1': False})
-        assert db.getOne('1') == (True, None, {'key1': 'value1'})
+        ops = {aid1: {'data': {'key2': 'value2'}}}
+        assert db.put(ops) == (True, None, {aid1: False})
+        assert db.getOne(aid1) == (True, None, {'key1': 'value1'})
 
         # ---------------------------------------------------------------------
         # Attempt to insert two new documents, one of which already exists.
         # ---------------------------------------------------------------------
         ops = {
-            '1': {'data': {'key3': 'value3'}},
-            '2': {'data': {'key4': 'value4'}},
+            aid1: {'data': {'key3': 'value3'}},
+            aid2: {'data': {'key4': 'value4'}},
         }
-        assert db.put(ops) == (True, None, {'1': False, '2': True})
+        assert db.put(ops) == (True, None, {aid1: False, aid2: True})
         assert db.count() == (True, None, 2)
 
         # Query both documents. Both must exist.
-        ret = db.getMulti(['1', '2'])
+        ret = db.getMulti([aid1, aid2])
         assert ret.ok
-        assert ret.data == {'1': {'key1': 'value1'}, '2': {'key4': 'value4'}}
+        assert ret.data == {aid1: {'key1': 'value1'}, aid2: {'key4': 'value4'}}
 
     @pytest.mark.parametrize('clsDatabase', all_engines)
     def test_replace(self, clsDatabase):

@@ -33,7 +33,8 @@ def init():
     """
     Flush the database.
     """
-    # Delete the database.
+    # Delete the database ('dbName' is a global variable defined at the end of
+    # this module).
     client.drop_database(dbName)
 
 
@@ -80,12 +81,12 @@ def getUniqueObjectIDs(numIDs: int):
 
 def _checkGet(aids: (tuple, list), prj: list):
     """
-    Return True if the ``aids`` and ``prj`` are valid input to the
-    get{One, Multi, All} methods.
+    Return True if the ``aids`` and ``prj`` are valid inputs to the
+    `get{One, Multi, All}` methods.
 
     Example:: _checkGet(['foo', 'bar'], [('a', 'b')])
 
-    :param str aids: the objec ID.
+    :param str AIDs: the object ID.
     :param list[list] prj: list of (nested) JSON keys.
     :return: bool
     """
@@ -184,7 +185,7 @@ def _checkMod(ops):
                 assert _validJsonKey(v_unset)
 
             # The 'exists' field must be a dictionary. All its keys must be
-            # valid JSON keys and all its values must be Bools.
+            # valid JSON keys and all its values must be Boolean.
             assert isinstance(value['exists'], dict)
             for k_exists, v_exists in value['exists'].items():
                 assert _validJsonKey(k_exists)
@@ -282,7 +283,7 @@ class DatastoreBase:
         """
         raise NotImplementedError
 
-    def getOne(self, aid: (list, tuple), prj=None):
+    def getOne(self, aid: str, prj=None):
         """
         Return the document with ``aid``, or None if it does not exist.
 
@@ -443,7 +444,7 @@ class DatabaseInMemory(DatastoreBase):
         See docu in ``DatastoreBase``.
         """
         if _checkGet([aid], prj) is False:
-            self.logit.warning('Invalid PUT argument')
+            self.logit.warning('Invalid GETONE argument')
             return RetVal(False, 'Argument error', None)
 
         doc = self.content.get(aid, None)
@@ -461,7 +462,7 @@ class DatabaseInMemory(DatastoreBase):
         """
         # Sanity check the arguments.
         if _checkGet(aids, prj) is False:
-            self.logit.warning('Invalid PUT argument')
+            self.logit.warning('Invalid GETMULTI argument')
             return RetVal(False, 'Argument error', None)
 
         # Copy the requested documents into an output dictionary. If a document
@@ -484,7 +485,7 @@ class DatabaseInMemory(DatastoreBase):
         See docu in ``DatastoreBase``.
         """
         if _checkGetAll(prj) is False:
-            self.logit.warning('Invalid PUT argument')
+            self.logit.warning('Invalid GETALL argument')
             return RetVal(False, 'Argument error', None)
 
         docs = copy.deepcopy(self.content)
@@ -519,7 +520,7 @@ class DatabaseInMemory(DatastoreBase):
         See docu in ``DatastoreBase``.
         """
         if _checkPut(ops) is False:
-            self.logit.warning('Invalid PUT argument')
+            self.logit.warning('Invalid REPLACE argument')
             return RetVal(False, 'Argument error', None)
 
         ret = {}
@@ -538,7 +539,7 @@ class DatabaseInMemory(DatastoreBase):
         See docu in ``DatastoreBase``.
         """
         if _checkMod(ops) is False:
-            self.logit.warning('Invalid PUT argument')
+            self.logit.warning('Invalid MODIFY argument')
             return RetVal(False, 'Argument error', None)
 
         ret = {}
@@ -766,7 +767,7 @@ class DatabaseMongo(DatastoreBase):
         See docu in ``DatastoreBase``.
         """
         if _checkPut(ops) is False:
-            self.logit.warning('Invalid PUT argument')
+            self.logit.warning('Invalid REPLACE argument')
             return RetVal(False, 'Argument error', None)
 
         ret = {}
