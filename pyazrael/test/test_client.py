@@ -748,7 +748,7 @@ class TestClient:
         assert client.getConstraints([id_1]) == (True, None, [])
 
         # Add both constraints and verify they are returned correctly.
-        assert client.addConstraints([con_1, con_2]) == (True, None, 2)
+        assert client.addConstraints([con_1, con_2]) == (True, None, [True] * 2)
         ret = client.getConstraints(None)
         assert ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
 
@@ -798,7 +798,7 @@ class TestClient:
 
         # Define- and add the constraints.
         con = [getP2P(rb_a=id_1, rb_b=id_2, pivot_a=pos_b, pivot_b=pos_a)]
-        assert client.addConstraints(con) == (True, None, 1)
+        assert client.addConstraints(con) == (True, None, [True])
 
         # Apply a force that will pull the left object further to the left.
         # However, both objects must move the same distance in the same

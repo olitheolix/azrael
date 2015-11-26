@@ -712,7 +712,7 @@ class TestLeonardOther:
 
         # Specify the constraints.
         con = getP2P(rb_a=id_a, rb_b=id_b, pivot_a=pos_b, pivot_b=pos_a)
-        self.igor.addConstraints([con])
+        assert self.igor.addConstraints([con]).ok
 
         # Spawn both objects.
         assert leoAPI.addCmdSpawn([(id_a, body_a), (id_b, body_b)]).ok

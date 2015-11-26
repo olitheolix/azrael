@@ -1330,7 +1330,7 @@ class TestClerk:
         assert clerk.getConstraints([id_1]) == (True, None, tuple())
 
         # Add both constraints and verify Clerk returns them correctly.
-        assert clerk.addConstraints([con_1, con_2]) == (True, None, 2)
+        assert clerk.addConstraints([con_1, con_2]) == (True, None, [True, True])
         ret = clerk.getConstraints(None)
         assert ret.ok and (sorted(ret.data) == sorted([con_1, con_2]))
 
@@ -1396,7 +1396,7 @@ class TestClerk:
 
         # Define the constraints.
         con = [getP2P(rb_a=id_a, rb_b=id_b, pivot_a=pos_b, pivot_b=pos_a)]
-        assert clerk.addConstraints(con) == (True, None, 1)
+        assert clerk.addConstraints(con) == (True, None, [True])
 
         # Apply a force that will pull the left object further to the left.
         # However, both objects must move the same distance in the same
