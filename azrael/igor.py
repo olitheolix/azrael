@@ -42,7 +42,7 @@ class Igor:
 
         :return: success
         """
-        self.db.drop()
+        self.db.reset()
         self._cache = {}
         return RetVal(True, None, None)
 
@@ -56,11 +56,19 @@ class Igor:
         self._cache = {}
         cache = self._cache
 
-        # Create a Mongo cursor to retrieve all constraints.
-        cursor = self.db.find({}, {'_id': False})
+        # Fetch all constraints.
+        ret = self.db.getAll()
+        if not ret.ok:
+            return ret
+        docs = ret.data
 
-        # Iterate over the cursor and compile the ConstraintMeta types.
-        constraints = (ConstraintMeta(**_) for _ in cursor)
+        # Extract the AID from the compound key value. A compound key is a
+        # colon (':') separated string in the form of 'aid:contype:rb_a:rb_b'.
+        for k, v in docs.items():
+            v['aid'] = k.split(':')[0]
+
+        # Convert the documents into ConstraintMeta instances.
+        constraints = (ConstraintMeta(**_) for _ in docs.values())
 
         # Iterate over all constraints and  build a dictionary. The keys are
         # `ConstraintMeta` tuples with a value of *None* for the data field.
@@ -73,7 +81,7 @@ class Igor:
             cache[key] = con
             del con, key
 
-        # Return the number of valid constraints now in the cache.
+        # Return the number of valid constraints currently in the cache.
         return RetVal(True, None, len(self._cache))
 
     def addConstraints(self, constraints: (tuple, list)):
@@ -118,30 +126,31 @@ class Igor:
         if len(constraints_sane) == 0:
             return RetVal(True, None, 0)
 
-        # Compile the bulk query and execute it.
-        bulk = self.db.initialize_unordered_bulk_op()
+        # Compile the put operation for each constraint.
+        ops = {}
         for con in constraints_sane:
-            # We will search for the entire meta information (ie everything
-            # except the parameters of the constraint itself stored in
-            # 'condata') and then overwrite the constraint as a whole.
-            value = con._asdict()
-            query = con._asdict()
-            del query['condata']
-            bulk.find(query).upsert().update({'$setOnInsert': value})
-        ret = bulk.execute()
+            # The key is a colon seprated string that encodes the AID of
+            # constraint, constraint type, and AIDs of first and second rigid
+            # body. This is not very elegant but the data store only supports
+            # string keys (for now). The colon itself will not lead to
+            # ambiguities because the the various AIDs are not allowed to
+            # contain them.
+            key = ':'.join([con.aid, con.contype, con.rb_a, con.rb_b])
+            ops[key] = {'data': con._asdict()}
+        ret = self.db.put(ops)
 
         # Return the number of newly created constraints.
-        return RetVal(True, None, ret['nUpserted'])
+        nupserted = len([_ for _ in ret.data.values() if _ is True])
+        return RetVal(True, None, nupserted)
 
     def getConstraints(self, bodyIDs: (set, tuple, list)):
         """
         Return all constraints that involve any of the bodies in ``bodyIDs``.
 
-        Return unconditionally all constraints if ``bodyIDs`` is *None*.
+        Return all constraints if ``bodyIDs`` is *None*.
 
         ..note:: this method only consults the local cache. Depending on your
-                 circumstances you may want to call ``updateLocalCache``
-                 first.
+            circumstances you may want to call ``updateLocalCache`` first.
 
         :param list[int] bodyIDs: list of body IDs
         :return: list of ``ConstraintMeta`` instances.
@@ -182,19 +191,17 @@ class Igor:
         if len(constraints) == 0:
             return RetVal(True, None, 0)
 
-        # Compile the bulk query with all the constraints to remove.
-        bulk = self.db.initialize_unordered_bulk_op()
+        # Compile datastore operation for each constraints to remove.
+        ops = []
         for con in constraints:
-            # The constraint must match all the meta data, but not
-            # (necessarily) the parameters of the constraint itself, which is
-            # why the 'condata' field is removed.
-            query = con._asdict()
-            del query['condata']
-            bulk.find(query).remove()
-        ret = bulk.execute()
+            # See 'addConstraints' method for an explanation of the colon
+            # separated compound key.
+            key = ':'.join([con.aid, con.contype, con.rb_a, con.rb_b])
+            ops.append(key)
+        ret = self.db.remove(ops)
 
         # Return the number of newly created constraints.
-        return RetVal(True, None, ret['nRemoved'])
+        return RetVal(True, None, ret.data)
 
     def uniquePairs(self):
         """

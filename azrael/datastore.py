@@ -37,6 +37,9 @@ def init():
     # this module).
     client.drop_database(dbName)
 
+    dbHandles['Templates'].reset()
+    dbHandles['ObjInstances'].reset()
+    dbHandles['Constraints'].reset()
 
 @typecheck
 def getUniqueObjectIDs(numIDs: int):
@@ -854,8 +857,8 @@ client = config.getMongoClient()
 dbName = 'azrael'
 dbHandles = {
     'Commands': client[dbName]['Cmd'],
+    'Counters': client[dbName]['Counters'],
     'Templates': DatabaseMongo((dbName, 'template')),
     'ObjInstances': DatabaseMongo((dbName, 'objinstances')),
-    'Counters': client[dbName]['Counters'],
-    'Constraints': client[dbName]['Constraints'],
+    'Constraints': DatabaseMongo((dbName, 'constraints'))
 }
