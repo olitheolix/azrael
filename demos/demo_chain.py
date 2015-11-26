@@ -365,7 +365,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         ConstraintMeta('', 'p2p', ids[1], ids[2], p2p_1),
         ConstraintMeta('', '6DOFSPRING2', ids[2], ids[3], dof),
     ]
-    assert client.addConstraints(constraints) == (True, None, 3)
+    assert client.addConstraints(constraints) == (
+        True, None, [True] * len(constraints))
 
     # Make 'frag_2' invisible by setting its scale to zero.
     for objID in ret.data:
