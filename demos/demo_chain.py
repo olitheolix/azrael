@@ -341,7 +341,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     t0 = time.time()
     ret = client.spawn(allObjs)
     assert ret.ok
-    ids = ret.data
+    objIDs = ret.data
     print('{:.1f}s'.format(time.time() - t0))
 
     # Define the constraints.
@@ -361,16 +361,12 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         bounce=[1, 1.5, 2],
         enableSpring=[True, False, False, False, False, False])
     constraints = [
-        ConstraintMeta('', 'p2p', ids[0], ids[1], p2p_0),
-        ConstraintMeta('', 'p2p', ids[1], ids[2], p2p_1),
-        ConstraintMeta('', '6DOFSPRING2', ids[2], ids[3], dof),
+        ConstraintMeta('', 'p2p', objIDs[0], objIDs[1], p2p_0),
+        ConstraintMeta('', 'p2p', objIDs[1], objIDs[2], p2p_1),
+        ConstraintMeta('', '6DOFSPRING2', objIDs[2], objIDs[3], dof),
     ]
     assert client.addConstraints(constraints) == (
         True, None, [True] * len(constraints))
-
-    # Make 'frag_2' invisible by setting its scale to zero.
-    for objID in ret.data:
-        client.setFragments({objID: {'frag_2': {'scale': 0}}})
 
 
 def main():
