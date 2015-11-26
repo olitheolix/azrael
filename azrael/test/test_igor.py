@@ -81,36 +81,37 @@ class TestClerk:
         assert igor.addConstraints([]) == (True, None, 0)
 
         # Add one constraint and update the cache.
-        assert igor.addConstraints([c1]) == (True, None, 1)
+        assert igor.addConstraints([c1]) == (True, None, [True])
         assert igor.updateLocalCache() == (True, None, 1)
 
         # Add the same constraint. This must add no constraint, but the update
         # function must still fetch exactly one constraint.
-        assert igor.addConstraints([c1]) == (True, None, 0)
+        assert igor.addConstraints([c1]) == (True, None, [False])
         assert igor.updateLocalCache() == (True, None, 1)
 
         # Add two new constraints.
-        assert igor.addConstraints([c2, c3]) == (True, None, 2)
+        assert igor.addConstraints([c2, c3]) == (True, None, [True] * 2)
         assert igor.updateLocalCache() == (True, None, 3)
 
         # Add two more constraints, one of which is not new. This must add one
         # new constraint and increase the total number of unique constraints to
         # four.
-        assert igor.addConstraints([c3, c4]) == (True, None, 1)
+        assert igor.addConstraints([c3, c4]) == (True, None, [False, True])
         assert igor.updateLocalCache() == (True, None, 4)
 
-        # Add five more constaints, but only two of them are actually unique.
-        assert igor.addConstraints([c5, c5, c6, c6, c6]) == (True, None, 2)
-        assert igor.updateLocalCache() == (True, None, 6)
-        ref = sorted((c1, c2, c3, c4, c5, c6))
+        # Add five more constraints, only two of which are actually unique.
+        # This must return with an error and do nothing.
+        assert igor.addConstraints([c5, c5, c6, c6, c6]).ok is False
+        assert igor.updateLocalCache() == (True, None, 4)
+        ref = sorted((c1, c2, c3, c4))
         assert sorted(igor.getConstraints(None).data) == ref
 
-        # Reset igor and add two constraints, of which only one has a valid
+        # Reset igor and add two constraints. Only one has a valid
         # 'contype'. The 'addConstraints' must only add the valid one.
         c6 = c6._replace(contype='foo')
         assert igor.reset().ok
-        assert igor.addConstraints([c1, c6]) == (True, None, 1)
-        assert igor.updateLocalCache() == (True, None, 1)
+        assert igor.addConstraints([c1, c6]).ok is False
+        assert igor.updateLocalCache() == (True, None, 0)
 
     @pytest.mark.parametrize('getCon', _AllConstraintGetters)
     def test_add_unique_bug1(self, getCon):
@@ -132,12 +133,12 @@ class TestClerk:
         # Attempt to add the first constraint twice. Igor must detect this and
         # only add it once.
         assert igor.reset().ok
-        assert igor.addConstraints([c1, c1]) == (True, None, 1)
+        assert igor.addConstraints([c1, c1]).ok is False
 
         # Attempt to both constraints. Without the bug fix Igor would only add
         # the first one, whereas with the bug fix it adds both.
         assert igor.reset().ok
-        assert igor.addConstraints([c1, c2]) == (True, None, 2)
+        assert igor.addConstraints([c1, c2]) == (True, None, [True] * 2)
 
         # Update the local cache and verify that really both constraints are
         # available.
@@ -165,14 +166,14 @@ class TestClerk:
 
         # Add two constraints and verify that Igor returns them *after* a cache
         # update.
-        assert igor.addConstraints([c1, c2]) == (True, None, 2)
+        assert igor.addConstraints([c1, c2]) == (True, None, [True] * 2)
         assert igor.getConstraints(None).data == tuple()
         assert igor.updateLocalCache() == (True, None, 2)
         assert sorted(igor.getConstraints(None).data) == sorted((c1, c2))
 
         # Add another two constraints, only one of which is new. Verify that
         # Igor returns the correct three constraints.
-        assert igor.addConstraints([c2, c3]) == (True, None, 1)
+        assert igor.addConstraints([c2, c3]) == (True, None, [False, True])
         assert igor.updateLocalCache() == (True, None, 3)
         assert sorted(igor.getConstraints(None).data) == sorted((c1, c2, c3))
 
@@ -190,14 +191,14 @@ class TestClerk:
         c3 = getCon('foo', '3', '4')
 
         # Attempt to delete a non-existing constraint. This must neither return
-        # an error not delete anything.
+        # an error nor delete anything.
         assert igor.reset().ok
         assert igor.deleteConstraints([c1]) == (True, None, 0)
         assert igor.deleteConstraints([c1, c2]) == (True, None, 0)
         assert igor.updateLocalCache() == (True, None, 0)
 
         # Add some constraints, delete them, and update the cache.
-        assert igor.addConstraints([c1, c2, c3]) == (True, None, 3)
+        assert igor.addConstraints([c1, c2, c3]) == (True, None, [True] * 3)
         assert igor.updateLocalCache() == (True, None, 3)
         assert igor.deleteConstraints([c1, c2]) == (True, None, 2)
         assert igor.updateLocalCache() == (True, None, 1)
@@ -205,10 +206,10 @@ class TestClerk:
         # Add/delete more constraints without every updating the cache. These
         # operations must not affect the local cache of constraints in Igor.
         assert igor.reset().ok
-        assert igor.addConstraints([c1, c2, c3]) == (True, None, 3)
+        assert igor.addConstraints([c1, c2, c3]) == (True, None, [True] * 3)
         assert igor.deleteConstraints([c1, c2]) == (True, None, 2)
         assert igor.deleteConstraints([c1, c2]) == (True, None, 0)
-        assert igor.addConstraints([c1, c2]) == (True, None, 2)
+        assert igor.addConstraints([c1, c2]) == (True, None, [True] * 2)
         assert igor.deleteConstraints([c1]) == (True, None, 1)
         assert igor.deleteConstraints([c1, c2]) == (True, None, 1)
         assert igor.deleteConstraints([c1, c2]) == (True, None, 0)
@@ -235,13 +236,13 @@ class TestClerk:
 
         # Adding a constraint must result in one unique pair of IDs *after*
         # updating the Igor cache.
-        assert igor.addConstraints([c1]) == (True, None, 1)
+        assert igor.addConstraints([c1]) == (True, None, [True])
         assert igor.uniquePairs() == (True, None, tuple())
         assert igor.updateLocalCache() == (True, None, 1)
         assert igor.uniquePairs().data == ((c1.rb_a, c1.rb_b), )
 
         # Add three more constraints, only two of which are actually new.
-        assert igor.addConstraints([c1, c2, c3]) == (True, None, 2)
+        assert igor.addConstraints([c1, c2, c3]) == (True, None, [False, True, True])
         assert igor.updateLocalCache() == (True, None, 3)
 
         # Verify that the set of unique pairs now covers those involved in the
@@ -276,7 +277,7 @@ class TestClerk:
         assert igor.getConstraints([1, 2]) == (True, None, tuple())
 
         # Add four constraints for the following tests.
-        assert igor.addConstraints([c1, c2, c3]) == (True, None, 3)
+        assert igor.addConstraints([c1, c2, c3]) == (True, None, [True] * 3)
 
         # Query the constraints that involve object one. This must return only
         # the first object, and only *after* the local Igor cache was updated.

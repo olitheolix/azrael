@@ -86,26 +86,30 @@ class Igor:
 
     def addConstraints(self, constraints: (tuple, list)):
         """
-        Add all ``constraints`` to the database.
+        Add all ``constraints`` to the database and return success.
 
         All entries in ``constraints`` must be ``ConstraintMeta`` instances,
         and their `data` attribute must be a valid ``Constraint*`` instance.
 
-        This method will skip over all constraints with an invalid/unknown
-        type.
+        Abort immediately if any of the constraints are invalid, or if the same
+        constraint occurs multiple times in ``constraints``.
 
-        It will return the number of constraints
+        The return value is an list of Booleans to indicate which constraint
+        was newly added. If a constraint already exists then it will not be
+        overwritten and the return value for it would be False.
 
         :param list constraints: a list of ``ConstraintMeta`` instances.
-        :return: number of newly added constraints.
+        :return: list[Bool]
         """
+        # Validate the constraints and convert them into a sane format (most
+        # notably, making sure that rb_a and rb_b are sorted.
         constraints_sane = []
         for con in constraints:
             # Compile- and sanity check all constraints.
             try:
                 con = ConstraintMeta(*con)
             except TypeError:
-                continue
+                return RetVal(False, 'Invalid constraint data', None)
 
             # Convenience.
             rb_a, rb_b = con.rb_a, con.rb_b
@@ -128,7 +132,8 @@ class Igor:
 
         # Compile the put operation for each constraint.
         ops = {}
-        for con in constraints_sane:
+        idx2key = {}
+        for idx, con in enumerate(constraints_sane):
             # The key is a colon seprated string that encodes the AID of
             # constraint, constraint type, and AIDs of first and second rigid
             # body. This is not very elegant but the data store only supports
@@ -137,11 +142,23 @@ class Igor:
             # contain them.
             key = ':'.join([con.aid, con.contype, con.rb_a, con.rb_b])
             ops[key] = {'data': con._asdict()}
-        ret = self.db.put(ops)
+
+            # Record which datastore key belonged to which constraint. We will
+            # need this to compile the return value where we indicate which
+            # constraints could be added, and which could not.
+            idx2key[idx] = key
+
+        # Verify that we have as many data store operations as we have
+        # constraints. If not then one or more constraints mapped to the same
+        # key and were thus duplicates.
+        if len(constraints_sane) > len(ops):
+            return RetVal(False, 'Not all constraints are unique', None)
+        else:
+            ret = self.db.put(ops)
 
         # Return the number of newly created constraints.
-        nupserted = len([_ for _ in ret.data.values() if _ is True])
-        return RetVal(True, None, nupserted)
+        success = [ret.data[idx2key[_]] for _ in range(len(constraints_sane))]
+        return RetVal(True, None, success)
 
     def getConstraints(self, bodyIDs: (set, tuple, list)):
         """
@@ -200,7 +217,7 @@ class Igor:
             ops.append(key)
         ret = self.db.remove(ops)
 
-        # Return the number of newly created constraints.
+        # Return the number of deleted constraints.
         return RetVal(True, None, ret.data)
 
     def uniquePairs(self):
