@@ -174,8 +174,8 @@ class TestLeonardAPI:
         # Verify that the spawn commands were added.
         ret = leoAPI.dequeueCommands()
         assert ret.ok
-        assert ret.data['spawn'][0]['objID'] == id_1
-        assert ret.data['spawn'][1]['objID'] == id_2
+        spawn = ret.data['spawn']
+        assert {spawn[0]['objID'], spawn[1]['objID']} == {id_1, id_2}
         assert ret.data['remove'] == []
         assert ret.data['modify'] == []
         assert ret.data['direct_force'] == []

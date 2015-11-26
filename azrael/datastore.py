@@ -40,6 +40,8 @@ def init():
     dbHandles['Templates'].reset()
     dbHandles['ObjInstances'].reset()
     dbHandles['Constraints'].reset()
+    dbHandles['Commands'].reset()
+
 
 @typecheck
 def getUniqueObjectIDs(numIDs: int):
@@ -856,7 +858,7 @@ class DatabaseMongo(DatastoreBase):
 client = config.getMongoClient()
 dbName = 'azrael'
 dbHandles = {
-    'Commands': client[dbName]['Cmd'],
+    'Commands': DatabaseMongo((dbName, 'cmd')),
     'Counters': client[dbName]['Counters'],
     'Templates': DatabaseMongo((dbName, 'template')),
     'ObjInstances': DatabaseMongo((dbName, 'objinstances')),

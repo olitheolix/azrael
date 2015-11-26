@@ -121,11 +121,22 @@ def dequeueCommands():
     # Convenience.
     db = datastore.dbHandles['Commands']
 
-    # Query all pending commands and delete them from the queue.
-    docs = list(db.find())
-    db.remove({'_id': {'$in': [_['_id'] for _ in docs]}})
-    for doc in docs:
-        del doc['_id']
+    # Fetch all pending commands.
+    ret = db.getAll()
+    if not ret.ok:
+        return ret
+    docs = ret.data
+
+    # Delete all the commands we have just fetched.
+    db.remove(list(docs.keys()))
+
+    # fixme: docu
+    for key, doc in docs.items():
+        cmd, objID = key.split(':')
+        docs[key]['cmd'] = cmd
+        docs[key]['objID'] = objID
+        del cmd, objID
+    docs = docs.values()
 
     # Split the commands into categories.
     spawn = [_ for _ in docs if _['cmd'] == 'spawn']
@@ -156,7 +167,7 @@ def addCmdSpawn(objData: (tuple, list)):
     :param tuple[(int, _RigidBodyData)]: the new objects created in Azrael.
     :return: success.
     """
-    # Sanity checks all the provided bodies.
+    # Sanity check all bodies.
     for objID, body in objData:
         try:
             assert isinstance(objID, str)
@@ -170,25 +181,23 @@ def addCmdSpawn(objData: (tuple, list)):
             logit.warning(msg)
             return RetVal(False, msg, None)
 
-    # Meta data for spawn command.
-    db = datastore.dbHandles['Commands']
-    bulk = db.initialize_unordered_bulk_op()
+    # Compile the datastore ops.
+    ops = {}
     for objID, body in objData:
         # Compile the AABBs. Return immediately if an error occurs.
         aabbs = computeAABBs(body.cshapes)
         if not aabbs.ok:
             return RetVal(False, 'Could not compile all AABBs', None)
 
-        # Insert this document unless one already matches the query.
-        query = {'cmd': 'spawn', 'objID': objID}
+        # Insert this document.
         data = {'rbs': body._asdict(), 'AABBs': aabbs.data}
-        bulk.find(query).upsert().update({'$setOnInsert': data})
+        key = 'spawn:{}'.format(objID)
+        ops[key] = {'data': data}
 
-    ret = bulk.execute()
-    if ret['nMatched'] > 0:
-        # A template with name ``templateID`` already existed --> failure.
-        # It should be impossible for this to happen if the object IDs come
-        # from ``datastore.getUniqueObjectIDs``.
+    # fixme: check return value
+    db = datastore.dbHandles['Commands']
+    ret = db.put(ops)
+    if False in ret.data.values():
         msg = 'At least one objID already existed --> serious bug'
         logit.error(msg)
         return RetVal(False, msg, None)
@@ -210,10 +219,11 @@ def addCmdRemoveObject(objID: str):
     :param str objID: ID of object to delete.
     :return: Success.
     """
-    # The 'data' is dummy because Mongo's 'update' requires one.
     db = datastore.dbHandles['Commands']
-    data = query = {'cmd': 'remove', 'objID': objID}
-    db.update(query, {'$setOnInsert': data}, upsert=True)
+    key = 'remove:{}'.format(objID)
+    ops = {key: {'data': {}}}
+    db.put(ops)
+
     return RetVal(True, None, None)
 
 
@@ -258,9 +268,11 @@ def addCmdModifyBodyState(objID: str, body: dict):
     # clients can read it at their leisure. Note that this will overwrite
     # already pending update commands for the same object - tough luck.
     db = datastore.dbHandles['Commands']
-    query = {'cmd': 'modify', 'objID': objID}
-    db_data = {'rbs': body, 'AABBs': aabbs}
-    db.update(query, {'$setOnInsert': db_data}, upsert=True)
+
+    data = {'rbs': body, 'AABBs': aabbs}
+    key = 'modify:{}'.format(objID)
+    ops = {key: {'data': data}}
+    db.put(ops)
 
     # This function was successful if exactly one document was updated.
     return RetVal(True, None, None)
@@ -287,11 +299,12 @@ def addCmdDirectForce(objID: str, force: list, torque: list):
     if not (len(force) == len(torque) == 3):
         return RetVal(False, 'force or torque has invalid length', None)
 
-    # Update the DB.
+    # Compile datastore ops.
     db = datastore.dbHandles['Commands']
-    query = {'cmd': 'direct_force', 'objID': objID}
     data = {'force': force, 'torque': torque}
-    db.update(query, {'$setOnInsert': data}, upsert=True)
+    key = 'direct_force:{}'.format(objID)
+    ops = {key: {'data': data}}
+    db.put(ops)
 
     return RetVal(True, None, None)
 
@@ -323,10 +336,11 @@ def addCmdBoosterForce(objID: str, force: list, torque: list):
     if not (len(force) == len(torque) == 3):
         return RetVal(False, 'force or torque has invalid length', None)
 
-    # Update the DB.
+    # Compile datastore ops.
     db = datastore.dbHandles['Commands']
-    query = {'cmd': 'booster_force', 'objID': objID}
     data = {'force': force, 'torque': torque}
-    db.update(query, {'$setOnInsert': data}, upsert=True)
+    key = 'booster_force:{}'.format(objID)
+    ops = {key: {'data': data}}
+    db.put(ops)
 
     return RetVal(True, None, None)
