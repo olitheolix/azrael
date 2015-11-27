@@ -671,19 +671,21 @@ class LeonardBase(config.AzraelProcess):
         t0 = time.time()
         stepinterval = 0.050
 
-        while True:
-            # Wait, if less than 10ms have passed, or proceed immediately.
-            sleep_time = stepinterval - (time.time() - t0)
-            if sleep_time > 0:
-                time.sleep(sleep_time)
+        try:
+            while True:
+                # Wait if <10ms have passed. Proceed immediately otherwise.
+                sleep_time = stepinterval - (time.time() - t0)
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
 
-            # Backup the time stamp.
-            t0 = time.time()
+                # Backup the time stamp.
+                t0 = time.time()
 
-            # Trigger the physics update step.
-            with util.Timeit('Leonard:1.0 Step'):
-                self.step(stepinterval, 10)
-
+                # Trigger the physics update step.
+                with util.Timeit('Leonard:1.0 Step'):
+                    self.step(stepinterval, 10)
+        except KeyboardInterrupt:
+            self.logit.warning('Leonard was aborted')
 
 class LeonardBullet(LeonardBase):
     """

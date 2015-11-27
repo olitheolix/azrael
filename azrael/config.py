@@ -188,5 +188,10 @@ class AzraelProcess(multiprocessing.Process):
         # Iterate over all its childrent, grand-children, etc and kill them.
         [_.kill() for _ in parent.children(recursive=True)]
 
-        # Kill this (parent) process as well.
-        super().terminate()
+        # Kill this (parent) process as well. However, it may not be running
+        # anymore (this terminate method is usually called from another
+        # thread), hence the try/except clause.
+        try:
+            super().terminate()
+        except psutil.NoSuchProcess:
+            pass

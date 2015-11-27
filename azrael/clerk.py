@@ -261,7 +261,10 @@ class Clerk(config.AzraelProcess):
         # Digest loop.
         while True:
             # Wait for socket activity.
-            sock = dict(poller.poll())
+            try:
+                sock = dict(poller.poll())
+            except KeyboardInterrupt:
+                break
             if self.sock_cmd not in sock:
                 continue
 
@@ -311,6 +314,7 @@ class Clerk(config.AzraelProcess):
                     # Unknown command word.
                     ret = RetVal(False, 'Invalid command <{}>'.format(cmd), None)
                     self.returnToClient(self.last_addr, ret)
+        self.logit.warning('Clerk was aborted')
 
     @typecheck
     def returnToClient(self, addr, ret: RetVal, addToLog: bool=True):
