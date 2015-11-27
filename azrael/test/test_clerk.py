@@ -44,6 +44,7 @@ class TestClerk:
     @classmethod
     def setup_class(cls):
         killAzrael()
+        azrael.datastore.init(flush=False)
         cls.clerk = azrael.clerk.Clerk()
 
     @classmethod
@@ -1285,9 +1286,6 @@ class TestClerk:
         """
         clerk = self.clerk
 
-        # Reset the constraint database.
-        assert clerk.igor.reset().ok
-
         # Define three collision shapes.
         pos_1, pos_2, pos_3 = [-2, 0, 0], [2, 0, 0], [6, 0, 0]
         body_1 = getRigidBody(position=pos_1)
@@ -1355,9 +1353,6 @@ class TestClerk:
         # Instantiate a Leonard and a Clerk.
         leo = getLeonard(azrael.leonard.LeonardBullet)
         clerk = self.clerk
-
-        # Reset the constraint database.
-        assert clerk.igor.reset().ok
 
         # Parameters and constants for this test.
         id_a, id_b = '1', '2'
@@ -1659,6 +1654,7 @@ class TestModifyFragments:
     @classmethod
     def setup_class(cls):
         killAzrael()
+        azrael.datastore.init(flush=False)
         cls.clerk = azrael.clerk.Clerk()
 
     @classmethod
@@ -2065,6 +2061,7 @@ class TestClerkEnd2End:
     @classmethod
     def setup_class(cls):
         killAzrael()
+        azrael.datastore.init(flush=False)
         cls.clerk = azrael.clerk.Clerk()
 
     @classmethod
