@@ -29,13 +29,29 @@ from azrael.aztypes import typecheck, RetVal
 # Global database handles.
 logit = logging.getLogger('azrael.' + __name__)
 
+dbHandles = {}
 
-def init():
+def init(flush=True):
     """
-    Reset all data store.
+    Create all data stores and reset their content.
+
+    This method will update the global dbHandles dictionary. Its keys are
+    handles to subclasses of `DatastoreBase` instances.
     """
-    for name in dbHandles:
-        dbHandles[name].reset()
+    global dbHandles
+
+    # Create all the data stores.
+    names = ('Commands', 'Constraints', 'Counters', 'ObjInstances', 'Templates')
+    try:
+        dbHandles = {name: DatabaseMongo(('azrael', name)) for name in names}
+    except IOError:
+        return RetVal(False, 'Could not initialise Datastore', None)
+
+    # Reset each data store.
+    if flush:
+        for name in names:
+            dbHandles[name].reset()
+    return RetVal(True, 'Could not initialise Datastore', None)
 
 
 @typecheck
@@ -1003,9 +1019,3 @@ class DatabaseMongo(DatastoreBase):
             prj['aid'] = True
         prj['_id'] = False
         return prj
-
-
-# Create all the data stores.
-names = ('Commands', 'Constraints', 'Counters', 'ObjInstances', 'Templates')
-dbHandles = {name: DatabaseMongo(('azrael', name)) for name in names}
-del names
