@@ -42,40 +42,44 @@ class TestAtomicCounter:
         """
         # Reset Azrael.
         datastore.init(flush=True)
+
+        # Get current value (increment is zero).
         ret = datastore.getUniqueObjectIDs(0)
-        assert ret.ok and ret.data == 0
+        assert ret.ok and ret.data == ['0']
 
+        # Increment by 1 and verify the new value.
         ret = datastore.getUniqueObjectIDs(1)
-        assert ret.ok and ret.data == (1, )
+        assert ret.ok and ret.data == ['1']
 
-        # Ask for new counter values.
+        # Ask for several new object IDs.
         for ii in range(5):
             ret = datastore.getUniqueObjectIDs(1)
             assert ret.ok
-            assert ret.data == (ii + 2, )
+            assert ret.data == [str(ii + 2)]
 
-        # Reset Azrael again and verify that all counters start at '1' again.
+        # Reset Azrael. Verify that all counters start at '0' again.
         datastore.init(flush=True)
         ret = datastore.getUniqueObjectIDs(0)
-        assert ret.ok and ret.data == 0
+        assert ret.ok and ret.data == ['0']
 
+        # Request three unique IDs.
         ret = datastore.getUniqueObjectIDs(3)
         assert ret.ok
-        assert ret.data == (1, 2, 3)
+        assert ret.data == ['1', '2', '3']
 
         # Increment the counter by different values.
         datastore.init(flush=True)
         ret = datastore.getUniqueObjectIDs(0)
-        assert ret.ok and ret.data == 0
+        assert ret.ok and ret.data == ['0']
 
         ret = datastore.getUniqueObjectIDs(2)
-        assert ret.ok and ret.data == (1, 2)
+        assert ret.ok and ret.data == ['1', '2']
 
         ret = datastore.getUniqueObjectIDs(3)
-        assert ret.ok and ret.data == (3, 4, 5)
+        assert ret.ok and ret.data == ['3', '4', '5']
 
         ret = datastore.getUniqueObjectIDs(4)
-        assert ret.ok and ret.data == (6, 7, 8, 9)
+        assert ret.ok and ret.data == ['6', '7', '8', '9']
 
         # Run invalid queries.
         assert not datastore.getUniqueObjectIDs(-1).ok

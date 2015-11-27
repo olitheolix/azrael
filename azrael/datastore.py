@@ -57,18 +57,10 @@ def init(flush):
 @typecheck
 def getUniqueObjectIDs(numIDs: int):
     """
-    Return ``numIDs`` unique object IDs as a tuple.
-
-    If ``numIDs`` is Zero then return a scalar with the current value.
-
-    If ``numIDs`` is positive then return a tuple with ``numIDs`` entries,
-    each of which constitutes a unique ID.
-
-    This function returns an error unless ``numIDs`` is non-negative.
+    Return a list of ``numIDs`` unique strings.
 
     :param int numIDs: non-negative integer.
-    :return tuple or scalar: object IDs (numIDs > 0) or last issued object ID
-                            (numIDs = 0)
+    :return list[str]: for instance ['1', '2']
     """
     # Sanity check.
     if numIDs < 0:
@@ -79,14 +71,21 @@ def getUniqueObjectIDs(numIDs: int):
     ret = db.incrementCounter('objcnt', numIDs)
     if not ret.ok:
         return ret
+    value = ret.data
 
-    # Return either the current value or the range of new IDs.
-    cnt = ret.data
+    # The a range of values with length numIDs.
     if numIDs == 0:
-        return RetVal(True, None, cnt)
+        newIDs = range(1)
     else:
-        newIDs = tuple(range(cnt - numIDs + 1, cnt + 1))
-        return RetVal(True, None, newIDs)
+        newIDs = range(numIDs)
+
+    # Convert [0, 1, ..., N] to [value, value-1, ..., value-N+1]. For instance,
+    # if value=10 and N=3 then this will produce [10, 9, 8]
+    newIDs = [value - ii for ii in newIDs]
+
+    # Reverse the list and convert the integers to strings.
+    newIDs = [str(_) for _ in newIDs[::-1]]
+    return RetVal(True, None, newIDs)
 
 
 def _checkGet(aids: (tuple, list), prj: list):
