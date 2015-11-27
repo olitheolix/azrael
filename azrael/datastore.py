@@ -19,6 +19,7 @@
 Database abstractions.
 """
 import copy
+import time
 import pymongo
 import logging
 
@@ -758,11 +759,7 @@ class DatastoreMongo(DatastoreBase):
         # Record the database/collection name.
         self.name_db, self.name_col = name
 
-        # Attempt to connect to MongoDB.
-        try:
-            client = config.getMongoClient()
-        except pymongo.errors.ConnectionFailure:
-            raise IOError('Could not connect to MongoDB')
+        client = self.connect()
 
         # Store the MongoDB handle as an instance variable.
         self.db = client[self.name_db][self.name_col]
@@ -770,16 +767,32 @@ class DatastoreMongo(DatastoreBase):
     # -------------------------------------------------------------------------
     #                             API methods.
     # -------------------------------------------------------------------------
+    def connect(self):
+        # Attempt to connect to MongoDB.
+        try:
+            return config.getMongoClient()
+        except pymongo.errors.ConnectionFailure:
+            raise IOError('Could not connect to MongoDB')
+
     def reset(self):
         """
         See docu in ``DatastoreBase``.
         """
-        self.db.drop()
-        self.db.ensure_index(
-            [('aid', pymongo.ASCENDING)],
-            background=False,
-            unique=True
-        )
+        for ii in range(5):
+            try:
+                self.db.drop()
+                self.db.ensure_index(
+                    [('aid', pymongo.ASCENDING)],
+                    background=False,
+                    unique=True
+                )
+                break
+            except pymongo.errors.AutoReconnect as err:
+                time.sleep(0.1)
+                self.connect()
+            if ii >= 4:
+                raise err
+
         return RetVal(True, None, None)
 
     def count(self):
