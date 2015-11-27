@@ -756,9 +756,16 @@ class DatabaseMongo(DatastoreBase):
     def __init__(self, name: tuple):
         super().__init__(name)
 
+        # Record the database/collection name.
         self.name_db, self.name_col = name
 
-        client = pymongo.MongoClient()
+        # Attempt to connect to MongoDB.
+        try:
+            client = config.getMongoClient()
+        except pymongo.errors.ConnectionFailure:
+            raise IOError('Could not connect to MongoDB')
+
+        # Store the MongoDB handle as an instance variable.
         self.db = client[self.name_db][self.name_col]
 
     # -------------------------------------------------------------------------
