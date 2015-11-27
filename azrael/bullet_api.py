@@ -27,7 +27,7 @@ import numpy as np
 import azrael.bullet.azBullet as azBullet
 
 from IPython import embed as ipshell
-from azrael.aztypes import typecheck, RetVal, _RigidBodyData, RigidBodyData
+from azrael.aztypes import typecheck, RetVal, _RigidBodyData
 from azrael.aztypes import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.aztypes import CollShapeMeta, CollShapeSphere, CollShapeBox, CollShapePlane
 
