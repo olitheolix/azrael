@@ -32,17 +32,10 @@ logit = logging.getLogger('azrael.' + __name__)
 
 def init():
     """
-    Flush the database.
+    Reset all data store.
     """
-    # Delete the database ('dbName' is a global variable defined at the end of
-    # this module).
-    client.drop_database(dbName)
-
-    dbHandles['Commands'].reset()
-    dbHandles['Constraints'].reset()
-    dbHandles['Counters'].reset()
-    dbHandles['ObjInstances'].reset()
-    dbHandles['Templates'].reset()
+    for name in dbHandles:
+        dbHandles[name].reset()
 
 
 @typecheck
@@ -1012,14 +1005,7 @@ class DatabaseMongo(DatastoreBase):
         return prj
 
 
-# Connect to MongoDB and store the relevant collection handles in the
-# 'dbHandles' variables to avoid hard coded collection names in Azrael.
-client = config.getMongoClient()
-dbName = 'azrael'
-dbHandles = {
-    'Commands': DatabaseMongo((dbName, 'cmd')),
-    'Constraints': DatabaseMongo((dbName, 'constraints')),
-    'Counters': DatabaseMongo((dbName, 'counters')),
-    'ObjInstances': DatabaseMongo((dbName, 'objinstances')),
-    'Templates': DatabaseMongo((dbName, 'template')),
-}
+# Create all the data stores.
+names = ('Commands', 'Constraints', 'Counters', 'ObjInstances', 'Templates')
+dbHandles = {name: DatabaseMongo(('azrael', name)) for name in names}
+del names
