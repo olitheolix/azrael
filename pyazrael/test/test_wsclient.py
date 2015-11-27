@@ -37,69 +37,81 @@ import azrael.clerk
 import azrael.config as config
 
 
-def test_custom_objid():
-    """
-    Create two clients. The first automatically gets an ID assigned,
-    whereas the second one specifies one explicitly.
+class TestLeonardAPI:
+    @classmethod
+    def setup_class(cls):
+        pass
 
-    This behaviour matches that of `Client`` but is not automatically
-    inherited because the ``WSClient`` is not a client itself but a
-    wrapper to communicate with the client instance in WebServer.
-    """
-    # Start Clerk.
-    clerk = azrael.clerk.Clerk()
-    clerk.start()
+    @classmethod
+    def teardown_class(cls):
+        pass
 
-    # Start WebServer.
-    web = azrael.web.WebServer()
-    web.start()
+    def setup_method(self, method):
+        azrael.datastore.init(flush=True)
 
-    # Instantiate a WSClient without specifiying an object ID.
-    client = pyazrael.AzraelWSClient(config.addr_webapi, config.port_webapi, timeout=1)
+    def teardown_method(self, method):
+        pass
 
-    # Ping Clerk to verify the connection is live.
-    ret = client.ping()
-    assert (ret.ok, ret.data) == (True, 'pong clerk')
+    def test_custom_objid(self):
+        """
+        Create two clients. The first automatically gets an ID assigned,
+        whereas the second one specifies one explicitly.
 
-    # Shutdown the system.
-    clerk.terminate()
-    web.terminate()
-    clerk.join(timeout=3)
-    web.join(timeout=3)
+        This behaviour matches that of `Client`` but is not automatically
+        inherited because the ``WSClient`` is not a client itself but a
+        wrapper to communicate with the client instance in WebServer.
+        """
+        # Start Clerk.
+        clerk = azrael.clerk.Clerk()
+        clerk.start()
 
-    print('Test passed')
+        # Start WebServer.
+        web = azrael.web.WebServer()
+        web.start()
 
+        # Instantiate a WSClient without specifiying an object ID.
+        client = pyazrael.AzraelWSClient(config.addr_webapi, config.port_webapi, timeout=1)
 
-def test_ping_WebServer():
-    """
-    Start services and send Ping to WebServer. Then terminate the WebServer and
-    verify that the ping fails.
-    """
-    # Convenience.
-    addr_webapi = config.addr_webapi
-    port_webapi = config.port_webapi
+        # Ping Clerk to verify the connection is live.
+        ret = client.ping()
+        assert (ret.ok, ret.data) == (True, 'pong clerk')
 
-    # Start the services.
-    clerk = azrael.clerk.Clerk()
-    web = azrael.web.WebServer()
-    clerk.start()
-    web.start()
+        # Shutdown the system.
+        clerk.terminate()
+        web.terminate()
+        clerk.join(timeout=3)
+        web.join(timeout=3)
 
-    # Create a Websocket client.
-    client = pyazrael.AzraelWSClient(addr_webapi, port_webapi, timeout=1)
+    def test_ping_WebServer(self):
+        """
+        Start services and send Ping to WebServer. Then terminate the WebServer and
+        verify that the ping fails.
+        """
+        # Convenience.
+        addr_webapi = config.addr_webapi
+        port_webapi = config.port_webapi
 
-    # Ping Clerk via the Web service.
-    assert client.ping()
-    assert client.pingWebserver().ok
+        # Start the services.
+        clerk = azrael.clerk.Clerk()
+        web = azrael.web.WebServer()
+        clerk.start()
+        web.start()
 
-    # Terminate the services.
-    clerk.terminate()
-    web.terminate()
-    clerk.join()
-    web.join()
+        # Create a Websocket client.
+        client = pyazrael.AzraelWSClient(addr_webapi, port_webapi, timeout=1)
 
-    # Ping must now be impossible.
-    with pytest.raises(ConnectionRefusedError):
-        pyazrael.AzraelWSClient(addr_webapi, port_webapi, timeout=1)
+        # Ping Clerk via the Web service.
+        assert client.ping()
+        assert client.pingWebserver().ok
 
-    assert not client.pingWebserver().ok
+        # Terminate the services.
+        clerk.terminate()
+        web.terminate()
+        clerk.join()
+        web.join()
+
+        # Ping must now be impossible.
+        with pytest.raises(ConnectionRefusedError):
+            pyazrael.AzraelWSClient(addr_webapi, port_webapi, timeout=1)
+
+        assert not client.pingWebserver().ok
