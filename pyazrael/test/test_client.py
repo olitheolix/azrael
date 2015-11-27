@@ -211,7 +211,7 @@ class TestClient:
         assert ret.data[name_1]['template'].rbs.cshapes == {'csempty': getCSEmpty()}
 
         # Add a new object template.
-        frag = {'bar': getFragRaw()}
+        frag = {'bar': getFragRaw(), 'foo': getFragDae()}
         body = getRigidBody()
         temp_name = 't1'
         temp_orig = getTemplate(temp_name, rbs=body, fragments=frag)
@@ -230,9 +230,15 @@ class TestClient:
         # Fetch the geometry from the web server and verify it.
         ret = client.getTemplateGeometry(ret.data[temp_name])
         assert ret.ok
-        ret = ret.data['bar']['model.json'].encode('utf8')
-        assert ret == frag['bar'].files['model.json']
-        del ret, temp_out, temp_orig
+        raw = ret.data['bar']['model.json'].encode('utf8')
+        dae_mod = ret.data['foo']['model.dae'].encode('utf8')
+        dae_png = ret.data['foo']['rgb1.png'].encode('utf8')
+        dae_jpg = ret.data['foo']['rgb2.jpg'].encode('utf8')
+        assert raw == frag['bar'].files['model.json']
+        assert dae_mod == frag['foo'].files['model.dae']
+        assert dae_png == frag['foo'].files['rgb1.png']
+        assert dae_jpg == frag['foo'].files['rgb2.jpg']
+        del ret, temp_out, temp_orig, raw, dae_mod, dae_png, dae_jpg
 
         # Define a new object with two boosters and one factory unit.
         # The 'boosters' and 'factories' arguments are a list of named

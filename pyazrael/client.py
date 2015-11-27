@@ -593,31 +593,38 @@ class Client():
     @typecheck
     def getTemplateGeometry(self, template):
         """
-        fixme: this method assumes there exactly one fragment with type 'RAW'.
+        Return the model files for ``template``.
 
-        Return the geometries for ``template``.
+        The return value is a dictionary of dictionaries::
 
-        The return value is a dictionary. The keys are the fragment names and
-        the values are ``Fragment`` instances:
-
-            {'frag_1': FragRaw(...), 'frag_2': FragDae(...), ...}
+            ret = {
+                fragname1: {
+                    filename_1: binary, ..., filename_n: binary
+                },
+                ...,
+                fragnameN: {
+                    filename_1: binary, ..., filename_n: binary
+                }
+            }
 
         :param dict template: template URL
         :return: fragments.
-        :rtype: dict
+        :rtype: dict[dict]
         """
         # Compile the URL.
         base_url = 'http://{ip}:{port}{url}'.format(
             ip=self.addr_clerk, port=self.port_webapi, url=template['url_frag'])
 
-        # Fetch the geometry from the web server and decode it.
+        # Fetch all the model files for each fragment.
         out = {}
-        for aid, frag in template['template'].fragments.items():
-            url = base_url + '/' + aid + '/model.json'
-            geo = requests.get(url).content
+        for fragname, frag in template['template'].fragments.items():
+            out[fragname] = {}
 
-            # Add the files.
-            out[aid] = {'model.json': geo.decode('utf8')}
+            # Download each model for the current fragment.
+            for fname in frag.files:
+                url = base_url + '/' + fragname + '/' + fname
+                geo = requests.get(url).content
+                out[fragname][fname] = geo.decode('utf8')
         return RetVal(True, None, out)
 
     @typecheck
