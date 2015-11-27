@@ -130,7 +130,9 @@ def dequeueCommands():
     # Delete all the commands we have just fetched.
     db.remove(list(docs.keys()))
 
-    # fixme: docu
+    # Decompose the command:objID key into its constituents and add them to the
+    # document. This will allow us to compile all spawn/remove/etc commands
+    # easily below.
     for key, doc in docs.items():
         cmd, objID = key.split(':')
         docs[key]['cmd'] = cmd
@@ -194,11 +196,18 @@ def addCmdSpawn(objData: (tuple, list)):
         key = 'spawn:{}'.format(objID)
         ops[key] = {'data': data}
 
-    # fixme: check return value
+    # Store the spawn commands.
     db = datastore.dbHandles['Commands']
     ret = db.put(ops)
+    if not ret.ok:
+        return ret
+
+    # Notify the user if not all spawn commands could be written. This should
+    # not happen because all object IDs must be unique. If this error occurs
+    # then something is wrong with the atomic object count.
     if False in ret.data.values():
-        msg = 'At least one objID already existed --> serious bug'
+        msg = ('At least one spawn command for the same objID already '
+               'exists --> serious bug')
         logit.error(msg)
         return RetVal(False, msg, None)
     else:
