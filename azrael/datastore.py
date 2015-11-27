@@ -402,6 +402,54 @@ class DatastoreBase:
         """
         raise NotImplementedError
 
+    def setCounter(self, counter_name: str, value: int):
+        """
+        Set ``counter_name`` to ``value`` and return ``value``.
+
+        If the counter variable does not yet exist it then create it.
+
+        :param str counter_name: name of counter to set.
+        :param int value: initial counter value.
+        :return: the counter ``value`` upon success.
+        """
+        raise NotImplementedError
+        
+    def getCounter(self, counter_name: str):
+        """
+        Return value of ``counter_name``.
+
+        Return None if ``counter_name`` does not exist.
+
+        :param str counter_name: return the value for this counter.
+        :return: current value of ``counter_name``.
+        """
+        raise NotImplementedError
+        
+    def incrementCounter(self, counter_name: str, value: int):
+        """
+        Increment ``counter_name`` by ``value`` and return the new value.
+
+        If ``counter_name`` does not yet exist then do nothing and return None
+        as its value.
+
+        :param str counter_name: name of counter.
+        :param int value: add this value to the current counter.
+        :return: new counter value
+        """
+        raise NotImplementedError
+        
+    def deleteCounter(self, counter_name: str):
+        """
+        Delete the counter.
+
+        This method always suceeds.
+        
+        :param str counter_name: return the value for this counter.
+        :return: current value of ``counter_name``.
+        """
+        raise NotImplementedError
+        
+
 
 class DatabaseInMemory(DatastoreBase):
     """
@@ -428,6 +476,7 @@ class DatabaseInMemory(DatastoreBase):
         See docu in ``DatastoreBase``.
         """
         self.content = {}
+        self.counters = {}
         return RetVal(True, None, None)
 
     def count(self):
@@ -592,6 +641,49 @@ class DatabaseInMemory(DatastoreBase):
             except KeyError:
                 pass
         return RetVal(True, None, num_deleted)
+
+    # -------------------------------------------------------------------------
+    #                         Counter Functionality
+    # -------------------------------------------------------------------------
+    @typecheck
+    def setCounter(self, counter_name: str, value: int):
+        """
+        See docu in ``DatastoreBase``.
+        """
+        self.counters[counter_name] = value
+        return RetVal(True, None, value)
+
+    @typecheck
+    def getCounter(self, counter_name: str):
+        """
+        See docu in ``DatastoreBase``.
+        """
+        value = self.counters.get(counter_name)
+        return RetVal(True, None, value)
+
+    @typecheck
+    def incrementCounter(self, counter_name: str, value: int):
+        """
+        See docu in ``DatastoreBase``.
+        """
+        try:
+            self.counters[counter_name] += value
+        except KeyError:
+            return RetVal(True, None, None)
+
+        return RetVal(True, None, self.counters[counter_name])
+
+    @typecheck
+    def deleteCounter(self, counter_name: str):
+        """
+        See docu in ``DatastoreBase``.
+        """
+        try:
+            del self.counters[counter_name]
+        except KeyError:
+            pass
+        return RetVal(True, None, None)
+
 
     # -------------------------------------------------------------------------
     #                           Utility methods.
@@ -830,6 +922,73 @@ class DatabaseMongo(DatastoreBase):
 
         ret = self.db.delete_many({'aid': {'$in': aids}})
         return RetVal(True, None, ret.deleted_count)
+
+    # -------------------------------------------------------------------------
+    #                         Counter Functionality
+    # -------------------------------------------------------------------------
+
+    @typecheck
+    def setCounter(self, counter_name: str, value: int):
+        """
+        See docu in ``DatastoreBase``.
+        """
+        # Each counter has its own document that specifies the counter name and
+        # its value. 
+        fam = self.db.find_and_modify
+        doc = fam(
+            {'aid': counter_name},
+            {'$set': {'aid': counter_name, 'value': value}},
+            new=True, upsert=True,
+        )
+
+        if doc is None:
+            # This should be impossible.
+            msg = 'Could not create counter'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
+
+        return RetVal(True, None, doc['value'])
+
+    @typecheck
+    def getCounter(self, counter_name: str):
+        """
+        See docu in ``DatastoreBase``.
+        """
+        doc = self.db.find_one({'aid': counter_name})
+        if doc is None:
+            value = None
+        else:
+            value = doc['value']
+        return RetVal(True, None, value)
+
+    @typecheck
+    def incrementCounter(self, counter_name: str, value: int):
+        """
+        See docu in ``DatastoreBase``.
+        """
+        fam = self.db.find_and_modify
+        doc = fam(
+            {'aid': counter_name},
+            {'$inc': {'value': value}},
+            new=True, upsert=False,
+        )
+
+        if doc is None:
+            # This should be impossible.
+            msg = 'Could not create counter'
+            self.logit.error(msg)
+            return RetVal(False, msg, None)
+
+        return RetVal(True, None, doc['value'])
+
+    @typecheck
+    def deleteCounter(self, counter_name: str):
+        """
+        See docu in ``DatastoreBase``.
+        """
+        self.db.delete_one({'aid': counter_name})
+        return RetVal(True, None, None)
+
 
     # -------------------------------------------------------------------------
     #                           Utility methods.

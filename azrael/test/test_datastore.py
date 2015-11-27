@@ -491,6 +491,46 @@ class TestAllDatastoreBackends:
         }
         assert ret.data == ref
 
+    @pytest.mark.parametrize('clsDatabase', all_engines)
+    def test_atomic_counter(self, clsDatabase):
+        """
+        Create an atomic counter and increment it.
+        """
+        db = clsDatabase(name=('test1', 'test2'))
+
+        # Reset the database and verify that it is empty.
+        assert db.reset().ok and db.count().data == 0
+
+        # Query a non-existing counter.
+        db.getCounter('foo') == (True, None, None)
+
+        # Modify a non-existing counter.
+        db.incrementCounter('foo', 1) == (True, None, None)
+
+        # Create a new counter and set its value.
+        val = 2
+        db.setCounter('foo', val) == (True, None, val)
+        db.getCounter('foo') == (True, None, val)
+
+        # Increment the counter. This must return the incremented value.
+        db.incrementCounter('foo', 3) == (True, None, val + 3)
+        db.getCounter('foo') == (True, None, val + 3)
+
+        # Set an existing counter. This must simply overwrite its value.
+        val = 20
+        db.setCounter('foo', val) == (True, None, val)
+        db.getCounter('foo') == (True, None, val)
+
+        # Delete a non-existing counter. This must always succeed (and do
+        # nothing).
+        db.deleteCounter('bar') == (True, None, None)
+
+        # Delete the existing 'foo' counter and verify that operations on it
+        # return None.
+        db.deleteCounter('foo') == (True, None, None)
+        db.getCounter('foo') == (True, None, None)
+        db.incrementCounter('foo', 3) == (True, None, None)
+
 
 class TestDatabaseInMemory:
     """
