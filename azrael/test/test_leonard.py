@@ -735,7 +735,7 @@ class TestLeonardOther:
         # Unlink the objects again, apply a right-pointing force to the
         # right object and verify that the left continues to move left and the
         # right does not.
-        assert self.igor.deleteConstraints([con]) == (True, None, 1)
+        assert self.igor.removeConstraints([con]) == (True, None, 1)
         assert leoAPI.addCmdDirectForce(id_b, [10, 0, 0], [0, 0, 0]).ok
         leo.processCommandsAndSync()
         leo.step(1.0, 60)

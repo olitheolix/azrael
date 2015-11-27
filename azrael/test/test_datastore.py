@@ -515,7 +515,7 @@ class TestAllDatastoreBackends:
         assert db.getCounter('bar') == (True, None, val)
 
         # Remove the 'bar' counter again.
-        assert db.deleteCounter('bar') == (True, None, None)
+        assert db.removeCounter('bar') == (True, None, None)
         assert db.getCounter('bar') == (True, None, None)
 
         # Create a new counter and set its value.
@@ -534,11 +534,11 @@ class TestAllDatastoreBackends:
         assert db.getCounter('foo') == (True, None, val)
 
         # Delete a non-existing counter. Nothing must happen.
-        assert db.deleteCounter('bar') == (True, None, None)
+        assert db.removeCounter('bar') == (True, None, None)
 
         # Delete the existing counter 'foo'. Verify that it subsequent GET
         # queries return None values for it.
-        assert db.deleteCounter('foo') == (True, None, None)
+        assert db.removeCounter('foo') == (True, None, None)
         assert db.getCounter('foo') == (True, None, None)
 
 

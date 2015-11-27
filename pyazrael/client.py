@@ -577,7 +577,7 @@ class Client():
         return ret._replace(data=data)
 
     @typecheck
-    def deleteConstraints(self, constraints: (tuple, list)):
+    def removeConstraints(self, constraints: (tuple, list)):
         """
         Remove the ``constraints``.
 
@@ -588,7 +588,7 @@ class Client():
         :return: number of newly added constraints.
         """
         payload = {'constraints': [_._asdict() for _ in constraints]}
-        return self.serialiseAndSend('delete_constraints', payload)
+        return self.serialiseAndSend('remove_constraints', payload)
 
     @typecheck
     def getTemplateGeometry(self, template):

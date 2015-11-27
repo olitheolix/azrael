@@ -1338,7 +1338,7 @@ class TestClerk:
         assert clerk.getConstraints([id_3]) == (True, None, (con_2, ))
 
         # Remove one constraint and verify Clerk returns them correctly.
-        assert clerk.deleteConstraints([con_2]) == (True, None, 1)
+        assert clerk.removeConstraints([con_2]) == (True, None, 1)
         assert clerk.getConstraints(None) == (True, None, (con_1, ))
         assert clerk.getConstraints([id_1]) == (True, None, (con_1, ))
         assert clerk.getConstraints([id_2]) == (True, None, (con_1,))

@@ -764,7 +764,7 @@ class TestClient:
 
         # Remove the second constraint and verify the remaining constraint is
         # returned correctly.
-        assert client.deleteConstraints([con_2]) == (True, None, 1)
+        assert client.removeConstraints([con_2]) == (True, None, 1)
         assert client.getConstraints(None) == (True, None, [con_1])
         assert client.getConstraints([id_1]) == (True, None, [con_1])
         assert client.getConstraints([id_2]) == (True, None, [con_1])

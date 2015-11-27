@@ -321,16 +321,16 @@ def FromClerk_AddConstraints_Encode(num_added):
 
 
 # ---------------------------------------------------------------------------
-# DeleteConstraints
+# RemoveConstraints
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_DeleteConstraints_Decode(payload: dict):
+def ToClerk_RemoveConstraints_Decode(payload: dict):
     return ToClerk_AddConstraints_Decode(payload)
 
 
 @typecheck
-def FromClerk_DeleteConstraints_Encode(num_added):
+def FromClerk_RemoveConstraints_Encode(num_added):
     return FromClerk_AddConstraints_Encode(num_added)
 
 

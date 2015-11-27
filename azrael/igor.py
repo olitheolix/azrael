@@ -188,7 +188,7 @@ class Igor:
             out.append(self._cache[tmp])
         return RetVal(True, None, tuple(out))
 
-    def deleteConstraints(self, constraints: (tuple, list)):
+    def removeConstraints(self, constraints: (tuple, list)):
         """
         Delete the ``constraints`` in the data base.
 

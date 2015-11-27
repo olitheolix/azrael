@@ -443,7 +443,7 @@ class DatastoreBase:
         """
         raise NotImplementedError
         
-    def deleteCounter(self, counter_name: str):
+    def removeCounter(self, counter_name: str):
         """
         Delete the counter.
 
@@ -679,7 +679,7 @@ class DatastoreInMemory(DatastoreBase):
         return RetVal(True, None, self.counters[counter_name])
 
     @typecheck
-    def deleteCounter(self, counter_name: str):
+    def removeCounter(self, counter_name: str):
         """
         See docu in ``DatastoreBase``.
         """
@@ -1010,7 +1010,7 @@ class DatastoreMongo(DatastoreBase):
         return RetVal(True, None, doc['value'])
 
     @typecheck
-    def deleteCounter(self, counter_name: str):
+    def removeCounter(self, counter_name: str):
         """
         See docu in ``DatastoreBase``.
         """

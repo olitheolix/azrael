@@ -154,10 +154,10 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_GetConstraints_Decode,
                 self.getConstraints,
                 protocol.FromClerk_GetConstraints_Encode),
-            'delete_constraints': (
-                protocol.ToClerk_DeleteConstraints_Decode,
-                self.deleteConstraints,
-                protocol.FromClerk_DeleteConstraints_Encode),
+            'remove_constraints': (
+                protocol.ToClerk_RemoveConstraints_Decode,
+                self.removeConstraints,
+                protocol.FromClerk_RemoveConstraints_Encode),
             'set_custom': (
                 protocol.ToClerk_SetCustomData_Decode,
                 self.setCustomData,
@@ -1594,16 +1594,16 @@ class Clerk(config.AzraelProcess):
         return self.igor.getConstraints(bodyIDs)
 
     @typecheck
-    def deleteConstraints(self, constraints: (tuple, list)):
+    def removeConstraints(self, constraints: (tuple, list)):
         """
         Return the number of ``constraints`` actually deleted.
 
-        See ``Igor.deleteConstraints`` for details.
+        See ``Igor.removeConstraints`` for details.
 
         :param list[ConstraintMeta] constraints: the constraints to remove.
         :return: number of deleted entries.
         """
-        return self.igor.deleteConstraints(constraints)
+        return self.igor.removeConstraints(constraints)
 
     @typecheck
     def setCustomData(self, data: dict):
