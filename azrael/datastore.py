@@ -19,6 +19,7 @@
 Database abstractions.
 """
 import copy
+import pymongo
 import logging
 
 import azrael.config as config
@@ -429,8 +430,8 @@ class DatastoreBase:
         """
         Increment ``counter_name`` by ``value`` and return the new value.
 
-        If ``counter_name`` does not yet exist then do nothing and return None
-        as its value.
+        If ``counter_name`` does not yet exist then create it and initialise
+        its values with Zero.
 
         :param str counter_name: name of counter.
         :param int value: add this value to the current counter.
@@ -669,7 +670,7 @@ class DatabaseInMemory(DatastoreBase):
         try:
             self.counters[counter_name] += value
         except KeyError:
-            return RetVal(True, None, None)
+            self.counters[counter_name] = value
 
         return RetVal(True, None, self.counters[counter_name])
 
@@ -751,11 +752,10 @@ class DatabaseMongo(DatastoreBase):
     def __init__(self, name: tuple):
         super().__init__(name)
 
-        import pymongo
         self.name_db, self.name_col = name
+
         client = pymongo.MongoClient()
         self.db = client[self.name_db][self.name_col]
-        self.db.ensure_index([('aid', 1)])
 
     # -------------------------------------------------------------------------
     #                             API methods.
@@ -765,6 +765,11 @@ class DatabaseMongo(DatastoreBase):
         See docu in ``DatastoreBase``.
         """
         self.db.drop()
+        self.db.ensure_index(
+            [('aid', pymongo.ASCENDING)],
+            background=False,
+            unique=True
+        )
         return RetVal(True, None, None)
 
     def count(self):
@@ -966,11 +971,11 @@ class DatabaseMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
-        fam = self.db.find_and_modify
-        doc = fam(
+        doc = self.db.find_one_and_update(
             {'aid': counter_name},
             {'$inc': {'value': value}},
-            new=True, upsert=False,
+            upsert=True,
+            return_document=pymongo.ReturnDocument.AFTER
         )
 
         if doc is None:

@@ -504,32 +504,38 @@ class TestAllDatastoreBackends:
         # Query a non-existing counter.
         db.getCounter('foo') == (True, None, None)
 
-        # Modify a non-existing counter.
-        db.incrementCounter('foo', 1) == (True, None, None)
+        # Increment the not existing counter 'bar'. This must create the
+        # counter and initialise it to zero.
+        val = 1
+        assert db.incrementCounter('bar', val) == (True, None, val)
+        assert db.getCounter('bar') == (True, None, val)
+
+        # Remove the 'bar' counter again.
+        assert db.deleteCounter('bar') == (True, None, None)
+        assert db.getCounter('bar') == (True, None, None)
 
         # Create a new counter and set its value.
         val = 2
-        db.setCounter('foo', val) == (True, None, val)
-        db.getCounter('foo') == (True, None, val)
+        assert db.setCounter('foo', val) == (True, None, val)
+        assert db.getCounter('foo') == (True, None, val)
 
-        # Increment the counter. This must return the incremented value.
-        db.incrementCounter('foo', 3) == (True, None, val + 3)
-        db.getCounter('foo') == (True, None, val + 3)
+        # Increment the value of the existing counter 'foo'. This must return
+        # the incremented value.
+        assert db.incrementCounter('foo', 3) == (True, None, val + 3)
+        assert db.getCounter('foo') == (True, None, val + 3)
 
-        # Set an existing counter. This must simply overwrite its value.
+        # Overwrite the value of an existing counter.
         val = 20
-        db.setCounter('foo', val) == (True, None, val)
-        db.getCounter('foo') == (True, None, val)
+        assert db.setCounter('foo', val) == (True, None, val)
+        assert db.getCounter('foo') == (True, None, val)
 
-        # Delete a non-existing counter. This must always succeed (and do
-        # nothing).
-        db.deleteCounter('bar') == (True, None, None)
+        # Delete a non-existing counter. Nothing must happen.
+        assert db.deleteCounter('bar') == (True, None, None)
 
-        # Delete the existing 'foo' counter and verify that operations on it
-        # return None.
-        db.deleteCounter('foo') == (True, None, None)
-        db.getCounter('foo') == (True, None, None)
-        db.incrementCounter('foo', 3) == (True, None, None)
+        # Delete the existing counter 'foo'. Verify that it subsequent GET
+        # queries return None values for it.
+        assert db.deleteCounter('foo') == (True, None, None)
+        assert db.getCounter('foo') == (True, None, None)
 
 
 class TestDatabaseInMemory:
