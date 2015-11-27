@@ -34,6 +34,7 @@ class TestClerk:
     @classmethod
     def setup_class(cls):
         killAzrael()
+        azrael.datastore.init(flush=True)
         cls.igor = azrael.igor.Igor()
 
     @classmethod
@@ -41,10 +42,10 @@ class TestClerk:
         killAzrael()
 
     def setup_method(self, method):
-        self.igor.reset()
+        assert self.igor.reset() == (True, None, None)
 
     def teardown_method(self, method):
-        self.igor.reset()
+        pass
 
     def test_basic(self):
         """
@@ -64,7 +65,6 @@ class TestClerk:
         """
         # Convenience.
         igor = self.igor
-        igor.reset()
 
         # Create the constraints for this test.
         c1 = getCon('foo', '1', '2')
@@ -159,7 +159,6 @@ class TestClerk:
         c3 = getCon('foo', '4', '5')
 
         # The list of constraints must be empty after a reset.
-        assert igor.reset() == (True, None, None)
         assert igor.getConstraints(None).data == tuple()
         assert igor.updateLocalCache() == (True, None, 0)
         assert igor.getConstraints(None).data == tuple()
@@ -231,7 +230,6 @@ class TestClerk:
         c3 = getCon('foo', '3', '4')
 
         # There must not be any pairs after a reset.
-        assert igor.reset() == (True, None, None)
         assert igor.uniquePairs() == (True, None, tuple())
 
         # Adding a constraint must result in one unique pair of IDs *after*
@@ -271,7 +269,6 @@ class TestClerk:
 
         # Query the constraints for bodies that do not feature in any
         # constraints.
-        assert igor.reset() == (True, None, None)
         assert igor.getConstraints([]) == (True, None, tuple())
         assert igor.getConstraints([1]) == (True, None, tuple())
         assert igor.getConstraints([1, 2]) == (True, None, tuple())

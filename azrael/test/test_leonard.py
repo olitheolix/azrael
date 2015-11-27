@@ -37,7 +37,6 @@ class TestLeonardAllEngines:
     def setup_method(self, method):
         assert azrael.vectorgrid.deleteAllGrids().ok
         azrael.datastore.init(flush=True)
-        self.igor.reset()
 
     def teardown_method(self, method):
         pass
@@ -282,12 +281,11 @@ class TestLeonardOther:
 
     @classmethod
     def teardown_class(cls):
-        cls.igor.reset()
+        pass
 
     def setup_method(self, method):
         assert azrael.vectorgrid.deleteAllGrids().ok
         azrael.datastore.init(flush=True)
-        self.igor.reset()
 
     def teardown_method(self, method):
         pass
