@@ -38,10 +38,11 @@ def init():
     # this module).
     client.drop_database(dbName)
 
-    dbHandles['Templates'].reset()
-    dbHandles['ObjInstances'].reset()
-    dbHandles['Constraints'].reset()
     dbHandles['Commands'].reset()
+    dbHandles['Constraints'].reset()
+    dbHandles['Counters'].reset()
+    dbHandles['ObjInstances'].reset()
+    dbHandles['Templates'].reset()
 
 
 @typecheck
@@ -65,19 +66,13 @@ def getUniqueObjectIDs(numIDs: int):
         return RetVal(False, 'numIDs must be non-negative', None)
 
     # Increment the counter by ``numIDs``.
-    fam = dbHandles['Counters'].find_and_modify
-    doc = fam({'name': 'objcnt'},
-              {'$inc': {'cnt': numIDs}},
-              new=True, upsert=True)
-
-    # Error check.
-    if doc is None:
-        return RetVal(False, 'Cannot determine new object IDs', None)
-
-    # Extract the new counter value (after it was incremented).
-    cnt = doc['cnt']
+    db = dbHandles['Counters']
+    ret = db.incrementCounter('objcnt', numIDs)
+    if not ret.ok:
+        return ret
 
     # Return either the current value or the range of new IDs.
+    cnt = ret.data
     if numIDs == 0:
         return RetVal(True, None, cnt)
     else:
@@ -1023,8 +1018,8 @@ client = config.getMongoClient()
 dbName = 'azrael'
 dbHandles = {
     'Commands': DatabaseMongo((dbName, 'cmd')),
-    'Counters': client[dbName]['Counters'],
-    'Templates': DatabaseMongo((dbName, 'template')),
+    'Constraints': DatabaseMongo((dbName, 'constraints')),
+    'Counters': DatabaseMongo((dbName, 'counters')),
     'ObjInstances': DatabaseMongo((dbName, 'objinstances')),
-    'Constraints': DatabaseMongo((dbName, 'constraints'))
+    'Templates': DatabaseMongo((dbName, 'template')),
 }
