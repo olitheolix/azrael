@@ -1309,12 +1309,12 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             self.logit.info('Worker {} terminated itself after {} steps'
                             .format(self.workerID, numSteps))
         except KeyboardInterrupt:
-            print('Aborted Worker {}'.format(self.workerID))
+            self.logit.warning('Aborted Worker {}'.format(self.workerID))
 
         # Terminate.
         sock.close(linger=0)
         ctx.destroy()
-        print('Worker {} exited cleanly'.format(self.workerID))
+        self.logit.info('Worker {} exited cleanly'.format(self.workerID))
 
 
 class WorkerManager(config.AzraelProcess):
@@ -1393,11 +1393,11 @@ class WorkerManager(config.AzraelProcess):
         try:
             self._run()
         except KeyboardInterrupt:
-            print('Worker Manager was aborted')
+            self.logit.warning('Worker Manager was aborted')
 
         # Terminate all workers.
         for w in self.workers:
             if w is not None and w.is_alive():
                 w.terminate()
                 w.join()
-        print('Worker manager finished')
+        self.logit.info('Worker manager finished')
