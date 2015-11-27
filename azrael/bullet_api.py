@@ -24,7 +24,6 @@ Bullet for another engine at some point, should the need arise.
 """
 import logging
 import numpy as np
-import azrael.aztypes as aztypes
 import azrael.bullet.azBullet as azBullet
 
 from IPython import embed as ipshell
@@ -286,7 +285,7 @@ class PyBulletDynamicsWorld():
         if (old.scale != rbState.scale) or \
            not (np.array_equal(old.cshapes, rbState.cshapes)):
             # Create a new collision shape.
-            tmp = self.compileCollisionShape(bodyID, rbState)
+            tmp = self.compileCollisionShape(rbState)
             mass, inertia, cshapes = tmp.data
             del mass, inertia, tmp
 
@@ -423,7 +422,7 @@ class PyBulletDynamicsWorld():
             return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, bodyID: str, rbState: _RigidBodyData):
+    def compileCollisionShape(self, rbState: _RigidBodyData):
         """
         Return the correct Bullet collision shape based on ``rbState``.
 
@@ -431,7 +430,6 @@ class PyBulletDynamicsWorld():
 
         fixme: find out how to combine mass/inertia of multi body bodies.
 
-        :param str bodyID: body ID.
         :param _RigidBodyData rbState: meta data to describe the body.
         :return: compound shape with all the individual shapes.
         :rtype: ``CompoundShape``
@@ -454,7 +452,7 @@ class PyBulletDynamicsWorld():
 
         # Create the collision shapes one by one.
         scale = rbState.scale
-        for name, cs in rbState.cshapes.items():
+        for cs in rbState.cshapes.values():
             # Convert the input data to a CollShapeMeta tuple. This is
             # necessary if the data passed to us here comes straight from the
             # database because then it it is merely a list of values, not (yet)
@@ -519,7 +517,7 @@ class PyBulletDynamicsWorld():
         pos = Vec3(*rbState.position)
 
         # Build the collision shape.
-        ret = self.compileCollisionShape(bodyID, rbState)
+        ret = self.compileCollisionShape(rbState)
         mass, inertia, cshapes = ret.data
 
         # Create a motion state for the initial rotation and position.

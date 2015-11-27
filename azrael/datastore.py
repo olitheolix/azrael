@@ -186,7 +186,7 @@ def _checkMod(ops):
             # The 'set' field must be a dictionary. All its keys must be valid
             # JSON keys.
             assert isinstance(value['set'], dict)
-            for k_set, v_set in value['set'].items():
+            for k_set in value['set']:
                 assert _validJsonKey(k_set)
 
             # The 'unset' field must be a dictionary. All its keys must be
@@ -201,7 +201,7 @@ def _checkMod(ops):
             for k_exists, v_exists in value['exists'].items():
                 assert _validJsonKey(k_exists)
                 assert isinstance(v_exists, bool)
-    except (KeyError, AssertionError) as err:
+    except (KeyError, AssertionError):
         return False
     return True
 
@@ -531,7 +531,6 @@ class DatastoreInMemory(DatastoreBase):
         # Copy the requested documents into an output dictionary. If a key does
         # not exist then the output dictionary will contain None for the
         # respective values.
-        cp = copy.deepcopy
         content = self.content
         docs = {aid: content[aid] if aid in content else None
                 for aid in aids}
@@ -871,6 +870,9 @@ class DatastoreInMemory(DatastoreBase):
 
 
 class DatastoreMongo(DatastoreBase):
+    """
+    MongoDB backed datastore.
+    """
     def __init__(self, name: tuple):
         super().__init__(name)
 
@@ -1208,7 +1210,7 @@ class DatastoreMongo(DatastoreBase):
         keys. Furthermore, remove the 'aid' field from the document.
         """
         docs = {doc['aid']: doc for doc in docs}
-        for aid, doc in docs.items():
+        for doc in docs.values():
             del doc['aid']
         return docs
 

@@ -32,7 +32,6 @@ import azrael.datastore
 import azrael.vectorgrid
 import azrael.bullet_api
 import azrael.util as util
-import azrael.aztypes as aztypes
 import azrael.config as config
 import azrael.leo_api as leoAPI
 
@@ -210,7 +209,7 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
         # the body theyt are attached to, and compile the AABB boundaries.
         # Note: the AABBs are not re-computed here. The assumption is that the
         # AABB is large enough to contain their body at any rotation.
-        for name, aabb in sorted(AABBs[objID].items()):
+        for aabb in sorted(AABBs[objID].values()):
             # Sanity check: each AABB has exactly 6 entries. Since any given
             # body can have multiple of them the number of values in the array
             # must be an integer multiple of 6.
@@ -530,7 +529,7 @@ class LeonardBase(config.AzraelProcess):
             self.allBodies[objID] = sv._replace(position=pos, velocityLin=vel)
 
         # Synchronise the local object cache back to the database.
-        self.syncObjects(writeconcern=False)
+        self.syncObjects()
 
     def processCommandQueue(self):
         """
@@ -617,15 +616,9 @@ class LeonardBase(config.AzraelProcess):
 
         return RetVal(True, None, None)
 
-    def syncObjects(self, writeconcern: bool):
+    def syncObjects(self):
         """
         Sync the local BodyStates to Leonard's DB and the master record.
-
-        The ``writeconcern`` flag is mostly for performance tuning. If set to
-        *False* then the sync will not wait for an acknowledgement from the
-        database after the write opration.
-
-        :param bool writeconcern: disable write concern when set to *False*.
         """
         # Return immediately if we have no objects to begin with.
         if len(self.allBodies) == 0:
@@ -654,7 +647,7 @@ class LeonardBase(config.AzraelProcess):
         not critical).
         """
         self.processCommandQueue()
-        self.syncObjects(writeconcern=True)
+        self.syncObjects()
 
     def run(self):
         """
@@ -769,7 +762,7 @@ class LeonardBullet(LeonardBase):
                 self.allBodies[objID] = ret.data
 
         # Synchronise the local object cache back to the database.
-        self.syncObjects(writeconcern=False)
+        self.syncObjects()
 
 
 class LeonardSweeping(LeonardBase):
@@ -881,7 +874,7 @@ class LeonardSweeping(LeonardBase):
                     self.allBodies[objID] = ret.data
 
         # Synchronise the local object cache back to the database.
-        self.syncObjects(writeconcern=False)
+        self.syncObjects()
 
 
 class LeonardDistributedZeroMQ(LeonardBase):
@@ -1063,7 +1056,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Synchronise the local cache back to the database.
         with util.Timeit('Leonard:1.5  syncObjects'):
-            self.syncObjects(writeconcern=False)
+            self.syncObjects()
 
     @typecheck
     def createWorkPackage(self, objIDs: (tuple, list),

@@ -39,7 +39,6 @@ language agnostic.
 import io
 import os
 import zmq
-import copy
 import json
 import jsonschema
 import traceback
@@ -57,7 +56,7 @@ import azrael.datastore as datastore
 import azrael.azschemas as azschemas
 
 from IPython import embed as ipshell
-from azrael.aztypes import typecheck, RetVal, Template, FragMeta, _FragMeta
+from azrael.aztypes import typecheck, RetVal, Template, FragMeta
 
 
 class Clerk(config.AzraelProcess):
@@ -531,7 +530,7 @@ class Clerk(config.AzraelProcess):
         """
         # Iterate over all fragments in the template and mangle the geometry
         # file names.
-        for fragname, metafrag in template_json['fragments'].items():
+        for metafrag in template_json['fragments'].values():
             fnames = metafrag['files']
             tmp = {self._mangleFileName(fname, unmangle=False): None
                    for fname in fnames}
@@ -1287,8 +1286,7 @@ class Clerk(config.AzraelProcess):
             # Add the ops for the data store and Igor.
             ops_db[objID] = op_db
             ops_file[objID] = op_file
-            del op_db, op_file, pre
-        del objID, frags
+            del op_db, op_file, pre, objID, frags
 
         # -----------------------------------------------------------------
         # Apply the updates.
@@ -1406,7 +1404,7 @@ class Clerk(config.AzraelProcess):
             # position in the document hierarchy.
             ops[objID] = {
                 'inc': {},
-                'set': {('template', 'rbs',  k): v for (k, v) in body.items()},
+                'set': {('template', 'rbs', k): v for (k, v) in body.items()},
                 'unset': [],
                 'exists': {},
             }

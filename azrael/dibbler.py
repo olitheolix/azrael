@@ -32,16 +32,13 @@ infrequently. They usually contain only geometric models and textures.
 
 This version of Dibbler uses Mongo's GridFS to store the files.
 """
-import os
-import json
 import gridfs
 import logging
 
 import azrael.config as config
 
 from IPython import embed as ipshell
-from azrael.aztypes import typecheck, Template, RetVal
-from azrael.aztypes import FragMeta
+from azrael.aztypes import typecheck, RetVal
 
 
 class Dibbler:
@@ -126,7 +123,7 @@ class Dibbler:
             for fname, fdata in files.items():
                 assert isinstance(fdata, bytes)
                 assert self.isValidFileName(fname)
-        except AssertionError as e:
+        except AssertionError:
             msg = 'Invalid file name or data format for <{}>'
             msg = msg.format(fname)
             self.logit.info(msg)
@@ -138,7 +135,7 @@ class Dibbler:
             try:
                 self.fs.put(fdata, filename=fname)
                 num_written += 1
-            except gridfs.errors.GridFSError as err:
+            except gridfs.errors.GridFSError:
                 self.logit.error('GridFS error')
         return RetVal(True, None, {'written': num_written})
 
@@ -172,7 +169,7 @@ class Dibbler:
                 msg = 'Corrupt GridFS for URL <{}>'.format(fname)
                 self.logit.error(msg)
                 return RetVal(False, msg, None)
-            except gridfs.errors.GridFSError as err:
+            except gridfs.errors.GridFSError:
                 msg = 'Unkown GridFS error'
                 self.logit.error(msg)
                 return RetVal(False, msg, None)
@@ -232,9 +229,9 @@ class Dibbler:
                 # versions we found.
                 if found_at_least_one:
                     num_deleted += 1
-            except gridfs.errors.NoFile as err:
+            except gridfs.errors.NoFile:
                 pass
-            except gridfs.errors.GridFSError as err:
+            except gridfs.errors.GridFSError:
                 # All other GridFS errors.
                 pass
         return RetVal(True, None, num_deleted)

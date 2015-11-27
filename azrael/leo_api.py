@@ -133,7 +133,7 @@ def dequeueCommands():
     # Decompose the command:objID key into its constituents and add them to the
     # document. This will allow us to compile all spawn/remove/etc commands
     # easily below.
-    for key, doc in docs.items():
+    for key in docs:
         cmd, objID = key.split(':')
         docs[key]['cmd'] = cmd
         docs[key]['objID'] = objID
