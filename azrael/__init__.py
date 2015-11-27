@@ -34,7 +34,7 @@ def waitForDatabases(timeout=60):
     """
     # Attempt to initialise the data stores.
     t0 = time.time()
-    while azrael.datastore.init(flush=True) is False:
+    while azrael.datastore.init(flush=False) is False:
         if time.time() - t0 > timeout:
             # A minute has passed - abort with an error.
             print('failed!')
