@@ -26,6 +26,7 @@ import subprocess
 import azrael.web
 import azrael.util
 import azrael.clerk
+import azrael.config
 import azrael.dibbler
 import azrael.leonard
 import azrael.datastore
@@ -49,7 +50,8 @@ class AzraelStack:
         azrael.datastore.init(flush=True)
 
         # Reset the profiling database and enable logging.
-        azrael.util.resetTiming()
+        host, port = azrael.config.addr_database, azrael.config.port_database
+        azrael.util.resetTiming(host=host, port=port)
         self.setupLogging(loglevel)
 
         # Delete all grids but define a force grid (will not be used but
