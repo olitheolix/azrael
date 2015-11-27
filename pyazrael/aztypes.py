@@ -906,18 +906,25 @@ class Template(_Template):
                 assert isAIDStringValid(tmp_aid)
 
             # Compile- and sanity check all geometry fragments.
-            fragments = {k: FragMeta(**v) if isinstance(v, dict) else FragMeta(*v)
-                         for (k, v) in fragments.items()}
+            fragments = {
+                k: FragMeta(**v)
+                if isinstance(v, dict) else FragMeta(*v)
+                for (k, v) in fragments.items()
+            }
 
             # Compile- and sanity check all boosters.
-            boosters = {k: Booster(**v)
-                        if isinstance(v, dict) else Booster(*v)
-                        for (k, v) in boosters.items()}
+            boosters = {
+                k: Booster(**v)
+                if isinstance(v, dict) else Booster(*v)
+                for (k, v) in boosters.items()
+            }
 
             # Compile- and sanity check all factories.
-            factories = {k: Factory(**v)
-                         if isinstance(v, dict) else Factory(*v)
-                         for (k, v) in factories.items()}
+            factories = {
+                k: Factory(**v)
+                if isinstance(v, dict) else Factory(*v)
+                for (k, v) in factories.items()
+            }
 
             # Compile the RBS data.
             if isinstance(rbs, dict):
