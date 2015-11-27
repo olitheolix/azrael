@@ -632,7 +632,7 @@ class LeonardBase(config.AzraelProcess):
             return
 
         # Update the RBS data in the master record.
-        db2 = azrael.datastore.DatabaseMongo(('azrael', 'objinstances'))
+        db = azrael.datastore.dbHandles['ObjInstances']
         ops = {}
         for aid, body in self.allBodies.items():
             ops[aid] = {
@@ -641,7 +641,7 @@ class LeonardBase(config.AzraelProcess):
                 'unset': [],
                 'exists': {('template', 'rbs'): True},
             }
-        db2.modify(ops)
+        db.modify(ops)
 
     def processCommandsAndSync(self):
         """

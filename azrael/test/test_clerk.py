@@ -1353,7 +1353,7 @@ class TestClerk:
         Then apply a force onto one of them and verify the second one moves
         accordingly.
         """
-        # Reset the SV database and instantiate a Leonard and a Clerk.
+        # Instantiate a Leonard and a Clerk.
         leo = getLeonard(azrael.leonard.LeonardBullet)
         clerk = self.clerk
 
@@ -1633,10 +1633,10 @@ class TestClerk:
         # Convenience.
         id_1 = '1'
         body_1 = getRigidBody(imass=1)
-        db2 = azrael.datastore.DatabaseMongo(('azrael', 'objinstances'))
+        db = azrael.datastore.dbHandles['ObjInstances']
 
         # Database and Leonard cache must both be empty.
-        assert db2.count() == (True, None, 0)
+        assert db.count() == (True, None, 0)
         assert len(leo.allBodies) == len(leo.allForces) == 0
 
         # Announce a newly spawned object in a way that bypasses Clerk. This
@@ -1650,7 +1650,7 @@ class TestClerk:
 
         # Verify further that Leonard did *not* create an entry in the master
         # record due to an errornous 'upsert' command.
-        assert db2.count() == (True, None, 0)
+        assert db.count() == (True, None, 0)
 
 
 class TestModifyFragments:
