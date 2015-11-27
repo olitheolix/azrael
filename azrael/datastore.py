@@ -502,14 +502,18 @@ class DatastoreInMemory(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity checks.
         if _checkGet([aid], prj) is False:
             self.logit.warning('Invalid GETONE argument')
             return RetVal(False, 'Argument error', None)
 
+        # Fetch the document.
         doc = self.content.get(aid, None)
         if doc is None:
+            # Return None because key did not exist.
             return RetVal(False, None, None)
         else:
+            # Key did exist. Apply projection operator and return result.
             if prj is not None:
                 doc = self.project(doc, prj)
             return RetVal(True, None, doc)
@@ -524,8 +528,9 @@ class DatastoreInMemory(DatastoreBase):
             self.logit.warning('Invalid GETMULTI argument')
             return RetVal(False, 'Argument error', None)
 
-        # Copy the requested documents into an output dictionary. If a document
-        # does not exist set it to None in the output dictionary.
+        # Copy the requested documents into an output dictionary. If a key does
+        # not exist then the output dictionary will contain None for the
+        # respective values.
         cp = copy.deepcopy
         content = self.content
         docs = {aid: content[aid] if aid in content else None
@@ -543,10 +548,14 @@ class DatastoreInMemory(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkGetAll(prj) is False:
             self.logit.warning('Invalid GETALL argument')
             return RetVal(False, 'Argument error', None)
 
+        # Copy the requested documents into an output dictionary. If a key does
+        # not exist then the output dictionary will contain None for the
+        # respective values.
         docs = copy.deepcopy(self.content)
         if prj is not None:
             for doc in docs:
@@ -559,13 +568,19 @@ class DatastoreInMemory(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkPut(ops) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
+        # Iterate over all ops, extract the 'data' field (this is what we
+        # actually store), and insert it into our database.
         ret = {}
         for aid, op in ops.items():
+            # Unpack the actual data we want to store.
             data = op['data']
+
+            # Create the document. Log an error if it already exists.
             if aid not in self.content:
                 self.content[aid] = data
                 ret[aid] = True
@@ -578,13 +593,20 @@ class DatastoreInMemory(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkPut(ops) is False:
             self.logit.warning('Invalid REPLACE argument')
             return RetVal(False, 'Argument error', None)
 
+        # Iterate over all ops, extract the 'data' field (this is what we
+        # actually store), and insert it into our database.
         ret = {}
         for aid, op in ops.items():
+            # Unpack the actual data we want to store.
             data = op['data']
+
+            # Replace the document. Log an error if the document to
+            # replace does not exist.
             if aid in self.content:
                 self.content[aid] = data
                 ret[aid] = True
@@ -597,37 +619,59 @@ class DatastoreInMemory(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkMod(ops) is False:
             self.logit.warning('Invalid MODIFY argument')
             return RetVal(False, 'Argument error', None)
 
+        # Iterate over all ops (one for each AID) and apply the requested
+        # modifications.
         ret = {}
         for aid, op in ops.items():
-            # Verify the specified items exist.
+            # Sanity checks. If any of the necessary keys do not exist then
+            # then no modification will be applied to the current AID.
             try:
+                # Get the document from the database.
                 c = self.content[aid]
+
+                # Verify that all the keys specified in the 'exists' field
+                # actually do exist.
                 for key, yes in op['exists'].items():
                     assert self.hasKey(c, key) is yes
 
+                # Traverse the nested dictionaries to the value that we are
+                # supposed to increase. Triggers a KeyError if the keys do not
+                # all exist.
                 for key_hierarchy in op['inc']:
                     tmp = c
                     for key in key_hierarchy:
                         tmp = tmp[key]
+
+                    # The value to increment must be a number.
                     assert isinstance(tmp, (float, int))
+
+                # If we got until here we have established that the request is
+                # (probably) reasonable.
                 ret[aid] = True
             except (AssertionError, KeyError):
+                # Skip this AID because something went wrong. A 'False' will be
+                # returned for it later.
                 ret[aid] = False
                 continue
 
+            # Increment the specified keys.
             for key, val in op['inc'].items():
                 self.incKey(self.content[aid], key, val)
 
+            # Delete the specified keys.
             for key in op['unset']:
                 self.delKey(self.content[aid], key)
 
+            # Create/overwrite the specified keys/value pairs.
             for key, val in op['set'].items():
                 self.setKey(self.content[aid], key, val)
 
+        # Return the success status (True or False) for each AID.
         return RetVal(True, None, ret)
 
     @typecheck
@@ -635,9 +679,12 @@ class DatastoreInMemory(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkRemove(aids) is False:
             return RetVal(False, 'Argument error', None)
 
+        # Delete every key. Ignore those that do not exist, but don't count
+        # them.
         num_deleted = 0
         for aid in aids:
             try:
@@ -645,6 +692,8 @@ class DatastoreInMemory(DatastoreBase):
                 num_deleted += 1
             except KeyError:
                 pass
+
+        # Return the total number of deleted keys.
         return RetVal(True, None, num_deleted)
 
     # -------------------------------------------------------------------------
@@ -693,31 +742,65 @@ class DatastoreInMemory(DatastoreBase):
     #                           Utility methods.
     # -------------------------------------------------------------------------
     def hasKey(self, d, key_hierarchy):
+        """
+        Return True if `d` contains the `key_hierarchy`.
+
+        :param dict[dict[...]] d: nested dictionary
+        :param tuple[str] key_hierarchy: key sequence that must exist in `d`.
+        :return: Bool: True if the `key_hierarchy` exists in `d`.
+        """
+        # Traverse the nested dictionaries. Return False at the first key that
+        # does not exist.
         try:
             tmp = d
             for key in key_hierarchy:
                 tmp = tmp[key]
-
         except (KeyError, TypeError):
             return False
+
+        # The sequence of keys did exist in `d`.
         return True
 
     def setKey(self, d, key_hierarchy, value):
+        """
+        Set/overwrite the value at the end of ``key_hierarchy`` in ``d``.
+
+        :param dict[dict[...]] d: nested dictionary
+        :param tuple[str] key_hierarchy: key sequence that must exist in `d`.
+        :param value: the value to insert at the end of key_hierarchy.
+        :return: Bool: True
+        """
+        # Traverse the dictionaries to the second last key and create keys as
+        # necessary.
         tmp = d
         for key in key_hierarchy[:-1]:
             if key not in tmp:
                 tmp[key] = {}
             tmp = tmp[key]
+
+        # Create/overwrite the last key with the specified value.
         tmp[key_hierarchy[-1]] = value
         return True
 
     def incKey(self, d, key_hierarchy, value):
+        """
+        Increment the value at the end of ``key_hierarchy`` in ``d`` by
+        ``value``.
+
+        Raises KeyError if the value did not exist.
+
+        :param dict[dict[...]] d: nested dictionary
+        :param tuple[str] key_hierarchy: key sequence that must exist in `d`.
+        :return: Bool: True if the `key_hierarchy` exists in `d`.
+        """
+        # Traverse the nested dictionaries to the second last key. Create new
+        # keys as necessary.
         tmp = d
         for key in key_hierarchy[:-1]:
-            if key not in tmp:
-                tmp[key] = {}
             tmp = tmp[key]
 
+        # Increment the value at the last key if it is a number. Return an
+        # error if it is not.
         try:
             tmp[key_hierarchy[-1]] += value
         except TypeError:
@@ -725,6 +808,16 @@ class DatastoreInMemory(DatastoreBase):
         return True
 
     def delKey(self, d, key_hierarchy):
+        """
+        Delete the key at the end of ``key_hierarchy`` in ``d``.
+
+        Return True if the key existed.
+
+        :param dict[dict[...]] d: nested dictionary
+        :param tuple[str] key_hierarchy: key sequence that must exist in `d`.
+        :return: Bool: True if the `key_hierarchy` existed in `d`.
+        """
+        # Traverse the key sequence. Abort at the first key error.
         try:
             tmp = d
             for key in key_hierarchy[:-1]:
@@ -732,16 +825,42 @@ class DatastoreInMemory(DatastoreBase):
             del tmp[key_hierarchy[-1]]
         except (KeyError, TypeError):
             return False
+
+        # Key did exist and we deleted it.
         return True
 
     def getKey(self, d, key_hierarchy):
+        """
+        Retun value at the end of ``key_hierarchy`` in ``d``.
+
+        Raise KeyError if ``key_hierarchy`` not in ``d``.
+
+        :param dict[dict[...]] d: nested dictionary
+        :param tuple[str] key_hierarchy: key sequence that must exist in `d`.
+        :return: Value at the end of ``key_hierarchy`` in ``d``.
+        """
+        # Traverse the nested dictionary.
         tmp = d
         for key in key_hierarchy:
             tmp = tmp[key]
         return tmp
 
-    def project(self, doc, prj):
+    def project(self, doc: dict, prj: tuple):
+        """
+        Return ``doc`` but with only those fields specified in ``prj``.
+
+        This method returns a copy of the original ``doc``. It does *not*
+        modify the original ``doc`` in any way.
+
+        :param dict doc: possibly nested dictionary.
+        :param tuple prj: list of key_hierarchies.
+        """
+        # Create a genuine copy that is independent from all the dictionaries
+        # in the original.
         doc = copy.deepcopy(doc)
+
+        # Iterate over all key hierarchies specified in ``prj``. Copy the
+        # respective values from the original `doc`.
         out = {}
         for p in prj:
             try:
@@ -758,27 +877,34 @@ class DatastoreMongo(DatastoreBase):
         # Record the database/collection name.
         self.name_db, self.name_col = name
 
+        # Get client handle (may raise IOError to relay errors to the caller).
         client = self.connect()
 
         # Store the MongoDB handle as an instance variable.
         self.db = client[self.name_db][self.name_col]
 
-    # -------------------------------------------------------------------------
-    #                             API methods.
-    # -------------------------------------------------------------------------
     def connect(self):
-        # Attempt to connect to MongoDB.
+        """
+        Attempt to connect to MongoDB and return the client handle.
+
+        Raises IOError if the connection failed.
+        """
         try:
             return config.getMongoClient()
         except pymongo.errors.ConnectionFailure:
             raise IOError('Could not connect to MongoDB')
 
+    # -------------------------------------------------------------------------
+    #                             API methods.
+    # -------------------------------------------------------------------------
     def reset(self):
         """
         See docu in ``DatastoreBase``.
         """
-        for ii in range(5):
+        # Make several attempts to connect to the database and flush it.
+        for ii in range(10):
             try:
+                # Delete the database. Then create a unique index on AID.
                 self.db.drop()
                 self.db.ensure_index(
                     [('aid', pymongo.ASCENDING)],
@@ -787,11 +913,16 @@ class DatastoreMongo(DatastoreBase):
                 )
                 break
             except pymongo.errors.AutoReconnect as err:
-                time.sleep(0.1)
+                # An error occurred. According to the pymongo docu this means
+                # we need to retry.
+                time.sleep(0.2)
                 self.connect()
-            if ii >= 4:
+
+            # Too many errors have occurred.
+            if ii >= 8:
                 raise err
 
+        # All good.
         return RetVal(True, None, None)
 
     def count(self):
@@ -812,16 +943,20 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkGet([aid], prj) is False:
             self.logit.warning('Invalid GETONE argument')
             return RetVal(False, 'Argument error', None)
 
+        # Find the one requested document.
         prj = self._compileProjectionOperator(prj)
         doc = self.db.find_one({'aid': aid}, prj)
 
         if doc is None:
+            # Did not find the document.
             return RetVal(False, None, None)
         else:
+            # Remove the AID field.
             doc = self._removeAID([doc])[aid]
             return RetVal(True, None, doc)
 
@@ -830,17 +965,28 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkGet(aids, prj) is False:
             self.logit.warning('Invalid GETMULTI argument')
             return RetVal(False, 'Argument error', None)
 
+        # Retrieve the requested documents.
         prj = self._compileProjectionOperator(prj)
         cursor = self.db.find({'aid': {'$in': aids}}, prj)
+
+        # Compile all documents into a dictionary. The keys are the AIDs and
+        # the values are the original documents with the AID field removed.
         docs = self._removeAID(cursor)
 
+        # Compile the output dictionary and assign None for every requested
+        # document. The overwrite the None values with the ones we could
+        # retrieve from the database. This will ensure the set of keys in the
+        # output dictionary matches ``aids`` even if not all values were
+        # available in the database.
         out = {_: None for _ in aids}
         out.update(docs)
 
+        # Return the documents (or None for those we did not find).
         return RetVal(True, None, out)
 
     @typecheck
@@ -848,12 +994,17 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkGetAll(prj) is False:
             self.logit.warning('Invalid GETALL argument')
             return RetVal(False, 'Argument error', None)
 
+        # Fetch all documents.
         prj = self._compileProjectionOperator(prj)
         cursor = self.db.find({}, prj)
+
+        # Compile all documents into a dictionary. The keys are the AIDs and
+        # the values are the original documents with the AID field removed.
         docs = self._removeAID(cursor)
 
         return RetVal(True, None, docs)
@@ -863,26 +1014,35 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkPut(ops) is False:
             self.logit.warning('Invalid PUT argument')
             return RetVal(False, 'Argument error', None)
 
         ret = {}
         for aid, op in ops.items():
+            # Unpack the data and make a genuine copy of it (jsut to avoid bad
+            # surprised because dictionaries are mutable).
             data = op['data']
             data = copy.deepcopy(data)
+
+            # Insert the AID field. This field is the primary key in the
+            # Datastore.
             data['aid'] = aid
 
-            if True:
-                r = self.db.update_one(
-                    {'aid': aid},
-                    {'$setOnInsert': data},
-                    upsert=True
-                )
-                if r.upserted_id is None:
-                    ret[aid] = False
-                else:
-                    ret[aid] = True
+            # Insert the document only if it does not yet exist.
+            r = self.db.update_one(
+                {'aid': aid},
+                {'$setOnInsert': data},
+                upsert=True
+            )
+
+            # Specify the success value for this document depending on whether
+            # it already existed in the database or not.
+            if r.upserted_id is None:
+                ret[aid] = False
+            else:
+                ret[aid] = True
         return RetVal(True, None, ret)
 
     @typecheck
@@ -890,18 +1050,25 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkPut(ops) is False:
             self.logit.warning('Invalid REPLACE argument')
             return RetVal(False, 'Argument error', None)
 
         ret = {}
         for aid, op in ops.items():
+            # Unpack the data and make a genuine copy of it (jsut to avoid bad
+            # surprised because dictionaries are mutable).
             data = op['data']
             data = copy.deepcopy(data)
+
+            # Insert the AID field. This field is the primary key in the
+            # Datastore.
             data['aid'] = aid
-            if True:
-                r = self.db.replace_one({'aid': aid}, data, upsert=False)
-                ret[aid] = (r.matched_count > 0)
+
+            # Replace the document if it exist, do nothing if it does not.
+            r = self.db.replace_one({'aid': aid}, data, upsert=False)
+            ret[aid] = (r.matched_count > 0)
         return RetVal(True, None, ret)
 
     @typecheck
@@ -909,23 +1076,30 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkMod(ops) is False:
             self.logit.warning('Invalid MOD argument')
             return RetVal(False, 'Argument error', None)
 
+        # Issue the operations one-by-one.
         ret = {}
         for aid, op_tmp in ops.items():
+            # Compile the first part of the query that specifies which (nested)
+            # keys must exist.
             query = {'.'.join(key): {'$exists': yes}
                      for key, yes in op_tmp['exists'].items()}
+
+            # Add the AID to the query.
             query['aid'] = aid
 
-            # Update operations.
+            # Compile the update operations.
             op = {
                 '$inc': {'.'.join(key): val for key, val in op_tmp['inc'].items()},
                 '$set': {'.'.join(key): val for key, val in op_tmp['set'].items()},
                 '$unset': {'.'.join(key): True for key in op_tmp['unset']},
             }
-            # Prune update operations.
+
+            # Prune the update operations (Mongo complains if they are empty).
             op = {k: v for k, v in op.items() if len(v) > 0}
 
             # If no updates are necessary then skip this object.
@@ -935,6 +1109,9 @@ class DatastoreMongo(DatastoreBase):
             # Issue the database query.
             r = self.db.update_one(query, op, upsert=False)
 
+            # The update was a success if Mongo could find a document that
+            # matched our query. Since AID has a unique index it is impossible
+            # to match more than one.
             ret[aid] = (r.matched_count == 1)
         return RetVal(True, None, ret)
 
@@ -943,10 +1120,13 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Sanity check all arguments.
         if _checkRemove(aids) is False:
             self.logit.warning('Invalid REMOVE argument')
             return RetVal(False, 'Argument error', None)
 
+        # Delete the specified AIDs and return the number of actually deleted
+        # documents.
         ret = self.db.delete_many({'aid': {'$in': aids}})
         return RetVal(True, None, ret.deleted_count)
 
@@ -981,6 +1161,7 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Fetch the counter value (if it exists).
         doc = self.db.find_one({'aid': counter_name})
         if doc is None:
             value = None
@@ -993,6 +1174,7 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Update the counter value. Create it if it does not exist.
         doc = self.db.find_one_and_update(
             {'aid': counter_name},
             {'$inc': {'value': value}},
@@ -1013,13 +1195,18 @@ class DatastoreMongo(DatastoreBase):
         """
         See docu in ``DatastoreBase``.
         """
+        # Delete the specified counter.
         self.db.delete_one({'aid': counter_name})
         return RetVal(True, None, None)
 
     # -------------------------------------------------------------------------
     #                           Utility methods.
     # -------------------------------------------------------------------------
-    def _removeAID(self, docs):
+    def _removeAID(self, docs: list):
+        """
+        Compile the list of docs into a dictionary with the 'aid' field as
+        keys. Furthermore, remove the 'aid' field from the document.
+        """
         docs = {doc['aid']: doc for doc in docs}
         for aid, doc in docs.items():
             del doc['aid']
@@ -1027,12 +1214,19 @@ class DatastoreMongo(DatastoreBase):
 
     def _compileProjectionOperator(self, prj):
         """
-        Return a Mongo compatible projection operator.
+        Compile the key hierarchies in ``prj`` into a Mongo compatible projection
+        operator.
         """
         if prj is None:
+            # No projection specified.
             prj = {}
         else:
+            # Join the key hierarchies with dots. Also, we _always_ need the
+            # aid because this is the primary key as far as Azrael is
+            # concerned (most return values need it to form dictionaries).
             prj = {'.'.join(_): True for _ in prj}
             prj['aid'] = True
+
+        # Never return the _id field.
         prj['_id'] = False
         return prj
