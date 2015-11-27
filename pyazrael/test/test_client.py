@@ -115,9 +115,7 @@ class TestClient:
         assert ret.ok
 
     def teardown_method(self, method):
-        # Clean up.
-        azrael.datastore.init()
-        self.dibbler.reset()
+        pass
 
     def test_shared_files(self):
         """

@@ -74,8 +74,7 @@ class TestClerk:
         }
 
     def teardown_method(self, method):
-        self.dibbler.reset()
-        azrael.datastore.init()
+        pass
 
     def test_get_default_templates(self):
         """
@@ -1684,8 +1683,7 @@ class TestModifyFragments:
         self.id_0, self.id_1 = ret.data
 
     def teardown_method(self, method):
-        self.dibbler.reset()
-        azrael.datastore.init()
+        pass
 
     def test_setFragments_state_only(self):
         """
@@ -2082,8 +2080,6 @@ class TestClerkEnd2End:
         self.web.start()
 
     def teardown_method(self, method):
-        self.dibbler.reset()
-        azrael.datastore.init()
         self.web.terminate()
         self.web.join()
 
