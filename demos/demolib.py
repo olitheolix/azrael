@@ -300,7 +300,7 @@ def load3JSModel(data_json):
     # respectively. This will come in handy for indexing later.
     vertex_LUT = vertex_LUT.reshape((len(vertex_LUT) // 3, 3))
     uv_LUT = uv_LUT.reshape((len(uv_LUT) // 2, 2))
-    
+
     # Initialise the output structure.
     out = {'faces': [], 'uv': [], 'rgb': []}
 
@@ -334,15 +334,15 @@ def load3JSModel(data_json):
 
         # Triangle or Quad (three or four integers).
         if isQuad:
-            out['faces'].append(faces[ofs:ofs+4])
+            out['faces'].append(faces[ofs:ofs + 4])
             ofs += 4
         else:
-            out['faces'].append(faces[ofs:ofs+3])
+            out['faces'].append(faces[ofs:ofs + 3])
             ofs += 3
 
         # Face material (one integer).
         if hasMaterial:
-            out['rgb'].append(faces[ofs:ofs+1][0])
+            out['rgb'].append(faces[ofs:ofs + 1][0])
             ofs += 1
 
         # Face UV (one integer).
@@ -352,10 +352,10 @@ def load3JSModel(data_json):
         # Vertex UVs (0, 3, or 4 integers).
         if hasVertexUV:
             if isQuad:
-                out['uv'].append(faces[ofs:ofs+4])
+                out['uv'].append(faces[ofs:ofs + 4])
                 ofs += 4
             else:
-                out['uv'].append(faces[ofs:ofs+3])
+                out['uv'].append(faces[ofs:ofs + 3])
                 ofs += 3
 
         # Face normal (one integer).
@@ -383,14 +383,14 @@ def load3JSModel(data_json):
         vert.extend(list(tmp))
 
     # Compile UV values.
-    uvs= []
+    uvs = []
     for el in out['uv']:
         tmp = uv_LUT[el].flatten()
         uvs.extend(list(tmp))
 
     # Compile the material colors. Materials have various color components but
     # for now this will only return the ambient component.
-    rgb= []
+    rgb = []
     for el in out['rgb']:
         mat = data_json['materials'][el]
         rgb.extend(mat['colorAmbient'])
@@ -401,7 +401,7 @@ def load3JSModel(data_json):
         assert len(uvs) % (2 * 3) == 0
     except AssertionError:
         return [], [], []
-    
+
     num_vert = len(vert) // 3
 
     np.random.seed(0)

@@ -136,7 +136,7 @@ def loadColladaModel(filename):
         # Nx3 matrix of vertices.
         vert = i_transform.dot(t.dot(vert))
         vert = vert[:-1, :].T
-        
+
         # Flatten the vertex matrix into a simple list and compile it into a
         # fragment.
         vert = vert.flatten()

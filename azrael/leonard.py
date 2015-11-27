@@ -687,6 +687,7 @@ class LeonardBase(config.AzraelProcess):
         except KeyboardInterrupt:
             self.logit.warning('Leonard was aborted')
 
+
 class LeonardBullet(LeonardBase):
     """
     An extension of ``LeonardBase`` that uses Bullet for the physics.

@@ -1575,8 +1575,9 @@ class TestClerk:
         assert clerk.getCustomData([id_1]) == (True, None, {id_1: ''})
 
         # Query the custom data for two objects, only one of which exists.
-        assert clerk.getCustomData([id_1, '10']) == (True, None, {id_1: '',
-        '10': None})
+        ret = clerk.getCustomData([id_1, '10'])
+        assert ret.ok
+        assert ret.data == {id_1: '', '10': None}
 
         # Set the custom data for a non-existing object.
         assert clerk.setCustomData({'10': 'blah'}) == (True, None, ['10'])

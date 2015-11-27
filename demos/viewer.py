@@ -615,9 +615,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     # Model files in 3JS format. These are stored in a main
                     # JSON file plus (optional) texture files. Find the JSON
                     # file and log an error if there is not exactly one.
-                    fnames = [_ for _ in frag_data['files'] if _.lower().endswith('.json')]
+                    fnames = [_ for _ in frag_data['files']
+                              if _.lower().endswith('.json')]
                     if len(fnames) != 1:
-                        print('Got {} possible 3JS model candidates'.format(len(fnames)))
+                        print('{} possible 3JS model candidates'.format(len(fnames)))
                         break
 
                     # Download the model.
@@ -631,7 +632,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     vert, uv, rgb = demolib.load3JSModel(frag)
 
                     # Download a texture file (if the model has one).
-                    fnames = [_ for _ in frag_data['files'] if _.lower().endswith('.jpg')]
+                    fnames = [_ for _ in frag_data['files']
+                              if _.lower().endswith('.jpg')]
                     if len(fnames) > 0:
                         print('found texture')
                         url = base_url + frag_data['url_frag'] + '/' + fnames[0]

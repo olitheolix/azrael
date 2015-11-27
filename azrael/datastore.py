@@ -32,6 +32,7 @@ logit = logging.getLogger('azrael.' + __name__)
 
 dbHandles = {}
 
+
 def init(flush):
     """
     Create all data stores and reset their content.
@@ -418,7 +419,7 @@ class DatastoreBase:
         :return: the counter ``value`` upon success.
         """
         raise NotImplementedError
-        
+
     def getCounter(self, counter_name: str):
         """
         Return value of ``counter_name``.
@@ -429,7 +430,7 @@ class DatastoreBase:
         :return: current value of ``counter_name``.
         """
         raise NotImplementedError
-        
+
     def incrementCounter(self, counter_name: str, value: int):
         """
         Increment ``counter_name`` by ``value`` and return the new value.
@@ -442,18 +443,17 @@ class DatastoreBase:
         :return: new counter value
         """
         raise NotImplementedError
-        
+
     def removeCounter(self, counter_name: str):
         """
         Delete the counter.
 
         This method always suceeds.
-        
+
         :param str counter_name: return the value for this counter.
         :return: current value of ``counter_name``.
         """
         raise NotImplementedError
-        
 
 
 class DatastoreInMemory(DatastoreBase):
@@ -688,7 +688,6 @@ class DatastoreInMemory(DatastoreBase):
         except KeyError:
             pass
         return RetVal(True, None, None)
-
 
     # -------------------------------------------------------------------------
     #                           Utility methods.
@@ -961,7 +960,7 @@ class DatastoreMongo(DatastoreBase):
         See docu in ``DatastoreBase``.
         """
         # Each counter has its own document that specifies the counter name and
-        # its value. 
+        # its value.
         fam = self.db.find_and_modify
         doc = fam(
             {'aid': counter_name},
@@ -1016,7 +1015,6 @@ class DatastoreMongo(DatastoreBase):
         """
         self.db.delete_one({'aid': counter_name})
         return RetVal(True, None, None)
-
 
     # -------------------------------------------------------------------------
     #                           Utility methods.

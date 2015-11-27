@@ -850,7 +850,9 @@ class TestClient:
         assert client.spawn([init, init]) == (True, None, [id_1, id_2])
 
         # Update the custom data for an existing- and a non-existing object.
-        assert client.setCustomData({id_1: 'foo', id_fake: 'bar'}) == (True, None, [id_fake])
+        ret = client.setCustomData({id_1: 'foo', id_fake: 'bar'})
+        assert ret.ok
+        assert ret.data == [id_fake]
 
         # Query two existing- and one non-existing object. The returned
         # dictionary must not include a key for the non-existing id_fake.

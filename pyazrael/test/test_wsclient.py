@@ -70,7 +70,9 @@ class TestLeonardAPI:
         web.start()
 
         # Instantiate a WSClient without specifiying an object ID.
-        client = pyazrael.AzraelWSClient(config.addr_webapi, config.port_webapi, timeout=1)
+        client = pyazrael.AzraelWSClient(
+            config.addr_webapi, config.port_webapi, timeout=1
+        )
 
         # Ping Clerk to verify the connection is live.
         ret = client.ping()

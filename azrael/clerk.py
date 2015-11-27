@@ -1465,7 +1465,7 @@ class Clerk(config.AzraelProcess):
         """
         # Get handle to datastore.
         db = datastore.dbHandles['ObjInstances']
-        
+
         # Projection operator to reduce the amount of network traffic.
         prj = [
             ('version', ),
