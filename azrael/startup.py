@@ -46,7 +46,7 @@ class AzraelStack:
         # Kill any pending processes.
         subprocess.call(['pkill', 'Azrael:'])
         time.sleep(0.2)
-        azrael.datastore.init()
+        azrael.datastore.init(flush=True)
 
         # Reset the profiling database and enable logging.
         azrael.util.resetTiming()

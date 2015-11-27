@@ -41,7 +41,7 @@ class TestAtomicCounter:
         Reset the Counter DB and fetch a few counter values.
         """
         # Reset Azrael.
-        datastore.init()
+        datastore.init(flush=True)
         ret = datastore.getUniqueObjectIDs(0)
         assert ret.ok and ret.data == 0
 
@@ -55,7 +55,7 @@ class TestAtomicCounter:
             assert ret.data == (ii + 2, )
 
         # Reset Azrael again and verify that all counters start at '1' again.
-        datastore.init()
+        datastore.init(flush=True)
         ret = datastore.getUniqueObjectIDs(0)
         assert ret.ok and ret.data == 0
 
@@ -64,7 +64,7 @@ class TestAtomicCounter:
         assert ret.data == (1, 2, 3)
 
         # Increment the counter by different values.
-        datastore.init()
+        datastore.init(flush=True)
         ret = datastore.getUniqueObjectIDs(0)
         assert ret.ok and ret.data == 0
 

@@ -31,7 +31,7 @@ logit = logging.getLogger('azrael.' + __name__)
 
 dbHandles = {}
 
-def init(flush=True):
+def init(flush):
     """
     Create all data stores and reset their content.
 

@@ -37,7 +37,7 @@ def killAzrael():
     # Delete all grids used in this test.
     assert azrael.vectorgrid.deleteAllGrids().ok
 
-    azrael.datastore.init()
+    azrael.datastore.init(flush=True)
 
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):

@@ -36,7 +36,7 @@ class TestLeonardAPI:
         pass
 
     def setup_method(self, method):
-        azrael.datastore.init()
+        azrael.datastore.init(flush=True)
 
     def teardown_method(self, method):
         pass

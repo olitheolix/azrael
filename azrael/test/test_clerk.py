@@ -53,7 +53,7 @@ class TestClerk:
     def setup_method(self, method):
         self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
-        azrael.datastore.init()
+        azrael.datastore.init(flush=True)
 
         # Insert default objects. None of them has an actual geometry but
         # their collision shapes are: none, sphere, box.
@@ -1668,7 +1668,7 @@ class TestModifyFragments:
     def setup_method(self, method):
         self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
-        azrael.datastore.init()
+        azrael.datastore.init(flush=True)
 
         # Compile a template with two fragments.
         frags = {'fraw': getFragRaw(), 'fdae': getFragDae()}
@@ -2074,7 +2074,7 @@ class TestClerkEnd2End:
     def setup_method(self, method):
         self.dibbler = azrael.dibbler.Dibbler()
         self.dibbler.reset()
-        azrael.datastore.init()
+        azrael.datastore.init(flush=True)
 
         self.web = azrael.web.WebServer()
         self.web.start()

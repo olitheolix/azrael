@@ -92,7 +92,7 @@ class TestClient:
 
     def setup_method(self, method):
         # Reset the database.
-        azrael.datastore.init()
+        azrael.datastore.init(flush=True)
 
         # Flush the model database.
         self.dibbler.reset()
