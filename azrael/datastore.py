@@ -43,7 +43,7 @@ def init(flush):
     # Create all the data stores.
     names = ('Commands', 'Constraints', 'Counters', 'ObjInstances', 'Templates')
     try:
-        dbHandles = {name: DatabaseMongo(('azrael', name)) for name in names}
+        dbHandles = {name: DatastoreMongo(('azrael', name)) for name in names}
     except IOError:
         return RetVal(False, 'Could not initialise Datastore', None)
 
@@ -455,7 +455,7 @@ class DatastoreBase:
         
 
 
-class DatabaseInMemory(DatastoreBase):
+class DatastoreInMemory(DatastoreBase):
     """
     Implements the Datastore as a simple dictionary.
 
@@ -751,7 +751,7 @@ class DatabaseInMemory(DatastoreBase):
         return out
 
 
-class DatabaseMongo(DatastoreBase):
+class DatastoreMongo(DatastoreBase):
     def __init__(self, name: tuple):
         super().__init__(name)
 

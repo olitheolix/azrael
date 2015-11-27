@@ -91,8 +91,8 @@ class TestAllDatastoreBackends:
     """
     # Used in the py.test decorator to apply every test each backend.
     all_engines = [
-        datastore.DatabaseInMemory,
-        datastore.DatabaseMongo,
+        datastore.DatastoreInMemory,
+        datastore.DatastoreMongo,
     ]
 
     @classmethod
@@ -542,7 +542,7 @@ class TestAllDatastoreBackends:
         assert db.getCounter('foo') == (True, None, None)
 
 
-class TestDatabaseInMemory:
+class TestDatastoreInMemory:
     """
     The tests here pertain to various helper functions defined in the datastore
     module (eg. various argument checks).
@@ -556,7 +556,7 @@ class TestDatabaseInMemory:
         pass
 
     def setup_method(self, method):
-        self.db = datastore.DatabaseInMemory(name=('test1', 'test2'))
+        self.db = datastore.DatastoreInMemory(name=('test1', 'test2'))
 
     def teardown_method(self, method):
         pass
