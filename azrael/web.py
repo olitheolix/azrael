@@ -280,4 +280,4 @@ class WebServer(config.AzraelProcess):
         try:
             tornado_app.start()
         except KeyboardInterrupt:
-            print(' Webserver interrupted by user')
+            self.logit.warning('Webserver interrupted by user')
