@@ -26,17 +26,18 @@ import numpy as np
 
 
 # Global handle to the collection for timing metrics.
-dbTiming = pymongo.MongoClient()['timing']['timing']
+dbTiming = None
 
 
-def resetTiming():
+def resetTiming(host, port):
     """
     Flush existing timing metrics and create a new capped collection.
     """
     global dbTiming
 
     # Drop existing collection.
-    col = pymongo.MongoClient()['timing']
+    client = pymongo.MongoClient(host=host, port=port)
+    col = client['timing']
     col.drop_collection('timing')
 
     # Create a new capped collection and update the dbTiming variable.
@@ -55,6 +56,9 @@ def logMetricQty(metric, value, ts=None):
     :param int value: value
     :param float value: unix time stamp as supplied by eg. time.time()
     """
+    if dbTiming is None:
+        return
+
     if ts is None:
         ts = time.time()
 
@@ -104,6 +108,9 @@ class Timeit(object):
         """
         Write the measurement to the DB.
         """
+        if dbTiming is None:
+            return
+
         doc = {'Timestamp': self.start,
                'Metric': name,
                'Value': elapsed,
