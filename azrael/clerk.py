@@ -621,9 +621,7 @@ class Clerk(config.AzraelProcess):
         if not ret.ok:
             self.logit.error(ret.msg)
             return ret
-
-        # fixme: getUniqueObjectID should return a string.
-        newObjectIDs = [str(_) for _ in ret.data]
+        newObjectIDs = ret.data
 
         db = datastore.dbHandles['ObjInstances']
         with util.Timeit('spawn:2 createStates'):
