@@ -14,6 +14,7 @@ dependencies:
 - path.py=8.1.2=py34_1
 - pexpect=3.3=py34_0
 - pickleshare=0.5=py34_0
+- pillow=3.0.0=py34_1
 - pip=7.1.2=py34_0
 - psutil=3.3.0=py34_0
 - py=1.4.30=py34_0
