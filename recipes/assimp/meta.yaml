@@ -21,7 +21,6 @@ requirements:
   run:
     - python
     - numpy
-    - libgcc
 
 test:
   imports:
@@ -32,4 +31,9 @@ test:
 
 about:
     home: https://github.com/assimp/assimp
+    summary: >
+      AssImp library and Python3 bindings. Note that this is not the original AssImp
+      repository (https://github.com/assimp/assimp) but a fork thereof
+      that contains the Conda recipes (https://github.com/olitheolix/assimp.git)
+      as well. In terms of functionality there is no difference.
     license: Unknown
