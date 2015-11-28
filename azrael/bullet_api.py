@@ -24,7 +24,14 @@ Bullet for another engine at some point, should the need arise.
 """
 import logging
 import numpy as np
-import azrael.bullet.azBullet as azBullet
+
+# Attempt to import the locally compiled version of azBullet first. If it does
+# not exist (typically the case inside a Docker container) then import the
+# system wide one.
+try:
+    import azrael.bullet.azBullet as azBullet
+except ImportError:
+    import azBullet
 
 from IPython import embed as ipshell
 from azrael.aztypes import typecheck, RetVal, _RigidBodyData
