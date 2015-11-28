@@ -1,0 +1,34 @@
+package:
+  name: azbullet
+  version: "1.0"
+
+source:
+  path: ../../azrael/bullet
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ipython
+    - cython
+    - libgcc
+    - numpy
+    - pytest
+    - python
+
+  run:
+    - python
+
+test:
+  imports:
+    - azBullet
+
+about:
+  home: https://github.com/olitheolix/azrael/tree/master/azrael/bullet
+  license: AGPL v3
+  summary: 'Bullet bindings for Azrael'
+
+# See
+# http://docs.continuum.io/conda/build.html for
+# more information about meta.yaml
