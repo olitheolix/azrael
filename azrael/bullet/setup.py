@@ -157,52 +157,48 @@ def main():
     # Get absolute path to Bullet tarball (download if necessary).
     tarball = getBulletTarball()
 
-    # Path where the Bullet libraries and headers should be installed.
-    dir_prefix = os.path.dirname(os.path.abspath(__file__))
-    dir_prefix = os.path.join(dir_prefix, 'bulletlib')
+    # Install path for Bullet library and its headers. The specific path
+    # depends on whether we are building via an Anaconda recipe or just
+    # for dev purposes on local host (in the latter case the '--inplace'
+    # argument must be given for everything to compile and link properly).
+    if os.getenv('CONDA_BUILD') == '1':
+        dir_prefix = os.getenv('PREFIX')
+        assert dir_prefix is not None
+    else:
+        dir_prefix = os.path.dirname(os.path.abspath(__file__))
+        dir_prefix = os.path.join(dir_prefix, 'bulletlib')
 
     # If 'cleanall' was provided then delete the Bullet library.
-    if 'cleanall' in sys.argv:
-        print('Removing Bullet library directory <{}>'.format(dir_prefix))
+    if 'clean' in sys.argv:
+        print('rm -rf {}'.format(dir_prefix))
         shutil.rmtree(dir_prefix, ignore_errors=True)
 
         tmp = './build/'
-        print('Removing azBullet build directory <{}>'.format(tmp))
+        print('rm -rf {}'.format(tmp))
         shutil.rmtree(tmp, ignore_errors=True)
 
         tmp = '{}.egg-info'.format(libname)
-        print('Removing egg directory <{}>'.format(tmp))
+        print('rm -rf {}'.format(tmp))
         shutil.rmtree(tmp, ignore_errors=True)
 
-        # Remove Cython generated cpp file.
-        subprocess.call('rm {}.cpp'.format(libname), shell=True)
+        # Remove the Cython generated cpp file.
+        subprocess.call('rm -f {}.cpp'.format(libname), shell=True)
 
-        # It is necessary to remove the 'cleanall' argument because distutils
-        # will otherwise complain about an 'unknown argument'. In this case, we
-        # will replace it with a 'clean' argument to force distutils to also
-        # clean up.
-        sys.argv.remove('cleanall')
-        if 'clean' not in sys.argv:
-            sys.argv.append('clean')
+        # Delete the cpython extension module.
+        subprocess.call('rm -f {}.cpython-*.so'.format(libname), shell=True)
 
-    # If the extension module was build with
-    #   >> python setup.py build_ext --inplace
-    # then there will be a dynamic library next to the pyx file - delete it.
-    if 'clean' in sys.argv:
-        subprocess.call('rm {}.cpython-*.so'.format(libname), shell=True)
+        # Do not proceed any further because we are only cleaning up.
+        return
 
-    # Build the Bullet library if it does not yet exist AND the user did not
-    # specify the 'clean' option.
-    if ('clean' not in sys.argv) and (not os.path.exists(dir_prefix)):
-        # Attempt to compile the Bullet library.
-        try:
-            compileBullet(tarball, dir_prefix, double_precision)
-        except Exception as err:
-            raise err
-        finally:
-            # Whatever happens, make sure we get back to the original
-            # directory.
-            os.chdir(cwd)
+    # Attempt to build the Bullet library.
+    try:
+        compileBullet(tarball, dir_prefix, double_precision)
+    except Exception as err:
+        raise err
+    finally:
+        # Whatever happens, make sure we get back to the original
+        # directory.
+        os.chdir(cwd)
 
     # If Bullet was compiled with double precision types then it is paramount
     # that all source files define the 'BT_USE_DOUBLE_PRECISION' macro.
@@ -211,8 +207,7 @@ def main():
     else:
         macros = []
 
-    # Let distutils Extension function take care to specify all the compiler
-    # options.
+    # Let distutils' Extension function take care of the compiler options.
     ext = Extension(
         name=libname,
         sources=[libname + '.pyx'],
