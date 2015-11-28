@@ -39,8 +39,9 @@ cdef extern from "btBulletDynamicsCommon.h":
         const btScalar &getPlaneConstant()
 
     cdef cppclass btCompoundShape:
-       btCompoundShape(bint enableDynamicAabbTree)
-       void addChildShape(const btTransform &localTransform, btCollisionShape *shape)
-       btCollisionShape *getChildShape(int index)
-       void removeChildShape(btCollisionShape *shape)
-       int getNumChildShapes()
+        btCompoundShape(bint enableDynamicAabbTree)
+        void addChildShape(const btTransform &localTransform, btCollisionShape *shape)
+        btCollisionShape *getChildShape(int index)
+        void removeChildShape(btCollisionShape *shape)
+        int getNumChildShapes()
+        void calculatePrincipalAxisTransform(btScalar *masses, btTransform &principal, btVector3 &inertia)

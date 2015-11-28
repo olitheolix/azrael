@@ -241,3 +241,30 @@ cdef class CompoundShape(CollisionShape):
             raise AssertionError(
                 'Invalid #ChildShapes in CompoundShape')
         return self.ptr_CompoundShape.getNumChildShapes()
+
+    def calculatePrincipalAxisTransform(self, masses):
+        # There must be as many masses as there are child shapes.
+        if len(masses) != self.ptr_CompoundShape.getNumChildShapes():
+            raise AssertionError('Incorrect number of masses')
+
+        # Instantiate a Vec3 and Transform class. These will be passed by
+        # reference into 'calculatePrincipalAxisTransform'.
+        inertia, principal = Vec3(), Transform()
+
+        # Do not attempt to compute any inertia without bodies.
+        if self.ptr_CompoundShape.getNumChildShapes() == 0:
+            return inertia, principal
+
+        # Convert the list of masses to an array of btScalars.
+        cdef btScalar* ptr_masses = new btScalar(len(masses))
+        for idx, mass in enumerate(masses):
+            ptr_masses[idx] = btScalar(mass)
+
+        self.ptr_CompoundShape.calculatePrincipalAxisTransform(
+                ptr_masses,
+                principal.ptr_Transform[0],
+                inertia.ptr_Vector3[0]
+        )
+
+        # Return the Inertia and its principal axis.
+        return inertia, principal

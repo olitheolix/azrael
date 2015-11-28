@@ -640,6 +640,123 @@ class TestCollisionShapes:
         tmp = [_.getName() for _ in comp]
         assert tmp == [b'STATICPLANE', b'Box', b'SPHERE', b'Empty']
 
+    def test_CompoundShapes_calculatePrincipalAxisTransform_basic(self):
+        """
+        Test edge cases of calculatePrincipalAxisTransform.
+        """
+        # Create a compound- and sphere shape.
+        cs = CompoundShape()
+        sphere = SphereShape(1)
+
+        # Inertia of empty compound shape must be zero.
+        inertia, principal = cs.calculatePrincipalAxisTransform([])
+        center_of_mass = principal.getOrigin().topy()
+        paxis = principal.getRotation().topy()
+        assert np.allclose(center_of_mass, [0, 0, 0])
+        assert np.allclose(paxis, [0, 0, 0, 1])
+        assert np.allclose(inertia.topy(), [0, 0, 0])
+
+        # Add a sphere to the compund shape.
+        t = Transform(Quaternion(0, 0, 0, 1), Vec3(0, 0, 0))
+        cs.addChildShape(t, sphere)
+
+        # Passing more or less masses to CPAT than there are child shapes must
+        # result in an error.
+        mass = 1
+        with pytest.raises(AssertionError):
+            cs.calculatePrincipalAxisTransform([])
+        with pytest.raises(AssertionError):
+            cs.calculatePrincipalAxisTransform([mass, mass])
+
+    def test_CompoundShapes_calculatePrincipalAxisTransform_single(self):
+        """
+        Create a compound shape with one sphere at different positions. Then
+        verify its inertia and center of mass.
+        """
+        # ---------------------------------------------------------------------
+        # Inertia of compound shape with one sphere at the center must match
+        # the inertia of the single sphere.
+        # ---------------------------------------------------------------------
+        mass = 1
+        cs = CompoundShape()
+        sphere = SphereShape(1)
+
+        # Add the sphere to the center of the compound shape.
+        pos = [0, 0, 0]
+        t = Transform(Quaternion(0, 0, 0, 1), Vec3(*pos))
+        cs.addChildShape(t, sphere)
+
+        # Ask Bullet for the Inertia of the compound shape.
+        inertia, principal = cs.calculatePrincipalAxisTransform([mass])
+        center_of_mass = principal.getOrigin().topy()
+        paxis = principal.getRotation().topy()
+        inertia_sphere = sphere.calculateLocalInertia(mass)
+
+        # The center of mass must coincide with 'pos' because the compound
+        # contains only one sphere. Similarly, the principal axis must be
+        # neutral and the inertia must match that of the sphere.
+        assert np.allclose(center_of_mass, pos)
+        assert np.allclose(paxis, [0, 0, 0, 1])
+        assert np.allclose(inertia.topy(), inertia_sphere.topy())
+
+        del pos, t, inertia, principal, center_of_mass, paxis, inertia_sphere
+        del cs, sphere
+        
+        # ---------------------------------------------------------------------
+        # Create a compound shape with one sphere _not_ at the center. The
+        # principal axis and Inertia must still be that of the sphere, but the
+        # center of mass must match the position of the sphere in the compound
+        # shape.
+        # ---------------------------------------------------------------------
+        mass = 1
+        cs = CompoundShape()
+        sphere = SphereShape(1)
+
+        # Add the sphere at position `pos` to the compound shape.
+        pos = [1, 2, 3]
+        t = Transform(Quaternion(0, 0, 0, 1), Vec3(*pos))
+        cs.addChildShape(t, sphere)
+
+        # The center of mass must coincide with 'pos' because the compound
+        # contains only one sphere. Similarly, the principal axis must be
+        # neutral and the inertia must match that of the sphere.
+        inertia, principal = cs.calculatePrincipalAxisTransform([mass])
+        center_of_mass = principal.getOrigin().topy()
+        paxis = principal.getRotation().topy()
+        inertia_sphere = sphere.calculateLocalInertia(mass)
+
+        assert np.allclose(center_of_mass, pos)
+        assert np.allclose(paxis, [0, 0, 0, 1])
+        assert np.allclose(inertia.topy(), inertia_sphere.topy())
+        
+    def test_CompoundShapes_calculatePrincipalAxisTransform_multi(self):
+        """
+        Create a compound shape with two spheres at different positions. Then
+        verify its inertia and center of mass.
+        """
+        # Create compound- and sphere shape.
+        cs = CompoundShape()
+        sphere = SphereShape(1)
+
+        # Add two sphere shapes to the compound.
+        pos1 = [-2, 2, 0]
+        pos2 = [1, -1, 0]
+        t1 = Transform(Quaternion(0, 0, 0, 1), Vec3(*pos1))
+        t2 = Transform(Quaternion(0, 0, 0, 1), Vec3(*pos2))
+        cs.addChildShape(t1, sphere)
+        cs.addChildShape(t2, sphere)
+
+        # Specify the mass of the spheres and manually compute the weighted
+        # center of mass.
+        masses = [1, 2]
+        ref = np.array(pos1) * masses[0] + np.array(pos2) * masses[1]
+        ref = ref / sum(masses)
+
+        # Ask Bullet for the Inertia and princiapl axis. The center of mass
+        # must match our manually compute one.
+        inertia, principal = cs.calculatePrincipalAxisTransform(masses)
+        assert np.allclose(principal.getOrigin().topy(), ref)
+        
 
 class TestTransform:
     @classmethod
