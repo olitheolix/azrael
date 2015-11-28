@@ -190,15 +190,16 @@ def main():
         # Do not proceed any further because we are only cleaning up.
         return
 
-    # Attempt to build the Bullet library.
-    try:
-        compileBullet(tarball, dir_prefix, double_precision)
-    except Exception as err:
-        raise err
-    finally:
-        # Whatever happens, make sure we get back to the original
-        # directory.
-        os.chdir(cwd)
+    # Build the Bullet library unless it (appears to) already exist.
+    if not os.path.exists(os.path.join(dir_prefix, 'include', 'bullet')):
+        try:
+            compileBullet(tarball, dir_prefix, double_precision)
+        except Exception as err:
+            raise err
+        finally:
+            # Whatever happens, make sure we get back to the original
+            # directory.
+            os.chdir(cwd)
 
     # If Bullet was compiled with double precision types then it is paramount
     # that all source files define the 'BT_USE_DOUBLE_PRECISION' macro.
@@ -210,16 +211,30 @@ def main():
     # Let distutils' Extension function take care of the compiler options.
     ext = Extension(
         name=libname,
-        sources=[libname + '.pyx'],
-        include_dirs=[os.path.join(dir_prefix, 'include/bullet'),
-                      np.get_include()],
-        library_dirs=[os.path.join(dir_prefix, 'lib')],
-        runtime_library_dirs=[os.path.join(dir_prefix, 'lib')],
-        libraries=['BulletCollision', 'BulletDynamics', 'LinearMath'],
+        sources=[
+            libname + '.pyx'
+        ],
+        include_dirs=[
+            os.path.join(dir_prefix, 'include/bullet'),
+            np.get_include()
+        ],
+        library_dirs=[
+            os.path.join(dir_prefix, 'lib')
+        ],
+        runtime_library_dirs=[
+            os.path.join(dir_prefix, 'lib')
+        ],
+        libraries=[
+            'BulletCollision',
+            'BulletDynamics',
+            'LinearMath'
+        ],
         define_macros=macros,
-        extra_compile_args=['-Wall', '-Wextra', '-pedantic', '-std=c++11',
-                            '-Wno-unused-parameter', '-Wno-unused-function',
-                            '-Wno-unused-variable'],
+        extra_compile_args=[
+            '-Wall', '-Wextra', '-pedantic', '-std=c++11',
+            '-Wno-unused-parameter', '-Wno-unused-function',
+            '-Wno-unused-variable'
+        ],
         language='c++',
     )
 
