@@ -8,47 +8,38 @@
 FROM continuumio/miniconda3:latest
 MAINTAINER Oliver Nagy <olitheolix@gmail.com>
 
-# Create "/demo" to hold the Azrael repo.
-RUN mkdir -p /demo/
-
-# Install Ubuntu packages for Azrael.
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    git \
-    wget \
-    && apt-get clean
-
 # Add the Anaconda binaries to the path.
 ENV PATH /opt/miniconda3/bin:$PATH
-
-# Clone Azrael from GitHub.
-RUN git clone https://github.com/olitheolix/azrael /demo/azrael
 
 # This will let Azrael know it runs inside a Docker container.
 ENV INSIDEDOCKER 1
 
+# Create "/demo" to hold the Azrael repo.
+RUN mkdir -p /demo/
+
+# Install Ubuntu packages for Azrael.
+RUN apt-get update && apt-get install -y git
+
+# Clone Azrael from GitHub.
+RUN git clone https://github.com/olitheolix/azrael /demo/azrael
+
 # Move into Azrael's home directory.
 WORKDIR /demo/azrael
 
-# Build and install the AssImp library and its Python bindings.
-RUN conda install -y conda-build
-RUN conda build recipes/assimp && conda install -y assimp --use-local
-
 # Install the missing packages required by Azrael.
-RUN conda env update --name root --file environment_docker.yml \
-    && conda clean -p -t -y
+RUN apt-get install -y build-essential procps \
+    && conda install -y -c https://conda.anaconda.org/olitheolix assimp azbullet \
+    && conda env update --name root --file environment_docker.yml \
+    && conda clean -p -s -t -y \
+    && apt-get remove -y build-essential \
+    && apt-get -y autoremove \
+    && apt-get -y autoclean \
+    && apt-get -y clean
 
 # Expose the ports for Clerk and Clacks.
 EXPOSE 5555 8080
 
-# Move into Bullet wrapper directory to compile- and test the extension modules.
-WORKDIR /demo/azrael/azrael/bullet
-RUN python setup.py cleanall && python setup.py build_ext --inplace && rm -rf build
-
-# Move into Azrael's home directory.
-WORKDIR /demo/azrael
-
 # Default command: start the force grid demo.
 CMD ["python", "demos/demo_forcegrid.py", "--noviewer", \
      "--reset=30", "--cubes=3,3,1", "--linear=1", "--circular=1"]
+
