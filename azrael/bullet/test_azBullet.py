@@ -836,6 +836,28 @@ class TestTransform:
         assert t.getOrigin() == pos
         assert t.getRotation() == rot
 
+    def test_inverse_mult(self):
+        """
+        Create a transform and verify that its multiplication with its inverse
+        is a neutral transform.
+        """
+        # Create a Transform. The Quaternion is deliberatly unnormalised.
+        t1 = Transform(Quaternion(1, 2, 3, 4), Vec3(1, 4, 8))
+
+        # To compute the produce of two transforms Bullet already needs an
+        # intantiated Transform to hold the result.
+        t2 = Transform()
+
+        # Multply the original transform t1 by its inverse. By definition this
+        # must result in a neutral transform.
+        t2.mult(t1, t1.inverse())
+
+        # Verify that t2 is indeed the netural transform.
+        pos = t2.getOrigin().topy()
+        rot = t2.getRotation().topy()
+        assert np.allclose(pos, [0, 0, 0])
+        assert np.allclose(rot, [0, 0, 0, 1])
+
 
 class TestMotionState:
     @classmethod

@@ -43,3 +43,10 @@ cdef class Transform:
         q.ptr_Quaternion[0] = self.ptr_Transform.getRotation()
         return q
 
+    def inverse(self):
+        ret = Transform()
+        ret.ptr_Transform[0] = self.ptr_Transform.inverse()
+        return ret
+
+    def mult(self, Transform a, Transform b):
+        self.ptr_Transform.mult(a.ptr_Transform[0], b.ptr_Transform[0])

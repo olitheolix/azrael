@@ -9,4 +9,5 @@ cdef extern from "btBulletDynamicsCommon.h":
         btVector3 &getOrigin()
         btQuaternion getRotation()
         void setRotation(const btQuaternion &q)
-
+        btTransform inverse()
+        void mult (const btTransform &t1, const btTransform &t2)
