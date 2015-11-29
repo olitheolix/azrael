@@ -11,6 +11,10 @@ cdef extern from "btBulletDynamicsCommon.h":
         const btScalar &z()
         const btScalar &w()
         bint operator==(btScalar)
+        btQuaternion &operator* (const btQuaternion &q)
+        btQuaternion &normalize()
+        btQuaternion inverse() const
+        btScalar length2() const
 
     cdef cppclass btVector3:
         btVector3()

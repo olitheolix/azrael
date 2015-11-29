@@ -136,6 +136,38 @@ class TestQuaternion:
         assert q1 == Quaternion(0, 0, 0, 1)
         assert q2 == Quaternion(0, 0, 1, 0)
 
+    def test_normalize(self):
+        """
+        Create an unnormalised Quaternion. Verify that it is unnormalise, then
+        normalise it, and verify that its length is now unity.
+        """
+        q = Quaternion(1, 2, 3, 4)
+        assert q.length2() > 1
+
+        q.normalize()
+        assert abs(q.length2() - 1) < 1E-5
+
+    def test_mult_inverse(self):
+        """
+        Create an unnormalised Quaternion. Verify that the product of Q and its
+        inverse commute. Verify further that the product of the normalised
+        version of Q and its inverse results in a neutral Quaternion.
+        """
+        # Unnormalised Quaternion.
+        q = Quaternion(1, 2, 3, 4)
+
+        # Quaternion products do not normally commute, however the product of a
+        # Quaternion with its inverse must.
+        a = q * q.inverse()
+        b = q.inverse() * q
+        assert np.allclose(a.topy(), b.topy())
+        del a, b
+
+        # Normalise the Quaternion. Then compute its product with its own
+        # inverse. This must be neutral Quaternion.
+        q.normalize()
+        assert np.allclose((q * q.inverse()).topy(), [0, 0, 0, 1])
+
 
 class TestRigidBody:
     @classmethod

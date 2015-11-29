@@ -106,3 +106,19 @@ cdef class Quaternion:
 
     def __repr__(self):
         return repr(self.topy())
+
+    def __mul__(Quaternion self, Quaternion q):
+        ret = Quaternion()
+        ret.ptr_Quaternion[0] = self.ptr_Quaternion[0] * q.ptr_Quaternion[0]
+        return ret
+
+    def normalize(self):
+        self.ptr_Quaternion.normalize()
+
+    def inverse(self):
+        q = Quaternion()
+        q.ptr_Quaternion[0] = self.ptr_Quaternion.inverse()
+        return q
+
+    def length2(self):
+        return <double>self.ptr_Quaternion.length2()
