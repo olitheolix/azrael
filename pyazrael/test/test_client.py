@@ -132,7 +132,9 @@ class TestClient:
         for fname in fnames:
             tmp_1 = open(pjoin(dir_1, fname), 'rb').read()
             tmp_2 = open(pjoin(dir_2, fname), 'rb').read()
-            assert tmp_1 == tmp_2
+            if tmp_1 != tmp_2:
+                print('File <{}> differs'.format(fname))
+                assert False
 
     def test_ping(self):
         """
