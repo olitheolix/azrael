@@ -378,8 +378,8 @@ class TestLeonardOther:
         assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
         assert (ret.ok, len(data)) == (True, 2)
         assert (data[0].aid, data[1].aid) == (id_1, id_2)
-        assert getRigidBody(*data[0].sv) == body_1
-        assert getRigidBody(*data[1].sv) == body_2
+        assert getRigidBody(*data[0].rbs) == body_1
+        assert getRigidBody(*data[1].rbs) == body_2
         assert np.array_equal(data[0].force, [0, 0, 0])
         assert np.array_equal(data[1].force, [0, 0, 0])
 

@@ -1198,7 +1198,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         with util.Timeit('Worker:1.1.0  applyforce'):
             with util.Timeit('Worker:1.1.1   grid'):
                 # Fetch the forces for all object positions.
-                idPos = {_.aid: _.sv.position for _ in worklist}
+                idPos = {_.aid: _.rbs.position for _ in worklist}
                 ret = self.getGridForces(idPos)
                 if not ret.ok:
                     self.logit.info(ret.msg)
@@ -1211,7 +1211,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             with util.Timeit('Worker:1.1.1   updateGeo'):
                 for obj in worklist:
                     # Update the object in Bullet and apply the force/torque.
-                    setRB(obj.aid, obj.sv)
+                    setRB(obj.aid, obj.rbs)
 
             with util.Timeit('Worker:1.1.1   updateForce'):
                 for obj in worklist:
@@ -1242,7 +1242,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
                 body = ret.data
                 if not ret.ok:
                     # Something went wrong. Reuse the old body.
-                    body = obj.sv
+                    body = obj.rbs
                     self.logit.error('Unable to get all objects from Bullet')
                 out.append((obj.aid, body))
 
