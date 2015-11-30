@@ -34,7 +34,7 @@ except ImportError:
     import azBullet
 
 from IPython import embed as ipshell
-from azrael.aztypes import typecheck, RetVal, _RigidBodyData
+from azrael.aztypes import typecheck, RetVal, _RigidBodyData, RbStateUpdate
 from azrael.aztypes import ConstraintMeta, ConstraintP2P, Constraint6DofSpring2
 from azrael.aztypes import CollShapeMeta, CollShapeSphere, CollShapeBox, CollShapePlane
 
@@ -213,12 +213,12 @@ class PyBulletDynamicsWorld():
 
     def getRigidBodyData(self, bodyID: str):
         """
-        Return Body State of ``bodyID``.
+        Return latest body state (pos, rot, vLin, vRot) of ``bodyID``.
 
-        This method aborts immediately if ``bodyID`` does not exists.
+        Return with an error if ``bodyID`` does not exist.
 
         :param str bodyID: the ID of body for which to return the state.
-        :return: ``_RigidBodyData`` instances.
+        :return: ``RbStateUpdate`` instances.
         """
         # Abort immediately if the ID is unknown.
         if bodyID not in self.rigidBodies:
@@ -249,11 +249,8 @@ class PyBulletDynamicsWorld():
         # information from the body's meta data.
         cshapes = body.azrael[1].cshapes
 
-        # Construct a new _RigidBodyData structure and add it to the list
-        # that will eventually be returned to the caller.
-        out = _RigidBodyData(scale, body.getInvMass(),
-                             body.getRestitution(), rot, pos, vLin, vRot,
-                             cshapes, axesLockLin, axesLockRot, 0)
+        # Put the result into a named tuple and return it.
+        out = RbStateUpdate(pos, rot, vLin, vRot, cshapes)
         return RetVal(True, None, out)
 
     @typecheck

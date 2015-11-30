@@ -60,6 +60,10 @@ _RigidBodyData = namedtuple('_RigidBodyData',
                             'position velocityLin velocityRot cshapes '
                             'axesLockLin axesLockRot version')
 
+# Return value of 'bullet_api.getRigidBody'. It is in a dedicated named tuple
+# to make the values and their order explicit.
+RbStateUpdate = namedtuple('RbStateUpdate', 'position rotation vLin vRot cshapes')
+
 # Collision shapes.
 _CollShapeMeta = namedtuple('_CollShapeMeta', 'cstype position rotation csdata')
 _CollShapeBox = namedtuple('_CollShapeBox', 'x y z')

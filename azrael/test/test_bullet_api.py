@@ -40,6 +40,17 @@ class TestBulletAPI:
     def teardown_method(self, method):
         pass
 
+    def isBulletRbsEqual(self, ret_bullet, ref):
+        tmp = (ref.position, ref.rotation, ref.velocityLin, ref.velocityRot)
+        try:
+            assert ret_bullet.position == ref.position
+            assert ret_bullet.rotation == ref.rotation
+            assert ret_bullet.vLin == ref.velocityLin
+            assert ret_bullet.vRot == ref.velocityRot
+        except AssertionError:
+            return False
+        return True
+
     def test_getset_object(self):
         """
         Send/retrieve object to/from Bullet and verify the integrity.
@@ -74,7 +85,7 @@ class TestBulletAPI:
         # Send object to Bullet and request it back.
         sim.setRigidBodyData(aid, obj_a)
         ret = sim.getRigidBodyData(aid)
-        assert (ret.ok, ret.data) == (True, obj_a)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
 
     def test_update_object(self):
         """
@@ -101,7 +112,7 @@ class TestBulletAPI:
         # Send object to Bullet and request it back.
         sim.setRigidBodyData(aid, obj_a)
         ret = sim.getRigidBodyData(aid)
-        assert (ret.ok, ret.data) == (True, obj_a)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
 
         # Update the object.
         obj_a = getRigidBody(
@@ -116,7 +127,7 @@ class TestBulletAPI:
         assert obj_a is not None
         sim.setRigidBodyData(aid, obj_a)
         ret = sim.getRigidBodyData(aid)
-        assert (ret.ok, ret.data) == (True, obj_a)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
 
     @pytest.mark.parametrize('forceFun', ['applyForce', 'applyForceAndTorque'])
     def test_apply_force(self, forceFun):
@@ -140,7 +151,7 @@ class TestBulletAPI:
         sim.setRigidBodyData(objID, obj_a)
         sim.compute([objID], dt, maxsteps)
         ret = sim.getRigidBodyData(objID)
-        assert (ret.ok, ret.data) == (True, obj_a)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
 
         # Now apply a central force of one Newton in z-direction.
         if forceFun == 'applyForce':
@@ -153,7 +164,7 @@ class TestBulletAPI:
 
         # Nothing must have happened because the simulation has not progressed.
         ret = sim.getRigidBodyData(objID)
-        assert (ret.ok, ret.data) == (True, obj_a)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
 
         # Progress the simulation by another 'dt' seconds.
         sim.compute([objID], dt, maxsteps)
@@ -168,7 +179,7 @@ class TestBulletAPI:
         #   v = t * F / m
         # or in terms of the inverse mass:
         #   v = t * F * imass
-        assert np.allclose(ret.data.velocityLin, dt * force * 1, atol=1E-2)
+        assert np.allclose(ret.data.vLin, dt * force * 1, atol=1E-2)
 
     def test_compute_invalid(self):
         """
@@ -192,7 +203,7 @@ class TestBulletAPI:
         sim.setRigidBodyData(objID, obj_a)
         assert sim.compute([objID], dt, maxsteps).ok
         ret = sim.getRigidBodyData(objID)
-        assert (ret.ok, ret.data) == (True, obj_a)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
 
         # Call 'compute' again with one (in)valid object.
         assert not sim.compute([objID, 100], dt, maxsteps).ok
@@ -222,7 +233,7 @@ class TestBulletAPI:
         sim.setRigidBodyData(objID, obj_a)
         sim.compute([objID], dt, maxsteps)
         ret = sim.getRigidBodyData(objID)
-        assert (ret.ok, ret.data) == (True, obj_a)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
 
         # Now apply a central force of one Newton in z-direction and a torque
         # of two NewtonMeters.
@@ -230,13 +241,12 @@ class TestBulletAPI:
 
         # Nothing must have happened because the simulation has not progressed.
         ret = sim.getRigidBodyData(objID)
-        assert (ret.ok, ret.data) == (True, obj_a)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
 
         # Progress the simulation for another second.
         sim.compute([objID], dt, maxsteps)
         ret = sim.getRigidBodyData(objID)
         assert ret.ok
-        velLin, velRot = ret.data.velocityLin, ret.data.velocityRot
 
         # The object must have accelerated to the linear velocity
         #   v = a * t                  (1)
@@ -246,7 +256,7 @@ class TestBulletAPI:
         #   v = t * F / m
         # or in terms of the inverse mass:
         #   v = t * F * imass
-        assert np.allclose(velLin, dt * force * (2 / 5), atol=1E-2)
+        assert np.allclose(ret.data.vLin, dt * force * (2 / 5), atol=1E-2)
 
         # The object must have accelerated to the angular velocity omega
         #   omega = OMEGA * t                  (1)
@@ -260,7 +270,7 @@ class TestBulletAPI:
         # Our Inertia is roughly unity because we adjusted the sphere's mass
         # accordingly when we created it (ie. set it 5/2kg or 2/5 for the
         # inverse mass).
-        assert np.allclose(velRot, dt * torque * 1, atol=1E-2)
+        assert np.allclose(ret.data.vRot, dt * torque * 1, atol=1E-2)
 
     def test_remove_object(self):
         """
@@ -281,7 +291,7 @@ class TestBulletAPI:
         # Send object to Bullet and request it back.
         sim.setRigidBodyData(aid, obj_a)
         ret = sim.getRigidBodyData(aid)
-        assert (ret.ok, ret.data) == (True, obj_a)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
 
         # Delete the object. The attempt to request it afterwards must fail.
         assert sim.removeRigidBody([aid]).ok
@@ -343,9 +353,9 @@ class TestBulletAPI:
         changing the mass (see previous test) because this time the entire
         collision shape must be swapped out underneath.
 
-        To test this we create two spheres that do not touch, which means
-        nothing must happen during a physics update. Then we enlarge one sphere
-        so that it touchs the other. This time Bullet must pick up on the
+        To test this we create two spheres that do not touch. Nothing must
+        therefore happen during a physics update. Then we enlarge one sphere
+        until it touches the other. This time Bullet must pick up on the
         interpenetration and modify the sphere's position somehow (we do not
         really care how).
         """
@@ -354,7 +364,7 @@ class TestBulletAPI:
         pos_a = [0, 0, 0]
         pos_b = [3, 0, 0]
 
-        # Create two identical spheres, one left, one right (x-axis).
+        # Create two identical spheres. Place one left and one right (x-axis).
         radius = 2
         cs_a = {'csfoo': getCSSphere(radius=radius)}
         cs_b = {'csbar': getCSSphere(radius=radius)}
@@ -365,9 +375,8 @@ class TestBulletAPI:
         # Instantiate Bullet engine.
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
 
-        # Send objects to Bullet and progress the simulation. The sole point of
-        # progressing the simulation is to make sure Bullet actually accesses
-        # the objects; we do not actually care if/how the objects moved.
+        # Send objects to Bullet and progress the simulation. Nothing must
+        # happen because the bodies do not touch and no forces are active.
         sim.setRigidBodyData(objID_a, obj_a)
         sim.setRigidBodyData(objID_b, obj_b)
         sim.compute([objID_a, objID_b], 1.0, 60)
@@ -383,7 +392,7 @@ class TestBulletAPI:
         tmp_cs = sim.rigidBodies[objID_b].getCollisionShape()
         assert tmp_cs.getChildShape(0).getRadius() == radius
 
-        # Enlarge the second object so that the spheres do not overlap.
+        # Enlarge the second object until it overlaps with the first.
         obj_b = obj_b._replace(scale=2.5)
         sim.setRigidBodyData(objID_b, obj_b)
         ret = sim.getRigidBodyData(objID_b)
@@ -391,8 +400,9 @@ class TestBulletAPI:
         tmp_cs = sim.rigidBodies[objID_b].getCollisionShape()
         assert tmp_cs.getChildShape(0).getRadius() == 2.5 * radius
 
-        # Then step the simulation again to ensure Bullet accesses each object
-        # and nothing bad happens (eg a segfault).
+        # Step the simulation. This ensures that Bullet accesses each
+        # object without segfaulting despite swapping out C-pointers
+        # underneath the hood.
         sim.compute([objID_a, objID_b], 1.0, 60)
 
     def test_modify_cshape(self):
@@ -480,7 +490,7 @@ class TestBulletAPI:
         # Load the constraints into the physics engine.
         assert sim.setConstraints(con).ok
 
-        # Step the simulation. Nothing must happen.
+        # Step the simulation. Both objects must stay put.
         sim.compute([id_a, id_b], 1.0, 60)
         ret_a = sim.getRigidBodyData(id_a)
         ret_b = sim.getRigidBodyData(id_b)
