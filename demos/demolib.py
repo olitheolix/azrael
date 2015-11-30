@@ -94,6 +94,9 @@ def getFragMetaRaw(vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
 def getRigidBody(scale: (int, float)=1,
                  imass: (int, float)=1,
                  restitution: (int, float)=0.9,
+                 com: (tuple, list)=(0, 0, 0),
+                 inertia: (tuple, list)=(1, 1, 1),
+                 paxis: (tuple, list)=(0, 0, 0, 1),
                  rotation: (tuple, list)=(0, 0, 0, 1),
                  position: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
@@ -109,8 +112,8 @@ def getRigidBody(scale: (int, float)=1,
                                 csdata=CollShapeSphere(radius=1))
         cshapes = {'Sphere': cshapes}
     return aztypes.RigidBodyData(
-        scale, imass, restitution, rotation, position,
-        velocityLin, velocityRot, cshapes,
+        scale, imass, restitution, com, inertia, paxis,
+        rotation, position, velocityLin, velocityRot, cshapes,
         axesLockLin, axesLockRot, version)
 
 

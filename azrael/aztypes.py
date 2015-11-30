@@ -56,9 +56,9 @@ Forces = namedtuple('Forces',
 
 # Motion state of an object.
 _RigidBodyData = namedtuple('_RigidBodyData',
-                            'scale imass restitution rotation '
-                            'position velocityLin velocityRot cshapes '
-                            'axesLockLin axesLockRot version')
+                            'scale imass restitution com inertia paxis '
+                            'rotation position velocityLin velocityRot '
+                            'cshapes axesLockLin axesLockRot version')
 
 # Return value of 'bullet_api.getRigidBody'. It is in a dedicated named tuple
 # to make the values and their order explicit.
@@ -769,6 +769,9 @@ class RigidBodyData(_RigidBodyData):
     :param float scale: non-negative scale of rigid body (should almost
         certainly be always 1).
     :param float restitution: restitution coefficient (non-negative).
+    :param vec3 com: center of mass,
+    :param vec3 inertia: inertia values in paxis coordinates,
+    :param vec4 paxis: principal axis of inertia,
     :param vec4 rotation: orientation Quaternion.
     :param vec3 position: position of body in world coordinates.
     :param vec3 velocityLin: linear velocity of body.
@@ -785,6 +788,9 @@ class RigidBodyData(_RigidBodyData):
                 scale: (int, float),
                 imass: (int, float),
                 restitution: (int, float),
+                com: (tuple, list, np.ndarray),
+                inertia: (tuple, list, np.ndarray),
+                paxis: (tuple, list, np.ndarray),
                 rotation: (tuple, list),
                 position: (tuple, list, np.ndarray),
                 velocityLin: (tuple, list, np.ndarray),
@@ -798,6 +804,9 @@ class RigidBodyData(_RigidBodyData):
             assert scale >= 0
             assert restitution >= 0
             assert version >= 0
+            com = toVec(3, com)
+            inertia = toVec(3, inertia)
+            paxis = toVec(4, paxis)
             rotation = toVec(4, rotation)
             position = toVec(3, position)
             axesLockLin = toVec(3, axesLockLin)
@@ -824,6 +833,9 @@ class RigidBodyData(_RigidBodyData):
             scale=scale,
             imass=imass,
             restitution=restitution,
+            com=com,
+            inertia=inertia,
+            paxis=paxis,
             rotation=rotation,
             position=position,
             velocityLin=velocityLin,
@@ -843,6 +855,9 @@ class RigidBodyData(_RigidBodyData):
 def DefaultRigidBody(scale=1,
                      imass=1,
                      restitution=0.9,
+                     com=(0, 0, 0),
+                     inertia=(1, 1, 1),
+                     paxis=(0, 0, 0, 1),
                      rotation=(0, 0, 0, 1),
                      position=(0, 0, 0),
                      velocityLin=(0, 0, 0),
@@ -867,9 +882,9 @@ def DefaultRigidBody(scale=1,
             for (k, v) in cshapes.items()
         }
 
-    return RigidBodyData(scale, imass, restitution, rotation, position,
-                         velocityLin, velocityRot, cshapes, axesLockLin,
-                         axesLockRot, version)
+    return RigidBodyData(scale, imass, restitution, com, inertia, paxis,
+                         rotation, position, velocityLin, velocityRot, cshapes,
+                         axesLockLin, axesLockRot, version)
 
 
 class Template(_Template):

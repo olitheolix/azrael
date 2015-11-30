@@ -157,6 +157,9 @@ def get6DofSpring2(aid='constraint_6dofspring2', rb_a='1', rb_b='2'):
 def getRigidBody(scale: (int, float)=1,
                  imass: (int, float)=1,
                  restitution: (int, float)=0.9,
+                 com: (tuple, list, np.ndarray)=(0, 0, 0),
+                 inertia: (tuple, list, np.ndarray)=(1, 1, 1),
+                 paxis: (tuple, list, np.ndarray)=(0, 0, 0, 1),
                  rotation: (tuple, list)=(0, 0, 0, 1),
                  position: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
@@ -165,9 +168,10 @@ def getRigidBody(scale: (int, float)=1,
                  axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
                  axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
-    return RigidBodyData(scale, imass, restitution, rotation, position,
-                         velocityLin, velocityRot, cshapes, axesLockLin,
-                         axesLockRot, version)
+    return RigidBodyData(
+        scale, imass, restitution, com, inertia, paxis,
+        rotation, position, velocityLin, velocityRot,
+        cshapes, axesLockLin, axesLockRot, version)
 
 
 def getTemplate(name='template',
