@@ -68,25 +68,12 @@ def addPlatforms():
     # Geometry and collision shape for platform.
     vert, cshapes = demolib.cubeGeometry(2, 0.1, 2)
 
-    # Rigid body parameters.
-    scale = 1
-    imass = 1
-    restitution = 0.9
-    rotation = (0, 0, 0, 1)
-    position = (0, 0, 0)
-    velocityLin = (0, 0, 0)
-    velocityRot = (0, 0, 0)
-    axesLockLin = (0, 0, 0)
-    axesLockRot = (0, 0, 0)
-    version = 0
-    cshapes = {'cs': cshapes}
-
     # Rigid body data for platforms (defines their physics, not appearance).
-    body = azrael.aztypes.RigidBodyData(
-        scale, imass, restitution, rotation,
-        position, velocityLin, velocityRot,
-        cshapes, axesLockLin, axesLockRot,
-        version)
+    body = demolib.getRigidBody(
+        cshapes={'cs': cshapes},
+        axesLockLin=[0, 0, 0],
+        axesLockRot=[0, 0, 0]
+    )
 
     # Geometry for the platforms (defines their appearance, not physics).
     fm = demolib.getFragMetaRaw(
@@ -94,8 +81,9 @@ def addPlatforms():
         uv=[],
         rgb=[],
         scale=1,
-        pos=position,
-        rot=rotation)
+        pos=(0, 0, 0),
+        rot=(0, 0, 0, 1)
+    )
     frags = {'frag_1': fm}
 
     # Define the platform template and upload it to Azrael.
