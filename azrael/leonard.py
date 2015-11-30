@@ -427,12 +427,12 @@ class LeonardBase(config.AzraelProcess):
         """
         Return dictionary of force values for every object in ``idPos``.
 
-        The ``idPos`` argument is a {objID_1: sv_1, objID_2, sv_2, ...}
+        The ``idPos`` argument is a {objID_1: body_1, objID_2, body_2, ...}
         dictionary.
 
         The returned dictionary has the same keys as ``idPos``.
 
-        :param dict idPos: dictionary with objIDs and corresponding SVs.
+        :param dict idPos: dictionary with objIDs and corresponding bodies.
         :return dict: {objID_k: force_k}
         """
         # Convenience.
@@ -468,11 +468,11 @@ class LeonardBase(config.AzraelProcess):
         :rtype: (list, list)
         """
         # Convenience.
-        sv = self.allBodies[objID]
+        body = self.allBodies[objID]
         f = self.allForces[objID]
 
         # Construct the Quaternion of the object based on its rotation.
-        quat = util.Quaternion(sv.rotation[3], sv.rotation[:3])
+        quat = util.Quaternion(body.rotation[3], body.rotation[:3])
 
         # Fetch the force vector for the current object from the DB.
         force = np.array(f.forceDirect, np.float64)
@@ -513,8 +513,8 @@ class LeonardBase(config.AzraelProcess):
             gridForces = ret.data
         del ret, idPos
 
-        # Iterate over all objects and update their SV information in Bullet.
-        for objID, sv in self.allBodies.items():
+        # Iterate over all objects and update their body information in Bullet.
+        for objID, body in self.allBodies.items():
             # Compute direct- and booster forces on object.
             force, torque = self.totalForceAndTorque(objID)
 
@@ -522,11 +522,11 @@ class LeonardBase(config.AzraelProcess):
             force += gridForces[objID]
 
             # Update velocity and position.
-            vel = np.array(sv.velocityLin, np.float64) + 0.5 * force
-            pos = np.array(sv.position, np.float64)
+            vel = np.array(body.velocityLin, np.float64) + 0.5 * force
+            pos = np.array(body.position, np.float64)
             pos += dt * vel
             vel, pos = tuple(vel), tuple(pos)
-            self.allBodies[objID] = sv._replace(position=pos, velocityLin=vel)
+            self.allBodies[objID] = body._replace(position=pos, velocityLin=vel)
 
         # Synchronise the local object cache back to the database.
         self.syncObjects()
@@ -567,8 +567,8 @@ class LeonardBase(config.AzraelProcess):
 
             # Add the body and its AABB to Leonard's cache. Furthermore, add
             # (and initialise) the entry for the forces on this body.
-            sv_old = doc['rbs']
-            self.allBodies[objID] = RigidBodyData(**sv_old)
+            body_old = doc['rbs']
+            self.allBodies[objID] = RigidBodyData(**body_old)
             self.allForces[objID] = Forces(*(([0, 0, 0], ) * 4))
             self.allAABBs[objID] = doc['AABBs']
 
@@ -700,7 +700,7 @@ class LeonardBullet(LeonardBase):
         """
         Advance the simulation by ``dt`` using at most ``maxsteps``.
 
-        This method will query all SV objects from the database and updates
+        This method will query all bodies from the database and updates
         them in the Bullet engine. Then it defers to Bullet for the physics
         update.  Finally it copies the updated values in Bullet back to the
         database.
@@ -728,9 +728,9 @@ class LeonardBullet(LeonardBase):
         del ret, idPos
 
         # Iterate over all objects and update them.
-        for objID, sv in self.allBodies.items():
-            # Pass the SV data from the DB to Bullet.
-            self.bullet.setRigidBodyData(objID, sv)
+        for objID, body in self.allBodies.items():
+            # Copy the body from the DB to Bullet.
+            self.bullet.setRigidBodyData(objID, body)
 
             # Compute direct- and booster forces on object.
             force, torque = self.totalForceAndTorque(objID)
@@ -785,7 +785,7 @@ class LeonardSweeping(LeonardBase):
         """
         Advance the simulation by ``dt`` using at most ``maxsteps``.
 
-        This method will query all SV objects from the database and updates
+        This method will query all bodies from the database and updates
         them in the Bullet engine. Then it defers to Bullet for the physics
         update.  Finally it copies the updated values in Bullet back to the
         database.
@@ -819,10 +819,10 @@ class LeonardSweeping(LeonardBase):
         # Process all subsets individually.
         for subset in collSets:
             # Compile the subset dictionary for the current collision set.
-            coll_SV = {_: self.allBodies[_] for _ in subset}
+            coll_bodies = {_: self.allBodies[_] for _ in subset}
 
             # Fetch the forces for all object positions.
-            idPos = {k: v.position for (k, v) in coll_SV.items()}
+            idPos = {k: v.position for (k, v) in coll_bodies.items()}
             ret = self.getGridForces(idPos)
             if not ret.ok:
                 self.logit.info(ret.msg)
@@ -833,9 +833,9 @@ class LeonardSweeping(LeonardBase):
             del ret, idPos
 
             # Iterate over all objects and update them.
-            for objID, sv in coll_SV.items():
-                # Pass the SV data from the DB to Bullet.
-                self.bullet.setRigidBodyData(objID, sv)
+            for objID, body in coll_bodies.items():
+                # Copy the body from the DB to Bullet.
+                self.bullet.setRigidBodyData(objID, body)
 
                 # Compute direct- and booster forces on object.
                 force, torque = self.totalForceAndTorque(objID)
@@ -851,7 +851,7 @@ class LeonardSweeping(LeonardBase):
             # simple way to avoid it without major changes to the class
             # structure - for now this is acceptable, especially because this
             # class is mostly for testing).
-            tmp = self.igor.getConstraints(coll_SV.keys()).data
+            tmp = self.igor.getConstraints(coll_bodies.keys()).data
 
             # Apply all constraints. Log any errors but ignore them otherwise
             # as they are harmless (simply means no constraints were applied).
@@ -862,13 +862,13 @@ class LeonardSweeping(LeonardBase):
 
             # Wait for Bullet to advance the simulation by one step.
             with util.Timeit('compute'):
-                self.bullet.compute(list(coll_SV.keys()), dt, maxsteps)
+                self.bullet.compute(list(coll_bodies.keys()), dt, maxsteps)
 
             # Remove all constraints.
             self.bullet.clearAllConstraints()
 
             # Retrieve all objects from Bullet.
-            for objID, sv in coll_SV.items():
+            for objID, body in coll_bodies.items():
                 ret = self.bullet.getRigidBodyData(objID)
                 if ret.ok:
                     self.allBodies[objID] = ret.data
@@ -960,9 +960,9 @@ class LeonardDistributedZeroMQ(LeonardBase):
         """
         Advance the simulation by ``dt`` using at most ``maxsteps``.
 
-        This method moves all SV objects from the database to the Bullet
+        This method copies all bodies from the database to the Bullet
         engine. Then it defers to Bullet for the physics update. Finally, it
-        replaces the SV fields with the user specified values (only applies if
+        replaces the body fields with the user specified values (only applies if
         the user called 'setRigidBody') and writes the results back to the
         database.
 
@@ -1074,11 +1074,6 @@ class LeonardDistributedZeroMQ(LeonardBase):
         The ``dt`` and ``maxsteps`` arguments are for the underlying physics
         engine.
 
-        .. note::
-           A work package contains only the objIDs but not their SV. The
-           ``getNextWorkPackage`` function takes care of compiling this
-           information.
-
         :param iterable objIDs: list of object IDs in the new work package.
         :param float dt: time step for this work package.
         :param int maxsteps: number of sub-steps for the time step.
@@ -1093,9 +1088,9 @@ class LeonardDistributedZeroMQ(LeonardBase):
         try:
             wpdata = []
             for objID in objIDs:
-                sv = self.allBodies[objID]
+                body = self.allBodies[objID]
                 force, torque = self.totalForceAndTorque(objID)
-                wpdata.append(WPData(objID, sv, force, torque))
+                wpdata.append(WPData(objID, body, force, torque))
         except KeyError:
             return RetVal(False, 'Cannot compile WP', None)
 
@@ -1115,7 +1110,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
         """
         Copy every object from ``wpdata`` to the local cache.
 
-        The ``wpdata`` argument is a list of (objID, sv) tuples.
+        The ``wpdata`` argument is a list of (objID, body) tuples.
 
         The implicit assumption of this method is that ``wpdata`` is the
         output of ``computePhysicsForWorkPackage`` from a Worker.
@@ -1124,8 +1119,8 @@ class LeonardDistributedZeroMQ(LeonardBase):
         """
         # Reset force and torque for all objects in the WP, and overwrite
         # the old Body States with the new one from the processed WP.
-        for (objID, sv) in wpdata:
-            self.allBodies[objID] = _RigidBodyData(*sv)
+        for (objID, body) in wpdata:
+            self.allBodies[objID] = _RigidBodyData(*body)
 
 
 class LeonardWorkerZeroMQ(config.AzraelProcess):
@@ -1152,12 +1147,12 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         """
         Return dictionary of force values for every object in ``idPos``.
 
-        The ``idPos`` argument is a {objID_1: sv_1, objID_2, sv_2, ...}
+        The ``idPos`` argument is a {objID_1: body_1, objID_2, body_2, ...}
         dictionary.
 
         The returned dictionary has the same keys as ``idPos``.
 
-        :param dict idPos: dictionary with objIDs and corresponding SVs.
+        :param dict idPos: dictionary with objIDs and corresponding body data.
         :return dict: {objID_k: force_k}
         """
         # Convenience.
@@ -1184,7 +1179,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         Leonard itself.
 
         :param dict wp: Work Package content from ``createWorkPackage``.
-        :return dict: {'wpdata': list_of_SVs, 'wpid': wpid}
+        :return dict: {'wpdata': list_of_bodies, 'wpid': wpid}
         """
         worklist, meta = wp['wpdata'], WPMeta(*wp['wpmeta'])
         constraints = wp['wpconstraints']
@@ -1244,12 +1239,12 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             out = []
             for obj in worklist:
                 ret = self.bullet.getRigidBodyData(obj.aid)
-                sv = ret.data
+                body = ret.data
                 if not ret.ok:
-                    # Something went wrong. Reuse the old SV.
-                    sv = obj.sv
+                    # Something went wrong. Reuse the old body.
+                    body = obj.sv
                     self.logit.error('Unable to get all objects from Bullet')
-                out.append((obj.aid, sv))
+                out.append((obj.aid, body))
 
         # Return the updated WP data.
         return {'wpid': meta.wpid, 'wpdata': out}
