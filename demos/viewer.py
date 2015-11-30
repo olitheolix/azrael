@@ -732,8 +732,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Create the camera and place it (in the z-direction) between the
         # Cubes and Sphere generated  by the 'start' script, but out of their
         # way to the side.
-        initPos = [-25, 0, 0]
-        self.camera = Camera(initPos, 90 * np.pi / 180, 0)
+        initPos = [0, 0, 10]
+        self.camera = Camera(initPos, np.pi, 0)
 
         # Spawn the player object (it has the same shape as a projectile).
         d = {'templateID': self.t_projectile, 'rbs': {'position': initPos}}
@@ -1098,7 +1098,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if button == 1:
             # Determine the initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
-            vel = 10 * self.camera.view
+            vel = 20 * self.camera.view
 
             # Spawn the object.
             d = {
