@@ -733,7 +733,7 @@ class TestCollisionShapes:
 
         del pos, t, inertia, principal, center_of_mass, paxis, inertia_sphere
         del cs, sphere
-        
+
         # ---------------------------------------------------------------------
         # Create a compound shape with one sphere _not_ at the center. The
         # principal axis and Inertia must still be that of the sphere, but the
@@ -760,7 +760,7 @@ class TestCollisionShapes:
         assert np.allclose(center_of_mass, pos)
         assert np.allclose(paxis, [0, 0, 0, 1])
         assert np.allclose(inertia.topy(), inertia_sphere.topy())
-        
+
     def test_CompoundShapes_calculatePrincipalAxisTransform_multi(self):
         """
         Create a compound shape with two spheres at different positions. Then
@@ -788,7 +788,43 @@ class TestCollisionShapes:
         # must match our manually compute one.
         inertia, principal = cs.calculatePrincipalAxisTransform(masses)
         assert np.allclose(principal.getOrigin().topy(), ref)
-        
+
+    def test_CompoundShape_get_and_update_childTransforms(self):
+        """
+        Create a compound shape with two elements. Then query their transforms,
+        update one of them, and verify they were udpated correctly.
+        """
+        # Create compound- and sphere shape.
+        cs = CompoundShape()
+        sphere_1, sphere_2 = SphereShape(1), SphereShape(2)
+
+        # Create two distinct transforms.
+        rot1, pos1 = (0, 0, 0, 1), (1, 2, 3)
+        rot2, pos2 = (1, 0, 0, 0), (4, 5, 6)
+        t1 = Transform(Quaternion(*rot1), Vec3(*pos1))
+        t2 = Transform(Quaternion(*rot2), Vec3(*pos2))
+
+        # Add both spheres with the _same_ transform.
+        cs.addChildShape(t1, sphere_1)
+        cs.addChildShape(t1, sphere_2)
+
+        # Verify the children have the specified transforms.
+        for childIdx in range(2):
+            child_transform = cs.getChildTransform(childIdx)
+            assert np.allclose(pos1, child_transform.getOrigin().topy())
+            assert np.allclose(rot1, child_transform.getRotation().topy())
+
+        # Update the local transform of the first child. Leave the second child
+        # alone.
+        cs.updateChildTransform(0, t2)
+
+        # Verify that the first child has the new transform values and the
+        # second one still the original ones.
+        assert np.allclose(pos2, cs.getChildTransform(0).getOrigin().topy())
+        assert np.allclose(rot2, cs.getChildTransform(0).getRotation().topy())
+        assert np.allclose(pos1, cs.getChildTransform(1).getOrigin().topy())
+        assert np.allclose(rot1, cs.getChildTransform(1).getRotation().topy())
+
 
 class TestTransform:
     @classmethod

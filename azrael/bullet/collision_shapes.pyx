@@ -268,3 +268,15 @@ cdef class CompoundShape(CollisionShape):
 
         # Return the Inertia and its principal axis.
         return inertia, principal
+
+    def getChildTransform(self, int index):
+        t = Transform()
+        t.ptr_Transform[0] = self.ptr_CompoundShape.getChildTransform(index)
+        return t
+
+    def updateChildTransform(self, int idx, Transform t, bint recalculateAABB=True):
+        self.ptr_CompoundShape.updateChildTransform(
+            idx,
+            t.ptr_Transform[0],
+            recalculateAABB
+        )

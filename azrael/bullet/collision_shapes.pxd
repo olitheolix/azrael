@@ -45,3 +45,7 @@ cdef extern from "btBulletDynamicsCommon.h":
         void removeChildShape(btCollisionShape *shape)
         int getNumChildShapes()
         void calculatePrincipalAxisTransform(btScalar *masses, btTransform &principal, btVector3 &inertia)
+        btTransform &getChildTransform(int index)
+        void updateChildTransform(int childIndex,
+                                  const btTransform &newChildTransform,
+                                  bint shouldRecalculateLocalAabb)
