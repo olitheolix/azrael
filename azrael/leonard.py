@@ -758,8 +758,17 @@ class LeonardBullet(LeonardBase):
         # that the user explicilty wanted to change (if any).
         for objID in self.allBodies:
             ret = self.bullet.getRigidBodyData(objID)
-            if ret.ok:
-                self.allBodies[objID] = ret.data
+
+            # Assign the new object properties only if the call succeeded. Keep
+            # the old body otherwise.
+            if ret.ok is True:
+                body = self.allBodies[objID]
+                self.allBodies[objID] = body._replace(
+                    position=ret.data.position,
+                    rotation=ret.data.rotation,
+                    velocityLin=ret.data.vLin,
+                    velocityRot=ret.data.vRot
+                )
 
         # Synchronise the local object cache back to the database.
         self.syncObjects()
@@ -870,8 +879,17 @@ class LeonardSweeping(LeonardBase):
             # Retrieve all objects from Bullet.
             for objID, body in coll_bodies.items():
                 ret = self.bullet.getRigidBodyData(objID)
-                if ret.ok:
-                    self.allBodies[objID] = ret.data
+
+                # Assign the new object properties only if the call succeeded. Keep
+                # the old body otherwise.
+                if ret.ok is True:
+                    body = self.allBodies[objID]
+                    self.allBodies[objID] = body._replace(
+                        position=ret.data.position,
+                        rotation=ret.data.rotation,
+                        velocityLin=ret.data.vLin,
+                        velocityRot=ret.data.vRot
+                    )
 
         # Synchronise the local object cache back to the database.
         self.syncObjects()
@@ -1239,8 +1257,14 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             out = []
             for obj in worklist:
                 ret = self.bullet.getRigidBodyData(obj.aid)
-                body = ret.data
-                if not ret.ok:
+                if ret.ok is True:
+                    body = obj.rbs._replace(
+                        position=ret.data.position,
+                        rotation=ret.data.rotation,
+                        velocityLin=ret.data.vLin,
+                        velocityRot=ret.data.vRot
+                    )
+                else:
                     # Something went wrong. Reuse the old body.
                     body = obj.rbs
                     self.logit.error('Unable to get all objects from Bullet')
