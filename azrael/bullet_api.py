@@ -264,9 +264,11 @@ class PyBulletDynamicsWorld():
         :param ``_RigidBodyData`` rbState: body description.
         :return: Success
         """
-        # Create the Rigid Body if it does not exist yet.
+        # Create the rigid body if it does not exist yet.
         if bodyID not in self.rigidBodies:
-            self.createRigidBody(bodyID, rbState)
+            ret = self.createRigidBody(bodyID, rbState)
+            if ret.ok:
+                self.rigidBodies[bodyID] = ret.data
 
         # Convenience.
         body = self.rigidBodies[bodyID]
@@ -507,7 +509,7 @@ class PyBulletDynamicsWorld():
     @typecheck
     def createRigidBody(self, bodyID: str, rbState: _RigidBodyData):
         """
-        Create a new rigid body ``rbState`` with ``bodyID``.
+        Return a new rigid body based on ``rbState`` with ``bodyID``.
 
         :param str bodyID: ID of new rigid body.
         :param _RigidBodyData rbState: State Variables of rigid body.
@@ -534,8 +536,7 @@ class PyBulletDynamicsWorld():
         body.setSleepingThresholds(0.1, 0.1)
 
         # Attach my own admin structure to the body.
-        body.azrael = (bodyID, rbState)
+        body.azrael = (bodyID, rbState, rbState.com)
 
-        # Add the rigid body to the body cache.
-        self.rigidBodies[bodyID] = body
-        return RetVal(True, None, None)
+        # Return the new body.
+        return RetVal(True, None, body)

@@ -644,8 +644,8 @@ class TestBulletAPI:
         assert b_plane is not None
 
         # Add the objects to the simulation and verify their positions.
-        sim.createRigidBody(aid_1, b_plane)
-        sim.createRigidBody(aid_2, b_box)
+        sim.setRigidBodyData(aid_1, b_plane)
+        sim.setRigidBodyData(aid_2, b_box)
         ret_plane = sim.getRigidBodyData(aid_1)
         ret_box = sim.getRigidBodyData(aid_2)
         assert (ret_plane.ok is True) and (ret_box.ok is True)
@@ -698,8 +698,8 @@ class TestBulletAPI:
         assert b_plane is not None
 
         # Add the objects to the simulation and verify their positions.
-        sim.createRigidBody(aid_1, b_plane)
-        sim.createRigidBody(aid_2, b_box)
+        sim.setRigidBodyData(aid_1, b_plane)
+        sim.setRigidBodyData(aid_2, b_box)
         ret_plane = sim.getRigidBodyData(aid_1)
         ret_box = sim.getRigidBodyData(aid_2)
         assert (ret_plane.ok is True) and (ret_box.ok is True)
