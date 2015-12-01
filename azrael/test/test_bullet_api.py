@@ -42,11 +42,12 @@ class TestBulletAPI:
 
     def isBulletRbsEqual(self, ret_bullet, ref):
         tmp = (ref.position, ref.rotation, ref.velocityLin, ref.velocityRot)
+        ac = np.allclose
         try:
-            assert ret_bullet.position == ref.position
-            assert ret_bullet.rotation == ref.rotation
-            assert ret_bullet.vLin == ref.velocityLin
-            assert ret_bullet.vRot == ref.velocityRot
+            assert ac(ret_bullet.position, ref.position)
+            assert ac(ret_bullet.rotation, ref.rotation)
+            assert ac(ret_bullet.vLin, ref.velocityLin)
+            assert ac(ret_bullet.vRot, ref.velocityRot)
         except AssertionError:
             return False
         return True

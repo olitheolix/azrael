@@ -58,25 +58,25 @@ class PyRigidBody(azBullet.RigidBody):
 
 
 import azrael.util
-def bullet2azrael(com_pos, com_rot, com_ofs):
+def bullet2azrael(bt_pos, bt_rot, com_ofs):
     """
     Return the Azrael object position for the compound shape.
     """
-    w, v = float(com_rot[3]), list(com_rot[:3])
+    w, v = float(bt_rot[3]), list(bt_rot[:3])
     q0 = azrael.util.Quaternion(w, v)
 
-    pos_new = com_pos - q0 * com_ofs
+    pos_new = bt_pos - q0 * com_ofs
     return list(pos_new)
 
 
-def azrael2bullet(az_obj_pos, az_obj_rot, com_ofs):
+def azrael2bullet(az_pos, az_rot, com_ofs):
     """
     Return the compound shape transform for the Azrael object.
     """
-    w, v = float(az_obj_rot[3]), list(az_obj_rot[:3])
+    w, v = float(az_rot[3]), list(az_rot[:3])
     q0 = azrael.util.Quaternion(w, v)
 
-    bt_com_pos = az_obj_pos + q0 * com_ofs
+    bt_com_pos = az_pos + q0 * com_ofs
     return list(bt_com_pos)
 
 
@@ -255,24 +255,33 @@ class PyBulletDynamicsWorld():
         rot = body.getCenterOfMassTransform().getRotation().topy()
         pos = body.getCenterOfMassTransform().getOrigin().topy()
 
+        # The object position does not match the position of the rigid body
+        # unless the center of mass is (0, 0, 0). Here we correct it.
+        pos = bullet2azrael(pos, rot, body.azrael[2])
+#        pos, rot = azBullet.bullet2azrael(pos, rot, Vec3(*body.azrael[2])
+
         # Determine linear and angular velocity.
         vLin = body.getLinearVelocity().topy()
         vRot = body.getAngularVelocity().topy()
 
         # Linear/angular damping factors.
+        # fixme: not needed anymore
         axesLockLin = body.getLinearFactor().topy()
         axesLockRot = body.getAngularFactor().topy()
 
         # Bullet does not support scaling collision shape (actually, it does,
         # but it is frought with problems). Therefore, we may thus copy the
         # 'scale' value from the body's meta data.
+        # fixme: not needed anymore
         scale = body.azrael[1].scale
 
         # Bullet will never modify the Collision shape. We may thus use the
         # information from the body's meta data.
+        # fixme: should not be needed anymore
         cshapes = body.azrael[1].cshapes
 
         # Put the result into a named tuple and return it.
+        # fixme; do not return cshapes
         out = RbStateUpdate(pos, rot, vLin, vRot, cshapes)
         return RetVal(True, None, out)
 
@@ -297,12 +306,12 @@ class PyBulletDynamicsWorld():
         body = self.rigidBodies[bodyID]
 
         # Convert rotation and position to Vec3.
+        pos = azrael2bullet(rbState.position, rbState.rotation, rbState.com)
+        pos = Vec3(*pos)
         rot = Quaternion(*rbState.rotation)
-        pos = Vec3(*rbState.position)
 
         # Assign body properties.
-        tmp = azBullet.Transform(rot, pos)
-        body.setCenterOfMassTransform(tmp)
+        body.setCenterOfMassTransform(Transform(rot, pos))
         body.setLinearVelocity(Vec3(*rbState.velocityLin))
         body.setAngularVelocity(Vec3(*rbState.velocityRot))
         body.setRestitution(rbState.restitution)
