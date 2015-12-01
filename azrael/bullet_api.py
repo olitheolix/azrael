@@ -252,10 +252,18 @@ class PyBulletDynamicsWorld():
 
         # Convenience.
         body = self.rigidBodies[bodyID]
+        rbState = body.azrael['rbState']
 
-        # Determine rotation and position.
-        rot = body.getCenterOfMassTransform().getRotation()
-        pos = body.getCenterOfMassTransform().getOrigin()
+        # Undo the principal axis transform.
+        paxis = Quaternion(*rbState.paxis)
+        paxis.normalize()
+        t = Transform(paxis, Vec3(0, 0, 0))
+        t = t.inverse()
+        t.mult(body.getCenterOfMassTransform(), t)
+
+        # Unpack rotation and position.
+        rot, pos = t.getRotation(), t.getOrigin()
+        del paxis, t
 
         # The object position does not match the position of the rigid body
         # unless the center of mass is (0, 0, 0). Here we correct it.
@@ -292,8 +300,14 @@ class PyBulletDynamicsWorld():
         # Convert rotation and position to Vec3.
         pos, rot = azrael2bullet(rbState.position, rbState.rotation, rbState.com)
 
+        # Apply the principal axes of inertia.
+        paxis = Quaternion(*rbState.paxis)
+        paxis.normalize()
+        t = Transform(paxis, Vec3(0, 0, 0))
+        t.mult(Transform(rot, pos), t)
+
         # Assign body properties.
-        body.setCenterOfMassTransform(Transform(rot, pos))
+        body.setCenterOfMassTransform(t)
         body.setLinearVelocity(Vec3(*rbState.velocityLin))
         body.setAngularVelocity(Vec3(*rbState.velocityRot))
         body.setRestitution(rbState.restitution)
@@ -310,7 +324,7 @@ class PyBulletDynamicsWorld():
 
             # Replace the existing collision shape with the new one.
             body.setCollisionShape(ret.data)
-        del old, new_cs, new_scale
+        del old, new_cs, new_scale, paxis, t
 
         # Update mass and inertia.
         if rbState.imass < 1E-5:
@@ -446,6 +460,15 @@ class PyBulletDynamicsWorld():
         # Create the compound shape that will hold all other shapes.
         compound = azBullet.CompoundShape()
 
+        # Compute the inverse principal axis transform and apply it to all
+        # child shapes. To compensate, the setRigidBodyData function will apply
+        # the (not inverse) principal axis transform to the rigid body. The net
+        # effect will be that Bullet uses the correct inertia frame during a
+        # collision.
+        paxis = Quaternion(*rbState.paxis)
+        paxis.normalize()
+        principal = Transform(paxis, Vec3(0, 0, 0)).inverse()
+
         # Create the collision shapes one by one.
         scale = rbState.scale
         for cs in rbState.cshapes.values():
@@ -481,6 +504,7 @@ class PyBulletDynamicsWorld():
                 Quaternion(*cs.rotation),
                 Vec3(*cs.position) - Vec3(*rbState.com)
             )
+            t.mult(principal, t)
             compound.addChildShape(t, child)
 
         return RetVal(True, None, compound)
