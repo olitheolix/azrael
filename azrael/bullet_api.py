@@ -446,7 +446,7 @@ class PyBulletDynamicsWorld():
             return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, rbState: _RigidBodyData, com_ofs=(0, 0, 0)):
+    def compileCollisionShape(self, rbState: _RigidBodyData):
         """
         Return the correct Bullet collision shape based on ``rbState``.
 
@@ -456,7 +456,6 @@ class PyBulletDynamicsWorld():
         This is a convenience method only.
 
         :param _RigidBodyData rbState: meta data to describe the body.
-        :param vec3 com_ofs: center of mass.
         :return: compound shape with all the individual shapes.
         :rtype: ``CompoundShape``
         """
@@ -496,7 +495,7 @@ class PyBulletDynamicsWorld():
             # of mass.
             t = Transform(
                 Quaternion(*cs.rotation),
-                Vec3(*cs.position) - Vec3(*com_ofs)
+                Vec3(*cs.position) - Vec3(*rbState.com)
             )
             compound.addChildShape(t, child)
 
@@ -531,7 +530,7 @@ class PyBulletDynamicsWorld():
                 return RetVal(False, msg, None)
 
         # Build the collision shape.
-        ret = self.compileCollisionShape(rbState, rbState.com)
+        ret = self.compileCollisionShape(rbState)
         compound = ret.data
 
         # Instantiate the rigid body and specify its mass, motion state,
