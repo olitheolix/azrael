@@ -180,11 +180,12 @@ class TestBulletAPI:
         """
         # Constants and parameters for this test.
         objID = '10'
-        force = np.array([0, 0, 1], np.float64)
+        imass = 2
+        force = np.array([1, 2, 3], np.float64)
         dt, maxsteps = 1.0, 60
 
         # Create an object and overwrite the CShape data to obtain a sphere.
-        obj_a = getRigidBody()
+        obj_a = getRigidBody(imass=imass)
 
         # Instantiate Bullet engine.
         sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
@@ -203,7 +204,7 @@ class TestBulletAPI:
             applyForceFun = sim.applyForceAndTorque
         else:
             assert False
-        applyForceFun(objID, force, np.zeros(3, np.float64))
+        applyForceFun(objID, force, [0, 0, 0])
 
         # Nothing must have happened because the simulation has not progressed.
         ret = sim.getRigidBodyData(objID)
@@ -214,15 +215,15 @@ class TestBulletAPI:
         ret = sim.getRigidBodyData(objID)
         assert ret.ok
 
-        # The object must have accelerated and reached the linear velocity
+        # The object must have accelerated to the linear velocity
         #   v = a * t                  (1)
         # where the acceleration $a$ follows from
         #   F = m * a --> a = F / m    (2)
-        # Substitue (2) into (1) to obtain
+        # Substitute (2) into (1) to obtain
         #   v = t * F / m
         # or in terms of the inverse mass:
         #   v = t * F * imass
-        assert np.allclose(ret.data.vLin, dt * force * 1, atol=1E-2)
+        assert np.allclose(ret.data.vLin, dt * force * imass, atol=1E-1)
 
     def test_compute_invalid(self):
         """
