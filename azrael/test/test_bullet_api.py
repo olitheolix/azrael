@@ -225,6 +225,61 @@ class TestBulletAPI:
         #   v = t * F * imass
         assert np.allclose(ret.data.vLin, dt * force * imass, atol=1E-1)
 
+    def test_apply_torque_diagonal(self):
+        """
+        Create a body with neutral principal axis (ie aligned with the world
+        coordinate system). Then apply a torque vector. The object must spin at
+        the respective velocities in each direction.
+        """
+        # Constants and parameters for this test.
+        objID = '10'
+        inertia = [1, 2, 3]
+        torque = np.array([2, 3, 1])
+
+        # Bullet simulation step. This *must* happen in a *single* step to
+        # produce the anticipated outcome. The reason is subtle: Bullet always
+        # applies the torque in world coordinates yet the body progressively
+        # rotate in each sub-step. Unless the moments of inertia are all equal
+        # this means the induced rotation will change its axis a bit at each
+        # step.
+        dt, maxsteps = 1.0, 1
+
+        # Create an object and overwrite the CShape data to obtain a sphere.
+        obj_a = getRigidBody(inertia=inertia)
+
+        # Instantiate Bullet engine.
+        sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
+
+        # Send object to Bullet and progress the simulation by one second.
+        # The objects must not move because no forces are at play.
+        sim.setRigidBodyData(objID, obj_a)
+        sim.compute([objID], dt, maxsteps)
+        ret = sim.getRigidBodyData(objID)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
+
+        # Apply the torque.
+        sim.applyForceAndTorque(objID, [0, 0, 0], torque)
+
+        # Nothing must have happened because the simulation has not progressed.
+        ret = sim.getRigidBodyData(objID)
+        assert ret.ok and self.isBulletRbsEqual(ret.data, obj_a)
+
+        # Progress the simulation by another 'dt' seconds.
+        sim.compute([objID], dt, maxsteps)
+        ret = sim.getRigidBodyData(objID)
+        assert ret.ok
+
+        # The object must have accelerated to the angular velocity
+        #   v = a * t                  (1)
+        # The (angular) acceleration $a$ follows from
+        #   T = I * a --> a = T / I    (2)
+        # based on (T)orque and (I)nertia. In this test, the torque and
+        # principal axis coincide and T and I are thus diagonal (the "division"
+        # of matrices above is thus justified in this special case). Now
+        # substitute (2) into (1) to obtain the angular velocity v as
+        #   v = t * T / I
+        assert np.allclose(ret.data.vRot, dt * torque / inertia, atol=1E-1)
+
     def test_compute_invalid(self):
         """
         Call 'compute' method for non-existing object IDs.
