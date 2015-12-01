@@ -291,12 +291,10 @@ class PyBulletDynamicsWorld():
         if (old.scale != rbState.scale) or \
            not (np.array_equal(old.cshapes, rbState.cshapes)):
             # Create a new collision shape.
-            tmp = self.compileCollisionShape(rbState)
-            mass, inertia, cshapes = tmp.data
-            del mass, inertia, tmp
+            ret = self.compileCollisionShape(rbState)
 
             # Replace the existing collision shape with the new one.
-            body.setCollisionShape(cshapes)
+            body.setCollisionShape(ret.data)
         del old
 
         # Update the mass but leave the inertia intact. This is somewhat
@@ -323,7 +321,7 @@ class PyBulletDynamicsWorld():
             body.setMassProps(m, Vec3(x, y, z))
 
         # Overwrite the old RigidBodyData instance with the latest version.
-        body.azrael = (bodyID, rbState)
+        body.azrael = (bodyID, rbState, rbState.com)
         return RetVal(True, None, None)
 
     def setConstraints(self, constraints: (tuple, list)):
@@ -428,13 +426,14 @@ class PyBulletDynamicsWorld():
             return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, rbState: _RigidBodyData):
+    def compileCollisionShape(self, rbState: _RigidBodyData, com=(0, 0, 0)):
         """
+        # fixme: rename com
+        fixme: find out how to combine mass/inertia of multi body bodies.
+
         Return the correct Bullet collision shape based on ``rbState``.
 
         This is a convenience method only.
-
-        fixme: find out how to combine mass/inertia of multi body bodies.
 
         :param _RigidBodyData rbState: meta data to describe the body.
         :return: compound shape with all the individual shapes.
@@ -442,19 +441,6 @@ class PyBulletDynamicsWorld():
         """
         # Create the compound shape that will hold all other shapes.
         compound = azBullet.CompoundShape()
-
-        # Aggregate the total mass and inertia.
-        tot_mass = 0
-        tot_inertia = Vec3(0, 0, 0)
-
-        # Bodies with virtually no mass will be converted to static bodies.
-        # This is almost certainly not what the user wants but it is the only
-        # safe option here. Note: it is the user's responsibility to ensure the
-        # mass is reasonably large!
-        if rbState.imass > 1E-4:
-            rbState_mass = 1.0 / rbState.imass
-        else:
-            rbState_mass = 0
 
         # Create the collision shapes one by one.
         scale = rbState.scale
@@ -485,26 +471,12 @@ class PyBulletDynamicsWorld():
                 msg = 'Unrecognised collision shape <{}>'.format(cstype)
                 self.logit.warning(msg)
 
-            # Let Bullet compute the local inertia of the body.
-            inertia = child.calculateLocalInertia(rbState_mass)
-
-            # Warn about unreasonable inertia values.
-            if rbState_mass > 0:
-                tmp = np.array(inertia.topy())
-                if not (1E-5 < np.sqrt(np.dot(tmp, tmp)) < 100):
-                    msg = 'Inertia = ({:.1E}, {:.1E}, {:.1E})'
-                    self.logit.warning(msg.format(*inertia.topy()))
-                del tmp
-
-            # Add the collision shape at the respective position and
-            # rotation relative to the parent.
-            t = azBullet.Transform(Quaternion(*cs.rotation),
-                                   Vec3(*cs.position))
+            # Add the collision shape. Its position is relative to the center
+            # of mass.
+            t = Transform(Quaternion(*cs.rotation), Vec3(*cs.position) - Vec3(*com))
             compound.addChildShape(t, child)
-            tot_mass += rbState_mass
-            tot_inertia += inertia
 
-        return RetVal(True, None, (tot_mass, tot_inertia, compound))
+        return RetVal(True, None, compound)
 
     @typecheck
     def createRigidBody(self, bodyID: str, rbState: _RigidBodyData):
@@ -515,19 +487,39 @@ class PyBulletDynamicsWorld():
         :param _RigidBodyData rbState: State Variables of rigid body.
         :return: Success
         """
-        # Convert rotation and position to Bullet types.
-        rot = Quaternion(*rbState.rotation)
-        pos = Vec3(*rbState.position)
+        # Bodies with virtually no mass will be converted to static bodies.
+        # This is almost certainly not what the user wants but it is the only
+        # safe option here. Note: it is the user's responsibility to ensure the
+        # mass is reasonably large!
+        if rbState.imass > 1E-4:
+            mass = 1.0 / rbState.imass
+        else:
+            mass = 0
+
+        # Warn about unreasonable inertia values.
+        # fixme: what to do about this?
+        if mass > 0:
+            tmp = np.array(rbState.inertia)
+            if not (1E-5 < np.sqrt(np.dot(tmp, tmp)) < 100):
+                msg = 'Inertia = ({:.1E}, {:.1E}, {:.1E})'
+                msg = msg.format(*tmp)
+                self.logit.warning(msg)
+                return RetVal(False, msg, None)
 
         # Build the collision shape.
-        ret = self.compileCollisionShape(rbState)
-        mass, inertia, cshapes = ret.data
+        ret = self.compileCollisionShape(rbState, rbState.com)
+        compound = ret.data
 
-        # Create a motion state for the initial rotation and position.
-        ms = azBullet.DefaultMotionState(azBullet.Transform(rot, pos))
-
-        # Instantiate the actual rigid body.
-        ci = azBullet.RigidBodyConstructionInfo(mass, ms, cshapes, inertia)
+        # Instantiate the rigid body and specify its mass, motion state,
+        # collision shapes, and inertia.
+        # fixme: mention that all values are neutra; setRigidBody will actually
+        # set them. Can I simplify this method further?
+        ci = azBullet.RigidBodyConstructionInfo(
+            mass,
+            azBullet.DefaultMotionState(Transform()),
+            compound,
+            Vec3(*rbState.inertia)
+        )
         body = PyRigidBody(ci)
 
         # Set additional parameters.
