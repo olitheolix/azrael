@@ -723,3 +723,40 @@ class TestBulletAPI:
         assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert abs(ret_box.data.position[2] + ofs_z) < 1E-3
+
+    def test_convert_bullet2azrael(self):
+        """
+        Azrael uses the same coordinate system for fragment and collisions
+        shapes positions. However, collision shapes must be specified relative
+        to their center of mass to produce the correct physics. The position in
+        Azrael and the position of the compound shape used in the physics
+        engine there do not coincide unless the center of mass is (0, 0, 0).
+
+        This test verifies that the utility functions that convert between the
+        Azrael object position and the Bullet compound shape position work
+        correctly.
+        """
+        # Convenience.
+        bullet2azrael = azrael.bullet_api.bullet2azrael
+        azrael2bullet = azrael.bullet_api.azrael2bullet
+
+        # Center of mass offset relative to the object position in Azrael (the
+        # user specifies this value in the template).
+        com_ofs = np.array([2, 2, 0])
+
+        # After a physics update Bullet gives us the following position and rotation
+        # for the compound shape.
+        bt_pos = [6, 2, 0]
+        bt_rot = [0, 0, 1, 0]
+
+        # Convert this to an object position in Azrael. The rotatation of rigid
+        # bodies and Azrael objects are always identical; only the position
+        # differs due to the center of mass offset.
+        az_pos = bullet2azrael(bt_pos, bt_rot, com_ofs)
+        az_rot = bt_rot
+        assert np.allclose(az_pos, [8, 4, 0])
+
+        # Convert the Azrael object position to a Bullet rigid body position.
+        # Verify that this produces the original value.
+        bt_pos_new = azrael2bullet(az_pos, az_rot, com_ofs)
+        assert np.allclose(bt_pos_new, bt_pos)
