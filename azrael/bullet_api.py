@@ -259,7 +259,7 @@ class PyBulletDynamicsWorld():
 
         # The object position does not match the position of the rigid body
         # unless the center of mass is (0, 0, 0). Here we correct it.
-        pos, rot = bullet2azrael(pos, rot, body.azrael[2])
+        pos, rot = bullet2azrael(pos, rot, body.azrael['rbState'].com)
 
         # Determine linear and angular velocity.
         vLin = body.getLinearVelocity().topy()
@@ -268,7 +268,7 @@ class PyBulletDynamicsWorld():
         # Bullet will never modify the Collision shape. We may thus use the
         # information from the body's meta data.
         # fixme: should not be needed anymore
-        cshapes = body.azrael[1].cshapes
+        cshapes = body.azrael['rbState'].cshapes
 
         # Put the result into a named tuple and return it.
         # fixme; do not return cshapes
@@ -307,7 +307,7 @@ class PyBulletDynamicsWorld():
         body.setAngularFactor(Vec3(*rbState.axesLockRot))
 
         # Build and assign the new collision shape, if necessary.
-        old = body.azrael[1]
+        old = body.azrael['rbState']
         if (old.scale != rbState.scale) or \
            not (np.array_equal(old.cshapes, rbState.cshapes)):
             # Create a new collision shape.
@@ -341,7 +341,7 @@ class PyBulletDynamicsWorld():
             body.setMassProps(m, Vec3(x, y, z))
 
         # Overwrite the old RigidBodyData instance with the latest version.
-        body.azrael = (bodyID, rbState, rbState.com)
+        body.azrael = {'rbState': rbState}
         return RetVal(True, None, None)
 
     def setConstraints(self, constraints: (tuple, list)):
@@ -551,7 +551,7 @@ class PyBulletDynamicsWorld():
         body.setSleepingThresholds(0.1, 0.1)
 
         # Attach my own admin structure to the body.
-        body.azrael = (bodyID, rbState, rbState.com)
+        body.azrael = {'rbState': rbState}
 
         # Return the new body.
         return RetVal(True, None, body)
