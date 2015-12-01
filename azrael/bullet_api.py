@@ -265,17 +265,6 @@ class PyBulletDynamicsWorld():
         vLin = body.getLinearVelocity().topy()
         vRot = body.getAngularVelocity().topy()
 
-        # Linear/angular damping factors.
-        # fixme: not needed anymore
-        axesLockLin = body.getLinearFactor().topy()
-        axesLockRot = body.getAngularFactor().topy()
-
-        # Bullet does not support scaling collision shape (actually, it does,
-        # but it is frought with problems). Therefore, we may thus copy the
-        # 'scale' value from the body's meta data.
-        # fixme: not needed anymore
-        scale = body.azrael[1].scale
-
         # Bullet will never modify the Collision shape. We may thus use the
         # information from the body's meta data.
         # fixme: should not be needed anymore
@@ -457,16 +446,17 @@ class PyBulletDynamicsWorld():
             return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, rbState: _RigidBodyData, com=(0, 0, 0)):
+    def compileCollisionShape(self, rbState: _RigidBodyData, com_ofs=(0, 0, 0)):
         """
-        # fixme: rename com
-        fixme: find out how to combine mass/inertia of multi body bodies.
-
         Return the correct Bullet collision shape based on ``rbState``.
+
+        The position of all collision shapes will be automatically corrected to
+        be relative to the center of mass argument ``com_ofs``.
 
         This is a convenience method only.
 
         :param _RigidBodyData rbState: meta data to describe the body.
+        :param vec3 com_ofs: center of mass.
         :return: compound shape with all the individual shapes.
         :rtype: ``CompoundShape``
         """
@@ -504,7 +494,10 @@ class PyBulletDynamicsWorld():
 
             # Add the collision shape. Its position is relative to the center
             # of mass.
-            t = Transform(Quaternion(*cs.rotation), Vec3(*cs.position) - Vec3(*com))
+            t = Transform(
+                Quaternion(*cs.rotation),
+                Vec3(*cs.position) - Vec3(*com_ofs)
+            )
             compound.addChildShape(t, child)
 
         return RetVal(True, None, compound)
