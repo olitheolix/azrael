@@ -300,16 +300,17 @@ class PyBulletDynamicsWorld():
         body.setLinearFactor(Vec3(*rbState.axesLockLin))
         body.setAngularFactor(Vec3(*rbState.axesLockRot))
 
-        # Build and assign the new collision shape, if necessary.
+        # Build and assign the new collision shape if they have changed.
         old = body.azrael['rbState']
-        if (old.scale != rbState.scale) or \
-           not (np.array_equal(old.cshapes, rbState.cshapes)):
+        new_cs = not np.array_equal(old.cshapes, rbState.cshapes)
+        new_scale = (old.scale != rbState.scale)
+        if new_cs or new_scale:
             # Create a new collision shape.
             ret = self.compileCollisionShape(rbState)
 
             # Replace the existing collision shape with the new one.
             body.setCollisionShape(ret.data)
-        del old
+        del old, new_cs, new_scale
 
         # Update the mass but leave the inertia intact. This is somewhat
         # awkward to implement because Bullet returns the inverse values yet
