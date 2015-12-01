@@ -312,30 +312,19 @@ class PyBulletDynamicsWorld():
             body.setCollisionShape(ret.data)
         del old, new_cs, new_scale
 
-        # Update the mass but leave the inertia intact. This is somewhat
-        # awkward to implement because Bullet returns the inverse values yet
-        # expects the non-inverted ones in 'set_mass_props'.
-        if rbState.imass == 0:
+        # Update mass and inertia.
+        if rbState.imass < 1E-5:
             # Static body: mass and inertia are zero anyway.
             body.setMassProps(0, Vec3(0, 0, 0))
         else:
-            m = rbState.imass
-            x, y, z = body.getInvInertiaDiagLocal().topy()
-            if (m < 1E-10) or (x < 1E-10) or (y < 1E-10) or (z < 1E-10):
-                # Use safe values if either the inertia or the mass is too
-                # small for inversion.
-                m = x = y = z = 1
-            else:
-                # Inverse mass and inertia.
-                x = 1 / x
-                y = 1 / y
-                z = 1 / z
-                m = 1 / m
+            imass = 1 / rbState.imass
+            inertia = Vec3(*rbState.inertia)
 
             # Apply the new mass and inertia.
-            body.setMassProps(m, Vec3(x, y, z))
+            body.setMassProps(imass, inertia)
+            del imass, inertia
 
-        # Overwrite the old RigidBodyData instance with the latest version.
+        # Attach a copy of the rbState structure to the rigid body.
         body.azrael = {'rbState': rbState}
         return RetVal(True, None, None)
 
