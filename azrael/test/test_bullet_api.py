@@ -393,12 +393,12 @@ class TestBulletAPI:
     def test_modify_size(self):
         """
         Change the size of the collision shape. This is more intricate than
-        changing the mass (see previous test) because this time the entire
-        collision shape must be swapped out underneath.
+        changing the mass in test_modify_mass. The reason is that, internally,
+        the entire collision shape must be replaced.
 
-        To test this we create two spheres that do not touch. Nothing must
+        For this test we create two non-touching spheres. Nothing must
         therefore happen during a physics update. Then we enlarge one sphere
-        until it touches the other. This time Bullet must pick up on the
+        to ensure they interpenetrate. This time Bullet must pick up on the
         interpenetration and modify the sphere's position somehow (we do not
         really care how).
         """
@@ -424,12 +424,11 @@ class TestBulletAPI:
         sim.setRigidBodyData(objID_b, obj_b)
         sim.compute([objID_a, objID_b], 1.0, 60)
 
-        # Request the object back and inspect the collision shapes.
+        # Request the object back and inspect the radius of the spherical
+        # collision shapes.
         ret_a = sim.getRigidBodyData(objID_a)
         ret_b = sim.getRigidBodyData(objID_b)
         assert ret_a.ok and ret_b.ok
-        assert list(ret_a.data.cshapes.keys()) == ['csfoo']
-        assert list(ret_b.data.cshapes.keys()) == ['csbar']
         tmp_cs = sim.rigidBodies[objID_a].getCollisionShape()
         assert tmp_cs.getChildShape(0).getRadius() == radius
         tmp_cs = sim.rigidBodies[objID_b].getCollisionShape()
@@ -450,14 +449,12 @@ class TestBulletAPI:
 
     def test_modify_cshape(self):
         """
-        Change the collision shape type. This is more intricate than
-        changing the mass (see previous test) because this time the entire
-        collision shape must be swapped out underneath.
+        Replace the entire collision shape.
 
-        To test this we create two spheres that (just) do not touch. They are
-        offset along the x/y axis. Once we change the spheres to cubes the
-        their edges will interpenetrate and Bullet will move them apart. We can
-        identify this movement.
+        Place two spheres diagonally along the x/y axis. Their distance is such
+        that they do not touch, but only just. Then replace them with boxes and
+        step the simulation again. Ideally, nothing happens, in particular no
+        segfault because we swapped out C-pointers under the hood.
         """
         # Constants and parameters for this test.
         objID_a, objID_b = '10', '20'
@@ -482,30 +479,32 @@ class TestBulletAPI:
         sim.setRigidBodyData(objID_b, obj_b)
         sim.compute([objID_a, objID_b], 1.0, 60)
 
-        # Verify the collision shapes are as expected.
-        ret = sim.getRigidBodyData(objID_a)
-        assert ret.ok
-        assert ret.data.cshapes == cshape_sph
-        ret = sim.getRigidBodyData(objID_b)
-        assert ret.ok
-        assert ret.data.cshapes == cshape_sph
+        # Verify the collision shapes are spheres.
+        ret_a = sim.getRigidBodyData(objID_a)
+        ret_b = sim.getRigidBodyData(objID_b)
+        assert ret_a.ok and ret_b.ok
+        cs_a = sim.rigidBodies[objID_a].getCollisionShape().getChildShape(0)
+        cs_b = sim.rigidBodies[objID_a].getCollisionShape().getChildShape(0)
+        assert cs_a.getName() == cs_b.getName() == b'SPHERE'
+        del ret_a, ret_b, cs_a, cs_b
 
-        # Change both collision shape to unit cubes. Then step the simulation
-        # again to ensure Bullet accesses each object and nothing bad happens
-        # (eg a segfault).
+        # Replace the collision spheres with collision cubes. Then step the
+        # simulation again to ensure Bullet touches the shapes without
+        # segfaulting.
         obj_a = getRigidBody(position=pos_a, cshapes=cshape_box)
         obj_b = getRigidBody(position=pos_b, cshapes=cshape_box)
         sim.setRigidBodyData(objID_a, obj_a)
         sim.setRigidBodyData(objID_b, obj_b)
         sim.compute([objID_a, objID_b], 1.0, 60)
 
-        # Verify the collision shapes have been updated to boxes.
-        ret = sim.getRigidBodyData(objID_a)
-        assert ret.ok
-        assert ret.data.cshapes == cshape_box
-        ret = sim.getRigidBodyData(objID_b)
-        assert ret.ok
-        assert ret.data.cshapes == cshape_box
+        # Verify the collision shapes are now boxes.
+        ret_a = sim.getRigidBodyData(objID_a)
+        ret_b = sim.getRigidBodyData(objID_b)
+        assert ret_a.ok and ret_b.ok
+        cs_a = sim.rigidBodies[objID_a].getCollisionShape().getChildShape(0)
+        cs_b = sim.rigidBodies[objID_a].getCollisionShape().getChildShape(0)
+        assert cs_a.getName() == cs_b.getName() == b'Box'
+        del ret_a, ret_b, cs_a, cs_b
 
     def test_specify_P2P_constraint(self):
         """
