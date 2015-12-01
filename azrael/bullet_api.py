@@ -265,14 +265,8 @@ class PyBulletDynamicsWorld():
         vLin = body.getLinearVelocity().topy()
         vRot = body.getAngularVelocity().topy()
 
-        # Bullet will never modify the Collision shape. We may thus use the
-        # information from the body's meta data.
-        # fixme: should not be needed anymore
-        cshapes = body.azrael['rbState'].cshapes
-
         # Put the result into a named tuple and return it.
-        # fixme; do not return cshapes
-        out = RbStateUpdate(pos, rot, vLin, vRot, cshapes)
+        out = RbStateUpdate(pos, rot, vLin, vRot)
         return RetVal(True, None, out)
 
     @typecheck
