@@ -19,6 +19,10 @@ cdef class Transform:
         attr = ['{}={}'.format(name, getattr(tmp, name)) for name in tmp._fields]
         return '  '.join(attr)
 
+    def __mul__(Transform self, Vec3 v):
+        cdef btVector3 tmp = self.ptr_Transform[0] * v.ptr_Vector3[0]
+        return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
+
     def topy(self):
         p, r = self.getOrigin(), self.getRotation()
         ret = NT(p.topy(), r.topy())

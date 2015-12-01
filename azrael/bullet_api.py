@@ -57,27 +57,29 @@ class PyRigidBody(azBullet.RigidBody):
         super().__init__(ci)
 
 
-import azrael.util
-def bullet2azrael(bt_pos, bt_rot, com_ofs):
+def bullet2azrael(bt_pos: Vec3, bt_rot: Quaternion, com_ofs: list):
     """
     Return the Azrael object position for the compound shape.
+
+    pos_new = bt_pos - bt_rot * com_ofs
     """
-    w, v = float(bt_rot[3]), list(bt_rot[:3])
-    q0 = azrael.util.Quaternion(w, v)
+    # Use Bullet's Transform class to apply the Quaternion bt_rot.
+    rot = Transform(bt_rot, Vec3(0, 0, 0))
+    bt_pos = bt_pos - rot * Vec3(*com_ofs)
+    return bt_pos.topy(), bt_rot.topy()
 
-    pos_new = bt_pos - q0 * com_ofs
-    return list(pos_new)
 
-
-def azrael2bullet(az_pos, az_rot, com_ofs):
+def azrael2bullet(az_pos: list, az_rot: list, com_ofs: list):
     """
     Return the compound shape transform for the Azrael object.
-    """
-    w, v = float(az_rot[3]), list(az_rot[:3])
-    q0 = azrael.util.Quaternion(w, v)
 
-    bt_com_pos = az_pos + q0 * com_ofs
-    return list(bt_com_pos)
+    pos_new = az_pos + az_rot * com_ofs
+    """
+    # Use Bullet's Transform class to apply the Quaternion bt_rot.
+    az_rot = Quaternion(*az_rot)
+    rot = Transform(az_rot, Vec3(0, 0, 0))
+    az_pos = Vec3(*az_pos) + rot * Vec3(*com_ofs)
+    return az_pos, az_rot
 
 
 class PyBulletDynamicsWorld():
@@ -252,13 +254,12 @@ class PyBulletDynamicsWorld():
         body = self.rigidBodies[bodyID]
 
         # Determine rotation and position.
-        rot = body.getCenterOfMassTransform().getRotation().topy()
-        pos = body.getCenterOfMassTransform().getOrigin().topy()
+        rot = body.getCenterOfMassTransform().getRotation()
+        pos = body.getCenterOfMassTransform().getOrigin()
 
         # The object position does not match the position of the rigid body
         # unless the center of mass is (0, 0, 0). Here we correct it.
-        pos = bullet2azrael(pos, rot, body.azrael[2])
-#        pos, rot = azBullet.bullet2azrael(pos, rot, Vec3(*body.azrael[2])
+        pos, rot = bullet2azrael(pos, rot, body.azrael[2])
 
         # Determine linear and angular velocity.
         vLin = body.getLinearVelocity().topy()
@@ -306,9 +307,7 @@ class PyBulletDynamicsWorld():
         body = self.rigidBodies[bodyID]
 
         # Convert rotation and position to Vec3.
-        pos = azrael2bullet(rbState.position, rbState.rotation, rbState.com)
-        pos = Vec3(*pos)
-        rot = Quaternion(*rbState.rotation)
+        pos, rot = azrael2bullet(rbState.position, rbState.rotation, rbState.com)
 
         # Assign body properties.
         body.setCenterOfMassTransform(Transform(rot, pos))

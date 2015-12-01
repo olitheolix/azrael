@@ -4,6 +4,7 @@ cdef extern from "btBulletDynamicsCommon.h":
     cdef cppclass btTransform:
         btTransform()
         btTransform(btQuaternion &q, btVector3 &c)
+        btVector3 operator*(const btVector3 &x) const
         void setIdentity()
         void setOrigin(btVector3 &origin)
         btVector3 &getOrigin()
