@@ -19,9 +19,26 @@ cdef class Transform:
         attr = ['{}={}'.format(name, getattr(tmp, name)) for name in tmp._fields]
         return '  '.join(attr)
 
-    def __mul__(Transform self, Vec3 v):
-        cdef btVector3 tmp = self.ptr_Transform[0] * v.ptr_Vector3[0]
-        return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
+    def __mul__(Transform self, v):
+        """
+        Overload the multiplication operator. 'v' may be either a Vec3 or a
+        Quaternion.
+
+        Note: Cython will not compile this method if either branch in the 'if'
+        below creates variables with the same name. Specicially, 'out_v' and
+        'out_t' cannot both be renamed to 'out' even though in pure Python that
+        would be perfectly admissible.
+        """
+        if isinstance(v, Vec3):
+            out_v = Vec3()
+            out_v.ptr_Vector3[0] = self.ptr_Transform[0] * (<Vec3?>v).ptr_Vector3[0]
+            return out_v
+        elif isinstance(v, Transform):
+            out_t = Transform()
+            out_t.ptr_Transform[0] = self.ptr_Transform[0] * (<Transform?>v).ptr_Transform[0]
+            return out_t
+        else:
+            assert False
 
     def topy(self):
         p, r = self.getOrigin(), self.getRotation()

@@ -872,23 +872,52 @@ class TestTransform:
         assert t.getOrigin() == pos
         assert t.getRotation() == rot
 
+    def test_mult(self):
+        """
+        Multiply two transforms. There are two ways to do this: overloaded '*'
+        operator and dedicated `mult` method of `Transform` class.
+        """
+        # Create two Transforms. Their Quaternions are deliberately not
+        # normalised. The Transform class must normalise them automatically.
+        t1 = Transform(Quaternion(1, 2, 3, 4), Vec3(1, 4, 8))
+        t2 = Transform(Quaternion(4, 3, 2, 1), Vec3(16, 32, 64))
+
+        # To use the 'mult' method we need a Transform to hold the result.
+        t3 = Transform()
+        t3.mult(t1, t2)
+
+        # Use the overloaded '*' operator.
+        t4 = t1 * t2
+
+        # Verify that both operations yielded the same result.
+        assert np.allclose(t3.getOrigin().topy(), t4.getOrigin().topy())
+        assert np.allclose(t3.getRotation().topy(), t4.getRotation().topy())
+
+        # Verify that the transforms normalised their Quaternions.
+        assert abs(t3.getRotation().length2() - 1) < 1E-5
+        assert abs(t4.getRotation().length2() - 1) < 1E-5
+        del t1, t2, t3, t4
+
+        # Verify the translation value manually. This is only a very basic test
+        # because we are basically relying on Bullet to correctly compute it.
+        t1 = Transform(Quaternion(0, 0, 0, 1), Vec3(0, 1, 2))
+        t2 = Transform(Quaternion(0, 0, 0, 1), Vec3(3, 2, 1))
+        t3 = t1 * t2
+        assert np.allclose(t3.getOrigin().topy(), [3, 3, 3])
+
     def test_inverse_mult(self):
         """
         Create a transform and verify that its multiplication with its inverse
         is a neutral transform.
         """
-        # Create a Transform. The Quaternion is deliberatly unnormalised.
+        # Create a Transform. The Quaternion is deliberately not normalised.
         t1 = Transform(Quaternion(1, 2, 3, 4), Vec3(1, 4, 8))
 
-        # To compute the produce of two transforms Bullet already needs an
-        # intantiated Transform to hold the result.
+        # To use the 'mult' method we need a Transform to hold the result.
         t2 = Transform()
-
-        # Multply the original transform t1 by its inverse. By definition this
-        # must result in a neutral transform.
         t2.mult(t1, t1.inverse())
 
-        # Verify that t2 is indeed the netural transform.
+        # Verify that t2 is indeed the neutral transform.
         pos = t2.getOrigin().topy()
         rot = t2.getRotation().topy()
         assert np.allclose(pos, [0, 0, 0])
