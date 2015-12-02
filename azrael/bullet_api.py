@@ -236,126 +236,6 @@ class PyBulletDynamicsWorld():
         body.applyForce(b_force, b_relpos)
         return RetVal(True, None, None)
 
-    def getRigidBodyData(self, bodyID: str):
-        """
-        Return latest body state (pos, rot, vLin, vRot) of ``bodyID``.
-
-        Return with an error if ``bodyID`` does not exist.
-
-        :param str bodyID: the ID of body for which to return the state.
-        :return: ``RbStateUpdate`` instances.
-        """
-        # Abort immediately if the ID is unknown.
-        if bodyID not in self.rigidBodies:
-            msg = 'Cannot find body with ID <{}>'.format(bodyID)
-            return RetVal(False, msg, None)
-
-        # Convenience.
-        body = self.rigidBodies[bodyID]
-        rbState = body.azrael['rbState']
-
-        # Get the transform (ie. position and rotation) of the compound shape.
-        t = body.getCenterOfMassTransform()
-        rot, pos = t.getRotation(), t.getOrigin()
-
-        # Undo the rotation that is purely due to the alignment with the ineria
-        # axis so that Bullet can apply the moments of inertia directly.
-        # fixme: Quaternions should automatically normalise
-        paxis = Quaternion(*rbState.paxis)
-        paxis.normalize()
-        rot = paxis.inverse() * rot
-        del t, paxis
-
-        # The object position does not match the position of the rigid body
-        # unless the center of mass is (0, 0, 0). Here we correct it.
-        pos, rot = bullet2azrael(pos, rot, body.azrael['rbState'].com)
-
-        # Determine linear and angular velocity.
-        vLin = body.getLinearVelocity().topy()
-        vRot = body.getAngularVelocity().topy()
-
-        # Put the result into a named tuple and return it.
-        out = RbStateUpdate(pos, rot, vLin, vRot)
-        return RetVal(True, None, out)
-
-    @typecheck
-    def setRigidBodyData(self, bodyID: str, rbState: _RigidBodyData):
-        """
-        Update State Variables of ``bodyID`` to ``rbState``.
-
-        Create a new body with ``bodyID`` if it does not yet exist.
-
-        :param str bodyID: the IDs of all bodies to retrieve.
-        :param ``_RigidBodyData`` rbState: body description.
-        :return: Success
-        """
-        paxis = Quaternion(*rbState.paxis)
-        paxis.normalize()
-        cot = Transform(paxis, Vec3(*rbState.com))
-        del paxis
-
-        # Create the rigid body if it does not exist yet.
-        if bodyID not in self.rigidBodies:
-            ret = self.createRigidBody(bodyID, rbState)
-            if ret.ok:
-                self.rigidBodies[bodyID] = ret.data
-
-        # Convenience.
-        body = self.rigidBodies[bodyID]
-
-        # Convert rotation and position to Vec3.
-        # fixme: this is now void
-        pos, rot = azrael2bullet(rbState.position, rbState.rotation, [0, 0, 0])
-
-        # The shapes inside the compound have all been transformed with the
-        # inverse COT. Here we undo this transformation by applying the COT
-        # again. The net effect in terms of collision shape positions is zero.
-        # However, by undoing the COT on every shape *inside* the compound it
-        # has overall become aligned with the principal axis of all those
-        # shapes. This, in turn, is what Bullet implicitly assumes when it
-        # computes angular movement. This is also the reason why the inertia
-        # Tensor has only 3 elements instead of being a 3x3 matrix. Yes, I know
-        # this is confusing.
-        t = Transform(rot, pos) * cot
-
-        # Assign body properties.
-        body.setCenterOfMassTransform(t)
-        body.setLinearVelocity(Vec3(*rbState.velocityLin))
-        body.setAngularVelocity(Vec3(*rbState.velocityRot))
-        body.setRestitution(rbState.restitution)
-        body.setLinearFactor(Vec3(*rbState.axesLockLin))
-        body.setAngularFactor(Vec3(*rbState.axesLockRot))
-        del t
-
-        # Build and assign the new collision shape if they have changed.
-        # fixme: also build a new compund if paxis has changed.
-        old = body.azrael['rbState']
-        new_cs = not np.array_equal(old.cshapes, rbState.cshapes)
-        new_scale = (old.scale != rbState.scale)
-        if new_cs or new_scale:
-            # Create a new collision shape.
-            ret = self.compileCollisionShape(rbState)
-
-            # Replace the existing collision shape with the new one.
-            body.setCollisionShape(ret.data)
-        del old, new_cs, new_scale
-
-        # Set mass and inertia.
-        if rbState.imass < 1E-5:
-            # Static body: mass and inertia are zero anyway.
-            body.setMassProps(0, Vec3(0, 0, 0))
-        else:
-            imass = 1 / rbState.imass
-            inertia = Vec3(*rbState.inertia)
-
-            # Apply the new mass and inertia.
-            body.setMassProps(imass, inertia)
-            del imass, inertia
-
-        # Attach a copy of the rbState structure to the rigid body.
-        body.azrael = {'rbState': rbState}
-        return RetVal(True, None, None)
-
     def setConstraints(self, constraints: (tuple, list)):
         """
         Apply the ``constraints`` to the specified bodies in the world.
@@ -578,3 +458,123 @@ class PyBulletDynamicsWorld():
 
         # Return the new body.
         return RetVal(True, None, body)
+
+    def getRigidBodyData(self, bodyID: str):
+        """
+        Return latest body state (pos, rot, vLin, vRot) of ``bodyID``.
+
+        Return with an error if ``bodyID`` does not exist.
+
+        :param str bodyID: the ID of body for which to return the state.
+        :return: ``RbStateUpdate`` instances.
+        """
+        # Abort immediately if the ID is unknown.
+        if bodyID not in self.rigidBodies:
+            msg = 'Cannot find body with ID <{}>'.format(bodyID)
+            return RetVal(False, msg, None)
+
+        # Convenience.
+        body = self.rigidBodies[bodyID]
+        rbState = body.azrael['rbState']
+
+        # Get the transform (ie. position and rotation) of the compound shape.
+        t = body.getCenterOfMassTransform()
+        rot, pos = t.getRotation(), t.getOrigin()
+
+        # Undo the rotation that is purely due to the alignment with the ineria
+        # axis so that Bullet can apply the moments of inertia directly.
+        # fixme: Quaternions should automatically normalise
+        paxis = Quaternion(*rbState.paxis)
+        paxis.normalize()
+        rot = paxis.inverse() * rot
+        del t, paxis
+
+        # The object position does not match the position of the rigid body
+        # unless the center of mass is (0, 0, 0). Here we correct it.
+        pos, rot = bullet2azrael(pos, rot, body.azrael['rbState'].com)
+
+        # Determine linear and angular velocity.
+        vLin = body.getLinearVelocity().topy()
+        vRot = body.getAngularVelocity().topy()
+
+        # Put the result into a named tuple and return it.
+        out = RbStateUpdate(pos, rot, vLin, vRot)
+        return RetVal(True, None, out)
+
+    @typecheck
+    def setRigidBodyData(self, bodyID: str, rbState: _RigidBodyData):
+        """
+        Update State Variables of ``bodyID`` to ``rbState``.
+
+        Create a new body with ``bodyID`` if it does not yet exist.
+
+        :param str bodyID: the IDs of all bodies to retrieve.
+        :param ``_RigidBodyData`` rbState: body description.
+        :return: Success
+        """
+        paxis = Quaternion(*rbState.paxis)
+        paxis.normalize()
+        cot = Transform(paxis, Vec3(*rbState.com))
+        del paxis
+
+        # Create the rigid body if it does not exist yet.
+        if bodyID not in self.rigidBodies:
+            ret = self.createRigidBody(bodyID, rbState)
+            if ret.ok:
+                self.rigidBodies[bodyID] = ret.data
+
+        # Convenience.
+        body = self.rigidBodies[bodyID]
+
+        # Convert rotation and position to Vec3.
+        # fixme: this is now void
+        pos, rot = azrael2bullet(rbState.position, rbState.rotation, [0, 0, 0])
+
+        # The shapes inside the compound have all been transformed with the
+        # inverse COT. Here we undo this transformation by applying the COT
+        # again. The net effect in terms of collision shape positions is zero.
+        # However, by undoing the COT on every shape *inside* the compound it
+        # has overall become aligned with the principal axis of all those
+        # shapes. This, in turn, is what Bullet implicitly assumes when it
+        # computes angular movement. This is also the reason why the inertia
+        # Tensor has only 3 elements instead of being a 3x3 matrix. Yes, I know
+        # this is confusing.
+        t = Transform(rot, pos) * cot
+
+        # Assign body properties.
+        body.setCenterOfMassTransform(t)
+        body.setLinearVelocity(Vec3(*rbState.velocityLin))
+        body.setAngularVelocity(Vec3(*rbState.velocityRot))
+        body.setRestitution(rbState.restitution)
+        body.setLinearFactor(Vec3(*rbState.axesLockLin))
+        body.setAngularFactor(Vec3(*rbState.axesLockRot))
+        del t
+
+        # Build and assign the new collision shape if they have changed.
+        # fixme: also build a new compund if paxis has changed.
+        old = body.azrael['rbState']
+        new_cs = not np.array_equal(old.cshapes, rbState.cshapes)
+        new_scale = (old.scale != rbState.scale)
+        if new_cs or new_scale:
+            # Create a new collision shape.
+            ret = self.compileCollisionShape(rbState)
+
+            # Replace the existing collision shape with the new one.
+            body.setCollisionShape(ret.data)
+        del old, new_cs, new_scale
+
+        # Set mass and inertia.
+        if rbState.imass < 1E-5:
+            # Static body: mass and inertia are zero anyway.
+            body.setMassProps(0, Vec3(0, 0, 0))
+        else:
+            imass = 1 / rbState.imass
+            inertia = Vec3(*rbState.inertia)
+
+            # Apply the new mass and inertia.
+            body.setMassProps(imass, inertia)
+            del imass, inertia
+
+        # Attach a copy of the rbState structure to the rigid body.
+        body.azrael = {'rbState': rbState}
+        return RetVal(True, None, None)
