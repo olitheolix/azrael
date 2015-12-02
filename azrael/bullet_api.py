@@ -254,16 +254,17 @@ class PyBulletDynamicsWorld():
         body = self.rigidBodies[bodyID]
         rbState = body.azrael['rbState']
 
-        # Undo the principal axis transform.
+        # Get the transform (ie. position and rotation) of the compound shape.
+        t = body.getCenterOfMassTransform()
+        rot, pos = t.getRotation(), t.getOrigin()
+
+        # Undo the rotation that is purely due to the alignment with the ineria
+        # axis so that Bullet can apply the moments of inertia directly.
+        # fixme: Quaternions should automatically normalise
         paxis = Quaternion(*rbState.paxis)
         paxis.normalize()
-        t = Transform(paxis, Vec3(0, 0, 0))
-        t = t.inverse()
-        t.mult(body.getCenterOfMassTransform(), t)
-
-        # Unpack rotation and position.
-        rot, pos = t.getRotation(), t.getOrigin()
-        del paxis, t
+        rot = paxis.inverse() * rot
+        del t, paxis
 
         # The object position does not match the position of the rigid body
         # unless the center of mass is (0, 0, 0). Here we correct it.
@@ -288,6 +289,11 @@ class PyBulletDynamicsWorld():
         :param ``_RigidBodyData`` rbState: body description.
         :return: Success
         """
+        paxis = Quaternion(*rbState.paxis)
+        paxis.normalize()
+        cot = Transform(paxis, Vec3(*rbState.com))
+        del paxis
+
         # Create the rigid body if it does not exist yet.
         if bodyID not in self.rigidBodies:
             ret = self.createRigidBody(bodyID, rbState)
@@ -298,13 +304,19 @@ class PyBulletDynamicsWorld():
         body = self.rigidBodies[bodyID]
 
         # Convert rotation and position to Vec3.
-        pos, rot = azrael2bullet(rbState.position, rbState.rotation, rbState.com)
+        # fixme: this is now void
+        pos, rot = azrael2bullet(rbState.position, rbState.rotation, [0, 0, 0])
 
-        # Apply the principal axes of inertia.
-        paxis = Quaternion(*rbState.paxis)
-        paxis.normalize()
-        t = Transform(paxis, Vec3(0, 0, 0))
-        t.mult(Transform(rot, pos), t)
+        # The shapes inside the compound have all been transformed with the
+        # inverse COT. Here we undo this transformation by applying the COT
+        # again. The net effect in terms of collision shape positions is zero.
+        # However, by undoing the COT on every shape *inside* the compound it
+        # has overall become aligned with the principal axis of all those
+        # shapes. This, in turn, is what Bullet implicitly assumes when it
+        # computes angular movement. This is also the reason why the inertia
+        # Tensor has only 3 elements instead of being a 3x3 matrix. Yes, I know
+        # this is confusing.
+        t = Transform(rot, pos) * cot
 
         # Assign body properties.
         body.setCenterOfMassTransform(t)
@@ -313,8 +325,10 @@ class PyBulletDynamicsWorld():
         body.setRestitution(rbState.restitution)
         body.setLinearFactor(Vec3(*rbState.axesLockLin))
         body.setAngularFactor(Vec3(*rbState.axesLockRot))
+        del t
 
         # Build and assign the new collision shape if they have changed.
+        # fixme: also build a new compund if paxis has changed.
         old = body.azrael['rbState']
         new_cs = not np.array_equal(old.cshapes, rbState.cshapes)
         new_scale = (old.scale != rbState.scale)
@@ -324,9 +338,9 @@ class PyBulletDynamicsWorld():
 
             # Replace the existing collision shape with the new one.
             body.setCollisionShape(ret.data)
-        del old, new_cs, new_scale, paxis, t
+        del old, new_cs, new_scale
 
-        # Update mass and inertia.
+        # Set mass and inertia.
         if rbState.imass < 1E-5:
             # Static body: mass and inertia are zero anyway.
             body.setMassProps(0, Vec3(0, 0, 0))
@@ -460,14 +474,12 @@ class PyBulletDynamicsWorld():
         # Create the compound shape that will hold all other shapes.
         compound = azBullet.CompoundShape()
 
-        # Compute the inverse principal axis transform and apply it to all
-        # child shapes. To compensate, the setRigidBodyData function will apply
-        # the (not inverse) principal axis transform to the rigid body. The net
-        # effect will be that Bullet uses the correct inertia frame during a
-        # collision.
+        # Compute the inverse COT.
+        # fixme: quaternion should normalise automatically
         paxis = Quaternion(*rbState.paxis)
         paxis.normalize()
-        principal = Transform(paxis, Vec3(0, 0, 0)).inverse()
+        cot = Transform(paxis, Vec3(*rbState.com))
+        i_cot = cot.inverse()
 
         # Create the collision shapes one by one.
         scale = rbState.scale
@@ -498,13 +510,16 @@ class PyBulletDynamicsWorld():
                 msg = 'Unrecognised collision shape <{}>'.format(cstype)
                 self.logit.warning(msg)
 
-            # Add the collision shape. Its position is relative to the center
-            # of mass.
-            t = Transform(
-                Quaternion(*cs.rotation),
-                Vec3(*cs.position) - Vec3(*rbState.com)
-            )
-            t.mult(principal, t)
+            # Determine the transform with respect to the center of mass. Then
+            # pre-multiply it with the principal axis of inertia (the rigid
+            # body will apply the inverse to undo the effect). This ensures the
+            # applied torque will be properly aligned with the principal axis.
+            # fixme: rename COT to something else, maybe aligned_center_of_mass
+            # (ACOT)?
+            t = Transform(Quaternion(*cs.rotation), Vec3(*cs.position))
+            t = i_cot * t
+
+            # Add the child with the correct transform.
             compound.addChildShape(t, child)
 
         return RetVal(True, None, compound)
@@ -543,8 +558,8 @@ class PyBulletDynamicsWorld():
 
         # Instantiate the rigid body and specify its mass, motion state,
         # collision shapes, and inertia.
-        # fixme: mention that all values are neutra; setRigidBody will actually
-        # set them. Can I simplify this method further?
+        # fixme: mention that all values are neutral; setRigidBody will
+        # actually set them. Can I simplify this method further?
         ci = azBullet.RigidBodyConstructionInfo(
             mass,
             azBullet.DefaultMotionState(Transform()),
