@@ -280,6 +280,108 @@ class TestBulletAPI:
         #   v = t * T / I
         assert np.allclose(ret.data.vRot, dt * torque / inertia, atol=1E-1)
 
+    def test_apply_torque_not_diagonal(self):
+        """
+        Verify the angular velocity for a general torque vector and a body with
+        a dense 3x3 inertia matrix (ie all 9 elements are nonzero).
+
+        The setup is annoyingly fickle because Bullet does not use inertia
+        tensors. Instead it *assumes* that the all collisions shapes are
+        aligned with the principal axis of inertia. If this is not the case
+        then it is our (ie Azrael's) responsibility to put the collision shapes
+        into a compound shape first. Inside this compund shape the collision
+        shapes must be translated/rotated so that their combined centre of mass
+        is at the center of the compound shape, and that the principal axis of
+        inertia align with the *world* coordinate system (ie the usual x/y/z
+        axis). To compensate for this transformation Azrael must then apply the
+        inverse translation/rotation to the compound shape. This will maintain
+        the position of all collision shapes in world coordinates. The whole
+        point of this exercise is to make it easy for Bullet to apply torques
+        to the compound shapes because its rotatation now automatically
+        specifies the rotation of the principal inertia axis. Given a torque it
+        is then straightforward to apply that torque for each axis individually
+        instead of working with a complete inertia Tensor.
+        
+        This is all well for Bullet but does not make testing any easier. In
+        this test we will use a general 3x3 inertia tensor and apply a torque.
+        Then we will use Newton's second law and the 3x3 Inertia tensor to
+        predict the angular velocity. If Azrael set up the bodies correctly
+        then this must match the values returned by Bullet.
+
+        There is another catch: specifying the 3x3 Inertia tensor is easy, but
+        expressing its principal axis (ie. the rotation defined by its
+        eigenvectors) is not always (numerically) straightforward. To avoid
+        this problem I will therfore start with a general Quaternion, convert
+        it to a rotation matrix (always stable), and then use this as the
+        eigenspace of the Inertia matrix. This still allows me to construct a
+        general inertia matrix, specify the diagonal inertias directly, and
+        have the principal axis Quaternion handy for Bullet. 
+
+        In case you wonder: no, none of this is self evident. At least we will
+        not have to manually compute the eigenvectors.
+        """
+        # Constants and parameters for this test.
+        objID = '10'
+
+        # Specify the torque and moments of inertia.
+        torque = [1, -2, 3]
+        inertia_diag = [1, 2, 3]
+
+        # Construct an inertia matrix Step 1/2: start with a general
+        # Quaternion, convert it to a rotation matrix, and then pretend this is
+        # the eigenspace of the inertia tensor.
+        paxis = [1, -2, 3, 0]
+        q = azrael.util.Quaternion(paxis[3], paxis[:3]).normalise()
+        U = np.around(q.toMatrix()[:3, :3], 3)
+
+        # Construct an inertia matrix Step 2/2: given the orthonormal matrix U
+        # and the moments of inertia, we can can compute the total inertia
+        # matrix as I = U * diag(inertia_diag) * U^{-1]
+        inertia_mat = U.dot(np.diag(inertia_diag).dot(U.T))
+        del q, U
+
+        # Let's be certain that our inertia matrix is really dense, ie does not
+        # contain any zeros.
+        assert np.amin(np.abs(inertia_mat)) > 0.1
+
+        # Specify the Bullet simulation step. Ther *must* be only a *single*
+        # step. The reason is subtle: Bullet always applies the torque in world
+        # coordinates. If it splits up the physis update into several sub-steps
+        # then the body will progressively rotate yet Bullet does not rotate
+        # the torque with it. Unless the moments of inertia are symmetric this
+        # will induce more and more "wobble" in each step. If Bullet is not
+        # allowed to compute sub-steps then only one update is applied (at the
+        # expense of numerical accuracy for which we do not care in this test).
+        dt, maxsteps = 1.0, 1
+
+        # Create an object and overwrite the CShape data to obtain a sphere.
+        obj_a = getRigidBody(inertia=inertia_diag, paxis=paxis)
+
+        # Instantiate Bullet engine, add the body, and apply the torque.
+        sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
+        sim.setRigidBodyData(objID, obj_a)
+        sim.applyForceAndTorque(objID, [0, 0, 0], torque)
+
+        # Progress the simulation by 'dt' seconds.
+        sim.compute([objID], dt, maxsteps)
+        ret = sim.getRigidBodyData(objID)
+        assert ret.ok
+
+        # Newton's second law relates the (angular) (a)cceleration (3-Vec) to
+        # the (I)nertia matrix (3x3) and (T)orque (3-Vec):
+        #
+        #   T = I * a    -->     a = I^{-1} * T
+        #
+        # Integrating both sides by $t$ yields the angular velocity:
+        #
+        #   \int{a dt} = \int{I^{-1} * T dt}
+        #            v = I^{-1} * T * t
+        #
+        # This velocity must match the one returned by Bullet if all the
+        # collisions were aligned properly.
+        acceleration = np.linalg.inv(inertia_mat).dot(torque)
+        assert np.allclose(ret.data.vRot, dt * acceleration, atol=1E-1)
+
     def test_compute_invalid(self):
         """
         Call 'compute' method for non-existing object IDs.
