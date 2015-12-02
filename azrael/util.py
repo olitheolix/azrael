@@ -200,11 +200,20 @@ class Quaternion:
         tmp[3] = self.w
         return str(tmp)
 
-    def norm(self):
+    def length(self):
         """
-        Norm of Quaternion.
+        Return length of Quaternion.
         """
         return np.sqrt(self.w ** 2 + np.inner(self.v, self.v))
+
+    def normalise(self):
+        """
+        Return normalised version of this Quaternion.
+        """
+        l = self.length()
+        w = self.w / l
+        v = self.v / l
+        return Quaternion(w, v)
 
     def toMatrix(self):
         """
