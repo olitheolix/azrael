@@ -382,6 +382,56 @@ class TestBulletAPI:
         acceleration = np.linalg.inv(inertia_mat).dot(torque)
         assert np.allclose(ret.data.vRot, dt * acceleration, atol=1E-1)
 
+    @pytest.mark.parametrize('forceFun', ['applyForce', 'applyForceAndTorque'])
+    def test_apply_force_on_noncentred_body(self, forceFun):
+        """
+        Create two non-touching bodies. The centre of mass of the first
+        coincides with its position. The center of mass for the second has an
+        offset in y-direction.
+
+        Then apply a force in z-direction at position of the rigid body and
+        query them via the `bullet_api`. The first object must have moved
+        *only* along the z-direction (we do not really care how much here). The
+        second object must have moved only a bit in z *and* negative y
+        direction (because it starts to rotate around the centre of mass which
+        is at a negative y-position).
+        """
+        # Constants and parameters for this test.
+        id_a, id_b = '10', '11'
+        force = [0, 0, 1]
+        pos_a, pos_b = [-5, 0, 0], [5, 0, 0]
+        dt, maxsteps = 1.0, 60
+
+        # Create two bodies. They do not touch and have different centres of
+        # mass.
+        obj_a = getRigidBody(position=pos_a, com=[0, 0, 0])
+        obj_b = getRigidBody(position=pos_b, com=[0, -1, 0])
+
+        # Instantiate a Bullet engine, load the objects, and apply the same
+        # force to both with respect to the position in Azrael (not with
+        # respect to their centre of mass!).
+        sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
+        sim.setRigidBodyData(id_a, obj_a)
+        sim.setRigidBodyData(id_b, obj_b)
+        sim.applyForce(id_a, force, [0, 0, 0])
+        sim.applyForce(id_b, force, [0, 0, 0])
+
+        # Progress the simulation and query the objects.
+        sim.compute([id_a, id_b], dt, maxsteps)
+        ret_a = sim.getRigidBodyData(id_a)
+        ret_b = sim.getRigidBodyData(id_b)
+        assert ret_a.ok and ret_b.ok
+
+        # Verify that the centred offset only moved in z-direction. Then verify
+        # that the second object moved along the positive 'z' and negative 'y'
+        # axis because it must have started to spin.
+        rpos_a = ret_a.data.position
+        rpos_b = ret_b.data.position
+        assert (rpos_a[0] == pos_a[0]) and (rpos_a[1] == pos_a[1])
+        assert rpos_a[2] > 0.1
+        assert rpos_b[0] == pos_b[0]
+        assert (rpos_b[1] < 0.1) and (rpos_b[2] > 0.1)
+
     def test_compute_invalid(self):
         """
         Call 'compute' method for non-existing object IDs.
