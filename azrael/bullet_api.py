@@ -495,19 +495,17 @@ class PyBulletDynamicsWorld():
         body = self.rigidBodies[bodyID]
         rbState = body.azrael['rbState']
 
-        # Get the transform (ie. position and rotation) of the compound shape.
-        t = body.getCenterOfMassTransform()
-        rot, pos = t.getRotation(), t.getOrigin()
-
-        # Undo the rotation that is purely due to the alignment with the ineria
-        # axis so that Bullet can apply the moments of inertia directly.
+        # Compute the transforms that will undo the centre-of-mass and
+        # principal-axis correction.
         paxis = Quaternion(*rbState.paxis).normalized()
-        rot = paxis.inverse() * rot
-        del t, paxis
+        i_paComT = Transform(paxis, Vec3(*rbState.com)).inverse()
+        del paxis
 
-        # The object position does not match the position of the rigid body
-        # unless the center of mass is (0, 0, 0). Here we correct it.
-        pos, rot = bullet2azrael(pos, rot, body.azrael['rbState'].com)
+        # Get the transform (ie. position and rotation) of the compound shape.
+        # Then undo the compound shape correction based on centre of mass and
+        # principal axis orientation.
+        t = body.getCenterOfMassTransform() * i_paComT
+        rot, pos = t.getRotation().topy(), t.getOrigin().topy()
 
         # Determine linear and angular velocity.
         vLin = body.getLinearVelocity().topy()
