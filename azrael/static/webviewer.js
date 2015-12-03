@@ -214,7 +214,7 @@ function* mycoroutine(connection) {
     var camera = new THREE.PerspectiveCamera(FOV, AR, 0.1, 1000);
     
     // Initialise camera.
-    var initPos = [-20, 0, 0]
+    var initPos = [0, 0, 10]
     camera.position.set(initPos[0], initPos[1], initPos[2]);
     camera.lookAt(new THREE.Vector3(0, 0, 0))
     camera.updateProjectionMatrix();
