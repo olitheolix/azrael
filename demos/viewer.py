@@ -315,8 +315,15 @@ class Camera:
 
 
 class ViewerWidget(QtOpenGL.QGLWidget):
-    def __init__(self, addr_clerk: str, port_clerk: int, parent=None):
+    def __init__(self, addr_clerk: str,
+                 port_clerk: int,
+                 show_player: bool=True,
+                 parent=None):
         super().__init__(parent)
+
+        # If True then a dedicated player object will be created. Its position
+        # will always coincide with that of the camera.
+        self.show_player = show_player
 
         # Camera instance.
         self.camera = None
@@ -740,13 +747,16 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Spawn the player object (it has the same shape as a projectile).
         d = {'templateID': self.t_projectile, 'rbs': {'position': initPos}}
-        ret = self.client.spawn([d])
-        if not ret.ok:
-            print('Cannot spawn player object (<{}>)'.format(ret.data))
-            self.close()
-
-        self.player_id = ret.data[0]
-        print('Spawned player object <{}>'.format(self.player_id))
+        if self.show_player:
+            ret = self.client.spawn([d])
+            if ret.ok:
+                self.player_id = ret.data[0]
+                print('Spawned player object <{}>'.format(self.player_id))
+            else:
+                print('Could not spawn player object (<{}>)'.format(ret.data))
+                self.close()
+        else:
+            self.player_id = None
 
         # Initialise instance variables.
         self.numVertices = {}
@@ -998,7 +1008,8 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         cs = CollShapeBox(1, 1, 1)
         cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
         attr = {'position': pos.tolist(), 'cshapes': {'player': cs}}
-        assert self.client.setRigidBodies({self.player_id: attr}).ok
+        if self.show_player:
+            assert self.client.setRigidBodies({self.player_id: attr}).ok
         del cs
 
         # Do not update the camera rotation if the mouse is not grabbed.
