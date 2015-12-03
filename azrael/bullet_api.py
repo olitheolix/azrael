@@ -586,17 +586,16 @@ class PyBulletDynamicsWorld():
         body.setAngularFactor(Vec3(*rbState.axesLockRot))
         del t
 
-        # Set mass and inertia.
-        if rbState.imass < 1E-5:
+        # Set mass and inertia. Make the whole body static if either mass or
+        # inertia is too small. This may not be what the user wants. Then
+        # again, it is the user's job to provide useful values for mass and
+        # inertia.
+        if (rbState.imass < 1E-4) or (sum(rbState.inertia) < 1E-4):
             # Static body: mass and inertia are zero anyway.
             body.setMassProps(0, Vec3(0, 0, 0))
         else:
-            imass = 1 / rbState.imass
-            inertia = Vec3(*rbState.inertia)
-
             # Apply the new mass and inertia.
-            body.setMassProps(imass, inertia)
-            del imass, inertia
+            body.setMassProps(1 / rbState.imass, Vec3(*rbState.inertia))
 
         # Attach a copy of the rbState structure to the rigid body.
         body.azrael = {'rbState': rbState}
