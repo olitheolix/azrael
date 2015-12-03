@@ -66,7 +66,7 @@ def createTemplate():
 
     # Define a booster
     booster = Booster(
-        pos=[0, 0, 0],                    # Booster is located here and...
+        position=[0, 0, 0],                    # Booster is located here and...
         direction=[1, 0, 0],              # points in this direction.
         minval=0,                         # Minimum allowed force.
         maxval=10.0,                      # Maximum allowed force.
