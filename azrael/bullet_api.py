@@ -581,12 +581,12 @@ class PyBulletDynamicsWorld():
         t = Transform(rot, pos) * paComT
 
         # Assign body properties.
-        body.setAngularFactor(Vec3(*rbState.axesLockRot))
+        body.setAngularFactor(Vec3(*rbState.rotFactor))
         body.setAngularVelocity(Vec3(*rbState.velocityRot))
         body.setCenterOfMassTransform(t)
         body.setDamping(0.02, 0.02)
         body.setFriction(0.1)
-        body.setLinearFactor(Vec3(*rbState.axesLockLin))
+        body.setLinearFactor(Vec3(*rbState.linFactor))
         body.setLinearVelocity(Vec3(*rbState.velocityLin))
         body.setMassProps(mass, inertia)
         body.setRestitution(rbState.restitution)

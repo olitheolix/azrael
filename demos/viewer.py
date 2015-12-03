@@ -99,8 +99,8 @@ def getRigidBody(scale: (int, float)=1,
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
                  cshapes: (tuple, list)=None,
-                 axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
-                 axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
+                 linFactor: (tuple, list, np.ndarray)=(1, 1, 1),
+                 rotFactor: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
     if cshapes is None:
         cshapes = CollShapeMeta(aid='',
@@ -112,7 +112,7 @@ def getRigidBody(scale: (int, float)=1,
     return pyazrael.aztypes.RigidBodyData(
         scale, imass, restitution, com, inertia, paxis,
         rotation, position, velocityLin, velocityRot, cshapes,
-        axesLockLin, axesLockRot, version)
+        linFactor, rotFactor, version)
 
 
 def perspective(fov, ar, near, far):

@@ -71,8 +71,8 @@ def addPlatforms():
     # Rigid body data for platforms (defines their physics, not appearance).
     body = demolib.getRigidBody(
         cshapes={'cs': cshapes},
-        axesLockLin=[0, 0, 0],
-        axesLockRot=[0, 0, 0]
+        linFactor=[0, 0, 0],
+        rotFactor=[0, 0, 0]
     )
 
     # Geometry for the platforms (defines their appearance, not physics).

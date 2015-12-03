@@ -91,8 +91,8 @@ def spawn_city():
             'imass': 0.1,
             'position': pos,
             'rotation': orient,
-            'axesLockLin': [1, 1, 1],
-            'axesLockRot': [1, 1, 1]}
+            'linFactor': [1, 1, 1],
+            'rotFactor': [1, 1, 1]}
     }
     ret = client.spawn([new_obj])
     assert ret.ok

@@ -324,14 +324,14 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
 
     # The first object cannot move (only rotate). It serves as an anchor for
     # the connected bodies.
-    allObjs[0]['rbs']['axesLockLin'] = [0, 0, 0]
-    allObjs[0]['rbs']['axesLockRot'] = [1, 1, 1]
+    allObjs[0]['rbs']['linFactor'] = [0, 0, 0]
+    allObjs[0]['rbs']['rotFactor'] = [1, 1, 1]
 
     # Add a small damping factor to all bodies to avoid them moving around
     # perpetually.
     for oo in allObjs[1:]:
-        oo['rbs']['axesLockLin'] = [0.9, 0.9, 0.9]
-        oo['rbs']['axesLockRot'] = [0.9, 0.9, 0.9]
+        oo['rbs']['linFactor'] = [0.9, 0.9, 0.9]
+        oo['rbs']['rotFactor'] = [0.9, 0.9, 0.9]
 
     print('{:,} objects ({:.1f}s)'.format(len(allObjs), time.time() - t0))
     del cube_idx, cube_spacing, row, col, lay

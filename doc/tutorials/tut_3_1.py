@@ -57,8 +57,8 @@ def createTemplate():
         velocityLin=(0, 0, 0),
         velocityRot=(0, 0, 0),
         cshapes={'foo_sphere': cs_sphere},
-        axesLockLin=(1, 1, 1),
-        axesLockRot=(1, 1, 1),
+        linFactor=(1, 1, 1),
+        rotFactor=(1, 1, 1),
         version=0)
 
     # Compile and return the template.

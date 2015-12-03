@@ -136,7 +136,7 @@ class CtrlBoosterCube():
             'rbs': {
                 'imass': 0.1,
                 'position': pos,
-                'axesLockRot': [0, 0, 0],
+                'rotFactor': [0, 0, 0],
             }
         }
         ret = self.client.spawn([ship_init])

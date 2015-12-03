@@ -58,7 +58,7 @@ Forces = namedtuple('Forces',
 _RigidBodyData = namedtuple('_RigidBodyData',
                             'scale imass restitution com inertia paxis '
                             'rotation position velocityLin velocityRot '
-                            'cshapes axesLockLin axesLockRot version')
+                            'cshapes linFactor rotFactor version')
 
 # Return value of 'bullet_api.getRigidBody'. It is in a dedicated named tuple
 # to make the values and their order explicit.
@@ -796,8 +796,8 @@ class RigidBodyData(_RigidBodyData):
                 velocityLin: (tuple, list, np.ndarray),
                 velocityRot: (tuple, list, np.ndarray),
                 cshapes: dict,
-                axesLockLin: (tuple, list, np.ndarray),
-                axesLockRot: (tuple, list, np.ndarray),
+                linFactor: (tuple, list, np.ndarray),
+                rotFactor: (tuple, list, np.ndarray),
                 version: int):
         try:
             # Sanity checks inputs.
@@ -809,8 +809,8 @@ class RigidBodyData(_RigidBodyData):
             paxis = toVec(4, paxis)
             rotation = toVec(4, rotation)
             position = toVec(3, position)
-            axesLockLin = toVec(3, axesLockLin)
-            axesLockRot = toVec(3, axesLockRot)
+            linFactor = toVec(3, linFactor)
+            rotFactor = toVec(3, rotFactor)
             velocityLin = toVec(3, velocityLin)
             velocityRot = toVec(3, velocityRot)
 
@@ -841,8 +841,8 @@ class RigidBodyData(_RigidBodyData):
             velocityLin=velocityLin,
             velocityRot=velocityRot,
             cshapes=cshapes,
-            axesLockLin=axesLockLin,
-            axesLockRot=axesLockRot,
+            linFactor=linFactor,
+            rotFactor=rotFactor,
             version=version)
 
     def _asdict(self):
@@ -863,8 +863,8 @@ def DefaultRigidBody(scale=1,
                      velocityLin=(0, 0, 0),
                      velocityRot=(0, 0, 0),
                      cshapes=None,
-                     axesLockLin=(1, 1, 1),
-                     axesLockRot=(1, 1, 1),
+                     linFactor=(1, 1, 1),
+                     rotFactor=(1, 1, 1),
                      version=0):
 
     # If cshape was explicitly 'None' then we create a default collision shape.
@@ -884,7 +884,7 @@ def DefaultRigidBody(scale=1,
 
     return RigidBodyData(scale, imass, restitution, com, inertia, paxis,
                          rotation, position, velocityLin, velocityRot, cshapes,
-                         axesLockLin, axesLockRot, version)
+                         linFactor, rotFactor, version)
 
 
 class Template(_Template):

@@ -127,12 +127,12 @@ RigidBodyState = {
         'velocityRot': vec3,
         'rotation': vec4,
         'cshapes': {'type': 'object'},
-        'axesLockLin': vec3,
-        'axesLockRot': vec3,
+        'linFactor': vec3,
+        'rotFactor': vec3,
         'version': {'type': 'number'},
     },
     'required': ['scale', 'imass', 'restitution', 'position', 'rotation',
-                 'axesLockLin', 'axesLockRot', 'version', 'cshapes'],
+                 'linFactor', 'rotFactor', 'version', 'cshapes'],
     'additionalProperties': False,
 }
 

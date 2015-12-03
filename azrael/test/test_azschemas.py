@@ -55,8 +55,8 @@ class TestAZSchema:
                     'csdata': {'radius': 1},
                 }
             },
-            'axesLockLin': [1.0, 1.0, 1.0],
-            'axesLockRot': [1.0, 1.0, 1.0],
+            'linFactor': [1.0, 1.0, 1.0],
+            'rotFactor': [1.0, 1.0, 1.0],
             'version': 0
         }
 

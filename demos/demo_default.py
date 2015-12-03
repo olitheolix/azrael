@@ -169,8 +169,8 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
             'imass': 0.1,
             'position': pos,
             'rotation': orient,
-            'axesLockLin': [1, 1, 1],
-            'axesLockRot': [1, 1, 1]}
+            'linFactor': [1, 1, 1],
+            'rotFactor': [1, 1, 1]}
     }
     ret = client.spawn([new_obj])
     objID = ret.data[0]

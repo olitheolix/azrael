@@ -191,8 +191,8 @@ def spawn_model():
             'imass': 0.1,
             'position': [0, 0, 0],
             'rotation': [0, 0, 0, 1],
-            'axesLockLin': [1, 1, 1],
-            'axesLockRot': [1, 1, 1]}
+            'linFactor': [1, 1, 1],
+            'rotFactor': [1, 1, 1]}
     }
     ret = client.spawn([new_obj])
     assert ret.ok

@@ -165,13 +165,13 @@ def getRigidBody(scale: (int, float)=1,
                  velocityLin: (tuple, list, np.ndarray)=(0, 0, 0),
                  velocityRot: (tuple, list, np.ndarray)=(0, 0, 0),
                  cshapes: dict={'cssphere': getCSSphere()},
-                 axesLockLin: (tuple, list, np.ndarray)=(1, 1, 1),
-                 axesLockRot: (tuple, list, np.ndarray)=(1, 1, 1),
+                 linFactor: (tuple, list, np.ndarray)=(1, 1, 1),
+                 rotFactor: (tuple, list, np.ndarray)=(1, 1, 1),
                  version: int=0):
     return RigidBodyData(
         scale, imass, restitution, com, inertia, paxis,
         rotation, position, velocityLin, velocityRot,
-        cshapes, axesLockLin, axesLockRot, version)
+        cshapes, linFactor, rotFactor, version)
 
 
 def getTemplate(name='template',
