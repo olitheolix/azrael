@@ -223,10 +223,8 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     # ----------------------------------------------------------------------
     # Two boosters, one left, one right. Both point in the same direction.
     boosters = {
-        '0': aztypes.Booster(position=[+0.05, 0, 0], direction=[0, 0, 1],
-                             minval=0, maxval=10.0, force=0),
-        '1': aztypes.Booster(position=[-0.05, 0, 0], direction=[0, 0, 1],
-                             minval=0, maxval=10.0, force=0)
+        '0': aztypes.Booster(position=[+0.05, 0, 0], direction=[0, 0, 1], force=0),
+        '1': aztypes.Booster(position=[-0.05, 0, 0], direction=[0, 0, 1], force=0)
     }
 
     # ----------------------------------------------------------------------

@@ -57,9 +57,9 @@ def spawnSpaceship(scale, fname):
     pos = (0, 0, 0)
     B = aztypes.Booster
     boosters = {
-        'b_x': B(pos, direction=(1, 0, 0), minval=0, maxval=10.0, force=0),
-        'b_y': B(pos, direction=(0, 1, 0), minval=0, maxval=10.0, force=0),
-        'b_z': B(pos, direction=(0, 0, 1), minval=0, maxval=10.0, force=0)
+        'b_x': B(pos, direction=(1, 0, 0), force=0),
+        'b_y': B(pos, direction=(0, 1, 0), force=0),
+        'b_z': B(pos, direction=(0, 0, 1), force=0)
     }
     del dir_x, dir_y, dir_z, pos, B
 

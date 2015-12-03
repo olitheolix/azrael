@@ -116,14 +116,10 @@ def addBoosterCubeTemplate(scale, vert, uv, rgb):
     pos_center = np.zeros(3)
 
     boosters = {
-        '0': aztypes.Booster(position=pos_left, direction=-dir_up,
-                             minval=0, maxval=10.0, force=0),
-        '1': aztypes.Booster(position=pos_center, direction=dir_forward,
-                             minval=0, maxval=1000.0, force=0),
-        '2': aztypes.Booster(position=-pos_left, direction=dir_up,
-                             minval=0, maxval=10.0, force=0),
-        '3': aztypes.Booster(position=pos_center, direction=-dir_forward,
-                             minval=0, maxval=1000.0, force=0)
+        '0': aztypes.Booster(position=pos_left, direction=-dir_up, force=0),
+        '1': aztypes.Booster(position=pos_center, direction=dir_forward, force=0),
+        '2': aztypes.Booster(position=-pos_left, direction=dir_up, force=0),
+        '3': aztypes.Booster(position=pos_center, direction=-dir_forward, force=0)
     }
     del dir_up, dir_forward, pos_left, pos_center
 
@@ -238,10 +234,8 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # ----------------------------------------------------------------------
     # Two boosters, one left, one right. Both point in the same direction.
     boosters = {
-        '0': aztypes.Booster(position=[+0.05, 0, 0], direction=[0, 0, 1],
-                             minval=0, maxval=10.0, force=0),
-        '1': aztypes.Booster(position=[-0.05, 0, 0], direction=[0, 0, 1],
-                             minval=0, maxval=10.0, force=0)
+        '0': aztypes.Booster(position=[+0.05, 0, 0], direction=[0, 0, 1], force=0),
+        '1': aztypes.Booster(position=[-0.05, 0, 0], direction=[0, 0, 1], force=0)
     }
 
     # Two factories, one left one right. They will eject the new objects

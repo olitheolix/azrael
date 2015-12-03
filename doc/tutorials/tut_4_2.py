@@ -65,8 +65,6 @@ def createTemplate():
     booster = Booster(
         position=[0, 0, 0],                    # Booster is located here and...
         direction=[1, 0, 0],              # points in this direction.
-        minval=0,                         # Minimum allowed force.
-        maxval=10.0,                      # Maximum allowed force.
         force=0                           # Initial force.
     )
     boosters = {'booster_foo': booster}
