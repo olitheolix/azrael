@@ -714,6 +714,77 @@ class TestBulletAPI:
         assert cs_a.getName() == cs_b.getName() == b'Box'
         del ret_a, ret_b, cs_a, cs_b
 
+    def test_needNewCollisionShapes(self):
+        """
+        Verify the conditions under which 'bullet_api' must throw out its
+        current compound shape and compile a new one from scratch.
+
+        Specifically, create a new compound shape only if:
+          * type of at least one collision shape changed,
+          * size of at least one collision shape changed,
+          * centre of mass position changed,
+          * principal axs of inertia changed.
+
+        To clarify, there is no need to recompile the compound shape if only
+        mass, moments of inertia (without a change in principal axis),
+        position, rotation, etc changed.
+        """
+        id_a = '1'
+        p, q = (0, 0, 0), (0, 0, 0, 1)
+        csdefault = {'foo': getCSSphere(p, q, radius=1)}
+
+        # Create test body with spherical collision shape.
+        obj_a = getRigidBody(cshapes=csdefault)
+        sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
+        sim.setRigidBodyData(id_a, obj_a)
+
+        # Same object: do not rebuild.
+        obj_new = getRigidBody(cshapes=csdefault)
+        assert sim.needNewCollisionShape(id_a, obj_new) is False
+
+        # Different position and rotation: do not rebuild.
+        obj_new = getRigidBody(
+            position=[0, 1, 2],
+            rotation=[0, 1, 0, 1],
+            cshapes=csdefault,
+        )
+        assert sim.needNewCollisionShape(id_a, obj_new) is False
+
+        # New collision shape name: rebuild CS (Azrael cannot know if the old
+        # one was just renamed or if it was removed and replaced by a new one
+        # that just happens to have the same properties).
+        obj_new = getRigidBody(cshapes={'bar': getCSSphere(p, q, radius=1)})
+        assert sim.needNewCollisionShape(id_a, obj_new) is True
+
+        # New collision shape parameter (radius):
+        obj_new = getRigidBody(cshapes={'foo': getCSSphere(p, q, radius=2)})
+        assert sim.needNewCollisionShape(id_a, obj_new) is True
+
+        # Changed collision shape type (box):
+        obj_new = getRigidBody(cshapes={'foo': getCSBox(p, q)})
+        assert sim.needNewCollisionShape(id_a, obj_new) is True
+
+        # Additional collision shape: rebuild.
+        obj_new = getRigidBody(
+            cshapes={
+                'foo': getCSSphere(p, q),
+                'bar': getCSBox(p, q),
+            }
+        )
+        assert sim.needNewCollisionShape(id_a, obj_new) is True
+
+        # New center of mass: rebuild.
+        obj_new = getRigidBody(cshapes=csdefault, com=[1, 2, 3])
+        assert sim.needNewCollisionShape(id_a, obj_new) is True
+
+        # New principal axis of inertia: rebuild.
+        obj_new = getRigidBody(cshapes=csdefault, paxis=[1, 2, 3, 4])
+        assert sim.needNewCollisionShape(id_a, obj_new) is True
+
+        # New inertia (but same principal axis): do not rebuild.
+        obj_new = getRigidBody(cshapes=csdefault, inertia=[1, 2, 3])
+        assert sim.needNewCollisionShape(id_a, obj_new) is False
+        
     def test_specify_P2P_constraint(self):
         """
         Use a P2P constraint to test the various methods to add- and remove

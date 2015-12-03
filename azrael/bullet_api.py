@@ -501,6 +501,34 @@ class PyBulletDynamicsWorld():
         out = RbStateUpdate(pos, rot, vLin, vRot)
         return RetVal(True, None, out)
 
+    def needNewCollisionShape(self, objID, rbStateNew):
+        """
+        Return True if rbState warrants a new compound shape for objID.
+
+        Specifically, create a new compound shape only if:
+          * type of at least one collision shape changed,
+          * size of at least one collision shape changed,
+          * centre of mass position changed,
+          * principal axs of inertia changed.
+
+        :param str objID: ID of reference object.
+        :param _RigidBodyData rbStateNew: the new body parameters
+        :return: True if the new parameters require a modified compound shape.
+        """
+        try:
+            ref = self.rigidBodies[objID].azrael['rbState']
+        except KeyError:
+            return True
+
+        try:
+            assert np.array_equal(ref.cshapes, rbStateNew.cshapes)
+            assert ref.scale == rbStateNew.scale
+            assert np.array_equal(ref.com, rbStateNew.com)
+            assert np.array_equal(ref.paxis, rbStateNew.paxis)
+        except AssertionError:
+            return True
+        return False
+
     @typecheck
     def setRigidBodyData(self, bodyID: str, rbState: _RigidBodyData):
         """
