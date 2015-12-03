@@ -413,25 +413,6 @@ class PyBulletDynamicsWorld():
         :param _RigidBodyData rbState: State Variables of rigid body.
         :return: Success
         """
-        # Bodies with virtually no mass will be converted to static bodies.
-        # This is almost certainly not what the user wants but it is the only
-        # safe option here. Note: it is the user's responsibility to ensure the
-        # mass is reasonably large!
-        if rbState.imass > 1E-4:
-            mass = 1.0 / rbState.imass
-        else:
-            mass = 0
-
-        # Warn about unreasonable inertia values.
-        # fixme: what to do about this?
-        if mass > 0:
-            tmp = np.array(rbState.inertia)
-            if not (1E-5 < np.sqrt(np.dot(tmp, tmp)) < 100):
-                msg = 'Inertia = ({:.1E}, {:.1E}, {:.1E})'
-                msg = msg.format(*tmp)
-                self.logit.warning(msg)
-                return RetVal(False, msg, None)
-
         # Build the collision shape.
         compound = self._compileCollisionShape(rbState)
 
@@ -440,10 +421,10 @@ class PyBulletDynamicsWorld():
         # fixme: mention that all values are neutral; setRigidBody will
         # actually set them. Can I simplify this method further?
         ci = azBullet.RigidBodyConstructionInfo(
-            mass,
+            1,
             azBullet.DefaultMotionState(Transform()),
             compound,
-            Vec3(*rbState.inertia)
+            Vec3(1, 1, 1)
         )
         body = PyRigidBody(ci)
 
@@ -594,6 +575,7 @@ class PyBulletDynamicsWorld():
         else:
             # Apply the new mass and inertia.
             body.setMassProps(1 / rbState.imass, Vec3(*rbState.inertia))
+        body.updateInertiaTensor()
 
         # Attach a copy of the rbState structure to the rigid body.
         body.azrael = {'rbState': rbState}
