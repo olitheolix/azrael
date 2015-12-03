@@ -109,7 +109,7 @@ def toVec(num_el, v):
     return tuple(v)
 
 
-def isAIDStringValid(aid):
+def isValidAIDString(aid):
     """
     Return *True* if ``aid`` is a valid ID name in Azrael.
 
@@ -492,7 +492,7 @@ class ConstraintMeta(_ConstraintMeta):
                 condata: (tuple, list, dict)):
         try:
             # Verify the inputs.
-            assert isAIDStringValid(aid)
+            assert isValidAIDString(aid)
             assert (rb_a != '') and (rb_b != '')
 
             if contype.upper() == 'P2P':
@@ -821,7 +821,7 @@ class RigidBodyData(_RigidBodyData):
             # Verify that the collision shapes have valid names.
             for csname in cshapes:
                 assert isinstance(csname, str)
-                assert isAIDStringValid(csname)
+                assert isValidAIDString(csname)
         except (AssertionError, TypeError):
             raise TypeError
 
@@ -912,15 +912,15 @@ class Template(_Template):
                 custom: str=''):
         try:
             # Sanity check the AID of the template, boosters, and factories.
-            assert isAIDStringValid(aid)
+            assert isValidAIDString(aid)
             for bb in boosters:
-                assert isAIDStringValid(bb)
+                assert isValidAIDString(bb)
             for ff in factories:
-                assert isAIDStringValid(ff)
+                assert isValidAIDString(ff)
 
             # AID must be valid.
             for tmp_aid in fragments:
-                assert isAIDStringValid(tmp_aid)
+                assert isValidAIDString(tmp_aid)
 
             # Compile- and sanity check all geometry fragments.
             fragments = {
