@@ -141,11 +141,24 @@ class TestQuaternion:
         Create an unnormalised Quaternion. Verify that it is unnormalise, then
         normalise it, and verify that its length is now unity.
         """
+        # Verify length of Quaternion.
         q = Quaternion(1, 2, 3, 4)
-        assert q.length2() > 1
+        assert abs(q.length2() - np.dot(q.topy(), q.topy())) < 1E-5
 
+        # Normalise the Quaternion and verify it now has unit length. Note that
+        # the 'normalize' method normalised the Quaternion inplace.
         q.normalize()
-        assert abs(q.length2() - 1) < 1E-5
+        assert abs(q.length2() - 1.0) < 1E-5
+
+        # Similar to before, but this time we use the 'normalized' method (note
+        # the trailing 'd' in the method name). This must return a new
+        # Quaternion that is normalised and leave the original one intact.
+        q1 = Quaternion(1, 2, 3, 4).normalized()
+        len_q1 = q1.length2()
+
+        q2 = q1.normalized()
+        assert q1.length2() == len_q1
+        assert abs(q2.length2() - 1.0) < 1E-5
 
     def test_mult_inverse(self):
         """

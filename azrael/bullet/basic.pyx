@@ -115,6 +115,11 @@ cdef class Quaternion:
     def normalize(self):
         self.ptr_Quaternion.normalize()
 
+    def normalized(self):
+        ret = Quaternion()
+        ret.ptr_Quaternion[0] = self.ptr_Quaternion.normalized()
+        return ret
+
     def inverse(self):
         q = Quaternion()
         q.ptr_Quaternion[0] = self.ptr_Quaternion.inverse()
