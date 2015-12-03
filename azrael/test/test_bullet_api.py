@@ -246,7 +246,7 @@ class TestBulletAPI:
         The setup is annoyingly fickle. For more information about why this
         test does what it does refer to the docstring of
         'bullet_api._compileCollisionShape'.
-        
+
         We will use a general 3x3 inertia tensor and apply a torque. Then we
         will use Newton's second law and the 3x3 Inertia tensor to predict the
         angular velocity. If Azrael set up the bodies correctly then this must
@@ -259,7 +259,7 @@ class TestBulletAPI:
         it to a rotation matrix (always stable), and then use this as the
         eigenspace of the Inertia matrix. This still allows me to construct a
         general inertia matrix, specify the diagonal inertias directly, and
-        have the principal axis Quaternion handy for Bullet. 
+        have the principal axis Quaternion handy for Bullet.
 
         In case you wonder: no, none of this is self evident. At least we will
         not have to manually compute the eigenvectors.
@@ -766,7 +766,7 @@ class TestBulletAPI:
         # New inertia (but same principal axis): do not rebuild.
         obj_new = getRigidBody(cshapes=csdefault, inertia=[1, 2, 3])
         assert sim.needNewCollisionShape(id_a, obj_new) is False
-        
+
     def test_specify_P2P_constraint(self):
         """
         Use a P2P constraint to test the various methods to add- and remove

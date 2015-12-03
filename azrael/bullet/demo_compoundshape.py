@@ -64,7 +64,7 @@ del masses, ci
 # because Bullet will clear all the forces afterwards).
 body.clearForces()
 body.applyCentralForce(Vec3(*(0, 1, 0)))
-#body.applyTorque(Vec3(*(0, 1, 0)))
+# body.applyTorque(Vec3(*(0, 1, 0)))
 
 # Step the simulation and print the position of the Ball.
 for ii in range(10):
