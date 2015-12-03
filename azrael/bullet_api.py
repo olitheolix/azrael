@@ -404,41 +404,6 @@ class PyBulletDynamicsWorld():
 
         return compound
 
-    @typecheck
-    def createRigidBody(self, bodyID: str, rbState: _RigidBodyData):
-        """
-        Return a new rigid body based on ``rbState`` with ``bodyID``.
-
-        :param str bodyID: ID of new rigid body.
-        :param _RigidBodyData rbState: State Variables of rigid body.
-        :return: Success
-        """
-        # Build the collision shape.
-        compound = self._compileCollisionShape(rbState)
-
-        # Instantiate the rigid body and specify its mass, motion state,
-        # collision shapes, and inertia.
-        # fixme: mention that all values are neutral; setRigidBody will
-        # actually set them. Can I simplify this method further?
-        ci = azBullet.RigidBodyConstructionInfo(
-            1,
-            azBullet.DefaultMotionState(Transform()),
-            compound,
-            Vec3(1, 1, 1)
-        )
-        body = PyRigidBody(ci)
-
-        # Set additional parameters.
-        body.setFriction(0.1)
-        body.setDamping(0.02, 0.02)
-        body.setSleepingThresholds(0.1, 0.1)
-
-        # Attach my own admin structure to the body.
-        body.azrael = {'rbState': rbState}
-
-        # Return the new body.
-        return RetVal(True, None, body)
-
     def getRigidBodyData(self, bodyID: str):
         """
         Return latest body state (pos, rot, vLin, vRot) of ``bodyID``.
@@ -527,9 +492,24 @@ class PyBulletDynamicsWorld():
 
         # Create the rigid body if it does not yet exist.
         if bodyID not in self.rigidBodies:
-            ret = self.createRigidBody(bodyID, rbState)
-            if ret.ok:
-                self.rigidBodies[bodyID] = ret.data
+            # Get the collision shape (always a compund shape)
+            compound = self._compileCollisionShape(rbState)
+
+            # Create a rigid body for the collision shape. Use default values
+            # for mass, inertia, position and orientation. We will overwrite
+            # them later in this method.
+            body = PyRigidBody(
+                azBullet.RigidBodyConstructionInfo(
+                    mass=1,
+                    ms=azBullet.DefaultMotionState(),
+                    cs=compound,
+                    inert=Vec3(1, 1, 1)
+                )
+            )
+
+            # Attach Azrael's info and add the body to our cache.
+            body.azrael = {'rbState': rbState}
+            self.rigidBodies[bodyID] = body
 
         # Convenience.
         body = self.rigidBodies[bodyID]
@@ -557,12 +537,15 @@ class PyBulletDynamicsWorld():
         t = Transform(rot, pos) * cot
 
         # Assign body properties.
-        body.setCenterOfMassTransform(t)
-        body.setLinearVelocity(Vec3(*rbState.velocityLin))
-        body.setAngularVelocity(Vec3(*rbState.velocityRot))
-        body.setRestitution(rbState.restitution)
-        body.setLinearFactor(Vec3(*rbState.axesLockLin))
         body.setAngularFactor(Vec3(*rbState.axesLockRot))
+        body.setAngularVelocity(Vec3(*rbState.velocityRot))
+        body.setCenterOfMassTransform(t)
+        body.setDamping(0.02, 0.02)
+        body.setFriction(0.1)
+        body.setLinearFactor(Vec3(*rbState.axesLockLin))
+        body.setLinearVelocity(Vec3(*rbState.velocityLin))
+        body.setRestitution(rbState.restitution)
+        body.setSleepingThresholds(0.1, 0.1)
         del t
 
         # Set mass and inertia. Make the whole body static if either mass or
