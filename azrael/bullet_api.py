@@ -474,7 +474,6 @@ class PyBulletDynamicsWorld():
         # Undo the rotation that is purely due to the alignment with the ineria
         # axis so that Bullet can apply the moments of inertia directly.
         paxis = Quaternion(*rbState.paxis).normalized()
-        paxis.normalize()
         rot = paxis.inverse() * rot
         del t, paxis
 
@@ -529,8 +528,7 @@ class PyBulletDynamicsWorld():
         :param ``_RigidBodyData`` rbState: body description.
         :return: Success
         """
-        paxis = Quaternion(*rbState.paxis)
-        paxis.normalize()
+        paxis = Quaternion(*rbState.paxis).normalized()
         paComT = Transform(paxis, Vec3(*rbState.com))
         del paxis
 
