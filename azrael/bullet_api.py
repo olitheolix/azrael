@@ -554,6 +554,14 @@ class PyBulletDynamicsWorld():
         # Convenience.
         body = self.rigidBodies[bodyID]
 
+        # Build a new compound shape if necessary.
+        if self.needNewCollisionShape(bodyID, rbState):
+            # Create a new collision shape.
+            ret = self.compileCollisionShape(rbState)
+
+            # Replace the existing collision shape with the new one.
+            body.setCollisionShape(ret.data)
+
         # Convert rotation and position to Vec3.
         # fixme: this is now void
         pos, rot = azrael2bullet(rbState.position, rbState.rotation, [0, 0, 0])
@@ -577,19 +585,6 @@ class PyBulletDynamicsWorld():
         body.setLinearFactor(Vec3(*rbState.axesLockLin))
         body.setAngularFactor(Vec3(*rbState.axesLockRot))
         del t
-
-        # Build and assign the new collision shape if they have changed.
-        # fixme: also build a new compund if paxis has changed.
-        old = body.azrael['rbState']
-        new_cs = not np.array_equal(old.cshapes, rbState.cshapes)
-        new_scale = (old.scale != rbState.scale)
-        if new_cs or new_scale:
-            # Create a new collision shape.
-            ret = self.compileCollisionShape(rbState)
-
-            # Replace the existing collision shape with the new one.
-            body.setCollisionShape(ret.data)
-        del old, new_cs, new_scale
 
         # Set mass and inertia.
         if rbState.imass < 1E-5:
