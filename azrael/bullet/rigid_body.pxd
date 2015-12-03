@@ -60,6 +60,7 @@ cdef extern from "btBulletDynamicsCommon.h":
         btScalar getInvMass()
         btVector3 &getInvInertiaDiagLocal()
         void setMassProps(btScalar mass, const btVector3 &inertia)
+        void updateInertiaTensor()
 
         # Force functions: clearForces, applyForce, applyTorque,
         #                  applyCentralForce, getTotalForce, getTotalTorque

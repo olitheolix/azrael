@@ -339,6 +339,9 @@ cdef class RigidBody(CollisionObject):
     def setMassProps(self, double mass, Vec3 inertia):
         self.ptr_RigidBody.setMassProps(btScalar(mass), inertia.ptr_Vector3[0])
 
+    def updateInertiaTensor(self):
+        self.ptr_RigidBody.updateInertiaTensor()
+
     def getInvMass(self):
         return <double>self.ptr_RigidBody.getInvMass()
 
