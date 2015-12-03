@@ -87,22 +87,22 @@ class TestAZSchema:
 
     def getBoosters(self):
         return {
-            '0': {'pos': [-1.5, 0.0, 0.0],
+            '0': {'position': [-1.5, 0.0, 0.0],
                   'direction': [0.0, -1.0, 0.0],
                   'minval': 0,
                   'maxval': 10.0,
                   'force': 0},
-            '1': {'pos': [0.0, 0.0, 0.0],
+            '1': {'position': [0.0, 0.0, 0.0],
                   'direction': [0.0, 0.0, -1.0],
                   'minval': 0,
                   'maxval': 1000.0,
                   'force': 0},
-            '2': {'pos': [1.5, -0.0, -0.0],
+            '2': {'position': [1.5, -0.0, -0.0],
                   'direction': [0.0, 1.0, 0.0],
                   'minval': 0,
                   'maxval': 10.0,
                   'force': 0},
-            '3': {'pos': [0.0, 0.0, 0.0],
+            '3': {'position': [0.0, 0.0, 0.0],
                   'direction': [0.0, 0.0, 1.0],
                   'minval': 0,
                   'maxval': 1000.0,
@@ -112,13 +112,13 @@ class TestAZSchema:
     def getFactories(self):
         return {
             '0': {
-                'pos': [1.5, 0.0, 0.0],
+                'position': [1.5, 0.0, 0.0],
                 'direction': [1.0, 0.0, 0.0],
                 'templateID': 'Product1',
                 'exit_speed': [0.1, 1.0],
             },
             '1': {
-                'pos': [-1.5, 0.0, 0.0],
+                'position': [-1.5, 0.0, 0.0],
                 'direction': [-1.0, 0.0, 0.0],
                 'templateID': 'Product2',
                 'exit_speed': [0.1, 1.0],

@@ -791,7 +791,7 @@ class Clerk(config.AzraelProcess):
                 del cmds[partID]
 
             # Convenience.
-            b_pos = np.array(booster.pos)
+            b_pos = np.array(booster.position)
             b_dir = np.array(booster.direction)
 
             # Update the central force and torque.
@@ -938,7 +938,7 @@ class Clerk(config.AzraelProcess):
 
             # Position (in world coordinates) where the new object will be
             # spawned.
-            pos = quat * this.pos + sv_parent.position
+            pos = quat * this.position + sv_parent.position
 
             # Align the exit velocity vector with the parent's rotation.
             velocityLin = cmd.exit_speed * (quat * this.direction)

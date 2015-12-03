@@ -90,10 +90,10 @@ Booster = {
         'minval': {'type': 'number'},
         'maxval': {'type': 'number'},
         'force': {'type': 'number'},
-        'pos': vec3,
+        'position': vec3,
         'direction': vec3,
     },
-    'required': ['minval', 'maxval', 'force', 'pos', 'direction'],
+    'required': ['minval', 'maxval', 'force', 'position', 'direction'],
     'additionalProperties': False,
 }
 
@@ -104,10 +104,10 @@ Factory = {
     'properties': {
         'templateID': {'type': 'string'},
         'exit_speed': vec2,
-        'pos': vec3,
+        'position': vec3,
         'direction': vec3,
     },
-    'required': ['templateID', 'exit_speed', 'pos', 'direction'],
+    'required': ['templateID', 'exit_speed', 'position', 'direction'],
     'additionalProperties': False,
 }
 

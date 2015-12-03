@@ -151,13 +151,13 @@ class TestClerk:
 
         # Define a new template with two boosters and one factory.
         boosters = {
-            '0': aztypes.Booster(pos=(0, 1, 2), direction=(0, 0, 1),
+            '0': aztypes.Booster(position=(0, 1, 2), direction=(0, 0, 1),
                                  minval=0, maxval=0.5, force=0),
-            '1': aztypes.Booster(pos=(6, 7, 8), direction=(0, 1, 0),
+            '1': aztypes.Booster(position=(6, 7, 8), direction=(0, 1, 0),
                                  minval=1, maxval=1.5, force=0)
         }
         factories = {
-            '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Factory(position=(0, 0, 0), direction=(0, 0, 1),
                                  templateID='_templateBox',
                                  exit_speed=(0.1, 0.5))
         }
@@ -689,11 +689,11 @@ class TestClerk:
 
         # Define the Booster and Factory parts.
         boosters = {
-            '0': aztypes.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Booster(position=(0, 0, 0), direction=(0, 0, 1),
                                  minval=0, maxval=0.5, force=0)
         }
         factories = {
-            '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Factory(position=(0, 0, 0), direction=(0, 0, 1),
                                  templateID='_templateBox', exit_speed=(0, 1))
         }
 
@@ -739,9 +739,9 @@ class TestClerk:
 
         # Define two boosters.
         boosters = {
-            '0': aztypes.Booster(pos=pos_0, direction=dir_0,
+            '0': aztypes.Booster(position=pos_0, direction=dir_0,
                                  minval=0, maxval=0.5, force=0),
-            '1': aztypes.Booster(pos=pos_1, direction=dir_1,
+            '1': aztypes.Booster(position=pos_1, direction=dir_1,
                                  minval=0, maxval=0.5, force=0)
         }
 
@@ -810,10 +810,10 @@ class TestClerk:
         # named tuples passed to addTemplates. The user must assign the partIDs
         # manually.
         factories = {
-            '0': aztypes.Factory(pos=pos_0, direction=dir_0,
+            '0': aztypes.Factory(position=pos_0, direction=dir_0,
                                  templateID='_templateBox',
                                  exit_speed=[0.1, 0.5]),
-            '1': aztypes.Factory(pos=pos_1, direction=dir_1,
+            '1': aztypes.Factory(position=pos_1, direction=dir_1,
                                  templateID='_templateSphere',
                                  exit_speed=[1, 5])
         }
@@ -889,10 +889,10 @@ class TestClerk:
 
         # Define factory parts.
         factories = {
-            '0': aztypes.Factory(pos=pos_0, direction=dir_0,
+            '0': aztypes.Factory(position=pos_0, direction=dir_0,
                                  templateID='_templateBox',
                                  exit_speed=[0.1, 0.5]),
-            '1': aztypes.Factory(pos=pos_1, direction=dir_1,
+            '1': aztypes.Factory(position=pos_1, direction=dir_1,
                                  templateID='_templateSphere',
                                  exit_speed=[1, 5])
         }
@@ -997,16 +997,16 @@ class TestClerk:
 
         # Define the Booster and Factory parts.
         boosters = {
-            '0': aztypes.Booster(pos=pos_0, direction=dir_0,
+            '0': aztypes.Booster(position=pos_0, direction=dir_0,
                                  minval=0, maxval=0.5, force=0),
-            '1': aztypes.Booster(pos=pos_1, direction=dir_1,
+            '1': aztypes.Booster(position=pos_1, direction=dir_1,
                                  minval=0, maxval=1.0, force=0)
         }
         factories = {
-            '0': aztypes.Factory(pos=pos_0, direction=dir_0,
+            '0': aztypes.Factory(position=pos_0, direction=dir_0,
                                  templateID='_templateBox',
                                  exit_speed=[0.1, 0.5]),
-            '1': aztypes.Factory(pos=pos_1, direction=dir_1,
+            '1': aztypes.Factory(position=pos_1, direction=dir_1,
                                  templateID='_templateSphere',
                                  exit_speed=[1, 5])
         }
@@ -1207,9 +1207,9 @@ class TestClerk:
         # z-direction.
         # ---------------------------------------------------------------------
         boosters = {
-            '0': aztypes.Booster(pos=[-1, 0, 0], direction=[0, 0, 1],
+            '0': aztypes.Booster(position=[-1, 0, 0], direction=[0, 0, 1],
                                  minval=-1, maxval=1, force=0),
-            '1': aztypes.Booster(pos=[+1, 0, 0], direction=[0, 0, 1],
+            '1': aztypes.Booster(position=[+1, 0, 0], direction=[0, 0, 1],
                                  minval=-1, maxval=1, force=0)
         }
 
