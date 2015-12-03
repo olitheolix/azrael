@@ -81,8 +81,8 @@ _Constraint6DofSpring2 = namedtuple(
                               'rotLimitLo rotLimitHi bounce enableSpring')
 
 # Boosters, Factories, and commands they can receive.
-_Booster = namedtuple('Booster', 'pos direction minval maxval force ')
-_Factory = namedtuple('Factory', 'pos direction templateID exit_speed')
+_Booster = namedtuple('Booster', 'position direction minval maxval force ')
+_Factory = namedtuple('Factory', 'position direction templateID exit_speed')
 _CmdBooster = namedtuple('CmdBooster', 'force')
 _CmdFactory = namedtuple('CmdFactory', 'exit_speed')
 
@@ -644,12 +644,12 @@ class Booster(_Booster):
     :return Booster: compiled booster description.
     """
     @typecheck
-    def __new__(cls, pos: (tuple, list, np.ndarray),
+    def __new__(cls, position: (tuple, list, np.ndarray),
                 direction: (tuple, list, np.ndarray), minval: (int, float),
                 maxval: (int, float), force: (int, float)):
         try:
             # Verify the inputs.
-            pos = toVec(3, pos)
+            position = toVec(3, position)
             direction = toVec(3, direction)
 
             # Normalise the direction vector. Raise an error if it is invalid.
@@ -662,7 +662,7 @@ class Booster(_Booster):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, pos, direction, minval, maxval, force)
+        return super().__new__(cls, position, direction, minval, maxval, force)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))
@@ -695,7 +695,7 @@ class Factory(_Factory):
     can only spawn a particular template. The newly spawned object can
     exit with the specified speed along the factory direction.
 
-    The unit is located at ``pos`` relative to the parent's centre of
+    The unit is located at ``position`` relative to the parent's centre of
     mass. The initial velocity of the spawned objects is constrained by the
     ``exit_speed`` variable.
 
@@ -704,19 +704,19 @@ class Factory(_Factory):
        points in the nozzle direction of the factory (it the direction in
        which new objects will be spawned).
 
-    :param vec3 pos: position vector (3-elements).
+    :param vec3 position: position vector (3-elements).
     :param vec3 direction: exit direction of new objects (3-elements).
     :param str templateID: name of template spawned by this factory.
     :param vec2 exit_speed: [min, max] exit speed of spawned object.
     :return Factory: compiled factory description.
     """
     @typecheck
-    def __new__(cls, pos: (tuple, list, np.ndarray),
+    def __new__(cls, position: (tuple, list, np.ndarray),
                 direction: (tuple, list, np.ndarray), templateID: str,
                 exit_speed: (tuple, list, np.ndarray)):
         try:
             # Verify the inputs.
-            pos = toVec(3, pos)
+            position = toVec(3, position)
             direction = toVec(3, direction)
             exit_speed = toVec(2, exit_speed)
 
@@ -731,7 +731,7 @@ class Factory(_Factory):
 
         # Return a valid Factory instance based on the arguments.
         return super().__new__(
-            cls, pos, direction, templateID, exit_speed)
+            cls, position, direction, templateID, exit_speed)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))

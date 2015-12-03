@@ -247,13 +247,13 @@ class TestClient:
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any).
         boosters = {
-            '0': aztypes.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Booster(position=(0, 0, 0), direction=(0, 0, 1),
                                  minval=0, maxval=0.5, force=0),
-            '1': aztypes.Booster(pos=(0, 0, 0), direction=(0, 0, 1),
+            '1': aztypes.Booster(position=(0, 0, 0), direction=(0, 0, 1),
                                  minval=0, maxval=0.5, force=0),
         }
         factories = {
-            '0': aztypes.Factory(pos=(0, 0, 0), direction=(0, 0, 1),
+            '0': aztypes.Factory(position=(0, 0, 0), direction=(0, 0, 1),
                                  templateID='_templateBox',
                                  exit_speed=(0.1, 0.5))
         }
@@ -450,16 +450,16 @@ class TestClient:
 
         # Define the parts.
         boosters = {
-            '0': aztypes.Booster(pos=pos_0, direction=dir_0,
+            '0': aztypes.Booster(position=pos_0, direction=dir_0,
                                  minval=0, maxval=0.5, force=0),
-            '1': aztypes.Booster(pos=pos_1, direction=dir_1,
+            '1': aztypes.Booster(position=pos_1, direction=dir_1,
                                  minval=0, maxval=1.0, force=0)
         }
         factories = {
-            '0': aztypes.Factory(pos=pos_0, direction=dir_0,
+            '0': aztypes.Factory(position=pos_0, direction=dir_0,
                                  templateID='_templateBox',
                                  exit_speed=[0.1, 0.5]),
-            '1': aztypes.Factory(pos=pos_1, direction=dir_1,
+            '1': aztypes.Factory(position=pos_1, direction=dir_1,
                                  templateID='_templateSphere',
                                  exit_speed=[1, 5])
         }
