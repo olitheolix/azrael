@@ -151,10 +151,8 @@ class TestClerk:
 
         # Define a new template with two boosters and one factory.
         boosters = {
-            '0': aztypes.Booster(position=(0, 1, 2), direction=(0, 0, 1),
-                                 minval=0, maxval=0.5, force=0),
-            '1': aztypes.Booster(position=(6, 7, 8), direction=(0, 1, 0),
-                                 minval=1, maxval=1.5, force=0)
+            '0': aztypes.Booster(position=(0, 1, 2), direction=(0, 0, 1), force=0),
+            '1': aztypes.Booster(position=(6, 7, 8), direction=(0, 1, 0), force=0),
         }
         factories = {
             '0': aztypes.Factory(position=(0, 0, 0), direction=(0, 0, 1),
@@ -689,8 +687,7 @@ class TestClerk:
 
         # Define the Booster and Factory parts.
         boosters = {
-            '0': aztypes.Booster(position=(0, 0, 0), direction=(0, 0, 1),
-                                 minval=0, maxval=0.5, force=0)
+            '0': aztypes.Booster(position=(0, 0, 0), direction=(0, 0, 1), force=0)
         }
         factories = {
             '0': aztypes.Factory(position=(0, 0, 0), direction=(0, 0, 1),
@@ -739,10 +736,8 @@ class TestClerk:
 
         # Define two boosters.
         boosters = {
-            '0': aztypes.Booster(position=pos_0, direction=dir_0,
-                                 minval=0, maxval=0.5, force=0),
-            '1': aztypes.Booster(position=pos_1, direction=dir_1,
-                                 minval=0, maxval=0.5, force=0)
+            '0': aztypes.Booster(position=pos_0, direction=dir_0, force=0),
+            '1': aztypes.Booster(position=pos_1, direction=dir_1, force=0)
         }
 
         # Define a new template with two boosters and add it to Azrael.
@@ -997,10 +992,8 @@ class TestClerk:
 
         # Define the Booster and Factory parts.
         boosters = {
-            '0': aztypes.Booster(position=pos_0, direction=dir_0,
-                                 minval=0, maxval=0.5, force=0),
-            '1': aztypes.Booster(position=pos_1, direction=dir_1,
-                                 minval=0, maxval=1.0, force=0)
+            '0': aztypes.Booster(position=pos_0, direction=dir_0, force=0),
+            '1': aztypes.Booster(position=pos_1, direction=dir_1, force=0),
         }
         factories = {
             '0': aztypes.Factory(position=pos_0, direction=dir_0,
@@ -1207,10 +1200,8 @@ class TestClerk:
         # z-direction.
         # ---------------------------------------------------------------------
         boosters = {
-            '0': aztypes.Booster(position=[-1, 0, 0], direction=[0, 0, 1],
-                                 minval=-1, maxval=1, force=0),
-            '1': aztypes.Booster(position=[+1, 0, 0], direction=[0, 0, 1],
-                                 minval=-1, maxval=1, force=0)
+            '0': aztypes.Booster(position=[-1, 0, 0], direction=[0, 0, 1], force=0),
+            '1': aztypes.Booster(position=[+1, 0, 0], direction=[0, 0, 1], force=0),
         }
 
         # Define a template with one fragment.

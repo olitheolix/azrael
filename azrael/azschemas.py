@@ -87,13 +87,11 @@ Booster = {
     'title': 'Booster',
     'type': 'object',
     'properties': {
-        'minval': {'type': 'number'},
-        'maxval': {'type': 'number'},
         'force': {'type': 'number'},
         'position': vec3,
         'direction': vec3,
     },
-    'required': ['minval', 'maxval', 'force', 'position', 'direction'],
+    'required': ['force', 'position', 'direction'],
     'additionalProperties': False,
 }
 

@@ -81,7 +81,7 @@ _Constraint6DofSpring2 = namedtuple(
                               'rotLimitLo rotLimitHi bounce enableSpring')
 
 # Boosters, Factories, and commands they can receive.
-_Booster = namedtuple('Booster', 'position direction minval maxval force ')
+_Booster = namedtuple('Booster', 'position direction force ')
 _Factory = namedtuple('Factory', 'position direction templateID exit_speed')
 _CmdBooster = namedtuple('CmdBooster', 'force')
 _CmdFactory = namedtuple('CmdFactory', 'exit_speed')
@@ -638,15 +638,13 @@ class Booster(_Booster):
 
     :param vec3 pos: position vector (3-elements)
     :param vec3 direction: force direction (3-elements)
-    :param float minval: minimum force this Booster can generate.
-    :param float maxval: maximum force this Booster can generate.
     :param float force: force value this booster currently exerts on object.
     :return Booster: compiled booster description.
     """
     @typecheck
     def __new__(cls, position: (tuple, list, np.ndarray),
-                direction: (tuple, list, np.ndarray), minval: (int, float),
-                maxval: (int, float), force: (int, float)):
+                direction: (tuple, list, np.ndarray),
+                force: (int, float)):
         try:
             # Verify the inputs.
             position = toVec(3, position)
@@ -662,7 +660,7 @@ class Booster(_Booster):
             raise TypeError
 
         # Return constructed data type.
-        return super().__new__(cls, position, direction, minval, maxval, force)
+        return super().__new__(cls, position, direction, force)
 
     def _asdict(self):
         return OrderedDict(zip(self._fields, self))

@@ -54,10 +54,8 @@ class TestClerk:
         # tuples. Their first argument is the unit ID (Azrael does not
         # automatically assign any IDs).
         boosters = {
-            '0': aztypes.Booster(position=(0, 1, 2), direction=(0, 0, 1),
-                                 minval=0, maxval=0.5, force=0),
-            '1': aztypes.Booster(position=(6, 7, 8), direction=(0, 1, 0),
-                                 minval=1, maxval=1.5, force=0)
+            '0': aztypes.Booster(position=(0, 1, 2), direction=(0, 0, 1), force=0),
+            '1': aztypes.Booster(position=(6, 7, 8), direction=(0, 1, 0), force=0),
         }
         factories = {
             '0': aztypes.Factory(position=(0, 0, 0), direction=(0, 0, 1),

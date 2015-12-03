@@ -112,10 +112,8 @@ class TestAZTypes:
     def test_Template(self):
         # Define boosters and factories.
         boosters = {
-            '0': Booster(position=(0, 1, 2), direction=(1, 0, 0),
-                         minval=0, maxval=1, force=0),
-            '1': Booster(position=(3, 4, 5), direction=(0, 1, 0),
-                         minval=0, maxval=2, force=0)
+            '0': Booster(position=(0, 1, 2), direction=(1, 0, 0), force=0),
+            '1': Booster(position=(3, 4, 5), direction=(0, 1, 0), force=0)
         }
         factories = {
             '0': Factory(position=(0, 1, 2), direction=(0, 0, 1),

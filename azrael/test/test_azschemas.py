@@ -89,23 +89,15 @@ class TestAZSchema:
         return {
             '0': {'position': [-1.5, 0.0, 0.0],
                   'direction': [0.0, -1.0, 0.0],
-                  'minval': 0,
-                  'maxval': 10.0,
                   'force': 0},
             '1': {'position': [0.0, 0.0, 0.0],
                   'direction': [0.0, 0.0, -1.0],
-                  'minval': 0,
-                  'maxval': 1000.0,
                   'force': 0},
             '2': {'position': [1.5, -0.0, -0.0],
                   'direction': [0.0, 1.0, 0.0],
-                  'minval': 0,
-                  'maxval': 10.0,
                   'force': 0},
             '3': {'position': [0.0, 0.0, 0.0],
                   'direction': [0.0, 0.0, 1.0],
-                  'minval': 0,
-                  'maxval': 1000.0,
                   'force': 0}
         }
 
