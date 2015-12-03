@@ -31,7 +31,11 @@ from azBullet import Generic6DofConstraint
 from azBullet import Generic6DofSpringConstraint, Generic6DofSpring2Constraint
 
 
-def getRB(pos=Vec3(0, 0, 0), cshape=SphereShape(1), bodyID=0):
+def getRB(pos=Vec3(0, 0, 0),
+          cshape=SphereShape(1),
+          mass=1,
+          inertia=(1, 1, 1),
+          bodyID=0):
     """
     Return a Rigid Body plus auxiliary information (do *not* delete; see
     note below).
@@ -43,10 +47,9 @@ def getRB(pos=Vec3(0, 0, 0), cshape=SphereShape(1), bodyID=0):
     """
     t = Transform(Quaternion(0, 0, 0, 1), pos)
     ms = DefaultMotionState(t)
-    mass = 1
 
     # Build construction info and instantiate the rigid body.
-    ci = RigidBodyConstructionInfo(mass, ms, cshape)
+    ci = RigidBodyConstructionInfo(mass, ms, cshape, Vec3(*inertia))
     rb = RigidBody(ci, bodyID)
 
     # Ensure the body remains activated.
