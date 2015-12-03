@@ -920,9 +920,9 @@ class DatastoreMongo(DatastoreBase):
                 time.sleep(0.2)
                 self.connect()
 
-            # Too many errors have occurred.
-            if ii >= 8:
-                raise err
+                # Too many errors have occurred.
+                if ii >= 8:
+                    raise err
 
         # All good.
         return RetVal(True, None, None)
