@@ -338,7 +338,7 @@ class PyBulletDynamicsWorld():
             return RetVal(True, None, None)
 
     @typecheck
-    def compileCollisionShape(self, rbState: _RigidBodyData):
+    def _compileCollisionShape(self, rbState: _RigidBodyData):
         """
         Return the correct Bullet collision shape based on ``rbState``.
 
@@ -433,7 +433,7 @@ class PyBulletDynamicsWorld():
                 return RetVal(False, msg, None)
 
         # Build the collision shape.
-        compound = self.compileCollisionShape(rbState)
+        compound = self._compileCollisionShape(rbState)
 
         # Instantiate the rigid body and specify its mass, motion state,
         # collision shapes, and inertia.
@@ -556,7 +556,7 @@ class PyBulletDynamicsWorld():
         # Build a new compound shape if necessary.
         if self.needNewCollisionShape(bodyID, rbState):
             # Create a new collision shape and replace the old one.
-            compound = self.compileCollisionShape(rbState)
+            compound = self._compileCollisionShape(rbState)
             body.setCollisionShape(compound)
             del compound
 
