@@ -1192,11 +1192,12 @@ class TestConstraints:
         The test code is therefore mostly identical to that for a Point2Point
         constraint.
         """
-        # Create two rigid bodies side by side (they *do* touch, but just).
+        # Create two rigid bodies side by side (they *do* touch, but just) and
+        # lock their Inertia (ie the bodies cannot rotate).
         pos_a = Vec3(-1, 0, 0)
         pos_b = Vec3(1, 0, 0)
-        rb_a = getRB(pos=pos_a, cshape=SphereShape(1))
-        rb_b = getRB(pos=pos_b, cshape=BoxShape(Vec3(1, 2, 3)))
+        rb_a = getRB(pos=pos_a, cshape=SphereShape(1), inertia=(0, 0, 0))
+        rb_b = getRB(pos=pos_b, cshape=BoxShape(Vec3(1, 2, 3)), inertia=(0, 0, 0))
 
         # Create the constraint between the two bodies.
         frameInA = Transform()
@@ -1215,17 +1216,16 @@ class TestConstraints:
         # Add constraint to Bullet simulation.
         bb.addConstraint(dof)
 
-        # Verify that the objects are at x-position +/-1, and thus 2 Meters
-        # apart.
+        # Verify that the objects are at x=+/-1 respectively.
         p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
         p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
         init_pos = (p_a[0], p_b[0])
         fixed_dist = p_a[0] - p_b[0]
         assert init_pos == (-1, 1)
 
-        # Apply opposing forces to both objects, step the simulation a few
-        # times, and verify at each step that *both* objects move in the *same*
-        # direction due to the constraint.
+        # Apply opposing forces to both objects and step the simulation a few
+        # times. Verify that *both* objects move in the *same* direction
+        # due to the constraint.
         rb_a.applyCentralForce(Vec3(10, 0, 0))
         rb_b.applyCentralForce(Vec3(10, 0, 0))
         for ii in range(3):
@@ -1236,8 +1236,10 @@ class TestConstraints:
             p_a = rb_a.getCenterOfMassTransform().getOrigin().topy()
             p_b = rb_b.getCenterOfMassTransform().getOrigin().topy()
 
-            # Verify that both objects continue to move to right, yet maintain
-            # their initial distance.
+            # Verify that both objects a) continue to move right and b)
+            # to (roughly) maintain their initial distance. The distance will
+            # not be maintained exactly due to the implementation of the
+            # constraint inside Bullet itself.
             assert p_a[0] > init_pos[0]
             assert p_b[0] > init_pos[1]
             assert abs((p_a[0] - p_b[0]) - fixed_dist) < 0.1
