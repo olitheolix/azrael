@@ -145,18 +145,13 @@ class Quaternion:
     This class implements a sub-set of the available Quaternion
     algebra. The operations should suffice for most 3D related tasks.
     """
-    def __init__(self, w=None, v=None):
+    def __init__(self, x, y, z, w):
         """
         Construct Quaternion with scalar ``w`` and vector ``v``.
         """
-        # Sanity checks. 'w' must be a scalar, and 'v' a 3D vector.
-        assert isinstance(w, (int, float))
-        assert isinstance(v, (tuple, list, np.ndarray))
-        assert len(v) == 3
-
         # Store 'w' and 'v' as Numpy types in the class.
         self.w = np.float64(w)
-        self.v = np.array(v, dtype=np.float64)
+        self.v = np.array([x, y, z], dtype=np.float64)
 
     def __mul__(self, q):
         """
@@ -175,10 +170,12 @@ class Quaternion:
             # Q * Q2:
             w = self.w * q.w - np.inner(self.v, q.v)
             v = self.w * q.v + q.w * self.v + np.cross(self.v, q.v)
-            return Quaternion(w, v)
+            arg = v.tolist() + [float(w)]
+            return Quaternion(*arg)
         elif isinstance(q, (int, float)):
             # Q * S:
-            return Quaternion(q * self.w, q * self.v)
+            arg = (q * v).tolist() + [q * float(self.w)]
+            return Quaternion(*arg)
         elif isinstance(q, (np.ndarray, tuple, list)):
             # Q * V: convert Quaternion to 4x4 matrix and multiply it
             # with the input vector.
@@ -213,7 +210,9 @@ class Quaternion:
         l = self.length()
         w = self.w / l
         v = self.v / l
-        return Quaternion(w, v)
+
+        arg = v.tolist() + [float(w)]
+        return Quaternion(*arg)
 
     def toMatrix(self):
         """

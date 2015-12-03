@@ -787,7 +787,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         # Convert the object Quaternion into a rotation matrix.
         q = frag['rotation']
-        matRotObj = util.Quaternion(q[3], q[:3]).toMatrix()
+        matRotObj = util.Quaternion(*q).toMatrix()
 
         # Build the model matrix for the overall object.
         matModelObj = np.eye(4)

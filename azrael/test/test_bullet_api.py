@@ -275,7 +275,7 @@ class TestBulletAPI:
         # Quaternion, convert it to a rotation matrix, and then pretend this is
         # the eigenspace of the inertia tensor.
         paxis = [1, -2, 3, 0]
-        q = azrael.util.Quaternion(paxis[3], paxis[:3]).normalise()
+        q = azrael.util.Quaternion(*paxis).normalise()
         U = np.around(q.toMatrix()[:3, :3], 3)
 
         # Construct an inertia matrix Step 2/2: given the orthonormal matrix U

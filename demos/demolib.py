@@ -159,8 +159,8 @@ def loadBoosterCubeBlender():
     # We will compute the thrusters for the remaining two cube faces with a
     # 90degree rotation around the x- and y axis.
     s2 = 1 / np.sqrt(2)
-    quat_x = util.Quaternion(s2, [s2, 0, 0])
-    quat_y = util.Quaternion(s2, [0, s2, 0])
+    quat_x = util.Quaternion(s2, 0, 0, s2)
+    quat_y = util.Quaternion(0, s2, 0, s2)
     for ii, (tx, ty) in enumerate(zip(thruster_x, thruster_y)):
         thruster_x[ii] = quat_x * tx
         thruster_y[ii] = quat_y * ty

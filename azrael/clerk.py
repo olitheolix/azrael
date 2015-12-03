@@ -886,7 +886,7 @@ class Clerk(config.AzraelProcess):
         # Extract the parent's rotation from its rigid body state.
         sv_parent = sv_parent.data[objID]['rbs']
         parent_orient = sv_parent.rotation
-        quat = util.Quaternion(parent_orient[3], parent_orient[:3])
+        quat = util.Quaternion(*parent_orient)
 
         # Sanity check the Booster- and Factory commands.
         try:

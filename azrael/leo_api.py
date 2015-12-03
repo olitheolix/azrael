@@ -80,7 +80,7 @@ def computeAABBs(cshapes: dict):
 
         for name, cs in cshapes.items():
             # Move the origin of the collision shape according to its rotation.
-            quat = util.Quaternion(cs.rotation[3], cs.rotation[:3])
+            quat = util.Quaternion(*cs.rotation)
             pos = tuple(quat * cs.position)
 
             # Determine the AABBs based on the collision shape type.

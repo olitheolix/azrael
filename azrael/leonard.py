@@ -194,7 +194,7 @@ def computeCollisionSetsAABB(bodies: dict, AABBs: dict):
         pos_rb = bodies[objID].position
         scale = bodies[objID].scale
         rot = bodies[objID].rotation
-        quat = util.Quaternion(rot[3], rot[:3])
+        quat = util.Quaternion(*rot)
 
         # Create an empty data structure (will be populated below).
         sweep_data[objID] = {'x': [], 'y': [], 'z': []}
@@ -472,7 +472,7 @@ class LeonardBase(config.AzraelProcess):
         f = self.allForces[objID]
 
         # Construct the Quaternion of the object based on its rotation.
-        quat = util.Quaternion(body.rotation[3], body.rotation[:3])
+        quat = util.Quaternion(*body.rotation)
 
         # Fetch the force vector for the current object from the DB.
         force = np.array(f.forceDirect, np.float64)
