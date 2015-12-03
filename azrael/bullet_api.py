@@ -402,7 +402,7 @@ class PyBulletDynamicsWorld():
             # Add the child with the correct transform.
             compound.addChildShape(t, child)
 
-        return RetVal(True, None, compound)
+        return compound
 
     @typecheck
     def createRigidBody(self, bodyID: str, rbState: _RigidBodyData):
@@ -433,8 +433,7 @@ class PyBulletDynamicsWorld():
                 return RetVal(False, msg, None)
 
         # Build the collision shape.
-        ret = self.compileCollisionShape(rbState)
-        compound = ret.data
+        compound = self.compileCollisionShape(rbState)
 
         # Instantiate the rigid body and specify its mass, motion state,
         # collision shapes, and inertia.
@@ -545,7 +544,7 @@ class PyBulletDynamicsWorld():
         cot = Transform(paxis, Vec3(*rbState.com))
         del paxis
 
-        # Create the rigid body if it does not exist yet.
+        # Create the rigid body if it does not yet exist.
         if bodyID not in self.rigidBodies:
             ret = self.createRigidBody(bodyID, rbState)
             if ret.ok:
@@ -556,11 +555,10 @@ class PyBulletDynamicsWorld():
 
         # Build a new compound shape if necessary.
         if self.needNewCollisionShape(bodyID, rbState):
-            # Create a new collision shape.
-            ret = self.compileCollisionShape(rbState)
-
-            # Replace the existing collision shape with the new one.
-            body.setCollisionShape(ret.data)
+            # Create a new collision shape and replace the old one.
+            compound = self.compileCollisionShape(rbState)
+            body.setCollisionShape(compound)
+            del compound
 
         # Convert rotation and position to Vec3.
         # fixme: this is now void
