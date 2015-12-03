@@ -561,16 +561,21 @@ class PyBulletDynamicsWorld():
         # Convenience.
         body = self.rigidBodies[bodyID]
 
-        # Build a new compound shape if necessary.
+        # Build a new collision shape, if necessary, and replace the old one
+        # with it.
         if self.needNewCollisionShape(bodyID, rbState):
-            # Create a new collision shape and replace the old one.
-            compound = self._compileCollisionShape(rbState)
-            body.setCollisionShape(compound)
-            del compound
+            body.setCollisionShape(self._compileCollisionShape(rbState))
 
-        # Convert rotation and position to Vec3.
-        # fixme: this is now void
-        pos, rot = azrael2bullet(rbState.position, rbState.rotation, [0, 0, 0])
+        # Convert rotation and position to Bullet types.
+        pos, rot = Vec3(*rbState.position), Quaternion(*rbState.rotation)
+
+        # Convert mass and inertia to Bullet types.
+        if (rbState.imass < 1E-4) or (sum(rbState.inertia) < 1E-4):
+            # Static body: mass and inertia are zero anyway.
+            mass, inertia = 0, Vec3(0, 0, 0)
+        else:
+            # Dynamic body: convert mass/inertia to Bullet types.
+            mass, inertia = 1 / rbState.imass, Vec3(*rbState.inertia)
 
         # The shapes inside the compound have all been transformed with the
         # inverse COT. Here we undo this transformation by applying the COT
@@ -591,22 +596,11 @@ class PyBulletDynamicsWorld():
         body.setFriction(0.1)
         body.setLinearFactor(Vec3(*rbState.axesLockLin))
         body.setLinearVelocity(Vec3(*rbState.velocityLin))
+        body.setMassProps(mass, inertia)
         body.setRestitution(rbState.restitution)
         body.setSleepingThresholds(0.1, 0.1)
-        del t
-
-        # Set mass and inertia. Make the whole body static if either mass or
-        # inertia is too small. This may not be what the user wants. Then
-        # again, it is the user's job to provide useful values for mass and
-        # inertia.
-        if (rbState.imass < 1E-4) or (sum(rbState.inertia) < 1E-4):
-            # Static body: mass and inertia are zero anyway.
-            body.setMassProps(0, Vec3(0, 0, 0))
-        else:
-            # Apply the new mass and inertia.
-            body.setMassProps(1 / rbState.imass, Vec3(*rbState.inertia))
         body.updateInertiaTensor()
 
-        # Attach a copy of the rbState structure to the rigid body.
+        # Overwrite the rbState structure with the latest version.
         body.azrael = {'rbState': rbState}
         return RetVal(True, None, None)
