@@ -149,9 +149,7 @@ class Quaternion:
         """
         Construct Quaternion with scalar ``w`` and vector ``v``.
         """
-        # Store 'w' and 'v' as Numpy types in the class.
-        self.w = np.float64(w)
-        self.v = np.array([x, y, z], dtype=np.float64)
+        self.vec = np.array([x, y, z, w], np.float64)
 
     def __mul__(self, q):
         """
@@ -166,16 +164,15 @@ class Quaternion:
 
         Note that V * Q and S * Q are *not* supported.
         """
+        v, w = self.vec[:3], self.vec[3]
         if isinstance(q, Quaternion):
             # Q * Q2:
-            w = self.w * q.w - np.inner(self.v, q.v)
-            v = self.w * q.v + q.w * self.v + np.cross(self.v, q.v)
-            arg = v.tolist() + [float(w)]
-            return Quaternion(*arg)
+            out_w = w * q.w - np.inner(v, q.v)
+            out_v = w * q.v + q.w * v + np.cross(v, q.v)
+            return Quaternion(*np.hstack([out_v, out_w]))
         elif isinstance(q, (int, float)):
             # Q * S:
-            arg = (q * v).tolist() + [q * float(self.w)]
-            return Quaternion(*arg)
+            return Quaternion(*np.hstack([q * v, q * w]))
         elif isinstance(q, (np.ndarray, tuple, list)):
             # Q * V: convert Quaternion to 4x4 matrix and multiply it
             # with the input vector.
@@ -192,26 +189,19 @@ class Quaternion:
         """
         Represent Quaternion as a vector with 4 elements.
         """
-        tmp = np.zeros(4, dtype=np.float64)
-        tmp[:3] = self.v
-        tmp[3] = self.w
-        return str(tmp)
+        return str(self.vec)
 
     def length(self):
         """
         Return length of Quaternion.
         """
-        return np.sqrt(self.w ** 2 + np.inner(self.v, self.v))
+        return np.linalg.norm(self.vec)
 
     def normalise(self):
         """
         Return normalised version of this Quaternion.
         """
-        l = self.length()
-        w = self.w / l
-        v = self.v / l
-
-        arg = v.tolist() + [float(w)]
+        arg = self.vec / self.length()
         return Quaternion(*arg)
 
     def toMatrix(self):
@@ -219,8 +209,7 @@ class Quaternion:
         Return the corresponding rotation matrix for this Quaternion.
         """
         # Shorthands.
-        x, y, z = self.v
-        w = self.w
+        x, y, z, w = self.vec
 
         # Elements of the Rotation Matrix based on the Quaternion elements.
         a11 = 1 - 2 * y * y - 2 * z * z
