@@ -285,28 +285,14 @@ class TestBulletAPI:
         Verify the angular velocity for a general torque vector and a body with
         a dense 3x3 inertia matrix (ie all 9 elements are nonzero).
 
-        The setup is annoyingly fickle because Bullet does not use inertia
-        tensors. Instead it *assumes* that the all collisions shapes are
-        aligned with the principal axis of inertia. If this is not the case
-        then it is our (ie Azrael's) responsibility to put the collision shapes
-        into a compound shape first. Inside this compund shape the collision
-        shapes must be translated/rotated so that their combined centre of mass
-        is at the center of the compound shape, and that the principal axis of
-        inertia align with the *world* coordinate system (ie the usual x/y/z
-        axis). To compensate for this transformation Azrael must then apply the
-        inverse translation/rotation to the compound shape. This will maintain
-        the position of all collision shapes in world coordinates. The whole
-        point of this exercise is to make it easy for Bullet to apply torques
-        to the compound shapes because its rotatation now automatically
-        specifies the rotation of the principal inertia axis. Given a torque it
-        is then straightforward to apply that torque for each axis individually
-        instead of working with a complete inertia Tensor.
+        The setup is annoyingly fickle. For more information about why this
+        test does what it does refer to the docstring of
+        'bullet_api._compileCollisionShape'.
         
-        This is all well for Bullet but does not make testing any easier. In
-        this test we will use a general 3x3 inertia tensor and apply a torque.
-        Then we will use Newton's second law and the 3x3 Inertia tensor to
-        predict the angular velocity. If Azrael set up the bodies correctly
-        then this must match the values returned by Bullet.
+        We will use a general 3x3 inertia tensor and apply a torque. Then we
+        will use Newton's second law and the 3x3 Inertia tensor to predict the
+        angular velocity. If Azrael set up the bodies correctly then this must
+        match the values returned by Bullet.
 
         There is another catch: specifying the 3x3 Inertia tensor is easy, but
         expressing its principal axis (ie. the rotation defined by its

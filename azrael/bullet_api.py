@@ -342,10 +342,57 @@ class PyBulletDynamicsWorld():
         """
         Return the correct Bullet collision shape based on ``rbState``.
 
-        The position of all collision shapes will be automatically corrected to
-        be relative to the center of mass argument ``com_ofs``.
+        Bullet does *not* use inertia tensors. It also does not have (much of)
+        a concept of centre of mass. Instead it *assumes* that the principal
+        axis of inertia of the (unrotated) collision shape is *literally* the
+        x/y/z axis of the world coordinate system. It *assumes* further that
+        the centre of mass is at the center of that collision shape.
 
-        This is a convenience method only.
+        This is fine for axis symmetric objects (eg spheres, boxes, capsules),
+        but  not much else. We can get around this restriction with a compound
+        shape. The basic idea is that with a compound shape bullet does not
+        care about the child shapes, only the compound shape. We may thus apply
+        a particular transform (translate/rotate) to all child shapes and the
+        inverse transform to the compound shape. If we do this correctly we can
+        make the position of the compound shape coincide with its centre of
+        mass, and have its principal axis aligned with x/y/z in world
+        coordinates. This is explained next.
+
+        Before we start recall that the centre of mass and axis of inertia for
+        the overall rigid body were specified by the user (available in the
+        `rbState` argument). Azrael *never* computes or modifies inertia
+        tensors or centre of masses - the user has to do that explicitly.
+
+        Now, to get around the aforementioned problem: first we put the
+        collision shape(s) into a compound shape. However, we do not put them
+        at their absolute positions but at their respective position/rotation
+        relative to the centre of mass and principal axis orientation.
+
+        The compound shape's centre of mass thus coincides with the position of
+        the compound shape. The compound's principal axis of inertia also
+        coincides with the x/y/z axis of the world coordinates. Together this
+        satisfies Bullet's assumption stated in the second paragraph of this
+        doc string.
+
+        The position/rotation of the child shapes in world coordinates is still
+        *wrong*, however, because their position/rotation was relative to
+        centre of mass and principal axis. To correct it we move and rotate the
+        compound shape in the exact opposite way.
+
+        The net effect is that the child shapes are now in the correct location
+        (as we want it) *and* the centre of mass coincides with the position of
+        the compound shape (as Bullet wants it) *and* the principal axis of the
+        compound shape aligns with the x/y/z axis of the world coordinate
+        system (as Bullet wants it as well).
+
+        Remarks:
+          * The mass and inertia of the child shapes is irrelevant; Bullet
+            only looks at the mass/inertia of the compound.
+          * Bullet does not compute the mass/inertia of the compound based on
+            the children; it offers convenience methods for doing so, but the
+            user must explicitly use them.
+          * The one and only purpose of the child shapes inside a compound is
+            to define where (and how) the rigid body can be "collided with".
 
         :param _RigidBodyData rbState: meta data to describe the body.
         :return: compound shape with all the individual shapes.
