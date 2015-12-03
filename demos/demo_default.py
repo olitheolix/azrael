@@ -449,7 +449,8 @@ def main():
             addBoosterCubeTemplate(scale, vert, uv, rgb)
 
             # Define additional templates, in this case the wall of cubes.
-            spawnCubes(*param.cubes, center=(0, 0, 10))
+            # Spawn them a bit to the right and back.
+            spawnCubes(*param.cubes, center=(5, 0, -5))
             del p, fname, model_name
 
         # Launch a dedicated process to periodically reset the simulation.
