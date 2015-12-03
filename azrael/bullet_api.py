@@ -401,12 +401,14 @@ class PyBulletDynamicsWorld():
         # Create the compound shape that will hold all other shapes.
         compound = azBullet.CompoundShape()
 
-        # Compute the inverse COT.
+        # Compute the inverse paComT.
         # fixme: quaternion should normalise automatically
         paxis = Quaternion(*rbState.paxis)
         paxis.normalize()
-        cot = Transform(paxis, Vec3(*rbState.com))
-        i_cot = cot.inverse()
+
+        # Determine the transform with respect to the principal axis
+        # orientation and the centre of mass.
+        i_paComT = Transform(paxis, Vec3(*rbState.com)).inverse()
 
         # Create the collision shapes one by one.
         scale = rbState.scale
@@ -437,14 +439,12 @@ class PyBulletDynamicsWorld():
                 msg = 'Unrecognised collision shape <{}>'.format(cstype)
                 self.logit.warning(msg)
 
-            # Determine the transform with respect to the center of mass. Then
-            # pre-multiply it with the principal axis of inertia (the rigid
-            # body will apply the inverse to undo the effect). This ensures the
-            # applied torque will be properly aligned with the principal axis.
-            # fixme: rename COT to something else, maybe aligned_center_of_mass
-            # (ACOT)?
+            # Specify the position/rotation of the child shape. Then adjust
+            # them to be relative to the principal axis orientation and centre
+            # of mass location (setRigidBodyData will compensate for this with
+            # the inverse transform on the compound shape).
             t = Transform(Quaternion(*cs.rotation), Vec3(*cs.position))
-            t = i_cot * t
+            t = i_paComT * t
 
             # Add the child with the correct transform.
             compound.addChildShape(t, child)
@@ -534,7 +534,7 @@ class PyBulletDynamicsWorld():
         """
         paxis = Quaternion(*rbState.paxis)
         paxis.normalize()
-        cot = Transform(paxis, Vec3(*rbState.com))
+        paComT = Transform(paxis, Vec3(*rbState.com))
         del paxis
 
         # Create the rigid body if it does not yet exist.
@@ -577,6 +577,7 @@ class PyBulletDynamicsWorld():
             # Dynamic body: convert mass/inertia to Bullet types.
             mass, inertia = 1 / rbState.imass, Vec3(*rbState.inertia)
 
+        # pacomt
         # The shapes inside the compound have all been transformed with the
         # inverse COT. Here we undo this transformation by applying the COT
         # again. The net effect in terms of collision shape positions is zero.
@@ -586,7 +587,7 @@ class PyBulletDynamicsWorld():
         # computes angular movement. This is also the reason why the inertia
         # Tensor has only 3 elements instead of being a 3x3 matrix. Yes, I know
         # this is confusing.
-        t = Transform(rot, pos) * cot
+        t = Transform(rot, pos) * paComT
 
         # Assign body properties.
         body.setAngularFactor(Vec3(*rbState.axesLockRot))
