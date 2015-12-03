@@ -366,7 +366,7 @@ class TestBulletAPI:
         ret_b = sim.getRigidBodyData(id_b)
         assert ret_a.ok and ret_b.ok
 
-        # Verify that the centred offset only moved in z-direction. Then verify
+        # Verify that the centred body only moved in z-direction. Then verify
         # that the second object moved along the positive 'z' and negative 'y'
         # axis because it must have started to spin.
         rpos_a = ret_a.data.position
@@ -375,6 +375,44 @@ class TestBulletAPI:
         assert rpos_a[2] > 0.1
         assert rpos_b[0] == pos_b[0]
         assert (rpos_b[1] < 0.1) and (rpos_b[2] > 0.1)
+
+    @pytest.mark.parametrize('forceFun', ['applyForce', 'applyForceAndTorque'])
+    def test_apply_angular_velocity_to_noncentred_body(self, forceFun):
+        """
+        Create a body at position (0, 0, 0). Its centre of mass is at (1, 0, 0). The
+        apply an angular velocity of pi rad/s along the z-axis and step the
+        simulation for one second. This must have rotated the body by 180
+        degrees, which means the body's position must have gone from (0, 0, 0)
+        to (2, 0, 0).
+        """
+        # Constants and parameters for this test.
+        id_a = '10'
+        dt, maxsteps = 1.0, 60
+
+        # Create two bodies. They do not touch and have different centres of
+        # mass.
+        pi = float(np.pi)
+        pos = (1, 2, 3)
+        com = (4, 5, 0)
+        obj_a = getRigidBody(position=pos, com=com, velocityRot=(0, 0, pi))
+
+        # Instantiate a Bullet engine and load the object.
+        sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
+        sim.setRigidBodyData(id_a, obj_a)
+
+        # Query the object back immediately and verify that it is intact
+        # (despite the centre of mass not being zero in this test).
+        ret_a = sim.getRigidBodyData(id_a)
+        assert self.isBulletRbsEqual(ret_a.data, obj_a)
+
+        # Progress the simulation and query the object.
+        sim.compute([id_a], dt, maxsteps)
+        ret_a = sim.getRigidBodyData(id_a)
+        assert ret_a.ok
+
+        # Extract the position. The object position must have rotated 180
+        # degrees around the centre of mass (around the z-axis).
+        assert np.allclose(2 * np.array(com) + pos, ret_a.data.position, 0.1)
 
     def test_compute_invalid(self):
         """
