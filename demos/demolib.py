@@ -257,20 +257,32 @@ def cubeGeometry(hlen_x=1.0, hlen_y=1.0, hlen_z=1.0):
     return vert, cs
 
 
-def launchQtViewer(param):
+def launchQtViewer():
     """
-    Launch the Qt Viewer in a separate process.
+    Launch the Qt Viewer in a separate process and return its handle.
 
-    This function does not return until the viewer process finishes.
+    The calling process will probably want to use handle.poll(),
+    handle.wait(), etc to monitor the viewer process. For details see:
+
+    https://docs.python.org/3.5/library/subprocess.html#subprocess.Popen
     """
+    # Construct the absolute path the the viewer script.
     this_dir = os.path.dirname(os.path.abspath(__file__))
     fname = os.path.join(this_dir, 'viewer.py')
 
+    # Spawn the viewer process and return its handle.
+    return subprocess.Popen(['python', fname])
+
+
+def waitForever():
+    """
+    Wait forever and intercept keyboard interrup.
+
+    This is a covenience function because the logic shows up in most demos.
+    """
     try:
-        if param.noviewer:
-            time.sleep(3600000000)
-        else:
-            subprocess.call(['python3', fname])
+        while True:
+            time.sleep(10)
     except KeyboardInterrupt:
         pass
 
