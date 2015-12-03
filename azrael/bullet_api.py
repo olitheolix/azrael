@@ -577,16 +577,10 @@ class PyBulletDynamicsWorld():
             # Dynamic body: convert mass/inertia to Bullet types.
             mass, inertia = 1 / rbState.imass, Vec3(*rbState.inertia)
 
-        # pacomt
-        # The shapes inside the compound have all been transformed with the
-        # inverse COT. Here we undo this transformation by applying the COT
-        # again. The net effect in terms of collision shape positions is zero.
-        # However, by undoing the COT on every shape *inside* the compound it
-        # has overall become aligned with the principal axis of all those
-        # shapes. This, in turn, is what Bullet implicitly assumes when it
-        # computes angular movement. This is also the reason why the inertia
-        # Tensor has only 3 elements instead of being a 3x3 matrix. Yes, I know
-        # this is confusing.
+        # Rotate/translate the compound shape as specified by the principal
+        # axis of inertia and the centre of mass to undo the inverse
+        # transformation of the child shapes. Then move the compound shape to
+        # the position specified by Azrael.
         t = Transform(rot, pos) * paComT
 
         # Assign body properties.
