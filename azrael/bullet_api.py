@@ -547,7 +547,7 @@ class PyBulletDynamicsWorld():
                     mass=1,
                     ms=azBullet.DefaultMotionState(),
                     cs=compound,
-                    inert=Vec3(1, 1, 1)
+                    inertia=Vec3(1, 1, 1)
                 )
             )
 

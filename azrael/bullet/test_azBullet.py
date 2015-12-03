@@ -422,9 +422,9 @@ class TestRigidBody:
         # Get RigidBody object.
         body = getRB()
 
-        # The default body has unit mass and no inertia.
+        # The default body has unit mass and unit inertia.
         assert body.getInvMass() == 1
-        assert body.getInvInertiaDiagLocal() == Vec3(0, 0, 0)
+        assert body.getInvInertiaDiagLocal() == Vec3(1, 1, 1)
 
         # Set the linear- and angular friction coefficients.
         mass, inertia = 2, Vec3(1, 10, 100)
@@ -541,7 +541,7 @@ class TestRigidBody:
         assert ci.mass == 1.1
 
         # Local inertia was specified in Ctor.
-        assert ci.localInertia == Vec3(0, 0, 0)
+        assert ci.localInertia == Vec3(1, 1, 1)
         inert = Vec3(1, 2, 10)
         ci.localInertia = inert
         assert ci.localInertia == inert

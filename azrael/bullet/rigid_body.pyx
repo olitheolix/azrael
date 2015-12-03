@@ -8,13 +8,16 @@ cdef class RigidBodyConstructionInfo:
     def __cinit__(self):
         self.ptr_RigidBodyConstructionInfo = NULL
 
-    def __init__(self, double mass, MotionState ms, CollisionShape cs,
-                  Vec3 inert=Vec3(0, 0, 0)):
+    def __init__(self,
+                 double mass,
+                 MotionState ms,
+                 CollisionShape cs,
+                 Vec3 inertia=Vec3(1, 1, 1)):
         self.ptr_RigidBodyConstructionInfo = new btRigidBodyConstructionInfo(
             btScalar(mass),
             ms.ptr_MotionState,
             cs.ptr_CollisionShape,
-            inert.ptr_Vector3[0])
+            inertia.ptr_Vector3[0])
         assert self.ptr_RigidBodyConstructionInfo != NULL
 
         # Keep a handle to the MotionState and CollisionShape to ensure they
