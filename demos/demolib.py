@@ -21,6 +21,12 @@ import time
 import json
 import netifaces
 import subprocess
+
+# Import 'setproctitle' *before* NumPy, even though it is not even used
+# in this script. Howver, if it is import after NumPy then the various Azrael
+# modules cannot rename themselves. No, I do not know why.
+import setproctitle
+
 import numpy as np
 
 # Import the necessary Azrael modules.

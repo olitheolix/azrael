@@ -31,13 +31,9 @@ import argparse
 import PIL.Image
 import subprocess
 import multiprocessing
-
-# Import 'setproctitle' *before* NumPy, even though it is not even used
-# in this script. Howver, if it is import after NumPy then the various Azrael
-# modules cannot rename themselves. No, I do not know why.
-import setproctitle
-import numpy as np
 import demolib
+
+import numpy as np
 
 # Import the necessary Azrael modules.
 p = os.path.dirname(os.path.abspath(__file__))
