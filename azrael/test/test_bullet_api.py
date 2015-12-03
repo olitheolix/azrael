@@ -52,48 +52,6 @@ class TestBulletAPI:
             return False
         return True
 
-    def test_convert_bullet2azrael(self):
-        """
-        Azrael uses the same coordinate system for fragment and collisions
-        shapes positions. However, collision shapes must be specified relative
-        to their center of mass to produce the correct physics. The position in
-        Azrael and the position of the compound shape used in the physics
-        engine there do not coincide unless the center of mass is (0, 0, 0).
-
-        This test verifies that the utility functions that convert between the
-        Azrael object position and the Bullet compound shape position work
-        correctly.
-        """
-        # Convenience.
-        bullet2azrael = azrael.bullet_api.bullet2azrael
-        azrael2bullet = azrael.bullet_api.azrael2bullet
-        Vec3 = azrael.bullet_api.Vec3
-        Quaternion = azrael.bullet_api.Quaternion
-
-        # Center of mass offset relative to the object position in Azrael (the
-        # user specifies this value in the template).
-        com_ofs = [2, 2, 0]
-
-        # After a physics update Bullet gives us the following position and rotation
-        # for the compound shape.
-        bt_pos = Vec3(*[6, 2, 0])
-        bt_rot = Quaternion(*[0, 0, 1, 0])
-
-        # Convert this to an object position in Azrael. The rotatation of rigid
-        # bodies and Azrael objects are always identical; only the position
-        # differs due to the center of mass offset.
-        az_pos, az_rot = bullet2azrael(bt_pos, bt_rot, com_ofs)
-        assert np.allclose(az_pos, [8, 4, 0])
-        assert np.allclose(az_rot, bt_rot.topy())
-
-        # Convert the Azrael object position to a Bullet rigid body position.
-        # Verify that this produces the original value.
-        bt_pos_new, bt_rot_new = azrael2bullet(az_pos, az_rot, com_ofs)
-        assert isinstance(bt_pos_new, Vec3)
-        assert isinstance(bt_rot_new, Quaternion)
-        assert np.allclose(bt_pos_new.topy(), bt_pos.topy())
-        assert np.allclose(bt_rot_new.topy(), bt_rot.topy())
-
     def test_getset_object(self):
         """
         Send/retrieve object to/from Bullet and verify the integrity.

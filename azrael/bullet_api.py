@@ -57,31 +57,6 @@ class PyRigidBody(azBullet.RigidBody):
         super().__init__(ci)
 
 
-def bullet2azrael(bt_pos: Vec3, bt_rot: Quaternion, com_ofs: list):
-    """
-    Return the Azrael object position for the compound shape.
-
-    pos_new = bt_pos - bt_rot * com_ofs
-    """
-    # Use Bullet's Transform class to apply the Quaternion bt_rot.
-    rot = Transform(bt_rot, Vec3(0, 0, 0))
-    bt_pos = bt_pos - rot * Vec3(*com_ofs)
-    return bt_pos.topy(), bt_rot.topy()
-
-
-def azrael2bullet(az_pos: list, az_rot: list, com_ofs: list):
-    """
-    Return the compound shape transform for the Azrael object.
-
-    pos_new = az_pos + az_rot * com_ofs
-    """
-    # Use Bullet's Transform class to apply the Quaternion bt_rot.
-    az_rot = Quaternion(*az_rot)
-    rot = Transform(az_rot, Vec3(0, 0, 0))
-    az_pos = Vec3(*az_pos) + rot * Vec3(*com_ofs)
-    return az_pos, az_rot
-
-
 class PyBulletDynamicsWorld():
     """
     High level wrapper around the low level Bullet bindings.
