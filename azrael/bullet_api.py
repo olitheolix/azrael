@@ -402,9 +402,7 @@ class PyBulletDynamicsWorld():
         compound = azBullet.CompoundShape()
 
         # Compute the inverse paComT.
-        # fixme: quaternion should normalise automatically
-        paxis = Quaternion(*rbState.paxis)
-        paxis.normalize()
+        paxis = Quaternion(*rbState.paxis).normalized()
 
         # Determine the transform with respect to the principal axis
         # orientation and the centre of mass.
@@ -475,8 +473,7 @@ class PyBulletDynamicsWorld():
 
         # Undo the rotation that is purely due to the alignment with the ineria
         # axis so that Bullet can apply the moments of inertia directly.
-        # fixme: Quaternions should automatically normalise
-        paxis = Quaternion(*rbState.paxis)
+        paxis = Quaternion(*rbState.paxis).normalized()
         paxis.normalize()
         rot = paxis.inverse() * rot
         del t, paxis
