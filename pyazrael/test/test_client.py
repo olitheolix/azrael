@@ -25,6 +25,7 @@ if you want to see thorough tests for the Clerk functionality.
 import os
 import sys
 import time
+import copy
 import json
 import pytest
 import requests
@@ -625,7 +626,7 @@ class TestClient:
         ]
 
         # ---------------------------------------------------------------------
-        # Modify the fragments.
+        # Modify the fragments and verify that setFragments has no side effects
         # ---------------------------------------------------------------------
         cmd = {
             objID: {
@@ -642,7 +643,16 @@ class TestClient:
                 }
             }
         }
+
+        # Create a deep copy of the command.
+        cmd_copy = copy.deepcopy(cmd)
+
+        # Issue the setFragment command.
         assert client.setFragments(cmd) == (True, None, {'updated': {objID: True}})
+
+        # Verify that the content of `cmd` was not modified in any way.
+        assert cmd_copy == cmd
+        del cmd_copy
 
         # The object must have received a new 'version'.
         ret = client.getRigidBodies(objID)

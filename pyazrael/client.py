@@ -27,6 +27,7 @@ feature set is identical).
 import io
 import zmq
 import json
+import copy
 import base64
 import logging
 import requests
@@ -398,6 +399,10 @@ class Client():
         """
         def enc(filedata):
             return base64.b64encode(filedata).decode('utf8')
+
+        # Copy the input data because we will replace the binary file data with
+        # Base64 encoded versions thereof.
+        cmd = copy.deepcopy(cmd)
 
         for objID in cmd:
             for fragname, fragdata in cmd[objID].items():
