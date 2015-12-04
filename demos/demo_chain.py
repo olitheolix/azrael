@@ -394,8 +394,12 @@ def main():
     az.startProcess(
         UpdateGrid(period_circ=param.circular, period_lin=param.linear))
 
-    # Start the Qt Viewer. This call will block until the viewer exits.
-    demolib.launchQtViewer(param)
+    # Either wait forever or start the Qt Viewer and wait for it to return.
+    if param.noviewer:
+        demolib.waitForever()
+    else:
+        viewer = demolib.launchQtViewer()
+        viewer.wait()
 
     # Stop Azrael stack.
     az.stop()

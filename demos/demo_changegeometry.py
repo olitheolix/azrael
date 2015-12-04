@@ -203,8 +203,12 @@ def main():
     # process to the list of processes.
     az.startProcess(SetGeometry(2))
 
-    # Start the Qt Viewer. This call will block until the viewer exits.
-    demolib.launchQtViewer(param)
+    # Either wait forever or start the Qt Viewer and wait for it to return.
+    if param.noviewer:
+        demolib.waitForever()
+    else:
+        viewer = demolib.launchQtViewer()
+        viewer.wait()
 
     # Stop Azrael stack.
     az.stop()

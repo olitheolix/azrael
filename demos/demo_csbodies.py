@@ -212,9 +212,15 @@ def main():
     time.sleep(1)
     print('Azrael now live')
 
-    # Spawn the model. Then either launch the Qt viewer or wait forever.
+    # Setup the simulation.
     spawn_model()
-    demolib.launchQtViewer(param)
+
+    # Either wait forever or start the Qt Viewer and wait for it to return.
+    if param.noviewer:
+        demolib.waitForever()
+    else:
+        viewer = demolib.launchQtViewer()
+        viewer.wait()
 
     # Stop Azrael stack.
     az.stop()
