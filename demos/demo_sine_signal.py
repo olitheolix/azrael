@@ -61,59 +61,65 @@ def parseCommandLine():
     return param
 
 
-class ModifyScale(multiprocessing.Process):
+class SineWaveGenerator:
     """
-    Periodically modify the size of the cubes to visualise a sinusoidal
-    signal with the lines of cubes.
+    Scale the cubes to visualise a Sine wave.
     """
-    def run(self):
-        # Connect to Azrael.
-        client = azrael.clerk.Clerk()
+    def __init__(self, client):
+        self.client = client
+        self.objID = None
+        self.cnt = 0
 
+    def waitForObject(self, name):
+        """
+        Wait until the object ``name`` is present in the simulation.
+
+        Return the objID.
+        """
         # Poll the simulation until an object with the correct tag appears.
         while True:
-            ret = client.getCustomData(None)
+            ret = self.client.getCustomData(None)
             assert ret.ok
-            objIDs = [k for (k, v) in ret.data.items() if v == 'PlotObject']
+            objIDs = [k for (k, v) in ret.data.items() if v == name]
             if len(objIDs) == 1:
-                objID = objIDs[0]
-                print('Found the object (ID={})'.format(objID))
+                self.objID = objIDs[0]
                 break
             time.sleep(0.5)
 
         # Fetch all fragment names.
-        ret = client.getFragments([objID])
+        ret = self.client.getFragments([self.objID])
         assert ret.ok
-        frag_names = sorted(ret.data[objID].keys())
+        self.frag_names = sorted(ret.data[self.objID].keys())
+        return self.objID
 
-        # Periodically update the scale values of each cube.
-        cnt = 0
-        while True:
-            # Increment loop counter.
-            cnt += 1
+    def updatePlot(self):
+        """
+        Compute a new phase value and update the Sine wave accordingly.
+        """
+        # Increment loop counter.
+        self.cnt += 1
 
-            # Compute a sine wave and convert it to scale values.
-            t = np.linspace(0, 1, len(frag_names))
-            phi = np.pi * (cnt / 10)
-            scale = np.sin(2 * np.pi * t  + phi)
+        # Compute a sine wave and convert it to scale values.
+        t = np.linspace(0, 1, len(self.frag_names))
+        phi = np.pi * (self.cnt / 10)
+        scale = np.sin(2 * np.pi * t + phi)
 
-            # Scale values must be non-negative.
-            scale = (1 + scale) / 2
+        # Scale values must be non-negative in Azrael.
+        scale = (1 + scale) / 2
 
-            # Apply the scale values to the cubes.
-            cmd = {}
-            for scale, frag_name in zip(scale.tolist(), frag_names):
-                cmd[frag_name] = {'op': 'mod', 'scale': scale}
-            ret = client.setFragments({objID: cmd})
-
-            # Wait.
-            time.sleep(0.1)
+        # Apply the scale values to the cubes.
+        cmd = {}
+        for scale, frag_name in zip(scale.tolist(), self.frag_names):
+            cmd[frag_name] = {'op': 'mod', 'scale': scale}
+        assert self.client.setFragments({self.objID: cmd}).ok
 
 
-def addLineOfCubes(numCubes=15):
-    # Connect to Azrael.
-    client = azrael.clerk.Clerk()
+def addLineOfCubes(client, objName: str, numCubes: int):
+    """
+    Spawn a single body with ``numCubes`` fragments.
 
+    The body will also be tagged with `objName`.
+    """
     # Get the mesh and collision shape for a single cube.
     vert, csmetabox = demolib.cubeGeometry(0.5, 0.5, 0.5)
 
@@ -142,7 +148,7 @@ def addLineOfCubes(numCubes=15):
     objID = ret.data[0]
 
     # Tag the object.
-    assert client.setCustomData({objID: 'PlotObject'})
+    assert client.setCustomData({objID: objName})
 
 
 def main():
@@ -154,17 +160,30 @@ def main():
     az.start()
     print('Azrael now live')
 
-    # Spawn the line of cubes that will serve as the stems of the plot.
-    p = ModifyScale()
-    p.start()
-    addLineOfCubes()
+    # Connect to Azrael.
+    client = azrael.clerk.Clerk()
 
-    # Launch Qt viewer and wait for it to exit.
-    demolib.launchQtViewer(param)
+    # Spawn the line of cubes that will serve as the plot markers.
+    objName = 'PlotObject'
+    addLineOfCubes(client, objName, 15)
+
+    # Create the Sine wave generator and wait until it found the object.
+    swg = SineWaveGenerator(client)
+    swg.waitForObject(objName)
+
+    # Wait for the user to terminate the program.
+    if param.noviewer:
+        # Wait until <Ctrl-C>
+        demolib.waitForever()
+    else:
+        # Launch Qt Viewer in new process and wait until the user quits it.
+        viewer = demolib.launchQtViewer()
+        while viewer.poll() is None:
+            time.sleep(0.1)
+            swg.updatePlot()
+        viewer.wait()
 
     # Stop Azrael stack.
-    p.terminate()
-    p.join()
     az.stop()
     print('Clean shutdown')
 
