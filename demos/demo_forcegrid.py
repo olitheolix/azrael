@@ -114,7 +114,7 @@ class UpdateGrid(multiprocessing.Process):
         Nx, Ny, Nz = 20, 20, 3
 
         # Lower left corner of the grid in space.
-        ofs = np.array([-Nx, -Ny, 10 - Nz], np.float64)
+        ofs = np.array([-Nx, -Ny, -10 - Nz], np.float64)
 
         # Compute a counter clockwise oriented vector grid and another one the
         # always points to the center. Both calculations ignore the
@@ -168,7 +168,7 @@ def main():
         az.start()
         if not param.noinit:
             # Add the specified number of cubes in a grid layout.
-            demo_default.spawnCubes(*param.cubes, center=(0, 0, 10))
+            demo_default.spawnCubes(*param.cubes, center=(0, 0, -10))
 
         # Launch a dedicated process to periodically reset the simulation.
         time.sleep(2)

@@ -311,10 +311,10 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         print('fixme: start demo with at least 4 cubes!')
         sys.exit(1)
     allObjs = []
-    pos_0 = [2, 0, 10]
-    pos_1 = [-2, 0, 10]
-    pos_2 = [-6, 0, 10]
-    pos_3 = [-10, 0, 10]
+    pos_0 = [2, 0, -10]
+    pos_1 = [-2, 0, -10]
+    pos_2 = [-6, 0, -10]
+    pos_3 = [-10, 0, -10]
     allObjs.append({'templateID': tID_cube[0], 'rbs': {'position': pos_0}})
     allObjs.append({'templateID': tID_cube[1], 'rbs': {'position': pos_1}})
     allObjs.append({'templateID': tID_cube[2], 'rbs': {'position': pos_2}})

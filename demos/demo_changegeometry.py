@@ -199,7 +199,7 @@ def main():
         az.start()
         if not param.noinit:
             # Define additional templates.
-            demo_default.spawnCubes(*param.cubes, center=(0, 0, 10))
+            demo_default.spawnCubes(*param.cubes, center=(0, 0, -10))
 
         # Launch a dedicated process to periodically reset the simulation.
         time.sleep(2)
