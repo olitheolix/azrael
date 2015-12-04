@@ -123,9 +123,10 @@ class SetGeometry(multiprocessing.Process):
                 tmp = requests.get(url).content
                 tmp = json.loads(tmp.decode('utf8'))
                 geo_orig[objID][frag_name] = {
+                    'op': 'mod',
                     'fragtype': 'RAW',
                     'scale': 1,
-                    'fragdata': crf(tmp['vert'], tmp['uv'], tmp['rgb']),
+                    'put': crf(tmp['vert'], tmp['uv'], tmp['rgb']),
                 }
                 del url, tmp
             del objID
@@ -135,11 +136,17 @@ class SetGeometry(multiprocessing.Process):
         # periodically swapped out for the original models.
         sphere_vert, sphere_uv, sphere_rgb = loadSphere()
         sphere = crf(sphere_vert, sphere_uv, sphere_rgb)
+
         geo_spheres = {}
         for objID in objIDs:
             geo_spheres[objID] = {
-                _: {'fragtype': 'RAW', 'scale': 1, 'fragdata': sphere}
-                for _ in geo_orig[objID]}
+                frag_name: {
+                    'op': 'mod',
+                    'fragtype': 'RAW',
+                    'scale': 1,
+                    'put': sphere
+                } for frag_name in geo_orig[objID]
+            }
         del sphere_vert, sphere_uv, sphere_rgb, sphere
 
         cnt = 0
@@ -168,6 +175,7 @@ class SetGeometry(multiprocessing.Process):
                 # Modify the position of the second fragment.
                 new_frag_states[objID] = {
                     'frag_2': {
+                        'op': 'mod',
                         'scale': scale,
                         'position': [-10 + cnt, 0, 0]
                     }
