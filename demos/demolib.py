@@ -71,7 +71,7 @@ def getNetworkAddress():
     return host_ip
 
 
-def compileRawFragment(vert, uv, rgb):
+def compileRawFragment(vert, uv, rgb, width, height):
     if not isinstance(vert, np.ndarray):
         vert = np.array(vert, np.float64)
     if not isinstance(uv, np.ndarray):
@@ -82,17 +82,22 @@ def compileRawFragment(vert, uv, rgb):
     model = {
         'vert': vert.tolist(),
         'uv': uv.tolist(),
-        'rgb': rgb.tolist()
+        'rgb': rgb.tolist(),
+        'width': width,
+        'height': height,
     }
 
     return {'model.json': json.dumps(model).encode('utf8')}
 
 
-def getFragMetaRaw(vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
+def getFragMetaRaw(vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1),
+    width=None, height=None):
     """
     Return compiled FragMeta tuple for a modle in RAW format.
+
+    fixme: make width/height compulsory
     """
-    files = compileRawFragment(vert, uv, rgb)
+    files = compileRawFragment(vert, uv, rgb, width, height)
     return FragMeta(fragtype='RAW', scale=scale, position=pos,
                     rotation=rot, files=files)
 
