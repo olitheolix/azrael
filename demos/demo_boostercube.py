@@ -24,7 +24,6 @@ import demo_default
 import numpy as np
 
 # Import the necessary Azrael modules.
-import model_import
 import pyazrael
 import azrael
 import azrael.util as util

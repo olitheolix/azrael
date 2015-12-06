@@ -40,7 +40,6 @@ p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '..'))
 del p
 
-import model_import
 import pyazrael
 import azrael.startup
 import azrael.util as util
