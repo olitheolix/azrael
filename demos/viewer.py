@@ -79,13 +79,16 @@ def parseCommandLine():
     return param
 
 
-def getFragMetaRaw(vert, uv, rgb):
+def getFragMetaRaw(vert, uv, rgb, width, height):
     scale = 1
     pos = (0, 0, 0)
     rot = (0, 0, 0, 1)
 
-    Model = namedtuple('Model', 'fragtype scale position rotation vert uv rgb')
-    return Model('RAW', scale, pos, rot, vert, uv, rgb)
+    Model = namedtuple(
+        'Model',
+        'fragtype scale position rotation vert uv rgb width height'
+    )
+    return Model('RAW', scale, pos, rot, vert, uv, rgb, width, height)
 
 
 def getRigidBody(scale: (int, float)=1,
@@ -415,8 +418,18 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if len(frag.vert) == 0:
             return
 
-        # fixme: getGeometries must provide this (what about getGeometries?).
-        width = height = int(np.sqrt(len(frag.rgb) // 3))
+        # Unpack the texture size.
+        width, height = frag.width, frag.height
+
+        # fixme: this workaround must become redundant once the mess with the
+        # texture files and various model loader functions is gone. Right now
+        # the viewer has code to load DAE files, demolib has code, demolib also
+        # has special code for the boostercube cube because the DAE file is
+        # broken... move all model loading functionality into demolib, remove
+        # it from the viewer, and replace the boostercube.dae with a
+        # boostercube.blend once Blender import works.
+        if (width is None) or (height is None):
+            width = height = int(np.sqrt(len(frag.rgb) // 3))
 
         # GPU needs float32 values for vertices and UV, and uint8 for RGB.
         buf_vert = np.array(frag.vert).astype(np.float32)
@@ -459,7 +472,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         gl.glVertexAttribPointer(0, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
         gl.glEnableVertexAttribArray(0)
 
-        if len(buf_uv) == 0:
+        if (len(buf_rgb) == 0) or (len(buf_uv) == 0):
             if len(buf_rgb) == numVertices * 3:
                 # No UV map, but vertex colors. Add the missing alpha values
                 # but use the data as-is otherwise.
@@ -468,7 +481,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 buf_col[:, :3] = tmp / 255
                 del tmp
             else:
-                # Neither an UV map nor vertices are available: create random
+                # Neither a UV map nor vertices are available: create random
                 # colors.
                 buf_col = np.random.rand(4 * numVertices)
 
@@ -508,10 +521,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
             # Upload texture to GPU (transpose the image first).
             buf_rgb = np.reshape(buf_rgb, (width, height, 3))
-            buf_rgb[:, :, 0] = buf_rgb[:, :, 0].T
-            buf_rgb[:, :, 1] = buf_rgb[:, :, 1].T
-            buf_rgb[:, :, 2] = buf_rgb[:, :, 2].T
-            buf_rgb = buf_rgb.flatten()
+            buf_rgb = buf_rgb.transpose((1, 0, 2))
             gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height,
                             0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE, buf_rgb)
 
@@ -597,7 +607,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                         self._removeObjectData(objID)
                         break
                     frag = json.loads(frag.decode('utf8'))
-                    frag = getFragMetaRaw(frag['vert'], frag['uv'], frag['rgb'])
+                    frag = getFragMetaRaw(
+                        frag['vert'], frag['uv'], frag['rgb'],
+                        frag['width'], frag['height']
+                    )
                 elif frag_data['fragtype'] == 'DAE':
                     url = base_url + frag_data['url_frag'] + '/' + fragID
                     frag = requests.get(url).content
@@ -615,12 +628,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                     vert = np.array(mesh['vertices']).flatten()
                     uv = np.array(mesh['UV']).flatten()
                     rgb = np.array(mesh['RGB']).flatten()
+                    width = height = None
 
                     # Ensure the data has the correct format.
                     vert = np.array(vert)
                     uv = np.array(uv, np.float32)
                     rgb = np.array(rgb, np.uint8)
-                    frag = getFragMetaRaw(vert, uv, rgb)
+                    frag = getFragMetaRaw(vert, uv, rgb, width, height)
                 elif frag_data['fragtype'] == '3JS_V3':
                     # Model files in 3JS format. These are stored in a main
                     # JSON file plus (optional) texture files. Find the JSON
@@ -652,6 +666,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                         with tempfile.TemporaryDirectory() as tmpdir:
                             open('texture.jpg', 'wb').write(texture)
                             img = PIL.Image.open(fnames[0])
+                            width, height = img.size
                             img = np.array(img)
                             rgb = np.rollaxis(np.flipud(img), 1).flatten()
                             print('imported texture {}'.format(url))
@@ -659,7 +674,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                         del url, texture
                     del fnames
 
-                    frag = getFragMetaRaw(vert, uv, rgb)
+                    frag = getFragMetaRaw(vert, uv, rgb, width, height)
                 else:
                     continue
                 self.upload2GPU(objID, fragID, frag)
@@ -688,7 +703,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         model = {
             'vert': buf_vert.tolist(),
             'uv': uv.tolist(),
-            'rgb': rgb.tolist()
+            'rgb': rgb.tolist(),
+            'width': 1,
+            'height': 1,
         }
         model = json.dumps(model).encode('utf8')
 
