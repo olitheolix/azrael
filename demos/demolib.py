@@ -90,8 +90,9 @@ def compileRawFragment(vert, uv, rgb, width, height):
     return {'model.json': json.dumps(model).encode('utf8')}
 
 
-def getFragMetaRaw(vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1),
-    width=None, height=None):
+def getFragMetaRaw(
+        vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1),
+        width=None, height=None):
     """
     Return compiled FragMeta tuple for a modle in RAW format.
 

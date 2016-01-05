@@ -205,8 +205,8 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
     path_base = os.path.join(path_base, '..', 'azrael', 'static', 'img')
     fname = os.path.join(path_base, 'texture_5.jpg')
 
-    # Load the texture and convert it to flat vector because this is how OpenGL
-    # will want it.
+    # Load the texture and convert it to a flat vector because this is how
+    # OpenGL will want it.
     img = PIL.Image.open(fname)
     img = np.array(img)
     rgb = np.rollaxis(np.flipud(img), 1).flatten()
