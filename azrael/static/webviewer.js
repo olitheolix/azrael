@@ -38,7 +38,40 @@ function compileMesh (objID, vert, uv, rgb, scale) {
     }
 
     // Assign the face colors, either via directly specified colors or a texture map.
-    if (!hasUV) {
+    if (hasUV) {
+        // fixme: must be provided
+        var width = Math.floor(Math.sqrt(rgb.length / 3))
+        var height = Math.floor(Math.sqrt(rgb.length / 3))
+
+        // 3JS needs the RGB data as a UInt8 buffer; we also need to transpose
+        // the image to make it appear correctly.
+        var mytex = new Uint8Array(rgb.length)
+        for (var h = 0; h < height; h++) {
+            for (var w = 0; w < width; w++) {
+                // Index in original and transposed image.
+                var idx_src = 3 * (w + width * h);
+                var idx_dst = 3 * (h + height * w);
+
+                // Copy the RGB data to the new typed array.
+                mytex[idx_dst + 0] = rgb[idx_src + 0];
+                mytex[idx_dst + 1] = rgb[idx_src + 1];
+                mytex[idx_dst + 2] = rgb[idx_src + 2];
+            }
+        }
+
+        // Create the 3JS texture from our raw RGB data.
+        var texture = new THREE.DataTexture(mytex, width, height, THREE.RGBFormat);
+        texture.needsUpdate = true;
+        texture.flipY = false;
+
+        // Create a textured material.
+        var mat = new THREE.MeshBasicMaterial(
+            {'map': texture,
+             'wireframe': false,
+             'overdraw': true
+            }
+        )
+    } else {
         for (var i = 0; i < geo.faces.length; i++) {
             var face = geo.faces[i];
             if (hasRGB) {
@@ -58,16 +91,8 @@ function compileMesh (objID, vert, uv, rgb, scale) {
         var mat = new THREE.MeshBasicMaterial(
             {'vertexColors': THREE.FaceColors,
              'wireframe': false,
-             'wireframeLinewidth': 3})
-    } else {
-        // Create a textured material.
-        var fname = 'img/texture_' + objID + '.jpg'
-        var texture = THREE.ImageUtils.loadTexture(fname);
-        var mat = new THREE.MeshBasicMaterial({
-            'map': texture,
-            'wireframe': false,
-            'overdraw': true
-        })
+             'wireframeLinewidth': 3}
+        );
     }
 
     return new THREE.Mesh(geo, mat)
