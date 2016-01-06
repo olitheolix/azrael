@@ -421,16 +421,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Unpack the texture size.
         width, height = frag.width, frag.height
 
-        # fixme: this workaround must become redundant once the mess with the
-        # texture files and various model loader functions is gone. Right now
-        # the viewer has code to load DAE files, demolib has code, demolib also
-        # has special code for the boostercube cube because the DAE file is
-        # broken... move all model loading functionality into demolib, remove
-        # it from the viewer, and replace the boostercube.dae with a
-        # boostercube.blend once Blender import works.
-        if (width is None) or (height is None):
-            width = height = int(np.sqrt(len(frag.rgb) // 3))
-
         # GPU needs float32 values for vertices and UV, and uint8 for RGB.
         buf_vert = np.array(frag.vert).astype(np.float32)
         buf_uv = np.array(frag.uv).astype(np.float32)
