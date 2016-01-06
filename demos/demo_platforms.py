@@ -90,11 +90,12 @@ def addPlatforms():
     template = Template('platform', body, frags, {}, {})
     ret = client.addTemplates([template])
 
-    # Spawn several platforms at different positions. The overall impression
-    # will be akin to a stairway.
+    # Spawn several platforms at different positions. Their positions are
+    # supposed to create the impression of a stairway. The values assume the
+    # camera is at [0, 0, 10] and points in -z direction.
     platforms = []
     for ii in range(5):
-        pos = (ii * 5, -ii * 2, ii * 5)
+        pos = (-10 + ii * 5, -ii * 2, -20)
         platforms.append(
             {
                 'templateID': 'platform',

@@ -325,10 +325,11 @@ def main():
     c = CtrlBoosterCube(ip)
     c.spawn((0, 5, 0))
 
-    # Successively manoeuvre the ship above each platform.
+    # Successively manoeuvre the ship above each platform. The hard coded
+    # postions match those of the platforms defined in 'demo_platforms'.
     time.sleep(5)
     for ii in range(5):
-        pos_ref = (ii * 5, -ii * 2 + 0.5 + 2, ii * 5)
+        pos_ref = (-10 + ii * 5, -ii * 2 + 2.5, -20)
         c.controller(pos_ref, dt=0.1, num_steps=50, verbose=False)
     del c
 
