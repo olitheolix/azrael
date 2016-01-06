@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------
 // Create a ThreeJS geometry object.
 // ----------------------------------------------------------------------
-function compileMesh (objID, vert, uv, rgb, scale) {
+function compileMesh (objID, vert, uv, rgb, width, height, scale) {
     var geo = new THREE.Geometry()
 
     console.log('Compiling mesh with ' + vert.length + ' vertices');
@@ -38,13 +38,10 @@ function compileMesh (objID, vert, uv, rgb, scale) {
     }
 
     // Assign the face colors, either via directly specified colors or a texture map.
-    if (hasUV) {
-        // fixme: must be provided
-        var width = Math.floor(Math.sqrt(rgb.length / 3))
-        var height = Math.floor(Math.sqrt(rgb.length / 3))
-
-        // 3JS needs the RGB data as a UInt8 buffer; we also need to transpose
-        // the image to make it appear correctly.
+    if (hasUV && hasRGB) {
+        // We have UV data, this means that RGB must contain a texture image.
+        //
+        // Convert the RGB list to a Uint8 buffer and transpose the image.
         var mytex = new Uint8Array(rgb.length)
         for (var h = 0; h < height; h++) {
             for (var w = 0; w < width; w++) {
@@ -72,6 +69,8 @@ function compileMesh (objID, vert, uv, rgb, scale) {
             }
         )
     } else {
+        // If RGB data is available then it denotes the vertex colors.
+        // If not then we will assign random colors.
         for (var i = 0; i < geo.faces.length; i++) {
             var face = geo.faces[i];
             if (hasRGB) {
@@ -312,7 +311,7 @@ function* mycoroutine(connection) {
                 var scale = allSVs[objID]['rbs'].scale;
                 switch (d.type) {
                 case 'RAW':
-                    var geo = compileMesh(objID, d.vert, d.uv, d.rgb, scale);
+                    var geo = compileMesh(objID, d.vert, d.uv, d.rgb, d.width, d.height, scale);
 
                     // Add the fragment to the local object cache and scene.
                     obj_cache[objID][frag_name] = geo;
