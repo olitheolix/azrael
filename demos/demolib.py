@@ -194,19 +194,19 @@ def loadBoosterCubeBlender():
     # Assign a color to the body.
     rgb_body = np.tile([0.8, 0.8, 0.8], len(body) // 3)
 
-    # Combine the RGB vectors into single one to match the vector of vertices.
+    # Flatten the RGB vectors to match the vertex vector.
     rgb = np.hstack((rgb_thrusters, rgb_body))
     del rgb_thruster, rgb_thrusters, rgb_body
 
-    # Add some random "noise" to the colors.
+    # Add some "noise" to the blueish flame color.
     rgb += 0.2 * (np.random.rand(len(rgb)) - 0.5)
 
-    # Convert the RGB values from a triple of [0, 1] floats to a triple of [0,
-    # 255] integers.
+    # Scale the RGB values from [0, 1] to a [0, 255] integers.
     rgb = rgb.clip(0, 1)
     rgb = np.array(rgb * 255, np.uint8)
 
-    # Return the model data.
+    # Return the model data (it has no UV data).
+    uv = []
     return vert, uv, rgb
 
 
