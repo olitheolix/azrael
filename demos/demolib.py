@@ -71,7 +71,7 @@ def getNetworkAddress():
     return host_ip
 
 
-def compileRawFragment(vert, uv, rgb, width, height):
+def compileRawFragment(vert, uv, rgb):
     if not isinstance(vert, np.ndarray):
         vert = np.array(vert, np.float64)
     if not isinstance(uv, np.ndarray):
@@ -79,10 +79,35 @@ def compileRawFragment(vert, uv, rgb, width, height):
     if not isinstance(rgb, np.ndarray):
         rgb = np.array(rgb, np.uint8)
 
+    # Number of vertices.
+    num_vert = np.prod(vert.shape) // 3
+    num_rgb = np.prod(rgb.shape) // 3
+    num_uv = np.prod(uv.shape) // 2
+
+    # In the absence of UV data the RGB vector must be a simple vector to
+    # denote vertex colors. If UV is a non-zero array then RGB must be a
+    # image texture (3D array).
+    if len(rgb) == 0:
+        # No RGB or UV.
+        assert len(uv) == 0
+        width = height = None
+    elif rgb.ndim == 1:
+        # No UV map; RGB must be denote one RGB triplet for each vertex.
+        assert len(uv) == 0
+        assert num_rgb == num_vert
+        width = height = None
+    elif rgb.ndim == 3:
+        # UV map; RGB must be an image texture.
+        width, height, depth = rgb.shape
+        assert depth == 3
+        assert num_uv == num_vert
+    else:
+        assert False
+
     model = {
         'vert': vert.tolist(),
         'uv': uv.tolist(),
-        'rgb': rgb.tolist(),
+        'rgb': rgb.flatten().tolist(),
         'width': width,
         'height': height,
     }
@@ -90,15 +115,13 @@ def compileRawFragment(vert, uv, rgb, width, height):
     return {'model.json': json.dumps(model).encode('utf8')}
 
 
-def getFragMetaRaw(
-        vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1),
-        width=None, height=None):
+def getFragMetaRaw(vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Return compiled FragMeta tuple for a modle in RAW format.
 
     fixme: make width/height compulsory
     """
-    files = compileRawFragment(vert, uv, rgb, width, height)
+    files = compileRawFragment(vert, uv, rgb)
     return FragMeta(fragtype='RAW', scale=scale, position=pos,
                     rotation=rot, files=files)
 
@@ -147,6 +170,7 @@ def loadBoosterCubeBlender():
     p = os.path.dirname(os.path.abspath(__file__))
     fname = os.path.join(p, 'models', 'boostercube', 'boostercube.dae')
     vert, uv, rgb = loadModel(fname)
+    del uv, rgb
 
     # Extract the body and thruster component.
     body, thruster_z = np.array(vert[0]), np.array(vert[1])
@@ -222,8 +246,8 @@ def loadModel(fname):
     # UV- and texture maps. The following code simply flattens the three lists
     # of lists into just three lists.
     vert = np.array(mesh['vertices']).flatten()
-    uv = np.array(mesh['UV']).flatten()
-    rgb = np.array(mesh['RGB']).flatten()
+    uv = np.array(mesh['UV'])
+    rgb = np.array(mesh['RGB'])
     print('done')
 
     return vert, uv, rgb
