@@ -116,7 +116,6 @@ def loadColladaModel(filename):
     # For later: compute the inverse transform of MainBody.
     scale, i_transform = inverseTransform(objs['MainBody'].transformation)
 
-    gfmr = demolib.getFragMetaRaw
     frags, cshapes = {}, {}
     for name in objs:
         # 4x4 transformation matrix for current mesh (this is always in global
@@ -140,7 +139,7 @@ def loadColladaModel(filename):
         # Flatten the vertex matrix into a simple list and compile it into a
         # fragment.
         vert = vert.flatten()
-        frags[name] = gfmr(vert, uv=[], rgb=[], scale=1)
+        frags[name] = demolib.getFragMetaRaw(vert, uv=[], rgb=[], scale=1)
 
         # All bodies whose name starts with 'cs' get a spherical collision
         # shape.

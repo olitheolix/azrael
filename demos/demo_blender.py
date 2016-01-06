@@ -192,10 +192,10 @@ def loadMaterials(scene, fname):
         width, height = img.size
         img = img.transpose(PIL.Image.ROTATE_270)
         RGB = np.fromstring(img.tobytes(), np.uint8).tolist()
+        RGB = np.array(img, np.uint8)
         del mat_aux, fname_texture, img
 
-        # Sanity check.
-        assert (len(RGB) == width * height * 3)
+        # Add texture to material list.
         materials.append({'RGB': RGB, 'width': width, 'height': height})
     return materials
 
@@ -249,11 +249,12 @@ def loadBlender(fname_blender: str):
                 start, stop = 6 * idx, 6 * (idx + 1)
                 uv[start:stop] = np.hstack(tmp)
                 del start, stop, tmp, idx, face
+
+            # Sanity check.
+            assert (len(uv) // 2 == len(vert) // 3)
         else:
             uv = 0.5 * np.ones(2 * (len(vert) // 3))
-
-        # Sanity check.
-        assert (len(uv) // 2 == len(vert) // 3)
+            uv = []
 
         # Azrael does not allow 'dots', yet Bullet uses it prominently to name
         # objects. As a quick fix, simply replace the dots with something else.
@@ -271,7 +272,7 @@ def loadBlender(fname_blender: str):
         # Create a RAW fragment.
         scale = 1
         rgb, width, height = material['RGB'], material['width'], material['height']
-        frag = demolib.getFragMetaRaw(vert, uv, rgb, scale, pos, rot, width, height)
+        frag = demolib.getFragMetaRaw(vert, uv, rgb, scale, pos, rot)
         frag.files['interior_points'] = interior_points
         frags[azname] = frag
 

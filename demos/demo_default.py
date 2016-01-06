@@ -209,7 +209,7 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
     # OpenGL will want it.
     img = PIL.Image.open(fname)
     img = np.array(img)
-    rgb = np.rollaxis(np.flipud(img), 1).flatten()
+    rgb = np.rollaxis(np.flipud(img), 1)
 
     # ----------------------------------------------------------------------
     # Create templates for the factory output.
@@ -265,7 +265,7 @@ def addTexturedCubeTemplates(numCols, numRows, numLayers):
         try:
             img = PIL.Image.open(fname)
             img = np.array(img)
-            rgb = np.rollaxis(np.flipud(img), 1).flatten()
+            rgb = np.rollaxis(np.flipud(img), 1)
             curUV = uv
         except FileNotFoundError:
             texture_errors += 1

@@ -242,7 +242,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
         try:
             img = PIL.Image.open(fname)
             img = np.array(img)
-            rgb = np.rollaxis(np.flipud(img), 1).flatten()
+            rgb = np.rollaxis(np.flipud(img), 1)
             curUV = uv
         except FileNotFoundError:
             texture_errors += 1
