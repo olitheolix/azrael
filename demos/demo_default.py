@@ -27,11 +27,10 @@ Qt Viewer.
 import os
 import sys
 import time
+import demolib
 import argparse
 import PIL.Image
-import subprocess
 import multiprocessing
-import demolib
 
 import numpy as np
 
