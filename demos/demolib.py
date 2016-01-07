@@ -118,8 +118,6 @@ def compileRawFragment(vert, uv, rgb):
 def getFragMetaRaw(vert, uv, rgb, scale=1, pos=(0, 0, 0), rot=(0, 0, 0, 1)):
     """
     Return compiled FragMeta tuple for a modle in RAW format.
-
-    fixme: make width/height compulsory
     """
     files = compileRawFragment(vert, uv, rgb)
     return FragMeta(fragtype='RAW', scale=scale, position=pos,

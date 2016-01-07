@@ -164,12 +164,11 @@ cdef class BulletBase:
             # the same key as contacts for (2, 1).
             bodyIDs = tuple(sorted(bodyIDs))
 
-            # Add the current body pair to the dictionary. So far this
-            # means the objects are close...
+            # Ensure we have an entry for the current contact pair.
             if bodyIDs not in pairData:
                 pairData[bodyIDs] = []
 
-            # Compile a list of all contacts.
+            # Compile the list of all contact positions for the current pair.
             for jj in range(contactManifold.getNumContacts()):
                 # Query the contact point structure.
                 ptr_mp = contactManifold.getContactPoint(jj)

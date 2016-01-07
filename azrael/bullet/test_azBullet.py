@@ -1635,6 +1635,14 @@ class TestContactGeneration:
         pass
 
     def test_getLatestContacts(self):
+        """
+        Place bodies at different positions and check if Bullet correctly
+        reports their contacts.
+
+        Note: Bullet will internally create and remove contacts in every sub
+        step. It is therefore paramount that the simulation uses only a single
+        sub-step.
+        """
         def moveBody(rb, pos):
             trans = Transform()
             trans.setOrigin(pos)
@@ -1665,7 +1673,7 @@ class TestContactGeneration:
         ret = sim.azGetLastContacts()
         assert set(ret.keys()) == set([(1, 2)])
 
-        # Move the middle body B towards the right so that touches D: "A  BD".
+        # Move B towards the right so that it touches D: "A  BD".
         moveBody(rb_a, pos_a)
         moveBody(rb_b, pos_c)
         moveBody(rb_d, pos_d)
@@ -1673,7 +1681,7 @@ class TestContactGeneration:
         ret = sim.azGetLastContacts()
         assert set(ret.keys()) == set([(2, 4)])
 
-        # Move the B towards the far right so that it does not touch D at all:
+        # Move D towards the far right so that it does not touch B any more:
         # "A  B    D".
         moveBody(rb_a, pos_a)
         moveBody(rb_b, Vec3(30, 0, 0))
