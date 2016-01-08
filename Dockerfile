@@ -8,9 +8,6 @@
 FROM continuumio/miniconda3:latest
 MAINTAINER Oliver Nagy <olitheolix@gmail.com>
 
-# Add the Anaconda binaries to the path.
-ENV PATH /opt/miniconda3/bin:$PATH
-
 # This will let Azrael know it runs inside a Docker container.
 ENV INSIDEDOCKER 1
 
