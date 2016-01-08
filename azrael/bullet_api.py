@@ -53,8 +53,8 @@ class PyRigidBody(azBullet.RigidBody):
     a pure Python class (eg adding attributes at runtime). This is transparent
     to the end user.
     """
-    def __init__(self, ci):
-        super().__init__(ci)
+    def __init__(self, ci, bodyID):
+        super().__init__(ci, bodyID)
 
 
 class PyBulletDynamicsWorld():
@@ -519,7 +519,8 @@ class PyBulletDynamicsWorld():
                     ms=azBullet.DefaultMotionState(),
                     cs=compound,
                     inertia=Vec3(1, 1, 1)
-                )
+                ),
+                int(bodyID),
             )
 
             # Attach Azrael's info and add the body to our cache.

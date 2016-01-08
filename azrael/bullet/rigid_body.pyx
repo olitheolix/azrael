@@ -201,7 +201,7 @@ cdef class RigidBody(CollisionObject):
     def __cinit__(self):
         self.ptr_RigidBody = NULL
 
-    def __init__(self, RigidBodyConstructionInfo ci, int bodyID=0):
+    def __init__(self, RigidBodyConstructionInfo ci, int bodyID):
         self.ptr_RigidBody = new btRigidBody(ci.ptr_RigidBodyConstructionInfo[0])
         assert self.ptr_RigidBody != NULL
         self._ref_cs = ci._ref_cs

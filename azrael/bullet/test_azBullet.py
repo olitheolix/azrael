@@ -579,7 +579,7 @@ class TestRigidBody:
         assert ci.localInertia == inert
 
         # Construct the rigid body and delete the construction info.
-        body = RigidBody(ci)
+        body = RigidBody(ci, bodyID=0)
         del ci
 
         # Verify that the object is at the correct position and has the correct
