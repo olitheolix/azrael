@@ -126,7 +126,7 @@ def main():
     # Setup the parcour of platforms.
     addPlatforms()
 
-    # Apply gravity in the vincinity of the platforms.
+    # Apply gravity in the vicinity of the platforms.
     print('Setting grid...', end='', flush=True)
     ofs = np.array([-5, -5, -5], np.float64)
     val = np.zeros((30, 30, 30, 3))

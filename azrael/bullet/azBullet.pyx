@@ -184,7 +184,7 @@ cdef class BulletBase:
                 pairData[bodyIDs].append((c_a, c_b))
 
         # Explicitly set the internal pointers to NULL as the destructor of rb_a
-        # and rb_a would otherwise deallocate the user pointers where the
+        # and rb_b would otherwise deallocate the user pointers where the
         # bodyID is stored.
         rb_a.ptr_CollisionObject = NULL
         rb_b.ptr_CollisionObject = NULL

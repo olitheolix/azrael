@@ -234,7 +234,7 @@ cdef class RigidBody(CollisionObject):
         r = r.format(<double>rot.x(), <double>rot.y(), <double>rot.z(), <double>rot.w())
 
         # Compile the string to describe this rigid body.
-        s = ('Ridid Body: \n'
+        s = ('Rigid Body: \n'
              '  Position: {} \n'
              '  Rotation: {} \n'
              '  Collision Shape: {}')
