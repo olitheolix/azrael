@@ -387,10 +387,8 @@ class TestBulletAPI:
         """
         # Constants and parameters for this test.
         id_a = '10'
-        dt, maxsteps = 1.0, 60
 
-        # Create two bodies. They do not touch and have different centres of
-        # mass.
+        # Create a rigid body that spins with pi rad/s around the z-axis.
         pi = float(np.pi)
         pos = (1, 2, 3)
         com = (4, 5, 0)
@@ -405,8 +403,13 @@ class TestBulletAPI:
         ret_a = sim.getRigidBodyData(id_a)
         assert self.isBulletRbsEqual(ret_a.data, obj_a)
 
-        # Progress the simulation and query the object.
-        sim.compute([id_a], dt, maxsteps)
+        # Progress the simulation by one second. Use many small steps to ensure
+        # the numerical errors stay small and the object does indeed rotate
+        # ~180 degrees around the z-axis (recall that we specified an angular
+        # velocity of ~Pi rad/s).
+        sim.compute([id_a], 1, 60)
+
+        # Query the object back.
         ret_a = sim.getRigidBodyData(id_a)
         assert ret_a.ok
 
