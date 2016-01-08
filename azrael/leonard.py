@@ -675,8 +675,13 @@ class LeonardBase(config.AzraelProcess):
                 t0 = time.time()
 
                 # Trigger the physics update step.
+                # Note: 'maxsteps' *must* be 1 to obtain all collision
+                # contacts from the `PyBulletDynamicsWorld` instance. The
+                # reason is that Bullet may create and and clear contacts
+                # during the sub-steps, but we can only query them after the
+                # last update.
                 with util.Timeit('Leonard:1.0 Step'):
-                    self.step(stepinterval, 10)
+                    self.step(stepinterval, maxsteps=1)
         except KeyboardInterrupt:
             self.logit.warning('Leonard was aborted')
 
