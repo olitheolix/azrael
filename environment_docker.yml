@@ -1,9 +1,9 @@
 name: azrael_docker
 dependencies:
 - backports_abc=0.4=py34_0
-- decorator=4.0.4=py34_0
+- decorator=4.0.6=py34_0
 - freetype=2.5.5=0
-- ipython=4.0.0=py34_0
+- ipython=4.0.1=py34_0
 - ipython_genutils=0.1.0=py34_0
 - jbig=2.1=0
 - jpeg=8d=0
@@ -13,7 +13,7 @@ dependencies:
 - libsodium=1.0.3=0
 - libtiff=4.0.6=1
 - networkx=1.10=py34_0
-- numpy=1.10.1=py34_0
+- numpy=1.10.2=py34_0
 - openblas=0.2.14=3
 - openssl=1.0.2d=0
 - path.py=8.1.2=py34_1
@@ -26,10 +26,10 @@ dependencies:
 - pymongo=3.0.3=py34_0
 - pytest=2.8.1=py34_0
 - python=3.4.3=2
-- pyzmq=14.7.0=py34_1
+- pyzmq=15.1.0=py34_0
 - readline=6.2=2
-- requests=2.8.1=py34_0
-- setuptools=18.5=py34_0
+- requests=2.9.0=py34_0
+- setuptools=19.1.1=py34_0
 - simplegeneric=0.8.1=py34_0
 - sqlite=3.8.4.1=1
 - tk=8.5.18=0
@@ -46,3 +46,4 @@ dependencies:
   - setproctitle==1.1.9
   - six==1.10.0
   - websocket-client-py3==0.15.0
+
