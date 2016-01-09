@@ -1045,12 +1045,12 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
                     # Ignore the message if its Work Package is not pending
                     # anymore (most likely because multiple Workers processed
-                    # the same Work Package and the other Worker has already
+                    # the same Work Package and one of the others already
                     # returned it).
                     if wpid in all_WPs:
                         self.updateLocalCache(msg['wpdata'])
 
-                        # Decrement the Work Package Index if the wpIdx counter
+                        # Decrement the Work Package index if the wpIdx counter
                         # is already past that work package. This simply
                         # ensures that no WP is skipped simply because the
                         # queue has shrunk.
@@ -1220,7 +1220,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         # Add every object to the Bullet engine and set the force/torque.
         with util.Timeit('Worker:1.1.0  applyforce'):
             with util.Timeit('Worker:1.1.1   grid'):
-                # Fetch the forces for all object positions.
+                # Fetch the grid force for all object positions.
                 idPos = {_.aid: _.rbs.position for _ in worklist}
                 ret = self.getGridForces(idPos)
                 if not ret.ok:
@@ -1233,12 +1233,13 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
 
             with util.Timeit('Worker:1.1.1   updateGeo'):
                 for obj in worklist:
-                    # Update the object in Bullet and apply the force/torque.
+                    # Load all objects into Bullet.
                     setRB(obj.aid, obj.rbs)
 
             with util.Timeit('Worker:1.1.1   updateForce'):
                 for obj in worklist:
-                    # Add the force defined on the 'force' grid.
+                    # Tally up and apply the combined grid + user specified
+                    # force for each object.
                     force = obj.force + gridForces[obj.aid]
                     applyForceAndTorque(obj.aid, force, obj.torque)
 
@@ -1258,7 +1259,8 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             self.bullet.clearAllConstraints()
 
         with util.Timeit('Worker:1.3.0  fetchFromBullet'):
-            # Retrieve the objects from Bullet again and update them in the DB.
+            # Compile the new state variables into a list. This list will be
+            # sent back to the caller later on.
             out = []
             for obj in worklist:
                 ret = self.bullet.getRigidBodyData(obj.aid)
