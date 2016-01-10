@@ -419,9 +419,9 @@ class TestLeonardOther:
         assert (ret.ok, ret_wpid, len(ret_wpdata)) == (True, 1, 2)
 
         # Check the WP content.
-        WPData = azrael.leonard.WPData
-        WPMeta = azrael.leonard.WPMeta
-        data = [WPData(*_) for _ in ret.data['wpdata']]
+        WPDataOut = azrael.aztypes.WPDataOut
+        WPMeta = azrael.aztypes.WPMeta
+        data = [WPDataOut(*_) for _ in ret.data['wpdata']]
         meta = WPMeta(*ret.data['wpmeta'])
         assert (meta.dt, meta.maxsteps) == (dt, maxsteps)
         assert (ret.ok, len(data)) == (True, 2)
@@ -450,10 +450,9 @@ class TestLeonardOther:
 
         # Create a new State Vector to replace the old one.
         body_3 = getRigidBody(imass=4, position=[1, 2, 3])
-        # fixme: use a named tuple for this
-        newWP = [(id_1, body_3)]
+        newWP = [azrael.aztypes.WPDataRet(id_1, body_3, None)]
 
-        # Check the State Vector for objID=id_1 before and after the update.
+        # Check the state variables for objID=id_1 before and after the update.
         assert getRigidBody(*leo.allBodies[id_1]) == body_1
         leo.updateLocalCache(newWP)
         assert getRigidBody(*leo.allBodies[id_1]) == body_3

@@ -49,7 +49,8 @@ _Template = namedtuple('_Template', 'aid rbs fragments boosters factories custom
 _FragMeta = namedtuple('_FragMeta', 'fragtype scale position rotation files')
 
 # Work package related.
-WPData = namedtuple('WPData', 'aid rbs force torque')
+WPDataOut = namedtuple('WPDataOut', 'aid rbs force torque')
+WPDataRet = namedtuple('WPDataRet', 'aid body collisions')
 WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
 Forces = namedtuple('Forces',
                     'forceDirect forceBoost torqueDirect torqueBoost')

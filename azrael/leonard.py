@@ -37,7 +37,7 @@ import azrael.leo_api as leoAPI
 
 from IPython import embed as ipshell
 from azrael.aztypes import _RigidBodyData, RigidBodyData
-from azrael.aztypes import typecheck, RetVal, WPData, WPMeta, Forces
+from azrael.aztypes import typecheck, RetVal, WPMeta, WPDataOut, WPDataRet, Forces
 
 # Create module logger.
 logit = logging.getLogger('azrael.' + __name__)
@@ -1107,13 +1107,13 @@ class LeonardDistributedZeroMQ(LeonardBase):
         if len(objIDs) == 0:
             return RetVal(False, 'Work package is empty', None)
 
-        # Compile the Body States and forces into a list of ``WPData`` tuples.
+        # Compile the Body States and forces into a list of ``WPDataOut`` tuples.
         try:
             wpdata = []
             for objID in objIDs:
                 body = self.allBodies[objID]
                 force, torque = self.totalForceAndTorque(objID)
-                wpdata.append(WPData(objID, body, force, torque))
+                wpdata.append(WPDataOut(objID, body, force, torque))
         except KeyError:
             return RetVal(False, 'Cannot compile WP', None)
 
@@ -1129,21 +1129,21 @@ class LeonardDistributedZeroMQ(LeonardBase):
         self.wpid_counter += 1
         return RetVal(True, None, data)
 
-    def updateLocalCache(self, wpdata):
+    def updateLocalCache(self, wpdataret):
         """
         Copy every object from ``wpdata`` to the local cache.
 
-        The ``wpdata`` argument is a list of (objID, body) tuples.
+        The ``wpdataret`` argument is a list of (objID, body) tuples.
 
         The implicit assumption of this method is that ``wpdata`` is the
         output of ``computePhysicsForWorkPackage`` from a Worker.
 
-        :param list wpdata: Content of Work Packge as returned by Workers.
+        :param list[WPDataRet] wpdataret: data returned by Minion.
         """
         # Reset force and torque for all objects in the WP, and overwrite
         # the old Body States with the new one from the processed WP.
-        for (objID, body) in wpdata:
-            self.allBodies[objID] = _RigidBodyData(*body)
+        for wp in wpdataret:
+            self.allBodies[wp.aid] = _RigidBodyData(*wp.body)
 
 
 class LeonardWorkerZeroMQ(config.AzraelProcess):
@@ -1210,8 +1210,8 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         # Log the number of collision-sets in the current Work Package.
         util.logMetricQty('Engine_{}'.format(self.workerID), len(worklist))
 
-        # Convenience: the WPData elements make the code more readable.
-        worklist = [WPData(*_) for _ in worklist]
+        # Convenience: the WPDataOut elements make the code more readable.
+        worklist = [WPDataOut(*_) for _ in worklist]
 
         # Convenience.
         applyForceAndTorque = self.bullet.applyForceAndTorque
@@ -1275,9 +1275,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
                     # Something went wrong. Reuse the old body.
                     body = obj.rbs
                     self.logit.error('Unable to get all objects from Bullet')
-
-                # fixme: define a named tuple for the returned data, eg WPReturnData
-                out.append((obj.aid, body))
+                out.append(WPDataRet(obj.aid, body, None))
 
         # Return the updated WP data.
         return {'wpid': meta.wpid, 'wpdata': out}
