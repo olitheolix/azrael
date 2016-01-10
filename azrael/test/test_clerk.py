@@ -562,8 +562,8 @@ class TestClerk:
         assert (ret.ok, len(ret.data)) == (True, 1)
 
         # Verify that the rigid body meta data is correct and complete.
-        expected_keys = set(['scale', 'position', 'rotation',
-                             'velocityLin', 'velocityRot', 'version'])
+        expected_keys = {'scale', 'position', 'rotation',
+                         'velocityLin', 'velocityRot', 'version'}
         r = ret.data[id_1]['rbs']
         assert set(r.keys()) == expected_keys
         assert r['scale'] == 1

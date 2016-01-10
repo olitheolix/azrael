@@ -314,7 +314,7 @@ class TestLeonardAPI:
         # Define two grids and delete both with 'deleteAllGrids'.
         assert vg.defineGrid('grid_1', 3, 1).ok
         assert vg.defineGrid('grid_2', 3, 1).ok
-        assert set(vg.getAllGridNames().data) == set(['grid_1', 'grid_2'])
+        assert set(vg.getAllGridNames().data) == {'grid_1', 'grid_2'}
         assert vg.deleteAllGrids().ok
         assert vg.getAllGridNames().data == tuple()
 

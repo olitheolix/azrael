@@ -1523,9 +1523,9 @@ class TestBroadphase:
 
         # Step the simulation and fetch the collision pairs.
         sim.azResetPairCache()
-        assert sim.azReturnPairCache() == set([])
+        assert sim.azReturnPairCache() == set()
         sim.stepSimulation(1, 1)
-        assert sim.azReturnPairCache() == set([(1, 2)])
+        assert sim.azReturnPairCache() == {(1, 2)}
 
         # Move the middle body towards the right.  Step the simulation again
         # (this will re-populate the broadphase cache) and verify that the
@@ -1533,14 +1533,14 @@ class TestBroadphase:
         moveBody(rb_b, pos_c)
         sim.azResetPairCache()
         sim.stepSimulation(1, 1)
-        assert sim.azReturnPairCache() == set([(2, 4)])
+        assert sim.azReturnPairCache() == {(2, 4)}
 
         # Move the middle body towards the far right so that none of the bodies
         # overlap: "A D        B"
         moveBody(rb_b, Vec3(30, 0, 0))
         sim.azResetPairCache()
         sim.stepSimulation(1, 1)
-        assert sim.azReturnPairCache() == set([])
+        assert sim.azReturnPairCache() == set()
 
         # Move the middle body back to its original position and insert the
         # fourth body. Now all bodies touch their immediate neighbours:
@@ -1549,7 +1549,7 @@ class TestBroadphase:
         sim.addRigidBody(rb_c)
         sim.azResetPairCache()
         sim.stepSimulation(1, 1)
-        assert sim.azReturnPairCache() == set([(1, 2), (2, 3), (3, 4)])
+        assert sim.azReturnPairCache() == {(1, 2), (2, 3), (3, 4)}
 
     def test_broadphase_no_collision(self):
         """
@@ -1671,7 +1671,7 @@ class TestContactGeneration:
         # Step the simulation and fetch the collision pairs.
         sim.stepSimulation(1, 1)
         ret = sim.azGetLastContacts()
-        assert set(ret.keys()) == set([(1, 2)])
+        assert set(ret.keys()) == {(1, 2)}
 
         # Move B towards the right so that it touches D: "A  BD".
         moveBody(rb_a, pos_a)
@@ -1679,7 +1679,7 @@ class TestContactGeneration:
         moveBody(rb_d, pos_d)
         sim.stepSimulation(1, 1)
         ret = sim.azGetLastContacts()
-        assert set(ret.keys()) == set([(2, 4)])
+        assert set(ret.keys()) == {(2, 4)}
 
         # Move D towards the far right so that it does not touch B any more:
         # "A  B    D".
@@ -1699,4 +1699,4 @@ class TestContactGeneration:
         moveBody(rb_d, pos_d)
         sim.stepSimulation(1, 1)
         ret = sim.azGetLastContacts()
-        assert set(ret.keys()) == set([(1, 2), (2, 3), (3, 4)])
+        assert set(ret.keys()) == {(1, 2), (2, 3), (3, 4)}

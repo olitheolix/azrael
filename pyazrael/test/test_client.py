@@ -374,7 +374,7 @@ class TestClient:
         ret = client.getObjectStates([objID_1])
         assert ret.ok
         r = ret.data[objID_1]
-        assert set(r.keys()) == set(['rbs', 'frag'])
+        assert set(r.keys()) == {'rbs', 'frag'}
         r = ret.data[objID_1]['rbs']
         assert r['position'] == list(pos)
         assert r['velocityLin'] == list(vlin)
