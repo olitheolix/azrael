@@ -1,0 +1,14 @@
+# Start all essential Azrael service for development.
+# >> docker-compose -f docker-compose-dev.yml
+
+Database:
+  image: mongo:3.0
+  volumes:
+    - /tmp/azrael:/data/db
+  ports:
+    - 27017:27017
+
+RabbitMQ:
+  image: rabbitmq:latest
+  ports:
+    - 5672:5672
