@@ -273,6 +273,54 @@ class TestLeonardAllEngines:
         assert 0.4 <= body.position[0] < 0.6
         assert body.position[1] == body.position[2] == 0
 
+    @pytest.mark.parametrize('clsLeonard', allEngines)
+    def test_collision_contacts_mock(self, clsLeonard):
+        """
+        Create two touching objects and verify that Bullet dispatches the
+        event. This test uses a mock to intercept the exact information to
+        dispatch.
+        """
+        # Get a Leonard instance and verify it has an EventStore instance.
+        leo = getLeonard(clsLeonard)
+        assert hasattr(leo, events)
+
+        # Install the mock.
+        mock = mock.create_autospec(azrael.eventstore.EventStore)
+        mock.publish.return_value = RetVal(True, None, None)
+        leo.events = mock
+
+        # Constants and parameters for this test.
+        id_0, id_1 = '0', '1'
+
+        # Step the empty simulation, spawn one object, step it again. Verify
+        # that 'publish' is never called because no collisions have occurred.
+        assert mock.call_count == 0
+        assert leo.step(1, 1)
+        assert mock.call_count == 0
+        assert leoAPI.addCmdSpawn([(id_0, getRigidBody())]).ok
+        assert mock.call_count == 0
+        assert leo.step(1, 1)
+        assert mock.call_count == 0
+
+        # Duplicate the object at the same location. This implies they collide
+        # and 'publish' must be triggered *after* stepping the simulation.
+        assert leoAPI.addCmdSpawn([(id_1, getRigidBody())]).ok
+        assert mock.call_count == 0
+        assert leo.step(1, 1)
+        assert mock.call_count == 1
+
+        # The collision position is difficult to predict, but we know for a
+        # fact that object 0 and 1 did collide.
+        assert set(mock.called_with().keys()) == {('0', '1')}
+
+    @pytest.mark.parametrize('clsLeonard', allEngines)
+    def test_collision_contacts_eventstore(self, clsLeonard):
+        """
+        Create two touching bodies and step the simulation. Verify the
+        collision event via the event store API.
+        """
+        assert False
+
 
 class TestLeonardOther:
     @classmethod
@@ -402,12 +450,18 @@ class TestLeonardOther:
 
         # Create a new State Vector to replace the old one.
         body_3 = getRigidBody(imass=4, position=[1, 2, 3])
+        # fixme: use a named tuple for this
         newWP = [(id_1, body_3)]
 
         # Check the State Vector for objID=id_1 before and after the update.
         assert getRigidBody(*leo.allBodies[id_1]) == body_1
         leo.updateLocalCache(newWP)
         assert getRigidBody(*leo.allBodies[id_1]) == body_3
+
+        # Collision contacts must be relayed as well. There is also a name
+        # ambiguity with 'wpdata' for packages that to the minions and come
+        # back, even though they contain different information.
+        assert False
 
     def test_processCommandQueue(self):
         """

@@ -1275,6 +1275,8 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
                     # Something went wrong. Reuse the old body.
                     body = obj.rbs
                     self.logit.error('Unable to get all objects from Bullet')
+
+                # fixme: define a named tuple for the returned data, eg WPReturnData
                 out.append((obj.aid, body))
 
         # Return the updated WP data.
