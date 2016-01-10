@@ -64,7 +64,7 @@ class TestBulletAPI:
         cshapes = {'1': getCSEmpty(pos, rot), '2': getCSSphere(pos, rot)}
         del pos, rot
 
-        # Create an object and serialise it.
+        # Create a test object.
         obj_a = getRigidBody(
             scale=3.5,
             imass=4.5,
@@ -1029,3 +1029,71 @@ class TestBulletAPI:
         assert (ret_plane.ok is True) and (ret_box.ok is True)
         assert ret_plane.data.position[2] == 0
         assert abs(ret_box.data.position[2] + ofs_z) < 1E-3
+
+    def test_get_contacts(self):
+        """
+        Verify that every call to 'compute' also creates collision contacts.
+        """
+        # Create a test object.
+        cshapes = {'1': getCSSphere((0, 0, 0), (0, 0, 0, 1))}
+        obj_a = getRigidBody(
+            scale=1,
+            imass=1,
+            cshapes=cshapes,
+            restitution=1,
+            rotation=(0, 1, 0, 0),
+            position=(0, 0, 0),
+            velocityLin=(0, 0, 0),
+            velocityRot=(0, 0, 0)
+        )
+
+        # Instantiate Bullet engine.
+        sim = azrael.bullet_api.PyBulletDynamicsWorld(1)
+
+        # Verify there are no collision contacts, and that a simulation for
+        # unknown objects does not produce any.
+        assert sim.getLastContacts() == (True, None, [])
+        assert not sim.compute(['0'], 1, 1).ok
+        assert sim.getLastContacts() == (True, None, [])
+
+        # Add the object and verify again that there are still no collisions (a
+        # single object cannot collide with anything).
+        sim.setRigidBodyData('0', obj_a)
+        assert sim.getLastContacts() == (True, None, [])
+        assert sim.compute(['0'], 1, 1).ok
+        assert sim.getLastContacts() == (True, None, [])
+
+        # Add another body with the same attributes as the first. This ensures
+        # they touch and must create a collision *after* the 'compute'
+        # method was called.
+        sim.setRigidBodyData('1', obj_a)
+        assert sim.getLastContacts() == (True, None, [])
+        assert sim.compute(['0', '1'], 1, 1).ok
+        ret = sim.getLastContacts()
+        assert ret.ok
+
+        # The collision informaiton must be provided in the form (aidA, aidB,
+        # [colPosA_0, colPosB_0, colPosA_1, colPosB_2, ...]). In this test
+        # exactly one collision must have been created. The next few lines
+        # disassemble this result and verify it is correct. We will also verify
+        # that all types are native to Python.
+        assert len(ret.data) == 1
+        data = ret.data[0]
+
+        # Unpack the constituents.
+        aidA, aidB, colPositions = data
+        assert aidA == '0' and aidB == '1'
+
+        # The collision points must be a list of 3-tuples. There must be
+        # exactly two such 3-tuple (one for the collision contact on object A
+        # and object B, respectively).
+        assert isinstance(colPositions, list) and len(colPositions) == 2
+        colPosA, colPosB = colPositions
+        assert isinstance(colPosA, tuple) and len(colPosA) == 3
+        assert isinstance(colPosB, tuple) and len(colPosB) == 3
+
+        # The 'compute' method must clear the contacts every time. To test
+        # this, call it with an empty list of objects. This must do nothing in
+        # terms of physics, but the contacts data must still be erased.
+        assert sim.compute([], 1, 1).ok
+        assert sim.getLastContacts() == (True, None, [])

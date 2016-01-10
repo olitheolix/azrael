@@ -78,6 +78,9 @@ class PyBulletDynamicsWorld():
         # Dictionary of all bodies.
         self.rigidBodies = {}
 
+        # Buffer for the collision contacts from the last 'compute' step.
+        self._lastContacts = {}
+
     def setGravity(self, gravity: (tuple, list)):
         """
         Set the ``gravity`` in the simulation.
@@ -115,6 +118,42 @@ class PyBulletDynamicsWorld():
         # Return the total number of removed bodies.
         return RetVal(True, None, cnt)
 
+    def getLastContacts(self):
+        """
+        Return the collisions created during the last simulation step.
+
+        The return value is a list of tuples:
+        [(aidA, aidB, [cPosA_0, cPosB_0, cPosA_1, cPosB_2, ...]), ...].
+
+        Here `aidA` and `aidB` are the AIDs of the objects that collided. The
+        `cPos*_*` entries denote the position of the collision on the
+        respective object. There can be many collision points between the same
+        two objects.
+
+        Example: [['0', '1', [(-1.0, 0.0, 0.0), (1.0, 0.0, 0.0)]]]
+        means object '0' and '1' collided. The first object collided at
+        position (-1, 0, 0) and the second at (1, 0, 0). These values are in
+        *world* coordinates and *not* in  body local coordinates.
+
+        :return: list of collision info for each body pair that collided.
+        """
+        # The self._lastContacts variables store the collision contact
+        # information as provided by Bullet. It is a dictionary of the form:
+        # {(aidA_0, aidB_0): [(colPosA_0, colPosB_0), (colPosA_1, colPosB_1))}
+        #
+        # The following piece of code converts this dictionary into a list. The
+        # primary reason for the conversion is that the JSON format does not
+        # support tuples as dictionary keys - sucks.
+        out = []
+        for (aidA, aidB), con in self._lastContacts.items():
+            # Flatten the list of collision positions and convert the
+            # bullet.Vec3 information to a native Python list.
+            con = [_.topy() for el in con for _ in el]
+
+            # Add a another collision entry to the list.
+            out.append([str(aidA), str(aidB), con])
+        return RetVal(True, None, out)
+
     def compute(self, bodyIDs: (tuple, list), dt: float, max_substeps: int):
         """
         Step the simulation for all ``bodyIDs`` by ``dt``.
@@ -125,11 +164,14 @@ class PyBulletDynamicsWorld():
         granularity. Typiclal values for ``dt`` and ``max_substeps`` are
         (1, 60).
 
-        :param list bodyIDs: list of bodyIDs for which to update the physics.
+        :param list[str] bodyIDs: bodyIDs for which to update the physics.
         :param float dt: time step in seconds
         :param int max_substeps: maximum number of sub-steps.
         :return: Success
         """
+        # Clear all previous contacts.
+        self._lastContacts.clear()
+
         # All specified bodies must exist. Abort otherwise.
         try:
             rigidBodies = [self.rigidBodies[_] for _ in bodyIDs]
@@ -149,6 +191,7 @@ class PyBulletDynamicsWorld():
         # dt= 0.1 and max_substeps=10, then, internally, Bullet will simulate
         # no finer than dt / max_substeps = 0.01s.
         self.dynamicsWorld.stepSimulation(dt, max_substeps)
+        self._lastContacts.update(self.dynamicsWorld.azGetLastContacts())
 
         # Remove all bodies from the simulation again.
         for body in rigidBodies:
