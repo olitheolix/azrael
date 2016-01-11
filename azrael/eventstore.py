@@ -142,7 +142,7 @@ class EventStore(threading.Thread):
         return RetVal(True, None, msg)
         
     @typecheck
-    def publish(self, key: str, msg: bytes):
+    def publish(self, topic: str, msg: bytes):
         """
         Publish the binary ``msg`` to ``topic``.
 
@@ -154,7 +154,7 @@ class EventStore(threading.Thread):
         """
         self.chan.basic_publish(
             exchange=self.exchange_name,
-            routing_key=key,
+            routing_key=topic,
             body=msg,
         )
         return RetVal(True, None, None)

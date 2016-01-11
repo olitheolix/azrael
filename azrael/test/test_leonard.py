@@ -322,7 +322,7 @@ class TestLeonardAllEngines:
             _, kwargs = mock_es.publish.call_args
 
             # Verify the argument values.
-            assert kwargs['key'] == 'phys.collisions'
+            assert kwargs['topic'] == 'phys.collisions'
             msg = json.loads(kwargs['msg'].decode('utf8'))
             assert len(msg) == 1
 

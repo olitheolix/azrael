@@ -97,8 +97,8 @@ class TestEventStore:
         assert es.getMessages() == (True, None, [])
 
         # Publish our test messages.
-        es.publish(key='foo', msg='bar0'.encode('utf8'))
-        es.publish(key='foo', msg='bar1'.encode('utf8'))
+        es.publish(topic='foo', msg='bar0'.encode('utf8'))
+        es.publish(topic='foo', msg='bar1'.encode('utf8'))
 
         # Wait until the client received at least two messages (RabbitMQ incurs
         # some latency).
@@ -138,9 +138,9 @@ class TestEventStore:
         assert es.getMessages() == (True, None, [])
 
         # Publish our test messages.
-        es.publish(key='foo', msg='bar0'.encode('utf8'))
-        es.publish(key='blah', msg='bar1'.encode('utf8'))
-        es.publish(key='foo', msg='bar2'.encode('utf8'))
+        es.publish(topic='foo', msg='bar0'.encode('utf8'))
+        es.publish(topic='blah', msg='bar1'.encode('utf8'))
+        es.publish(topic='foo', msg='bar2'.encode('utf8'))
 
         # Wait until the client received at least two messages (RabbitMQ incurs
         # some latency).
@@ -174,9 +174,9 @@ class TestEventStore:
         pub = eventstore.EventStore(topics=['foo'])
 
         # Publish our test messages.
-        pub.publish(key='foo', msg='bar0'.encode('utf8'))
-        pub.publish(key='blah', msg='bar1'.encode('utf8'))
-        pub.publish(key='foo', msg='bar2'.encode('utf8'))
+        pub.publish(topic='foo', msg='bar0'.encode('utf8'))
+        pub.publish(topic='blah', msg='bar1'.encode('utf8'))
+        pub.publish(topic='foo', msg='bar2'.encode('utf8'))
 
         # Wait until each client received at least two messages (RabbitMQ incurs
         # some latency).
@@ -208,9 +208,9 @@ class TestEventStore:
         es.start()
 
         # Publish our test messages.
-        es.publish(key='foo', msg='0'.encode('utf8'))
-        es.publish(key='blah', msg='1'.encode('utf8'))
-        es.publish(key='bar', msg='2'.encode('utf8'))
+        es.publish(topic='foo', msg='0'.encode('utf8'))
+        es.publish(topic='blah', msg='1'.encode('utf8'))
+        es.publish(topic='bar', msg='2'.encode('utf8'))
 
         # Wait until the client received at least two messages (RabbitMQ incurs
         # some latency).

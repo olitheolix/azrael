@@ -635,7 +635,7 @@ class LeonardBase(config.AzraelProcess):
         # Publish the collision contacts (if there are any).
         if (collisions is not None) and (len(collisions) > 0):
             msg = json.dumps(collisions).encode('utf8')
-            self.events.publish(key='phys.collisions', msg=msg)
+            self.events.publish(topic='phys.collisions', msg=msg)
 
         # Update the RBS data in the master record.
         db = azrael.datastore.dbHandles['ObjInstances']
