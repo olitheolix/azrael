@@ -521,7 +521,7 @@ class TestLeonardOther:
 
         # Create a new State Vector to replace the old one.
         body_3 = getRigidBody(imass=4, position=[1, 2, 3])
-        newWP = [azrael.aztypes.WPDataRet(id_1, body_3, None)]
+        newWP = [azrael.aztypes.WPDataRet(id_1, body_3)]
 
         # Check the state variables for objID=id_1 before and after the update.
         assert getRigidBody(*leo.allBodies[id_1]) == body_1

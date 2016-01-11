@@ -50,7 +50,7 @@ _FragMeta = namedtuple('_FragMeta', 'fragtype scale position rotation files')
 
 # Work package related.
 WPDataOut = namedtuple('WPDataOut', 'aid rbs force torque')
-WPDataRet = namedtuple('WPDataRet', 'aid body collisions')
+WPDataRet = namedtuple('WPDataRet', 'aid body')
 WPMeta = namedtuple('WPAdmin', 'wpid dt maxsteps')
 Forces = namedtuple('Forces',
                     'forceDirect forceBoost torqueDirect torqueBoost')
