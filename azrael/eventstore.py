@@ -113,7 +113,7 @@ class EventStore(threading.Thread):
         self.messages.append((method.routing_key, body))
         if self._terminate is True:
             self.chan.stop_consuming()
-        
+
     def _onTimeout(self):
         """
         Periodically checks if the thread should terminate itself.
@@ -122,13 +122,13 @@ class EventStore(threading.Thread):
             self.chan.stop_consuming()
         else:
             self.conn.add_timeout(self._timeout, self._onTimeout)
-            
+
     def stop(self):
         """
         Signal the thread to terminate itself.
         """
         self._terminate = True
-        
+
     def getMessages(self):
         """
         Return all messages that have arrived since the last call.
@@ -140,7 +140,7 @@ class EventStore(threading.Thread):
         msg = list(self.messages)
         self.messages = self.messages[len(msg):]
         return RetVal(True, None, msg)
-        
+
     @typecheck
     def publish(self, topic: str, msg: bytes):
         """
