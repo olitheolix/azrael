@@ -941,6 +941,11 @@ class LeonardDistributedZeroMQ(LeonardBase):
         self.ctx = None
         self.sock = None
 
+        # Local cache of collision contacts. This one will be filled up as the
+        # minions return their result. Only when all results are in will the
+        # collision contacts be dispatched.
+        self.collisions = []
+
         # Worker terminate automatically after a certain number of processed
         # Work Packages. The precise number is a constructor argument and the
         # following two variables simply specify the range. The final number
@@ -1016,6 +1021,9 @@ class LeonardDistributedZeroMQ(LeonardBase):
         :param int maxsteps: maximum number of sub-steps to simulate for one
                              ``dt`` update.
         """
+        # Flush the collision contacts from the previous iteration.
+        self.collisions.clear()
+
         # Read queued commands and update the local object cache accordingly.
         with util.Timeit('Leonard:1.1  processCmdQueue'):
             self.processCommandQueue()
@@ -1071,7 +1079,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
                     # the same Work Package and one of the others already
                     # returned it).
                     if wpid in all_WPs:
-                        self.updateLocalCache(msg['wpdata'])
+                        self.updateLocalCache(msg['wpdata'], msg['collisions'])
 
                         # Decrement the Work Package index if the wpIdx counter
                         # is already past that work package. This simply
@@ -1102,7 +1110,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Synchronise the local cache back to the database.
         with util.Timeit('Leonard:1.5  syncObjects'):
-            self.syncObjects()
+            self.syncObjects(self.collisions)
 
     @typecheck
     def createWorkPackage(self, objIDs: (tuple, list),
@@ -1152,21 +1160,29 @@ class LeonardDistributedZeroMQ(LeonardBase):
         self.wpid_counter += 1
         return RetVal(True, None, data)
 
-    def updateLocalCache(self, wpdataret):
+    def updateLocalCache(self, wp_data_ret, collisions):
         """
-        Copy every object from ``wpdata`` to the local cache.
+        Copy every object from ``wp_data_ret`` to the local cache.
 
-        The ``wpdataret`` argument is a list of (objID, body) tuples.
+        The ``wp_data_ret`` argument is a list of (objID, body) tuples.
 
         The implicit assumption of this method is that ``wpdata`` is the
         output of ``computePhysicsForWorkPackage`` from a Worker.
 
-        :param list[WPDataRet] wpdataret: data returned by Minion.
+        This method will also publish all `collisions`, the format of which is
+        determined entirely by `PyBulletDynamicsWorld.getLastContacts`.
+
+        :param list[Wp_data_ret] wp_data_ret: data returned by Minion.
+        :param list collisions: collisions to publish.
         """
         # Reset force and torque for all objects in the WP, and overwrite
         # the old Body States with the new one from the processed WP.
-        for wp in wpdataret:
+        for wp in wp_data_ret:
             self.allBodies[wp.aid] = _RigidBodyData(*wp.body)
+
+        # Extend the list of collision contacts if any were provided.
+        if (collisions is not None) and len(collisions) > 0:
+            self.collisions.extend(collisions)
 
 
 class LeonardWorkerZeroMQ(config.AzraelProcess):
@@ -1281,6 +1297,9 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             # Remove all constraints.
             self.bullet.clearAllConstraints()
 
+        # Retrieve all collision contacts generated during the last step.
+        collisions = self.bullet.getLastContacts().data
+
         with util.Timeit('Worker:1.3.0  fetchFromBullet'):
             # Compile the new state variables into a list. This list will be
             # sent back to the caller later on.
@@ -1301,7 +1320,7 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
                 out.append(WPDataRet(obj.aid, body, None))
 
         # Return the updated WP data.
-        return {'wpid': meta.wpid, 'wpdata': out}
+        return {'wpid': meta.wpid, 'wpdata': out, 'collisions': collisions}
 
     @typecheck
     def run(self):
