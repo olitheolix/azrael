@@ -21,6 +21,7 @@ Physics manager.
 import os
 import zmq
 import time
+import json
 import signal
 import pickle
 import logging
@@ -29,6 +30,7 @@ import numpy as np
 
 import azrael.igor
 import azrael.datastore
+import azrael.eventstore
 import azrael.vectorgrid
 import azrael.bullet_api
 import azrael.util as util
@@ -412,6 +414,7 @@ class LeonardBase(config.AzraelProcess):
         self.allBodies = {}
         self.allAABBs = {}
         self.allForces = {}
+        self.events = azrael.eventstore.EventStore(topics=['phys'])
 
     def setup(self):
         """
@@ -529,7 +532,7 @@ class LeonardBase(config.AzraelProcess):
             self.allBodies[objID] = body._replace(position=pos, velocityLin=vel)
 
         # Synchronise the local object cache back to the database.
-        self.syncObjects()
+        self.syncObjects(collisions=None)
 
     def processCommandQueue(self):
         """
@@ -616,13 +619,23 @@ class LeonardBase(config.AzraelProcess):
 
         return RetVal(True, None, None)
 
-    def syncObjects(self):
+    def syncObjects(self, collisions: list):
         """
-        Sync the local BodyStates to Leonard's DB and the master record.
+        Sync the bodies from Leonard's local cache to the datastore.
+
+        This method will also publish the `collisions`, the format of which is
+        determined entirely by `PyBulletDynamicsWorld.getLastContacts`.
+
+        :param list collisions: collisions to publish.
         """
         # Return immediately if we have no objects to begin with.
         if len(self.allBodies) == 0:
             return
+
+        # Publish the collision contacts (if there are any).
+        if (collisions is not None) and (len(collisions) > 0):
+            msg = json.dumps(collisions).encode('utf8')
+            self.events.publish(key='phys.collisions', msg=msg)
 
         # Update the RBS data in the master record.
         db = azrael.datastore.dbHandles['ObjInstances']
@@ -638,7 +651,7 @@ class LeonardBase(config.AzraelProcess):
 
     def processCommandsAndSync(self):
         """
-        Process all pending commands and syncronise the cache to the DB.
+        Process all pending commands and synchronise the cache to the DB.
 
         This method is useful for unit tests but probably not much else. It
         also ensures that the synchronisation of the objects from the local
@@ -647,7 +660,7 @@ class LeonardBase(config.AzraelProcess):
         not critical).
         """
         self.processCommandQueue()
-        self.syncObjects()
+        self.syncObjects(collisions=None)
 
     def run(self):
         """
