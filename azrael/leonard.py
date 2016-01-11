@@ -772,6 +772,9 @@ class LeonardBullet(LeonardBase):
             # Remove all constraints.
             self.bullet.clearAllConstraints()
 
+        # Retrieve all collisions generated during the last step.
+        collisions = self.bullet.getLastContacts().data
+
         # Retrieve all objects from Bullet and overwrite the state variables
         # that the user explicilty wanted to change (if any).
         for objID in self.allBodies:
@@ -789,7 +792,7 @@ class LeonardBullet(LeonardBase):
                 )
 
         # Synchronise the local object cache back to the database.
-        self.syncObjects()
+        self.syncObjects(collisions)
 
 
 class LeonardSweeping(LeonardBase):
@@ -843,6 +846,10 @@ class LeonardSweeping(LeonardBase):
         # Log the number of created collision sets.
         util.logMetricQty('#CollSets', len(collSets))
 
+        # Create empty set of collisions. This is a precaution in case the
+        # for-loop below does not run (ie there are no bodies to simulate).
+        collisions = []
+
         # Process all subsets individually.
         for subset in collSets:
             # Compile the subset dictionary for the current collision set.
@@ -894,6 +901,9 @@ class LeonardSweeping(LeonardBase):
             # Remove all constraints.
             self.bullet.clearAllConstraints()
 
+            # Retrieve all collisions generated during the last step.
+            collisions = self.bullet.getLastContacts().data
+
             # Retrieve all objects from Bullet.
             for objID, body in coll_bodies.items():
                 ret = self.bullet.getRigidBodyData(objID)
@@ -910,7 +920,7 @@ class LeonardSweeping(LeonardBase):
                     )
 
         # Synchronise the local object cache back to the database.
-        self.syncObjects()
+        self.syncObjects(collisions)
 
 
 class LeonardDistributedZeroMQ(LeonardBase):
