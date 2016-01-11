@@ -1,10 +1,12 @@
 import json
 import pytest
+import time
 import azrael.igor
 import azrael.aztypes
 import azrael.leonard
 import azrael.datastore
 import azrael.vectorgrid
+import azrael.eventstore
 
 import numpy as np
 import unittest.mock as mock
@@ -343,7 +345,52 @@ class TestLeonardAllEngines:
         Create two touching bodies and step the simulation. Verify the
         collision event via the event store API.
         """
-        assert False
+        # Skip this test for LeonardBase because it does not emit any messages.
+        if clsLeonard == azrael.leonard.LeonardBase:
+            return
+
+        # Instantiate the message store API and start it in a thread.
+        es = azrael.eventstore.EventStore(topics=['#'])
+        es.start()
+
+        # Instantiate Leonard.
+        leo = getLeonard(clsLeonard)
+
+        # Spawn two identical objects and step the simulation.
+        assert leoAPI.addCmdSpawn([('0', getRigidBody()), ('1', getRigidBody())]).ok
+        leo.step(1, 1)
+
+        # Wait for the message to arrive.
+        for ii in range(10):
+            time.sleep(0.1)
+            if len(es.messages) > 0:
+                break
+            assert ii < 9
+        ret = es.getMessages()
+        assert ret.ok
+
+        # Verify there is exactly one message. That message must have been
+        # published to the 'phys.collisions' topic.
+        assert len(ret.data) == 1
+        topic, msg = ret.data[0]
+        assert topic == 'phys.collisions'
+
+        # The payload must be JSON.
+        msg = json.loads(msg.decode('utf8'))
+
+        # The payload is a list of lists. Since only one pair of objects must
+        # have collided, that list must contain only one element.
+        assert len(msg) == 1
+        msg = msg[0]
+
+        # The content of the list comprises the AIDs of the two objects first,
+        # followed by information about the position of the collisions (which
+        # we ignore here because we cannot safely predict their values).
+        assert (msg[0] == '0') and (msg[1] == '1')
+
+        # Stop the thread.
+        es.stop()
+        es.join()
 
 
 class TestLeonardOther:
