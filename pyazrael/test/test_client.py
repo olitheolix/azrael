@@ -870,3 +870,34 @@ class TestClient:
 
         # Query all at once.
         assert client.getCustomData(None) == client.getCustomData([id_1, id_2])
+
+    @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
+    def test_addTemplate_spawn_with_custom_data(self, client_type):
+        """
+        Create and spawn a template with non-default 'custom' data.
+        """
+        # Get the client for this test.
+        client = self.clients[client_type]
+
+        # Add a new template with a non-default 'custom' attribute.
+        temp = getTemplate(
+            't1',
+            rbs=getRigidBody(),
+            fragments={'bar': getFragRaw()},
+            custom='foo'
+        )
+        assert client.addTemplates([temp]).ok
+
+        # Query the template and verify the 'custom' attribute.
+        ret = client.getTemplates(['t1'])
+        assert ret.ok and ret.data['t1']['template'].custom == 'foo'
+
+        # Spawn two objects from the just defined template. Spawn the second
+        # one with a new 'custom' attribute.
+        id_1, id_2 = '1', '2'
+        init = [{'templateID': 't1'}, {'templateID': 't1', 'custom': 'bar'}]
+        assert client.spawn(init) == (True, None, [id_1, id_2])
+
+        # Query the custom data for both objects and verify they are correct.
+        ret = client.getCustomData([id_1, id_2])
+        assert ret == (True, None, {id_1: 'foo', id_2: 'bar'})
