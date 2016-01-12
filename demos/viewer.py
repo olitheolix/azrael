@@ -324,6 +324,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                  parent=None):
         super().__init__(parent)
 
+        self.tname_player = 'player'
+        self.tname_projectile = 'projectile'
+
         # If True then a dedicated player object will be created. Its position
         # will always coincide with that of the camera.
         self.show_player = show_player
@@ -686,9 +689,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         uv = np.array([], np.float64)
         rgb = np.array([], np.uint8)
 
-        # Create the template with name 'cube'.
-        t_projectile = 'cube'
-
         # Fixme: use convenience method in demolib
         model = {
             'vert': buf_vert.tolist(),
@@ -706,18 +706,18 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                       files={'model.json': model})
         frags = {'frag_1': fm}
         body = getRigidBody(cshapes={'player': cs})
-        temp = Template(t_projectile, body, frags, {}, {})
-        ret = self.client.addTemplates([temp])
-        del frags, temp
+        ret = self.client.addTemplates([
+            Template(self.tname_player, body, frags, {}, {}),
+            Template(self.tname_projectile, body, frags, {}, {}),
+        ])
+        del frags
 
-        # The template was probably already defined (eg by a nother instance of
-        # this script).
+        # Check for errors.
         if not ret.ok:
             print('Viewer could not add new template: {}'.format(ret.msg))
             sys.exit(1)
 
-        print('Created template <{}>'.format(t_projectile))
-        return t_projectile
+        print('Created templates for player and projectile')
 
     def initializeGL(self):
         """
@@ -744,7 +744,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         print('Client connected')
 
         # Define a template for projectiles.
-        self.t_projectile = self.defineProjectileTemplate()
+        self.defineProjectileTemplate()
 
         # Create the camera and place it (in the z-direction) between the
         # Cubes and Sphere generated  by the 'start' script, but out of their
@@ -753,7 +753,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.camera = Camera(initPos, np.pi, 0)
 
         # Spawn the player object (it has the same shape as a projectile).
-        d = {'templateID': self.t_projectile, 'rbs': {'position': initPos}}
+        d = {'templateID': self.tname_player, 'rbs': {'position': initPos}}
         if self.show_player:
             ret = self.client.spawn([d])
             if ret.ok:
@@ -1116,6 +1116,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
     def mousePressEvent(self, event):
         button = event.button()
+
+        # Name the projectile to associate it with this player.
+        name = 'projectile_{}'.format(self.player_id)
+
         if button == 1:
             # Determine the initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
@@ -1123,35 +1127,37 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
             # Spawn the object.
             d = {
-                'templateID': self.t_projectile,
+                'templateID': self.tname_projectile,
                 'rbs': {
                     'position': pos.tolist(),
                     'velocityLin': vel.tolist(),
                     'scale': 0.25,
                     'imass': 20
-                }
+                },
+                'custom': name,
             }
             ret = self.client.spawn([d])
             if not ret.ok:
-                print('Could not spawn <{}>'.format(self.t_projectile))
+                print('Could not spawn <{}>'.format(self.tname_projectile))
         elif button == 2:
             # Determine the initial position and velocity of new object.
-            pos = self.camera.position + 2 * self.camera.view
+            pos = self.camera.position + 3 * self.camera.view
             vel = 5 * self.camera.view
 
             # Spawn the object.
             d = {
-                'templateID': self.t_projectile,
+                'templateID': self.tname_projectile,
                 'rbs': {
                     'position': pos.tolist(),
                     'velocityLin': vel.tolist(),
                     'scale': 0.75,
                     'imass': 0.2,
-                }
+                },
+                'custom': name,
             }
             ret = self.client.spawn([d])
             if not ret.ok:
-                print('Could not spawn <{}>'.format(self.t_projectile))
+                print('Could not spawn <{}>'.format(self.tname_projectile))
         else:
             print('Unknown button <{}>'.format(button))
 
