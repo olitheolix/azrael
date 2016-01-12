@@ -106,11 +106,24 @@ class EventStore(threading.Thread):
         if self.conn is not None:
             self.conn.close()
 
+    def onMessage(self):
+        """
+        For user to overload. Triggers after a message was received.
+        """
+        pass
+
+    def onTimeout(self):
+        """
+        For user to overload. Triggers after the periodic timer expired.
+        """
+        pass
+
     def _onMessage(self, ch, method, properties, body):
         """
         Add messages to the local cache whenver they arrive.
         """
         self.messages.append((method.routing_key, body))
+        self.onMessage()
         if self._terminate is True:
             self.chan.stop_consuming()
 
@@ -118,6 +131,7 @@ class EventStore(threading.Thread):
         """
         Periodically checks if the thread should terminate itself.
         """
+        self.onTimeout()
         if self._terminate is True:
             self.chan.stop_consuming()
         else:
