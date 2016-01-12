@@ -327,6 +327,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.tname_player = 'player'
         self.tname_projectile = 'projectile'
 
+        # Projectiles will disappear after ttl_projectile Seconds.
+        self.ttl_projectile = 3.0
+        self.projectiles = {}
+
         # If True then a dedicated player object will be created. Its position
         # will always coincide with that of the camera.
         self.show_player = show_player
@@ -718,6 +722,16 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             sys.exit(1)
 
         print('Created templates for player and projectile')
+
+    def removeProjectiles(self):
+        """
+        Remove all projectiles whose time to live has expired.
+        """
+        t0 = time.time()
+        tmp = [k for (k, v) in self.projectiles.items() if t0 > v]
+        [self.projectiles.pop(k) for k in tmp]
+        if len(tmp) > 0:
+            self.client.removeObjects(tmp)
 
     def initializeGL(self):
         """
@@ -1123,10 +1137,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         if button == 1:
             # Determine the initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
-            vel = 20 * self.camera.view
+            vel = 40 * self.camera.view
 
             # Spawn the object.
-            d = {
+            objs = {
                 'templateID': self.tname_projectile,
                 'rbs': {
                     'position': pos.tolist(),
@@ -1136,16 +1150,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 },
                 'custom': name,
             }
-            ret = self.client.spawn([d])
-            if not ret.ok:
-                print('Could not spawn <{}>'.format(self.tname_projectile))
         elif button == 2:
             # Determine the initial position and velocity of new object.
             pos = self.camera.position + 3 * self.camera.view
             vel = 5 * self.camera.view
 
             # Spawn the object.
-            d = {
+            objs = {
                 'templateID': self.tname_projectile,
                 'rbs': {
                     'position': pos.tolist(),
@@ -1155,11 +1166,15 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 },
                 'custom': name,
             }
-            ret = self.client.spawn([d])
-            if not ret.ok:
-                print('Could not spawn <{}>'.format(self.tname_projectile))
         else:
             print('Unknown button <{}>'.format(button))
+            return
+
+        ret = self.client.spawn([objs])
+        if not ret.ok:
+            print('Could not spawn <{}>'.format(self.tname_projectile))
+        t0 = time.time() + self.ttl_projectile
+        self.projectiles.update({aid: t0 for aid in ret.data})
 
     def timerEvent(self, event):
         """
@@ -1176,6 +1191,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.killTimer(event.timerId())
         self.drawTimer = self.startTimer(20)
         self.updateGL()
+        self.removeProjectiles()
 
 
 def main():
