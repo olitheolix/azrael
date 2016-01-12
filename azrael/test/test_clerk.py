@@ -1635,8 +1635,76 @@ class TestClerk:
         assert len(leo.allBodies) == len(leo.allForces) == 1
 
         # Verify further that Leonard did *not* create an entry in the master
-        # record due to an errornous 'upsert' command.
+        # record due to an erroneous 'upsert' command.
         assert db.count() == (True, None, 0)
+
+    def test_addTemplate_with_custom_data(self):
+        """
+        Specify custom' data directly in the template definition. This feature
+        requires a dedicated test because it was retrofitted.
+        """
+        clerk = self.clerk
+
+        # Auxiliary data for template construction.
+        frags = {'foo': getFragRaw()}
+        body = getRigidBody(cshapes={'cssphere': getCSSphere()})
+
+        # Add a valid template
+        template = getTemplate('tname', rbs=body, fragments=frags, custom='mydata')
+        assert clerk.addTemplates([template]) == (True, None, {'tname': True})
+
+        # Query the template and verify the 'custom' data is correct.
+        ret = clerk.getTemplates(['tname'])
+        assert ret.ok
+        assert ret.data['tname']['template'].custom == 'mydata'
+
+        # Spawn the object and verify that it has the correct custom data.
+        ret = clerk.spawn([{'templateID': 'tname'}])
+        assert ret.ok
+        aid = ret.data[0]
+        assert clerk.getCustomData([aid]) == (True, None, {aid: 'mydata'})
+
+        # Adding a template with an invalid 'custom' field must fail.
+        template = template._replace(custom=[1])
+        assert not clerk.addTemplates([template]).ok
+
+    def test_spawn_with_custom_data(self):
+        """
+        Specify custom' data directly when spawning templates. This feature
+        requires a dedicated test because it was retrofitted.
+        """
+        clerk = self.clerk
+
+        # Construct template data.
+        frags = {'foo': getFragRaw()}
+        body = getRigidBody(cshapes={'cssphere': getCSSphere()})
+        template = getTemplate('tname', rbs=body, fragments=frags, custom='data_foo')
+
+        # Add the template.
+        assert clerk.addTemplates([template]) == (True, None, {'tname': True})
+
+        # Query the template and verify the 'custom' data is correct.
+        ret = clerk.getTemplates(['tname'])
+        assert ret.ok
+        assert ret.data['tname']['template'].custom == 'data_foo'
+
+        # Spawn the same template twice but overload the custom data of the
+        # second one.
+        ret = clerk.spawn([
+            {'templateID': 'tname'},
+            {'templateID': 'tname', 'custom': 'data_bar'},
+        ])
+        assert ret.ok
+        aid_0, aid_1 = ret.data
+
+        # Verify the custom data of both object instances is correct.
+        ret = clerk.getCustomData([aid_0, aid_1])
+        assert ret.ok
+        assert ret.data == {aid_0: 'data_foo', aid_1: 'data_bar'}
+
+        # Attempt to override the 'custom' field with something other than a
+        # string.
+        assert not clerk.spawn([{'templateID': 'tname', 'custom': [1]}]).ok
 
 
 class TestModifyFragments:

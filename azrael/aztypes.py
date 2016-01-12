@@ -955,7 +955,6 @@ class Template(_Template):
             raise TypeError
 
         # Return constructed data type.
-        custom = ''
         return super().__new__(
             cls, aid, rbs, fragments, boosters, factories, custom)
 

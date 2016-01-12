@@ -572,12 +572,14 @@ class Clerk(config.AzraelProcess):
                 {'templateID': 'foo'},
                 {'templateID': 'foo', 'rbs': {'imass': 5}},
                 {'templateID': 'bar', 'rbs': {'position': (1, 2, 3)},
+                {'templateID': 'bar', 'custom': 'blah'},
             ]
 
         This will spawn three objects. The first one is a verbatim copy of
-        `foo`. The second will also be an instance of `foo` but with an `imass`
-        of 5, whereas the third object is an instance of `bar` that is spawned
-        at position (1, 2, 3).
+        `foo`. The second object will also be a `foo` instance but with an
+        `imass` of 5. The third object is a `bar` instance spawned at the
+        position (1, 2, 3). The fourth object is a verbatim `bar` instance with
+        its 'custom' data initialised to 'blah'.
 
         This method will either spawn all objects, or return with an error
         without spawning a single one.
@@ -597,6 +599,8 @@ class Clerk(config.AzraelProcess):
                 assert isinstance(tmp['templateID'], str)
                 if 'rbs' in tmp:
                     aztypes.DefaultRigidBody(**tmp['rbs'])
+                if 'custom' in tmp:
+                    assert isinstance(tmp['custom'], str)
         except (AssertionError, KeyError, TypeError):
             return RetVal(False, '<spawn> received invalid arguments', None)
 
@@ -653,8 +657,12 @@ class Clerk(config.AzraelProcess):
                 template = template._replace(rbs=body)
                 del body
 
-                # The new bodies will be published once the objects exist in
-                # the database. Until then, store them.
+                # Update the 'custom' field.
+                if 'custom' in newObj:
+                    template = template._replace(custom=newObj['custom'])
+
+                # The new bodies will be announced (eg to Leonard) once they
+                # exist in the database. Until we just hold on to their data.
                 bodyStates[objID] = template.rbs
 
                 # ------------------------------------------------------------

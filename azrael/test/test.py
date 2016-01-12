@@ -178,8 +178,9 @@ def getTemplate(name='template',
                 rbs=None,
                 fragments={},
                 boosters={},
-                factories={}):
+                factories={},
+                custom=''):
     if rbs is None:
         rbs = getRigidBody(cshapes={'cssphere': getCSSphere()})
 
-    return Template(name, rbs, fragments, boosters, factories)
+    return Template(name, rbs, fragments, boosters, factories, custom)
