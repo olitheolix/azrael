@@ -442,7 +442,7 @@ class Clerk(config.AzraelProcess):
         """
         Return the meta data for all ``templateIDs`` as a dictionary.
 
-        The data for for non-existing templates will be None.
+        The data for non-existing templates will be None.
 
         Note that each template will be returned only once, no matter
         how many times it was specified in `templateIDs`. For instance,
@@ -640,7 +640,13 @@ class Clerk(config.AzraelProcess):
                 # ------------------------------------------------------------
                 # Overwrite the initial state with the provided values (eg
                 # initial position).
+                #
+                # Note: the following code actually makes a copy of the
+                # template (via `._replace method`). This ensures the same
+                # template data can be used to spawn multiple objects from the
+                # same template without bleeding attributes to each other.
                 # ------------------------------------------------------------
+                # Update rigid body state.
                 body = template.rbs
                 if 'rbs' in newObj:
                     body = body._replace(**newObj['rbs'])
@@ -1438,8 +1444,8 @@ class Clerk(config.AzraelProcess):
         velocity of the body. The dictionary does not contain any collision
         shapes, fragment geometries, or other specialised data.
 
-        The purpose of this method is to make it easy to query the salient
-        information about an object in a (more) bandwidth efficient way.::
+        This method makes it easy to query salient object information in a
+        (more) bandwidth efficient way.::
 
             out = {
                 objID_1: {
