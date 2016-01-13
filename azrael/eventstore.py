@@ -66,8 +66,17 @@ class EventStore(threading.Thread):
             port=config.port_rabbitmq,
         )
 
-        # Connect to RabbitMQ.
-        self.conn = pika.BlockingConnection(conn_param)
+        # Connect to RabbitMQ. Raise a generic RunTime error if that is not
+        # possible. This is a band-aid solution for now since I am still unsure
+        # how to handle connection errors in general. Wrapping every call to
+        # the EventStore in a try/except block seems inelegant.
+        try:
+            self.conn = pika.BlockingConnection(conn_param)
+        except (pika.exceptions.ConnectionClosed,
+                pika.exceptions.ChannelClosed,
+                pika.exceptions.IncompatibleProtocolError):
+            self.chan = self.conn = None
+            raise RuntimeError
 
         # Create and configure the channel. All deliveries must be confirmed.
         self.chan = self.conn.channel()
@@ -103,11 +112,19 @@ class EventStore(threading.Thread):
 
         # Close the channel if it is still open.
         if self.chan is not None:
-            self.chan.close()
+            try:
+                self.chan.close()
+            except pika.exceptions.ChannelClosed:
+                pass
+            self.chan = None
 
         # Close the connection to RabbitMQ if it is still open.
         if self.conn is not None:
-            self.conn.close()
+            try:
+                self.conn.close()
+            except pika.exceptions.ConnectionClosed:
+                pass
+            self.conn = None
 
     def onMessage(self):
         """
