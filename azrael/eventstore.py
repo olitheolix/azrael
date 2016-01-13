@@ -61,10 +61,13 @@ class EventStore(threading.Thread):
         # Event parameters.
         self.topics = topics
         self.exchange_name = 'azevents'
-        conn_param = pika.ConnectionParameters(host='localhost')
+        conn_param = pika.ConnectionParameters(
+            host=config.addr_rabbitmq,
+            port=config.port_rabbitmq,
+        )
 
         # Connect to RabbitMQ.
-        self.conn = pika.BlockingConnection()
+        self.conn = pika.BlockingConnection(conn_param)
 
         # Create and configure the channel. All deliveries must be confirmed.
         self.chan = self.conn.channel()

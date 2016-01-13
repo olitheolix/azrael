@@ -107,9 +107,13 @@ addr_azrael = getNetworkAddress()
 # Database host.
 if 'INSIDEDOCKER' in os.environ:
     addr_database = 'database'
+    addr_rabbitmq = 'RabbitMQ'
+    port_rabbitmq = 5672
     port_database = 27017
 else:
     addr_database = 'localhost'
+    addr_rabbitmq = 'localhost'
+    port_rabbitmq = 5672
     port_database = 27017
 
 # Addresses of the various Azrael services.
