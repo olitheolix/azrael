@@ -43,6 +43,7 @@ dependencies:
   - backports-abc==0.4
   - ipython-genutils==0.1.0
   - netifaces==0.10.4
+  - pika==0.10.0
   - setproctitle==1.1.9
   - six==1.10.0
   - websocket-client-py3==0.15.0
