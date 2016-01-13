@@ -18,6 +18,7 @@
 import time
 import multiprocessing
 import azrael.datastore
+import azrael.eventstore
 
 # Use 'fork' system call to create new processes.
 multiprocessing.set_start_method('fork')
@@ -32,17 +33,55 @@ def waitForDatabases(timeout=60):
     problem locally but if the databases are started separately (eg in Docker
     containers) then it may take a while until they accept connections.
     """
+    if azrael.datastore.init(flush=False).ok is True:
+        return
+
     # Attempt to initialise the data stores.
+    time.sleep(0.5)
     t0 = time.time()
-    while azrael.datastore.init(flush=False) is False:
+    print('Waiting for data store .', flush=True, end='')
+    while azrael.datastore.init(flush=False).ok is False:
         if time.time() - t0 > timeout:
             # A minute has passed - abort with an error.
             print('failed!')
-            print('Could not reach all Datastore backends -- Abort')
+            print('Could not connect to datastore backends -- Abort')
             raise ImportError('Could not connect to databases')
-        time.sleep(1)
+        time.sleep(0.5)
+        print('.', end='', flush=True)
+    print('ok')
+
+
+def waitForEventStore(timeout=60):
+    """
+    Raise `ImportError` if EventStore cannot connect for ``timeout`` seconds.
+
+    The most likely cause is that the RabbitMQ server is still starting up.
+    """
+    try:
+        azrael.eventstore.EventStore(['#'])
+        return
+    except RuntimeError:
+        pass
+
+    t0 = time.time()
+    print('Waiting for event store .', flush=True, end='')
+    while True:
+        time.sleep(0.5)
+        try:
+            azrael.eventstore.EventStore(['#'])
+            print('ok')
+            break
+        except RuntimeError:
+            pass
+
+        if time.time() - t0 > timeout:
+            # A minute has passed - abort with an error.
+            print('failed!')
+            print('Could not connect to event store -- Abort')
+            raise ImportError('Could not connect to databases')
         print('.', end='', flush=True)
 
 
 # Do not proceed with Azrael until the databases are ready.
 waitForDatabases(timeout=60)
+waitForEventStore(timeout=60)

@@ -53,7 +53,7 @@ def init(flush):
     if flush:
         for name in names:
             dbHandles[name].reset()
-    return RetVal(True, 'Could not initialise Datastore', None)
+    return RetVal(True, None, None)
 
 
 @typecheck
