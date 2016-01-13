@@ -39,8 +39,8 @@ RUN python setup.py clean
 
 # Build the Anaconda packages.
 WORKDIR /demo/azrael/recipes
-RUN conda build --python 3.4 --python 3.5 azbullet 
-RUN conda build --python 3.4 --python 3.5 assimp 
+RUN conda build --python 3.4 --python 3.5 azbullet
+RUN conda build --python 3.4 --python 3.5 assimp
 
 # Display Anaconda login and upload instructions.
 CMD echo "To upload packages to Anaconda.org:" && \

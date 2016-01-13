@@ -5,9 +5,13 @@ database:
   volumes:
     - /tmp/azrael:/data/db
 
+RabbitMQ:
+  image: rabbitmq:latest
+
 azrael:
   image: olitheolix/azrael:latest
   ports:
     - "8080:8080"
   links:
     - database
+    - RabbitMQ
