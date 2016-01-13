@@ -15,7 +15,7 @@ dependencies:
 - networkx=1.10=py34_0
 - numpy=1.10.2=py34_0
 - openblas=0.2.14=3
-- openssl=1.0.2d=0
+- openssl=1.0.2e=0
 - path.py=8.1.2=py34_1
 - pexpect=3.3=py34_0
 - pickleshare=0.5=py34_0
@@ -25,13 +25,13 @@ dependencies:
 - py=1.4.30=py34_0
 - pymongo=3.0.3=py34_0
 - pytest=2.8.1=py34_0
-- python=3.4.3=2
-- pyzmq=15.1.0=py34_0
+- python=3.4.4=0
+- pyzmq=15.2.0=py34_0
 - readline=6.2=2
 - requests=2.9.0=py34_0
 - setuptools=19.1.1=py34_0
 - simplegeneric=0.8.1=py34_0
-- sqlite=3.8.4.1=1
+- sqlite=3.9.2=0
 - tk=8.5.18=0
 - tornado=4.3=py34_0
 - traitlets=4.0.0=py34_0
