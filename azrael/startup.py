@@ -45,7 +45,7 @@ class AzraelStack:
         self.procs = []
 
         # Kill any pending processes.
-        subprocess.call(['pkill', 'Azrael:'])
+        subprocess.run(['pkill', 'Azrael:'], check=False)
         time.sleep(0.2)
         azrael.datastore.init(flush=True)
 

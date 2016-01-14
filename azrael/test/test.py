@@ -32,7 +32,7 @@ from azrael.aztypes import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
 
 
 def killAzrael():
-    subprocess.call(['pkill', 'Azreal:'])
+    subprocess.run(['pkill', 'Azreal:'], check=False)
 
     # Delete all grids.
     assert azrael.vectorgrid.deleteAllGrids().ok

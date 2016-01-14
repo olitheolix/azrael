@@ -125,6 +125,9 @@ def processBlenderFile(fname):
     # Tell Blender to load the scene and run the Python script without spawning
     # a user interface. If everything goes well we will have a new file
     # `fname_out` with the content created fname_script.
+    # Note: do not check the return value because Blender will complain about
+    # the '--azrael' flag that our 'fname' script needs; Blender will execute
+    # our script fine but still exit with a non-zero value.
     cmd = [
         'blender',
         fname,
@@ -132,7 +135,7 @@ def processBlenderFile(fname):
         '--python', fname_script,
         '--azrael', fname_out,
     ]
-    subprocess.call(cmd)
+    subprocess.run(cmd, check=False)
 
     # Return the name with the meta information.
     return fname_out
