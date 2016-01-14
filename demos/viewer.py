@@ -1132,9 +1132,14 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         button = event.button()
 
         # Name the projectile to associate it with this player.
-        name = 'projectile_{}'.format(self.player_id)
+        name = {'parent': self.player_id, 'name': 'projectile', 'type': None}
 
         if button == 1:
+            # This projectiles will live half as long as the one spawned with
+            # the other button but moves considerably faster.
+            ttl = 1 * self.ttl_projectile
+            name['type'] = 'A'
+
             # Determine the initial position and velocity of new object.
             pos = self.camera.position + 2 * self.camera.view
             vel = 40 * self.camera.view
@@ -1145,12 +1150,16 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 'rbs': {
                     'position': pos.tolist(),
                     'velocityLin': vel.tolist(),
-                    'scale': 0.25,
                     'imass': 20
                 },
-                'custom': name,
+                'custom': json.dumps(name),
             }
         elif button == 2:
+            # This projectiles will live twice as long as the one spawned with
+            # the other button but moves considerably slower.
+            ttl = 5 * self.ttl_projectile
+            name['type'] = 'B'
+
             # Determine the initial position and velocity of new object.
             pos = self.camera.position + 3 * self.camera.view
             vel = 5 * self.camera.view
@@ -1161,10 +1170,9 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                 'rbs': {
                     'position': pos.tolist(),
                     'velocityLin': vel.tolist(),
-                    'scale': 0.75,
                     'imass': 0.2,
                 },
-                'custom': name,
+                'custom': json.dumps(name),
             }
         else:
             print('Unknown button <{}>'.format(button))
@@ -1173,7 +1181,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         ret = self.client.spawn([objs])
         if not ret.ok:
             print('Could not spawn <{}>'.format(self.tname_projectile))
-        t0 = time.time() + self.ttl_projectile
+        t0 = time.time() + ttl
         self.projectiles.update({aid: t0 for aid in ret.data})
 
     def timerEvent(self, event):
