@@ -15,7 +15,7 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 ENV INSIDEDOCKER 1
 
 # Create a dedicated environment for Azrael.
-RUN conda create -y --name azrael python=3.4
+RUN conda create -y --name azrael python=3.5
 
 # Create "/demo" to hold the Azrael repo.
 RUN mkdir -p /demo/
