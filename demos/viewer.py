@@ -1134,22 +1134,22 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         # Name the projectile to associate it with this player.
         name = {'parent': self.player_id, 'name': 'projectile', 'type': None}
 
+        # Determine initial position and velocity of the new object.
+        pos = self.camera.position + 3 * self.camera.view
+        vel = self.camera.view
+
         if button == 1:
             # This projectiles will live half as long as the one spawned with
             # the other button but moves considerably faster.
             ttl = 1 * self.ttl_projectile
             name['type'] = 'A'
 
-            # Determine the initial position and velocity of new object.
-            pos = self.camera.position + 2 * self.camera.view
-            vel = 40 * self.camera.view
-
             # Spawn the object.
             objs = {
                 'templateID': self.tname_projectile,
                 'rbs': {
                     'position': pos.tolist(),
-                    'velocityLin': vel.tolist(),
+                    'velocityLin': (40 * vel).tolist(),
                     'imass': 20
                 },
                 'custom': json.dumps(name),
@@ -1160,16 +1160,12 @@ class ViewerWidget(QtOpenGL.QGLWidget):
             ttl = 5 * self.ttl_projectile
             name['type'] = 'B'
 
-            # Determine the initial position and velocity of new object.
-            pos = self.camera.position + 3 * self.camera.view
-            vel = 5 * self.camera.view
-
             # Spawn the object.
             objs = {
                 'templateID': self.tname_projectile,
                 'rbs': {
                     'position': pos.tolist(),
-                    'velocityLin': vel.tolist(),
+                    'velocityLin': (5 * vel).tolist(),
                     'imass': 0.2,
                 },
                 'custom': json.dumps(name),
