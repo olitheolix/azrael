@@ -324,9 +324,6 @@ class ViewerWidget(QtOpenGL.QGLWidget):
                  parent=None):
         super().__init__(parent)
 
-        self.tname_player = 'player'
-        self.tname_projectile = 'projectile'
-
         # Projectiles will disappear after ttl_projectile Seconds.
         self.ttl_projectile = 3.0
         self.projectiles = {}
@@ -686,42 +683,49 @@ class ViewerWidget(QtOpenGL.QGLWidget):
 
         Every projectile has the shape of the cube.
         """
-        # Geometry.
-        buf_vert = getGeometriesCube()
-        cs = CollShapeBox(1, 1, 1)
-        cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
-        uv = np.array([], np.float64)
-        rgb = np.array([], np.uint8)
+        def _buildTemplate(name, imass, hlen, lf, rf):
+            """
+            Return a complete template for a cube object.
+            This is a helper function only.
+            """
+            # Geometry and collision shape for platform.
+            vert, cshapes = demolib.cubeGeometry(hlen, hlen, hlen)
 
-        # Fixme: use convenience method in demolib
-        model = {
-            'vert': buf_vert.tolist(),
-            'uv': uv.tolist(),
-            'rgb': rgb.tolist(),
-            'width': 1,
-            'height': 1,
-        }
-        model = json.dumps(model).encode('utf8')
+            # Rigid body data for platforms (defines their physics, not appearance).
+            body = demolib.getRigidBody(
+                cshapes={'cs': cshapes},
+                linFactor=lf,
+                rotFactor=rf,
+                imass=imass,
+            )
 
-        fm = FragMeta(fragtype='RAW',
-                      scale=1,
-                      position=(0, 0, 0),
-                      rotation=(0, 0, 0, 1),
-                      files={'model.json': model})
-        frags = {'frag_1': fm}
-        body = getRigidBody(cshapes={'player': cs})
+            # Geometry for the platforms (defines their appearance, not physics).
+            fm = demolib.getFragMetaRaw(
+                vert=vert,
+                uv=[],
+                rgb=[],
+                scale=1,
+                pos=(0, 0, 0),
+                rot=(0, 0, 0, 1)
+            )
+            frags = {'frag_1': fm}
+
+            # Define the platform template and upload it to Azrael.
+            return Template(name, body, frags, {}, {})
+
+        # Add the player and projectile templates.
         ret = self.client.addTemplates([
-            Template(self.tname_player, body, frags, {}, {}),
-            Template(self.tname_projectile, body, frags, {}, {}),
+            _buildTemplate('player', 0.2, 1.0, [0, 0, 0], [0, 0, 0]),
+            _buildTemplate('projectile_A', 2, .2, [1, 1, 1], [1, 1, 1]),
+            _buildTemplate('projectile_B', 0.2, 0.5, [1, 1, 1], [1, 1, 1]),
         ])
-        del frags
 
         # Check for errors.
         if not ret.ok:
             print('Viewer could not add new template: {}'.format(ret.msg))
             sys.exit(1)
 
-        print('Created templates for player and projectile')
+        print('Created player and projectile templates')
 
     def removeProjectiles(self):
         """
@@ -767,9 +771,10 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         self.camera = Camera(initPos, np.pi, 0)
 
         # Spawn the player object (it has the same shape as a projectile).
-        d = {'templateID': self.tname_player, 'rbs': {'position': initPos}}
         if self.show_player:
-            ret = self.client.spawn([d])
+            ret = self.client.spawn(
+                [{'templateID': 'player', 'rbs': {'position': initPos}}]
+            )
             if ret.ok:
                 self.player_id = ret.data[0]
                 print('Spawned player object <{}>'.format(self.player_id))
@@ -1132,51 +1137,38 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         button = event.button()
 
         # Name the projectile to associate it with this player.
-        name = {'parent': self.player_id, 'name': 'projectile', 'type': None}
+        tag = {'parent': self.player_id, 'name': 'projectile', 'type': None}
 
         # Determine initial position and velocity of the new object.
         pos = self.camera.position + 3 * self.camera.view
         vel = self.camera.view
 
         if button == 1:
-            # This projectiles will live half as long as the one spawned with
-            # the other button but moves considerably faster.
+            # Faster but short lived projectile named 'A'.
+            vel = 20 * vel
+            tag['type'] = 'A'
+            tname = 'projectile_A'
             ttl = 1 * self.ttl_projectile
-            name['type'] = 'A'
-
-            # Spawn the object.
-            objs = {
-                'templateID': self.tname_projectile,
-                'rbs': {
-                    'position': pos.tolist(),
-                    'velocityLin': (40 * vel).tolist(),
-                    'imass': 20
-                },
-                'custom': json.dumps(name),
-            }
         elif button == 2:
-            # This projectiles will live twice as long as the one spawned with
-            # the other button but moves considerably slower.
+            # Slower but longer lived projectile named 'B'.
+            vel = 5 * vel
+            tag['type'] = 'B'
+            tname = 'projectile_B'
             ttl = 5 * self.ttl_projectile
-            name['type'] = 'B'
-
-            # Spawn the object.
-            objs = {
-                'templateID': self.tname_projectile,
-                'rbs': {
-                    'position': pos.tolist(),
-                    'velocityLin': (5 * vel).tolist(),
-                    'imass': 0.2,
-                },
-                'custom': json.dumps(name),
-            }
         else:
             print('Unknown button <{}>'.format(button))
             return
 
-        ret = self.client.spawn([objs])
+        # Spawn the projectile and check for errors.
+        ret = self.client.spawn([{
+            'templateID': tname,
+            'rbs': {'position': pos.tolist(), 'velocityLin': vel.tolist()},
+            'custom': json.dumps(tag),
+        }])
         if not ret.ok:
-            print('Could not spawn <{}>'.format(self.tname_projectile))
+            print('Could not spawn <{}>'.format(tname))
+
+        # Record the time to live for the new projectile.
         t0 = time.time() + ttl
         self.projectiles.update({aid: t0 for aid in ret.data})
 
