@@ -66,9 +66,9 @@ def parseCommandLine():
 
     # Add the command line options.
     padd('--addr', metavar='addr', type=str, default='',
-         help='IP of Clerk (eg. "127.0.0.1"')
+         help='IP of Clerk (eg. "127.0.0.1")')
     padd('--port', metavar='addr', type=int, default=5555,
-         help='Port of Clerk (eg. 5555')
+         help='Port of Clerk (eg. 5555)')
 
     param = parser.parse_args()
 
