@@ -1,6 +1,8 @@
 name: azrael
 dependencies:
 - alabaster=0.7.6=py35_0
+- assimp=azrael=py35_1
+- azbullet=1.0=py35_1
 - babel=2.1.1=py35_0
 - cycler=0.9.0=py35_0
 - cython=0.23.4=py35_0
@@ -67,6 +69,7 @@ dependencies:
   - ipython-genutils==0.1.0
   - netifaces==0.10.4
   - pika==0.10.0
+  - pyassimp==0.1
   - setproctitle==1.1.9
   - sphinx-rtd-theme==0.1.7
   - websocket-client-py3==0.15.0
