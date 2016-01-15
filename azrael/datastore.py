@@ -892,8 +892,15 @@ class DatastoreMongo(DatastoreBase):
         Raises IOError if the connection failed.
         """
         try:
-            return config.getMongoClient()
-        except pymongo.errors.ConnectionFailure:
+            # Connect to Mongo. Since this will not throw error even when
+            # there is no running Mongo instance we need to make a dummy
+            # query. This will throw an error if there is no running Mongo
+            # instance.
+            db = config.getMongoClient(timeout=2000)
+            db.database_names()
+            return db
+        except (pymongo.errors.ConnectionFailure,
+                pymongo.errors.ServerSelectionTimeoutError):
             raise IOError('Could not connect to MongoDB')
 
     # -------------------------------------------------------------------------
