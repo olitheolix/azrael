@@ -20,7 +20,6 @@ Build a chain of cubes.
 
 fixme:
  - clean up
- - the --cubes argument only takes one argument (length of chain)
  - increase damping of the objects to avoid the perpetual jumpiness
  - the 6Dof constraint is working but ill configured
  - the code assumes there are at least 4 cubes
@@ -72,8 +71,6 @@ def parseCommandLine():
          help='Do not load any models')
     padd('--port', metavar='port', type=int, default=azrael.config.port_webapi,
          help='Port number')
-    padd('--cubes', metavar='X,Y,Z', type=str, default='1,1,1',
-         help='Number of cubes in each dimension')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
     padd('--reset', type=int, metavar='T', default=-1,
@@ -85,92 +82,7 @@ def parseCommandLine():
 
     # Run the parser.
     param = parser.parse_args()
-    try:
-        cubes = [int(_) for _ in param.cubes.split(',')]
-        assert len(cubes) == 3
-        assert min(cubes) >= 0
-        assert sum(cubes) >= 0
-        param.cubes = cubes
-    except (TypeError, ValueError, AssertionError):
-        print('The <cubes> argument is invalid')
-        sys.exit(1)
-
     return param
-
-
-class UpdateGrid(multiprocessing.Process):
-    """
-    Update the force grid throughout the simulation.
-    """
-    def __init__(self, period_circ=1, period_lin=1):
-        """
-        Update the force grid values every ``period`` seconds.
-        """
-        super().__init__()
-        self.period_lin = period_lin
-        self.period_circ = period_circ
-
-    def run(self):
-        """
-        Alternate the vector grid between 2 states.
-
-        The first state is a rotational grid to make the cubes form a
-        vortex. The second grid type simpy pulls all cubes towards the center.
-        """
-        # Convenience.
-        vg = vectorgrid
-
-        # Specify the spatial extend of the grid. Note that eg Nx=3 means the
-        # grid extends from [-3, 3] in x-direction.
-        Nx, Ny, Nz = 20, 20, 3
-
-        # Lower left corner of the grid in space.
-        ofs = np.array([-Nx, -Ny, 10 - Nz], np.float64)
-
-        # Compute a counter clockwise oriented vector grid and another one the
-        # always points to the center. Both calculations ignore the
-        # z-dimension.
-        force_rot = np.zeros((2 * Nx + 1, 2 * Ny + 1, 2 * Nz + 1, 3))
-        force_lin = np.zeros_like(force_rot)
-        force_grav = np.zeros_like(force_rot)
-        for x in range(-Nx, Nx + 1):
-            for y in range(-Ny, Ny + 1):
-                # Magnitude and phase.
-                r, phi = np.sqrt(x ** 2 + y ** 2), np.arctan2(y, x)
-
-                # Normalise the vectors to ensure the velocity does not depend
-                # on the distance from the origin.
-                v = np.zeros(3, np.float64)
-                if r > 1E-5:
-                    v[0] = -np.sin(phi)
-                    v[1] = np.cos(phi)
-
-                # Assign the value.
-                force_rot[x + Nx, y + Ny, :] = v
-
-                # Points towards the center.
-                v = -np.array([x, y, 0], np.float64)
-                force_lin[x + Nx, y + Ny, :] = v
-
-                force_grav[x + Nx, y + Ny, :] = np.array([-1, 0, 0])
-
-        while True:
-            ret = vg.setRegion('force', ofs, force_grav)
-            time.sleep(100000000)
-
-            # Activate the circular grid.
-            ret = vg.setRegion('force', ofs, 0.3 * force_rot)
-            print('Circular force')
-            if not ret.ok:
-                print('Could not set force grid values')
-            time.sleep(self.period_circ)
-
-            # Activate the linear grid.
-            ret = vg.setRegion('force', ofs, 0.1 * force_lin)
-            print('Linear force')
-            if not ret.ok:
-                print('Could not set force grid values')
-            time.sleep(self.period_lin)
 
 
 def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
@@ -306,10 +218,10 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
                 cube_idx += 1
                 del pos
 
-    # fixme: this code assumes there are at least 4 cubes!
-    if len(allObjs) < 4:
-        print('fixme: start demo with at least 4 cubes!')
-        sys.exit(1)
+    # Since the first four cubes will be chained together we need at least four
+    # of them!
+    assert len(allObjs) >= 4
+
     allObjs = []
     pos_0 = [2, 0, -10]
     pos_1 = [-2, 0, -10]
@@ -380,19 +292,13 @@ def main():
     with azrael.util.Timeit('Startup Time', True):
         az.start()
         if not param.noinit:
-            # Add the specified number of cubes in a grid layout.
-            spawnCubes(*param.cubes, center=(0, 0, 10))
+            # Spawn four cubes in a row.
+            spawnCubes(4, 1, 1, center=(0, 0, 10))
 
         # Launch a dedicated process to periodically reset the simulation.
         time.sleep(2)
-#        az.startProcess(demolib.ResetSim(period=param.reset))
 
     print('Azrael now live')
-
-    # Start the process that periodically changes the force field. Add the
-    # process handle to the list of processes.
-    az.startProcess(
-        UpdateGrid(period_circ=param.circular, period_lin=param.linear))
 
     # Either wait forever or start the Qt Viewer and wait for it to return.
     if param.noviewer:
