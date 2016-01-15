@@ -135,7 +135,7 @@ url_instances = '/instances'
 assert not url_templates.endswith('/') and not url_templates.endswith('/')
 
 
-def getMongoClient():
+def getMongoClient(timeout: float=10):
     """
     Return a connected `MongoClient` instance.
 
@@ -145,11 +145,19 @@ def getMongoClient():
     This function does intercept any errors. It is the responsibility of the
     caller to use the correct try/except statement.
 
+    :param float timeout: timeout in Seconds.
     :return: connection to MongoDB
     :rtype: `pymongo.MongoClient`.
     :raises: pymongo.errors.*
     """
-    return pymongo.MongoClient(host=addr_database, port=port_database)
+    timeout_milliseconds = int(1000 * timeout)
+    return pymongo.MongoClient(
+        host=addr_database,
+        port=port_database,
+        serverSelectionTimeoutMS=timeout_milliseconds,
+        socketTimeoutMS=timeout_milliseconds,
+        connectTimeoutMS=timeout_milliseconds,
+    )
 
 
 class AzraelProcess(multiprocessing.Process):
