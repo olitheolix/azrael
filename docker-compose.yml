@@ -10,8 +10,11 @@ RabbitMQ:
 
 azrael:
   image: olitheolix/azrael:latest
+  command: /demo/azrael/entrypoint.sh asteroids
   ports:
     - "8080:8080"
+    - "5555:5555"
   links:
     - database
     - RabbitMQ
+

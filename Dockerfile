@@ -42,15 +42,5 @@ RUN apt-get install -y build-essential \
 # Expose the ports for Clerk and Clacks.
 EXPOSE 5555 8080
 
-RUN echo $'\
-    #!/bin/bash \n\
-    source activate azrael \n\
-    CMD="python demos/demo_forcegrid.py --noviewer --reset=30 --cubes=3,3,1 --linear=1 --circular=1" \n\
-    echo Azrael startup command: \n\
-    echo "  >> $CMD" \n\
-    $CMD\n' \
-    > /opt/start.sh \
-    && chmod u+x /opt/start.sh
-
 # Default command: start the force grid demo.
-CMD ["/opt/start.sh"]
+CMD ["/demo/azrael/entrypoint.sh", "forcegrid"]
