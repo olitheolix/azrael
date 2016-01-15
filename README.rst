@@ -1,147 +1,180 @@
-======
-Azrael
-======
+=========================================================
+Azrael - For Rocket Scientists Who Cannot Afford a Rocket
+=========================================================
 
-A game engine for scientists, engineers, and enthusiasts.
+The virtual world of the Internet has changed society. Smart innovations in the
+non-virtual world, like self driving cars, city wide traffic control systems,
+space exploration and more, may do it again. The difference: building and
+launching a web service is considerably cheaper than building and launching a
+space ship...
 
-Azrael is a proof-of-concept project where every object is subject to the laws
-of physics and can be controlled via the network.
+Put differently: everyone can contribute to the Internet but only a few
+are privy to the resources for a space ship... and *you* are probably not one of
+them. Azrael's purpose is to remove this barrier and simulate the (macroscopic)
+physics for "stuff" you cannot afford in the real world.
 
-You can send commands to object parts, for instance the engines to accelerate
-it. It is up to you whether you want to control these parts manually, or devise
-an algorithm with the latest and greatest machine learning to automate it.
-
-Unlike traditional game engines, the graphics engine, physics engine, and
-object control (AI) are independent and will most likely not even run on the
-same machine.
-
-The API is language agnostic. Albeit written in Python, the data exchange is
-pure JSON and the transport layer is either a Websocket (JavaScript/browsers)
-or ZeroMQ (pretty much everything but JavaScript).
-
-The `project page <https://olitheolix.com/azrael/>`_ contains a high level
-overview. Interested programmers may find the
-`Tutorial Section <https://olitheolix.com/azrael-doc/tutorials.html>`_ more
-useful.
-
-To find out what I am working on, check out my
-`Trello Board <https://trello.com/b/3XJRlgt9>`_.
+Take the `Rosetta mission
+<https://en.wikipedia.org/wiki/Rosetta_%28spacecraft%29>`_ as an example. The
+total cost exceeded a Billion dollars and it took years to complete. On the
+other hand, to reproduce it in its simplest form for your personal studies you
+merely need to simulate the physics of two bodies: an asteroid and a space
+probe. The probe has thruster, the asteroid does not. The challenge: write a
+controller for the ship to reproduce the original `approach and manoeuvres
+<https://en.wikipedia.org/wiki/Rosetta_%28spacecraft%29#Orbit_around_67P>`_.
 
 
-How and Why
-===========
+Technology
+==========
+Azrael is an API to create bodies and modify their attributes (eg position or
+geometry). This API is only accessible via the network. Clients can connect to
+it from anywhere and use it to drive the simulation. For instance, they create objects,
+control them (like the aforementioned Rosetta probe), render the scene,
+progress a Newtonian physics simulation...
 
-The cornerstone of Azrael is the clean separation of physics, object control
-(or AI), and rendering. The physics engine moves object according to the 
-applied forces. The API allows to  send commands via the network to
-modify these forces and also to query the simulation.
+Azrael is written in Python yet the network API is language agnostic. The API
+accepts Websockets (Java Script in browsers) and ZeroMQ sockets (everything but
+Java Script).
 
-Ideally, every object in the simulation will be remote controlled from a
-different computer, virtual machine, or at least a separate process on a single
-computer.
-
-The goal is to eventually make the physics engine itself scalable across
-multiple computers to simulate worlds of unprecedented size, detail, and
-accuracy. All hail cloud computing :)
-
-Why do I bother? Because in a reasonably realistic virtual world I can have my
-own space shuttle, design my own sub-marine, invent my own Mars rover with
-awesome navigation abilities, launch my own Rosetta mission, invent my own
-reusable rocket ... no job at ESA, NASA or SpaceX required.
+To see Azrael in action you may try the demos or watch the `PyCon Australia
+2015 <https://youtu.be/JG8-yurFBXM?list=PLs4CJRBY5F1IZYVBLXGX1DRYXHMjUjG8k>`_
+presentation.
 
 
-How It (may) Work
+Not A Game Engine
 =================
 
-Classical Physics engines assume they run on a single computer, which means
-data access is fast/free and the number of CPU cores is limited. In the Cloud
-it is the other way around. Beating the network latency and designing a loosely
-coupled system that nevertheless produces coherent physics are the major
-challenges.
+Azrael does not schedule clients or callbacks - everything happens
+asynchronously. It also stores all data in databases and fetching it may incur
+unacceptable latency by the standards of a game.
 
-My current approach is as follows:
+Another point concerns visualisation: Azrael has none. A client may query
+object geometries and render them (as seen in the demos) but Azrael itself
+would neither know nor care.
 
-* compile potential collision sets (broadphase) in Azrael,
-* send each set via the network to a Worker,
-* wait until all sets have been computed.
-
-The Workers are little more than standard Physics Engines (currently Bullet)
-with some wrapper code to interface with Azrael.
-
-Feel free to drop me a line if you have any questions or suggestions.
+That being said, some `example scenarios <https://olitheolix.com/azrael/>`_
+appear smooth when served from an AWS C4 instance. This despite the dumb
+polling used by the visualisation clients.
 
 
 Project Status
 ==============
 
-Azrael currently features a basic API to upload meshes, define boosters to
-exert force, send commands to these boosters, and query the scene in
-general (for rendering and object control).
+It is a usable work in progress. The emphasis remains on completing the feature
+set to build large simulations. Performance optimisation comes afterwards.
 
-It also ships with two simple viewers. One is a standalone PyQT/OpenGL program,
-whereas the other uses JavaScript and runs in a browser.
+The current API suffices to create objects, define and control boosters,
+exert force, upload meshes and more. It also comes with a Newtonian physics
+engine (based on `Bullet <http://bulletphysics.org>`_) to simulate elementary
+motion. This is already enough for a basic Asteroids simulation.
+
+The project also ships with two simple viewers to render the scene. One uses
+PyQT/OpenGL whereas the other runs in the browser.
+
+The `demos/` folder showcases various features of Azrael. Some of them have
+dedicated docker-compose files in `demos/docker/` to simplify the setup.
 
 
 Installation
 ============
 
-From Source
------------
-Azrael requires Python 3.4 or higher. To use the source code you must have
-
-* `Anaconda <https://store.continuum.io/cshop/anaconda/>`_ installed and
-  'conda' in your path,
-* a running MongoDB instance (listening on its default port 27017),
-* (K)Ubuntu 14.04 or 15.04 (but should work on other Debian based systems as
-  well).
+The easiest way to see a demo is with Docker Compose:
 
 .. code-block:: bash
 
+    wget https://github.com/olitheolix/azrael/blob/master/demos/docker/asteroids_autopilot.yml
+    docker-compose -f asteroids_autopilot.yml up
+
+Then point your browser (recent Firefox or Chrome) to http://localhost:8080
+and fly through the scene with mouse and WASD keys.
+
+
+From Source (For Developers)
+----------------------------
+
+To hack on Azrael you need Linux, Anaconda and Docker (Compose). The
+`Dockerfile <_https://github.com/olitheolix/azrael/blob/master/Dockerfile>`_
+always constitutes the most up-to-date installation instructions. The following
+steps should suffice though:
+
+.. code-block:: bash
+
+   # Get the source code.
    git clone https://github.com/olitheolix/azrael
    cd azrael
-   sudo apt-get install build-essential cmake git libassimp-dev wget
 
-   # Create the Anaconda environment 'azrael' and compile the extension modules.
-   ./create_anaconda_env.sh
+   # Create the Anaconda environment 'azrael'.
+   sudo apt-get install build-essential
+   conda env create --name azrael --file environment.yml
 
-   # Activate the environment, run the tests, and start the demo.
-   source activate azrael
-   py.test -x
+   # Start the auxiliary services (eg database and RabbitMQ).
+   docker-compose -f devtools/docker-compose-dev.yml up -d
+
+   # Activate the Azrael environment and start the demo.
    python demos/demo_default.py --noviewer --cubes 4,4,1
 
-See `Viewing the Scene in the Browser`_ for details on how to visualise the demo.
+Azrael should now run. With a recent version of Firefox or Chrome you can see
+the rendered scene at http://localhost:8080. Alternatively, you may omit the
+"`--noviewer`" flag and use the Qt viewer (requires an OpenGL 3.3+ capable
+GPU).
 
 
-Docker
-------
-To try the demo without installing source code you will need `Docker
-<http://www.docker.com/>`_ and
-`Docker-Compose<https://docs.docker.com/compose/>`_.
+Contribute to Azrael
+====================
 
-.. code-block:: bash
+Pull requests are welcome. Please use best Python practices for documentation
+and coding style (PEP8). Please add tests for bug fixes and new features -
+thank you.
 
-   wget https://github.com/olitheolix/azrael/raw/master/docker-compose.yml
-   docker-compose up
-
-See next section for details on how to visualise the demo.
+A rough road map of short- and medium term tasks is below (all skill levels). My
+current tasks are also in a `Trello Board <https://trello.com/b/3XJRlgt9>`_.
 
 
-Viewing the Scene in the Browser
---------------------------------
+Deployment
+----------
 
-You will need a recent version of Firefox or Chrome. Once Azrael is up you
-can view the scene at http://localhost:8080.
+* One click deployment (Kubernetes?) on AWS and other Clouds.
+* Shrink the size of the Docker image (currently ~1GB).
 
-Note: it may take a minute or two for the URL to come live the first time
-because MongoDB may have to initialise its database first.
 
-Use the WASD keys, or the mouse, to fly through the scene.
+Core Modules
+------------
+
+* Use the `ELK Stack <https://www.elastic.co/products>`_ for logging?
+* Make `typecheck` decorator compatible with PEP484.
+* Replace current annotations with PEP484 compatible ones.
+* Log and visualise profiling information for all major functions calls.
+* Expose event system via Tornado.
+* Build a sensible grid engine.
+* Better (and possibly faster) data validation and/or format, eg `JSON schema
+  <http://json-schema.org>`_ or `CapNProto <https://capnproto.org/>`_.
+* Wrap more of Bullet's collision shapes (convex and capsule in particular).
+
+
+Rendering Frontend
+-------------------
+
+* New and clean Qt/JS viewers; current ones have become a (still working) mess.
+* Support basic light and shadow effects to better gauge depth.
+* Clients currently have to poll Azrael; how could a push based system work?
+
+
+Accessibility
+-------------
+
+* Reformat existing doc-strings to `Google Style Docstring
+  <https://pypi.python.org/pypi/sphinxcontrib-napoleon>`_.
+* Spell check and proof read doc-strings.
+* Homepage for Azrael.
+* New/better 3D models.
+* Import 3D models directly from Blender (see `demo_blender`).
+* Support `ThreeJS Model Format 3/4 <https://github.com/mrdoob/three.js/wiki>`_.
+* More and better demos.
 
 
 License
 =======
 
-Azrael (everything under `azrael/`) is licensed under the terms of the AGPL v3.
+Azrael itself (everything under `azrael/`) is licensed under the terms of the
+AGPL v3.
 
-Everything else is (including the Python client and the demos) are licensed
-under the terms of Apache v2.
+All other files, including `pyazrael` and the demos, are Apache v2 licensed.
