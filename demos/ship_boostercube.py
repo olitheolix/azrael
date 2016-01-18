@@ -66,7 +66,7 @@ def BoostercubeTemplate(scale=1.0):
     }
     del dir_x, dir_y, dir_z, pos, B
 
-    # Load sphere and color it blue(ish). This is going to be the (super
+    # Load sphere and colour it blue(ish). This is going to be the (super
     # simple) "flame" that comes out of the (still invisible) boosters.
     p = os.path.dirname(os.path.abspath(__file__))
     fname = os.path.join(p, 'models', 'sphere', 'sphere.obj')
@@ -115,7 +115,7 @@ class CtrlBoosterCube():
             assert False
         print('Connected to Azrael')
 
-        print('Addding template for this ship...', flush=True, end='')
+        print('Adding template for this ship...', flush=True, end='')
         template = BoostercubeTemplate(scale=1.0)
         self.client.addTemplates([template])
         print('done')
@@ -326,7 +326,7 @@ def main():
     c.spawn((0, 5, 0))
 
     # Successively manoeuvre the ship above each platform. The hard coded
-    # postions match those of the platforms defined in 'demo_platforms'.
+    # positions match those of the platforms defined in 'demo_platforms'.
     time.sleep(5)
     for ii in range(5):
         pos_ref = (-10 + ii * 5, -ii * 2 + 2.5, -20)
