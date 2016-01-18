@@ -1,7 +1,6 @@
 **/*~
 **/*.cache
 **/__pycache__/
-/aux/
 /azrael/bullet/.sconsign.dblite
 /azrael/bullet/azBullet.cpp
 /azrael/bullet/azBullet.cpython-34m.so
@@ -13,9 +12,6 @@
 /azrael/bullet/cython_bullet.cpp
 /azrael/bullet/cython_bullet.cpython-34m.so
 /azrael/bullet/cython_bullet.os
-/azrael/data/
-/demos/video/
-/demos/models/
 /doc/_build/
 /doc/json_schemas/
 /doc/images/orig
