@@ -1,0 +1,30 @@
+# Create a basic Azrael stack for the demo.
+# Once the stack is live point your browser to http://127.0.0.1:8080.
+database:
+  image: mongo:3.0
+  volumes:
+    - /tmp/azrael:/data/db
+
+RabbitMQ:
+  image: rabbitmq:latest
+
+azrael:
+  image: olitheolix/azrael:latest
+  command: /demo/azrael/entrypoint.sh forcegrid
+  ports:
+    - "8080:8080"
+    - "5555:5555"
+  links:
+    - database
+    - RabbitMQ
+
+player:
+  image: olitheolix/azrael:latest
+  command: /demo/azrael/entrypoint.sh asteroids-player
+  ports:
+    - "8080"
+    - "5555"
+  links:
+    - database
+    - RabbitMQ
+    - azrael
