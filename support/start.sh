@@ -1,12 +1,11 @@
 #!/bin/bash
 
-# Activate the Azrael Anaconda environment.
+# Activate the Azrael Anaconda environment and run the command. This
+# will only work if Anaconda's 'activate' script is in the path, which
+# is always the case inside Anaconda containers.
 source activate azrael
 
-# Default demo.
-CMD="/demo_default.py --noviewer" 
-
-# Override the default demo if one was specified.
+# Select the demo or run a custom command.
 case "$1" in
     forcegrid) 
      CMD="demo_forcegrid.py --noviewer --reset=30 --cubes=3,3,1 --linear=1 --circular=1" 
@@ -14,17 +13,18 @@ case "$1" in
     asteroids) 
      CMD="demo_asteroids.py --noviewer -N3"
      ;; 
+    asteroidsplayer)
+     CMD="ship_asteroids.py"
+     ;;
     *) 
-     CMD="demo_default.py --noviewer" 
+     exec "$1"
      ;; 
 esac 
 
-# Build the full command.
+# Prepend the demo directory.
 CMD="python demos/$CMD"
 
-# Print the command we will actually run.
+# Replace this script with the actual command.
 echo "Azrael startup command: "
 echo "  >> $CMD"
-
-# Run the command.
-$CMD
+exec $CMD
