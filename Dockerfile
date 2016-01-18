@@ -32,4 +32,4 @@ ENV INSIDEDOCKER 1
 
 # Finalise container setup.
 EXPOSE 5555 8080
-CMD ["/demo/azrael/entrypoint.sh", "forcegrid"]
+CMD ["/demo/azrael/support/start.sh", "forcegrid"]
