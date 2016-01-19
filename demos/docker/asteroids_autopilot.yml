@@ -9,7 +9,7 @@ RabbitMQ:
 
 Azrael:
   image: olitheolix/azrael:latest
-  command: /demo/azrael/support/start.sh asteroids
+  command: asteroids
   ports:
     - "8080:8080"
     - "5555:5555"
@@ -19,7 +19,7 @@ Azrael:
 
 Player:
   image: olitheolix/azrael:latest
-  command: /demo/azrael/support/start.sh asteroidsplayer
+  command: asteroidsplayer
   ports:
     - "8080"
     - "5555"

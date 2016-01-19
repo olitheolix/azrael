@@ -1,8 +1,6 @@
 # Azrael in a Docker container.
 #
-# To start the demo you need 'docker-compose' and the 'docker-compose.yml' file.
-#
-#   >> docker-compose up
+# See the demos/docker folder for canned demos using docker-compose.
 
 # Anaconda base image.
 FROM continuumio/miniconda3:latest
@@ -13,9 +11,8 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh \
     && apt-get update && apt-get install -y git procps
 
 # Create the application directory and clone Azrael from GitHub.
-RUN mkdir -p /demo/
-WORKDIR /demo/azrael
-RUN git clone https://github.com/olitheolix/azrael /demo/azrael
+RUN git clone https://github.com/olitheolix/azrael /azrael
+WORKDIR /azrael
 
 # Setup the Anaconda environment for Azrael.
 RUN apt-get install -y build-essential \
@@ -27,9 +24,9 @@ RUN apt-get install -y build-essential \
     && apt-get -y autoclean \
     && apt-get -y clean
 
-# Tell Azrael to connect to Docker networks instead of 'localhost'.
+# Tell Azrael to use the Docker networks instead of 'localhost'.
 ENV INSIDEDOCKER 1
 
 # Finalise container setup.
 EXPOSE 5555 8080
-CMD ["/demo/azrael/support/start.sh", "forcegrid"]
+ENTRYPOINT ["/azrael/devtools/entrypoint.sh"]

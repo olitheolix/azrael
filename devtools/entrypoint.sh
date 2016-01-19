@@ -1,17 +1,21 @@
 #!/bin/bash
-
+#
 # Accept the name of a demo and spawn it with reasonable default
 # arguments. This script is not intended to be used outside the
 # Azrael/Docker container.
 
+# Abort if we are not inside an AZrael/Docker container.
 if [ -z $INSIDEDOCKER ]; then
     echo 'Must be inside Docker container'
     exit 1
 fi
 
-# Activate the Azrael Anaconda environment and run the command. This
-# will only work if Anaconda's 'activate' script is in the path, which
-# is always the case inside Anaconda containers.
+# Spawn a shell if no arguments were provided.
+if [ -z $1 ]; then
+    exec bash
+fi
+
+# Activate the Anaconda environment.
 source activate azrael
 
 # Select the demo or run a custom command.

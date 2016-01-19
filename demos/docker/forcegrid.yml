@@ -9,7 +9,7 @@ RabbitMQ:
 
 Azrael:
   image: olitheolix/azrael:latest
-  command: /demo/azrael/support/start.sh forcegrid
+  command: forcegrid
   ports:
     - "8080:8080"
     - "5555:5555"
