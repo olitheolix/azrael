@@ -247,7 +247,7 @@ class Clerk(config.AzraelProcess):
 
         # Initialise ZeroMQ and create the command socket. All client request
         # will come through this socket.
-        addr = 'tcp://{}:{}'.format(config.addr_clerk, config.port_clerk)
+        addr = 'tcp://{}:{}'.format('*', config.port_clerk)
         self.logit.info('Attempt to bind <{}>'.format(addr))
         ctx = zmq.Context()
         self.sock_cmd = ctx.socket(zmq.ROUTER)

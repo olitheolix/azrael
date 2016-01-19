@@ -973,7 +973,9 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Close the Leonard <---> Worker socket.
         if self.sock is not None:
-            self.sock.unbind(config.addr_leonard_repreq)
+            addr = 'tcp://{}:{}'.format('*', config.port_leonard)
+            self.sock.unbind(addr)
+            del addr
             self.sock.close(linger=100)
 
         # Terminate the ZeroMQ context.
@@ -997,14 +999,15 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Bind the socket to the specified address. Retry a few times if
         # necessary.
+        addr = 'tcp://{}:{}'.format('*', config.port_leonard)
         for ii in range(10):
             try:
-                self.sock.bind(config.addr_leonard_repreq)
+                self.sock.bind(addr)
                 break
             except zmq.error.ZMQError:
                 time.sleep(0.2)
             assert ii < 9
-        self.logit.info('Setup complete')
+        self.logit.info('Setup complete - listening on <{}>'.format(addr))
 
     @typecheck
     def step(self, dt, maxsteps):

@@ -126,7 +126,9 @@ port_dibbler = 8081
 addr_clerk = addr_azrael
 port_clerk = 5555
 
-addr_leonard_repreq = 'tcp://' + addr_azrael + ':5556'
+addr_leonard = addr_azrael
+port_leonard = 5556
+addr_leonard_repreq = 'tcp://{}:{}'.format(addr_leonard, addr_leonard)
 
 # WebServer URLs for the model- templates and instances. These *must not* include
 # the trailing slash.
