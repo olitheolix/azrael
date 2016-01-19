@@ -111,7 +111,9 @@ class Client():
         self.ctx = zmq.Context()
         self.sock_cmd = self.ctx.socket(zmq.REQ)
         self.sock_cmd.linger = 0
-        self.sock_cmd.connect('tcp://{}:{}'.format(self.addr_clerk, self.port_clerk))
+        addr = 'tcp://{}:{}'.format(self.addr_clerk, self.port_clerk)
+        self.logit.info('Connecing to <{}>'.format(addr))
+        self.sock_cmd.connect(addr)
 
     def __del__(self):
         if self.sock_cmd is not None:
