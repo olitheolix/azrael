@@ -1337,8 +1337,11 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             # Setup ZeroMQ.
             ctx = zmq.Context()
             sock = ctx.socket(zmq.REQ)
-            sock.connect(config.addr_leonard_repreq)
-            self.logit.info('Worker {} connected'.format(self.workerID))
+            addr = 'tcp://{}:{}'.format(config.addr_leonard, config.port_leonard)
+            sock.connect(addr)
+            self.logit.info(
+                'Worker {} connected to <{}>'.format(self.workerID, addr)
+            )
 
             # Contact Leonard with an empty payload.
             sock.send(b'')
