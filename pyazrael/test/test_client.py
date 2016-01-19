@@ -59,6 +59,7 @@ class TestClient:
         killAzrael()
 
         # Start a Clerk and WebServer instance.
+        azrael.datastore.init(flush=True)
         cls.clerk = azrael.clerk.Clerk()
         cls.web = azrael.web.WebServer()
         cls.clerk.start()
