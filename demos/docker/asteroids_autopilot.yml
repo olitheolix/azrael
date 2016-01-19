@@ -1,5 +1,4 @@
-# Create a basic Azrael stack for the demo.
-# Once the stack is live point your browser to http://127.0.0.1:8080.
+# Asteroids game.
 Database:
   image: mongo:3.0
   volumes:
