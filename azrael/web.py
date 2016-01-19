@@ -68,12 +68,12 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         a new Websocket connection.
         """
         # Create ZeroMQ sockets and connect them to Clerk.
-        ip = config.addr_clerk
-        port = config.port_clerk
+        addr = 'tcp://{}:{}'.format(config.addr_clerk, config.port_clerk)
         self.ctx = zmq.Context()
         self.sock_cmd = self.ctx.socket(zmq.REQ)
         self.sock_cmd.linger = 0
-        self.sock_cmd.connect('tcp://{}:{}'.format(ip, port))
+        self.logit.info('Websocket opened to <{}>'.format(addr))
+        self.sock_cmd.connect(addr)
 
     @typecheck
     def returnToClient(self, ret: RetVal):
