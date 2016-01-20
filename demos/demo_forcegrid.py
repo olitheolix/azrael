@@ -35,7 +35,7 @@ import demo_default
 
 # Import the necessary Azrael modules.
 import azrael
-import azutils as util
+import azutils
 import azrael.config as config
 import azrael.vectorgrid as vectorgrid
 

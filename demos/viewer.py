@@ -28,11 +28,6 @@ install them with the following commands:
 # Add the viewer directory to the Python path.
 import os
 import sys
-_this_directory = os.path.dirname(os.path.abspath(__file__))
-p = os.path.join(_this_directory, '..')
-sys.path.insert(0, p)
-del p
-
 import time
 import json
 import PIL
@@ -794,12 +789,13 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         gl.glClearColor(0, 0, 0, 0)
 
         # Put the two possible shaders into dictionaries.
-        vs = os.path.join(_this_directory, 'shaders/passthrough.vs')
-        fs = os.path.join(_this_directory, 'shaders/passthrough.fs')
+        fdir = os.path.dirname(os.path.abspath(__file__))
+        vs = os.path.join(fdir, 'shaders/passthrough.vs')
+        fs = os.path.join(fdir, 'shaders/passthrough.fs')
         self.shaderDict['passthrough'] = self.linkShaders(vs, fs)
 
-        vs = os.path.join(_this_directory, 'shaders/uv.vs')
-        fs = os.path.join(_this_directory, 'shaders/uv.fs')
+        vs = os.path.join(fdir, 'shaders/uv.vs')
+        fs = os.path.join(fdir, 'shaders/uv.fs')
         self.shaderDict['uv'] = self.linkShaders(vs, fs)
 
         # Load and compile all objects.

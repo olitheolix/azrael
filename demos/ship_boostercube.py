@@ -31,9 +31,6 @@ import demolib
 import numpy as np
 from IPython import embed as ipshell
 
-# Import the necessary Azrael modules.
-p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, '../'))
 import pyazrael
 import pyazrael.aztypes as aztypes
 

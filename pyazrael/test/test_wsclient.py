@@ -30,8 +30,6 @@ import pyazrael
 
 from IPython import embed as ipshell
 
-p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, '../'))
 import azrael.web
 import azrael.clerk
 import azrael.config as config

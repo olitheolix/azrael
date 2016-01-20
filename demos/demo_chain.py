@@ -39,7 +39,7 @@ import demolib
 import azrael.aztypes as aztypes
 import pyazrael
 import azrael.startup
-import azutils as util
+import azutils
 import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid

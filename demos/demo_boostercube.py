@@ -26,7 +26,7 @@ import numpy as np
 # Import the necessary Azrael modules.
 import pyazrael
 import azrael
-import azutils as util
+import azutils
 import azrael.aztypes as aztypes
 
 from IPython import embed as ipshell

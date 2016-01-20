@@ -35,11 +35,6 @@ import multiprocessing
 
 import numpy as np
 
-# Import the necessary Azrael modules.
-p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, '..'))
-del p
-
 import pyazrael
 import azrael.startup
 import azutils as util

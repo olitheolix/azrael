@@ -35,11 +35,6 @@ import numpy as np
 import pyazrael
 import pyazrael.aztypes as aztypes
 
-# Import the necessary Azrael modules.
-# fixme: use pytest path variable
-p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, '../'))
-
 import azrael.web
 import azrael.igor
 import azrael.clerk

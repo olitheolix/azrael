@@ -70,12 +70,8 @@ import numpy as np
 
 from IPython import embed as ipshell
 
-# Import the necessary Azrael modules.
-p = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(p, '../'))
 import pyazrael
 import azrael.aztypes as aztypes
-del p
 
 
 def resetSimulation(host, port=5555):
@@ -110,7 +106,7 @@ class PyConBrisbaneClient():
     """
     def __init__(self, host, port=5555):
         # Connect to Azrael.
-        self.client = pyazrael.AzraelClient(ip=host, port=port)
+        self.client = pyazrael.AzraelClient(host, port)
 
         # Ping Azrael. This call will block if it cannot connect.
         ret = self.client.ping()
