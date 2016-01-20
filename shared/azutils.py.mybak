@@ -1,7 +1,6 @@
 import os
 import re
 import time
-import collections
 
 import pymongo
 import numpy as np
@@ -244,14 +243,13 @@ def parseHostsFile(lines: list):
     return hosts
 
 def getAzraelServiceHosts(etchosts: str):
-    AddrPort = collections.namedtuple('AddrPort', 'ip port')
     hosts_default = {
-        'clerk': AddrPort('localhost', 5555),
-        'database': AddrPort('localhost', 27017),
-        'rabbitmq': AddrPort('localhost', 5672),
-        'webapi': AddrPort('localhost', 8080),
-        'dibbler': AddrPort('localhost', 8081),
-        'leonard': AddrPort('localhost', 5556),
+        'clerk': ('localhost', '5555'),
+        'database': ('localhost', '27017'),
+        'rabbitmq': ('localhost', '5672'),
+        'webapi': ('localhost', '8080'),
+        'dibbler': ('localhost', '8081'),
+        'leonard': ('localhost', '5556'),
     }
         
     if os.getenv('INSIDEDOCKER', None) is None:
@@ -264,11 +262,12 @@ def getAzraelServiceHosts(etchosts: str):
         hosts_system = {}
 
     hosts_system = {k.lower(): v for (k, v) in hosts_system.items()}
+    print(hosts_system)
 
     hosts = {}
     for (name, (addr, port)) in hosts_default.items():
         name = name.lower()
         if name in hosts_system:
             addr = hosts_system[name]
-        hosts[name] = AddrPort(addr, port)
+        hosts[name] = (addr, port)
     return hosts
