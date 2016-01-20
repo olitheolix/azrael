@@ -125,7 +125,7 @@ class TestClient:
         notably the type definitions. This test ensures the files stay in sync.
         """
         # Verify these files.
-        fnames = ['util.py', 'aztypes.py']
+        fnames = ['aztypes.py']
 
         cur_path = os.path.dirname(os.path.abspath(__file__))
         pjoin = os.path.join

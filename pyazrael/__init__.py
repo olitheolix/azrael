@@ -14,8 +14,16 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import os
+import sys
+
+# Add the 'shared' directory to the path.
+tmp = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(tmp, '..', 'shared'))
+del tmp
+
+# Define some convenience variables.
 import pyazrael.client
 import pyazrael.wsclient
-
 AzraelClient = pyazrael.client.Client
 AzraelWSClient = pyazrael.wsclient.WSClient

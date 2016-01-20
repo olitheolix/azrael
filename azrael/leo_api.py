@@ -22,7 +22,7 @@ state variables.
 
 import logging
 import numpy as np
-import azrael.util as util
+import azutils as util
 import azrael.aztypes as aztypes
 import azrael.datastore as datastore
 

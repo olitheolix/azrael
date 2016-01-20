@@ -33,10 +33,11 @@ import numpy as np
 p = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(p, '..'))
 sys.path.insert(0, os.path.join(p, '../viewer'))
+sys.path.insert(0, os.path.join(p, '../shared'))
 del p
 
 import model_import
-import azrael.util as util
+import azutils as util
 import azrael.aztypes as aztypes
 from IPython import embed as ipshell
 from azrael.aztypes import Template, FragMeta

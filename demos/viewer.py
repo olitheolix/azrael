@@ -46,7 +46,7 @@ import numpy as np
 import OpenGL.GL as gl
 
 import pyazrael
-import pyazrael.util as util
+import azutils as util
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from collections import namedtuple, OrderedDict

@@ -15,7 +15,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import sys
 import multiprocessing
 
 # Use 'fork' system call to create new processes.
 multiprocessing.set_start_method('fork')
+
+# Add the 'shared' directory to the path.
+tmp = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(tmp, '..', 'shared'))
+del tmp

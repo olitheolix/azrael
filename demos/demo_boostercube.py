@@ -26,7 +26,7 @@ import numpy as np
 # Import the necessary Azrael modules.
 import pyazrael
 import azrael
-import azrael.util as util
+import azutils as util
 import azrael.aztypes as aztypes
 
 from IPython import embed as ipshell
@@ -100,7 +100,7 @@ def main():
     az = azrael.startup.AzraelStack(param.loglevel)
 
     # Start Azrael services.
-    with azrael.util.Timeit('Startup Time', True):
+    with azutils.Timeit('Startup Time', True):
         az.start()
         if not param.noinit:
             # Define a sphere with boosters and spawn an instance thereof.

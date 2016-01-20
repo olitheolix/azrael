@@ -28,6 +28,7 @@ import os
 import sys
 import time
 import demolib
+import azutils
 import argparse
 import PIL.Image
 import multiprocessing
@@ -41,7 +42,7 @@ del p
 
 import pyazrael
 import azrael.startup
-import azrael.util as util
+import azutils as util
 import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.aztypes as aztypes
@@ -410,7 +411,7 @@ def main():
     az = azrael.startup.AzraelStack(param.loglevel)
 
     # Start Azrael services.
-    with azrael.util.Timeit('Startup Time', True):
+    with azutils.Timeit('Startup Time', True):
         az.start()
         if not param.noinit:
             # Add a model to the otherwise empty simulation. The sphere is

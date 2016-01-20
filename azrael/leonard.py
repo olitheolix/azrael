@@ -33,7 +33,7 @@ import azrael.datastore
 import azrael.eventstore
 import azrael.vectorgrid
 import azrael.bullet_api
-import azrael.util as util
+import azutils as util
 import azrael.config as config
 import azrael.leo_api as leoAPI
 

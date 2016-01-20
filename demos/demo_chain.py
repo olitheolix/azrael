@@ -39,7 +39,7 @@ import demolib
 import azrael.aztypes as aztypes
 import pyazrael
 import azrael.startup
-import azrael.util as util
+import azutils as util
 import azrael.config as config
 import azrael.leo_api as leoAPI
 import azrael.vectorgrid as vectorgrid
@@ -289,7 +289,7 @@ def main():
     az = azrael.startup.AzraelStack(param.loglevel)
 
     # Start Azrael services.
-    with azrael.util.Timeit('Startup Time', True):
+    with azutils.Timeit('Startup Time', True):
         az.start()
         if not param.noinit:
             # Spawn four cubes in a row.

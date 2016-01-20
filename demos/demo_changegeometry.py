@@ -35,7 +35,7 @@ import demo_default
 import model_import
 import azrael
 import pyazrael
-import azrael.util as util
+import azutils as util
 import azrael.config as config
 
 from IPython import embed as ipshell
@@ -195,7 +195,7 @@ def main():
     az = azrael.startup.AzraelStack(param.loglevel)
 
     # Start Azrael services.
-    with azrael.util.Timeit('Startup Time', True):
+    with azutils.Timeit('Startup Time', True):
         az.start()
         if not param.noinit:
             # Define additional templates.

@@ -16,6 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
+import azutils
 import azrael.bullet_api
 
 import numpy as np
@@ -275,7 +276,7 @@ class TestBulletAPI:
         # Quaternion, convert it to a rotation matrix, and then pretend this is
         # the eigenspace of the inertia tensor.
         paxis = [1, -2, 3, 0]
-        q = azrael.util.Quaternion(*paxis).normalise()
+        q = azutils.Quaternion(*paxis).normalise()
         U = np.around(q.toMatrix()[:3, :3], 3)
 
         # Construct an inertia matrix Step 2/2: given the orthonormal matrix U

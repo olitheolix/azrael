@@ -36,7 +36,7 @@ import time
 import websocket
 
 import pyazrael.client
-import pyazrael.util as util
+import azutils as util
 
 from pyazrael.aztypes import typecheck, RetVal
 

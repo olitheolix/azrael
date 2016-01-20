@@ -30,7 +30,7 @@ languages.
 """
 import base64
 import jsonschema
-import azrael.util
+import azutils
 import azrael.azschemas
 import azrael.aztypes as aztypes
 
@@ -73,7 +73,7 @@ def ToClerk_AddTemplates_Decode(payload: dict):
     # Convenience.
     T = aztypes.Template
     dec = base64.b64decode
-    with azrael.util.Timeit('clerk.decode'):
+    with azutils.Timeit('clerk.decode'):
         decoded = []
         # Iterate over all templates.
         for template in payload['templates']:

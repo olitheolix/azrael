@@ -35,7 +35,7 @@ import demo_default
 
 # Import the necessary Azrael modules.
 import azrael
-import azrael.util as util
+import azutils as util
 import azrael.config as config
 import azrael.vectorgrid as vectorgrid
 
@@ -164,7 +164,7 @@ def main():
     az = azrael.startup.AzraelStack(param.loglevel)
 
     # Start Azrael services.
-    with azrael.util.Timeit('Startup Time', True):
+    with azutils.Timeit('Startup Time', True):
         az.start()
         if not param.noinit:
             # Add the specified number of cubes in a grid layout.

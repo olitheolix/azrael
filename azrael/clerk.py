@@ -46,7 +46,7 @@ import traceback
 import numpy as np
 
 import azrael.igor
-import azrael.util as util
+import azutils as util
 import azrael.aztypes as aztypes
 import azrael.config as config
 import azrael.leo_api as leoAPI

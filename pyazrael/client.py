@@ -35,7 +35,7 @@ import traceback
 import netifaces
 
 import numpy as np
-import pyazrael.util as util
+import azutils as util
 import pyazrael.aztypes as aztypes
 
 from IPython import embed as ipshell
