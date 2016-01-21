@@ -132,20 +132,21 @@ class AzraelStack:
         clerk = azrael.clerk.Clerk()
         web = azrael.web.WebServer()
 
-        # Flush the model database.
-        dibbler = azrael.dibbler.Dibbler()
-        dibbler.reset()
+        if not azutils.isInsideDocker():
+            # Flush the model database.
+            dibbler = azrael.dibbler.Dibbler()
+            dibbler.reset()
 
-        # Start the physics engine.
-        # leo = azrael.leonard.LeonardBase()
-        # leo = azrael.leonard.LeonardBullet()
-        # leo = azrael.leonard.LeonardSweeping()
-        leo = azrael.leonard.LeonardDistributedZeroMQ()
+            # Start the physics engine.
+            # leo = azrael.leonard.LeonardBase()
+            # leo = azrael.leonard.LeonardBullet()
+            # leo = azrael.leonard.LeonardSweeping()
+            leo = azrael.leonard.LeonardDistributedZeroMQ()
 
-        # Start Clerk, WebServer, and Leonard.
-        self.startProcess(clerk)
-        self.startProcess(web)
-        self.startProcess(leo)
+            # Start Clerk, WebServer, and Leonard.
+            self.startProcess(clerk)
+            self.startProcess(web)
+            self.startProcess(leo)
 
     def stop(self):
         """
