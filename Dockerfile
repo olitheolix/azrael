@@ -28,5 +28,5 @@ RUN apt-get install -y build-essential \
 ENV INSIDEDOCKER 1
 
 # Finalise container setup.
-EXPOSE 5555 8080
+EXPOSE 5555 5556 8080
 ENTRYPOINT ["/azrael/devtools/entrypoint.sh"]
