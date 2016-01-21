@@ -111,7 +111,7 @@ class AzraelStack:
         azrael.datastore.init(flush=True)
 
         # Reset the profiling database and enable logging.
-        host, port = azrael.config.addr_database, azrael.config.port_database
+        host, port = azrael.config.azService['database']
         azutils.resetTiming(host=host, port=port)
         self.setupLogging(loglevel)
 

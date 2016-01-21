@@ -35,7 +35,7 @@ import traceback
 import netifaces
 
 import numpy as np
-import azutils as util
+import azutils
 import pyazrael.aztypes as aztypes
 
 from IPython import embed as ipshell
@@ -44,33 +44,6 @@ typecheck = aztypes.typecheck
 RetVal = aztypes.RetVal
 Template = aztypes.Template
 ConstraintMeta = aztypes.ConstraintMeta
-
-
-def getNetworkAddress():
-    """
-    Return the IP address of the first configured network interface.
-
-    The search order is 'eth*', 'wlan*', and localhost last.
-    """
-    # Find all interface names.
-    eth = [_ for _ in netifaces.interfaces() if _.lower().startswith('eth')]
-    wlan = [_ for _ in netifaces.interfaces() if _.lower().startswith('wlan')]
-    lo = [_ for _ in netifaces.interfaces() if _.lower().startswith('lo')]
-
-    # Search through all interfaces until a configured one (ie one with an IP
-    # address) was found. Return that one to the user, or abort with an error.
-    host_ip = None
-    for iface in eth + wlan + lo:
-        try:
-            host_ip = netifaces.ifaddresses(iface)[2][0]['addr']
-            break
-        except (ValueError, KeyError):
-            pass
-    if host_ip is None:
-        logger.critical('Could not find a valid network interface')
-        sys.exit(1)
-
-    return host_ip
 
 
 class Client():
@@ -90,16 +63,21 @@ class Client():
     """
     @typecheck
     def __init__(self, addr_clerk: str=None,
-                 port_clerk: int=5555,
-                 port_webapi: int=8080):
+                 port_clerk: int=None,
+                 port_webapi: int=None):
         super().__init__()
 
-        # If no IP address was given for Azrael then try to determine it
-        # automatically.
+        # Use default values for the omitted connection parameters.
+        azService = azutils.getAzraelServiceHosts('/etc/hosts')
         if addr_clerk is None:
-            self.addr_clerk = getNetworkAddress()
-        else:
-            self.addr_clerk = addr_clerk
+            addr_clerk = azService['clerk'].ip
+        if port_clerk is None:
+            port_clerk = azService['clerk'].port
+        if port_webapi is None:
+            port_webapi = azService['webapi'].port
+
+        # Store the connection parameters in instance variables.
+        self.addr_clerk = addr_clerk
         self.port_clerk = port_clerk
         self.port_webapi = port_webapi
 
@@ -164,7 +142,7 @@ class Client():
         :return: Payload data in whatever form it arrives.
         :rtype: any
         """
-        with util.Timeit('client.sendToClerk:{}:1'.format(cmd)):
+        with azutils.Timeit('client.sendToClerk:{}:1'.format(cmd)):
             try:
                 payload = json.dumps({'cmd': cmd, 'data': data})
             except (ValueError, TypeError):
@@ -173,14 +151,14 @@ class Client():
                 return RetVal(False, msg, None)
 
         # Send data and wait for response.
-        with util.Timeit('client.sendToClerk:{}:2'.format(cmd)):
+        with azutils.Timeit('client.sendToClerk:{}:2'.format(cmd)):
             self.send(payload)
             payload = self.recv()
 
-        util.logMetricQty('client.recv:{}'.format(cmd), len(payload))
+        azutils.logMetricQty('client.recv:{}'.format(cmd), len(payload))
 
         # Decode the response and wrap it into a RetVal tuple.
-        with util.Timeit('client.sendToClerk:{}:3'.format(cmd)):
+        with azutils.Timeit('client.sendToClerk:{}:3'.format(cmd)):
             try:
                 ret = json.loads(payload)
                 ret = RetVal(**ret)

@@ -67,10 +67,10 @@ class TestClient:
         cls.dibbler = azrael.dibbler.Dibbler()
 
         # Create a ZMQ- and Websocket client.
-        client_zmq = pyazrael.AzraelClient(
-            config.addr_clerk, config.port_clerk, config.port_webapi)
-        client_ws = pyazrael.AzraelWSClient(
-            config.addr_webapi, config.port_webapi, timeout=1)
+        addr_clerk, port_clerk = config.azService['clerk']
+        addr_webapi, port_webapi = config.azService['webapi']
+        client_zmq = pyazrael.AzraelClient(addr_clerk, port_clerk, port_webapi)
+        client_ws = pyazrael.AzraelWSClient(addr_webapi, port_webapi, timeout=1)
         assert client_ws.ping()
         cls.clients = {'ZeroMQ': client_zmq, 'Websocket': client_ws}
 
@@ -546,7 +546,7 @@ class TestClient:
 
         # Address of web server.
         base_url = 'http://{ip}:{port}'.format(
-            ip=config.addr_webapi, port=config.port_webapi)
+            ip=config.azService['webapi'].ip, port=config.azService['webapi'].port)
 
         # ---------------------------------------------------------------------
         # Create a template with two fragments and spawn it.

@@ -68,7 +68,7 @@ class WebsocketHandler(tornado.websocket.WebSocketHandler):
         a new Websocket connection.
         """
         # Create ZeroMQ sockets and connect them to Clerk.
-        addr = 'tcp://{}:{}'.format(config.addr_clerk, config.port_clerk)
+        addr = 'tcp://{}:{}'.format(*config.azService['clerk'])
         self.ctx = zmq.Context()
         self.sock_cmd = self.ctx.socket(zmq.REQ)
         self.sock_cmd.linger = 0
@@ -273,7 +273,7 @@ class WebServer(config.AzraelProcess):
         http = tornado.httpserver.HTTPServer(app)
 
         # Specify the server port and start the ioloop.
-        http.listen(config.port_webapi)
+        http.listen(config.azService['webapi'].port)
         tornado_app = ioloop.IOLoop.instance()
 
         # Start Tornado event loop.

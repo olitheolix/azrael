@@ -62,8 +62,8 @@ class EventStore(threading.Thread):
         self.topics = topics
         self.exchange_name = 'azevents'
         conn_param = pika.ConnectionParameters(
-            host=config.addr_rabbitmq,
-            port=config.port_rabbitmq,
+            host=config.azService['rabbitmq'].ip,
+            port=config.azService['rabbitmq'].port,
         )
 
         # Connect to RabbitMQ. Raise a generic RunTime error if that is not

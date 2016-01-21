@@ -973,7 +973,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Close the Leonard <---> Worker socket.
         if self.sock is not None:
-            addr = 'tcp://{}:{}'.format('*', config.port_leonard)
+            addr = 'tcp://{}:{}'.format('*', config.azService['leonard'].port)
             self.sock.unbind(addr)
             del addr
             self.sock.close(linger=100)
@@ -999,7 +999,7 @@ class LeonardDistributedZeroMQ(LeonardBase):
 
         # Bind the socket to the specified address. Retry a few times if
         # necessary.
-        addr = 'tcp://{}:{}'.format('*', config.port_leonard)
+        addr = 'tcp://{}:{}'.format('*', config.azService['leonard'].port)
         for ii in range(10):
             try:
                 self.sock.bind(addr)
@@ -1337,7 +1337,8 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             # Setup ZeroMQ.
             ctx = zmq.Context()
             sock = ctx.socket(zmq.REQ)
-            addr = 'tcp://{}:{}'.format(config.addr_leonard, config.port_leonard)
+            host = config.azService['leonard']
+            addr = 'tcp://{}:{}'.format(host.ip, host.port)
             sock.connect(addr)
             self.logit.info(
                 'Worker {} connected to <{}>'.format(self.workerID, addr)

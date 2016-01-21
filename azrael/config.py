@@ -29,6 +29,7 @@ Global configuration parameters.
 import os
 import sys
 import psutil
+import azutils
 import pymongo
 import logging
 import netifaces
@@ -101,33 +102,9 @@ def getNetworkAddress():
 
     return host_ip
 
-# Default address where all of Azrael's services will run.
-addr_azrael = getNetworkAddress()
+# Determine the host/ip addresses of all the services.
+azService = azutils.getAzraelServiceHosts('/etc/hosts')
 
-# Database host.
-if 'INSIDEDOCKER' in os.environ:
-    addr_database = 'database'
-    addr_rabbitmq = 'RabbitMQ'
-    port_rabbitmq = 5672
-    port_database = 27017
-else:
-    addr_database = 'localhost'
-    addr_rabbitmq = 'localhost'
-    port_rabbitmq = 5672
-    port_database = 27017
-
-# Addresses of the various Azrael services.
-addr_webapi = addr_azrael
-port_webapi = 8080
-
-addr_dibbler = addr_azrael
-port_dibbler = 8081
-
-addr_clerk = addr_azrael
-port_clerk = 5555
-
-addr_leonard = addr_azrael
-port_leonard = 5556
 
 # WebServer URLs for the model- templates and instances. These *must not* include
 # the trailing slash.
@@ -153,8 +130,8 @@ def getMongoClient(timeout: float=10):
     """
     timeout_milliseconds = int(1000 * timeout)
     return pymongo.MongoClient(
-        host=addr_database,
-        port=port_database,
+        host=azService['database'].ip,
+        port=azService['database'].port,
         serverSelectionTimeoutMS=timeout_milliseconds,
         socketTimeoutMS=timeout_milliseconds,
         connectTimeoutMS=timeout_milliseconds,

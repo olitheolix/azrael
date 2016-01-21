@@ -2251,8 +2251,8 @@ class TestClerkEnd2End:
         # Verify the current fragment geometries (nothing is modified).
         # ---------------------------------------------------------------------
         # URL of web server from where we will get the geometries.
-        base_url = 'http://{}:{}'.format(
-            azrael.config.addr_webapi, azrael.config.port_webapi)
+        host = azrael.config.azService['webapi']
+        base_url = 'http://{}:{}'.format(*host)
 
         # Query the current fragment _geometries_.
         ret = clerk.getFragments([objID])
@@ -2325,8 +2325,7 @@ def test_invalid():
         """
         def __init__(self):
             # Convenience.
-            ip = config.addr_clerk
-            port = config.port_clerk
+            ip, port = config.azService['clerk']
 
             # Create ZeroMQ sockets and connect them to Clerk.
             self.ctx = zmq.Context()
