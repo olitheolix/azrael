@@ -94,22 +94,14 @@ class TestClerk:
         }
         m_getenv.assert_called_with('INSIDEDOCKER', None)
 
-    @mock.patch.object(azutils.os, 'getenv')
-    def test_getAzraelServiceHosts_inside_docker(self, m_getenv):
+    @mock.patch.object(azutils, 'isInsideDocker')
+    def test_getAzraelServiceHosts_inside_docker(self, m_isInsideDocker):
         """
         Inside a container the host names for the services must match their
         service name. For instance, the 'Leonard' service must run on a host
         called 'Leonard' (not case sensitive).
         """
-        # Mock os.getenv to ensure it tells getAzraelServiceHosts that we are
-        # inside a container.
-        m_getenv.return_value = '1'
-
-        # When no hosts file was provided then all services are expected to run
-        # on localhost.
-        ret1 = azutils.getAzraelServiceHosts(etchosts=None)
-        ret2 = azutils.getAzraelServiceHosts(etchosts='/does_not_exist_foo_bar.txt')
-        assert ret1 == ret2 == {
+        default_services = {
             'clerk': ('localhost', 5555),
             'database': ('localhost', 27017),
             'rabbitmq': ('localhost', 5672),
@@ -117,6 +109,26 @@ class TestClerk:
             'dibbler': ('localhost', 8081),
             'leonard': ('localhost', 5556),
         }
+
+        # Make getAzraelServiceHosts believe we are outside a container. In
+        # that case all services are assumed to run on 'localhost'.
+        m_isInsideDocker.return_value = False
+        assert m_isInsideDocker.call_count == 0
+        ret = azutils.getAzraelServiceHosts(etchosts=None)
+        assert m_isInsideDocker.call_count == 1
+
+        # Make getAzraelServiceHosts believe we are inside a container.
+        m_isInsideDocker.return_value = True
+
+        # If the specified /etc/hosts file does not exists then we must get the
+        # default values.
+        m_isInsideDocker.reset_mock()
+        ret = azutils.getAzraelServiceHosts(etchosts=None)
+        assert m_isInsideDocker.call_count == 1
+        assert ret == default_services
+        ret = azutils.getAzraelServiceHosts(etchosts='/does_not_exist.txt')
+        assert m_isInsideDocker.call_count == 2
+        assert ret == default_services
 
         # Create a dummy hosts file and mess with the upper/lower case of the
         # strings (host names are case insensitive).

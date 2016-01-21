@@ -271,9 +271,8 @@ def getAzraelServiceHosts(etchosts: str):
         'leonard': AddrPort('localhost', 5556),
     }
 
-    # If we are not inside a docker container then we assume all services run
-    # on this very host.
-    if os.getenv('INSIDEDOCKER', None) is None:
+    # Return default service names if we are not in an Azrael container.
+    if not isInsideDocker():
         return dict(hosts_default)
 
     # ---------------------------------------------------------------------------
