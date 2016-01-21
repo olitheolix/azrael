@@ -2,7 +2,8 @@
 # >> docker-compose -f docker-compose-dev.yml
 
 Database:
-  image: mongo:3.0
+  image: mongo:latest
+  command: --quiet --storageEngine wiredTiger --logpath /data/db/somelogfile.log
   volumes:
     - /tmp/azrael:/data/db
   ports:
