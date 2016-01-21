@@ -896,7 +896,7 @@ class DatastoreMongo(DatastoreBase):
             # there is no running Mongo instance we need to make a dummy
             # query. This will throw an error if there is no running Mongo
             # instance.
-            db = config.getMongoClient(timeout=2000)
+            db = config.getMongoClient(timeout=1.0)
             db.database_names()
             return db
         except (pymongo.errors.ConnectionFailure,
