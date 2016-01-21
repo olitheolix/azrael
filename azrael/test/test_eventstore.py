@@ -52,8 +52,9 @@ class TestEventStore:
         # we want to intercept.
         for err in possible_exceptions:
             es = eventstore.EventStore(topics=['#'])
-            es.chan = mock.MagicMock()
-            es.chan.start_consuming.side_effect = err
+            m_chan = mock.MagicMock()
+            m_chan.start_consuming.side_effect = err
+            es.rmq = {'chan': m_chan, 'conn': mock.MagicMock(), 'name_queue': 'foo'}
             assert not es.blockingConsume().ok
 
     @mock.patch.object(eventstore.EventStore, 'setupRabbitMQ')

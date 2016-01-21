@@ -81,12 +81,12 @@ class EventStore(threading.Thread):
             self.join()
 
         # Close the channel if it is still open.
-        if self.chan is not None:
+        if self.rmq['chan'] is not None:
             try:
-                self.chan.close()
+                self.rmq['chan'].close()
             except pika.exceptions.ChannelClosed:
                 pass
-            self.chan = None
+            self.rmq['chan'] = None
 
         # Close the connection to RabbitMQ if it is still open.
         if self.rmq['conn'] is not None:
@@ -134,9 +134,15 @@ class EventStore(threading.Thread):
                 queue=queue_name,
                 routing_key=topic,
             )
-        self.chan = chan
-        self.rmq = {'conn': conn, 'chan': chan, 'name_queue':
-            queue_name, 'name_exchange': exchange_name}
+
+        # Gather all RabbitMQ handles in a single dictionary and store it in an
+        # instance variable.
+        self.rmq = {
+            'conn': conn,
+            'chan': chan,
+            'name_queue': queue_name,
+            'name_exchange': exchange_name
+        }
 
     def onMessage(self):
         """
@@ -157,7 +163,7 @@ class EventStore(threading.Thread):
         self.messages.append((method.routing_key, body))
         self.onMessage()
         if self._terminate is True:
-            self.chan.stop_consuming()
+            self.rmq['chan'].stop_consuming()
 
     def _onTimeout(self):
         """
@@ -165,7 +171,7 @@ class EventStore(threading.Thread):
         """
         self.onTimeout()
         if self._terminate is True:
-            self.chan.stop_consuming()
+            self.rmq['chan'].stop_consuming()
         else:
             self.rmq['conn'].add_timeout(self._timeout, self._onTimeout)
 
@@ -198,7 +204,7 @@ class EventStore(threading.Thread):
         :param str topic: topic string
         :param bytes msg: message to publish.
         """
-        self.chan.basic_publish(
+        self.rmq['chan'].basic_publish(
             exchange=self.rmq['name_exchange'],
             routing_key=topic,
             body=msg,
@@ -220,7 +226,7 @@ class EventStore(threading.Thread):
         self.rmq['conn'].add_timeout(self._timeout, self._onTimeout)
 
         # Install message callback for the subscribed keys.
-        self.chan.basic_consume(
+        self.rmq['chan'].basic_consume(
             self._onMessage,
             queue=self.rmq['name_queue'], no_ack=False
         )
@@ -229,8 +235,8 @@ class EventStore(threading.Thread):
         # another thread must call the 'stop' method.
         ret = RetVal(True, None, None)
         try:
-            self.chan.start_consuming()
-            self.chan.close()
+            self.rmq['chan'].start_consuming()
+            self.rmq['chan'].close()
             self.rmq['conn'].close()
         except pika.exceptions.ChannelClosed:
             ret = RetVal(False, 'Channel Closed', None)
@@ -239,7 +245,7 @@ class EventStore(threading.Thread):
         except pika.exceptions.ConnectionClosed:
             ret = RetVal(False, 'Connection Closed', None)
         finally:
-            self.chan = None
+            self.rmq['chan'] = None
             self.rmq['conn'] = None
         return ret
 
