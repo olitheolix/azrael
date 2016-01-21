@@ -96,8 +96,10 @@ class EventStore(threading.Thread):
                 routing_key=topic,
             )
 
-        # Specify polling timeout. Lower values make the class more responsive
-        # but also invoke the GIL more frequently.
+        # Specify polling timeout. Smaller values make the class more
+        # responsive in the event of a shutdown. However, smaller values also
+        # means invoking the GIL more frequently which slows down the main
+        # thread.
         self._timeout = 0.2
 
     def __del__(self):
@@ -193,7 +195,17 @@ class EventStore(threading.Thread):
         )
         return RetVal(True, None, None)
 
-    def run(self):
+    def blockingConsume(self):
+        """
+        Connect to RabbitMQ and commence the message consumption.
+
+        This method also installs callbacks for when messages arrive or the
+        timeout counter expires.
+
+        Note: this method does not return of its own accord. The only two
+        scenarios where it does return is if an exception is thrown or one of
+        the callbacks explicitly terminates the event loop.
+        """
         # Install timeout callback.
         self.conn.add_timeout(self._timeout, self._onTimeout)
 
@@ -205,8 +217,21 @@ class EventStore(threading.Thread):
 
         # Commence Pika's event loop. This will block indefinitely. To stop it,
         # another thread must call the 'stop' method.
-        self.chan.start_consuming()
-        self.chan.close()
-        self.conn.close()
-        self.chan = None
-        self.conn = None
+        ret = RetVal(True, None, None)
+        try:
+            self.chan.start_consuming()
+            self.chan.close()
+            self.conn.close()
+        except pika.exceptions.ChannelClosed:
+            ret = RetVal(False, 'Channel Closed', None)
+        except pika.exceptions.ChannelError:
+            ret = RetVal(False, 'Channel Error', None)
+        except pika.exceptions.ConnectionClosed:
+            ret = RetVal(False, 'Connection Closed', None)
+        finally:
+            self.chan = None
+            self.conn = None
+        return ret
+
+    def run(self):
+        self.blockingConsume()

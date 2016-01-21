@@ -16,7 +16,9 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 import json
 import time
+import pika
 import pytest
+import unittest.mock as mock
 
 from IPython import embed as ipshell
 import azrael.eventstore as eventstore
@@ -36,6 +38,23 @@ class TestEventStore:
 
     def teardown_method(self, method):
         pass
+
+    def test_connection_closed_error(self):
+        # Create one EventStore instance and subscribed it to all topics.
+        possible_exceptions = [
+            pika.exceptions.ChannelClosed,
+            pika.exceptions.ChannelError,
+            pika.exceptions.ConnectionClosed,
+        ]
+
+        # Create an EventStore instance, mock out the RabbitMQ channel, and let
+        # the 'start_consuming' method raise one of the various RabbitMQ errors
+        # we want to intercept.
+        for err in possible_exceptions:
+            es = eventstore.EventStore(topics=['#'])
+            es.chan = mock.MagicMock()
+            es.chan.start_consuming.side_effect = err
+            assert not es.blockingConsume().ok
 
     def test_shutdown(self):
         """
