@@ -85,16 +85,16 @@ def compileRawFragment(vert, uv, rgb):
     num_rgb = np.prod(rgb.shape) // 3
     num_uv = np.prod(uv.shape) // 2
 
-    # In the absence of UV data the RGB vector must be a simple vector to
-    # denote vertex colors. If UV is a non-zero array then RGB must be a
+    # In the absence of UV data the RGB data must be a simple vector that
+    # denotes vertex colors. If UV is a non-zero array then RGB must be a
     # image texture (3D array).
     if len(rgb) == 0:
         # No RGB or UV.
         assert len(uv) == 0
         width = height = None
     elif rgb.ndim == 1:
-        # No UV map; RGB must be denote one RGB triplet for each vertex.
-        assert len(uv) == 0
+        # No UV map; RGB must denote one RGB triplet for each vertex.
+        assert len(uv) == 0, (len(uv), rgb.shape)
         assert num_rgb == num_vert
         width = height = None
     elif rgb.ndim == 3:
