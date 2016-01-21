@@ -93,8 +93,8 @@ def getMongoClient(timeout: float=10):
     This is a convenience method that automatically connects to the correct
     host on the correct address.
 
-    This function does intercept any errors. It is the responsibility of the
-    caller to use the correct try/except statement.
+    This function does *not* intercept any errors. It is the responsibility of
+    the caller to use the correct try/except statement.
 
     :param float timeout: timeout in Seconds.
     :return: connection to MongoDB

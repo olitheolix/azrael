@@ -87,7 +87,7 @@ def waitForEventStore(timeout=60):
             # A minute has passed - abort with an error.
             print('failed!')
             print('Could not connect to event store -- Abort')
-            raise ImportError('Could not connect to databases')
+            raise ImportError('Could not connect to event store')
         print('.', end='', flush=True)
 
 
