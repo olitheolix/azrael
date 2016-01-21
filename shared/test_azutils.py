@@ -16,6 +16,7 @@
 # under the License.
 
 import azutils
+import builtins
 import unittest.mock as mock
 from IPython import embed as ipshell
 
@@ -125,12 +126,15 @@ class TestClerk:
             '127.0.1.3       wEbApI',
             '127.0.1.4       Dibbler alias1 alias2',
         ]) + '\n'
-        fname = '/tmp/az_etchosts'
-        open(fname, 'w').write(lines)
 
         # This time the hosts for 'webapi' and 'dibbler' must reflect the
         # values in the hosts file.
-        ret = azutils.getAzraelServiceHosts(etchosts=fname)
+        with mock.patch.object(builtins, 'open',
+                               mock.mock_open(read_data=lines)) as m_open:
+            assert m_open.call_count == 0
+            ret = azutils.getAzraelServiceHosts(etchosts='/etc/hosts')
+            assert m_open.call_count == 1
+
         assert ret == {
             'clerk': ('localhost', 5555),
             'database': ('localhost', 27017),
