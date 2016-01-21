@@ -411,16 +411,16 @@ def main():
             # in the repo whereas the Vatican model is available here:
             # http://artist-3d.com/free_3d_models/dnm/model_disp.php?\
             # uid=3290&count=count
-#            p = os.path.dirname(os.path.abspath(__file__))
-#            fname = os.path.join(p, 'models', 'sphere', 'sphere.obj')
-#            fname = os.path.join(p, 'house', 'house.obj')
-#            fname = os.path.join(p, 'test.obj')
-#            scale, model_name = (1.25, fname)
+            # p = os.path.dirname(os.path.abspath(__file__))
+            # fname = os.path.join(p, 'models', 'sphere', 'sphere.obj')
+            # fname = os.path.join(p, 'house', 'house.obj')
+            # fname = os.path.join(p, 'test.obj')
+            # scale, model_name = (1.25, fname)
             # scale, model_name = (
             #     50, 'viewer/models/vatican/vatican-cathedral.3ds')
             # scale, model_name = (
             #     1.25, 'viewer/models/house/house.3ds')
-#            vert, uv, rgb = demolib.loadModel(model_name)
+            # vert, uv, rgb = demolib.loadModel(model_name)
 
             # Load the Booster Cube Model created in Blender.
             scale, (vert, uv, rgb) = 1, demolib.loadBoosterCubeBlender()
