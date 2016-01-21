@@ -217,8 +217,10 @@ def parseHostsFile(lines: list):
     """
     Return a dictionary of {hostname: ip} based on ``lines``.
 
-    The format for every element in ``lines`` must match the format used in the
-    /etc/hosts file.
+    Ignores every line that does not strictly adhere to the /etc/hosts format.
+
+    :param list[str] lines: typically the lines of the local /etc/hosts file.
+    :return: dict of (ip, port) tuples.
     """
     # Sanity checks.
     try:
@@ -243,8 +245,23 @@ def parseHostsFile(lines: list):
     hosts = {_[1]: _[0] for _ in hosts}
     return hosts
 
+
 def getAzraelServiceHosts(etchosts: str):
+    """
+    Return the hosts/ports for all Azrael services.
+
+    The ``etchosts`` parameter specifies the file from which to parse the
+    addresses of the services. This file will almost always be the
+    system/container local /etc/hosts file. If not it must still adhere to the
+    same format.
+
+    :param str etchosts: location of hosts file.
+    :return: dict eg {'clerk': ('localhost', 5555)}
+    """
+    # Put the host/port into a named tuple.
     AddrPort = collections.namedtuple('AddrPort', 'ip port')
+
+    # All services reside on the local host by default.
     hosts_default = {
         'clerk': AddrPort('localhost', 5555),
         'database': AddrPort('localhost', 27017),
@@ -253,21 +270,34 @@ def getAzraelServiceHosts(etchosts: str):
         'dibbler': AddrPort('localhost', 8081),
         'leonard': AddrPort('localhost', 5556),
     }
-        
+
+    # If we are not inside a docker container then we assume all services run
+    # on this very host.
     if os.getenv('INSIDEDOCKER', None) is None:
         return dict(hosts_default)
 
+    # ---------------------------------------------------------------------------
+    # If we get to here it means we are running inside a Docker container. We
+    # therefore read the /etc/hosts file (or whatever we got given in the
+    # `etchosts` argument) and parse it.
+    # ---------------------------------------------------------------------------
+
+    # Read the hosts file.
     try:
         lines = open(etchosts, 'r').readlines()
         hosts_system = parseHostsFile(lines)
     except (TypeError, FileNotFoundError):
         hosts_system = {}
 
+    # Host names are case insensitive, but docker-compose adheres to the case
+    # specified by the user. Therefore, ensure all host names are lower case.
     hosts_system = {k.lower(): v for (k, v) in hosts_system.items()}
 
+    # If the host file contains an entry for any of the services Azrael has to
+    # offer then replace the derault ('localhost') with the entry from the
+    # hosts file.
     hosts = {}
     for (name, (addr, port)) in hosts_default.items():
-        name = name.lower()
         if name in hosts_system:
             addr = hosts_system[name]
         hosts[name] = AddrPort(addr, port)

@@ -19,6 +19,7 @@ import azutils
 import unittest.mock as mock
 from IPython import embed as ipshell
 
+
 class TestClerk:
     @classmethod
     def setup_class(cls):
@@ -33,7 +34,6 @@ class TestClerk:
 
     def teardown_method(self, method):
         pass
-
 
     def test_parseHostsFile_valid(self):
         """
@@ -81,7 +81,7 @@ class TestClerk:
         # Mock os.getenv to ensure it tells getAzraelServiceHosts that we are
         # outside a container.
         m_getenv.return_value = None
-        
+
         ret = azutils.getAzraelServiceHosts(etchosts=None)
         assert ret == {
             'clerk': ('localhost', 5555),
