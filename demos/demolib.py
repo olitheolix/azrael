@@ -22,9 +22,9 @@ import json
 import netifaces
 import subprocess
 
-# Import 'setproctitle' *before* NumPy, even though it is not even used
-# in this script. Howver, if it is import after NumPy then the various Azrael
-# modules cannot rename themselves. No, I do not know why.
+# Import 'setproctitle' *before* NumPy, even though it is not even used in this
+# script. However, if it is import after NumPy then the various Azrael modules
+# cannot rename themselves. No, I do not know why.
 import setproctitle
 
 import numpy as np
@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.join(p, '../shared'))
 del p
 
 import model_import
-import azutils as util
+import azutils
 import azrael.aztypes as aztypes
 from IPython import embed as ipshell
 from azrael.aztypes import Template, FragMeta
@@ -194,8 +194,8 @@ def loadBoosterCubeBlender():
     # We will compute the thrusters for the remaining two cube faces with a
     # 90degree rotation around the x- and y axis.
     s2 = 1 / np.sqrt(2)
-    quat_x = util.Quaternion(s2, 0, 0, s2)
-    quat_y = util.Quaternion(0, s2, 0, s2)
+    quat_x = azutils.Quaternion(s2, 0, 0, s2)
+    quat_y = azutils.Quaternion(0, s2, 0, s2)
     for ii, (tx, ty) in enumerate(zip(thruster_x, thruster_y)):
         thruster_x[ii] = quat_x * tx
         thruster_y[ii] = quat_y * ty
