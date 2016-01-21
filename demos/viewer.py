@@ -68,7 +68,7 @@ def parseCommandLine():
     param = parser.parse_args()
 
     if param.addr == '':
-        param.addr = demolib.getNetworkAddress()
+        param.addr = demolib.azService['clerk'].ip
 
     # run the parser.
     return param

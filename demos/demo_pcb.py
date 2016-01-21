@@ -499,7 +499,7 @@ def interactive(host):
 
 def main():
     # Guess Azrael's IP address on the local computer.
-    host = demolib.getNetworkAddress()
+    host = demolib.azService['clerk'].ip
 
     # We expect at least on script option to determine which function to run
     # (see below).

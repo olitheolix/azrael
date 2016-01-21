@@ -40,18 +40,13 @@ class Ship(ship_boostercube.CtrlBoosterCube):
 
 def main():
     # Guess Azrael's IP address on the local computer.
-    if os.getenv('INSIDEDOCKER') is None:
-        print('Determining IP address')
-        ip = demolib.getNetworkAddress()
-    else:
-        print('Running inside Docker container')
-        ip = 'azrael'
-    print('Connecting to <{}>'.format(ip))
+    host = demolib.azService['clerk'].ip
+    print('Connecting to <{}>'.format(host))
 
     time.sleep(5)
 
     # Spawn our ship.
-    c = Ship(ip)
+    c = Ship(host)
     c.spawn((0, 5, 0))
 
     # Manoeuvre the ship to deterministic way points. This may not be very

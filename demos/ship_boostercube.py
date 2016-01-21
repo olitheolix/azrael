@@ -316,10 +316,10 @@ class CtrlBoosterCube():
 
 def main():
     # Guess Azrael's IP address on the local computer.
-    ip = demolib.getNetworkAddress()
+    host = demolib.azService['clerk'].ip
 
     # Instantiate the controller for a BoosterCube ship. Then spawn it.
-    c = CtrlBoosterCube(ip)
+    c = CtrlBoosterCube(host)
     c.spawn((0, 5, 0))
 
     # Successively manoeuvre the ship above each platform. The hard coded
