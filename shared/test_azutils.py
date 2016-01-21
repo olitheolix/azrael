@@ -143,3 +143,19 @@ class TestClerk:
             'dibbler': ('127.0.1.4', 8081),
             'leonard': ('localhost', 5556)
         }
+
+    @mock.patch.object(azutils.os, 'getenv')
+    def test_isInsideDocker(self, m_getenv):
+        m_getenv.return_value = '1'
+        assert m_getenv.call_count == 0
+        assert azutils.isInsideDocker() is True
+        assert m_getenv.call_count == 1
+        m_getenv.assert_called_with('INSIDEDOCKER', None)
+
+        for retval in [None, 1, 2, '2']:
+            m_getenv.reset_mock()
+            m_getenv.return_value = retval
+            assert m_getenv.call_count == 0
+            assert azutils.isInsideDocker() is False
+            assert m_getenv.call_count == 1
+            m_getenv.assert_called_with('INSIDEDOCKER', None)

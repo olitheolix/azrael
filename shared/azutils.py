@@ -302,3 +302,10 @@ def getAzraelServiceHosts(etchosts: str):
             addr = hosts_system[name]
         hosts[name] = AddrPort(addr, port)
     return hosts
+
+
+def isInsideDocker():
+    """
+    Return True if we are in an Azrael Docker container.
+    """
+    return os.getenv('INSIDEDOCKER', None) == '1'
