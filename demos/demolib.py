@@ -19,7 +19,6 @@ import os
 import sys
 import time
 import json
-import netifaces
 import subprocess
 
 # Import 'setproctitle' *before* NumPy, even though it is not even used in this

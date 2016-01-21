@@ -42,7 +42,6 @@ dependencies:
 - zlib=1.2.8=0
 - pip:
   - ipython-genutils==0.1.0
-  - netifaces==0.10.4
   - pika==0.10.0
   - pyassimp==0.1
   - setproctitle==1.1.9

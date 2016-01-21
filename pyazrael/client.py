@@ -32,7 +32,6 @@ import base64
 import logging
 import requests
 import traceback
-import netifaces
 
 import numpy as np
 import azutils
