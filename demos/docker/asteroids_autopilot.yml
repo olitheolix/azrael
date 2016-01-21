@@ -1,29 +1,66 @@
 # Asteroids game.
 Database:
   image: mongo:3.0
+  command: --quiet
   volumes:
     - /tmp/azrael:/data/db
 
 RabbitMQ:
   image: rabbitmq:latest
 
-Azrael:
+Clerk:
   image: olitheolix/azrael:latest
-  command: asteroids
-  ports:
-    - "8080:8080"
-    - "5555:5555"
+  command: clerk
+  expose:
+    - "5555"
+    - "5556"
+    - "8080"
   links:
     - Database
     - RabbitMQ
 
+WebAPI:
+  image: olitheolix/azrael:latest
+  command: webapi
+  expose:
+    - "5555"
+    - "5556"
+  ports:
+    - "8080:8080"
+  links:
+    - Clerk
+    - Database
+    - RabbitMQ
+
+Leonard:
+  image: olitheolix/azrael:latest
+  command: leonard
+  expose:
+    - "5555"
+    - "5556"
+    - "8080"
+  links:
+    - Clerk
+    - Database
+    - RabbitMQ
+
+Demo:
+  image: olitheolix/azrael:latest
+  command: asteroids
+  links:
+    - Clerk
+    - Database
+    - Leonard
+    - RabbitMQ
+    - WebAPI
+
 Player:
   image: olitheolix/azrael:latest
   command: asteroidsplayer
-  ports:
-    - "8080"
-    - "5555"
   links:
+    - Clerk
     - Database
+    - Demo
+    - Leonard
     - RabbitMQ
-    - Azrael
+    - WebAPI
