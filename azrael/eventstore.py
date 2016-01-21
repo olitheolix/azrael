@@ -60,6 +60,43 @@ class EventStore(threading.Thread):
 
         # Event parameters.
         self.topics = topics
+
+        # Specify polling timeout. Smaller values make the class more
+        # responsive in the event of a shutdown. However, smaller values also
+        # means invoking the GIL more frequently which slows down the main
+        # thread.
+        self._timeout = 0.2
+
+        # Setup the RabbitMQ exchange.
+        self.rmq = self.setupRabbitMQ()
+
+    def __del__(self):
+        """
+        Attempt to shut down cleanly.
+        """
+        if self.is_alive():
+            # Thread is still running. Stop and join. This may block
+            # indefinitely.
+            self.stop()
+            self.join()
+
+        # Close the channel if it is still open.
+        if self.chan is not None:
+            try:
+                self.chan.close()
+            except pika.exceptions.ChannelClosed:
+                pass
+            self.chan = None
+
+        # Close the connection to RabbitMQ if it is still open.
+        if self.conn is not None:
+            try:
+                self.conn.close()
+            except pika.exceptions.ConnectionClosed:
+                pass
+            self.conn = None
+
+    def setupRabbitMQ(self):
         self.exchange_name = 'azevents'
         conn_param = pika.ConnectionParameters(
             host=config.azService['rabbitmq'].ip,
@@ -96,38 +133,6 @@ class EventStore(threading.Thread):
                 routing_key=topic,
             )
 
-        # Specify polling timeout. Smaller values make the class more
-        # responsive in the event of a shutdown. However, smaller values also
-        # means invoking the GIL more frequently which slows down the main
-        # thread.
-        self._timeout = 0.2
-
-    def __del__(self):
-        """
-        Attempt to shut down cleanly.
-        """
-        if self.is_alive():
-            # Thread is still running. Stop and join. This may block
-            # indefinitely.
-            self.stop()
-            self.join()
-
-        # Close the channel if it is still open.
-        if self.chan is not None:
-            try:
-                self.chan.close()
-            except pika.exceptions.ChannelClosed:
-                pass
-            self.chan = None
-
-        # Close the connection to RabbitMQ if it is still open.
-        if self.conn is not None:
-            try:
-                self.conn.close()
-            except pika.exceptions.ConnectionClosed:
-                pass
-            self.conn = None
-
     def onMessage(self):
         """
         For user to overload. Triggers after a message was received.
@@ -142,7 +147,7 @@ class EventStore(threading.Thread):
 
     def _onMessage(self, ch, method, properties, body):
         """
-        Add messages to the local cache whenver they arrive.
+        Add messages to the local cache whenever they arrive.
         """
         self.messages.append((method.routing_key, body))
         self.onMessage()

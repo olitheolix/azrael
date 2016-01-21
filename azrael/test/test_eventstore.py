@@ -56,6 +56,15 @@ class TestEventStore:
             es.chan.start_consuming.side_effect = err
             assert not es.blockingConsume().ok
 
+    @mock.patch.object(eventstore.EventStore, 'setupRabbitMQ')
+    def test_ctor(self, m_setupRabbitMQ):
+        # Create one EventStore instance and subscribed it to all topics.
+        m_setupRabbitMQ.return_value = 'foo'
+        assert m_setupRabbitMQ.call_count == 0
+        es = eventstore.EventStore(topics=['#'])
+        assert m_setupRabbitMQ.call_count == 1
+        assert es.rmq == 'foo'
+
     def test_shutdown(self):
         """
         Verify that the EventStore threads shut down properly. Threads must be
