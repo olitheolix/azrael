@@ -89,7 +89,6 @@ class TestClerk:
             'database': ('localhost', 27017),
             'rabbitmq': ('localhost', 5672),
             'webapi': ('localhost', 8080),
-            'dibbler': ('localhost', 8081),
             'leonard': ('localhost', 5556),
         }
         m_getenv.assert_called_with('INSIDEDOCKER', None)
@@ -104,10 +103,9 @@ class TestClerk:
         default_services = {
             'clerk': ('localhost', 5555),
             'database': ('localhost', 27017),
+            'leonard': ('localhost', 5556),
             'rabbitmq': ('localhost', 5672),
             'webapi': ('localhost', 8080),
-            'dibbler': ('localhost', 8081),
-            'leonard': ('localhost', 5556),
         }
 
         # Make getAzraelServiceHosts believe we are outside a container. In
@@ -136,10 +134,10 @@ class TestClerk:
             '127.0.0.1       localhost',
             '127.0.1.2       foo',
             '127.0.1.3       wEbApI',
-            '127.0.1.4       Dibbler alias1 alias2',
+            '127.0.1.4       Clerk alias1 alias2',
         ]) + '\n'
 
-        # This time the hosts for 'webapi' and 'dibbler' must reflect the
+        # This time the hosts for 'webapi' and 'clerk' must reflect the
         # values in the hosts file.
         with mock.patch.object(builtins, 'open',
                                mock.mock_open(read_data=lines)) as m_open:
@@ -148,12 +146,11 @@ class TestClerk:
             assert m_open.call_count == 1
 
         assert ret == {
-            'clerk': ('localhost', 5555),
+            'clerk': ('127.0.1.4', 5555),
             'database': ('localhost', 27017),
+            'leonard': ('localhost', 5556),
             'rabbitmq': ('localhost', 5672),
             'webapi': ('127.0.1.3', 8080),
-            'dibbler': ('127.0.1.4', 8081),
-            'leonard': ('localhost', 5556)
         }
 
     @mock.patch.object(azutils.os, 'getenv')

@@ -265,10 +265,9 @@ def getAzraelServiceHosts(etchosts: str):
     hosts_default = {
         'clerk': AddrPort('localhost', 5555),
         'database': AddrPort('localhost', 27017),
+        'leonard': AddrPort('localhost', 5556),
         'rabbitmq': AddrPort('localhost', 5672),
         'webapi': AddrPort('localhost', 8080),
-        'dibbler': AddrPort('localhost', 8081),
-        'leonard': AddrPort('localhost', 5556),
     }
 
     # Return default service names if we are not in an Azrael container.
