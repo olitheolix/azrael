@@ -20,19 +20,31 @@ source activate azrael
 
 # Select the demo or run a custom command.
 case "$1" in
-    forcegrid) 
-     CMD="demo_forcegrid.py --noviewer --reset=30 --cubes=3,3,1 --linear=1 --circular=1" 
-     ;; 
-    asteroids) 
-     CMD="demo_asteroids.py --noviewer -N3"
-     ;; 
+    forcegrid)
+        CMD="demo_forcegrid.py --noviewer --reset=30 --cubes=3,3,1 --linear=1 --circular=1"
+        ;;
+    asteroids)
+        CMD="demo_asteroids.py --noviewer -N3"
+        ;;
     asteroidsplayer)
-     CMD="ship_asteroids.py"
-     ;;
-    *) 
-     exec "$1"
-     ;; 
-esac 
+        CMD="ship_asteroids.py"
+        ;;
+    clerk)
+        exec python -c "import azrael.clerk; azrael.clerk.Clerk().run()"
+        ;;
+    webapi)
+        exec python -c "import azrael.web; azrael.web.WebServer().run()"
+        ;;
+    leonard)
+        exec python -c "import azrael.leonard; azrael.leonard.LeonardDistributedZeroMQ().run()"
+        ;;
+    info)
+        exec python -c "import azrael; import azutils; import pprint; pprint.pprint(azutils.getAzraelServiceHosts('/etc/hosts'))"
+        ;;
+    *)
+        exec $*
+        ;;
+esac
 
 # Prepend the demo directory.
 CMD="python demos/$CMD"
