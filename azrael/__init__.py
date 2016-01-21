@@ -26,3 +26,8 @@ multiprocessing.set_start_method('fork')
 tmp = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(tmp, '..', 'shared'))
 del tmp
+
+# Wait for the data- and event store to come online.
+import azrael.startup
+azrael.startup.waitForDatabases(timeout=60)
+azrael.startup.waitForEventStore(timeout=6)
