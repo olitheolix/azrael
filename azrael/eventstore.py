@@ -68,7 +68,7 @@ class EventStore(threading.Thread):
         self._timeout = 0.2
 
         # Setup the RabbitMQ exchange.
-        self.rmq = self.setupRabbitMQ()
+        self.setupRabbitMQ()
 
     def __del__(self):
         """
@@ -89,15 +89,18 @@ class EventStore(threading.Thread):
             self.chan = None
 
         # Close the connection to RabbitMQ if it is still open.
-        if self.conn is not None:
+        if self.rmq['conn'] is not None:
             try:
-                self.conn.close()
+                self.rmq['conn'].close()
             except pika.exceptions.ConnectionClosed:
                 pass
-            self.conn = None
+            self.rmq['conn'] = None
 
     def setupRabbitMQ(self):
-        self.exchange_name = 'azevents'
+        """
+        fixme: docu
+        """
+        exchange_name = 'azevents'
         conn_param = pika.ConnectionParameters(
             host=config.azService['rabbitmq'].ip,
             port=config.azService['rabbitmq'].port,
@@ -108,30 +111,32 @@ class EventStore(threading.Thread):
         # how to handle connection errors in general. Wrapping every call to
         # the EventStore in a try/except block seems inelegant.
         try:
-            self.conn = pika.BlockingConnection(conn_param)
+            conn = pika.BlockingConnection(conn_param)
         except (pika.exceptions.ConnectionClosed,
                 pika.exceptions.ChannelClosed,
                 pika.exceptions.IncompatibleProtocolError):
-            self.chan = self.conn = None
+            chan = conn = None
             raise RuntimeError
 
         # Create and configure the channel. All deliveries must be confirmed.
-        self.chan = self.conn.channel()
-        self.chan.confirm_delivery()
-        self.chan.basic_qos(prefetch_size=0, prefetch_count=0, all_channels=False)
+        chan = conn.channel()
+        chan.confirm_delivery()
+        chan.basic_qos(prefetch_size=0, prefetch_count=0, all_channels=False)
 
         # Create a Topic exchange.
-        self.chan.exchange_declare(exchange='azevents', type='topic')
-        tmp = self.chan.queue_declare(exclusive=True)
-        self.queue_name = tmp.method.queue
+        chan.exchange_declare(exchange='azevents', type='topic')
+        queue_name = chan.queue_declare(exclusive=True).method.queue
 
         # Setup the callbacks.
         for topic in self.topics:
-            self.chan.queue_bind(
-                exchange=self.exchange_name,
-                queue=self.queue_name,
+            chan.queue_bind(
+                exchange=exchange_name,
+                queue=queue_name,
                 routing_key=topic,
             )
+        self.chan = chan
+        self.rmq = {'conn': conn, 'chan': chan, 'name_queue':
+            queue_name, 'name_exchange': exchange_name}
 
     def onMessage(self):
         """
@@ -162,7 +167,7 @@ class EventStore(threading.Thread):
         if self._terminate is True:
             self.chan.stop_consuming()
         else:
-            self.conn.add_timeout(self._timeout, self._onTimeout)
+            self.rmq['conn'].add_timeout(self._timeout, self._onTimeout)
 
     def stop(self):
         """
@@ -194,7 +199,7 @@ class EventStore(threading.Thread):
         :param bytes msg: message to publish.
         """
         self.chan.basic_publish(
-            exchange=self.exchange_name,
+            exchange=self.rmq['name_exchange'],
             routing_key=topic,
             body=msg,
         )
@@ -212,12 +217,12 @@ class EventStore(threading.Thread):
         the callbacks explicitly terminates the event loop.
         """
         # Install timeout callback.
-        self.conn.add_timeout(self._timeout, self._onTimeout)
+        self.rmq['conn'].add_timeout(self._timeout, self._onTimeout)
 
         # Install message callback for the subscribed keys.
         self.chan.basic_consume(
             self._onMessage,
-            queue=self.queue_name, no_ack=False
+            queue=self.rmq['name_queue'], no_ack=False
         )
 
         # Commence Pika's event loop. This will block indefinitely. To stop it,
@@ -226,7 +231,7 @@ class EventStore(threading.Thread):
         try:
             self.chan.start_consuming()
             self.chan.close()
-            self.conn.close()
+            self.rmq['conn'].close()
         except pika.exceptions.ChannelClosed:
             ret = RetVal(False, 'Channel Closed', None)
         except pika.exceptions.ChannelError:
@@ -235,7 +240,7 @@ class EventStore(threading.Thread):
             ret = RetVal(False, 'Connection Closed', None)
         finally:
             self.chan = None
-            self.conn = None
+            self.rmq['conn'] = None
         return ret
 
     def run(self):
