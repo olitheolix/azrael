@@ -51,8 +51,6 @@ def parseCommandLine():
     padd = parser.add_argument
 
     # Add the command line options.
-    padd('--port', metavar='port', type=int, default=azrael.config.port_webapi,
-         help='Port number')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
 

@@ -50,8 +50,6 @@ def parseCommandLine():
     # Add the command line options.
     padd('--noviewer', action='store_true', default=False,
          help='Do not spawn a viewer')
-    padd('--port', metavar='port', type=int, default=azrael.config.port_webapi,
-         help='Port number')
     padd('-N', metavar='', type=int, default=3,
          help='Number of Asteroids to spawn (default=3)')
     padd('--loglevel', type=int, metavar='level', default=1,

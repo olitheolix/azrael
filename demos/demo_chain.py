@@ -69,8 +69,6 @@ def parseCommandLine():
          help='Do not spawn a viewer')
     padd('--noinit', action='store_true', default=False,
          help='Do not load any models')
-    padd('--port', metavar='port', type=int, default=azrael.config.port_webapi,
-         help='Port number')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
     padd('--reset', type=int, metavar='T', default=-1,
