@@ -127,7 +127,7 @@ class Simulation(azrael.eventstore.EventStore):
                 player_id = tmp['parent']
                 score = 2 if tmp['type'] == 'B' else 1
                 del tmp
-            except (AssertionError, json.JSONDecodeError, KeyError):
+            except (AssertionError, json.JSONDecodeError, KeyError, TypeError):
                 continue
 
             # Update score board based on player and projectile type. That
