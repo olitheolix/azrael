@@ -25,7 +25,7 @@ from IPython import embed as ipshell
 import azrael.eventstore as eventstore
 
 
-class TestEventStore:
+class TestUnitEventStore:
     @classmethod
     def setup_class(cls):
         pass
@@ -176,6 +176,22 @@ class TestEventStore:
             es.rmq = {'chan': m_chan, 'conn': mock.MagicMock(), 'name_queue': 'foo'}
             assert not es.blockingConsume().ok
 
+
+class TestIntegrationEventStore:
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        pass
+
     def test_shutdown(self):
         """
         Verify that the EventStore threads shut down properly. Threads must be
@@ -187,6 +203,7 @@ class TestEventStore:
         es.start()
 
         # Tell the thread to stop. Wait at most one Second, then verify it has
+
         # really stopped.
         es.stop()
         es.join(1.0)
@@ -317,7 +334,7 @@ class TestEventStore:
         [_.stop() for _ in es]
         [_.join() for _ in es]
 
-    def test_listen_for_multiple_topic(self):
+    def test_listen_for_multiple_topics(self):
         """
         Subscribe two multiple topics at once.
         """
