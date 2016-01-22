@@ -20,6 +20,7 @@ Provide a uniform API to publish events and subscribes to topics.
 """
 
 import os
+import time
 import pika
 import logging
 import threading
@@ -267,9 +268,17 @@ class EventStore(threading.Thread):
             return RetVal(False, 'Connection Closed', None)
 
     def run(self):
+        """
+        Start to consume messages.
+
+        This method blocks until either the consumption loop finished
+        voluntarily or we were unable to connect to RabbitMQ for too long (hard
+        coded values of ~200 Seconds at the moment).
+        """
         retries = 0
         while not self.blockingConsume().ok:
             self.disconnect()
+            time.sleep(0.2)
             self.connect()
             retries += 1
-            assert retries < 20
+            assert retries < 1000
