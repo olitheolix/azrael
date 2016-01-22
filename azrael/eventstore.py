@@ -115,7 +115,8 @@ class EventStore(threading.Thread):
                 self.rmq[name].close()
             except (pika.exceptions.ChannelClosed,
                     pika.exceptions.ChannelError,
-                    pika.exceptions.ConnectionClosed):
+                    pika.exceptions.ConnectionClosed,
+                    KeyError):
                 pass
 
         # Remove the handles.
