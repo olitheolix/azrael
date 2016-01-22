@@ -265,7 +265,6 @@ class TestIntegrationEventStore:
         es.start()
 
         # Tell the thread to stop. Wait at most one Second, then verify it has
-
         # really stopped.
         es.stop()
         es.join(1.0)
@@ -290,12 +289,16 @@ class TestIntegrationEventStore:
         es = eventstore.EventStore(topics=['#'])
         es.start()
 
+        # Create a dedicated publisher instance because the class does not play
+        # nice when called from different threads.
+        pub = eventstore.EventStore(topics=['foo'])
+
         # No messages must have arrived yet.
         assert es.getMessages() == (True, None, [])
 
         # Publish our test messages.
-        es.publish(topic='foo', msg='bar0'.encode('utf8'))
-        es.publish(topic='foo', msg='bar1'.encode('utf8'))
+        assert pub.publish(topic='foo', msg=b'bar0').ok
+        assert pub.publish(topic='foo', msg=b'bar1').ok
 
         # Wait until the client received at least two messages (RabbitMQ incurs
         # some latency).
@@ -309,8 +312,8 @@ class TestIntegrationEventStore:
         ret = es.getMessages()
         assert ret.ok
         assert ret.data == [
-            ('foo', 'bar0'.encode('utf8')),
-            ('foo', 'bar1'.encode('utf8')),
+            ('foo', b'bar0'),
+            ('foo', b'bar1'),
         ]
 
         # There must be no new messages.
@@ -334,10 +337,14 @@ class TestIntegrationEventStore:
         # No messages must have arrived yet.
         assert es.getMessages() == (True, None, [])
 
+        # Create a dedicated publisher instance because the class does not play
+        # nice when called from different threads.
+        pub = eventstore.EventStore(topics=['foo'])
+
         # Publish our test messages.
-        es.publish(topic='foo', msg='bar0'.encode('utf8'))
-        es.publish(topic='blah', msg='bar1'.encode('utf8'))
-        es.publish(topic='foo', msg='bar2'.encode('utf8'))
+        pub.publish(topic='foo', msg=b'bar0')
+        pub.publish(topic='blah', msg=b'bar1')
+        pub.publish(topic='foo', msg=b'bar2')
 
         # Wait until the client received at least two messages (RabbitMQ incurs
         # some latency).
@@ -351,8 +358,8 @@ class TestIntegrationEventStore:
         ret = es.getMessages()
         assert ret.ok
         assert ret.data == [
-            ('foo', 'bar0'.encode('utf8')),
-            ('foo', 'bar2'.encode('utf8')),
+            ('foo', b'bar0'),
+            ('foo', b'bar2'),
         ]
 
         # Stop the thread.
@@ -367,13 +374,14 @@ class TestIntegrationEventStore:
         es = [eventstore.EventStore(topics=['foo']) for _ in range(3)]
         [_.start() for _ in es]
 
-        # Create a dedicated publisher instance.
+        # Create a dedicated publisher instance because the class does not play
+        # nice when called from different threads.
         pub = eventstore.EventStore(topics=['foo'])
 
         # Publish our test messages.
-        pub.publish(topic='foo', msg='bar0'.encode('utf8'))
-        pub.publish(topic='blah', msg='bar1'.encode('utf8'))
-        pub.publish(topic='foo', msg='bar2'.encode('utf8'))
+        pub.publish(topic='foo', msg=b'bar0')
+        pub.publish(topic='blah', msg=b'bar1')
+        pub.publish(topic='foo', msg=b'bar2')
 
         # Wait until each client received at least two messages (RabbitMQ incurs
         # some latency).
@@ -388,8 +396,8 @@ class TestIntegrationEventStore:
             ret = thread.getMessages()
             assert ret.ok
             assert ret.data == [
-                ('foo', 'bar0'.encode('utf8')),
-                ('foo', 'bar2'.encode('utf8')),
+                ('foo', b'bar0'),
+                ('foo', b'bar2'),
             ]
 
         # Stop the threads.
@@ -404,10 +412,14 @@ class TestIntegrationEventStore:
         es = eventstore.EventStore(topics=['foo', 'bar'])
         es.start()
 
+        # Create a dedicated publisher instance because the class does not play
+        # nice when called from different threads.
+        pub = eventstore.EventStore(topics=['foo'])
+
         # Publish our test messages.
-        es.publish(topic='foo', msg='0'.encode('utf8'))
-        es.publish(topic='blah', msg='1'.encode('utf8'))
-        es.publish(topic='bar', msg='2'.encode('utf8'))
+        pub.publish(topic='foo', msg=b'0')
+        pub.publish(topic='blah', msg=b'1')
+        pub.publish(topic='bar', msg=b'2')
 
         # Wait until the client received at least two messages (RabbitMQ incurs
         # some latency).
@@ -421,8 +433,8 @@ class TestIntegrationEventStore:
         ret = es.getMessages()
         assert ret.ok
         assert ret.data == [
-            ('foo', '0'.encode('utf8')),
-            ('bar', '2'.encode('utf8')),
+            ('foo', b'0'),
+            ('bar', b'2'),
         ]
 
         # Stop the thread.
