@@ -24,6 +24,8 @@ from azrael.aztypes import RetVal
 from IPython import embed as ipshell
 import azrael.eventstore as eventstore
 
+MagicMock = mock.MagicMock
+
 
 class TestUnitEventStore:
     @classmethod
@@ -97,8 +99,8 @@ class TestUnitEventStore:
         assert es.disconnect() == (True, None, None)
 
         # Specify RabbitMQ handles.
-        m_chan = mock.MagicMock()
-        m_conn = mock.MagicMock()
+        m_chan = MagicMock()
+        m_conn = MagicMock()
         es.rmq = {'chan': m_chan, 'conn': m_conn}
         
         # This time, 'disconnect' must call the close methods on the RabbitMQ
@@ -171,9 +173,9 @@ class TestUnitEventStore:
         # we want to intercept.
         for err in possible_exceptions:
             es = eventstore.EventStore(topics=['#'])
-            m_chan = mock.MagicMock()
+            m_chan = MagicMock()
             m_chan.start_consuming.side_effect = err
-            es.rmq = {'chan': m_chan, 'conn': mock.MagicMock(), 'name_queue': 'foo'}
+            es.rmq = {'chan': m_chan, 'conn': MagicMock(), 'name_queue': 'foo'}
             assert not es.blockingConsume().ok
 
     @mock.patch.object(eventstore.EventStore, 'connect')
@@ -182,9 +184,9 @@ class TestUnitEventStore:
         es = eventstore.EventStore(topics=['#'])
 
         # Side effect function for the mock (see below).
-        m_chan = mock.MagicMock()
+        m_chan = MagicMock()
         rmq_mock_handles = {
-            'chan': m_chan, 'conn': mock.MagicMock(),
+            'chan': m_chan, 'conn': MagicMock(),
             'name_queue': 'foo', 'name_exchange': 'foo'
         }
         def side_effect_fun():
@@ -229,9 +231,9 @@ class TestUnitEventStore:
         # Verify that each error is intercepted.
         for err in possible_exceptions:
             es = eventstore.EventStore(topics=['#'])
-            m_chan = mock.MagicMock()
+            m_chan = MagicMock()
             m_chan.basic_publish.side_effect = err
-            es.rmq = {'chan': m_chan, 'conn': mock.MagicMock(), 'name_exchange': 'foo'}
+            es.rmq = {'chan': m_chan, 'conn': MagicMock(), 'name_exchange': 'foo'}
             assert not es.publish(topic='foo', msg=b'bar').ok
 
 
