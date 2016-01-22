@@ -13,8 +13,6 @@ Clerk:
   command: clerk
   expose:
     - "5555"
-    - "5556"
-    - "8080"
   links:
     - Database
     - RabbitMQ
@@ -22,9 +20,6 @@ Clerk:
 WebAPI:
   image: olitheolix/azrael:latest
   command: webapi
-  expose:
-    - "5555"
-    - "5556"
   ports:
     - "8080:8080"
   links:
@@ -36,9 +31,7 @@ Leonard:
   image: olitheolix/azrael:latest
   command: leonard
   expose:
-    - "5555"
-    - "5556"
-    - "8080"
+     - "5556"
   links:
     - Clerk
     - Database
