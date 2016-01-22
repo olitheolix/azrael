@@ -294,6 +294,12 @@ class EventStore(threading.Thread):
         voluntarily or we were unable to connect to RabbitMQ for too long (hard
         coded values of ~200 Seconds at the moment).
         """
+        # Establish the connection (break the existing one if necessary).
+        self.disconnect()
+        self.connect()
+
+        # Consume messages until it voluntarily quits or reaches the retry
+        # limit.
         retries = 0
         while not self.blockingConsume().ok:
             self.disconnect()

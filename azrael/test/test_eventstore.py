@@ -150,10 +150,12 @@ class TestUnitEventStore:
 
         # 'run' must call the 'connect' method whenever an error has occurred,
         # and exit once 'blockingConsume' returns without error (this
-        # constitutes terminating the thread).
+        # constitutes terminating the thread). Note: run always calls
+        # 'disconnect' and 'connnect' before it makes any attempts to consume,
+        # hence the '+1' in the test below.
         es.run()
-        assert m_connect.call_count == 2
-        assert m_disconnect.call_count == 2
+        assert m_connect.call_count == 2 + 1
+        assert m_disconnect.call_count == 2 + 1
         assert m_blockingConsume.call_count == 3
 
     def test_blockingConsume_when_pika_raises_error(self):
