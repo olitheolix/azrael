@@ -88,6 +88,26 @@ class TestEventStore:
             m_setupRabbitMQ.side_effect = err
             assert not es.connect().ok
 
+    def test_disconnect(self):
+        # Get an EventStore instance.
+        es = eventstore.EventStore(topics=['#'])
+
+        # Must do nothing when es.rmq is None.
+        es.rmq = None
+        assert es.disconnect() == (True, None, None)
+
+        # Specify RabbitMQ handles.
+        m_chan = mock.MagicMock()
+        m_conn = mock.MagicMock()
+        es.rmq = {'chan': m_chan, 'conn': m_conn}
+        
+        # This time, 'disconnect' must call the close methods on the RabbitMQ
+        # channel and connection, respectively.
+        assert es.disconnect() == (True, None, None)
+        m_chan.close.call_count == 1
+        m_conn.close.call_count == 1
+        assert es.rmq is None
+        
     @mock.patch.object(eventstore.EventStore, '_blockingConsumePika')
     def test_blockingConsume_not_yet_connected(self, m__blockingConsumePika):
         """
@@ -112,8 +132,9 @@ class TestEventStore:
         assert m__blockingConsumePika.call_count == 1
 
     @mock.patch.object(eventstore.EventStore, 'connect')
+    @mock.patch.object(eventstore.EventStore, 'disconnect')
     @mock.patch.object(eventstore.EventStore, 'blockingConsume')
-    def test_run_auto_connect(self, m_blockingConsume, m_connect):
+    def test_run_auto_connect(self, m_blockingConsume, m_disconnect, m_connect):
         # Get an EventStore instance.
         es = eventstore.EventStore(topics=['#'])
 
@@ -128,9 +149,9 @@ class TestEventStore:
         # 'run' must call the 'connect' method whenever an error has occurred,
         # and exit once 'blockingConsume' returns without error (this
         # constitutes terminating the thread).
-        assert m_connect.call_count == 0
         es.run()
         assert m_connect.call_count == 2
+        assert m_diconnect.call_count == 2
         assert m_blockingConsume.call_count == 3
 
     def test_blockingConsume_when_pika_raises_error(self):

@@ -99,6 +99,27 @@ class EventStore(threading.Thread):
         self.rmq = ret.data
         return RetVal(True, None, None)
 
+    def disconnect(self):
+        """
+        Close any open RabbitMQ connections.
+        """
+        # Return immediately if have no connection handles.
+        if self.rmq is None:
+            return RetVal(True, None, None)
+
+        # Close first the channel and then the connection. Ignore any errors.
+        for name in ['chan', 'conn']:
+            try:
+                self.rmq[name].close()
+            except (pika.exceptions.ChannelClosed,
+                    pika.exceptions.ChannelError,
+                    pika.exceptions.ConnectionClosed):
+                pass
+
+        # Remove the handles.
+        self.rmq = None
+        return RetVal(True, None, None)
+
     def setupRabbitMQ(self):
         """
         fixme: docu
