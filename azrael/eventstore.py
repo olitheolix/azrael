@@ -269,6 +269,7 @@ class EventStore(threading.Thread):
     def run(self):
         retries = 0
         while not self.blockingConsume().ok:
+            self.disconnect()
             self.connect()
             retries += 1
             assert retries < 20

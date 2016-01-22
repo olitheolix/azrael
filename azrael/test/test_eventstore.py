@@ -151,7 +151,7 @@ class TestEventStore:
         # constitutes terminating the thread).
         es.run()
         assert m_connect.call_count == 2
-        assert m_diconnect.call_count == 2
+        assert m_disconnect.call_count == 2
         assert m_blockingConsume.call_count == 3
 
     def test_blockingConsume_when_pika_raises_error(self):
