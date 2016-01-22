@@ -254,15 +254,34 @@ class TestIntegrationEventStore:
     def teardown_method(self, method):
         pass
 
+    def createEventStoreClients(self, num_clients: int, topics: list):
+        """
+        Return a of connected EventStore clients.
+
+        The list will contain `num_client` thread handles.
+
+        This method does not return until all threads have successfully
+        established a connection to RabbitMQ.
+        """
+        # Spawn the threads.
+        es = [eventstore.EventStore(topics=topics) for _ in range(3)]
+        [_.start() for _ in es]
+
+        # Wait until each thread updated its 'rmq' attribute.
+        while True:
+            if len([_.rmq for _ in es if _.rmq is None]) == 0:
+                return es
+            time.sleep(0.5)
+            print('waiting')
+
     def test_shutdown(self):
         """
         Verify that the EventStore threads shut down properly. Threads must be
         cooperative in this regard because Python lacks the mechanism to
         forcefully terminate them.
         """
-        # Create one EventStore instance and subscribed it to all topics.
-        es = eventstore.EventStore(topics=['#'])
-        es.start()
+        # Create an EventStore instance and subscribe it to all topics.
+        es = self.createEventStoreClients(num_clients=1, topics=['#'])[0]
 
         # Tell the thread to stop. Wait at most one Second, then verify it has
         # really stopped.
@@ -285,9 +304,8 @@ class TestIntegrationEventStore:
         Create an EventStore instance that listens for all messages. Then
         publish some messages and verify they arrive as expected.
         """
-        # Create an EventStore instance and subscribe it to all messages.
-        es = eventstore.EventStore(topics=['#'])
-        es.start()
+        # Create an EventStore instance and subscribe it to all topics.
+        es = self.createEventStoreClients(num_clients=1, topics=['#'])[0]
 
         # Create a dedicated publisher instance because the class does not play
         # nice when called from different threads.
@@ -331,8 +349,7 @@ class TestIntegrationEventStore:
         receive two messages.
         """
         # Create an EventStore instance and subscribe it to the 'foo' topic.
-        es = eventstore.EventStore(topics=['foo'])
-        es.start()
+        es = self.createEventStoreClients(num_clients=1, topics=['foo'])[0]
 
         # No messages must have arrived yet.
         assert es.getMessages() == (True, None, [])
@@ -371,8 +388,7 @@ class TestIntegrationEventStore:
         Create several listeners and verify they all receive the message.
         """
         # Start several event store threads and subscribe them to 'foo'.
-        es = [eventstore.EventStore(topics=['foo']) for _ in range(3)]
-        [_.start() for _ in es]
+        es = self.createEventStoreClients(num_clients=3, topics=['foo'])
 
         # Create a dedicated publisher instance because the class does not play
         # nice when called from different threads.
@@ -409,8 +425,7 @@ class TestIntegrationEventStore:
         Subscribe two multiple topics at once.
         """
         # Create an EventStore instance and subscribe it to all messages.
-        es = eventstore.EventStore(topics=['foo', 'bar'])
-        es.start()
+        es = self.createEventStoreClients(num_clients=1, topics=['foo', 'bar'])[0]
 
         # Create a dedicated publisher instance because the class does not play
         # nice when called from different threads.
