@@ -205,6 +205,20 @@ class EventStore(threading.Thread):
         )
         return RetVal(True, None, None)
 
+    def _blockingConsumePika(self):
+        """
+        Pika specific portion of `blockingConsume`.
+        """
+        # Install timeout callback.
+        self.rmq['conn'].add_timeout(self._timeout, self._onTimeout)
+
+        # Install message callback for the subscribed keys.
+        self.rmq['chan'].basic_consume(
+            self._onMessage,
+            queue=self.rmq['name_queue'], no_ack=False
+        )
+        self.rmq['chan'].start_consuming()
+
     def blockingConsume(self):
         """
         Connect to RabbitMQ and commence the message consumption.
@@ -216,32 +230,24 @@ class EventStore(threading.Thread):
         scenarios where it does return is if an exception is thrown or one of
         the callbacks explicitly terminates the event loop.
         """
-        # Install timeout callback.
-        self.rmq['conn'].add_timeout(self._timeout, self._onTimeout)
-
-        # Install message callback for the subscribed keys.
-        self.rmq['chan'].basic_consume(
-            self._onMessage,
-            queue=self.rmq['name_queue'], no_ack=False
-        )
+        if self.rmq is None:
+            return RetVal(False, 'Not yet connected', None)
 
         # Commence Pika's event loop. This will block indefinitely. To stop it,
         # another thread must call the 'stop' method.
-        ret = RetVal(True, None, None)
         try:
-            self.rmq['chan'].start_consuming()
-            self.rmq['chan'].close()
-            self.rmq['conn'].close()
+            self._blockingConsumePika()
+            return RetVal(True, None, None)
         except pika.exceptions.ChannelClosed:
-            ret = RetVal(False, 'Channel Closed', None)
+            return RetVal(False, 'Channel Closed', None)
         except pika.exceptions.ChannelError:
-            ret = RetVal(False, 'Channel Error', None)
+            return RetVal(False, 'Channel Error', None)
         except pika.exceptions.ConnectionClosed:
-            ret = RetVal(False, 'Connection Closed', None)
-        finally:
-            self.rmq['chan'] = None
-            self.rmq['conn'] = None
-        return ret
+            return RetVal(False, 'Connection Closed', None)
 
     def run(self):
-        self.blockingConsume()
+        retries = 0
+        while not self.blockingConsume().ok:
+            self.connect()
+            retries += 1
+            assert retries < 20

@@ -88,6 +88,51 @@ class TestEventStore:
             m_setupRabbitMQ.side_effect = err
             assert not es.connect().ok
 
+    @mock.patch.object(eventstore.EventStore, '_blockingConsumePika')
+    def test_blockingConsume_not_yet_connected(self, m__blockingConsumePika):
+        """
+        Our 'blockingConsume' function must automatically connect to RabbitMQ
+        unless the connection already exists.
+        """
+        # Get an EventStore instance.
+        es = eventstore.EventStore(topics=['#'])
+
+        # 'blockingConsume' must return with an error if no RabbitMQ handles
+        # are available.
+        assert es.rmq is None
+        assert m__blockingConsumePika.call_count == 0
+        assert es.blockingConsume() == (False, 'Not yet connected', None)
+        assert m__blockingConsumePika.call_count == 0
+
+        # 'blockingConsume' must call the Pika handler if handles are available
+        es.rmq = {'foo': 'bar'}
+        m__blockingConsumePika.return_value = RetVal(True, None, None)
+        assert m__blockingConsumePika.call_count == 0
+        assert es.blockingConsume().ok
+        assert m__blockingConsumePika.call_count == 1
+
+    @mock.patch.object(eventstore.EventStore, 'connect')
+    @mock.patch.object(eventstore.EventStore, 'blockingConsume')
+    def test_run_auto_connect(self, m_blockingConsume, m_connect):
+        # Get an EventStore instance.
+        es = eventstore.EventStore(topics=['#'])
+
+        # 'blockingConsume' will return an error the first two times, and no
+        # error the last time.
+        m_blockingConsume.side_effect = [
+            RetVal(False, None, None),
+            RetVal(False, None, None),
+            RetVal(True, None, None)
+        ]
+
+        # 'run' must call the 'connect' method whenever an error has occurred,
+        # and exit once 'blockingConsume' returns without error (this
+        # constitutes terminating the thread).
+        assert m_connect.call_count == 0
+        es.run()
+        assert m_connect.call_count == 2
+        assert m_blockingConsume.call_count == 3
+
     def test_blockingConsume_when_pika_raises_error(self):
         """
         Creat mocked Pika handles and let 'start_consume' raise an error. Our
