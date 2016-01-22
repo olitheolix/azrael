@@ -176,6 +176,64 @@ class TestUnitEventStore:
             es.rmq = {'chan': m_chan, 'conn': mock.MagicMock(), 'name_queue': 'foo'}
             assert not es.blockingConsume().ok
 
+    @mock.patch.object(eventstore.EventStore, 'connect')
+    def test_publish_raises_no_error(self, m_connect):
+        # Get an EventStore instance.
+        es = eventstore.EventStore(topics=['#'])
+
+        # Side effect function for the mock (see below).
+        m_chan = mock.MagicMock()
+        rmq_mock_handles = {
+            'chan': m_chan, 'conn': mock.MagicMock(),
+            'name_queue': 'foo', 'name_exchange': 'foo'
+        }
+        def side_effect_fun():
+            es.rmq = rmq_mock_handles
+
+        # We expect the mocked 'connect' function to return success and install
+        # the 'rmq' instance variable.
+        m_connect.side_effect = side_effect_fun
+        m_connect.return_value = RetVal(True, None, None)
+
+        # Publish one message when no connection has been established yet.
+        assert es.rmq is None
+        assert m_chan.basic_publish.call_count == 0
+        assert m_connect.call_count == 0
+        assert es.publish(topic='foo', msg=b'bar') == (True, None, None)
+        assert m_connect.call_count == 1
+        assert m_chan.basic_publish.call_count == 1
+
+        # Publish one message when the connection has already been established.
+        es.rmq = rmq_mock_handles
+        m_chan.reset_mock()
+        m_connect.reset_mock()
+        m_connect.return_value = RetVal(True, None, None)
+        assert m_chan.basic_publish.call_count == 0
+        assert m_connect.call_count == 0
+        assert es.publish(topic='foo', msg=b'bar') == (True, None, None)
+        assert m_connect.call_count == 0
+        assert m_chan.basic_publish.call_count == 1
+
+    def test_publish_raises_errors(self):
+        """
+        Our 'publish' method must safely intercept all errors raised by Pika's
+        'basic_publish' method.
+        """
+        # Define possible exceptions.
+        possible_exceptions = [
+            pika.exceptions.ChannelClosed,
+            pika.exceptions.ChannelError,
+            pika.exceptions.ConnectionClosed,
+        ]
+
+        # Verify that each error is intercepted.
+        for err in possible_exceptions:
+            es = eventstore.EventStore(topics=['#'])
+            m_chan = mock.MagicMock()
+            m_chan.basic_publish.side_effect = err
+            es.rmq = {'chan': m_chan, 'conn': mock.MagicMock(), 'name_exchange': 'foo'}
+            assert not es.publish(topic='foo', msg=b'bar').ok
+
 
 class TestIntegrationEventStore:
     @classmethod

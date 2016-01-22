@@ -220,14 +220,30 @@ class EventStore(threading.Thread):
         The ``topic`` must be a '.' delimited string, for instance
         'foo.bar.something'.
 
+        This method will automatically connect to RabbitMQ if the connect does
+        not yet exist. However, it will not attempt to retransmit a message if
+        an error has occurred.
+
         :param str topic: topic string
         :param bytes msg: message to publish.
         """
-        self.rmq['chan'].basic_publish(
-            exchange=self.rmq['name_exchange'],
-            routing_key=topic,
-            body=msg,
-        )
+        # Connect to RabbitMQ if not already connected.
+        if self.rmq is None:
+            self.connect()
+
+        # Publish the message and intercept possible errors.
+        try:
+            self.rmq['chan'].basic_publish(
+                exchange=self.rmq['name_exchange'],
+                routing_key=topic,
+                body=msg,
+            )
+        except pika.exceptions.ChannelClosed:
+            return RetVal(False, 'Channel Closed', None)
+        except pika.exceptions.ChannelError:
+            return RetVal(False, 'Channel Error', None)
+        except pika.exceptions.ConnectionClosed:
+            return RetVal(False, 'Connection Closed', None)
         return RetVal(True, None, None)
 
     def _blockingConsumePika(self):
