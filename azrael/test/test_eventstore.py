@@ -19,6 +19,7 @@ import time
 import pika
 import pytest
 import unittest.mock as mock
+from azrael.aztypes import RetVal
 
 from IPython import embed as ipshell
 import azrael.eventstore as eventstore
@@ -39,7 +40,59 @@ class TestEventStore:
     def teardown_method(self, method):
         pass
 
-    def test_connection_closed_error(self):
+    @mock.patch.object(eventstore.EventStore, 'setupRabbitMQ')
+    def test_connect_when_setupRabbitMQ_does_not_raise(self, m_setupRabbitMQ):
+        """
+        Handle the return values of setupRabbitMQ correctly when it does not
+        raise any exceptions.
+        """
+        # Constructor must set 'rmq' to None and not connect to RabbitMQ.
+        es = eventstore.EventStore(topics=['#'])
+        assert es.rmq is None
+        assert m_setupRabbitMQ.call_count == 0
+
+        # If the 'rmq' is not None then setupRabbitMQ must not be called.
+        es.rmq = {'x': 'y'}
+        assert m_setupRabbitMQ.call_count == 0
+        assert es.connect() == (True, None, None)
+        assert m_setupRabbitMQ.call_count == 0
+        assert es.rmq == {'x': 'y'}
+
+        # If the 'rmq' is None then setupRabbitMQ must be called and its return
+        # value stored in the 'rmq' instance variable.
+        es.rmq = None
+        m_setupRabbitMQ.reset_mock()
+        m_setupRabbitMQ.return_value = RetVal(True, None, {'foo': 'bar'})
+        assert m_setupRabbitMQ.call_count == 0
+        assert es.connect() == (True, None, None)
+        assert m_setupRabbitMQ.call_count == 1
+        assert es.rmq == {'foo': 'bar'}
+
+    @mock.patch.object(eventstore.EventStore, 'setupRabbitMQ')
+    def test_connect_when_setupRabbitMQ_raises_exception(self, m_setupRabbitMQ):
+        """
+        SetupRabbitMQ raises an error. Our 'setup' method must intercept them
+        and return an error.
+        """
+        # Define possible exceptions.
+        possible_exceptions = [
+            pika.exceptions.ChannelClosed,
+            pika.exceptions.ChannelError,
+            pika.exceptions.ConnectionClosed,
+        ]
+
+        # Verify that each error is intercepted.
+        for err in possible_exceptions:
+            es = eventstore.EventStore(topics=['#'])
+            m_setupRabbitMQ.mock_reset()
+            m_setupRabbitMQ.side_effect = err
+            assert not es.connect().ok
+
+    def test_blockingConsume_when_pika_raises_error(self):
+        """
+        Creat mocked Pika handles and let 'start_consume' raise an error. Our
+        own 'blockingConsume' must safely intercept the error.
+        """
         # Create one EventStore instance and subscribed it to all topics.
         possible_exceptions = [
             pika.exceptions.ChannelClosed,
@@ -56,16 +109,6 @@ class TestEventStore:
             m_chan.start_consuming.side_effect = err
             es.rmq = {'chan': m_chan, 'conn': mock.MagicMock(), 'name_queue': 'foo'}
             assert not es.blockingConsume().ok
-
-    @mock.patch.object(eventstore.EventStore, 'setupRabbitMQ')
-    def test_ctor(self, m_setupRabbitMQ):
-        return
-        # Create one EventStore instance and subscribed it to all topics.
-        m_setupRabbitMQ.return_value = 'foo'
-        assert m_setupRabbitMQ.call_count == 0
-        es = eventstore.EventStore(topics=['#'])
-        assert m_setupRabbitMQ.call_count == 1
-        assert es.rmq == 'foo'
 
     def test_shutdown(self):
         """

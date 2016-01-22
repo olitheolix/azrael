@@ -51,15 +51,15 @@ class EventStore(threading.Thread):
     def __init__(self, topics: (tuple, list)):
         super().__init__(daemon=True)
 
-        # Create an empty message list.
+        # Store the topics we want to subscribe to.
+        self.topics = topics
+
+        # Buffer for received messages is initially empty.
         self.messages = []
 
-        # This thread will periodically chack this flag and terminate once it
-        # is True.
+        # We will periodically check this flag and terminate the thread once it
+        # changes its value to True.
         self._terminate = False
-
-        # Event parameters.
-        self.topics = topics
 
         # Specify polling timeout. Smaller values make the class more
         # responsive in the event of a shutdown. However, smaller values also
@@ -67,56 +67,49 @@ class EventStore(threading.Thread):
         # thread.
         self._timeout = 0.2
 
-        # Setup the RabbitMQ exchange.
-        self.setupRabbitMQ()
+        # We do not connect to RabbitMQ in the ctor (see `connect` method).
+        self.rmq = None
 
     def __del__(self):
         """
         Attempt to shut down cleanly.
         """
-        if self.is_alive():
-            # Thread is still running. Stop and join. This may block
-            # indefinitely.
-            self.stop()
-            self.join()
+        pass
 
-        # Close the channel if it is still open.
-        if self.rmq['chan'] is not None:
-            try:
-                self.rmq['chan'].close()
-            except pika.exceptions.ChannelClosed:
-                pass
-            self.rmq['chan'] = None
+    def connect(self):
+        # Do nothing if we still have connection handles (use the `disconnect`
+        # method to close the connection first).
+        if self.rmq is not None:
+            return RetVal(True, None, None)
 
-        # Close the connection to RabbitMQ if it is still open.
-        if self.rmq['conn'] is not None:
-            try:
-                self.rmq['conn'].close()
-            except pika.exceptions.ConnectionClosed:
-                pass
-            self.rmq['conn'] = None
+        # Connect to RabbitMQ and intercept any Pika exceptions.
+        try:
+            ret = self.setupRabbitMQ()
+        except (pika.exceptions.ConnectionClosed,
+                pika.exceptions.ChannelClosed,
+                pika.exceptions.ChannelError):
+            ret = RetVal(False, 'Pika error', None)
+
+        # Return any errors verbatim.
+        if not ret.ok:
+            return ret
+
+        # Connection to RabbitMQ was successful - store the connection
+        # parameters in 'rmq'.
+        self.rmq = ret.data
+        return RetVal(True, None, None)
 
     def setupRabbitMQ(self):
         """
         fixme: docu
         """
+        # Connect to the specified exchange of RabbitMQ.
         exchange_name = 'azevents'
         conn_param = pika.ConnectionParameters(
             host=config.azService['rabbitmq'].ip,
             port=config.azService['rabbitmq'].port,
         )
-
-        # Connect to RabbitMQ. Raise a generic RunTime error if that is not
-        # possible. This is a band-aid solution for now since I am still unsure
-        # how to handle connection errors in general. Wrapping every call to
-        # the EventStore in a try/except block seems inelegant.
-        try:
-            conn = pika.BlockingConnection(conn_param)
-        except (pika.exceptions.ConnectionClosed,
-                pika.exceptions.ChannelClosed,
-                pika.exceptions.IncompatibleProtocolError):
-            chan = conn = None
-            raise RuntimeError
+        conn = pika.BlockingConnection(conn_param)
 
         # Create and configure the channel. All deliveries must be confirmed.
         chan = conn.channel()
@@ -137,12 +130,13 @@ class EventStore(threading.Thread):
 
         # Gather all RabbitMQ handles in a single dictionary and store it in an
         # instance variable.
-        self.rmq = {
+        handles = {
             'conn': conn,
             'chan': chan,
             'name_queue': queue_name,
             'name_exchange': exchange_name
         }
+        return RetVal(True, None, handles)
 
     def onMessage(self):
         """
