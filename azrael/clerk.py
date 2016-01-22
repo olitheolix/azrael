@@ -228,7 +228,7 @@ class Clerk(config.AzraelProcess):
             msg_st = msg + '\n' + ''.join(msg_st)
 
             # Log the error message with stack trace. However, only
-            # the basic error message to the client.
+            # send the basic error message to the client.
             self.logit.error(msg_st)
             ret = RetVal(False, msg, None)
             self.returnToClient(self.last_addr, ret, addToLog=False)
@@ -245,7 +245,7 @@ class Clerk(config.AzraelProcess):
         # Call `run` method of `AzraelProcess` base class.
         super().run()
 
-        # Initialise ZeroMQ and create the command socket. All client request
+        # Initialise ZeroMQ and create the command socket. All client requests
         # will come through this socket.
         addr = 'tcp://{}:{}'.format('*', config.azService['clerk'].port)
         self.logit.info('Attempt to bind <{}>'.format(addr))
