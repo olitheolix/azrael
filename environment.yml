@@ -1,4 +1,6 @@
 name: azrael
+channels:
+- olitheolix
 dependencies:
 - alabaster=0.7.6=py35_0
 - assimp=azrael=py35_1

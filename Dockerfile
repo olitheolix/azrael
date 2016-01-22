@@ -16,7 +16,6 @@ WORKDIR /azrael
 
 # Setup the Anaconda environment for Azrael.
 RUN apt-get install -y build-essential \
-    && conda config --add channels olitheolix \
     && conda env create --name azrael --file environment_docker.yml \
     && conda clean -p -s -t -y \
     && apt-get remove -y build-essential \

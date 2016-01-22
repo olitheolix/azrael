@@ -1,4 +1,6 @@
 name: azrael_docker
+channels:
+- olitheolix
 dependencies:
 - assimp=azrael=py35_1
 - azbullet=1.0=py35_1
