@@ -202,27 +202,6 @@ class TestEventStore:
             assert not thread.is_alive()
         del threads
 
-    def test_destructor(self):
-        """
-        The destructor must clean up properly, irrespective of whether the
-        thread never ran, is still running, or has been stopped already.
-        """
-        # Test destructor: unstarted thread.
-        es = eventstore.EventStore(topics=['#'])
-        es.__del__()
-
-        # Test destructor: started thread.
-        es = eventstore.EventStore(topics=['#'])
-        es.start()
-        es.__del__()
-
-        # Test destructor: stopped thread.
-        es = eventstore.EventStore(topics=['#'])
-        es.start()
-        es.stop()
-        es.join()
-        es.__del__()
-
     def test_basic_publishing(self):
         """
         Create an EventStore instance that listens for all messages. Then

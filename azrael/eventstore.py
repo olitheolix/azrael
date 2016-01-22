@@ -75,7 +75,8 @@ class EventStore(threading.Thread):
         """
         Attempt to shut down cleanly.
         """
-        pass
+        self.stop()
+        self.disconnect()
 
     def connect(self):
         # Do nothing if we still have connection handles (use the `disconnect`
@@ -194,6 +195,8 @@ class EventStore(threading.Thread):
     def stop(self):
         """
         Signal the thread to terminate itself.
+
+        fixme: add a timeout and automatically join here?
         """
         self._terminate = True
 
