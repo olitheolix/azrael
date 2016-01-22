@@ -47,7 +47,7 @@ class Dibbler:
     """
     def __init__(self):
         # Create a GridFS handle.
-        db = config.getMongoClient()['AzraelGridDB']
+        db = config.getMongoClient(timeout=1.0)['AzraelGridDB']
         self.fs = gridfs.GridFS(db)
 
         # Create a Class-specific logger.
