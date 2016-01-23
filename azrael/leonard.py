@@ -974,7 +974,12 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # Close the Leonard <---> Worker socket.
         if self.sock is not None:
             addr = 'tcp://{}:{}'.format('*', config.azService['leonard'].port)
-            self.sock.unbind(addr)
+            try:
+                self.sock.unbind(addr)
+            except zmq.error.ZMQError:
+                # This is to mask a bug in ZeroMQ where the 'unbind' method
+                # does not accept the '*' wildcard.
+                pass
             del addr
             self.sock.close(linger=100)
 
