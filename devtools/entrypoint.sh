@@ -28,9 +28,9 @@ if [ -z $1 ]; then
 fi
 
 # Activate the Anaconda environment.
-source activate azrael
+source /opt/conda/bin/activate azrael
 
-# Select the demo or run a custom command.
+# Start the specified demo or run a custom command.
 case "$1" in
     forcegrid)
         CMD="demo_forcegrid.py --noviewer --reset=30 --cubes=3,3,1 --linear=1 --circular=1"
