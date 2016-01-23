@@ -17,6 +17,7 @@
 
 import os
 import sys
+import signal
 import multiprocessing
 
 # Use 'fork' system call to create new processes.
@@ -31,3 +32,11 @@ del tmp
 import azrael.startup
 azrael.startup.waitForDatabases(timeout=60)
 azrael.startup.waitForEventStore(timeout=6)
+
+
+# Intercept SIGTERM. Docker sends this signal when it wants to shut down
+# containers.
+def sighandler(signum, frame):
+    print('Azrael intercepted SIGTERM - exiting gracefully now.')
+    sys.exit(0)
+signal.signal(signal.SIGTERM, sighandler)
