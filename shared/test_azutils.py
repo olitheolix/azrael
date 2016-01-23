@@ -85,11 +85,11 @@ class TestClerk:
 
         ret = azutils.getAzraelServiceHosts(etchosts=None)
         assert ret == {
-            'clerk': ('localhost', 5555),
-            'database': ('localhost', 27017),
-            'rabbitmq': ('localhost', 5672),
-            'webapi': ('localhost', 8080),
-            'leonard': ('localhost', 5556),
+            'clerk': ('127.0.0.1', 5555),
+            'database': ('127.0.0.1', 27017),
+            'rabbitmq': ('127.0.0.1', 5672),
+            'webapi': ('127.0.0.1', 8080),
+            'leonard': ('127.0.0.1', 5556),
         }
         m_getenv.assert_called_with('INSIDEDOCKER', None)
 
@@ -101,15 +101,15 @@ class TestClerk:
         called 'Leonard' (not case sensitive).
         """
         default_services = {
-            'clerk': ('localhost', 5555),
-            'database': ('localhost', 27017),
-            'leonard': ('localhost', 5556),
-            'rabbitmq': ('localhost', 5672),
-            'webapi': ('localhost', 8080),
+            'clerk': ('127.0.0.1', 5555),
+            'database': ('127.0.0.1', 27017),
+            'leonard': ('127.0.0.1', 5556),
+            'rabbitmq': ('127.0.0.1', 5672),
+            'webapi': ('127.0.0.1', 8080),
         }
 
         # Make getAzraelServiceHosts believe we are outside a container. In
-        # that case all services are assumed to run on 'localhost'.
+        # that case all services are assumed to run on localhost.
         m_isInsideDocker.return_value = False
         assert m_isInsideDocker.call_count == 0
         ret = azutils.getAzraelServiceHosts(etchosts=None)
@@ -147,9 +147,9 @@ class TestClerk:
 
         assert ret == {
             'clerk': ('127.0.1.4', 5555),
-            'database': ('localhost', 27017),
-            'leonard': ('localhost', 5556),
-            'rabbitmq': ('localhost', 5672),
+            'database': ('127.0.0.1', 27017),
+            'leonard': ('127.0.0.1', 5556),
+            'rabbitmq': ('127.0.0.1', 5672),
             'webapi': ('127.0.1.3', 8080),
         }
 

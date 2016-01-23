@@ -256,18 +256,18 @@ def getAzraelServiceHosts(etchosts: str):
     same format.
 
     :param str etchosts: location of hosts file.
-    :return: dict eg {'clerk': ('localhost', 5555)}
+    :return: dict eg {'clerk': ('127.0.0.1', 5555)}
     """
     # Put the host/port into a named tuple.
     AddrPort = collections.namedtuple('AddrPort', 'ip port')
 
     # All services reside on the local host by default.
     hosts_default = {
-        'clerk': AddrPort('localhost', 5555),
-        'database': AddrPort('localhost', 27017),
-        'leonard': AddrPort('localhost', 5556),
-        'rabbitmq': AddrPort('localhost', 5672),
-        'webapi': AddrPort('localhost', 8080),
+        'clerk': AddrPort('127.0.0.1', 5555),
+        'database': AddrPort('127.0.0.1', 27017),
+        'leonard': AddrPort('127.0.0.1', 5556),
+        'rabbitmq': AddrPort('127.0.0.1', 5672),
+        'webapi': AddrPort('127.0.0.1', 8080),
     }
 
     # Return default service names if we are not in an Azrael container.
@@ -292,7 +292,7 @@ def getAzraelServiceHosts(etchosts: str):
     hosts_system = {k.lower(): v for (k, v) in hosts_system.items()}
 
     # If the host file contains an entry for any of the services Azrael has to
-    # offer then replace the derault ('localhost') with the entry from the
+    # offer then replace the derault ('127.0.0.1') with the entry from the
     # hosts file.
     hosts = {}
     for (name, (addr, port)) in hosts_default.items():
