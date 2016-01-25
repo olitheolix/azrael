@@ -36,7 +36,7 @@ case "$1" in
         CMD="demo_forcegrid.py --noviewer --reset=30 --cubes=3,3,1 --linear=1 --circular=1"
         ;;
     asteroids)
-        CMD="demo_asteroids.py --noviewer -N3"
+        CMD="demo_asteroids.py --noviewer -N=3 --reset-interval=60"
         ;;
     asteroidsplayer)
         CMD="ship_asteroids.py"
