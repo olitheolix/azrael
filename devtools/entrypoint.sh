@@ -42,7 +42,10 @@ case "$1" in
         CMD="ship_asteroids.py"
         ;;
     clerk)
-        exec python -c "import azrael.clerk; azrael.clerk.Clerk().run()"
+        exec python -c "import azrael.clerk;\
+                        import azrael.datastore;\
+                        azrael.datastore.init(flush=True);\
+                        azrael.clerk.Clerk().run()"
         ;;
     webapi)
         exec python -c "import azrael.web; azrael.web.WebServer().run()"
