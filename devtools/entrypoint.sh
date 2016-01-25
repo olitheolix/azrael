@@ -44,17 +44,29 @@ case "$1" in
     clerk)
         exec python -c "import azrael.clerk;\
                         import azrael.datastore;\
+                        import azrael.startup;\
+                        azrael.startup.waitForDatabases(timeout=60);\
+                        azrael.startup.waitForEventStore(timeout=60);\
                         azrael.datastore.init(flush=True);\
                         azrael.clerk.Clerk().run()"
         ;;
     webapi)
-        exec python -c "import azrael.web; azrael.web.WebServer().run()"
+        exec python -c "import azrael.web;\
+                        import azrael.startup;\
+                        azrael.datastore.init(flush=True);\
+                        azrael.web.WebServer().run()"
         ;;
     leonard)
-        exec python -c "import azrael.leonard; azrael.leonard.LeonardDistributedZeroMQ().run()"
+        exec python -c "import azrael.leonard;\
+                        import azrael.startup;\
+                        azrael.datastore.init(flush=True);\
+                        azrael.leonard.LeonardDistributedZeroMQ().run()"
         ;;
     info)
-        exec python -c "import azrael; import azutils; import pprint; pprint.pprint(azutils.getAzraelServiceHosts('/etc/hosts'))"
+        exec python -c "import pprint;\
+                        import azrael;\
+                        import azutils;\
+                        pprint.pprint(azutils.getAzraelServiceHosts('/etc/hosts'))"
         ;;
     *)
         exec $*
