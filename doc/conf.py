@@ -24,6 +24,7 @@ import sys
 sys.path.insert(0, '/usr/local/lib/python3.3/dist-packages/sphinxcontrib')
 sys.path.insert(0, os.path.abspath('./extensions/'))
 sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('../../'))
 
 # -- General configuration ------------------------------------------------
 

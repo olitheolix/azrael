@@ -1,8 +1,8 @@
 Azrael package
 ==============
 
-Submodules
-----------
+Core Modules
+++++++++++++
 
 azrael.bullet_api module
 ------------------------
@@ -93,14 +93,6 @@ azrael.aztypes module
     :show-inheritance:
 
 
-azrael.util module
-------------------
-
-.. automodule:: azrael.util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 azrael.vectorgrid module
 ------------------------
 
@@ -125,3 +117,18 @@ Module contents
     :members:
     :undoc-members:
     :show-inheritance:
+
+
+Auxiliary Modules
++++++++++++++++++
+These packages contain code currently shared by the demos and other scripts.
+
+
+azutils module
+--------------
+
+.. automodule:: azutils
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
