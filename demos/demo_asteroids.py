@@ -54,10 +54,134 @@ def parseCommandLine():
          help='Number of Asteroids to spawn (default=3)')
     padd('--loglevel', type=int, metavar='level', default=1,
          help='Specify error log level (0: Debug, 1:Info)')
+    padd('--reset-interval', type=int, metavar='T', default=None,
+         help='Reset simulation every T seconds (default: never/None)')
 
     # Run the parser.
     param = parser.parse_args()
     return param
+
+
+def getLargeAsteroidTemplate(hlen):
+    """
+    Return the template for a large asteroid.
+
+    A large asteroids consists of multiple 6 patched together cubes. Each cube
+    has a half length of ``hlen``.
+    """
+    def _randomise(scale, pos):
+        pos = scale * np.random.uniform(-1, 1, 3) + pos
+        return pos.tolist()
+
+    # Geometry and collision shape for a single cube.
+    vert, csmetabox = demolib.cubeGeometry(hlen, hlen, hlen)
+
+    # Define the positions of the individual cubes/fragments in that will
+    # constitute the Asteroid. The positions are slightly randomised to make the
+    # Asteroids somewhat irregular.
+    ofs = 1.5 * hlen
+    noise = 0.6
+    frag_src = {
+        'up': _randomise(noise, [0, ofs, 0]),
+        'down': _randomise(noise, [0, -ofs, 0]),
+        'left': _randomise(noise, [ofs, 0, 0]),
+        'right': _randomise(noise, [-ofs, 0, 0]),
+        'front': _randomise(noise, [0, 0, ofs]),
+        'back': _randomise(noise, [0, 0, -ofs]),
+    }
+    del ofs
+
+    # Patch together the fragments that will constitute the geometry of a
+    # single large Asteroid. While at it, also create the individual collision
+    # shapes for each fragment (not part of the geometry but needed
+    # afterwards).
+    frags, cshapes = {}, {}
+    for name, pos in frag_src.items():
+        frags[name] = demolib.getFragMetaRaw(
+            vert=vert,
+            uv=[],
+            rgb=[],
+            scale=1,
+            pos=pos,
+            rot=[0, 0, 0, 1],
+        )
+
+        # Collision shape for this fragment.
+        cshapes[name] = csmetabox._replace(position=pos)
+        del name, pos
+    del frag_src
+
+    # Specify the physics of the overall bodies.
+    body = demolib.getRigidBody(
+        imass=0.01,
+        inertia=[3, 3, 3],
+        cshapes=cshapes,
+    )
+
+    # Return the completed Template.
+    return Template('Asteroid_large', body, frags, {}, {})
+
+
+def getSmallAsteroidTemplate(hlen):
+    """
+    Return the template for a small asteroid.
+
+    A small asteroid is merely a cube with half length ``hlen``.
+    """
+    vert, cshapes = demolib.cubeGeometry(hlen, hlen, hlen)
+
+    # Define the geometry of the Asteroids.
+    fm = demolib.getFragMetaRaw(
+        vert=vert,
+        uv=[],
+        rgb=[],
+        scale=1,
+        pos=(0, 0, 0),
+        rot=(0, 0, 0, 1)
+    )
+    frags = {'frag_1': fm}
+
+    # Define the physics parameters for the Asteroids.
+    body = demolib.getRigidBody(
+        imass=80,
+        inertia=[1, 1, 1],
+        cshapes={'cs': cshapes},
+    )
+
+    return Template('Asteroid_small', body, frags, {}, {})
+
+
+def addAsteroids(num_asteroids):
+    """
+    Spawn ``num_asteroids`` and return their IDs.
+
+    The initial position of the asteroids is always the same. Their initial
+    velocity vector is random.
+    """
+    # Connect to Azrael.
+    client = azrael.clerk.Clerk()
+
+    # Upload a template for large and small Asteroids.
+    assert client.addTemplates([
+        getLargeAsteroidTemplate(hlen=1.5),
+        getSmallAsteroidTemplate(hlen=0.5),
+    ]).ok
+
+    # Spawn the asteroids in fixed positions but random initial velocities.
+    asteroids = []
+    for ii in range(num_asteroids):
+        asteroids.append({
+            'templateID': 'Asteroid_large',
+            'rbs': {
+                'position': (-10 + ii * 10, -ii * 5, -20),
+                'velocityLin': list(np.random.uniform(-1, 1, 3)),
+                'velocityRot': list(np.random.uniform(-1, 1, 3)),
+            },
+            'custom': 'asteroid_large_{}'.format(ii),
+        })
+    ret = client.spawn(asteroids)
+    assert ret.ok
+    return tuple(ret.data)
 
 
 class Simulation(azrael.eventstore.EventStore):
@@ -65,18 +189,27 @@ class Simulation(azrael.eventstore.EventStore):
     Govern the simulation, keep score, split large Asteroids into smaller one
     upon impact.
     """
-    def __init__(self, viewer, asteroidIDs, *args, **kwargs):
+    def __init__(self, viewer, num_asteroids, reset_interval, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.client = azrael.clerk.Clerk()
+        # Store arguments.
         self.viewer = viewer
+        self.num_asteroids = num_asteroids
+        self.reset_interval = reset_interval
+        self.next_reset = reset_interval
+
+        # Connect to Azrael.
+        self.client = azrael.clerk.Clerk()
+
+        # IDs of all (small and large) asteroids.
+        self.asteroidsSmall = set()
+        self.asteroidsLarge = set()
+
+        # The scoreboard.
         self.scoreboard = {}
 
-        # Keep track of all the small and large asteroids.
-        self.asteroidsSmall = set()
-        self.asteroidsLarge = set(asteroidIDs)
-
-        self.reset_time = time.time() + 5
+        # Reset the simulation.
+        self.reset()
 
     def onMessage(self):
         """
@@ -192,24 +325,38 @@ class Simulation(azrael.eventstore.EventStore):
         Shut down the simulation when the user closes the viewer (if any was
         started with this simulation).
         """
+        # End the simulation if all asteroids have been destroyed.
         if self.asteroidsLarge == self.asteroidsSmall == set():
             print('Game finished')
             if self.viewer is not None:
                 self.viewer.terminate()
             self.rmq['chan'].stop_consuming()
 
+        # End the simulation if the viewer was closed (assuming there was one
+        # to begin with).
         if (self.viewer is not None) and (self.viewer.poll() is not None):
             self.rmq['chan'].stop_consuming()
 
-        if time.time() >= self.reset_time:
-            assert self.client.removeObjects(list(self.asteroidsLarge)).ok
-            assert self.client.removeObjects(list(self.asteroidsSmall)).ok
+        # Periodically reset the simulation.
+        if (self.next_reset is not None) and (time.time() >= self.next_reset):
+            self.reset()
 
-            self.asteroidsSmall = []
-            self.asteroidsLarge = addAsteroids(3)
-            self.reset_time = time.time() + 5
-            print('reset')
+    def reset(self):
+        """
+        Put the simulation in the default state.
+        """
+        # Delete all asteroids.
+        assert self.client.removeObjects(list(self.asteroidsLarge)).ok
+        assert self.client.removeObjects(list(self.asteroidsSmall)).ok
 
+        # Reset the scoreboard and reset timeout.
+        self.scoreboard = {}
+        if self.next_reset is not None:
+            self.next_reset = time.time() + self.reset_interval
+
+        # Repopulate the simulation with large asteroids.
+        self.asteroidsSmall = set()
+        self.asteroidsLarge = set(addAsteroids(self.num_asteroids))
 
     def run(self):
         """
@@ -223,129 +370,6 @@ class Simulation(azrael.eventstore.EventStore):
         print('Game aborted by user')
 
 
-def getLargeAsteroidTemplate(hlen):
-    """
-    Return the template for a large asteroid.
-
-    A large asteroids consists of multiple 6 patched together cubes. Each cube
-    has a half length of ``hlen``.
-    """
-    def _randomise(scale, pos):
-        pos = scale * np.random.uniform(-1, 1, 3) + pos
-        return pos.tolist()
-
-    # Geometry and collision shape for a single cube.
-    vert, csmetabox = demolib.cubeGeometry(hlen, hlen, hlen)
-
-    # Define the positions of the individual cubes/fragments in that will
-    # constitute the Asteroid. The positions are slightly randomised to make the
-    # Asteroids somewhat irregular.
-    ofs = 1.5 * hlen
-    noise = 0.6
-    frag_src = {
-        'up': _randomise(noise, [0, ofs, 0]),
-        'down': _randomise(noise, [0, -ofs, 0]),
-        'left': _randomise(noise, [ofs, 0, 0]),
-        'right': _randomise(noise, [-ofs, 0, 0]),
-        'front': _randomise(noise, [0, 0, ofs]),
-        'back': _randomise(noise, [0, 0, -ofs]),
-    }
-    del ofs
-
-    # Patch together the fragments that will constitute the geometry of a
-    # single large Asteroid. While at it, also create the individual collision
-    # shapes for each fragment (not part of the geometry but needed
-    # afterwards).
-    frags, cshapes = {}, {}
-    for name, pos in frag_src.items():
-        frags[name] = demolib.getFragMetaRaw(
-            vert=vert,
-            uv=[],
-            rgb=[],
-            scale=1,
-            pos=pos,
-            rot=[0, 0, 0, 1],
-        )
-
-        # Collision shape for this fragment.
-        cshapes[name] = csmetabox._replace(position=pos)
-        del name, pos
-    del frag_src
-
-    # Specify the physics of the overall bodies.
-    body = demolib.getRigidBody(
-        imass=0.01,
-        inertia=[3, 3, 3],
-        cshapes=cshapes,
-    )
-
-    # Return the completed Template.
-    return Template('Asteroid_large', body, frags, {}, {})
-
-
-def getSmallAsteroidTemplate(hlen):
-    """
-    Return the template for a small asteroid.
-
-    A small asteroid is merely a cube with half length ``hlen``.
-    """
-    vert, cshapes = demolib.cubeGeometry(hlen, hlen, hlen)
-
-    # Define the geometry of the Asteroids.
-    fm = demolib.getFragMetaRaw(
-        vert=vert,
-        uv=[],
-        rgb=[],
-        scale=1,
-        pos=(0, 0, 0),
-        rot=(0, 0, 0, 1)
-    )
-    frags = {'frag_1': fm}
-
-    # Define the physics parameters for the Asteroids.
-    body = demolib.getRigidBody(
-        imass=80,
-        inertia=[1, 1, 1],
-        cshapes={'cs': cshapes},
-    )
-
-    return Template('Asteroid_small', body, frags, {}, {})
-
-
-def addAsteroids(num_asteroids):
-    """
-    Spawn the initial set of ``num_asteroids`` and return their ID.
-
-    This function also defines the asteroid templates. The initial position of
-    the asteroids is always the same. However, their initial velocity vector is
-    random.
-    """
-    # Connect to Azrael.
-    client = azrael.clerk.Clerk()
-
-    # Upload a template for large and small Asteroids.
-    assert client.addTemplates([
-        getLargeAsteroidTemplate(hlen=1.5),
-        getSmallAsteroidTemplate(hlen=0.5),
-    ]).ok
-
-    # Spawn the asteroids in fixed positions but random initial velocities.
-    asteroids = []
-    for ii in range(num_asteroids):
-        asteroids.append({
-            'templateID': 'Asteroid_large',
-            'rbs': {
-                'position': (-10 + ii * 10, -ii * 5, -20),
-                'velocityLin': list(np.random.uniform(-1, 1, 3)),
-                'velocityRot': list(np.random.uniform(-1, 1, 3)),
-            },
-            'custom': 'asteroid_large_{}'.format(ii),
-        })
-    ret = client.spawn(asteroids)
-    assert ret.ok
-    return tuple(ret.data)
-
-
 def main():
     # Parse the command line.
     param = parseCommandLine()
@@ -355,11 +379,6 @@ def main():
     az.start()
     print('Azrael now live')
 
-    # Spawn the initial set of asteroids.
-    asteroidIDs = addAsteroids(num_asteroids=param.N)
-
-    print('Simulation setup complete')
-
     # Spawn the viewer.
     if param.noviewer:
         viewer = None
@@ -367,7 +386,7 @@ def main():
         viewer = demolib.launchQtViewer()
 
     # Start the games...
-    Simulation(viewer, asteroidIDs, topics=['#']).run()
+    Simulation(viewer, param.N, param.reset_interval, topics=['#']).run()
 
     # Stop Azrael stack.
     az.stop()
