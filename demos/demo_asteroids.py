@@ -76,6 +76,8 @@ class Simulation(azrael.eventstore.EventStore):
         self.asteroidsSmall = set()
         self.asteroidsLarge = set(asteroidIDs)
 
+        self.reset_time = time.time() + 5
+
     def onMessage(self):
         """
         If a projectile collided with an Asteroid that take action.
@@ -187,17 +189,27 @@ class Simulation(azrael.eventstore.EventStore):
 
     def onTimeout(self):
         """
-        Shut down the simulation when the user closes the viewer that was
-        started with this simulation.
+        Shut down the simulation when the user closes the viewer (if any was
+        started with this simulation).
         """
         if self.asteroidsLarge == self.asteroidsSmall == set():
             print('Game finished')
             if self.viewer is not None:
                 self.viewer.terminate()
-            self.chan.stop_consuming()
+            self.rmq['chan'].stop_consuming()
 
         if (self.viewer is not None) and (self.viewer.poll() is not None):
-            self.chan.stop_consuming()
+            self.rmq['chan'].stop_consuming()
+
+        if time.time() >= self.reset_time:
+            assert self.client.removeObjects(list(self.asteroidsLarge)).ok
+            assert self.client.removeObjects(list(self.asteroidsSmall)).ok
+
+            self.asteroidsSmall = []
+            self.asteroidsLarge = addAsteroids(3)
+            self.reset_time = time.time() + 5
+            print('reset')
+
 
     def run(self):
         """
@@ -343,7 +355,7 @@ def main():
     az.start()
     print('Azrael now live')
 
-    # Spawn the initial set of Asteroids.
+    # Spawn the initial set of asteroids.
     asteroidIDs = addAsteroids(num_asteroids=param.N)
 
     print('Simulation setup complete')
