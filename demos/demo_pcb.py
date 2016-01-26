@@ -184,7 +184,7 @@ class PyConBrisbaneClient():
         """
         # Send the update request to Azrael and check for errors.
         new = {self.shipID: {'position': pos, 'velocityLin': vel}}
-        ret = self.client.setRigidBodies(new)
+        ret = self.client.setRigidBodyData(new)
         if not ret.ok:
             print('Error setPosAndVel: ', ret.msg)
         return ret
@@ -394,7 +394,7 @@ def placeTarget(host, numTargets=1):
     cs = aztypes.CollShapeEmpty()
     cs = aztypes.CollShapeMeta('empty', (0, 0, 0), (0, 0, 0, 1), cs)
     cmd = {targetID: {'cshapes': {'cssphere': cs}} for targetID in targetIDs}
-    assert client.setRigidBodies(cmd).ok
+    assert client.setRigidBodyData(cmd).ok
     del cs
 
     # Tag the object with target. This is necessary because the
@@ -434,7 +434,7 @@ def placeTarget(host, numTargets=1):
             for targetID in targetIDs:
                 pos = 15 * np.random.rand(3) - 10
                 cmd[targetID] = {'position': pos.tolist()}
-            assert client.setRigidBodies(cmd).ok
+            assert client.setRigidBodyData(cmd).ok
         cnt += 1
 
 

@@ -444,9 +444,9 @@ class TestClerk:
         ret = clerk.getAllObjectIDs()
         assert (ret.ok, ret.data) == (True, [])
 
-    def test_getRigidBodies(self):
+    def test_getRigidBodyData(self):
         """
-        Test the 'getRigidBodies' command in the Clerk.
+        Test the 'getRigidBodyData' command in the Clerk.
         """
         # Test parameters and constants.
         objID_1 = '1'
@@ -459,11 +459,11 @@ class TestClerk:
         clerk = self.clerk
 
         # Retrieve all body states --> there must be none.
-        ret = clerk.getRigidBodies(None)
+        ret = clerk.getRigidBodyData(None)
         assert (ret.ok, ret.data) == (True, {})
 
         # Retrieve the bodies for a non-existing ID.
-        ret = clerk.getRigidBodies(['10'])
+        ret = clerk.getRigidBodyData(['10'])
         assert (ret.ok, ret.data) == (True, {'10': None})
 
         # Spawn a new object. Its AID must be objID_1.
@@ -486,14 +486,14 @@ class TestClerk:
 
         # Retrieve the body state for a non-existing ID --> must return None
         # for that body.
-        ret = clerk.getRigidBodies(['10'])
+        ret = clerk.getRigidBodyData(['10'])
         assert (ret.ok, ret.data) == (True, {'10': None})
 
         # Retrieve the body state for the existing objID_1.
-        ret = clerk.getRigidBodies([objID_1])
+        ret = clerk.getRigidBodyData([objID_1])
         assert (ret.ok, len(ret.data)) == (True, 1)
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
-        assert ret == clerk.getRigidBodies(None)
+        assert ret == clerk.getRigidBodyData(None)
 
         # Spawn a second object.
         ret = clerk.spawn([init_2])
@@ -501,18 +501,18 @@ class TestClerk:
 
         # Retrieve the state variables for both objects individually.
         for objID, ref_sv in zip([objID_1, objID_2], [body_1, body_2]):
-            ret = clerk.getRigidBodies([objID])
+            ret = clerk.getRigidBodyData([objID])
             assert (ret.ok, len(ret.data)) == (True, 1)
             assert RBS(*ret.data[objID]['rbs']) == ref_sv
 
         # Retrieve the state variables for both objects at once.
-        ret = clerk.getRigidBodies([objID_1, objID_2])
+        ret = clerk.getRigidBodyData([objID_1, objID_2])
         assert (ret.ok, len(ret.data)) == (True, 2)
         assert RBS(*ret.data[objID_1]['rbs']) == body_1
         assert RBS(*ret.data[objID_2]['rbs']) == body_2
 
         # Query all of them.
-        assert ret == clerk.getRigidBodies(None)
+        assert ret == clerk.getRigidBodyData(None)
 
     def test_getObjectStates(self):
         """
@@ -839,7 +839,7 @@ class TestClerk:
         del spawnedIDs
 
         # Query the state variables of the objects spawned by the factories.
-        ret = clerk.getRigidBodies([id_2, id_3])
+        ret = clerk.getRigidBodyData([id_2, id_3])
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Determine which body was spawned by which factory based on their
@@ -922,7 +922,7 @@ class TestClerk:
         assert ret.data == [objID_2, objID_3]
 
         # Query the state variables of the objects spawned by the factories.
-        ret = clerk.getRigidBodies([objID_2, objID_3])
+        ret = clerk.getRigidBodyData([objID_2, objID_3])
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Determine which body was spawned by which factory based on their
@@ -1044,7 +1044,7 @@ class TestClerk:
         del ret
 
         # Query the state variables of the objects spawned by the factories.
-        ret = clerk.getRigidBodies([objID_2, objID_3])
+        ret = clerk.getRigidBodyData([objID_2, objID_3])
         assert (ret.ok, len(ret.data)) == (True, 2)
 
         # Determine which body was spawned by which factory based on their
@@ -1389,7 +1389,7 @@ class TestClerk:
         assert clerk.setForce(id_a, [-10, 0, 0], [0, 0, 0]).ok
         leo.processCommandsAndSync()
         leo.step(1.0, 60)
-        ret = clerk.getRigidBodies([id_a, id_b])
+        ret = clerk.getRigidBodyData([id_a, id_b])
         assert ret.ok
         pos_a2 = ret.data[id_a]['rbs'].position
         pos_b2 = ret.data[id_b]['rbs'].position
@@ -1398,7 +1398,7 @@ class TestClerk:
         assert delta_a[0] < pos_a[0]
         assert np.allclose(delta_a, delta_b)
 
-    def test_setRigidBodies(self):
+    def test_setRigidBodyData(self):
         """
         Spawn an object and update its body attributes.
         """
@@ -1414,7 +1414,7 @@ class TestClerk:
         assert ret.ok and (ret.data == [id_1, id_2])
 
         # Verify that the initial body states are correct.
-        ret = clerk.getRigidBodies([id_1, id_2])
+        ret = clerk.getRigidBodyData([id_1, id_2])
         assert ret.ok
         ret_1 = ret.data[id_1]['rbs']
         ret_2 = ret.data[id_2]['rbs']
@@ -1430,12 +1430,12 @@ class TestClerk:
             'imass': 2,
             'scale': 3,
             'cshapes': {'cssphere': getCSBox()._asdict()}}
-        assert clerk.setRigidBodies({id_1: new_bs}).ok
+        assert clerk.setRigidBodyData({id_1: new_bs}).ok
 
         # Verify that the specified attributes for id_1 have changed, but the
         # other ones (in particular velocityLin because we overwrote it in the
         # spawn command) remained unaffected.
-        ret = clerk.getRigidBodies([id_1, id_2])
+        ret = clerk.getRigidBodyData([id_1, id_2])
         assert ret.ok
         ret_1 = ret.data[id_1]['rbs']
         ret_2 = ret.data[id_2]['rbs']
@@ -1458,7 +1458,7 @@ class TestClerk:
             'imass': 2,
             'scale': 3,
             'cshapes': {'cssphere': getCSSphere()._asdict()}}
-        assert not clerk.setRigidBodies({id_1: new_bs_2}).ok
+        assert not clerk.setRigidBodyData({id_1: new_bs_2}).ok
 
         # Attempt to update one valid and one invalid object. This must update
         # the valid object only.
@@ -1467,11 +1467,11 @@ class TestClerk:
             'imass': 3,
             'scale': 4,
             'cshapes': {'cssphere': getCSPlane()._asdict()}}
-        ret = clerk.setRigidBodies({id_2: new_bs_3, '10': new_bs_3})
+        ret = clerk.setRigidBodyData({id_2: new_bs_3, '10': new_bs_3})
         assert ret == (True, None, ['10'])
 
         # Verify that id_1 has the new attributes and id_2 remained unaffected.
-        ret = clerk.getRigidBodies([id_1, id_2])
+        ret = clerk.getRigidBodyData([id_1, id_2])
         assert ret.ok
         ret_1 = ret.data[id_1]['rbs']
         ret_2 = ret.data[id_2]['rbs']
@@ -1494,7 +1494,7 @@ class TestClerk:
         not collide with anything.
 
         This test creates the three test cases and verifies that
-        `Clerk.getRigidBodies' handles them correctly.
+        `Clerk.getRigidBodyData' handles them correctly.
         """
         # Create a Leonard and Clerk.
         leo = getLeonard(azrael.leonard.LeonardBullet)
@@ -1532,11 +1532,11 @@ class TestClerk:
             id_frag: new_bs_frag,
             id_none: new_bs_none,
         }
-        assert clerk.setRigidBodies(cmd).ok
+        assert clerk.setRigidBodyData(cmd).ok
 
         # Verify that all bodies are at their new positions.
         ret_os = clerk.getObjectStates([id_cs, id_frag, id_none])
-        ret_rb = clerk.getRigidBodies([id_cs, id_frag, id_none])
+        ret_rb = clerk.getRigidBodyData([id_cs, id_frag, id_none])
         assert ret_os.ok and ret_rb.ok
 
         r_os = ret_os.data
@@ -2367,19 +2367,19 @@ def test_invalid():
     assert ret == (False, 'Invalid command <blah>', None)
 
     # Correct command but 'data' is not a dictionary.
-    msg = json.dumps({'cmd': 'get_rigid_bodies', 'data': [1, 2]})
+    msg = json.dumps({'cmd': 'get_rigid_body_data', 'data': [1, 2]})
     assert not client.testSend(msg.encode('utf8')).ok
 
     # Correct command and payload type, correct 'data' type, but the keys do
     # not match the signature of 'Clerk.getTemplates'.
     data = {'blah': [1, 2]}
-    msg = json.dumps({'cmd': 'get_rigid_bodies', 'data': data})
+    msg = json.dumps({'cmd': 'get_rigid_body_data', 'data': data})
     assert not client.testSend(msg.encode('utf8')).ok
 
     # Correct command, correct payload type, correct payload content. This must
     # succeed.
     data = {'objIDs': ['1', '2']}
-    msg = json.dumps({'cmd': 'get_rigid_bodies', 'data': data})
+    msg = json.dumps({'cmd': 'get_rigid_body_data', 'data': data})
     assert client.testSend(msg.encode('utf8')).ok
 
     # Terminate the Clerk.

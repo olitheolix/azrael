@@ -164,9 +164,9 @@ class TestClerk:
         assert r['cmd_boosters'] == cmd_boosters
         assert r['cmd_factories'] == cmd_factories
 
-    def test_GetRigidBodies(self):
+    def test_GetRigidBodyData(self):
         """
-        Test codec for GetRigidBodies.
+        Test codec for GetRigidBodyData.
         """
         # Clerk --> Client.
         frag_states = {
@@ -185,7 +185,7 @@ class TestClerk:
         del frag_states
 
         # Encode source data and simulate wire transmission.
-        enc = protocol.FromClerk_GetRigidBodies_Encode(payload)
+        enc = protocol.FromClerk_GetRigidBodyData_Encode(payload)
         enc = json.loads(json.dumps(enc))
 
         # Verify that the rigid bodies survived the serialisation.

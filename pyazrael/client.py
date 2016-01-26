@@ -393,7 +393,7 @@ class Client():
         return self.serialiseAndSend('set_fragments', {'fragupdates': cmd})
 
     @typecheck
-    def getRigidBodies(self, objIDs: (str, list, tuple)):
+    def getRigidBodyData(self, objIDs: (str, list, tuple)):
         """
         Return the State Variables for all ``objIDs`` in a dictionary.
 
@@ -414,7 +414,7 @@ class Client():
 
         # Pass on the request to Clerk.
         payload = {'objIDs': objIDs}
-        ret = self.serialiseAndSend('get_rigid_bodies', payload)
+        ret = self.serialiseAndSend('get_rigid_body_data', payload)
         if not ret.ok:
             return ret
 
@@ -431,7 +431,7 @@ class Client():
         return ret._replace(data=out)
 
     @typecheck
-    def setRigidBodies(self, bodies: dict):
+    def setRigidBodyData(self, bodies: dict):
         """
         Overwrite the body data for all bodies specified in ``bodies``.
 
@@ -449,7 +449,7 @@ class Client():
                 }
 
         payload = {'bodies': bodies}
-        return self.serialiseAndSend('set_rigid_bodies', payload)
+        return self.serialiseAndSend('set_rigid_body_data', payload)
 
     @typecheck
     def getObjectStates(self, objIDs: (list, tuple, str)):

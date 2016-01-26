@@ -341,7 +341,7 @@ class TestClient:
 
         # Query the state variables for a non existing object.
         tmp_ID = '100'
-        assert client.getRigidBodies(tmp_ID) == (True, None, {tmp_ID: None})
+        assert client.getRigidBodyData(tmp_ID) == (True, None, {tmp_ID: None})
         del tmp_ID
 
         # Instruct Clerk to spawn a new object. Its objID must be '1'.
@@ -357,13 +357,13 @@ class TestClient:
 
         # The body parameters of the new object must match the inital state
         # (plus the tweaks provided to the spawn command).
-        ret = client.getRigidBodies(objID_1)
+        ret = client.getRigidBodyData(objID_1)
         assert ret.ok and (set(ret.data.keys()) == {objID_1})
         assert ret.data[objID_1]['rbs'].position == pos
         assert ret.data[objID_1]['rbs'].velocityLin == vlin
 
         # Same test but this time get all of them.
-        assert client.getRigidBodies(None) == ret
+        assert client.getRigidBodyData(None) == ret
 
         # Query just the state variables instead of the entire rigid body.
         assert client.getObjectStates(None) == client.getObjectStates([objID_1])
@@ -497,7 +497,7 @@ class TestClient:
         assert (ret.ok, ret.data) == (True, [id_2, id_3])
 
         # Query the state variables of the objects spawned by the factories.
-        ok, _, ret_SVs = client.getRigidBodies([id_2, id_3])
+        ok, _, ret_SVs = client.getRigidBodyData([id_2, id_3])
         assert (ok, len(ret_SVs)) == (True, 2)
 
         # Determine which body was spawned by which factory based on their
@@ -567,7 +567,7 @@ class TestClient:
         del temp, new_obj, ret
 
         # Query the rigid body and record the current 'version'.
-        ret = client.getRigidBodies(objID)
+        ret = client.getRigidBodyData(objID)
         assert ret.ok
         version = ret.data[objID]['rbs'].version
         del ret
@@ -651,7 +651,7 @@ class TestClient:
         del cmd_copy
 
         # The object must have received a new 'version'.
-        ret = client.getRigidBodies(objID)
+        ret = client.getRigidBodyData(objID)
         assert ret.ok and (ret.data[objID]['rbs'].version != version)
 
         # ---------------------------------------------------------------------
@@ -823,7 +823,7 @@ class TestClient:
 
             # Query the objects and put their positions into convenience
             # variables.
-            ret = client.getRigidBodies([id_1, id_2])
+            ret = client.getRigidBodyData([id_1, id_2])
             pos_a2 = ret.data[id_1]['rbs'].position
             pos_b2 = ret.data[id_2]['rbs'].position
 

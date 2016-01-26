@@ -121,14 +121,14 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_GetObjectStates_Decode,
                 self.getObjectStates,
                 protocol.FromClerk_GetObjectStates_Encode),
-            'get_rigid_bodies': (
-                protocol.ToClerk_GetRigidBodies_Decode,
-                self.getRigidBodies,
-                protocol.FromClerk_GetRigidBodies_Encode),
-            'set_rigid_bodies': (
-                protocol.ToClerk_SetRigidBodies_Decode,
-                self.setRigidBodies,
-                protocol.FromClerk_SetRigidBodies_Encode),
+            'get_rigid_body_data': (
+                protocol.ToClerk_GetRigidBodyData_Decode,
+                self.getRigidBodyData,
+                protocol.FromClerk_GetRigidBodyData_Encode),
+            'set_rigid_body_data': (
+                protocol.ToClerk_SetRigidBodyData_Decode,
+                self.setRigidBodyData,
+                protocol.FromClerk_SetRigidBodyData_Encode),
             'set_fragments': (
                 protocol.ToClerk_SetFragments_Decode,
                 self.setFragments,
@@ -885,7 +885,7 @@ class Clerk(config.AzraelProcess):
 
         # Fetch the SV for objID (we need this to determine the rotation of
         # the base object to which the parts are attached).
-        sv_parent = self.getRigidBodies([objID])
+        sv_parent = self.getRigidBodyData([objID])
         if not sv_parent.ok:
             msg = 'Could not retrieve body state for objID={}'.format(objID)
             self.logit.warning(msg)
@@ -1325,7 +1325,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, {'updated': updated})
 
     @typecheck
-    def getRigidBodies(self, objIDs: (list, tuple)):
+    def getRigidBodyData(self, objIDs: (list, tuple)):
         """
         Return the rigid body data for all ``objIDs`` in a dictionary.
 
@@ -1375,7 +1375,7 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, out)
 
     @typecheck
-    def setRigidBodies(self, bodies: dict):
+    def setRigidBodyData(self, bodies: dict):
         """
         Set the rigid body state of ``objID`` to ``body``.
 

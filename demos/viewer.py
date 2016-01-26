@@ -1031,7 +1031,7 @@ class ViewerWidget(QtOpenGL.QGLWidget):
         cs = CollShapeMeta('box', (0, 0, 0), (0, 0, 0, 1), cs)
         attr = {'position': pos.tolist(), 'cshapes': {'player': cs}}
         if self.show_player:
-            assert self.client.setRigidBodies({self.player_id: attr}).ok
+            assert self.client.setRigidBodyData({self.player_id: attr}).ok
         del cs
 
         # Do not update the camera rotation if the mouse is not grabbed.

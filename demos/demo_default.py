@@ -360,7 +360,7 @@ class ResetSim(multiprocessing.Process):
         # survive the reset.
         ret = client.getAllObjectIDs()
         assert ret.ok
-        ret = client.getRigidBodies(ret.data)
+        ret = client.getRigidBodyData(ret.data)
         assert ret.ok
         allowed_objIDs = {k: v['rbs'] for k, v in ret.data.items()
                           if v is not None}
@@ -392,7 +392,7 @@ class ResetSim(multiprocessing.Process):
                         'velocityLin': SV.velocityLin,
                         'velocityRot': SV.velocityRot,
                         'rotation': SV.rotation}
-                    assert client.setRigidBodies({objID: tmp}).ok
+                    assert client.setRigidBodyData({objID: tmp}).ok
                 time.sleep(0.1)
 
 

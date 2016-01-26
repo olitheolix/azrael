@@ -178,7 +178,7 @@ class CtrlBoosterCube():
         """
         # Send the update request to Azrael and check for errors.
         new = {self.shipID: {'position': pos, 'velocityLin': vel}}
-        ret = self.client.setRigidBodies(new)
+        ret = self.client.setRigidBodyData(new)
         if not ret.ok:
             print('Error setPosAndVel: ', ret.msg)
         return ret

@@ -239,30 +239,30 @@ def FromClerk_SetFragments_Encode(response):
 
 
 # ---------------------------------------------------------------------------
-# SetRigidBodies
+# SetRigidBodyData
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_SetRigidBodies_Decode(payload: dict):
+def ToClerk_SetRigidBodyData_Decode(payload: dict):
     return payload
 
 
 @typecheck
-def FromClerk_SetRigidBodies_Encode(dummyarg):
+def FromClerk_SetRigidBodyData_Encode(dummyarg):
     return None
 
 
 # ---------------------------------------------------------------------------
-# GetRigidBodies
+# GetRigidBodyData
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_GetRigidBodies_Decode(payload: dict):
+def ToClerk_GetRigidBodyData_Decode(payload: dict):
     return payload
 
 
 @typecheck
-def FromClerk_GetRigidBodies_Encode(payload: dict):
+def FromClerk_GetRigidBodyData_Encode(payload: dict):
     out = {}
     for objID, data in payload.items():
         if data is None:
