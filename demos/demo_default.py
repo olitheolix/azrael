@@ -334,7 +334,7 @@ def spawnCubes(numCols, numRows, numLayers, center=(0, 0, 0)):
     for objID in ret.data:
         cmd = {objID: {'frag_2': {'op': 'mod', 'scale': 0}}}
         assert client.setFragments(cmd).ok
-        assert client.setCustomData({objID: 'asteroid'}).ok
+        assert client.setObjectTags({objID: 'asteroid'}).ok
 
 
 class ResetSim(multiprocessing.Process):

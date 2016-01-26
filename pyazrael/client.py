@@ -612,7 +612,7 @@ class Client():
         return RetVal(True, None, out)
 
     @typecheck
-    def setCustomData(self, data: dict):
+    def setObjectTags(self, data: dict):
         """
         Update the `custom` field with the information in ``data``.
 
@@ -630,10 +630,10 @@ class Client():
             assert isinstance(k, str)
             assert isinstance(v, str)
 
-        return self.serialiseAndSend('set_custom', {'data': data})
+        return self.serialiseAndSend('set_tags', {'data': data})
 
     @typecheck
-    def getCustomData(self, objIDs: (tuple, list)):
+    def getObjectTags(self, objIDs: (tuple, list)):
         """
         Return the `custom` data for all ``objIDs`` in a dictionary.
 
@@ -648,7 +648,7 @@ class Client():
                 assert isinstance(objID, str)
 
         # Send to Clerk and wait for response.
-        ret = self.serialiseAndSend('get_custom', {'objIDs': objIDs})
+        ret = self.serialiseAndSend('get_tags', {'objIDs': objIDs})
         if not ret.ok:
             return ret
         return ret

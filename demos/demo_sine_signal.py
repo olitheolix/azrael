@@ -76,7 +76,7 @@ class SineWaveGenerator:
         """
         # Poll the simulation until an object with the correct tag appears.
         while True:
-            ret = self.client.getCustomData(None)
+            ret = self.client.getObjectTags(None)
             assert ret.ok
             objIDs = [k for (k, v) in ret.data.items() if v == name]
             if len(objIDs) == 1:
@@ -146,7 +146,7 @@ def addLineOfCubes(client, objName: str, numCubes: int):
     objID = ret.data[0]
 
     # Tag the object.
-    assert client.setCustomData({objID: objName})
+    assert client.setObjectTags({objID: objName})
 
 
 def main():

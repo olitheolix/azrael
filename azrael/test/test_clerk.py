@@ -1560,42 +1560,42 @@ class TestClerk:
         assert ret == (True, None, [id_1, id_2])
 
         # Query the custom data for a non-existing object.
-        assert clerk.getCustomData(['10']) == (True, None, {'10': None})
+        assert clerk.getObjectTags(['10']) == (True, None, {'10': None})
 
         # Query an existing object.
-        assert clerk.getCustomData([id_1]) == (True, None, {id_1: ''})
+        assert clerk.getObjectTags([id_1]) == (True, None, {id_1: ''})
 
         # Query the custom data for two objects, only one of which exists.
-        ret = clerk.getCustomData([id_1, '10'])
+        ret = clerk.getObjectTags([id_1, '10'])
         assert ret.ok
         assert ret.data == {id_1: '', '10': None}
 
         # Set the custom data for a non-existing object.
-        assert clerk.setCustomData({'10': 'blah'}) == (True, None, ['10'])
+        assert clerk.setObjectTags({'10': 'blah'}) == (True, None, ['10'])
 
         # Set/get the custom data for an existing object.
-        ret = clerk.setCustomData({id_1: 'foo', '20': 'bar'})
+        ret = clerk.setObjectTags({id_1: 'foo', '20': 'bar'})
         assert ret.data == ['20']
-        ret = clerk.getCustomData([id_1, id_2])
+        ret = clerk.getObjectTags([id_1, id_2])
         assert ret == (True, None, {id_1: 'foo', id_2: ''})
 
         # Get all 'custom' fields at once.
-        assert clerk.getCustomData([id_1, id_2]) == clerk.getCustomData(None)
+        assert clerk.getObjectTags([id_1, id_2]) == clerk.getObjectTags(None)
 
         # Attempt to store something other than a string.
-        assert clerk.getCustomData([id_1]) == (True, None, {id_1: 'foo'})
-        assert clerk.setCustomData({id_1: 10}) == (True, None, [id_1])
-        assert clerk.getCustomData([id_1]) == (True, None, {id_1: 'foo'})
+        assert clerk.getObjectTags([id_1]) == (True, None, {id_1: 'foo'})
+        assert clerk.setObjectTags({id_1: 10}) == (True, None, [id_1])
+        assert clerk.getObjectTags([id_1]) == (True, None, {id_1: 'foo'})
 
         # Attempt to use a string that exceeds the 16k limit.
         max_len = 2 ** 16
         long_string = 'v' * max_len
         short_string = 'i' * (max_len - 1)
-        assert clerk.getCustomData([id_1]) == (True, None, {id_1: 'foo'})
-        assert clerk.setCustomData({id_1: long_string}) == (True, None, [id_1])
-        assert clerk.getCustomData([id_1]) == (True, None, {id_1: 'foo'})
-        assert clerk.setCustomData({id_1: short_string}).ok
-        assert clerk.getCustomData([id_1]) == (True, None, {id_1: short_string})
+        assert clerk.getObjectTags([id_1]) == (True, None, {id_1: 'foo'})
+        assert clerk.setObjectTags({id_1: long_string}) == (True, None, [id_1])
+        assert clerk.getObjectTags([id_1]) == (True, None, {id_1: 'foo'})
+        assert clerk.setObjectTags({id_1: short_string}).ok
+        assert clerk.getObjectTags([id_1]) == (True, None, {id_1: short_string})
 
     def test_remove_sync_bug(self):
         """
@@ -1662,7 +1662,7 @@ class TestClerk:
         ret = clerk.spawn([{'templateID': 'tname'}])
         assert ret.ok
         aid = ret.data[0]
-        assert clerk.getCustomData([aid]) == (True, None, {aid: 'mydata'})
+        assert clerk.getObjectTags([aid]) == (True, None, {aid: 'mydata'})
 
         # Adding a template with an invalid 'custom' field must fail.
         template = template._replace(custom=[1])
@@ -1698,7 +1698,7 @@ class TestClerk:
         aid_0, aid_1 = ret.data
 
         # Verify the custom data of both object instances is correct.
-        ret = clerk.getCustomData([aid_0, aid_1])
+        ret = clerk.getObjectTags([aid_0, aid_1])
         assert ret.ok
         assert ret.data == {aid_0: 'data_foo', aid_1: 'data_bar'}
 

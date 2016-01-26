@@ -854,18 +854,18 @@ class TestClient:
         assert client.spawn([init, init]) == (True, None, [id_1, id_2])
 
         # Update the custom data for an existing- and a non-existing object.
-        ret = client.setCustomData({id_1: 'foo', id_fake: 'bar'})
+        ret = client.setObjectTags({id_1: 'foo', id_fake: 'bar'})
         assert ret.ok
         assert ret.data == [id_fake]
 
         # Query two existing- and one non-existing object. The returned
         # dictionary must not include a key for the non-existing id_fake.
-        ret = client.getCustomData([id_1, id_2, id_fake])
+        ret = client.getObjectTags([id_1, id_2, id_fake])
         assert ret.ok
         assert ret.data == ({id_1: 'foo', id_2: '', id_fake: None})
 
         # Query all at once.
-        assert client.getCustomData(None) == client.getCustomData([id_1, id_2])
+        assert client.getObjectTags(None) == client.getObjectTags([id_1, id_2])
 
     @pytest.mark.parametrize('client_type', ['Websocket', 'ZeroMQ'])
     def test_addTemplate_spawn_with_custom_data(self, client_type):
@@ -895,5 +895,5 @@ class TestClient:
         assert client.spawn(init) == (True, None, [id_1, id_2])
 
         # Query the custom data for both objects and verify they are correct.
-        ret = client.getCustomData([id_1, id_2])
+        ret = client.getObjectTags([id_1, id_2])
         assert ret == (True, None, {id_1: 'foo', id_2: 'bar'})

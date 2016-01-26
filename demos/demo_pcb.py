@@ -317,7 +317,7 @@ class PyConBrisbaneClient():
         one of those randomly, and assigns it to an instance variable.
         """
         # Query the tags of all objects in the scene.
-        ret = self.client.getCustomData(None)
+        ret = self.client.getObjectTags(None)
         assert ret.ok
 
         # Compile a list of all objIDs whose associated object has a 'TARGET'
@@ -401,7 +401,7 @@ def placeTarget(host, numTargets=1):
     # `PyConBrisbaneClient.selectNewTarget` method will use to distinguish
     # targets from other objects.
     cmd = {targetID: 'Target' for targetID in targetIDs}
-    assert client.setCustomData(cmd)
+    assert client.setObjectTags(cmd)
 
     # Create a random phase offset in the oscillation pattern (pure eye candy
     # to avoid all targets scale synchronously).

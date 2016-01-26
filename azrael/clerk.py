@@ -157,14 +157,14 @@ class Clerk(config.AzraelProcess):
                 protocol.ToClerk_RemoveConstraints_Decode,
                 self.removeConstraints,
                 protocol.FromClerk_RemoveConstraints_Encode),
-            'set_custom': (
-                protocol.ToClerk_SetCustomData_Decode,
-                self.setCustomData,
-                protocol.FromClerk_SetCustomData_Encode),
-            'get_custom': (
-                protocol.ToClerk_GetCustomData_Decode,
-                self.getCustomData,
-                protocol.FromClerk_GetCustomData_Encode),
+            'set_tags': (
+                protocol.ToClerk_SetObjectTags_Decode,
+                self.setObjectTags,
+                protocol.FromClerk_SetObjectTags_Encode),
+            'get_tags': (
+                protocol.ToClerk_GetObjectTags_Decode,
+                self.getObjectTags,
+                protocol.FromClerk_GetObjectTags_Encode),
         }
 
     def runCommand(self, cmd, payload, fun_decode, fun_process, fun_encode):
@@ -1618,20 +1618,18 @@ class Clerk(config.AzraelProcess):
         return self.igor.removeConstraints(constraints)
 
     @typecheck
-    def setCustomData(self, data: dict):
-        """
-        Update the `custom` field with the information in ``data``.
+    def setObjectTags(self, data: dict):
+        """ Tag objects with custom data.
 
-        ``Data`` is a dictionary, eg::
-            {1: 'foo', 25: 'bar'}
+        The tags can be arbititray strings (and only strings). The string
+        length is currently limited to 16k.
 
-        Non-existing objects are silently ignored, but their ID will be
-        returned to the caller.
-
-        All entries must be strings with less than 16k characters.
-
-        :param dict[int: str] data: new content for 'custom' field in object.
-        :return: List of invalid object IDs.
+        Args:
+            data (dict): the keys/values are the object IDs and their new tags,
+            respectively. For instance {1: 'foo', 25: 'bar'}. The IDs of
+            non-existing objects will be returned to the caller.
+        Returns:
+            (RetVal): List of invalid object IDs.
         """
         # Get handle to datastore.
         db = datastore.dbHandles['ObjInstances']
@@ -1663,14 +1661,20 @@ class Clerk(config.AzraelProcess):
         return RetVal(True, None, invalid_objects + not_updated)
 
     @typecheck
-    def getCustomData(self, objIDs: (tuple, list)):
-        """
-        Return the `custom` data for all ``objIDs`` in a dictionary.
+    def getObjectTags(self, objIDs: (tuple, list)):
+        """Return the object tags for all ``objIDs``.
 
-        The return value looks like this:: {1: 'foo', 25: 'bar'}
+        All tags are by definition strings. The return dictionary looks like
+        this:: {1: 'foo', 25: 'bar'}.
 
-        The returned dictionary will only contain keys for objects that were
-        actually found.
+        The keys of the returned dictionary match the entries in `objIDs`. If
+        one or more of those objects did not exist then those keys will *not*
+        be present.
+
+        Args:
+            objIDs (tuple): list of object IDs.
+        Returns:
+            Dictionary with requested tags.
 
         :param dict[int: str] data: new content for 'custom' field in object.
         :return: dictionary of 'custom' data.

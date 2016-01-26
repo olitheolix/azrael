@@ -232,7 +232,7 @@ class Simulation(azrael.eventstore.EventStore):
         bodies = [body for pair in pairs for body in pair]
 
         # Query their tags to determine what collided with what.
-        ret = self.client.getCustomData(bodies)
+        ret = self.client.getObjectTags(bodies)
         assert ret.ok
         tags = ret.data
         del ret

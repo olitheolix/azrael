@@ -109,7 +109,7 @@ def addPlatforms():
 
     # Tag all platforms with a custom string.
     cmd = {platformID: 'Platform' for platformID in platformIDs.data}
-    assert client.setCustomData(cmd)
+    assert client.setObjectTags(cmd)
 
 
 def main():

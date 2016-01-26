@@ -349,28 +349,28 @@ def FromClerk_GetConstraints_Encode(constraints):
 
 
 # ---------------------------------------------------------------------------
-# setCustomData
+# setObjectTags
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_SetCustomData_Decode(payload: dict):
+def ToClerk_SetObjectTags_Decode(payload: dict):
     return payload
 
 
 @typecheck
-def FromClerk_SetCustomData_Encode(payload):
+def FromClerk_SetObjectTags_Encode(payload):
     return payload
 
 
 # ---------------------------------------------------------------------------
-# getCustomData
+# getObjectTags
 # ---------------------------------------------------------------------------
 
 @typecheck
-def ToClerk_GetCustomData_Decode(payload: dict):
+def ToClerk_GetObjectTags_Decode(payload: dict):
     return payload
 
 
 @typecheck
-def FromClerk_GetCustomData_Encode(payload):
+def FromClerk_GetObjectTags_Encode(payload):
     return payload
