@@ -4,18 +4,19 @@ Azrael package
 Core Modules
 ++++++++++++
 
-azrael.bullet_api module
-------------------------
+azrael.aztypes module
+-------------------------------
 
-.. automodule:: azrael.bullet_api
+.. automodule:: azrael.aztypes
     :members:
     :undoc-members:
     :show-inheritance:
 
-azrael.web module
---------------------
 
-.. automodule:: azrael.web
+azrael.bullet_api module
+------------------------
+
+.. automodule:: azrael.bullet_api
     :members:
     :undoc-members:
     :show-inheritance:
@@ -52,6 +53,14 @@ azrael.dibbler module
     :undoc-members:
     :show-inheritance:
 
+azrael.eventstore module
+------------------------
+
+.. automodule:: azrael.eventstore
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 azrael.igor module
 ----------------------
 
@@ -84,15 +93,6 @@ azrael.protocol module
     :undoc-members:
     :show-inheritance:
 
-azrael.aztypes module
--------------------------------
-
-.. automodule:: azrael.aztypes
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
 azrael.vectorgrid module
 ------------------------
 
@@ -102,10 +102,10 @@ azrael.vectorgrid module
     :show-inheritance:
 
 
-azrael.eventstore module
-------------------------
+azrael.web module
+--------------------
 
-.. automodule:: azrael.eventstore
+.. automodule:: azrael.web
     :members:
     :undoc-members:
     :show-inheritance:
