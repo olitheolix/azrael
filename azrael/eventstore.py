@@ -46,7 +46,8 @@ class EventStore(threading.Thread):
     subscribe. However, this only affects which message can be received. It
     does not affect the ``publish`` method at all.
 
-    :param list[str] topics: the topics to subscribe.
+    Args:
+        topics (list[str]): the topics to subscribe.
     """
     @typecheck
     def __init__(self, topics: (tuple, list)):
@@ -79,6 +80,17 @@ class EventStore(threading.Thread):
         self.disconnect()
 
     def connect(self):
+        """Connect to the Broker.
+
+        There is usually no need to call this method explicitly.
+
+        Note: this method is a wrapper. The actual connection happens in
+        :meth:`~setupRabbitMQ`.
+
+        Returns:
+            Success (RetVal): True if successful, False if Pika raised an error.
+        """
+
         # Do nothing if we still have connection handles (use the `disconnect`
         # method to close the connection first).
         if self.rmq is not None:
@@ -102,10 +114,14 @@ class EventStore(threading.Thread):
         return RetVal(True, None, None)
 
     def disconnect(self):
+        """Disconnect from the broker.
+
+        This method does nothing if there is no connection.
+
+        Returns:
+            Success (RetVal): True if successful, False if Pika raised an error.
         """
-        Close any open RabbitMQ connections.
-        """
-        # Return immediately if have no connection handles.
+        # Return immediately if we have no connection handles.
         if self.rmq is None:
             return RetVal(True, None, None)
 
@@ -124,8 +140,13 @@ class EventStore(threading.Thread):
         return RetVal(True, None, None)
 
     def setupRabbitMQ(self):
-        """
-        fixme: docu
+        """Establish the connection with RabbitMQ.
+
+        Raises:
+            All possible Pika errors.
+            
+        Returns:
+            Success (RetVal): Always True.
         """
         # Connect to the specified exchange of RabbitMQ.
         exchange_name = 'azevents'
@@ -169,23 +190,36 @@ class EventStore(threading.Thread):
         pass
 
     def onTimeout(self):
-        """
-        For user to overload. Triggers after the periodic timer expired.
+        """Triggers after the periodic timer expired.
+
+        User can overload this function to trigger custom callbacks.
         """
         pass
 
     def _onMessage(self, ch, method, properties, body):
+        """Pika/RabbitMQ callback for when a message arrives - do not overload.
+
+        Handle the incoming message, trigger the user callback
+        :meth:`~onMessage`. This method will also terminate the event loop if
+        the user has called :meth:`~stop` previously.
+
+        Args:
+            See Pika documentation.
         """
-        Add messages to the local cache whenever they arrive.
-        """
+        # Add the message to the local cache.
         self.messages.append((method.routing_key, body))
+
+        # Trigger the callback.
         self.onMessage()
+
+        # Terminate the event loop if the '_terminate' flag has been set.
         if self._terminate is True:
             self.rmq['chan'].stop_consuming()
 
     def _onTimeout(self):
-        """
-        Periodically checks if the thread should terminate itself.
+        """Pika/RabbitMQ callback for timeouts - do not overload.
+
+        Terminate the event loop if :meth:`~stop` has been called.
         """
         self.onTimeout()
         if self._terminate is True:
@@ -194,20 +228,22 @@ class EventStore(threading.Thread):
             self.rmq['conn'].add_timeout(self._timeout, self._onTimeout)
 
     def stop(self):
-        """
-        Signal the thread to terminate itself.
+        """Signal the thread to terminate itself.
 
-        fixme: add a timeout and automatically join here?
+        This method sets an internal flag but does *not* terminate the thread.
+        Instead, the callback methods for messages or timeout will check that
+        flag and terminate the event loop. This is necessary because
+        :meth:`~stop` will be called from a different thread.
         """
         self._terminate = True
 
     def getMessages(self):
-        """
-        Return all messages that have arrived since the last call.
+        """Return all cached messages.
 
-        Subsequent calls to this method will only return newer messages.
+        Subsequent calls to this method will not return old messages.
 
-        :return: list of (topic, message) tuple.
+        Returns:
+            Success (RetVal): Always True.
         """
         msg = list(self.messages)
         self.messages = self.messages[len(msg):]
@@ -215,18 +251,20 @@ class EventStore(threading.Thread):
 
     @typecheck
     def publish(self, topic: str, msg: bytes):
-        """
-        Publish the binary ``msg`` to ``topic``.
+        """Publish the binary ``msg`` to ``topic``.
 
-        The ``topic`` must be a '.' delimited string, for instance
+        The ``topic`` must be a `.` delimited string, for instance
         'foo.bar.something'.
 
-        This method will automatically connect to RabbitMQ if the connect does
-        not yet exist. However, it will not attempt to retransmit a message if
-        an error has occurred.
+        This method will automatically connect to RabbitMQ.
 
-        :param str topic: topic string
-        :param bytes msg: message to publish.
+        Returns an error if the message could not be transmitted.
+
+        Args:
+            topic (str): the topic to publish on
+            msg (bytes): the payload.
+        Return:
+            Success (RetVal): True if successful, False otherwise.
         """
         # Connect to RabbitMQ if not already connected.
         if self.rmq is None:
@@ -248,8 +286,10 @@ class EventStore(threading.Thread):
         return RetVal(True, None, None)
 
     def _blockingConsumePika(self):
-        """
-        Pika specific portion of `blockingConsume`.
+        """Pika specific portion of :meth:`~blockingConsume`.
+
+        Auxiliary method that triggers the blocking consumption via the Pika
+        wrapper.
         """
         # Install timeout callback.
         self.rmq['conn'].add_timeout(self._timeout, self._onTimeout)
@@ -262,8 +302,7 @@ class EventStore(threading.Thread):
         self.rmq['chan'].start_consuming()
 
     def blockingConsume(self):
-        """
-        Connect to RabbitMQ and commence the message consumption.
+        """Connect to RabbitMQ and commence the message consumption.
 
         This method also installs callbacks for when messages arrive or the
         timeout counter expires.
@@ -271,6 +310,9 @@ class EventStore(threading.Thread):
         Note: this method does not return of its own accord. The only two
         scenarios where it does return is if an exception is thrown or one of
         the callbacks explicitly terminates the event loop.
+
+        Returns:
+            Success (RetVal): True if no errors were raised, False otherwise.
         """
         if self.rmq is None:
             return RetVal(False, 'Not yet connected', None)
@@ -288,12 +330,13 @@ class EventStore(threading.Thread):
             return RetVal(False, 'Connection Closed', None)
 
     def run(self):
-        """
-        Start to consume messages.
+        """ Establish connection and start consuming.
 
-        This method blocks until either the consumption loop finished
-        voluntarily or we were unable to connect to RabbitMQ for too long (hard
-        coded values of ~200 Seconds at the moment).
+        This method typically runs in a new thread and blocks until the
+        user calls :meth:`~stop` from another thread.
+
+        This method also returns if the connection to the broker has been
+        severed too many times.
         """
         # Establish the connection (break the existing one if necessary).
         self.disconnect()

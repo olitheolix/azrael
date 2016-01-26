@@ -101,6 +101,19 @@ azrael.vectorgrid module
     :undoc-members:
     :show-inheritance:
 
+
+azrael.eventstore module
+------------------------
+
+.. automodule:: azrael.eventstore
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Python Client
++++++++++++++
+
 pyazrael.client module
 ----------------------
 
