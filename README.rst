@@ -81,7 +81,7 @@ The easiest way to see a demo is with Docker Compose:
 
 .. code-block:: bash
 
-    wget https://github.com/olitheolix/azrael/blob/master/demos/docker/asteroids_autopilot.yml
+    wget https://github.com/olitheolix/azrael/raw/master/demos/docker/asteroids_autopilot.yml
     docker-compose -f asteroids_autopilot.yml up
 
 Then point your browser (recent Firefox or Chrome) to http://localhost:8080
