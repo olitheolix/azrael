@@ -102,14 +102,14 @@ class TestUnitEventStore:
         m_chan = MagicMock()
         m_conn = MagicMock()
         es.rmq = {'chan': m_chan, 'conn': m_conn}
-        
+
         # This time, 'disconnect' must call the close methods on the RabbitMQ
         # channel and connection, respectively.
         assert es.disconnect() == (True, None, None)
         m_chan.close.call_count == 1
         m_conn.close.call_count == 1
         assert es.rmq is None
-        
+
     @mock.patch.object(eventstore.EventStore, '_blockingConsumePika')
     def test_blockingConsume_not_yet_connected(self, m__blockingConsumePika):
         """
@@ -191,6 +191,9 @@ class TestUnitEventStore:
             'chan': m_chan, 'conn': MagicMock(),
             'name_queue': 'foo', 'name_exchange': 'foo'
         }
+
+        # Install mocked RabbitMQ as a side effect because the rest of the
+        # connect function will assume they exist.
         def side_effect_fun():
             es.rmq = rmq_mock_handles
 

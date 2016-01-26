@@ -151,7 +151,7 @@ class EventStore(threading.Thread):
 
         Raises:
             All possible Pika errors.
-            
+
         Returns:
             Success (RetVal): Always True.
         """

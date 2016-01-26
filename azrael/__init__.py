@@ -20,6 +20,7 @@ import sys
 import signal
 import multiprocessing
 
+
 # Use 'fork' system call to create new processes.
 multiprocessing.set_start_method('fork')
 
@@ -27,6 +28,7 @@ multiprocessing.set_start_method('fork')
 tmp = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(tmp, '..', 'shared'))
 del tmp
+
 
 # Intercept SIGTERM. Docker sends this signal when it wants to shut down
 # containers.

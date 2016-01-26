@@ -1071,11 +1071,11 @@ class TestConstraints:
         assert p2p.getRigidBodyB().getCollisionShape().getName() == b'Box'
 
         # Enable- and disable the constraint.
-        assert p2p.isEnabled() == True
+        assert p2p.isEnabled() is True
         p2p.setEnabled(False)
-        assert p2p.isEnabled() == False
+        assert p2p.isEnabled() is False
         p2p.setEnabled(True)
-        assert p2p.isEnabled() == True
+        assert p2p.isEnabled() is True
 
         # Query the object type; not sure what this is, but if it does not
         # segfault it works :)
@@ -1436,14 +1436,14 @@ class TestConstraints:
 
         # So far we have not added any constraints.
         assert bb.getNumConstraints() == 0
-        assert bb.getConstraint(0) == None
-        assert bb.getConstraint(10) == None
+        assert bb.getConstraint(0) is None
+        assert bb.getConstraint(10) is None
 
         # Add the first constraint.
         bb.addConstraint(p2p_ab)
         assert bb.getNumConstraints() == 1
         assert bb.getConstraint(0) == p2p_ab
-        assert bb.getConstraint(1) == None
+        assert bb.getConstraint(1) is None
         assert list(bb.iterateConstraints()) == [p2p_ab]
 
         # Add the first constraint a second time. The function call must suceed
@@ -1451,7 +1451,7 @@ class TestConstraints:
         bb.addConstraint(p2p_ab)
         assert bb.getNumConstraints() == 1
         assert bb.getConstraint(0) == p2p_ab
-        assert bb.getConstraint(1) == None
+        assert bb.getConstraint(1) is None
         assert list(bb.iterateConstraints()) == [p2p_ab]
 
         # Add the second and third constraint.
@@ -1472,7 +1472,7 @@ class TestConstraints:
             assert bb.getNumConstraints() == 2
             assert bb.getConstraint(0) == p2p_ab
             assert bb.getConstraint(1) == p2p_cd
-            assert bb.getConstraint(2) == None
+            assert bb.getConstraint(2) is None
 
             # Remove non-existing constraint.
             bb.removeConstraint(p2p_none)
