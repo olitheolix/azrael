@@ -53,6 +53,10 @@ class EventStore(threading.Thread):
     def __init__(self, topics: (tuple, list)):
         super().__init__(daemon=True)
 
+        # Create a Class-specific logger.
+        name = '.'.join([__name__, self.__class__.__name__])
+        self.logit = logging.getLogger(name)
+
         # Store the topics we want to subscribe to.
         self.topics = topics
 
@@ -99,9 +103,11 @@ class EventStore(threading.Thread):
         # Connect to RabbitMQ and intercept any Pika exceptions.
         try:
             ret = self.setupRabbitMQ()
+            self.logit.info('Connected to RabbitMQ')
         except (pika.exceptions.ConnectionClosed,
                 pika.exceptions.ChannelClosed,
                 pika.exceptions.ChannelError):
+            self.logit.warning('Could not connected to RabbitMQ')
             ret = RetVal(False, 'Pika error', None)
 
         # Return any errors verbatim.
@@ -129,6 +135,7 @@ class EventStore(threading.Thread):
         for name in ['chan', 'conn']:
             try:
                 self.rmq[name].close()
+                self.logit.info('Disconnected from RabbitMQ')
             except (pika.exceptions.ChannelClosed,
                     pika.exceptions.ChannelError,
                     pika.exceptions.ConnectionClosed,
@@ -235,6 +242,7 @@ class EventStore(threading.Thread):
         flag and terminate the event loop. This is necessary because
         :meth:`~stop` will be called from a different thread.
         """
+        self.logit.info('Got <stop> signal')
         self._terminate = True
 
     def getMessages(self):
@@ -278,11 +286,17 @@ class EventStore(threading.Thread):
                 body=msg,
             )
         except pika.exceptions.ChannelClosed:
-            return RetVal(False, 'Channel Closed', None)
+            msg = 'Channel Closed'
+            self.logit.warning('Could not publish message <{}>'.format(msg))
+            return RetVal(False, msg, None)
         except pika.exceptions.ChannelError:
-            return RetVal(False, 'Channel Error', None)
+            msg = 'Channel Error'
+            self.logit.warning('Could not publish message <{}>'.format(msg))
+            return RetVal(False, msg, None)
         except pika.exceptions.ConnectionClosed:
-            return RetVal(False, 'Connection Closed', None)
+            msg = 'Connection Closed'
+            self.logit.warning('Could not publish message <{}>'.format(msg))
+            return RetVal(False, msg, None)
         return RetVal(True, None, None)
 
     def _blockingConsumePika(self):
@@ -323,11 +337,17 @@ class EventStore(threading.Thread):
             self._blockingConsumePika()
             return RetVal(True, None, None)
         except pika.exceptions.ChannelClosed:
-            return RetVal(False, 'Channel Closed', None)
+            msg = 'Channel Closed'
+            self.logit.warning('Error in consume loop (<{}>)'.format(msg))
+            return RetVal(False, msg, None)
         except pika.exceptions.ChannelError:
-            return RetVal(False, 'Channel Error', None)
+            msg = 'Channel Error'
+            self.logit.warning('Error in consume loop (<{}>)'.format(msg))
+            return RetVal(False, msg, None)
         except pika.exceptions.ConnectionClosed:
-            return RetVal(False, 'Connection Closed', None)
+            msg = 'Connection Closed'
+            self.logit.warning('Error in consume loop (<{}>)'.format(msg))
+            return RetVal(False, msg, None)
 
     def run(self):
         """ Establish connection and start consuming.
