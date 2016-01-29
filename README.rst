@@ -1,6 +1,6 @@
-=========================================================
-Azrael - For Rocket Scientists Who Cannot Afford a Rocket
-=========================================================
+================================================
+For Rocket Scientists Who Cannot Afford a Rocket
+================================================
 
 The virtual world of the Internet has changed society. Smart innovations in the
 non-virtual world, like self driving cars, city wide traffic control systems,
@@ -22,7 +22,6 @@ probe. The probe has thruster, the asteroid does not. The challenge: write a
 controller for the ship to reproduce the original `approach and manoeuvres
 <https://en.wikipedia.org/wiki/Rosetta_%28spacecraft%29#Orbit_around_67P>`_.
 
-
 Technology
 ==========
 Azrael is an API to create bodies and modify their attributes (eg position or
@@ -38,6 +37,24 @@ Java Script).
 To see Azrael in action you may try the demos or watch the `PyCon Australia
 2015 <https://youtu.be/JG8-yurFBXM?list=PLs4CJRBY5F1IZYVBLXGX1DRYXHMjUjG8k>`_
 presentation.
+
+
+Demo Video
+----------
+Here Azrael runs on AWS whereas the rendering and object control runs on my
+local computer. Note how the rendering in the browser and standalone Qt program
+stay in sync even though they have no knowledge of each other.
+
+.. raw:: html
+
+    <video autoplay="autoplay" loop="loop" width="100%">
+
+      <source src="https://s3-ap-southeast-2.amazonaws.com/olitheolix/azrael/bothviewers.mp4" type="video/mp4" />
+      <source src="https://s3-ap-southeast-2.amazonaws.com/olitheolix/azrael/bothviewers.ogv" type="video/ogg" />
+      <source src="https://s3-ap-southeast-2.amazonaws.com/olitheolix/azrael/bothviewers.webm" type="video/ogg" />
+      Your browser does not support the video tag.
+    </video>
+    <p>
 
 
 Not A Game Engine
@@ -70,8 +87,14 @@ motion. This is already enough for a basic Asteroids simulation.
 The project also ships with two simple viewers to render the scene. One uses
 PyQT/OpenGL whereas the other runs in the browser.
 
+
+Demos and Documentation
+=======================
+
 The `demos/` folder showcases various features of Azrael. Some of them have
 dedicated docker-compose files in `demos/docker/` to simplify the setup.
+
+The API is documented `here <http://azrael.readthedocs.org/en/latest/>`_.
 
 
 Installation
