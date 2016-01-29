@@ -208,6 +208,28 @@ def loadBoosterCubeBlender():
     return vert, uv, rgb
 
 
+def loadSphere(radius: float=1.0):
+    """
+    Return the collision shape and vertices for a sphere with ``radius``.
+
+    Args:
+        radius (float): sphere radius (must be >= 0.01).
+
+    Returns:
+        (vert, colshapes): the vertices and collision shape for the sphere.
+    """
+    assert radius >= 0.01
+    p = os.path.dirname(os.path.abspath(__file__))
+    fname = os.path.join(p, 'models', 'sphere', 'sphere.obj')
+    vert, uv, rgb = loadModel(fname)
+    vert *= radius
+    cshapes = CollShapeMeta(cstype='Sphere',
+                            position=(0, 0, 0),
+                            rotation=(0, 0, 0, 1),
+                            csdata=CollShapeSphere(radius=radius))
+    return vert, cshapes
+
+
 def loadModel(fname):
     """
     Load 3D model from ``fname`` and return the vertices, UV, and RGB arrays.
