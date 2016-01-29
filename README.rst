@@ -51,9 +51,11 @@ Another point concerns visualisation: Azrael has none. A client may query
 object geometries and render them (as seen in the demos) but Azrael itself
 would neither know nor care.
 
-That being said, some `example scenarios <http://azrael.readthedocs.org/en/latest/>`_
+That being said, some
+`example scenarios <http://azrael.readthedocs.org/en/latest/demos.html>`_
 appear reasonably smooth when served from an AWS C4 instance. This despite the
 dumb polling used by the visualisation clients.
+
 
 
 Project Status
