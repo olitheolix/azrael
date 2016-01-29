@@ -119,7 +119,7 @@ def dequeueCommands():
     :return QueuedCommands: a tuple with lists for each command.
     """
     # Convenience.
-    db = datastore.dbHandles['Commands']
+    db = datastore.getDSHandle('Commands')
 
     # Fetch all pending commands.
     ret = db.getAll()
@@ -197,7 +197,7 @@ def addCmdSpawn(objData: (tuple, list)):
         ops[key] = {'data': data}
 
     # Store the spawn commands.
-    db = datastore.dbHandles['Commands']
+    db = datastore.getDSHandle('Commands')
     ret = db.put(ops)
     if not ret.ok:
         return ret
@@ -228,7 +228,7 @@ def addCmdRemoveObject(objID: str):
     :param str objID: ID of object to delete.
     :return: Success.
     """
-    db = datastore.dbHandles['Commands']
+    db = datastore.getDSHandle('Commands')
     key = 'remove:{}'.format(objID)
     ops = {key: {'data': {}}}
     db.put(ops)
@@ -276,7 +276,7 @@ def addCmdModifyBodyState(objID: str, body: dict):
     # Add the new body state and AABBs to the 'command' database from where
     # clients can read it at their leisure. Note that this will overwrite
     # already pending update commands for the same object - tough luck.
-    db = datastore.dbHandles['Commands']
+    db = datastore.getDSHandle('Commands')
 
     data = {'rbs': body, 'AABBs': aabbs}
     key = 'modify:{}'.format(objID)
@@ -309,7 +309,7 @@ def addCmdDirectForce(objID: str, force: list, torque: list):
         return RetVal(False, 'force or torque has invalid length', None)
 
     # Compile datastore ops.
-    db = datastore.dbHandles['Commands']
+    db = datastore.getDSHandle('Commands')
     data = {'force': force, 'torque': torque}
     key = 'direct_force:{}'.format(objID)
     ops = {key: {'data': data}}
@@ -346,7 +346,7 @@ def addCmdBoosterForce(objID: str, force: list, torque: list):
         return RetVal(False, 'force or torque has invalid length', None)
 
     # Compile datastore ops.
-    db = datastore.dbHandles['Commands']
+    db = datastore.getDSHandle('Commands')
     data = {'force': force, 'torque': torque}
     key = 'booster_force:{}'.format(objID)
     ops = {key: {'data': data}}

@@ -385,7 +385,7 @@ class Clerk(config.AzraelProcess):
                 return RetVal(False, 'Invalid template data', None)
 
             # Handle to data store.
-            db = datastore.dbHandles['Templates']
+            db = datastore.getDSHandle('Templates')
 
             # Prepare each template and compile the database operations.
             dib_files, ds_ops = {}, {}
@@ -475,7 +475,7 @@ class Clerk(config.AzraelProcess):
         templateIDs = tuple(set(templateIDs))
 
         # Fetch the requested templates.
-        db = datastore.dbHandles['Templates']
+        db = datastore.getDSHandle('Templates')
         ret = db.getMulti(templateIDs)
         if not ret.ok:
             return ret
@@ -630,7 +630,7 @@ class Clerk(config.AzraelProcess):
             return ret
         newObjectIDs = ret.data
 
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
         with util.Timeit('spawn:2 createStates'):
             # Copy every template, endow it with the meta information for an
             # instance object, and add it to the list of objects to spawn.
@@ -770,7 +770,7 @@ class Clerk(config.AzraelProcess):
         :rtype: tuple(vec3, vec3)
         """
         # Convenience.
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
 
         # Query the object's booster information.
         ret = db.getOne(objID, [['template', 'boosters']])
@@ -863,7 +863,7 @@ class Clerk(config.AzraelProcess):
         :raises: None
         """
         # Fetch the instance data and return immediately if it does not exist.
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
         ret = db.getOne(objID, [['template']])
         if not ret.ok:
             return ret
@@ -997,7 +997,7 @@ class Clerk(config.AzraelProcess):
             leoAPI.addCmdRemoveObject(objID)
 
         # Fetch the documents before deleting them (need later).
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
         docs = db.getMulti(objIDs).data
 
         # Remove the objects from the instance data store.
@@ -1039,7 +1039,7 @@ class Clerk(config.AzraelProcess):
         :rtype: dict
         """
         # Retrieve the geometry. Return an error if the ID does not exist.
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
         ret = db.getMulti(objIDs)
         if not ret.ok:
             return ret
@@ -1243,7 +1243,7 @@ class Clerk(config.AzraelProcess):
         :param dict fragupdates: update operations.
         :return: dict[aid]: bool to state which ones were successfully updated.
         """
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
 
         # Compile the data store ops for all objects (no actual data store
         # querie take place in this loop.
@@ -1351,7 +1351,7 @@ class Clerk(config.AzraelProcess):
         :rtype: dict
         """
         # Fetch the specified objects, or fetch all if none were specified.
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
         prj = [['version'], ['objID'], ['template', 'rbs']]
         if objIDs is None:
             ret = db.getAll(prj)
@@ -1393,7 +1393,7 @@ class Clerk(config.AzraelProcess):
         :return: Success
         """
         # Get handle to datastore.
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
 
         # Compile the data store ops to modify all the objects.
         ops = {}
@@ -1476,7 +1476,7 @@ class Clerk(config.AzraelProcess):
         :return: see example above.
         """
         # Get handle to datastore.
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
 
         # Projection operator to reduce the amount of network traffic.
         prj = [
@@ -1534,7 +1534,7 @@ class Clerk(config.AzraelProcess):
         :return: templateID from which ``objID`` was created.
         """
         # Get handle to datastore and query for the specified ``objID``.
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
         ret = db.getOne(objID)
 
         # Return the template (or an error).
@@ -1557,7 +1557,7 @@ class Clerk(config.AzraelProcess):
         :return: list of objIDs
         :rtype: list(int)
         """
-        return datastore.dbHandles['ObjInstances'].allKeys()
+        return datastore.getDSHandle('ObjInstances').allKeys()
 
     @typecheck
     def setForce(self, objID: str, force: (tuple, list), rpos: (tuple, list)):
@@ -1632,7 +1632,7 @@ class Clerk(config.AzraelProcess):
             (RetVal): List of invalid object IDs.
         """
         # Get handle to datastore.
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
 
         # Will hold the database operations and AIDs of objects that could not
         # be updatd.
@@ -1680,7 +1680,7 @@ class Clerk(config.AzraelProcess):
         :return: dictionary of 'custom' data.
         """
         # Get handle to datastore.
-        db = datastore.dbHandles['ObjInstances']
+        db = datastore.getDSHandle('ObjInstances')
 
         # Fetch the specified objects. Fetch all if `objID` is None.
         prj = [('template', 'custom')]

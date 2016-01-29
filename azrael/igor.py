@@ -33,7 +33,7 @@ class Igor:
         self.logit = logging.getLogger(name)
 
         # Create the database handle and local constraint cache.
-        self.db = datastore.dbHandles['Constraints']
+        self.db = datastore.getDSHandle('Constraints')
         self._cache = {}
 
     def reset(self):

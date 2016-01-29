@@ -1619,7 +1619,7 @@ class TestClerk:
         # Convenience.
         id_1 = '1'
         body_1 = getRigidBody(imass=1)
-        db = azrael.datastore.dbHandles['ObjInstances']
+        db = azrael.datastore.getDSHandle('ObjInstances')
 
         # Database and Leonard cache must both be empty.
         assert db.count() == (True, None, 0)

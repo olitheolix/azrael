@@ -638,7 +638,7 @@ class LeonardBase(config.AzraelProcess):
             self.events.publish(topic='phys.collisions', msg=msg)
 
         # Update the RBS data in the master record.
-        db = azrael.datastore.dbHandles['ObjInstances']
+        db = azrael.datastore.getDSHandle('ObjInstances')
         ops = {}
         for aid, body in self.allBodies.items():
             ops[aid] = {
