@@ -57,6 +57,31 @@ def init(flush):
 
 
 @typecheck
+def getDSHandle(name: str):
+    """
+    Return the datastore handle for ``name``.
+
+    If the datastores have not been initialised yet then this function will do
+    so (leaving all data in the datastores intact).
+
+    ..note:: this method does not return a `RetVal` tuple but raises an error
+    instead. This is a band aid solution because this entire module should be a
+    class. However, for now the error will ensure that no one requests an
+    invalid name.
+
+    Raises:
+        KeyError: if the name does not exist.
+    Args:
+        name (str): datastore name.
+    """
+    try:
+        return dbHandles[name]
+    except KeyError:
+        init(flush=False)
+    return dbHandles[name]
+
+
+@typecheck
 def getUniqueObjectIDs(numIDs: int):
     """
     Return a list of ``numIDs`` unique strings.

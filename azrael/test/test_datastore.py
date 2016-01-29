@@ -16,6 +16,7 @@
 # along with Azrael. If not, see <http://www.gnu.org/licenses/>.
 import copy
 import pytest
+import unittest.mock as mock
 import azrael.datastore as datastore
 
 from IPython import embed as ipshell
@@ -656,6 +657,39 @@ class TestHelperFunctions:
 
     def teardown_method(self, method):
         pass
+
+    def test_getDSHandle_valid(self):
+        """
+        getDSHandle must return a valid datastore handle. If no such handle
+        exists yet it must populate the datastore handles.
+        """
+        # Request a valid datastore name. This must not raise any errors.
+        datastore.dbHandles = {}
+        datastore.getDSHandle('ObjInstances')
+
+    @mock.patch.object(datastore, 'init')
+    def test_getDSHandle_invalid(self, m_init):
+        """
+        getDSHandle must call the 'init' method if it cannot find a particular
+        data store name. If the requested datastore name still does not exist
+        after the init function was called then it must raise an error.
+        """
+        # Delete any existing handles and replace it with a dummy.
+        datastore.dbHandles = {'foo': None}
+
+        # Request the dummy name. This must not trigger the 'init' method
+        # because the name 'foo' exists in the list.
+        assert m_init.call_count == 0
+        datastore.getDSHandle('foo')
+        assert m_init.call_count == 0
+
+        # Attempt to fetch a non-existing handle. This must raise a KeyError.
+        datastore.dbHandles = {}
+        m_init.mock_reset()
+        assert m_init.call_count == 0
+        with pytest.raises(KeyError):
+            datastore.getDSHandle('foo')
+        assert m_init.call_count == 1
 
     def test_datastore_validJsonKey(self):
         """
