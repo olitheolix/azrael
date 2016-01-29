@@ -34,27 +34,10 @@ Azrael is written in Python yet the network API is language agnostic. The API
 accepts Websockets (Java Script in browsers) and ZeroMQ sockets (everything but
 Java Script).
 
-To see Azrael in action you may try the demos or watch the `PyCon Australia
+To see Azrael in action you may try the demos, watch the `PyCon Australia
 2015 <https://youtu.be/JG8-yurFBXM?list=PLs4CJRBY5F1IZYVBLXGX1DRYXHMjUjG8k>`_
-presentation.
-
-
-Demo Video
-----------
-Here Azrael runs on AWS whereas the rendering and object control runs on my
-local computer. Note how the rendering in the browser and standalone Qt program
-stay in sync even though they have no knowledge of each other.
-
-.. raw:: html
-
-    <video autoplay="autoplay" loop="loop" width="100%">
-
-      <source src="https://s3-ap-southeast-2.amazonaws.com/olitheolix/azrael/bothviewers.mp4" type="video/mp4" />
-      <source src="https://s3-ap-southeast-2.amazonaws.com/olitheolix/azrael/bothviewers.ogv" type="video/ogg" />
-      <source src="https://s3-ap-southeast-2.amazonaws.com/olitheolix/azrael/bothviewers.webm" type="video/ogg" />
-      Your browser does not support the video tag.
-    </video>
-    <p>
+presentation, or check out (the somewhat dated)
+`demo videos <http://azrael.readthedocs.org/en/latest/demos.html>`_
 
 
 Not A Game Engine
@@ -68,9 +51,9 @@ Another point concerns visualisation: Azrael has none. A client may query
 object geometries and render them (as seen in the demos) but Azrael itself
 would neither know nor care.
 
-That being said, some `example scenarios <https://olitheolix.com/azrael/>`_
-appear smooth when served from an AWS C4 instance. This despite the dumb
-polling used by the visualisation clients.
+That being said, some `example scenarios <http://azrael.readthedocs.org/en/latest/>`_
+appear reasonably smooth when served from an AWS C4 instance. This despite the
+dumb polling used by the visualisation clients.
 
 
 Project Status
@@ -91,11 +74,12 @@ PyQT/OpenGL whereas the other runs in the browser.
 Demos and Documentation
 =======================
 
-The `demos/` folder showcases various features of Azrael. Some of them have
-dedicated docker-compose files in `demos/docker/` to simplify the setup.
+The scripts in the `demos/` folder showcase various features of Azrael. They
+are a good source of usage examples and complement the
+`API documentation <http://azrael.readthedocs.org/en/latest/>`_.
 
-The API is documented `here <http://azrael.readthedocs.org/en/latest/>`_.
-
+Some of the demos also have dedicated docker-compose files in the
+`demos/docker/` folder to simplify the setup.
 
 Installation
 ============
