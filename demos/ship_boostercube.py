@@ -118,6 +118,9 @@ class CtrlBoosterCube():
         print('done')
 
     def __del__(self):
+        self.removeShip()
+
+    def removeShip(self):
         if self.shipID is None:
             return
         self.client.removeObjects([self.shipID])
