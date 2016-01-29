@@ -14,6 +14,7 @@ Contents:
    :maxdepth: 4
 
    overview
+   demos
    tutorials
    api
 
