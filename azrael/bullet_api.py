@@ -52,8 +52,12 @@ class PyRigidBody(azBullet.RigidBody):
     compiled module. However, by subclassing it we get the convenience of
     a pure Python class (eg adding attributes at runtime). This is transparent
     to the end user.
+
+    Args:
+        ci (azBullet.RigidBodyConstructionInfo): body information.
+        bodyID (int): AID
     """
-    def __init__(self, ci, bodyID):
+    def __init__(self, ci, bodyID: int):
         super().__init__(ci, bodyID)
 
 

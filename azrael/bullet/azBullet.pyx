@@ -231,12 +231,11 @@ cdef class BulletBase:
 
     def stepSimulation(self, double timeStep, int maxSubSteps):
         """
-        The time step denotes the amount of time (in seconds) the world should
-        be simulated. The the 'maxSubSteps' parameter tells Bullet how many
-        sub-steps it is allowed to use (this is for accuracy). These two
-        parameters are exposed. The third parameter expected by Bullet, called
-        fixedTimeStep, is not exposed. Instead, it is computed to ensure a
-        consistent simulation as described in
+        The time step denotes the amount of Seconds to advance the simulation.
+        The 'maxSubSteps' parameter tells Bullet how many sub-steps it is
+        allowed to use (this is for accuracy). These two parameters are
+        exposed. The third parameter (`fixedTimeStep`) is determined
+        automatically according to
         http://www.bulletphysics.org/mediawiki-1.5.8/index.php?title=Stepping_The_World
         """
         # Sanity check.
