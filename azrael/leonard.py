@@ -1406,14 +1406,13 @@ class WorkerManager(config.AzraelProcess):
     :param int maxSteps: see Worker
     :param class workerCls: the class to instantiate.
     """
+    @typecheck
     def __init__(self, numWorkers: int, minSteps: int, maxSteps: int,
                  workerCls):
         super().__init__()
 
         # Sanity checks.
         assert numWorkers > 0
-        assert isinstance(minSteps, int)
-        assert isinstance(maxSteps, int)
         assert 0 < minSteps <= maxSteps
 
         # Backup the arguments.
