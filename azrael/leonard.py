@@ -1440,8 +1440,8 @@ class WorkerManager(config.AzraelProcess):
 
         # Periodically monitor the processes and restart any that have died.
         while True:
-            # Only check once a second.
-            time.sleep(1)
+            # Poll worker status every 250ms.
+            time.sleep(0.25)
             for workerID, proc in enumerate(self.workers):
                 # Skip current process if it is still running.
                 if proc.is_alive():
