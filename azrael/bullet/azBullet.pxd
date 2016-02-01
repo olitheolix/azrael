@@ -4,11 +4,25 @@ from typed_constraint cimport *
 from libcpp.vector cimport vector
 
 
-cdef extern from "broadphase_paircache_builder.cpp":
+# Custom callbacks functions for broadphase solver.
+cdef extern from "broadphase_callback.cpp":
     cdef cppclass BroadphasePaircacheBuilder:
         BroadphasePaircacheBuilder()
         void azResetPairCache()
         vector[int] *azGetPairCache()
+
+
+# Custom callbacks functions for narrowphase solver.
+cdef extern from "narrowphase_callback.cpp":
+    cdef void installNarrowphaseCallback(btDiscreteDynamicsWorld *world)
+    cdef void resetNarrowphasePairCache();
+    cdef vector[AzraelCollisionData] narrowphasePairCache
+    cdef struct AzraelCollisionData:
+        int aid_a
+        int aid_b
+        btVector3 point_a
+        btVector3 point_b
+        btVector3 normal_on_b
 
 
 cdef extern from "btBulletDynamicsCommon.h":

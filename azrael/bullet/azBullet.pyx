@@ -17,11 +17,11 @@
 
 """
 To compile and test:
-  >> python3 setup.py cleanall
-  >> python3 setup.py build_ext --inplace
+  >> python setup.py cleanall
+  >> python setup.py build_ext --inplace
 
 Python version of Bullet's Hello World program:
-  >> python3 hello.py
+  >> python hello.py
 """
 from cpython.object cimport Py_EQ, Py_NE
 
@@ -79,11 +79,19 @@ cdef class BulletBase:
             self.collisionConfiguration)
         assert self.dynamicsWorld != NULL
 
+        # Install a custom handler that Bullet calls after each tick. The
+        # handler is a pure C++ function and compiles all the collision
+        # contacts that have occurred during that tick.
+        installNarrowphaseCallback(self.dynamicsWorld)
+
         # Container to keep track of all constraints.
         self._list_constraints = []
 
         # No gravity by default.
         self.setGravity(Vec3(0, 0, 0))
+
+        # Reset the collision contact pair caches.
+        self.azResetPairCache()
 
     def __dealloc__(self):
         del self.dynamicsWorld
@@ -100,8 +108,10 @@ cdef class BulletBase:
         return Vec3(<double>tmp.x(), <double>tmp.y(), <double>tmp.z())
 
     def installBroadphaseCallback(self):
-        # fixme: docu; rename function; user must select in ctor if they want
-        # broadphase only (ie. remove this explicit method call).
+        # Install the broadphase callback. This is only necessary if Bullet
+        # should do the broadphase instead of Azrael, but that did not work out
+        # too well (suprisingly slow, probably due to adding/removing all the
+        # bodies at every step).
         self.cb_broadphase = new BroadphasePaircacheBuilder()
         self.dynamicsWorld.getPairCache().setOverlapFilterCallback(
             <btOverlapFilterCallback*?>self.cb_broadphase)
@@ -109,6 +119,7 @@ cdef class BulletBase:
     def azResetPairCache(self):
         # Clear the pair cache that has built up in the Broadphase callback.
         self.cb_broadphase.azResetPairCache()
+        resetNarrowphasePairCache()
 
     def azReturnPairCache(self):
         # Return latest set of broadphase collision pairs.
@@ -129,13 +140,12 @@ cdef class BulletBase:
         cdef btDispatcher *dispatcher = self.dynamicsWorld.getDispatcher()
 
         # Allocate auxiliary variables needed later on.
-        cdef btVector3 vec
         cdef btManifoldPoint ptr_mp
         cdef btPersistentManifold* contactManifold
 
-        # Initialise the dictionary that will hold the pair cache information,
-        # ie body IDs and their contact points (if any).
-        pairData = {}
+        # This list will contain the contact information returned to the
+        # caller.
+        pairData = []
 
         # Auxiliary Python objects to gain access to the 'azGetBodyID'
         # convenience methods.
@@ -158,30 +168,34 @@ cdef class BulletBase:
             bodyIDs = rb_a.azGetBodyID(), rb_b.azGetBodyID()
             if None in bodyIDs:
                 continue
-
-            # Sort the bodyIDs because they will be used as the key in the
-            # dictionary below and contacts for (1, 2) should be stored under
-            # the same key as contacts for (2, 1).
-            bodyIDs = tuple(sorted(bodyIDs))
-
-            # Ensure we have an entry for the current contact pair.
-            if bodyIDs not in pairData:
-                pairData[bodyIDs] = []
+            aid_a, aid_b = bodyIDs
 
             # Compile the list of all contact positions for the current pair.
             for jj in range(contactManifold.getNumContacts()):
                 # Query the contact point structure.
                 ptr_mp = contactManifold.getContactPoint(jj)
 
-                # Extract the contact point of both objects.
-                vec = ptr_mp.getPositionWorldOnA()
-                c_a = Vec3(<double>vec.x(), <double>vec.y(), <double>vec.z())
-
-                vec = ptr_mp.getPositionWorldOnB()
-                c_b = Vec3(<double>vec.x(), <double>vec.y(), <double>vec.z())
-
                 # Add the contact point locations to our pairData dictionary.
-                pairData[bodyIDs].append((c_a, c_b))
+                tmp = {
+                    'aid_a': aid_a,
+                    'aid_b': aid_b,
+                    'point_a': (
+                        <double>(ptr_mp.getPositionWorldOnA().x()),
+                        <double>(ptr_mp.getPositionWorldOnA().y()),
+                        <double>(ptr_mp.getPositionWorldOnA().z())
+                    ),
+                    'point_b': (
+                        <double>(ptr_mp.getPositionWorldOnB().x()),
+                        <double>(ptr_mp.getPositionWorldOnB().y()),
+                        <double>(ptr_mp.getPositionWorldOnB().z())
+                    ),
+                }
+
+                # Ensure aid_a < aid_b.
+                if tmp['aid_a'] > tmp['aid_b']:
+                    tmp['aid_a'], tmp['aid_b'] = tmp['aid_b'], tmp['aid_a']
+                    tmp['point_a'], tmp['point_b'] = tmp['point_b'], tmp['point_a']
+                pairData.append(tmp)
 
         # Explicitly set the internal pointers to NULL as the destructor of rb_a
         # and rb_b would otherwise deallocate the user pointers where the
@@ -189,6 +203,56 @@ cdef class BulletBase:
         rb_a.ptr_CollisionObject = NULL
         rb_b.ptr_CollisionObject = NULL
         return pairData
+
+    def azGetNarrowphaseContacts(self):
+        """
+        Return the list of collision contacts gathered during the narrowphase.
+
+        Each element in the list is a dictionary that contains the information
+        in terms of native Python types. For instance::
+
+        [{'aid_a': aida, 'aid_b': aidb, 'point_a': pa, 'point_b': pb}, ...]
+
+        This method guarantees that 'aid_a' <= 'aid_b'.
+
+        Returns:
+            list(dict): 
+        """
+        # Shorthand for readability.
+        cdef vector[AzraelCollisionData] *pc = &narrowphasePairCache
+
+        # Compile the collision information from bullet into a Python
+        # dictionary and pass it to the (Python)caller.
+        out = []
+        for ii in range(pc[0].size()):
+            tmp = {
+                'aid_a': pc[0][ii].aid_a,
+                'aid_b': pc[0][ii].aid_b,
+                'point_a': (
+                    <double>(pc[0][ii].point_a.x()),
+                    <double>(pc[0][ii].point_a.y()),
+                    <double>(pc[0][ii].point_a.z())
+                ),
+                'point_b': (
+                    <double>(pc[0][ii].point_b.x()),
+                    <double>(pc[0][ii].point_b.y()),
+                    <double>(pc[0][ii].point_b.z())
+                ),
+                # 'normal_on_b': (
+                #     <double>(pc[0][ii].normal_on_b.x()),
+                #     <double>(pc[0][ii].normal_on_b.y()),
+                #     <double>(pc[0][ii].normal_on_b.z())
+                # ),
+            }
+
+            # Swap the information if aid_a < aid_b.
+            if tmp['aid_a'] > tmp['aid_b']:
+                tmp['aid_a'], tmp['aid_b'] = tmp['aid_b'], tmp['aid_a']
+                tmp['point_a'], tmp['point_b'] = tmp['point_b'], tmp['point_a']
+
+            # Add the current collision info to the buffer.
+            out.append(tmp)
+        return out
 
     def addRigidBody(self, RigidBody body, short group=-1, short mask=-1):
         if (group < 0) or (mask < 0):
@@ -241,6 +305,9 @@ cdef class BulletBase:
         # Sanity check.
         if maxSubSteps < 1:
             maxSubSteps = 1
+
+        # Clear the narrowphase pair cache.
+        self.azResetPairCache()
 
         cdef double fixedTimeStep = (timeStep / maxSubSteps)
         self.dynamicsWorld.stepSimulation(

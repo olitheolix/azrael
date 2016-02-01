@@ -1634,14 +1634,19 @@ class TestContactGeneration:
     def teardown_method(self, method):
         pass
 
-    def test_getLatestContacts(self):
+    @pytest.mark.parametrize('contactfun', ['last', 'narrowphase'])
+    def test_getNarrowphaseContacts(self, contactfun):
         """
         Place bodies at different positions and check if Bullet correctly
         reports their contacts.
 
-        Note: Bullet will internally create and remove contacts in every sub
-        step. It is therefore paramount that the simulation uses only a single
-        sub-step.
+        Bullet supports several ways to query collision contacts. The Cython
+        wrapper exposed two of them, both of which are tested here. Both ways
+        provide collision contacts from the last simulation tick. However,
+        ('last') only returns the ones generated in the very last sub-step,
+        whereas ('narrowphase') collects over the inter simulation step. The
+        second version is better but was added later. For backwards
+        compatibility, this test covers both methods.
         """
         def moveBody(rb, pos):
             trans = Transform()
@@ -1668,26 +1673,39 @@ class TestContactGeneration:
         sim.addRigidBody(rb_b)
         sim.addRigidBody(rb_d)
 
+        # Decide which getter function for the contacts we are going to test.
+        if contactfun == 'last':
+            num_sub_steps = 1
+            getter = sim.azGetLastContacts
+        elif contactfun == 'narrowphase':
+            num_sub_steps = 60
+            getter = sim.azGetNarrowphaseContacts
+        else:
+            assert False
+
         # Step the simulation and fetch the collision pairs.
-        sim.stepSimulation(1, 1)
-        ret = sim.azGetLastContacts()
-        assert set(ret.keys()) == {(1, 2)}
+        assert getter() == []
+        sim.stepSimulation(1, num_sub_steps)
+        ret = getter()
+        ret = [(_['aid_a'], _['aid_b']) for _ in ret]
+        assert set(ret) == {(1, 2)}
 
         # Move B towards the right so that it touches D: "A  BD".
         moveBody(rb_a, pos_a)
         moveBody(rb_b, pos_c)
         moveBody(rb_d, pos_d)
-        sim.stepSimulation(1, 1)
-        ret = sim.azGetLastContacts()
-        assert set(ret.keys()) == {(2, 4)}
+        sim.stepSimulation(1, num_sub_steps)
+        ret = getter()
+        ret = [(_['aid_a'], _['aid_b']) for _ in ret]
+        assert set(ret) == {(2, 4)}
 
         # Move D towards the far right so that it does not touch B any more:
         # "A  B    D".
         moveBody(rb_a, pos_a)
         moveBody(rb_b, Vec3(30, 0, 0))
         moveBody(rb_d, pos_d)
-        sim.stepSimulation(1, 1)
-        assert sim.azGetLastContacts() == {}
+        sim.stepSimulation(1, num_sub_steps)
+        assert getter() == []
 
         # Move the middle body back to its original position and insert the
         # fourth body. Now all bodies touch their immediate neighbours:
@@ -1697,6 +1715,7 @@ class TestContactGeneration:
         moveBody(rb_b, pos_b)
         moveBody(rb_c, pos_c)
         moveBody(rb_d, pos_d)
-        sim.stepSimulation(1, 1)
-        ret = sim.azGetLastContacts()
-        assert set(ret.keys()) == {(1, 2), (2, 3), (3, 4)}
+        sim.stepSimulation(1, num_sub_steps)
+        ret = getter()
+        ret = [(_['aid_a'], _['aid_b']) for _ in ret]
+        assert set(ret) == {(1, 2), (2, 3), (3, 4)}

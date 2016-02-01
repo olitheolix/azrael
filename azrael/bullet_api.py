@@ -82,9 +82,6 @@ class PyBulletDynamicsWorld():
         # Dictionary of all bodies.
         self.rigidBodies = {}
 
-        # Buffer for the collision contacts from the last 'compute' step.
-        self._lastContacts = {}
-
     def setGravity(self, gravity: (tuple, list)):
         """
         Set the ``gravity`` in the simulation.
@@ -134,29 +131,40 @@ class PyBulletDynamicsWorld():
         respective object. There can be many collision points between the same
         two objects.
 
-        Example: [['0', '1', [(-1.0, 0.0, 0.0), (1.0, 0.0, 0.0)]]]
-        means object '0' and '1' collided. The first object collided at
-        position (-1, 0, 0) and the second at (1, 0, 0). These values are in
-        *world* coordinates and *not* in  body local coordinates.
+        Example: [['0', '1', [(-1, 0, 0), (1, 0, 0), (0, 0, 0), (-5, 0, 1.5)]]]
+        means object '0' and '1' collided/touched at two points:
+        (-1, 0, 0) and (0, 0, 0) for the first object and (1, 0, 0) and (-5, 0,
+        1.5) for the second objects. These values are in *world* coordinates
+        and *not* in  body local coordinates.
 
         :return: list of collision info for each body pair that collided.
         """
-        # The self._lastContacts variables store the collision contact
-        # information as provided by Bullet. It is a dictionary of the form:
-        # {(aidA_0, aidB_0): [(colPosA_0, colPosB_0), (colPosA_1, colPosB_1))}
-        #
-        # The following piece of code converts this dictionary into a list. The
-        # primary reason for the conversion is that the JSON format does not
-        # support tuples as dictionary keys - sucks.
-        out = []
-        for (aidA, aidB), con in self._lastContacts.items():
-            # Flatten the list of collision positions and convert the
-            # bullet.Vec3 information to a native Python list.
-            con = [_.topy() for el in con for _ in el]
+        # Fetch the list of collision contacts from Bullet. Each element in the
+        # list is a dictionary to describe which objects were involved in a
+        # collision and where they touched.
+        contacts = self.dynamicsWorld.azGetNarrowphaseContacts()
 
-            # Add a another collision entry to the list.
-            out.append([str(aidA), str(aidB), con])
-        return RetVal(True, None, out)
+        # At the moment, the contacts list contains one dictionary for every
+        # collision. However, the same pair of objects may have collided
+        # several times. The following loop groups all collision positions for
+        # each object pair.
+        unpacked = {}
+        for contact in contacts:
+            # Unpack for convenience.
+            key = contact['aid_a'], contact['aid_b']
+            pos_a, pos_b = contact['point_a'], contact['point_b']
+
+            # The key will the collision pair.
+            if key in unpacked:
+                unpacked[key].extend([pos_a, pos_b])
+            else:
+                unpacked[key] = [pos_a, pos_b]
+
+        # Flatten the dictionary into the list described in the doc string.
+        # Also convert the object IDs from Integers(Bullet format) to strings
+        # (Azrael format).
+        unpacked = [(str(k[0]), str(k[1]), v) for k, v in unpacked.items()]
+        return RetVal(True, None, unpacked)
 
     def compute(self, bodyIDs: (tuple, list), dt: float, max_substeps: int):
         """
@@ -173,9 +181,6 @@ class PyBulletDynamicsWorld():
         :param int max_substeps: maximum number of sub-steps.
         :return: Success
         """
-        # Clear all previous contacts.
-        self._lastContacts.clear()
-
         # All specified bodies must exist. Abort otherwise.
         try:
             rigidBodies = [self.rigidBodies[_] for _ in bodyIDs]
@@ -191,11 +196,10 @@ class PyBulletDynamicsWorld():
             body.forceActivationState(4)
 
         # The max_substeps parameter instructs Bullet to subdivide the
-        # specified timestep (dt) into at most max_substeps. For example, if
-        # dt= 0.1 and max_substeps=10, then, internally, Bullet will simulate
-        # no finer than dt / max_substeps = 0.01s.
+        # specified timestep (dt) into at most max_substeps. For example, with
+        # dt= 0.1 and max_substeps=10 Bullet will not simulate
+        # finer than dt / max_substeps = 0.01s.
         self.dynamicsWorld.stepSimulation(dt, max_substeps)
-        self._lastContacts.update(self.dynamicsWorld.azGetLastContacts())
 
         # Remove all bodies from the simulation again.
         for body in rigidBodies:

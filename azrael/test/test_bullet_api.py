@@ -1031,9 +1031,17 @@ class TestBulletAPI:
         assert ret_plane.data.position[2] == 0
         assert abs(ret_box.data.position[2] + ofs_z) < 1E-3
 
-    def test_get_contacts(self):
+    @pytest.mark.parametrize('num_sub_steps', [1, 60])
+    def test_get_contacts(self, num_sub_steps):
         """
         Verify that every call to 'compute' also creates collision contacts.
+
+        This test runs twice, once with a single sub-step and once with
+        multiple sub-steps. The reason is due to a changed collision callback
+        in Bullet. The original method could only gather contacts from the last
+        sub-step, which means the number of sub-steps had to be set to 1. Now
+        there is a better version which is independent of the number of
+        sub-steps. However, just to be sure, I am testing both here.
         """
         # Create a test object.
         cshapes = {'1': getCSSphere((0, 0, 0), (0, 0, 0, 1))}
@@ -1054,14 +1062,14 @@ class TestBulletAPI:
         # Verify there are no collision contacts, and that a simulation for
         # unknown objects does not produce any.
         assert sim.getLastContacts() == (True, None, [])
-        assert not sim.compute(['0'], 1, 1).ok
+        assert not sim.compute(['0'], 1, num_sub_steps).ok
         assert sim.getLastContacts() == (True, None, [])
 
         # Add the object and verify again that there are still no collisions (a
         # single object cannot collide with anything).
         sim.setRigidBodyData('0', obj_a)
         assert sim.getLastContacts() == (True, None, [])
-        assert sim.compute(['0'], 1, 1).ok
+        assert sim.compute(['0'], 1, num_sub_steps).ok
         assert sim.getLastContacts() == (True, None, [])
 
         # Add another body with the same attributes as the first. This ensures
@@ -1069,8 +1077,13 @@ class TestBulletAPI:
         # method was called.
         sim.setRigidBodyData('1', obj_a)
         assert sim.getLastContacts() == (True, None, [])
-        assert sim.compute(['0', '1'], 1, 1).ok
+
+        assert sim.compute(['0', '1'], 1, num_sub_steps).ok
+
+        # Query the collision contacts produced by both methods.
         ret = sim.getLastContacts()
+
+        # Verify the returned contacts from both methods.
         assert ret.ok
 
         # The collision informaiton must be provided in the form (aidA, aidB,
@@ -1086,15 +1099,22 @@ class TestBulletAPI:
         assert aidA == '0' and aidB == '1'
 
         # The collision points must be a list of 3-tuples. There must be
-        # exactly two such 3-tuple (one for the collision contact on object A
-        # and object B, respectively).
-        assert isinstance(colPositions, list) and len(colPositions) == 2
-        colPosA, colPosB = colPositions
-        assert isinstance(colPosA, tuple) and len(colPosA) == 3
-        assert isinstance(colPosB, tuple) and len(colPosB) == 3
+        # exactly two such 3-tuple if we only simulated a single sub-step:
+        # one for the collision contact on object A and B, respectively. If we
+        # did multiple sub-steps, then Bullet will probably have generated
+        # contacts in several sub-steps until it was resolved. How many exactly
+        # is difficult to predict however.
+        if num_sub_steps == 1:
+            assert isinstance(colPositions, list) and len(colPositions) == 2
+        else:
+            assert isinstance(colPositions, list) and len(colPositions) >= 2
+        assert len(colPositions) % 2 == 0
+        for colPosA, colPosB in zip(colPositions[0::2], colPositions[1::2]):
+            assert isinstance(colPosA, tuple) and len(colPosA) == 3
+            assert isinstance(colPosB, tuple) and len(colPosB) == 3
 
         # The 'compute' method must clear the contacts every time. To test
         # this, call it with an empty list of objects. This must do nothing in
         # terms of physics, but the contacts data must still be erased.
-        assert sim.compute([], 1, 1).ok
+        assert sim.compute([], 1, num_sub_steps).ok
         assert sim.getLastContacts() == (True, None, [])
