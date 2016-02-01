@@ -30,12 +30,24 @@ from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox, CollShapePlane, RigidBodyData
 from azrael.aztypes import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
 
+# Gather all processes started for the tests in this variable.
+test_procs = []
+
 
 def killAzrael():
-    subprocess.run(['pkill', 'Azreal:'], check=False)
+    killProcesses()
 
-    # Delete all grids.
+    # Kill all Azrael processes and delete all grids.
+    subprocess.run(['pkill', 'Azreal:'], check=False)
     assert azrael.vectorgrid.deleteAllGrids().ok
+
+
+def killProcesses():
+    # Terminate and join all processes.
+    for p in test_procs:
+        p.terminate()
+        p.join()
+    test_procs.clear()
 
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
@@ -48,6 +60,14 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     """
     # Return a Leonard instance.
     leo = LeonardCls()
+    if LeonardCls == azrael.leonard.LeonardDistributedZeroMQ:
+        p = azrael.leonard.WorkerManager(
+        numWorkers=3,
+        minSteps=500,
+        maxSteps=700,
+        workerCls=azrael.leonard.LeonardWorkerZeroMQ)
+        test_procs.append(p)
+        p.start()
     leo.setup()
     return leo
 

@@ -42,7 +42,7 @@ class TestLeonardAllEngines:
         azrael.datastore.init(flush=True)
 
     def teardown_method(self, method):
-        pass
+        azrael.test.test.killProcesses()
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_getGridForces(self, clsLeonard):
@@ -407,7 +407,7 @@ class TestLeonardOther:
         azrael.datastore.init(flush=True)
 
     def teardown_method(self, method):
-        pass
+        azrael.test.test.killProcesses()
 
     def test_worker_respawn(self):
         """
@@ -417,12 +417,19 @@ class TestLeonardOther:
         The test code is similar to ``test_move_two_objects_no_collision``.
         """
         # Instantiate Leonard.
+        workerManager = azrael.leonard.WorkerManager(
+            numWorkers=3,
+            minSteps=5,
+            maxSteps=10,
+            workerCls=azrael.leonard.LeonardWorkerZeroMQ)
+        workerManager.start()
+
         leo = azrael.leonard.LeonardDistributedZeroMQ()
-        leo.workerStepsUntilQuit = (1, 10)
+        leo.workermanager = workerManager
         leo.setup()
 
-        # Define a force grid (not used in this test but prevent a plethora
-        # of meaningleass warning messages).
+        # Define a force grid (not used in this test but prevents a plethora
+        # of meaningless warning messages).
         vg = azrael.vectorgrid
         assert vg.defineGrid(name='force', vecDim=3, granularity=1).ok
 
@@ -430,18 +437,16 @@ class TestLeonardOther:
         id_0, id_1 = '0', '1'
         cshapes = {'cssphere': getCSSphere(radius=1)}
 
-        # Two State Vectors for this test.
+        # Define two bodies and create the objects.
         body_0 = getRigidBody(
             position=[0, 0, 0], velocityLin=[1, 0, 0], cshapes=cshapes)
         body_1 = getRigidBody(
             position=[0, 10, 0], velocityLin=[0, -1, 0], cshapes=cshapes)
-
-        # Create two objects.
         tmp = [(id_0, body_0), (id_1, body_1)]
         assert leoAPI.addCmdSpawn(tmp).ok
 
-        # Advance the simulation by 1s, but use many small time steps. This
-        # ensures that the Workers will restart themselves frequently.
+        # Advance the simulation by 1s via many small time steps. This
+        # ensures the Workers will restart themselves frequently.
         for ii in range(60):
             leo.step(1.0 / 60, 1)
 
@@ -452,6 +457,9 @@ class TestLeonardOther:
         assert pos_1[0] == pos_1[2] == 0
         assert 0.9 <= pos_0[0] <= 1.1
         assert 8.9 <= pos_1[1] <= 9.1
+
+        workerManager.terminate()
+        workerManager.join()
 
     def test_createWorkPackages(self):
         """
@@ -880,7 +888,7 @@ class TestBroadphase:
         self.igor.reset()
 
     def teardown_method(self, method):
-        pass
+        azrael.test.test.killProcesses()
 
     def verifySweeping(self, aabbsIn, correct_answer):
         # Create the AABB dictionaries. For this test the data is

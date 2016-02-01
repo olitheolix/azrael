@@ -936,7 +936,6 @@ class LeonardDistributedZeroMQ(LeonardBase):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.numWorkers = 3
         self.wpid_counter = 0
         self.ctx = None
         self.sock = None
@@ -946,31 +945,10 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # collision contacts be dispatched.
         self.collisions = []
 
-        # Worker terminate automatically after a certain number of processed
-        # Work Packages. The precise number is a constructor argument and the
-        # following two variables simply specify the range. The final number
-        # will be chosen randomly from this interval (different for every
-        # Worker instance to minimise the probability that all terminate
-        # simultaneously).
-        self.minSteps, self.maxSteps = (500, 700)
-
-        # Initialise worker manager handle.
-        self.workermanager = None
-
     def __del__(self):
         """
         Kill all worker processes.
         """
-        if self.workermanager is not None:
-            # Send Keyboard interrupt to Worker manager and try to join it.
-            os.kill(self.workermanager.pid, signal.SIGINT)
-            self.workermanager.join(1)
-
-            # Kill the Worker Manager if we could not join it.
-            if self.workermanager.is_alive():
-                self.workermanager.terminate()
-                self.workermanager.join()
-
         # Close the Leonard <---> Worker socket.
         if self.sock is not None:
             addr = 'tcp://{}:{}'.format('*', config.azService['leonard'].port)
@@ -989,12 +967,6 @@ class LeonardDistributedZeroMQ(LeonardBase):
             self.ctx.destroy()
 
     def setup(self):
-        # Start the WorkerManager which, in turn, will spawn the workers.
-        self.workermanager = WorkerManager(
-            self.numWorkers, self.minSteps,
-            self.maxSteps, LeonardWorkerZeroMQ)
-        self.workermanager.start()
-
         # Create the ZeroMQ context. Note: this MUST happen AFTER the Worker
         # Manager was started, because otherwise the child processes will get a
         # copy of the ZeroMQ context with the already bound address, which it
