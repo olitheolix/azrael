@@ -52,21 +52,15 @@ case "$1" in
         ;;
     webapi)
         exec python -c "import azrael.web;\
-                        import azrael.startup;\
-                        azrael.datastore.init(flush=True);\
                         azrael.web.WebServer().run()"
         ;;
     leonard)
         exec python -c "import azrael.leonard;\
-                        import azrael.startup;\
-                        azrael.datastore.init(flush=True);\
                         azrael.leonard.LeonardDistributedZeroMQ().run()"
         ;;
     leo_minions)
         exec python -c "import azrael.leonard;\
-                        import azrael.startup;\
-                        azrael.datastore.init(flush=True);\
-                        azrael.leonard.WorkerManager(3, 5, 10, azrael.leonard.LeonardWorkerZeroMQ).run()"
+                        azrael.leonard.WorkerManager(3, 500, 700, azrael.leonard.LeonardWorkerZeroMQ).run()"
         ;;
     info)
         exec python -c "import pprint;\
