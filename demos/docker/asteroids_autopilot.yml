@@ -37,6 +37,15 @@ Leonard:
     - Database
     - RabbitMQ
 
+Minions:
+  image: olitheolix/azrael:latest
+  command: leo_minions
+  links:
+    - Clerk
+    - Database
+    - Leonard
+    - RabbitMQ
+
 Demo:
   image: olitheolix/azrael:latest
   command: asteroids
@@ -55,5 +64,6 @@ Player:
     - Database
     - Demo
     - Leonard
+    - Minions
     - RabbitMQ
     - WebAPI

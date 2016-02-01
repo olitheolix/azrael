@@ -62,6 +62,12 @@ case "$1" in
                         azrael.datastore.init(flush=True);\
                         azrael.leonard.LeonardDistributedZeroMQ().run()"
         ;;
+    leo_minions)
+        exec python -c "import azrael.leonard;\
+                        import azrael.startup;\
+                        azrael.datastore.init(flush=True);\
+                        azrael.leonard.WorkerManager(3, 5, 10, azrael.leonard.LeonardWorkerZeroMQ).run()"
+        ;;
     info)
         exec python -c "import pprint;\
                         import azrael;\

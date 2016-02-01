@@ -141,12 +141,15 @@ class AzraelStack:
             # leo = azrael.leonard.LeonardBase()
             # leo = azrael.leonard.LeonardBullet()
             # leo = azrael.leonard.LeonardSweeping()
+
             leo = azrael.leonard.LeonardDistributedZeroMQ()
+            wm = azrael.leonard.WorkerManager(3, 500, 700, azrael.leonard.LeonardWorkerZeroMQ)
 
             # Start Clerk, WebServer, and Leonard.
             self.startProcess(clerk)
             self.startProcess(web)
             self.startProcess(leo)
+            self.startProcess(wm)
 
     def stop(self):
         """
