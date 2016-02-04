@@ -694,7 +694,7 @@ class LeonardBase(config.AzraelProcess):
                 # during the sub-steps, but we can only query them after the
                 # last update.
                 with util.Timeit('Leonard:1.0 Step'):
-                    self.step(stepinterval, maxsteps=1)
+                    self.step(stepinterval, maxsteps=10)
         except KeyboardInterrupt:
             self.logit.warning('Leonard was aborted')
 
