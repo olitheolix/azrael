@@ -143,7 +143,12 @@ class AzraelStack:
             # leo = azrael.leonard.LeonardSweeping()
 
             leo = azrael.leonard.LeonardDistributedZeroMQ()
-            wm = azrael.leonard.WorkerManager(3, 500, 700, azrael.leonard.LeonardWorkerZeroMQ)
+            wm = azrael.leonard.WorkerManager(
+                numWorkers=3,
+                minSteps=500,
+                maxSteps=700,
+                workerCls=azrael.leonard.LeonardWorkerZeroMQ
+            )
 
             # Start Clerk, WebServer, and Leonard.
             self.startProcess(clerk)

@@ -62,10 +62,11 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     leo = LeonardCls()
     if LeonardCls == azrael.leonard.LeonardDistributedZeroMQ:
         p = azrael.leonard.WorkerManager(
-        numWorkers=3,
-        minSteps=500,
-        maxSteps=700,
-        workerCls=azrael.leonard.LeonardWorkerZeroMQ)
+            numWorkers=3,
+            minSteps=500,
+            maxSteps=700,
+            workerCls=azrael.leonard.LeonardWorkerZeroMQ
+        )
         test_procs.append(p)
         p.start()
     leo.setup()
