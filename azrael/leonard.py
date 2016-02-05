@@ -1493,6 +1493,7 @@ class WorkerManager(config.AzraelProcess):
         # Install the signal handler to facilitate a clean shutdown (including
         # minion processes).
         signal.signal(signal.SIGTERM, self.sighandler)
+        signal.signal(signal.SIGINT, self.sighandler)
 
         # Periodially monitor the state of the minion fleet.
         self.logit.info('Spawning Minions')
