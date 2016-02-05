@@ -954,8 +954,8 @@ class LeonardDistributedZeroMQ(LeonardBase):
         # collision contacts be dispatched.
         self.collisions = []
 
-    def __del__(self):
-        self.shutdown()
+#    def __del__(self):
+#        self.shutdown()
 
     def shutdown(self):
         """
