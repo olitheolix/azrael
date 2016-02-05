@@ -76,13 +76,6 @@ class EventStore(threading.Thread):
         # We do not connect to RabbitMQ in the ctor (see `connect` method).
         self.rmq = None
 
-    def __del__(self):
-        """
-        Attempt to shut down cleanly.
-        """
-        self.stop()
-        self.disconnect()
-
     def connect(self):
         """Connect to the Broker.
 
