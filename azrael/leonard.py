@@ -19,6 +19,7 @@
 Physics manager.
 """
 import os
+import sys
 import zmq
 import time
 import json
@@ -1380,13 +1381,11 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
 
 class WorkerManager(config.AzraelProcess):
     """
-    Launch Worker processes and restart them as necessary.
+    Spawn and maintain a fleet of minion processes.
 
-    This class merely launches the inital set of workers and periodically
-    checks if any have died. If so, it joins these processes and replaces it
-    with a new Worker that has the same ID.
+    This class launches the inital fleet minions and restart any that die.
 
-    :param int numWorker: number of Workers processes to spawn.
+    :param int numWorker: nonegative number of Minion processes to maintain.
     :param int minSteps: see Worker
     :param int maxSteps: see Worker
     :param class workerCls: the class to instantiate.
@@ -1397,67 +1396,88 @@ class WorkerManager(config.AzraelProcess):
         super().__init__()
 
         # Sanity checks.
-        assert numWorkers > 0
+        assert numWorkers >= 0
         assert 0 < minSteps <= maxSteps
 
-        # Backup the arguments.
+        # Backup the ctor arguments.
         self.numWorkers = numWorkers
         self.workerCls = workerCls
         self.minSteps, self.maxSteps = minSteps, maxSteps
 
-        # Initialise the list of workers.
-        self.workers = []
+        # Handles to minion processes.
+        self.workers = [None] * numWorkers
 
-    def _run(self):
+    def maintainFleet(self):
         """
-        Start the initial collection of Workers and ensure they remain alive.
+        Join all dead minion processes and replace them with new ones.
+
+        Returns:
+           Always succeeds.
         """
-        # Spawn the initial collection of Workers.
-        delta = self.maxSteps - self.minSteps
-        for ii in range(self.numWorkers):
-            # Random number in [minSteps, maxSteps]. The process will
-            # automatically terminate after `suq` steps.
-            suq = self.minSteps + int(np.random.rand() * delta)
+        # Check each process handle and restart those that have died.
+        for workerID, proc in enumerate(self.workers):
+            # Do nothing if the minion is alive and well.
+            if proc is not None and proc.is_alive():
+                continue
 
-            # Instantiate the process and add it to the list.
-            self.workers.append(self.workerCls(ii + 1, suq))
-            self.workers[-1].start()
+            # New worker processes will only live for a certain number of
+            # steps. The exact number is a random pick from the min/max steps
+            # interval.
+            suq = np.random.randint(self.minSteps, self.maxSteps + 1)
 
-        # Periodically monitor the processes and restart any that have died.
-        while True:
-            # Poll worker status every 250ms.
-            time.sleep(0.25)
-            for workerID, proc in enumerate(self.workers):
-                # Skip current process if it is still running.
-                if proc.is_alive():
-                    continue
+            # Start a new Minion. The number of steps until quitting (suq) is a
+            # random number in the specified interval.
+            self.workers[workerID] = self.workerCls(workerID, suq)
+            self.workers[workerID].start()
+        return RetVal(True, None, None)
 
-                # Process has died --> join it to clear up the process table.
-                proc.join()
+    def stopAll(self):
+        """
+        Send SIGTERM to all minions and join them.
 
-                # Create a new Worker with the same ID but a (possibly)
-                # different number of steps after which it must terminate.
-                suq = self.minSteps + int(np.random.rand() * delta)
-                proc = self.workerCls(workerID, suq)
-                proc.start()
-                self.workers[workerID] = proc
-                self.logit.info('Restarted Worker {}'.format(workerID))
+        Returns:
+           Always succeeds.
+        """
+        # Send SIGTERM to minons currently alive.
+        for proc in self.workers:
+            if proc is None or not proc.is_alive():
+                continue
+            os.kill(proc.pid, signal.SIGTERM)
+
+        # Join all minions.
+        for workerID, proc in enumerate(self.workers):
+            if proc is None:
+                continue
+            proc.join()
+            self.workers[workerID] = None
+        return RetVal(True, None, None)
+
+    def sighandler(self, signum, frame):
+        """
+        Signal handler for SIGTERM.
+
+        Intercept the termination signal (including the one sent by the
+        'terminate' method of the 'multiprocessing.Process' module) and shut
+        down all minions.
+
+        See `signal module <https://docs.python.org/3/library/signal.html>`_
+        for the specific meaning of the arguments.
+        """
+        msg = 'Gru intercepted signal {} - inhuming Minions'.format(signum)
+        self.logit.info(msg)
+        self.stopAll()
+        self.logit.info('Gru now exiting cleanly')
+        sys.exit(0)
 
     def run(self):
-        """
-        Wrapper around ``_run`` to intercept SIGTERM.
-        """
-        # Call `run` method of `AzraelProcess` base class.
         super().run()
 
-        try:
-            self._run()
-        except KeyboardInterrupt:
-            self.logit.warning('Worker Manager was aborted')
+        # Install the signal handler to facilitate a clean shutdown (including
+        # minion processes).
+        signal.signal(signal.SIGTERM, self.sighandler)
 
-        # Terminate all workers.
-        for w in self.workers:
-            if w is not None and w.is_alive():
-                w.terminate()
-                w.join()
-        self.logit.info('Worker manager finished')
+        # Periodially monitor the state of the minion fleet.
+        self.logit.info('Spawning Minions')
+        while True:
+            self.maintainFleet()
+            time.sleep(0.25)

@@ -394,21 +394,94 @@ class TestLeonardAllEngines:
         es.join()
 
 
-class TestLeonardOther:
+class TestWorkerManager:
     @classmethod
     def setup_class(cls):
-        cls.igor = azrael.igor.Igor()
+        pass
 
     @classmethod
     def teardown_class(cls):
         pass
 
     def setup_method(self, method):
-        assert azrael.vectorgrid.deleteAllGrids().ok
-        azrael.datastore.init(flush=True)
+        pass
+        #azrael.datastore.init(flush=True)
 
     def teardown_method(self, method):
-        azrael.test.test.killProcesses()
+        azrael.test.test.shutdownLeonard()
+
+    def test_workerManager_basic(self):
+        """
+        """
+        # Convenience.
+        m_workerCls = mock.MagicMock()
+        m_worker = mock.MagicMock()
+        m_workerCls.return_value = m_worker
+        WM = azrael.leonard.WorkerManager
+
+        # Number of workers and/or steps can be zero but not negative.
+        with pytest.raises(AssertionError):
+            WM(numWorkers=-1, minSteps=5, maxSteps=10, workerCls=m_workerCls)
+        with pytest.raises(AssertionError):
+            WM(numWorkers=1, minSteps=-5, maxSteps=10, workerCls=m_workerCls)
+        with pytest.raises(AssertionError):
+            WM(numWorkers=1, minSteps=5, maxSteps=-10, workerCls=m_workerCls)
+
+        # 'minSteps' must be smaller or equal than 'maxSteps'.
+        WM(numWorkers=1, minSteps=50, maxSteps=50, workerCls=m_workerCls)
+        with pytest.raises(AssertionError):
+            WM(numWorkers=1, minSteps=50, maxSteps=10, workerCls=m_workerCls)
+
+        # Start a fleet of zero workers and verify that the WorkerManager did
+        # not make any attempts to instantiate the WorkerCls.
+        assert not m_workerCls.called
+        wm = WM(numWorkers=0, minSteps=10, maxSteps=50, workerCls=m_workerCls)
+        assert wm.workers == []
+        wm.maintainFleet()
+        assert not m_workerCls.called
+        del m_worker
+
+        # Start a fleet of two (mock) workers.
+        m_workerCls.reset_mock()
+        m_worker1, m_worker2 = mock.MagicMock(), mock.MagicMock()
+        m_workerCls.side_effect = [m_worker1, m_worker2]
+        assert not m_workerCls.called
+        wm = WM(numWorkers=2, minSteps=10, maxSteps=50, workerCls=m_workerCls)
+        assert wm.workers == [None, None]
+        wm.maintainFleet()
+        assert m_worker1.start.called
+        assert m_worker2.start.called
+
+    @mock.patch.object(azrael.leonard.os, 'kill')
+    def test_workerManager_stop(self, m_oskill):
+        """
+        """
+        WM = azrael.leonard.WorkerManager
+
+        # Create mocked Workers, one alive, one already terminated.
+        m_worker_alive, m_worker_dead = mock.MagicMock(), mock.MagicMock()
+        m_worker_alive.is_alive.return_value = True
+        m_worker_alive.pid = 1
+        m_worker_dead.is_alive.return_value = False
+        m_worker_dead.pid = 2
+
+        # Create a WorkerManager and install a list of mocked Worker instances.
+        m_workerCls = mock.MagicMock()
+        wm = WM(numWorkers=2, minSteps=1, maxSteps=5, workerCls=m_workerCls)
+        assert wm.workers == [None, None]
+        wm.workers = [m_worker_alive, m_worker_dead]
+
+        # Call the 'stop' method. This must first send SIGTERM to all children
+        # still alive and then join them.
+        assert m_oskill.call_count == 0
+        wm.stopAll()
+        assert m_worker_alive.is_alive.called
+        assert m_worker_dead.is_alive.called
+        assert m_oskill.call_count == 1
+        assert m_oskill.called_with(m_worker_alive.pid, azrael.leonard.signal.SIGTERM)
+        assert m_worker_alive.join.called
+        assert m_worker_dead.join.called
+        assert wm.workers == [None, None]
 
     def test_worker_respawn(self):
         """
@@ -418,16 +491,7 @@ class TestLeonardOther:
         The test code is similar to ``test_move_two_objects_no_collision``.
         """
         # Instantiate Leonard.
-        workerManager = azrael.leonard.WorkerManager(
-            numWorkers=3,
-            minSteps=5,
-            maxSteps=10,
-            workerCls=azrael.leonard.LeonardWorkerZeroMQ)
-        workerManager.start()
-
-        leo = azrael.leonard.LeonardDistributedZeroMQ()
-        leo.workermanager = workerManager
-        leo.setup()
+        leo = getLeonard(azrael.leonard.LeonardDistributedZeroMQ)
 
         # Define a force grid (not used in this test but prevents a plethora
         # of meaningless warning messages).
@@ -459,8 +523,22 @@ class TestLeonardOther:
         assert 0.9 <= pos_0[0] <= 1.1
         assert 8.9 <= pos_1[1] <= 9.1
 
-        workerManager.terminate()
-        workerManager.join()
+
+class TestLeonardOther:
+    @classmethod
+    def setup_class(cls):
+        cls.igor = azrael.igor.Igor()
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def setup_method(self, method):
+        assert azrael.vectorgrid.deleteAllGrids().ok
+        azrael.datastore.init(flush=True)
+
+    def teardown_method(self, method):
+        azrael.test.test.shutdownLeonard()
 
     def test_createWorkPackages(self):
         """
