@@ -10,13 +10,12 @@ MAINTAINER Oliver Nagy <olitheolix@gmail.com>
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh \
     && apt-get update && apt-get install -y git procps
 
-# Create the application directory and clone Azrael from GitHub.
-RUN git clone https://github.com/olitheolix/azrael /azrael
-WORKDIR /azrael
+# Clone Azrael from GitHub and delete the .git folder.
+RUN git clone https://github.com/olitheolix/azrael /azrael && rm -rf /azrael/.git
 
 # Setup the Anaconda environment for Azrael.
 RUN apt-get install -y build-essential \
-    && conda env create --name azrael --file environment_docker.yml \
+    && conda env create --name azrael --file /azrael/environment_docker.yml \
     && conda clean -p -s -t -y \
     && apt-get remove -y build-essential \
     && apt-get -y autoremove \
@@ -27,5 +26,6 @@ RUN apt-get install -y build-essential \
 ENV INSIDEDOCKER 1
 
 # Finalise container setup.
+WORKDIR /azrael
 EXPOSE 5555 5556 8080
 ENTRYPOINT ["/azrael/devtools/entrypoint.sh"]
