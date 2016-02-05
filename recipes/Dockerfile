@@ -1,10 +1,11 @@
 # Build all the Anaconda packages required by Azrael.
 #
-# From this directory (where this 'Dockerfile' is located) issue:
-#   >> docker build -t build_azanaconda_packages -f Dockerfile ..
+# From this directory (where this 'Dockerfile' is located) build and run the
+# container with the following command:
 #
-# Upload instructions will be displayed upon container login:
-#   >> docker run -ti build_azanaconda_packages
+#  >> docker build -t build_azanaconda_packages -f Dockerfile .. && docker run -ti build_azanaconda_packages
+#
+# This will also display the upload instructions for Anaconda.org.
 
 # Anaconda base image.
 FROM continuumio/miniconda3:latest
@@ -39,11 +40,11 @@ RUN python setup.py clean
 
 # Build the Anaconda packages.
 WORKDIR /demo/azrael/recipes
-RUN conda build --python 3.4 --python 3.5 azbullet
 RUN conda build --python 3.4 --python 3.5 assimp
+RUN conda build --python 3.4 --python 3.5 azbullet
 
 # Display Anaconda login and upload instructions.
 CMD echo "To upload packages to Anaconda.org:" && \
     echo "  >> anaconda login" && \
-    echo "  >> anaconda upload --interactive /opt/conda/conda-bld/linux-64/*.tar.bz2" && \
+    echo "  >> anaconda upload --force /opt/conda/conda-bld/linux-64/*.tar.bz2" && \
     bash

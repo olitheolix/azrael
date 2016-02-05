@@ -10,7 +10,7 @@ cmake \
     -DCMAKE_C_COMPILER=${PREFIX}/bin/gcc \
     -DCMAKE_CXX_COMPILER=${PREFIX}/bin/g++
 
-make install
+make install -j4
 
 # Install the Python bindings.
 cd port/PyAssimp
