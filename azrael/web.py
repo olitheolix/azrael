@@ -28,8 +28,10 @@ little more than a wrapper around Dibbler which administrates all model files.
 """
 
 import os
+import sys
 import time
 import json
+import signal
 import logging
 import tornado.websocket
 import tornado.httpserver
@@ -230,9 +232,28 @@ class WebServer(config.AzraelProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def sighandler(self, signum, frame):
+        """
+        Signal handler for SIGTERM.
+
+        Intercept the termination signal (including the one sent by the
+        'terminate' method of the 'multiprocessing.Process' module) and cleanly
+        shut down the WebAPI.
+
+        See `signal module <https://docs.python.org/3/library/signal.html>`_
+        for the specific meaning of the arguments.
+        """
+        msg = 'WebAPI intercepted signal {} - shutting down.'.format(signum)
+        self.logit.info(msg)
+        sys.exit(0)
+
     def run(self):
         # Call `run` method of `AzraelProcess` base class.
         super().run()
+
+        # Install the signal handler to facilitate a clean shutdown.
+        signal.signal(signal.SIGTERM, self.sighandler)
+        signal.signal(signal.SIGINT, self.sighandler)
 
         # Not sure if this really does anything but it certainly does not hurt.
         self.daemon = True
@@ -274,7 +295,5 @@ class WebServer(config.AzraelProcess):
         tornado_app = ioloop.IOLoop.instance()
 
         # Start Tornado event loop.
-        try:
-            tornado_app.start()
-        except KeyboardInterrupt:
-            self.logit.warning('Webserver interrupted by user')
+        self.logit.info('Starting WebAPI')
+        tornado_app.start()
