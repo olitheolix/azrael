@@ -1327,11 +1327,24 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         See `signal module <https://docs.python.org/3/library/signal.html>`_
         for the specific meaning of the arguments.
         """
-        msg = 'Minion {} intercepted signal {}'.format(self.workerID, signum)
-        self.logit.info(msg)
+        # Attempt to log the status (my fail if the process is already being
+        # deleted due to a kill signal from another process).
+        try:
+            msg = 'Minion {} intercepted signal {}'
+            self.logit.info(msg.format(self.workerID, signum))
+        except RuntimeError:
+            pass
+
+        # Close the ZeroMQ sockets.
         self.sock.close(linger=0)
         self.ctx.destroy()
-        self.logit.info('Minion exited cleanly')
+
+        # Attempt to log the status (my fail if the process is already being
+        # deleted due to a kill signal from another process).
+        try:
+            self.logit.info('Minion exited cleanly')
+        except RuntimeError:
+            pass
         sys.exit(0)
 
     @typecheck
@@ -1456,17 +1469,29 @@ class WorkerManager(config.AzraelProcess):
         Returns:
            Always succeeds.
         """
-        # Send SIGTERM to minons currently alive.
+        # Send SIGTERM to all minons which are currently alive.
         for proc in self.workers:
-            if proc is None or not proc.is_alive():
-                continue
-            os.kill(proc.pid, signal.SIGTERM)
+            try:
+                if proc is None or not proc.is_alive():
+                    continue
+                os.kill(proc.pid, signal.SIGTERM)
+            except AssertionError:
+                # This Exception is raised by multiprocessing. The cause is a
+                # problem where this function may be interrupted by a SIGTERM
+                # and the handler calling this very function again as a result.
+                return
 
         # Join all minions.
         for workerID, proc in enumerate(self.workers):
             if proc is None:
                 continue
-            proc.join()
+            try:
+                proc.join()
+            except AssertionError:
+                # This Exception is raised by multiprocessing. The cause is a
+                # problem where this function may be interrupted by a SIGTERM
+                # and the handler calling this very function again as a result.
+                return
             self.workers[workerID] = None
         return RetVal(True, None, None)
 
@@ -1481,10 +1506,12 @@ class WorkerManager(config.AzraelProcess):
         See `signal module <https://docs.python.org/3/library/signal.html>`_
         for the specific meaning of the arguments.
         """
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         msg = 'Gru intercepted signal {} - inhuming Minions'.format(signum)
         self.logit.info(msg)
         self.stopAll()
-        self.logit.info('Gru now exiting cleanly')
+        self.logit.info('Gru exited cleanly')
         sys.exit(0)
 
     def run(self):
