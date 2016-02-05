@@ -1406,8 +1406,9 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
             numSteps += 1
 
         # Log a last status message before terminating.
-        self.logit.info('Worker {} terminated itself after {} steps'
-                            .format(self.workerID, numSteps))
+        msg = 'Worker {} terminated itself after {} steps'
+        msg = msg.format(self.workerID, numSteps)
+        self.logit.info(msg)
 
 
 class WorkerManager(config.AzraelProcess):

@@ -128,33 +128,36 @@ class AzraelStack:
         """
         Start the Azrael processes.
         """
+        # Do nothing if we are inside Docker.
+        if azutils.isInsideDocker():
+            return
+
         # Spawn Azrael's APIs.
         clerk = azrael.clerk.Clerk()
         web = azrael.web.WebServer()
 
-        if not azutils.isInsideDocker():
-            # Flush the model database.
-            dibbler = azrael.dibbler.Dibbler()
-            dibbler.reset()
+        # Flush the model database.
+        dibbler = azrael.dibbler.Dibbler()
+        dibbler.reset()
 
-            # Start the physics engine.
-            # leo = azrael.leonard.LeonardBase()
-            # leo = azrael.leonard.LeonardBullet()
-            # leo = azrael.leonard.LeonardSweeping()
+        # Start the physics engine.
+        # leo = azrael.leonard.LeonardBase()
+        # leo = azrael.leonard.LeonardBullet()
+        # leo = azrael.leonard.LeonardSweeping()
 
-            leo = azrael.leonard.LeonardDistributedZeroMQ()
-            wm = azrael.leonard.WorkerManager(
-                numWorkers=3,
-                minSteps=500,
-                maxSteps=700,
-                workerCls=azrael.leonard.LeonardWorkerZeroMQ
-            )
+        leo = azrael.leonard.LeonardDistributedZeroMQ()
+        wm = azrael.leonard.WorkerManager(
+            numWorkers=3,
+            minSteps=500,
+            maxSteps=700,
+            workerCls=azrael.leonard.LeonardWorkerZeroMQ
+        )
 
-            # Start Clerk, WebServer, and Leonard.
-            self.startProcess(clerk)
-            self.startProcess(web)
-            self.startProcess(leo)
-            self.startProcess(wm)
+        # Start Clerk, WebServer, and Leonard.
+        self.startProcess(clerk)
+        self.startProcess(web)
+        self.startProcess(leo)
+        self.startProcess(wm)
 
     def stop(self):
         """

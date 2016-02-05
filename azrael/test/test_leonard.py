@@ -405,7 +405,6 @@ class TestWorkerManager:
 
     def setup_method(self, method):
         pass
-        #azrael.datastore.init(flush=True)
 
     def teardown_method(self, method):
         azrael.test.test.shutdownLeonard()
