@@ -38,9 +38,11 @@ language agnostic.
 """
 import io
 import os
+import sys
 import zmq
 import json
 import jsonschema
+import signal
 import traceback
 
 import numpy as np
@@ -234,6 +236,25 @@ class Clerk(config.AzraelProcess):
             self.returnToClient(self.last_addr, ret, addToLog=False)
             del msg, buf, msg_st, ret
 
+    def sighandler(self, signum, frame):
+        """
+        Signal handler for SIGTERM.
+
+        Intercept the termination signal (including the one sent by the
+        'terminate' method of the 'multiprocessing.Process' module) and cleanly
+        shut down Clerk.
+
+        See `signal module <https://docs.python.org/3/library/signal.html>`_
+        for the specific meaning of the arguments.
+        """
+        msg = 'Clerk intercepted signal {} - initiating shutdown'
+        msg = msg.format(signum)
+        self.logit.info(msg)
+        self.sock_cmd.close(linger=0)
+        self.ctx.destroy()
+        self.logit.info('Clerk shutdown complete.')
+        sys.exit(0)
+
     def run(self):
         """
         Initialise ZeroMQ and wait for client requests.
@@ -245,12 +266,16 @@ class Clerk(config.AzraelProcess):
         # Call `run` method of `AzraelProcess` base class.
         super().run()
 
+        # Install the signal handler to facilitate a clean shutdown.
+        signal.signal(signal.SIGTERM, self.sighandler)
+        signal.signal(signal.SIGINT, self.sighandler)
+
         # Initialise ZeroMQ and create the command socket. All client requests
         # will come through this socket.
         addr = 'tcp://{}:{}'.format('*', config.azService['clerk'].port)
         self.logit.info('Attempt to bind <{}>'.format(addr))
-        ctx = zmq.Context()
-        self.sock_cmd = ctx.socket(zmq.ROUTER)
+        self.ctx = zmq.Context()
+        self.sock_cmd = self.ctx.socket(zmq.ROUTER)
         self.sock_cmd.bind(addr)
         poller = zmq.Poller()
         poller.register(self.sock_cmd, zmq.POLLIN)
@@ -260,10 +285,7 @@ class Clerk(config.AzraelProcess):
         # Digest loop.
         while True:
             # Wait for socket activity.
-            try:
-                sock = dict(poller.poll())
-            except KeyboardInterrupt:
-                break
+            sock = dict(poller.poll())
             if self.sock_cmd not in sock:
                 continue
 
@@ -313,7 +335,6 @@ class Clerk(config.AzraelProcess):
                     # Unknown command word.
                     ret = RetVal(False, 'Invalid command <{}>'.format(cmd), None)
                     self.returnToClient(self.last_addr, ret)
-        self.logit.warning('Clerk was aborted')
 
     @typecheck
     def returnToClient(self, addr, ret: RetVal, addToLog: bool=True):
