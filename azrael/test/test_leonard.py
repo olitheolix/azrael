@@ -24,7 +24,8 @@ allEngines = [
     azrael.leonard.LeonardBase,
     azrael.leonard.LeonardBullet,
     azrael.leonard.LeonardSweeping,
-    azrael.leonard.LeonardDistributedZeroMQ]
+    azrael.leonard.LeonardDistributedZeroMQ,
+]
 
 
 class TestLeonardAllEngines:

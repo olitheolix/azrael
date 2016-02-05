@@ -101,21 +101,22 @@ def getCSEmpty(pos=[0, 0, 0], rot=[0, 0, 0, 1]):
 
 def getCSBox(pos=[0, 0, 0], rot=[0, 0, 0, 1], dim=[1, 1, 1]):
     """
-    Convenience function to construct a Box shape.
+    Convenience function: return collision shape for Box.
     """
     return CollShapeMeta('box', pos, rot, CollShapeBox(*dim))
 
 
 def getCSSphere(pos=[0, 0, 0], rot=[0, 0, 0, 1], radius=1):
     """
-    Convenience function to construct a Sphere shape.
+    Convenience function: return collision shape for Sphere.
     """
     return CollShapeMeta('sphere', pos, rot, CollShapeSphere(radius))
 
 
 def getCSPlane(pos=[0, 0, 0], rot=[0, 0, 0, 1], normal=[0, 0, 1], ofs=0):
     """
-    Convenience function to construct a Plane in the x/y dimension.
+    Convenience function: return collision shape for a Plane in the x/y
+    dimension.
     """
     return CollShapeMeta('plane', pos, rot, CollShapePlane(normal, ofs))
 
