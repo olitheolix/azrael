@@ -11,8 +11,8 @@ RabbitMQ:
 Clerk:
   image: olitheolix/azrael:latest
   command: clerk
-  expose:
-    - "5555"
+  ports:
+    - "5555:5555"
   links:
     - Database
     - RabbitMQ
