@@ -30,24 +30,33 @@ from azrael.aztypes import CollShapeMeta, CollShapeEmpty, CollShapeSphere
 from azrael.aztypes import CollShapeBox, CollShapePlane, RigidBodyData
 from azrael.aztypes import Constraint6DofSpring2, ConstraintP2P, ConstraintMeta
 
-# Gather all processes started for the tests in this variable.
-test_procs = []
+# List of Leonard/WorkerManager processes started as part of a test.
+test_leo_procs = []
 
 
 def killAzrael():
-    killProcesses()
-
     # Kill all Azrael processes and delete all grids.
     subprocess.run(['pkill', 'Azreal:'], check=False)
     assert azrael.vectorgrid.deleteAllGrids().ok
 
 
-def killProcesses():
-    # Terminate and join all processes.
-    for p in test_procs:
-        p.terminate()
-        p.join()
-    test_procs.clear()
+def shutdownLeonard():
+    """
+    Terminate all WorkerManager instances and call Leonard's 'shutdown' method.
+
+    This method works in tandem with 'getLeonard'.
+    """
+    for leo, wm in test_leo_procs:
+        # Termiante the WorkerManager instance (if we event created one).
+        if wm is not None:
+            wm.terminate()
+            wm.join()
+
+        # Call Leonard' shutdown method.
+        leo.shutdown()
+
+    # Reset the list.
+    test_leo_procs.clear()
 
 
 def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
@@ -60,15 +69,25 @@ def getLeonard(LeonardCls=azrael.leonard.LeonardBase):
     """
     # Return a Leonard instance.
     leo = LeonardCls()
+
+    # Some Leonard classes rely on separate minion processes. For those classes
+    # we will instantiate a WorkerManager.
     if LeonardCls == azrael.leonard.LeonardDistributedZeroMQ:
-        p = azrael.leonard.WorkerManager(
+        wm = azrael.leonard.WorkerManager(
             numWorkers=3,
             minSteps=500,
             maxSteps=700,
             workerCls=azrael.leonard.LeonardWorkerZeroMQ
         )
-        test_procs.append(p)
-        p.start()
+        wm.start()
+    else:
+        wm = None
+
+    # Add the currente Leonard and WorkerManager to the list. If the teardown
+    # methods in the tests call the 'shutdownLeonard' function (see above) then
+    # this takes care of cleanly terminating the processes (and closing the
+    # sockets).
+    test_leo_procs.append((leo, wm))
     leo.setup()
     return leo
 

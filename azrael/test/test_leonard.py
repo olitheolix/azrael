@@ -42,7 +42,7 @@ class TestLeonardAllEngines:
         azrael.datastore.init(flush=True)
 
     def teardown_method(self, method):
-        azrael.test.test.killProcesses()
+        azrael.test.test.shutdownLeonard()
 
     @pytest.mark.parametrize('clsLeonard', allEngines)
     def test_getGridForces(self, clsLeonard):
@@ -888,7 +888,7 @@ class TestBroadphase:
         self.igor.reset()
 
     def teardown_method(self, method):
-        azrael.test.test.killProcesses()
+        azrael.test.test.shutdownLeonard()
 
     def verifySweeping(self, aabbsIn, correct_answer):
         # Create the AABB dictionaries. For this test the data is
