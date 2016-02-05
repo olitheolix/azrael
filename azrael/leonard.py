@@ -426,6 +426,14 @@ class LeonardBase(config.AzraelProcess):
         """
         pass
 
+    def shutdown(self):
+        """
+        Stub for shutdown code that cannot go into the destructor.
+
+        The typical use case is to close ZeroMQ sockets.
+        """
+        pass
+
     def getGridForces(self, idPos: dict):
         """
         Return dictionary of force values for every object in ``idPos``.
@@ -946,6 +954,9 @@ class LeonardDistributedZeroMQ(LeonardBase):
         self.collisions = []
 
     def __del__(self):
+        self.shutdown()
+
+    def shutdown(self):
         """
         Kill all worker processes.
         """
@@ -960,11 +971,13 @@ class LeonardDistributedZeroMQ(LeonardBase):
                 pass
             del addr
             self.sock.close(linger=100)
+            self.sock = None
 
         # Terminate the ZeroMQ context.
         if self.ctx is not None:
             self.ctx.term()
             self.ctx.destroy()
+            self.ctx = None
 
     def setup(self):
         # Create the ZeroMQ context. Note: this MUST happen AFTER the Worker
