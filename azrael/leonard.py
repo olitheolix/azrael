@@ -1316,6 +1316,24 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         # Return the updated WP data.
         return {'wpid': meta.wpid, 'wpdata': out, 'collisions': collisions}
 
+    def sighandler(self, signum, frame):
+        """
+        Signal handler for SIGTERM.
+
+        Intercept the termination signal (including the one sent by the
+        'terminate' method of the 'multiprocessing.Process' module) and shut
+        down all minions.
+
+        See `signal module <https://docs.python.org/3/library/signal.html>`_
+        for the specific meaning of the arguments.
+        """
+        msg = 'Minion {} intercepted signal {}'.format(self.workerID, signum)
+        self.logit.info(msg)
+        self.sock.close(linger=0)
+        self.ctx.destroy()
+        self.logit.info('Minion exited cleanly')
+        sys.exit(0)
+
     @typecheck
     def run(self):
         """
@@ -1324,59 +1342,59 @@ class LeonardWorkerZeroMQ(config.AzraelProcess):
         # Call `run` method of `AzraelProcess` base class.
         super().run()
 
-        try:
-            # Setup ZeroMQ.
-            ctx = zmq.Context()
-            sock = ctx.socket(zmq.REQ)
-            host = config.azService['leonard']
-            addr = 'tcp://{}:{}'.format(host.ip, host.port)
-            sock.connect(addr)
-            self.logit.info(
-                'Worker {} connected to <{}>'.format(self.workerID, addr)
-            )
+        # Install the signal handler to facilitate a clean shutdown.
+        signal.signal(signal.SIGTERM, self.sighandler)
+        signal.signal(signal.SIGINT, self.sighandler)
 
-            # Contact Leonard with an empty payload.
-            sock.send(b'')
+        # Setup ZeroMQ.
+        ctx = zmq.Context()
+        sock = ctx.socket(zmq.REQ)
+        host = config.azService['leonard']
+        addr = 'tcp://{}:{}'.format(host.ip, host.port)
+        sock.connect(addr)
+        self.logit.info(
+            'Worker {} connected to <{}>'.format(self.workerID, addr)
+        )
 
-            # Wait for messages from Leonard. If they contain a WP then process
-            # it and return the result, otherwise reply with an empty message.
-            numSteps = 0
-            suq = self.stepsUntilQuit
-            while numSteps < suq:
-                # Wait for the next message.
-                msg = sock.recv()
+        # Store as instance variables for signal handler.
+        self.ctx = ctx
+        self.sock = sock
 
-                # If Leonard did not send a Work Package (probably because it
-                # does not have one right now) then wait for a short time
-                # before asking again to avoid spamming the network.
-                if msg == b'':
-                    time.sleep(0.003)
-                    sock.send(b'')
-                    continue
+        # Contact Leonard with an empty payload.
+        sock.send(b'')
 
-                # Unpickle the Work Package.
-                wpdata = pickle.loads(msg)
+        # Wait for messages from Leonard. If they contain a WP then process
+        # it and return the result, otherwise reply with an empty message.
+        numSteps = 0
+        suq = self.stepsUntilQuit
+        while numSteps < suq:
+            # Wait for the next message.
+            msg = sock.recv()
 
-                # Process the Work Package.
-                with util.Timeit('Worker:1.0.0 WPTotal'):
-                    wpdata = self.computePhysicsForWorkPackage(wpdata)
+            # If Leonard did not send a Work Package (probably because it
+            # does not have one right now) then wait for a short time
+            # before asking again to avoid spamming the network.
+            if msg == b'':
+                time.sleep(0.003)
+                sock.send(b'')
+                continue
 
-                # Pack up the Work Package and send it back to Leonard.
-                sock.send(pickle.dumps(wpdata))
+            # Unpickle the Work Package.
+            wpdata = pickle.loads(msg)
 
-                # Count the number of Work Packages we have processed.
-                numSteps += 1
+            # Process the Work Package.
+            with util.Timeit('Worker:1.0.0 WPTotal'):
+                wpdata = self.computePhysicsForWorkPackage(wpdata)
 
-            # Log a last status message before terminating.
-            self.logit.info('Worker {} terminated itself after {} steps'
+            # Pack up the Work Package and send it back to Leonard.
+            sock.send(pickle.dumps(wpdata))
+
+            # Count the number of Work Packages we have processed.
+            numSteps += 1
+
+        # Log a last status message before terminating.
+        self.logit.info('Worker {} terminated itself after {} steps'
                             .format(self.workerID, numSteps))
-        except KeyboardInterrupt:
-            self.logit.warning('Aborted Worker {}'.format(self.workerID))
-
-        # Terminate.
-        sock.close(linger=0)
-        ctx.destroy()
-        self.logit.info('Worker {} exited cleanly'.format(self.workerID))
 
 
 class WorkerManager(config.AzraelProcess):
